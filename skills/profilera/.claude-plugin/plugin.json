@@ -1,0 +1,8 @@
+{
+  "name": "profilera",
+  "version": "1.0.0",
+  "description": "PROFILERA -- PROFILing Extracted Reasoning and Attitudes. Mines session history to build an agent-consumable decision profile.",
+  "author": {
+    "name": "jgabor"
+  }
+}
