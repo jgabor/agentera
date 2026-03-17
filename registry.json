@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1",
+  "skills": [
+    {
+      "name": "inspirera",
+      "description": "INSPIRERA — Inspect Navigated Source, Project Its Resonance, Extract Reusable Abstractions. Analyzes an external link and maps its concepts, patterns, and primitives to one of your own projects.",
+      "path": "skills/inspirera",
+      "tags": ["research", "architecture", "code-review"],
+      "added": "2026-03-15"
+    },
+    {
+      "name": "profilera",
+      "description": "PROFILERA — PROFILing Extracted Reasoning and Attitudes. Mines session history to build an agent-consumable decision profile.",
+      "path": "skills/profilera",
+      "tags": ["decision-mining", "session-analysis", "preferences"],
+      "added": "2026-03-16"
+    },
+    {
+      "name": "utvecklarn",
+      "description": "UTVECKLARN — Autonomous vision-driven development cycles. Independently decides what to build, evolves projects, and makes structured progress on a codebase.",
+      "path": "skills/utvecklarn",
+      "tags": ["autonomous", "development", "continuous"],
+      "added": "2026-03-17"
+    }
+  ]
+}

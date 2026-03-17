@@ -1,0 +1,41 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agent-skills",
+  "version": "1.0.0",
+  "description": "Custom agent skills — research, architecture analysis, and cross-project pattern mapping",
+  "owner": {
+    "name": "jgabor"
+  },
+  "plugins": [
+    {
+      "name": "inspirera",
+      "description": "Analyzes external links (GitHub repos, articles, docs) and maps concepts, patterns, and primitives to your own projects. Cross-pollination analysis with applicability matrix.",
+      "version": "1.0.0",
+      "author": {
+        "name": "jgabor"
+      },
+      "source": "./skills/inspirera",
+      "category": "development"
+    },
+    {
+      "name": "profilera",
+      "description": "Mines Claude Code session history to build an agent-consumable decision profile. Extracts patterns from memory, conversations, history, and configs.",
+      "version": "1.0.0",
+      "author": {
+        "name": "jgabor"
+      },
+      "source": "./skills/profilera",
+      "category": "development"
+    },
+    {
+      "name": "utvecklarn",
+      "description": "Autonomous vision-driven development cycles. Independently decides what to build, evolves projects, and makes structured progress on a codebase.",
+      "version": "1.0.0",
+      "author": {
+        "name": "jgabor"
+      },
+      "source": "./skills/utvecklarn",
+      "category": "development"
+    }
+  ]
+}

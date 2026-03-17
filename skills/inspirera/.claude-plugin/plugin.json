@@ -1,0 +1,8 @@
+{
+  "name": "inspirera",
+  "version": "1.0.0",
+  "description": "INSPIRERA — Inspect Navigated Source, Project Its Resonance, Extract Reusable Abstractions. Analyzes external links and maps concepts to your own projects.",
+  "author": {
+    "name": "jgabor"
+  }
+}
