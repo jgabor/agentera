@@ -1,8 +1,8 @@
 ---
 name: inspirera
 description: >
-  INSPIRERA — Inspect Navigated Source, Project Its Resonance, Extract Reusable Abstractions.
-  Analyzes an external link (GitHub repo, article, blog post, docs page, HN thread) and maps its
+  INSPIRERA — Insight Navigation: Source Pattern Identification and Resonance — Evaluate,
+  Reframe, Assimilate. Analyzes an external link (GitHub repo, article, blog post, docs page, HN thread) and maps its
   concepts, patterns, and primitives to one of the user's own projects. Use this skill whenever
   the user drops a URL alongside a project name or repo link, or asks something like "could I use
   this in X?", "how does this apply to my project?", "is this relevant to Y?", "what can I take
@@ -16,7 +16,7 @@ description: >
 
 # INSPIRERA
 
-**Inspect Navigated Source, Project Its Resonance, Extract Reusable Abstractions**
+**Insight Navigation: Source Pattern Identification and Resonance — Evaluate, Reframe, Assimilate**
 
 Analyze an external resource and map its ideas to a target project the user names (or the project
 they're currently working in). Output a structured markdown analysis the user can navigate and
@@ -193,6 +193,24 @@ After presenting the analysis, offer to go deeper — for example:
 Surface the most interesting or transferable concepts from the source in general terms. Skip the
 Applicability Matrix and "Where in Target" columns. Ask the user if they want to map it to a
 specific project.
+
+---
+
+## Cross-skill integration
+
+Inspirera is part of a four-skill ecosystem. Its analysis feeds naturally into the other skills.
+
+### Feeding into /realisera
+Add actionable findings to the project's ISSUES.md, or refine VISION.md's direction if the
+inspiration shifts thinking. The next realisera cycle picks up the changes automatically.
+
+### Feeding into /optimera
+When the source contains optimization techniques (performance patterns, algorithm improvements,
+caching strategies), optimera's Hypothesize step can draw on the analysis for its next experiment.
+
+### Informed by /profilera
+If a decision profile exists at `~/.claude/profile/PROFILE.md`, use it to inform applicability
+judgments — what trade-offs the user prefers, what patterns they favor, what they resist.
 
 ---
 

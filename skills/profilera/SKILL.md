@@ -1,7 +1,8 @@
 ---
 name: profilera
 description: >
-  PROFILERA -- PROFILing Extracted Reasoning and Attitudes. Mines Claude Code session
+  PROFILERA — Persona Reconstruction: Observable Footprint Indexing Logic — Examine,
+  Reconcile, Articulate. Mines Claude Code session
   history, memory files, project configs, and conversation data to generate an
   agent-consumable decision profile. This skill should be used when the user says
   "build decision profile", "generate decision profile", "update my profile",
@@ -14,7 +15,7 @@ description: >
 
 # PROFILERA
 
-**PROFILing Extracted Reasoning and Attitudes**
+**Persona Reconstruction: Observable Footprint Indexing Logic — Examine, Reconcile, Articulate**
 
 Mine the user's Claude Code session history and produce a structured decision profile that an
 AI agent could use to predict "What would this person decide in a given situation?"
@@ -40,7 +41,7 @@ confirm the extraction counts. Report the summary to the user.
 **If extraction fails**: Report the error to the user. Common causes:
 - Python not found: try `python3` instead of `python`
 - Permission errors: check that `~/.claude/` is readable
-- Empty output: the user may have no session history yet -- report this and skip to Step 4
+- Empty output: the user may have no session history yet — report this and skip to Step 4
   with whatever data is available
 If only some extractors fail, proceed with partial data and note which sources are missing.
 
@@ -50,10 +51,10 @@ If only some extractors fail, proceed with partial data and note which sources a
 
 Read all four intermediate JSON files:
 
-1. `~/.claude/profile/intermediate/crystallized.json` -- Memory files, CLAUDE.md, AGENTS.md
-2. `~/.claude/profile/intermediate/history_decisions.json` -- Decision-rich prompts from history
-3. `~/.claude/profile/intermediate/conversation_decisions.json` -- Decision exchanges from conversations
-4. `~/.claude/profile/intermediate/project_configs.json` -- Recurring config patterns
+1. `~/.claude/profile/intermediate/crystallized.json` — Memory files, CLAUDE.md, AGENTS.md
+2. `~/.claude/profile/intermediate/history_decisions.json` — Decision-rich prompts from history
+3. `~/.claude/profile/intermediate/conversation_decisions.json` — Decision exchanges from conversations
+4. `~/.claude/profile/intermediate/project_configs.json` — Recurring config patterns
 
 These files are pre-filtered and structured. Read them all before proceeding to synthesis.
 
@@ -68,30 +69,30 @@ If any file is very large (> 500 entries), focus on the highest-signal entries f
 
 Group all extracted signals into these 12 categories:
 
-1. **Architecture & Design Patterns** -- How software is structured (package layout, abstraction
+1. **Architecture & Design Patterns** — How software is structured (package layout, abstraction
    boundaries, API design, data flow patterns)
-2. **Technology & Tooling Selection** -- What gets picked and why (languages, frameworks,
+2. **Technology & Tooling Selection** — What gets picked and why (languages, frameworks,
    libraries, build tools, linters)
-3. **Agent & Automation Philosophy** -- How AI agents should behave, what autonomy they get,
+3. **Agent & Automation Philosophy** — How AI agents should behave, what autonomy they get,
    interaction patterns
-4. **Code Quality & Standards** -- What "good code" means (error handling, testing, validation,
+4. **Code Quality & Standards** — What "good code" means (error handling, testing, validation,
    naming, formatting)
-5. **DX & Project Structure** -- How projects should feel to work in (directory layout, build
+5. **DX & Project Structure** — How projects should feel to work in (directory layout, build
    targets, configuration, documentation)
-6. **Scoping & Prioritization** -- How to decide what to build, version milestones, feature
+6. **Scoping & Prioritization** — How to decide what to build, version milestones, feature
    gating, complexity budgets
-7. **Communication Style** -- Writing preferences, documentation voice, how things should read
-8. **Process & Workflow** -- Git workflow, commit conventions, PR practices, release process
-9. **UI/UX Preferences** -- Visual patterns, interaction design, CLI vs TUI vs web preferences
-10. **Trade-off Heuristics** -- How competing concerns are resolved (simplicity vs flexibility,
+7. **Communication Style** — Writing preferences, documentation voice, how things should read
+8. **Process & Workflow** — Git workflow, commit conventions, PR practices, release process
+9. **UI/UX Preferences** — Visual patterns, interaction design, CLI vs TUI vs web preferences
+10. **Trade-off Heuristics** — How competing concerns are resolved (simplicity vs flexibility,
     speed vs correctness, convention vs configuration)
-11. **Anti-patterns & Rejections** -- Things actively avoided, with reasoning
-12. **Meta-decision Style** -- How decisions are made (frameworks used, information gathering
+11. **Anti-patterns & Rejections** — Things actively avoided, with reasoning
+12. **Meta-decision Style** — How decisions are made (frameworks used, information gathering
     patterns, when to decide vs defer)
 
 For each category:
 
-- Identify distinct decisions (not just preferences -- decisions have conditions and reasoning)
+- Identify distinct decisions (not just preferences — decisions have conditions and reasoning)
 - Look for the *why* behind each decision, not just the *what*
 - Note exceptions or cases where the usual rule was overridden
 - Assign confidence based on consistency:
@@ -146,7 +147,7 @@ information they seek before deciding]
 ### [Decision Name]
 - **Rule**: [Imperative statement an agent can follow directly]
 - **When**: [Specific conditions or triggers for this rule]
-- **Why**: [The reasoning -- what value or concern drives this]
+- **Why**: [The reasoning — what value or concern drives this]
 - **Exceptions**: [Known cases where this was overridden, or "None observed"]
 - **Confidence**: high|medium|low
 
@@ -158,11 +159,11 @@ information they seek before deciding]
 ### Writing guidelines
 
 - Write rules as imperatives, not descriptions ("Use X" not "[Name] prefers X")
-- Be specific about conditions -- "when building Go CLIs" not "when building things"
-- Include the *why* even when it seems obvious -- agents need reasoning to handle edge cases
-- Don't duplicate what's already in CLAUDE.md -- this profile covers decision *patterns*,
+- Be specific about conditions — "when building Go CLIs" not "when building things"
+- Include the *why* even when it seems obvious — agents need reasoning to handle edge cases
+- Don't duplicate what's already in CLAUDE.md — this profile covers decision *patterns*,
   not project-specific instructions
-- Omit categories with fewer than 2 decisions -- not enough signal to be useful
+- Omit categories with fewer than 2 decisions — not enough signal to be useful
 
 ---
 
@@ -180,6 +181,25 @@ below 3/5, identify which categories need more signal and note this in the profi
 
 ---
 
+## Cross-skill integration
+
+Profilera is part of a four-skill ecosystem. The decision profile it produces is consumed by
+the other skills.
+
+### Consumed by /realisera
+Realisera reads `PROFILE.md` in its Orient step to make persona-grounded decisions — what to
+prioritize, how to resolve trade-offs, when to be conservative vs. aggressive.
+
+### Consumed by /optimera
+Optimera reads `PROFILE.md` to calibrate experimentation style — how much risk to take, how
+much complexity is acceptable, what trade-offs the user prefers.
+
+### Consumed by /inspirera
+Inspirera can use `PROFILE.md` to inform applicability judgments — what patterns the user
+favors, what they resist, how to weigh recommendations.
+
+---
+
 ## Notes on depth vs speed
 
 - The extraction scripts handle the expensive I/O. Claude's job is synthesis, not parsing.
@@ -187,6 +207,6 @@ below 3/5, identify which categories need more signal and note this in the profi
   files in parallel and report back summaries.
 - The crystallized.json file (memory + CLAUDE.md) is the highest-signal source. Start there
   and use other sources to corroborate and enrich.
-- Conversation exchanges are the most nuanced source -- they show *how* decisions are made
+- Conversation exchanges are the most nuanced source — they show *how* decisions are made
   in real time, not just what was decided.
-- Config patterns are the most objective source -- they show what was actually shipped.
+- Config patterns are the most objective source — they show what was actually shipped.

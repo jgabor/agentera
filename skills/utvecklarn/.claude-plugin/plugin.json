@@ -1,8 +1,0 @@
-{
-  "name": "utvecklarn",
-  "version": "1.0.0",
-  "description": "UTVECKLARN — Autonomous vision-driven development cycles. Independently decides what to build, evolves projects over time, and makes structured progress on a codebase.",
-  "author": {
-    "name": "jgabor"
-  }
-}
