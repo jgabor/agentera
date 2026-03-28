@@ -1,1 +1,1 @@
-"""Profilera extraction scripts for building decision profiles."""
+"""Profilera scripts for building and evaluating decision profiles."""

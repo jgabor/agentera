@@ -146,8 +146,17 @@ selection — e.g., if the output shows no test cycles, that's a signal.
 1. **PROGRESS.md** — what happened last cycle, what was suggested next
 2. **VISION.md** — the north star, principles, and direction
 3. **ISSUES.md** — what's broken or degraded
-4. **PROFILE.md** (`~/.claude/profile/PROFILE.md`) — the user's decision
-   patterns. If missing, note this and proceed without persona grounding, but flag it:
+4. **Decision profile** — run the effective profile script for a confidence-weighted summary:
+   ```bash
+   python3 -m scripts.effective_profile
+   ```
+   Run from the profilera skill directory (typically
+   `~/.claude/plugins/marketplaces/agent-skills/skills/profilera`).
+   This outputs a summary table with effective confidence after dormancy decay.
+   Use it to weight decisions: high effective confidence entries (0.65+) are strong
+   constraints, low effective confidence entries (<0.45) are suggestions. Read full
+   `~/.claude/profile/PROFILE.md` for complete rule details when needed.
+   If the script or PROFILE.md is missing, proceed without persona grounding but flag it:
    "Consider running /profilera to generate a decision profile — it helps me make choices
    you'd agree with."
 5. **Project discovery** (cycle 1 or when unfamiliar):
@@ -341,8 +350,11 @@ the source deeply, extract transferable patterns, note the source for credit in 
 For deeper analysis, run `/inspirera <url>` directly.
 
 ### Realisera reads /profilera output
-Every cycle consults `~/.claude/profile/PROFILE.md` for the user's decision-making style —
-what to prioritize, how to resolve trade-offs, when to be conservative vs. aggressive.
+Every cycle runs the effective profile script (`python3 -m scripts.effective_profile` from the
+profilera skill directory) to get a confidence-weighted summary table. High effective confidence
+entries are treated as strong constraints; low effective confidence entries are treated as
+suggestions. Full rules are read from `~/.claude/profile/PROFILE.md` when needed for detailed
+reasoning about trade-offs and priorities.
 
 ---
 

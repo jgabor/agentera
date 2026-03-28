@@ -209,8 +209,11 @@ When the source contains optimization techniques (performance patterns, algorith
 caching strategies), optimera's Hypothesize step can draw on the analysis for its next experiment.
 
 ### Informed by /profilera
-If a decision profile exists at `~/.claude/profile/PROFILE.md`, use it to inform applicability
-judgments — what trade-offs the user prefers, what patterns they favor, what they resist.
+If a decision profile exists at `~/.claude/profile/PROFILE.md`, run the effective profile
+script (`python3 -m scripts.effective_profile` from the profilera skill directory) for a
+confidence-weighted summary. Use effective confidence to weight applicability judgments —
+high-confidence entries strongly constrain recommendations, low-confidence entries are
+treated as tendencies rather than rules.
 
 ---
 
