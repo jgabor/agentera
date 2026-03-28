@@ -38,6 +38,9 @@ Realisera maintains three files in the project root. All are bootstrapped if the
 | `ISSUES.md` | Tech debt, bugs, discrepancies. Things that need fixing. | `# Issues\n\nNo known issues.` |
 | `PROGRESS.md` | Continuity log. What happened each cycle. | `# Progress\n\n` then the first cycle entry. |
 
+Templates for each artifact live in `references/templates/`. Use them as the starting structure
+when bootstrapping — adapt to the project, don't copy verbatim.
+
 ### VISION.md
 
 An evergreen document. Realisera creates it through a brief brainstorm session on first run,
@@ -129,7 +132,16 @@ After the brainstorm completes, proceed to cycle 1 (or resume cycling if this wa
 
 ### Step 1: Orient
 
-Read the project state to understand where things stand.
+Read the project state to understand where things stand. If PROGRESS.md exists and has 3+
+cycles, run the analytics script first for a structured overview:
+
+```bash
+python3 -m scripts.analyze_progress --progress PROGRESS.md --pretty
+```
+
+The script (in `scripts/analyze_progress.py`) outputs JSON with velocity, work type
+distribution, inspiration rate, and pattern-based suggestions. Use this to inform work
+selection — e.g., if the output shows no test cycles, that's a signal.
 
 1. **PROGRESS.md** — what happened last cycle, what was suggested next
 2. **VISION.md** — the north star, principles, and direction
