@@ -4,24 +4,31 @@
   "skills": [
     {
       "name": "inspirera",
-      "description": "INSPIRERA — Inspect Navigated Source, Project Its Resonance, Extract Reusable Abstractions. Analyzes an external link and maps its concepts, patterns, and primitives to one of your own projects.",
+      "description": "INSPIRERA — Insight Navigation: Source Pattern Identification and Resonance — Evaluate, Reframe, Assimilate. Analyzes an external link and maps its concepts, patterns, and primitives to one of your own projects.",
       "path": "skills/inspirera",
       "tags": ["research", "architecture", "code-review"],
       "added": "2026-03-15"
     },
     {
       "name": "profilera",
-      "description": "PROFILERA — PROFILing Extracted Reasoning and Attitudes. Mines session history to build an agent-consumable decision profile.",
+      "description": "PROFILERA — Persona Reconstruction: Observable Footprint Indexing Logic — Examine, Reconcile, Articulate. Mines session history to build an agent-consumable decision profile.",
       "path": "skills/profilera",
       "tags": ["decision-mining", "session-analysis", "preferences"],
       "added": "2026-03-16"
     },
     {
-      "name": "utvecklarn",
-      "description": "UTVECKLARN — Autonomous vision-driven development cycles. Independently decides what to build, evolves projects, and makes structured progress on a codebase.",
-      "path": "skills/utvecklarn",
+      "name": "realisera",
+      "description": "REALISERA — Relentless Execution: Autonomous Loops Iterating Software — Evolve, Refine, Adapt. Independently decides what to build, evolves projects, and makes structured progress on a codebase.",
+      "path": "skills/realisera",
       "tags": ["autonomous", "development", "continuous"],
       "added": "2026-03-17"
+    },
+    {
+      "name": "optimera",
+      "description": "OPTIMERA — Objective Pursuit: Targeted Iterative Measurement — Experiment, Record, Advance. Metric-driven optimization through systematic experimentation.",
+      "path": "skills/optimera",
+      "tags": ["optimization", "benchmarks", "metrics", "testing"],
+      "added": "2026-03-28"
     }
   ]
 }

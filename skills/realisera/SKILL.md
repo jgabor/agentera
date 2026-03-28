@@ -1,12 +1,13 @@
 ---
-name: utvecklarn
+name: realisera
 description: >
+  REALISERA — Relentless Execution: Autonomous Loops Iterating Software — Evolve, Refine, Adapt.
   ALWAYS use this skill for autonomous or continuous development of a project. This skill
   is REQUIRED whenever the user wants you to independently decide what to build and build it,
   evolve a project over time, run development cycles, or make autonomous progress on a
   codebase. Do NOT attempt autonomous development without this skill — it contains the
   critical workflow for vision-driven development, persona-grounded decisions, structured
-  cycles, and safety rails that prevent wasted work. Trigger on: "utvecklarn", "run a dev
+  cycles, and safety rails that prevent wasted work. Trigger on: "realisera", "run a dev
   cycle", "evolve the project", "develop autonomously", "build the next feature", "keep
   building", "start building", "work on the project", "refine the vision", any mention of
   autonomous/continuous development, any request to figure out what to build next, any
@@ -15,9 +16,9 @@ description: >
   the user has a codebase and wants you to independently decide what to work on.
 ---
 
-# UTVECKLARN
+# REALISERA
 
-**The Autonomous Developer**
+**Relentless Execution: Autonomous Loops Iterating Software — Evolve, Refine, Adapt**
 
 An autonomous development loop that evolves any software project, one focused cycle at a time.
 Decisions are grounded in the user's persona via their decision profile. Inspiration is drawn
@@ -29,7 +30,7 @@ Each invocation = one cycle. `/loop` handles recurrence.
 
 ## State artifacts
 
-Utvecklarn maintains three files in the project root. All are bootstrapped if they don't exist.
+Realisera maintains three files in the project root. All are bootstrapped if they don't exist.
 
 | File | Purpose | Bootstrap |
 |------|---------|-----------|
@@ -39,7 +40,7 @@ Utvecklarn maintains three files in the project root. All are bootstrapped if th
 
 ### VISION.md
 
-An evergreen document. Utvecklarn creates it through a brief brainstorm session on first run,
+An evergreen document. Realisera creates it through a brief brainstorm session on first run,
 and can refine it when the user explicitly asks. Outside of those two cases, the agent never
 touches it — it reads the vision, it doesn't rewrite it. VISION.md sets a direction without
 prescribing specific goals. A constitution, not a backlog. Typical structure:
@@ -90,7 +91,7 @@ The "Next" field from the previous cycle is a suggestion, not a mandate. Re-eval
 ## Brainstorm: bootstrapping or refining VISION.md
 
 This runs in two situations:
-1. **VISION.md doesn't exist** — the first time utvecklarn runs on a project
+1. **VISION.md doesn't exist** — the first time realisera runs on a project
 2. **User explicitly asks** to refine the vision (e.g., "refine the vision", "update VISION.md")
 
 In all other cases, skip straight to the cycle.
@@ -167,6 +168,11 @@ profile is for.
 
 **When fixing issues:**
 - Pick from ISSUES.md, prioritizing by severity (broken > degraded > annoying)
+
+**When the work is optimization-shaped:**
+- If the increment is about improving a measurable metric (e.g., "speed up test suite by 30%",
+  "reduce bundle size"), consider delegating to `/optimera` instead. Realisera builds;
+  optimera tunes.
 
 Write a 1-2 sentence rationale. Scope down aggressively — one focused increment per cycle.
 
@@ -307,23 +313,44 @@ Never waste a cycle. If the first pick is blocked, pivot.
 
 ---
 
+## Cross-skill integration
+
+Realisera is part of a four-skill ecosystem. Each skill can invoke the others when the work
+calls for it.
+
+### Realisera delegates to /optimera
+When the picked work is optimization-shaped — improving a measurable metric like test performance,
+bundle size, latency, or coverage — delegate to optimera instead of implementing directly.
+Realisera provides the context; optimera runs the metric-driven experiment loop.
+
+### Realisera uses /inspirera
+In Step 3 (Seek inspiration), search for external approaches the way /inspirera would: read
+the source deeply, extract transferable patterns, note the source for credit in PROGRESS.md.
+For deeper analysis, run `/inspirera <url>` directly.
+
+### Realisera reads /profilera output
+Every cycle consults `~/.claude/profile/PROFILE.md` for the user's decision-making style —
+what to prioritize, how to resolve trade-offs, when to be conservative vs. aggressive.
+
+---
+
 ## Getting started
 
 ### New project
 
 1. `/profilera` — generate or refresh the decision profile (skip if recent)
-2. `/utvecklarn` — the first run detects no VISION.md, runs a brief brainstorm with you
+2. `/realisera` — the first run detects no VISION.md, runs a brief brainstorm with you
    to create it, then proceeds to cycle 1
-3. `/loop 10m /utvecklarn` — set up continuous autonomous development
+3. `/loop 10m /realisera` — set up continuous autonomous development
 
 ### Existing project with code
 
-1. `/utvecklarn` — if VISION.md exists, starts cycling immediately. If not, brainstorms
+1. `/realisera` — if VISION.md exists, starts cycling immediately. If not, brainstorms
    with you first (reading the existing codebase to inform the conversation), then cycles.
 
 ### Course correction
 
-Edit VISION.md directly to sharpen direction, or tell utvecklarn to "refine the vision"
+Edit VISION.md directly to sharpen direction, or tell realisera to "refine the vision"
 for a guided session. The next cycle reads the updated vision and adjusts accordingly.
 
 ### Drawing in external inspiration
