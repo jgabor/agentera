@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "agent-skills",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Custom agent skills — research, architecture analysis, and cross-project pattern mapping",
   "owner": {
     "name": "jgabor"
@@ -10,7 +10,7 @@
     {
       "name": "inspirera",
       "description": "INSPIRERA — Insight Navigation: Source Pattern Identification and Resonance — Evaluate, Reframe, Assimilate. Analyzes external links and maps concepts, patterns, and primitives to your own projects.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "jgabor"
       },
@@ -20,7 +20,7 @@
     {
       "name": "profilera",
       "description": "PROFILERA — Persona Reconstruction: Observable Footprint Indexing Logic — Examine, Reconcile, Articulate. Mines session history to build an agent-consumable decision profile.",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "author": {
         "name": "jgabor"
       },
@@ -30,7 +30,7 @@
     {
       "name": "realisera",
       "description": "REALISERA — Relentless Execution: Autonomous Loops Iterating Software — Evolve, Refine, Adapt. Independently decides what to build, evolves projects, and makes structured progress on a codebase.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "jgabor"
       },
@@ -40,7 +40,7 @@
     {
       "name": "optimera",
       "description": "OPTIMERA — Objective Pursuit: Targeted Iterative Measurement — Experiment, Record, Advance. Metric-driven optimization that improves any measurable property of a codebase through systematic experimentation.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "jgabor"
       },
