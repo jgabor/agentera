@@ -80,41 +80,38 @@ agent from wandering.
 
 ### .optimera/harness
 
-A script that runs the measurement and outputs a structured result. The agent writes this
-during the brainstorm phase. The user approves it. After approval, the harness is **locked** —
-the agent never modifies it during optimization cycles.
+A script that measures the metric and outputs structured JSON. The agent writes this during
+the brainstorm phase using the reference documentation as a guide. The user approves it.
+After approval, the harness is **locked** — the agent never modifies it during optimization
+cycles.
 
-The harness script:
-- Lives at `.optimera/harness` (executable, language depends on the project)
-- Runs the measurement (test suite, benchmark, linter, profiler, etc.)
-- Outputs a JSON line to stdout with at minimum: `{"metric": <number>, "direction": "lower"|"higher"}`
-- May include additional fields: `{"metric": 142.3, "direction": "lower", "unit": "ms", "detail": "p95 latency across 1000 requests"}`
-- Exits 0 on successful measurement, non-zero on measurement failure
-- Has a timeout (declared in OBJECTIVE.md, default 5 minutes)
+The harness wraps the project's own tooling (test runners, benchmarks, linters, build tools)
+and translates their output into a consistent format. It does not reimplement measurement —
+the project's tooling is the source of truth.
 
-Example harness for test pass rate:
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-result=$(npm test -- --json 2>/dev/null)
-passed=$(echo "$result" | jq '.numPassedTests')
-total=$(echo "$result" | jq '.numTotalTests')
-rate=$(echo "scale=4; $passed / $total * 100" | bc)
-echo "{\"metric\": $rate, \"direction\": \"higher\", \"unit\": \"%\", \"detail\": \"$passed/$total tests passing\"}"
+**Before writing a harness**, read these references (bundled with this skill):
+- `references/harness-guide.md` — principles, patterns, and pitfalls
+- `references/output-schema.md` — formal JSON output specification
+- `references/examples/` — harness patterns for common metric types:
+  - `test-pass-rate.md` — Node (Jest/Vitest), Python (pytest), Go, Rust
+  - `benchmark.md` — hyperfine, built-in benchmarks, HTTP latency
+  - `bundle-size.md` — JS bundles, Go binaries, Docker images, gzipped size
+  - `lint-score.md` — ESLint, Pylint, golangci-lint, Biome
+  - `coverage.md` — c8/nyc, coverage.py, go cover, cargo-tarpaulin
+
+**Output contract** (minimal):
+```json
+{"metric": <number>, "direction": "higher"|"lower"}
 ```
 
-Example harness for bundle size:
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-npm run build --silent 2>/dev/null
-size=$(stat -f%z dist/index.js 2>/dev/null || stat -c%s dist/index.js)
-kb=$(echo "scale=2; $size / 1024" | bc)
-echo "{\"metric\": $kb, \"direction\": \"lower\", \"unit\": \"KB\", \"detail\": \"dist/index.js\"}"
+**Output contract** (with optional fields for richer signal):
+```json
+{"metric": 85.5, "direction": "higher", "unit": "%", "detail": "42/50 tests passing", "breakdown": [{"name": "unit", "value": 95.0}, {"name": "integration", "value": 60.0}]}
 ```
 
-The harness is the **immutable ground truth** — it prevents the agent from gaming the metric.
-If the harness is wrong, the user must explicitly ask to rebuild it.
+The harness is the **immutable ground truth**. It prevents the agent from gaming the metric
+by separating measurement from optimization. If the harness is wrong, the user must explicitly
+ask to rebuild it.
 
 ### EXPERIMENTS.md
 
@@ -164,10 +161,12 @@ experiments.
    the biggest gains are?" Read the codebase to propose informed scope boundaries.
 5. **Write OBJECTIVE.md** — synthesize the answers into a precise optimization charter.
    Present it to the user for approval before writing.
-6. **Write the eval harness** — based on the objective, write a script at `.optimera/harness`
-   that measures the metric and outputs structured JSON. Present the script to the user,
-   explain what it does, and get explicit approval before locking it. Run it once to
-   verify it works and establish the baseline metric value.
+6. **Write the eval harness** — read `references/harness-guide.md` and the relevant example
+   in `references/examples/` for the metric type. Based on the objective and the reference
+   patterns, write a script at `.optimera/harness` that measures the metric using the
+   project's own tooling and outputs structured JSON per `references/output-schema.md`.
+   Present the script to the user, explain what it does, and get explicit approval before
+   locking it. Run it once to verify it works and establish the baseline metric value.
 
 When **refining** an existing objective, read the current OBJECTIVE.md first, show the user what
 you'd change and why, and get confirmation before writing. If the harness needs to change,
@@ -199,19 +198,29 @@ Read the optimization state to understand where things stand.
 
 ### Step 2: Analyze
 
-Run the eval harness to get the current metric value.
+Run two things:
+
+**2a. Experiment history analysis** — if EXPERIMENTS.md has prior entries, run the analysis
+script (bundled with this skill) to get structured trend data:
+
+```bash
+python3 -m scripts.analyze_experiments --experiments EXPERIMENTS.md --objective OBJECTIVE.md --pretty
+```
+
+This outputs JSON with: metric trajectory, plateau detection, win/loss rates, distance to
+target, and recent experiment summaries. Use this to inform the Hypothesize step.
+
+**2b. Current metric** — run the eval harness to get the baseline for this experiment:
 
 ```bash
 chmod +x .optimera/harness && ./.optimera/harness
 ```
 
-Parse the JSON output. Record the current metric as the baseline for this experiment.
-Compare against the target in OBJECTIVE.md — how far are we? Compare against the trend
-in EXPERIMENTS.md — are we making progress, plateauing, or regressing?
+Parse the JSON output. Record the current metric as the baseline.
 
-**Plateau detection**: if the metric has not improved in the last 3 experiments, flag this
-explicitly. Consider a radically different approach, seek external inspiration, or escalate
-to the user.
+**Plateau detection**: if the analysis script reports `plateau_detected: true` (no improvement
+in 3+ experiments), flag this explicitly. Consider a radically different approach, seek
+external inspiration via /inspirera, or escalate to the user.
 
 ### Step 3: Hypothesize
 
