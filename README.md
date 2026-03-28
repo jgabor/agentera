@@ -6,7 +6,10 @@ Personal Claude Code skill marketplace. Each skill is a self-contained directory
 
 | Skill | Description |
 |-------|-------------|
-| [inspirera](./skills/inspirera/) | INSPIRERA — Inspect Navigated Source, Project Its Resonance, Extract Reusable Abstractions. Analyzes an external link and maps its concepts to one of your own projects. |
+| [inspirera](./skills/inspirera/) | INSPIRERA — Insight Navigation: Source Pattern Identification and Resonance — Evaluate, Reframe, Assimilate. Analyzes an external link and maps its concepts to one of your own projects. |
+| [realisera](./skills/realisera/) | REALISERA — Relentless Execution: Autonomous Loops Iterating Software — Evolve, Refine, Adapt. Autonomous development loop that evolves any project one focused cycle at a time. |
+| [optimera](./skills/optimera/) | OPTIMERA — Objective Pursuit: Targeted Iterative Measurement — Experiment, Record, Advance. Metric-driven optimization loop that improves any measurable property of a codebase. |
+| [profilera](./skills/profilera/) | PROFILERA — Persona Reconstruction: Observable Footprint Indexing Logic — Examine, Reconcile, Articulate. Mines session history to generate an agent-consumable decision profile. |
 
 ---
 
