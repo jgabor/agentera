@@ -4,11 +4,14 @@ description: >
   PROFILERA — Persona Reconstruction: Observable Footprint Indexing Logic — Examine,
   Reconcile, Articulate. Mines Claude Code session
   history, memory files, project configs, and conversation data to generate an
-  agent-consumable decision profile. This skill should be used when the user says
+  agent-consumable decision profile with per-entry confidence scoring and dormancy decay.
+  Two modes: Full (regenerate from scratch) and Validate (incremental check of existing
+  profile). This skill should be used when the user says
   "build decision profile", "generate decision profile", "update my profile",
   "refresh my decision profile", "rebuild my profile", "regenerate profile",
   "what would I decide", "analyze my decisions", "mine my sessions",
-  "decision patterns", "review my decision history", or "/profilera". Also applies when
+  "decision patterns", "review my decision history", "validate my profile",
+  "check my profile", "quick profile check", or "/profilera". Also applies when
   the user wants to understand their own decision-making patterns across sessions, asks
   someone else to predict their decisions, or wants a document that captures how they think.
 ---
@@ -18,17 +21,50 @@ description: >
 **Persona Reconstruction: Observable Footprint Indexing Logic — Examine, Reconcile, Articulate**
 
 Mine the user's Claude Code session history and produce a structured decision profile that an
-AI agent could use to predict "What would this person decide in a given situation?"
+AI agent could use to predict "What would this person decide in a given situation?" Each profile
+entry carries numeric confidence, permanence classification, and temporal metadata — enabling
+dormancy decay so stale entries are automatically discounted by consuming skills.
+
+Two modes:
+
+- **Full**: Extract all session data, synthesize from scratch, write a fresh PROFILE.md.
+- **Validate**: Quick incremental check — surface the ~6 entries most worth validating, let the
+  user confirm or challenge each one, update metadata in place.
 
 ---
 
-## Step 1: Run extraction
+## Step 0: Detect mode
+
+Before doing anything else, check if `~/.claude/profile/PROFILE.md` exists.
+
+**If it does NOT exist**: Proceed directly to Full mode (Step 1).
+
+**If it DOES exist**: Present the mode choice to the user:
+
+> Your decision profile exists. How would you like to proceed?
+>
+> **Full** — Regenerate from scratch using all session data. Replaces the existing profile
+> including any accumulated tensions. Best when the profile feels significantly outdated or
+> you want a clean baseline.
+>
+> **Validate** — Quick check of your existing profile (~2 minutes). Reviews the entries most
+> worth validating — confirm, challenge, or skip each one. Best for regular maintenance
+> between full regenerations.
+
+If the user chooses **Full**, proceed to Step 1.
+If the user chooses **Validate**, skip to Validate Mode.
+
+---
+
+## Full Mode
+
+### Step 1: Run extraction
 
 Run the Python extraction scripts to gather raw decision signals from all data sources. The
 scripts handle the heavy JSONL parsing and output structured JSON that fits in context.
 
 ```bash
-python -m scripts.extract_all --output-dir ~/.claude/profile/intermediate
+python3 -m scripts.extract_all --output-dir ~/.claude/profile/intermediate
 ```
 
 The script auto-detects its own location and resolves paths from there. Run it from the
@@ -47,7 +83,7 @@ If only some extractors fail, proceed with partial data and note which sources a
 
 ---
 
-## Step 2: Read extracted data
+### Step 2: Read extracted data
 
 Read all four intermediate JSON files:
 
@@ -65,7 +101,7 @@ If any file is very large (> 500 entries), focus on the highest-signal entries f
 
 ---
 
-## Step 3: Categorize and synthesize
+### Step 3: Categorize and synthesize
 
 Group all extracted signals into these 12 categories:
 
@@ -95,48 +131,103 @@ For each category:
 - Identify distinct decisions (not just preferences — decisions have conditions and reasoning)
 - Look for the *why* behind each decision, not just the *what*
 - Note exceptions or cases where the usual rule was overridden
-- Assign confidence based on consistency:
-  - **high**: Appears across multiple projects/sessions with no contradictions
-  - **medium**: Clear pattern but limited to a few contexts, or with minor variations
-  - **low**: Single instance or inferred from indirect evidence
 
-Cross-category patterns are especially valuable. Look for meta-principles that explain
-decisions across multiple categories (e.g., "convention over configuration" might explain
-both tooling choices and project structure decisions).
+#### Assign confidence (numeric, 0.0-1.0)
+
+Decision patterns are empirically verifiable — you can check git history and configs to see
+if someone actually follows their stated convention. The confidence scale reflects this:
+
+| Range | Label | Criteria |
+|-------|-------|----------|
+| 0.85-0.95 | Shipped consistently | Appears in configs/code across 3+ projects, verifiable from artifacts |
+| 0.65-0.80 | Established | Consistent across sessions, corroborated by behavior |
+| 0.45-0.60 | Emerging | Observed multiple times but limited context or minor variations |
+| 0.25-0.40 | Single signal | One data point or inferred from adjacent patterns |
+| 0.10-0.20 | Speculative | No direct evidence, extrapolated from related decisions |
+
+**Bias check**: Confidence is earned through evidence, not assigned by how insightful the
+decision sounds. A pithy design principle observed once is 0.30, not 0.75.
+
+#### Assign permanence class
+
+Permanence captures how *stable* a decision domain is — independent of how *confident* you
+are about it. You can be highly confident about something that will change (0.85, situational)
+or uncertain about something deep (0.35, stable).
+
+| Class | Domain | Timescale |
+|-------|--------|-----------|
+| **stable** | Architecture principles, design patterns, meta-decision heuristics | Decade |
+| **durable** | Tooling choices, code standards, process conventions, DX preferences | Year |
+| **situational** | Current project priorities, active initiative choices, recent tech stack picks | Month |
+
+Default permanence mapping by category:
+- Architecture & Design Patterns, Meta-decision Style → stable
+- Technology & Tooling, Code Quality & Standards, Process & Workflow, DX & Project Structure,
+  Communication Style, Trade-off Heuristics, Anti-patterns → durable
+- Scoping & Prioritization, UI/UX Preferences → situational (unless clearly long-standing)
+- Agent & Automation Philosophy → durable (unless project-specific)
+
+Override the default when the evidence suggests otherwise.
+
+#### Set dates
+
+- **first**: Earliest timestamp from the source data that evidences this decision
+- **confirmed**: Set to today's date (the generation date)
+- **challenged**: Set to `—` (no challenges yet on a fresh profile)
+
+#### Identify tensions
+
+Cross-category patterns are especially valuable. But also look for contradictions:
+- Does the user state one principle but ship code that violates it?
+- Do decisions in one category conflict with decisions in another?
+- Are there "Exceptions" that suggest the rule is weaker than it appears?
+
+When contradictions are found during synthesis, record them in the Tensions section of
+PROFILE.md rather than smoothing them into a coherent narrative.
 
 ---
 
-## Step 4: Generate the profile
+### Step 4: Generate the profile
 
 Write the decision profile to `~/.claude/profile/PROFILE.md`.
 
 If a previous version exists:
-1. Copy it to `~/.claude/profile/history/DECISION_PROFILE-{timestamp}.md`
+1. Copy it to `~/.claude/profile/history/PROFILE-{timestamp}.md`
 2. Generate the new version
 3. Show a summary of what changed (new decisions added, decisions updated, decisions removed)
 
-### Profile format
+#### Profile format
 
 ```markdown
 # Decision Profile: [User Name]
 
 <!-- Generated: {date} | Data: {date range from earliest to latest timestamp} -->
 <!-- Sources: {N} memory files, {N} history prompts, {N} conversation exchanges, {N} configs -->
+<!-- Decay parameters: stable λ=0.001, durable λ=0.005, situational λ=0.015 -->
+<!-- Formula: effective_conf = conf × e^(-λ × days_since_confirmed), floor 0.20 -->
 <!-- Regenerate with /profilera -->
 
 ## How to Use This Profile
 
 This profile captures decision-making patterns extracted from {N} months of Claude Code
-sessions across {N} projects. Each entry is written as an imperative rule that an agent
-can follow directly.
+sessions across {N} projects. Each entry carries inline metadata:
 
-**Confidence levels**: high = consistent across projects/time, medium = clear but limited
-context, low = inferred or single-instance.
+`conf:0.75 | perm:durable | first:2026-01-15 | confirmed:2026-03-28 | challenged:—`
+
+- **conf** (0.0-1.0): Evidence-based confidence. 0.85+ shipped consistently, 0.65-0.80
+  established, 0.45-0.60 emerging, 0.25-0.40 single signal, 0.10-0.20 speculative.
+- **perm**: How stable the decision domain is. stable (decade), durable (year),
+  situational (month).
+- **first/confirmed/challenged**: When the decision was first observed, last confirmed,
+  and last challenged.
+
+When consuming this profile, compute effective confidence using the decay formula in the
+header. Stale situational entries should carry less weight than fresh stable ones.
 
 **When the profile is silent**: If a situation isn't covered, look for the closest trade-off
 heuristic or meta-decision pattern. When truly uncertain, ask.
 
-## Decision-Making Style
+## Decision-Making Philosophy
 
 [2-3 paragraphs describing the meta-patterns: how this person approaches decisions, what
 frameworks they use, their risk posture, when they decide quickly vs deliberate, what
@@ -145,18 +236,31 @@ information they seek before deciding]
 ## [Category Name]
 
 ### [Decision Name]
+`conf:0.75 | perm:durable | first:2026-01-15 | confirmed:2026-03-28 | challenged:—`
+
 - **Rule**: [Imperative statement an agent can follow directly]
 - **When**: [Specific conditions or triggers for this rule]
 - **Why**: [The reasoning — what value or concern drives this]
 - **Exceptions**: [Known cases where this was overridden, or "None observed"]
-- **Confidence**: high|medium|low
 
-[Repeat for each decision in the category. Order by confidence (high first).]
+[Repeat for each decision in the category. Order by confidence (highest first).]
 
 [Repeat for all 12 categories. Skip categories with no signal.]
+
+## Tensions
+
+Each entry records a contradiction or divergence found during profile generation or
+challenged during validation. Default status is **unresolved** — resist the urge to
+wrap tensions in resolution narratives. Some tensions are real and persistent.
+
+### YYYY-MM-DD — [Short description]
+
+**Decision affected**: [which decision was contradicted]
+**What happened**: [what was observed or said that didn't fit]
+**Status**: unresolved
 ```
 
-### Writing guidelines
+#### Writing guidelines
 
 - Write rules as imperatives, not descriptions ("Use X" not "[Name] prefers X")
 - Be specific about conditions — "when building Go CLIs" not "when building things"
@@ -164,10 +268,11 @@ information they seek before deciding]
 - Don't duplicate what's already in CLAUDE.md — this profile covers decision *patterns*,
   not project-specific instructions
 - Omit categories with fewer than 2 decisions — not enough signal to be useful
+- Every entry MUST have the inline metadata line immediately after the ### heading
 
 ---
 
-## Step 5: Validate
+### Step 5: Validate predictions
 
 Pick 5 decision-rich prompts from the extracted history that were NOT directly used to create
 a profile entry. For each:
@@ -181,22 +286,95 @@ below 3/5, identify which categories need more signal and note this in the profi
 
 ---
 
+## Validate Mode
+
+A quick incremental check of the existing profile. Designed to take ~2 minutes.
+
+### Step V1: Run smart selection
+
+Run the effective profile script in validate mode to identify which entries are most worth
+checking:
+
+```bash
+python3 -m scripts.effective_profile --validate
+```
+
+Run from the skill's root directory. The script outputs JSON with ~6 entries scored by:
+- **Decay gap**: how much confidence was lost to dormancy decay
+- **Staleness**: days since confirmation relative to permanence half-life
+- **Tension history**: whether the entry has been challenged before
+- **Extremity**: how far from center (very high or very low confidence)
+
+Read the output. If the script fails (PROFILE.md missing or has no metadata), fall back to
+Full mode and inform the user.
+
+### Step V2: Present entries for validation
+
+Present entries one at a time to the user. For each entry, show:
+- The decision name
+- The current rule text
+- The reason this entry was surfaced (from the script's `reason` field)
+- The stored confidence and effective confidence after decay
+
+Ask the user to: **Confirm**, **Challenge**, or **Skip**.
+
+### Step V3: Apply updates
+
+For each response:
+
+- **Confirm**: Bump `conf` by 0.05 (cap at 0.95). Update `confirmed` to today's date.
+- **Challenge**: Soften `conf` by 0.10 (floor at 0.10). Update `challenged` to today's date.
+  Append a tension entry to the `## Tensions` section:
+  ```
+  ### {today} — {decision name} challenged during validation
+  **Decision affected**: {decision name}
+  **What happened**: Challenged by user during validation
+  **Status**: unresolved
+  ```
+- **Skip**: No changes to this entry.
+
+### Step V4: Write and report
+
+Write the updated PROFILE.md with all metadata changes applied. Report a summary:
+
+> Validated {N} entries: {N} confirmed, {N} challenged, {N} skipped.
+
+If any entries were challenged, mention them by name so the user knows what shifted.
+
+---
+
 ## Cross-skill integration
 
 Profilera is part of a four-skill ecosystem. The decision profile it produces is consumed by
 the other skills.
 
 ### Consumed by /realisera
-Realisera reads `PROFILE.md` in its Orient step to make persona-grounded decisions — what to
-prioritize, how to resolve trade-offs, when to be conservative vs. aggressive.
+Realisera runs the effective profile script in its Orient step to get a confidence-weighted
+summary table. High effective confidence entries are treated as strong constraints; low
+effective confidence entries are treated as suggestions. Full rules are read from PROFILE.md
+when needed for detailed reasoning.
 
 ### Consumed by /optimera
-Optimera reads `PROFILE.md` to calibrate experimentation style — how much risk to take, how
-much complexity is acceptable, what trade-offs the user prefers.
+Optimera runs the effective profile script to calibrate experimentation style — how aggressive
+to be, how much complexity is acceptable, what trade-offs the user prefers. Effective
+confidence weighting ensures stale preferences don't over-constrain experiments.
 
 ### Consumed by /inspirera
-Inspirera can use `PROFILE.md` to inform applicability judgments — what patterns the user
-favors, what they resist, how to weigh recommendations.
+Inspirera can run the effective profile script to inform applicability judgments — what
+patterns the user favors, what they resist, how to weigh recommendations. High-confidence
+entries strongly constrain recommendations; low-confidence entries are treated as tendencies.
+
+### Effective profile script
+
+All consuming skills use the same script for consistency:
+
+```bash
+python3 -m scripts.effective_profile
+```
+
+Run from the profilera skill directory. Outputs a markdown summary table with effective
+confidence after dormancy decay. The script reads decay parameters from the PROFILE.md
+header, so the formula stays in one place.
 
 ---
 
@@ -210,3 +388,5 @@ favors, what they resist, how to weigh recommendations.
 - Conversation exchanges are the most nuanced source — they show *how* decisions are made
   in real time, not just what was decided.
 - Config patterns are the most objective source — they show what was actually shipped.
+- Validate mode is designed for regular use (weekly or per-session). Full mode is for
+  periodic regeneration (monthly or when the profile feels significantly stale).

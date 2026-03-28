@@ -184,8 +184,18 @@ Read the optimization state to understand where things stand.
 
 1. **EXPERIMENTS.md** — what was tried last, what the result suggested next
 2. **OBJECTIVE.md** — the metric, target, constraints, and scope
-3. **PROFILE.md** (`~/.claude/profile/PROFILE.md`) — the user's decision
-   patterns. If missing, note this and proceed without persona grounding, but flag it:
+3. **Decision profile** — run the effective profile script for a confidence-weighted summary:
+   ```bash
+   python3 -m scripts.effective_profile
+   ```
+   Run from the profilera skill directory (typically
+   `~/.claude/plugins/marketplaces/agent-skills/skills/profilera`).
+   This outputs a summary table with effective confidence after dormancy decay.
+   Use it to calibrate experimentation style: high effective confidence entries (0.65+)
+   are strong constraints on approach, low effective confidence entries (<0.45) are
+   suggestions that can be overridden. Read full `~/.claude/profile/PROFILE.md` for
+   complete rule details when needed.
+   If the script or PROFILE.md is missing, proceed without persona grounding but flag it:
    "Consider running /profilera to generate a decision profile — it helps me make choices
    you'd agree with."
 4. **Project discovery** (experiment 1 or when unfamiliar):
@@ -373,8 +383,11 @@ When realisera picks work that is optimization-shaped (e.g., "improve test perfo
 context; optimera runs the optimization loop.
 
 ### Optimera reads /profilera output
-Every experiment consults `~/.claude/profile/PROFILE.md` for the user's decision-making style —
-how aggressive to be, how much complexity is acceptable, what trade-offs the user prefers.
+Every experiment runs the effective profile script (`python3 -m scripts.effective_profile` from
+the profilera skill directory) to get a confidence-weighted summary table. Effective confidence
+weighting ensures stale preferences don't over-constrain experiments — how aggressive to be,
+how much complexity is acceptable, and what trade-offs the user prefers are all modulated by
+how recently each preference was confirmed.
 
 ---
 
