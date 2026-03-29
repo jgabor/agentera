@@ -336,7 +336,7 @@ Never waste a cycle. If the first pick is blocked, pivot.
 
 ## Cross-skill integration
 
-Realisera is part of a four-skill ecosystem. Each skill can invoke the others when the work
+Realisera is part of a five-skill ecosystem. Each skill can invoke the others when the work
 calls for it.
 
 ### Realisera delegates to /optimera
@@ -355,6 +355,13 @@ profilera skill directory) to get a confidence-weighted summary table. High effe
 entries are treated as strong constraints; low effective confidence entries are treated as
 suggestions. Full rules are read from `~/.claude/profile/PROFILE.md` when needed for detailed
 reasoning about trade-offs and priorities.
+
+### Realisera uses /resonera for complex decisions
+When the brainstorm session or work selection surfaces a decision too complex for inline
+resolution — competing architectural approaches, ambiguous scope, or consequential tradeoffs —
+suggest `/resonera` to deliberate first. Resonera can produce or refine VISION.md directly,
+and its DECISIONS.md entries give realisera reasoning context for future cycles. If
+`DECISIONS.md` exists, read it during the Orient step for context on prior deliberations.
 
 ---
 

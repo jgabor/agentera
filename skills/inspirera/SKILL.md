@@ -198,7 +198,7 @@ specific project.
 
 ## Cross-skill integration
 
-Inspirera is part of a four-skill ecosystem. Its analysis feeds naturally into the other skills.
+Inspirera is part of a five-skill ecosystem. Its analysis feeds naturally into the other skills.
 
 ### Feeding into /realisera
 Add actionable findings to the project's ISSUES.md, or refine VISION.md's direction if the
@@ -214,6 +214,12 @@ script (`python3 -m scripts.effective_profile` from the profilera skill director
 confidence-weighted summary. Use effective confidence to weight applicability judgments —
 high-confidence entries strongly constrain recommendations, low-confidence entries are
 treated as tendencies rather than rules.
+
+### Feeding into /resonera
+When the analysis surfaces recommendations that require deliberation — competing approaches,
+unclear adoption cost, or tradeoffs the user needs to resolve — suggest `/resonera` to think
+it through before acting. Resonera can evaluate which recommendations are actually worth
+adopting and capture the reasoning in DECISIONS.md.
 
 ---
 
