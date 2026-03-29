@@ -46,6 +46,16 @@
       },
       "source": "./skills/optimera",
       "category": "development"
+    },
+    {
+      "name": "resonera",
+      "description": "RESONERA — Reflective Engagement: Socratic Observation Nexus — Explore, Reframe, Articulate. Structured deliberation through Socratic questioning, producing decision artifacts the rest of the suite consumes.",
+      "version": "1.0.0",
+      "author": {
+        "name": "jgabor"
+      },
+      "source": "./skills/resonera",
+      "category": "development"
     }
   ]
 }

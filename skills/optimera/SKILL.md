@@ -369,7 +369,7 @@ Never waste a cycle. If the first hypothesis is blocked, pivot.
 
 ## Cross-skill integration
 
-Optimera is part of a four-skill ecosystem. Each skill can invoke the others when the work
+Optimera is part of a five-skill ecosystem. Each skill can invoke the others when the work
 calls for it.
 
 ### Optimera invokes /inspirera
@@ -388,6 +388,13 @@ the profilera skill directory) to get a confidence-weighted summary table. Effec
 weighting ensures stale preferences don't over-constrain experiments — how aggressive to be,
 how much complexity is acceptable, and what trade-offs the user prefers are all modulated by
 how recently each preference was confirmed.
+
+### Optimera uses /resonera for objective decisions
+When the brainstorm session surfaces ambiguity about what to optimize — competing metrics,
+unclear constraints, or tradeoffs between measurement approaches — suggest `/resonera` to
+deliberate first. Resonera can produce or refine OBJECTIVE.md directly, and its DECISIONS.md
+entries give optimera context for why the objective was chosen. If `DECISIONS.md` exists,
+read it during the Orient step for context on prior deliberations.
 
 ---
 

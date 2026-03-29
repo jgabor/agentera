@@ -345,7 +345,7 @@ If any entries were challenged, mention them by name so the user knows what shif
 
 ## Cross-skill integration
 
-Profilera is part of a four-skill ecosystem. The decision profile it produces is consumed by
+Profilera is part of a five-skill ecosystem. The decision profile it produces is consumed by
 the other skills.
 
 ### Consumed by /realisera
@@ -363,6 +363,16 @@ confidence weighting ensures stale preferences don't over-constrain experiments.
 Inspirera can run the effective profile script to inform applicability judgments — what
 patterns the user favors, what they resist, how to weigh recommendations. High-confidence
 entries strongly constrain recommendations; low-confidence entries are treated as tendencies.
+
+### Consumed by /resonera
+Resonera reads the decision profile at the start of every deliberation. High-confidence entries
+in the relevant domain are acknowledged upfront to prevent re-deliberating settled preferences.
+Low-confidence entries are surfaced as hypotheses worth testing during the conversation.
+
+### Fed by /resonera
+DECISIONS.md (maintained by resonera) is a high-signal source for profilera's extraction
+scripts. Each decision entry captures reasoning, tradeoffs, and confidence — making deliberation
+sessions one of the richest inputs for decision profile generation.
 
 ### Effective profile script
 
