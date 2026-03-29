@@ -86,6 +86,16 @@
       },
       "source": "./skills/visionera",
       "category": "development"
+    },
+    {
+      "name": "dokumentera",
+      "description": "DOKUMENTERA — Documentation Origin: Knowledge Unified, Methodology Enforced, Notation Traced — Examine, Record, Articulate. DTC-first documentation creation, maintenance, and verification with DOCS.md coverage tracking.",
+      "version": "1.0.0",
+      "author": {
+        "name": "jgabor"
+      },
+      "source": "./skills/dokumentera",
+      "category": "development"
     }
   ]
 }

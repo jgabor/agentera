@@ -15,6 +15,7 @@ and learning from your own decision patterns.
 | [optimera](./skills/optimera/) | **Tune** — Metric-driven optimization through systematic experimentation. |
 | [planera](./skills/planera/) | **Plan** — Scale-adaptive planning (skip/light/full) with behavioral acceptance criteria bridging deliberation and execution. |
 | [inspektera](./skills/inspektera/) | **Audit** — Codebase health assessment across six dimensions with confidence scoring and trend tracking. |
+| [dokumentera](./skills/dokumentera/) | **Document** — DTC-first documentation creation, maintenance, and verification with DOCS.md coverage tracking. |
 | [profilera](./skills/profilera/) | **Know thyself** — Mines session history to generate a decision profile other skills consume. |
 
 ### How they connect
@@ -52,6 +53,7 @@ Each skill generates markdown artifacts in the target project (not in this repo)
 | `OBJECTIVE.md` | resonera, optimera | optimera |
 | `EXPERIMENTS.md` | optimera | optimera |
 | `HEALTH.md` | inspektera | realisera, planera, inspektera |
+| `DOCS.md` | dokumentera | dokumentera, inspektera |
 | `PROFILE.md` | profilera | all skills |
 
 ---
