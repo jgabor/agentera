@@ -369,7 +369,7 @@ Never waste a cycle. If the first hypothesis is blocked, pivot.
 
 ## Cross-skill integration
 
-Optimera is part of a five-skill ecosystem. Each skill can invoke the others when the work
+Optimera is part of a six-skill ecosystem. Each skill can invoke the others when the work
 calls for it.
 
 ### Optimera invokes /inspirera
@@ -395,6 +395,11 @@ unclear constraints, or tradeoffs between measurement approaches — suggest `/r
 deliberate first. Resonera can produce or refine OBJECTIVE.md directly, and its DECISIONS.md
 entries give optimera context for why the objective was chosen. If `DECISIONS.md` exists,
 read it during the Orient step for context on prior deliberations.
+
+### Inspektera feeds /optimera
+When an inspektera audit reveals a poor dimension grade with a clearly measurable improvement
+path (test coverage, complexity score, dependency count), the finding can become an optimization
+objective. `/inspektera` may suggest `/optimera` when the metric and direction are clear.
 
 ---
 

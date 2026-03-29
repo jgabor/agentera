@@ -56,6 +56,16 @@
       },
       "source": "./skills/resonera",
       "category": "development"
+    },
+    {
+      "name": "inspektera",
+      "description": "INSPEKTERA — Integrity Navigation: Systematic Pattern Evaluation, Knowledge Tracing — Examine, Report, Advise. Codebase health audit with multi-dimensional evaluation, confidence scoring, and trend tracking.",
+      "version": "1.0.0",
+      "author": {
+        "name": "jgabor"
+      },
+      "source": "./skills/inspektera",
+      "category": "development"
     }
   ]
 }

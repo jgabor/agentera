@@ -10,6 +10,7 @@ Personal Claude Code skill marketplace. Each skill is a self-contained directory
 | [realisera](./skills/realisera/) | REALISERA — Relentless Execution: Autonomous Loops Iterating Software — Evolve, Refine, Adapt. Autonomous development loop that evolves any project one focused cycle at a time. |
 | [optimera](./skills/optimera/) | OPTIMERA — Objective Pursuit: Targeted Iterative Measurement — Experiment, Record, Advance. Metric-driven optimization loop that improves any measurable property of a codebase. |
 | [resonera](./skills/resonera/) | RESONERA — Reflective Engagement: Socratic Observation Nexus — Explore, Reframe, Articulate. Structured deliberation through Socratic questioning before consequential decisions. |
+| [inspektera](./skills/inspektera/) | INSPEKTERA — Integrity Navigation: Systematic Pattern Evaluation, Knowledge Tracing — Examine, Report, Advise. Codebase health audit with multi-dimensional evaluation and trend tracking. |
 | [profilera](./skills/profilera/) | PROFILERA — Persona Reconstruction: Observable Footprint Indexing Logic — Examine, Reconcile, Articulate. Mines session history to generate an agent-consumable decision profile. |
 
 ---

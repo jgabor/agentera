@@ -336,7 +336,7 @@ Never waste a cycle. If the first pick is blocked, pivot.
 
 ## Cross-skill integration
 
-Realisera is part of a five-skill ecosystem. Each skill can invoke the others when the work
+Realisera is part of a six-skill ecosystem. Each skill can invoke the others when the work
 calls for it.
 
 ### Realisera delegates to /optimera
@@ -362,6 +362,12 @@ resolution — competing architectural approaches, ambiguous scope, or consequen
 suggest `/resonera` to deliberate first. Resonera can produce or refine VISION.md directly,
 and its DECISIONS.md entries give realisera reasoning context for future cycles. If
 `DECISIONS.md` exists, read it during the Orient step for context on prior deliberations.
+
+### Realisera is audited by /inspektera
+HEALTH.md findings filed to ISSUES.md become candidates for work selection. Run `/inspektera`
+every 5-10 cycles to ensure forward progress isn't accumulating structural debt. If HEALTH.md
+exists, read its latest grades during the Orient step — poor grades signal that structural
+fixes should be prioritized over new features.
 
 ---
 

@@ -198,7 +198,7 @@ specific project.
 
 ## Cross-skill integration
 
-Inspirera is part of a five-skill ecosystem. Its analysis feeds naturally into the other skills.
+Inspirera is part of a six-skill ecosystem. Its analysis feeds naturally into the other skills.
 
 ### Feeding into /realisera
 Add actionable findings to the project's ISSUES.md, or refine VISION.md's direction if the
