@@ -350,7 +350,7 @@ Feed actionable findings into the rest of the suite:
 
 ## Cross-skill integration
 
-Inspektera is part of a six-skill ecosystem. It is the feedback loop — the skill that tells
+Inspektera is part of a seven-skill ecosystem. It is the feedback loop — the skill that tells
 realisera whether its work is making things better.
 
 ### Inspektera feeds /realisera
@@ -363,6 +363,11 @@ when planning changes.
 When the audit reveals architectural drift or structural decisions that need deliberation —
 the code has evolved past the stated architecture, or competing patterns suggest a design
 choice is needed — suggest `/resonera` to think it through before anyone starts fixing.
+
+### Inspektera feeds /planera
+When the audit reveals multiple related structural issues, suggest `/planera` to create a
+remediation plan. The plan's acceptance criteria give inspektera concrete targets to verify
+in the next audit.
 
 ### Inspektera feeds /optimera
 When a dimension grade is poor and the improvement is measurable (test coverage, dependency

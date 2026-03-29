@@ -66,6 +66,16 @@
       },
       "source": "./skills/inspektera",
       "category": "development"
+    },
+    {
+      "name": "planera",
+      "description": "PLANERA — Planning Logic: Adaptive Notation, Executable Requirements Architecture — Explore, Refine, Articulate. Scale-adaptive planning with behavioral acceptance criteria that bridges deliberation and execution.",
+      "version": "1.0.0",
+      "author": {
+        "name": "jgabor"
+      },
+      "source": "./skills/planera",
+      "category": "development"
     }
   ]
 }

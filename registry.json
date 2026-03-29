@@ -43,6 +43,13 @@
       "path": "skills/inspektera",
       "tags": ["audit", "health", "architecture", "quality", "review"],
       "added": "2026-03-29"
+    },
+    {
+      "name": "planera",
+      "description": "PLANERA — Planning Logic: Adaptive Notation, Executable Requirements Architecture — Explore, Refine, Articulate. Scale-adaptive planning with behavioral acceptance criteria that bridges deliberation and execution.",
+      "path": "skills/planera",
+      "tags": ["planning", "decomposition", "spec", "acceptance-criteria"],
+      "added": "2026-03-29"
     }
   ]
 }
