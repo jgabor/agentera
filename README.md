@@ -1,21 +1,56 @@
 # agent-skills
 
-Personal Claude Code skill marketplace. Each skill is a self-contained directory with a `SKILL.md` that Claude reads to acquire specialised behaviour.
+Personal Claude Code skill marketplace. Six skills that form a connected ecosystem for
+autonomous software development — from deliberation through building, optimizing, auditing,
+and learning from your own decision patterns.
 
 ## Skills
 
-| Skill | Description |
+| Skill | What it does |
 |-------|-------------|
-| [inspirera](./skills/inspirera/) | INSPIRERA — Insight Navigation: Source Pattern Identification and Resonance — Evaluate, Reframe, Assimilate. Analyzes an external link and maps its concepts to one of your own projects. |
-| [realisera](./skills/realisera/) | REALISERA — Relentless Execution: Autonomous Loops Iterating Software — Evolve, Refine, Adapt. Autonomous development loop that evolves any project one focused cycle at a time. |
-| [optimera](./skills/optimera/) | OPTIMERA — Objective Pursuit: Targeted Iterative Measurement — Experiment, Record, Advance. Metric-driven optimization loop that improves any measurable property of a codebase. |
-| [resonera](./skills/resonera/) | RESONERA — Reflective Engagement: Socratic Observation Nexus — Explore, Reframe, Articulate. Structured deliberation through Socratic questioning before consequential decisions. |
-| [inspektera](./skills/inspektera/) | INSPEKTERA — Integrity Navigation: Systematic Pattern Evaluation, Knowledge Tracing — Examine, Report, Advise. Codebase health audit with multi-dimensional evaluation and trend tracking. |
-| [profilera](./skills/profilera/) | PROFILERA — Persona Reconstruction: Observable Footprint Indexing Logic — Examine, Reconcile, Articulate. Mines session history to generate an agent-consumable decision profile. |
+| [resonera](./skills/resonera/) | **Deliberate** — Structured Socratic questioning before consequential decisions. Produces DECISIONS.md. |
+| [inspirera](./skills/inspirera/) | **Research** — Analyzes an external resource and maps its concepts to your project. |
+| [realisera](./skills/realisera/) | **Build** — Autonomous development loop that evolves a project one focused cycle at a time. |
+| [optimera](./skills/optimera/) | **Tune** — Metric-driven optimization through systematic experimentation. |
+| [inspektera](./skills/inspektera/) | **Audit** — Codebase health assessment across six dimensions with confidence scoring and trend tracking. |
+| [profilera](./skills/profilera/) | **Know thyself** — Mines session history to generate a decision profile other skills consume. |
+
+### How they connect
+
+```
+                    profilera
+                   (decision profile)
+                    ↓ consumed by all
+resonera ──→ realisera ←──→ optimera
+  (think)      (build)        (tune)
+    ↑              ↑              ↑
+    └── inspirera ─┘   inspektera┘
+        (research)      (audit)
+```
+
+- **resonera** produces VISION.md and OBJECTIVE.md that drive realisera and optimera
+- **inspirera** feeds external patterns into realisera's cycles and optimera's hypotheses
+- **inspektera** files health findings to ISSUES.md for realisera to fix, and triggers resonera for architectural decisions
+- **profilera** calibrates all other skills to the user's decision-making patterns
+
+### State artifacts
+
+Each skill generates markdown artifacts in the target project (not in this repo):
+
+| Artifact | Maintained by | Consumed by |
+|----------|---------------|-------------|
+| `VISION.md` | resonera, realisera | realisera, inspektera |
+| `DECISIONS.md` | resonera | realisera, optimera, inspektera, profilera |
+| `PROGRESS.md` | realisera | inspektera |
+| `ISSUES.md` | realisera, inspektera | realisera |
+| `OBJECTIVE.md` | resonera, optimera | optimera |
+| `EXPERIMENTS.md` | optimera | optimera |
+| `HEALTH.md` | inspektera | realisera, inspektera |
+| `PROFILE.md` | profilera | all skills |
 
 ---
 
-## Installing in Claude Code
+## Installing
 
 Clone the repo once:
 
@@ -61,4 +96,4 @@ skills/
     └── scripts/          # optional — executable helpers
 ```
 
-Then update `registry.json` and the table above.
+Then update `registry.json`, the skills table above, and `.claude-plugin/marketplace.json`.
