@@ -18,15 +18,16 @@ registry.json                   # Skill index with versions and tags
 
 ## Skill ecosystem
 
-The six skills form a connected graph — not isolated tools:
+The seven skills form a connected graph — not isolated tools:
 
-- **resonera** (deliberates) produces decision artifacts and feeds into realisera's VISION.md and optimera's OBJECTIVE.md
-- **realisera** (builds) delegates metric work to **optimera**, consumes research from **inspirera**, and escalates complex decisions to **resonera**
-- **inspektera** (audits) assesses codebase health, files findings to ISSUES.md for realisera, and triggers resonera for architectural decisions
+- **resonera** (deliberates) produces decision artifacts and feeds into planera and realisera
+- **planera** (plans) produces PLAN.md with behavioral acceptance criteria consumed by realisera for task selection
+- **realisera** (builds) executes plan tasks or vision-gap reasoning, delegates metric work to **optimera**, consumes research from **inspirera**
+- **inspektera** (audits) assesses codebase health, files findings to ISSUES.md, triggers planera for remediation plans
 - **inspirera** feeds findings into realisera's VISION.md/ISSUES.md, optimization hypotheses into optimera, and adoption decisions into resonera
 - **profilera** produces PROFILE.md consumed by all other skills to weight decisions by user persona
 
-Each skill generates state artifacts (DECISIONS.md, VISION.md, PROGRESS.md, ISSUES.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, PROFILE.md) in the *target project*, not in this repo. These artifacts are structured markdown designed for both human reading and script parsing.
+Each skill generates state artifacts (DECISIONS.md, PLAN.md, VISION.md, PROGRESS.md, ISSUES.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, PROFILE.md) in the *target project*, not in this repo. These artifacts are structured markdown designed for both human reading and script parsing.
 
 ## Adding or modifying a skill
 

@@ -216,7 +216,7 @@ For any option the user selects:
 
 ## Cross-skill integration
 
-Resonera is part of a six-skill ecosystem. It is the deliberation layer — the skill you use
+Resonera is part of a seven-skill ecosystem. It is the deliberation layer — the skill you use
 to think before the other skills act.
 
 ### Resonera feeds into /realisera
@@ -251,6 +251,11 @@ the user has already settled. Low-confidence entries are treated as hypotheses w
 DECISIONS.md is a high-signal source for profilera's extraction scripts. Each decision entry
 captures not just what was chosen but *why* — the reasoning, tradeoffs, and confidence level.
 This makes deliberation sessions one of the richest inputs for decision profile generation.
+
+### Resonera feeds /planera
+When a deliberation concludes with a decision to build something, the natural next step is
+`/planera` to plan the work. The DECISIONS.md entry provides the "why" context that planera
+reads during its Orient step.
 
 ### Resonera is triggered by /inspektera
 

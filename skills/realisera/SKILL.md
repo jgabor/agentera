@@ -336,7 +336,7 @@ Never waste a cycle. If the first pick is blocked, pivot.
 
 ## Cross-skill integration
 
-Realisera is part of a six-skill ecosystem. Each skill can invoke the others when the work
+Realisera is part of a seven-skill ecosystem. Each skill can invoke the others when the work
 calls for it.
 
 ### Realisera delegates to /optimera
@@ -362,6 +362,13 @@ resolution — competing architectural approaches, ambiguous scope, or consequen
 suggest `/resonera` to deliberate first. Resonera can produce or refine VISION.md directly,
 and its DECISIONS.md entries give realisera reasoning context for future cycles. If
 `DECISIONS.md` exists, read it during the Orient step for context on prior deliberations.
+
+### Realisera consumes /planera plans
+When PLAN.md exists with pending tasks, realisera's Step 2 (Pick work) reads the plan instead
+of reasoning from the vision. Pick the next pending task with satisfied dependencies. Use the
+task's behavioral acceptance criteria as exit conditions. After committing, update the task's
+status to `complete`. If reality diverges from the plan, add a Surprise entry. When all tasks
+are complete, archive PLAN.md to `.planera/archive/` and resume vision-driven work selection.
 
 ### Realisera is audited by /inspektera
 HEALTH.md findings filed to ISSUES.md become candidates for work selection. Run `/inspektera`
