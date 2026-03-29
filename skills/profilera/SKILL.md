@@ -345,7 +345,7 @@ If any entries were challenged, mention them by name so the user knows what shif
 
 ## Cross-skill integration
 
-Profilera is part of a seven-skill ecosystem. The decision profile it produces is consumed by
+Profilera is part of an eight-skill ecosystem. The decision profile it produces is consumed by
 the other skills.
 
 ### Consumed by /realisera
