@@ -75,3 +75,39 @@ visionera, but defers to it when installed.
 | Standalone principle | All skills work independently AND mesh when co-installed |
 | Realisera relationship | Realisera keeps quick bootstrap. Defers to visionera when installed. |
 | Validation/pivot | Out of scope — validation is inspektera's job, pivoting is resonera's |
+
+## Decision 3 — 2026-03-29
+
+**Question**: How should dokumentera (a documentation skill) be designed for the suite?
+**Context**: The suite follows DTC (Document, Test, Code) but no skill owns the "D". Realisera
+writes code. Planera writes plans. Visionera writes VISION.md. But project documentation
+(README, CLAUDE.md, AGENTS.md, API docs, feature guides) has no dedicated skill. /doc-audit
+exists externally for auditing docs against code, but nothing creates or maintains docs.
+**Alternatives**:
+- Generate docs from code (reactive) — rejected: violates DTC; docs should lead, not follow
+- Maintain docs alongside changes only — rejected: misses the DTC-first opportunity
+- Separate create/audit split (like visionera/inspektera) — rejected: user wants full lifecycle in one skill
+**Choice**: Dokumentera as the "D" in DTC. Two modes (create/update). DOCS.md index. Full
+lifecycle including audit (absorbs doc-audit). Context-detected approach. Strict DTC pipeline.
+**Reasoning**: DTC says documentation defines intent. Currently nobody in the suite writes the
+intent documentation — the "D" is missing. Dokumentera fills this by writing docs before code
+(intent-first for new features) and generating docs from existing code (autonomous exploration).
+DOCS.md index gives other skills a map of what documentation exists. Full lifecycle including
+audit means one skill for all doc needs — simpler for users than coordinating dokumentera +
+doc-audit. Context detection (feature exists? → explore and document. Feature doesn't exist? →
+write intent docs) makes the skill adaptive without requiring the user to specify mode.
+The strict DTC pipeline (dokumentera → planera → realisera) embeds documentation-first as
+an architectural principle, not just a guideline.
+**Confidence**: firm
+**Feeds into**: DOCS.md artifact, DTC pipeline integration, doc-audit absorption
+
+### Design Decisions Summary
+
+| Aspect | Decision |
+|--------|----------|
+| Modes | Two: create (new docs) and update (revise existing docs) |
+| Approach | Context-detected: intent-first for unbuilt features, autonomous exploration for existing code |
+| Artifact | DOCS.md index + individual doc files (README, CLAUDE.md, etc.) |
+| Audit | Full lifecycle — includes doc-vs-code verification (absorbs doc-audit) |
+| Pipeline | Strict DTC: dokumentera → planera → realisera |
+| Standalone | Works independently; meshes with suite when co-installed |

@@ -57,6 +57,13 @@
       "path": "skills/visionera",
       "tags": ["vision", "strategy", "direction", "brainstorm"],
       "added": "2026-03-29"
+    },
+    {
+      "name": "dokumentera",
+      "description": "DOKUMENTERA — Documentation Origin: Knowledge Unified, Methodology Enforced, Notation Traced — Examine, Record, Articulate. DTC-first documentation creation, maintenance, and verification.",
+      "path": "skills/dokumentera",
+      "tags": ["documentation", "dtc", "docs-first", "audit"],
+      "added": "2026-03-29"
     }
   ]
 }
