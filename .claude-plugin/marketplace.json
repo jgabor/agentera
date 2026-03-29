@@ -76,6 +76,16 @@
       },
       "source": "./skills/planera",
       "category": "development"
+    },
+    {
+      "name": "visionera",
+      "description": "VISIONERA — Visionary Inception: Strategic Imagination, Observation Nexus — Explore, Refine, Articulate. Deep creation and stewardship of VISION.md through codebase exploration, domain research, and aspirational challenge.",
+      "version": "1.0.0",
+      "author": {
+        "name": "jgabor"
+      },
+      "source": "./skills/visionera",
+      "category": "development"
     }
   ]
 }

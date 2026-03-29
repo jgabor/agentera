@@ -50,6 +50,13 @@
       "path": "skills/planera",
       "tags": ["planning", "decomposition", "spec", "acceptance-criteria"],
       "added": "2026-03-29"
+    },
+    {
+      "name": "visionera",
+      "description": "VISIONERA — Visionary Inception: Strategic Imagination, Observation Nexus — Explore, Refine, Articulate. Deep creation and stewardship of VISION.md through codebase exploration, domain research, and aspirational challenge.",
+      "path": "skills/visionera",
+      "tags": ["vision", "strategy", "direction", "brainstorm"],
+      "added": "2026-03-29"
     }
   ]
 }

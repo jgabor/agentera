@@ -8,6 +8,7 @@ and learning from your own decision patterns.
 
 | Skill | What it does |
 |-------|-------------|
+| [visionera](./skills/visionera/) | **Envision** — Deep creation and stewardship of VISION.md through codebase exploration, domain research, and aspirational challenge. |
 | [resonera](./skills/resonera/) | **Deliberate** — Structured Socratic questioning before consequential decisions. Produces DECISIONS.md. |
 | [inspirera](./skills/inspirera/) | **Research** — Analyzes an external resource and maps its concepts to your project. |
 | [realisera](./skills/realisera/) | **Build** — Autonomous development loop that evolves a project one focused cycle at a time. |
@@ -19,16 +20,17 @@ and learning from your own decision patterns.
 ### How they connect
 
 ```
-                    profilera
-                   (decision profile)
-                    ↓ consumed by all
-resonera ──→ planera ──→ realisera ←──→ optimera
-  (think)     (plan)       (build)        (tune)
-    ↑                         ↑              ↑
-    └────── inspirera ────────┘   inspektera─┘
-              (research)            (audit)
+                      profilera
+                     (decision profile)
+                      ↓ consumed by all
+visionera ──→ resonera ──→ planera ──→ realisera ←──→ optimera
+ (envision)    (think)       (plan)       (build)        (tune)
+                  ↑                          ↑              ↑
+                  └────── inspirera ─────────┘   inspektera─┘
+                            (research)              (audit)
 ```
 
+- **visionera** creates and stewards VISION.md through deep exploration and aspirational challenge
 - **resonera** deliberates on what to build, producing DECISIONS.md
 - **planera** decomposes decisions into plans with behavioral acceptance criteria (PLAN.md)
 - **realisera** executes plan tasks (or reasons from VISION.md when no plan exists)
@@ -42,7 +44,7 @@ Each skill generates markdown artifacts in the target project (not in this repo)
 
 | Artifact | Maintained by | Consumed by |
 |----------|---------------|-------------|
-| `VISION.md` | resonera, realisera | realisera, planera, inspektera |
+| `VISION.md` | visionera, realisera | realisera, planera, inspektera |
 | `DECISIONS.md` | resonera | planera, realisera, optimera, inspektera, profilera |
 | `PLAN.md` | planera | realisera, inspektera |
 | `PROGRESS.md` | realisera | planera, inspektera |

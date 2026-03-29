@@ -41,3 +41,37 @@ PLAN.md presence as a signal of active work.
 | Plan lifecycle | Active in root as PLAN.md; archived to .planera/ on completion |
 | Boundary | Planera: what + why + constraints + acceptance. Realisera: which files, implementation, tests, code |
 | Plan surprises | Realisera logs surprises, picks next viable task; doesn't block on stale tasks |
+
+## Decision 2 — 2026-03-29
+
+**Question**: Should the vision brainstorm be extracted from realisera into a dedicated skill?
+**Context**: Realisera currently owns VISION.md creation via a quick 5-question brainstorm
+before cycle 1. This works but is shallow — it needs to get to execution quickly. Vision
+creation is a distinct creative/strategic activity that deserves depth. Additionally, the
+suite's architectural principle is that skills must work standalone AND mesh when co-installed.
+**Alternatives**:
+- Keep brainstorm in realisera — rejected: vision creation deserves more depth than a pre-cycle interview
+- Make it a resonera specialization — rejected: vision creation is aspirational/creative, not deliberative
+- Lightweight wrapper around resonera — rejected: distinct workflow with codebase reading + domain research
+**Choice**: Visionera as a distinct skill with two modes (create/refine), deep codebase reading,
+domain research, and aspirational Socratic challenge. Realisera keeps its quick bootstrap for
+standalone use.
+**Reasoning**: Vision creation is fundamentally different from deliberation (resonera) and
+execution planning (planera). It requires: (1) reading the codebase to understand what exists,
+(2) researching the domain to ground ambition in reality, (3) pushing the user to dream bigger
+through aspirational challenge. Realisera's 5-question brainstorm is a quick bootstrap, not
+deep strategic work. The standalone + mesh principle means realisera keeps working without
+visionera, but defers to it when installed.
+**Confidence**: firm
+**Feeds into**: VISION.md artifact ownership, realisera integration
+
+### Design Decisions Summary
+
+| Aspect | Decision |
+|--------|----------|
+| Modes | Two: create (new project) and refine (evolve existing vision) |
+| Depth | Codebase reading + domain research + aspirational Socratic challenge |
+| Artifact | VISION.md (same format, now owned by visionera when installed) |
+| Standalone principle | All skills work independently AND mesh when co-installed |
+| Realisera relationship | Realisera keeps quick bootstrap. Defers to visionera when installed. |
+| Validation/pivot | Out of scope — validation is inspektera's job, pivoting is resonera's |
