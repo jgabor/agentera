@@ -111,3 +111,40 @@ an architectural principle, not just a guideline.
 | Audit | Full lifecycle — includes doc-vs-code verification (absorbs doc-audit) |
 | Pipeline | Strict DTC: dokumentera → planera → realisera |
 | Standalone | Works independently; meshes with suite when co-installed |
+
+---
+
+## Decision 4 — 2026-03-30
+
+**Question**: how should skill-generated docs and artifacts integrate with existing project documentation conventions?
+
+**Context**: The skill suite generates up to 10 state artifacts (VISION.md, DECISIONS.md, PLAN.md, etc.) and dokumentera writes project docs (README, CLAUDE.md, feature guides). When deploying into codebases with existing doc conventions (docs/, shared/docs/, auto-generated API docs, established README style), the skills currently hardcode root placement and impose their own structure. This breaks the host project's organizational contract.
+
+**Alternatives**:
+- [Always root] — status quo, simple, but ignores existing conventions and clutters the root with up to 10 unfamiliar files
+- [Dedicated directory (.claude/ or .skills/)] — reduces clutter but treats artifacts as hidden tooling state rather than project documentation
+- [Project-configurable path] — flexible but adds configuration overhead, violates "convention over configuration"
+- [Skills detect and adapt to project conventions] — respects the host project, but requires reliable detection and a coordination mechanism
+
+**Choice**: Skills adapt to the project's existing documentation conventions, coordinated through an expanded DOCS.md contract.
+
+**Reasoning**: "Convention over configuration" (high-confidence profile entry) means the *project's* convention wins, not the skill suite's. The skills are guests in someone else's codebase. The key realization: these artifacts are genuinely dual-purpose (human documentation AND skill coordination state), which means they can't be hidden away in a tooling directory, but they also can't be dumped at root unconditionally.
+
+**Design**:
+
+DOCS.md evolves from a flat documentation index into a three-layer contract:
+1. **Conventions** — where docs live in this project, style defaults (tone, structure, badges), auto-gen tooling declarations (TypeDoc, Storybook, OpenAPI tracked as `generated` / hands-off)
+2. **Artifact mapping** — where each skill artifact goes in this project (customizable per-project, defaults to root for backward compatibility)
+3. **Index** — what docs exist (authored, generated, skill artifacts), their status, coverage stats
+
+**How it works**:
+- Dokumentera's first run on a new project performs a survey: explore the codebase, detect existing doc structure/style/tooling, propose a full convention map, user approves
+- The convention map is written to DOCS.md
+- All nine skills check DOCS.md for artifact paths before reading/writing, with root as fallback (backward compatible)
+- Dokumentera reads existing docs + DOCS.md style defaults to match tone when generating new docs; broad rules declared, fine details inferred
+- Auto-generated docs tracked with `generated` status so dokumentera knows to observe but not touch
+
+**Implementation scope**: Update DOCS.md template, update dokumentera's survey/audit flow, update all 9 SKILL.md files to check DOCS.md for artifact paths.
+
+**Confidence**: firm
+**Feeds into**: PLAN.md
