@@ -87,3 +87,11 @@
 **Inspiration**: visionera's refine mode pattern; depdevs audit approach
 **Discovered**: No new issues
 **Next**: Task 4 — update visionera cross-skill refs, then Task 5 — repo-wide updates
+
+## Cycle 12 — 2026-03-30
+
+**What**: Tasks 4+5 — wired visionera ↔ visualisera cross-skill refs, updated all skill counts to ten, added visualisera to all metadata and repo docs
+**Commit**: fd4af1f feat: integrate visualisera as 10th skill across entire suite
+**Inspiration**: None — mechanical integration sweep
+**Discovered**: No new issues. Plan complete — all 5 tasks shipped.
+**Next**: Plan complete. visualisera is fully integrated. Consider /inspektera for a health check on the expanded 10-skill suite.
