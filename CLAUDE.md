@@ -18,7 +18,7 @@ registry.json                   # Skill index with versions and tags
 
 ## Skill ecosystem
 
-The nine skills form a connected graph — not isolated tools. See the README for the full ecosystem diagram and state artifact reference table. All skills work standalone AND mesh when co-installed. Each skill generates state artifacts (DECISIONS.md, PLAN.md, VISION.md, PROGRESS.md, ISSUES.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, DOCS.md, PROFILE.md) in the *target project*, not in this repo.
+The nine skills form a connected graph — not isolated tools. See the README for the full ecosystem diagram and state artifact reference table. All skills work standalone AND mesh when co-installed. Each skill generates state artifacts (DECISIONS.md, PLAN.md, VISION.md, PROGRESS.md, ISSUES.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, DOCS.md, PROFILE.md) in the *target project*, not in this repo. All consuming skills check DOCS.md for artifact paths before reading or writing, falling back to project root when DOCS.md is absent.
 
 ## Adding or modifying a skill
 
