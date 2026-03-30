@@ -63,3 +63,27 @@
 **Inspiration**: Decision 5 — product identity is as foundational as purpose; DESIGN.md handles visual, VISION.md handles verbal/experiential
 **Discovered**: No new issues
 **Next**: README "personal skill marketplace" is stale per user feedback — should reflect public release intent
+
+## Cycle 9 — 2026-03-30
+
+**What**: Scaffolded visualisera with bundled DESIGN.md spec, validate_design.py script, and enforcement patterns reference
+**Commit**: a39adaa feat(visualisera): scaffold skill with bundled DESIGN.md spec and validation script
+**Inspiration**: depdevs design system enforcement (three-layer: validation, linting, audit)
+**Discovered**: No new issues
+**Next**: Task 2 — write visualisera SKILL.md core create mode
+
+## Cycle 10 — 2026-03-30
+
+**What**: Wrote full visualisera SKILL.md (332 lines) with create mode, codebase exploration, conversation workflow, validation
+**Commit**: b9ed2b3 feat(visualisera): write core SKILL.md with create mode workflow
+**Inspiration**: visionera's structure as the sibling skill pattern
+**Discovered**: No new issues
+**Next**: Task 3 — add refine mode, audit mode, cross-skill integration, getting started
+
+## Cycle 11 — 2026-03-30
+
+**What**: Added refine mode, audit mode (with validation script), cross-skill integration, and getting started to visualisera
+**Commit**: d642a65 feat(visualisera): add refine mode, audit mode, cross-skill integration, getting started
+**Inspiration**: visionera's refine mode pattern; depdevs audit approach
+**Discovered**: No new issues
+**Next**: Task 4 — update visionera cross-skill refs, then Task 5 — repo-wide updates

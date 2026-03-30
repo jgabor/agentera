@@ -1,6 +1,6 @@
 # agent-skills
 
-Claude Code skill marketplace. Nine skills that form a connected ecosystem for autonomous
+Claude Code skill marketplace. Ten skills that form a connected ecosystem for autonomous
 software development — from vision and deliberation through planning, building, optimizing,
 auditing, documenting, and learning from your own decision patterns.
 
@@ -17,6 +17,7 @@ auditing, documenting, and learning from your own decision patterns.
 | [inspektera](./skills/inspektera/) | **Audit** — Codebase health assessment across six dimensions with confidence scoring and trend tracking. |
 | [dokumentera](./skills/dokumentera/) | **Document** — DTC-first documentation creation, maintenance, and verification with DOCS.md coverage tracking. |
 | [profilera](./skills/profilera/) | **Know thyself** — Mines session history to generate a decision profile other skills consume. |
+| [visualisera](./skills/visualisera/) | **Visualize** — Creates, refines, and audits DESIGN.md visual identity files with bundled spec and validation. |
 
 ### How they connect
 
@@ -26,9 +27,9 @@ auditing, documenting, and learning from your own decision patterns.
                       ↓ consumed by all
 visionera ──→ resonera ──→ planera ──→ realisera ←──→ optimera
  (envision)    (think)       (plan)       (build)        (tune)
-                  ↑                          ↑              ↑
-                  └────── inspirera ─────────┘   inspektera─┘
-                            (research)              (audit)
+    ↕                          ↑              ↑
+ visualisera   inspirera ─────┘   inspektera─┘
+  (design)     (research)            (audit)
 ```
 
 - **visionera** creates and stewards VISION.md through deep exploration and aspirational challenge
@@ -54,6 +55,7 @@ Each skill generates markdown artifacts in the target project (not in this repo)
 | `EXPERIMENTS.md` | optimera | optimera |
 | `HEALTH.md` | inspektera | realisera, planera, inspektera |
 | `DOCS.md` | dokumentera | all skills (artifact path resolution) |
+| `DESIGN.md` | visualisera | realisera, visionera |
 | `PROFILE.md` | profilera | all skills |
 
 ---

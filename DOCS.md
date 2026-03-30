@@ -27,6 +27,7 @@ If an artifact has no entry, skills fall back to the project root.
 | OBJECTIVE.md | OBJECTIVE.md | optimera |
 | EXPERIMENTS.md | EXPERIMENTS.md | optimera |
 | DOCS.md | DOCS.md | dokumentera |
+| DESIGN.md | DESIGN.md | visualisera |
 | PROFILE.md | ~/.claude/profile/PROFILE.md | profilera |
 
 ## Index
@@ -42,7 +43,7 @@ If an artifact has no entry, skills fall back to the project root.
 
 ## Coverage
 
-- **Documented**: 9/9 skills have SKILL.md (single source of truth)
+- **Documented**: 10/10 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: 0 documents have drifted from implementation (after this audit)
 

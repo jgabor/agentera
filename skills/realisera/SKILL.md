@@ -347,7 +347,7 @@ Never waste a cycle. If the first pick is blocked, pivot.
 
 ## Cross-skill integration
 
-Realisera is part of a nine-skill ecosystem. Each skill can invoke the others when the work
+Realisera is part of a ten-skill ecosystem. Each skill can invoke the others when the work
 calls for it.
 
 ### Realisera defers to /visionera for vision creation

@@ -377,7 +377,7 @@ Never waste a cycle. If the first hypothesis is blocked, pivot.
 
 ## Cross-skill integration
 
-Optimera is part of a nine-skill ecosystem. Each skill can invoke the others when the work
+Optimera is part of a ten-skill ecosystem. Each skill can invoke the others when the work
 calls for it.
 
 ### Optimera invokes /inspirera

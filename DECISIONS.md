@@ -180,3 +180,35 @@ DOCS.md evolves from a flat documentation index into a three-layer contract:
 
 **Confidence**: firm
 **Feeds into**: PLAN.md
+
+---
+
+## Decision 6 — 2026-03-30
+
+**Question**: how should the DESIGN.md spec be absorbed into the skill suite, given skills must work standalone?
+
+**Context**: Decision 5 added an Identity section to VISION.md and had visionera reference DESIGN.md for coherence. But visionera says "read DESIGN.md" without understanding the format — the `<!-- design:colors -->` marker syntax, the YAML token blocks, the standard sections, the constraint system. That knowledge lives in `~/git/DESIGN.md/DESIGN.md`, an external spec that's a moving target. The standalone principle means skills can't depend on external resources.
+
+**Alternatives**:
+- [Bundle spec in visionera/references/] — makes visionera aware of the format, but other skills (realisera, dokumentera, inspektera) also need format knowledge; centralizing in one skill creates a hidden dependency
+- [Shared suite-level reference] — breaks the per-skill standalone model; skills are installed individually
+- [New visualisera skill] — dedicated skill that owns the DESIGN.md lifecycle and bundles the spec, paralleling visionera's role for VISION.md
+
+**Choice**: Create visualisera as the 10th skill — the visual identity counterpart to visionera. Full DESIGN.md lifecycle with the spec bundled as a reference doc.
+
+**Reasoning**: DESIGN.md is both a format specification AND a creative artifact. Creating a design system (brainstorming aesthetic, choosing tokens, defining constraints) is a distinct creative workflow that parallels what visionera does for purpose. Bundling the spec as a reference in visualisera's `references/` eliminates the external dependency. The read/write boundary is clean: visionera reads DESIGN.md for Identity coherence (like it reads HEALTH.md), visualisera owns all writes. This follows the same pattern as realisera/optimera (realisera reads OBJECTIVE.md, optimera writes it).
+
+### Design Decisions Summary
+
+| Aspect | Decision |
+|--------|----------|
+| Skill name | visualisera (Visual Identity: ...) |
+| Artifact | DESIGN.md (created and maintained by visualisera) |
+| Spec location | visualisera/references/DESIGN-spec.md (bundled, not external) |
+| Lifecycle | Create, refine, audit — same modes as visionera |
+| Read/write boundary | Visionera reads DESIGN.md for context; visualisera owns all writes |
+| Coherence | Visualisera reads VISION.md Identity section; visionera reads DESIGN.md |
+| Suite size | 10 skills (update all "nine-skill" references) |
+
+**Confidence**: firm
+**Feeds into**: PLAN.md
