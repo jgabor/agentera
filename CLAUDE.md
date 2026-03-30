@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A personal Claude Code skill marketplace. Nine skills — each a self-contained `SKILL.md` with optional `references/` and `scripts/` — that give Claude specialized autonomous behaviors. See the README for the full skill table and ecosystem diagram.
+A Claude Code skill marketplace. Nine skills — each a self-contained `SKILL.md` with optional `references/` and `scripts/` — that give Claude specialized autonomous behaviors. See the README for the full skill table and ecosystem diagram.
 
 ## Repository layout
 
