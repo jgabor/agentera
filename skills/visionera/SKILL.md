@@ -314,6 +314,13 @@ HEALTH.md tells visionera what structural realities constrain the vision. A proj
 architecture may need a vision adjustment — or the vision may confirm that the architecture
 needs to change.
 
+### Visionera reads /visualisera output
+If DESIGN.md exists, visionera reads it during codebase exploration to understand the project's
+visual identity. The Identity section in VISION.md should be coherent with the visual system
+declared in DESIGN.md. Visionera reads DESIGN.md for context but never writes it — visualisera
+owns all DESIGN.md writes. If visualisera is not installed, visionera still reads DESIGN.md
+if present (the file is framework-agnostic markdown).
+
 ### Visionera feeds /planera
 When a new or refined vision changes the project's direction, planera can produce a plan to
 realign the codebase with the updated vision.
