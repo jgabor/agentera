@@ -148,3 +148,35 @@ DOCS.md evolves from a flat documentation index into a three-layer contract:
 
 **Confidence**: firm
 **Feeds into**: PLAN.md
+
+---
+
+## Decision 5 — 2026-03-30
+
+**Question**: should visionera's VISION.md include a product identity layer (brand personality, voice, aesthetic, communication style)?
+
+**Context**: VISION.md currently captures purpose identity — North Star, Who It's For, Principles, Direction. But it has no section for experiential identity — what the product *feels like* as an entity. Meanwhile, DESIGN.md (a separate spec at ~/git/DESIGN.md) handles visual design tokens (colors, typography, constraints) as a machine-parseable format for agents. The gap: verbal identity, personality, emotional register, and naming philosophy have no home. These skills are meant for public release and must work for any user and project.
+
+**Alternatives**:
+- [Expand DESIGN.md] to include verbal/experiential identity — rejected: DESIGN.md is a visual token system, adding brand strategy blurs its focus
+- [Separate BRAND.md artifact] — rejected: adds artifact sprawl; identity is part of what the project IS, not a separate concern
+- [Fold into Principles] — rejected: principles are values and tradeoffs; identity is personality and voice, a different dimension
+- [Add Identity section to VISION.md] — chosen: extends the "who is this project" document naturally
+
+**Choice**: Add a four-dimension Identity section to VISION.md, explored by visionera's conversation. Explicitly link to DESIGN.md as the visual implementation of the declared identity.
+
+**Reasoning**: VISION.md already answers "what does this project do, for whom, why, and where is it going." Identity answers the missing "who is this project as an entity." The four dimensions — personality (adjectives), voice (communication style), emotional register (how it feels to use), naming (how things are named) — capture the non-visual identity that DESIGN.md can't express. The relationship is DTC-style: Identity section is the intent, DESIGN.md implements it visually, code implements it functionally. Visionera reads DESIGN.md during exploration to ensure coherence between declared identity and visual system.
+
+### Design Decisions Summary
+
+| Aspect | Decision |
+|--------|----------|
+| Location | Identity section in VISION.md (not a separate artifact) |
+| Dimensions | Four: personality, voice, emotional register, naming |
+| Tone | Aspirational, not prescriptive (like everything in VISION.md) |
+| DESIGN.md linkage | Explicitly linked — visionera reads DESIGN.md to ensure coherence; Identity section is the brief for DESIGN.md |
+| Visionera conversation | New fifth arc after direction: explore the product's personality |
+| Public release | Skills work for any user — identity is explored fresh per project, profile provides defaults |
+
+**Confidence**: firm
+**Feeds into**: PLAN.md

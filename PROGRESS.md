@@ -55,3 +55,11 @@
 **Inspiration**: None — audit-driven fixes
 **Discovered**: No new issues. All 6 issues from Audit 1 now resolved.
 **Next**: All issues clear. Codebase health should improve to Architecture A / Patterns B on next audit.
+
+## Cycle 8 — 2026-03-30
+
+**What**: Added Identity section to VISION.md template (personality, voice, emotional register, naming) and fifth conversation arc to visionera
+**Commit**: 6afa29f feat(visionera): add Identity section to VISION.md template and conversation
+**Inspiration**: Decision 5 — product identity is as foundational as purpose; DESIGN.md handles visual, VISION.md handles verbal/experiential
+**Discovered**: No new issues
+**Next**: README "personal skill marketplace" is stale per user feedback — should reflect public release intent
