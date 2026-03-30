@@ -25,14 +25,14 @@
     },
     {
       "name": "optimera",
-      "description": "OPTIMERA — Objective Pursuit: Targeted Iterative Measurement — Experiment, Record, Advance. Metric-driven optimization through systematic experimentation.",
+      "description": "OPTIMERA — Objective Pursuit: Targeted Iterative Measurement — Experiment, Record, Advance. Metric-driven optimization that improves any measurable property of a codebase through systematic experimentation.",
       "path": "skills/optimera",
       "tags": ["optimization", "benchmarks", "metrics", "testing"],
       "added": "2026-03-28"
     },
     {
       "name": "resonera",
-      "description": "RESONERA — Reflective Engagement: Socratic Observation Nexus — Explore, Reframe, Articulate. Structured deliberation through Socratic questioning, producing decision artifacts.",
+      "description": "RESONERA — Reflective Engagement: Socratic Observation Nexus — Explore, Reframe, Articulate. Structured deliberation through Socratic questioning, producing decision artifacts the rest of the suite consumes.",
       "path": "skills/resonera",
       "tags": ["deliberation", "decisions", "socratic", "scoping"],
       "added": "2026-03-29"
@@ -60,7 +60,7 @@
     },
     {
       "name": "dokumentera",
-      "description": "DOKUMENTERA — Documentation Origin: Knowledge Unified, Methodology Enforced, Notation Traced — Examine, Record, Articulate. DTC-first documentation creation, maintenance, and verification.",
+      "description": "DOKUMENTERA — Documentation Origin: Knowledge Unified, Methodology Enforced, Notation Traced — Examine, Record, Articulate. DTC-first documentation creation, maintenance, and verification with DOCS.md coverage tracking.",
       "path": "skills/dokumentera",
       "tags": ["documentation", "dtc", "docs-first", "audit"],
       "added": "2026-03-29"

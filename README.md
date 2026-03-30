@@ -1,8 +1,8 @@
 # agent-skills
 
-Personal Claude Code skill marketplace. Six skills that form a connected ecosystem for
-autonomous software development — from deliberation through building, optimizing, auditing,
-and learning from your own decision patterns.
+Personal Claude Code skill marketplace. Nine skills that form a connected ecosystem for
+autonomous software development — from vision and deliberation through planning, building,
+optimizing, auditing, documenting, and learning from your own decision patterns.
 
 ## Skills
 
@@ -50,7 +50,7 @@ Each skill generates markdown artifacts in the target project (not in this repo)
 | `PLAN.md` | planera | realisera, inspektera |
 | `PROGRESS.md` | realisera | planera, inspektera |
 | `ISSUES.md` | realisera, inspektera | realisera, planera |
-| `OBJECTIVE.md` | resonera, optimera | optimera |
+| `OBJECTIVE.md` | optimera | optimera |
 | `EXPERIMENTS.md` | optimera | optimera |
 | `HEALTH.md` | inspektera | realisera, planera, inspektera |
 | `DOCS.md` | dokumentera | dokumentera, inspektera |
