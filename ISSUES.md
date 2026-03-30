@@ -18,3 +18,12 @@ resonera now says "cross-skill reads and writes."
 
 ## ~~ISS-6: Missing bidirectional cross-skill references — annoying~~ RESOLVED
 Fixed in 086c059. Added inspirera→visionera and planera←dokumentera (DTC pipeline) references.
+
+## ISS-7: Inspektera dedup uses single-signal "highest confidence wins" — degraded
+Inspektera's Step 4 synthesis merges cross-dimension findings by taking the one with the
+highest confidence score. When two dimensions flag the same underlying issue (e.g., coupling-health
+finds a god-module's structural problem, complexity-hotspots finds its metric evidence), the
+current approach discards the lower-confidence finding entirely. A three-tier preference —
+fullest context → most evidence-rich dimension → latest — would preserve complementary evidence
+from different audit angles. One-paragraph edit in `skills/inspektera/SKILL.md` Step 4.
+Source: knowledge-synthesis skill (Anthropic) — multi-signal deduplication pattern.

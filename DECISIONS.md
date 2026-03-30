@@ -212,3 +212,105 @@ DOCS.md evolves from a flat documentation index into a three-layer contract:
 
 **Confidence**: firm
 **Feeds into**: PLAN.md
+
+---
+
+## Decision 7 — 2026-03-30
+
+**Question**: How should the skill ecosystem enforce cross-skill alignment and prevent shared primitives from diverging as skills are added?
+
+**Context**: The knowledge-synthesis cross-pollination analysis (inspirera) revealed that
+inspektera uses a 0-100 confidence scale while profilera uses 0.0-1.0 with exponential decay —
+two independently invented systems for the same concept. This is the poster child for a broader
+risk: as skills grow, shared primitives (confidence, severity, artifact formats, structural
+conventions) diverge because they're defined by copy-paste convention rather than a single
+source of truth. The user explicitly rejected artifact authority ordering in favor of
+preventing conflicts rather than arbitrating them.
+
+**Alternatives**:
+- [Artifact authority ordering] — rejected: the user wants alignment enforcement, not conflict
+  arbitration. Conflicts between artifacts signal real problems that should be surfaced and fixed.
+- [Runtime validation when skills interact on a target project] — rejected: alignment is a
+  development-time concern. Skills are authored together in one repo, so catch drift before
+  publishing.
+- [Shared reference docs only (no enforcement)] — rejected: DOCS.md's artifact path resolution
+  is already a convention that skills honor voluntarily, and divergence still happened.
+- [Per-primitive reference docs] — rejected in favor of a single comprehensive spec for
+  maintainability.
+
+**Choice**: Single ecosystem spec (`references/ecosystem-spec.md`) defining all shared primitives,
+enforced by a Python linter (`scripts/validate-ecosystem.py`) running as a pre-commit hook.
+
+**Reasoning**: The confidence divergence proved that convention-based alignment fails silently.
+Two skills independently invented scoring systems that use different scales for the same concept.
+The fix is twofold: (1) define shared primitives in one place so new skills inherit consistency,
+and (2) validate alignment deterministically so drift can't be committed. A pre-commit hook is
+the tightest feedback loop — it catches violations at the moment they're introduced, requiring
+zero discipline. The Anthropic `~~placeholder` + `CONNECTORS.md` pattern from knowledge-work-plugins
+confirmed the architecture: define once, reference everywhere, validate consistency.
+
+**Primitives identified (9 total)**:
+
+| # | Primitive | Category | Validation |
+|---|-----------|----------|------------|
+| 1 | Confidence scale (0-100, five tiers) | Behavioral | Deterministic — regex tier boundaries |
+| 2 | Severity levels | Behavioral | Deterministic — exact string matching |
+| 3 | Decision confidence labels (firm/provisional/exploratory) | Behavioral | Deterministic — enum values |
+| 4 | Artifact format contracts | Behavioral | Manual review flag |
+| 5 | Artifact path resolution (DOCS.md pattern) | Mechanical | Deterministic — instruction text matching |
+| 6 | Profile consumption pattern | Mechanical | Deterministic — script invocation matching |
+| 7 | Cross-skill integration section format | Structural | Deterministic — section presence + completeness |
+| 8 | Safety rails section format | Structural | Deterministic — `<critical>` tag presence |
+| 9 | SKILL.md frontmatter requirements | Structural | Deterministic — required fields |
+
+**Validation approach**: Deterministic checks (boundaries, names, section presence, field
+requirements) block commits. Fuzzy checks (artifact format semantic alignment) flag for manual
+review but don't block. Python stdlib only — consistent with existing scripts.
+
+**Confidence**: firm
+**Feeds into**: ISSUES.md, PLAN.md
+
+---
+
+## Decision 8 — 2026-03-30
+
+**Question**: Should the ecosystem unify its confidence model, and if so, on what scale?
+
+**Context**: Inspektera uses a 0-100 integer scale with five tiers (90-100 verified, 70-89
+strong, 50-69 moderate, 30-49 uncertain, 0-29 speculative). Profilera uses 0.0-1.0 float with
+exponential decay (`conf × e^(-λ × days_since_confirmed)`) and similar five tiers (0.85-0.95,
+0.65-0.80, 0.45-0.60, 0.25-0.40, 0.10-0.20). Seven skills consume confidence values from one
+or both systems. The two scales express the same semantics at different numeric ranges.
+
+**Alternatives**:
+- [0.0-1.0 everywhere] — rejected: less human-readable in artifacts like HEALTH.md that humans
+  read directly. "confidence: 73" is more natural than "confidence: 0.73".
+- [Unified semantic tiers only (let skills pick their scale)] — rejected: the user wants one
+  numeric scale, no translation needed between skills.
+- [Same tier names across skills] — rejected: tier *labels* are domain-specific (inspektera:
+  "definitely a real issue" vs profilera: "shipped consistently"). Shared boundaries are
+  sufficient; each skill describes what a tier means in its own context.
+
+**Choice**: Unify on 0-100 integer scale. Five shared tier boundaries. Domain-specific labels.
+Temporal decay is opt-in.
+
+**Reasoning**: 0-100 is more readable in human-facing artifacts (HEALTH.md, PROFILE.md) and
+inspektera already uses it. The decay formula works identically at this scale (`floor 20`
+instead of `floor 0.20`, same λ values). Same boundaries remove all translation friction when
+one skill reads another's confidence values. Domain-specific labels preserve each skill's ability
+to describe what confidence means in its context — "verified by reading the code" and "shipped
+consistently across 3+ projects" are both 90+ but mean different things.
+
+### Design Decisions Summary
+
+| Aspect | Decision |
+|--------|----------|
+| Scale | 0-100 integer |
+| Tiers | Five (boundaries to be reconciled from inspektera/profilera current ranges) |
+| Labels | Domain-specific — each skill defines its own tier descriptions |
+| Decay | Opt-in per skill. Profilera uses it. Inspektera does not. |
+| Migration | Profilera migrates from 0.0-1.0 to 0-100 |
+| Boundary reconciliation | Implementation detail — reconcile during ecosystem-spec authoring |
+
+**Confidence**: firm
+**Feeds into**: references/ecosystem-spec.md (Decision 7)
