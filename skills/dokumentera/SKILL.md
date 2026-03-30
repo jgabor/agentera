@@ -41,6 +41,14 @@ Dokumentera maintains one index file and writes to individual doc files across t
 The template lives in `references/templates/`. Individual doc files (README.md, CLAUDE.md, etc.)
 are written directly to their standard locations.
 
+### Artifact path resolution
+
+Before reading or writing any artifact, check if DOCS.md exists in the project root. If it
+has an Artifact Mapping section, use the path specified for each canonical filename (DOCS.md,
+etc.). If DOCS.md doesn't exist or has no entry for a given artifact, default to the project
+root. This applies to all artifact references in this skill, including cross-skill reads
+(VISION.md, PROGRESS.md, DECISIONS.md, HEALTH.md).
+
 ### DOCS.md
 
 ```markdown

@@ -40,6 +40,14 @@ Visionera maintains one file in the project root.
 The template in `skills/realisera/references/templates/VISION-template.md` provides the
 starting structure. Visionera adapts and expands it based on the conversation.
 
+### Artifact path resolution
+
+Before reading or writing any artifact, check if DOCS.md exists in the project root. If it
+has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md,
+etc.). If DOCS.md doesn't exist or has no entry for a given artifact, default to the project
+root. This applies to all artifact references in this skill, including cross-skill reads
+(DECISIONS.md, HEALTH.md, PROGRESS.md, ISSUES.md).
+
 ### VISION.md
 
 ```markdown

@@ -40,6 +40,14 @@ Optimera maintains three artifacts in the project root. All are bootstrapped if 
 | `.optimera/harness` | Eval script that measures the metric. Locked after user approval. | Written by the agent during brainstorm, approved by the user. |
 | `EXPERIMENTS.md` | Log of every experiment — what was tried, what the metric said, kept or discarded. | `# Experiments\n\n` then the first experiment entry. |
 
+### Artifact path resolution
+
+Before reading or writing any artifact, check if DOCS.md exists in the project root. If it
+has an Artifact Mapping section, use the path specified for each canonical filename
+(OBJECTIVE.md, EXPERIMENTS.md, etc.). If DOCS.md doesn't exist or has no entry for a given
+artifact, default to the project root. This applies to all artifact references in this skill,
+including cross-skill reads (DECISIONS.md).
+
 ### OBJECTIVE.md
 
 An evergreen document. Optimera creates it through a brainstorm session on first run, and can
