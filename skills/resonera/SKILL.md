@@ -46,7 +46,7 @@ Before reading or writing any artifact, check if DOCS.md exists in the project r
 has an Artifact Mapping section, use the path specified for each canonical filename
 (DECISIONS.md, etc.). If DOCS.md doesn't exist or has no entry for a given artifact, default
 to the project root. This applies to all artifact references in this skill, including
-cross-skill writes (VISION.md, OBJECTIVE.md, ISSUES.md).
+cross-skill reads and writes (VISION.md, OBJECTIVE.md, ISSUES.md).
 
 ### DECISIONS.md
 

@@ -170,7 +170,8 @@ A brief conversation (2-4 questions) to capture:
 - **What level of detail?** (overview, tutorial, reference, all three)
 
 If VISION.md exists, read it to understand the project's direction and audience.
-If the decision profile exists, read it for documentation style preferences.
+If the decision profile exists (`~/.claude/profile/PROFILE.md`), read it for documentation
+style preferences — detail level, tone, format, and which docs the user considers essential.
 
 ### Step 2: Write the documentation
 
@@ -220,7 +221,9 @@ Read the codebase deeply — same depth as visionera's exploration:
 3. Read existing docs (README, CLAUDE.md, etc.) — understand what's already documented
 4. Read key source files — understand architecture, public APIs, patterns
 5. Read VISION.md, PROGRESS.md, DECISIONS.md if they exist
-6. `git log --oneline -20` for recent context
+6. Read the decision profile (`~/.claude/profile/PROFILE.md`) if it exists — calibrate doc
+   style, detail level, and format preferences
+7. `git log --oneline -20` for recent context
 
 ### Step 2: Identify gaps
 

@@ -393,6 +393,28 @@ header, so the formula stays in one place.
 
 ---
 
+## Getting started
+
+### First profile generation
+```
+/profilera
+```
+Runs full extraction across session history, memory, configs, and conversations. Takes a few
+minutes. Produces `~/.claude/profile/PROFILE.md`.
+
+### Regular validation
+```
+/profilera validate
+```
+Quick refresh that checks for new evidence and updates confidence scores without full
+regeneration. Run weekly or per-session.
+
+### Using the profile in other skills
+All skills read the profile automatically via `python3 -m scripts.effective_profile`. No
+manual steps needed — just ensure PROFILE.md exists.
+
+---
+
 ## Notes on depth vs speed
 
 - The extraction scripts handle the expensive I/O. Claude's job is synthesis, not parsing.
