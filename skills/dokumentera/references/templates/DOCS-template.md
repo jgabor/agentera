@@ -31,6 +31,7 @@ If an artifact has no entry, skills fall back to the project root.
 | OBJECTIVE.md | OBJECTIVE.md | optimera |
 | EXPERIMENTS.md | EXPERIMENTS.md | optimera |
 | DOCS.md | DOCS.md | dokumentera |
+| DESIGN.md | DESIGN.md | visualisera |
 | PROFILE.md | ~/.claude/profile/PROFILE.md | profilera |
 
 ---

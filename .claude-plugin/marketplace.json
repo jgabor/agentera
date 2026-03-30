@@ -96,6 +96,16 @@
       },
       "source": "./skills/dokumentera",
       "category": "development"
+    },
+    {
+      "name": "visualisera",
+      "description": "VISUALISERA — Visual Identity: Systematic Unified Aesthetic Language, Intent-driven Style Engineering — Record, Articulate. Creates, refines, and audits DESIGN.md visual identity files with bundled spec and validation.",
+      "version": "1.0.0",
+      "author": {
+        "name": "jgabor"
+      },
+      "source": "./skills/visualisera",
+      "category": "development"
     }
   ]
 }

@@ -64,6 +64,13 @@
       "path": "skills/dokumentera",
       "tags": ["documentation", "dtc", "docs-first", "audit"],
       "added": "2026-03-29"
+    },
+    {
+      "name": "visualisera",
+      "description": "VISUALISERA — Visual Identity: Systematic Unified Aesthetic Language, Intent-driven Style Engineering — Record, Articulate. Creates, refines, and audits DESIGN.md visual identity files with bundled spec and validation.",
+      "path": "skills/visualisera",
+      "tags": ["design", "visual-identity", "design-tokens", "design-system", "audit"],
+      "added": "2026-03-30"
     }
   ]
 }
