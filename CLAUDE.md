@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A personal Claude Code skill marketplace. Four skills — each a self-contained `SKILL.md` with optional `references/` and `scripts/` — that give Claude specialized autonomous behaviors: cross-pollination research (inspirera), autonomous development loops (realisera), metric-driven optimization (optimera), and decision-profile mining (profilera).
+A personal Claude Code skill marketplace. Nine skills — each a self-contained `SKILL.md` with optional `references/` and `scripts/` — that give Claude specialized autonomous behaviors. See the README for the full skill table and ecosystem diagram.
 
 ## Repository layout
 
@@ -18,20 +18,7 @@ registry.json                   # Skill index with versions and tags
 
 ## Skill ecosystem
 
-The eight skills form a connected graph — not isolated tools:
-
-- **visionera** (envisions) deep creation and stewardship of VISION.md through codebase exploration, domain research, and aspirational challenge
-- **resonera** (deliberates) produces decision artifacts and feeds into planera and realisera
-- **planera** (plans) produces PLAN.md with behavioral acceptance criteria consumed by realisera for task selection
-- **realisera** (builds) executes plan tasks or vision-gap reasoning, delegates metric work to **optimera**, consumes research from **inspirera**
-- **inspektera** (audits) assesses codebase health, files findings to ISSUES.md, triggers planera for remediation plans
-- **inspirera** feeds findings into realisera's VISION.md/ISSUES.md, optimization hypotheses into optimera, and adoption decisions into resonera
-- **profilera** produces PROFILE.md consumed by all other skills to weight decisions by user persona
-
-All skills work standalone AND mesh when co-installed. Realisera has a built-in quick brainstorm
-for VISION.md but defers to visionera when installed.
-
-Each skill generates state artifacts (DECISIONS.md, PLAN.md, VISION.md, PROGRESS.md, ISSUES.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, PROFILE.md) in the *target project*, not in this repo. These artifacts are structured markdown designed for both human reading and script parsing.
+The nine skills form a connected graph — not isolated tools. See the README for the full ecosystem diagram and state artifact reference table. All skills work standalone AND mesh when co-installed. Each skill generates state artifacts (DECISIONS.md, PLAN.md, VISION.md, PROGRESS.md, ISSUES.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, DOCS.md, PROFILE.md) in the *target project*, not in this repo.
 
 ## Adding or modifying a skill
 
