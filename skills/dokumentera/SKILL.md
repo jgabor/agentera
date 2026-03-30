@@ -36,7 +36,7 @@ Dokumentera maintains one index file and writes to individual doc files across t
 
 | Artifact | Purpose | Bootstrap |
 |----------|---------|-----------|
-| `DOCS.md` | Documentation index. What docs exist, when last updated, coverage status. | Created on first dokumentera run. |
+| `DOCS.md` | Documentation contract. Conventions, artifact mapping, and documentation index. | Created on first dokumentera run. |
 
 The template lives in `references/templates/`. Individual doc files (README.md, CLAUDE.md, etc.)
 are written directly to their standard locations.
@@ -52,24 +52,32 @@ root. This applies to all artifact references in this skill, including cross-ski
 ### DOCS.md
 
 ```markdown
-# Documentation Index
+# Documentation Contract
 
 <!-- Maintained by dokumentera. Last audit: YYYY-MM-DD -->
 
+## Conventions
+
+```
+doc_root: docs/
+style:    technical, sections with examples, no badges
+auto_gen:
+  - TypeDoc → docs/api/
+```
+
+## Artifact Mapping
+
+| Artifact | Path | Producers |
+|----------|------|-----------|
+| VISION.md | docs/VISION.md | visionera, realisera |
+...
+
+## Index
+
 | Document | Path | Last Updated | Status |
 |----------|------|-------------|--------|
-| README | README.md | YYYY-MM-DD | current / stale / missing |
-| CLAUDE.md | CLAUDE.md | YYYY-MM-DD | current / stale / missing |
-| API Docs | docs/api.md | YYYY-MM-DD | current / stale / missing |
-
-## Coverage
-- **Documented**: N modules/features have documentation
-- **Undocumented**: N modules/features lack documentation
-- **Stale**: N documents have drifted from implementation
-
-## Audit Log
-### YYYY-MM-DD
-- [finding type] description — severity
+| README | README.md | YYYY-MM-DD | current |
+...
 ```
 
 ---
@@ -89,6 +97,61 @@ Determine what kind of documentation work is needed.
 | Code exists, docs don't | **Explore and generate** (autonomous) |
 | Docs exist, may be stale | **Update and verify** (audit-driven) |
 | Broad "audit the docs" / "are docs up to date" | **Full audit** |
+| No DOCS.md exists | **First-run survey** (convention detection) |
+
+---
+
+## First-run survey (convention detection)
+
+When DOCS.md doesn't exist, dokumentera runs a survey before any other mode. The survey
+observes the project and proposes a three-layer convention map for user approval.
+
+### Step 1: Explore structure
+
+Read the codebase to detect documentation conventions:
+
+1. **Doc root** -- where do documentation files live? Check for docs/, doc/, documentation/,
+   wiki/, or docs scattered at root. If no doc directory exists, default to root.
+2. **Existing docs** -- what documentation already exists? README, CLAUDE.md, AGENTS.md,
+   CONTRIBUTING.md, API docs, guides, tutorials.
+3. **Auto-generated docs** -- detect tooling output: TypeDoc (typedoc.json, docs/api/),
+   Storybook (.storybook/), OpenAPI/Swagger (openapi.yaml, swagger.json), GoDoc, Rustdoc,
+   Javadoc. Record each with its output path.
+4. **Style** -- read existing docs to infer tone (technical/casual), structure patterns
+   (sections with examples, flat descriptions), formatting conventions (badges, TOC, etc.).
+5. **Existing skill artifacts** -- check for VISION.md, DECISIONS.md, PLAN.md, PROGRESS.md,
+   ISSUES.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md at root. Note which already exist.
+
+### Step 2: Propose conventions
+
+Draft a three-layer DOCS.md using the template from `references/templates/`:
+
+1. **Conventions** -- populate doc_root, style, and auto_gen from what was observed
+2. **Artifact mapping** -- propose paths for all skill artifacts, consistent with the
+   project's doc organization. If the project keeps docs at root, map to root. If docs
+   live in docs/, propose docs/ paths for artifacts.
+3. **Index** -- populate with all discovered documentation files. Auto-generated docs get
+   `generated` status. Existing docs get `current` status.
+
+Present the proposed DOCS.md to the user for approval. The user can modify any section
+before it's written.
+
+### Step 3: Handle existing artifacts
+
+If skill artifacts already exist at root but the proposed mapping places them elsewhere:
+
+1. List the artifacts that would need to move (e.g., "VISION.md is at root but the mapping
+   says docs/VISION.md")
+2. Offer to relocate them: `git mv` each artifact to its new path
+3. If the user declines relocation, update the mapping to match where artifacts actually are
+
+### Step 4: Write DOCS.md
+
+Write the approved convention map. All other dokumentera modes and all other skills now
+read this file for artifact paths and documentation conventions.
+
+After writing DOCS.md, proceed to whatever mode the user originally requested (create,
+generate, audit) -- or stop if the survey was the entire request.
 
 ---
 
@@ -119,6 +182,7 @@ Write the documentation in the appropriate location and format:
 - **Inline docs** (help text, CLI descriptions): write to the source file or config
 
 **Documentation principles** (from the decision profile):
+- If DOCS.md has a Conventions section with style defaults, follow them. Infer fine details (voice, formatting quirks) from existing docs in the project.
 - Write as the intended steady state, not a changelog
 - Evergreen and non-temporal — what WILL be, not what currently is
 - Write for the primary audience (agents first if agent-consumed, humans first otherwise)
@@ -178,11 +242,14 @@ Write documentation for the identified gaps. Prioritize by impact:
 3. **API / CLI docs** — public interfaces need documentation
 4. **Architecture docs** — if the codebase is complex enough to warrant them
 
+When writing docs, follow the style conventions declared in DOCS.md. Infer fine details from existing project docs.
+
 Present each doc draft to the user for approval before writing.
 
 ### Step 4: Update DOCS.md
 
 Create or update DOCS.md with all documented and undocumented items.
+If DOCS.md doesn't exist yet, run the first-run survey first to establish conventions before populating the index.
 
 ---
 
@@ -199,7 +266,7 @@ Identify all documentation files:
 - Config docs: comments in config files that make claims about behavior
 - Read DOCS.md if it exists for the current index
 
-Skip auto-generated docs (typedoc, godoc, etc.) and files in node_modules/, .git/, vendor/.
+Track auto-generated docs (typedoc, godoc, etc.) in the index with `generated` status -- don't verify their content, but record their existence. Skip files in node_modules/, .git/, vendor/.
 
 ### Step 2: Verify
 
