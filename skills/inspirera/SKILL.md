@@ -202,9 +202,11 @@ Inspirera is part of a nine-skill ecosystem. Its analysis feeds naturally into t
 
 ### Artifact path resolution
 
-Before writing to any project artifact, check if DOCS.md exists in the project root. If it
+Before reading or writing any artifact, check if DOCS.md exists in the project root. If it
 has an Artifact Mapping section, use the path specified for each canonical filename (ISSUES.md,
-VISION.md). If DOCS.md doesn't exist or has no entry, default to the project root.
+VISION.md, etc.). If DOCS.md doesn't exist or has no entry for a given artifact, default to
+the project root. This applies to all artifact references in this skill, including cross-skill
+writes (ISSUES.md, VISION.md).
 
 ### Feeding into /realisera
 Add actionable findings to the project's ISSUES.md, or refine VISION.md's direction if the
@@ -221,11 +223,53 @@ confidence-weighted summary. Use effective confidence to weight applicability ju
 high-confidence entries strongly constrain recommendations, low-confidence entries are
 treated as tendencies rather than rules.
 
+### Feeding into /visionera
+When the analysis shifts thinking about the project's direction — a new paradigm, a competitor's
+approach, or a user need not yet captured — the findings can inform vision refinement. Suggest
+`/visionera` to revisit VISION.md with the new context.
+
 ### Feeding into /resonera
 When the analysis surfaces recommendations that require deliberation — competing approaches,
 unclear adoption cost, or tradeoffs the user needs to resolve — suggest `/resonera` to think
 it through before acting. Resonera can evaluate which recommendations are actually worth
 adopting and capture the reasoning in DECISIONS.md.
+
+---
+
+## Safety rails
+
+<critical>
+
+- NEVER modify code in the target project. Inspirera analyzes; other skills implement.
+- NEVER write to ISSUES.md or VISION.md without explicit user confirmation. Present findings
+  and get approval before filing.
+- NEVER present shallow analysis as deep insight. If you haven't read the source thoroughly,
+  say so.
+- NEVER recommend adoption without assessing fit. Every recommendation must consider the
+  target project's constraints, stack, and principles.
+- NEVER fabricate source content. Quote actual code and text from the source.
+
+</critical>
+
+---
+
+## Getting started
+
+### Analyze a GitHub repo
+```
+/inspirera https://github.com/org/repo
+```
+Reads the repo, maps its patterns to your current project.
+
+### Analyze an article or docs page
+```
+/inspirera https://example.com/blog/interesting-approach
+```
+Extracts transferable concepts and assesses applicability.
+
+### Feed findings into the development loop
+After analysis, file actionable findings to ISSUES.md for `/realisera` to pick up,
+or refine VISION.md if the research shifts your project's direction.
 
 ---
 

@@ -342,6 +342,11 @@ constraints and acceptance criteria.
 When inspirera's analysis recommends adopting patterns or libraries, planera can incorporate
 those recommendations into the plan's design section and task decomposition.
 
+### Planera is fed by /dokumentera (DTC pipeline)
+In the strict DTC pipeline, dokumentera writes intent docs first, then planera decomposes
+them into implementation tasks. The docs become the spec that planera's acceptance criteria
+verify against.
+
 ---
 
 ## Getting started
