@@ -287,13 +287,83 @@ After creating the design system, suggest concrete next steps:
 
 ## Refine mode
 
-*Added in Task 3.*
+Evolve an existing design system based on what's changed — new components, shifted aesthetic,
+expanded scope, or lessons learned from implementation.
+
+### Step 1: Read the current state
+
+1. Read current DESIGN.md — all token blocks, constraints, prose
+2. Read the codebase — same depth as Create Step 1, focused on what changed since DESIGN.md
+   was written (check git log, new components, new pages)
+3. Read VISION.md Identity section — has the verbal identity evolved?
+4. Read PROGRESS.md — what UI work has happened? What design decisions were made inline?
+5. Read ISSUES.md — any design-related issues logged?
+
+### Step 2: Propose changes
+
+Present your assessment:
+
+> Here's what's changed since the design system was written:
+> - New components [A, B] were built that aren't in the component contracts
+> - The color palette has drifted: [file:line] uses [value] not in the token set
+> - VISION.md Identity now says [X] — the visual system [does/doesn't] reflect that
+>
+> I'd suggest updating:
+> - [Section]: [what to change and why]
+
+Engage in a brief conversation to refine proposed changes. One question at a time. Shorter
+than creation — typically 2-4 exchanges.
+
+### Step 3: Update DESIGN.md
+
+Show the updated design system as a diff (what changed and why). Get explicit approval.
+Run validation after writing.
 
 ---
 
 ## Audit mode
 
-*Added in Task 3.*
+Verify the design system is being followed in practice. Two-phase check: deterministic
+validation (script), then agent-driven code analysis.
+
+### Step 1: Validate structure
+
+Run the bundled validation script:
+
+```bash
+python3 -m scripts.validate_design --design DESIGN.md --pretty
+```
+
+Report any structural issues: malformed YAML, missing sections, unresolved theme references,
+preserve mismatches.
+
+### Step 2: Check adherence
+
+Read the codebase looking for design drift:
+
+1. **Token usage** — are declared tokens actually used? Are there colors, fonts, or spacing
+   values in code that aren't in the token set?
+2. **Constraint violations** — if `<!-- design:constraints -->` prohibits shadows, search for
+   shadow classes or properties in the codebase
+3. **Component drift** — if `<!-- design:components -->` declares variants, are components
+   using undeclared variants or accepting prohibited props?
+4. **Consistency** — are similar UI elements styled consistently, or has ad-hoc styling crept in?
+
+### Step 3: Report
+
+Categorize findings by severity:
+
+- **Critical** — tokens in code that don't exist in DESIGN.md (uncontrolled styling)
+- **Warning** — declared tokens not used anywhere (dead tokens), mild inconsistencies
+- **Info** — suggestions for new tokens or constraints based on observed patterns
+
+Present findings with file:line references and suggested fixes. For each finding, offer to:
+- **Fix DESIGN.md** — add missing tokens or constraints
+- **File to ISSUES.md** — if the code is wrong (design is right, code drifted)
+- **Skip** — intentional or not worth fixing
+
+See `references/enforcement-patterns.md` for guidance on setting up framework-specific
+enforcement (linting, CI checks) beyond what the audit catches.
 
 ---
 
@@ -323,10 +393,68 @@ After creating the design system, suggest concrete next steps:
 
 ## Cross-skill integration
 
-*Added in Task 3.*
+Visualisera is part of a ten-skill ecosystem. It is the visual identity layer — the skill that
+defines how the project looks.
+
+### Visualisera reads /visionera output
+VISION.md's Identity section declares the verbal personality (bold, warm, playful, etc.).
+Visualisera reads this to propose visual tokens coherent with the declared identity. If
+Identity says "industrial and direct," visualisera proposes sharp edges and monospace type.
+Visionera reads DESIGN.md in return — neither writes the other's artifact.
+
+### Visualisera feeds /realisera
+DESIGN.md's tokens and constraints guide autonomous UI development. When realisera builds
+components or pages, it reads DESIGN.md to understand what colors, typography, spacing, and
+constraints to use. The design system prevents visual drift across cycles.
+
+### Visualisera is informed by /dokumentera
+DOCS.md tracks DESIGN.md in the artifact mapping. Dokumentera may document the design system
+as part of project documentation.
+
+### Visualisera is informed by /inspektera
+When inspektera audits architecture alignment or pattern consistency, design system adherence
+is a relevant dimension. Future integration may include design-specific audit dimensions.
+
+### Visualisera is informed by /profilera
+The decision profile captures aesthetic preferences — the user's established patterns around
+visual design, typography choices, and UI conventions. Visualisera reads these as defaults
+during the create conversation.
+
+### Visualisera is informed by /inspirera
+When inspirera analyzes external design systems or visual patterns, the findings can feed into
+visualisera's research step or refine mode. External design references enrich the conversation.
+
+### Visualisera is informed by /resonera
+When design decisions require deliberation — competing aesthetics, brand evolution, or
+significant visual pivots — suggest `/resonera` to think it through before committing to a
+new design direction.
 
 ---
 
 ## Getting started
 
-*Added in Task 3.*
+### New project — design before building
+
+1. `/visionera` — create VISION.md with Identity section (who the project IS)
+2. `/visualisera` — create DESIGN.md (how it LOOKS), coherent with the Identity
+3. `/realisera` — build UI to the design spec
+
+### Existing project — capture the visual identity
+
+1. `/visualisera` — reads existing styles, proposes tokens from what's already there
+2. Review and refine the generated DESIGN.md
+3. Set up enforcement (see `references/enforcement-patterns.md`)
+
+### Audit existing design
+
+```
+/visualisera
+```
+Select "Audit" mode. Validates structure and scans code for drift.
+
+### Refine after evolution
+
+```
+/visualisera
+```
+Select "Refine" mode. Reviews what's changed and proposes design system updates.
