@@ -12,6 +12,9 @@ A Claude Code skill marketplace. Ten skills — each a self-contained `SKILL.md`
 skills/<name>/SKILL.md          # Frontmatter + full workflow (the skill itself)
 skills/<name>/references/       # Supplementary docs, templates, schemas
 skills/<name>/scripts/          # Python helpers (stdlib only, no pip deps)
+references/ecosystem-spec.md    # Shared primitives spec (all skills must align)
+scripts/validate-ecosystem.py   # Ecosystem linter (pre-commit hook)
+.githooks/pre-commit            # Git hook running the linter
 registry.json                   # Skill index with versions and tags
 .claude-plugin/marketplace.json # Plugin marketplace manifest
 ```
@@ -40,9 +43,23 @@ cd skills/optimera && python3 -m scripts.analyze_experiments
 cd skills/realisera && python3 -m scripts.analyze_progress
 ```
 
+The repo-level `scripts/validate-ecosystem.py` checks all 10 SKILL.md files against `references/ecosystem-spec.md`. Run from the repo root:
+```bash
+python3 scripts/validate-ecosystem.py
+```
+
+## Ecosystem linter
+
+A pre-commit hook runs the linter on any commit touching `skills/*/SKILL.md` or `references/ecosystem-spec.md`. Enable with:
+```bash
+git config core.hooksPath .githooks
+```
+The linter blocks commits with alignment errors and warns on advisory issues.
+
 ## Key conventions
 
 - SKILL.md is the single source of truth for each skill's behavior — workflow steps, trigger patterns, output format, safety rails, and cross-skill integration are all defined there
+- Shared primitives (confidence scale, severity levels, structural conventions) are defined in `references/ecosystem-spec.md` — all SKILL.md files must align with this spec
 - Skills never push to remote repos or modify VISION.md/OBJECTIVE.md during execution cycles
 - Conventional commits: feat/fix/docs/refactor/chore/test
 - realisera and optimera dispatch implementation work to Sonnet agents in worktrees, then verify before committing
