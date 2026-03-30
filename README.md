@@ -53,7 +53,7 @@ Each skill generates markdown artifacts in the target project (not in this repo)
 | `OBJECTIVE.md` | optimera | optimera |
 | `EXPERIMENTS.md` | optimera | optimera |
 | `HEALTH.md` | inspektera | realisera, planera, inspektera |
-| `DOCS.md` | dokumentera | dokumentera, inspektera |
+| `DOCS.md` | dokumentera | all skills (artifact path resolution) |
 | `PROFILE.md` | profilera | all skills |
 
 ---
