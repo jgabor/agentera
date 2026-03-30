@@ -198,7 +198,7 @@ specific project.
 
 ## Cross-skill integration
 
-Inspirera is part of an eight-skill ecosystem. Its analysis feeds naturally into the other skills.
+Inspirera is part of a nine-skill ecosystem. Its analysis feeds naturally into the other skills.
 
 ### Artifact path resolution
 
