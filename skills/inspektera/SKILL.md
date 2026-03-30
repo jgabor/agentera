@@ -258,8 +258,12 @@ After all agents complete:
 
 1. **Filter by confidence** — discard findings below 50. Findings 50-69 are marked as "info"
    regardless of their apparent severity.
-2. **Deduplicate** — multiple dimensions may flag the same underlying issue. Merge into one
-   finding with the highest confidence score.
+2. **Deduplicate** — multiple dimensions may flag the same underlying issue. Merge using a
+   three-tier preference: (1) keep the finding with the fullest context (the one that
+   explains the most about the issue), (2) if context is comparable, prefer the finding
+   from the most evidence-rich dimension, (3) if still tied, prefer the most recent.
+   Preserve complementary evidence from discarded findings as additional context in the
+   merged entry rather than dropping it entirely.
 3. **Cross-reference** — check findings against DECISIONS.md and ISSUES.md:
    - If a finding matches a known decision → discard or downgrade to info with a note
    - If a finding matches a known issue → note "already tracked" and skip
