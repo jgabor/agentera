@@ -1,8 +1,8 @@
 # agent-skills
 
-Personal Claude Code skill marketplace. Nine skills that form a connected ecosystem for
-autonomous software development — from vision and deliberation through planning, building,
-optimizing, auditing, documenting, and learning from your own decision patterns.
+Claude Code skill marketplace. Nine skills that form a connected ecosystem for autonomous
+software development — from vision and deliberation through planning, building, optimizing,
+auditing, documenting, and learning from your own decision patterns.
 
 ## Skills
 
