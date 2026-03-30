@@ -164,8 +164,8 @@ selection — e.g., if the output shows no test cycles, that's a signal.
    Run from the profilera skill directory (typically
    `~/.claude/plugins/marketplaces/agent-skills/skills/profilera`).
    This outputs a summary table with effective confidence after dormancy decay.
-   Use it to weight decisions: high effective confidence entries (0.65+) are strong
-   constraints, low effective confidence entries (<0.45) are suggestions. Read full
+   Use it to weight decisions: high effective confidence entries (65+) are strong
+   constraints, low effective confidence entries (<45) are suggestions. Read full
    `~/.claude/profile/PROFILE.md` for complete rule details when needed.
    If the script or PROFILE.md is missing, proceed without persona grounding but flag it:
    "Consider running /profilera to generate a decision profile — it helps me make choices

@@ -222,6 +222,7 @@ script (`python3 -m scripts.effective_profile` from the profilera skill director
 confidence-weighted summary. Use effective confidence to weight applicability judgments —
 high-confidence entries strongly constrain recommendations, low-confidence entries are
 treated as tendencies rather than rules.
+If the script or PROFILE.md is missing, proceed without persona grounding.
 
 ### Feeding into /visionera
 When the analysis shifts thinking about the project's direction — a new paradigm, a competitor's

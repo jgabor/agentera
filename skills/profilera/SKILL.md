@@ -343,6 +343,24 @@ If any entries were challenged, mention them by name so the user knows what shif
 
 ---
 
+## Safety rails
+
+<critical>
+
+- NEVER fabricate decision patterns. Every profile entry must be grounded in observed evidence
+  from session history, memory files, configs, or conversation data.
+- NEVER assign confidence higher than the evidence warrants. A single data point is 30-49,
+  not 70+, regardless of how insightful the decision sounds.
+- NEVER smooth over contradictions. When evidence conflicts, record tensions rather than
+  forcing a coherent narrative.
+- NEVER modify the user's session history, memory files, or config files. Profilera reads
+  these sources; it never writes to them.
+- NEVER share profile contents with external services or include them in commits.
+
+</critical>
+
+---
+
 ## Cross-skill integration
 
 Profilera is part of a ten-skill ecosystem. The decision profile it produces is consumed by
