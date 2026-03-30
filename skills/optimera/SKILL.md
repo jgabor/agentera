@@ -199,8 +199,8 @@ Read the optimization state to understand where things stand.
    Run from the profilera skill directory (typically
    `~/.claude/plugins/marketplaces/agent-skills/skills/profilera`).
    This outputs a summary table with effective confidence after dormancy decay.
-   Use it to calibrate experimentation style: high effective confidence entries (0.65+)
-   are strong constraints on approach, low effective confidence entries (<0.45) are
+   Use it to calibrate experimentation style: high effective confidence entries (65+)
+   are strong constraints on approach, low effective confidence entries (<45) are
    suggestions that can be overridden. Read full `~/.claude/profile/PROFILE.md` for
    complete rule details when needed.
    If the script or PROFILE.md is missing, proceed without persona grounding but flag it:

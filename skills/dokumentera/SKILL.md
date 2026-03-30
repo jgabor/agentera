@@ -305,7 +305,7 @@ Categorize findings by severity:
 
 - **Critical** — will cause user errors (documented APIs that don't exist, wrong setup steps)
 - **Warning** — may cause confusion (stale content, redundancies)
-- **Info** — minor (slightly outdated examples, wording inconsistencies)
+- **Info** — cosmetic, low-impact (slightly outdated examples, wording inconsistencies)
 
 Present findings to the user with suggested fixes. For each finding, offer to:
 - **Fix it** — update the documentation to match reality
@@ -344,7 +344,7 @@ Update the index with:
 
 ## Cross-skill integration
 
-Dokumentera is part of the skill ecosystem. It is the documentation layer — the "D" in DTC.
+Dokumentera is part of a ten-skill ecosystem. It is the documentation layer — the "D" in DTC.
 
 ### Dokumentera feeds /planera (DTC pipeline)
 In the strict DTC pipeline, dokumentera writes intent docs first, then planera breaks them
