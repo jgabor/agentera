@@ -75,6 +75,9 @@ frustrations, specific workflows. Who reaches for this tool and why?]
 ## Direction
 [Where this project is heading. The kind of capabilities it should grow toward.
 Aspirational, not prescriptive.]
+
+## Identity
+[What this project IS as an entity — personality, voice, emotional register, naming.]
 ```
 
 The exact structure may vary — what matters is that the vision is ambitious enough to

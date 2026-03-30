@@ -70,12 +70,31 @@ of the world where this project has succeeded.]
 ## Direction
 [Where this project is heading. Aspirational, not prescriptive. The kind of capabilities
 it should grow toward.]
+
+## Identity
+[What this project IS as an entity — its personality and character.]
+
+### Personality
+[If this product were a person, what adjectives describe it? Bold? Quiet? Playful? Industrial?]
+
+### Voice
+[How does it communicate? Direct and terse? Warm and encouraging? Technical and precise?]
+
+### Emotional Register
+[What does it feel like to use? Empowering? Calming? Energizing? What emotion does a
+successful interaction leave behind?]
+
+### Naming
+[How are things named? What conventions, cultural references, or philosophy guide naming
+of features, modules, commands, and concepts?]
 ```
 
 The exact structure may vary — what matters is that the vision is ambitious enough to sustain
 months of autonomous development, the personas are concrete enough to resolve "who is this
-for?" debates, and the direction is clear enough for an autonomous agent to derive what to
-build next.
+for?" debates, the direction is clear enough for an autonomous agent to derive what to build
+next, and the identity is vivid enough to guide every user-facing decision from error messages
+to module names. If the project has a DESIGN.md, the Identity section should be coherent with
+the visual system declared there.
 
 ---
 
@@ -112,7 +131,8 @@ distinguishes visionera from a blank-slate interview — you arrive informed.
 4. **Read key source files** — enough to understand what the software does today
 5. **Read PROGRESS.md, ISSUES.md, DECISIONS.md** if they exist — understand the trajectory
 6. **Read HEALTH.md** if it exists — understand current quality
-7. `git log --oneline -30` — understand the recent story
+7. **Read DESIGN.md** if it exists — understand the existing visual identity and design system
+8. `git log --oneline -30` — understand the recent story
 
 Synthesize your understanding into a brief summary: "Here's what I see. The project currently
 does X, is built with Y, and has been moving toward Z. The strongest patterns are A. The
@@ -170,7 +190,17 @@ cover these areas:
 4. **The direction** — "Given all of that — where is this heading? Not features. Capabilities.
    What kind of tool does this become in a year? What would surprise you?"
 
-5. **The tension** — "What's the hardest tension in this vision? Where do the principles
+5. **The identity** — "If this product were a person, how would you describe its personality?
+   Is it bold and direct, or quiet and precise? How does it talk to the user — warm? terse?
+   playful? And how should it feel to use? What emotion does a successful interaction leave?"
+
+   Also explore naming: "How do you name things? Is there a convention, a cultural reference,
+   a philosophy? What should a new feature's name *sound like*?"
+
+   If DESIGN.md exists, reference it: "Your visual system says X — does the verbal identity
+   match that? If the design is brutalist, is the voice also sharp and direct?"
+
+6. **The tension** — "What's the hardest tension in this vision? Where do the principles
    conflict? What will you have to give up to get what matters most?"
 
    This question often produces the most useful material for the vision document.
