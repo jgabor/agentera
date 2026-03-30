@@ -132,27 +132,27 @@ For each category:
 - Look for the *why* behind each decision, not just the *what*
 - Note exceptions or cases where the usual rule was overridden
 
-#### Assign confidence (numeric, 0.0-1.0)
+#### Assign confidence (numeric, 0-100)
 
 Decision patterns are empirically verifiable — you can check git history and configs to see
 if someone actually follows their stated convention. The confidence scale reflects this:
 
 | Range | Label | Criteria |
 |-------|-------|----------|
-| 0.85-0.95 | Shipped consistently | Appears in configs/code across 3+ projects, verifiable from artifacts |
-| 0.65-0.80 | Established | Consistent across sessions, corroborated by behavior |
-| 0.45-0.60 | Emerging | Observed multiple times but limited context or minor variations |
-| 0.25-0.40 | Single signal | One data point or inferred from adjacent patterns |
-| 0.10-0.20 | Speculative | No direct evidence, extrapolated from related decisions |
+| 90-100 | Shipped consistently | Appears in configs/code across 3+ projects, verifiable from artifacts |
+| 70-89 | Established | Consistent across sessions, corroborated by behavior |
+| 50-69 | Emerging | Observed multiple times but limited context or minor variations |
+| 30-49 | Single signal | One data point or inferred from adjacent patterns |
+| 0-29 | Speculative | No direct evidence, extrapolated from related decisions |
 
 **Bias check**: Confidence is earned through evidence, not assigned by how insightful the
-decision sounds. A pithy design principle observed once is 0.30, not 0.75.
+decision sounds. A pithy design principle observed once is 30, not 75.
 
 #### Assign permanence class
 
 Permanence captures how *stable* a decision domain is — independent of how *confident* you
-are about it. You can be highly confident about something that will change (0.85, situational)
-or uncertain about something deep (0.35, stable).
+are about it. You can be highly confident about something that will change (85, situational)
+or uncertain about something deep (35, stable).
 
 | Class | Domain | Timescale |
 |-------|--------|-----------|
@@ -204,7 +204,7 @@ If a previous version exists:
 <!-- Generated: {date} | Data: {date range from earliest to latest timestamp} -->
 <!-- Sources: {N} memory files, {N} history prompts, {N} conversation exchanges, {N} configs -->
 <!-- Decay parameters: stable λ=0.001, durable λ=0.005, situational λ=0.015 -->
-<!-- Formula: effective_conf = conf × e^(-λ × days_since_confirmed), floor 0.20 -->
+<!-- Formula: effective_conf = conf × e^(-λ × days_since_confirmed), floor 20 -->
 <!-- Regenerate with /profilera -->
 
 ## How to Use This Profile
@@ -212,10 +212,10 @@ If a previous version exists:
 This profile captures decision-making patterns extracted from {N} months of Claude Code
 sessions across {N} projects. Each entry carries inline metadata:
 
-`conf:0.75 | perm:durable | first:2026-01-15 | confirmed:2026-03-28 | challenged:—`
+`conf:75 | perm:durable | first:2026-01-15 | confirmed:2026-03-28 | challenged:—`
 
-- **conf** (0.0-1.0): Evidence-based confidence. 0.85+ shipped consistently, 0.65-0.80
-  established, 0.45-0.60 emerging, 0.25-0.40 single signal, 0.10-0.20 speculative.
+- **conf** (0-100): Evidence-based confidence. 90+ shipped consistently, 70-89
+  established, 50-69 emerging, 30-49 single signal, 0-29 speculative.
 - **perm**: How stable the decision domain is. stable (decade), durable (year),
   situational (month).
 - **first/confirmed/challenged**: When the decision was first observed, last confirmed,
@@ -236,7 +236,7 @@ information they seek before deciding]
 ## [Category Name]
 
 ### [Decision Name]
-`conf:0.75 | perm:durable | first:2026-01-15 | confirmed:2026-03-28 | challenged:—`
+`conf:75 | perm:durable | first:2026-01-15 | confirmed:2026-03-28 | challenged:—`
 
 - **Rule**: [Imperative statement an agent can follow directly]
 - **When**: [Specific conditions or triggers for this rule]
@@ -322,8 +322,8 @@ Ask the user to: **Confirm**, **Challenge**, or **Skip**.
 
 For each response:
 
-- **Confirm**: Bump `conf` by 0.05 (cap at 0.95). Update `confirmed` to today's date.
-- **Challenge**: Soften `conf` by 0.10 (floor at 0.10). Update `challenged` to today's date.
+- **Confirm**: Bump `conf` by 5 (cap at 95). Update `confirmed` to today's date.
+- **Challenge**: Soften `conf` by 10 (floor at 10). Update `challenged` to today's date.
   Append a tension entry to the `## Tensions` section:
   ```
   ### {today} — {decision name} challenged during validation

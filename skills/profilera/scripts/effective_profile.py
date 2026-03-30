@@ -36,7 +36,7 @@ HALF_LIVES = {
     "unknown": 69,  # ~2.5 months
 }
 
-CONFIDENCE_FLOOR = 0.20
+CONFIDENCE_FLOOR = 20
 VALIDATE_COUNT = 6
 
 # Regex for the inline metadata line
@@ -142,7 +142,7 @@ def score_for_validation(entry: dict) -> float:
     has_tension = 1.0 if entry["challenged"] != "—" else 0.0
 
     # How far from center (extremes are more interesting)
-    extremity = abs(effective - 0.5) / 0.5
+    extremity = abs(effective - 50) / 50
 
     return 0.35 * decay_gap + 0.30 * staleness + 0.20 * has_tension + 0.15 * extremity
 
@@ -156,9 +156,9 @@ def format_summary_table(entries: list[dict]) -> str:
         "|-------|------|-----|------|--------|",
     ]
     for e in sorted_entries:
-        stale = "Yes" if e["decay_gap"] >= 0.05 else "No"
+        stale = "Yes" if e["decay_gap"] >= 5 else "No"
         lines.append(
-            f"| {e['name']} | {e['conf']:.2f} | {e['effective']:.2f} "
+            f"| {e['name']} | {e['conf']:.0f} | {e['effective']:.0f} "
             f"| {e['perm']} | {stale} |"
         )
 
@@ -177,15 +177,15 @@ def select_for_validation(entries: list[dict]) -> list[dict]:
         half_life = HALF_LIVES.get(perm, HALF_LIVES["unknown"])
 
         reasons = []
-        if conf - effective >= 0.10:
+        if conf - effective >= 10:
             reasons.append("significant decay gap")
         if e["days_stale"] >= half_life:
             reasons.append("stale relative to permanence")
         if e["challenged"] != "—":
             reasons.append("previously challenged")
-        if effective >= 0.80:
+        if effective >= 80:
             reasons.append("high confidence — worth periodic check")
-        if effective <= 0.30:
+        if effective <= 30:
             reasons.append("low confidence — confirm or drop")
 
         scored.append(
