@@ -358,7 +358,7 @@ Feed actionable findings into the rest of the suite:
 
 ## Cross-skill integration
 
-Inspektera is part of an eight-skill ecosystem. It is the feedback loop — the skill that tells
+Inspektera is part of a nine-skill ecosystem. It is the feedback loop — the skill that tells
 realisera whether its work is making things better.
 
 ### Inspektera feeds /realisera

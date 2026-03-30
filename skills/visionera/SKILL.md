@@ -256,7 +256,7 @@ Show the updated vision as a diff (what changed and why). Get explicit approval 
 
 ## Cross-skill integration
 
-Visionera is part of an eight-skill ecosystem. It is the strategic layer — the skill that
+Visionera is part of a nine-skill ecosystem. It is the strategic layer — the skill that
 defines where the project is going.
 
 ### Visionera produces what /realisera consumes

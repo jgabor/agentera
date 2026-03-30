@@ -312,7 +312,7 @@ When all tasks are complete (or the plan is explicitly discarded):
 
 ## Cross-skill integration
 
-Planera is part of an eight-skill ecosystem. It is the bridge between deliberation and execution.
+Planera is part of a nine-skill ecosystem. It is the bridge between deliberation and execution.
 
 ### Planera is fed by /resonera
 When resonera's deliberation concludes with a decision to build something, the natural next
