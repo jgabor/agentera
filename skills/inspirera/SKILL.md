@@ -200,6 +200,12 @@ specific project.
 
 Inspirera is part of an eight-skill ecosystem. Its analysis feeds naturally into the other skills.
 
+### Artifact path resolution
+
+Before writing to any project artifact, check if DOCS.md exists in the project root. If it
+has an Artifact Mapping section, use the path specified for each canonical filename (ISSUES.md,
+VISION.md). If DOCS.md doesn't exist or has no entry, default to the project root.
+
 ### Feeding into /realisera
 Add actionable findings to the project's ISSUES.md, or refine VISION.md's direction if the
 inspiration shifts thinking. The next realisera cycle picks up the changes automatically.
