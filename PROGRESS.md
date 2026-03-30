@@ -95,3 +95,43 @@
 **Inspiration**: None — mechanical integration sweep
 **Discovered**: No new issues. Plan complete — all 5 tasks shipped.
 **Next**: Plan complete. visualisera is fully integrated. Consider /inspektera for a health check on the expanded 10-skill suite.
+
+## Cycle 13 — 2026-03-30
+
+**What**: Authored ecosystem-spec.md defining all 9 shared primitives (Task 1 of alignment plan)
+**Commit**: ad5ba73 feat: add ecosystem spec, plan, and decisions for cross-skill alignment
+**Inspiration**: knowledge-synthesis skill (Anthropic) — multi-signal dedup and confidence patterns; CONNECTORS.md define-once-reference-everywhere architecture
+**Discovered**: ISS-7 (inspektera dedup uses single-signal "highest confidence wins"). Profilera missing safety rails section (will be fixed in Task 4).
+**Next**: Task 2 (build ecosystem linter) or Task 3 (migrate profilera to 0-100) — both unblocked
+
+## Cycle 14 — 2026-03-30
+
+**What**: Built ecosystem linter (scripts/validate-ecosystem.py) — 8 deterministic + 1 advisory check, 30ms runtime
+**Commit**: 09ada50 feat: add ecosystem linter for shared primitive validation
+**Inspiration**: None — mechanical implementation of spec checks
+**Discovered**: 7 known errors confirmed by linter (profilera scale, safety rails; dokumentera severity, ecosystem language; inspirera fallback; realisera/optimera thresholds). All expected pre-migration violations.
+**Next**: Task 3 (migrate profilera to 0-100) — unblocked, then Task 4 (fix all violations) and Task 5 (pre-commit hook)
+
+## Cycle 15 — 2026-03-30
+
+**What**: Migrated profilera from 0.0-1.0 to 0-100 confidence scale (SKILL.md + effective_profile.py)
+**Commit**: c48948e feat(profilera): migrate confidence scale from 0.0-1.0 to 0-100
+**Inspiration**: None — mechanical scale migration
+**Discovered**: No new issues. Decay formula proportional results verified identical at both scales.
+**Next**: Task 4 (align all SKILL.md files with spec) — now unblocked (depends on Tasks 1+2+3, all complete)
+
+## Cycle 16 — 2026-03-30
+
+**What**: Fixed all 6 linter errors across 5 skills — 0 errors, 10/10 skills pass
+**Commit**: 6859e4d fix: align all SKILL.md files with ecosystem spec
+**Inspiration**: None — mechanical fixes guided by linter output
+**Discovered**: No new issues. 2 advisory warnings remain (artifact format details — deferred).
+**Next**: Task 5 (wire pre-commit hook + update CLAUDE.md) — final task
+
+## Cycle 17 — 2026-03-30
+
+**What**: Wired pre-commit hook + updated CLAUDE.md repo layout (Task 5). Plan complete — all 5 tasks shipped.
+**Commit**: 53cff23 feat: add pre-commit hook for ecosystem linter and update repo layout
+**Inspiration**: None — mechanical hookup
+**Discovered**: No new issues.
+**Next**: Plan complete. Ecosystem alignment infrastructure shipped. Enable hook with `git config core.hooksPath .githooks`. Consider /inspektera for a health check.
