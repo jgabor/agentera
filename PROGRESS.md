@@ -191,3 +191,11 @@
 **Inspiration**: None — bug discovered during hej briefing when PROFILE.md showed "not found"
 **Discovered**: DOCS.md already mapped PROFILE.md correctly; the root cause was hej's SKILL.md not surfacing the global path, causing agents to glob the project root instead
 **Next**: All issues clear. Consider vision-driven work.
+
+## Cycle 25 — 2026-03-31
+
+**What**: Added visual identity primitives as section 12 of ecosystem spec (Plan Task 1) — skill glyphs, semantic tokens, composition rules, token-to-artifact mapping
+**Commit**: 75d5660 feat: add visual identity primitives to ecosystem spec (Plan Task 1)
+**Inspiration**: Decision 11 — visual identity system deliberated via /resonera
+**Discovered**: No new issues
+**Next**: Tasks 2-6 now unblocked — hej dashboard (Task 2), artifact templates (Task 3), skill output instructions (Tasks 4-6)
