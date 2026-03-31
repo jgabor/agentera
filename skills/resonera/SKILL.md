@@ -95,7 +95,7 @@ a report.
 
 ---
 
-## Getting started
+## Starting a session
 
 ### If a topic is provided
 
