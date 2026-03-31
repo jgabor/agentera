@@ -332,6 +332,10 @@ declared in DESIGN.md. Visionera reads DESIGN.md for context but never writes it
 owns all DESIGN.md writes. If visualisera is not installed, visionera still reads DESIGN.md
 if present (the file is framework-agnostic markdown).
 
+### Visionera reads /dokumentera output
+DOCS.md provides artifact path resolution for VISION.md placement. Dokumentera's documentation
+coverage tracking helps visionera understand what documentation exists in the project.
+
 ### Visionera feeds /planera
 When a new or refined vision changes the project's direction, planera can produce a plan to
 realign the codebase with the updated vision.

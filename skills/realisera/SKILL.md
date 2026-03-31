@@ -400,6 +400,15 @@ task's behavioral acceptance criteria as exit conditions. After committing, upda
 status to `complete`. If reality diverges from the plan, add a Surprise entry. When all tasks
 are complete, archive PLAN.md to `.planera/archive/` and resume vision-driven work selection.
 
+### Realisera reads /dokumentera output
+DOCS.md provides artifact path resolution that realisera checks before reading or writing
+any artifact. In the DTC pipeline, dokumentera writes intent docs that feed planera, which
+feeds realisera.
+
+### Realisera reads /visualisera output
+DESIGN.md provides visual identity context (design tokens, constraints) that realisera
+respects when building user-facing features.
+
 ### Realisera is audited by /inspektera
 HEALTH.md findings filed to ISSUES.md become candidates for work selection. Run `/inspektera`
 every 5-10 cycles to ensure forward progress isn't accumulating structural debt. If HEALTH.md

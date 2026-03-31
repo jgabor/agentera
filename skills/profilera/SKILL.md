@@ -408,6 +408,10 @@ Inspektera reads the decision profile to calibrate what "healthy" means for this
 Quality preferences, complexity tolerance, and pattern priorities from the profile weight
 the grading and determine which findings matter most.
 
+### Profilera is consumed by /planera
+Planera reads the decision profile during its Orient step to calibrate planning depth,
+pattern preferences, and constraint priorities.
+
 ### Effective profile script
 
 All consuming skills use the same script for consistency:

@@ -353,6 +353,11 @@ constraints and acceptance criteria.
 When inspirera's analysis recommends adopting patterns or libraries, planera can incorporate
 those recommendations into the plan's design section and task decomposition.
 
+### Planera reads /visionera output
+VISION.md provides the north star that planera reads during its Orient step. When visionera
+creates or refines the vision, planera's next planning session aligns with the updated
+direction.
+
 ### Planera is fed by /dokumentera (DTC pipeline)
 In the strict DTC pipeline, dokumentera writes intent docs first, then planera decomposes
 them into implementation tasks. The docs become the spec that planera's acceptance criteria

@@ -240,6 +240,10 @@ When the analysis shifts thinking about the project's direction — a new paradi
 approach, or a user need not yet captured — the findings can inform vision refinement. Suggest
 `/visionera` to revisit VISION.md with the new context.
 
+### Feeding into /planera
+When the analysis recommends adopting patterns or libraries, planera can incorporate those
+recommendations into a plan's design section and task decomposition.
+
 ### Feeding into /resonera
 When the analysis surfaces recommendations that require deliberation — competing approaches,
 unclear adoption cost, or tradeoffs the user needs to resolve — suggest `/resonera` to think
