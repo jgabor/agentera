@@ -376,3 +376,103 @@ existing mechanisms (trigger patterns, DECISIONS.md format, planera approval gat
 
 **Confidence**: firm
 **Feeds into**: resonera SKILL.md (pushback patterns)
+
+---
+
+## Decision 11 — 2026-03-31
+
+**Question**: How should agentera express its identity visually across skills and artifacts?
+**Context**: The ecosystem has 11 skills and up to 10 state artifacts, all producing plain text
+output. The verbal identity is strong (Swedish names, workshop-floor vocabulary, direct voice)
+but the visual output has no distinctive character. A box-drawing logo was created. The goal:
+visual formatting that elicits a "whoa" reaction while remaining conservative and tasteful.
+**Alternatives**:
+- [Framed precision] Box-drawing borders framing entire outputs, terminal UI panel style — rejected: too contained, too "UI panel," doesn't breathe
+- [Open structure] No outer frames, breathing room, `───` dividers, Unicode markers — chosen: craft is in precision and whitespace, not enclosure
+- [Ephemeral only] Visual treatment only in skill output, not artifacts — rejected: user wants full consistency where artifacts and output look like the same system
+- [Custom format replacing Markdown] Replace `##` headers with `───` dividers in artifacts — rejected: artifacts must stay valid Markdown for portability
+**Choice**: Open-structure visual identity system layered on standard Markdown. Full Unicode
+vocabulary with per-skill glyphs, semantic status/severity/confidence tokens, and the agentera
+logo at key moments. Section dividers (`─── label ───`) as the primary structural element. Hej
+dashboard as the reference composition.
+**Reasoning**: The key insight is that craft and density are the same move — every visual element
+must carry semantic weight. The vocabulary divides into three categories: (1) skill identity
+glyphs — one unique geometric Unicode character per skill, appearing in section headers as subtle
+signatures; (2) semantic tokens — status, severity, confidence, and trends expressed as single
+characters with escalating visual weight; (3) structural tokens — section dividers, bullets,
+separators, and progress bars. The logo uses box-drawing characters exclusively, keeping it
+visually distinct from everything else. Artifacts stay valid Markdown with the visual vocabulary
+layered within sections. The hej dashboard demonstrates the composition pattern: logo at top,
+data grid with skill glyphs as markers, narrative summary, severity-marked attention items, and
+target-skill-glyph routing.
+
+### Visual Token Vocabulary
+
+| Category | Token | Code | Meaning |
+|----------|-------|------|---------|
+| hej | 🞔 | U+1F794 | angular hub |
+| realisera | ⧉ | U+29C9 | joined building blocks |
+| inspektera | ⛶ | U+26F6 | viewfinder frame |
+| resonera | ❈ | U+2748 | spark of insight |
+| planera | ≡ | U+2261 | structured layers |
+| visionera | ⛥ | U+26E5 | guiding star |
+| optimera | ⎘ | U+2398 | measurement |
+| dokumentera | ▤ | U+25A4 | text on page |
+| profilera | ♾ | U+267E | permanent mark |
+| inspirera | ⬚ | U+2B1A | frame to fill |
+| visualisera | ◰ | U+25F0 | design grid |
+| Status: complete | ■ | U+25A0 | filled square |
+| Status: in-progress | ▣ | U+25A3 | nested square |
+| Status: open | □ | U+25A1 | empty square |
+| Status: blocked | ▨ | U+25A8 | crosshatch square |
+| Severity: critical | ⇶ | U+21F6 | triple arrow |
+| Severity: degraded | ⇉ | U+21C9 | double arrow |
+| Severity: annoying | ⇢ | U+21E2 | dashed arrow |
+| Confidence: firm | ━ | U+2501 | heavy line |
+| Confidence: provisional | ─ | U+2500 | normal line |
+| Confidence: exploratory | ┄ | U+2504 | dashed line |
+| Trend: improving | ⮉ | U+2B89 | up arrow |
+| Trend: degrading | ⮋ | U+2B8B | down arrow |
+
+### Composition Rules
+
+| Rule | Detail |
+|------|--------|
+| Logo placement | Key moments only (hej dashboard, major completions) |
+| Skill introduction | `─── glyph skillname · context ───` |
+| Section headers | Clean labels, no glyphs |
+| Breathing room | Blank lines between sections |
+| Narrative position | Summaries close sections, not open them |
+| Markdown layering | All artifacts stay valid Markdown; visual tokens layer within |
+| Box-drawing scope | Logo only — no frames anywhere else |
+
+### Hej Dashboard Reference Composition
+
+```
+┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
+├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
+┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
+
+─── status ─────────────────────────────
+
+  ⛶ health    ⮉ B+ (coupling: C)
+  ⇶ issues    2 critical · 1 degraded
+  ≡ plan      ██████▓▓░░ 6/10
+  ⎘ optim     latency 230ms → 200ms
+  ♾ profile   loaded
+
+  Cycle 5 shipped auth middleware and rate
+  limiting. Health improved but coupling drags.
+
+─── attention ──────────────────────────
+
+  ⇶ 2 critical issues need attention
+  ⇉ HEALTH.md stale (18 days)
+
+─── next ───────────────────────────────
+
+  suggested → ⛶ /inspektera (health stale)
+```
+
+**Confidence**: firm
+**Feeds into**: DESIGN.md (visual token system)
