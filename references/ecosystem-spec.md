@@ -301,3 +301,114 @@ PROGRESS.md inspection.
 optimera), check that the `## Exit signals` section contains both "3" (the
 threshold) and a reference to PROGRESS.md or consecutive failure detection (`loop-guard`). Advisory
 for all other skills.
+
+## 12. Visual Identity
+
+The ecosystem has a shared visual vocabulary defined in DESIGN.md (the project-level visual
+identity, maintained by visualisera). This section defines the ecosystem-level conventions
+that all SKILL.md files follow when formatting output and artifact content.
+
+DESIGN.md is the source of truth for token definitions. This spec defines how skills use
+those tokens — introduction patterns, semantic roles, and composition rules. Skills include
+actual glyph characters inline in their output format examples (they run in target projects
+without access to this repo's DESIGN.md).
+
+### Skill glyphs
+
+Each skill has a unique Unicode glyph used as a subtle signature in output.
+
+| Skill | Glyph | Code | Meaning |
+|-------|-------|------|---------|
+| hej | 🞔 | U+1F794 | angular hub |
+| realisera | ⧉ | U+29C9 | joined building blocks |
+| inspektera | ⛶ | U+26F6 | viewfinder frame |
+| resonera | ❈ | U+2748 | spark of insight |
+| planera | ≡ | U+2261 | structured layers |
+| visionera | ⛥ | U+26E5 | guiding star |
+| optimera | ⎘ | U+2398 | measurement |
+| dokumentera | ▤ | U+25A4 | text on page |
+| profilera | ♾ | U+267E | permanent mark |
+| inspirera | ⬚ | U+2B1A | frame to fill |
+| visualisera | ◰ | U+25F0 | design grid |
+
+### Semantic tokens
+
+Six token families express status, urgency, certainty, and direction.
+
+**Status** (task/item completion — square fill progression):
+
+| State | Glyph | Code |
+|-------|-------|------|
+| complete | ■ | U+25A0 |
+| in-progress | ▣ | U+25A3 |
+| open | □ | U+25A1 |
+| blocked | ▨ | U+25A8 |
+
+**Severity** (issue urgency — rightward arrows, more arrows = more serious):
+
+| Level | Glyph | Code |
+|-------|-------|------|
+| critical | ⇶ | U+21F6 |
+| degraded | ⇉ | U+21C9 |
+| annoying | ⇢ | U+21E2 |
+
+**Confidence** (decision certainty — box-drawing line weight):
+
+| Level | Glyph | Code |
+|-------|-------|------|
+| firm | ━ | U+2501 |
+| provisional | ─ | U+2500 |
+| exploratory | ┄ | U+2504 |
+
+**Trends** (direction of change):
+
+| Direction | Glyph | Code |
+|-----------|-------|------|
+| improving | ⮉ | U+2B89 |
+| degrading | ⮋ | U+2B8B |
+
+**Structural** (layout primitives):
+
+| Element | Glyph/Pattern | Code |
+|---------|---------------|------|
+| section divider | `─── label ───────` | U+2500 |
+| list item | ▸ | U+25B8 |
+| inline separator | · | U+00B7 |
+| flow / target | → | U+2192 |
+| progress bar | █▓░ | U+2588/2593/2591 |
+
+### Composition rules
+
+- **Skill introduction**: every skill opens with `─── glyph skillname · context ───`
+- **Logo placement**: the agentera logo (box-drawing characters) appears at key moments
+  only — hej dashboard, major completions. Not every skill invocation.
+- **Open structure**: no outer frames except the logo. Breathing room (blank lines) between
+  sections. Section headers are clean labels — no glyphs in `##` Markdown headers.
+- **Narrative position**: summaries close sections, not open them.
+- **Markdown layering**: all artifacts stay valid standard Markdown. Visual tokens layer
+  within sections alongside existing `##` headers, `**bold**` labels, and tables.
+
+### Token-to-artifact mapping
+
+| Artifact | Token families used |
+|----------|---------------------|
+| PLAN.md | Status (■/▣/□/▨) for task states |
+| ISSUES.md | Severity (⇶/⇉/⇢) in issue headings |
+| DECISIONS.md | Confidence (━/─/┄) alongside confidence labels |
+| HEALTH.md | Trends (⮉/⮋) for trajectory, severity for findings |
+| PROGRESS.md | Status (■) for cycle completion markers |
+| VISION.md | Structural (▸, ·) for principles and direction |
+| DOCS.md | Structural (▸, ·) for index, status tokens for coverage |
+
+### Rules
+
+- Skills producing formatted output MUST use their assigned glyph in the skill
+  introduction pattern
+- Skills producing or consuming artifacts SHOULD use the token families specified
+  in the token-to-artifact mapping
+- Semantic tokens augment existing text labels — they do not replace them
+  (`⇶ critical` not just `⇶`)
+- New skills MUST be assigned a glyph in DESIGN.md before their SKILL.md is finalized
+
+**Linter check**: Advisory — presence of skill glyph in SKILL.md output format sections.
+Not deterministic because output format instructions vary by skill.
