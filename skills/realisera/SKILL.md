@@ -145,6 +145,9 @@ Each cycle opens with the skill introduction: `─── ⧉ realisera · cycle 
 
 ### Step 1: Orient
 
+Read VISION.md, PROGRESS.md, ISSUES.md, and HEALTH.md in parallel — these reads are
+independent, issue all in a single response.
+
 Read the project state to understand where things stand. If PROGRESS.md exists and has 3+
 cycles, run the analytics script first for a structured overview:
 
@@ -157,8 +160,10 @@ distribution, inspiration rate, and pattern-based suggestions. Use this to infor
 selection — e.g., if the output shows no test cycles, that's a signal.
 
 1. **PROGRESS.md** — what happened last cycle, what was suggested next
-2. **VISION.md** — the north star, principles, and direction
+2. **VISION.md** — read `## Principles` and `## Direction` sections (skip full personas/history for orient)
 3. **ISSUES.md** — what's broken or degraded
+3b. **HEALTH.md** — read `critical` and `degraded` findings only (if exists)
+3c. **DECISIONS.md** — read `firm` and `provisional` entries only (if exists)
 4. **Decision profile** — run the effective profile script for a confidence-weighted summary:
    ```bash
    python3 -m scripts.effective_profile
@@ -179,6 +184,16 @@ selection — e.g., if the output shows no test cycles, that's a signal.
    - Identify the build/test/lint commands
    - Read key source files to understand architecture
 6. `git log --oneline -20` for recent changes
+
+Before proceeding: in your response, list the 3-5 facts from VISION.md, PROGRESS.md,
+ISSUES.md, and HEALTH.md that will determine what you build this cycle. These survive if
+earlier tool results are cleared by context compaction.
+
+**Exit-early guard (plan-driven mode only)**: If PLAN.md exists and all tasks are `■ complete`
+or `skipped`, and no new tasks have been added — archive the plan and report exit signal
+`complete: plan finished`. Do not proceed to Step 2. This guard does NOT apply in
+vision-driven mode — realisera always has work when reasoning from the gap between vision
+and codebase.
 
 ### Step 2: Pick work
 
@@ -315,7 +330,9 @@ to the new version number, then include those files in the commit. If DOCS.md ha
 
 ### Step 8: Log
 
-- **ISSUES.md** — add newly discovered issues, mark resolved ones.
+- **ISSUES.md** — add newly discovered issues, mark resolved ones. When updating existing
+  entries (e.g., marking resolved), use the Edit tool on the specific entry rather than
+  rewriting the file.
   Output constraint: ≤30 words per issue description, ≤15 words per remediation.
 - **PROGRESS.md** — append the cycle entry (number, timestamp, what shipped, commit hash,
   inspiration, discoveries, next suggestion).
@@ -412,8 +429,8 @@ and its DECISIONS.md entries give realisera reasoning context for future cycles.
 ### Realisera consumes /planera plans
 When PLAN.md exists with `□ pending` tasks, realisera's Step 2 (Pick work) reads the plan instead
 of reasoning from the vision. Pick the next `□ pending` task with satisfied dependencies. Use the
-task's behavioral acceptance criteria as exit conditions. After committing, update the task's
-status to `■ complete`. If reality diverges from the plan, add a Surprise entry. When all tasks
+task's behavioral acceptance criteria as exit conditions. After committing, use the Edit tool
+to update the task's status to `■ complete` (targeted edit, not full file rewrite). If reality diverges from the plan, add a Surprise entry. When all tasks
 are complete, archive PLAN.md to `.planera/archive/` and resume vision-driven work selection.
 
 ### Realisera reads /dokumentera output

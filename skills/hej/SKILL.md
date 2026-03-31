@@ -114,9 +114,10 @@ The user is new to this project's ecosystem. Orient them.
 
 The user is returning. Show them where things stand.
 
-1. **Read all existing artifacts** — skip any that don't exist. Extract only the
-   most recent entry or top-level summary from each. Do not read entire files
-   line by line — pull headlines and latest entries.
+1. **Read all existing artifacts** — Read VISION.md, PROGRESS.md, ISSUES.md, HEALTH.md,
+   PLAN.md, and DECISIONS.md in parallel — these reads are independent, issue all in a single
+   response. Read first 20 lines of each artifact for orientation. Skip any that don't exist.
+   Extract only the most recent entry or top-level summary from each.
 
 2. **Build the dashboard** — a concise status display covering only what exists.
    Omit any line whose source artifact is missing. Never show empty sections.

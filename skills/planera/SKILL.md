@@ -80,10 +80,13 @@ If uncertain between light and full, default to light. The user can escalate.
 
 ## Step 1: Orient
 
+Read VISION.md, DECISIONS.md, and ISSUES.md in parallel — these reads are independent, issue
+all in a single response.
+
 Read project state for context.
 
 1. **VISION.md** — the north star (if exists)
-2. **DECISIONS.md** — prior deliberations relevant to this work (if exists)
+2. **DECISIONS.md** — read `firm` entries only (these are hard constraints for planning)
 3. **HEALTH.md** — latest codebase health grades (if exists)
 4. **ISSUES.md** — related known issues (if exists)
 5. **PROGRESS.md** — what was built recently (if exists)
@@ -99,6 +102,9 @@ Read project state for context.
    - Read dependency manifests, README, CLAUDE.md
    - Identify build/test/lint commands
    - Read key source files to understand architecture
+
+Before decomposing: in your response, summarize the constraints from VISION.md and
+DECISIONS.md that bound this plan. These survive compaction.
 
 ---
 

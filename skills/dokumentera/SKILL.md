@@ -238,6 +238,10 @@ Read the codebase deeply — same depth as visionera's exploration:
    style, detail level, and format preferences
 7. `git log --oneline -20` for recent context
 
+**Exit-early guard**: If DOCS.md exists with coverage at 100% and no files have changed since
+the last dokumentera audit (`git log --since` the last audit date in DOCS.md shows no changes)
+— report exit signal `complete: documentation current` and stop.
+
 ### Step 2: Identify gaps
 
 Compare what exists against what should be documented:
@@ -264,7 +268,9 @@ Present each doc draft to the user for approval before writing.
 
 ### Step 4: Update DOCS.md
 
-Create or update DOCS.md with all documented and undocumented items.
+Create or update DOCS.md with all documented and undocumented items. When updating existing
+entries (changing status, updating dates), use the Edit tool on specific entries rather than
+rewriting the file.
 If DOCS.md doesn't exist yet, run the first-run survey first to establish conventions before populating the index.
 
 ---

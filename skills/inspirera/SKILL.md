@@ -82,6 +82,9 @@ often contain the most useful distillation of a concept — treat comments as si
 If the source is a well-known library or framework, also check context7 for up-to-date
 documentation — this can surface API details and usage patterns that the README alone won't cover.
 
+Before proceeding to target analysis: in your response, list the 3-5 most transferable
+concepts from the source. These survive if the source file reads are cleared.
+
 ---
 
 ## Step 3: Read the target project
