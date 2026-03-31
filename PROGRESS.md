@@ -183,3 +183,11 @@
 **Inspiration**: None — audit-driven fix
 **Discovered**: No new issues. All Audit 2 issues now resolved (ISS-8, ISS-9, ISS-10).
 **Next**: All issues clear. Consider vision-driven work or push all changes.
+
+## Cycle 24 — 2026-03-31
+
+**What**: Fixed ISS-11 — documented PROFILE.md as the only global artifact in hej's SKILL.md and ecosystem spec
+**Commit**: b2dfa4a fix: document PROFILE.md as global artifact in hej and ecosystem spec (ISS-11)
+**Inspiration**: None — bug discovered during hej briefing when PROFILE.md showed "not found"
+**Discovered**: DOCS.md already mapped PROFILE.md correctly; the root cause was hej's SKILL.md not surfacing the global path, causing agents to glob the project root instead
+**Next**: All issues clear. Consider vision-driven work.

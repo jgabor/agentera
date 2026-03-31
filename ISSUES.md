@@ -25,11 +25,10 @@ dimension → latest. Complementary evidence preserved in merged entries.
 
 ## Open
 
-## ISS-11: Hej doesn't surface PROFILE.md's global path — degraded
-PROFILE.md is the only global artifact (`~/.claude/profile/PROFILE.md`). DOCS.md maps it
-correctly, but hej's SKILL.md doesn't mention the global path in its state artifacts table,
-and its Step 0 says "in the project" which leads agents to glob the project root and miss
-the profile. Ecosystem spec also doesn't note PROFILE.md's global nature in the artifact table.
+## ~~ISS-11: Hej doesn't surface PROFILE.md's global path — degraded~~ RESOLVED
+Fixed in b2dfa4a. Added global path notation to hej's state artifacts table, explicit
+note in hej's artifact path resolution section, and global artifact note in ecosystem spec's
+artifact table.
 
 ## ~~ISS-8: CLAUDE.md and DOCS.md have stale skill counts — degraded~~ RESOLVED
 Fixed in b11b018. CLAUDE.md → "Eleven skills", DOCS.md → "11/11".
