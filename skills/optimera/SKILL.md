@@ -127,12 +127,14 @@ ask to rebuild it.
 ## Experiment N — YYYY-MM-DD HH:MM
 
 **Hypothesis**: what we expected to improve and why
+**Method**: the approach taken to test the hypothesis
 **Change**: one-line summary of the code change
 **Metric**: <before> → <after> (<direction> is <better|worse|unchanged>)
 **Regression**: pass | fail (existing test/build suite)
 **Status**: kept | discarded | error
 **Commit**: <hash> (if kept)
 **Inspiration**: external source that informed the approach (if any)
+**Conclusion**: what we learned — confirms, refutes, or refines the hypothesis
 **Next**: what the result suggests trying next
 ```
 
