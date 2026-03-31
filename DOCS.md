@@ -43,7 +43,7 @@ If an artifact has no entry, skills fall back to the project root.
 
 ## Coverage
 
-- **Documented**: 10/10 skills have SKILL.md (single source of truth)
+- **Documented**: 11/11 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: 0 documents have drifted from implementation (after this audit)
 
