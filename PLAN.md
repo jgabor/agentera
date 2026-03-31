@@ -99,7 +99,7 @@ once the spec is written.
 
 ### Task 4: Execution skills — realisera, optimera
 **Depends on**: Task 1
-**Status**: pending
+**Status**: complete
 **Acceptance**:
 - GIVEN realisera's output format instructions WHEN describing cycle introduction THEN it specifies `─── ⧉ realisera · cycle N ───`
 - GIVEN optimera's output format instructions WHEN describing experiment results THEN it specifies trend arrows (⮉/⮋) alongside metric values
