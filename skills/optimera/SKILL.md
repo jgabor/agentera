@@ -194,7 +194,7 @@ Each experiment opens with the skill introduction: `─── ⎘ optimera · ex
 
 Read the optimization state to understand where things stand.
 
-1. **EXPERIMENTS.md** — what was tried last, what the result suggested next
+1. **EXPERIMENTS.md** — read last 5 experiments only (check for plateau patterns)
 2. **OBJECTIVE.md** — the metric, target, constraints, and scope
 3. **Decision profile** — run the effective profile script for a confidence-weighted summary:
    ```bash
@@ -217,6 +217,12 @@ Read the optimization state to understand where things stand.
    - Identify the build/test/lint commands (needed for regression checks)
    - Read key source files in scope to understand architecture
 5. `git log --oneline -20` for recent changes
+
+Before experimenting: in your response, list the current baseline, target, and constraints
+from OBJECTIVE.md. These survive if earlier reads are cleared.
+
+**Exit-early guard**: If OBJECTIVE.md target has been met (current metric ≥ target) — report
+exit signal `complete: objective achieved` and stop.
 
 ### Step 2: Analyze
 

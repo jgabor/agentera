@@ -81,6 +81,9 @@ root. This applies to all artifact references in this skill, including cross-ski
 
 ## Step 1: Orient
 
+Read HEALTH.md, ISSUES.md, and PROGRESS.md in parallel — these reads are independent, issue
+all in a single response.
+
 Read the project state to understand context before auditing.
 
 1. **HEALTH.md** — prior audit findings and grades (if exists)
@@ -90,8 +93,8 @@ Read the project state to understand context before auditing.
    contradict a deliberate decision are not findings — they're implementations of that decision.
 4. **ISSUES.md** — known problems already tracked (if exists). Don't re-report known issues
    unless they've worsened.
-5. **PROGRESS.md** — what was built recently (if exists). Recent changes are higher-priority
-   audit targets.
+5. **PROGRESS.md** — read last 3 cycle entries only (recent changes are higher-priority audit
+   targets).
 6. **Decision profile** — run the effective profile script for a confidence-weighted summary:
    ```bash
    python3 -m scripts.effective_profile
@@ -107,6 +110,12 @@ Read the project state to understand context before auditing.
    - Read README, CLAUDE.md if they exist
    - Identify language, stack, and build/test/lint commands
    - `git log --oneline -20` for recent changes
+
+Before proceeding: in your response, list the key structural facts (module boundaries,
+dependency patterns, test coverage gaps) you observed. These survive context compaction.
+
+**Exit-early guard**: If `git diff` since the last HEALTH.md update shows no file changes —
+report exit signal `complete: no changes since last audit` and stop.
 
 ---
 
@@ -305,6 +314,9 @@ preserves the analysis; the artifact preserves the conclusions.
 
 Output constraint: ≤30 words per finding description, ≤15 words per recommendation. Letter
 grade + ≤3 sentences justification per dimension.
+
+When updating existing HEALTH.md entries (e.g., updating Patterns Observed), use the Edit
+tool on the specific section rather than rewriting the file. Append new audit entries.
 
 Write the audit results to `HEALTH.md` (append new audit, keep prior audits for trend history)
 and present to the user.
