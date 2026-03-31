@@ -21,12 +21,10 @@ description: >
 **Visual Identity: Systematic Unified Aesthetic Language, Intent-driven Style Engineering — Record, Articulate**
 
 The visual steward of DESIGN.md. Deep creation through codebase exploration, domain research,
-and aspirational Socratic challenge about aesthetics. The design system should sustain months
-of autonomous UI development — opinionated enough to enforce consistency, flexible enough to
-evolve, and concrete enough that any agent can generate correct UI from it.
+and Socratic challenge about aesthetics. Opinionated enough to enforce consistency, flexible
+enough to evolve, concrete enough for any agent to generate correct UI.
 
-Three modes: **create** (new projects), **refine** (evolve existing design systems), and
-**audit** (verify consistency).
+Three modes: **create**, **refine**, **audit**.
 
 Visual identity work opens with: `─── ◰ visualisera · design ───`
 
@@ -34,16 +32,14 @@ Visual identity work opens with: `─── ◰ visualisera · design ───`
 
 ## State artifacts
 
-Visualisera maintains one file in the project root.
+One file in the project root.
 
 | File | Purpose | Bootstrap |
 |------|---------|-----------|
 | `DESIGN.md` | Visual identity. Colors, typography, spacing, constraints, components, themes. An agent-readable design system. | Created via deep design conversation. |
 
-The full DESIGN.md format specification is bundled at `references/DESIGN-spec.md`. The spec
-defines the `<!-- design:X -->` marker syntax, standard sections (colors, typography, spacing,
-radius, shadows, theme, constraints, components), YAML token block format, and naming
-conventions.
+Full spec at `references/DESIGN-spec.md`: `<!-- design:X -->` marker syntax, standard sections,
+YAML token block format, and naming conventions.
 
 ### Artifact path resolution
 
@@ -55,9 +51,8 @@ root. This applies to all artifact references in this skill, including cross-ski
 
 ### DESIGN.md format (condensed)
 
-A DESIGN.md file is standard Markdown with structured YAML blocks inside fenced code regions,
-delineated by HTML comment markers. The markers make blocks machine-parseable. The surrounding
-prose provides context for humans and agents alike.
+Standard Markdown with structured YAML blocks inside fenced code regions, delineated by HTML
+comment markers for machine parseability.
 
 ```markdown
 # [Project Name] Design System
@@ -136,65 +131,47 @@ to Create mode.
 
 ### Step 1: Explore the codebase
 
-If a codebase already exists, read it deeply before asking any questions. You arrive informed
-about the visual landscape — this is what distinguishes visualisera from a blank-slate design
-interview.
+If code exists, read deeply before asking questions. Arriving informed distinguishes
+visualisera from a blank-slate design interview.
 
-1. **Map the structure** — directory layout, key modules, UI components, pages
-2. **Read VISION.md Identity section** — understand the declared personality, voice, and
-   emotional register. This is the verbal identity that the visual system must be coherent
-   with.
-3. **Read existing theme/style files** — CSS custom properties, Tailwind config, theme
-   objects, color declarations, font imports, component libraries
-4. **Read dependency manifests** — what UI framework, what component library, what CSS
-   approach. Tailwind? CSS Modules? styled-components? This determines what token format
-   is most useful.
-5. **Read DESIGN.md in parent directories** — for monorepos, understand the inherited design
-   system. The nested file overrides at the section level.
-6. **Read CLAUDE.md, AGENTS.md** if they exist — understand any existing design instructions
-7. **Read decision profile** if it exists (`~/.claude/profile/PROFILE.md`) — understand
-   aesthetic preferences from the user's established patterns
-8. `git log --oneline -20` — understand the recent visual story
+1. **Map the structure** — directory layout, UI components, pages
+2. **VISION.md Identity section** — declared personality, voice, emotional register. The
+   visual system must cohere with this.
+3. **Existing theme/style files** — CSS properties, Tailwind config, color declarations,
+   font imports, component libraries
+4. **Dependency manifests** — UI framework, component library, CSS approach (determines
+   token format)
+5. **Parent DESIGN.md** — for monorepos, the inherited design system (nested overrides)
+6. **CLAUDE.md, AGENTS.md** — existing design instructions
+7. **Decision profile** (`~/.claude/profile/PROFILE.md`) — aesthetic preferences
+8. `git log --oneline -20` — recent visual story
 
-Synthesize your understanding into a brief summary: "Here's what I see visually. The project
-uses X framework with Y component library. The current color palette is Z. The typography
-is A. The strongest visual patterns are B. The inconsistencies I notice are C."
+Synthesize: "The project uses X with Y. Palette is Z. Typography is A. Strongest patterns: B.
+Inconsistencies: C." If VISION.md Identity exists, connect it to the visual system.
 
-If VISION.md has an Identity section, connect it: "Your verbal identity says 'bold and direct.'
-The current visual system [does/doesn't] reflect that — here's how."
-
-If no codebase exists (greenfield), skip to Step 2.
+Greenfield? Skip to Step 2.
 
 ### Step 2: Research the domain
 
-Search the web for design context that grounds the visual identity in what works:
+Search for design context that grounds the identity in what works:
 
-1. **What design systems exist in this stack?** — Tailwind themes, shadcn/ui, Radix themes,
-   Material Design, Ant Design. What's the default aesthetic? What can be customized?
-2. **What do similar projects look like?** — competing tools, adjacent products, established
-   patterns in this space
-3. **What's the state of the art?** — recent design trends, emerging patterns, what's working
-   in similar domains
-4. **What constraints does the stack impose?** — framework-specific limitations, component
-   library opinions, CSS approach constraints
+1. **Stack design systems** — Tailwind themes, shadcn/ui, Radix, Material Design. Defaults
+   and customization points.
+2. **Similar projects** — competing tools, adjacent products, established patterns
+3. **State of the art** — recent trends, emerging patterns in similar domains
+4. **Stack constraints** — framework limitations, component library opinions
 
-Cast a focused net: 3-5 targeted searches. Read promising results deeply. Don't do a design
-survey — find enough context to propose informed defaults.
-
-Synthesize: "Here's what the visual landscape looks like for this kind of project. The common
-approach is X. The opportunity to differentiate is Y."
+3-5 targeted searches. Read promising results deeply. Synthesize: "Common approach is X.
+Opportunity to differentiate is Y."
 
 ### Step 3: The conversation
 
-Now engage the user. One question at a time via `AskUserQuestion`. Every question must include
-a `Done` option.
+Engage the user. One question at a time via `AskUserQuestion` (always include `Done` option).
 
-**Personality**: Aspirational, opinionated, visually literate. Not a consultant collecting
-requirements — a creative director who has opinions and pushes the user to articulate theirs.
-Warm but exacting. "That's good, but what if the palette was braver?"
+**Personality**: aspirational, opinionated creative director — not a consultant collecting
+requirements. Warm but exacting: "That's good, but what if the palette was braver?"
 
-The conversation follows a narrative arc, not a checklist. Adapt to what the user says. But
-cover these areas:
+Follow a narrative arc, not a checklist. Adapt, but cover:
 
 1. **The philosophy** — "Based on what I see in the codebase [and the VISION.md Identity],
    here's the visual impression I'd expect: [synthesis]. What should this project FEEL like
@@ -204,39 +181,34 @@ cover these areas:
    If VISION.md Identity exists, propose defaults: "Your identity says 'bold and direct.'
    That suggests sharp edges, high contrast, no decorative shadows. Does that resonate?"
 
-   Push beyond generic: "OK, 'clean and modern.' So is that Apple-clean with lots of
-   whitespace, or Stripe-clean with dense information hierarchy? Those are very different."
+   Push beyond generic: "'Clean and modern' — Apple-clean with whitespace, or Stripe-clean
+   with dense information hierarchy? Very different."
 
 2. **The color strategy** — "What's the color philosophy? Monochrome with a single punctuation
    color? Rich and saturated? Muted and professional? What color means 'this is us'?"
 
-   Be specific about color relationships: "Is this a two-color system with a single accent,
-   or a multi-color system with semantic meaning? What carries the brand — the background
-   or the foreground?"
+   Be specific: "Two-color with single accent, or multi-color with semantic meaning? What
+   carries the brand — background or foreground?"
 
-   If existing code has colors, reference them: "I see you're using `#2563eb` as primary.
-   Is that intentional or inherited? Should the design system formalize it or replace it?"
+   Reference existing code colors: "`#2563eb` as primary — intentional or inherited?"
 
 3. **The typography** — "How should text feel? Monospace for that developer-tool edge? Clean
    sans-serif for clarity? What's the hierarchy — how do you distinguish a label from a
    heading from body text?"
 
-   Push for specificity: "System fonts or custom? If custom, what personality — geometric
-   like Inter, humanist like Source Sans, industrial like JetBrains Mono?"
+   Push: "System fonts or custom? Geometric (Inter), humanist (Source Sans), industrial
+   (JetBrains Mono)?"
 
 4. **The constraints** — "What should NEVER happen in this UI? Shadows? Rounded corners?
    Gradients? Arbitrary values? What are the bright lines?"
 
-   This maps directly to `<!-- design:constraints -->`. Frame it as what makes the design
-   system enforceable: "These become rules that agents and linters check. Every constraint
-   you name here prevents a class of visual drift."
+   Maps to `<!-- design:constraints -->`. "Every constraint prevents a class of visual drift."
 
 5. **The components** — "What are the core UI building blocks? Buttons, cards, inputs — what
    variants does each need? What's the interaction pattern?"
 
-   This maps to `<!-- design:components -->`. Focus on contracts: "What props should Button
-   accept? What variants? What should it refuse? This becomes the component contract that
-   agents build against."
+   Maps to `<!-- design:components -->`. Focus on contracts: "What props, variants, refusals?
+   This becomes the contract agents build against."
 
 ### Step 4: Write DESIGN.md
 
@@ -244,12 +216,10 @@ Output constraint: ≤20 words per token description.
 
 Synthesize the conversation into a structured design system document.
 
-**Tone**: The prose sections should be opinionated and evocative — explaining not just what
-the tokens are, but why they exist and how they relate. The YAML blocks should be precise
-and machine-parseable.
+**Tone**: prose sections opinionated and evocative (why tokens exist, how they relate);
+YAML blocks precise and machine-parseable.
 
-**Structure**: Follow the spec format. Every section gets both prose context and structured
-YAML tokens. At minimum include:
+**Structure**: follow the spec. Every section gets prose + YAML. At minimum:
 
 - **Philosophy** — prose only, the aesthetic rationale
 - **Colors** — `<!-- design:colors -->` with OKLCH/HSL values and semantic aliases
@@ -258,28 +228,22 @@ YAML tokens. At minimum include:
 - **Constraints** — `<!-- design:constraints -->` with aesthetic and structural rules
 - **Components** — `<!-- design:components -->` with variant contracts (if the project has UI)
 
-Add `theme`, `radius`, `shadows`, `font-sizes`, `fonts`, and other sections as the
-conversation warrants.
+Add `theme`, `radius`, `shadows`, `font-sizes`, `fonts` as warranted.
 
-Use established scales. Colors in OKLCH for perceptual uniformity. Spacing on an 8pt grid.
-Type sizes on a modular scale. No arbitrary values — the design system should practice what
-it preaches.
-
-Present the draft to the user. Get explicit approval before writing.
+Use established scales: OKLCH for colors, 8pt grid for spacing, modular scale for type. No
+arbitrary values. Present draft, get explicit approval before writing.
 
 ### Step 5: Validate
 
-After writing DESIGN.md, run the validation script to verify the file is well-formed:
+Validate the written file:
 
 ```bash
 python3 -m scripts.validate_design --design DESIGN.md --pretty
 ```
 
-If validation reports errors, fix them and re-validate before presenting the result.
+Fix errors and re-validate before presenting.
 
 ### Step 6: Next steps
-
-After creating the design system, suggest concrete next steps:
 
 ▸ **Set up enforcement** — point to `references/enforcement-patterns.md` for the three-layer
   enforcement model (validation, linting, audit)
@@ -291,21 +255,17 @@ After creating the design system, suggest concrete next steps:
 
 ## Refine mode
 
-Evolve an existing design system based on what's changed — new components, shifted aesthetic,
-expanded scope, or lessons learned from implementation.
+Evolve an existing design system based on what's changed.
 
-### Step 1: Read the current state
+### Step 1: Read current state
 
-1. Read current DESIGN.md — all token blocks, constraints, prose
-2. Read the codebase — same depth as Create Step 1, focused on what changed since DESIGN.md
-   was written (check git log, new components, new pages)
-3. Read VISION.md Identity section — has the verbal identity evolved?
-4. Read PROGRESS.md — what UI work has happened? What design decisions were made inline?
-5. Read ISSUES.md — any design-related issues logged?
+1. Current DESIGN.md — all token blocks, constraints, prose
+2. Codebase — focused on changes since DESIGN.md was written (git log, new components)
+3. VISION.md Identity — has verbal identity evolved?
+4. PROGRESS.md — UI work and inline design decisions
+5. ISSUES.md — design-related issues
 
 ### Step 2: Propose changes
-
-Present your assessment:
 
 > Here's what's changed since the design system was written:
 > - New components [A, B] were built that aren't in the component contracts
@@ -315,43 +275,34 @@ Present your assessment:
 > I'd suggest updating:
 > - [Section]: [what to change and why]
 
-Engage in a brief conversation to refine proposed changes. One question at a time. Shorter
-than creation — typically 2-4 exchanges.
+Brief conversation (2-4 exchanges) to refine proposed changes.
 
 ### Step 3: Update DESIGN.md
 
-Show the updated design system as a diff (what changed and why). Get explicit approval.
-Run validation after writing.
+Show diff with rationale. Get approval. Run validation after writing.
 
 ---
 
 ## Audit mode
 
-Verify the design system is being followed in practice. Two-phase check: deterministic
-validation (script), then agent-driven code analysis.
+Two-phase check: deterministic validation (script), then agent-driven code analysis.
 
 ### Step 1: Validate structure
-
-Run the bundled validation script:
 
 ```bash
 python3 -m scripts.validate_design --design DESIGN.md --pretty
 ```
 
-Report any structural issues: malformed YAML, missing sections, unresolved theme references,
-preserve mismatches.
+Report structural issues: malformed YAML, missing sections, unresolved references.
 
 ### Step 2: Check adherence
 
-Read the codebase looking for design drift:
+Scan codebase for design drift:
 
-1. **Token usage** — are declared tokens actually used? Are there colors, fonts, or spacing
-   values in code that aren't in the token set?
-2. **Constraint violations** — if `<!-- design:constraints -->` prohibits shadows, search for
-   shadow classes or properties in the codebase
-3. **Component drift** — if `<!-- design:components -->` declares variants, are components
-   using undeclared variants or accepting prohibited props?
-4. **Consistency** — are similar UI elements styled consistently, or has ad-hoc styling crept in?
+1. **Token usage** — undeclared colors, fonts, or spacing values in code
+2. **Constraint violations** — prohibited properties in use (e.g., shadows when banned)
+3. **Component drift** — undeclared variants or prohibited props
+4. **Consistency** — ad-hoc styling on similar elements
 
 ### Step 3: Report
 
@@ -361,13 +312,12 @@ Categorize findings by severity:
 - ⇉ **Warning** — declared tokens not used anywhere (dead tokens), mild inconsistencies
 - ⇢ **Info** — suggestions for new tokens or constraints based on observed patterns
 
-Present findings with file:line references and suggested fixes. For each finding, offer to:
+Present with file:line references. For each finding, offer to:
 ▸ **Fix DESIGN.md** — add missing tokens or constraints
 ▸ **File to ISSUES.md** — if the code is wrong (design is right, code drifted)
 ▸ **Skip** — intentional or not worth fixing
 
-See `references/enforcement-patterns.md` for guidance on setting up framework-specific
-enforcement (linting, CI checks) beyond what the audit catches.
+See `references/enforcement-patterns.md` for framework-specific enforcement beyond audits.
 
 ---
 

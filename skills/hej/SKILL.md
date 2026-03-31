@@ -19,19 +19,16 @@ description: >
 
 **Holistic Entry Junction — Orient, Route, Activate**
 
-The single point of entry to the agentera ecosystem. Detects whether a project is
-fresh or returning, delivers a situational briefing, and routes to the appropriate
-skill. Works the same on first install and on the 100th session.
+Single entry point to the agentera ecosystem. Detects fresh vs returning, delivers
+a situational briefing, routes to the right skill. Same on first install and 100th session.
 
-Each invocation = one orientation. No artifacts produced — hej reads everything,
-writes nothing.
+Each invocation = one orientation. Reads everything, writes nothing.
 
 ---
 
 ## State artifacts
 
-Hej maintains no artifacts of its own. It reads all ecosystem artifacts to build
-its briefing:
+No artifacts of its own. Reads all ecosystem artifacts for the briefing:
 
 | Artifact | Read for |
 |----------|----------|
@@ -62,26 +59,21 @@ directly rather than falling back to the project root.
 
 ## Step 0: Detect mode
 
-Check for the existence of ecosystem state artifacts in the project (respecting
-artifact path resolution). Count how many exist.
+Check for ecosystem state artifacts (respecting path resolution).
 
-- **Fresh** (0 artifacts found): The ecosystem has never been used here.
-  Proceed to Step 1a.
-- **Returning** (1+ artifacts found): The project has ecosystem history.
-  Proceed to Step 1b.
+- **Fresh** (0 artifacts): Proceed to Step 1a.
+- **Returning** (1+ artifacts): Proceed to Step 1b.
 
 ---
 
 ## Step 1a: Welcome (Fresh mode)
 
-The user is new to this project's ecosystem. Orient them.
+Orient a new user.
 
-1. **Quick project scan** — identify language(s), framework(s), README presence,
-   git log (last 5 commits), approximate size (file count, line count). Keep this
-   fast — no deep analysis.
+1. **Quick scan** — language(s), framework(s), README, last 5 commits, approximate size.
+   Fast, no deep analysis.
 
-2. **Present capabilities** — show the user what the ecosystem can do for them,
-   grouped by intent:
+2. **Present capabilities** by intent:
 
    | | If you want to... | Use |
    |---|---------------------|-----|
@@ -96,32 +88,23 @@ The user is new to this project's ecosystem. Orient them.
    | ♾ | Build a decision profile | `/profilera` |
    | ◰ | Define visual identity | `/visualisera` |
 
-3. **Suggest a starting point** based on what the project scan revealed:
-   - No direction or vision → `/visionera`
-   - Has code but quality is unknown → `/inspektera`
-   - Has a specific decision to make → `/resonera`
-   - Ready to start building → `/realisera`
-   - Has a README but no other docs → `/dokumentera`
+3. **Suggest a starting point** based on scan: no vision → `/visionera`, unknown
+   quality → `/inspektera`, decision needed → `/resonera`, ready to build →
+   `/realisera`, docs gaps → `/dokumentera`. Recommend, don't direct.
 
-   Frame the suggestion as a recommendation, not a directive.
-
-4. **Route**: ask the user what they'd like to do. When they choose, invoke the
-   skill.
+4. **Route**: ask what they'd like to do. Invoke the chosen skill.
 
 ---
 
 ## Step 1b: Briefing (Returning mode)
 
-The user is returning. Show them where things stand.
+Show where things stand.
 
-1. **Read all existing artifacts** — Read VISION.md, PROGRESS.md, ISSUES.md, HEALTH.md,
-   PLAN.md, and DECISIONS.md in parallel — these reads are independent, issue all in a single
-   response. Read first 20 lines of each artifact for orientation. Skip any that don't exist.
-   Extract only the most recent entry or top-level summary from each.
+1. **Read artifacts** — VISION.md, PROGRESS.md, ISSUES.md, HEALTH.md, PLAN.md, DECISIONS.md
+   in parallel. First 20 lines each. Skip absent ones. Extract most recent entry or summary.
 
-2. **Build the dashboard** — a concise status display covering only what exists.
-   Omit any line whose source artifact is missing. Never show empty sections.
-   Show the agentera logo at the top — this is a key moment.
+2. **Build the dashboard** — concise status, only what exists. No empty sections.
+   Show the agentera logo.
 
    ```
    ┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
@@ -162,44 +145,28 @@ The user is returning. Show them where things stand.
    - Omit any line whose source artifact is missing
    - Omit any section that would be empty (e.g., no attention items = no attention section)
 
-3. **Flag attention items** — the attention section highlights anything that needs
-   action, in priority order. Use severity arrows to mark urgency:
-   - ⇶ Critical issues in ISSUES.md
-   - ⇶ Degrading health dimensions in HEALTH.md (grade drop between audits)
-   - ⇉ Plan tasks that are blocked or overdue
-   - ⇉ Stale artifacts (last modified >14 days ago — check via `git log -1` on
-     each artifact file, or file modification time)
-   - ⇉ Loop guard triggers (3+ consecutive failed cycles in PROGRESS.md)
-   - ⇢ Unresolved decisions in DECISIONS.md marked exploratory
+3. **Attention items** — priority order with severity arrows:
+   - ⇶ Critical issues, degrading health dimensions
+   - ⇉ Blocked/overdue plan tasks, stale artifacts (>14 days), loop guard triggers
+   - ⇢ Unresolved exploratory decisions
 
-   If nothing needs attention, say so. A clean bill of health is useful information.
+   Nothing? Say so — a clean bill of health is useful.
 
-4. **Suggest next action** — based on the attention flags and overall project
-   state, recommend one skill. Use the target skill's glyph in the suggestion:
-   - Critical issues exist → ⧉ `/realisera` (to fix) or ⛶ `/inspektera` (to investigate)
-   - Stale or missing vision → ⛥ `/visionera`
-   - Has vision but no plan → ≡ `/planera`
-   - Health degrading → ⛶ `/inspektera`
-   - Active optimization stalled → ⎘ `/optimera`
-   - Everything healthy, plan has open tasks → ⧉ `/realisera`
-   - Everything healthy, plan complete → ⛥ `/visionera` to chart next direction
+4. **Suggest next action** — one skill based on state. Use the target glyph:
+   critical issues → ⧉/⛶, stale vision → ⛥, vision but no plan → ≡,
+   degrading health → ⛶, stalled optimization → ⎘, healthy + open tasks → ⧉,
+   healthy + plan complete → ⛥
 
-5. **Route**: present the suggestion and let the user choose. When they decide,
-   invoke the skill. If they want to keep talking without invoking a skill, that's
-   fine too — hej's job is orientation, not coercion.
+5. **Route**: present suggestion, let user choose. No coercion.
 
 ---
 
 ## Step 2: Route
 
-When the user indicates what they want to do (or accepts the suggestion):
-
 1. Confirm: "Starting /[skill]..."
 2. Invoke the skill. Hej's work is done.
 
-If the user's request doesn't map cleanly to a single skill, ask **one** clarifying
-question. Do not ask compound questions. Do not suggest multiple skills at once
-unless the user explicitly asks for options.
+Unclear mapping? Ask **one** clarifying question. No compound questions.
 
 ---
 

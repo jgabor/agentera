@@ -20,28 +20,25 @@ description: >
 
 **Documentation Origin: Knowledge Unified, Methodology Enforced, Notation Traced — Examine, Record, Articulate**
 
-The "D" in DTC. Writes documentation that defines intent before code exists, generates docs for
-existing code, maintains docs as projects evolve, and verifies docs against implementation. One
-skill for the full documentation lifecycle.
+The "D" in DTC. Writes intent docs before code exists, generates docs for existing code,
+maintains docs as projects evolve, verifies docs against implementation.
 
-Documentation work opens with: `─── ▤ dokumentera · docs ───`
+Output opens with: `─── ▤ dokumentera · docs ───`
 
-Two modes: **create** (new documentation) and **update** (revise and verify existing docs).
-Context-detected approach: if the feature doesn't exist yet, write intent-first docs. If the
-code exists but docs don't, explore and generate.
+Two modes: **create** and **update**. Context-detected: no feature yet = intent-first;
+code exists = explore and generate.
 
 ---
 
 ## State artifacts
 
-Dokumentera maintains one index file and writes to individual doc files across the project.
+One index file; writes individual doc files across the project.
 
 | Artifact | Purpose | Bootstrap |
 |----------|---------|-----------|
 | `DOCS.md` | Documentation contract. Conventions, artifact mapping, and documentation index. | Created on first dokumentera run. |
 
-The template lives in `references/templates/`. Individual doc files (README.md, CLAUDE.md, etc.)
-are written directly to their standard locations.
+Template in `references/templates/`. Individual doc files written to standard locations.
 
 ### Artifact path resolution
 
@@ -88,12 +85,10 @@ Status tokens: `■ current`, `▣ stale`, `□ missing`
 
 ## Step 0: Detect context
 
-Determine what kind of documentation work is needed.
-
-1. **Read DOCS.md** if it exists — understand current documentation state
-2. **Read the user's request** — are they asking to document something specific, or a broad
-   "write docs" / "update docs"?
-3. **Check the codebase** — does the feature or module they're asking about exist in code?
+Determine what kind of documentation work is needed:
+1. Read DOCS.md (if exists) for current state
+2. Parse user request — specific target or broad "write/update docs"?
+3. Check codebase — does the feature exist in code?
 
 | Context | Approach |
 |---------|----------|
@@ -107,101 +102,69 @@ Determine what kind of documentation work is needed.
 
 ## First-run survey (convention detection)
 
-When DOCS.md doesn't exist, dokumentera runs a survey before any other mode. The survey
-observes the project and proposes a three-layer convention map for user approval.
+When DOCS.md doesn't exist, run a survey first. Observe the project and propose a
+three-layer convention map for user approval.
 
 ### Step 1: Explore structure
 
-Read the codebase to detect documentation conventions:
+Detect documentation conventions:
 
-1. **Doc root** -- where do documentation files live? Check for docs/, doc/, documentation/,
-   wiki/, or docs scattered at root. If no doc directory exists, default to root.
-2. **Existing docs** -- what documentation already exists? README, CLAUDE.md, AGENTS.md,
-   CONTRIBUTING.md, API docs, guides, tutorials.
-3. **Auto-generated docs** -- detect tooling output: TypeDoc (typedoc.json, docs/api/),
-   Storybook (.storybook/), OpenAPI/Swagger (openapi.yaml, swagger.json), GoDoc, Rustdoc,
-   Javadoc. Record each with its output path.
-4. **Style** -- read existing docs to infer tone (technical/casual), structure patterns
-   (sections with examples, flat descriptions), formatting conventions (badges, TOC, etc.).
-5. **Existing skill artifacts** -- check for VISION.md, DECISIONS.md, PLAN.md, PROGRESS.md,
-   ISSUES.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md at root. Note which already exist.
-6. **Version files** -- detect files containing version numbers: package.json, Cargo.toml,
-   pyproject.toml, go.mod (module path), plugin.json, setup.py, version.txt, *.gemspec,
-   pom.xml. If found, note which files and their current version values. If none found,
-   the versioning convention is omitted from DOCS.md.
+1. **Doc root** -- check docs/, doc/, documentation/, wiki/, or root. Default to root.
+2. **Existing docs** -- README, CLAUDE.md, AGENTS.md, CONTRIBUTING.md, API docs, guides
+3. **Auto-generated docs** -- TypeDoc, Storybook, OpenAPI/Swagger, GoDoc, Rustdoc, Javadoc.
+   Record each with output path.
+4. **Style** -- infer tone, structure patterns, formatting conventions from existing docs
+5. **Skill artifacts** -- check for VISION.md, DECISIONS.md, PLAN.md, etc. at root
+6. **Version files** -- package.json, Cargo.toml, pyproject.toml, plugin.json, etc. Note
+   files and current values. None found = omit versioning from DOCS.md.
 
 ### Step 2: Propose conventions
 
-Draft a three-layer DOCS.md using the template from `references/templates/`:
+Draft three-layer DOCS.md from `references/templates/`:
 
-1. **Conventions** -- populate doc_root, style, auto_gen, and versioning from what was observed.
-   If version files were detected, populate `version_files` with their paths and ask the
-   user about their semver policy ("how do you decide when to bump versions?"). If no
-   version files were found, omit the versioning block entirely.
-2. **Artifact mapping** -- propose paths for all skill artifacts, consistent with the
-   project's doc organization. If the project keeps docs at root, map to root. If docs
-   live in docs/, propose docs/ paths for artifacts.
-3. **Index** -- populate with all discovered documentation files. Auto-generated docs get
-   `generated` status. Existing docs get `current` status.
+1. **Conventions** -- doc_root, style, auto_gen from observations. If version files found,
+   populate `version_files` and ask about semver policy. No version files = omit block.
+2. **Artifact mapping** -- paths consistent with project's doc organization
+3. **Index** -- all discovered docs (auto-generated = `generated`, existing = `current`)
 
-Present the proposed DOCS.md to the user for approval. The user can modify any section
-before it's written.
+Present for user approval.
 
 ### Step 3: Handle existing artifacts
 
-If skill artifacts already exist at root but the proposed mapping places them elsewhere:
+If artifacts exist at root but mapping places them elsewhere:
 
-1. List the artifacts that would need to move (e.g., "VISION.md is at root but the mapping
-   says docs/VISION.md")
-2. Offer to relocate them: `git mv` each artifact to its new path
-3. If the user declines relocation, update the mapping to match where artifacts actually are
+1. List artifacts that would move
+2. Offer to relocate via `git mv`
+3. If declined, update mapping to match actual locations
 
 ### Step 4: Write DOCS.md
 
-Write the approved convention map. All other dokumentera modes and all other skills now
-read this file for artifact paths and documentation conventions.
-
-After writing DOCS.md, proceed to whatever mode the user originally requested (create,
-generate, audit) -- or stop if the survey was the entire request.
+Write the approved convention map. After writing, proceed to the originally requested
+mode -- or stop if the survey was the entire request.
 
 ---
 
 ## Intent-first mode (docs before code)
 
-This is the DTC-first path. The user wants to document what a feature SHOULD do before anyone
-builds it. The documentation becomes the spec that realisera implements against.
+DTC-first: document what a feature SHOULD do before building. Docs become the spec.
 
 ### Step 1: Understand the intent
 
-A brief conversation (2-4 questions) to capture:
+Brief conversation (2-4 questions): what, who reads it, what format, what detail level.
 
-- **What** is being documented? (feature, API, CLI command, module, project)
-- **Who** reads this documentation? (end users, developers, agents, contributors)
-- **What format** fits? (README section, dedicated doc file, CLAUDE.md entry, API reference)
-- **What level of detail?** (overview, tutorial, reference, all three)
-
-If VISION.md exists, read it to understand the project's direction and audience.
-If the decision profile exists (`~/.claude/profile/PROFILE.md`), read it for documentation
-style preferences — detail level, tone, format, and which docs the user considers essential.
+Read VISION.md for direction/audience and decision profile (`~/.claude/profile/PROFILE.md`)
+for doc style preferences if they exist.
 
 ### Step 2: Write the documentation
 
-Write the documentation in the appropriate location and format:
+Write docs in the appropriate location: project-level (README, CLAUDE.md) to standard
+paths, feature docs to the project's docs directory, inline docs to source files.
 
-- **Project-level docs** (README.md, CLAUDE.md, AGENTS.md, CONTRIBUTING.md): write directly
-  to the standard location
-- **Feature docs** (docs/*.md, API references): create in the project's docs directory
-- **Inline docs** (help text, CLI descriptions): write to the source file or config
+**Principles**: follow DOCS.md style conventions, infer details from existing docs. Write
+as intended steady state (evergreen, non-temporal). Primary audience first. Concrete
+examples. DRY across doc files.
 
-**Documentation principles** (from the decision profile):
-- If DOCS.md has a Conventions section with style defaults, follow them. Infer fine details (voice, formatting quirks) from existing docs in the project.
-- Write as the intended steady state, not a changelog
-- Evergreen and non-temporal — what WILL be, not what currently is
-- Write for the primary audience (agents first if agent-consumed, humans first otherwise)
-- Include concrete examples, not just descriptions
-- Keep it DRY — don't duplicate information across doc files
-
-Present the draft to the user for approval before writing.
+Present draft for approval before writing.
 
 ### Step 3: Update DOCS.md
 
@@ -214,29 +177,22 @@ Output constraint: ≤15 words per index entry description.
 
 ### Step 4: Suggest next steps
 
-In the strict DTC pipeline:
-- If the docs define a feature to build: suggest `/planera` to plan the implementation
-- If the docs are standalone (README, CONTRIBUTING): suggest running `/doc-audit` patterns
-  to verify accuracy (or dokumentera's own update mode later)
+- Feature docs → suggest `/planera` to plan implementation
+- Standalone docs → suggest update mode later for verification
 
 ---
 
 ## Explore-and-generate mode (docs for existing code)
 
-Code exists but documentation doesn't. Dokumentera reads the codebase and generates docs.
+Code exists, docs don't. Read codebase and generate.
 
 ### Step 1: Explore
 
-Read the codebase deeply — same depth as visionera's exploration:
-
-1. Map directory structure
-2. Read dependency manifests
-3. Read existing docs (README, CLAUDE.md, etc.) — understand what's already documented
-4. Read key source files — understand architecture, public APIs, patterns
-5. Read VISION.md, PROGRESS.md, DECISIONS.md if they exist
-6. Read the decision profile (`~/.claude/profile/PROFILE.md`) if it exists — calibrate doc
-   style, detail level, and format preferences
-7. `git log --oneline -20` for recent context
+1. Map directory structure, read dependency manifests
+2. Read existing docs — what's already documented
+3. Read key source files — architecture, public APIs, patterns
+4. Read VISION.md, PROGRESS.md, DECISIONS.md, decision profile if they exist
+5. `git log --oneline -20` for context
 
 **Exit-early guard**: If DOCS.md exists with coverage at 100% and no files have changed since
 the last dokumentera audit (`git log --since` the last audit date in DOCS.md shows no changes)
@@ -244,34 +200,18 @@ the last dokumentera audit (`git log --since` the last audit date in DOCS.md sho
 
 ### Step 2: Identify gaps
 
-Compare what exists against what should be documented:
-
-- Does README exist and describe the project accurately?
-- Does CLAUDE.md exist with development instructions?
-- Are public APIs documented?
-- Are CLI commands documented with usage examples?
-- Are configuration options documented?
-- Are key architectural decisions documented?
+Compare what exists against what should be documented: README accuracy, CLAUDE.md presence,
+API docs, CLI docs with usage, configuration docs, architectural decision docs.
 
 ### Step 3: Generate
 
-Write documentation for the identified gaps. Prioritize by impact:
-
-1. **README** — if missing or severely outdated, this is always first
-2. **CLAUDE.md** — if missing, critical for agent-assisted development
-3. **API / CLI docs** — public interfaces need documentation
-4. **Architecture docs** — if the codebase is complex enough to warrant them
-
-When writing docs, follow the style conventions declared in DOCS.md. Infer fine details from existing project docs.
-
-Present each doc draft to the user for approval before writing.
+Write docs for gaps, prioritized: (1) README, (2) CLAUDE.md, (3) API/CLI docs,
+(4) architecture docs. Follow DOCS.md style conventions. Present drafts for approval.
 
 ### Step 4: Update DOCS.md
 
-Create or update DOCS.md with all documented and undocumented items. When updating existing
-entries (changing status, updating dates), use the Edit tool on specific entries rather than
-rewriting the file.
-If DOCS.md doesn't exist yet, run the first-run survey first to establish conventions before populating the index.
+Create or update DOCS.md with all items. Use the Edit tool on specific entries when updating
+status/dates. If DOCS.md doesn't exist, run first-run survey first.
 
 ---
 
@@ -281,55 +221,27 @@ Docs exist but may have drifted from implementation.
 
 ### Step 1: Discover
 
-Identify all documentation files:
-
-- Root: README.md, CLAUDE.md, AGENTS.md, CONTRIBUTING.md, CHANGELOG.md
-- Directories: docs/, .github/
-- Config docs: comments in config files that make claims about behavior
-- Read DOCS.md if it exists for the current index
-
-Track auto-generated docs (typedoc, godoc, etc.) in the index with `generated` status -- don't verify their content, but record their existence. Skip files in node_modules/, .git/, vendor/.
+Identify all doc files: root (README, CLAUDE.md, etc.), directories (docs/, .github/),
+config comments. Read DOCS.md for current index. Track auto-generated docs as `generated`.
+Skip node_modules/, .git/, vendor/.
 
 ### Step 2: Verify
 
-For each documentation file, check four dimensions:
+Check each doc file on four dimensions:
 
-**Gaps** — documented but not implemented:
-- Features, APIs, or behaviors described in docs that don't exist in code
-- CLI flags or config options mentioned but not handled
-- Examples referencing functions or modules that don't exist
+- **Gaps** — documented features/APIs/behaviors that don't exist in code
+- **Staleness** — changed signatures, removed features, outdated setup instructions
+- **Redundancies** — duplicated content across doc files
+- **Misalignments** — docs contradict actual code behavior
 
-**Staleness** — code changed but docs not updated:
-- Function signatures that changed
-- Removed features still documented
-- Changed default values or behaviors
-- Outdated setup instructions
-
-**Redundancies** — same information in multiple places:
-- Identical or near-identical content across doc files
-- Instructions that could diverge over time
-
-**Misalignments** — docs contradict implementation:
-- Documented behavior differs from actual code behavior
-- Stated constraints not enforced in code
-
-For each finding, gather concrete evidence:
-- Quote the relevant doc section
-- Reference the relevant code location (file:line)
-- Explain the discrepancy
+For each finding: quote the doc section, reference code location (file:line), explain
+the discrepancy.
 
 ### Step 3: Report and fix
 
-Categorize findings by severity:
-
-- ⇶ **Critical** — will cause user errors (documented APIs that don't exist, wrong setup steps)
-- ⇉ **Warning** — may cause confusion (stale content, redundancies)
-- ⇢ **Info** — cosmetic, low-impact (slightly outdated examples, wording inconsistencies)
-
-Present findings to the user with suggested fixes. For each finding, offer to:
-- **Fix it** — update the documentation to match reality
-- **File it** — add to ISSUES.md if it's a code problem (docs are right, code is wrong — per DTC)
-- **Skip it** — intentional or not worth fixing
+By severity: ⇶ critical (causes user errors), ⇉ warning (causes confusion), ⇢ info
+(cosmetic). For each finding, offer to: fix the doc, file to ISSUES.md (code is wrong
+per DTC), or skip.
 
 ### Step 4: Update DOCS.md
 
