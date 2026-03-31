@@ -306,6 +306,13 @@ type(scope): summary
 - Never commit partial or broken work
 - Never push to remote — local commits only
 
+If the current task is a version bump (e.g., a PLAN.md task labeled "Version bump per DOCS.md
+convention", or a version-staleness finding picked up from ISSUES.md): read DOCS.md for the
+`versioning` section — it lists `version_files` (files to update) and `semver_policy` (how to
+determine the bump level from conventional commit types). Update every file in `version_files`
+to the new version number, then include those files in the commit. If DOCS.md has no
+`versioning` section, skip version management entirely.
+
 ### Step 8: Log
 
 - **ISSUES.md** — add newly discovered issues, mark resolved ones
