@@ -104,6 +104,78 @@ project-root fallback.
 
 **Linter check**: Advisory — flags missing structural elements as warnings, not errors.
 
+### Token budgets
+
+Per-artifact word limits. Producing skills check approximate word count before writing.
+If a write would exceed the budget, compact first (see Compaction thresholds below).
+
+| Artifact | Scope | Budget |
+|----------|-------|--------|
+| PROGRESS.md | Per-cycle entry | ≤500 words |
+| PROGRESS.md | Full file | ≤3,000 words |
+| EXPERIMENTS.md | Per-experiment entry | ≤300 words |
+| EXPERIMENTS.md | Full file | ≤2,500 words |
+| HEALTH.md | Per-dimension assessment | ≤150 words |
+| HEALTH.md | Full file | ≤2,000 words |
+| DECISIONS.md | Per-decision entry | ≤200 words |
+| ISSUES.md | Per-issue entry | ≤100 words |
+| PLAN.md | Per-task entry | ≤100 words |
+| PLAN.md | Full file | ≤2,500 words |
+| VISION.md | Full file | ≤1,500 words |
+| DESIGN.md | Full file | ≤2,000 words |
+| DOCS.md | Full file | ≤2,000 words |
+
+Budgets are guidelines, not hard blockers. A 510-word cycle entry is fine; a 1,200-word
+entry signals the write step lacks output constraints.
+
+### Content exclusion
+
+Artifacts store judgments, intent, reasoning, and context that would be lost without
+them — the non-derivable residue. Do not duplicate state retrievable from the project's
+files or history with a deterministic command.
+
+| Exclude from artifacts | Retrieve from |
+|------------------------|---------------|
+| Files modified in a cycle | `git log --stat` |
+| Function signatures from audits | `Grep` against source code |
+| Dependency versions | Manifest files (package.json, go.mod, etc.) |
+| Lines of code per module | `wc -l` or Glob + Read |
+| Code snippets in PROGRESS.md | Commit diffs (`git show`) |
+| Test names enumerated in findings | `Grep` against test files |
+
+The test: if a reader can reconstruct the information from the project's current state
+or git history, it does not belong in the artifact.
+
+### Compaction thresholds
+
+Growing artifacts (PROGRESS.md, EXPERIMENTS.md) are compacted to cap read cost for
+consuming skills. Compaction runs when the producing skill writes a new entry.
+
+**PROGRESS.md** — compacted by realisera when writing a new cycle entry:
+
+| Tier | Entries | Format |
+|------|---------|--------|
+| Full detail | 10 most recent cycles | Standard cycle entry format |
+| One-line archive | Cycles 11 through 50 | `Cycle N (YYYY-MM-DD): ≤15-word summary` |
+| Dropped | Cycles older than 50 | Removed entirely |
+
+When writing a new cycle: if >10 full-detail entries exist, collapse the oldest to
+one-line format under an `## Archived Cycles` heading (below the recent cycles). If >40
+one-line entries exist, drop the oldest. One-line summaries preserve cycle number, date,
+and work-type — enough for trend analysis by consuming skills.
+
+**EXPERIMENTS.md** — compacted by optimera when writing a new experiment:
+
+| Tier | Entries | Format |
+|------|---------|--------|
+| Full detail | 8 most recent experiments | Standard experiment entry format |
+| One-line archive | Experiments 9 through 30 | `EXP-N: ≤15-word result summary` |
+| Dropped | Experiments older than 30 | Removed entirely |
+
+Same logic: collapse oldest full-detail to one-line when >8 exist. Drop oldest one-line
+when >22 one-line entries exist. Archive section sits below recent experiments under an
+`## Archived Experiments` heading.
+
 ## 5. Artifact Path Resolution
 
 Every skill that reads or writes artifacts MUST include the artifact path resolution
