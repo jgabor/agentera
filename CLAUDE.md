@@ -14,6 +14,7 @@ skills/<name>/references/       # Supplementary docs, templates, schemas
 skills/<name>/scripts/          # Python helpers (stdlib only, no pip deps)
 references/ecosystem-spec.md    # Shared primitives spec (all skills must align)
 scripts/validate-ecosystem.py   # Ecosystem linter (pre-commit hook)
+scripts/eval-skills.py          # Tier 2 eval runner (smoke-tests skills via claude -p)
 .githooks/pre-commit            # Git hook running the linter
 registry.json                   # Skill index with versions and tags
 .claude-plugin/marketplace.json # Plugin marketplace manifest
@@ -48,6 +49,13 @@ The repo-level `scripts/validate-ecosystem.py` checks all 10 SKILL.md files agai
 python3 scripts/validate-ecosystem.py
 ```
 
+The repo-level `scripts/eval-skills.py` smoke-tests skills via `claude -p` (Tier 2 eval). Run from the repo root:
+```bash
+python3 scripts/eval-skills.py --dry-run          # list skills and prompts
+python3 scripts/eval-skills.py --skill realisera   # test one skill
+python3 scripts/eval-skills.py --parallel 3        # test all skills, 3 at a time
+```
+
 ## Ecosystem linter
 
 A pre-commit hook runs the linter on any commit touching `skills/*/SKILL.md` or `references/ecosystem-spec.md`. Enable with:
@@ -59,7 +67,7 @@ The linter blocks commits with alignment errors and warns on advisory issues.
 ## Key conventions
 
 - SKILL.md is the single source of truth for each skill's behavior — workflow steps, trigger patterns, output format, safety rails, and cross-skill integration are all defined there
-- Shared primitives (confidence scale, severity levels, structural conventions) are defined in `references/ecosystem-spec.md` — all SKILL.md files must align with this spec
+- Shared primitives (confidence scale, severity levels, completion status protocol, escalation discipline, structural conventions) are defined in `references/ecosystem-spec.md` — all SKILL.md files must align with this spec
 - Skills never push to remote repos or modify VISION.md/OBJECTIVE.md during execution cycles
 - Conventional commits: feat/fix/docs/refactor/chore/test
 - realisera and optimera dispatch implementation work to Sonnet agents in worktrees, then verify before committing

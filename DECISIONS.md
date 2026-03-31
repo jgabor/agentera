@@ -338,5 +338,7 @@ consistently across 3+ projects" are both 90+ but mean different things.
 - Must be pronounceable by non-Swedes and hint at what it is
 - Swedish flavor is non-negotiable (matches the -era skill identity)
 
+**Primitive vocabulary convention** (added 2026-03-31): ecosystem primitives use lowercase, single-word terms with personality — matching the register of existing vocabularies (critical/degraded/annoying, firm/provisional/exploratory). New primitives must follow the same convention. ALL_CAPS engineering jargon and corporate headings are rejected in favor of workshop-floor language. Applied to exit signals: `complete/flagged/stuck/waiting`. Section headings: "Exit signals" (peer to "Safety rails"), "Loop guard" (workshop machinery metaphor for runaway prevention).
+
 **Confidence**: firm
-**Feeds into**: rename execution across repo, marketplace manifest, README, CLAUDE.md, registry
+**Feeds into**: rename execution across repo, marketplace manifest, README, CLAUDE.md, registry; ecosystem-spec.md primitive vocabulary

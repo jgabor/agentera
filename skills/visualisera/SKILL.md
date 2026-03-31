@@ -391,6 +391,17 @@ enforcement (linting, CI checks) beyond what the audit catches.
 
 ---
 
+## Exit signals
+
+Report one of these statuses at workflow completion:
+
+- **complete** — DESIGN.md was written (Create/Replace mode), updated (Refine mode), or audited with findings reported (Audit mode); validation script ran without errors; and all changes had explicit user approval before writing.
+- **flagged** — The design system was produced or audited but with issues worth surfacing: validation passed but with advisory warnings, the design drifts from VISION.md Identity in ways the user acknowledged, or audit findings were discovered that were neither fixed nor filed to ISSUES.md.
+- **stuck** — Cannot write DESIGN.md because the user declined to approve the draft, the validation script reports errors that cannot be resolved without user input on the design intent, or the project's UI stack is inaccessible and token defaults cannot be reliably inferred.
+- **waiting** — The visual identity direction is entirely undefined and the user has not engaged with the design conversation, or the project has no UI layer and DESIGN.md would serve no purpose without clarification of what is being designed.
+
+---
+
 ## Cross-skill integration
 
 Visualisera is part of a ten-skill ecosystem. It is the visual identity layer — the skill that

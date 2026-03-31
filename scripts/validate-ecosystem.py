@@ -4,8 +4,8 @@
 Validates all 10 SKILL.md files against the ecosystem spec
 (references/ecosystem-spec.md). Checks frontmatter, confidence scales,
 severity levels, decision labels, artifact path resolution, profile
-consumption, cross-skill integration, safety rails, and artifact
-format contracts.
+consumption, cross-skill integration, safety rails, artifact format
+contracts, exit signals, and loop guard.
 
 Run from repo root:
     python3 scripts/validate-ecosystem.py
@@ -55,6 +55,8 @@ REQUIRED_REFS: dict[str, list[str]] = {
 SCRIPT_PATTERN_CONSUMERS = {
     "realisera", "optimera", "inspektera", "planera", "inspirera",
 }
+
+AUTONOMOUS_LOOP_SKILLS = {"realisera", "optimera"}
 
 # Artifact format contracts (spec section 4).
 # Key = artifact name, value = (producer skill(s), key structural elements).
@@ -551,6 +553,66 @@ def check_artifact_format(skill: str, text: str, r: Results) -> None:
         pass
 
 
+def check_exit_signals(skill: str, text: str, r: Results) -> None:
+    """Check 10: Exit signals section with all four status terms."""
+    section = extract_section(text, "Exit signals")
+    if section is None:
+        r.error(skill, "exit-signals", "Missing ## Exit signals section")
+        return
+
+    required_terms = ["complete", "flagged", "stuck", "waiting"]
+    missing = [term for term in required_terms if term not in section]
+    if missing:
+        r.error(
+            skill, "exit-signals",
+            f"Missing status term(s): {', '.join(missing)}",
+        )
+    else:
+        r.ok(skill, "exit-signals")
+
+
+def check_loop_guard(skill: str, text: str, r: Results) -> None:
+    """Check 11: Loop guard for autonomous-loop skills.
+
+    For realisera and optimera: the ## Exit signals section must
+    reference the 3-failure threshold and PROGRESS.md or consecutive failure
+    detection.  For all other skills this check passes unconditionally.
+    """
+    if skill not in AUTONOMOUS_LOOP_SKILLS:
+        r.ok(skill, "loop-guard")
+        return
+
+    section = extract_section(text, "Exit signals")
+    if section is None:
+        r.error(
+            skill, "loop-guard",
+            "Missing ## Exit signals section (required for loop guard check)",
+        )
+        return
+
+    errors: list[str] = []
+
+    # Must reference the failure threshold of 3.
+    if not re.search(r"\b3\b", section):
+        errors.append("Missing reference to '3' (the consecutive-failure threshold)")
+
+    # Must reference PROGRESS.md or consecutive failure detection.
+    has_progress_ref = "PROGRESS.md" in section
+    has_consecutive_ref = bool(
+        re.search(r"consecutive\s+fail", section, re.IGNORECASE)
+    )
+    if not has_progress_ref and not has_consecutive_ref:
+        errors.append(
+            "Missing reference to PROGRESS.md or consecutive failure detection"
+        )
+
+    if errors:
+        for detail in errors:
+            r.error(skill, "loop-guard", detail)
+    else:
+        r.ok(skill, "loop-guard")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -569,6 +631,8 @@ def validate_skill(path: Path, r: Results) -> None:
     check_cross_skill_integration(skill, text, r)
     check_safety_rails(skill, text, r)
     check_artifact_format(skill, text, r)
+    check_exit_signals(skill, text, r)
+    check_loop_guard(skill, text, r)
 
 
 def main() -> int:

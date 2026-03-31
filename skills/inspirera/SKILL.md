@@ -196,6 +196,17 @@ specific project.
 
 ---
 
+## Exit signals
+
+Report one of these statuses at workflow completion:
+
+- **complete** — Source was read deeply, target project was explored (if provided), concept mapping was completed, and a structured analysis with applicability matrix and recommended next steps was delivered.
+- **flagged** — Analysis completed but with limitations worth surfacing: the source was paywalled or truncated, the target project was inaccessible, or key concepts could not be fully assessed for fit (e.g., incompatible language or paradigm).
+- **stuck** — Cannot proceed because the source URL is inaccessible and no fallback content is available, or the target project specified does not exist and cannot be located.
+- **waiting** — The source link was not provided or is malformed, or the target project is genuinely ambiguous and neither the current directory nor context resolves it.
+
+---
+
 ## Cross-skill integration
 
 Inspirera is part of a ten-skill ecosystem. Its analysis feeds naturally into the other skills.

@@ -143,3 +143,19 @@
 **Inspiration**: knowledge-synthesis skill (Anthropic) — multi-signal deduplication pattern
 **Discovered**: No new issues. All issues now resolved (ISS-1 through ISS-7).
 **Next**: All issues clear. No VISION.md exists for this repo. Consider /inspektera health check or vision-driven work if user wants to continue evolving the ecosystem.
+
+## Cycle 19 — 2026-03-31
+
+**What**: Added completion status protocol and escalation discipline as ecosystem primitives (spec + linter + all 10 SKILL.md files + Tier 2 eval runner)
+**Commit**: fb0d39a, 140603b, 6aa7076, 8057731, 6e91066 (5 commits across plan tasks)
+**Inspiration**: gstack (garrytan/gstack) — inspirera analysis identified completion status protocol, escalation discipline, and tiered eval as transferable patterns
+**Discovered**: No new issues. Parallel worktree dispatch worked cleanly for Tasks 2/3/4.
+**Next**: Plan complete. All 5 tasks shipped. Consider /inspektera for health check on expanded 11-check linter. Tier 3 eval (LLM-as-judge) deferred for future plan.
+
+## Cycle 20 — 2026-03-31
+
+**What**: Renamed gstack-borrowed terminology to agentera-native vocabulary (Decision 9 addendum): complete/flagged/stuck/waiting, Exit signals, Loop guard
+**Commit**: ef48e2b, f12fd53, 64bb72d, b2edd3f (spec + linter + 10 SKILL.md + decision update)
+**Inspiration**: Decision 9 vocabulary convention — primitives must use lowercase single-word terms with personality, matching existing register
+**Discovered**: No new issues. Archived plan correctly preserves old terminology as historical record.
+**Next**: Push all changes. Consider /inspektera health check on the 11-check linter with renamed vocabulary.
