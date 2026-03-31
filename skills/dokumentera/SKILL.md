@@ -125,12 +125,19 @@ Read the codebase to detect documentation conventions:
    (sections with examples, flat descriptions), formatting conventions (badges, TOC, etc.).
 5. **Existing skill artifacts** -- check for VISION.md, DECISIONS.md, PLAN.md, PROGRESS.md,
    ISSUES.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md at root. Note which already exist.
+6. **Version files** -- detect files containing version numbers: package.json, Cargo.toml,
+   pyproject.toml, go.mod (module path), plugin.json, setup.py, version.txt, *.gemspec,
+   pom.xml. If found, note which files and their current version values. If none found,
+   the versioning convention is omitted from DOCS.md.
 
 ### Step 2: Propose conventions
 
 Draft a three-layer DOCS.md using the template from `references/templates/`:
 
-1. **Conventions** -- populate doc_root, style, and auto_gen from what was observed
+1. **Conventions** -- populate doc_root, style, auto_gen, and versioning from what was observed.
+   If version files were detected, populate `version_files` with their paths and ask the
+   user about their semver policy ("how do you decide when to bump versions?"). If no
+   version files were found, omit the versioning block entirely.
 2. **Artifact mapping** -- propose paths for all skill artifacts, consistent with the
    project's doc organization. If the project keeps docs at root, map to root. If docs
    live in docs/, propose docs/ paths for artifacts.

@@ -11,6 +11,9 @@ doc_root: docs/
 style:    technical, sections with examples, no badges
 auto_gen:
   - none
+versioning:
+  version_files: []
+  semver_policy: ""
 ```
 
 ---
@@ -73,8 +76,15 @@ Severity:
   warning  — may cause confusion
   info     — minor issue
 
+Versioning convention (optional):
+  version_files  — list of files containing version numbers (e.g., package.json, Cargo.toml, plugin.json)
+  semver_policy  — how commit types map to version bumps (e.g., "feat = minor, fix = patch")
+  If the versioning block is absent or version_files is empty, skills do not attempt
+  version management. Skills that consume this: planera (flags bump-worthy plans),
+  inspektera (checks for unbumped significant changes), realisera (executes bumps).
+
 Sections:
-  Conventions      — project-level doc config (doc_root, style, auto_gen)
+  Conventions      — project-level doc config (doc_root, style, auto_gen, versioning)
   Artifact Mapping — canonical-to-path lookup for skill state files
   Index            — document registry with status tracking
   Coverage         — quantitative doc health summary
