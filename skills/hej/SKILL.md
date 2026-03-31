@@ -45,7 +45,7 @@ its briefing:
 | `EXPERIMENTS.md` | Experiment status |
 | `DOCS.md` | Documentation coverage and artifact paths |
 | `DESIGN.md` | Visual identity status |
-| `PROFILE.md` | Decision profile |
+| `PROFILE.md` | Decision profile (global: `~/.claude/profile/PROFILE.md`) |
 
 ### Artifact path resolution
 
@@ -53,6 +53,10 @@ Before reading any artifact, check if DOCS.md exists in the project root. If it
 has an Artifact Mapping section, use the path specified for each canonical filename.
 If DOCS.md doesn't exist or has no entry for a given artifact, default to the
 project root. This applies to all artifact reads in this skill.
+
+Note: PROFILE.md is global, not project-scoped. Its path is always
+`~/.claude/profile/PROFILE.md` regardless of DOCS.md presence. Check this path
+directly rather than falling back to the project root.
 
 ---
 

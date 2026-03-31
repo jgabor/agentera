@@ -98,6 +98,10 @@ format; consuming skills depend on it.
 | DESIGN.md | visualisera | realisera, visionera | Standard sections per DESIGN-spec.md |
 | PROFILE.md | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
 
+PROFILE.md is the only global artifact — stored at `~/.claude/profile/PROFILE.md`, not in
+the project root. Skills should read it from this path directly rather than relying on the
+project-root fallback.
+
 **Linter check**: Advisory — flags missing structural elements as warnings, not errors.
 
 ## 5. Artifact Path Resolution
