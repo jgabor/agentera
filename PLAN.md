@@ -63,7 +63,7 @@ If absent, no skill attempts version management. If present, four skills act:
 
 ### Task 2: planera — version bump awareness in planning
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 - ▸ GIVEN planera reading DOCS.md WHEN the versioning convention exists and the plan scope includes `feat` or `fix` work THEN planera includes a version bump task at the end of the plan
 - ▸ GIVEN planera reading DOCS.md WHEN no versioning convention exists THEN planera does not mention version bumps
@@ -72,7 +72,7 @@ If absent, no skill attempts version management. If present, four skills act:
 
 ### Task 3: inspektera — version staleness check in audits
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 - ▸ GIVEN inspektera auditing a project WHEN DOCS.md has a versioning convention THEN inspektera checks git log for `feat`/`fix` commits since the last version bump
 - ▸ GIVEN unbumped `feat`/`fix` commits WHEN inspektera detects them THEN it files a finding with severity based on count and age
@@ -81,7 +81,7 @@ If absent, no skill attempts version management. If present, four skills act:
 
 ### Task 4: realisera — version bump execution awareness
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 - ▸ GIVEN realisera executing a plan task labeled as a version bump WHEN DOCS.md has version file locations THEN realisera reads those locations and performs the mechanical version update
 - ▸ GIVEN realisera picking up a version-staleness finding from ISSUES.md WHEN the finding references DOCS.md versioning THEN realisera performs the bump
