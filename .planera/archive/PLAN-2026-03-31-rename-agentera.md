@@ -90,14 +90,14 @@ or restart Claude Code afterward.
 
 ### Task 2: Commit and push the rename
 **Depends on**: Task 1
-**Status**: pending
+**Status**: complete
 **Acceptance**:
 - GIVEN the git log WHEN checked THEN a commit exists containing the rename changes
 - GIVEN the remote WHEN checked THEN the commit has been pushed
 
 ### Task 3: Rename GitHub repository and local directory ⚠️ SESSION BOUNDARY
 **Depends on**: Task 2
-**Status**: pending
+**Status**: complete
 **Acceptance**:
 - GIVEN the GitHub API WHEN the repo is queried THEN it exists at jgabor/agentera
 - GIVEN the local filesystem WHEN checked THEN the repo lives at ~/git/agentera
@@ -108,7 +108,7 @@ in ~/git/agentera before proceeding to Task 4.
 
 ### Task 4: Update Claude Code configuration and migrate project memory
 **Depends on**: Task 3
-**Status**: pending
+**Status**: complete
 **Acceptance**:
 - GIVEN ~/.claude/settings.json WHEN read THEN the marketplace is named "agentera" and points to jgabor/agentera
 - GIVEN the skill enables in settings.json WHEN read THEN they reference @agentera not @agent-skills
@@ -117,7 +117,7 @@ in ~/git/agentera before proceeding to Task 4.
 
 ### Task 5: Verify end-to-end
 **Depends on**: Task 4
-**Status**: pending
+**Status**: complete
 **Acceptance**:
 - GIVEN the ecosystem linter WHEN run from ~/git/agentera THEN it passes with no errors
 - GIVEN a search across the repo and Claude config WHEN run for "agent-skills" THEN no stale references remain except DECISIONS.md historical entries
