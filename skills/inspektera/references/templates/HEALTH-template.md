@@ -7,12 +7,14 @@ audits are kept for trend tracking. Findings feed into ISSUES.md for realisera t
 
 **Dimensions assessed**: [list of dimensions]
 **Findings**: X critical, Y warnings, Z info (N filtered by confidence)
-**Overall trajectory**: baseline (first audit)
+**Overall trajectory**: ⮉ improving | ⮋ degrading | baseline (first audit)
 **Grades**: Architecture [?] | Patterns [?] | Coupling [?] | Complexity [?] | Tests [?] | Deps [?]
 
 ### [Dimension Name]: [A-F grade]
 
-#### [Finding title] — [critical | warning | info] (confidence: N/100)
+#### ⇶ [Finding title] — critical (confidence: N/100)
+#### ⇉ [Finding title] — warning (confidence: N/100)
+#### ⇢ [Finding title] — info (confidence: N/100)
 - **Location**: `file:line` (or module/package)
 - **Evidence**: [quoted code or structural observation]
 - **Impact**: [what breaks, degrades, or risks]

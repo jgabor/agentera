@@ -12,7 +12,7 @@ are referenced by realisera, optimera, and profilera for context on why choices 
 - [Option B] — tradeoffs
 **Choice**: what was chosen
 **Reasoning**: the key insight or tradeoff that resolved it
-**Confidence**: firm | provisional | exploratory
+**Confidence**: ━ firm | ─ provisional | ┄ exploratory
 **Feeds into**: VISION.md | OBJECTIVE.md | ISSUES.md | standalone
 
 <!--
@@ -27,7 +27,7 @@ Entry format reference:
   - [Option B] — [tradeoffs]
   **Choice**: [what was chosen]
   **Reasoning**: [key insight or tradeoff that resolved it]
-  **Confidence**: firm | provisional | exploratory
+  **Confidence**: ━ firm | ─ provisional | ┄ exploratory
   **Feeds into**: VISION.md | OBJECTIVE.md | ISSUES.md | standalone
 
 Confidence levels:
