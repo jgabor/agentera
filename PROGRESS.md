@@ -159,3 +159,11 @@
 **Inspiration**: Decision 9 vocabulary convention — primitives must use lowercase single-word terms with personality, matching existing register
 **Discovered**: No new issues. Archived plan correctly preserves old terminology as historical record.
 **Next**: Push all changes. Consider /inspektera health check on the 11-check linter with renamed vocabulary.
+
+## Cycle 21 — 2026-03-31
+
+**What**: Added pushback discipline subsection to resonera (4 principles: demand specifics, name hidden assumptions, reframe imprecise framing, don't lower the bar)
+**Commit**: 9bc7f20 feat(resonera): add pushback discipline for sharper deliberation
+**Inspiration**: gstack/office-hours anti-sycophancy patterns (Decision 10 adopt-now item)
+**Discovered**: No new issues
+**Next**: Plan complete. Consider /inspektera health check — suite has grown to 11 skills with hej, and resonera has new content.
