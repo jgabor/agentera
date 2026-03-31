@@ -275,7 +275,7 @@
 ## Cycle 35 — 2026-03-31
 
 **What**: Fixed all 4 inspektera Audit 3 findings (ISS-12 through ISS-15) — added dokumentera to README diagram, moved inspirera artifact path resolution to State artifacts section, fixed hej "all eleven" → "ten other", added State artifacts section to profilera.
-**Commit**: (pending)
+**Commit**: abd2bea fix: resolve ISS-12 through ISS-15 from inspektera Audit 3
 **Inspiration**: None — audit-driven fixes
 **Discovered**: ISS-14 was partially incorrect — hej's skill list already had all 10 entries (profilera and inspirera present at lines 240-241). Linter's core sentence check is newline-sensitive — "check if\nDOCS.md" doesn't match "check if DOCS.md".
 **Next**: All issues clear. Linter passes 0 errors. Resume vision-driven work.
