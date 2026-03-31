@@ -328,9 +328,10 @@ This section helps realisera and resonera understand the current reality.]
 
 Feed actionable findings into the rest of the suite:
 
-1. **ISSUES.md** — for each critical finding not already tracked, offer to add an issue entry.
-   Use severity mapping: critical finding → `critical` severity, warning → `degraded`,
-   info → `annoying`. Present the list and get user confirmation before writing.
+1. **ISSUES.md** — for each critical finding not already tracked, offer to add an issue entry
+   under the `## Open` section. Use severity mapping: critical finding → `critical` severity,
+   warning → `degraded`, info → `annoying`. Present the list and get user confirmation before
+   writing.
 2. **VISION.md** — if architecture alignment reveals the stated architecture is outdated (the
    code has intentionally evolved past it), suggest updating VISION.md via `/resonera` to
    deliberate on the new direction.

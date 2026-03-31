@@ -75,22 +75,27 @@ later and understand the story of her own project.
 
 ## Direction
 
-The skills grow to cover the entire software development lifecycle. Today the ecosystem handles
-vision, deliberation, planning, building, tuning, auditing, documenting, researching, profiling,
-and visual identity. Tomorrow it extends into orchestration, delegation, knowledge management,
-and whatever other gaps emerge between what a solo founder needs and what the current skills
-provide.
+The ecosystem becomes the orchestration layer for autonomous software development. Not a
+pipeline — Planner → Architect → Implementer → Tester → Reviewer is what happens when you
+think about agents the way you think about assembly lines. agentera is a graph. Skills read
+each other's artifacts, check each other's work, and compound understanding over time. The
+difference matters: pipelines execute sequences, graphs build judgment.
 
-The ecosystem spec becomes the gravity well. Today it enforces alignment across the suite.
-Tomorrow it's the contract that third-party skills build against. The reference implementation
-teaches the ecosystem how skill composition should work — not through documentation, but
-through a working system that demonstrates every pattern.
+This happens in two layers. The foundation is the ecosystem spec — artifact contracts, shared
+primitives, integration protocols that define how agents become a team. Any orchestrator that
+speaks this language can coordinate agents that share state and enforce alignment. The reference
+implementation is the eleven skills that demonstrate every pattern: vision informing planning
+informing building informing auditing informing vision again. The spec teaches. The skills prove.
 
-The compounding goes deeper with each skill added. The system doesn't just accumulate artifacts — it
-builds institutional memory that makes every future cycle more informed. Decisions reference past
-decisions. Health audits track trends. Progress logs tell the story. The solo founder's project
-develops a *history* that persists across sessions, across months, across whatever model
-happens to be running today.
+The spec becomes the gravity well. Today it enforces alignment across the suite. Tomorrow it's
+the contract that third-party skills build against. In a world with thousands of disconnected
+skills, the ones that talk to each other win. The ecosystem spec is what makes them talk.
+
+The compounding goes deeper with each skill added. The system doesn't just accumulate
+artifacts — it builds institutional memory that makes every future cycle more informed.
+Decisions reference past decisions. Health audits track trends. Progress logs tell the story.
+The project develops a *history* that persists across sessions, across months, across whatever
+model happens to be running today.
 
 ## Identity
 
@@ -114,7 +119,9 @@ says "hey, I noticed this" with enough evidence that you take it seriously.
 ### Naming
 Swedish verb stems with the *-era* suffix. Always. The name IS the action. New skills follow
 the same convention — if you can't express it as a Swedish verb, reconsider whether it's a
-distinct skill or a mode of an existing one.
+distinct skill or a mode of an existing one. The register extends beyond names: the ecosystem
+speaks in workshop-floor language — *complete*, *flagged*, *stuck* — because the vocabulary
+of the workshop is the vocabulary of the work.
 
 ## The Tension
 
