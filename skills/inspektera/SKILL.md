@@ -407,6 +407,10 @@ DECISIONS.md explains why things are the way they are. Findings that contradict 
 decisions are not findings. This prevents inspektera from flagging intentional tradeoffs as
 problems.
 
+### Inspektera reads /visualisera output
+DESIGN.md provides visual identity constraints that inspektera can audit for consistency —
+checking whether the codebase respects the declared design tokens and patterns.
+
 ### Inspektera is informed by /profilera
 The decision profile calibrates what "healthy" means for this user. A user who values
 simplicity over flexibility will have different complexity thresholds than one who values

@@ -444,6 +444,11 @@ Edit OBJECTIVE.md directly to adjust the target value or constraints, or tell op
 "refine the objective" for a guided session. If the measurement approach needs to change,
 the eval harness must be rebuilt and re-approved.
 
+### Optimera is fed by /planera
+When a plan includes optimization-shaped tasks (improving a measurable metric), planera can
+delegate those tasks to optimera. The plan's acceptance criteria inform the optimization
+objective.
+
 ### Drawing in external techniques
 
 Run `/inspirera <url>` with a relevant article, repo, or resource. The analysis will surface

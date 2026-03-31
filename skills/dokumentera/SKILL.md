@@ -379,6 +379,10 @@ the documentation is for and what tone to use.
 The decision profile calibrates documentation style — the user's preferences for detail level,
 tone, format, and which docs they consider essential.
 
+### Dokumentera reads /visualisera output
+DESIGN.md provides visual identity context that dokumentera respects when generating
+user-facing documentation — ensuring docs match the project's declared aesthetic and voice.
+
 ### Dokumentera feeds /profilera
 Documentation decisions (what to document, how, at what depth) are signal for profilera's
 extraction scripts.
