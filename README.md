@@ -1,13 +1,15 @@
 # agentera
 
-Claude Code skill marketplace. Ten skills that form a connected ecosystem for autonomous
-software development — from vision and deliberation through planning, building, optimizing,
-auditing, documenting, and learning from your own decision patterns.
+Claude Code skill marketplace. Eleven skills that form a connected ecosystem for autonomous
+software development — one entry point and ten specialized workflows spanning vision,
+deliberation, planning, building, optimizing, auditing, documenting, and learning from
+your own decision patterns.
 
 ## Skills
 
 | Skill | What it does |
 |-------|-------------|
+| [hej](./skills/hej/) | **Entry point** — Single point of entry. Detects fresh vs returning projects, delivers a situational briefing, routes to the right skill. |
 | [visionera](./skills/visionera/) | **Envision** — Deep creation and stewardship of VISION.md through codebase exploration, domain research, and aspirational challenge. |
 | [resonera](./skills/resonera/) | **Deliberate** — Structured Socratic questioning before consequential decisions. Produces DECISIONS.md. |
 | [inspirera](./skills/inspirera/) | **Research** — Analyzes an external resource and maps its concepts to your project. |
@@ -22,6 +24,9 @@ auditing, documenting, and learning from your own decision patterns.
 ### How they connect
 
 ```
+                        hej
+                     (entry point)
+                      ↓ routes to all
                       profilera
                      (decision profile)
                       ↓ consumed by all
