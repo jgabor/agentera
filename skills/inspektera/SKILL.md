@@ -93,7 +93,7 @@ Read the project state to understand context before auditing.
    python3 -m scripts.effective_profile
    ```
    Run from the profilera skill directory (typically
-   `~/.claude/plugins/marketplaces/agent-skills/skills/profilera`).
+   `~/.claude/plugins/marketplaces/agentera/skills/profilera`).
    Use it to calibrate what "healthy" means for this user — their tolerance for complexity,
    preferred patterns, and quality standards.
    If the script or PROFILE.md is missing, proceed without persona grounding.

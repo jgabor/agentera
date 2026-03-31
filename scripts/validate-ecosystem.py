@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ecosystem linter for agent-skills SKILL.md files.
+"""Ecosystem linter for agentera SKILL.md files.
 
 Validates all 10 SKILL.md files against the ecosystem spec
 (references/ecosystem-spec.md). Checks frontmatter, confidence scales,

@@ -69,7 +69,7 @@ python3 -m scripts.extract_all --output-dir ~/.claude/profile/intermediate
 
 The script auto-detects its own location and resolves paths from there. Run it from the
 skill's root directory (the directory containing this SKILL.md file), typically at
-`~/.claude/plugins/marketplaces/agent-skills/skills/profilera`.
+`~/.claude/plugins/marketplaces/agentera/skills/profilera`.
 
 After the scripts finish, read `~/.claude/profile/intermediate/extraction_summary.json` to
 confirm the extraction counts. Report the summary to the user.

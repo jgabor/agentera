@@ -197,7 +197,7 @@ Read the optimization state to understand where things stand.
    python3 -m scripts.effective_profile
    ```
    Run from the profilera skill directory (typically
-   `~/.claude/plugins/marketplaces/agent-skills/skills/profilera`).
+   `~/.claude/plugins/marketplaces/agentera/skills/profilera`).
    This outputs a summary table with effective confidence after dormancy decay.
    Use it to calibrate experimentation style: high effective confidence entries (65+)
    are strong constraints on approach, low effective confidence entries (<45) are

@@ -1,4 +1,4 @@
-# agent-skills
+# agentera
 
 Claude Code skill marketplace. Ten skills that form a connected ecosystem for autonomous
 software development — from vision and deliberation through planning, building, optimizing,
@@ -65,7 +65,7 @@ Each skill generates markdown artifacts in the target project (not in this repo)
 Clone the repo once:
 
 ```bash
-git clone git@github.com:jgabor/agent-skills.git ~/.claude/skills
+git clone git@github.com:jgabor/agentera.git ~/.claude/skills
 ```
 
 Then add individual skills to your project's `.claude/settings.json`:

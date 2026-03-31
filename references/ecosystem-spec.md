@@ -1,6 +1,6 @@
 # Ecosystem Spec
 
-<!-- Shared primitives for the agent-skills ecosystem. -->
+<!-- Shared primitives for the agentera ecosystem. -->
 <!-- All 10 skills/*/SKILL.md files must align with this spec. -->
 <!-- Validated by scripts/validate-ecosystem.py (pre-commit hook). -->
 <!-- See Decisions 7 and 8 in DECISIONS.md for rationale. -->
