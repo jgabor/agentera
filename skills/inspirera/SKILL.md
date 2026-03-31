@@ -169,6 +169,7 @@ What it is, why it's interesting, and concretely where/how it applies to the tar
 
 Reason through concept applicability in your response text. The Applicability Matrix below
 should contain only conclusions, not reasoning chains.
+Output constraint: ≤15 words per matrix cell.
 
 ## Applicability Matrix
 

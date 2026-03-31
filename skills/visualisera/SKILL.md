@@ -240,6 +240,8 @@ cover these areas:
 
 ### Step 4: Write DESIGN.md
 
+Output constraint: ≤20 words per token description.
+
 Synthesize the conversation into a structured design system document.
 
 **Tone**: The prose sections should be opinionated and evocative — explaining not just what

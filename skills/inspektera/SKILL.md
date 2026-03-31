@@ -303,6 +303,9 @@ Assess each dimension in your response text. Write ONLY the letter grade, trend 
 and ≤30-word finding per dimension to HEALTH.md — no assessment reasoning. The conversation
 preserves the analysis; the artifact preserves the conclusions.
 
+Output constraint: ≤30 words per finding description, ≤15 words per recommendation. Letter
+grade + ≤3 sentences justification per dimension.
+
 Write the audit results to `HEALTH.md` (append new audit, keep prior audits for trend history)
 and present to the user.
 
@@ -352,7 +355,7 @@ Feed actionable findings into the rest of the suite:
 1. **ISSUES.md** — for each critical finding not already tracked, offer to add an issue entry
    under the `## Open` section. Use severity mapping: critical finding → `critical` severity,
    warning → `degraded`, info → `annoying`. Present the list and get user confirmation before
-   writing.
+   writing. Output constraint: ≤30 words per issue description.
 2. **VISION.md** — if architecture alignment reveals the stated architecture is outdated (the
    code has intentionally evolved past it), suggest updating VISION.md via `/resonera` to
    deliberate on the new direction.

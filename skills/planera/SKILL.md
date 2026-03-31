@@ -187,6 +187,8 @@ Reason through task dependencies and decomposition in your response text. Write 
 task list with acceptance criteria to PLAN.md — no decomposition rationale. The conversation
 preserves the reasoning; the artifact preserves the actionable plan.
 
+Output constraint: ≤30 words per task description, ≤20 words per acceptance criterion.
+
 Write the plan to `PLAN.md` in the project root.
 
 ### Light plan format

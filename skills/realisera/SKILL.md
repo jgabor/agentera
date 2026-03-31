@@ -315,9 +315,16 @@ to the new version number, then include those files in the commit. If DOCS.md ha
 
 ### Step 8: Log
 
-- **ISSUES.md** — add newly discovered issues, mark resolved ones
+- **ISSUES.md** — add newly discovered issues, mark resolved ones.
+  Output constraint: ≤30 words per issue description, ≤15 words per remediation.
 - **PROGRESS.md** — append the cycle entry (number, timestamp, what shipped, commit hash,
-  inspiration, discoveries, next suggestion)
+  inspiration, discoveries, next suggestion).
+  Output constraint: ≤50 words for cycle work summary, ≤30 words per discovered issue.
+
+When writing a new cycle entry to PROGRESS.md, check entry count. If >10 full-detail entries
+exist, collapse the oldest to one-line format under `## Archived Cycles` (one line per cycle:
+`Cycle N (YYYY-MM-DD): ≤15-word summary`). If >40 one-line entries exist in the archive,
+drop the oldest. See ecosystem-spec.md Section 4 compaction thresholds.
 
 Then stop. One cycle complete.
 

@@ -147,6 +147,8 @@ Your questions should do one of these things:
 - **Constrain**: "What absolutely must NOT happen? What's the non-negotiable?"
 - **Tradeoff**: "You can't have both X and Y at this scale. Which do you optimize for?"
 
+Output constraint: ≤15 words per question.
+
 Don't follow a script. Follow the conversation. If something interesting comes up, chase it.
 If the user is going in circles, name it: "I think we keep coming back to X — want to dig
 into why?"
@@ -228,6 +230,7 @@ For any option the user selects:
   alternative in your response text. Write ONLY the chosen decision, confidence label, and
   ≤50-word rationale to DECISIONS.md — no full deliberation transcript. The conversation
   preserves the reasoning; the artifact preserves the conclusion.
+  Output constraint: ≤50 words per alternative, ≤30 words per tradeoff.
 - **VISION.md / OBJECTIVE.md**: if the user wants to create or update these, run a brief
   follow-up to fill in the structure (use the same brainstorm patterns realisera and optimera
   use, but the heavy thinking is already done). Present the draft for approval before writing.

@@ -149,6 +149,8 @@ The user is returning. Show them where things stand.
      suggested → [glyph] /[skill] ([reason])
    ```
 
+   Output constraint: ≤100 words total briefing, ≤15 words per routing suggestion.
+
    **Formatting rules**:
    - Each status line uses the skill glyph that owns that data
    - Severity arrows (⇶/⇉/⇢) mark attention items by urgency

@@ -210,6 +210,8 @@ Add or update the entry in DOCS.md:
 - Date written
 - Status: `current`
 
+Output constraint: ≤15 words per index entry description.
+
 ### Step 4: Suggest next steps
 
 In the strict DTC pipeline:
