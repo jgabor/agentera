@@ -89,7 +89,7 @@ current state of the codebase.
 ### PROGRESS.md
 
 ```markdown
-## Cycle N — YYYY-MM-DD HH:MM
+■ ## Cycle N — YYYY-MM-DD HH:MM
 
 **What**: one-line summary of what shipped
 **Commit**: <hash> <message>
@@ -140,6 +140,8 @@ After the brainstorm completes, proceed to cycle 1 (or resume cycling if this wa
 ---
 
 ## The cycle
+
+Each cycle opens with the skill introduction: `─── ⧉ realisera · cycle N ───`
 
 ### Step 1: Orient
 
@@ -394,10 +396,10 @@ and its DECISIONS.md entries give realisera reasoning context for future cycles.
 `DECISIONS.md` exists, read it during the Orient step for context on prior deliberations.
 
 ### Realisera consumes /planera plans
-When PLAN.md exists with pending tasks, realisera's Step 2 (Pick work) reads the plan instead
-of reasoning from the vision. Pick the next pending task with satisfied dependencies. Use the
+When PLAN.md exists with `□ pending` tasks, realisera's Step 2 (Pick work) reads the plan instead
+of reasoning from the vision. Pick the next `□ pending` task with satisfied dependencies. Use the
 task's behavioral acceptance criteria as exit conditions. After committing, update the task's
-status to `complete`. If reality diverges from the plan, add a Surprise entry. When all tasks
+status to `■ complete`. If reality diverges from the plan, add a Surprise entry. When all tasks
 are complete, archive PLAN.md to `.planera/archive/` and resume vision-driven work selection.
 
 ### Realisera reads /dokumentera output
