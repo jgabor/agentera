@@ -224,7 +224,7 @@ unless the user explicitly asks for options.
 
 ## Cross-skill integration
 
-Hej is the entry point to an eleven-skill ecosystem. It reads artifacts from all eleven
+Hej is the entry point to an eleven-skill ecosystem. It reads artifacts from the other ten
 workflow skills but produces no artifacts of its own and no downstream skill
 depends on it.
 

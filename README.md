@@ -32,13 +32,16 @@ your own decision patterns.
                       ↓ consumed by all
 visionera ──→ resonera ──→ planera ──→ realisera ←──→ optimera
  (envision)    (think)       (plan)       (build)        (tune)
-    ↕                          ↑              ↑
- visualisera   inspirera ─────┘   inspektera─┘
-  (design)     (research)            (audit)
+    ↕                       ↑  ↑              ↑
+ visualisera  dokumentera──┘   │   inspektera─┘
+  (design)     (document)      │      (audit)
+               inspirera ──────┘
+               (research)
 ```
 
 - **visionera** creates and stewards VISION.md through deep exploration and aspirational challenge
 - **resonera** deliberates on what to build, producing DECISIONS.md
+- **dokumentera** writes intent docs that feed planera (DTC pipeline), maintains DOCS.md
 - **planera** decomposes decisions into plans with behavioral acceptance criteria (PLAN.md)
 - **realisera** executes plan tasks (or reasons from VISION.md when no plan exists)
 - **inspektera** audits health and feeds findings to planera for remediation plans

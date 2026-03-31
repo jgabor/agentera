@@ -210,9 +210,14 @@ Report one of these statuses at workflow completion:
 
 ---
 
-## Cross-skill integration
+## State artifacts
 
-Inspirera is part of an eleven-skill ecosystem. Its analysis feeds naturally into the other skills.
+Inspirera maintains no dedicated state file. It writes to other skills' artifacts.
+
+| Artifact | Purpose | Access |
+|----------|---------|--------|
+| ISSUES.md | File actionable findings for realisera | write |
+| VISION.md | Refine direction when inspiration shifts thinking | write |
 
 ### Artifact path resolution
 
@@ -221,6 +226,12 @@ has an Artifact Mapping section, use the path specified for each canonical filen
 VISION.md, etc.). If DOCS.md doesn't exist or has no entry for a given artifact, default to
 the project root. This applies to all artifact references in this skill, including cross-skill
 writes (ISSUES.md, VISION.md).
+
+---
+
+## Cross-skill integration
+
+Inspirera is part of an eleven-skill ecosystem. Its analysis feeds naturally into the other skills.
 
 ### Feeding into /realisera
 Add actionable findings to the project's ISSUES.md, or refine VISION.md's direction if the

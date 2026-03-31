@@ -27,6 +27,28 @@ dormancy decay so stale entries are automatically discounted by consuming skills
 
 Profile generation output opens with: `─── ♾ profilera · profile ───`
 
+---
+
+## State artifacts
+
+Profilera writes one global artifact and reads project-level artifacts.
+
+| Artifact | Purpose | Path |
+|----------|---------|------|
+| PROFILE.md | Decision profile consumed by all skills | `~/.claude/profile/PROFILE.md` (global, not in project root) |
+| DECISIONS.md | High-signal source for pattern extraction | project root (via DOCS.md mapping) |
+
+### Artifact path resolution
+
+PROFILE.md is the only global artifact in the ecosystem — it lives at
+`~/.claude/profile/PROFILE.md`, not in the project root, and DOCS.md artifact mapping
+does not apply to it. For DECISIONS.md and any other project-level artifacts,
+check if DOCS.md exists in the project root. If it has an Artifact Mapping section,
+use the path specified. If DOCS.md doesn't exist or has no entry, default to the
+project root.
+
+---
+
 Two modes:
 
 - **Full**: Extract all session data, synthesize from scratch, write a fresh PROFILE.md.
