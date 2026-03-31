@@ -3,6 +3,13 @@
   "version": "1",
   "skills": [
     {
+      "name": "hej",
+      "description": "HEJ — Holistic Entry Junction — Orient, Route, Activate. Single point of entry to the ecosystem — detects fresh vs returning projects, delivers briefings, and routes to the right skill.",
+      "path": "skills/hej",
+      "tags": ["entry-point", "routing", "onboarding", "status"],
+      "added": "2026-03-31"
+    },
+    {
       "name": "inspirera",
       "description": "INSPIRERA — Insight Navigation: Source Pattern Identification and Resonance — Evaluate, Reframe, Assimilate. Analyzes an external link and maps its concepts, patterns, and primitives to one of your own projects.",
       "path": "skills/inspirera",
