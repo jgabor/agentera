@@ -27,6 +27,8 @@ to be actionable.
 
 Two modes: **create** (new projects) and **refine** (evolve existing visions).
 
+Vision work opens with: `─── ⛥ visionera · vision ───`
+
 ---
 
 ## State artifacts
@@ -64,8 +66,8 @@ of the world where this project has succeeded.]
 [What's their day like? What frustrates them? What moment makes them think "I need this"?]
 
 ## Principles
-- [Core principles that guide every decision]
-- [What to optimize for, what to resist]
+▸ [Core principles that guide every decision]
+▸ [What to optimize for, what to resist]
 
 ## Direction
 [Where this project is heading. Aspirational, not prescriptive. The kind of capabilities
@@ -75,7 +77,7 @@ it should grow toward.]
 [What this project IS as an entity — its personality and character.]
 
 ### Personality
-[If this product were a person, what adjectives describe it? Bold? Quiet? Playful? Industrial?]
+▸ [adjective] · [adjective] · [adjective]
 
 ### Voice
 [How does it communicate? Direct and terse? Warm and encouraging? Technical and precise?]
@@ -85,8 +87,8 @@ it should grow toward.]
 successful interaction leave behind?]
 
 ### Naming
-[How are things named? What conventions, cultural references, or philosophy guide naming
-of features, modules, commands, and concepts?]
+▸ [convention or philosophy]
+▸ [cultural reference or pattern]
 ```
 
 The exact structure may vary — what matters is that the vision is ambitious enough to sustain

@@ -28,6 +28,8 @@ WHAT and WHY. Realisera owns HOW.
 Three levels: **skip** (trivial work — just run realisera), **light** (single-cycle enrichment),
 **full** (multi-cycle orchestration with adversarial review).
 
+Planning output opens with: `─── ≡ planera · planning ───`
+
 ---
 
 ## State artifacts
@@ -197,9 +199,9 @@ Write the plan to `PLAN.md` in the project root.
 - [What's out of scope]
 
 ## Acceptance Criteria
-- GIVEN [context] WHEN [action] THEN [expected outcome]
-- GIVEN [context] WHEN [action] THEN [expected outcome]
-- ...
+▸ GIVEN [context] WHEN [action] THEN [expected outcome]
+▸ GIVEN [context] WHEN [action] THEN [expected outcome]
+▸ ...
 ```
 
 ### Full plan format
@@ -234,23 +236,23 @@ NOT implementation details.]
 
 ### Task 1: [Title]
 **Depends on**: none
-**Status**: pending
+**Status**: □ pending
 **Acceptance**:
-- GIVEN [context] WHEN [action] THEN [expected outcome]
-- ...
+▸ GIVEN [context] WHEN [action] THEN [expected outcome]
+▸ ...
 
 ### Task 2: [Title]
 **Depends on**: Task 1
-**Status**: pending
+**Status**: □ pending
 **Acceptance**:
-- GIVEN [context] WHEN [action] THEN [expected outcome]
-- ...
+▸ GIVEN [context] WHEN [action] THEN [expected outcome]
+▸ ...
 
 [Repeat for 3-8 tasks]
 
 ## Overall Acceptance
-- GIVEN [context] WHEN [action] THEN [expected outcome]
-- ...
+▸ GIVEN [context] WHEN [action] THEN [expected outcome]
+▸ ...
 
 ## Surprises
 [Empty — populated by realisera during execution when reality diverges from plan]
@@ -274,10 +276,10 @@ After PLAN.md is written and approved:
 When PLAN.md exists with pending tasks, realisera's Step 2 (Pick work) changes:
 
 1. Read PLAN.md
-2. Find tasks with `Status: pending` whose dependencies are all `Status: complete`
+2. Find tasks with `Status: □ pending` whose dependencies are all `Status: ■ complete`
 3. Pick the first eligible task
 4. Use the task's acceptance criteria as exit conditions for the cycle
-5. After committing, update the task's status to `complete` in PLAN.md
+5. After committing, update the task's status to `■ complete` in PLAN.md
 6. If the task revealed something unexpected, add an entry to the `## Surprises` section
 7. If a task doesn't make sense given current codebase state, mark it `skipped` with a note
    and pick the next eligible task

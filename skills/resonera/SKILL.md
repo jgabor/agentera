@@ -27,6 +27,8 @@ is sound before action begins.
 
 Each invocation = one deliberation. The user controls when it ends.
 
+Each deliberation session opens with: `─── ❈ resonera · deliberation ───`
+
 ---
 
 ## State artifacts
@@ -121,7 +123,9 @@ After each answer, maintain a short scratchpad (show it to the user, keep it bri
 
 > **The decision:** one-liner framing of what's being decided, updated as understanding evolves
 > **Known constraints:** hard requirements that any option must satisfy
-> **Alternatives on the table:** the options being considered, with emerging pros/cons
+> ▸ list each constraint
+> **Alternatives on the table:** the options being considered · emerging pros/cons
+> ▸ list each alternative
 > **The crux:** the key tension or uncertainty that needs to resolve for the decision to land
 
 Keep this compact — 5-8 bullets max across all sections. Drop items that stop being relevant.

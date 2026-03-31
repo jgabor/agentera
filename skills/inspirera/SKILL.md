@@ -22,6 +22,8 @@ Analyze an external resource and map its ideas to a target project the user name
 they're currently working in). Output a structured markdown analysis the user can navigate and
 act on.
 
+Analysis output opens with: `─── ⬚ inspirera · analysis ───`
+
 ---
 
 ## Step 1: Identify source and target
@@ -176,8 +178,9 @@ Honest assessment of concepts/patterns that look interesting but don't fit — a
 Being clear about what *not* to adopt is as valuable as the recommendations.
 
 ## Recommended Next Steps
-Short numbered list of concrete actions, ordered by value/effort ratio.
-Where possible, name the specific files or modules that would change.
+▸ [action] · [specific file or module]
+▸ [action] · [specific file or module]
+Ordered by value/effort ratio.
 ````
 
 **Tone**: Direct and technically fluent. Skip any section that has nothing useful to say. Lead
