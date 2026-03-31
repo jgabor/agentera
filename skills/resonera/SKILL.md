@@ -224,8 +224,10 @@ every time.
 
 For any option the user selects:
 
-- **DECISIONS.md**: append the decision entry using the format above. Include the full reasoning
-  trail — alternatives considered, why they were rejected, and the key insight that resolved it.
+- **DECISIONS.md**: append the decision entry using the format above. Reason through each
+  alternative in your response text. Write ONLY the chosen decision, confidence label, and
+  ≤50-word rationale to DECISIONS.md — no full deliberation transcript. The conversation
+  preserves the reasoning; the artifact preserves the conclusion.
 - **VISION.md / OBJECTIVE.md**: if the user wants to create or update these, run a brief
   follow-up to fill in the structure (use the same brainstorm patterns realisera and optimera
   use, but the heavy thinking is already done). Present the draft for approval before writing.
