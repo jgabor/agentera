@@ -70,3 +70,72 @@
 - Two outliers (inspirera, profilera) predate later skills and lack structural sections
 - Cross-skill references mostly bidirectional with gaps around dokumentera (newest skill)
 - Python scripts well-organized and consistently located in scripts/
+
+---
+
+## Audit 2 — 2026-03-31
+
+**Dimensions assessed**: architecture alignment, pattern consistency
+**Findings**: 0 critical, 4 warnings, 6 info (4 filtered by confidence)
+**Overall trajectory**: improving vs Audit 1
+**Grades**: Architecture [B] | Patterns [B]
+
+### Architecture alignment: B
+
+#### CLAUDE.md claims "Ten skills" — warning (confidence: 100)
+- **Location**: `CLAUDE.md:5`
+- **Evidence**: "Ten skills — each a self-contained SKILL.md" — should be "Eleven skills" after hej addition
+- **Impact**: Developers setting up the repo read stale count
+- **Suggested action**: Update to "Eleven skills"
+
+#### DOCS.md coverage says 10/10 — warning (confidence: 100)
+- **Location**: `DOCS.md:46`
+- **Evidence**: `Documented: 10/10 skills have SKILL.md` — should be 11/11
+- **Impact**: Self-assessment of documentation coverage is off by one
+- **Suggested action**: Update count
+
+#### Some cross-skill references are unidirectional — warning (confidence: 90)
+- **Location**: Multiple SKILL.md cross-skill sections
+- **Evidence**: inspektera says "feeds /optimera" but optimera doesn't acknowledge reading HEALTH.md. dokumentera feeds planera/realisera but neither acknowledges dokumentera.
+- **Impact**: Reading friction — not a logic error, all relationships work correctly
+- **Suggested action**: Add reciprocal mentions where missing
+
+#### README state artifacts table shows primary consumers only — info (confidence: 85)
+- **Location**: `README.md:52-65`
+- **Evidence**: Table shows primary workflow consumers, not the full mesh. Known from Audit 1. By design.
+
+### Pattern consistency: B
+
+#### Resonera has duplicate "Getting started" sections — warning (confidence: 98)
+- **Location**: `skills/resonera/SKILL.md:98` and `skills/resonera/SKILL.md:312`
+- **Evidence**: Two `## Getting started` headings — first describes workflow initiation, second describes usage patterns. First is misplaced mid-document. All other skills have one section at the end.
+- **Impact**: Breaks structural pattern followed by all 10 other skills
+- **Suggested action**: Merge into one section at the end
+
+#### Hej artifact path resolution under-specified — info (confidence: 75)
+- **Location**: `skills/hej/SKILL.md:50-55`
+- **Evidence**: Says "all artifact reads" without listing specific artifacts or noting hej produces nothing. Other skills list explicit examples.
+
+#### Inspirera description differs between registry and marketplace — info (confidence: 100)
+- **Location**: `registry.json:7` vs `.claude-plugin/marketplace.json:13`
+- **Evidence**: "an external link" (singular, accurate) vs "external links" (plural)
+
+#### Safety rails count varies 5-9 across skills — info (confidence: 65)
+- **Location**: All SKILL.md safety rails sections
+- **Evidence**: optimera 9, inspirera/profilera 5. Variation likely reflects genuine complexity differences.
+
+#### Resonera is the only skill with a "Personality" section — info (confidence: 60)
+- **Location**: `skills/resonera/SKILL.md:73-86`
+- **Evidence**: No other skill documents communication personality as a formal section. Makes sense as an exception — resonera's warm Socratic style is central to its function.
+
+### Trends vs Audit 1
+- **Improved**: Patterns C→B. All 6 Audit 1 findings (ISS-1 through ISS-6) resolved.
+- **Stable**: Architecture remains B. No structural regressions from adding hej.
+- **New**: 4 new findings — stale counts (CLAUDE.md, DOCS.md), resonera duplicate section, unidirectional cross-skill refs.
+- **Resolved**: ISS-1 through ISS-7 (all prior issues cleared).
+
+### Patterns Observed
+- Hej integrates cleanly as a meta-skill — reads all artifacts, produces none, passes all linter checks
+- Doc references go stale immediately on skill addition (same pattern as ISS-1). Consider a linter check for count consistency.
+- Pushback discipline addition fits tonally with resonera's personality
+- Ecosystem handles skill count changes gracefully at the structural level; staleness is purely documentation
