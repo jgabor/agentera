@@ -1,4 +1,4 @@
-# agent-skills
+# agentera
 
 ## North Star
 
@@ -16,7 +16,7 @@ drifts. Decisions evaporate. Architecture degrades silently. Documentation doesn
 nobody's job is to write it. Three months in, you're standing in a codebase that no longer
 resembles what you set out to build, and you're not even sure when it went wrong.
 
-agent-skills exists so that never happens again. Skills that share state, enforce alignment,
+agentera exists so that never happens again. Skills that share state, enforce alignment,
 and *compound*. Every cycle deposits understanding — why decisions were made, what the
 architecture looks like, where the project is heading. The system doesn't just execute. Over
 time, it understands the project and the person building it. The twentieth cycle is
@@ -69,7 +69,7 @@ later and understand the story of her own project.
   rails, real self-correction. Don't build a tool — build a teammate.
 
 - **Openness over lock-in.** Skills work across Claude, Codex, Gemini, and whatever comes
-  next. The Agent Skills format is an open standard. The ecosystem spec is public. Platform-specific
+  next. The agentera format is an open standard. The ecosystem spec is public. Platform-specific
   features are not features — they're walls. If the format is open and the spec is public,
   the ecosystem grows beyond any single vendor.
 

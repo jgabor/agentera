@@ -314,3 +314,29 @@ consistently across 3+ projects" are both 90+ but mean different things.
 
 **Confidence**: firm
 **Feeds into**: references/ecosystem-spec.md (Decision 7)
+
+---
+
+## Decision 9 — 2026-03-31
+
+**Question**: What should this skill ecosystem be named? The current name "agent-skills" is generic and doesn't represent what it is or provides.
+**Context**: The ecosystem is a collection of 10 interconnected Swedish-named skills that give a solo founder an engineering team. All skill names follow the Swedish -era verb convention. The name appears in the repo, marketplace manifest, README, and CLAUDE.md. It's the public identity.
+**Alternatives**:
+- [agent-skills] — current name. Generic, describes the format not the identity. Could be any collection of any skills.
+- [agenterna] — "the agents" in Swedish. Directly plural/collective. Rejected: too literal, dictionary translation energy rather than proper name energy.
+- [arsenalen] — "the arsenal." Cross-language transparency, forge heritage. Rejected: military connotation clashes with crew/team energy.
+- [ateljén / fabriken / hantverket] — explored as forge/workshop alternatives with cross-language transparency. None landed — each had tradeoffs (too artsy, too industrial, too literal) that didn't match the desired feel.
+- [smedjan] — "the forge." Maximum Swedish character. Rejected: completely opaque to non-Swedes.
+- [agenteri] — "agent-ery," Swedish -eri suffix (bakery, brewery). Workshop energy. Discussed but not the frontrunner.
+- [agentera] — follows the -era verb convention. Consistent with skills. Runner-up: risks blending in with individual skill names since they're all -era verbs, but the verb-as-ecosystem-name has appeal.
+**Choice**: **agentera** — "to agent." The ecosystem name follows the same -era verb convention as its skills.
+**Reasoning**: The deliberation explored two directions — agent-rooted names and non-agent forge/workshop names. The forge direction produced evocative options but none satisfied all constraints simultaneously. Agenturen was the analytical frontrunner (noun, collective, survives scrutiny), but agentera is the instinctive choice: it follows the -era verb pattern that defines the entire suite's identity, "agent" is universally legible, and -era is the signature suffix. The noun-vs-verb distinction matters less than the user initially thought — the ecosystem IS an action. You don't just install a collection; you agentera your project. The name is both the identity and the invocation.
+
+**Key constraints discovered during deliberation**:
+- Must feel like a crew/team, specifically plurality/collective
+- Must have proper name energy — character, not a dictionary translation
+- Must be pronounceable by non-Swedes and hint at what it is
+- Swedish flavor is non-negotiable (matches the -era skill identity)
+
+**Confidence**: firm
+**Feeds into**: rename execution across repo, marketplace manifest, README, CLAUDE.md, registry
