@@ -32,8 +32,8 @@ Fixed in b11b018. CLAUDE.md → "Eleven skills", DOCS.md → "11/11".
 Fixed in b11b018. First section renamed to "Starting a session" (workflow step). Second
 section remains as the real "Getting started" at end of file.
 
-## ISS-10: Some cross-skill references are unidirectional — annoying
-inspektera says "feeds /optimera" but optimera doesn't acknowledge inspektera. dokumentera
-feeds planera/realisera but neither acknowledges dokumentera. Not a logic error — all
-relationships work correctly. Causes reading friction when discovering integration points.
-Found in Audit 2.
+## ~~ISS-10: Some cross-skill references are unidirectional — annoying~~ RESOLVED
+Fixed in 364727c. Added 9 reciprocal references across 8 skills: optimera←planera,
+profilera←planera, inspirera←planera, planera←visionera, realisera←dokumentera,
+realisera←visualisera, visionera←dokumentera, dokumentera←visualisera,
+inspektera←visualisera.
