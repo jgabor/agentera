@@ -366,7 +366,7 @@ Report one of these statuses at workflow completion:
 
 ## Cross-skill integration
 
-Dokumentera is part of a ten-skill ecosystem. It is the documentation layer — the "D" in DTC.
+Dokumentera is part of an eleven-skill ecosystem. It is the documentation layer — the "D" in DTC.
 
 ### Dokumentera feeds /planera (DTC pipeline)
 In the strict DTC pipeline, dokumentera writes intent docs first, then planera breaks them

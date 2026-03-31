@@ -212,7 +212,7 @@ Report one of these statuses at workflow completion:
 
 ## Cross-skill integration
 
-Inspirera is part of a ten-skill ecosystem. Its analysis feeds naturally into the other skills.
+Inspirera is part of an eleven-skill ecosystem. Its analysis feeds naturally into the other skills.
 
 ### Artifact path resolution
 

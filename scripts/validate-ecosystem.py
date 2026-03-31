@@ -459,16 +459,16 @@ def check_cross_skill_integration(skill: str, text: str, r: Results) -> None:
         r.error(skill, "cross-skill-refs", "Missing ## Cross-skill integration section")
         return
 
-    # Must contain "ten-skill ecosystem".
-    if "ten-skill ecosystem" not in section.lower():
+    # Must contain "eleven-skill ecosystem".
+    if "eleven-skill ecosystem" not in section.lower():
         bad_counts = []
-        for n in ("eight", "nine", "seven", "six", "five"):
+        for n in ("ten", "nine", "eight", "seven", "six", "five"):
             if f"{n}-skill" in section.lower():
                 bad_counts.append(f"{n}-skill")
         if bad_counts:
             r.error(
                 skill, "cross-skill-refs",
-                f"Uses '{bad_counts[0]}' instead of 'ten-skill ecosystem'",
+                f"Uses '{bad_counts[0]}' instead of 'eleven-skill ecosystem'",
             )
         elif "skill ecosystem" in section.lower():
             r.error(
@@ -478,7 +478,7 @@ def check_cross_skill_integration(skill: str, text: str, r: Results) -> None:
         else:
             r.error(
                 skill, "cross-skill-refs",
-                "Missing 'ten-skill ecosystem' in cross-skill integration section",
+                "Missing 'eleven-skill ecosystem' in cross-skill integration section",
             )
 
     # Check required references (case-insensitive word boundary match).
@@ -495,7 +495,7 @@ def check_cross_skill_integration(skill: str, text: str, r: Results) -> None:
             f"Missing reference to: {', '.join(missing)}",
         )
 
-    if "ten-skill ecosystem" in section.lower() and not missing:
+    if "eleven-skill ecosystem" in section.lower() and not missing:
         r.ok(skill, "cross-skill-refs")
 
 

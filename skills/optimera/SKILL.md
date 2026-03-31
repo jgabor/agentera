@@ -394,7 +394,7 @@ Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3
 
 ## Cross-skill integration
 
-Optimera is part of a ten-skill ecosystem. Each skill can invoke the others when the work
+Optimera is part of an eleven-skill ecosystem. Each skill can invoke the others when the work
 calls for it.
 
 ### Optimera invokes /inspirera

@@ -391,7 +391,7 @@ Report one of these statuses at workflow completion:
 
 ## Cross-skill integration
 
-Inspektera is part of a ten-skill ecosystem. It is the feedback loop — the skill that tells
+Inspektera is part of an eleven-skill ecosystem. It is the feedback loop — the skill that tells
 realisera whether its work is making things better.
 
 ### Inspektera feeds /realisera

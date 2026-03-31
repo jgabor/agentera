@@ -23,13 +23,6 @@ Fixed in 086c059. Added inspirera→visionera and planera←dokumentera (DTC pip
 Fixed in baff5b6. Dedup now uses three-tier preference: fullest context → most evidence-rich
 dimension → latest. Complementary evidence preserved in merged entries.
 
-## Open
-
-## ~~ISS-11: Hej doesn't surface PROFILE.md's global path — degraded~~ RESOLVED
-Fixed in b2dfa4a. Added global path notation to hej's state artifacts table, explicit
-note in hej's artifact path resolution section, and global artifact note in ecosystem spec's
-artifact table.
-
 ## ~~ISS-8: CLAUDE.md and DOCS.md have stale skill counts — degraded~~ RESOLVED
 Fixed in b11b018. CLAUDE.md → "Eleven skills", DOCS.md → "11/11".
 
@@ -42,3 +35,10 @@ Fixed in 364727c. Added 9 reciprocal references across 8 skills: optimera←plan
 profilera←planera, inspirera←planera, planera←visionera, realisera←dokumentera,
 realisera←visualisera, visionera←dokumentera, dokumentera←visualisera,
 inspektera←visualisera.
+
+## ~~ISS-11: Hej doesn't surface PROFILE.md's global path — degraded~~ RESOLVED
+Fixed in b2dfa4a. Added global path notation to hej's state artifacts table, explicit
+note in hej's artifact path resolution section, and global artifact note in ecosystem spec's
+artifact table.
+
+## Open

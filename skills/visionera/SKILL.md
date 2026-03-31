@@ -299,7 +299,7 @@ Report one of these statuses at workflow completion:
 
 ## Cross-skill integration
 
-Visionera is part of a ten-skill ecosystem. It is the strategic layer — the skill that
+Visionera is part of an eleven-skill ecosystem. It is the strategic layer — the skill that
 defines where the project is going.
 
 ### Visionera produces what /realisera consumes

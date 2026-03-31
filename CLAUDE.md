@@ -71,3 +71,5 @@ The linter blocks commits with alignment errors and warns on advisory issues.
 - Skills never push to remote repos or modify VISION.md/OBJECTIVE.md during execution cycles
 - Conventional commits: feat/fix/docs/refactor/chore/test
 - realisera and optimera dispatch implementation work to Sonnet agents in worktrees, then verify before committing
+- Visual identity system defined in `references/ecosystem-spec.md` Section 12 — skill glyphs, semantic tokens (status, severity, confidence, trend), and composition rules that all skills and artifact templates follow
+- Versioning convention in DOCS.md — `version_files` lists what to bump, `semver_policy` maps commit types to bump levels. Planera flags bump-worthy plans, inspektera checks for unbumped changes, realisera executes bumps

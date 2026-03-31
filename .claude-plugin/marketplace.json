@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "agentera",
   "version": "1.2.0",
-  "description": "agentera — vision, deliberation, planning, autonomous development, optimization, auditing, documentation, research, and decision-profile mining",
+  "description": "agentera — entry-point routing, vision, deliberation, planning, autonomous development, optimization, auditing, documentation, visual identity, research, and decision-profile mining",
   "owner": {
     "name": "jgabor"
   },
