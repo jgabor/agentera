@@ -361,6 +361,17 @@ If any entries were challenged, mention them by name so the user knows what shif
 
 ---
 
+## Exit signals
+
+Report one of these statuses at workflow completion:
+
+- **complete** — PROFILE.md was written (Full mode) or updated (Validate mode) with all metadata changes applied, prediction accuracy was verified (Full mode), and a summary of what changed was reported.
+- **flagged** — Profile generation or validation completed but with data quality issues: extraction failed for one or more sources, prediction accuracy was below 3/5, or significant tensions were found that could not be resolved from available evidence.
+- **stuck** — Cannot generate or validate a profile because the extraction scripts failed entirely, Python is unavailable, or `~/.claude/` is unreadable and no session data can be accessed.
+- **waiting** — The user chose Validate mode but PROFILE.md does not exist or has no valid metadata, requiring a Full mode run that the user has not confirmed; or the user's intent between Full and Validate is genuinely ambiguous.
+
+---
+
 ## Cross-skill integration
 
 Profilera is part of a ten-skill ecosystem. The decision profile it produces is consumed by

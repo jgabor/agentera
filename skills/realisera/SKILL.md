@@ -345,6 +345,19 @@ Never waste a cycle. If the first pick is blocked, pivot.
 
 ---
 
+## Exit signals
+
+Report one of these statuses at workflow completion:
+
+- **complete** — One full cycle completed: work was selected, implemented, verified against the project's test/build suite, committed with a conventional message, and PROGRESS.md and ISSUES.md were updated.
+- **flagged** — The cycle completed but with notable issues: verification passed but with warnings, the committed work is narrower than intended due to scope reduction, or discoveries logged in PROGRESS.md suggest the next cycle may face blockers.
+- **stuck** — Cannot complete a cycle because VISION.md does not exist and the brainstorm cannot proceed without the user, every available work item is blocked (missing dependencies, ambiguous requirements, decisions too consequential to make autonomously), or the verification suite is broken and cannot be fixed within the cycle's scope.
+- **waiting** — The project has no VISION.md and no codebase to infer direction from, or the user's explicit instruction for what to build is too ambiguous to act on without clarification.
+
+Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3 entries record failed cycles — commits that were reverted, cycles that logged a blocker and pivoted 3 times consecutively, or cycles whose "Discovered" field logs the same issue that was supposed to be fixed — this constitutes 3 consecutive failures: **stop**, log the failure pattern to ISSUES.md with what was attempted and what the skill believes is wrong, and surface the situation to the user with a recommended course of action (e.g., "/resonera to deliberate on the approach", "manual investigation needed", "dependency missing"). Do not attempt a 4th consecutive cycle on the same failing problem.
+
+---
+
 ## Cross-skill integration
 
 Realisera is part of a ten-skill ecosystem. Each skill can invoke the others when the work

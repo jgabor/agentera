@@ -360,6 +360,17 @@ Feed actionable findings into the rest of the suite:
 
 ---
 
+## Exit signals
+
+Report one of these statuses at workflow completion:
+
+- **complete** — All selected audit dimensions were assessed, findings were synthesized, grades were assigned, HEALTH.md was updated, and the user was presented with actionable results.
+- **flagged** — The audit completed but with notable caveats: one or more dimensions had to be skipped due to missing tooling, confidence was too low to grade a dimension reliably, or critical findings were discovered that require urgent attention beyond the audit scope.
+- **stuck** — Cannot complete the audit because the project is inaccessible, required language tooling is unavailable and manual analysis is not feasible, or filing findings to ISSUES.md was declined by the user and the results cannot be safely surfaced any other way.
+- **waiting** — The audit target is ambiguous: no project was identified, the codebase is too incomplete to assess meaningfully, or the user's request specifies dimensions that cannot be evaluated without additional information.
+
+---
+
 ## Cross-skill integration
 
 Inspektera is part of a ten-skill ecosystem. It is the feedback loop — the skill that tells

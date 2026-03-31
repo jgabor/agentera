@@ -209,3 +209,91 @@ enough trigger phrases for Claude to activate the skill from natural language.
 
 **Linter check**: Deterministic — frontmatter presence, required field presence, name
 format (kebab-case).
+
+## 10. Exit Signals
+
+Every skill MUST report a completion status at the end of its workflow. This enables
+downstream skills, orchestration layers, and the user to determine what happened without
+parsing natural language.
+
+### Statuses
+
+| Status | Meaning | When to use |
+|--------|---------|-------------|
+| **complete** | All steps completed successfully | The skill's workflow ran to completion and all acceptance criteria (if any) were met |
+| **flagged** | Completed, but with issues the user should know about | The workflow completed but discovered problems, made compromises, or has caveats worth surfacing |
+| **stuck** | Cannot proceed | A hard blocker prevents completion — missing dependency, permission issue, ambiguous requirement too consequential to resolve autonomously |
+| **waiting** | Missing information required to continue | The skill needs input, clarification, or a decision from the user or another skill before it can proceed |
+
+### Rules
+
+- Skills MUST report exactly one status at workflow completion
+- The status MUST appear in a `## Exit signals` section in each SKILL.md,
+  defining when the skill reports each status with skill-specific guidance
+- `flagged` MUST list each concern — a bare status without details is
+  not acceptable
+- `stuck` and `waiting` MUST state what is blocking / what is needed and
+  what was attempted
+- The `## Exit signals` section is a peer to `## Safety rails` (not nested
+  inside it)
+
+### SKILL.md structural requirement
+
+Each SKILL.md MUST contain a `## Exit signals` section with:
+
+1. All four status terms (complete, flagged, stuck, waiting)
+2. Skill-specific guidance on when each status applies in that skill's context
+
+**Linter check**: Deterministic — `## Exit signals` heading presence, all four
+status terms present in the section content (`exit-signals`).
+
+## 11. Loop Guard
+
+Skills that run autonomous loops (currently: realisera, optimera) MUST include an
+escalation rule to prevent runaway cycles producing bad work.
+
+### The rule
+
+When the skill detects 3 consecutive failed cycles, it MUST:
+
+1. **Stop** — do not attempt a 4th cycle on the same problem
+2. **Log** — file the failure pattern to ISSUES.md with context: what was attempted,
+   what failed, and what the skill thinks is wrong
+3. **Surface** — tell the user what happened and recommend a course of action
+   (e.g., "/resonera to deliberate on the approach", "manual investigation needed",
+   "dependency missing")
+
+### Failure detection
+
+Consecutive failures are detected by reading the last 3 entries in PROGRESS.md. A cycle
+counts as failed when:
+
+- The commit was reverted or the verification step failed
+- The cycle logged a blocker and pivoted to different work 3 times in a row
+  (3 consecutive pivots = the available work surface is exhausted)
+- The cycle's "Discovered" field logs the same issue that was supposed to be fixed
+
+### Complementary mechanisms
+
+Optimera's existing plateau detection in `analyze_experiments.py` detects experiment
+stagnation (no improvement over N iterations). The loop guard is complementary:
+plateau detection handles metric stagnation, escalation handles general execution failure.
+Both can trigger independently.
+
+### Applicability
+
+The escalation rule is REQUIRED for autonomous-loop skills: `realisera`, `optimera`.
+
+Other skills MAY include loop guard language but are not required to — their workflows
+are typically single-invocation and do not risk runaway cycles.
+
+### SKILL.md structural requirement
+
+Autonomous-loop skills MUST include loop guard language in their
+`## Exit signals` section, referencing the 3-failure threshold and
+PROGRESS.md inspection.
+
+**Linter check**: Deterministic — for skills in the autonomous-loop set (realisera,
+optimera), check that the `## Exit signals` section contains both "3" (the
+threshold) and a reference to PROGRESS.md or consecutive failure detection (`loop-guard`). Advisory
+for all other skills.

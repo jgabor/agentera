@@ -310,6 +310,17 @@ When all tasks are complete (or the plan is explicitly discarded):
 
 ---
 
+## Exit signals
+
+Report one of these statuses at workflow completion:
+
+- **complete** — PLAN.md was written and approved (or the user confirmed skip level), the adversarial review ran for full plans, and the handoff to realisera was suggested.
+- **flagged** — The plan was produced but with caveats: the adversarial critic raised issues that were dismissed rather than resolved, the work scope is larger than ideally fits the plan format, or one or more acceptance criteria could not be made fully behavioral.
+- **stuck** — Cannot plan because the work description is too ambiguous to decompose, required context files (VISION.md, DECISIONS.md) contain contradictions that must be resolved first, or the user declined to approve the plan and no clear revision path exists.
+- **waiting** — The feature or change to plan has not been specified with enough detail to produce acceptance criteria, or key architectural constraints that would shape the plan are unknown and cannot be inferred from the codebase.
+
+---
+
 ## Cross-skill integration
 
 Planera is part of a ten-skill ecosystem. It is the bridge between deliberation and execution.
