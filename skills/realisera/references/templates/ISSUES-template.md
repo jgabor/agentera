@@ -5,7 +5,9 @@ Resolved issues are marked with the cycle and commit that fixed them.
 
 ## Open
 
-### [severity] Short description
+### ⇶ [critical] Short description
+### ⇉ [degraded] Short description
+### ⇢ [annoying] Short description
 
 - **Discovered**: Cycle N — YYYY-MM-DD
 - **Context**: Where and how this was found
@@ -13,7 +15,9 @@ Resolved issues are marked with the cycle and commit that fixed them.
 
 ## Resolved
 
-### ~~[severity] Short description~~
+### ~~⇶ [critical] Short description~~
+### ~~⇉ [degraded] Short description~~
+### ~~⇢ [annoying] Short description~~
 
 - **Discovered**: Cycle N — YYYY-MM-DD
 - **Resolved**: Cycle M — YYYY-MM-DD — `<commit hash>`

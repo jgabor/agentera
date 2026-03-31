@@ -27,14 +27,14 @@ decisions. NOT implementation details — no function names, no line numbers, no
 
 ### Task 1: [Title]
 **Depends on**: none
-**Status**: pending | complete | skipped
+**Status**: □ pending | ■ complete | skipped
 **Acceptance**:
 - GIVEN [context] WHEN [action] THEN [expected outcome]
 - GIVEN [context] WHEN [action] THEN [expected outcome]
 
 ### Task 2: [Title]
 **Depends on**: Task 1
-**Status**: pending | complete | skipped
+**Status**: □ pending | ■ complete | skipped
 **Acceptance**:
 - GIVEN [context] WHEN [action] THEN [expected outcome]
 - GIVEN [context] WHEN [action] THEN [expected outcome]
@@ -53,9 +53,11 @@ Level guide:
   full  — Include all sections. 3-8 tasks, each sized for one realisera cycle.
 
 Task status:
-  pending   — not started, dependencies may or may not be met
-  complete  — acceptance criteria verified, committed
-  skipped   — no longer viable given current codebase state (note why)
+  □ pending   — not started, dependencies may or may not be met
+  ■ complete  — acceptance criteria verified, committed
+  ▨ blocked   — dependencies unmet or external blocker
+  ▣ in-progress — active in current cycle
+  skipped     — no longer viable given current codebase state (note why)
 
 Acceptance criteria format:
   GIVEN [precondition/context]

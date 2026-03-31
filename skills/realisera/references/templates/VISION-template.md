@@ -17,9 +17,9 @@ specific workflows. Who reaches for this tool and why?]
 
 ## Principles
 
-- [Core principle that guides every decision]
-- [What to optimize for]
-- [What to resist]
+- ▸ [Core principle that guides every decision]
+- ▸ [What to optimize for]
+- ▸ [What to resist]
 
 ## Direction
 

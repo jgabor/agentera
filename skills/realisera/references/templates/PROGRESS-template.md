@@ -14,7 +14,7 @@ suggestion, not a mandate — each cycle re-evaluates fresh.
 <!--
 Entry format reference:
 
-  ## Cycle N — YYYY-MM-DD HH:MM
+  ■ ## Cycle N — YYYY-MM-DD HH:MM   (■ marks a logged/complete cycle)
 
   **What**: [one-line summary]
   **Commit**: `<hash>` type(scope): message
