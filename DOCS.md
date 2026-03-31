@@ -9,6 +9,12 @@ doc_root: .
 style:    technical, concise, sections with tables, no badges
 auto_gen:
   - none
+versioning:
+  version_files:
+    - skills/*/. claude-plugin/plugin.json
+    - .claude-plugin/marketplace.json
+    - registry.json
+  semver_policy: "feat = minor, fix = patch, docs/chore/test = no bump"
 ```
 
 ## Artifact Mapping
