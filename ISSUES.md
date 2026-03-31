@@ -42,3 +42,23 @@ note in hej's artifact path resolution section, and global artifact note in ecos
 artifact table.
 
 ## Open
+
+## ISS-12: README ecosystem diagram omits dokumentera — ⇉ degraded
+Diagram shows 10 of 11 skills. Dokumentera is absent despite being consumed by all skills
+for DOCS.md path resolution. Visual representation contradicts the "Eleven skills" claim.
+Source: inspektera Audit 3, confidence 95.
+
+## ISS-13: inspirera artifact path resolution in wrong location — ⇉ degraded
+Artifact path resolution appears under `## Cross-skill integration` instead of `## State
+artifacts`. Ecosystem spec Section 5 requires it under State artifacts. inspirera has no
+State artifacts section at all. Source: inspektera Audit 3, confidence 100.
+
+## ISS-14: hej cross-skill section has count and list gaps — ⇉ degraded
+Line 227 says "all eleven workflow skills" — should be "ten other" (hej doesn't read
+itself). Line 231 heading says "Reads from all ten skills" but lists only 8 (missing
+profilera and inspirera). Source: inspektera Audit 3, confidence 90.
+
+## ISS-15: profilera lacks State artifacts section — ⇉ degraded
+Only skill of 11 without a `## State artifacts` section. Reads DECISIONS.md, writes
+PROFILE.md (global path), but documents neither in a structured section with artifact
+path resolution. Source: inspektera Audit 3, confidence 95.

@@ -139,3 +139,58 @@
 - Doc references go stale immediately on skill addition (same pattern as ISS-1). Consider a linter check for count consistency.
 - Pushback discipline addition fits tonally with resonera's personality
 - Ecosystem handles skill count changes gracefully at the structural level; staleness is purely documentation
+
+---
+
+## Audit 3 — 2026-03-31
+
+**Dimensions assessed**: architecture alignment, pattern consistency
+**Findings**: 0 critical, 4 warnings, 1 info (0 filtered by confidence)
+**Overall trajectory**: ⮉ improving vs Audit 2
+**Grades**: Architecture [B] | Patterns [B]
+
+### Architecture alignment: B
+
+#### README ecosystem diagram omits dokumentera — warning (confidence: 95)
+- **Location**: `README.md:27-38`
+- **Evidence**: ASCII diagram shows 10 of 11 skills. Dokumentera is absent despite being referenced in the opening line and the state artifacts table. All other skills appear.
+- **Impact**: Users don't see how documentation fits the workflow. Visual representation contradicts the "Eleven skills" claim.
+- **Suggested action**: Add dokumentera to the diagram as a cross-cutting layer (it's consumed by all skills for DOCS.md path resolution)
+
+#### inspirera artifact path resolution in wrong location — warning (confidence: 100)
+- **Location**: `skills/inspirera/SKILL.md:217`
+- **Evidence**: Artifact path resolution appears as a subsection of `## Cross-skill integration` instead of under `## State artifacts`. Ecosystem spec Section 5 requires it under State artifacts. inspirera has no State artifacts section at all.
+- **Impact**: Violates spec structural requirement. Linter passes because the instruction text exists, but the placement is wrong.
+- **Suggested action**: Add `## State artifacts` section to inspirera; move artifact path resolution under it
+
+#### hej cross-skill section has count and list gaps — warning (confidence: 90)
+- **Location**: `skills/hej/SKILL.md:227,231`
+- **Evidence**: Line 227 says "reads artifacts from all eleven workflow skills" — should be "ten other" (hej doesn't read itself). Line 231 heading says "Reads from all ten skills" but lists only 8 (missing profilera → PROFILE.md, inspirera → no direct artifact but should be acknowledged).
+- **Impact**: Incomplete dependency documentation for the entry-point skill
+- **Suggested action**: Fix line 227 to "ten other workflow skills", update line 231 list to include profilera and inspirera
+
+### Pattern consistency: B
+
+#### profilera lacks State artifacts section — warning (confidence: 95)
+- **Location**: `skills/profilera/SKILL.md`
+- **Evidence**: 10 of 11 skills have a `## State artifacts` section with artifact path resolution. profilera is the only one missing it. It reads DECISIONS.md (line 407) and writes PROFILE.md (global path) but documents neither in a structured section.
+- **Impact**: Inconsistent structure. profilera's exceptional artifact path (~/.claude/profile/) makes a State artifacts section MORE important, not less — consumers need to know it's not in the project root.
+- **Suggested action**: Add State artifacts section documenting PROFILE.md (global), DECISIONS.md (reads via DOCS.md mapping), and artifact path resolution
+
+#### DOCS.md Index missing PLAN.md and self-reference — info (confidence: 100)
+- **Location**: `DOCS.md:41-54`
+- **Evidence**: Index lists 12 documents but omits PLAN.md (exists at root, active plan) and DOCS.md itself. Both are canonical artifacts in the Artifact Mapping table.
+- **Impact**: Index doesn't fully document its own contents
+- **Suggested action**: Add both entries to the index
+
+### Trends vs Audit 2
+- **Improved**: All Audit 2 findings resolved (ISS-8, ISS-9, ISS-10). Dokumentera Audit 3 fixed 10 additional doc issues. Visual identity system fully deployed. Versioning convention established. Linter updated for eleven-skill count.
+- **Stable**: Both grades remain B. Nature of findings shifted from accuracy (wrong counts, missing sections, duplicate content) to structural placement and completeness.
+- **New**: 5 new findings (4 warnings, 1 info). 1 introduced by Audit 3 fix (hej "all eleven" should be "ten other"). 4 pre-existing but previously undetected.
+- **Resolved**: All Audit 2 findings (ISS-8, ISS-9, ISS-10) cleared.
+
+### Patterns Observed
+- Count-staleness pattern persists: three audits have found wrong skill counts (ISS-1 eight→nine, ISS-8 ten→eleven in CLAUDE.md, Audit 3 ten→eleven in SKILL.md/spec). Linter now validates the count, but the linter itself needed manual updating. Consider making the count dynamic (grep skills/ directory).
+- Two skills (profilera, inspirera) predate the structural conventions established in later skills. Both lack State artifacts sections that all post-convention skills have.
+- Finding quality is improving: Audit 1 found wrong counts and missing safety rails. Audit 2 found stale counts and structural duplicates. Audit 3 finds placement issues and list gaps. Each audit's findings are less severe than the last.
+- The ecosystem is settling into a mature pattern: 11 skills, shared spec, linter enforcement, visual identity, versioning convention. Remaining work is polish, not architecture.
