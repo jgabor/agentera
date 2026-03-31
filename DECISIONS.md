@@ -342,3 +342,37 @@ consistently across 3+ projects" are both 90+ but mean different things.
 
 **Confidence**: firm
 **Feeds into**: rename execution across repo, marketplace manifest, README, CLAUDE.md, registry; ecosystem-spec.md primitive vocabulary
+
+---
+
+## Decision 10 — 2026-03-31
+
+**Question**: Which patterns from gstack (garrytan/gstack) should agentera adopt, defer, or reject?
+**Context**: Inspirera analysis of gstack and its /office-hours skill identified 8 transferable
+concepts. Each was evaluated against agentera's existing capabilities, VISION.md principles
+(coherence over features, compounding over convenience, standalone + mesh), and the constraint
+that artifact sprawl has real cost.
+
+**Alternatives evaluated**:
+
+| # | Concept | Source pattern | Verdict | Reasoning |
+|---|---------|---------------|---------|-----------|
+| 1 | Forcing questions protocol | office-hours' 6 diagnostic questions | **Defer** | Resonera's Socratic identity is distinct from a product diagnostic. The pattern (don't accept vague answers) is worth absorbing into resonera's pushback principles (#3), but a formal diagnostic mode stretches resonera into two things. |
+| 2 | Proactive skill routing system | gstack's shared preamble routing rules | **Reject** | Claude Code's trigger-pattern matching from skill descriptions is the right mechanism for pure-Markdown skills. A separate routing system duplicates this. Hej's dashboard and routing-by-suggestion cover the entry-point case. |
+| 3 | Anti-sycophancy / pushback patterns | office-hours' explicit pushback rules and red flags | **Adopt now** | Clear gap. Resonera says "gently challenge assumptions" but doesn't codify pushback techniques. 3-4 explicit principles would sharpen deliberation without changing personality. |
+| 4 | Compounding learnings artifact | gstack's /learn with JSONL persistence | **Defer** | PROGRESS.md:Discovered, ISSUES.md, and HEALTH.md:Patterns Observed already capture most of what a learnings system would. Adding LEARNINGS.md overlaps all three without clear unique value. |
+| 5 | Design doc as intermediate artifact | office-hours' structured design doc between deliberation and planning | **Reject** | DECISIONS.md already serves this role (Question, Context, Alternatives, Choice, Reasoning). The entry format can stretch for complex decisions. Another artifact in the pipeline adds friction for every decision. |
+| 6 | Mode adaptation from user context | office-hours' startup/builder mode detection | **Defer** | Hej already reads PROFILE.md as part of its artifact scan. Explicit mode switching is premature — agentera targets one persona. Revisit if user base diversifies. |
+| 7 | Spec review loop for planera | office-hours' iterative accept/modify/reject loop | **Reject** | Decision 1 already established human approval for human-initiated plans. Adding an iterative review loop is ceremony. If the plan needs revision, the user says so. |
+| 8 | Three-tier eval (Tier 3 LLM-as-judge) | gstack's Sonnet-scored quality eval | **Defer** | Two-tier system (linter + smoke tests) catches structural and execution issues. LLM-as-judge for quality assessment is useful but not urgent until the skill set stabilizes. |
+
+**Choice**: Adopt #3 (anti-sycophancy pushback patterns for resonera). Defer #1, #4, #6, #8. Reject #2, #5, #7. Hej's dashboard and routing-by-suggestion are preserved — the reject on #2 applies only to a separate routing system layered on top.
+
+**Reasoning**: Most gstack patterns already have partial equivalents in agentera. The delta
+that justifies immediate action is #3 — resonera has the right structure for deliberation but
+lacks explicit pushback discipline. The deferred items have merit but either overlap existing
+artifacts or are premature for the current ecosystem size. The rejected items duplicate
+existing mechanisms (trigger patterns, DECISIONS.md format, planera approval gate).
+
+**Confidence**: firm
+**Feeds into**: resonera SKILL.md (pushback patterns)
