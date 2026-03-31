@@ -108,7 +108,7 @@ once the spec is written.
 
 ### Task 5: Audit/analysis skills — inspektera, profilera, dokumentera
 **Depends on**: Task 1
-**Status**: pending
+**Status**: complete
 **Acceptance**:
 - GIVEN inspektera's output format instructions WHEN describing findings THEN severity arrows (⇶/⇉/⇢) appear alongside severity text and confidence scores
 - GIVEN profilera's output format instructions WHEN describing confidence levels THEN confidence line tokens (━/─/┄) appear
