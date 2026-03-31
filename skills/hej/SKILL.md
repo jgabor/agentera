@@ -83,18 +83,18 @@ The user is new to this project's ecosystem. Orient them.
 2. **Present capabilities** — show the user what the ecosystem can do for them,
    grouped by intent:
 
-   | If you want to... | Use |
-   |--------------------|-----|
-   | Define project direction | `/visionera` |
-   | Think through a decision | `/resonera` |
-   | Research an external resource | `/inspirera` |
-   | Plan work with acceptance criteria | `/planera` |
-   | Build autonomously | `/realisera` |
-   | Optimize a metric | `/optimera` |
-   | Audit codebase health | `/inspektera` |
-   | Create or maintain docs | `/dokumentera` |
-   | Build a decision profile | `/profilera` |
-   | Define visual identity | `/visualisera` |
+   | | If you want to... | Use |
+   |---|---------------------|-----|
+   | ⛥ | Define project direction | `/visionera` |
+   | ❈ | Think through a decision | `/resonera` |
+   | ⬚ | Research an external resource | `/inspirera` |
+   | ≡ | Plan work with acceptance criteria | `/planera` |
+   | ⧉ | Build autonomously | `/realisera` |
+   | ⎘ | Optimize a metric | `/optimera` |
+   | ⛶ | Audit codebase health | `/inspektera` |
+   | ▤ | Create or maintain docs | `/dokumentera` |
+   | ♾ | Build a decision profile | `/profilera` |
+   | ◰ | Define visual identity | `/visualisera` |
 
 3. **Suggest a starting point** based on what the project scan revealed:
    - No direction or vision → `/visionera`
@@ -118,42 +118,68 @@ The user is returning. Show them where things stand.
    most recent entry or top-level summary from each. Do not read entire files
    line by line — pull headlines and latest entries.
 
-2. **Build the Project Pulse** — a concise dashboard covering only what exists.
+2. **Build the dashboard** — a concise status display covering only what exists.
    Omit any line whose source artifact is missing. Never show empty sections.
+   Show the agentera logo at the top — this is a key moment.
 
    ```
-   ## Project Pulse
+   ┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
+   ├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
+   ┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
 
-   **Vision**: [one-line North Star from VISION.md]
-   **Last cycle**: Cycle N — [what shipped] (date)
-   **Health**: [trend] — [worst dimension: grade]
-   **Open issues**: N critical, M degraded, K annoying
-   **Active plan**: [status] — N/M tasks complete
-   **Optimization**: [metric] at [current] vs target [target]
-   **Profile**: [loaded | not found]
+   ─── status ─────────────────────────────
+
+     ⛶ health    [⮉|⮋] [grade] ([worst dimension: grade])
+     ⇶ issues    N critical · M degraded · K annoying
+     ≡ plan      [██████▓▓░░] N/M tasks
+     ⎘ optim     [metric] [current] → [target]
+     ♾ profile   [loaded | not found]
+
+     [1-2 sentence narrative: what shipped recently,
+     what the current trajectory looks like]
+
+   ─── attention ──────────────────────────
+
+     ⇶ [critical items — triple arrow for critical]
+     ⇉ [degraded items — double arrow for degraded]
+     ⇢ [annoying items — dashed arrow for annoying]
+
+   ─── next ───────────────────────────────
+
+     suggested → [glyph] /[skill] ([reason])
    ```
 
-3. **Flag attention items** — highlight anything that needs action, in priority
-   order:
-   - Critical issues in ISSUES.md
-   - Degrading health dimensions in HEALTH.md (grade drop between audits)
-   - Plan tasks that are blocked or overdue
-   - Stale artifacts (last modified >14 days ago — check via `git log -1` on
+   **Formatting rules**:
+   - Each status line uses the skill glyph that owns that data
+   - Severity arrows (⇶/⇉/⇢) mark attention items by urgency
+   - Trend arrows (⮉/⮋) show health trajectory
+   - Progress bars (█▓░) show plan completion visually
+   - The inline separator (·) joins counts on a single line
+   - The narrative summary closes the status section (not opens it)
+   - Omit any line whose source artifact is missing
+   - Omit any section that would be empty (e.g., no attention items = no attention section)
+
+3. **Flag attention items** — the attention section highlights anything that needs
+   action, in priority order. Use severity arrows to mark urgency:
+   - ⇶ Critical issues in ISSUES.md
+   - ⇶ Degrading health dimensions in HEALTH.md (grade drop between audits)
+   - ⇉ Plan tasks that are blocked or overdue
+   - ⇉ Stale artifacts (last modified >14 days ago — check via `git log -1` on
      each artifact file, or file modification time)
-   - Loop guard triggers (3+ consecutive failed cycles in PROGRESS.md)
-   - Unresolved decisions in DECISIONS.md marked exploratory
+   - ⇉ Loop guard triggers (3+ consecutive failed cycles in PROGRESS.md)
+   - ⇢ Unresolved decisions in DECISIONS.md marked exploratory
 
    If nothing needs attention, say so. A clean bill of health is useful information.
 
 4. **Suggest next action** — based on the attention flags and overall project
-   state, recommend one skill:
-   - Critical issues exist → `/realisera` (to fix) or `/inspektera` (to investigate)
-   - Stale or missing vision → `/visionera`
-   - Has vision but no plan → `/planera`
-   - Health degrading → `/inspektera`
-   - Active optimization stalled → `/optimera`
-   - Everything healthy, plan has open tasks → `/realisera`
-   - Everything healthy, plan complete → `/visionera` to chart next direction
+   state, recommend one skill. Use the target skill's glyph in the suggestion:
+   - Critical issues exist → ⧉ `/realisera` (to fix) or ⛶ `/inspektera` (to investigate)
+   - Stale or missing vision → ⛥ `/visionera`
+   - Has vision but no plan → ≡ `/planera`
+   - Health degrading → ⛶ `/inspektera`
+   - Active optimization stalled → ⎘ `/optimera`
+   - Everything healthy, plan has open tasks → ⧉ `/realisera`
+   - Everything healthy, plan complete → ⛥ `/visionera` to chart next direction
 
 5. **Route**: present the suggestion and let the user choose. When they decide,
    invoke the skill. If they want to keep talking without invoking a skill, that's
