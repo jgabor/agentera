@@ -279,3 +279,43 @@
 **Inspiration**: None — audit-driven fixes
 **Discovered**: ISS-14 was partially incorrect — hej's skill list already had all 10 entries (profilera and inspirera present at lines 240-241). Linter's core sentence check is newline-sensitive — "check if\nDOCS.md" doesn't match "check if DOCS.md".
 **Next**: All issues clear. Linter passes 0 errors. Resume vision-driven work.
+
+## Cycle 36 — 2026-03-31
+
+**What**: Added token budget, content exclusion, and compaction conventions to ecosystem-spec.md Section 4 (Plan Task 1) — 13 per-artifact word limits, 6 derivable-state exclusion categories, three-tier compaction protocol for PROGRESS.md and EXPERIMENTS.md.
+**Commit**: d4bd535 feat: add token budget, content exclusion, and compaction conventions to ecosystem spec
+**Inspiration**: None — convention definition from token efficiency plan
+**Discovered**: No new issues
+**Next**: Tasks 2, 4, 5, 6, 7 unblocked. Task 3 now unblocked (depends on Task 1). Pick next task.
+
+## Cycle 37 — 2026-03-31
+
+**What**: Reordered HEALTH and ISSUES templates for stable-first layout (Task 2) and added scratchpad separation to resonera, inspektera, planera, inspirera (Task 4). Two tasks in one cycle.
+**Commit**: 925d351 feat: reorder artifact templates (Task 2), db2487f feat: add scratchpad separation (Task 4)
+**Inspiration**: None
+**Discovered**: VISION, PLAN, DOCS, PROGRESS, DECISIONS templates already had correct stable-first ordering — only HEALTH and ISSUES needed changes.
+**Next**: Tasks 3, 5, 6, 7 remain. Task 3 (numeric anchors) is the broadest — touches all 11 SKILL.md files.
+
+## Cycle 38 — 2026-03-31
+
+**What**: Added numeric output constraints to all 11 SKILL.md write steps, plus PROGRESS.md and EXPERIMENTS.md compaction instructions (Plan Task 3).
+**Commit**: dd795f2 feat: add numeric output constraints and compaction instructions to all 11 SKILL.md files
+**Inspiration**: None
+**Discovered**: Worktree agents based on stale commits produce unusable diffs — applied changes directly instead.
+**Next**: Tasks 5, 6, 7 remain (all unblocked). Task 8 (prose tightening) depends on 5, 6, 7.
+
+## Cycle 39 — 2026-03-31
+
+**What**: Added orient improvements (extraction priming, parallel reads, selective reading, exit-early guards) and delta write conventions across 7 SKILL.md files (Plan Tasks 5, 6, 7).
+**Commit**: 370ea33 feat: add orient improvements, exit-early guards, selective reading, delta writes
+**Inspiration**: None
+**Discovered**: No new issues
+**Next**: Task 8 (prose tightening) is the final task — depends on 3, 4, 5, 6, 7, all now complete.
+
+## Cycle 40 — 2026-03-31
+
+**What**: Tightened instruction prose across all 11 SKILL.md files — 16.9% word reduction (30,271 → 25,170). All Task 2-7 additions preserved. Plan complete — all 8 tasks shipped.
+**Commit**: 4ae1ff6 refactor: tighten SKILL.md instruction prose across all 11 skills (Plan Task 8)
+**Inspiration**: None
+**Discovered**: Worktree agents unreliable for edits requiring preservation of recent changes — stale base causes regressions. Direct-on-main agents succeeded where worktree agents failed.
+**Next**: Plan complete. Archive PLAN.md. Token efficiency improvements shipped across ecosystem-spec, 7 templates, and all 11 SKILL.md files.
