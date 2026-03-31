@@ -28,6 +28,8 @@ is getting better or just getting bigger.
 
 Each invocation = one audit. Findings feed into realisera's work selection via ISSUES.md.
 
+Each audit's output opens with: `─── ⛶ inspektera · audit ───`
+
 ---
 
 ## State artifacts
@@ -56,11 +58,13 @@ root. This applies to all artifact references in this skill, including cross-ski
 
 **Dimensions**: [which dimensions were assessed]
 **Findings**: X critical, Y warnings, Z info
-**Overall**: [improving | stable | degrading] vs prior audit
+**Overall**: ⮉ improving | stable | ⮋ degrading vs prior audit
 
 ### [Dimension Name]: [A-F grade]
 
-#### [Finding title] — [critical | warning | info] (confidence: N/100)
+#### ⇶ [Finding title] — critical (confidence: N/100)
+#### ⇉ [Finding title] — warning (confidence: N/100)
+#### ⇢ [Finding title] — info (confidence: N/100)
 - **Location**: `file:line` (or module/package)
 - **Evidence**: [what was observed — quote code, show pattern]
 - **Impact**: [why this matters]
@@ -294,12 +298,14 @@ and present to the user.
 
 **Dimensions assessed**: [list]
 **Findings**: X critical, Y warnings, Z info (N filtered by confidence)
-**Overall trajectory**: [improving | stable | degrading] vs Audit N-1
+**Overall trajectory**: ⮉ improving | stable | ⮋ degrading vs Audit N-1
 **Grades**: Architecture [B] | Patterns [A] | Coupling [C] | Complexity [B] | Tests [D] | Deps [A]
 
 ### [Dimension Name]: [Grade]
 
-#### [Finding title] — [critical | warning | info] (confidence: N/100)
+#### ⇶ [Finding title] — critical (confidence: N/100)
+#### ⇉ [Finding title] — warning (confidence: N/100)
+#### ⇢ [Finding title] — info (confidence: N/100)
 - **Location**: `file:line` (or module/package)
 - **Evidence**: [quoted code or structural observation]
 - **Impact**: [what breaks, degrades, or risks]
