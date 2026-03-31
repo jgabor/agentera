@@ -215,6 +215,8 @@ PROFILE.md rather than smoothing them into a coherent narrative.
 
 ### Step 4: Generate the profile
 
+Output constraint: ≤30 words per signal, ≤15 words per evidence line.
+
 Write the decision profile to `~/.claude/profile/PROFILE.md`.
 
 If a previous version exists:

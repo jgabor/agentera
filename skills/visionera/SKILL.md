@@ -218,6 +218,8 @@ this. It's a rallying cry, not a requirements document.
 user's vision has dimensions the template doesn't cover, add them. If a template section
 produced nothing interesting, omit it.
 
+Output constraint: ≤20 words per principle.
+
 Present the draft to the user. Get explicit approval before writing.
 
 ---

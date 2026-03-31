@@ -341,6 +341,12 @@ If either fails: **discard** — the worktree is abandoned. No merge. No commit.
 Update **EXPERIMENTS.md** — append the experiment entry (number, timestamp, hypothesis, change
 summary, metric before/after, regression result, status, commit hash if kept, inspiration
 source if any, suggestion for next experiment).
+Output constraint: ≤20 words hypothesis, ≤50 words result, ≤20 words conclusion per experiment.
+
+When writing a new experiment entry to EXPERIMENTS.md, check entry count. If >8 full-detail
+entries exist, collapse the oldest to one-line format under `## Archived Experiments` (one
+line per experiment: `EXP-N: ≤15-word result summary`). If >22 one-line entries exist, drop
+the oldest. See ecosystem-spec.md Section 4 compaction thresholds.
 
 Then stop. One experiment complete.
 
