@@ -167,6 +167,9 @@ What it is, why it's interesting, and concretely where/how it applies to the tar
 ### [Concept Name]
 ...repeat for each significant concept (typically 2–5)
 
+Reason through concept applicability in your response text. The Applicability Matrix below
+should contain only conclusions, not reasoning chains.
+
 ## Applicability Matrix
 
 | Concept | Relevance | Effort | Where in [Target] | Already Partially Done? |

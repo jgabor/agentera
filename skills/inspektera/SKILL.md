@@ -299,6 +299,10 @@ After all agents complete:
 
 ## Step 5: Report
 
+Assess each dimension in your response text. Write ONLY the letter grade, trend indicator,
+and ≤30-word finding per dimension to HEALTH.md — no assessment reasoning. The conversation
+preserves the analysis; the artifact preserves the conclusions.
+
 Write the audit results to `HEALTH.md` (append new audit, keep prior audits for trend history)
 and present to the user.
 
