@@ -126,6 +126,7 @@ monorepo.
 | **Complexity hotspots** | Functions too long, deeply nested, high fan-out, accumulated conditionals. | Any codebase |
 | **Test health** | Coverage gaps, test quality, test-to-code ratio, tests testing behavior vs implementation. | Project has tests |
 | **Dependency health** | Outdated deps, security advisories, unused deps, dep sprawl, pinning discipline. | Project has external dependencies |
+| **Version health** | Unreleased significant changes: `feat`/`fix` commits since the last version bump. | DOCS.md has a `versioning` convention block |
 
 **If the user specified dimensions**: audit only those.
 **If the user said "full audit" or didn't specify**: auto-select based on the project. Include
@@ -253,6 +254,16 @@ Evaluate external dependency management:
 - Evaluate dep sprawl: are there too many deps for what the project does?
 - Check pinning discipline: are versions pinned or floating?
 - Look for vendored vs remote: is the approach consistent?
+
+### Version health
+
+Only run this dimension if DOCS.md exists and contains a `versioning` convention block. Skip entirely if the convention is absent.
+
+- Read DOCS.md `Conventions.versioning` to identify the version file(s) and bump trigger rules
+- Run `git log --oneline` to find `feat` and `fix` commits since the last modification date of the version file(s) (`git log --follow -- <version-file>` gives the timestamp of the last bump)
+- Count unbumped `feat`/`fix` commits and note the age of the oldest one
+- Severity: warning if 1–4 unbumped commits or age ≤ 7 days; critical if 5+ unbumped commits or age > 7 days
+- If no `feat`/`fix` commits have landed since the last bump, this dimension is healthy — no finding
 
 ---
 

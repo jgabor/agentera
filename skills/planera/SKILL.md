@@ -134,6 +134,10 @@ A deeper conversation to capture:
   - One-line description
   - Dependencies (which tasks must complete first)
   - Acceptance criteria: 3-5 behavioral Given/When/Then criteria per task
+- **Version bump check**: after decomposing tasks, check if DOCS.md has a `versioning` block
+  in its Conventions section. If it does and the plan's scope includes `feat` or `fix` work,
+  add a final task: "Version bump per DOCS.md convention." This task depends on all other
+  tasks. If DOCS.md has no versioning convention, skip this entirely.
 - **Overall acceptance criteria**: behavioral criteria for the complete feature
 
 Present the full plan to the user for approval (if human-initiated) or proceed to adversarial
@@ -364,6 +368,11 @@ direction.
 In the strict DTC pipeline, dokumentera writes intent docs first, then planera decomposes
 them into implementation tasks. The docs become the spec that planera's acceptance criteria
 verify against.
+
+### Planera reads /dokumentera versioning conventions
+Planera reads the `versioning` block from DOCS.md Conventions (populated by dokumentera).
+When the plan's scope includes `feat` or `fix` work, planera appends a version bump task
+that depends on all other tasks. Realisera executes this bump at the end of the plan.
 
 ---
 
