@@ -21,27 +21,24 @@ description: >
 
 **Integrity Navigation: Systematic Pattern Evaluation, Knowledge Tracing — Examine, Report, Advise**
 
-A codebase health audit that evaluates structural quality across multiple dimensions, produces
-evidence-based findings with confidence scores, and tracks trends over time. The retrospective
-counterpart to realisera's forward motion — inspektera looks back to assess whether the codebase
-is getting better or just getting bigger.
+Codebase health audit: multi-dimensional structural quality evaluation with evidence-based
+findings, confidence scores, and trend tracking. The retrospective counterpart to realisera's
+forward motion — is the codebase getting better or just bigger?
 
-Each invocation = one audit. Findings feed into realisera's work selection via ISSUES.md.
-
-Each audit's output opens with: `─── ⛶ inspektera · audit ───`
+Each invocation = one audit. Findings feed realisera's work selection via ISSUES.md.
+Output opens with: `─── ⛶ inspektera · audit ───`
 
 ---
 
 ## State artifacts
 
-Inspektera maintains one file in the project root. Bootstrapped if it doesn't exist.
+One file in the project root, bootstrapped if absent.
 
 | File | Purpose | Bootstrap |
 |------|---------|-----------|
 | `HEALTH.md` | Codebase health assessment. Findings, dimension grades, trends. | `# Health\n\n` then the first audit entry. |
 
-The template lives in `references/templates/`. Use it as the starting structure when
-bootstrapping — adapt to the project, don't copy verbatim.
+Template in `references/templates/` — use as starting structure, adapt to the project.
 
 ### Artifact path resolution
 
@@ -84,32 +81,20 @@ root. This applies to all artifact references in this skill, including cross-ski
 Read HEALTH.md, ISSUES.md, and PROGRESS.md in parallel — these reads are independent, issue
 all in a single response.
 
-Read the project state to understand context before auditing.
-
 1. **HEALTH.md** — prior audit findings and grades (if exists)
-2. **VISION.md** — the intended architecture, principles, and direction (if exists). This is
-   the "what SHOULD BE" against which the "what IS" is compared.
-3. **DECISIONS.md** — context on why things are the way they are (if exists). Findings that
-   contradict a deliberate decision are not findings — they're implementations of that decision.
-4. **ISSUES.md** — known problems already tracked (if exists). Don't re-report known issues
-   unless they've worsened.
-5. **PROGRESS.md** — read last 3 cycle entries only (recent changes are higher-priority audit
-   targets).
-6. **Decision profile** — run the effective profile script for a confidence-weighted summary:
+2. **VISION.md** — the "what SHOULD BE" against which "what IS" is compared (if exists)
+3. **DECISIONS.md** — why things are the way they are (if exists). Findings contradicting
+   deliberate decisions are not findings.
+4. **ISSUES.md** — known problems (if exists). Don't re-report unless worsened.
+5. **PROGRESS.md** — last 3 cycle entries only (recent changes = higher-priority audit targets)
+6. **Decision profile** — run from the profilera skill directory (typically
+   `~/.claude/plugins/marketplaces/agentera/skills/profilera`):
    ```bash
    python3 -m scripts.effective_profile
    ```
-   Run from the profilera skill directory (typically
-   `~/.claude/plugins/marketplaces/agentera/skills/profilera`).
-   Use it to calibrate what "healthy" means for this user — their tolerance for complexity,
-   preferred patterns, and quality standards.
-   If the script or PROFILE.md is missing, proceed without persona grounding.
-7. **Project discovery**:
-   - Map the directory structure
-   - Read dependency manifests (package.json, go.mod, Cargo.toml, pyproject.toml, etc.)
-   - Read README, CLAUDE.md if they exist
-   - Identify language, stack, and build/test/lint commands
-   - `git log --oneline -20` for recent changes
+   Calibrates what "healthy" means for this user. If missing, proceed without persona grounding.
+7. **Project discovery** — map directory structure, read dependency manifests, README, CLAUDE.md,
+   identify language/stack/build commands, `git log --oneline -20`
 
 Before proceeding: in your response, list the key structural facts (module boundaries,
 dependency patterns, test coverage gaps) you observed. These survive context compaction.
@@ -121,9 +106,8 @@ report exit signal `complete: no changes since last audit` and stop.
 
 ## Step 2: Select dimensions
 
-Choose which health dimensions to assess based on the codebase and user request. Not every
-dimension applies to every project — a 200-line CLI tool doesn't need the same audit as a
-monorepo.
+Choose dimensions based on the codebase and user request. Not every dimension applies —
+a 200-line CLI doesn't need the same audit as a monorepo.
 
 ### Available dimensions
 
@@ -137,26 +121,19 @@ monorepo.
 | **Dependency health** | Outdated deps, security advisories, unused deps, dep sprawl, pinning discipline. | Project has external dependencies |
 | **Version health** | Unreleased significant changes: `feat`/`fix` commits since the last version bump. | DOCS.md has a `versioning` convention block |
 
-**If the user specified dimensions**: audit only those.
-**If the user said "full audit" or didn't specify**: auto-select based on the project. Include
-all applicable dimensions. Report which you selected and why before proceeding.
+**User specified dimensions**: audit only those.
+**Full audit or unspecified**: auto-select all applicable. Report selections before proceeding.
 
 ---
 
 ## Step 3: Assess
 
-Launch parallel agents — one per selected dimension. Each agent receives:
+Launch parallel agents — one per dimension. Each receives the dimension definition,
+language-specific commands from `references/audit-commands.md`, relevant context files,
+the confidence scoring rubric, and instructions to return structured findings.
 
-- The dimension definition and what to look for (from this skill's descriptions below)
-- Language-specific audit commands from `references/audit-commands.md` — read the relevant
-  language sections and include the concrete commands for the project's stack
-- Relevant context files (VISION.md for architecture alignment, dependency manifests for
-  dependency health, etc.)
-- The confidence scoring rubric
-- Instructions to return structured findings
-
-**Before deep analysis**: run the quick checklist from `references/audit-commands.md` for a
-rapid pass/fail sweep. Dimensions that pass all checklist items can be audited at lower priority.
+**Before deep analysis**: run the `references/audit-commands.md` quick checklist for a
+rapid pass/fail sweep. Dimensions passing all items can be audited at lower priority.
 
 ```
 You are auditing the [dimension] health of [project].
@@ -188,81 +165,74 @@ Every finding MUST include:
 
 ### Architecture alignment
 
-Evaluate how well the codebase matches its stated architecture:
+Compare codebase to stated architecture:
 
-- Read VISION.md (or README's architecture section) for the intended structure
-- Map the actual module boundaries, dependency graph, and data flow
-- Identify drift: where the code has diverged from the stated architecture
-- Check layering: do higher-level modules depend on lower-level ones correctly?
-- Check boundaries: are module interfaces clean, or do internals leak?
-- Extract "Patterns Observed" — the de facto architecture, independent of what's stated
+- Read VISION.md (or README architecture section) for intended structure
+- Map actual module boundaries, dependency graph, data flow
+- Identify drift from stated architecture
+- Check layering and boundary cleanliness
+- Extract "Patterns Observed" — de facto architecture independent of documentation
 
-If no architecture is documented, extract and report the de facto architecture. Note the
-absence of documentation as a finding.
+No documented architecture? Extract and report de facto; note absence as a finding.
 
 ### Pattern consistency
 
-Evaluate whether patterns are used consistently across the codebase:
+Check consistency across the codebase:
 
-- Error handling: is it consistent? (returns vs throws vs error types)
-- Naming: do similar things have similar names? (singular vs plural, prefixes, casing)
-- Structure: do similar modules have similar layouts?
-- Abstractions: are there competing abstractions for the same concept?
-- DRY: is there duplicated logic that should be shared?
-- Configuration: is config handled consistently? (env vars vs files vs flags)
+- Error handling (returns vs throws vs error types)
+- Naming (singular vs plural, prefixes, casing)
+- Module structure and layout similarity
+- Competing abstractions for the same concept
+- Duplicated logic that should be shared
+- Config handling (env vars vs files vs flags)
 
-Focus on inconsistencies between similar things, not on whether the chosen pattern is "best."
+Focus on inconsistencies between similar things, not whether the chosen pattern is "best."
 
 ### Coupling health
 
-Evaluate module coupling and dependency structure:
+Evaluate coupling and dependency structure:
 
-- Map import graphs — which modules depend on which?
-- Identify circular dependencies
+- Map import graphs, identify circular dependencies
 - Find god modules (too many dependents or dependencies)
-- Check for inappropriate intimacy (modules reaching into each other's internals)
-- Evaluate interface width — are module boundaries narrow or do they expose everything?
-- Check for hidden coupling through shared mutable state, global config, or side effects
+- Check for inappropriate intimacy (reaching into internals)
+- Evaluate interface width — narrow boundaries or exposing everything?
+- Check hidden coupling via shared mutable state, global config, side effects
 
-Use language-appropriate tools: Go has `go list`, Node has `madge`, Python has import analysis.
-If tools aren't available, trace imports manually on the highest-risk modules.
+Use language tools (`go list`, `madge`, import analysis). If unavailable, trace imports
+manually on highest-risk modules.
 
 ### Complexity hotspots
 
-Identify where complexity is accumulating:
+Find accumulating complexity:
 
-- Long functions (language-dependent thresholds, but generally 50+ lines is worth flagging)
-- Deep nesting (3+ levels of conditionals or loops)
-- High fan-out (functions calling many other functions)
-- Switch/match statements that keep growing
-- Functions with many parameters (5+)
-- Files that keep growing cycle over cycle (check git history)
+- Long functions (generally 50+ lines), deep nesting (3+ levels)
+- High fan-out, growing switch/match statements, many parameters (5+)
+- Files growing cycle over cycle (check git history)
 
-Prioritize hotspots that are also high-change files (frequently modified + complex = high risk).
+Prioritize high-change files — frequently modified + complex = high risk.
 
 ### Test health
 
-Evaluate the quality and coverage of the test suite:
+Evaluate test suite quality and coverage:
 
-- Run coverage if the project has a coverage tool, otherwise estimate from file analysis
-- Identify critical paths with no test coverage
-- Check test quality: are tests testing behavior or testing implementation?
-- Look for test antipatterns: excessive mocking, brittle assertions, tests that test nothing
-- Evaluate test naming: can you understand what failed from the test name alone?
-- Check test-to-code ratio for each major module
+- Run coverage tools if available, otherwise estimate from file analysis
+- Identify critical paths with no coverage
+- Check: testing behavior or implementation? Excessive mocking? Brittle assertions?
+- Evaluate test naming — can you understand what failed from the name alone?
+- Check test-to-code ratio per major module
 
-Don't just report a coverage number — identify the *highest-risk* coverage gaps.
+Don't just report a number — identify the *highest-risk* coverage gaps.
 
 ### Dependency health
 
-Evaluate external dependency management:
+Evaluate dependency management:
 
-- Check for outdated dependencies (use package manager's audit/outdated commands)
-- Check for known security vulnerabilities (npm audit, safety check, govulncheck, etc.)
-- Identify unused dependencies (installed but not imported)
-- Evaluate dep sprawl: are there too many deps for what the project does?
-- Check pinning discipline: are versions pinned or floating?
-- Look for vendored vs remote: is the approach consistent?
+- Outdated deps (package manager audit/outdated commands)
+- Known security vulnerabilities (npm audit, safety check, govulncheck)
+- Unused deps (installed but not imported)
+- Dep sprawl relative to project scope
+- Pinning discipline (pinned or floating?)
+- Vendored vs remote consistency
 
 ### Version health
 
@@ -280,37 +250,28 @@ Only run this dimension if DOCS.md exists and contains a `versioning` convention
 
 After all agents complete:
 
-1. **Filter by confidence** — discard findings below 50. Findings 50-69 are marked as "info"
-   regardless of their apparent severity.
-2. **Deduplicate** — multiple dimensions may flag the same underlying issue. Merge using a
-   three-tier preference: (1) keep the finding with the fullest context (the one that
-   explains the most about the issue), (2) if context is comparable, prefer the finding
-   from the most evidence-rich dimension, (3) if still tied, prefer the most recent.
-   Preserve complementary evidence from discarded findings as additional context in the
-   merged entry rather than dropping it entirely.
-3. **Cross-reference** — check findings against DECISIONS.md and ISSUES.md:
-   - If a finding matches a known decision → discard or downgrade to info with a note
-   - If a finding matches a known issue → note "already tracked" and skip
-   - If a finding is genuinely new → include at full severity
-4. **Grade each dimension** — assign a letter grade based on findings:
-   - **A**: No critical or warning findings. Healthy.
-   - **B**: No critical findings. Some warnings. Solid with room for improvement.
-   - **C**: 1-2 critical findings or many warnings. Needs attention.
-   - **D**: Multiple critical findings. Structural problems.
-   - **F**: Pervasive critical findings. Health crisis.
-5. **Detect trends** — if prior HEALTH.md exists, compare:
-   - Dimensions that improved (grade went up or findings resolved)
-   - Dimensions that degraded (grade went down or new findings)
-   - Dimensions that are stable (same grade, similar findings)
-   - Calculate overall trajectory: improving / stable / degrading
+1. **Filter** — discard findings below 50 confidence. Mark 50-69 as "info" regardless of
+   apparent severity.
+2. **Deduplicate** — merge by preference: (1) fullest context, (2) most evidence-rich
+   dimension, (3) most recent. Preserve complementary evidence from discarded findings.
+3. **Cross-reference** against DECISIONS.md and ISSUES.md:
+   - Matches known decision → discard or downgrade to info
+   - Matches known issue → "already tracked", skip
+   - Genuinely new → include at full severity
+4. **Grade** each dimension:
+   - **A**: No critical/warning findings. **B**: No critical, some warnings.
+   - **C**: 1-2 critical or many warnings. **D**: Multiple critical.
+   - **F**: Pervasive critical findings.
+5. **Trends** — compare to prior HEALTH.md: improved, degraded, stable dimensions.
+   Calculate overall trajectory: improving / stable / degrading.
 
 ---
 
 ## Step 5: Report
 
-Assess each dimension in your response text. Write ONLY the letter grade, trend indicator,
-and ≤30-word finding per dimension to HEALTH.md — no assessment reasoning. The conversation
-preserves the analysis; the artifact preserves the conclusions.
+Assess each dimension in your response. Write ONLY grade, trend indicator, and ≤30-word
+finding per dimension to HEALTH.md — no reasoning. The conversation preserves analysis;
+the artifact preserves conclusions.
 
 Output constraint: ≤30 words per finding description, ≤15 words per recommendation. Letter
 grade + ≤3 sentences justification per dimension.
@@ -362,20 +323,15 @@ This section helps realisera and resonera understand the current reality.]
 
 ## Step 6: Connect
 
-Feed actionable findings into the rest of the suite:
+Feed actionable findings into the ecosystem:
 
-1. **ISSUES.md** — for each critical finding not already tracked, offer to add an issue entry
-   under the `## Open` section. Use severity mapping: critical finding → `critical` severity,
-   warning → `degraded`, info → `annoying`. Present the list and get user confirmation before
-   writing. Output constraint: ≤30 words per issue description.
-2. **VISION.md** — if architecture alignment reveals the stated architecture is outdated (the
-   code has intentionally evolved past it), suggest updating VISION.md via `/resonera` to
-   deliberate on the new direction.
-3. **Present findings to the user** with a summary and ask if they want to:
-   - File findings to ISSUES.md for realisera to pick up
-   - Deliberate on structural decisions via `/resonera`
-   - Deep-dive on a specific dimension
-   - Investigate a specific finding in more detail
+1. **ISSUES.md** — for each critical finding not already tracked, offer to add under `## Open`.
+   Severity mapping: critical → `critical`, warning → `degraded`, info → `annoying`. Get user
+   confirmation before writing. Output constraint: ≤30 words per issue description.
+2. **VISION.md** — if architecture has intentionally evolved past stated architecture, suggest
+   updating via `/resonera`.
+3. **Present findings** and ask if the user wants to: file to ISSUES.md, deliberate via
+   `/resonera`, deep-dive on a dimension, or investigate a specific finding.
 
 ---
 

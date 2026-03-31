@@ -20,10 +20,9 @@ description: >
 
 **Persona Reconstruction: Observable Footprint Indexing Logic — Examine, Reconcile, Articulate**
 
-Mine the user's Claude Code session history and produce a structured decision profile that an
-AI agent could use to predict "What would this person decide in a given situation?" Each profile
-entry carries numeric confidence, permanence classification, and temporal metadata — enabling
-dormancy decay so stale entries are automatically discounted by consuming skills.
+Mine the user's Claude Code session history and produce a structured decision profile for
+predicting "What would this person decide?" Each entry carries numeric confidence, permanence
+classification, and temporal metadata enabling dormancy decay.
 
 Profile generation output opens with: `─── ♾ profilera · profile ───`
 
@@ -31,7 +30,7 @@ Profile generation output opens with: `─── ♾ profilera · profile ──
 
 ## State artifacts
 
-Profilera writes one global artifact and reads project-level artifacts.
+One global artifact (written) and project-level artifacts (read).
 
 | Artifact | Purpose | Path |
 |----------|---------|------|
@@ -40,12 +39,9 @@ Profilera writes one global artifact and reads project-level artifacts.
 
 ### Artifact path resolution
 
-PROFILE.md is the only global artifact in the ecosystem — it lives at
-`~/.claude/profile/PROFILE.md`, not in the project root, and DOCS.md artifact mapping
-does not apply to it. For DECISIONS.md and any other project-level artifacts,
-check if DOCS.md exists in the project root. If it has an Artifact Mapping section,
-use the path specified. If DOCS.md doesn't exist or has no entry, default to the
-project root.
+PROFILE.md is global — lives at `~/.claude/profile/PROFILE.md`, not in the project root.
+DOCS.md mapping does not apply. For project-level artifacts, check if DOCS.md exists and
+use its path mapping; default to project root if absent.
 
 ---
 
@@ -84,26 +80,22 @@ If the user chooses **Validate**, skip to Validate Mode.
 
 ### Step 1: Run extraction
 
-Run the Python extraction scripts to gather raw decision signals from all data sources. The
-scripts handle the heavy JSONL parsing and output structured JSON that fits in context.
+Run extraction scripts to gather raw decision signals. Scripts handle JSONL parsing and
+output structured JSON.
 
 ```bash
 python3 -m scripts.extract_all --output-dir ~/.claude/profile/intermediate
 ```
 
-The script auto-detects its own location and resolves paths from there. Run it from the
-skill's root directory (the directory containing this SKILL.md file), typically at
-`~/.claude/plugins/marketplaces/agentera/skills/profilera`.
+Run from the skill's root directory (typically
+`~/.claude/plugins/marketplaces/agentera/skills/profilera`).
 
-After the scripts finish, read `~/.claude/profile/intermediate/extraction_summary.json` to
-confirm the extraction counts. Report the summary to the user.
+Read `~/.claude/profile/intermediate/extraction_summary.json` to confirm counts. Report
+to the user.
 
-**If extraction fails**: Report the error to the user. Common causes:
-- Python not found: try `python3` instead of `python`
-- Permission errors: check that `~/.claude/` is readable
-- Empty output: the user may have no session history yet — report this and skip to Step 4
-  with whatever data is available
-If only some extractors fail, proceed with partial data and note which sources are missing.
+**If extraction fails**: common causes — Python not found (try `python3`), permission errors,
+empty output (no session history). If only some extractors fail, proceed with partial data
+and note missing sources.
 
 ---
 
@@ -116,50 +108,35 @@ Read all four intermediate JSON files:
 3. `~/.claude/profile/intermediate/conversation_decisions.json` — Decision exchanges from conversations
 4. `~/.claude/profile/intermediate/project_configs.json` — Recurring config patterns
 
-These files are pre-filtered and structured. Read them all before proceeding to synthesis.
-
-If any file is very large (> 500 entries), focus on the highest-signal entries first:
-- For history: prioritize "correction" and "decision" signal types over "question"
-- For conversations: prioritize entries with longer user responses (more reasoning visible)
-- For configs: look for patterns that appear across multiple projects
+Read all before proceeding to synthesis. If any file has > 500 entries, focus on highest
+signal first: history "correction"/"decision" over "question", conversations with longer
+user responses, configs appearing across multiple projects.
 
 ---
 
 ### Step 3: Categorize and synthesize
 
-Group all extracted signals into these 12 categories:
+Group signals into 12 categories:
 
-1. **Architecture & Design Patterns** — How software is structured (package layout, abstraction
-   boundaries, API design, data flow patterns)
-2. **Technology & Tooling Selection** — What gets picked and why (languages, frameworks,
-   libraries, build tools, linters)
-3. **Agent & Automation Philosophy** — How AI agents should behave, what autonomy they get,
-   interaction patterns
-4. **Code Quality & Standards** — What "good code" means (error handling, testing, validation,
-   naming, formatting)
-5. **DX & Project Structure** — How projects should feel to work in (directory layout, build
-   targets, configuration, documentation)
-6. **Scoping & Prioritization** — How to decide what to build, version milestones, feature
-   gating, complexity budgets
-7. **Communication Style** — Writing preferences, documentation voice, how things should read
-8. **Process & Workflow** — Git workflow, commit conventions, PR practices, release process
-9. **UI/UX Preferences** — Visual patterns, interaction design, CLI vs TUI vs web preferences
-10. **Trade-off Heuristics** — How competing concerns are resolved (simplicity vs flexibility,
-    speed vs correctness, convention vs configuration)
-11. **Anti-patterns & Rejections** — Things actively avoided, with reasoning
-12. **Meta-decision Style** — How decisions are made (frameworks used, information gathering
-    patterns, when to decide vs defer)
+1. **Architecture & Design Patterns** — package layout, abstraction boundaries, API design
+2. **Technology & Tooling Selection** — languages, frameworks, libraries, build tools
+3. **Agent & Automation Philosophy** — agent behavior, autonomy, interaction patterns
+4. **Code Quality & Standards** — error handling, testing, validation, naming
+5. **DX & Project Structure** — directory layout, build targets, configuration
+6. **Scoping & Prioritization** — what to build, milestones, complexity budgets
+7. **Communication Style** — writing preferences, documentation voice
+8. **Process & Workflow** — git workflow, commit conventions, release process
+9. **UI/UX Preferences** — visual patterns, interaction design, CLI vs TUI vs web
+10. **Trade-off Heuristics** — simplicity vs flexibility, speed vs correctness
+11. **Anti-patterns & Rejections** — things actively avoided, with reasoning
+12. **Meta-decision Style** — frameworks used, information gathering, decide vs defer
 
-For each category:
-
-- Identify distinct decisions (not just preferences — decisions have conditions and reasoning)
-- Look for the *why* behind each decision, not just the *what*
-- Note exceptions or cases where the usual rule was overridden
+Per category: identify distinct decisions (not just preferences — decisions have conditions
+and reasoning), look for the *why*, note exceptions where the rule was overridden.
 
 #### Assign confidence (numeric, 0-100)
 
-Decision patterns are empirically verifiable — you can check git history and configs to see
-if someone actually follows their stated convention. The confidence scale reflects this:
+Decision patterns are empirically verifiable via git history and configs:
 
 | Range | Label | Token | Criteria |
 |-------|-------|-------|----------|
@@ -176,9 +153,9 @@ decision sounds. A pithy design principle observed once is 30, not 75.
 
 #### Assign permanence class
 
-Permanence captures how *stable* a decision domain is — independent of how *confident* you
-are about it. You can be highly confident about something that will change (85, situational)
-or uncertain about something deep (35, stable).
+Permanence captures domain *stability*, independent of confidence. You can be highly
+confident about something that will change (85, situational) or uncertain about something
+deep (35, stable).
 
 | Class | Domain | Timescale |
 |-------|--------|-----------|
@@ -203,13 +180,9 @@ Override the default when the evidence suggests otherwise.
 
 #### Identify tensions
 
-Cross-category patterns are especially valuable. But also look for contradictions:
-- Does the user state one principle but ship code that violates it?
-- Do decisions in one category conflict with decisions in another?
-- Are there "Exceptions" that suggest the rule is weaker than it appears?
-
-When contradictions are found during synthesis, record them in the Tensions section of
-PROFILE.md rather than smoothing them into a coherent narrative.
+Look for cross-category patterns and contradictions: stated principle vs shipped code,
+conflicts between categories, "Exceptions" suggesting a weaker rule. Record contradictions
+in the Tensions section rather than smoothing them into a coherent narrative.
 
 ---
 
@@ -219,10 +192,8 @@ Output constraint: ≤30 words per signal, ≤15 words per evidence line.
 
 Write the decision profile to `~/.claude/profile/PROFILE.md`.
 
-If a previous version exists:
-1. Copy it to `~/.claude/profile/history/PROFILE-{timestamp}.md`
-2. Generate the new version
-3. Show a summary of what changed (new decisions added, decisions updated, decisions removed)
+If a previous version exists: copy to `~/.claude/profile/history/PROFILE-{timestamp}.md`,
+generate new version, show change summary (added, updated, removed).
 
 #### Profile format
 
@@ -291,61 +262,42 @@ wrap tensions in resolution narratives. Some tensions are real and persistent.
 
 #### Writing guidelines
 
-- Write rules as imperatives, not descriptions ("Use X" not "[Name] prefers X")
-- Be specific about conditions — "when building Go CLIs" not "when building things"
-- Include the *why* even when it seems obvious — agents need reasoning to handle edge cases
-- Don't duplicate what's already in CLAUDE.md — this profile covers decision *patterns*,
-  not project-specific instructions
-- Omit categories with fewer than 2 decisions — not enough signal to be useful
-- Every entry MUST have the inline metadata line immediately after the ### heading
+- Write rules as imperatives ("Use X" not "[Name] prefers X")
+- Be specific ("when building Go CLIs" not "when building things")
+- Always include the *why* — agents need reasoning for edge cases
+- Don't duplicate CLAUDE.md — this covers decision *patterns*, not project instructions
+- Omit categories with <2 decisions — insufficient signal
+- Every entry MUST have inline metadata after the ### heading
 
 ---
 
 ### Step 5: Validate predictions
 
-Pick 5 decision-rich prompts from the extracted history that were NOT directly used to create
-a profile entry. For each:
-
-1. Read the prompt and its context
-2. Predict what the profile would recommend
-3. Check against what actually happened
-
-Report the accuracy as a simple score (e.g., "4/5 predictions matched"). If accuracy is
-below 3/5, identify which categories need more signal and note this in the profile's header.
+Pick 5 decision-rich prompts NOT used to create profile entries. For each: predict what
+the profile would recommend, check against what happened. Report accuracy (e.g., "4/5").
+Below 3/5: identify categories needing more signal, note in profile header.
 
 ---
 
 ## Validate Mode
 
-A quick incremental check of the existing profile. Designed to take ~2 minutes.
+Quick incremental check (~2 minutes).
 
 ### Step V1: Run smart selection
 
-Run the effective profile script in validate mode to identify which entries are most worth
-checking:
+Identify which entries are most worth checking:
 
 ```bash
 python3 -m scripts.effective_profile --validate
 ```
 
-Run from the skill's root directory. The script outputs JSON with ~6 entries scored by:
-- **Decay gap**: how much confidence was lost to dormancy decay
-- **Staleness**: days since confirmation relative to permanence half-life
-- **Tension history**: whether the entry has been challenged before
-- **Extremity**: how far from center (very high or very low confidence)
-
-Read the output. If the script fails (PROFILE.md missing or has no metadata), fall back to
-Full mode and inform the user.
+Run from the skill's root directory. Outputs ~6 entries scored by decay gap, staleness,
+tension history, and extremity. If the script fails, fall back to Full mode.
 
 ### Step V2: Present entries for validation
 
-Present entries one at a time to the user. For each entry, show:
-- The decision name
-- The current rule text
-- The reason this entry was surfaced (from the script's `reason` field)
-- The stored confidence and effective confidence after decay
-
-Ask the user to: **Confirm**, **Challenge**, or **Skip**.
+Present entries one at a time: decision name, rule text, reason surfaced, stored vs effective
+confidence. Ask: **Confirm**, **Challenge**, or **Skip**.
 
 ### Step V3: Apply updates
 
@@ -364,11 +316,8 @@ For each response:
 
 ### Step V4: Write and report
 
-Write the updated PROFILE.md with all metadata changes applied. Report a summary:
-
-> Validated {N} entries: {N} confirmed, {N} challenged, {N} skipped.
-
-If any entries were challenged, mention them by name so the user knows what shifted.
+Write updated PROFILE.md. Report: "Validated {N} entries: {N} confirmed, {N} challenged,
+{N} skipped." Mention challenged entries by name.
 
 ---
 
@@ -461,15 +410,13 @@ header, so the formula stays in one place.
 ```
 /profilera
 ```
-Runs full extraction across session history, memory, configs, and conversations. Takes a few
-minutes. Produces `~/.claude/profile/PROFILE.md`.
+Full extraction across all sources. Produces `~/.claude/profile/PROFILE.md`.
 
 ### Regular validation
 ```
 /profilera validate
 ```
-Quick refresh that checks for new evidence and updates confidence scores without full
-regeneration. Run weekly or per-session.
+Quick confidence refresh without full regeneration. Run weekly or per-session.
 
 ### Using the profile in other skills
 All skills read the profile automatically via `python3 -m scripts.effective_profile`. No
@@ -479,13 +426,8 @@ manual steps needed — just ensure PROFILE.md exists.
 
 ## Notes on depth vs speed
 
-- The extraction scripts handle the expensive I/O. Claude's job is synthesis, not parsing.
-- If the intermediate files are very large, use subagents (Explore type) to read different
-  files in parallel and report back summaries.
-- The crystallized.json file (memory + CLAUDE.md) is the highest-signal source. Start there
-  and use other sources to corroborate and enrich.
-- Conversation exchanges are the most nuanced source — they show *how* decisions are made
-  in real time, not just what was decided.
-- Config patterns are the most objective source — they show what was actually shipped.
-- Validate mode is designed for regular use (weekly or per-session). Full mode is for
-  periodic regeneration (monthly or when the profile feels significantly stale).
+- Extraction scripts handle I/O; Claude's job is synthesis, not parsing.
+- Large intermediate files: use subagents to read in parallel.
+- Signal hierarchy: crystallized.json (highest — memory + CLAUDE.md), conversation exchanges
+  (most nuanced — real-time reasoning), config patterns (most objective — what shipped).
+- Validate mode: weekly/per-session. Full mode: monthly or when significantly stale.

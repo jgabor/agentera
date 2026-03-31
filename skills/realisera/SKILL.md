@@ -20,9 +20,8 @@ description: >
 
 **Relentless Execution: Autonomous Loops Iterating Software — Evolve, Refine, Adapt**
 
-An autonomous development loop that evolves any software project, one focused cycle at a time.
-Decisions are grounded in the user's persona via their decision profile. Inspiration is drawn
-proactively from external sources. Continuity lives in files, not memory.
+An autonomous development loop that evolves any software project one cycle at a time.
+Decisions grounded in the user's decision profile. Continuity lives in files, not memory.
 
 Each invocation = one cycle. `/loop` handles recurrence.
 
@@ -30,7 +29,7 @@ Each invocation = one cycle. `/loop` handles recurrence.
 
 ## State artifacts
 
-Realisera maintains three files in the project root. All are bootstrapped if they don't exist.
+Three files in the project root, bootstrapped if absent.
 
 | File | Purpose | Bootstrap |
 |------|---------|-----------|
@@ -38,8 +37,7 @@ Realisera maintains three files in the project root. All are bootstrapped if the
 | `ISSUES.md` | Tech debt, bugs, discrepancies. Things that need fixing. | `# Issues\n\nNo known issues.` |
 | `PROGRESS.md` | Continuity log. What happened each cycle. | `# Progress\n\n` then the first cycle entry. |
 
-Templates for each artifact live in `references/templates/`. Use them as the starting structure
-when bootstrapping — adapt to the project, don't copy verbatim.
+Templates in `references/templates/` — use as starting structure, adapt to the project.
 
 ### Artifact path resolution
 
@@ -51,10 +49,9 @@ reads (DECISIONS.md, HEALTH.md, PLAN.md).
 
 ### VISION.md
 
-An evergreen document. Realisera creates it through a brief brainstorm session on first run,
-and can refine it when the user explicitly asks. Outside of those two cases, the agent never
-touches it — it reads the vision, it doesn't rewrite it. VISION.md sets a direction without
-prescribing specific goals. A constitution, not a backlog. Typical structure:
+Evergreen. Created via brainstorm on first run, refined only when the user explicitly asks.
+Outside those two cases, the agent reads it but never writes it. A constitution, not a backlog.
+Typical structure:
 
 ```markdown
 # [Project Name]
@@ -80,11 +77,9 @@ Aspirational, not prescriptive.]
 [What this project IS as an entity — personality, voice, emotional register, naming.]
 ```
 
-The exact structure may vary — what matters is that the vision is ambitious enough to
-sustain months of autonomous development, the personas are concrete enough to resolve
-"who is this for?" debates, and the direction is clear enough for an autonomous agent
-to derive what to build next by reasoning about the gap between the vision and the
-current state of the codebase.
+The vision must be ambitious enough to sustain months of development, personas concrete
+enough to resolve "who is this for?" debates, and direction clear enough to derive next
+steps from the gap between vision and codebase.
 
 ### PROGRESS.md
 
@@ -112,30 +107,23 @@ In all other cases, skip straight to the cycle.
 
 ### How the brainstorm works
 
-A brief, focused conversation to capture the user's intent. One question at a time.
-Push for ambition — the vision should sustain months of autonomous development, so it
-needs to be bigger than "a tool that does X." Ask the user to dream.
+Brief, focused conversation. One question at a time. Push for ambition — bigger than
+"a tool that does X." Ask the user to dream.
 
-1. **Understand the dream** — "What's the big picture here? Not what the software does —
-   what does it make possible? If this project wildly succeeds, what changes?" If the
-   codebase already exists, read it first and present your understanding, then push beyond
-   it: "This is what exists. Where does it want to go?"
-2. **Find the people** — "Who specifically reaches for this? Describe a person — what's
-   their day like, what frustrates them, what moment makes them think 'I need this'?"
-   Push for concrete personas, not abstract user categories.
-3. **Find the principles** — "What principles should guide every decision? What do you
-   optimize for? What do you resist?" If a decision profile exists, propose principles
-   derived from it and let the user adjust.
-4. **Set the direction** — "Where is this heading? Not specific features — what kind of
-   capabilities should it grow toward? What's the long game?"
-5. **Write VISION.md** — synthesize the answers into an aspirational north star document.
-   The tone should be evocative, not clinical. Present it to the user for approval
-   before writing.
+1. **Understand the dream** — "Not what the software does — what does it make possible?
+   If this wildly succeeds, what changes?" If code exists, read it first, present your
+   understanding, then push beyond: "This is what exists. Where does it want to go?"
+2. **Find the people** — "Who reaches for this? Describe a person — their day, their
+   frustrations, the moment they think 'I need this'?" Push for concrete personas.
+3. **Find the principles** — "What principles guide every decision? What do you optimize
+   for? What do you resist?" If a decision profile exists, propose principles from it.
+4. **Set the direction** — "Where is this heading? Not features — what capabilities should
+   it grow toward?"
+5. **Write VISION.md** — synthesize into an aspirational north star. Tone: evocative, not
+   clinical. Present for approval before writing.
 
-When **refining** an existing vision, read the current VISION.md first, show the user what
-you'd change and why, and get confirmation before writing.
-
-After the brainstorm completes, proceed to cycle 1 (or resume cycling if this was a refinement).
+When **refining**, read current VISION.md, show proposed changes with rationale, get
+confirmation before writing. After brainstorm, proceed to cycle 1 (or resume cycling).
 
 ---
 
@@ -148,35 +136,28 @@ Each cycle opens with the skill introduction: `─── ⧉ realisera · cycle 
 Read VISION.md, PROGRESS.md, ISSUES.md, and HEALTH.md in parallel — these reads are
 independent, issue all in a single response.
 
-Read the project state to understand where things stand. If PROGRESS.md exists and has 3+
-cycles, run the analytics script first for a structured overview:
+If PROGRESS.md has 3+ cycles, run the analytics script first:
 
 ```bash
 python3 -m scripts.analyze_progress --progress PROGRESS.md --pretty
 ```
 
-The script (in `scripts/analyze_progress.py`) outputs JSON with velocity, work type
-distribution, inspiration rate, and pattern-based suggestions. Use this to inform work
-selection — e.g., if the output shows no test cycles, that's a signal.
+Outputs JSON with velocity, work type distribution, and suggestions. Use to inform work
+selection — e.g., no test cycles is a signal.
 
 1. **PROGRESS.md** — what happened last cycle, what was suggested next
 2. **VISION.md** — read `## Principles` and `## Direction` sections (skip full personas/history for orient)
 3. **ISSUES.md** — what's broken or degraded
 3b. **HEALTH.md** — read `critical` and `degraded` findings only (if exists)
 3c. **DECISIONS.md** — read `firm` and `provisional` entries only (if exists)
-4. **Decision profile** — run the effective profile script for a confidence-weighted summary:
+4. **Decision profile** — run from the profilera skill directory (typically
+   `~/.claude/plugins/marketplaces/agentera/skills/profilera`):
    ```bash
    python3 -m scripts.effective_profile
    ```
-   Run from the profilera skill directory (typically
-   `~/.claude/plugins/marketplaces/agentera/skills/profilera`).
-   This outputs a summary table with effective confidence after dormancy decay.
-   Use it to weight decisions: high effective confidence entries (65+) are strong
-   constraints, low effective confidence entries (<45) are suggestions. Read full
-   `~/.claude/profile/PROFILE.md` for complete rule details when needed.
-   If the script or PROFILE.md is missing, proceed without persona grounding but flag it:
-   "Consider running /profilera to generate a decision profile — it helps me make choices
-   you'd agree with."
+   Entries with effective confidence 65+ are strong constraints; <45 are suggestions.
+   Read full `~/.claude/profile/PROFILE.md` for details when needed.
+   If missing, proceed without persona grounding but flag it.
 5. **Project discovery** (cycle 1 or when unfamiliar):
    - Map the directory structure
    - Read dependency manifests (package.json, go.mod, Cargo.toml, pyproject.toml, etc.)
@@ -197,67 +178,44 @@ and codebase.
 
 ### Step 2: Pick work
 
-Choose **one** focused increment. There is no backlog — the agent decides what to build by
-reasoning about the gap between the vision and the current state of the codebase, weighted
-against known issues.
+Choose **one** focused increment. No backlog — decide by reasoning about the gap between
+vision and codebase, weighted against known issues.
 
-The decision each cycle: **build toward the vision, or fix something broken?**
+Each cycle: **build toward the vision, or fix something broken?** Consult the decision
+profile. A critical bug trumps a new feature; a minor nit doesn't block progress.
 
-Consult the decision profile. Weigh the severity of open issues against the value of the
-most promising next step toward the vision. A critical bug trumps a new feature. A minor
-style nit doesn't block meaningful progress. Use judgment — that's what the decision
-profile is for.
+**Building toward vision:** Read codebase + VISION.md, identify the gap, pick the smallest
+increment closing the most valuable part.
 
-**When building toward the vision:**
-- Read the codebase and PROGRESS.md to understand what exists
-- Read VISION.md to understand the direction
-- Identify the gap: what capability, pattern, or quality is missing that would move the
-  project closer to its north star?
-- Pick the smallest increment that closes the most valuable part of that gap
+**Fixing issues:** Pick from ISSUES.md by severity (broken > degraded > annoying).
 
-**When fixing issues:**
-- Pick from ISSUES.md, prioritizing by severity (broken > degraded > annoying)
+**Optimization-shaped work:** Delegate to `/optimera` for measurable metrics (speed, size,
+coverage). Realisera builds; optimera tunes.
 
-**When the work is optimization-shaped:**
-- If the increment is about improving a measurable metric (e.g., "speed up test suite by 30%",
-  "reduce bundle size"), consider delegating to `/optimera` instead. Realisera builds;
-  optimera tunes.
-
-Write a 1-2 sentence rationale. Scope down aggressively — one focused increment per cycle.
+Write a 1-2 sentence rationale. Scope down aggressively.
 
 ### Step 3: Seek inspiration
 
-Before planning the implementation, proactively search for relevant external approaches.
+Search for relevant external approaches before planning.
 
-1. **Assess** — is this a problem others have likely solved well? Bug fixes and mechanical
-   changes rarely benefit from inspiration. New features, architecture decisions, and
-   unfamiliar domains do.
-2. **Search** — use web search to find libraries, articles, repos, or patterns addressing
-   similar problems. Cast a focused net: 2-3 targeted queries.
-3. **Analyze** — if something promising surfaces, read it deeply (the way /inspirera would):
-   understand its core approach, identify what's transferable, assess what doesn't apply.
-   Note the source so it can be credited in PROGRESS.md.
-4. **Integrate** — fold applicable patterns into the plan. Record what you found and why
-   it's relevant.
+1. **Assess** — bug fixes rarely benefit from inspiration. New features, architecture
+   decisions, and unfamiliar domains do.
+2. **Search** — 2-3 targeted web queries for libraries, articles, repos, or patterns.
+3. **Analyze** — read promising finds deeply: core approach, transferable patterns,
+   inapplicable parts. Note the source for PROGRESS.md credit.
+4. **Integrate** — fold applicable patterns into the plan.
 
-This step is about finding better approaches, not about being exhaustive. If nothing useful
-turns up quickly, move on. The goal is to avoid reinventing wheels, not to do a literature
-review.
+Goal: avoid reinventing wheels. If nothing useful turns up quickly, move on.
 
 ### Step 4: Plan
 
-Write a concrete plan:
+Write a concrete plan: what changes in which files, expected behavior, verification
+approach, and any inspiration that informed it.
 
-- What changes, in which files
-- What the expected behavior is after the change
-- How to verify it works
-- Any inspiration that informed the approach
+Read files you plan to modify before committing to the plan. If docs should update first
+(docs define intent, code implements it), include that.
 
-Read the files you plan to modify before committing to the plan. If documentation should be
-updated first (docs define intent, code implements it), include that in the plan.
-
-The plan should be small enough for one implementation agent to execute in a single session.
-If it's too large, split it and save the rest for the next cycle.
+Keep small enough for one agent session. Too large? Split and save the rest for next cycle.
 
 ### Step 5: Dispatch
 
@@ -282,9 +240,7 @@ You are implementing a focused change for [project].
 - If you encounter a bug unrelated to your task, note it but do not fix it.
 ```
 
-For non-trivial design decisions, spawn an Opus agent first for the design, then a Sonnet
-agent for the implementation.
-
+For non-trivial design decisions, spawn Opus for design first, then Sonnet for implementation.
 Wait for all dispatched agents to complete before proceeding.
 
 ### Step 6: Verify
@@ -367,14 +323,11 @@ Then stop. One cycle complete.
 
 ## Handling blocked work
 
-If the chosen work is blocked (ambiguous requirement, missing dependency, decision too
-consequential to make autonomously):
+If blocked (ambiguous requirement, missing dependency, decision too consequential):
 
-1. Log the blocker in ISSUES.md with context and what decision is needed
-2. Log the skipped attempt in PROGRESS.md
+1. Log blocker in ISSUES.md with context and decision needed
+2. Log skipped attempt in PROGRESS.md
 3. Pick different work and complete a full cycle on that instead
-
-Never waste a cycle. If the first pick is blocked, pivot.
 
 ---
 

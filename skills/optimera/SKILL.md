@@ -21,10 +21,9 @@ description: >
 
 **Objective Pursuit: Targeted Iterative Measurement — Experiment, Record, Advance**
 
-A metric-driven optimization loop that improves any measurable property of a software project,
-one focused experiment at a time. The user defines the objective. The agent writes an eval
-harness. The harness becomes the immutable judge. Experiments that improve the metric and
-pass regression checks are kept; everything else is discarded.
+Metric-driven optimization: improve any measurable property one experiment at a time. User
+defines the objective, agent writes an eval harness, harness becomes the immutable judge.
+Improve + pass regression = keep; everything else is discarded.
 
 Each invocation = one experiment. `/loop` handles recurrence.
 
@@ -32,7 +31,7 @@ Each invocation = one experiment. `/loop` handles recurrence.
 
 ## State artifacts
 
-Optimera maintains three artifacts in the project root. All are bootstrapped if they don't exist.
+Three artifacts in the project root, bootstrapped if absent.
 
 | Artifact | Purpose | Bootstrap |
 |----------|---------|-----------|
@@ -50,9 +49,8 @@ including cross-skill reads (DECISIONS.md).
 
 ### OBJECTIVE.md
 
-An evergreen document. Optimera creates it through a brainstorm session on first run, and can
-refine it when the user explicitly asks. Outside of those two cases, the agent never touches
-it — it reads the objective, it doesn't rewrite it. Typical structure:
+Evergreen. Created via brainstorm on first run, refined only when the user explicitly asks.
+Outside those two cases, the agent reads it but never writes it. Typical structure:
 
 ```markdown
 # [Optimization Target]
@@ -82,20 +80,16 @@ this, but OBJECTIVE.md explains the intent behind it.]
 the agent uses judgment — but explicit scope prevents surprise.]
 ```
 
-The exact structure may vary — what matters is that the objective is precise enough to measure,
-the constraints are clear enough to enforce, and the scope is defined enough to prevent the
-agent from wandering.
+The objective must be precise enough to measure, constraints clear enough to enforce, and
+scope defined enough to prevent wandering.
 
 ### .optimera/harness
 
-A script that measures the metric and outputs structured JSON. The agent writes this during
-the brainstorm phase using the reference documentation as a guide. The user approves it.
-After approval, the harness is **locked** — the agent never modifies it during optimization
-cycles.
+Script that measures the metric and outputs structured JSON. Written during brainstorm,
+approved by the user, then **locked** — never modified during optimization cycles.
 
-The harness wraps the project's own tooling (test runners, benchmarks, linters, build tools)
-and translates their output into a consistent format. It does not reimplement measurement —
-the project's tooling is the source of truth.
+Wraps the project's own tooling (test runners, benchmarks, linters) and translates output
+into a consistent format. The project's tooling is the source of truth.
 
 **Before writing a harness**, read these references (bundled with this skill):
 - `references/harness-guide.md` — principles, patterns, and pitfalls
@@ -117,9 +111,8 @@ the project's tooling is the source of truth.
 {"metric": 85.5, "direction": "higher", "unit": "%", "detail": "42/50 tests passing", "breakdown": [{"name": "unit", "value": 95.0}, {"name": "integration", "value": 60.0}]}
 ```
 
-The harness is the **immutable ground truth**. It prevents the agent from gaming the metric
-by separating measurement from optimization. If the harness is wrong, the user must explicitly
-ask to rebuild it.
+The harness is the **immutable ground truth** — separates measurement from optimization.
+If wrong, the user must explicitly ask to rebuild it.
 
 ### EXPERIMENTS.md
 
@@ -153,36 +146,26 @@ In all other cases, skip straight to the cycle.
 
 ### How the brainstorm works
 
-A focused conversation to understand what the user wants to optimize and build the eval
-harness. One question at a time. Push for precision — vague objectives produce aimless
-experiments.
+Focused conversation. One question at a time. Push for precision — vague objectives produce
+aimless experiments.
 
-1. **Understand the objective** — "What specific metric do you want to improve? What's its
-   current value? What's the target?" If the codebase already exists, read it first — run
-   any existing test/bench/lint commands to establish the current state. Present your
-   understanding: "Here's what I measured. Is this the metric you care about?"
-2. **Understand the motivation** — "Why does this metric matter? What breaks or suffers at
-   the current value? What becomes possible at the target?" This context helps the agent
-   make trade-off decisions during optimization.
-3. **Define constraints** — "What must NOT break while optimizing? Are there files or modules
-   that are off-limits? Any resource limits?" If a decision profile exists, propose constraints
-   derived from it and let the user adjust.
-4. **Define scope** — "Which parts of the codebase should I focus on? Where do you suspect
-   the biggest gains are?" Read the codebase to propose informed scope boundaries.
-5. **Write OBJECTIVE.md** — synthesize the answers into a precise optimization charter.
-   Present it to the user for approval before writing.
-6. **Write the eval harness** — read `references/harness-guide.md` and the relevant example
-   in `references/examples/` for the metric type. Based on the objective and the reference
-   patterns, write a script at `.optimera/harness` that measures the metric using the
-   project's own tooling and outputs structured JSON per `references/output-schema.md`.
-   Present the script to the user, explain what it does, and get explicit approval before
-   locking it. Run it once to verify it works and establish the baseline metric value.
+1. **Objective** — "What metric, current value, target?" If code exists, run existing
+   test/bench/lint commands first: "Here's what I measured. Is this the metric you care about?"
+2. **Motivation** — "Why does this matter? What breaks at current value? What's possible at
+   target?" Context helps trade-off decisions during optimization.
+3. **Constraints** — "What must NOT break? Off-limits files? Resource limits?" If a decision
+   profile exists, propose constraints from it.
+4. **Scope** — "Which parts to focus on? Where are the biggest gains?" Read codebase to
+   propose informed boundaries.
+5. **Write OBJECTIVE.md** — synthesize into a precise charter. Present for approval.
+6. **Write the eval harness** — read `references/harness-guide.md` and relevant
+   `references/examples/` pattern. Write `.optimera/harness` using the project's own tooling,
+   outputting JSON per `references/output-schema.md`. Present, explain, get approval, run
+   once to establish baseline.
 
-When **refining** an existing objective, read the current OBJECTIVE.md first, show the user what
-you'd change and why, and get confirmation before writing. If the harness needs to change,
-the user must explicitly approve the new version.
-
-After the brainstorm completes, proceed to experiment 1.
+When **refining**, read current OBJECTIVE.md, show proposed changes with rationale, get
+confirmation. If the harness changes, the user must approve the new version.
+After brainstorm, proceed to experiment 1.
 
 ---
 
@@ -192,30 +175,19 @@ Each experiment opens with the skill introduction: `─── ⎘ optimera · ex
 
 ### Step 1: Orient
 
-Read the optimization state to understand where things stand.
-
-1. **EXPERIMENTS.md** — read last 5 experiments only (check for plateau patterns)
+1. **EXPERIMENTS.md** — last 5 experiments only (check for plateau patterns)
 2. **OBJECTIVE.md** — the metric, target, constraints, and scope
-3. **Decision profile** — run the effective profile script for a confidence-weighted summary:
+3. **Decision profile** — run from the profilera skill directory (typically
+   `~/.claude/plugins/marketplaces/agentera/skills/profilera`):
    ```bash
    python3 -m scripts.effective_profile
    ```
-   Run from the profilera skill directory (typically
-   `~/.claude/plugins/marketplaces/agentera/skills/profilera`).
-   This outputs a summary table with effective confidence after dormancy decay.
-   Use it to calibrate experimentation style: high effective confidence entries (65+)
-   are strong constraints on approach, low effective confidence entries (<45) are
-   suggestions that can be overridden. Read full `~/.claude/profile/PROFILE.md` for
-   complete rule details when needed.
-   If the script or PROFILE.md is missing, proceed without persona grounding but flag it:
-   "Consider running /profilera to generate a decision profile — it helps me make choices
-   you'd agree with."
-4. **Project discovery** (experiment 1 or when unfamiliar):
-   - Map the directory structure within the declared scope
-   - Read dependency manifests
-   - Read README, CLAUDE.md if they exist
-   - Identify the build/test/lint commands (needed for regression checks)
-   - Read key source files in scope to understand architecture
+   Entries with effective confidence 65+ are strong constraints; <45 are suggestions.
+   Read full `~/.claude/profile/PROFILE.md` for details when needed.
+   If missing, proceed without persona grounding but flag it.
+4. **Project discovery** (experiment 1 or when unfamiliar) — map directory structure within
+   scope, read dependency manifests, README, CLAUDE.md, identify build/test/lint commands,
+   read key source files in scope
 5. `git log --oneline -20` for recent changes
 
 Before experimenting: in your response, list the current baseline, target, and constraints
@@ -228,15 +200,13 @@ exit signal `complete: objective achieved` and stop.
 
 Run two things:
 
-**2a. Experiment history analysis** — if EXPERIMENTS.md has prior entries, run the analysis
-script (bundled with this skill) to get structured trend data:
+**2a. Experiment history analysis** — if EXPERIMENTS.md has prior entries, run:
 
 ```bash
 python3 -m scripts.analyze_experiments --experiments EXPERIMENTS.md --objective OBJECTIVE.md --pretty
 ```
 
-This outputs JSON with: metric trajectory, plateau detection, win/loss rates, distance to
-target, and recent experiment summaries. Use this to inform the Hypothesize step.
+Outputs JSON with metric trajectory, plateau detection, win/loss rates, and distance to target.
 
 **2b. Current metric** — run the eval harness to get the baseline for this experiment:
 
@@ -246,27 +216,21 @@ chmod +x .optimera/harness && ./.optimera/harness
 
 Parse the JSON output. Record the current metric as the baseline.
 
-**Plateau detection**: if the analysis script reports `plateau_detected: true` (no improvement
-in 3+ experiments), flag this explicitly. Consider a radically different approach, seek
-external inspiration via /inspirera, or escalate to the user.
+**Plateau detection**: if `plateau_detected: true` (no improvement in 3+ experiments), flag
+explicitly. Consider a radically different approach, /inspirera, or escalate to the user.
 
 ### Step 3: Hypothesize
 
-Formulate a single, focused hypothesis about what change will improve the metric.
+Formulate a single, focused hypothesis.
 
-1. **Review history** — read EXPERIMENTS.md to understand what's been tried, what worked,
-   what didn't, and what the last experiment's "Next" field suggested. Look for patterns:
-   which kinds of changes produce gains? Which approaches keep failing?
-2. **Seek inspiration** — if the optimization domain is non-trivial, proactively search for
-   external techniques. Use web search to find articles, libraries, or repos addressing
-   similar optimization problems. Cast a focused net: 2-3 targeted queries. Analyze anything
-   promising the way /inspirera would: core approach, transferability, applicability.
-3. **Formulate** — write a 1-2 sentence hypothesis: "I expect [change] to improve the metric
-   because [reasoning]." The hypothesis should be falsifiable — if the metric doesn't improve,
-   the hypothesis was wrong.
+1. **Review history** — what's been tried, what worked, what failed? Which change types
+   produce gains? What did the last "Next" field suggest?
+2. **Seek inspiration** — for non-trivial domains, 2-3 targeted web queries for techniques,
+   libraries, or patterns. Analyze promising finds for transferability.
+3. **Formulate** — "I expect [change] to improve the metric because [reasoning]." Must be
+   falsifiable.
 
-Consult the decision profile. Be conservative (small, safe changes) early in the optimization.
-Escalate to more aggressive changes if conservative approaches plateau.
+Be conservative early; escalate if conservative approaches plateau.
 
 ### Step 4: Implement
 
@@ -381,13 +345,10 @@ Then stop. One experiment complete.
 
 ## Handling blocked experiments
 
-If the hypothesis can't be tested (missing dependency, ambiguous constraint, change would be
-too risky to make autonomously):
+If blocked (missing dependency, ambiguous constraint, too risky):
 
-1. Log the blocked hypothesis in EXPERIMENTS.md with context and what decision is needed
+1. Log blocked hypothesis in EXPERIMENTS.md with context and decision needed
 2. Formulate a different hypothesis and complete a full experiment on that instead
-
-Never waste a cycle. If the first hypothesis is blocked, pivot.
 
 ---
 

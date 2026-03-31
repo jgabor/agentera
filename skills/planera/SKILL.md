@@ -21,12 +21,11 @@ description: >
 
 **Planning Logic: Adaptive Notation, Executable Requirements Architecture — Explore, Refine, Articulate**
 
-A scale-adaptive planning skill that bridges deliberation and execution. Produces a PLAN.md
-with behavioral acceptance criteria that realisera consumes for task selection. Planera owns
-WHAT and WHY. Realisera owns HOW.
+Scale-adaptive planning bridging deliberation and execution. PLAN.md with behavioral
+acceptance criteria for realisera. Planera owns WHAT and WHY; realisera owns HOW.
 
-Three levels: **skip** (trivial work — just run realisera), **light** (single-cycle enrichment),
-**full** (multi-cycle orchestration with adversarial review).
+Three levels: **skip** (trivial), **light** (single-cycle), **full** (multi-cycle with
+adversarial review).
 
 Planning output opens with: `─── ≡ planera · planning ───`
 
@@ -34,7 +33,7 @@ Planning output opens with: `─── ≡ planera · planning ───`
 
 ## State artifacts
 
-Planera maintains one file in the project root and one directory for archives.
+One file and one archive directory in the project root.
 
 | Artifact | Purpose | Bootstrap |
 |----------|---------|-----------|
@@ -44,8 +43,7 @@ Planera maintains one file in the project root and one directory for archives.
 **Presence signal**: `PLAN.md` in the project root means active planned work. Absence means no
 plan — realisera reasons from VISION.md as usual.
 
-Templates live in `references/templates/`. Use them as the starting structure — adapt to the
-project, don't copy verbatim.
+Templates in `references/templates/` — use as starting structure, adapt to the project.
 
 ### Artifact path resolution
 
@@ -59,10 +57,8 @@ root. This applies to all artifact references in this skill, including cross-ski
 
 ## Step 0: Detect level
 
-Before planning, assess the work complexity to choose the right level.
-
-Read the work description (from the user, from DECISIONS.md, or from ISSUES.md). Scan the
-codebase if needed to understand scope.
+Assess work complexity. Read the description (user, DECISIONS.md, or ISSUES.md). Scan
+codebase if needed.
 
 | Signal | Level |
 |--------|-------|
@@ -82,8 +78,6 @@ If uncertain between light and full, default to light. The user can escalate.
 
 Read VISION.md, DECISIONS.md, and ISSUES.md in parallel — these reads are independent, issue
 all in a single response.
-
-Read project state for context.
 
 1. **VISION.md** — the north star (if exists)
 2. **DECISIONS.md** — read `firm` entries only (these are hard constraints for planning)
@@ -110,51 +104,43 @@ DECISIONS.md that bound this plan. These survive compaction.
 
 ## Step 2: Specify
 
-Define WHAT is being built and WHY. This is the intent layer — not implementation details.
+Define WHAT and WHY. Intent layer, not implementation details.
 
 ### Light plans
 
-A brief, focused conversation (2-3 questions max) to capture:
+Brief conversation (2-3 questions):
 
 - **What**: one-paragraph description of the change
 - **Why**: what value it delivers or what problem it solves
 - **Constraints**: what must NOT break, what's out of scope
 - **Acceptance criteria**: 3-5 behavioral criteria in Given/When/Then format
 
-Write PLAN.md with these sections. Present to the user for approval (if human-initiated) or
-proceed (if autonomous).
+Write PLAN.md. Present for approval (human-initiated) or proceed (autonomous).
 
 ### Full plans
 
-A deeper conversation to capture:
+Deeper conversation:
 
 - **What**: detailed description of the feature or change
 - **Why**: motivation, user impact, relationship to VISION.md
 - **Constraints**: architectural boundaries, off-limits modules, non-functional requirements
 - **Scope**: what's in, what's explicitly out, what's deferred
-- **Design**: high-level approach — which modules are affected, how they interact, key
-  decisions. Do NOT specify implementation details (which functions to call, line-level
-  changes). Focus on product context and high-level technical design.
-- **Task decomposition**: break the work into 3-8 ordered tasks, each sized for one realisera
-  cycle. Each task gets:
-  - One-line description
-  - Dependencies (which tasks must complete first)
-  - Acceptance criteria: 3-5 behavioral Given/When/Then criteria per task
-- **Version bump check**: after decomposing tasks, check if DOCS.md has a `versioning` block
-  in its Conventions section. If it does and the plan's scope includes `feat` or `fix` work,
-  add a final task: "Version bump per DOCS.md convention." This task depends on all other
-  tasks. If DOCS.md has no versioning convention, skip this entirely.
+- **Design**: high-level approach — modules affected, interactions, key decisions. No
+  implementation details (functions, line-level changes).
+- **Task decomposition**: 3-8 ordered tasks, each one realisera cycle. Per task: one-line
+  description, dependencies, 3-5 behavioral Given/When/Then acceptance criteria
+- **Version bump check**: if DOCS.md has a `versioning` block and plan includes `feat`/`fix`
+  work, add final task "Version bump per DOCS.md convention" depending on all others. No
+  versioning convention = skip entirely.
 - **Overall acceptance criteria**: behavioral criteria for the complete feature
 
-Present the full plan to the user for approval (if human-initiated) or proceed to adversarial
-review (if autonomous).
+Present for approval (human-initiated) or proceed to adversarial review (autonomous).
 
 ---
 
 ## Step 3: Review (full plans only)
 
-Spawn an adversarial critic agent to review the plan. The critic MUST find issues — "looks
-good" is not an acceptable review.
+Spawn an adversarial critic. The critic MUST find issues — "looks good" is not acceptable.
 
 ```
 You are reviewing a development plan for [project]. Your job is to find problems.
@@ -179,19 +165,16 @@ Look for:
 Return a numbered list of issues, ordered by severity.
 ```
 
-Review the critic's findings. Address legitimate issues by updating the plan. Dismiss false
-positives with brief rationale.
-
-Present the reviewed plan to the user for approval (if human-initiated) or finalize (if
-autonomous).
+Address legitimate issues; dismiss false positives with rationale. Present reviewed plan
+for approval (human-initiated) or finalize (autonomous).
 
 ---
 
 ## Step 4: Write PLAN.md
 
-Reason through task dependencies and decomposition in your response text. Write ONLY the
-task list with acceptance criteria to PLAN.md — no decomposition rationale. The conversation
-preserves the reasoning; the artifact preserves the actionable plan.
+Reason through dependencies in response text. Write ONLY tasks with acceptance criteria
+to PLAN.md — no rationale. The conversation preserves reasoning; the artifact preserves
+the plan.
 
 Output constraint: ≤30 words per task description, ≤20 words per acceptance criterion.
 
@@ -278,18 +261,15 @@ NOT implementation details.]
 
 ## Step 5: Handoff
 
-After PLAN.md is written and approved:
-
-- **Light plans**: Suggest running `/realisera` to execute the single cycle with the plan's
-  acceptance criteria as exit conditions.
-- **Full plans**: Suggest running `/realisera` (or `/loop` for autonomous execution). Realisera
-  reads PLAN.md, picks the next pending task with satisfied dependencies, and executes it.
+- **Light plans**: suggest `/realisera` with plan's acceptance criteria as exit conditions.
+- **Full plans**: suggest `/realisera` or `/loop`. Realisera picks next pending task with
+  satisfied dependencies.
 
 ---
 
 ## How realisera reads PLAN.md
 
-When PLAN.md exists with pending tasks, realisera's Step 2 (Pick work) changes:
+When PLAN.md has pending tasks, realisera's Step 2 changes:
 
 1. Read PLAN.md
 2. Find tasks with `Status: □ pending` whose dependencies are all `Status: ■ complete`
