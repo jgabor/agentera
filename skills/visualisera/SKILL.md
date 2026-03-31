@@ -28,6 +28,8 @@ evolve, and concrete enough that any agent can generate correct UI from it.
 Three modes: **create** (new projects), **refine** (evolve existing design systems), and
 **audit** (verify consistency).
 
+Visual identity work opens with: `─── ◰ visualisera · design ───`
+
 ---
 
 ## State artifacts
@@ -277,11 +279,11 @@ If validation reports errors, fix them and re-validate before presenting the res
 
 After creating the design system, suggest concrete next steps:
 
-- **Set up enforcement** — point to `references/enforcement-patterns.md` for the three-layer
+▸ **Set up enforcement** — point to `references/enforcement-patterns.md` for the three-layer
   enforcement model (validation, linting, audit)
-- **Build to the spec** — run `/realisera` to implement UI that respects the design tokens
-- **Document it** — run `/dokumentera` to add the design system to project documentation
-- **Refine later** — run `/visualisera` again to evolve the design as the project matures
+▸ **Build to the spec** — run `/realisera` to implement UI that respects the design tokens
+▸ **Document it** — run `/dokumentera` to add the design system to project documentation
+▸ **Refine later** — run `/visualisera` again to evolve the design as the project matures
 
 ---
 
@@ -353,14 +355,14 @@ Read the codebase looking for design drift:
 
 Categorize findings by severity:
 
-- **Critical** — tokens in code that don't exist in DESIGN.md (uncontrolled styling)
-- **Warning** — declared tokens not used anywhere (dead tokens), mild inconsistencies
-- **Info** — suggestions for new tokens or constraints based on observed patterns
+- ⇶ **Critical** — tokens in code that don't exist in DESIGN.md (uncontrolled styling)
+- ⇉ **Warning** — declared tokens not used anywhere (dead tokens), mild inconsistencies
+- ⇢ **Info** — suggestions for new tokens or constraints based on observed patterns
 
 Present findings with file:line references and suggested fixes. For each finding, offer to:
-- **Fix DESIGN.md** — add missing tokens or constraints
-- **File to ISSUES.md** — if the code is wrong (design is right, code drifted)
-- **Skip** — intentional or not worth fixing
+▸ **Fix DESIGN.md** — add missing tokens or constraints
+▸ **File to ISSUES.md** — if the code is wrong (design is right, code drifted)
+▸ **Skip** — intentional or not worth fixing
 
 See `references/enforcement-patterns.md` for guidance on setting up framework-specific
 enforcement (linting, CI checks) beyond what the audit catches.
