@@ -129,9 +129,9 @@ ask to rebuild it.
 **Hypothesis**: what we expected to improve and why
 **Method**: the approach taken to test the hypothesis
 **Change**: one-line summary of the code change
-**Metric**: <before> → <after> (<direction> is <better|worse|unchanged>)
+**Metric**: <before> → <after> (⮉ better | ⮋ worse | unchanged)
 **Regression**: pass | fail (existing test/build suite)
-**Status**: kept | discarded | error
+**Status**: ■ kept | □ discarded | ▨ error
 **Commit**: <hash> (if kept)
 **Inspiration**: external source that informed the approach (if any)
 **Conclusion**: what we learned — confirms, refutes, or refines the hypothesis
@@ -187,6 +187,8 @@ After the brainstorm completes, proceed to experiment 1.
 ---
 
 ## The cycle
+
+Each experiment opens with the skill introduction: `─── ⎘ optimera · experiment N ───`
 
 ### Step 1: Orient
 
@@ -329,7 +331,7 @@ conventional commit message:
 ```
 perf(scope): summary of what improved the metric
 
-Metric: <before> → <after> (<unit>)
+Metric: <before> → <after> ⮉ (<unit>)
 ```
 
 If either fails: **discard** — the worktree is abandoned. No merge. No commit.
