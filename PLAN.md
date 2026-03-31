@@ -80,7 +80,7 @@ once the spec is written.
 
 ### Task 2: Hej — reference dashboard composition
 **Depends on**: Task 1
-**Status**: pending
+**Status**: complete
 **Acceptance**:
 - GIVEN hej's Step 1b (returning mode) WHEN the dashboard format is described THEN the output uses skill glyphs as pulse line markers, severity arrows for attention items, `─── status ───` section dividers, the agentera logo at the top, and a narrative summary closing the status section
 - GIVEN hej's Step 1a (fresh mode) WHEN the capability table is described THEN skill glyphs appear alongside skill names
