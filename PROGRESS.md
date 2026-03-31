@@ -239,3 +239,11 @@
 **Inspiration**: None — mechanical propagation from ecosystem spec
 **Discovered**: No new issues
 **Next**: Plan complete. Visual identity rollout shipped across all 11 skills, 7 templates, and ecosystem spec. Resume vision-driven work.
+
+## Cycle 31 — 2026-03-31
+
+**What**: Added versioning convention to DOCS.md template and dokumentera survey — optional version_files and semver_policy fields (Plan Task 1)
+**Commit**: a0c8f87 feat(dokumentera): add versioning convention to DOCS.md template and survey (Plan Task 1)
+**Inspiration**: Decision 12 — project-driven versioning convention via DOCS.md
+**Discovered**: No new issues
+**Next**: Tasks 2-4 unblocked (planera, inspektera, realisera awareness). Task 5 (agentera housekeeping) depends on Task 1.
