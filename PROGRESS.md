@@ -215,3 +215,11 @@
 **Inspiration**: Decision 11 token-to-template mapping
 **Discovered**: DECISIONS.md and DESIGN.md from resonera session were uncommitted — committed as prerequisite (6e0e2b1)
 **Next**: Tasks 4-6 remain — execution skills (Task 4), audit skills (Task 5), deliberation skills (Task 6)
+
+## Cycle 28 — 2026-03-31
+
+**What**: Added visual tokens to realisera and optimera SKILL.md output instructions (Plan Task 4) — intro patterns, trend arrows, status tokens
+**Commit**: c924acc feat: add visual tokens to realisera and optimera output (Plan Task 4)
+**Inspiration**: None — mechanical propagation from ecosystem spec
+**Discovered**: No new issues
+**Next**: Tasks 5-6 remain — audit skills (Task 5), deliberation skills (Task 6)
