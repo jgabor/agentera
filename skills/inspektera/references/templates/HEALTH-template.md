@@ -3,6 +3,16 @@
 Codebase health assessments maintained by inspektera. Each audit appends one entry. Prior
 audits are kept for trend tracking. Findings feed into ISSUES.md for realisera to pick up.
 
+## Patterns Observed
+
+[De facto architecture patterns extracted from the codebase. Updated by the latest audit —
+stable across audits unless the architecture changes.]
+
+- Module structure: [how code is organized]
+- Error handling: [predominant pattern]
+- Testing approach: [how tests are structured]
+- Dependency patterns: [how deps are managed]
+
 ## Audit 1 — YYYY-MM-DD
 
 **Dimensions assessed**: [list of dimensions]
@@ -22,13 +32,6 @@ audits are kept for trend tracking. Findings feed into ISSUES.md for realisera t
 
 ### Trends vs prior audit
 [First audit — no comparison available. Future audits compare against this baseline.]
-
-### Patterns Observed
-[De facto architecture patterns extracted from the codebase]
-- Module structure: [how code is organized]
-- Error handling: [predominant pattern]
-- Testing approach: [how tests are structured]
-- Dependency patterns: [how deps are managed]
 
 <!--
 Dimension grades:
