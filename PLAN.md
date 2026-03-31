@@ -89,7 +89,7 @@ once the spec is written.
 
 ### Task 3: Artifact templates — visual token integration
 **Depends on**: Task 1
-**Status**: pending
+**Status**: complete
 **Acceptance**:
 - GIVEN the PLAN template WHEN a task entry is written THEN status tokens (■/▣/□/▨) appear alongside the Status field
 - GIVEN the ISSUES template WHEN an issue heading is written THEN severity arrows (⇶/⇉/⇢) appear alongside severity text

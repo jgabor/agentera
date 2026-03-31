@@ -207,3 +207,11 @@
 **Inspiration**: Decision 11 reference composition
 **Discovered**: No new issues
 **Next**: Tasks 3-6 remain — artifact templates (Task 3), execution skills (Task 4), audit skills (Task 5), deliberation skills (Task 6)
+
+## Cycle 27 — 2026-03-31
+
+**What**: Added visual tokens to all 7 artifact templates — status, severity, confidence, trend, and structural tokens layered on existing Markdown (Plan Task 3)
+**Commit**: 5b6698f feat: add visual tokens to all 7 artifact templates (Plan Task 3)
+**Inspiration**: Decision 11 token-to-template mapping
+**Discovered**: DECISIONS.md and DESIGN.md from resonera session were uncommitted — committed as prerequisite (6e0e2b1)
+**Next**: Tasks 4-6 remain — execution skills (Task 4), audit skills (Task 5), deliberation skills (Task 6)
