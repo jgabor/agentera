@@ -167,3 +167,11 @@
 **Inspiration**: gstack/office-hours anti-sycophancy patterns (Decision 10 adopt-now item)
 **Discovered**: No new issues
 **Next**: Plan complete. Consider /inspektera health check — suite has grown to 11 skills with hej, and resonera has new content.
+
+## Cycle 22 — 2026-03-31
+
+**What**: Fixed ISS-8 (stale skill counts in CLAUDE.md/DOCS.md) and ISS-9 (resonera duplicate "Getting started" sections)
+**Commit**: b11b018 fix: resolve ISS-8 and ISS-9 from Audit 2
+**Inspiration**: None — audit-driven fixes
+**Discovered**: No new issues. ISS-10 (unidirectional cross-skill refs) remains open — annoying severity, separate cycle.
+**Next**: ISS-10 (add reciprocal cross-skill mentions) or vision-driven work.

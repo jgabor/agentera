@@ -25,16 +25,12 @@ dimension → latest. Complementary evidence preserved in merged entries.
 
 ## Open
 
-## ISS-8: CLAUDE.md and DOCS.md have stale skill counts — degraded
-CLAUDE.md says "Ten skills" (should be eleven). DOCS.md says "10/10 skills have SKILL.md"
-(should be 11/11). Same staleness pattern as ISS-1 — doc references go stale immediately
-on skill addition. Found in Audit 2.
+## ~~ISS-8: CLAUDE.md and DOCS.md have stale skill counts — degraded~~ RESOLVED
+Fixed in b11b018. CLAUDE.md → "Eleven skills", DOCS.md → "11/11".
 
-## ISS-9: Resonera has duplicate "Getting started" sections — degraded
-Two `## Getting started` headings at lines 98 and 312. First is misplaced mid-document
-(all other skills put it at the end). First section describes workflow initiation ("If a
-topic is provided"), second describes usage patterns ("Before a realisera session"). Should
-be merged into one section at the end. Found in Audit 2.
+## ~~ISS-9: Resonera has duplicate "Getting started" sections — degraded~~ RESOLVED
+Fixed in b11b018. First section renamed to "Starting a session" (workflow step). Second
+section remains as the real "Getting started" at end of file.
 
 ## ISS-10: Some cross-skill references are unidirectional — annoying
 inspektera says "feeds /optimera" but optimera doesn't acknowledge inspektera. dokumentera
