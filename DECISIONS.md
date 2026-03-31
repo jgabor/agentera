@@ -476,3 +476,54 @@ target-skill-glyph routing.
 
 **Confidence**: firm
 **Feeds into**: DESIGN.md (visual token system)
+
+---
+
+## Decision 12 — 2026-03-31
+
+**Question**: How should version management work across the agentera ecosystem — both for agentera's own skill versions and for target projects agentera runs in?
+**Context**: No skill currently owns version bumping. Two version mismatches (inspektera and
+inspirera) existed between plugin.json and marketplace.json with nobody catching them. CLAUDE.md
+describes the mechanics ("update both registry.json and plugin.json") but no skill triggers,
+detects, or executes bumps. The visual identity rollout changed all 11 SKILL.md files without
+any version bumps.
+**Alternatives**:
+- [New skill for version management] — rejected: versioning is a convention enforced by existing skills, not a distinct workflow
+- [Realisera auto-bumps at commit time] — rejected: too granular, multi-commit changes would produce multiple bumps
+- [Plan completion = version boundary] — rejected: plans are a workflow tool, not a release boundary. A typo-fix plan shouldn't trigger a bump.
+- [Strict semver default from commit types] — rejected: too prescriptive. Different projects have different versioning philosophies.
+- [Realisera + inspektera defense-in-depth] — evolved into the final design
+**Choice**: Project-driven versioning convention via DOCS.md, with three-layer enforcement
+across existing skills. No default imposed — if the project doesn't specify a versioning
+policy, no auto-bumping happens.
+**Reasoning**: The key insight is that versioning is a *project convention*, not an agentera
+convention. The skills are guests in someone else's codebase (Decision 4 principle). DOCS.md
+already captures project conventions (doc structure, style defaults, artifact paths) — versioning
+conventions belong there too. The three-layer enforcement follows the "detect → plan → execute"
+pattern already established: dokumentera detects conventions, planera evaluates scope, realisera
+executes, inspektera catches drift.
+
+### Design
+
+**DOCS.md conventions** (dokumentera survey): captures version file locations, semver policy,
+changelog location, release tooling. If the project has existing conventions, dokumentera
+records them. If none exist, DOCS.md says nothing about versioning.
+
+**Three-layer enforcement**:
+
+| Layer | Skill | Role | When |
+|-------|-------|------|------|
+| Proactive | planera | Includes a version bump task when planned scope warrants it (per DOCS.md policy) | During planning |
+| Reactive | inspektera | Flags unbumped significant changes as audit findings | During health audits |
+| Execution | realisera | Performs mechanical bump — reads DOCS.md for which files to update and semver level | When executing a bump task or picking up an inspektera finding |
+
+**No convention = no auto-bumping**: If DOCS.md has no versioning section, skills don't
+attempt version bumps. The user can always request one explicitly or ask dokumentera to
+establish a convention.
+
+**Same pattern for all projects**: agentera's 11+1 versioned files are just more version
+entries in DOCS.md conventions. Target projects with a single version file use the same
+mechanism. The skills don't need special logic per project type.
+
+**Confidence**: ━ firm
+**Feeds into**: DOCS.md template (versioning conventions), planera/inspektera/realisera SKILL.md updates
