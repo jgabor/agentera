@@ -46,7 +46,9 @@ If an artifact has no entry, skills fall back to the project root.
 | Vision | VISION.md | 2026-03-31 | ■ current |
 | Progress | PROGRESS.md | 2026-03-31 | ■ current |
 | Issues | ISSUES.md | 2026-03-31 | ■ current |
-| Health | HEALTH.md | 2026-03-31 | ▣ stale |
+| Health | HEALTH.md | 2026-03-31 | ■ current |
+| Plan | PLAN.md | 2026-03-31 | ■ current |
+| DOCS | DOCS.md | 2026-03-31 | ■ current |
 | Design | DESIGN.md | 2026-03-31 | ■ current |
 | Ecosystem spec | references/ecosystem-spec.md | 2026-03-31 | ■ current |
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
