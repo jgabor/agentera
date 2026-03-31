@@ -369,7 +369,7 @@ Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3
 
 ## Cross-skill integration
 
-Realisera is part of a ten-skill ecosystem. Each skill can invoke the others when the work
+Realisera is part of an eleven-skill ecosystem. Each skill can invoke the others when the work
 calls for it.
 
 ### Realisera defers to /visionera for vision creation

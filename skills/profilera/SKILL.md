@@ -379,7 +379,7 @@ Report one of these statuses at workflow completion:
 
 ## Cross-skill integration
 
-Profilera is part of a ten-skill ecosystem. The decision profile it produces is consumed by
+Profilera is part of an eleven-skill ecosystem. The decision profile it produces is consumed by
 the other skills.
 
 ### Consumed by /realisera

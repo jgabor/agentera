@@ -406,7 +406,7 @@ Report one of these statuses at workflow completion:
 
 ## Cross-skill integration
 
-Visualisera is part of a ten-skill ecosystem. It is the visual identity layer — the skill that
+Visualisera is part of an eleven-skill ecosystem. It is the visual identity layer — the skill that
 defines how the project looks.
 
 ### Visualisera reads /visionera output
