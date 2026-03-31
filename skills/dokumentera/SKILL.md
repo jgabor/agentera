@@ -24,6 +24,8 @@ The "D" in DTC. Writes documentation that defines intent before code exists, gen
 existing code, maintains docs as projects evolve, and verifies docs against implementation. One
 skill for the full documentation lifecycle.
 
+Documentation work opens with: `─── ▤ dokumentera · docs ───`
+
 Two modes: **create** (new documentation) and **update** (revise and verify existing docs).
 Context-detected approach: if the feature doesn't exist yet, write intent-first docs. If the
 code exists but docs don't, explore and generate.
@@ -76,8 +78,10 @@ auto_gen:
 
 | Document | Path | Last Updated | Status |
 |----------|------|-------------|--------|
-| README | README.md | YYYY-MM-DD | current |
+| README | README.md | YYYY-MM-DD | ■ current |
 ...
+
+Status tokens: `■ current`, `▣ stale`, `□ missing`
 ```
 
 ---
@@ -303,9 +307,9 @@ For each finding, gather concrete evidence:
 
 Categorize findings by severity:
 
-- **Critical** — will cause user errors (documented APIs that don't exist, wrong setup steps)
-- **Warning** — may cause confusion (stale content, redundancies)
-- **Info** — cosmetic, low-impact (slightly outdated examples, wording inconsistencies)
+- ⇶ **Critical** — will cause user errors (documented APIs that don't exist, wrong setup steps)
+- ⇉ **Warning** — may cause confusion (stale content, redundancies)
+- ⇢ **Info** — cosmetic, low-impact (slightly outdated examples, wording inconsistencies)
 
 Present findings to the user with suggested fixes. For each finding, offer to:
 - **Fix it** — update the documentation to match reality
@@ -315,10 +319,10 @@ Present findings to the user with suggested fixes. For each finding, offer to:
 ### Step 4: Update DOCS.md
 
 Update the index with:
-- Audit date
-- Status changes (current / stale / missing)
-- Coverage numbers
-- Audit log entry
+- ▸ Audit date
+- ▸ Status changes (■ current / ▣ stale / □ missing)
+- ▸ Coverage numbers
+- ▸ Audit log entry
 
 ---
 

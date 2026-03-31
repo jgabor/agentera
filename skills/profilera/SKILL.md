@@ -25,6 +25,8 @@ AI agent could use to predict "What would this person decide in a given situatio
 entry carries numeric confidence, permanence classification, and temporal metadata — enabling
 dormancy decay so stale entries are automatically discounted by consuming skills.
 
+Profile generation output opens with: `─── ♾ profilera · profile ───`
+
 Two modes:
 
 - **Full**: Extract all session data, synthesize from scratch, write a fresh PROFILE.md.
@@ -137,13 +139,15 @@ For each category:
 Decision patterns are empirically verifiable — you can check git history and configs to see
 if someone actually follows their stated convention. The confidence scale reflects this:
 
-| Range | Label | Criteria |
-|-------|-------|----------|
-| 90-100 | Shipped consistently | Appears in configs/code across 3+ projects, verifiable from artifacts |
-| 70-89 | Established | Consistent across sessions, corroborated by behavior |
-| 50-69 | Emerging | Observed multiple times but limited context or minor variations |
-| 30-49 | Single signal | One data point or inferred from adjacent patterns |
-| 0-29 | Speculative | No direct evidence, extrapolated from related decisions |
+| Range | Label | Token | Criteria |
+|-------|-------|-------|----------|
+| 90-100 | Shipped consistently | `━` | Appears in configs/code across 3+ projects, verifiable from artifacts |
+| 70-89 | Established | `━` | Consistent across sessions, corroborated by behavior |
+| 50-69 | Emerging | `─` | Observed multiple times but limited context or minor variations |
+| 30-49 | Single signal | `┄` | One data point or inferred from adjacent patterns |
+| 0-29 | Speculative | `┄` | No direct evidence, extrapolated from related decisions |
+
+Confidence line tokens map to three weight levels: `━` high (90-100), `─` medium (50-89), `┄` low (0-49). These tokens appear alongside inline metadata to give a quick visual confidence signal.
 
 **Bias check**: Confidence is earned through evidence, not assigned by how insightful the
 decision sounds. A pithy design principle observed once is 30, not 75.
@@ -212,10 +216,11 @@ If a previous version exists:
 This profile captures decision-making patterns extracted from {N} months of Claude Code
 sessions across {N} projects. Each entry carries inline metadata:
 
-`conf:75 | perm:durable | first:2026-01-15 | confirmed:2026-03-28 | challenged:—`
+`━ conf:75 | perm:durable | first:2026-01-15 | confirmed:2026-03-28 | challenged:—`
 
 - **conf** (0-100): Evidence-based confidence. 90+ shipped consistently, 70-89
   established, 50-69 emerging, 30-49 single signal, 0-29 speculative.
+  Line weight tokens: `━` high (90-100), `─` medium (50-89), `┄` low (0-49).
 - **perm**: How stable the decision domain is. stable (decade), durable (year),
   situational (month).
 - **first/confirmed/challenged**: When the decision was first observed, last confirmed,
@@ -236,12 +241,12 @@ information they seek before deciding]
 ## [Category Name]
 
 ### [Decision Name]
-`conf:75 | perm:durable | first:2026-01-15 | confirmed:2026-03-28 | challenged:—`
+`━ conf:75 | perm:durable | first:2026-01-15 | confirmed:2026-03-28 | challenged:—`
 
-- **Rule**: [Imperative statement an agent can follow directly]
-- **When**: [Specific conditions or triggers for this rule]
-- **Why**: [The reasoning — what value or concern drives this]
-- **Exceptions**: [Known cases where this was overridden, or "None observed"]
+- ▸ **Rule**: [Imperative statement an agent can follow directly]
+- ▸ **When**: [Specific conditions or triggers for this rule]
+- ▸ **Why**: [The reasoning — what value or concern drives this]
+- ▸ **Exceptions**: [Known cases where this was overridden, or "None observed"]
 
 [Repeat for each decision in the category. Order by confidence (highest first).]
 
