@@ -29,13 +29,14 @@ Each invocation = one cycle. `/loop` handles recurrence.
 
 ## State artifacts
 
-Three files, bootstrapped if absent. VISION.md and TODO.md at project root; PROGRESS.md in `.agentera/`.
+Four files, bootstrapped if absent. VISION.md, TODO.md, and CHANGELOG.md at project root; PROGRESS.md in `.agentera/`.
 
 | File | Purpose | Bootstrap |
 |------|---------|-----------|
 | `VISION.md` | North star. Direction, principles, aspirations. An evergreen constitution. | Via inline brainstorm session with the user (see below). |
 | `TODO.md` | Tech debt, bugs, discrepancies. Things that need fixing. | `# TODO\n\n## ⇶ Critical\n\n## ⇉ Degraded\n\n## ⇢ Annoying\n\n## Resolved\n` |
-| `PROGRESS.md` | Continuity log. What happened each cycle. | `# Progress\n\n` then the first cycle entry. |
+| `CHANGELOG.md` | Public change history. Version-level summaries for contributors. | `# Changelog\n\n## [Unreleased]\n` |
+| `PROGRESS.md` | Operational cycle log. What happened each cycle. | `# Progress\n\n` then the first cycle entry. |
 
 Templates in `references/templates/` — use as starting structure, adapt to the project.
 
@@ -96,6 +97,34 @@ steps from the gap between vision and codebase.
 ```
 
 The "Next" field from the previous cycle is a suggestion, not a mandate. Re-evaluate fresh.
+
+### CHANGELOG.md
+
+Public-facing change history. Keep-a-changelog format:
+
+```markdown
+# Changelog
+
+## [Unreleased]
+
+### Added
+- description
+
+### Changed
+- description
+
+### Fixed
+- description
+
+## [version] — YYYY-MM-DD
+
+### Added
+- description
+```
+
+Realisera appends entries under `## [Unreleased]` based on commit type: `feat` → Added,
+`refactor/chore` → Changed, `fix` → Fixed. On version bumps, promote the Unreleased section
+to a versioned heading.
 
 ---
 
@@ -288,17 +317,23 @@ to the new version number, then include those files in the commit. If DOCS.md ha
 
 ### Step 8: Log
 
+**Dual-write**: realisera maintains two change records — `.agentera/PROGRESS.md` (operational
+cycle detail for consuming skills) and `CHANGELOG.md` (public summary for project contributors).
+
 - **TODO.md** — add newly discovered issues, mark resolved ones. When updating existing
   entries (e.g., marking resolved), use the Edit tool on the specific entry rather than
   rewriting the file.
   Output constraint: ≤30 words per issue description, ≤15 words per remediation.
-- **PROGRESS.md** — append the cycle entry (number, timestamp, what shipped, commit hash,
-  inspiration, discoveries, next suggestion).
+- **.agentera/PROGRESS.md** — append the cycle entry (number, timestamp, what shipped, commit
+  hash, inspiration, discoveries, next suggestion).
   Output constraint: ≤50 words for cycle work summary, ≤30 words per discovered issue.
+- **CHANGELOG.md** — append a one-line entry under `## [Unreleased]` in the appropriate
+  subsection: `feat` → Added, `refactor/chore` → Changed, `fix` → Fixed. Concise description,
+  not the commit message verbatim.
 
-When writing a new cycle entry to PROGRESS.md, check entry count. If >10 full-detail entries
-exist, collapse the oldest to one-line format under `## Archived Cycles` (one line per cycle:
-`Cycle N (YYYY-MM-DD): ≤15-word summary`). If >40 one-line entries exist in the archive,
+When writing a new cycle entry to .agentera/PROGRESS.md, check entry count. If >10 full-detail
+entries exist, collapse the oldest to one-line format under `## Archived Cycles` (one line per
+cycle: `Cycle N (YYYY-MM-DD): ≤15-word summary`). If >40 one-line entries exist in the archive,
 drop the oldest. See ecosystem-spec.md Section 4 compaction thresholds.
 
 Then stop. One cycle complete.
@@ -386,7 +421,7 @@ When PLAN.md exists with `□ pending` tasks, realisera's Step 2 (Pick work) rea
 of reasoning from the vision. Pick the next `□ pending` task with satisfied dependencies. Use the
 task's behavioral acceptance criteria as exit conditions. After committing, use the Edit tool
 to update the task's status to `■ complete` (targeted edit, not full file rewrite). If reality diverges from the plan, add a Surprise entry. When all tasks
-are complete, archive PLAN.md to `.planera/archive/` and resume vision-driven work selection.
+are complete, archive PLAN.md to `.agentera/archive/` and resume vision-driven work selection.
 
 ### Realisera reads /dokumentera output
 DOCS.md provides artifact path resolution that realisera checks before reading or writing
