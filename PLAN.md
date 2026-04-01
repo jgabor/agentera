@@ -54,7 +54,7 @@ and design archives have distinct filename prefixes.
 
 ### Task 1: Update ecosystem-spec with new artifact convention
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN Section 4 WHEN reading artifact table THEN paths show 3 root + 8 in .agentera/
 ▸ GIVEN Section 4 WHEN reading format contracts THEN TODO.md and CHANGELOG.md have definitions

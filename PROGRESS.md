@@ -319,3 +319,11 @@
 **Inspiration**: None
 **Discovered**: Worktree agents unreliable for edits requiring preservation of recent changes — stale base causes regressions. Direct-on-main agents succeeded where worktree agents failed.
 **Next**: Plan complete. Archive PLAN.md. Token efficiency improvements shipped across ecosystem-spec, 7 templates, and all 11 SKILL.md files.
+
+## Cycle 41 — 2026-04-01
+
+**What**: Updated ecosystem-spec Sections 2, 4, 5, 12 with D13 artifact consolidation convention — deterministic layout (3 root + 8 .agentera/), TODO.md/CHANGELOG.md format definitions, dual-write convention, new path resolution template.
+**Commit**: cf8b9c2 feat: update ecosystem-spec with artifact consolidation convention (D13 Plan Task 1)
+**Inspiration**: None — implementing Decision 13 design
+**Discovered**: No new issues. Linter passes 0 errors despite spec changes — existing SKILL.md files still match old wording (expected; Task 5 updates the linter to enforce new wording).
+**Next**: Tasks 3, 4, 5 now unblocked (all depend on Task 1). Task 2 depends on Tasks 1+5.
