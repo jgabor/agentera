@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Ecosystem linter for agentera SKILL.md files.
 
-Validates all 10 SKILL.md files against the ecosystem spec
+Validates all 11 SKILL.md files against the ecosystem spec
 (references/ecosystem-spec.md). Checks frontmatter, confidence scales,
 severity levels, decision labels, artifact path resolution, profile
 consumption, cross-skill integration, safety rails, artifact format
@@ -23,6 +23,10 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 REQUIRED_REFS: dict[str, list[str]] = {
+    "hej": [
+        "visionera", "resonera", "planera", "realisera", "inspektera",
+        "optimera", "dokumentera", "visualisera", "profilera", "inspirera",
+    ],
     "inspirera": ["realisera", "optimera", "visionera", "resonera", "profilera"],
     "profilera": ["realisera", "optimera", "inspirera", "resonera", "inspektera"],
     "realisera": [
@@ -77,9 +81,13 @@ ARTIFACT_CONTRACTS: dict[str, tuple[list[str], list[str]]] = {
         ["realisera"],
         ["Cycle", "What", "Commit", "Inspiration", "Discovered", "Next"],
     ),
-    "ISSUES.md": (
+    "TODO.md": (
         ["realisera", "inspektera"],
-        ["Open", "Resolved"],
+        ["Critical", "Degraded", "Annoying", "Resolved"],
+    ),
+    "CHANGELOG.md": (
+        ["realisera"],
+        ["Unreleased", "Added", "Changed", "Fixed"],
     ),
     "HEALTH.md": (
         ["inspektera"],
@@ -376,15 +384,24 @@ def check_artifact_path_resolution(skill: str, text: str, r: Results) -> None:
         return
 
     subsection = extract_subsection(text, "State artifacts", "Artifact path resolution")
-    core_sentence = "check if DOCS.md exists"
+    core_sentence = "check if .agentera/DOCS.md exists"
+    old_sentence = "check if DOCS.md exists"
 
     if subsection and core_sentence.lower() in subsection.lower():
         r.ok(skill, "artifact-path-resolution")
         return
 
-    # Check if the sentence appears elsewhere (wrong location).
+    # Check for old-style wording (pre-D13: "check if DOCS.md exists in the project root").
+    if old_sentence.lower() in text.lower():
+        r.error(
+            skill, "artifact-path-resolution",
+            "Uses old-style 'check if DOCS.md exists' — update to "
+            "'check if .agentera/DOCS.md exists'",
+        )
+        return
+
+    # Check if new sentence appears elsewhere (wrong location).
     if core_sentence.lower() in text.lower():
-        # Find where it is.
         cross_skill = extract_section(text, "Cross-skill integration")
         if cross_skill and core_sentence.lower() in cross_skill.lower():
             r.error(
