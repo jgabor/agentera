@@ -82,7 +82,7 @@ and design archives have distinct filename prefixes.
 
 ### Task 4: Update planera, dokumentera, inspektera, visionera, visualisera for new convention
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN planera WHEN archiving THEN it writes to .agentera/archive/, not .planera/archive/
 ▸ GIVEN dokumentera WHEN creating DOCS.md THEN it writes to .agentera/DOCS.md
