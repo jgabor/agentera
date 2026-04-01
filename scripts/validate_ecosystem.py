@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
 """Ecosystem linter for agentera SKILL.md files.
 
 Validates all 11 SKILL.md files against the ecosystem spec
@@ -8,7 +12,7 @@ consumption, cross-skill integration, safety rails, artifact format
 contracts, exit signals, and loop guard.
 
 Run from repo root:
-    python3 scripts/validate-ecosystem.py
+    python3 scripts/validate_ecosystem.py
 """
 
 from __future__ import annotations
@@ -431,8 +435,8 @@ def check_profile_consumption(skill: str, text: str, r: Results) -> None:
     errors: list[str] = []
 
     # Must reference the effective_profile script.
-    if "scripts.effective_profile" not in text:
-        errors.append("Missing reference to 'python3 -m scripts.effective_profile'")
+    if "scripts/effective_profile.py" not in text and "scripts.effective_profile" not in text:
+        errors.append("Missing reference to effective_profile script")
 
     # Must use integer thresholds 65+ and <45 (not 0.65+ and <0.45).
     # The spec says this will currently fail since migration hasn't happened.

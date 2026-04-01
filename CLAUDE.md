@@ -9,15 +9,16 @@ agentera — a Claude Code skill marketplace. Eleven skills — each a self-cont
 ## Repository layout
 
 ```
-skills/<name>/SKILL.md          # Frontmatter + full workflow (the skill itself)
-skills/<name>/references/       # Supplementary docs, templates, schemas
-skills/<name>/scripts/          # Python helpers (stdlib only, no pip deps)
-references/ecosystem-spec.md    # Shared primitives spec (all skills must align)
-scripts/validate-ecosystem.py   # Ecosystem linter (pre-commit hook)
-scripts/eval-skills.py          # Tier 2 eval runner (smoke-tests skills via claude -p)
-.githooks/pre-commit            # Git hook running the linter
-registry.json                   # Skill index with versions and tags
-.claude-plugin/marketplace.json # Plugin marketplace manifest
+skills/<name>/SKILL.md               # Frontmatter + full workflow (the skill itself)
+skills/<name>/references/            # Supplementary docs, templates, schemas
+skills/<name>/scripts/               # Python helpers (stdlib only, no pip deps)
+skills/<name>/.claude-plugin/plugin.json  # Per-skill marketplace plugin manifest
+references/ecosystem-spec.md         # Shared primitives spec (all skills must align)
+scripts/validate_ecosystem.py        # Ecosystem linter (pre-commit hook)
+scripts/eval_skills.py               # Tier 2 eval runner (smoke-tests skills via claude -p)
+.githooks/pre-commit                 # Git hook running the linter
+registry.json                        # Skill index with versions and tags
+.claude-plugin/marketplace.json      # Plugin marketplace manifest
 ```
 
 ## Skill ecosystem
@@ -39,21 +40,21 @@ Scripts live in `skills/*/scripts/` and use only Python stdlib. They parse state
 
 Run from the skill directory:
 ```bash
-cd skills/profilera && python3 -m scripts.extract_all
-cd skills/optimera && python3 -m scripts.analyze_experiments
-cd skills/realisera && python3 -m scripts.analyze_progress
+python3 skills/profilera/scripts/extract_all.py
+python3 skills/optimera/scripts/analyze_experiments.py
+python3 skills/realisera/scripts/analyze_progress.py
 ```
 
-The repo-level `scripts/validate-ecosystem.py` checks all 11 SKILL.md files against `references/ecosystem-spec.md`. Run from the repo root:
+The repo-level `scripts/validate_ecosystem.py` checks all 11 SKILL.md files against `references/ecosystem-spec.md`. Run from the repo root:
 ```bash
-python3 scripts/validate-ecosystem.py
+python3 scripts/validate_ecosystem.py
 ```
 
-The repo-level `scripts/eval-skills.py` smoke-tests skills via `claude -p` (Tier 2 eval). Run from the repo root:
+The repo-level `scripts/eval_skills.py` smoke-tests skills via `claude -p` (Tier 2 eval). Run from the repo root:
 ```bash
-python3 scripts/eval-skills.py --dry-run          # list skills and prompts
-python3 scripts/eval-skills.py --skill realisera   # test one skill
-python3 scripts/eval-skills.py --parallel 3        # test all skills, 3 at a time
+python3 scripts/eval_skills.py --dry-run          # list skills and prompts
+python3 scripts/eval_skills.py --skill realisera   # test one skill
+python3 scripts/eval_skills.py --parallel 3        # test all skills, 3 at a time
 ```
 
 ## Ecosystem linter

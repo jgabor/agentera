@@ -10,7 +10,7 @@ if [ -z "$RELEVANT_FILES" ]; then
 fi
 
 echo "==> Running ecosystem linter (staged skill/spec changes detected)..."
-python3 scripts/validate-ecosystem.py
+python3 scripts/validate_ecosystem.py
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then

@@ -170,7 +170,7 @@ independent, issue all in a single response.
 If PROGRESS.md has 3+ cycles, run the analytics script first:
 
 ```bash
-python3 -m scripts.analyze_progress --progress PROGRESS.md --pretty
+python3 scripts/analyze_progress.py --progress PROGRESS.md --pretty
 ```
 
 Outputs JSON with velocity, work type distribution, and suggestions. Use to inform work
@@ -181,10 +181,9 @@ selection — e.g., no test cycles is a signal.
 3. **TODO.md** — what's broken or degraded
 3b. **HEALTH.md** — read `critical` and `degraded` findings only (if exists)
 3c. **DECISIONS.md** — read `firm` and `provisional` entries only (if exists)
-4. **Decision profile** — run from the profilera skill directory (typically
-   `~/.claude/plugins/marketplaces/agentera/skills/profilera`):
+4. **Decision profile** — run from the profilera skill directory:
    ```bash
-   python3 -m scripts.effective_profile
+   python3 scripts/effective_profile.py
    ```
    Entries with effective confidence 65+ are strong constraints; <45 are suggestions.
    Read full `~/.claude/profile/PROFILE.md` for details when needed.
@@ -403,7 +402,7 @@ the source deeply, extract transferable patterns, note the source for credit in 
 For deeper analysis, run `/inspirera <url>` directly.
 
 ### Realisera reads /profilera output
-Every cycle runs the effective profile script (`python3 -m scripts.effective_profile` from the
+Every cycle runs the effective profile script (`python3 scripts/effective_profile.py` from the
 profilera skill directory) to get a confidence-weighted summary table. High effective confidence
 entries are treated as strong constraints; low effective confidence entries are treated as
 suggestions. Full rules are read from `~/.claude/profile/PROFILE.md` when needed for detailed

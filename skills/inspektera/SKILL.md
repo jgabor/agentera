@@ -88,10 +88,9 @@ all in a single response.
    deliberate decisions are not findings.
 4. **TODO.md** — known problems (if exists). Don't re-report unless worsened.
 5. **PROGRESS.md** — last 3 cycle entries only (recent changes = higher-priority audit targets)
-6. **Decision profile** — run from the profilera skill directory (typically
-   `~/.claude/plugins/marketplaces/agentera/skills/profilera`):
+6. **Decision profile** — run from the profilera skill directory:
    ```bash
-   python3 -m scripts.effective_profile
+   python3 scripts/effective_profile.py
    ```
    Calibrates what "healthy" means for this user. If missing, proceed without persona grounding.
 7. **Project discovery** — map directory structure, read dependency manifests, README, CLAUDE.md,
