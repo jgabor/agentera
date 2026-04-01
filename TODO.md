@@ -3,6 +3,11 @@
 ## ⇶ Critical
 
 ## ⇉ Degraded
+- [ ] Installation path double-nesting: clone to `~/.claude/skills` produces confusing `skills/skills/` path (README.md)
+- [ ] README intro omits inspirera and visualisera from workflow list; diagram understates inspirera connections
+- [ ] Prerequisites undocumented: Python 3.10+, claude CLI, git not listed in README
+- [ ] CHANGELOG.md `[Unreleased]` section should be promoted to versioned `[1.3.0]` heading
+- [ ] Stale `ISSUES-template.md` in realisera/references/templates/ — should be TODO-template.md after D13 rename
 
 ## ⇢ Annoying
 
