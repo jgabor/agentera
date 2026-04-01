@@ -85,11 +85,10 @@ Run extraction scripts to gather raw decision signals. Scripts handle JSONL pars
 output structured JSON.
 
 ```bash
-python3 -m scripts.extract_all --output-dir ~/.claude/profile/intermediate
+python3 scripts/extract_all.py --output-dir ~/.claude/profile/intermediate
 ```
 
-Run from the skill's root directory (typically
-`~/.claude/plugins/marketplaces/agentera/skills/profilera`).
+Run from the skill's root directory.
 
 Read `~/.claude/profile/intermediate/extraction_summary.json` to confirm counts. Report
 to the user.
@@ -289,7 +288,7 @@ Quick incremental check (~2 minutes).
 Identify which entries are most worth checking:
 
 ```bash
-python3 -m scripts.effective_profile --validate
+python3 scripts/effective_profile.py --validate
 ```
 
 Run from the skill's root directory. Outputs ~6 entries scored by decay gap, staleness,
@@ -396,7 +395,7 @@ pattern preferences, and constraint priorities.
 All consuming skills use the same script for consistency:
 
 ```bash
-python3 -m scripts.effective_profile
+python3 scripts/effective_profile.py
 ```
 
 Run from the profilera skill directory. Outputs a markdown summary table with effective
@@ -420,7 +419,7 @@ Full extraction across all sources. Produces `~/.claude/profile/PROFILE.md`.
 Quick confidence refresh without full regeneration. Run weekly or per-session.
 
 ### Using the profile in other skills
-All skills read the profile automatically via `python3 -m scripts.effective_profile`. No
+All skills read the profile automatically via `python3 scripts/effective_profile.py`. No
 manual steps needed — just ensure PROFILE.md exists.
 
 ---
