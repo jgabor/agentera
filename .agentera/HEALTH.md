@@ -1,5 +1,187 @@
 # Health
 
+## Audit 4 — 2026-04-01
+
+**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, test health, version health, dependency health
+**Findings**: 3 critical, 14 warnings, 6 info (0 filtered by confidence)
+**Overall trajectory**: first full audit (6 dimensions vs prior 2); architecture ⮋ B→C, patterns stable B→B
+**Grades**: Architecture [C] | Patterns [B] | Coupling [B] | Tests [D] | Version [B] | Deps [B]
+
+### Architecture alignment: C
+
+#### ⇉ No LICENSE file — warning (confidence: 100)
+- **Location**: repo root
+- **Evidence**: No LICENSE/LICENSE.md exists. VISION.md states "openness over lock-in" and "open standard."
+- **Impact**: All rights reserved by default; external use legally blocked
+- **Suggested action**: Add LICENSE (MIT or Apache 2.0)
+
+#### ⇉ Installation path double-nesting — warning (confidence: 95)
+- **Location**: `README.md:85-106`
+- **Evidence**: Clone to `~/.claude/skills` produces `~/.claude/skills/skills/inspirera`
+- **Impact**: Confusing path; will generate user questions
+- **Suggested action**: Clone to `~/.claude/agentera` instead
+
+#### ⇉ Stale ISSUES-template.md — warning (confidence: 95)
+- **Location**: `skills/realisera/references/templates/ISSUES-template.md`
+- **Evidence**: D13 renamed ISSUES.md→TODO.md; template still says "# Issues"
+- **Impact**: Contributors find deprecated template
+- **Suggested action**: Rename to TODO-template.md, update content
+
+#### ⇉ README intro omits two skills — warning (confidence: 95)
+- **Location**: `README.md:3`
+- **Evidence**: Lists 8 workflows, claims 10; missing research (inspirera) and design (visualisera)
+- **Impact**: Two skills invisible in opening pitch
+- **Suggested action**: Add "researching, designing"
+
+#### ⇉ README diagram incomplete for inspirera — warning (confidence: 90)
+- **Location**: `README.md:27-48`
+- **Evidence**: Diagram shows inspirera→planera only; text says realisera+optimera; SKILL.md shows 5 connections
+- **Impact**: Ecosystem diagram understates inspirera
+- **Suggested action**: Add edges or note as simplified
+
+#### ⇢ CLAUDE.md layout omits plugin.json — info (confidence: 90)
+- **Location**: `CLAUDE.md:10-21`
+- **Evidence**: Layout shows SKILL.md, references/, scripts/ but not .claude-plugin/plugin.json
+- **Impact**: Contributors miss plugin structure
+- **Suggested action**: Add to layout block
+
+### Pattern consistency: B
+
+#### ⇉ inspirera section ordering anomaly — warning (confidence: 95)
+- **Location**: `skills/inspirera/SKILL.md`
+- **Evidence**: State artifacts after exit signals; safety rails after cross-skill. All 10 others follow canonical order.
+- **Impact**: Inconsistent structure hinders navigation
+- **Suggested action**: Reorder to canonical pattern
+
+#### ⇉ inspirera missing ALWAYS/REQUIRED phrasing — warning (confidence: 95)
+- **Location**: `skills/inspirera/SKILL.md:4-14`
+- **Evidence**: Uses "Use this skill whenever" instead of "ALWAYS use"/"This skill is REQUIRED"
+- **Impact**: Claude may skip skill for link analysis
+- **Suggested action**: Add ALWAYS/REQUIRED/DO NOT trinity
+
+#### ⇉ Output opening line placement inconsistency — warning (confidence: 95)
+- **Location**: realisera, optimera define in cycle section; others in intro
+- **Evidence**: 7 skills define in intro, 2 in cycle section, 1 (hej) uses dashboard
+- **Impact**: Agents may miss opening line definition
+- **Suggested action**: Standardize to intro paragraph
+
+#### ⇉ inspirera lacks Step 0 — warning (confidence: 85)
+- **Location**: `skills/inspirera/SKILL.md`
+- **Evidence**: 8 of 10 other skills with detection start at Step 0; inspirera starts at Step 1
+- **Impact**: Minor numbering inconsistency
+- **Suggested action**: Renumber or accept variance
+
+#### ⇢ Trailing "Notes" section in 2 skills — info (confidence: 90)
+- **Location**: inspirera, profilera
+- **Evidence**: "Notes on depth vs. speed" after Getting started; 9 others lack this
+- **Impact**: Minor structural outlier
+- **Suggested action**: Consider folding into workflow steps
+
+### Coupling health: B
+
+#### ⇉ README consumer tables stale vs ecosystem spec — warning (confidence: 88)
+- **Location**: `README.md:58-75` vs `references/ecosystem-spec.md`
+- **Evidence**: VISION.md missing dokumentera, visualisera as consumers; PROGRESS.md missing dokumentera, visionera
+- **Impact**: README understates artifact mesh
+- **Suggested action**: Sync with ecosystem spec
+
+#### ⇉ .optimera/harness outside standard layout — warning (confidence: 78)
+- **Location**: `skills/optimera/SKILL.md:39`
+- **Evidence**: Only artifact outside .agentera/; undocumented in spec format contracts
+- **Impact**: Not caught by .agentera/ tooling
+- **Suggested action**: Document in spec or relocate
+
+#### ⇉ Hardcoded profilera skill directory — warning (confidence: 78)
+- **Location**: `skills/realisera/SKILL.md:185`, `skills/inspektera/SKILL.md:92`
+- **Evidence**: Hardcodes `~/.claude/plugins/marketplaces/agentera/skills/profilera`; README suggests different path
+- **Impact**: Profile script may fail if installed differently
+- **Suggested action**: Remove hardcoded path
+
+#### ⇢ Interface width clean — info (confidence: 92)
+- **Location**: all cross-skill sections
+- **Evidence**: Skills communicate only through published artifacts and script output
+- **Impact**: None — healthy coupling
+
+### Test health: D
+
+#### ⇶ Zero unit tests for Python scripts — critical (confidence: 98)
+- **Location**: 12 Python files across skills/*/scripts/ and scripts/
+- **Evidence**: No test_*.py or *_test.py files anywhere. Scripts include regex parsing, exponential decay math, custom YAML parsing.
+- **Impact**: Parsing changes break silently
+- **Suggested action**: Add tests for parse functions in all 5 script modules
+
+#### ⇶ No artifact format contract tests — critical (confidence: 88)
+- **Location**: ecosystem-wide
+- **Evidence**: Primary value (inter-skill communication via artifacts) has zero format validation at test time
+- **Impact**: Format drift between producer and consumer undetectable
+- **Suggested action**: Contract tests per artifact in spec format table
+
+#### ⇶ Eval runner gaps — critical (confidence: 85)
+- **Location**: `scripts/eval-skills.py:38-49`
+- **Evidence**: hej missing from TRIGGER_PROMPTS. Runner checks crashes only, not output correctness.
+- **Impact**: Entry-point skill untested; behavioral correctness unverified
+- **Suggested action**: Add hej prompt; add output structure checks
+
+#### ⇉ Linter cannot catch semantic correctness — warning (confidence: 90)
+- **Location**: `scripts/validate-ecosystem.py`
+- **Evidence**: Checks structural presence (sections, keywords) not workflow logic correctness
+- **Impact**: Broken instructions pass linter
+- **Suggested action**: Accept scope; rely on eval for behavioral coverage
+
+### Version health: B
+
+#### ⇉ CHANGELOG.md [Unreleased] not promoted — warning (confidence: 95)
+- **Location**: `CHANGELOG.md:3`
+- **Evidence**: Version bump to 1.2.0/1.3.0 already shipped but CHANGELOG still says [Unreleased]
+- **Impact**: Consumers believe features are unreleased
+- **Suggested action**: Promote to [1.3.0] heading, add empty [Unreleased]
+
+#### ⇢ All 33 version locations consistent — info (confidence: 100)
+- **Location**: registry.json, marketplace.json, 11 plugin.json
+- **Evidence**: Every version matches across all three sources
+- **Impact**: None — excellent alignment
+
+### Dependency health: B
+
+#### ⇉ Prerequisites undocumented — warning (confidence: 90)
+- **Location**: `README.md` (absent section)
+- **Evidence**: Python 3.10+ required (PEP 604 syntax), claude CLI, git — none listed
+- **Impact**: Users hit cryptic errors on older Python
+- **Suggested action**: Add Prerequisites section to README
+
+#### ⇉ No minimum Claude Code version — warning (confidence: 85)
+- **Location**: absent from all docs
+- **Evidence**: Uses worktree isolation, pipe mode, model selection — version-dependent features
+- **Impact**: Older CLI versions may fail
+- **Suggested action**: Document minimum version
+
+#### ⇉ .gitignore minimal — warning (confidence: 80)
+- **Location**: `.gitignore`
+- **Evidence**: Missing .env, .DS_Store, editor temp patterns; .planera/ stale entry
+- **Impact**: Risk increases with contributors
+- **Suggested action**: Add defensive patterns
+
+#### ⇢ Zero third-party imports — info (confidence: 100)
+- **Location**: all 12 Python files
+- **Evidence**: Every import resolves to stdlib or relative
+- **Impact**: None — fully compliant
+
+### Trends vs Audit 3
+- **Degraded**: Architecture B→C — broader release-readiness scope exposed LICENSE gap, installation UX, and stale template
+- **Stable**: Patterns B→B — inspirera remains the structural outlier (3 of 4 warnings). All Audit 3 findings resolved.
+- **New dimensions**: Coupling B, Tests D, Version B, Dependencies B — first assessment
+- **Resolved**: All Audit 3 findings (4 warnings, 1 info) cleared. DOCS.md index, hej count, profilera State artifacts, inspirera placement — all fixed.
+- **Key risk**: Test health D is the primary blocker for public release confidence. Zero automated coverage for the ecosystem's core value proposition (inter-skill artifact communication).
+
+### Patterns Observed
+- inspirera is the persistent structural outlier: three consecutive audits have found pattern deviations. It predates structural conventions and has not been fully normalized.
+- Count-staleness pattern appears resolved: linter enforces "eleven-skill" count; no new count errors found.
+- Documentation quality follows a gradient: ecosystem-spec.md (authoritative) > SKILL.md files (aligned) > README.md (simplified, drifts). README is the weakest link.
+- Python scripts are well-isolated (stdlib-only, narrow interfaces) but completely untested — the classic "it works until it doesn't" pattern.
+- The ecosystem is structurally mature (11 skills, shared spec, linter, visual identity, versioning) but lacks the test infrastructure expected for a public release.
+
+---
+
 ## Audit 1 — 2026-03-30
 
 **Dimensions assessed**: architecture alignment, pattern consistency
