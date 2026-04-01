@@ -13,7 +13,7 @@ are referenced by realisera, optimera, and profilera for context on why choices 
 **Choice**: what was chosen
 **Reasoning**: the key insight or tradeoff that resolved it
 **Confidence**: ━ firm | ─ provisional | ┄ exploratory
-**Feeds into**: VISION.md | OBJECTIVE.md | ISSUES.md | standalone
+**Feeds into**: VISION.md | OBJECTIVE.md | TODO.md | standalone
 
 <!--
 Entry format reference:
@@ -28,7 +28,7 @@ Entry format reference:
   **Choice**: [what was chosen]
   **Reasoning**: [key insight or tradeoff that resolved it]
   **Confidence**: ━ firm | ─ provisional | ┄ exploratory
-  **Feeds into**: VISION.md | OBJECTIVE.md | ISSUES.md | standalone
+  **Feeds into**: VISION.md | OBJECTIVE.md | TODO.md | standalone
 
 Confidence levels:
   firm         — committed; other skills treat this as a constraint
@@ -38,6 +38,6 @@ Confidence levels:
 Feeds into:
   VISION.md    — project direction, scope, principles (consumed by realisera)
   OBJECTIVE.md — optimization target, constraints, scope (consumed by optimera)
-  ISSUES.md    — tech debt or problems surfaced during deliberation
+  TODO.md    — tech debt or problems surfaced during deliberation
   standalone   — the decision stands on its own, no downstream artifact
 -->

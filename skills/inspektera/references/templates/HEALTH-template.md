@@ -1,7 +1,7 @@
 # Health
 
 Codebase health assessments maintained by inspektera. Each audit appends one entry. Prior
-audits are kept for trend tracking. Findings feed into ISSUES.md for realisera to pick up.
+audits are kept for trend tracking. Findings feed into TODO.md for realisera to pick up.
 
 ## Patterns Observed
 
