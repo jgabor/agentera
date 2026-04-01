@@ -50,21 +50,31 @@ visionera ──→ resonera ──→ planera ──→ realisera ←──→ 
 
 ### State artifacts
 
-Each skill generates markdown artifacts in the target project (not in this repo):
+Each skill generates markdown artifacts in the target project (not in this repo).
+Default layout: three project-facing files at root, eight operational files in `.agentera/`.
+
+**Root (project-facing)**:
 
 | Artifact | Maintained by | Consumed by |
 |----------|---------------|-------------|
 | `VISION.md` | visionera, realisera | realisera, planera, inspektera |
+| `TODO.md` | realisera, inspektera | realisera, planera |
+| `CHANGELOG.md` | realisera | project contributors |
+
+**.agentera/ (operational)**:
+
+| Artifact | Maintained by | Consumed by |
+|----------|---------------|-------------|
+| `PROGRESS.md` | realisera | planera, inspektera |
 | `DECISIONS.md` | resonera | planera, realisera, optimera, inspektera, profilera |
 | `PLAN.md` | planera | realisera, inspektera |
-| `PROGRESS.md` | realisera | planera, inspektera |
-| `ISSUES.md` | realisera, inspektera | realisera, planera |
+| `HEALTH.md` | inspektera | realisera, planera |
 | `OBJECTIVE.md` | optimera | optimera |
 | `EXPERIMENTS.md` | optimera | optimera |
-| `HEALTH.md` | inspektera | realisera, planera, inspektera |
-| `DOCS.md` | dokumentera | all skills (artifact path resolution) |
 | `DESIGN.md` | visualisera | realisera, visionera |
-| `PROFILE.md` | profilera | all skills |
+| `DOCS.md` | dokumentera | all skills (path overrides) |
+
+`PROFILE.md` is global at `~/.claude/profile/PROFILE.md` (maintained by profilera, consumed by all skills).
 
 ---
 

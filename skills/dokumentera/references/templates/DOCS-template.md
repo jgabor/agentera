@@ -29,7 +29,7 @@ If an artifact has no entry, skills fall back to the project root.
 | DECISIONS.md | DECISIONS.md | resonera |
 | PLAN.md | PLAN.md | planera |
 | PROGRESS.md | PROGRESS.md | realisera |
-| ISSUES.md | ISSUES.md | realisera, inspektera |
+| TODO.md | TODO.md | realisera, inspektera |
 | HEALTH.md | HEALTH.md | inspektera |
 | OBJECTIVE.md | OBJECTIVE.md | optimera |
 | EXPERIMENTS.md | EXPERIMENTS.md | optimera |
@@ -91,7 +91,7 @@ Sections:
   Audit Log        — timestamped findings from dokumentera audits
 
 DTC principle:
-  If code diverges from docs, the code is wrong. File to ISSUES.md, don't update docs
+  If code diverges from docs, the code is wrong. File to TODO.md, don't update docs
   to match broken code. Exception: if the doc is genuinely wrong (outdated assumption),
   fix the doc explicitly.
 -->

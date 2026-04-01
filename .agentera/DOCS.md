@@ -19,21 +19,23 @@ versioning:
 
 ## Artifact Mapping
 
-Skills check this table before reading or writing an artifact.
-If an artifact has no entry, skills fall back to the project root.
+Skills check this table for path overrides. If an artifact has no entry or
+.agentera/DOCS.md is absent, use the default layout: VISION.md, TODO.md, and
+CHANGELOG.md at root; all other artifacts in .agentera/.
 
 | Artifact | Path | Producers |
 |----------|------|-----------|
 | VISION.md | VISION.md | visionera, realisera |
-| DECISIONS.md | DECISIONS.md | resonera |
-| PLAN.md | PLAN.md | planera |
-| PROGRESS.md | PROGRESS.md | realisera |
-| ISSUES.md | ISSUES.md | realisera, inspektera |
-| HEALTH.md | HEALTH.md | inspektera |
-| OBJECTIVE.md | OBJECTIVE.md | optimera |
-| EXPERIMENTS.md | EXPERIMENTS.md | optimera |
-| DOCS.md | DOCS.md | dokumentera |
-| DESIGN.md | DESIGN.md | visualisera |
+| TODO.md | TODO.md | realisera, inspektera |
+| CHANGELOG.md | CHANGELOG.md | realisera |
+| DECISIONS.md | .agentera/DECISIONS.md | resonera |
+| PLAN.md | .agentera/PLAN.md | planera |
+| PROGRESS.md | .agentera/PROGRESS.md | realisera |
+| HEALTH.md | .agentera/HEALTH.md | inspektera |
+| OBJECTIVE.md | .agentera/OBJECTIVE.md | optimera |
+| EXPERIMENTS.md | .agentera/EXPERIMENTS.md | optimera |
+| DOCS.md | .agentera/DOCS.md | dokumentera |
+| DESIGN.md | .agentera/DESIGN.md | visualisera |
 | PROFILE.md | ~/.claude/profile/PROFILE.md | profilera |
 
 ## Index
@@ -42,14 +44,15 @@ If an artifact has no entry, skills fall back to the project root.
 |----------|------|-------------|--------|
 | README | README.md | 2026-03-31 | ■ current |
 | CLAUDE.md | CLAUDE.md | 2026-03-31 | ■ current |
-| Decisions | DECISIONS.md | 2026-03-31 | ■ current |
+| Decisions | .agentera/DECISIONS.md | 2026-04-01 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
-| Progress | PROGRESS.md | 2026-03-31 | ■ current |
-| Issues | ISSUES.md | 2026-03-31 | ■ current |
-| Health | HEALTH.md | 2026-03-31 | ■ current |
-| Plan | PLAN.md | 2026-03-31 | ■ current |
-| DOCS | DOCS.md | 2026-03-31 | ■ current |
-| Design | DESIGN.md | 2026-03-31 | ■ current |
+| Progress | .agentera/PROGRESS.md | 2026-04-01 | ■ current |
+| TODO | TODO.md | 2026-04-01 | ■ current |
+| Changelog | CHANGELOG.md | 2026-04-01 | ■ current |
+| Health | .agentera/HEALTH.md | 2026-03-31 | ■ current |
+| Plan | .agentera/PLAN.md | 2026-04-01 | ■ current |
+| DOCS | .agentera/DOCS.md | 2026-04-01 | ■ current |
+| Design | .agentera/DESIGN.md | 2026-03-31 | ■ current |
 | Ecosystem spec | references/ecosystem-spec.md | 2026-03-31 | ■ current |
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
 | Registry | registry.json | 2026-03-31 | ■ current |
@@ -59,7 +62,7 @@ If an artifact has no entry, skills fall back to the project root.
 
 - **Documented**: 11/11 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
-- **Stale**: 1 document has drifted from implementation (HEALTH.md — all Audit 2 findings resolved, artifact not yet re-audited)
+- **Stale**: HEALTH.md — all Audit 3 findings resolved, artifact not yet re-audited. CLAUDE.md and README.md — repo layout needs updating for .agentera/ convention
 
 ## Audit Log
 

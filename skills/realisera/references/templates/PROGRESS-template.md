@@ -8,7 +8,7 @@ suggestion, not a mandate — each cycle re-evaluates fresh.
 **What**: one-line summary of what shipped
 **Commit**: `<hash>` type(scope): message
 **Inspiration**: external source that informed the approach, or "none"
-**Discovered**: issues or ideas found during this cycle (also logged in ISSUES.md), or "none"
+**Discovered**: issues or ideas found during this cycle (also logged in TODO.md), or "none"
 **Next**: what seems most valuable to work on next
 
 <!--
