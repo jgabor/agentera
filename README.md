@@ -1,90 +1,137 @@
-# agentera
+<div align="center">
+<pre>
+┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
+├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
+┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
+</pre>
 
-Claude Code skill marketplace. Eleven skills that form a connected ecosystem for autonomous
-software development — one entry point and ten specialized workflows spanning vision,
-deliberation, research, planning, building, optimizing, auditing, documenting, designing,
-and learning from your own decision patterns.
+<strong>Skill ecosystem</strong> for autonomous software development.
 
-## Skills
+Install and type <code>/hej</code> to begin:
 
-| Skill | What it does |
-|-------|-------------|
-| [hej](./skills/hej/) | **Entry point** — Single point of entry. Detects fresh vs returning projects, delivers a situational briefing, routes to the right skill. |
-| [visionera](./skills/visionera/) | **Envision** — Deep creation and stewardship of VISION.md through codebase exploration, domain research, and aspirational challenge. |
-| [resonera](./skills/resonera/) | **Deliberate** — Structured Socratic questioning before consequential decisions. Produces DECISIONS.md. |
-| [inspirera](./skills/inspirera/) | **Research** — Analyzes an external resource and maps its concepts to your project. |
-| [realisera](./skills/realisera/) | **Build** — Autonomous development loop that evolves a project one focused cycle at a time. |
-| [optimera](./skills/optimera/) | **Tune** — Metric-driven optimization through systematic experimentation. |
-| [planera](./skills/planera/) | **Plan** — Scale-adaptive planning (skip/light/full) with behavioral acceptance criteria bridging deliberation and execution. |
-| [inspektera](./skills/inspektera/) | **Audit** — Codebase health assessment across six dimensions with confidence scoring and trend tracking. |
-| [dokumentera](./skills/dokumentera/) | **Document** — DTC-first documentation creation, maintenance, and verification with DOCS.md coverage tracking. |
-| [profilera](./skills/profilera/) | **Know thyself** — Mines session history to generate a decision profile other skills consume. |
-| [visualisera](./skills/visualisera/) | **Visualize** — Creates, refines, and audits DESIGN.md visual identity files with bundled spec and validation. |
-
-### How they connect
-
-```
-                        hej
-                     (entry point)
-                      ↓ routes to all
-                      profilera
-                     (decision profile)
-                      ↓ consumed by all
-visionera ──→ resonera ──→ planera ──→ realisera ←──→ optimera
- (envision)    (think)       (plan)       (build)        (tune)
-    ↕                       ↑  ↑              ↑
- visualisera  dokumentera──┘   │   inspektera─┘
-  (design)     (document)      │      (audit)
-               inspirera ──────┘
-               (research)
+```bash
+npx skills add jgabor/agentera
 ```
 
-- **visionera** creates and stewards VISION.md through deep exploration and aspirational challenge
-- **resonera** deliberates on what to build, producing DECISIONS.md
-- **dokumentera** writes intent docs that feed planera (DTC pipeline), maintains DOCS.md
-- **planera** decomposes decisions into plans with behavioral acceptance criteria (PLAN.md)
-- **realisera** executes plan tasks (or reasons from VISION.md when no plan exists)
-- **inspektera** audits health and feeds findings to planera for remediation plans
-- **inspirera** feeds external patterns into realisera, optimera, planera, visionera, and resonera
-- **profilera** calibrates all other skills to the user's decision-making patterns
+<br>
 
-### State artifacts
+![](https://img.shields.io/badge/skills-11-444?style=flat-square)
+![](https://img.shields.io/badge/license-Apache_2.0-444?style=flat-square)
 
-Each skill generates markdown artifacts in the target project (not in this repo).
-Default layout: three project-facing files at root, eight operational files in `.agentera/`.
-
-**Root (project-facing)**:
-
-| Artifact | Maintained by | Consumed by |
-|----------|---------------|-------------|
-| `VISION.md` | visionera, realisera | realisera, planera, inspektera |
-| `TODO.md` | realisera, inspektera | realisera, planera |
-| `CHANGELOG.md` | realisera | project contributors |
-
-**.agentera/ (operational)**:
-
-| Artifact | Maintained by | Consumed by |
-|----------|---------------|-------------|
-| `PROGRESS.md` | realisera | planera, inspektera |
-| `DECISIONS.md` | resonera | planera, realisera, optimera, inspektera, profilera |
-| `PLAN.md` | planera | realisera, inspektera |
-| `HEALTH.md` | inspektera | realisera, planera |
-| `OBJECTIVE.md` | optimera | optimera |
-| `EXPERIMENTS.md` | optimera | optimera |
-| `DESIGN.md` | visualisera | realisera, visionera |
-| `DOCS.md` | dokumentera | all skills (path overrides) |
-
-`PROFILE.md` is global at `~/.claude/profile/PROFILE.md` (maintained by profilera, consumed by all skills).
+</div>
 
 ---
 
-## Prerequisites
+Type `/hej` and agentera reads your entire project — code, git history, open issues, health grades — and tells you where things stand:
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI
-- Python 3.10+ (for helper scripts)
-- git
+```
+┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
+├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
+┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
 
-## Installing
+─── status ─────────────────────────────
+
+  ⛶ health    ⮉ B+ (testing: C)
+  ⇶ issues    0 critical · 2 degraded · 5 annoying
+  ≡ plan      [██████▓░░░] 6/10 tasks
+  ♾ profile   loaded
+
+  Shipped auth middleware and rate limiting last cycle.
+  Health trending up, test coverage still lagging.
+
+─── attention ──────────────────────────
+
+  ⇉ test coverage below 60% — degrading since cycle 8
+  ⇉ task 7 blocked on API schema decision
+
+─── next ───────────────────────────────
+
+  suggested → ❈ /resonera (resolve API schema to unblock task 7)
+```
+
+Every skill suggests what to do next when it finishes. You follow the thread — or let agentera run on its own with `/loop`, picking up work, building, verifying, and continuing without intervention.
+
+---
+
+## Skills
+
+|     | Skill                                | What it does                                                                                                         |
+| :-: | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+|  🞔  | [hej](./skills/hej/)                 | **Entry point** — Reads your project state, shows what needs attention, suggests where to start.                     |
+|  ⛥  | [visionera](./skills/visionera/)     | **Envision** — Defines and evolves your project's north star through codebase exploration and aspirational challenge. |
+|  ❈  | [resonera](./skills/resonera/)       | **Deliberate** — Thinks through hard decisions via Socratic questioning before you commit.                           |
+|  ⬚  | [inspirera](./skills/inspirera/)     | **Research** — Analyzes an external resource and maps its patterns to your project.                                  |
+|  ≡  | [planera](./skills/planera/)         | **Plan** — Breaks work into tasks with clear done-criteria, scales from quick notes to full plans.                   |
+|  ⧉  | [realisera](./skills/realisera/)     | **Build** — Autonomous development loop that picks up work, implements, verifies, and continues.                     |
+|  ⎘  | [optimera](./skills/optimera/)       | **Tune** — Picks a metric, runs experiments, measures results, iterates until it improves.                           |
+|  ⛶  | [inspektera](./skills/inspektera/)   | **Audit** — Audits code health across six dimensions, tracks trends over time.                                       |
+|  ▤  | [dokumentera](./skills/dokumentera/) | **Document** — Creates and maintains docs, tracks what's covered and what's missing.                                 |
+|  ♾  | [profilera](./skills/profilera/)     | **Know thyself** — Learns your decision patterns so other skills adapt to how you work.                              |
+|  ◰  | [visualisera](./skills/visualisera/) | **Visualize** — Creates and maintains a visual identity system for your project.                                     |
+
+## How it works
+
+Skills communicate through markdown files in your project — a vision doc, a plan, a health report, a decision log. Each skill reads what the others have written and acts on it. You don't manage these files; they build up naturally as you work.
+
+```
+                       🞔 hej
+                    (entry point)
+                     ↓ routes to
+                      ♾ profilera
+                  (decision profile)
+                    ↓ consumed by
+⛥ visionera ──→ ❈ resonera ──→ ≡ planera ──→ ⧉ realisera ←──→ ⎘ optimera
+  (envision)      (think)       (plan)        (build)          (tune)
+     ↕                         ↑  ↑               ↑
+  ◰ visualisera ▤ dokumentera─┘   │   ⛶ inspektera┘
+    (design)     (document)        │      (audit)
+                 ⬚ inspirera ──────┘
+                  (research)
+```
+
+visionera writes a north star → planera reads it and creates tasks → realisera picks them up and builds → inspektera audits the result → findings feed back into the next planning cycle. profilera watches how you make decisions and tunes every skill to your preferences. The loop tightens over time.
+
+<details>
+<summary><strong>State artifacts reference</strong></summary>
+
+<br>
+
+Three project-facing files at root, eight operational files in `.agentera/`.
+
+**Root (project-facing)**:
+
+| Artifact       | Maintained by         | Consumed by                    |
+| -------------- | --------------------- | ------------------------------ |
+| `VISION.md`    | visionera, realisera  | realisera, planera, inspektera |
+| `TODO.md`      | realisera, inspektera | realisera, planera             |
+| `CHANGELOG.md` | realisera             | project contributors           |
+
+**.agentera/ (operational)**:
+
+| Artifact         | Maintained by | Consumed by                                         |
+| ---------------- | ------------- | --------------------------------------------------- |
+| `PROGRESS.md`    | realisera     | planera, inspektera                                 |
+| `DECISIONS.md`   | resonera      | planera, realisera, optimera, inspektera, profilera |
+| `PLAN.md`        | planera       | realisera, inspektera                               |
+| `HEALTH.md`      | inspektera    | realisera, planera                                  |
+| `OBJECTIVE.md`   | optimera      | optimera                                            |
+| `EXPERIMENTS.md` | optimera      | optimera                                            |
+| `DESIGN.md`      | visualisera   | realisera, visionera                                |
+| `DOCS.md`        | dokumentera   | all skills (path overrides)                         |
+
+`PROFILE.md` is global at `~/.claude/profile/PROFILE.md` (maintained by profilera, consumed by all skills).
+
+</details>
+
+---
+
+<details>
+<summary><strong>Installing</strong></summary>
+
+<br>
+
+> [!NOTE]
+> Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI, Python 3.10+, and git.
 
 ### From the plugin registry
 
@@ -106,13 +153,11 @@ Clone the repo:
 git clone git@github.com:jgabor/agentera.git ~/.claude/agentera
 ```
 
-Then add individual skills to your project's `.claude/settings.json`:
+Add individual skills to your project's `.claude/settings.json`:
 
 ```json
 {
-  "skills": [
-    "~/.claude/agentera/skills/inspirera"
-  ]
+  "skills": ["~/.claude/agentera/skills/inspirera"]
 }
 ```
 
@@ -120,9 +165,7 @@ Or reference the repo globally in `~/.claude/settings.json` to make all skills a
 
 ```json
 {
-  "skillPaths": [
-    "~/.claude/agentera/skills"
-  ]
+  "skillPaths": ["~/.claude/agentera/skills"]
 }
 ```
 
@@ -132,16 +175,4 @@ Pull updates at any time:
 cd ~/.claude/agentera && git pull
 ```
 
----
-
-## Adding a new skill
-
-```
-skills/
-└── your-skill-name/
-    └── SKILL.md          # required — frontmatter + instructions
-    └── references/       # optional — supplementary docs
-    └── scripts/          # optional — executable helpers
-```
-
-Then update `registry.json`, the skills table above, and `.claude-plugin/marketplace.json`.
+</details>
