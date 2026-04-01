@@ -69,5 +69,5 @@ Acceptance criteria format:
 
 Archival:
   When all tasks are complete or the plan is discarded, move this file to
-  .planera/archive/PLAN-{date}.md and delete from project root.
+  .agentera/archive/PLAN-{date}.md.
 -->

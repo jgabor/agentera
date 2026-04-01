@@ -140,8 +140,8 @@ If artifacts exist at root but mapping places them elsewhere:
 
 ### Step 4: Write DOCS.md
 
-Write the approved convention map. After writing, proceed to the originally requested
-mode -- or stop if the survey was the entire request.
+Write the approved convention map to `.agentera/DOCS.md`. After writing, proceed to the
+originally requested mode -- or stop if the survey was the entire request.
 
 ---
 
