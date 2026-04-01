@@ -6,7 +6,7 @@
 """Parse PROGRESS.md and output structured analysis for realisera's Orient step.
 
 Usage:
-    python3 -m scripts.analyze_progress [--progress PATH] [--vision PATH]
+    python3 scripts/analyze_progress.py [--progress PATH] [--vision PATH]
 
 Reads PROGRESS.md (and optionally VISION.md for direction context), outputs JSON with:
 - Cycle count and date range

@@ -9,9 +9,9 @@ and outputs either a summary table (for consuming skills) or a prioritized
 list of entries to validate (for profilera's Validate mode).
 
 Usage:
-    python3 -m scripts.effective_profile                  # summary table
-    python3 -m scripts.effective_profile --validate       # entries to validate
-    python3 -m scripts.effective_profile --profile PATH   # custom profile path
+    python3 scripts/effective_profile.py                  # summary table
+    python3 scripts/effective_profile.py --validate       # entries to validate
+    python3 scripts/effective_profile.py --profile PATH   # custom profile path
 """
 
 import argparse

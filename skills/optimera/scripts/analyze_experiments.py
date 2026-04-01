@@ -6,7 +6,7 @@
 """Parse EXPERIMENTS.md and output structured analysis for optimera's Orient step.
 
 Usage:
-    python3 -m scripts.analyze_experiments [--experiments PATH] [--objective PATH]
+    python3 scripts/analyze_experiments.py [--experiments PATH] [--objective PATH]
 
 Reads EXPERIMENTS.md (and optionally OBJECTIVE.md for the target), outputs JSON with:
 - Metric trajectory and trend
