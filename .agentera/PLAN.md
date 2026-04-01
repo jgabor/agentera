@@ -59,7 +59,7 @@ extract_memory.py, and extract_all.py into a single extract_all.py with PEP 723
 header. Remove __init__.py and individual module files. Update profilera SKILL.md
 invocation atomically in the same commit.
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the consolidated extract_all.py WHEN run with same args as before THEN output is identical
 ▸ GIVEN skills/profilera/scripts/ WHEN listed THEN it contains exactly effective_profile.py and extract_all.py
