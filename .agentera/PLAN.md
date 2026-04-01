@@ -73,7 +73,7 @@ visualisera/scripts/__init__.py. Update pre-commit hook, CLAUDE.md, and all
 11 SKILL.md invocation references to use direct script paths. All renames, removals,
 and reference updates in one atomic commit.
 **Depends on**: Task 1, Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN any SKILL.md WHEN searched for `python3 -m scripts.` THEN no matches found
 ▸ GIVEN the pre-commit hook WHEN triggered THEN it invokes validate_ecosystem.py successfully
@@ -89,7 +89,7 @@ parse_yaml_subset and validate (validate_design). Weight coverage toward the
 highest-complexity functions: parse_yaml_subset (custom parser) and
 compute_effective (exponential decay math) each need 3+ test cases.
 **Depends on**: Task 1, Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the test suite WHEN run with pytest THEN all tests pass
 ▸ GIVEN parse_yaml_subset THEN at least 3 tests cover nested structures, edge cases, and malformed input

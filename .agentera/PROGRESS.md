@@ -391,3 +391,11 @@
 **Inspiration**: None
 **Discovered**: No new issues. Consolidation reduced file count from 7 to 2 in profilera/scripts/.
 **Next**: Task 3 (rename repo scripts, update all invocation references) and Task 4 (unit tests) — both now unblocked.
+
+## Cycle 50 — 2026-04-01
+
+**What**: Tasks 3+4 in parallel — renamed repo scripts (hyphen→underscore), added PEP 723 headers, added hej to eval TRIGGER_PROMPTS, removed visualisera __init__.py, updated all 11 SKILL.md + CLAUDE.md + pre-commit hook invocation references to direct paths. Created tests/ with 48 pytest unit tests across 5 test files covering all critical parsing functions.
+**Commit**: multiple (Task 3 atomic rename+refs, Task 4 test suite, docstring fixup)
+**Inspiration**: None
+**Discovered**: Script docstrings still had old `python3 -m` usage examples — fixed in follow-up commit. Reference doc (enforcement-patterns.md) also had stale invocation.
+**Next**: Task 5 (version bump) — final task, all dependencies complete.

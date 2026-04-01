@@ -5,6 +5,12 @@
 ### Added
 - PEP 723 inline script metadata (`requires-python = ">=3.10"`) on all Python scripts
 - Consolidated profilera extract pipeline: 6 files merged into single-file extract_all.py
+- 48 unit tests for critical parsing functions (pytest)
+- hej trigger prompt in eval runner
+
+### Changed
+- All scripts renamed from hyphens to underscores for importability
+- All SKILL.md invocations use direct `python3 scripts/X.py` instead of `python3 -m scripts.X`
 - Artifact consolidation: 3 project-facing files at root (VISION.md, TODO.md, CHANGELOG.md), 8 operational files in .agentera/
 - Deterministic layout replaces DOCS.md-first discovery
 - TODO.md with severity-grouped checkboxes replaces ISSUES.md
