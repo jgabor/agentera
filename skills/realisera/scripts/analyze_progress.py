@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
 """Parse PROGRESS.md and output structured analysis for realisera's Orient step.
 
 Usage:

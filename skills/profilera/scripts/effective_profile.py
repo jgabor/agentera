@@ -1,3 +1,7 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
 """Compute effective confidence with dormancy decay for PROFILE.md entries.
 
 Reads the decision profile, parses inline metadata, applies dormancy decay,
