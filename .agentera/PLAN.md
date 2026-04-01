@@ -100,7 +100,7 @@ and design archives have distinct filename prefixes.
 
 ### Task 6: Apply new convention to agentera's own artifacts and repo docs
 **Depends on**: Tasks 2, 3, 4, 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN agentera root WHEN listing THEN only TODO.md, CHANGELOG.md, VISION.md are artifact files
 ▸ GIVEN .agentera/ WHEN listing THEN all 8 operational artifacts plus archive/ are present
