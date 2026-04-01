@@ -335,3 +335,11 @@
 **Inspiration**: None
 **Discovered**: Realisera SKILL.md missing "Unreleased" reference triggers advisory warning — expected, Task 3 adds CHANGELOG.md instructions.
 **Next**: Tasks 2, 3, 4 now eligible. Task 2 depends on Tasks 1+5 (both complete). Tasks 3, 4 depend on Task 1 (complete).
+
+## Cycle 43 — 2026-04-01
+
+**What**: Updated all 11 SKILL.md files — path resolution now references `.agentera/DOCS.md` with deterministic default layout, State artifacts tables updated for `.agentera/` paths, all ISSUES.md→TODO.md in SKILL.md files.
+**Commit**: d26c6bc feat: update all 11 SKILL.md with D13 artifact path convention (Plan Task 2)
+**Inspiration**: None
+**Discovered**: ISSUES.md references remain in template files (references/templates/) — not SKILL.md scope, will be updated in Task 6.
+**Next**: Tasks 3, 4 remain. Both depend only on Task 1 (complete). Task 6 depends on Tasks 2, 3, 4, 5.

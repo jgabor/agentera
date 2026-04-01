@@ -64,7 +64,7 @@ and design archives have distinct filename prefixes.
 
 ### Task 2: Update all 11 SKILL.md path resolution and State artifacts for new layout
 **Depends on**: Tasks 1, 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN any SKILL.md WHEN reading path resolution THEN it uses the new canonical template from Section 5
 ▸ GIVEN any SKILL.md WHEN reading State artifacts THEN default paths match the new convention
