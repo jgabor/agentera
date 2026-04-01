@@ -6,7 +6,7 @@
 """Validate a DESIGN.md file and output structured results for visualisera.
 
 Usage:
-    python3 -m scripts.validate_design --design DESIGN.md [--pretty]
+    python3 scripts/validate_design.py --design DESIGN.md [--pretty]
 
 Parses ``<!-- design:X -->`` markers followed by fenced YAML code blocks,
 validates structure and internal consistency, and outputs JSON with:

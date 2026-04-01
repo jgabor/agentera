@@ -14,7 +14,7 @@ CSS/theme files that have drifted from the DESIGN.md source. Runs on every commi
 **Bundled tool:**
 
 ```bash
-python3 -m scripts.validate_design --design DESIGN.md
+python3 scripts/validate_design.py --design DESIGN.md
 ```
 
 **How depdevs wires it** (lefthook pre-commit):
