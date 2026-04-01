@@ -29,23 +29,25 @@ Each invocation = one cycle. `/loop` handles recurrence.
 
 ## State artifacts
 
-Three files in the project root, bootstrapped if absent.
+Three files, bootstrapped if absent. VISION.md and TODO.md at project root; PROGRESS.md in `.agentera/`.
 
 | File | Purpose | Bootstrap |
 |------|---------|-----------|
 | `VISION.md` | North star. Direction, principles, aspirations. An evergreen constitution. | Via inline brainstorm session with the user (see below). |
-| `ISSUES.md` | Tech debt, bugs, discrepancies. Things that need fixing. | `# Issues\n\nNo known issues.` |
+| `TODO.md` | Tech debt, bugs, discrepancies. Things that need fixing. | `# TODO\n\n## ⇶ Critical\n\n## ⇉ Degraded\n\n## ⇢ Annoying\n\n## Resolved\n` |
 | `PROGRESS.md` | Continuity log. What happened each cycle. | `# Progress\n\n` then the first cycle entry. |
 
 Templates in `references/templates/` — use as starting structure, adapt to the project.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if DOCS.md exists in the project root. If it
-has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md,
-ISSUES.md, etc.). If DOCS.md doesn't exist or has no entry for a given artifact, default to
-the project root. This applies to all artifact references in this skill, including cross-skill
-reads (DECISIONS.md, HEALTH.md, PLAN.md).
+Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an
+Artifact Mapping section, use the path specified for each canonical filename (VISION.md,
+TODO.md, .agentera/PROGRESS.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping
+for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the
+project root; all other artifacts in .agentera/. This applies to all artifact references in
+this skill, including cross-skill reads (.agentera/DECISIONS.md, .agentera/HEALTH.md,
+.agentera/PLAN.md).
 
 ### VISION.md
 
@@ -89,7 +91,7 @@ steps from the gap between vision and codebase.
 **What**: one-line summary of what shipped
 **Commit**: <hash> <message>
 **Inspiration**: what external source informed the approach (if any)
-**Discovered**: issues or ideas found (also logged in ISSUES.md)
+**Discovered**: issues or ideas found (also logged in TODO.md)
 **Next**: what seems most valuable to work on next
 ```
 
@@ -133,7 +135,7 @@ Each cycle opens with the skill introduction: `─── ⧉ realisera · cycle 
 
 ### Step 1: Orient
 
-Read VISION.md, PROGRESS.md, ISSUES.md, and HEALTH.md in parallel — these reads are
+Read VISION.md, PROGRESS.md, TODO.md, and HEALTH.md in parallel — these reads are
 independent, issue all in a single response.
 
 If PROGRESS.md has 3+ cycles, run the analytics script first:
@@ -147,7 +149,7 @@ selection — e.g., no test cycles is a signal.
 
 1. **PROGRESS.md** — what happened last cycle, what was suggested next
 2. **VISION.md** — read `## Principles` and `## Direction` sections (skip full personas/history for orient)
-3. **ISSUES.md** — what's broken or degraded
+3. **TODO.md** — what's broken or degraded
 3b. **HEALTH.md** — read `critical` and `degraded` findings only (if exists)
 3c. **DECISIONS.md** — read `firm` and `provisional` entries only (if exists)
 4. **Decision profile** — run from the profilera skill directory (typically
@@ -167,7 +169,7 @@ selection — e.g., no test cycles is a signal.
 6. `git log --oneline -20` for recent changes
 
 Before proceeding: in your response, list the 3-5 facts from VISION.md, PROGRESS.md,
-ISSUES.md, and HEALTH.md that will determine what you build this cycle. These survive if
+TODO.md, and HEALTH.md that will determine what you build this cycle. These survive if
 earlier tool results are cleared by context compaction.
 
 **Exit-early guard (plan-driven mode only)**: If PLAN.md exists and all tasks are `■ complete`
@@ -187,7 +189,7 @@ profile. A critical bug trumps a new feature; a minor nit doesn't block progress
 **Building toward vision:** Read codebase + VISION.md, identify the gap, pick the smallest
 increment closing the most valuable part.
 
-**Fixing issues:** Pick from ISSUES.md by severity (broken > degraded > annoying).
+**Fixing issues:** Pick from TODO.md by severity (broken > degraded > annoying).
 
 **Optimization-shaped work:** Delegate to `/optimera` for measurable metrics (speed, size,
 coverage). Realisera builds; optimera tunes.
@@ -278,7 +280,7 @@ type(scope): summary
 - Never push to remote — local commits only
 
 If the current task is a version bump (e.g., a PLAN.md task labeled "Version bump per DOCS.md
-convention", or a version-staleness finding picked up from ISSUES.md): read DOCS.md for the
+convention", or a version-staleness finding picked up from TODO.md): read DOCS.md for the
 `versioning` section — it lists `version_files` (files to update) and `semver_policy` (how to
 determine the bump level from conventional commit types). Update every file in `version_files`
 to the new version number, then include those files in the commit. If DOCS.md has no
@@ -286,7 +288,7 @@ to the new version number, then include those files in the commit. If DOCS.md ha
 
 ### Step 8: Log
 
-- **ISSUES.md** — add newly discovered issues, mark resolved ones. When updating existing
+- **TODO.md** — add newly discovered issues, mark resolved ones. When updating existing
   entries (e.g., marking resolved), use the Edit tool on the specific entry rather than
   rewriting the file.
   Output constraint: ≤30 words per issue description, ≤15 words per remediation.
@@ -325,7 +327,7 @@ Then stop. One cycle complete.
 
 If blocked (ambiguous requirement, missing dependency, decision too consequential):
 
-1. Log blocker in ISSUES.md with context and decision needed
+1. Log blocker in TODO.md with context and decision needed
 2. Log skipped attempt in PROGRESS.md
 3. Pick different work and complete a full cycle on that instead
 
@@ -335,12 +337,12 @@ If blocked (ambiguous requirement, missing dependency, decision too consequentia
 
 Report one of these statuses at workflow completion:
 
-- **complete** — One full cycle completed: work was selected, implemented, verified against the project's test/build suite, committed with a conventional message, and PROGRESS.md and ISSUES.md were updated.
+- **complete** — One full cycle completed: work was selected, implemented, verified against the project's test/build suite, committed with a conventional message, and PROGRESS.md and TODO.md were updated.
 - **flagged** — The cycle completed but with notable issues: verification passed but with warnings, the committed work is narrower than intended due to scope reduction, or discoveries logged in PROGRESS.md suggest the next cycle may face blockers.
 - **stuck** — Cannot complete a cycle because VISION.md does not exist and the brainstorm cannot proceed without the user, every available work item is blocked (missing dependencies, ambiguous requirements, decisions too consequential to make autonomously), or the verification suite is broken and cannot be fixed within the cycle's scope.
 - **waiting** — The project has no VISION.md and no codebase to infer direction from, or the user's explicit instruction for what to build is too ambiguous to act on without clarification.
 
-Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3 entries record failed cycles — commits that were reverted, cycles that logged a blocker and pivoted 3 times consecutively, or cycles whose "Discovered" field logs the same issue that was supposed to be fixed — this constitutes 3 consecutive failures: **stop**, log the failure pattern to ISSUES.md with what was attempted and what the skill believes is wrong, and surface the situation to the user with a recommended course of action (e.g., "/resonera to deliberate on the approach", "manual investigation needed", "dependency missing"). Do not attempt a 4th consecutive cycle on the same failing problem.
+Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3 entries record failed cycles — commits that were reverted, cycles that logged a blocker and pivoted 3 times consecutively, or cycles whose "Discovered" field logs the same issue that was supposed to be fixed — this constitutes 3 consecutive failures: **stop**, log the failure pattern to TODO.md with what was attempted and what the skill believes is wrong, and surface the situation to the user with a recommended course of action (e.g., "/resonera to deliberate on the approach", "manual investigation needed", "dependency missing"). Do not attempt a 4th consecutive cycle on the same failing problem.
 
 ---
 
@@ -396,7 +398,7 @@ DESIGN.md provides visual identity context (design tokens, constraints) that rea
 respects when building user-facing features.
 
 ### Realisera is audited by /inspektera
-HEALTH.md findings filed to ISSUES.md become candidates for work selection. Run `/inspektera`
+HEALTH.md findings filed to TODO.md become candidates for work selection. Run `/inspektera`
 every 5-10 cycles to ensure forward progress isn't accumulating structural debt. If HEALTH.md
 exists, read its latest grades during the Orient step — poor grades signal that structural
 fixes should be prioritized over new features.
@@ -425,5 +427,5 @@ for a guided session. The next cycle reads the updated vision and adjusts accord
 ### Drawing in external inspiration
 
 Run `/inspirera <url>` with a relevant article, repo, or resource. The analysis will surface
-ideas applicable to the project. Add actionable items to ISSUES.md, or refine VISION.md's
+ideas applicable to the project. Add actionable items to TODO.md, or refine VISION.md's
 direction if the inspiration shifts your thinking. The next cycle picks it up naturally.

@@ -191,16 +191,17 @@ No dedicated state file. Writes to other skills' artifacts.
 
 | Artifact | Purpose | Access |
 |----------|---------|--------|
-| ISSUES.md | File actionable findings for realisera | write |
+| TODO.md | File actionable findings for realisera | write |
 | VISION.md | Refine direction when inspiration shifts thinking | write |
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if DOCS.md exists in the project root. If it
-has an Artifact Mapping section, use the path specified for each canonical filename (ISSUES.md,
-VISION.md, etc.). If DOCS.md doesn't exist or has no entry for a given artifact, default to
-the project root. This applies to all artifact references in this skill, including cross-skill
-writes (ISSUES.md, VISION.md).
+Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an
+Artifact Mapping section, use the path specified for each canonical filename (TODO.md,
+VISION.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact,
+use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other
+artifacts in .agentera/. This applies to all artifact references in this skill, including
+cross-skill writes (TODO.md, VISION.md).
 
 ---
 
@@ -209,7 +210,7 @@ writes (ISSUES.md, VISION.md).
 Inspirera is part of an eleven-skill ecosystem. Its analysis feeds naturally into the other skills.
 
 ### Feeding into /realisera
-Add actionable findings to the project's ISSUES.md, or refine VISION.md's direction if the
+Add actionable findings to the project's TODO.md, or refine VISION.md's direction if the
 inspiration shifts thinking. The next realisera cycle picks up the changes automatically.
 
 ### Feeding into /optimera
@@ -246,7 +247,7 @@ adopting and capture the reasoning in DECISIONS.md.
 <critical>
 
 - NEVER modify code in the target project. Inspirera analyzes; other skills implement.
-- NEVER write to ISSUES.md or VISION.md without explicit user confirmation. Present findings
+- NEVER write to TODO.md or VISION.md without explicit user confirmation. Present findings
   and get approval before filing.
 - NEVER present shallow analysis as deep insight. If you haven't read the source thoroughly,
   say so.
@@ -273,7 +274,7 @@ Reads the repo, maps its patterns to your current project.
 Extracts transferable concepts and assesses applicability.
 
 ### Feed findings into the development loop
-After analysis, file actionable findings to ISSUES.md for `/realisera` to pick up,
+After analysis, file actionable findings to TODO.md for `/realisera` to pick up,
 or refine VISION.md if the research shifts your project's direction.
 
 ---

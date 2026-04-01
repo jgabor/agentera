@@ -39,9 +39,10 @@ One global artifact (written) and project-level artifacts (read).
 
 ### Artifact path resolution
 
-PROFILE.md is global — lives at `~/.claude/profile/PROFILE.md`, not in the project root.
-DOCS.md mapping does not apply. For project-level artifacts, check if DOCS.md exists and
-use its path mapping; default to project root if absent.
+PROFILE.md is global — lives at `~/.claude/profile/PROFILE.md`, not in the project root
+or `.agentera/`. `.agentera/DOCS.md` mapping does not apply to PROFILE.md. For project-level
+artifacts, check if .agentera/DOCS.md exists and use its path mapping; if absent, use
+the default layout.
 
 ---
 
