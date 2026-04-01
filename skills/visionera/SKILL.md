@@ -43,11 +43,12 @@ starting structure. Visionera adapts and expands it based on the conversation.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if DOCS.md exists in the project root. If it
-has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md,
-etc.). If DOCS.md doesn't exist or has no entry for a given artifact, default to the project
-root. This applies to all artifact references in this skill, including cross-skill reads
-(DECISIONS.md, HEALTH.md, PROGRESS.md, ISSUES.md).
+Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an
+Artifact Mapping section, use the path specified for each canonical filename (VISION.md,
+etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the
+default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts
+in .agentera/. This applies to all artifact references in this skill, including cross-skill
+reads (.agentera/DECISIONS.md, .agentera/HEALTH.md, .agentera/PROGRESS.md, TODO.md).
 
 ### VISION.md
 
@@ -127,7 +128,7 @@ If code exists, read deeply before asking questions. You arrive informed.
 2. Read dependency manifests — stack, libraries, what choices reveal
 3. Read README, CLAUDE.md, AGENTS.md if they exist
 4. Read key source files — understand what the software does today
-5. Read PROGRESS.md, ISSUES.md, DECISIONS.md — trajectory
+5. Read PROGRESS.md, TODO.md, DECISIONS.md — trajectory
 6. Read HEALTH.md — current quality
 7. Read DESIGN.md — existing visual identity
 8. `git log --oneline -30` — recent story
@@ -211,7 +212,7 @@ Present the draft to the user. Get explicit approval before writing.
 3. Read PROGRESS.md — what's been built since the vision was created?
 4. Read DECISIONS.md — what decisions have shifted thinking?
 5. Read HEALTH.md — what structural realities constrain the vision?
-6. Read ISSUES.md — what recurring problems suggest the vision needs adjustment?
+6. Read TODO.md — what recurring problems suggest the vision needs adjustment?
 
 ### Step 2: Research updates
 

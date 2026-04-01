@@ -32,7 +32,7 @@ Each deliberation session opens with: `─── ❈ resonera · deliberation �
 
 ## State artifacts
 
-One file in the project root, bootstrapped if absent.
+One file in `.agentera/`, bootstrapped if absent.
 
 | File | Purpose | Bootstrap |
 |------|---------|-----------|
@@ -42,11 +42,12 @@ Template in `references/templates/` — use as starting structure, adapt to the 
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if DOCS.md exists in the project root. If it
-has an Artifact Mapping section, use the path specified for each canonical filename
-(DECISIONS.md, etc.). If DOCS.md doesn't exist or has no entry for a given artifact, default
-to the project root. This applies to all artifact references in this skill, including
-cross-skill reads and writes (VISION.md, OBJECTIVE.md, ISSUES.md).
+Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an
+Artifact Mapping section, use the path specified for each canonical filename
+(.agentera/DECISIONS.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a
+given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project
+root; all other artifacts in .agentera/. This applies to all artifact references in this
+skill, including cross-skill reads and writes (VISION.md, .agentera/OBJECTIVE.md, TODO.md).
 
 ### DECISIONS.md
 
@@ -61,7 +62,7 @@ cross-skill reads and writes (VISION.md, OBJECTIVE.md, ISSUES.md).
 **Choice**: what was chosen
 **Reasoning**: the key insight or tradeoff that resolved it
 **Confidence**: firm | provisional | exploratory
-**Feeds into**: VISION.md | OBJECTIVE.md | ISSUES.md | standalone
+**Feeds into**: VISION.md | OBJECTIVE.md | TODO.md | standalone
 ```
 
 The "Confidence" field signals how settled the decision is:
@@ -183,7 +184,7 @@ Relevant options only:
 - **Log it** — append to `DECISIONS.md` (always offered)
 - **Feed into VISION.md** — if about direction/scope/principles
 - **Feed into OBJECTIVE.md** — if about what to optimize
-- **File to ISSUES.md** — if surfaced tech debt
+- **File to TODO.md** — if surfaced tech debt
 - **Just wrap up** — no artifacts needed
 
 ### Step 3: Write artifacts
@@ -195,7 +196,7 @@ For any option the user selects:
   Output constraint: ≤50 words per alternative, ≤30 words per tradeoff.
 - **VISION.md / OBJECTIVE.md**: brief follow-up to fill structure (heavy thinking done).
   Present draft for approval.
-- **ISSUES.md**: standard format (severity, context, impact).
+- **TODO.md**: standard format (severity, context, impact).
 
 ---
 
@@ -205,7 +206,7 @@ For any option the user selects:
 
 - NEVER make the decision for the user. Your job is to help them think, not to decide.
 - NEVER skip to implementation. Resonera deliberates; other skills build.
-- NEVER modify VISION.md, OBJECTIVE.md, or ISSUES.md without explicit user confirmation.
+- NEVER modify VISION.md, OBJECTIVE.md, or TODO.md without explicit user confirmation.
   Present drafts and get approval.
 - NEVER ask compound questions. One question per turn — this forces depth over breadth.
 - NEVER ignore the decision profile. If high-confidence entries exist for this domain,
@@ -221,7 +222,7 @@ For any option the user selects:
 
 Report one of these statuses at workflow completion:
 
-- **complete** — The deliberation reached a conclusion the user chose to act on; any requested artifacts (DECISIONS.md, VISION.md, OBJECTIVE.md, ISSUES.md) were written with user approval, and the decision confidence level was captured.
+- **complete** — The deliberation reached a conclusion the user chose to act on; any requested artifacts (DECISIONS.md, VISION.md, OBJECTIVE.md, TODO.md) were written with user approval, and the decision confidence level was captured.
 - **flagged** — The deliberation concluded but the decision remains unresolved or provisional: the user wrapped up without a clear choice, the decision has significant tensions that could not be resolved, or the conclusion contradicts prior decisions in DECISIONS.md without explicit acknowledgment.
 - **stuck** — Cannot proceed because the user's topic requires external research the skill cannot access, or writing to an artifact was attempted but failed due to a file access issue.
 - **waiting** — No topic was provided and the user has not responded to "what's on your mind?", or the deliberation has surfaced that a different skill is needed first (e.g., /inspirera to research before deciding) and the user has not confirmed how to proceed.

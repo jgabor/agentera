@@ -32,7 +32,7 @@ Visual identity work opens with: `─── ◰ visualisera · design ───`
 
 ## State artifacts
 
-One file in the project root.
+One file in `.agentera/`.
 
 | File | Purpose | Bootstrap |
 |------|---------|-----------|
@@ -43,11 +43,12 @@ YAML token block format, and naming conventions.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if DOCS.md exists in the project root. If it
-has an Artifact Mapping section, use the path specified for each canonical filename (DESIGN.md,
-etc.). If DOCS.md doesn't exist or has no entry for a given artifact, default to the project
-root. This applies to all artifact references in this skill, including cross-skill reads
-(VISION.md, DECISIONS.md, PROFILE.md).
+Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an
+Artifact Mapping section, use the path specified for each canonical filename (.agentera/DESIGN.md,
+etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the
+default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts
+in .agentera/. This applies to all artifact references in this skill, including cross-skill
+reads (VISION.md, .agentera/DECISIONS.md, PROFILE.md).
 
 ### DESIGN.md format (condensed)
 
@@ -263,7 +264,7 @@ Evolve an existing design system based on what's changed.
 2. Codebase — focused on changes since DESIGN.md was written (git log, new components)
 3. VISION.md Identity — has verbal identity evolved?
 4. PROGRESS.md — UI work and inline design decisions
-5. ISSUES.md — design-related issues
+5. TODO.md — design-related issues
 
 ### Step 2: Propose changes
 
@@ -314,7 +315,7 @@ Categorize findings by severity:
 
 Present with file:line references. For each finding, offer to:
 ▸ **Fix DESIGN.md** — add missing tokens or constraints
-▸ **File to ISSUES.md** — if the code is wrong (design is right, code drifted)
+▸ **File to TODO.md** — if the code is wrong (design is right, code drifted)
 ▸ **Skip** — intentional or not worth fixing
 
 See `references/enforcement-patterns.md` for framework-specific enforcement beyond audits.
@@ -350,7 +351,7 @@ See `references/enforcement-patterns.md` for framework-specific enforcement beyo
 Report one of these statuses at workflow completion:
 
 - **complete** — DESIGN.md was written (Create/Replace mode), updated (Refine mode), or audited with findings reported (Audit mode); validation script ran without errors; and all changes had explicit user approval before writing.
-- **flagged** — The design system was produced or audited but with issues worth surfacing: validation passed but with advisory warnings, the design drifts from VISION.md Identity in ways the user acknowledged, or audit findings were discovered that were neither fixed nor filed to ISSUES.md.
+- **flagged** — The design system was produced or audited but with issues worth surfacing: validation passed but with advisory warnings, the design drifts from VISION.md Identity in ways the user acknowledged, or audit findings were discovered that were neither fixed nor filed to TODO.md.
 - **stuck** — Cannot write DESIGN.md because the user declined to approve the draft, the validation script reports errors that cannot be resolved without user input on the design intent, or the project's UI stack is inaccessible and token defaults cannot be reliably inferred.
 - **waiting** — The visual identity direction is entirely undefined and the user has not engaged with the design conversation, or the project has no UI layer and DESIGN.md would serve no purpose without clarification of what is being designed.
 

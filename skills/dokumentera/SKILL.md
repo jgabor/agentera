@@ -42,11 +42,12 @@ Template in `references/templates/`. Individual doc files written to standard lo
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if DOCS.md exists in the project root. If it
-has an Artifact Mapping section, use the path specified for each canonical filename (DOCS.md,
-etc.). If DOCS.md doesn't exist or has no entry for a given artifact, default to the project
-root. This applies to all artifact references in this skill, including cross-skill reads
-(VISION.md, PROGRESS.md, DECISIONS.md, HEALTH.md).
+Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an
+Artifact Mapping section, use the path specified for each canonical filename (.agentera/DOCS.md,
+etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the
+default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts
+in .agentera/. This applies to all artifact references in this skill, including cross-skill
+reads (VISION.md, .agentera/PROGRESS.md, .agentera/DECISIONS.md, .agentera/HEALTH.md).
 
 ### DOCS.md
 
@@ -240,7 +241,7 @@ the discrepancy.
 ### Step 3: Report and fix
 
 By severity: ⇶ critical (causes user errors), ⇉ warning (causes confusion), ⇢ info
-(cosmetic). For each finding, offer to: fix the doc, file to ISSUES.md (code is wrong
+(cosmetic). For each finding, offer to: fix the doc, file to TODO.md (code is wrong
 per DTC), or skip.
 
 ### Step 4: Update DOCS.md
@@ -259,7 +260,7 @@ Update the index with:
 
 - NEVER modify documentation without explicit user approval. Present drafts and get confirmation.
 - NEVER update docs to match broken code. Per DTC, if code diverges from docs, the code is
-  wrong. Document the divergence as an issue in ISSUES.md.
+  wrong. Document the divergence as an issue in TODO.md.
 - NEVER write temporal documentation (changelogs, "we recently added..."). Write as the
   intended steady state — evergreen and non-temporal.
 - NEVER duplicate information across doc files. Keep it DRY — reference, don't repeat.
@@ -337,7 +338,7 @@ extraction scripts.
 ### Audit and maintain
 
 1. `/dokumentera` — update-and-verify mode checks all docs against code
-2. Fix findings or file code issues to ISSUES.md
+2. Fix findings or file code issues to TODO.md
 
 ### Project bootstrap
 

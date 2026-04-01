@@ -25,14 +25,14 @@ Codebase health audit: multi-dimensional structural quality evaluation with evid
 findings, confidence scores, and trend tracking. The retrospective counterpart to realisera's
 forward motion — is the codebase getting better or just bigger?
 
-Each invocation = one audit. Findings feed realisera's work selection via ISSUES.md.
+Each invocation = one audit. Findings feed realisera's work selection via TODO.md.
 Output opens with: `─── ⛶ inspektera · audit ───`
 
 ---
 
 ## State artifacts
 
-One file in the project root, bootstrapped if absent.
+One file in `.agentera/`, bootstrapped if absent.
 
 | File | Purpose | Bootstrap |
 |------|---------|-----------|
@@ -42,11 +42,12 @@ Template in `references/templates/` — use as starting structure, adapt to the 
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if DOCS.md exists in the project root. If it
-has an Artifact Mapping section, use the path specified for each canonical filename (HEALTH.md,
-etc.). If DOCS.md doesn't exist or has no entry for a given artifact, default to the project
-root. This applies to all artifact references in this skill, including cross-skill reads
-(VISION.md, DECISIONS.md, ISSUES.md, PROGRESS.md).
+Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an
+Artifact Mapping section, use the path specified for each canonical filename (.agentera/HEALTH.md,
+etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the
+default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts
+in .agentera/. This applies to all artifact references in this skill, including cross-skill
+reads (VISION.md, .agentera/DECISIONS.md, TODO.md, .agentera/PROGRESS.md).
 
 ### HEALTH.md
 
@@ -78,14 +79,14 @@ root. This applies to all artifact references in this skill, including cross-ski
 
 ## Step 1: Orient
 
-Read HEALTH.md, ISSUES.md, and PROGRESS.md in parallel — these reads are independent, issue
+Read HEALTH.md, TODO.md, and PROGRESS.md in parallel — these reads are independent, issue
 all in a single response.
 
 1. **HEALTH.md** — prior audit findings and grades (if exists)
 2. **VISION.md** — the "what SHOULD BE" against which "what IS" is compared (if exists)
 3. **DECISIONS.md** — why things are the way they are (if exists). Findings contradicting
    deliberate decisions are not findings.
-4. **ISSUES.md** — known problems (if exists). Don't re-report unless worsened.
+4. **TODO.md** — known problems (if exists). Don't re-report unless worsened.
 5. **PROGRESS.md** — last 3 cycle entries only (recent changes = higher-priority audit targets)
 6. **Decision profile** — run from the profilera skill directory (typically
    `~/.claude/plugins/marketplaces/agentera/skills/profilera`):
@@ -159,7 +160,7 @@ Every finding MUST include:
 - Pre-existing patterns that are consistent and deliberate
 - Things a linter or type checker would catch (assume CI handles those)
 - Subjective style preferences not grounded in stated project principles
-- Known issues already tracked in ISSUES.md
+- Known issues already tracked in TODO.md
 - Intentional decisions documented in DECISIONS.md
 ```
 
@@ -254,7 +255,7 @@ After all agents complete:
    apparent severity.
 2. **Deduplicate** — merge by preference: (1) fullest context, (2) most evidence-rich
    dimension, (3) most recent. Preserve complementary evidence from discarded findings.
-3. **Cross-reference** against DECISIONS.md and ISSUES.md:
+3. **Cross-reference** against DECISIONS.md and TODO.md:
    - Matches known decision → discard or downgrade to info
    - Matches known issue → "already tracked", skip
    - Genuinely new → include at full severity
@@ -325,12 +326,12 @@ This section helps realisera and resonera understand the current reality.]
 
 Feed actionable findings into the ecosystem:
 
-1. **ISSUES.md** — for each critical finding not already tracked, offer to add under `## Open`.
+1. **TODO.md** — for each critical finding not already tracked, offer to add under the appropriate severity section.
    Severity mapping: critical → `critical`, warning → `degraded`, info → `annoying`. Get user
    confirmation before writing. Output constraint: ≤30 words per issue description.
 2. **VISION.md** — if architecture has intentionally evolved past stated architecture, suggest
    updating via `/resonera`.
-3. **Present findings** and ask if the user wants to: file to ISSUES.md, deliberate via
+3. **Present findings** and ask if the user wants to: file to TODO.md, deliberate via
    `/resonera`, deep-dive on a dimension, or investigate a specific finding.
 
 ---
@@ -340,11 +341,11 @@ Feed actionable findings into the ecosystem:
 <critical>
 
 - NEVER modify code. Inspektera audits; other skills fix.
-- NEVER file issues to ISSUES.md without explicit user confirmation.
+- NEVER file issues to TODO.md without explicit user confirmation.
 - NEVER present speculative findings (confidence < 50) as definitive problems.
 - NEVER ignore DECISIONS.md context. If a finding contradicts a deliberate decision,
   it is not a finding — it's an implementation of that decision. Discard or downgrade.
-- NEVER report known issues already tracked in ISSUES.md as new findings.
+- NEVER report known issues already tracked in TODO.md as new findings.
 - NEVER flag subjective style preferences as findings unless they violate stated principles
   in VISION.md, CLAUDE.md, or the decision profile.
 - NEVER run destructive commands or install packages. Read-only assessment.
@@ -359,7 +360,7 @@ Report one of these statuses at workflow completion:
 
 - **complete** — All selected audit dimensions were assessed, findings were synthesized, grades were assigned, HEALTH.md was updated, and the user was presented with actionable results.
 - **flagged** — The audit completed but with notable caveats: one or more dimensions had to be skipped due to missing tooling, confidence was too low to grade a dimension reliably, or critical findings were discovered that require urgent attention beyond the audit scope.
-- **stuck** — Cannot complete the audit because the project is inaccessible, required language tooling is unavailable and manual analysis is not feasible, or filing findings to ISSUES.md was declined by the user and the results cannot be safely surfaced any other way.
+- **stuck** — Cannot complete the audit because the project is inaccessible, required language tooling is unavailable and manual analysis is not feasible, or filing findings to TODO.md was declined by the user and the results cannot be safely surfaced any other way.
 - **waiting** — The audit target is ambiguous: no project was identified, the codebase is too incomplete to assess meaningfully, or the user's request specifies dimensions that cannot be evaluated without additional information.
 
 ---
@@ -370,7 +371,7 @@ Inspektera is part of an eleven-skill ecosystem. It is the feedback loop — the
 realisera whether its work is making things better.
 
 ### Inspektera feeds /realisera
-Critical and warning findings filed to ISSUES.md become candidates for realisera's work
+Critical and warning findings filed to TODO.md become candidates for realisera's work
 selection. The severity mapping ensures structural problems compete fairly with feature work.
 The "Patterns Observed" section helps realisera understand the codebase's de facto architecture
 when planning changes.
@@ -416,7 +417,7 @@ extensibility. High-confidence quality preferences from the profile weight the g
 ### First audit
 
 1. `/inspektera` — runs a full audit across all applicable dimensions, bootstraps HEALTH.md
-2. Review findings, file critical ones to ISSUES.md
+2. Review findings, file critical ones to TODO.md
 3. `/realisera` — next cycle picks up the filed issues and starts fixing
 
 ### Periodic health checks

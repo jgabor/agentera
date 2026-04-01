@@ -33,31 +33,32 @@ Planning output opens with: `─── ≡ planera · planning ───`
 
 ## State artifacts
 
-One file and one archive directory in the project root.
+One file and one archive directory in `.agentera/`.
 
 | Artifact | Purpose | Bootstrap |
 |----------|---------|-----------|
 | `PLAN.md` | Active plan. Spec, tasks, acceptance criteria. | Created during planning session. |
 | `.planera/archive/` | Completed or discarded plans. | Created on first archival. |
 
-**Presence signal**: `PLAN.md` in the project root means active planned work. Absence means no
+**Presence signal**: `.agentera/PLAN.md` means active planned work. Absence means no
 plan — realisera reasons from VISION.md as usual.
 
 Templates in `references/templates/` — use as starting structure, adapt to the project.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if DOCS.md exists in the project root. If it
-has an Artifact Mapping section, use the path specified for each canonical filename (PLAN.md,
-etc.). If DOCS.md doesn't exist or has no entry for a given artifact, default to the project
-root. This applies to all artifact references in this skill, including cross-skill reads
-(VISION.md, DECISIONS.md, HEALTH.md, ISSUES.md, PROGRESS.md).
+Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an
+Artifact Mapping section, use the path specified for each canonical filename (.agentera/PLAN.md,
+etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the
+default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts
+in .agentera/. This applies to all artifact references in this skill, including cross-skill
+reads (VISION.md, .agentera/DECISIONS.md, .agentera/HEALTH.md, TODO.md, .agentera/PROGRESS.md).
 
 ---
 
 ## Step 0: Detect level
 
-Assess work complexity. Read the description (user, DECISIONS.md, or ISSUES.md). Scan
+Assess work complexity. Read the description (user, DECISIONS.md, or TODO.md). Scan
 codebase if needed.
 
 | Signal | Level |
@@ -76,13 +77,13 @@ If uncertain between light and full, default to light. The user can escalate.
 
 ## Step 1: Orient
 
-Read VISION.md, DECISIONS.md, and ISSUES.md in parallel — these reads are independent, issue
+Read VISION.md, DECISIONS.md, and TODO.md in parallel — these reads are independent, issue
 all in a single response.
 
 1. **VISION.md** — the north star (if exists)
 2. **DECISIONS.md** — read `firm` entries only (these are hard constraints for planning)
 3. **HEALTH.md** — latest codebase health grades (if exists)
-4. **ISSUES.md** — related known issues (if exists)
+4. **TODO.md** — related known issues (if exists)
 5. **PROGRESS.md** — what was built recently (if exists)
 6. **Decision profile** — run the effective profile script:
    ```bash
@@ -178,7 +179,7 @@ the plan.
 
 Output constraint: ≤30 words per task description, ≤20 words per acceptance criterion.
 
-Write the plan to `PLAN.md` in the project root.
+Write the plan to `.agentera/PLAN.md`.
 
 ### Light plan format
 
@@ -283,7 +284,7 @@ When PLAN.md has pending tasks, realisera's Step 2 changes:
 When all tasks are complete (or the plan is explicitly discarded):
 
 1. Archive PLAN.md to `.planera/archive/PLAN-{date}.md`
-2. Delete PLAN.md from the project root
+2. Delete `.agentera/PLAN.md`
 3. Realisera resumes reasoning from VISION.md for subsequent cycles
 
 ---

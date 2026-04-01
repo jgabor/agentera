@@ -36,7 +36,7 @@ No artifacts of its own. Reads all ecosystem artifacts for the briefing:
 | `DECISIONS.md` | Pending and recent decisions |
 | `PLAN.md` | Active tasks, completion status |
 | `PROGRESS.md` | Recent cycles, what shipped |
-| `ISSUES.md` | Open problems by severity |
+| `TODO.md` | Open problems by severity |
 | `HEALTH.md` | Codebase health grades and trends |
 | `OBJECTIVE.md` | Optimization target and current value |
 | `EXPERIMENTS.md` | Experiment status |
@@ -46,14 +46,15 @@ No artifacts of its own. Reads all ecosystem artifacts for the briefing:
 
 ### Artifact path resolution
 
-Before reading any artifact, check if DOCS.md exists in the project root. If it
-has an Artifact Mapping section, use the path specified for each canonical filename.
-If DOCS.md doesn't exist or has no entry for a given artifact, default to the
-project root. This applies to all artifact reads in this skill.
+Before reading any artifact, check if .agentera/DOCS.md exists. If it has an
+Artifact Mapping section, use the path specified for each canonical filename.
+If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the
+default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other
+artifacts in .agentera/. This applies to all artifact reads in this skill.
 
 Note: PROFILE.md is global, not project-scoped. Its path is always
-`~/.claude/profile/PROFILE.md` regardless of DOCS.md presence. Check this path
-directly rather than falling back to the project root.
+`~/.claude/profile/PROFILE.md` regardless of .agentera/DOCS.md presence. Check this
+path directly rather than falling back to the project root.
 
 ---
 
@@ -100,7 +101,7 @@ Orient a new user.
 
 Show where things stand.
 
-1. **Read artifacts** — VISION.md, PROGRESS.md, ISSUES.md, HEALTH.md, PLAN.md, DECISIONS.md
+1. **Read artifacts** — VISION.md, PROGRESS.md, TODO.md, HEALTH.md, PLAN.md, DECISIONS.md
    in parallel. First 20 lines each. Skip absent ones. Extract most recent entry or summary.
 
 2. **Build the dashboard** — concise status, only what exists. No empty sections.

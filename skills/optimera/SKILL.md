@@ -31,7 +31,7 @@ Each invocation = one experiment. `/loop` handles recurrence.
 
 ## State artifacts
 
-Three artifacts in the project root, bootstrapped if absent.
+Three artifacts in `.agentera/`, bootstrapped if absent.
 
 | Artifact | Purpose | Bootstrap |
 |----------|---------|-----------|
@@ -41,11 +41,12 @@ Three artifacts in the project root, bootstrapped if absent.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if DOCS.md exists in the project root. If it
-has an Artifact Mapping section, use the path specified for each canonical filename
-(OBJECTIVE.md, EXPERIMENTS.md, etc.). If DOCS.md doesn't exist or has no entry for a given
-artifact, default to the project root. This applies to all artifact references in this skill,
-including cross-skill reads (DECISIONS.md).
+Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an
+Artifact Mapping section, use the path specified for each canonical filename
+(.agentera/OBJECTIVE.md, .agentera/EXPERIMENTS.md, etc.). If .agentera/DOCS.md doesn't exist
+or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and
+CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all
+artifact references in this skill, including cross-skill reads (.agentera/DECISIONS.md).
 
 ### OBJECTIVE.md
 
@@ -361,7 +362,7 @@ Report one of these statuses at workflow completion:
 - **stuck** — Cannot proceed because OBJECTIVE.md is missing and the brainstorm cannot be completed without user input, the eval harness is broken and cannot be repaired without user approval, or the regression check infrastructure is unavailable.
 - **waiting** — The optimization objective is too vague to experiment against, the metric cannot be measured by any available tooling, or the scope is undefined and cannot be safely inferred.
 
-Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3 entries record failed or discarded experiments (regression failures, blocked hypotheses with no successful pivot, or the "Discovered" field logging the same unresolved issue), this constitutes 3 consecutive failures: **stop the cycle**, log the failure pattern to ISSUES.md with what was attempted and what the skill believes is wrong, and surface the situation to the user with a recommended course of action (e.g., "/resonera to deliberate on the optimization approach", "manual investigation of the regression blocker needed"). Do not attempt a 4th consecutive experiment on the same problem.
+Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3 entries record failed or discarded experiments (regression failures, blocked hypotheses with no successful pivot, or the "Discovered" field logging the same unresolved issue), this constitutes 3 consecutive failures: **stop the cycle**, log the failure pattern to TODO.md with what was attempted and what the skill believes is wrong, and surface the situation to the user with a recommended course of action (e.g., "/resonera to deliberate on the optimization approach", "manual investigation of the regression blocker needed"). Do not attempt a 4th consecutive experiment on the same problem.
 
 ---
 
