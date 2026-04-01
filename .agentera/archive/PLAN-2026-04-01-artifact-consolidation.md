@@ -109,7 +109,7 @@ and design archives have distinct filename prefixes.
 
 ### Task 7: Version bump per DOCS.md convention
 **Depends on**: Task 6
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN DOCS.md semver policy WHEN applying to this plan's changes THEN versions bump accordingly
 ▸ GIVEN registry.json WHEN checking versions THEN all match their plugin.json
