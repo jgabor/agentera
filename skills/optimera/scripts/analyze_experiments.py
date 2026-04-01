@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
 """Parse EXPERIMENTS.md and output structured analysis for optimera's Orient step.
 
 Usage:
@@ -14,7 +18,6 @@ Reads EXPERIMENTS.md (and optionally OBJECTIVE.md for the target), outputs JSON 
 
 import argparse
 import json
-import os
 import re
 import sys
 from pathlib import Path

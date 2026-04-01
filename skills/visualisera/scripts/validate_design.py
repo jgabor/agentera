@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
 """Validate a DESIGN.md file and output structured results for visualisera.
 
 Usage:
