@@ -113,7 +113,7 @@ should cohere with the visual system.
 > a new one from scratch.
 
 If **Refine**, skip to Refine mode.
-If **Replace**, archive current VISION.md to `.visionera/VISION-{date}.md`, then proceed
+If **Replace**, archive current VISION.md to `.agentera/archive/VISION-{date}.md`, then proceed
 to Create mode.
 
 ---

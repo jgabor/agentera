@@ -123,7 +123,7 @@ theme mappings, component contracts, naming conventions, and monorepo nesting ru
 
 If **Refine**, skip to Refine mode.
 If **Audit**, skip to Audit mode.
-If **Replace**, archive current DESIGN.md to `.visualisera/DESIGN-{date}.md`, then proceed
+If **Replace**, archive current DESIGN.md to `.agentera/archive/DESIGN-{date}.md`, then proceed
 to Create mode.
 
 ---

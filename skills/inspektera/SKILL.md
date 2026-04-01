@@ -327,8 +327,9 @@ This section helps realisera and resonera understand the current reality.]
 Feed actionable findings into the ecosystem:
 
 1. **TODO.md** — for each critical finding not already tracked, offer to add under the appropriate severity section.
-   Severity mapping: critical → `critical`, warning → `degraded`, info → `annoying`. Get user
-   confirmation before writing. Output constraint: ≤30 words per issue description.
+   Severity mapping: critical → `## ⇶ Critical`, warning → `## ⇉ Degraded`, info → `## ⇢ Annoying`.
+   Each entry is a checkbox line: `- [ ] [finding description]`. Get user confirmation before writing.
+   Output constraint: ≤30 words per issue description.
 2. **VISION.md** — if architecture has intentionally evolved past stated architecture, suggest
    updating via `/resonera`.
 3. **Present findings** and ask if the user wants to: file to TODO.md, deliberate via

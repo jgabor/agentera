@@ -38,7 +38,7 @@ One file and one archive directory in `.agentera/`.
 | Artifact | Purpose | Bootstrap |
 |----------|---------|-----------|
 | `PLAN.md` | Active plan. Spec, tasks, acceptance criteria. | Created during planning session. |
-| `.planera/archive/` | Completed or discarded plans. | Created on first archival. |
+| `.agentera/archive/` | Completed or discarded plans. | Created on first archival. |
 
 **Presence signal**: `.agentera/PLAN.md` means active planned work. Absence means no
 plan — realisera reasons from VISION.md as usual.
@@ -283,7 +283,7 @@ When PLAN.md has pending tasks, realisera's Step 2 changes:
 
 When all tasks are complete (or the plan is explicitly discarded):
 
-1. Archive PLAN.md to `.planera/archive/PLAN-{date}.md`
+1. Archive PLAN.md to `.agentera/archive/PLAN-{date}.md`
 2. Delete `.agentera/PLAN.md`
 3. Realisera resumes reasoning from VISION.md for subsequent cycles
 
