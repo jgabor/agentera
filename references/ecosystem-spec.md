@@ -44,25 +44,50 @@ Used by skills that produce audit findings (inspektera, dokumentera, visualisera
 | **warning** | Works but poorly — fragile, confusing, or degraded |
 | **info** | Minor — cosmetic, style, low-impact improvement |
 
-### Issue severity (ISSUES.md)
+### Issue severity (TODO.md)
 
-Used by all skills that file to ISSUES.md.
+Used by all skills that file to TODO.md.
 
-| Level | Meaning |
-|-------|---------|
-| **critical** | Broken functionality, blocks progress |
-| **degraded** | Works but poorly — slow, fragile, ugly |
-| **annoying** | Cosmetic, minor friction, style nit |
+| Level | Glyph | Meaning |
+|-------|-------|---------|
+| **critical** | ⇶ | Broken functionality, blocks progress |
+| **degraded** | ⇉ | Works but poorly — slow, fragile, ugly |
+| **annoying** | ⇢ | Cosmetic, minor friction, style nit |
 
 ### Mapping
 
-When filing audit findings to ISSUES.md, map as follows:
+When filing audit findings to TODO.md, map as follows:
 
 | Finding severity | → | Issue severity |
 |-----------------|---|----------------|
 | critical | → | critical |
 | warning | → | degraded |
 | info | → | annoying |
+
+### TODO.md format convention
+
+TODO.md uses a conventional checkbox format grouped by severity. Skills write items
+as Markdown checkboxes under severity headings:
+
+```markdown
+# TODO
+
+## ⇶ Critical
+- [ ] description
+
+## ⇉ Degraded
+- [ ] description
+
+## ⇢ Annoying
+- [ ] description
+
+## Resolved
+- [x] ~~description~~ — resolved in commit hash
+```
+
+The severity vocabulary (critical/degraded/annoying) is preserved as section headings
+with severity glyphs. Checkboxes indicate completion state. Resolved items move to
+the Resolved section with strikethrough and commit reference.
 
 **Linter check**: Deterministic — exact string matching for severity terms in context.
 
@@ -84,23 +109,85 @@ inspektera, profilera).
 Each skill-maintained artifact has an expected structure. Producing skills define the
 format; consuming skills depend on it.
 
-| Artifact | Producer | Consumers | Key structural elements |
-|----------|----------|-----------|------------------------|
-| VISION.md | visionera, realisera | realisera, planera, inspektera, dokumentera, visualisera | ## North Star, ## Who It's For, ## Principles, ## Direction, ## Identity |
-| DECISIONS.md | resonera | planera, realisera, inspektera, profilera, optimera | ## Decision N — date, **Question/Context/Alternatives/Choice/Reasoning/Confidence/Feeds into** |
-| PLAN.md | planera | realisera, inspektera | <!-- Level/Created/Status -->, ## Tasks with ### Task N, **Status/Depends on/Acceptance** |
-| PROGRESS.md | realisera | planera, inspektera, dokumentera, visionera | ## Cycle N — date, **What/Commit/Inspiration/Discovered/Next** |
-| ISSUES.md | realisera, inspektera | realisera, planera | ## Open/Resolved, ### [severity] description |
-| HEALTH.md | inspektera | realisera, planera | ## Audit N — date, **Dimensions/Findings/Overall/Grades**, per-dimension sections |
-| OBJECTIVE.md | optimera | optimera | ## Metric, ## Target, ## Baseline, ## Constraints |
-| EXPERIMENTS.md | optimera | optimera | ## Experiment N — date, **Hypothesis/Method/Result/Conclusion** |
-| DOCS.md | dokumentera | all skills (path resolution) | ## Conventions, ## Artifact Mapping, ## Index |
-| DESIGN.md | visualisera | realisera, visionera | Standard sections per DESIGN-spec.md |
-| PROFILE.md | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
+### Default layout
 
-PROFILE.md is the only global artifact — stored at `~/.claude/profile/PROFILE.md`, not in
-the project root. Skills should read it from this path directly rather than relying on the
-project-root fallback.
+Three project-facing files at the project root; eight operational files in `.agentera/`.
+
+**Root (project-facing)**:
+
+| File | Purpose |
+|------|---------|
+| VISION.md | Project north star |
+| TODO.md | Actionable items with priority and checkboxes |
+| CHANGELOG.md | Version-level change summaries (keep-a-changelog) |
+
+**.agentera/ (operational)**:
+
+| File | Purpose |
+|------|---------|
+| PROGRESS.md | Cycle-by-cycle operational log |
+| DECISIONS.md | Reasoning trail |
+| PLAN.md | Active work plan |
+| HEALTH.md | Audit grades and findings |
+| OBJECTIVE.md | Optimization target |
+| EXPERIMENTS.md | Experiment log |
+| DESIGN.md | Visual identity |
+| DOCS.md | Documentation contract + optional artifact path overrides |
+| archive/ | Completed plans, superseded visions and designs |
+
+**PROFILE.md** is global at `~/.claude/profile/PROFILE.md` — not in the project root or
+`.agentera/`. Skills read it from this path directly.
+
+### Format contracts
+
+| Artifact | Path | Producer | Consumers | Key structural elements |
+|----------|------|----------|-----------|------------------------|
+| VISION.md | VISION.md | visionera, realisera | realisera, planera, inspektera, dokumentera, visualisera | ## North Star, ## Who It's For, ## Principles, ## Direction, ## Identity |
+| TODO.md | TODO.md | realisera, inspektera | realisera, planera | ## ⇶ Critical, ## ⇉ Degraded, ## ⇢ Annoying, ## Resolved |
+| CHANGELOG.md | CHANGELOG.md | realisera | project contributors | ## [Unreleased], ### Added/Changed/Fixed |
+| DECISIONS.md | .agentera/DECISIONS.md | resonera | planera, realisera, inspektera, profilera, optimera | ## Decision N — date, **Question/Context/Alternatives/Choice/Reasoning/Confidence/Feeds into** |
+| PLAN.md | .agentera/PLAN.md | planera | realisera, inspektera | <!-- Level/Created/Status -->, ## Tasks with ### Task N, **Status/Depends on/Acceptance** |
+| PROGRESS.md | .agentera/PROGRESS.md | realisera | planera, inspektera, dokumentera, visionera | ## Cycle N — date, **What/Commit/Inspiration/Discovered/Next** |
+| HEALTH.md | .agentera/HEALTH.md | inspektera | realisera, planera | ## Audit N — date, **Dimensions/Findings/Overall/Grades**, per-dimension sections |
+| OBJECTIVE.md | .agentera/OBJECTIVE.md | optimera | optimera | ## Metric, ## Target, ## Baseline, ## Constraints |
+| EXPERIMENTS.md | .agentera/EXPERIMENTS.md | optimera | optimera | ## Experiment N — date, **Hypothesis/Method/Result/Conclusion** |
+| DESIGN.md | .agentera/DESIGN.md | visualisera | realisera, visionera | Standard sections per DESIGN-spec.md |
+| DOCS.md | .agentera/DOCS.md | dokumentera | all skills (path resolution) | ## Conventions, ## Artifact Mapping, ## Index |
+| PROFILE.md | ~/.claude/profile/PROFILE.md | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
+
+**Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for
+project contributors) AND `.agentera/PROGRESS.md` (operational cycle-level detail for
+consuming skills). Consuming skills that need cycle detail read `.agentera/PROGRESS.md`;
+project contributors read CHANGELOG.md.
+
+### CHANGELOG.md format convention
+
+CHANGELOG.md follows the [Keep a Changelog](https://keepachangelog.com/) convention:
+
+```markdown
+# Changelog
+
+## [Unreleased]
+
+### Added
+- description
+
+### Changed
+- description
+
+### Fixed
+- description
+
+## [version] — YYYY-MM-DD
+
+### Added
+- description
+```
+
+Realisera appends entries under `## [Unreleased]` in the appropriate subsection
+(Added/Changed/Fixed) based on the conventional commit type (feat → Added,
+refactor → Changed, fix → Fixed). On version bumps, the Unreleased section is
+promoted to a versioned heading.
 
 **Linter check**: Advisory — flags missing structural elements as warnings, not errors.
 
@@ -118,7 +205,8 @@ If a write would exceed the budget, compact first (see Compaction thresholds bel
 | HEALTH.md | Per-dimension assessment | ≤150 words |
 | HEALTH.md | Full file | ≤2,000 words |
 | DECISIONS.md | Per-decision entry | ≤200 words |
-| ISSUES.md | Per-issue entry | ≤100 words |
+| TODO.md | Per-item entry | ≤100 words |
+| CHANGELOG.md | Per-version section | ≤300 words |
 | PLAN.md | Per-task entry | ≤100 words |
 | PLAN.md | Full file | ≤2,500 words |
 | VISION.md | Full file | ≤1,500 words |
@@ -178,16 +266,24 @@ when >22 one-line entries exist. Archive section sits below recent experiments u
 
 ## 5. Artifact Path Resolution
 
+The default artifact layout is deterministic (see Section 4, Default layout). Skills know
+where artifacts live by convention — no discovery step required for the default case.
+
+`.agentera/DOCS.md` is checked ONLY for path overrides. If a project needs artifacts in
+non-default locations, dokumentera writes an Artifact Mapping section to `.agentera/DOCS.md`
+with custom paths. Skills use those paths instead of the defaults.
+
 Every skill that reads or writes artifacts MUST include the artifact path resolution
 instruction. The canonical template:
 
 ```
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if DOCS.md exists in the project root. If it
-has an Artifact Mapping section, use the path specified for each canonical filename ({OWN_ARTIFACTS},
-etc.). If DOCS.md doesn't exist or has no entry for a given artifact, default to the project
-root. This applies to all artifact references in this skill, including cross-skill
+Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an
+Artifact Mapping section, use the path specified for each canonical filename ({OWN_ARTIFACTS},
+etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the
+default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts
+in .agentera/. This applies to all artifact references in this skill, including cross-skill
 {reads_or_writes} ({CROSS_ARTIFACTS}).
 ```
 
@@ -333,7 +429,7 @@ escalation rule to prevent runaway cycles producing bad work.
 When the skill detects 3 consecutive failed cycles, it MUST:
 
 1. **Stop** — do not attempt a 4th cycle on the same problem
-2. **Log** — file the failure pattern to ISSUES.md with context: what was attempted,
+2. **Log** — file the failure pattern to TODO.md with context: what was attempted,
    what failed, and what the skill thinks is wrong
 3. **Surface** — tell the user what happened and recommend a course of action
    (e.g., "/resonera to deliberate on the approach", "manual investigation needed",
@@ -465,7 +561,7 @@ Six token families express status, urgency, certainty, and direction.
 | Artifact | Token families used |
 |----------|---------------------|
 | PLAN.md | Status (■/▣/□/▨) for task states |
-| ISSUES.md | Severity (⇶/⇉/⇢) in issue headings |
+| TODO.md | Severity (⇶/⇉/⇢) in section headings, Status (□/■) via checkboxes |
 | DECISIONS.md | Confidence (━/─/┄) alongside confidence labels |
 | HEALTH.md | Trends (⮉/⮋) for trajectory, severity for findings |
 | PROGRESS.md | Status (■) for cycle completion markers |

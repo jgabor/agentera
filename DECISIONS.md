@@ -527,3 +527,68 @@ mechanism. The skills don't need special logic per project type.
 
 **Confidence**: ━ firm
 **Feeds into**: DOCS.md template (versioning conventions), planera/inspektera/realisera SKILL.md updates
+
+---
+
+## Decision 13 — 2026-04-01
+
+**Question**: Should agentera artifacts be consolidated out of the project root, and should their naming adopt common conventions?
+**Context**: The ecosystem produces up to 10 state artifacts, all placed at the project root by
+default. This creates visual clutter (8+ unfamiliar .md files alongside README and CLAUDE.md)
+and makes it hard to gitignore artifacts for projects that want them private. Decision 4
+established DOCS.md artifact mapping for per-project overrides, but the default layout remained
+root-only. Additionally, names like ISSUES.md and PROGRESS.md are agentera-specific when
+universally recognized equivalents (TODO.md, CHANGELOG.md) exist.
+**Alternatives**:
+- [Status quo — root placement with DOCS.md overrides] — rejected: default is cluttered, requires per-project config to fix
+- [Everything in .agentera/] — rejected: project-facing documentation (vision, tasks, changelog) should be visible to all contributors
+- [Rename only, no relocation] — rejected: root pollution is half the problem
+- [Split but keep agentera names] — rejected: if content adapts to conventional formats, names should match
+**Choice**: Three conventional files at project root, eight operational files in `.agentera/`.
+Content adapts to match conventional expectations.
+
+**Reasoning**: The artifacts are genuinely dual-purpose (Decision 4), but they aren't uniformly
+so. TODO.md and CHANGELOG.md serve the project's contributors — any developer recognizes them.
+HEALTH.md, EXPERIMENTS.md, PROGRESS.md serve the skills' operational needs. Different audiences
+deserve different locations. The dot-prefix convention (`.agentera/`) gives projects a one-line
+gitignore for operational state while keeping project knowledge visible. Adopting conventional
+names means adopting conventional formats — a TODO.md with severity levels and audit findings
+would confuse more than help. DOCS.md stays as an optional override for projects that want
+non-default artifact locations.
+
+### Design
+
+**Root (3 files — universally recognized)**:
+
+| File | Was | Format |
+|------|-----|--------|
+| TODO.md | ISSUES.md | Conventional TODO — actionable items with priority tags, checkboxes |
+| CHANGELOG.md | PROGRESS.md | Keep-a-changelog style — version-level Added/Changed/Fixed summaries |
+| VISION.md | VISION.md | Unchanged — project north star |
+
+**.agentera/ (8 files + archive — operational state)**:
+
+| File | Was | Notes |
+|------|-----|-------|
+| PROGRESS.md | PROGRESS.md | Cycle-by-cycle operational log (relocated, unchanged format) |
+| DECISIONS.md | DECISIONS.md | Reasoning trail (relocated — name is agentera-specific) |
+| PLAN.md | PLAN.md | Active work plan (relocated) |
+| HEALTH.md | HEALTH.md | Audit grades (relocated) |
+| OBJECTIVE.md | OBJECTIVE.md | Optimization target (relocated) |
+| EXPERIMENTS.md | EXPERIMENTS.md | Experiment log (relocated) |
+| DESIGN.md | DESIGN.md | Visual identity (relocated) |
+| DOCS.md | DOCS.md | Doc index + conventions + optional artifact mapping override (relocated) |
+| archive/ | .planera/archive/ | Completed plans (.planera/ absorbed) |
+
+**Dual-write for realisera**: writes CHANGELOG.md (public, version-level summary) AND
+`.agentera/PROGRESS.md` (operational cycle detail). Two audiences, two files.
+
+**Discovery convention**: skills check `.agentera/DOCS.md` for artifact mapping overrides.
+If absent, use the default convention (3 root + 8 in `.agentera/`). DOCS.md mapping is
+optional — the deterministic layout is the default.
+
+**Gitignore**: `.agentera/` hides all operational state. Add TODO.md, CHANGELOG.md,
+VISION.md individually if the project wants full privacy.
+
+**Confidence**: ━ firm
+**Feeds into**: All 11 SKILL.md files, ecosystem-spec.md, artifact templates, linter, DOCS.md template
