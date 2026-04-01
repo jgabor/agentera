@@ -2,8 +2,8 @@
 
 Claude Code skill marketplace. Eleven skills that form a connected ecosystem for autonomous
 software development — one entry point and ten specialized workflows spanning vision,
-deliberation, planning, building, optimizing, auditing, documenting, and learning from
-your own decision patterns.
+deliberation, research, planning, building, optimizing, auditing, documenting, designing,
+and learning from your own decision patterns.
 
 ## Skills
 
@@ -45,7 +45,7 @@ visionera ──→ resonera ──→ planera ──→ realisera ←──→ 
 - **planera** decomposes decisions into plans with behavioral acceptance criteria (PLAN.md)
 - **realisera** executes plan tasks (or reasons from VISION.md when no plan exists)
 - **inspektera** audits health and feeds findings to planera for remediation plans
-- **inspirera** feeds external patterns into realisera's cycles and optimera's hypotheses
+- **inspirera** feeds external patterns into realisera, optimera, planera, visionera, and resonera
 - **profilera** calibrates all other skills to the user's decision-making patterns
 
 ### State artifacts
@@ -78,12 +78,32 @@ Default layout: three project-facing files at root, eight operational files in `
 
 ---
 
+## Prerequisites
+
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI
+- Python 3.10+ (for helper scripts)
+- git
+
 ## Installing
 
-Clone the repo once:
+### From the plugin registry
 
 ```bash
-git clone git@github.com:jgabor/agentera.git ~/.claude/skills
+claude plugin add jgabor/agentera
+```
+
+### With npx
+
+```bash
+npx skills add jgabor/agentera
+```
+
+### Manual (git clone)
+
+Clone the repo:
+
+```bash
+git clone git@github.com:jgabor/agentera.git ~/.claude/agentera
 ```
 
 Then add individual skills to your project's `.claude/settings.json`:
@@ -91,7 +111,7 @@ Then add individual skills to your project's `.claude/settings.json`:
 ```json
 {
   "skills": [
-    "~/.claude/skills/skills/inspirera"
+    "~/.claude/agentera/skills/inspirera"
   ]
 }
 ```
@@ -101,7 +121,7 @@ Or reference the repo globally in `~/.claude/settings.json` to make all skills a
 ```json
 {
   "skillPaths": [
-    "~/.claude/skills/skills"
+    "~/.claude/agentera/skills"
   ]
 }
 ```
@@ -109,7 +129,7 @@ Or reference the repo globally in `~/.claude/settings.json` to make all skills a
 Pull updates at any time:
 
 ```bash
-cd ~/.claude/skills && git pull
+cd ~/.claude/agentera && git pull
 ```
 
 ---

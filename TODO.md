@@ -3,11 +3,6 @@
 ## ⇶ Critical
 
 ## ⇉ Degraded
-- [ ] Installation path double-nesting: clone to `~/.claude/skills` produces confusing `skills/skills/` path (README.md)
-- [ ] README intro omits inspirera and visualisera from workflow list; diagram understates inspirera connections
-- [ ] Prerequisites undocumented: Python 3.10+, claude CLI, git not listed in README
-- [ ] CHANGELOG.md `[Unreleased]` section should be promoted to versioned `[1.3.0]` heading
-- [ ] Stale `ISSUES-template.md` in realisera/references/templates/ — should be TODO-template.md after D13 rename
 
 ## ⇢ Annoying
 
@@ -27,3 +22,8 @@
 - [x] ~~ISS-13: inspirera artifact path resolution in wrong location~~ — fixed in abd2bea
 - [x] ~~ISS-14: hej cross-skill section has count and list gaps~~ — fixed in abd2bea
 - [x] ~~ISS-15: profilera lacks State artifacts section~~ — fixed in abd2bea
+- [x] ~~Installation path double-nesting~~ — fixed: clone to ~/.claude/agentera
+- [x] ~~README intro omits inspirera and visualisera~~ — fixed: added research, designing
+- [x] ~~Prerequisites undocumented~~ — fixed: added Prerequisites section to README
+- [x] ~~CHANGELOG.md [Unreleased] not promoted~~ — fixed: promoted to [1.4.0]
+- [x] ~~Stale ISSUES-template.md~~ — fixed: renamed to TODO-template.md
