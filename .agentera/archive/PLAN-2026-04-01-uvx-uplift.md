@@ -100,7 +100,7 @@ compute_effective (exponential decay math) each need 3+ test cases.
 Bump all 11 skills minor version. Update registry.json, marketplace.json, all
 plugin.json files per semver policy (feat = minor).
 **Depends on**: Task 1, Task 2, Task 3, Task 4
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all version files WHEN inspected THEN versions are bumped by one minor increment
 ▸ GIVEN the ecosystem linter WHEN run THEN 0 errors
