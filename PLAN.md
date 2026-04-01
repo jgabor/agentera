@@ -91,7 +91,7 @@ and design archives have distinct filename prefixes.
 
 ### Task 5: Update linter for new discovery convention
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the linter WHEN checking path resolution THEN it validates against new canonical wording
 ▸ GIVEN ARTIFACT_CONTRACTS WHEN checking TODO.md THEN it validates new format elements

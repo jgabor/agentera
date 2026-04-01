@@ -327,3 +327,11 @@
 **Inspiration**: None — implementing Decision 13 design
 **Discovered**: No new issues. Linter passes 0 errors despite spec changes — existing SKILL.md files still match old wording (expected; Task 5 updates the linter to enforce new wording).
 **Next**: Tasks 3, 4, 5 now unblocked (all depend on Task 1). Task 2 depends on Tasks 1+5.
+
+## Cycle 42 — 2026-04-01
+
+**What**: Updated linter for D13 convention — path resolution validates against `.agentera/DOCS.md`, old-style detection, ISSUES.md→TODO.md in ARTIFACT_CONTRACTS, CHANGELOG.md added, hej in REQUIRED_REFS.
+**Commit**: c0aedc1 feat: update linter for D13 artifact consolidation convention (Plan Task 5)
+**Inspiration**: None
+**Discovered**: Realisera SKILL.md missing "Unreleased" reference triggers advisory warning — expected, Task 3 adds CHANGELOG.md instructions.
+**Next**: Tasks 2, 3, 4 now eligible. Task 2 depends on Tasks 1+5 (both complete). Tasks 3, 4 depend on Task 1 (complete).
