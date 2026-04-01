@@ -343,3 +343,11 @@
 **Inspiration**: None
 **Discovered**: ISSUES.md references remain in template files (references/templates/) — not SKILL.md scope, will be updated in Task 6.
 **Next**: Tasks 3, 4 remain. Both depend only on Task 1 (complete). Task 6 depends on Tasks 2, 3, 4, 5.
+
+## Cycle 44 — 2026-04-01
+
+**What**: Added dual-write to realisera — CHANGELOG.md (keep-a-changelog) at root + .agentera/PROGRESS.md (cycle detail). State artifacts table now lists 4 files. Archive path updated to .agentera/archive/.
+**Commit**: 5da719b feat(realisera): add dual-write, CHANGELOG.md format, archive path (Plan Task 3)
+**Inspiration**: None
+**Discovered**: No new issues. Advisory linter warning resolved — "Unreleased" now in SKILL.md.
+**Next**: Task 4 (planera/dokumentera/inspektera/visionera/visualisera convention updates) is the only remaining task before Task 6.

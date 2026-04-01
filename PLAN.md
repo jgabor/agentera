@@ -73,7 +73,7 @@ and design archives have distinct filename prefixes.
 
 ### Task 3: Add dual-write and conventional formats to realisera
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN realisera WHEN completing a cycle THEN it writes both CHANGELOG.md and .agentera/PROGRESS.md
 ▸ GIVEN realisera WHEN writing CHANGELOG.md THEN format follows keep-a-changelog convention
