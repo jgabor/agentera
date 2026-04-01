@@ -87,7 +87,7 @@ all in a single response.
 5. **PROGRESS.md** — what was built recently (if exists)
 6. **Decision profile** — run the effective profile script:
    ```bash
-   python3 -m scripts.effective_profile
+   python3 scripts/effective_profile.py
    ```
    Run from the profilera skill directory. Use it to calibrate planning depth, pattern
    preferences, and constraint priorities.

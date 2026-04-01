@@ -178,10 +178,9 @@ Each experiment opens with the skill introduction: `─── ⎘ optimera · ex
 
 1. **EXPERIMENTS.md** — last 5 experiments only (check for plateau patterns)
 2. **OBJECTIVE.md** — the metric, target, constraints, and scope
-3. **Decision profile** — run from the profilera skill directory (typically
-   `~/.claude/plugins/marketplaces/agentera/skills/profilera`):
+3. **Decision profile** — run from the profilera skill directory:
    ```bash
-   python3 -m scripts.effective_profile
+   python3 scripts/effective_profile.py
    ```
    Entries with effective confidence 65+ are strong constraints; <45 are suggestions.
    Read full `~/.claude/profile/PROFILE.md` for details when needed.
@@ -204,7 +203,7 @@ Run two things:
 **2a. Experiment history analysis** — if EXPERIMENTS.md has prior entries, run:
 
 ```bash
-python3 -m scripts.analyze_experiments --experiments EXPERIMENTS.md --objective OBJECTIVE.md --pretty
+python3 scripts/analyze_experiments.py --experiments EXPERIMENTS.md --objective OBJECTIVE.md --pretty
 ```
 
 Outputs JSON with metric trajectory, plateau detection, win/loss rates, and distance to target.
@@ -382,7 +381,7 @@ When realisera picks work that is optimization-shaped (e.g., "improve test perfo
 context; optimera runs the optimization loop.
 
 ### Optimera reads /profilera output
-Every experiment runs the effective profile script (`python3 -m scripts.effective_profile` from
+Every experiment runs the effective profile script (`python3 scripts/effective_profile.py` from
 the profilera skill directory) to get a confidence-weighted summary table. Effective confidence
 weighting ensures stale preferences don't over-constrain experiments — how aggressive to be,
 how much complexity is acceptable, and what trade-offs the user prefers are all modulated by

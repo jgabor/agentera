@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
 """Tier 2 eval runner for agentera skill smoke testing.
 
 Invokes each skill via `claude -p` (Claude Code pipe mode) with a minimal
@@ -6,11 +10,11 @@ trigger prompt and checks for crashes / non-zero exit codes.  Scope is
 crash/error detection only — output correctness is not evaluated.
 
 Run from repo root:
-    python3 scripts/eval-skills.py                    # run all skills
-    python3 scripts/eval-skills.py --skill realisera  # run one skill
-    python3 scripts/eval-skills.py --dry-run           # list skills + prompts
-    python3 scripts/eval-skills.py --parallel N        # N concurrent workers
-    python3 scripts/eval-skills.py --timeout 60        # per-skill timeout (s)
+    python3 scripts/eval_skills.py                    # run all skills
+    python3 scripts/eval_skills.py --skill realisera  # run one skill
+    python3 scripts/eval_skills.py --dry-run           # list skills + prompts
+    python3 scripts/eval_skills.py --parallel N        # N concurrent workers
+    python3 scripts/eval_skills.py --timeout 60        # per-skill timeout (s)
 """
 
 from __future__ import annotations
@@ -37,6 +41,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # producing a large or expensive response.
 TRIGGER_PROMPTS: dict[str, str] = {
     "dokumentera": "Audit the documentation for this project.",
+    "hej": "Start a new session and give me a status briefing on this project.",
     "inspektera": "Run a codebase health audit.",
     "inspirera": "Analyze https://example.com and map patterns to this project.",
     "optimera": "Optimize test suite execution time.",

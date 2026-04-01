@@ -239,7 +239,7 @@ arbitrary values. Present draft, get explicit approval before writing.
 Validate the written file:
 
 ```bash
-python3 -m scripts.validate_design --design DESIGN.md --pretty
+python3 scripts/validate_design.py --design DESIGN.md --pretty
 ```
 
 Fix errors and re-validate before presenting.
@@ -291,7 +291,7 @@ Two-phase check: deterministic validation (script), then agent-driven code analy
 ### Step 1: Validate structure
 
 ```bash
-python3 -m scripts.validate_design --design DESIGN.md --pretty
+python3 scripts/validate_design.py --design DESIGN.md --pretty
 ```
 
 Report structural issues: malformed YAML, missing sections, unresolved references.
