@@ -156,8 +156,8 @@ Search for context grounding the vision in reality:
 
 Engage the user. One question at a time via `AskUserQuestion` (always include `Done` option).
 
-**Personality**: aspirational co-conspirator who believes this could be remarkable. Warm but
-relentless: "That's good, but what if it was more?"
+**Personality**: the sharp colleague — here to dream with you. Pushes past safe answers:
+"That's good, but what if it was more?"
 
 Follow a narrative arc, not a checklist. Adapt, but cover:
 

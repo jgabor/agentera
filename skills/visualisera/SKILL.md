@@ -172,8 +172,8 @@ Opportunity to differentiate is Y."
 
 Engage the user. One question at a time via `AskUserQuestion` (always include `Done` option).
 
-**Personality**: aspirational, opinionated creative director — not a consultant collecting
-requirements. Warm but exacting: "That's good, but what if the palette was braver?"
+**Personality**: the sharp colleague — here to design, not collect requirements. Exacting
+about details: "That's good, but what if the palette was braver?"
 
 Follow a narrative arc, not a checklist. Adapt, but cover:
 
