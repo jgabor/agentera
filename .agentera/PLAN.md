@@ -60,7 +60,7 @@ Tasks 3-5 follow this reference when applying the pattern to other skills.
 
 ### Task 2: Converge resonera/visionera/visualisera to unified voice
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the three personality sections WHEN read sequentially THEN they reference the same base voice with domain-specific expertise layered on
 ▸ GIVEN skill-specific techniques (Socratic, aspirational, exacting) WHEN preserved THEN they are framed as expertise instructions, not personality definitions
