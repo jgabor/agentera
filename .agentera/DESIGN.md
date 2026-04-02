@@ -41,6 +41,7 @@ dokumentera: { glyph: "▤", code: "U+25A4", meaning: "text on page" }
 profilera:   { glyph: "♾", code: "U+267E", meaning: "permanent mark" }
 inspirera:   { glyph: "⬚", code: "U+2B1A", meaning: "frame to fill" }
 visualisera: { glyph: "◰", code: "U+25F0", meaning: "design grid" }
+orkestrera:  { glyph: "⎈", code: "U+2388", meaning: "helm, steering" }
 ```
 
 ## Status Tokens

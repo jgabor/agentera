@@ -572,3 +572,58 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Confidence**: firm
 **Feeds into**: ecosystem-spec.md (new narration voice section), ~5 SKILL.md files (hej, visionera, profilera, visualisera, + ad-hoc narration guidance for all)
 **Feeds into**: VISION.md (Identity section), skill refinement across all 11 SKILL.md files
+
+## Decision 18 · 2026-04-02
+
+**Question**: How should the ecosystem handle em-dashes and double dashes in all text?
+**Context**: The decision profile has a high-confidence, stable entry (since Sep 2025) banning em-dashes because they signal AI-generated text. Decision 14 only enforced this for exit signal label separators (colons instead). The rest of the ecosystem (SKILL.md prose, ecosystem-spec, templates, agent output) continued using em-dashes freely. The profile also incorrectly listed double dashes (--) as an acceptable replacement.
+**Alternatives**:
+- [Ban in agent output only, allow in SKILL.md source], rejected: inconsistent standard
+- [Mechanical find-and-replace with double dashes], rejected: double dashes are equally a crutch
+- [Context-sensitive replacement (colons for labels, commas/periods for prose)], rejected: restructuring is better
+**Choice**: Full ban on em-dashes AND double dashes across the entire ecosystem. Replacement hierarchy: restructure the sentence first; fall back to commas, periods, or colons only when restructuring reads worse. Applies to SKILL.md source, ecosystem-spec, templates, and all agent-generated output.
+**Reasoning**: The goal is better prose, not a punctuation swap. Em-dashes and double dashes are a crutch for sentences that should be restructured. Removing them forces cleaner writing. The profile entry that listed double dashes as acceptable was wrong and needs correction.
+**Confidence**: firm
+**Feeds into**: ecosystem-spec.md (punctuation convention), all 11 SKILL.md files, PROFILE.md correction
+
+## Decision 19 · 2026-04-02
+
+**Question**: How should the ecosystem handle line-breaks in prose text?
+**Context**: No rule existed for line-wrapping. Agent output mixed hard-wrapped lines (inside code blocks at ~70 chars) with free-flowing prose, creating visible inconsistency. SKILL.md source files also hard-wrapped paragraphs at ~90 chars. Word-count caps governed brevity but not wrapping.
+**Alternatives**:
+- [Hard wrap at a fixed column (80 or 100 chars) everywhere], rejected: looks wrong at non-matching terminal widths
+- [Semantic line breaks (one sentence per line)], rejected: creates inconsistency when mixed with free flow
+- [No hard wraps, let terminal handle it], chosen
+**Choice**: No hard wraps in prose paragraphs. One paragraph = one line. Break only for paragraph boundaries, section boundaries, or list items. Terminal handles wrapping. Structured content (code blocks, lists, tables, frontmatter) keeps its inherent line breaks.
+**Reasoning**: The problem was consistency, not readability. Mixing two wrapping approaches in the same response looked arbitrary. Removing hard wraps entirely eliminates the inconsistency. The tradeoff (whole-paragraph diffs) is acceptable for the consistency gain.
+**Confidence**: firm
+**Feeds into**: ecosystem-spec.md (line-break convention), all 11 SKILL.md files
+
+## Decision 20 · 2026-04-02
+
+**Question**: Should the agentera ecosystem add an orchestration skill, and what should it own?
+**Context**: ISS-21 (separated evaluator), ISS-22 (headless runner), ISS-23 (AC verification), ISS-24 (retry caps) all pointed toward a missing orchestration layer. Realisera owns single-cycle execution but depends on `/loop` for recurrence. The ecosystem has no conductor that chains skills together. Research covered Claude Code's agent primitives (coordinator mode, worktrees, fork subagents, teams/swarm), lira's conductor/worker model (fixed pipeline, quality gates, task decomposition, SQLite state), and seven external frameworks (OpenAI Agents SDK, LangGraph, CrewAI, AutoGen, Mastra, PydanticAI, Google A2A). Also examined opencode-orchestrator and Auto-Claude from local repos.
+**Alternatives**:
+- [Orkestrera dispatches only to realisera], rejected: limits the conductor to implementation work
+- [Orkestrera dispatches directly to Sonnet agents], rejected: duplicates realisera's dispatch step, skills lose their autonomy
+- [Orkestrera as objective-driven with internal decomposition], rejected: duplicates planera's role
+- [No new skill; add evaluator and runner to realisera], rejected: conflates orchestration with execution
+**Choice**: Orkestrera as a skill-agnostic meta-orchestrator. Thin conductor, fat workers. Dispatches any skill as a subagent based on task semantics.
+**Reasoning**: The core insight is separation of concerns between orchestration and execution. Lira's conductor/worker split (conductor owns state and dispatch, workers execute in isolation) is the right pattern, but implemented as a skill (SKILL.md) rather than infrastructure. The conductor follows a deterministic protocol, keeping its context lean; creativity happens in the dispatched skills. Each dispatched skill runs as a subagent with its own context window, preventing conductor context pollution. Key design decisions: (1) plan-required, delegates to inspirera/planera to create one if absent, (2) inspektera as evaluator (GAN pattern using existing skill), (3) multi-cycle single session with lean conductor, (4) sequential task dispatch (realisera parallelizes internally), (5) retry with inspektera findings, max 2, then block and skip, (6) reuses existing artifacts (PLAN.md, PROGRESS.md, HEALTH.md). Supersedes ISS-21, ISS-22, ISS-23, ISS-24.
+**Confidence**: firm
+**Feeds into**: new skill (skills/orkestrera/SKILL.md), TODO.md (supersede ISS-21, ISS-22, ISS-23, ISS-24), ecosystem-spec.md (12th skill primitives)
+
+### Design Decisions Summary
+
+| Aspect | Decision |
+|--------|----------|
+| Dispatch model | Skill-agnostic: orkestrera infers which skill handles each task |
+| Input model | Plan-required: no PLAN.md triggers inspirera → planera chain |
+| Evaluation | Inspektera as discriminator, dispatched after each task |
+| Failure handling | Retry with inspektera findings, max 2, then block + skip to next |
+| Recurrence | Multi-cycle single session, not /loop. Stops on: plan complete + clean health, budget, or user interrupt |
+| Concurrency | Sequential task dispatch. Realisera keeps internal parallelism |
+| State artifacts | Reuses PLAN.md, PROGRESS.md, HEALTH.md. No new artifact |
+| Conductor model | Thin: dispatch + receive results + log. Never reads code, never runs tests |
+| Skill independence | All skills stay as-is. Orkestrera passes task prompts; skills adapt naturally |
+| Outer loop | Plan complete → inspektera health check → inspirera gap analysis → planera next plan → continue |
