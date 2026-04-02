@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-03-31 -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-02 -->
 
 ## Conventions
 
@@ -42,29 +42,39 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 | Document | Path | Last Updated | Status |
 |----------|------|-------------|--------|
-| README | README.md | 2026-03-31 | ■ current |
-| CLAUDE.md | CLAUDE.md | 2026-03-31 | ■ current |
-| Decisions | .agentera/DECISIONS.md | 2026-04-01 | ■ current |
+| README | README.md | 2026-04-02 | ■ current |
+| CLAUDE.md | CLAUDE.md | 2026-04-02 | ■ current |
+| Decisions | .agentera/DECISIONS.md | 2026-04-02 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
-| Progress | .agentera/PROGRESS.md | 2026-04-01 | ■ current |
-| TODO | TODO.md | 2026-04-01 | ■ current |
-| Changelog | CHANGELOG.md | 2026-04-01 | ■ current |
-| Health | .agentera/HEALTH.md | 2026-03-31 | ■ current |
-| Plan | .agentera/PLAN.md | 2026-04-01 | ■ current |
-| DOCS | .agentera/DOCS.md | 2026-04-01 | ■ current |
-| Design | .agentera/DESIGN.md | 2026-03-31 | ■ current |
-| Ecosystem spec | references/ecosystem-spec.md | 2026-03-31 | ■ current |
+| Progress | .agentera/PROGRESS.md | 2026-04-02 | ■ current |
+| TODO | TODO.md | 2026-04-02 | ■ current |
+| Changelog | CHANGELOG.md | 2026-04-02 | ■ current |
+| Health | .agentera/HEALTH.md | 2026-04-01 | ▣ stale |
+| Plan | .agentera/PLAN.md | 2026-04-02 | ■ current (archived) |
+| DOCS | .agentera/DOCS.md | 2026-04-02 | ■ current |
+| Design | .agentera/DESIGN.md | 2026-04-02 | ■ current |
+| Ecosystem spec | references/ecosystem-spec.md | 2026-04-02 | ■ current |
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
-| Registry | registry.json | 2026-03-31 | ■ current |
-| Marketplace manifest | .claude-plugin/marketplace.json | 2026-03-31 | ■ current |
+| Registry | registry.json | 2026-04-02 | ■ current |
+| Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-02 | ■ current |
 
 ## Coverage
 
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
-- **Stale**: HEALTH.md, all Audit 3 findings resolved, artifact not yet re-audited. CLAUDE.md and README.md, repo layout needs updating for .agentera/ convention
+- **Stale**: HEALTH.md (Audit 4 predates orkestrera addition, 12th skill not reflected)
 
 ## Audit Log
+
+### 2026-04-02 (Audit 4)
+
+- [stale] README.md line 52 referenced /loop without mentioning /orkestrera as primary autonomous execution method · warning (fixed)
+- [misaligned] README.md ecosystem diagram showed orkestrera → realisera but omitted orkestrera ↔ inspektera evaluation link · warning (fixed)
+- [misaligned] README.md and ecosystem-spec.md VISION.md consumers missing orkestrera (reads during bootstrap) · warning (fixed)
+- [stale] DOCS.md coverage notes referenced CLAUDE.md and README.md staleness already resolved by cycles 72-77 · warning (fixed)
+- [stale] DOCS.md Index dates from 2026-03-31 for files updated 2026-04-02 · warning (fixed)
+- [stale] DOCS.md last audit date said 2026-03-31 · info (fixed)
+- [stale] DOCS.md Plan entry showed active but plan was archived · info (fixed)
 
 ### 2026-03-31 (Audit 3)
 

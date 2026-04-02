@@ -49,7 +49,7 @@ Type `/hej` and agentera reads your entire project (code, git history, open issu
   suggested → ❈ /resonera (resolve API schema to unblock task 7)
 ```
 
-Every skill suggests what to do next when it finishes. You follow the thread, or let agentera run on its own with `/loop`, picking up work, building, verifying, and continuing without intervention.
+Every skill suggests what to do next when it finishes. You follow the thread, or run `/orkestrera` to execute an entire plan: it dispatches skills, evaluates each task with inspektera, retries failures, and loops until done.
 
 ---
 
@@ -83,9 +83,9 @@ Skills communicate through markdown files in your project: a vision doc, a plan,
                     ↓ consumed by
 ⛥ visionera ──→ ❈ resonera ──→ ≡ planera ──→ ⎈ orkestrera ──→ ⧉ realisera ←──→ ⎘ optimera
   (envision)      (think)       (plan)        (orchestrate)     (build)          (tune)
-     ↕                         ↑  ↑                                 ↑
-  ◰ visualisera ▤ dokumentera─┘   │             ⛶ inspektera────────┘
-    (design)     (document)        │                (audit)
+     ↕                         ↑  ↑               ↕                 ↑
+  ◰ visualisera ▤ dokumentera─┘   │       ⛶ inspektera──────────────┘
+    (design)     (document)        │          (evaluate + audit)
                  ⬚ inspirera ──────┘
                   (research)
 ```
@@ -103,7 +103,7 @@ Three project-facing files at root, eight operational files in `.agentera/`.
 
 | Artifact       | Maintained by         | Consumed by                    |
 | -------------- | --------------------- | ------------------------------ |
-| `VISION.md`    | visionera, realisera  | realisera, planera, inspektera |
+| `VISION.md`    | visionera, realisera  | realisera, planera, inspektera, orkestrera |
 | `TODO.md`      | realisera, inspektera | realisera, planera, orkestrera |
 | `CHANGELOG.md` | realisera             | project contributors           |
 
