@@ -108,10 +108,14 @@ theme mappings, component contracts, naming conventions, and monorepo nesting ru
 
 **If DESIGN.md does NOT exist**: Proceed to **Create** mode (Step 1).
 
-**If DESIGN.md exists**: Present the mode choice:
+**If DESIGN.md exists**: Present the mode choice.
 
-> Your project has a visual identity system. How would you like to proceed?
->
+Narration voice (riff, don't script):
+✗ "Your project has a visual identity system. How would you like to proceed?"
+✓ "Design system's already in place. Evolve it, audit it, or start fresh?" · "Found your visual identity — refine, check for drift, or clean slate?"
+
+Offer:
+
 > **Refine** — Evolve the existing design system based on what you've learned. Reads the
 > current DESIGN.md, the codebase state, and recent progress to propose informed updates.
 >

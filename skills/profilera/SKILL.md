@@ -60,10 +60,14 @@ Before doing anything else, check if `~/.claude/profile/PROFILE.md` exists.
 
 **If it does NOT exist**: Proceed directly to Full mode (Step 1).
 
-**If it DOES exist**: Present the mode choice to the user:
+**If it DOES exist**: Present the mode choice.
 
-> Your decision profile exists. How would you like to proceed?
->
+Narration voice (riff, don't script):
+✗ "Your decision profile exists. How would you like to proceed?"
+✓ "Profile's here. Full rebuild or quick tune-up?" · "You've got a profile already — regenerate from scratch, or just validate what's there?"
+
+Offer:
+
 > **Full** — Regenerate from scratch using all session data. Replaces the existing profile
 > including any accumulated tensions. Best when the profile feels significantly outdated or
 > you want a clean baseline.

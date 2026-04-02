@@ -102,10 +102,14 @@ should cohere with the visual system.
 
 **If VISION.md does NOT exist**: Proceed to **Create** mode (Step 1).
 
-**If VISION.md exists**: Present the mode choice:
+**If VISION.md exists**: Present the mode choice.
 
-> Your project has a vision. How would you like to proceed?
->
+Narration voice (riff, don't script):
+✗ "Your project has a vision. How would you like to proceed?"
+✓ "You've already got a vision. Sharpen it or start over?" · "Found your vision — refine what's there, or fresh start?"
+
+Offer:
+
 > **Refine** — Evolve the existing vision based on what you've learned. Reads the current
 > vision, the codebase state, and recent progress to propose informed updates.
 >
