@@ -15,7 +15,7 @@ npx skills add jgabor/agentera
 
 <br>
 
-![](https://img.shields.io/badge/skills-11-444?style=flat-square)
+![](https://img.shields.io/badge/skills-12-444?style=flat-square)
 ![](https://img.shields.io/badge/license-Apache_2.0-444?style=flat-square)
 
 </div>
@@ -68,6 +68,7 @@ Every skill suggests what to do next when it finishes. You follow the thread, or
 |  ▤  | [dokumentera](./skills/dokumentera/) | **Document.** Creates and maintains docs, tracks what's covered and what's missing.                                 |
 |  ♾  | [profilera](./skills/profilera/)     | **Know thyself.** Learns your decision patterns so other skills adapt to how you work.                              |
 |  ◰  | [visualisera](./skills/visualisera/) | **Visualize.** Creates and maintains a visual identity system for your project.                                     |
+|  ⎈  | [orkestrera](./skills/orkestrera/) | **Orchestrate.** Dispatches skills as subagents, evaluates each with inspektera, loops through plans. |
 
 ## How it works
 
@@ -80,16 +81,16 @@ Skills communicate through markdown files in your project: a vision doc, a plan,
                       ♾ profilera
                   (decision profile)
                     ↓ consumed by
-⛥ visionera ──→ ❈ resonera ──→ ≡ planera ──→ ⧉ realisera ←──→ ⎘ optimera
-  (envision)      (think)       (plan)        (build)          (tune)
-     ↕                         ↑  ↑               ↑
-  ◰ visualisera ▤ dokumentera─┘   │   ⛶ inspektera┘
-    (design)     (document)        │      (audit)
+⛥ visionera ──→ ❈ resonera ──→ ≡ planera ──→ ⎈ orkestrera ──→ ⧉ realisera ←──→ ⎘ optimera
+  (envision)      (think)       (plan)        (orchestrate)     (build)          (tune)
+     ↕                         ↑  ↑                                 ↑
+  ◰ visualisera ▤ dokumentera─┘   │             ⛶ inspektera────────┘
+    (design)     (document)        │                (audit)
                  ⬚ inspirera ──────┘
                   (research)
 ```
 
-visionera writes a north star → planera reads it and creates tasks → realisera picks them up and builds → inspektera audits the result → findings feed back into the next planning cycle. profilera watches how you make decisions and tunes every skill to your preferences. The loop tightens over time.
+visionera writes a north star → planera reads it and creates tasks → orkestrera dispatches skills as subagents to execute the plan → realisera builds, inspektera audits, optimera tunes → findings feed back into the next planning cycle. profilera watches how you make decisions and tunes every skill to your preferences. The loop tightens over time.
 
 <details>
 <summary><strong>State artifacts reference</strong></summary>
@@ -103,17 +104,17 @@ Three project-facing files at root, eight operational files in `.agentera/`.
 | Artifact       | Maintained by         | Consumed by                    |
 | -------------- | --------------------- | ------------------------------ |
 | `VISION.md`    | visionera, realisera  | realisera, planera, inspektera |
-| `TODO.md`      | realisera, inspektera | realisera, planera             |
+| `TODO.md`      | realisera, inspektera | realisera, planera, orkestrera |
 | `CHANGELOG.md` | realisera             | project contributors           |
 
 **.agentera/ (operational)**:
 
 | Artifact         | Maintained by | Consumed by                                         |
 | ---------------- | ------------- | --------------------------------------------------- |
-| `PROGRESS.md`    | realisera     | planera, inspektera                                 |
-| `DECISIONS.md`   | resonera      | planera, realisera, optimera, inspektera, profilera |
-| `PLAN.md`        | planera       | realisera, inspektera                               |
-| `HEALTH.md`      | inspektera    | realisera, planera                                  |
+| `PROGRESS.md`    | realisera     | planera, inspektera, orkestrera                                 |
+| `DECISIONS.md`   | resonera      | planera, realisera, optimera, inspektera, profilera, orkestrera |
+| `PLAN.md`        | planera       | realisera, inspektera, orkestrera                               |
+| `HEALTH.md`      | inspektera    | realisera, planera, orkestrera                                  |
 | `OBJECTIVE.md`   | optimera      | optimera                                            |
 | `EXPERIMENTS.md` | optimera      | optimera                                            |
 | `DESIGN.md`      | visualisera   | realisera, visionera                                |

@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "agentera",
   "version": "1.4.0",
-  "description": "agentera: entry-point routing, vision, deliberation, planning, autonomous development, optimization, auditing, documentation, visual identity, research, and decision-profile mining",
+  "description": "agentera: entry-point routing, vision, deliberation, planning, autonomous development, optimization, auditing, documentation, visual identity, research, decision-profile mining, and orchestration",
   "owner": {
     "name": "jgabor"
   },
@@ -115,6 +115,16 @@
         "name": "jgabor"
       },
       "source": "./skills/visualisera",
+      "category": "development"
+    },
+    {
+      "name": "orkestrera",
+      "description": "ORKESTRERA: Orchestration Runtime: Knowledge-coordinated Execution Strategy, Targeted Routing: Evaluate, Resolve, Adapt. Skill-agnostic meta-orchestrator that dispatches skills as subagents, evaluates with inspektera, and loops through plans.",
+      "version": "1.5.0",
+      "author": {
+        "name": "jgabor"
+      },
+      "source": "./skills/orkestrera",
       "category": "development"
     }
   ]
