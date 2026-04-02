@@ -2,7 +2,12 @@
 
 ## [Unreleased]
 
+## [1.5.0] · 2026-04-02
+
 ### Added
+- Orkestrera plugin.json, registry.json entry, and marketplace.json entry (v1.5.0); README skill table, ecosystem diagram, and artifact consumers updated; CLAUDE.md and DOCS.md counts updated to 12 skills
+- All 11 existing SKILL.md files updated to twelve-skill ecosystem; hej routing table, cross-skill section, and count references include orkestrera
+- Ecosystem-spec and linter updated for 12 skills: orkestrera in cross-skill table, autonomous-loop set, format contracts, and linter validation rules
 - Orkestrera SKILL.md: full conductor protocol with plan-driven dispatch, inspektera evaluation gating, retry logic, and lean-conductor discipline
 - Orkestrera skill foundation: Decision 20, PLAN.md with 7 tasks, glyph ⎈ (helm symbol) assigned in DESIGN.md and ecosystem-spec
 - Linter enforcement for em-dash detection (error) and hard-wrap detection (advisory warning) in validate_ecosystem.py
