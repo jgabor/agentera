@@ -88,6 +88,7 @@ all in a single response.
    deliberate decisions are not findings.
 4. **TODO.md** — known problems (if exists). Don't re-report unless worsened.
 5. **PROGRESS.md** — last 3 cycle entries only (recent changes = higher-priority audit targets)
+5b. **Change magnitude** — if PROGRESS.md has commit hashes from cycles since the last HEALTH.md audit date, run `git log --stat` on those commits to estimate total change volume (files touched, lines changed). If no PROGRESS.md or no commit hashes, skip — default depth applies.
 6. **Decision profile** — run from the profilera skill directory:
    ```bash
    python3 scripts/effective_profile.py
@@ -120,6 +121,16 @@ a 200-line CLI doesn't need the same audit as a monorepo.
 | **Test health** | Coverage gaps, test quality, test-to-code ratio, tests testing behavior vs implementation. | Project has tests |
 | **Dependency health** | Outdated deps, security advisories, unused deps, dep sprawl, pinning discipline. | Project has external dependencies |
 | **Version health** | Unreleased significant changes: `feat`/`fix` commits since the last version bump. | DOCS.md has a `versioning` convention block |
+
+### Depth guidance
+
+When change magnitude was derived in Step 1, apply advisory depth scaling:
+
+- **Light changes** (roughly ≤5 files, ≤200 lines since last audit): prioritize dimensions most relevant to the changed areas. Skip dimensions with no intersection.
+- **Standard changes** (default): assess all applicable dimensions at normal depth.
+- **Heavy changes** (roughly ≥20 files or architectural-scope commits): assess all applicable dimensions and increase evidence collection depth — read more files per dimension, trace more dependency paths, check more edge cases.
+
+These thresholds are guidelines, not hard rules. Use judgment — a 6-file change touching a critical security module warrants thorough depth; a 25-file rename is light.
 
 **User specified dimensions**: audit only those.
 **Full audit or unspecified**: auto-select all applicable. Report selections before proceeding.
