@@ -68,8 +68,7 @@ First impression: the colleague meets a new project.
    Fast, no deep analysis.
 
 2. **Share what's available**: lead with the 2-3 skills most relevant to what the
-   scan revealed. Don't enumerate all ten unless asked. Mention the rest exist and
-   offer the full table on request. The table below is a reference, not a script:
+   scan revealed. Don't enumerate all ten unless asked. Mention the rest exist and offer the full table on request. The table below is a reference, not a script:
 
    | | If you want to... | Use |
    |---|---------------------|-----|
@@ -85,10 +84,7 @@ First impression: the colleague meets a new project.
    | ◰ | Define visual identity | `/visualisera` |
 
 3. **Give your honest take**: based on the scan, tell the user where you'd start
-   and why. "If I were you, I'd start with X because Y." Use the same routing logic
-   (no vision → `/visionera`, unknown quality → `/inspektera`, decision needed →
-   `/resonera`, ready to build → `/realisera`, docs gaps → `/dokumentera`) but
-   frame it as judgment, not a lookup table.
+   and why. "If I were you, I'd start with X because Y." Use the same routing logic (no vision → `/visionera`, unknown quality → `/inspektera`, decision needed → `/resonera`, ready to build → `/realisera`, docs gaps → `/dokumentera`) but frame it as judgment, not a lookup table.
 
 4. **Route**: ask what they'd like to do. Invoke the chosen skill.
 
@@ -153,8 +149,7 @@ Show where things stand.
 
 4. **Suggest next action**: one skill based on state. Use the target glyph:
    critical issues → ⧉/⛶, stale vision → ⛥, vision but no plan → ≡,
-   degrading health → ⛶, stalled optimization → ⎘, healthy + open tasks → ⧉,
-   healthy + plan complete → ⛥
+   degrading health → ⛶, stalled optimization → ⎘, healthy + open tasks → ⧉, healthy + plan complete → ⛥
 
 5. **Route**: present suggestion, let user choose. No coercion.
 
@@ -215,8 +210,7 @@ Hej is the entry point to an eleven-skill ecosystem. It reads artifacts from the
 - **profilera** → PROFILE.md for decision profile context
 - **inspirera** → no direct artifact, but routes to it when research is needed
 
-Hej's unique role: it is the only skill that reads from every other skill's output.
-It does not feed into any downstream skill. Its output is the ephemeral briefing and the routing decision.
+Hej's unique role: it is the only skill that reads from every other skill's output. It does not feed into any downstream skill. Its output is the ephemeral briefing and the routing decision.
 
 ---
 

@@ -289,16 +289,12 @@ See `references/enforcement-patterns.md` for framework-specific enforcement beyo
 <critical>
 
 - NEVER modify DESIGN.md without explicit user approval. Present drafts and get confirmation.
-- NEVER write design tokens that conflict with VISION.md Identity. If the verbal identity says
-  "warm and approachable" and the user wants a cold, brutalist palette, surface the tension
-  explicitly and let the user resolve it.
+- NEVER write design tokens that conflict with VISION.md Identity. If the verbal identity says "warm and approachable" and the user wants a cold, brutalist palette, surface the tension explicitly and let the user resolve it.
 - NEVER impose aesthetic preferences. The user's taste drives the design. Have opinions, push
   for specificity, but defer to the user's choices.
 - NEVER skip the validation step after writing DESIGN.md. Run `scripts/validate_design.py`
   and fix any errors before presenting the result.
-- NEVER create arbitrary token values. Use established scales (8pt grid for spacing, modular
-  type scale for font sizes, OKLCH for perceptual color uniformity). The design system must
-  practice what it preaches.
+- NEVER create arbitrary token values. Use established scales (8pt grid for spacing, modular type scale for font sizes, OKLCH for perceptual color uniformity). The design system must practice what it preaches.
 - NEVER modify code files. Visualisera writes DESIGN.md; realisera implements it. The
   separation of declaration and implementation is fundamental.
 - NEVER skip the codebase exploration (Step 1) when code exists. Arriving informed is what

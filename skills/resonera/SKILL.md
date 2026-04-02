@@ -142,8 +142,7 @@ Follow the conversation, not a script. Going in circles? Name it: "We keep comin
 
 ### When the decision involves code
 
-Read files or search the web for better questions, but just enough context, not a binge.
-The user is the expert; you help them think clearly.
+Read files or search the web for better questions, but just enough context, not a binge. The user is the expert; you help them think clearly.
 
 ### When the decision profile has signal
 
@@ -171,8 +170,7 @@ Produce something actionable, not just a rubber-duck session.
 
 ### Step 1: Summarize the decision
 
-Brief, casual: where we landed (2-3 sentences), key insight, confidence
-(firm / provisional / exploratory).
+Brief, casual: where we landed (2-3 sentences), key insight, confidence (firm / provisional / exploratory).
 
 ### Step 2: Offer to capture and connect
 
@@ -188,8 +186,7 @@ Relevant options only:
 For any option the user selects:
 
 - **DECISIONS.md**: reason through alternatives in response text. Write ONLY chosen decision,
-  confidence, and a rationale of 50 words or fewer. No deliberation transcript.
-  Output constraint: ≤50 words per alternative, ≤30 words per tradeoff.
+  confidence, and a rationale of 50 words or fewer. No deliberation transcript. Output constraint: ≤50 words per alternative, ≤30 words per tradeoff.
 - **VISION.md / OBJECTIVE.md**: brief follow-up to fill structure (heavy thinking done).
   Present draft for approval.
 - **TODO.md**: standard format (severity, context, impact).

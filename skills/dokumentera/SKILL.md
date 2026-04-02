@@ -24,8 +24,7 @@ The "D" in DTC. Writes intent docs before code exists, generates docs for existi
 
 Skill introduction: `─── ▤ dokumentera · docs ───`
 
-Two modes: **create** and **update**. Context-detected: no feature yet = intent-first;
-code exists = explore and generate.
+Two modes: **create** and **update**. Context-detected: no feature yet = intent-first; code exists = explore and generate.
 
 ---
 
@@ -133,8 +132,7 @@ If artifacts exist at root but mapping places them elsewhere:
 
 ### Step 4: Write DOCS.md
 
-Write the approved convention map to `.agentera/DOCS.md`. After writing, proceed to the
-originally requested mode, or stop if the survey was the entire request.
+Write the approved convention map to `.agentera/DOCS.md`. After writing, proceed to the originally requested mode, or stop if the survey was the entire request.
 
 ---
 
@@ -153,8 +151,7 @@ Read VISION.md for direction/audience and decision profile (`~/.claude/profile/P
 
 ### Step 2: Write the documentation
 
-Write docs in the appropriate location: project-level (README, CLAUDE.md) to standard
-paths, feature docs to the project's docs directory, inline docs to source files.
+Write docs in the appropriate location: project-level (README, CLAUDE.md) to standard paths, feature docs to the project's docs directory, inline docs to source files.
 
 **Principles**: follow DOCS.md style conventions, infer details from existing docs. Write as intended steady state (evergreen, non-temporal). Primary audience first. Concrete examples. DRY across doc files.
 
@@ -237,9 +234,7 @@ For each finding: quote the doc section, reference code location (file:line), ex
 
 ### Step 3: Report and fix
 
-By severity: ⇶ critical (causes user errors), ⇉ warning (causes confusion), ⇢ info
-(cosmetic). For each finding, offer to: fix the doc, file to TODO.md (code is wrong
-per DTC), or skip.
+By severity: ⇶ critical (causes user errors), ⇉ warning (causes confusion), ⇢ info (cosmetic). For each finding, offer to: fix the doc, file to TODO.md (code is wrong per DTC), or skip.
 
 ### Step 4: Update DOCS.md
 

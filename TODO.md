@@ -14,6 +14,7 @@
 - [ ] ISS-19: Consider explicit phase tracking in PROGRESS.md. Define valid skill-chain transitions (envision → deliberate → plan → build → audit) with terminal states; skills check phase and flag out-of-order runs
 
 ## Resolved
+- [x] ~~ISS-28: Enforce prose formatting conventions ecosystem-wide (Decisions 18, 19)~~ · fixed in 79b4b0d..7035ece
 - [x] ~~ISS-26: Refine skill voice to match "sharp colleague" standard (Decision 16)~~ · fixed in e17d588..067a251
 - [x] ~~ISS-20: Implement formatting decisions (Decision 14)~~ · fixed in 8dfb6fe..e73d31e
 - [x] ~~ISS-16: Add context snapshot to realisera cycle start~~ · fixed in 73a5d26

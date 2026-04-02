@@ -100,9 +100,7 @@ Public-facing change history. Keep-a-changelog format:
 - description
 ```
 
-Realisera appends entries under `## [Unreleased]` based on commit type: `feat` → Added,
-`refactor/chore` → Changed, `fix` → Fixed. On version bumps, promote the Unreleased section
-to a versioned heading.
+Realisera appends entries under `## [Unreleased]` based on commit type: `feat` → Added, `refactor/chore` → Changed, `fix` → Fixed. On version bumps, promote the Unreleased section to a versioned heading.
 
 ---
 
@@ -158,9 +156,7 @@ Outputs JSON with velocity, work type distribution, and suggestions. Use to info
    ```bash
    python3 scripts/effective_profile.py
    ```
-   Entries with effective confidence 65+ are strong constraints; <45 are suggestions.
-   Read full `~/.claude/profile/PROFILE.md` for details when needed.
-   If missing, proceed without persona grounding but flag it.
+   Entries with effective confidence 65+ are strong constraints; <45 are suggestions. Read full `~/.claude/profile/PROFILE.md` for details when needed. If missing, proceed without persona grounding but flag it.
 5. **Project discovery** (cycle 1 or when unfamiliar):
    - Map the directory structure
    - Read dependency manifests (package.json, go.mod, Cargo.toml, pyproject.toml, etc.)
