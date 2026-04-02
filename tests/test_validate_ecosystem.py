@@ -903,3 +903,727 @@ class TestCheckHardWraps:
         warn_entries = [e for e in r.entries if e[0] == "WARN" and e[2] == "hard-wraps"]
         assert len(error_entries) == 0
         assert len(warn_entries) >= 1
+
+
+# ---------------------------------------------------------------------------
+# Additional synthetic content for Task 3 check function tests
+# ---------------------------------------------------------------------------
+
+SYNTHETIC_SKILL_ARTIFACT_PATH_WRONG_LOCATION = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+## State artifacts
+
+| File | Purpose |
+|------|---------|
+| `PROGRESS.md` | Cycle log |
+
+## Cross-skill integration
+
+Realisera is part of a twelve-skill ecosystem.
+
+### Artifact path resolution
+
+Before reading or writing any artifact, check if .agentera/DOCS.md exists.
+"""
+
+SYNTHETIC_SKILL_ARTIFACT_PATH_NO_SUBSECTION = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+## State artifacts
+
+| File | Purpose |
+|------|---------|
+| `PROGRESS.md` | Cycle log |
+
+Some text about state artifacts but no subsection for artifact path resolution.
+"""
+
+SYNTHETIC_SKILL_NO_STATE_ARTIFACTS = """\
+---
+name: hej
+description: Holistic entry junction
+---
+
+# HEJ
+
+## Cross-skill integration
+
+Hej is part of a twelve-skill ecosystem.
+"""
+
+SYNTHETIC_SKILL_PROFILE_MISSING_SCRIPT = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+Entries with effective confidence 65+ are strong constraints; <45 are suggestions. If the profile is missing or not available, proceed without persona grounding.
+"""
+
+SYNTHETIC_SKILL_PROFILE_DECIMAL_THRESHOLDS = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+Every cycle runs the effective profile script (python3 scripts/effective_profile.py from the profilera skill directory). Entries with effective confidence 0.65+ are strong constraints; <0.45 are suggestions. If the profile is missing or not available, proceed without persona grounding.
+"""
+
+SYNTHETIC_SKILL_PROFILE_NO_FALLBACK = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+Every cycle runs the effective profile script (python3 scripts/effective_profile.py from the profilera skill directory). Entries with effective confidence 65+ are strong constraints; <45 are suggestions.
+"""
+
+SYNTHETIC_SKILL_CROSS_SKILL_MISSING_REFS = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+## Cross-skill integration
+
+Realisera is part of a twelve-skill ecosystem. Each skill can invoke the others.
+
+### Realisera reads visionera output
+### Realisera delegates to optimera
+"""
+
+SYNTHETIC_SKILL_CROSS_SKILL_UNSPECIFIED_COUNT = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+## Cross-skill integration
+
+Realisera is part of a skill ecosystem. Each skill can invoke the others.
+"""
+
+SYNTHETIC_SKILL_SAFETY_RAILS_UNCLOSED_CRITICAL = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+## Safety rails
+
+<critical>
+
+- NEVER push to any remote.
+- NEVER bypass test suites.
+- NEVER modify git config.
+"""
+
+SYNTHETIC_SKILL_SAFETY_RAILS_FEW_NEVERS = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+## Safety rails
+
+<critical>
+
+- NEVER push to any remote.
+- NEVER bypass test suites.
+
+</critical>
+"""
+
+SYNTHETIC_SKILL_EXIT_SIGNALS_MISSING_SECTION = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+No exit signals section here at all.
+"""
+
+SYNTHETIC_SKILL_LOOP_GUARD_NO_THRESHOLD = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+## Exit signals
+
+- **complete**: One full cycle completed.
+- **flagged**: Cycle completed but with notable issues.
+- **stuck**: Cannot complete a cycle.
+- **waiting**: The project needs user input.
+
+Before reporting any status, inspect the last entries in PROGRESS.md. If all entries record consecutive failures, stop and surface the situation.
+"""
+
+SYNTHETIC_SKILL_LOOP_GUARD_CONSECUTIVE_FAIL = """\
+---
+name: orkestrera
+description: Plan-driven orchestration
+---
+
+# ORKESTRERA
+
+## Exit signals
+
+- **complete**: All plan tasks done.
+- **flagged**: Completed with issues.
+- **stuck**: Cannot proceed.
+- **waiting**: Needs user input.
+
+After 3 consecutive failures on a task, mark it as failed and escalate. Retry the task at most 3 times before moving on.
+"""
+
+SYNTHETIC_SKILL_LOOP_GUARD_RETRY_BASED = """\
+---
+name: optimera
+description: Metric-driven optimization
+---
+
+# OPTIMERA
+
+## Exit signals
+
+- **complete**: Objective met.
+- **flagged**: Improvement found but below target.
+- **stuck**: No improvement after 3 experiments.
+- **waiting**: Needs user input.
+
+After 3 failed experiments, stop and report. Retry the task if initial attempt fails, up to the maximum.
+"""
+
+
+# ---------------------------------------------------------------------------
+# check_artifact_path_resolution
+# ---------------------------------------------------------------------------
+
+
+class TestCheckArtifactPathResolution:
+    def test_valid_content_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_artifact_path_resolution(
+            "realisera", SYNTHETIC_SKILL_VALID, r,
+        )
+        assert r.error_count == 0
+        assert any(
+            level == "PASS" for level, _, check, _ in r.entries
+            if check == "artifact-path-resolution"
+        )
+
+    def test_no_state_artifacts_section_passes(self, validate_ecosystem):
+        """Skills without ## State artifacts skip this check entirely."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_artifact_path_resolution(
+            "hej", SYNTHETIC_SKILL_NO_STATE_ARTIFACTS, r,
+        )
+        assert r.error_count == 0
+        assert any(
+            level == "PASS" for level, _, check, _ in r.entries
+            if check == "artifact-path-resolution"
+        )
+
+    def test_old_style_wording_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_artifact_path_resolution(
+            "realisera", SYNTHETIC_SKILL_OLD_ARTIFACT_PATH, r,
+        )
+        assert r.error_count == 1
+        detail = r.entries[0][3]
+        assert "old-style" in detail.lower() or "DOCS.md exists" in detail
+
+    def test_missing_subsection_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_artifact_path_resolution(
+            "realisera", SYNTHETIC_SKILL_ARTIFACT_PATH_NO_SUBSECTION, r,
+        )
+        assert r.error_count == 1
+        assert "Missing ### Artifact path resolution" in r.entries[0][3]
+
+    def test_wrong_location_errors(self, validate_ecosystem):
+        """Instruction under Cross-skill instead of State artifacts is an error."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_artifact_path_resolution(
+            "realisera", SYNTHETIC_SKILL_ARTIFACT_PATH_WRONG_LOCATION, r,
+        )
+        assert r.error_count == 1
+        detail = r.entries[0][3]
+        assert "Cross-skill" in detail or "not as a ### subsection" in detail
+
+    def test_empty_content_passes(self, validate_ecosystem):
+        """Empty content has no State artifacts section, so check passes."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_artifact_path_resolution(
+            "realisera", SYNTHETIC_SKILL_EMPTY, r,
+        )
+        assert r.error_count == 0
+
+
+# ---------------------------------------------------------------------------
+# check_profile_consumption
+# ---------------------------------------------------------------------------
+
+
+class TestCheckProfileConsumption:
+    def test_valid_consumer_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_profile_consumption(
+            "realisera", SYNTHETIC_SKILL_VALID, r,
+        )
+        assert r.error_count == 0
+        assert any(
+            level == "PASS" for level, _, check, _ in r.entries
+            if check == "profile-consumption"
+        )
+
+    def test_non_consumer_passes_unconditionally(self, validate_ecosystem):
+        """Skills not in SCRIPT_PATTERN_CONSUMERS pass regardless of content."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_profile_consumption(
+            "resonera", SYNTHETIC_SKILL_EMPTY, r,
+        )
+        assert r.error_count == 0
+        assert any(
+            level == "PASS" for level, _, check, _ in r.entries
+            if check == "profile-consumption"
+        )
+
+    def test_non_consumer_bad_content_still_passes(self, validate_ecosystem):
+        """A non-consumer with no profile references still passes."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_profile_consumption(
+            "dokumentera", SYNTHETIC_SKILL_BAD_SAFETY_RAILS, r,
+        )
+        assert r.error_count == 0
+
+    def test_missing_script_reference_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_profile_consumption(
+            "realisera", SYNTHETIC_SKILL_PROFILE_MISSING_SCRIPT, r,
+        )
+        assert r.error_count >= 1
+        details = " ".join(d for _, _, _, d in r.entries)
+        assert "effective_profile" in details
+
+    def test_decimal_thresholds_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_profile_consumption(
+            "realisera", SYNTHETIC_SKILL_PROFILE_DECIMAL_THRESHOLDS, r,
+        )
+        assert r.error_count >= 1
+        details = " ".join(d for _, _, _, d in r.entries)
+        assert "0.65" in details or "threshold" in details.lower()
+
+    def test_missing_fallback_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_profile_consumption(
+            "realisera", SYNTHETIC_SKILL_PROFILE_NO_FALLBACK, r,
+        )
+        assert r.error_count >= 1
+        details = " ".join(d for _, _, _, d in r.entries)
+        assert "fallback" in details.lower()
+
+    def test_empty_consumer_errors(self, validate_ecosystem):
+        """A consumer skill with empty content fails all profile checks."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_profile_consumption(
+            "realisera", SYNTHETIC_SKILL_EMPTY, r,
+        )
+        assert r.error_count >= 1
+
+    def test_all_consumers_recognized(self, validate_ecosystem):
+        """Each known consumer skill triggers the profile check (not a pass-through)."""
+        consumers = {"realisera", "optimera", "inspektera", "planera", "inspirera"}
+        for skill in consumers:
+            r = validate_ecosystem.Results()
+            validate_ecosystem.check_profile_consumption(skill, SYNTHETIC_SKILL_EMPTY, r)
+            # Empty content should error for every consumer.
+            assert r.error_count >= 1, f"{skill} should fail on empty content"
+
+
+# ---------------------------------------------------------------------------
+# check_cross_skill_integration
+# ---------------------------------------------------------------------------
+
+
+class TestCheckCrossSkillIntegration:
+    def test_valid_content_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_cross_skill_integration(
+            "realisera", SYNTHETIC_SKILL_VALID, r,
+        )
+        assert r.error_count == 0
+        assert any(
+            level == "PASS" for level, _, check, _ in r.entries
+            if check == "cross-skill-refs"
+        )
+
+    def test_wrong_ecosystem_count_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_cross_skill_integration(
+            "realisera", SYNTHETIC_SKILL_BAD_CROSS_SKILL, r,
+        )
+        assert r.error_count >= 1
+        detail = r.entries[0][3]
+        assert "ten-skill" in detail
+
+    def test_missing_section_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_cross_skill_integration(
+            "realisera", SYNTHETIC_SKILL_BAD_SAFETY_RAILS, r,
+        )
+        assert r.error_count >= 1
+        detail = r.entries[0][3]
+        assert "Missing ## Cross-skill integration" in detail
+
+    def test_missing_required_refs_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_cross_skill_integration(
+            "realisera", SYNTHETIC_SKILL_CROSS_SKILL_MISSING_REFS, r,
+        )
+        assert r.error_count >= 1
+        details = " ".join(d for _, _, _, d in r.entries)
+        assert "Missing reference to" in details
+
+    def test_unspecified_count_errors(self, validate_ecosystem):
+        """Says 'skill ecosystem' without the 'twelve-' prefix."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_cross_skill_integration(
+            "realisera", SYNTHETIC_SKILL_CROSS_SKILL_UNSPECIFIED_COUNT, r,
+        )
+        assert r.error_count >= 1
+        details = " ".join(d for _, _, _, d in r.entries)
+        assert "twelve-skill" in details.lower()
+
+    def test_empty_content_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_cross_skill_integration(
+            "realisera", SYNTHETIC_SKILL_EMPTY, r,
+        )
+        assert r.error_count >= 1
+        assert "Missing ## Cross-skill integration" in r.entries[0][3]
+
+
+# ---------------------------------------------------------------------------
+# check_safety_rails
+# ---------------------------------------------------------------------------
+
+
+class TestCheckSafetyRails:
+    def test_valid_content_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_safety_rails("realisera", SYNTHETIC_SKILL_VALID, r)
+        assert r.error_count == 0
+        assert any(
+            level == "PASS" for level, _, check, _ in r.entries
+            if check == "safety-rails"
+        )
+
+    def test_no_critical_tags_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_safety_rails(
+            "realisera", SYNTHETIC_SKILL_BAD_SAFETY_RAILS, r,
+        )
+        assert r.error_count == 1
+        assert "critical" in r.entries[0][3].lower()
+
+    def test_missing_section_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_safety_rails(
+            "realisera", SYNTHETIC_SKILL_MISSING_FRONTMATTER, r,
+        )
+        assert r.error_count == 1
+        assert "Missing ## Safety rails" in r.entries[0][3]
+
+    def test_unclosed_critical_tag_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_safety_rails(
+            "realisera", SYNTHETIC_SKILL_SAFETY_RAILS_UNCLOSED_CRITICAL, r,
+        )
+        assert r.error_count == 1
+        assert "closing" in r.entries[0][3].lower() or "</critical>" in r.entries[0][3]
+
+    def test_too_few_never_bullets_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_safety_rails(
+            "realisera", SYNTHETIC_SKILL_SAFETY_RAILS_FEW_NEVERS, r,
+        )
+        assert r.error_count == 1
+        detail = r.entries[0][3]
+        assert "2" in detail
+        assert "minimum 3" in detail.lower()
+
+    def test_empty_content_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_safety_rails("realisera", SYNTHETIC_SKILL_EMPTY, r)
+        assert r.error_count == 1
+        assert "Missing ## Safety rails" in r.entries[0][3]
+
+
+# ---------------------------------------------------------------------------
+# check_artifact_format
+# ---------------------------------------------------------------------------
+
+
+class TestCheckArtifactFormat:
+    def test_valid_producer_no_warnings(self, validate_ecosystem):
+        """Valid content mentions all required elements for realisera's artifacts."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_artifact_format("realisera", SYNTHETIC_SKILL_VALID, r)
+        assert r.error_count == 0
+        assert r.warn_count == 0
+
+    def test_non_producer_no_output(self, validate_ecosystem):
+        """Skills that produce no artifacts get no entries at all."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_artifact_format("hej", SYNTHETIC_SKILL_EMPTY, r)
+        assert r.error_count == 0
+        assert r.warn_count == 0
+        # hej is not a producer, so no entries for artifact-format.
+        format_entries = [e for e in r.entries if e[2] == "artifact-format"]
+        assert len(format_entries) == 0
+
+    def test_producer_missing_elements_warns(self, validate_ecosystem):
+        """A producer skill with minimal content gets warnings for missing elements."""
+        minimal = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+Some content but no artifact format references.
+"""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_artifact_format("realisera", minimal, r)
+        assert r.error_count == 0
+        assert r.warn_count >= 1
+        # Warnings, not errors (advisory only).
+        for level, _, check, _ in r.entries:
+            if check == "artifact-format":
+                assert level == "WARN"
+
+    def test_advisory_never_errors(self, validate_ecosystem):
+        """Artifact format check only produces WARN, never ERROR."""
+        minimal = """\
+---
+name: planera
+description: Planning
+---
+
+# PLANERA
+
+No artifact format references at all.
+"""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_artifact_format("planera", minimal, r)
+        error_entries = [e for e in r.entries if e[0] == "ERROR" and e[2] == "artifact-format"]
+        assert len(error_entries) == 0
+
+    def test_empty_producer_warns(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_artifact_format("realisera", SYNTHETIC_SKILL_EMPTY, r)
+        # Empty content for a producer should still just warn (not error).
+        error_entries = [e for e in r.entries if e[0] == "ERROR" and e[2] == "artifact-format"]
+        assert len(error_entries) == 0
+
+    def test_warn_details_name_missing_elements(self, validate_ecosystem):
+        """Warning detail should name the artifact and missing elements."""
+        minimal = """\
+---
+name: resonera
+description: Structured deliberation
+---
+
+# RESONERA
+
+No DECISIONS.md format elements here.
+"""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_artifact_format("resonera", minimal, r)
+        warn_entries = [e for e in r.entries if e[0] == "WARN" and e[2] == "artifact-format"]
+        assert len(warn_entries) >= 1
+        detail = warn_entries[0][3]
+        assert "DECISIONS.md" in detail
+
+
+# ---------------------------------------------------------------------------
+# check_exit_signals
+# ---------------------------------------------------------------------------
+
+
+class TestCheckExitSignals:
+    def test_valid_content_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_exit_signals("realisera", SYNTHETIC_SKILL_VALID, r)
+        assert r.error_count == 0
+        assert any(
+            level == "PASS" for level, _, check, _ in r.entries
+            if check == "exit-signals"
+        )
+
+    def test_missing_terms_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_exit_signals(
+            "realisera", SYNTHETIC_SKILL_BAD_EXIT_SIGNALS, r,
+        )
+        assert r.error_count == 1
+        detail = r.entries[0][3]
+        assert "flagged" in detail
+        assert "waiting" in detail
+
+    def test_missing_section_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_exit_signals(
+            "realisera", SYNTHETIC_SKILL_EXIT_SIGNALS_MISSING_SECTION, r,
+        )
+        assert r.error_count == 1
+        assert "Missing ## Exit signals" in r.entries[0][3]
+
+    def test_empty_content_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_exit_signals("realisera", SYNTHETIC_SKILL_EMPTY, r)
+        assert r.error_count == 1
+        assert "Missing ## Exit signals" in r.entries[0][3]
+
+    def test_all_four_terms_required(self, validate_ecosystem):
+        """Each of the four status terms must appear in the section."""
+        for missing_term in ("complete", "flagged", "stuck", "waiting"):
+            terms = ["complete", "flagged", "stuck", "waiting"]
+            terms.remove(missing_term)
+            text = """\
+---
+name: test-skill
+description: Test
+---
+
+# TEST
+
+## Exit signals
+
+""" + "\n".join(f"- **{t}**: Description." for t in terms) + "\n"
+            r = validate_ecosystem.Results()
+            validate_ecosystem.check_exit_signals("test-skill", text, r)
+            assert r.error_count == 1, f"Should error when '{missing_term}' is missing"
+            assert missing_term in r.entries[0][3]
+
+
+# ---------------------------------------------------------------------------
+# check_loop_guard
+# ---------------------------------------------------------------------------
+
+
+class TestCheckLoopGuard:
+    def test_valid_content_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_loop_guard("realisera", SYNTHETIC_SKILL_VALID, r)
+        assert r.error_count == 0
+        assert any(
+            level == "PASS" for level, _, check, _ in r.entries
+            if check == "loop-guard"
+        )
+
+    def test_non_autonomous_passes_unconditionally(self, validate_ecosystem):
+        """Skills not in AUTONOMOUS_LOOP_SKILLS pass regardless of content."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_loop_guard("inspektera", SYNTHETIC_SKILL_EMPTY, r)
+        assert r.error_count == 0
+        assert any(
+            level == "PASS" for level, _, check, _ in r.entries
+            if check == "loop-guard"
+        )
+
+    def test_non_autonomous_bad_content_still_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_loop_guard(
+            "planera", SYNTHETIC_SKILL_NO_LOOP_GUARD, r,
+        )
+        assert r.error_count == 0
+
+    def test_missing_loop_guard_errors(self, validate_ecosystem):
+        """Autonomous skill with exit signals but no loop guard elements."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_loop_guard(
+            "realisera", SYNTHETIC_SKILL_NO_LOOP_GUARD, r,
+        )
+        assert r.error_count >= 1
+
+    def test_missing_threshold_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_loop_guard(
+            "realisera", SYNTHETIC_SKILL_LOOP_GUARD_NO_THRESHOLD, r,
+        )
+        assert r.error_count >= 1
+        details = " ".join(d for _, _, _, d in r.entries)
+        assert "3" in details or "threshold" in details.lower()
+
+    def test_missing_exit_signals_section_errors(self, validate_ecosystem):
+        """Autonomous skill with no exit signals section at all."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_loop_guard(
+            "realisera", SYNTHETIC_SKILL_EXIT_SIGNALS_MISSING_SECTION, r,
+        )
+        assert r.error_count == 1
+        assert "Missing ## Exit signals" in r.entries[0][3]
+
+    def test_consecutive_failure_detection_passes(self, validate_ecosystem):
+        """orkestrera-style loop guard using consecutive failure + retry."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_loop_guard(
+            "orkestrera", SYNTHETIC_SKILL_LOOP_GUARD_CONSECUTIVE_FAIL, r,
+        )
+        assert r.error_count == 0
+
+    def test_retry_based_detection_passes(self, validate_ecosystem):
+        """optimera-style loop guard using retry-based task failure."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_loop_guard(
+            "optimera", SYNTHETIC_SKILL_LOOP_GUARD_RETRY_BASED, r,
+        )
+        assert r.error_count == 0
+
+    def test_empty_autonomous_errors(self, validate_ecosystem):
+        """An autonomous skill with empty content fails."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_loop_guard("realisera", SYNTHETIC_SKILL_EMPTY, r)
+        assert r.error_count >= 1
+
+    def test_all_autonomous_skills_recognized(self, validate_ecosystem):
+        """Each known autonomous skill triggers the loop guard check."""
+        autonomous = {"realisera", "optimera", "orkestrera"}
+        for skill in autonomous:
+            r = validate_ecosystem.Results()
+            validate_ecosystem.check_loop_guard(skill, SYNTHETIC_SKILL_EMPTY, r)
+            assert r.error_count >= 1, f"{skill} should fail on empty content"
