@@ -42,7 +42,7 @@ echo "{\"metric\": $rate, \"direction\": \"higher\", \"unit\": \"%\", \"detail\"
 ```
 
 **Notes:**
-- `|| true` after pytest because it exits non-zero when tests fail — we still want the count
+- `|| true` after pytest because it exits non-zero when tests fail, and we still want the count
 - `-q` for compact output, `--tb=no` to suppress tracebacks
 
 ## Go
