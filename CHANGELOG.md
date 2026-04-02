@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 ### Added
+- Narration voice principle in ecosystem-spec Section 13: action narration register with riffable contrast-pair examples for mode announcements, routing transitions, and ad-hoc narration (Decision 17)
+- Warm narration examples in hej, visionera, profilera, visualisera, planera — replacing mechanical mode labels and formulaic framing
 - "Sharp colleague" voice across all 11 skills: human frame pattern (conversational opener before structured data), unified personality in resonera/visionera/visualisera, warm output framing in inspektera/optimera/planera/realisera/profilera/dokumentera/inspirera (Decision 16)
 - Formatting standard across ecosystem: divider hierarchy, exit signal format, step markers with N/M progress, opener phrasing, scratchpad container (Decision 14)
 - Context snapshot in realisera cycle entries (intent, constraints, unknowns, scope) for cross-cycle coherence

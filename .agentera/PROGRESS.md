@@ -1,5 +1,13 @@
 # Progress
 
+■ ## Cycles 65-67 — 2026-04-02
+
+**What**: Added narration voice principle to ecosystem-spec (Section 13), warmed up hej mode detection and routing, warmed up mode choice framing in visionera/profilera/visualisera/planera. Validated alignment — linter 0 errors, spot-check all 11 skills clean. Plan archived. ISS-27 resolved.
+**Commits**: 2ee4e99, f568993, de45a45
+**Inspiration**: Decision 17 (action narration register, riffable examples not scripts)
+**Discovered**: No new issues. Remaining 6 skills have no mechanical narration beyond structural markers — no changes needed.
+**Next**: Plan complete. All 4 tasks shipped. ISS-27 resolved. Resume vision-driven work.
+
 ## Cycle 1 — 2026-03-30
 
 **What**: Redesigned DOCS.md template as three-layer documentation contract (conventions, artifact mapping, index)

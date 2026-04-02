@@ -3,6 +3,7 @@
 ## ⇶ Critical
 
 ## ⇉ Degraded
+- [x] ~~ISS-27: Add narration voice principle and warm up skill narration (Decision 17)~~ — fixed in 2ee4e99..de45a45
 - [ ] ISS-21: Add separated evaluator to realisera — spawn a fresh `claude -p` session after each task that runs inspektera-style audit against the task's acceptance criteria; gate task completion on evaluator PASS verdict (inspired by harness GAN pattern)
 - [ ] ISS-22: Build headless runner script (`scripts/runner.py`) — batch orchestrator that reads PLAN.md, iterates tasks, launches Claude sessions with synthesized prompts, runs verification + evaluation gates, handles retries (max 2), updates PROGRESS.md; enables overnight autonomous runs and CI integration
 
