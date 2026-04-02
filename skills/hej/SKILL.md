@@ -1,14 +1,7 @@
 ---
 name: hej
 description: >
-  HEJ — Holistic Entry Junction — Orient, Route, Activate. ALWAYS use this skill
-  as the single point of entry to the agentera ecosystem. This skill is REQUIRED
-  whenever the user starts a session, returns to a project, or needs orientation
-  on what to do next. It detects whether the project is fresh (no state artifacts)
-  or returning (existing artifacts), delivers a situational briefing, and routes
-  to the appropriate skill. Do NOT skip this skill when the user greets you or asks
-  for project status — it contains the critical workflow for ecosystem-aware
-  orientation that prevents disoriented sessions. Trigger on: "hej", "hello",
+  HEJ (Holistic Entry Junction, Orient, Route, Activate). ALWAYS use this skill as the single point of entry to the agentera ecosystem. This skill is REQUIRED whenever the user starts a session, returns to a project, or needs orientation on what to do next. It detects whether the project is fresh (no state artifacts) or returning (existing artifacts), delivers a situational briefing, and routes to the appropriate skill. Do NOT skip this skill when the user greets you or asks for project status. It contains the critical workflow for ecosystem-aware orientation that prevents disoriented sessions. Trigger on: "hej", "hello",
   "hi", "start", "begin", "where were we", "catch me up", "what should I work on",
   "what's next", "status", "dashboard", "pulse", "brief me", "update me",
   "onboard me", "getting started", "what needs attention", any greeting at session
@@ -17,10 +10,9 @@ description: >
 
 # HEJ
 
-**Holistic Entry Junction — Orient, Route, Activate**
+**Holistic Entry Junction. Orient, Route, Activate**
 
-Single entry point to the agentera ecosystem. Detects fresh vs returning, delivers
-a situational briefing, routes to the right skill. Same on first install and 100th session.
+Single entry point to the agentera ecosystem. Detects fresh vs returning, delivers a situational briefing, routes to the right skill. Same on first install and 100th session.
 
 Each invocation = one orientation. Reads everything, writes nothing.
 
@@ -46,15 +38,9 @@ No artifacts of its own. Reads all ecosystem artifacts for the briefing:
 
 ### Artifact path resolution
 
-Before reading any artifact, check if .agentera/DOCS.md exists. If it has an
-Artifact Mapping section, use the path specified for each canonical filename.
-If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the
-default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other
-artifacts in .agentera/. This applies to all artifact reads in this skill.
+Before reading any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact reads in this skill.
 
-Note: PROFILE.md is global, not project-scoped. Its path is always
-`~/.claude/profile/PROFILE.md` regardless of .agentera/DOCS.md presence. Check this
-path directly rather than falling back to the project root.
+Note: PROFILE.md is global, not project-scoped. Its path is always `~/.claude/profile/PROFILE.md` regardless of .agentera/DOCS.md presence. Check this path directly rather than falling back to the project root.
 
 ---
 
@@ -66,22 +52,22 @@ Check for ecosystem state artifacts (respecting path resolution).
 - **Artifacts found** → Step 1b (returning to known project)
 
 Narration voice (riff, don't script):
-✗ "Fresh mode — scanning codebase."
-✓ "New project. Taking a look around..." · "First time here — let me see what we've got..."
+✗ "Fresh mode: scanning codebase."
+✓ "New project. Taking a look around..." · "First time here. Let me see what we've got..."
 
-✗ "Returning mode — reading artifacts for your briefing."
+✗ "Returning mode: reading artifacts for your briefing."
 ✓ "Pulling up the latest..." · "Checking in on the project..." · "Let me see where things stand..."
 
 ---
 
 ## Step 1a: Welcome
 
-First impression — the colleague meets a new project.
+First impression: the colleague meets a new project.
 
-1. **Quick scan** — language(s), framework(s), README, last 5 commits, approximate size.
+1. **Quick scan**: language(s), framework(s), README, last 5 commits, approximate size.
    Fast, no deep analysis.
 
-2. **Share what's available** — lead with the 2-3 skills most relevant to what the
+2. **Share what's available**: lead with the 2-3 skills most relevant to what the
    scan revealed. Don't enumerate all ten unless asked. Mention the rest exist and
    offer the full table on request. The table below is a reference, not a script:
 
@@ -98,7 +84,7 @@ First impression — the colleague meets a new project.
    | ♾ | Build a decision profile | `/profilera` |
    | ◰ | Define visual identity | `/visualisera` |
 
-3. **Give your honest take** — based on the scan, tell the user where you'd start
+3. **Give your honest take**: based on the scan, tell the user where you'd start
    and why. "If I were you, I'd start with X because Y." Use the same routing logic
    (no vision → `/visionera`, unknown quality → `/inspektera`, decision needed →
    `/resonera`, ready to build → `/realisera`, docs gaps → `/dokumentera`) but
@@ -112,10 +98,10 @@ First impression — the colleague meets a new project.
 
 Show where things stand.
 
-1. **Read artifacts** — VISION.md, PROGRESS.md, TODO.md, HEALTH.md, PLAN.md, DECISIONS.md
+1. **Read artifacts**: VISION.md, PROGRESS.md, TODO.md, HEALTH.md, PLAN.md, DECISIONS.md
    in parallel. First 20 lines each. Skip absent ones. Extract most recent entry or summary.
 
-2. **Brief them** — concise status, only what exists. No empty sections.
+2. **Brief them**: concise status, only what exists. No empty sections.
    Show the agentera logo.
 
    ```
@@ -125,7 +111,7 @@ Show where things stand.
 
    [1-2 sentence conversational opener: the colleague's read on
    the situation. What shipped, what's moving, what needs eyes.
-   Not metrics — interpretation.]
+   Interpretation, not metrics.]
 
    ─── status ─────────────────────────────
 
@@ -137,9 +123,9 @@ Show where things stand.
 
    ─── attention ──────────────────────────
 
-     ⇶ [critical items — triple arrow for critical]
-     ⇉ [degraded items — double arrow for degraded]
-     ⇢ [annoying items — dashed arrow for annoying]
+     ⇶ [critical items, triple arrow for critical]
+     ⇉ [degraded items, double arrow for degraded]
+     ⇢ [annoying items, dashed arrow for annoying]
 
    ─── next ───────────────────────────────
 
@@ -154,18 +140,18 @@ Show where things stand.
    - Trend arrows (⮉/⮋) show health trajectory
    - Progress bars (█▓░) show plan completion visually
    - The inline separator (·) joins counts on a single line
-   - The conversational opener precedes the status section — it's the colleague's interpretation; the dashboard below is the evidence
+   - The conversational opener precedes the status section. It's the colleague's interpretation; the dashboard below is the evidence
    - Omit any line whose source artifact is missing
    - Omit any section that would be empty (e.g., no attention items = no attention section)
 
-3. **Attention items** — priority order with severity arrows:
+3. **Attention items**: priority order with severity arrows:
    - ⇶ Critical issues, degrading health dimensions
    - ⇉ Blocked/overdue plan tasks, stale artifacts (>14 days), loop guard triggers
    - ⇢ Unresolved exploratory decisions
 
-   Nothing? Say so — a clean bill of health is useful.
+   Nothing? Say so. A clean bill of health is useful.
 
-4. **Suggest next action** — one skill based on state. Use the target glyph:
+4. **Suggest next action**: one skill based on state. Use the target glyph:
    critical issues → ⧉/⛶, stale vision → ⛥, vision but no plan → ≡,
    degrading health → ⛶, stalled optimization → ⎘, healthy + open tasks → ⧉,
    healthy + plan complete → ⛥
@@ -189,8 +175,8 @@ Unclear mapping? Ask **one** clarifying question. No compound questions.
 ## Safety rails
 
 <critical>
-- NEVER execute implementation work. Hej orients and routes — it does not build, audit, plan, or decide.
-- NEVER dump full artifact contents verbatim. Summarize concisely — the user can read the files themselves.
+- NEVER execute implementation work. Hej orients and routes; it does not build, audit, plan, or decide.
+- NEVER dump full artifact contents verbatim. Summarize concisely; the user can read the files themselves.
 - NEVER skip the briefing in returning mode. The user needs context before choosing a direction.
 - NEVER assume what the user wants without asking. Present the suggestion, then wait for confirmation.
 - NEVER modify any state artifact. Hej is strictly read-only.
@@ -215,9 +201,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Hej is the entry point to an eleven-skill ecosystem. It reads artifacts from the other ten
-workflow skills but produces no artifacts of its own and no downstream skill
-depends on it.
+Hej is the entry point to an eleven-skill ecosystem. It reads artifacts from the other ten workflow skills but produces no artifacts of its own and no downstream skill depends on it.
 
 **Reads from all ten skills**:
 - **visionera** → VISION.md for project direction and north star
@@ -232,15 +216,14 @@ depends on it.
 - **inspirera** → no direct artifact, but routes to it when research is needed
 
 Hej's unique role: it is the only skill that reads from every other skill's output.
-It does not feed into any downstream skill — its output is the ephemeral briefing
-and the routing decision.
+It does not feed into any downstream skill. Its output is the ephemeral briefing and the routing decision.
 
 ---
 
 ## Getting started
 
 ```
-/hej                        # Start here — always
+/hej                        # Start here, always
 "what should I work on"     # Natural language works too
 "catch me up"               # Returning to a project
 "what needs attention"      # Quick status check

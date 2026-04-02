@@ -1,7 +1,7 @@
 ---
 name: profilera
 description: >
-  PROFILERA — Persona Reconstruction: Observable Footprint Indexing Logic — Examine,
+  PROFILERA: Persona Reconstruction, Observable Footprint Indexing Logic. Examine,
   Reconcile, Articulate. Mines Claude Code session
   history, memory files, project configs, and conversation data to generate an
   agent-consumable decision profile with per-entry confidence scoring and dormancy decay.
@@ -18,11 +18,9 @@ description: >
 
 # PROFILERA
 
-**Persona Reconstruction: Observable Footprint Indexing Logic — Examine, Reconcile, Articulate**
+**Persona Reconstruction: Observable Footprint Indexing Logic. Examine, Reconcile, Articulate**
 
-Mine the user's Claude Code session history and produce a structured decision profile for
-predicting "What would this person decide?" Each entry carries numeric confidence, permanence
-classification, and temporal metadata enabling dormancy decay.
+Mine the user's Claude Code session history and produce a structured decision profile for predicting "What would this person decide?" Each entry carries numeric confidence, permanence classification, and temporal metadata enabling dormancy decay.
 
 Skill introduction: `─── ♾ profilera · profile ───`
 
@@ -39,18 +37,14 @@ One global artifact (written) and project-level artifacts (read).
 
 ### Artifact path resolution
 
-PROFILE.md is global — lives at `~/.claude/profile/PROFILE.md`, not in the project root
-or `.agentera/`. `.agentera/DOCS.md` mapping does not apply to PROFILE.md. For project-level
-artifacts, check if .agentera/DOCS.md exists and use its path mapping; if absent, use
-the default layout.
+PROFILE.md is global and lives at `~/.claude/profile/PROFILE.md`, not in the project root or `.agentera/`. `.agentera/DOCS.md` mapping does not apply to PROFILE.md. For project-level artifacts, check if .agentera/DOCS.md exists and use its path mapping; if absent, use the default layout.
 
 ---
 
 Two modes:
 
 - **Full**: Extract all session data, synthesize from scratch, write a fresh PROFILE.md.
-- **Validate**: Quick incremental check — surface the ~6 entries most worth validating, let the
-  user confirm or challenge each one, update metadata in place.
+- **Validate**: Quick incremental check. Surface the ~6 entries most worth validating, let the user confirm or challenge each one, update metadata in place.
 
 ---
 
@@ -64,17 +58,13 @@ Before doing anything else, check if `~/.claude/profile/PROFILE.md` exists.
 
 Narration voice (riff, don't script):
 ✗ "Your decision profile exists. How would you like to proceed?"
-✓ "Profile's here. Full rebuild or quick tune-up?" · "You've got a profile already — regenerate from scratch, or just validate what's there?"
+✓ "Profile's here. Full rebuild or quick tune-up?" · "You've got a profile already. Regenerate from scratch, or just validate what's there?"
 
 Offer:
 
-> **Full** — Regenerate from scratch using all session data. Replaces the existing profile
-> including any accumulated tensions. Best when the profile feels significantly outdated or
-> you want a clean baseline.
+> **Full**: Regenerate from scratch using all session data. Replaces the existing profile including any accumulated tensions. Best when the profile feels significantly outdated or you want a clean baseline.
 >
-> **Validate** — Quick check of your existing profile (~2 minutes). Reviews the entries most
-> worth validating — confirm, challenge, or skip each one. Best for regular maintenance
-> between full regenerations.
+> **Validate**: Quick check of your existing profile (~2 minutes). Reviews the entries most worth validating: confirm, challenge, or skip each one. Best for regular maintenance between full regenerations.
 
 If the user chooses **Full**, proceed to Step 1.
 If the user chooses **Validate**, skip to Validate Mode.
@@ -83,17 +73,14 @@ If the user chooses **Validate**, skip to Validate Mode.
 
 ## Full Mode
 
-The sharp colleague — here to pay attention to how you decide, not run a classification pipeline.
-This is someone who's been watching your work, noticing patterns, and reflecting back what they've
-seen. "Here's what I've noticed about how you work" — not "Signal extraction complete."
+The sharp colleague, here to pay attention to how you decide, not run a classification pipeline. This is someone who's been watching your work, noticing patterns, and reflecting back what they've seen. "Here's what I've noticed about how you work," not "Signal extraction complete."
 
 Step markers: display `── step N/5: verb` before each step.
 Steps: extract, read, categorize, generate, validate.
 
 ### Step 1: Run extraction
 
-Run extraction scripts to gather raw decision signals. Scripts handle JSONL parsing and
-output structured JSON.
+Run extraction scripts to gather raw decision signals. Scripts handle JSONL parsing and output structured JSON.
 
 ```bash
 python3 scripts/extract_all.py --output-dir ~/.claude/profile/intermediate
@@ -101,12 +88,9 @@ python3 scripts/extract_all.py --output-dir ~/.claude/profile/intermediate
 
 Run from the skill's root directory.
 
-Read `~/.claude/profile/intermediate/extraction_summary.json` to confirm counts. Report
-to the user.
+Read `~/.claude/profile/intermediate/extraction_summary.json` to confirm counts. Report to the user.
 
-**If extraction fails**: common causes — Python not found (try `python3`), permission errors,
-empty output (no session history). If only some extractors fail, proceed with partial data
-and note missing sources.
+**If extraction fails**: common causes include Python not found (try `python3`), permission errors, and empty output (no session history). If only some extractors fail, proceed with partial data and note missing sources.
 
 ---
 
@@ -114,14 +98,12 @@ and note missing sources.
 
 Read all four intermediate JSON files:
 
-1. `~/.claude/profile/intermediate/crystallized.json` — Memory files, CLAUDE.md, AGENTS.md
-2. `~/.claude/profile/intermediate/history_decisions.json` — Decision-rich prompts from history
-3. `~/.claude/profile/intermediate/conversation_decisions.json` — Decision exchanges from conversations
-4. `~/.claude/profile/intermediate/project_configs.json` — Recurring config patterns
+1. `~/.claude/profile/intermediate/crystallized.json`: Memory files, CLAUDE.md, AGENTS.md
+2. `~/.claude/profile/intermediate/history_decisions.json`: Decision-rich prompts from history
+3. `~/.claude/profile/intermediate/conversation_decisions.json`: Decision exchanges from conversations
+4. `~/.claude/profile/intermediate/project_configs.json`: Recurring config patterns
 
-Read all before proceeding to synthesis. If any file has > 500 entries, focus on highest
-signal first: history "correction"/"decision" over "question", conversations with longer
-user responses, configs appearing across multiple projects.
+Read all before proceeding to synthesis. If any file has > 500 entries, focus on highest signal first: history "correction"/"decision" over "question", conversations with longer user responses, configs appearing across multiple projects.
 
 ---
 
@@ -129,21 +111,20 @@ user responses, configs appearing across multiple projects.
 
 Group signals into 12 categories:
 
-1. **Architecture & Design Patterns** — package layout, abstraction boundaries, API design
-2. **Technology & Tooling Selection** — languages, frameworks, libraries, build tools
-3. **Agent & Automation Philosophy** — agent behavior, autonomy, interaction patterns
-4. **Code Quality & Standards** — error handling, testing, validation, naming
-5. **DX & Project Structure** — directory layout, build targets, configuration
-6. **Scoping & Prioritization** — what to build, milestones, complexity budgets
-7. **Communication Style** — writing preferences, documentation voice
-8. **Process & Workflow** — git workflow, commit conventions, release process
-9. **UI/UX Preferences** — visual patterns, interaction design, CLI vs TUI vs web
-10. **Trade-off Heuristics** — simplicity vs flexibility, speed vs correctness
-11. **Anti-patterns & Rejections** — things actively avoided, with reasoning
-12. **Meta-decision Style** — frameworks used, information gathering, decide vs defer
+1. **Architecture & Design Patterns**: package layout, abstraction boundaries, API design
+2. **Technology & Tooling Selection**: languages, frameworks, libraries, build tools
+3. **Agent & Automation Philosophy**: agent behavior, autonomy, interaction patterns
+4. **Code Quality & Standards**: error handling, testing, validation, naming
+5. **DX & Project Structure**: directory layout, build targets, configuration
+6. **Scoping & Prioritization**: what to build, milestones, complexity budgets
+7. **Communication Style**: writing preferences, documentation voice
+8. **Process & Workflow**: git workflow, commit conventions, release process
+9. **UI/UX Preferences**: visual patterns, interaction design, CLI vs TUI vs web
+10. **Trade-off Heuristics**: simplicity vs flexibility, speed vs correctness
+11. **Anti-patterns & Rejections**: things actively avoided, with reasoning
+12. **Meta-decision Style**: frameworks used, information gathering, decide vs defer
 
-Per category: identify distinct decisions (not just preferences — decisions have conditions
-and reasoning), look for the *why*, note exceptions where the rule was overridden.
+Per category: identify distinct decisions (not just preferences; decisions have conditions and reasoning), look for the *why*, note exceptions where the rule was overridden.
 
 #### Assign confidence (numeric, 0-100)
 
@@ -159,14 +140,11 @@ Decision patterns are empirically verifiable via git history and configs:
 
 Confidence line tokens map to three weight levels: `━` high (90-100), `─` medium (50-89), `┄` low (0-49). These tokens appear alongside inline metadata to give a quick visual confidence signal.
 
-**Bias check**: Confidence is earned through evidence, not assigned by how insightful the
-decision sounds. A pithy design principle observed once is 30, not 75.
+**Bias check**: Confidence is earned through evidence, not assigned by how insightful the decision sounds. A pithy design principle observed once is 30, not 75.
 
 #### Assign permanence class
 
-Permanence captures domain *stability*, independent of confidence. You can be highly
-confident about something that will change (85, situational) or uncertain about something
-deep (35, stable).
+Permanence captures domain *stability*, independent of confidence. You can be highly confident about something that will change (85, situational) or uncertain about something deep (35, stable).
 
 | Class | Domain | Timescale |
 |-------|--------|-----------|
@@ -187,13 +165,11 @@ Override the default when the evidence suggests otherwise.
 
 - **first**: Earliest timestamp from the source data that evidences this decision
 - **confirmed**: Set to today's date (the generation date)
-- **challenged**: Set to `—` (no challenges yet on a fresh profile)
+- **challenged**: Set to `—` (none yet on a fresh profile)
 
 #### Identify tensions
 
-Look for cross-category patterns and contradictions: stated principle vs shipped code,
-conflicts between categories, "Exceptions" suggesting a weaker rule. Record contradictions
-in the Tensions section rather than smoothing them into a coherent narrative.
+Look for cross-category patterns and contradictions: stated principle vs shipped code, conflicts between categories, "Exceptions" suggesting a weaker rule. Record contradictions in the Tensions section rather than smoothing them into a coherent narrative.
 
 ---
 
@@ -203,13 +179,9 @@ Output constraint: ≤30 words per signal, ≤15 words per evidence line.
 
 Write the decision profile to `~/.claude/profile/PROFILE.md`.
 
-If a previous version exists: copy to `~/.claude/profile/history/PROFILE-{timestamp}.md`,
-generate new version, show change summary (added, updated, removed).
+If a previous version exists: copy to `~/.claude/profile/history/PROFILE-{timestamp}.md`, generate new version, show change summary (added, updated, removed).
 
-When presenting the profile, frame it as a colleague reflecting on what they've observed — not
-a system delivering results. Open with what stood out, what surprised you, where the user is
-most consistent and where they contradict themselves. The structured profile follows, but the
-human read comes first.
+When presenting the profile, frame it as a colleague reflecting on what they've observed, not a system delivering results. Open with what stood out, what surprised you, where the user is most consistent and where they contradict themselves. The structured profile follows, but the human read comes first.
 
 #### Profile format
 
@@ -224,8 +196,7 @@ human read comes first.
 
 ## How to Use This Profile
 
-This profile captures decision-making patterns extracted from {N} months of Claude Code
-sessions across {N} projects. Each entry carries inline metadata:
+This profile captures decision-making patterns extracted from {N} months of Claude Code sessions across {N} projects. Each entry carries inline metadata:
 
 `━ conf:75 | perm:durable | first:2026-01-15 | confirmed:2026-03-28 | challenged:—`
 
@@ -256,7 +227,7 @@ information they seek before deciding]
 
 - ▸ **Rule**: [Imperative statement an agent can follow directly]
 - ▸ **When**: [Specific conditions or triggers for this rule]
-- ▸ **Why**: [The reasoning — what value or concern drives this]
+- ▸ **Why**: [The reasoning, the value or concern that drives this]
 - ▸ **Exceptions**: [Known cases where this was overridden, or "None observed"]
 
 [Repeat for each decision in the category. Order by confidence (highest first).]
@@ -265,11 +236,9 @@ information they seek before deciding]
 
 ## Tensions
 
-Each entry records a contradiction or divergence found during profile generation or
-challenged during validation. Default status is **unresolved** — resist the urge to
-wrap tensions in resolution narratives. Some tensions are real and persistent.
+Each entry records a contradiction or divergence found during profile generation or challenged during validation. Default status is **unresolved**. Resist the urge to wrap tensions in resolution narratives. Some tensions are real and persistent.
 
-### YYYY-MM-DD — [Short description]
+### YYYY-MM-DD: [Short description]
 
 **Decision affected**: [which decision was contradicted]
 **What happened**: [what was observed or said that didn't fit]
@@ -280,25 +249,22 @@ wrap tensions in resolution narratives. Some tensions are real and persistent.
 
 - Write rules as imperatives ("Use X" not "[Name] prefers X")
 - Be specific ("when building Go CLIs" not "when building things")
-- Always include the *why* — agents need reasoning for edge cases
-- Don't duplicate CLAUDE.md — this covers decision *patterns*, not project instructions
-- Omit categories with <2 decisions — insufficient signal
+- Always include the *why* because agents need reasoning for edge cases
+- Don't duplicate CLAUDE.md. This covers decision *patterns*, not project instructions
+- Omit categories with <2 decisions (insufficient signal)
 - Every entry MUST have inline metadata after the ### heading
 
 ---
 
 ### Step 5: Validate predictions
 
-Pick 5 decision-rich prompts NOT used to create profile entries. For each: predict what
-the profile would recommend, check against what happened. Report accuracy (e.g., "4/5").
-Below 3/5: identify categories needing more signal, note in profile header.
+Pick 5 decision-rich prompts NOT used to create profile entries. For each: predict what the profile would recommend, check against what happened. Report accuracy (e.g., "4/5"). Below 3/5: identify categories needing more signal, note in profile header.
 
 ---
 
 ## Validate Mode
 
-Quick incremental check (~2 minutes). Same colleague voice — you're checking in on what you
-noticed before, not running a diagnostic. "Still true? Let me know."
+Quick incremental check (~2 minutes). Same colleague voice: you're checking in on what you noticed before, not running a diagnostic. "Still true? Let me know."
 
 Step markers: display `── step N/4: verb` before each step.
 Steps: select, present, apply, write.
@@ -311,13 +277,11 @@ Identify which entries are most worth checking:
 python3 scripts/effective_profile.py --validate
 ```
 
-Run from the skill's root directory. Outputs ~6 entries scored by decay gap, staleness,
-tension history, and extremity. If the script fails, fall back to Full mode.
+Run from the skill's root directory. Outputs ~6 entries scored by decay gap, staleness, tension history, and extremity. If the script fails, fall back to Full mode.
 
 ### Step V2: Present entries for validation
 
-Present entries one at a time: decision name, rule text, reason surfaced, stored vs effective
-confidence. Ask: **Confirm**, **Challenge**, or **Skip**.
+Present entries one at a time: decision name, rule text, reason surfaced, stored vs effective confidence. Ask: **Confirm**, **Challenge**, or **Skip**.
 
 ### Step V3: Apply updates
 
@@ -327,7 +291,7 @@ For each response:
 - **Challenge**: Soften `conf` by 10 (floor at 10). Update `challenged` to today's date.
   Append a tension entry to the `## Tensions` section:
   ```
-  ### {today} — {decision name} challenged during validation
+  ### {today}: {decision name} challenged during validation
   **Decision affected**: {decision name}
   **What happened**: Challenged by user during validation
   **Status**: unresolved
@@ -336,8 +300,7 @@ For each response:
 
 ### Step V4: Write and report
 
-Write updated PROFILE.md. Report: "Validated {N} entries: {N} confirmed, {N} challenged,
-{N} skipped." Mention challenged entries by name.
+Write updated PROFILE.md. Report: "Validated {N} entries: {N} confirmed, {N} challenged, {N} skipped." Mention challenged entries by name.
 
 ---
 
@@ -375,43 +338,28 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Profilera is part of an eleven-skill ecosystem. The decision profile it produces is consumed by
-the other skills.
+Profilera is part of an eleven-skill ecosystem. The decision profile it produces is consumed by the other skills.
 
 ### Consumed by /realisera
-Realisera runs the effective profile script in its Orient step to get a confidence-weighted
-summary table. High effective confidence entries are treated as strong constraints; low
-effective confidence entries are treated as suggestions. Full rules are read from PROFILE.md
-when needed for detailed reasoning.
+Realisera runs the effective profile script in its Orient step to get a confidence-weighted summary table. High effective confidence entries are treated as strong constraints; low effective confidence entries are treated as suggestions. Full rules are read from PROFILE.md when needed for detailed reasoning.
 
 ### Consumed by /optimera
-Optimera runs the effective profile script to calibrate experimentation style — how aggressive
-to be, how much complexity is acceptable, what trade-offs the user prefers. Effective
-confidence weighting ensures stale preferences don't over-constrain experiments.
+Optimera runs the effective profile script to calibrate experimentation style: how aggressive to be, how much complexity is acceptable, what trade-offs the user prefers. Effective confidence weighting ensures stale preferences don't over-constrain experiments.
 
 ### Consumed by /inspirera
-Inspirera can run the effective profile script to inform applicability judgments — what
-patterns the user favors, what they resist, how to weigh recommendations. High-confidence
-entries strongly constrain recommendations; low-confidence entries are treated as tendencies.
+Inspirera can run the effective profile script to inform applicability judgments: what patterns the user favors, what they resist, how to weigh recommendations. High-confidence entries strongly constrain recommendations; low-confidence entries are treated as tendencies.
 
 ### Consumed by /resonera
-Resonera reads the decision profile at the start of every deliberation. High-confidence entries
-in the relevant domain are acknowledged upfront to prevent re-deliberating settled preferences.
-Low-confidence entries are surfaced as hypotheses worth testing during the conversation.
+Resonera reads the decision profile at the start of every deliberation. High-confidence entries in the relevant domain are acknowledged upfront to prevent re-deliberating settled preferences. Low-confidence entries are surfaced as hypotheses worth testing during the conversation.
 
 ### Fed by /resonera
-DECISIONS.md (maintained by resonera) is a high-signal source for profilera's extraction
-scripts. Each decision entry captures reasoning, tradeoffs, and confidence — making deliberation
-sessions one of the richest inputs for decision profile generation.
+DECISIONS.md (maintained by resonera) is a high-signal source for profilera's extraction scripts. Each decision entry captures reasoning, tradeoffs, and confidence, making deliberation sessions one of the richest inputs for decision profile generation.
 
 ### Consumed by /inspektera
-Inspektera reads the decision profile to calibrate what "healthy" means for this user.
-Quality preferences, complexity tolerance, and pattern priorities from the profile weight
-the grading and determine which findings matter most.
+Inspektera reads the decision profile to calibrate what "healthy" means for this user. Quality preferences, complexity tolerance, and pattern priorities from the profile weight the grading and determine which findings matter most.
 
 ### Profilera is consumed by /planera
-Planera reads the decision profile during its Orient step to calibrate planning depth,
-pattern preferences, and constraint priorities.
+Planera reads the decision profile during its Orient step to calibrate planning depth, pattern preferences, and constraint priorities.
 
 ### Effective profile script
 
@@ -421,9 +369,7 @@ All consuming skills use the same script for consistency:
 python3 scripts/effective_profile.py
 ```
 
-Run from the profilera skill directory. Outputs a markdown summary table with effective
-confidence after dormancy decay. The script reads decay parameters from the PROFILE.md
-header, so the formula stays in one place.
+Run from the profilera skill directory. Outputs a markdown summary table with effective confidence after dormancy decay. The script reads decay parameters from the PROFILE.md header, so the formula stays in one place.
 
 ---
 
@@ -442,8 +388,7 @@ Full extraction across all sources. Produces `~/.claude/profile/PROFILE.md`.
 Quick confidence refresh without full regeneration. Run weekly or per-session.
 
 ### Using the profile in other skills
-All skills read the profile automatically via `python3 scripts/effective_profile.py`. No
-manual steps needed — just ensure PROFILE.md exists.
+All skills read the profile automatically via `python3 scripts/effective_profile.py`. No manual steps needed; just ensure PROFILE.md exists.
 
 ---
 
@@ -451,6 +396,5 @@ manual steps needed — just ensure PROFILE.md exists.
 
 - Extraction scripts handle I/O; Claude's job is synthesis, not parsing.
 - Large intermediate files: use subagents to read in parallel.
-- Signal hierarchy: crystallized.json (highest — memory + CLAUDE.md), conversation exchanges
-  (most nuanced — real-time reasoning), config patterns (most objective — what shipped).
+- Signal hierarchy: crystallized.json (highest: memory + CLAUDE.md), conversation exchanges (most nuanced: real-time reasoning), config patterns (most objective: what shipped).
 - Validate mode: weekly/per-session. Full mode: monthly or when significantly stale.
