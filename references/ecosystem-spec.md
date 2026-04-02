@@ -147,7 +147,7 @@ Three project-facing files at the project root; eight operational files in `.age
 | CHANGELOG.md | CHANGELOG.md | realisera | project contributors | ## [Unreleased], ### Added/Changed/Fixed |
 | DECISIONS.md | .agentera/DECISIONS.md | resonera | planera, realisera, inspektera, profilera, optimera | ## Decision N — date, **Question/Context/Alternatives/Choice/Reasoning/Confidence/Feeds into** |
 | PLAN.md | .agentera/PLAN.md | planera | realisera, inspektera | <!-- Level/Created/Status -->, ## Tasks with ### Task N, **Status/Depends on/Acceptance** |
-| PROGRESS.md | .agentera/PROGRESS.md | realisera | planera, inspektera, dokumentera, visionera | ## Cycle N — date, **What/Commit/Inspiration/Discovered/Next** |
+| PROGRESS.md | .agentera/PROGRESS.md | realisera | planera, inspektera, dokumentera, visionera | ## Cycle N — date, **What/Commit/Inspiration/Discovered/Next/Context** |
 | HEALTH.md | .agentera/HEALTH.md | inspektera | realisera, planera | ## Audit N — date, **Dimensions/Findings/Overall/Grades**, per-dimension sections |
 | OBJECTIVE.md | .agentera/OBJECTIVE.md | optimera | optimera | ## Metric, ## Target, ## Baseline, ## Constraints |
 | EXPERIMENTS.md | .agentera/EXPERIMENTS.md | optimera | optimera | ## Experiment N — date, **Hypothesis/Method/Result/Conclusion** |

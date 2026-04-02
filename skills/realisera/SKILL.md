@@ -94,6 +94,7 @@ steps from the gap between vision and codebase.
 **Inspiration**: what external source informed the approach (if any)
 **Discovered**: issues or ideas found (also logged in TODO.md)
 **Next**: what seems most valuable to work on next
+**Context**: intent · constraints · unknowns · scope
 ```
 
 The "Next" field from the previous cycle is a suggestion, not a mandate. Re-evaluate fresh.
@@ -180,7 +181,7 @@ selection — e.g., no test cycles is a signal.
 2. **VISION.md** — read `## Principles` and `## Direction` sections (skip full personas/history for orient)
 3. **TODO.md** — what's broken or degraded
 3b. **HEALTH.md** — read `critical` and `degraded` findings only (if exists)
-3c. **DECISIONS.md** — read `firm` and `provisional` entries only (if exists)
+3c. **DECISIONS.md** — read all entries (if exists). `firm` entries are hard constraints. `provisional` entries are strong defaults. Note any `exploratory` entries — these are uncertain foundations that may need firming up before building on them.
 4. **Decision profile** — run from the profilera skill directory:
    ```bash
    python3 scripts/effective_profile.py
@@ -199,6 +200,10 @@ selection — e.g., no test cycles is a signal.
 Before proceeding: in your response, list the 3-5 facts from VISION.md, PROGRESS.md,
 TODO.md, and HEALTH.md that will determine what you build this cycle. These survive if
 earlier tool results are cleared by context compaction.
+
+Also read the prior cycle's Context block from PROGRESS.md — it captures what the last
+cycle intended, what was uncertain, and what scope it expected to touch. Use this for
+cross-cycle continuity.
 
 **Exit-early guard (plan-driven mode only)**: If PLAN.md exists and all tasks are `■ complete`
 or `skipped`, and no new tasks have been added — archive the plan and report exit signal
@@ -223,6 +228,12 @@ increment closing the most valuable part.
 coverage). Realisera builds; optimera tunes.
 
 Write a 1-2 sentence rationale. Scope down aggressively.
+
+Compose a Context block for this cycle: intent (what and why, one line), constraints (what
+must not break), unknowns (open questions or uncertain foundations), scope (areas expected
+to be affected). ≤80 words total. This is written to PROGRESS.md in Step 8.
+
+**Decision gate**: After selecting work, check whether any `exploratory` entries in DECISIONS.md relate to the selected work area. If found: flag the uncertain foundation, suggest `/resonera` to firm up the decision, and note the risk in the cycle's Context unknowns field. In autonomous mode, proceed with the work but log the risk — do not hard-block. If no DECISIONS.md exists or no exploratory entries relate, this gate is a no-op.
 
 ### Step 3: Seek inspiration
 
@@ -324,7 +335,8 @@ cycle detail for consuming skills) and `CHANGELOG.md` (public summary for projec
   rewriting the file.
   Output constraint: ≤30 words per issue description, ≤15 words per remediation.
 - **.agentera/PROGRESS.md** — append the cycle entry (number, timestamp, what shipped, commit
-  hash, inspiration, discoveries, next suggestion).
+  hash, inspiration, discoveries, next suggestion, context block (intent, constraints,
+  unknowns, scope)).
   Output constraint: ≤50 words for cycle work summary, ≤30 words per discovered issue.
 - **CHANGELOG.md** — append a one-line entry under `## [Unreleased]` in the appropriate
   subsection: `feat` → Added, `refactor/chore` → Changed, `fix` → Fixed. Concise description,
