@@ -75,6 +75,9 @@ If uncertain between light and full, default to light. The user can escalate.
 
 ---
 
+Step markers: display `── step N/5: verb` before each step (Step 0 excluded).
+Steps: orient, specify, review, write, handoff.
+
 ## Step 1: Orient
 
 Read VISION.md, DECISIONS.md, and TODO.md in parallel — these reads are independent, issue
