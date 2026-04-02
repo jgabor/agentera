@@ -81,3 +81,12 @@ def validate_design():
         "validate_design",
         REPO_ROOT / "skills" / "visualisera" / "scripts" / "validate_design.py",
     )
+
+
+@pytest.fixture(scope="session")
+def eval_skills():
+    """Load scripts/eval_skills.py."""
+    return _load_module(
+        "eval_skills",
+        REPO_ROOT / "scripts" / "eval_skills.py",
+    )
