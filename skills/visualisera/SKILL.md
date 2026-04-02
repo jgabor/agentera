@@ -320,7 +320,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Visualisera is part of an eleven-skill ecosystem. It is the visual identity layer, the skill that defines how the project looks.
+Visualisera is part of a twelve-skill ecosystem. It is the visual identity layer, the skill that defines how the project looks.
 
 ### Visualisera reads /visionera output
 VISION.md's Identity section declares the verbal personality (bold, warm, playful, etc.). Visualisera reads this to propose visual tokens coherent with the declared identity. If Identity says "industrial and direct," visualisera proposes sharp edges and monospace type. Visionera reads DESIGN.md in return; neither writes the other's artifact.

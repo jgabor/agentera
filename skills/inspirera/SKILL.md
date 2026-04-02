@@ -196,7 +196,7 @@ Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it
 
 ## Cross-skill integration
 
-Inspirera is part of an eleven-skill ecosystem. Its analysis feeds naturally into the other skills.
+Inspirera is part of a twelve-skill ecosystem. Its analysis feeds naturally into the other skills.
 
 ### Feeding into /realisera
 Add actionable findings to the project's TODO.md, or refine VISION.md's direction if the inspiration shifts thinking. The next realisera cycle picks up the changes automatically.

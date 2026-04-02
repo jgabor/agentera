@@ -350,7 +350,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Inspektera is part of an eleven-skill ecosystem. It is the feedback loop, the skill that tells realisera whether its work is making things better.
+Inspektera is part of a twelve-skill ecosystem. It is the feedback loop, the skill that tells realisera whether its work is making things better.
 
 ### Inspektera feeds /realisera
 Critical and warning findings filed to TODO.md become candidates for realisera's work selection. The severity mapping ensures structural problems compete fairly with feature work. The "Patterns Observed" section helps realisera understand the codebase's de facto architecture when planning changes.
