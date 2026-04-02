@@ -550,6 +550,13 @@ Cycle 42 (2026-04-01): Linter updated for D13 convention
 **Discovered**: Plan miscounted dokumentera modes (3 execution + 1 survey, not 4 execution). All sections got markers regardless.
 **Next**: Task 6 (validate) — final task. All prerequisites (Tasks 1-5) complete.
 
+■ ## Cycle 59 — 2026-04-02
+
+**What**: Rewrote hej SKILL.md with "dashboard + human frame" pattern — conversational opener before status data, fresh mode greets like a colleague, capability table shown selectively (ISS-26 Plan Task 1)
+**Commit**: e17d588 feat(hej): rewrite dashboard with human frame pattern
+**Discovered**: No new issues
+**Next**: Task 2 (converge resonera/visionera/visualisera personality sections) — no dependency on Task 1, can proceed immediately
+
 ■ ## Cycle 58 — 2026-04-02
 
 **What**: Validated all formatting changes — linter 0 errors, manual checklist passed all 11 files. Archived plan. ISS-20 resolved. (ISS-20 Plan Task 6)
