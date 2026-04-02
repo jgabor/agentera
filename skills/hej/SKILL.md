@@ -186,9 +186,14 @@ Unclear mapping? Ask **one** clarifying question. No compound questions.
 
 ## Exit signals
 
+Report one of these statuses at workflow completion:
+
+Format: the agentera logo serves as hej's exit boundary. Follow with a summary sentence.
+For flagged, stuck, and waiting: add `▸` bullet details below the summary.
+
 - **complete**: Briefing delivered (or welcome shown) and user successfully routed to a skill.
-- **flagged**: Briefing delivered but critical attention items were found — critical issues, degrading health, loop guard triggers. Each concern is listed explicitly.
-- **stuck**: Cannot orient — the working directory is not a code project, no readable files exist, or permissions prevent scanning.
+- **flagged**: Briefing delivered but critical attention items were found: critical issues, degrading health, loop guard triggers. Each concern is listed explicitly.
+- **stuck**: Cannot orient: the working directory is not a code project, no readable files exist, or permissions prevent scanning.
 - **waiting**: Briefing or welcome delivered, suggestion made, awaiting user input on which direction to take.
 
 ---

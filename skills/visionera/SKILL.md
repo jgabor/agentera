@@ -267,10 +267,13 @@ Show the updated vision as a diff (what changed and why). Get explicit approval 
 
 Report one of these statuses at workflow completion:
 
-- **complete** — VISION.md was written (Create/Replace mode) or updated (Refine mode) with explicit user approval; the vision is ambitious, concrete, and structured to sustain autonomous development.
-- **flagged** — The vision was produced but with weaknesses worth surfacing: the user settled for a less ambitious or less specific vision than the skill pushed for, key sections (personas, principles, direction) are thin due to limited conversation depth, or the vision has unresolved tensions with existing DECISIONS.md entries.
-- **stuck** — Cannot write VISION.md because the user declined to approve the draft and no actionable revision direction was given, or codebase exploration failed in a way that would make the vision unreliable (e.g., inaccessible repo).
-- **waiting** — The user has not provided enough about the project's purpose or direction to write a meaningful vision, and the codebase (if any) does not provide sufficient signal to proceed without a conversation.
+Format: `─── ⛥ visionera · status ───` followed by a summary sentence.
+For flagged, stuck, and waiting: add `▸` bullet details below the summary.
+
+- **complete**: VISION.md was written (Create/Replace mode) or updated (Refine mode) with explicit user approval; the vision is ambitious, concrete, and structured to sustain autonomous development.
+- **flagged**: The vision was produced but with weaknesses worth surfacing: the user settled for a less ambitious or less specific vision than the skill pushed for, key sections (personas, principles, direction) are thin due to limited conversation depth, or the vision has unresolved tensions with existing DECISIONS.md entries.
+- **stuck**: Cannot write VISION.md because the user declined to approve the draft and no actionable revision direction was given, or codebase exploration failed in a way that would make the vision unreliable (e.g., inaccessible repo).
+- **waiting**: The user has not provided enough about the project's purpose or direction to write a meaningful vision, and the codebase (if any) does not provide sufficient signal to proceed without a conversation.
 
 ---
 
