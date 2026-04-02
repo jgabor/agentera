@@ -133,7 +133,7 @@ Three project-facing files at the project root; eight operational files in `.age
 
 | Artifact | Path | Producer | Consumers | Key structural elements |
 |----------|------|----------|-----------|------------------------|
-| VISION.md | VISION.md | visionera, realisera | realisera, planera, inspektera, dokumentera, visualisera | ## North Star, ## Who It's For, ## Principles, ## Direction, ## Identity |
+| VISION.md | VISION.md | visionera, realisera | realisera, planera, inspektera, dokumentera, visualisera, orkestrera | ## North Star, ## Who It's For, ## Principles, ## Direction, ## Identity |
 | TODO.md | TODO.md | realisera, inspektera | realisera, planera, orkestrera | ## ⇶ Critical, ## ⇉ Degraded, ## ⇢ Annoying, ## Resolved |
 | CHANGELOG.md | CHANGELOG.md | realisera | project contributors | ## [Unreleased], ### Added/Changed/Fixed |
 | DECISIONS.md | .agentera/DECISIONS.md | resonera | planera, realisera, inspektera, profilera, optimera, orkestrera | ## Decision N · date, **Question/Context/Alternatives/Choice/Reasoning/Confidence/Feeds into** |
