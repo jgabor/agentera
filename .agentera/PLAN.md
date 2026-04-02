@@ -80,7 +80,7 @@ Style rules applied inline with each change: colons over em-dashes, labeled meta
 ### Task 4: Step markers for single-mode skills
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN realisera SKILL.md WHEN workflow section is read THEN contains step marker instruction with 8-step count (orient, select, research, plan, dispatch, verify, commit, log)
 ▸ GIVEN inspektera SKILL.md WHEN workflow section is read THEN contains step marker instruction with 6-step count (orient, select, assess, distill, report, connect)
