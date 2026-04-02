@@ -174,6 +174,9 @@ After brainstorm, proceed to experiment 1.
 
 Skill introduction: `─── ⎘ optimera · experiment N ───`
 
+Step markers: display `── step N/7: verb` before each step.
+Steps: orient, analyze, hypothesize, implement, measure, decide, log.
+
 ### Step 1: Orient
 
 1. **EXPERIMENTS.md** — last 5 experiments only (check for plateau patterns)

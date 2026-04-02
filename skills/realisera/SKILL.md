@@ -163,6 +163,9 @@ confirmation before writing. After brainstorm, proceed to cycle 1 (or resume cyc
 
 Skill introduction: `─── ⧉ realisera · cycle N ───`
 
+Step markers: display `── step N/8: verb` before each step.
+Steps: orient, select, research, plan, dispatch, verify, commit, log.
+
 ### Step 1: Orient
 
 Read VISION.md, PROGRESS.md, TODO.md, and HEALTH.md in parallel — these reads are

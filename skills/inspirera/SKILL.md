@@ -23,6 +23,9 @@ markdown analysis the user can navigate and act on.
 
 Skill introduction: `─── ⬚ inspirera · analysis ───`
 
+Step markers: display `── step N/5: verb` before each step.
+Steps: identify, read, explore, map, deliver.
+
 ---
 
 ## Step 1: Identify source and target

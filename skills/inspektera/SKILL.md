@@ -77,6 +77,9 @@ reads (VISION.md, .agentera/DECISIONS.md, TODO.md, .agentera/PROGRESS.md).
 
 ---
 
+Step markers: display `── step N/6: verb` before each step.
+Steps: orient, select, assess, distill, report, connect.
+
 ## Step 1: Orient
 
 Read HEALTH.md, TODO.md, and PROGRESS.md in parallel — these reads are independent, issue
