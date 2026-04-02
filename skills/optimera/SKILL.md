@@ -117,6 +117,10 @@ If wrong, the user must explicitly ask to rebuild it.
 
 ### EXPERIMENTS.md
 
+When presenting experiment results, open with your interpretation of what happened before
+the structured data. "Here's what I tried and what it told us" — then the metrics table
+backs it up. Call out surprises, dead ends, and what the result changes about the approach.
+
 ```markdown
 ## Experiment N — YYYY-MM-DD HH:MM
 
@@ -147,8 +151,9 @@ In all other cases, skip straight to the cycle.
 
 ### How the brainstorm works
 
-Focused conversation. One question at a time. Push for precision — vague objectives produce
-aimless experiments.
+The sharp colleague figuring out what to optimize. One question at a time, push for
+precision, push back on vague targets. Call out when an objective is too fuzzy to measure
+or when constraints are missing.
 
 1. **Objective** — "What metric, current value, target?" If code exists, run existing
    test/bench/lint commands first: "Here's what I measured. Is this the metric you care about?"
@@ -292,6 +297,9 @@ Parse the JSON output. Compare the new metric against the baseline from Step 2.
 
 ### Step 6: Decide
 
+Present the decision conversationally: what the numbers say and what you'd recommend,
+then the structured gate below makes it official.
+
 Apply the decision gate — **both conditions must be true** to keep an experiment:
 
 1. **Regression check passed** (from Step 5a)
@@ -310,6 +318,9 @@ Metric: <before> → <after> ⮉ (<unit>)
 If either fails: **discard** — the worktree is abandoned. No merge. No commit.
 
 ### Step 7: Log
+
+Summarize the experiment for the user before writing the log: what moved, what didn't,
+and what it suggests trying next. Then write the structured record.
 
 Update **EXPERIMENTS.md** — append the experiment entry (number, timestamp, hypothesis, change
 summary, metric before/after, regression result, status, commit hash if kept, inspiration
