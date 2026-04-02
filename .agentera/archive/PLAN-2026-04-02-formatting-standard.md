@@ -101,7 +101,7 @@ Style rules applied inline with each change: colons over em-dashes, labeled meta
 ### Task 6: Validate
 
 **Depends on**: Tasks 1, 2, 3, 4, 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the ecosystem linter WHEN run THEN passes with no regressions from current state
 ▸ GIVEN a manual checklist of all 11 files WHEN each is inspected THEN exit signals, opener phrasing, step markers, and style rules all conform to Decision 14
