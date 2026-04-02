@@ -6,8 +6,7 @@ Measuring execution time, throughput, or latency.
 
 ## Using hyperfine
 
-[hyperfine](https://github.com/sharkdp/hyperfine) runs a command multiple times and reports
-statistics. Good for CLI tools and scripts.
+[hyperfine](https://github.com/sharkdp/hyperfine) runs a command multiple times and reports statistics. Good for CLI tools and scripts.
 
 ```bash
 #!/usr/bin/env bash
@@ -117,6 +116,4 @@ echo "{\"metric\": $ms, \"direction\": \"lower\", \"unit\": \"ms\", \"detail\": 
 
 ## Variance warning
 
-Benchmarks have inherent variance. Document the expected noise level in OBJECTIVE.md so the
-LLM knows that a 1% change might be noise while a 10% change is signal. Consider using more
-runs (`--runs 20`) for noisy benchmarks, at the cost of longer harness execution time.
+Benchmarks have inherent variance. Document the expected noise level in OBJECTIVE.md so the LLM knows that a 1% change might be noise while a 10% change is signal. Consider using more runs (`--runs 20`) for noisy benchmarks, at the cost of longer harness execution time.

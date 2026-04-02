@@ -1,13 +1,13 @@
 # Plan: [Short Title]
 
-<!-- Level: light | full — Created: YYYY-MM-DD — Status: active | complete | discarded -->
+<!-- Level: light | full · Created: YYYY-MM-DD · Status: active | complete | discarded -->
 <!-- Reviewed: YYYY-MM-DD | Critic issues: N found, N addressed, N dismissed -->
 
 ## What
-[Description of the change — what is being built or changed]
+[Description of the change: what is being built or changed]
 
 ## Why
-[Motivation — what value it delivers, what problem it solves, how it relates to the vision]
+[Motivation: what value it delivers, what problem it solves, how it relates to the vision]
 
 ## Constraints
 - [What must NOT break]
@@ -20,8 +20,7 @@
 **Deferred**: [what's saved for a future plan]
 
 ## Design
-[High-level approach — which modules are affected, how they interact, key architectural
-decisions. NOT implementation details — no function names, no line numbers, no pseudocode.]
+[High-level approach: which modules are affected, how they interact, key architectural decisions. NOT implementation details: no function names, no line numbers, no pseudocode.]
 
 ## Tasks
 
@@ -49,15 +48,15 @@ Each entry: cycle number, what was expected, what actually happened, impact on p
 
 <!--
 Level guide:
-  light — Omit: Scope, Design, Tasks (use only top-level acceptance criteria for one cycle)
-  full  — Include all sections. 3-8 tasks, each sized for one realisera cycle.
+  light : Omit: Scope, Design, Tasks (use only top-level acceptance criteria for one cycle)
+  full  : Include all sections. 3-8 tasks, each sized for one realisera cycle.
 
 Task status:
-  □ pending   — not started, dependencies may or may not be met
-  ■ complete  — acceptance criteria verified, committed
-  ▨ blocked   — dependencies unmet or external blocker
-  ▣ in-progress — active in current cycle
-  skipped     — no longer viable given current codebase state (note why)
+  □ pending   : not started, dependencies may or may not be met
+  ■ complete  : acceptance criteria verified, committed
+  ▨ blocked   : dependencies unmet or external blocker
+  ▣ in-progress : active in current cycle
+  skipped     : no longer viable given current codebase state (note why)
 
 Acceptance criteria format:
   GIVEN [precondition/context]

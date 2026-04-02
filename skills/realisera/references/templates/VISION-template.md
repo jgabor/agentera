@@ -2,14 +2,11 @@
 
 ## North Star
 
-[The dream. Not what the software does — what it makes possible. Paint a picture of the world
-where this project has succeeded. What does it feel like to use? What changes for the people
-who have it? Be ambitious.]
+[The dream. Not what the software does, but what it makes possible. Paint a picture of the world where this project has succeeded. What does it feel like to use? What changes for the people who have it? Be ambitious.]
 
 ## Who It's For
 
-[Concrete personas. Not "developers" — specific people with specific days, specific frustrations,
-specific workflows. Who reaches for this tool and why?]
+[Concrete personas. Not "developers" but specific people with specific days, specific frustrations, specific workflows. Who reaches for this tool and why?]
 
 ### [Persona Name]
 
@@ -23,6 +20,4 @@ specific workflows. Who reaches for this tool and why?]
 
 ## Direction
 
-[Where this project is heading. Not specific features — what kind of capabilities should it grow
-toward? The long game. Aspirational, not prescriptive. This should sustain months of autonomous
-development.]
+[Where this project is heading. Not specific features, but what kind of capabilities should it grow toward. The long game. Aspirational, not prescriptive. This should sustain months of autonomous development.]

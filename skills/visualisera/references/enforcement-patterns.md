@@ -1,15 +1,12 @@
 # Enforcement Patterns
 
-How to enforce a DESIGN.md visual identity beyond declaring tokens. Three layers, from cheap
-and fast to thorough and periodic.
+How to enforce a DESIGN.md visual identity beyond declaring tokens. Three layers, from cheap and fast to thorough and periodic.
 
 ---
 
 ## Layer 1: Validation (framework-agnostic)
 
-Validation checks that DESIGN.md is well-formed and that generated files stay in sync with it.
-It catches malformed YAML, missing/duplicate markers, dangling token references, and generated
-CSS/theme files that have drifted from the DESIGN.md source. Runs on every commit and in CI.
+Validation checks that DESIGN.md is well-formed and that generated files stay in sync with it. It catches malformed YAML, missing/duplicate markers, dangling token references, and generated CSS/theme files that have drifted from the DESIGN.md source. Runs on every commit and in CI.
 
 **Bundled tool:**
 
@@ -26,16 +23,13 @@ pre-commit:
       run: bun run validate:tokens
 ```
 
-If someone edits the generated Tailwind theme directly instead of updating DESIGN.md, the
-hook catches it. Generated files are never edited by hand -- DESIGN.md is the source of truth
-and validation enforces this direction of flow.
+If someone edits the generated Tailwind theme directly instead of updating DESIGN.md, the hook catches it. Generated files are never edited by hand. DESIGN.md is the source of truth and validation enforces this direction of flow.
 
 ---
 
 ## Layer 2: Linting (framework-specific)
 
-Linting enforces design constraints at code-write time. Unlike validation (which checks the
-design system itself), linting checks that *application code* respects the design system.
+Linting enforces design constraints at code-write time. Unlike validation (which checks the design system itself), linting checks that *application code* respects the design system.
 
 The `<!-- design:constraints -->` block in DESIGN.md declares **what** to enforce:
 
@@ -57,9 +51,7 @@ structural:
     exceptions: ["Progress", "Chart"]
 ```
 
-Lint rules implement **how** to enforce those constraints for your specific framework. These
-rules are necessarily stack-specific -- a Svelte/Tailwind project and a React/CSS Modules
-project need completely different rule implementations for the same constraint.
+Lint rules implement **how** to enforce those constraints for your specific framework. These rules are necessarily stack-specific. A Svelte/Tailwind project and a React/CSS Modules project need completely different rule implementations for the same constraint.
 
 ### Example: depdevs lint rules (ESLint, Svelte/Tailwind)
 
@@ -85,25 +77,17 @@ The pattern is:
 3. The rule scans templates/JSX/markup for violations of that specific constraint
 4. Run the rules in your editor (immediate feedback) and in CI (gate)
 
-You cannot generalize these rules across frameworks. A "no arbitrary colors" rule for Tailwind
-classes looks nothing like the same rule for CSS-in-JS or vanilla CSS. Build them for your
-stack.
+You cannot generalize these rules across frameworks. A "no arbitrary colors" rule for Tailwind classes looks nothing like the same rule for CSS-in-JS or vanilla CSS. Build them for your stack.
 
 ---
 
 ## Layer 3: Audit (comprehensive)
 
-Auditing is a periodic deep check that combines static analysis with visual inspection. It
-catches violations that linting misses -- dynamic styles, computed classes, and visual
-regressions that are only visible in the rendered output.
+Auditing is a periodic deep check that combines static analysis with visual inspection. It catches violations that linting misses: dynamic styles, computed classes, and visual regressions that are only visible in the rendered output.
 
-**Code scanning** -- AST-level analysis looking for non-semantic typography, conflicting style
-declarations, color values outside `<!-- design:colors -->`, and component usage that bypasses
-declared contracts.
+**Code scanning**: AST-level analysis looking for non-semantic typography, conflicting style declarations, color values outside `<!-- design:colors -->`, and component usage that bypasses declared contracts.
 
-**Visual inspection** -- screenshot rendered pages and verify output matches the declared
-design. This catches what static analysis cannot: CSS specificity battles, third-party styles
-bleeding through, and dynamic styling that only manifests at runtime.
+**Visual inspection**: screenshot rendered pages and verify output matches the declared design. This catches what static analysis cannot: CSS specificity battles, third-party styles bleeding through, and dynamic styling that only manifests at runtime.
 
 ### Example: depdevs audit
 
@@ -113,10 +97,8 @@ bun run audit:design
 
 This runs two passes:
 
-1. **AST scan** -- walks the Svelte component tree, extracts all style-related attributes and
-   classes, and checks them against the DESIGN.md constraints
-2. **Visual scan** -- launches Playwright, screenshots key pages, and analyzes the rendered
-   output for prohibited visual properties
+1. **AST scan**: walks the Svelte component tree, extracts all style-related attributes and classes, and checks them against the DESIGN.md constraints
+2. **Visual scan**: launches Playwright, screenshots key pages, and analyzes the rendered output for prohibited visual properties
 
 The output is a structured report:
 
@@ -142,8 +124,6 @@ Visual check: PASS
 | Linting    | Editor + commit + CI| Code-level constraint violations       | < 5s      |
 | Audit      | Weekly / pre-release| Deep violations, visual regressions    | 30s - 2m  |
 
-The layers are complementary. Validation ensures the source of truth is correct. Linting
-prevents violations from being written. Auditing catches what slipped through.
+The layers are complementary. Validation ensures the source of truth is correct. Linting prevents violations from being written. Auditing catches what slipped through.
 
-Start with validation (it's free). Add lint rules incrementally as you find recurring
-violations. Run audits before releases or on a schedule.
+Start with validation (it's free). Add lint rules incrementally as you find recurring violations. Run audits before releases or on a schedule.

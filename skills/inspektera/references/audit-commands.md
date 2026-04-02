@@ -1,8 +1,7 @@
 # Audit Commands by Language
 
 Concrete commands and patterns for each health dimension, organized by language/stack.
-Agents should use these as starting points — adapt based on what the project actually has
-installed.
+Agents should use these as starting points and adapt based on what the project actually has installed.
 
 ---
 

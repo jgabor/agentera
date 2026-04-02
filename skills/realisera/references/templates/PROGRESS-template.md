@@ -1,9 +1,9 @@
 # Progress
 
 Continuity log maintained by realisera. Each cycle appends one entry. The "Next" field is a
-suggestion, not a mandate — each cycle re-evaluates fresh.
+suggestion, not a mandate; each cycle re-evaluates fresh.
 
-## Cycle 1 — YYYY-MM-DD HH:MM
+## Cycle 1 · YYYY-MM-DD HH:MM
 
 **What**: one-line summary of what shipped
 **Commit**: `<hash>` type(scope): message
@@ -15,7 +15,7 @@ suggestion, not a mandate — each cycle re-evaluates fresh.
 <!--
 Entry format reference:
 
-  ■ ## Cycle N — YYYY-MM-DD HH:MM   (■ marks a logged/complete cycle)
+  ■ ## Cycle N · YYYY-MM-DD HH:MM   (■ marks a logged/complete cycle)
 
   **What**: [one-line summary]
   **Commit**: `<hash>` type(scope): message

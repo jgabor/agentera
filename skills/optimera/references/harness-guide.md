@@ -1,52 +1,37 @@
 # Harness Guide
 
-How to write eval harnesses for optimera. Read this before writing a harness during the
-brainstorm phase.
+How to write eval harnesses for optimera. Read this before writing a harness during the brainstorm phase.
 
 ---
 
 ## What a harness is
 
-A harness is a script that measures a single metric about the project and outputs the result
-as JSON. It wraps the project's own tooling — test runners, benchmarks, linters, build tools —
-and translates their output into a consistent format that optimera can compare across experiments.
+A harness is a script that measures a single metric about the project and outputs the result as JSON. It wraps the project's own tooling (test runners, benchmarks, linters, build tools) and translates their output into a consistent format that optimera can compare across experiments.
 
-The harness is the **separation of concerns** between measuring and optimizing. The LLM
-optimizes the code; the harness measures whether the optimization worked. After the user
-approves it, the harness is locked — the LLM cannot modify it during optimization cycles.
+The harness is the **separation of concerns** between measuring and optimizing. The LLM optimizes the code; the harness measures whether the optimization worked. After the user approves it, the harness is locked. The LLM cannot modify it during optimization cycles.
 
 ## Principles
 
 ### Use the project's own tooling
 
 The harness calls existing commands (`npm test`, `pytest`, `go test`, `cargo build`). It does
-not reimplement measurement. The project's tooling is the source of truth — the harness just
-extracts a number from its output.
+not reimplement measurement. The project's tooling is the source of truth; the harness just extracts a number from its output.
 
 ### Be deterministic
 
-Given the same codebase state, the harness should produce the same metric. Avoid measurements
-that depend on network, external services, or system load (unless that's explicitly what's being
-optimized). If some variance is unavoidable (e.g., benchmark timing), note this in OBJECTIVE.md
-so the LLM knows to expect noise.
+Given the same codebase state, the harness should produce the same metric. Avoid measurements that depend on network, external services, or system load (unless that's explicitly what's being optimized). If some variance is unavoidable (e.g., benchmark timing), note this in OBJECTIVE.md so the LLM knows to expect noise.
 
 ### Be fast
 
-The harness runs every experiment cycle. If it takes 10 minutes, optimization is slow. Prefer
-focused measurements over comprehensive ones. Measure the specific thing being optimized, not
-everything.
+The harness runs every experiment cycle. If it takes 10 minutes, optimization is slow. Prefer focused measurements over comprehensive ones. Measure the specific thing being optimized, not everything.
 
 ### Fail loudly
 
-If the measurement can't be taken (build failure, missing dependency, test harness crash),
-exit non-zero. Don't output a metric. The LLM needs to know the measurement failed, not that
-the metric is zero.
+If the measurement can't be taken (build failure, missing dependency, test harness crash), exit non-zero. Don't output a metric. The LLM needs to know the measurement failed, not that the metric is zero.
 
 ### Capture what matters
 
-The primary metric is the number being optimized. But a harness can also output breakdowns
-that help the LLM understand *why* the metric changed. See `output-schema.md` for the full
-format.
+The primary metric is the number being optimized. But a harness can also output breakdowns that help the LLM understand *why* the metric changed. See `output-schema.md` for the full format.
 
 ---
 
@@ -65,13 +50,11 @@ What existing command measures the thing being optimized?
 | Test coverage | `nyc`, `coverage`, `go test -coverprofile` |
 | Type coverage | `tsc --noEmit`, `mypy --json-report` |
 
-If the project already has a measurement command, use it. If not, identify the simplest way to
-measure the metric using standard tooling for the project's language/stack.
+If the project already has a measurement command, use it. If not, identify the simplest way to measure the metric using standard tooling for the project's language/stack.
 
 ### Step 2: Parse the output
 
-Most tools have a structured output mode (JSON, TAP, JUnit XML). Prefer structured output
-over parsing human-readable text — it's more reliable across versions.
+Most tools have a structured output mode (JSON, TAP, JUnit XML). Prefer structured output over parsing human-readable text because it's more reliable across versions.
 
 Common patterns:
 - `--json` flag (npm test, eslint, pytest with plugins)
@@ -80,8 +63,7 @@ Common patterns:
 - Pipe to `jq` for extraction
 - `--output-format=json` (pylint)
 
-If no structured output is available, parse the human-readable output carefully. Anchor on
-specific patterns that are unlikely to change across versions.
+If no structured output is available, parse the human-readable output carefully. Anchor on specific patterns that are unlikely to change across versions.
 
 ### Step 3: Output the result
 
@@ -97,7 +79,7 @@ Write one JSON line to stdout. See `output-schema.md` for the exact format. At m
 - **Test runner crash**: exit non-zero, write error to stderr
 - **Partial measurement** (some tests skipped): decide during brainstorm whether to count
   skipped tests. Document the decision in OBJECTIVE.md.
-- **Timeout**: the harness itself should not implement timeouts — that's the caller's job.
+- **Timeout**: the harness itself should not implement timeouts; that's the caller's job.
   But if the underlying tool hangs, consider adding a `timeout` command wrapper.
 
 ### Step 5: Test before locking
@@ -133,16 +115,15 @@ The harness lives at `.optimera/harness` and must be executable (`chmod +x`).
 If the project runs on multiple platforms:
 
 - Use `#!/usr/bin/env bash` not `#!/bin/bash`
-- Avoid GNU-specific flags (`stat -c%s` is GNU, `stat -f%z` is BSD) — use fallbacks
-- Avoid `bc` for math — use `python3 -c` or `node -e` instead for portability
+- Avoid GNU-specific flags (`stat -c%s` is GNU, `stat -f%z` is BSD), use fallbacks
+- Avoid `bc` for math, use `python3 -c` or `node -e` instead for portability
 - Test the harness on the platforms the project supports
 
 ---
 
 ## Multi-metric harnesses
 
-Sometimes the objective involves a primary metric with secondary constraints (e.g., "reduce
-latency without increasing memory"). The harness can output a breakdown:
+Sometimes the objective involves a primary metric with secondary constraints (e.g., "reduce latency without increasing memory"). The harness can output a breakdown:
 
 ```json
 {
@@ -158,13 +139,11 @@ latency without increasing memory"). The harness can output a breakdown:
 }
 ```
 
-The primary `metric` is what optimera uses for keep/discard decisions. The breakdown gives the
-LLM richer signal for the Hypothesize step — it can see that p99 is the real problem, or that
-memory is creeping up.
+The primary `metric` is what optimera uses for keep/discard decisions. The breakdown gives the LLM richer signal for the Hypothesize step. It can see that p99 is the real problem, or that memory is creeping up.
 
 ---
 
 ## See also
 
-- `output-schema.md` — formal output format specification
-- `examples/` — harness patterns for common metric types
+- `output-schema.md`: formal output format specification
+- `examples/`: harness patterns for common metric types

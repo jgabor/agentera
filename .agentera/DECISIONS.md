@@ -742,3 +742,29 @@ skill's specific narration points.
 **Confidence**: firm
 **Feeds into**: ecosystem-spec.md (new narration voice section), ~5 SKILL.md files (hej, visionera, profilera, visualisera, + ad-hoc narration guidance for all)
 **Feeds into**: VISION.md (Identity section), skill refinement across all 11 SKILL.md files
+
+## Decision 18 — 2026-04-02
+
+**Question**: How should the ecosystem handle em-dashes and double dashes in all text?
+**Context**: The decision profile has a high-confidence, stable entry (since Sep 2025) banning em-dashes because they signal AI-generated text. Decision 14 only enforced this for exit signal label separators (colons instead). The rest of the ecosystem (SKILL.md prose, ecosystem-spec, templates, agent output) continued using em-dashes freely. The profile also incorrectly listed double dashes (--) as an acceptable replacement.
+**Alternatives**:
+- Ban em-dashes in agent output only, allow in SKILL.md source text: rejected, inconsistent standard
+- Mechanical find-and-replace with double dashes (--): rejected, double dashes are equally a crutch
+- Context-sensitive replacement (colons for labels, commas/periods for prose): considered, but restructuring is better
+**Choice**: Full ban on em-dashes AND double dashes across the entire ecosystem. Replacement hierarchy: restructure the sentence first; fall back to commas, periods, or colons only when restructuring reads worse. Applies to SKILL.md source, ecosystem-spec, templates, and all agent-generated output.
+**Reasoning**: The goal is better prose, not a punctuation swap. Em-dashes and double dashes are a crutch for sentences that should be restructured. Removing them forces cleaner writing. The profile entry that listed double dashes as acceptable was wrong and needs correction.
+**Confidence**: firm
+**Feeds into**: ecosystem-spec.md (punctuation convention), all 11 SKILL.md files, PROFILE.md correction (remove double dash as acceptable replacement)
+
+## Decision 19 — 2026-04-02
+
+**Question**: How should the ecosystem handle line-breaks in prose text?
+**Context**: No rule existed for line-wrapping. Agent output mixed hard-wrapped lines (inside code blocks at ~70 chars) with free-flowing prose, creating visible inconsistency. SKILL.md source files also hard-wrapped paragraphs at ~90 chars. Word-count caps (≤120 words, ≤15 words per narration line) governed brevity but not wrapping.
+**Alternatives**:
+- Hard wrap at a fixed column (80 or 100 chars) everywhere: rejected, looks wrong at non-matching terminal widths
+- Semantic line breaks (one sentence per line): rejected, still creates inconsistency when mixed with free flow
+- No hard wraps, let terminal handle it: chosen
+**Choice**: No hard wraps in prose paragraphs. One paragraph = one line. Break only for paragraph boundaries, section boundaries, or list items. Terminal handles wrapping. Structured content (code blocks, lists, tables, frontmatter) keeps its inherent line breaks. Applies to SKILL.md source, ecosystem-spec, templates, and all agent-generated output.
+**Reasoning**: The problem was consistency, not readability. Mixing two wrapping approaches in the same response looked arbitrary. Removing hard wraps entirely eliminates the inconsistency. The tradeoff (whole-paragraph diffs) is acceptable for the consistency gain.
+**Confidence**: firm
+**Feeds into**: ecosystem-spec.md (line-break convention), all 11 SKILL.md files

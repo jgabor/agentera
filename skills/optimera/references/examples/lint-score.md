@@ -1,6 +1,6 @@
 # Harness Example: Lint / Code Quality Score
 
-Measuring code quality via linting tools — violation counts, error scores, or quality ratings.
+Measuring code quality via linting tools: violation counts, error scores, or quality ratings.
 
 ---
 
@@ -88,5 +88,4 @@ Lint tools vary in what they output:
 - **Quality scores** (pylint's 0-10) → `"direction": "higher"` (higher is better)
 - **Error ratios** → `"direction": "lower"` (lower is better)
 
-Pick the one that most naturally maps to the user's objective. If the user says "clean up the
-linting," violation count with `"lower"` is the natural choice.
+Pick the one that most naturally maps to the user's objective. If the user says "clean up the linting," violation count with `"lower"` is the natural choice.

@@ -46,22 +46,18 @@ The eval harness outputs one JSON line to stdout. This document defines the form
 | 0 | Measurement succeeded. JSON output is valid. |
 | Non-zero | Measurement failed. No metric to report. Stderr may contain error details. |
 
-When the harness exits non-zero, the LLM should log the experiment as `status: error` in
-EXPERIMENTS.md and include any stderr output for diagnosis.
+When the harness exits non-zero, the LLM should log the experiment as `status: error` in EXPERIMENTS.md and include any stderr output for diagnosis.
 
 ## Output rules
 
 - Exactly **one JSON line** to stdout. No other stdout output.
 - Diagnostic messages, progress bars, and warnings go to **stderr**.
 - The JSON must be valid (parseable by any JSON parser).
-- The `metric` field must be a finite number. If the measurement produces NaN or Infinity,
-  the harness should exit non-zero instead.
+- The `metric` field must be a finite number. If the measurement produces NaN or Infinity, the harness should exit non-zero instead.
 
 ## Parsing
 
-The LLM parses the output by reading the single line from stdout and interpreting it as JSON.
-No regex extraction, no partial parsing. If the JSON is invalid, treat it as a measurement
-failure.
+The LLM parses the output by reading the single line from stdout and interpreting it as JSON. No regex extraction, no partial parsing. If the JSON is invalid, treat it as a measurement failure.
 
 ## Examples
 

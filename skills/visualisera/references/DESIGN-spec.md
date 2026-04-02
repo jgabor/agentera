@@ -1,43 +1,26 @@
 # DESIGN.md
 
-A simple, open format for defining visual identity in a way
-LLM agents can read, enforce, and generate from.
+A simple, open format for defining visual identity in a way LLM agents can read, enforce, and generate from.
 
-Think of DESIGN.md as a **design system for agents**: a dedicated,
-predictable place to declare how your project looks — colors,
-typography, spacing, constraints, components, and themes — in a
-single markdown file that is both human-reviewable and
-machine-parseable.
+Think of DESIGN.md as a **design system for agents**: a dedicated, predictable place to declare how your project looks (colors, typography, spacing, constraints, components, and themes) in a single markdown file that is both human-reviewable and machine-parseable.
 
 ## Why DESIGN.md?
 
-Design systems today are built for humans using GUIs. Figma
-tokens, Style Dictionary configs, theme objects — none of these
-are legible to an LLM agent that reads text, writes code, and
-runs commands.
+Design systems today are built for humans using GUIs. Figma tokens, Style Dictionary configs, theme objects: none of these are legible to an LLM agent that reads text, writes code, and runs commands.
 
-Meanwhile, agents are increasingly the primary authors of UI
-code. Without a readable spec, they drift: wrong colors,
-arbitrary spacing, shadows where there shouldn't be shadows,
-rounded corners on a brutalist site.
+Meanwhile, agents are increasingly the primary authors of UI code. Without a readable spec, they drift: wrong colors, arbitrary spacing, shadows where there shouldn't be shadows, rounded corners on a brutalist site.
 
-DESIGN.md solves this by putting the design system where agents
-already look: in the repo, as markdown.
+DESIGN.md solves this by putting the design system where agents already look: in the repo, as markdown.
 
 We intentionally kept it separate from AGENTS.md to:
 
 - Give the visual system its own predictable location.
-- Keep AGENTS.md focused on behavioral instructions (how to
-  work) rather than visual specifications (how things look).
-- Allow the design system to be versioned, diffed, and
-  reviewed independently.
+- Keep AGENTS.md focused on behavioral instructions (how to work) rather than visual specifications (how things look).
+- Allow the design system to be versioned, diffed, and reviewed independently.
 
 ## How it works
 
-A DESIGN.md file is standard Markdown with structured YAML
-blocks inside fenced code regions, delineated by HTML comment
-markers. The markers make blocks machine-parseable. The
-surrounding prose provides context for humans and agents alike.
+A DESIGN.md file is standard Markdown with structured YAML blocks inside fenced code regions, delineated by HTML comment markers. The markers make blocks machine-parseable. The surrounding prose provides context for humans and agents alike.
 
 ````markdown
 # My Project
@@ -69,20 +52,15 @@ text-label:
 
 The file is simultaneously:
 
-- **Documentation** that renders cleanly on GitHub, in a PR,
-  or in any editor.
-- **Configuration** that tools can parse and generate code
-  from.
+- **Documentation** that renders cleanly on GitHub, in a PR, or in any editor.
+- **Configuration** that tools can parse and generate code from.
 - **Constraints** that agents and linters can enforce.
 
 ## Specification
 
 ### File location
 
-Place a `DESIGN.md` file at the root of your repository, or
-nested in subdirectories for monorepos. Agents read the nearest
-`DESIGN.md` in the directory tree; the closest one takes
-precedence.
+Place a `DESIGN.md` file at the root of your repository, or nested in subdirectories for monorepos. Agents read the nearest `DESIGN.md` in the directory tree; the closest one takes precedence.
 
 ```text
 my-project/
@@ -97,14 +75,9 @@ my-project/
 
 A DESIGN.md file consists of:
 
-1. **Prose sections** — Markdown headings and paragraphs
-   providing context, rationale, and usage guidance. No special
-   format required. Write whatever helps agents understand the
-   design intent.
+1. **Prose sections**: Markdown headings and paragraphs providing context, rationale, and usage guidance. No special format required. Write whatever helps agents understand the design intent.
 
-2. **Token blocks** — Fenced YAML code blocks preceded by an
-   HTML comment marker. These are the machine-parseable sections
-   that tools read and generate from.
+2. **Token blocks**: Fenced YAML code blocks preceded by an HTML comment marker. These are the machine-parseable sections that tools read and generate from.
 
 ### Marker format
 
@@ -114,15 +87,11 @@ Markers use HTML comments with a `design:` prefix:
 <!-- design:{section} -->
 ```
 
-The marker must appear on the line immediately before a fenced
-YAML code block. The marker and the block together form a
-**token declaration**.
+The marker must appear on the line immediately before a fenced YAML code block. The marker and the block together form a **token declaration**.
 
 ### Standard sections
 
-The following section names are defined by the spec. All are
-optional — a minimal DESIGN.md might only define `colors` and
-`typography`.
+The following section names are defined by the spec. All are optional; a minimal DESIGN.md might only define `colors` and `typography`.
 
 | Marker                              | Purpose                                 | Content                                                |
 | ----------------------------------- | --------------------------------------- | ------------------------------------------------------ |
@@ -140,8 +109,7 @@ optional — a minimal DESIGN.md might only define `colors` and
 
 ### Custom sections
 
-You may define additional sections using the `design:` prefix
-with any name:
+You may define additional sections using the `design:` prefix with any name:
 
 ```text
 <!-- design:animations -->
@@ -149,13 +117,11 @@ with any name:
 <!-- design:z-index -->
 ```
 
-Tools should ignore sections they don't recognize and pass
-them through unchanged.
+Tools should ignore sections they don't recognize and pass them through unchanged.
 
 ### Token block format
 
-Token blocks are YAML inside fenced code blocks
-(` ```yaml `). The YAML structure depends on the section type.
+Token blocks are YAML inside fenced code blocks (` ```yaml `). The YAML structure depends on the section type.
 
 ### Simple key-value tokens
 
@@ -182,8 +148,7 @@ text-label:
 
 #### Theme mappings
 
-Used for `<!-- design:theme -->`. Top-level keys are mode
-names. Values reference token names:
+Used for `<!-- design:theme -->`. Top-level keys are mode names. Values reference token names:
 
 ```yaml
 light:
@@ -199,8 +164,7 @@ dark:
 
 #### Constraints
 
-Used for `<!-- design:constraints -->`. Declares what is
-prohibited and why:
+Used for `<!-- design:constraints -->`. Declares what is prohibited and why:
 
 ```yaml
 aesthetic:
@@ -210,7 +174,7 @@ aesthetic:
     alternatives: ["border-border"]
   - property: border-radius
     rule: prohibited
-    reason: "Sharp edges — industrial aesthetic"
+    reason: "Sharp edges, industrial aesthetic"
     override: "rounded-none"
 
 structural:
@@ -226,8 +190,7 @@ structural:
 
 #### Component contracts
 
-Used for `<!-- design:components -->`. Declares what
-components exist and what they accept:
+Used for `<!-- design:components -->`. Declares what components exist and what they accept:
 
 ```yaml
 Button:
@@ -247,50 +210,33 @@ Badge:
 
 ### Comments in YAML
 
-YAML supports inline comments with `#`. Use them to annotate
-tokens with rationale:
+YAML supports inline comments with `#`. Use them to annotate tokens with rationale:
 
 ```yaml
 dd-red: oklch(50% 0.25 25) # Primary brand, WCAG AA on white
 dd-amber: oklch(50% 0.18 85) # Warning/caution states
-dd-primary: var(--dd-red) # Alias — change this to rebrand
+dd-primary: var(--dd-red) # Alias: change this to rebrand
 ```
 
 ### Prose sections
 
-Everything outside of marker + YAML block pairs is prose.
-There are no format requirements for prose. Write whatever
-helps agents and humans understand the design system.
+Everything outside of marker + YAML block pairs is prose. There are no format requirements for prose. Write whatever helps agents and humans understand the design system.
 
 Recommended prose sections:
 
-- **Philosophy / Principles** — Why does the system look the
-  way it does? What aesthetic rules guide decisions? This
-  context helps agents make judgment calls when the tokens
-  don't cover a specific situation.
-- **Usage guidance** — How to use specific tokens. When to
-  use `text-label` vs `text-body-sm`. What the semantic color
-  mapping means.
-- **Anti-patterns** — What agents (and humans) commonly get
-  wrong. Specific examples of violations and their
-  corrections.
-- **Component guidelines** — Usage patterns, examples, and
-  do's/don'ts that go beyond what the
-  `<!-- design:components -->` block can express.
-- **Migration notes** — If tokens have been renamed or
-  deprecated, document the mapping.
+- **Philosophy / Principles**: Why does the system look the way it does? What aesthetic rules guide decisions? This context helps agents make judgment calls when the tokens don't cover a specific situation.
+- **Usage guidance**: How to use specific tokens. When to use `text-label` vs `text-body-sm`. What the semantic color mapping means.
+- **Anti-patterns**: What agents (and humans) commonly get wrong. Specific examples of violations and their corrections.
+- **Component guidelines**: Usage patterns, examples, and do's/don'ts that go beyond what the `<!-- design:components -->` block can express.
+- **Migration notes**: If tokens have been renamed or deprecated, document the mapping.
 
 ### Naming conventions
 
-Token names should follow a consistent convention. The spec
-does not mandate a specific convention, but recommends:
+Token names should follow a consistent convention. The spec does not mandate a specific convention, but recommends:
 
-- Use lowercase with hyphens: `dd-primary`, not `ddPrimary`
-  or `DD_PRIMARY`.
-- Use a project prefix to avoid collisions: `dd-`, `acme-`,
-  etc.
-- Use semantic names, not visual descriptions: `dd-primary`,
-  not `dd-red-500`.
+- Use lowercase with hyphens: `dd-primary`, not `ddPrimary` or `DD_PRIMARY`.
+- Use a project prefix to avoid collisions: `dd-`, `acme-`, etc.
+- Use semantic names, not visual descriptions: `dd-primary`, not `dd-red-500`.
 - Keep names short enough to use in utility classes.
 
 ### Encoding
@@ -308,9 +254,7 @@ DESIGN.md files must be UTF-8 encoded.
 
 ## Tooling
 
-DESIGN.md is a format, not a tool. Any tool can parse it.
-The marker + YAML pattern is trivially extractable with a
-regex:
+DESIGN.md is a format, not a tool. Any tool can parse it. The marker + YAML pattern is trivially extractable with a regex:
 
 ````javascript
 const regex = /<!-- design:(\w[\w-]*) -->\s*```ya?ml\n([\s\S]*?)```/gm;
@@ -320,25 +264,17 @@ const regex = /<!-- design:(\w[\w-]*) -->\s*```ya?ml\n([\s\S]*?)```/gm;
 
 A reference CLI (name TBD) can:
 
-- **Parse** — Extract token blocks from DESIGN.md into
-  structured data.
-- **Validate** — Check that tokens are well-formed and
-  internally consistent (no dangling references, valid color
-  values, etc.).
-- **Generate** — Emit CSS custom properties, Tailwind config,
-  TypeScript types, and theme files from the token blocks.
-- **Lint** — Check a codebase against the constraints declared
-  in `<!-- design:constraints -->`.
-- **Audit** — Run the full loop: validate source, check
-  generated files, lint code, report results.
-- **Schema** — Dump the spec format as JSON for agent
-  introspection.
+- **Parse**: Extract token blocks from DESIGN.md into structured data.
+- **Validate**: Check that tokens are well-formed and internally consistent (no dangling references, valid color values, etc.).
+- **Generate**: Emit CSS custom properties, Tailwind config, TypeScript types, and theme files from the token blocks.
+- **Lint**: Check a codebase against the constraints declared in `<!-- design:constraints -->`.
+- **Audit**: Run the full loop: validate source, check generated files, lint code, report results.
+- **Schema**: Dump the spec format as JSON for agent introspection.
 
 The CLI follows agent-first design principles:
 
 - All commands accept `--json` for structured input.
-- All output is JSON by default (pretty output via
-  `--output pretty`).
+- All output is JSON by default (pretty output via `--output pretty`).
 - `--dry-run` on all mutating commands.
 - Self-describing via `schema` command.
 - MCP surface via `mcp --stdio` for typed tool invocation.
@@ -375,10 +311,7 @@ body:
 
 ### Comprehensive DESIGN.md (brutalist example)
 
-See the [Deprecated Developers brand.md][dd-brand] for a
-production example of this pattern. It uses `design-tokens:`
-markers (the predecessor to `design:` markers) with the same
-structure.
+See the [Deprecated Developers brand.md][dd-brand] for a production example of this pattern. It uses `design-tokens:` markers (the predecessor to `design:` markers) with the same structure.
 
 [dd-brand]: https://github.com/jgabor/deprecated-developers/blob/main/docs/handbook/brand.md
 
@@ -400,66 +333,34 @@ acme-corp/
 
 ### Are there required sections?
 
-No. DESIGN.md is markdown with optional structured blocks.
-Use whichever sections your project needs. A file with only
-prose and no YAML blocks is still a valid DESIGN.md — it just
-won't be machine-parseable for token generation.
+No. DESIGN.md is markdown with optional structured blocks. Use whichever sections your project needs. A file with only prose and no YAML blocks is still a valid DESIGN.md, but it won't be machine-parseable for token generation.
 
 ### How does DESIGN.md relate to Figma?
 
-DESIGN.md replaces the _handoff_ step, not the _exploration_
-step. Use Figma for visual exploration and iteration. When
-design decisions are made, encode them in DESIGN.md. A tool
-can sync tokens between Figma Variables and DESIGN.md in
-either direction.
+DESIGN.md replaces the _handoff_ step, not the _exploration_ step. Use Figma for visual exploration and iteration. When design decisions are made, encode them in DESIGN.md. A tool can sync tokens between Figma Variables and DESIGN.md in either direction.
 
 ### Can I use DESIGN.md with Tailwind?
 
-Yes. A generator reads `<!-- design:colors -->` and
-`<!-- design:typography -->` blocks and emits
-Tailwind-compatible CSS custom properties and theme
-configuration. The `<!-- design:tw-merge-preserve -->` block
-specifically addresses the tailwind-merge class stripping
-problem.
+Yes. A generator reads `<!-- design:colors -->` and `<!-- design:typography -->` blocks and emits Tailwind-compatible CSS custom properties and theme configuration. The `<!-- design:tw-merge-preserve -->` block specifically addresses the tailwind-merge class stripping problem.
 
 ### What if my framework uses JSON/JS for config?
 
-DESIGN.md is the source of truth. A generation step emits
-whatever format your framework needs — CSS custom properties,
-JSON tokens, JavaScript theme objects, Tailwind config, Style
-Dictionary format. The markdown file is the interface; the
-output is framework-specific.
+DESIGN.md is the source of truth. A generation step emits whatever format your framework needs: CSS custom properties, JSON tokens, JavaScript theme objects, Tailwind config, Style Dictionary format. The markdown file is the interface; the output is framework-specific.
 
 ### How do nested DESIGN.md files work?
 
-The nearest DESIGN.md to the file being edited takes
-precedence. A tool or agent should walk up the directory tree
-and merge DESIGN.md files, with more specific (deeper) files
-overriding less specific (shallower) ones. The merge strategy
-is section-level: a nested DESIGN.md that defines
-`<!-- design:colors -->` replaces the parent's color block
-entirely. Sections not redefined in the nested file inherit
-from the parent.
+The nearest DESIGN.md to the file being edited takes precedence. A tool or agent should walk up the directory tree and merge DESIGN.md files, with more specific (deeper) files overriding less specific (shallower) ones. The merge strategy is section-level: a nested DESIGN.md that defines `<!-- design:colors -->` replaces the parent's color block entirely. Sections not redefined in the nested file inherit from the parent.
 
 ### Can I have multiple token blocks of the same type?
 
-No. Each `<!-- design:X -->` marker should appear at most once
-per DESIGN.md file. If you need to organize tokens into
-groups, use YAML comments within a single block.
+No. Each `<!-- design:X -->` marker should appear at most once per DESIGN.md file. If you need to organize tokens into groups, use YAML comments within a single block.
 
 ### What about dark mode?
 
-Use the `<!-- design:theme -->` block. Define light and dark
-(and any custom) modes as top-level keys. Values reference
-token names from `<!-- design:colors -->`. The generator emits
-mode-specific CSS using your framework's conventions (CSS
-custom properties with selectors, Tailwind dark: prefix,
-etc.).
+Use the `<!-- design:theme -->` block. Define light and dark (and any custom) modes as top-level keys. Values reference token names from `<!-- design:colors -->`. The generator emits mode-specific CSS using your framework's conventions (CSS custom properties with selectors, Tailwind dark: prefix, etc.).
 
 ## Contributing
 
-DESIGN.md is an open format. Contributions, feedback, and
-adoption are welcome.
+DESIGN.md is an open format. Contributions, feedback, and adoption are welcome.
 
-If you build a tool that reads or writes DESIGN.md files,
-please let us know so we can list it here.
+If you build a tool that reads or writes DESIGN.md files, please let us know so we can list it here.

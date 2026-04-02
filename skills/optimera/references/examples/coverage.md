@@ -103,6 +103,4 @@ Coverage tools typically report multiple dimensions:
 - **Function coverage**: percentage of functions called
 - **Statement coverage**: similar to line but counts individual statements
 
-Pick the one that matches the user's objective. Line coverage is the most common primary
-metric. Branch coverage is a stronger signal but harder to improve. Use the breakdown to
-report all dimensions even when optimizing just one.
+Pick the one that matches the user's objective. Line coverage is the most common primary metric. Branch coverage is a stronger signal but harder to improve. Use the breakdown to report all dimensions even when optimizing just one.
