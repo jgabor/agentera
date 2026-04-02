@@ -172,7 +172,7 @@ After brainstorm, proceed to experiment 1.
 
 ## The cycle
 
-Each experiment opens with the skill introduction: `─── ⎘ optimera · experiment N ───`
+Skill introduction: `─── ⎘ optimera · experiment N ───`
 
 ### Step 1: Orient
 

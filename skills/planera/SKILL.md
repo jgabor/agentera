@@ -27,7 +27,7 @@ acceptance criteria for realisera. Planera owns WHAT and WHY; realisera owns HOW
 Three levels: **skip** (trivial), **light** (single-cycle), **full** (multi-cycle with
 adversarial review).
 
-Planning output opens with: `─── ≡ planera · planning ───`
+Skill introduction: `─── ≡ planera · planning ───`
 
 ---
 

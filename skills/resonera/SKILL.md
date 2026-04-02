@@ -26,7 +26,7 @@ and ensures sound reasoning before action.
 
 Each invocation = one deliberation. The user controls when it ends.
 
-Each deliberation session opens with: `─── ❈ resonera · deliberation ───`
+Skill introduction: `─── ❈ resonera · deliberation ───`
 
 ---
 
@@ -110,14 +110,21 @@ Ask what's on their mind.
 
 ## Running state
 
-After each answer, maintain a short scratchpad (show it to the user, keep it brief):
+After each answer, show a short scratchpad using the container divider:
 
-> **The decision:** one-liner framing of what's being decided, updated as understanding evolves
-> **Known constraints:** hard requirements that any option must satisfy
-> ▸ list each constraint
-> **Alternatives on the table:** the options being considered · emerging pros/cons
-> ▸ list each alternative
-> **The crux:** the key tension or uncertainty that needs to resolve for the decision to land
+```
+── scratchpad
+
+Decision: one-liner framing of what's being decided, updated as understanding evolves
+
+Constraints:
+▸ hard requirements that any option must satisfy
+
+Options:
+▸ the options being considered · emerging pros/cons
+
+Crux: the key tension or uncertainty that needs to resolve for the decision to land
+```
 
 5-8 bullets max. Drop items that stop being relevant. Shared notes on a napkin.
 

@@ -161,7 +161,7 @@ confirmation before writing. After brainstorm, proceed to cycle 1 (or resume cyc
 
 ## The cycle
 
-Each cycle opens with the skill introduction: `─── ⧉ realisera · cycle N ───`
+Skill introduction: `─── ⧉ realisera · cycle N ───`
 
 ### Step 1: Orient
 

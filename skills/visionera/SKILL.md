@@ -26,7 +26,7 @@ grounded enough to be actionable.
 
 Two modes: **create** (new projects) and **refine** (evolve existing visions).
 
-Vision work opens with: `─── ⛥ visionera · vision ───`
+Skill introduction: `─── ⛥ visionera · vision ───`
 
 ---
 
