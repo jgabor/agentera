@@ -120,6 +120,9 @@ to Create mode.
 
 ## Create mode
 
+Step markers: display `── step N/4: verb` before each step.
+Steps: explore, research, converse, write.
+
 ### Step 1: Explore the codebase
 
 If code exists, read deeply before asking questions. You arrive informed.
@@ -204,6 +207,9 @@ Present the draft to the user. Get explicit approval before writing.
 ---
 
 ## Refine mode
+
+Step markers: display `── step N/4: verb` before each step.
+Steps: read, research, propose, update.
 
 ### Step 1: Read the current state
 
