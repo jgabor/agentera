@@ -71,7 +71,11 @@ codebase if needed.
 | One module affected, clear scope, fits one realisera cycle | **Light** |
 | Multiple modules, multi-file changes, 3+ logical steps, new feature spanning architecture | **Full** |
 
-**Skip**: Tell the user this doesn't need a plan — just run `/realisera`. Stop here.
+**Skip**: This doesn't need a plan — route to `/realisera`. Stop here.
+
+Narration voice (riff, don't script):
+✗ "This work does not require a plan. Proceed directly to /realisera."
+✓ "Small enough to just build. Run /realisera." · "Doesn't need a plan — /realisera can handle this."
 
 **Light or Full**: Proceed to planning.
 
