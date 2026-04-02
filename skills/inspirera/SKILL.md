@@ -21,7 +21,7 @@ description: >
 Analyze an external resource and map its ideas to a target project. Output a structured
 markdown analysis the user can navigate and act on.
 
-Analysis output opens with: `─── ⬚ inspirera · analysis ───`
+Skill introduction: `─── ⬚ inspirera · analysis ───`
 
 ---
 

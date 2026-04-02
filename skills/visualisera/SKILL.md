@@ -26,7 +26,7 @@ enough to evolve, concrete enough for any agent to generate correct UI.
 
 Three modes: **create**, **refine**, **audit**.
 
-Visual identity work opens with: `─── ◰ visualisera · design ───`
+Skill introduction: `─── ◰ visualisera · design ───`
 
 ---
 

@@ -24,7 +24,7 @@ Mine the user's Claude Code session history and produce a structured decision pr
 predicting "What would this person decide?" Each entry carries numeric confidence, permanence
 classification, and temporal metadata enabling dormancy decay.
 
-Profile generation output opens with: `─── ♾ profilera · profile ───`
+Skill introduction: `─── ♾ profilera · profile ───`
 
 ---
 

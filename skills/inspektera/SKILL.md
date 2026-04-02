@@ -26,7 +26,7 @@ findings, confidence scores, and trend tracking. The retrospective counterpart t
 forward motion — is the codebase getting better or just bigger?
 
 Each invocation = one audit. Findings feed realisera's work selection via TODO.md.
-Output opens with: `─── ⛶ inspektera · audit ───`
+Skill introduction: `─── ⛶ inspektera · audit ───`
 
 ---
 
@@ -257,7 +257,7 @@ Only run this dimension if DOCS.md exists and contains a `versioning` convention
 
 ---
 
-## Step 4: Synthesize
+## Step 4: Distill
 
 After all agents complete:
 

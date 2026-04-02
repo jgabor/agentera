@@ -23,7 +23,7 @@ description: >
 The "D" in DTC. Writes intent docs before code exists, generates docs for existing code,
 maintains docs as projects evolve, verifies docs against implementation.
 
-Output opens with: `─── ▤ dokumentera · docs ───`
+Skill introduction: `─── ▤ dokumentera · docs ───`
 
 Two modes: **create** and **update**. Context-detected: no feature yet = intent-first;
 code exists = explore and generate.
