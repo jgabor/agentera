@@ -62,7 +62,7 @@ Style rules applied inline with each change: colons over em-dashes, labeled meta
 ### Task 2: Standardize exit signal sections across all 11 SKILL.md
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN any SKILL.md exit signal section WHEN read THEN status descriptions use colon separators, not em-dashes
 ▸ GIVEN any SKILL.md exit signal section WHEN read THEN includes instruction referencing the visual exit format (divider + summary + bullets)
