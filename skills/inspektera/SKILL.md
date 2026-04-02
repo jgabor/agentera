@@ -51,6 +51,10 @@ reads (VISION.md, .agentera/DECISIONS.md, TODO.md, .agentera/PROGRESS.md).
 
 ### HEALTH.md
 
+Open with your read on the codebase before the structured data: what's improving, what's
+sliding, what surprised you. 1-2 sentences of interpretation, then the grades and findings
+back it up. The colleague says what they think, then shows the evidence.
+
 ```markdown
 ## Audit N — YYYY-MM-DD
 
@@ -142,6 +146,9 @@ These thresholds are guidelines, not hard rules. Use judgment — a 6-file chang
 
 ## Step 3: Assess
 
+Lead the assessment with your overall interpretation: what stands out, what's changed,
+where attention should go. Then the per-dimension breakdown provides the evidence.
+
 Launch parallel agents — one per dimension. Each receives the dimension definition,
 language-specific commands from `references/audit-commands.md`, relevant context files,
 the confidence scoring rubric, and instructions to return structured findings.
@@ -161,6 +168,11 @@ Every finding MUST include:
 - Quoted code showing the issue
 - Explanation of why it matters
 - Confidence score (0-100)
+
+## Presenting findings
+Introduce each finding conversationally before the structured evidence. The colleague
+says "hey, I noticed this" — not just dumps a finding card. Lead with why it caught
+your eye and what it means, then back it up with the evidence block.
 
 ## Confidence scoring
 - 90-100: Definitely a real issue. Verified by reading the code. Clear impact.
