@@ -408,7 +408,119 @@
 **Discovered**: No new issues.
 **Next**: Plan complete. uvx script uplift fully shipped — PEP 723 metadata, profilera consolidation, renames, reference updates, 48 unit tests, versions bumped.
 
+## Archived Cycles
+
+Cycle 1 (2026-03-30): DOCS.md template as three-layer documentation contract
+Cycle 2 (2026-03-30): Canonical artifact path resolution in realisera
+Cycle 3 (2026-03-30): Propagated artifact path resolution to all 7 consuming skills
+Cycle 4 (2026-03-30): Dokumentera first-run survey and three-layer DOCS.md
+Cycle 5 (2026-03-30): Updated repo docs for three-layer convention
+Cycle 6 (2026-03-30): Fixed eight-skill → nine-skill across all SKILL.md (ISS-1)
+Cycle 7 (2026-03-30): Fixed ISS-2 through ISS-6 from Audit 1
+Cycle 8 (2026-03-30): Added Identity section to VISION.md template
+Cycle 9 (2026-03-30): Scaffolded visualisera with DESIGN.md spec
+Cycle 10 (2026-03-30): Wrote visualisera SKILL.md core create mode
+Cycle 11 (2026-03-30): Added refine/audit modes to visualisera
+Cycle 12 (2026-03-30): Integrated visualisera as 10th skill across suite
+Cycle 13 (2026-03-30): Authored ecosystem-spec.md with 9 shared primitives
+Cycle 14 (2026-03-30): Built ecosystem linter (8 deterministic + 1 advisory check)
+Cycle 15 (2026-03-30): Migrated profilera from 0.0-1.0 to 0-100 confidence
+Cycle 16 (2026-03-30): Fixed all 6 linter errors across 5 skills
+Cycle 17 (2026-03-30): Wired pre-commit hook, updated CLAUDE.md
+Cycle 18 (2026-03-30): Upgraded inspektera dedup to three-tier (ISS-7)
+Cycle 19 (2026-03-31): Completion status protocol and escalation discipline
+Cycle 20 (2026-03-31): Renamed gstack terminology to agentera-native vocabulary
+Cycle 21 (2026-03-31): Added pushback discipline to resonera
+Cycle 22 (2026-03-31): Fixed ISS-8 and ISS-9 from Audit 2
+Cycle 23 (2026-03-31): Fixed ISS-10 — 9 reciprocal cross-skill references
+Cycle 24 (2026-03-31): Documented PROFILE.md as global artifact (ISS-11)
+Cycle 25 (2026-03-31): Visual identity primitives in ecosystem spec
+Cycle 26 (2026-03-31): Hej dashboard with full visual identity
+Cycle 27 (2026-03-31): Visual tokens in all 7 artifact templates
+Cycle 28 (2026-03-31): Visual tokens in realisera and optimera
+Cycle 29 (2026-03-31): Visual tokens in inspektera, profilera, dokumentera
+Cycle 30 (2026-03-31): Visual tokens in resonera, planera, visionera, inspirera, visualisera
+Cycle 31 (2026-03-31): Versioning convention in DOCS.md template
+Cycle 32 (2026-03-31): Version awareness in planera, inspektera, realisera
+Cycle 33 (2026-03-31): Version bump all 11 skills, collection 1.3.0
+Cycle 34 (2026-03-31): Fixed all 10 dokumentera Audit 3 findings
+Cycle 35 (2026-03-31): Fixed ISS-12 through ISS-15 from inspektera Audit 3
+Cycle 36 (2026-03-31): Token budget, content exclusion, compaction conventions
+Cycle 37 (2026-03-31): Reordered templates, added scratchpad separation
+Cycle 38 (2026-03-31): Numeric output constraints in all 11 SKILL.md
+Cycle 39 (2026-03-31): Orient improvements, exit-early guards, delta writes
+Cycle 40 (2026-03-31): Tightened prose — 16.9% word reduction across all 11 skills
+Cycle 41 (2026-04-01): Ecosystem-spec D13 artifact consolidation convention
+Cycle 42 (2026-04-01): Linter updated for D13 convention
+
+■ ## Cycle 43 — 2026-04-01
+
+**What**: Updated all 11 SKILL.md — path resolution references `.agentera/DOCS.md`, deterministic layout
+**Commit**: d26c6bc feat: update all 11 SKILL.md with D13 artifact path convention (Plan Task 2)
+**Discovered**: ISSUES.md references remain in template files — not SKILL.md scope
+**Next**: Tasks 3, 4 remain
+
+■ ## Cycle 44 — 2026-04-01
+
+**What**: Dual-write to realisera — CHANGELOG.md + .agentera/PROGRESS.md, archive path to .agentera/archive/
+**Commit**: 5da719b feat(realisera): add dual-write, CHANGELOG.md format, archive path (Plan Task 3)
+**Next**: Task 4 (5 skill convention updates)
+
+■ ## Cycle 45 — 2026-04-01
+
+**What**: Updated planera, dokumentera, inspektera, visionera, visualisera for D13 convention
+**Commit**: 973a8f1 feat: update 5 skills for D13 convention (Plan Task 4)
+**Next**: Task 6 (apply convention to agentera's own artifacts)
+
+■ ## Cycle 46 — 2026-04-01
+
+**What**: Applied D13 to agentera repo — moved 6 artifacts, consolidated archive, created TODO.md/CHANGELOG.md
+**Commit**: c0477a6 feat: apply D13 artifact consolidation to agentera repo (Plan Task 6)
+**Next**: Task 7 (version bump)
+
+■ ## Cycle 47 — 2026-04-01
+
+**What**: Minor version bump, collection 1.3.0 → plan complete
+**Commit**: ff931eb feat: version bump all 11 skills for D13 (Plan Task 7)
+**Next**: Plan complete
+
+■ ## Cycle 48 — 2026-04-01
+
+**What**: PEP 723 inline metadata on 4 standalone skill scripts
+**Commit**: 515b2d0 feat: PEP 723 metadata on 4 scripts (Plan Task 1)
+**Next**: Task 2 (consolidate profilera extract pipeline)
+
+■ ## Cycle 49 — 2026-04-01
+
+**What**: Consolidated profilera extract pipeline (6 files → 1 script)
+**Commit**: c749254 feat: consolidate profilera extract pipeline (Plan Task 2)
+**Next**: Tasks 3+4 unblocked
+
+■ ## Cycle 50 — 2026-04-01
+
+**What**: Script renames, reference updates, 48 unit tests
+**Commit**: multiple commits (Plan Tasks 3+4)
+**Next**: Task 5 (version bump)
+
+■ ## Cycle 51 — 2026-04-01
+
+**What**: Minor version bump, collection 1.4.0 — plan complete
+**Commit**: 7f58333 feat: version bump all 11 skills for uvx uplift (Plan Task 5)
+**Next**: Plan complete
+
 ■ ## Cycle 52 — 2026-04-02
+
+**What**: All 3 plan tasks in parallel — context snapshot, decision gate, tiered audit depth (ISS-16, ISS-17, ISS-18)
+**Commit**: `73a5d26` feat: add context snapshots, decision gate, and tiered audit depth
+**Discovered**: No new issues
+**Next**: Plan complete. ISS-19 deferred. Resume vision-driven work.
+
+■ ## Cycle 53 — 2026-04-02
+
+**What**: Updated ecosystem-spec.md Section 12 with formatting standard — divider hierarchy, exit signal format, step markers, instruction terms (ISS-20 Plan Task 1)
+**Commit**: 8dfb6fe feat: add divider hierarchy, exit signal format, and step markers to ecosystem spec
+**Discovered**: No new issues
+**Next**: Tasks 2-5 now unblocked (all depend on Task 1). Task 2 (exit signals across 11 SKILL.md) is broadest.
 
 **What**: All 3 plan tasks in parallel — context snapshot, decision gate, tiered audit depth (ISS-16, ISS-17, ISS-18)
 **Commit**: `73a5d26` feat: add context snapshots, decision gate, and tiered audit depth
