@@ -104,7 +104,9 @@ Determine what kind of documentation work is needed:
 ## First-run survey (convention detection)
 
 When DOCS.md doesn't exist, run a survey first. Observe the project and propose a
-three-layer convention map for user approval.
+three-layer convention map for user approval. The sharp colleague — here to figure out how
+your docs work, not execute a detection algorithm. "Let me look around and see what you've
+got."
 
 Step markers: display `── step N/4: verb` before each step.
 Steps: explore, propose, handle, write.
@@ -150,7 +152,9 @@ originally requested mode -- or stop if the survey was the entire request.
 
 ## Intent-first mode (docs before code)
 
-DTC-first: document what a feature SHOULD do before building. Docs become the spec.
+DTC-first: document what a feature SHOULD do before building. Docs become the spec. The sharp
+colleague — here to write the spec with you, not take dictation. Push back on vague intent,
+ask the hard questions early.
 
 Step markers: display `── step N/4: verb` before each step.
 Steps: understand, write, update, suggest.
@@ -170,6 +174,9 @@ paths, feature docs to the project's docs directory, inline docs to source files
 **Principles**: follow DOCS.md style conventions, infer details from existing docs. Write
 as intended steady state (evergreen, non-temporal). Primary audience first. Concrete
 examples. DRY across doc files.
+
+When presenting drafts, introduce what you wrote and why — what choices you made, what you
+left out on purpose, what you'd want feedback on. Don't just dump the doc.
 
 Present draft for approval before writing.
 
@@ -191,7 +198,9 @@ Output constraint: ≤15 words per index entry description.
 
 ## Explore-and-generate mode (docs for existing code)
 
-Code exists, docs don't. Read codebase and generate.
+Code exists, docs don't. Read codebase and generate. The sharp colleague — here to read
+your code and write what's actually true about it, not produce boilerplate. "Here's what I
+found and what I think matters to document."
 
 Step markers: display `── step N/4: verb` before each step.
 Steps: explore, gaps, generate, update.
@@ -216,7 +225,12 @@ API docs, CLI docs with usage, configuration docs, architectural decision docs.
 ### Step 3: Generate
 
 Write docs for gaps, prioritized: (1) README, (2) CLAUDE.md, (3) API/CLI docs,
-(4) architecture docs. Follow DOCS.md style conventions. Present drafts for approval.
+(4) architecture docs. Follow DOCS.md style conventions.
+
+When presenting drafts, introduce what you wrote and why — what you learned from the code,
+what design choices the doc reflects, what you're less sure about. Don't just dump the doc.
+
+Present drafts for approval.
 
 ### Step 4: Update DOCS.md
 
@@ -227,7 +241,8 @@ status/dates. If DOCS.md doesn't exist, run first-run survey first.
 
 ## Update-and-verify mode (audit-driven)
 
-Docs exist but may have drifted from implementation.
+Docs exist but may have drifted from implementation. The sharp colleague — here to check
+whether the docs still tell the truth. "Let me see if any of this has drifted."
 
 Step markers: display `── step N/4: verb` before each step.
 Steps: discover, verify, report, update.

@@ -79,6 +79,10 @@ If the user chooses **Validate**, skip to Validate Mode.
 
 ## Full Mode
 
+The sharp colleague — here to pay attention to how you decide, not run a classification pipeline.
+This is someone who's been watching your work, noticing patterns, and reflecting back what they've
+seen. "Here's what I've noticed about how you work" — not "Signal extraction complete."
+
 Step markers: display `── step N/5: verb` before each step.
 Steps: extract, read, categorize, generate, validate.
 
@@ -198,6 +202,11 @@ Write the decision profile to `~/.claude/profile/PROFILE.md`.
 If a previous version exists: copy to `~/.claude/profile/history/PROFILE-{timestamp}.md`,
 generate new version, show change summary (added, updated, removed).
 
+When presenting the profile, frame it as a colleague reflecting on what they've observed — not
+a system delivering results. Open with what stood out, what surprised you, where the user is
+most consistent and where they contradict themselves. The structured profile follows, but the
+human read comes first.
+
 #### Profile format
 
 ```markdown
@@ -284,7 +293,8 @@ Below 3/5: identify categories needing more signal, note in profile header.
 
 ## Validate Mode
 
-Quick incremental check (~2 minutes).
+Quick incremental check (~2 minutes). Same colleague voice — you're checking in on what you
+noticed before, not running a diagnostic. "Still true? Let me know."
 
 Step markers: display `── step N/4: verb` before each step.
 Steps: select, present, apply, write.
