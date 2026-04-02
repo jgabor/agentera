@@ -89,6 +89,14 @@
       "path": "skills/visualisera",
       "tags": ["design", "visual-identity", "design-tokens", "design-system", "audit"],
       "added": "2026-03-30"
+    },
+    {
+      "name": "orkestrera",
+      "version": "1.5.0",
+      "description": "ORKESTRERA: Orchestration Runtime: Knowledge-coordinated Execution Strategy, Targeted Routing: Evaluate, Resolve, Adapt. Skill-agnostic meta-orchestrator that dispatches skills as subagents, evaluates with inspektera, and loops through plans.",
+      "path": "skills/orkestrera",
+      "tags": ["orchestration", "automation", "multi-cycle", "dispatch", "evaluation"],
+      "added": "2026-04-02"
     }
   ]
 }

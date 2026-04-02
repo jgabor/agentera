@@ -60,7 +60,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 ## Coverage
 
-- **Documented**: 11/11 skills have SKILL.md (single source of truth)
+- **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: HEALTH.md, all Audit 3 findings resolved, artifact not yet re-audited. CLAUDE.md and README.md, repo layout needs updating for .agentera/ convention
 

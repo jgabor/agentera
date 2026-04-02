@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-agentera: a Claude Code skill marketplace. Eleven skills, each a self-contained `SKILL.md` with optional `references/` and `scripts/`, that give Claude specialized autonomous behaviors. See the README for the full skill table and ecosystem diagram.
+agentera: a Claude Code skill marketplace. Twelve skills, each a self-contained `SKILL.md` with optional `references/` and `scripts/`, that give Claude specialized autonomous behaviors. See the README for the full skill table and ecosystem diagram.
 
 ## Repository layout
 
@@ -23,7 +23,7 @@ registry.json                        # Skill index with versions and tags
 
 ## Skill ecosystem
 
-The eleven skills form a connected graph, not isolated tools. See the README for the full ecosystem diagram and state artifact reference table. All skills work standalone AND mesh when co-installed. Each skill generates state artifacts in the *target project*, not in this repo. Default layout: three project-facing files at root (VISION.md, TODO.md, CHANGELOG.md) and eight operational files in `.agentera/` (PROGRESS.md, DECISIONS.md, PLAN.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, DESIGN.md, DOCS.md). Skills check `.agentera/DOCS.md` for path overrides; if absent, use the deterministic default layout.
+The twelve skills form a connected graph, not isolated tools. See the README for the full ecosystem diagram and state artifact reference table. All skills work standalone AND mesh when co-installed. Each skill generates state artifacts in the *target project*, not in this repo. Default layout: three project-facing files at root (VISION.md, TODO.md, CHANGELOG.md) and eight operational files in `.agentera/` (PROGRESS.md, DECISIONS.md, PLAN.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, DESIGN.md, DOCS.md). Skills check `.agentera/DOCS.md` for path overrides; if absent, use the deterministic default layout.
 
 ## Adding or modifying a skill
 
@@ -45,7 +45,7 @@ python3 skills/optimera/scripts/analyze_experiments.py
 python3 skills/realisera/scripts/analyze_progress.py
 ```
 
-The repo-level `scripts/validate_ecosystem.py` checks all 11 SKILL.md files against `references/ecosystem-spec.md`. Run from the repo root:
+The repo-level `scripts/validate_ecosystem.py` checks all 12 SKILL.md files against `references/ecosystem-spec.md`. Run from the repo root:
 ```bash
 python3 scripts/validate_ecosystem.py
 ```
@@ -72,5 +72,6 @@ The linter blocks commits with alignment errors and warns on advisory issues.
 - Skills never push to remote repos or modify VISION.md/OBJECTIVE.md during execution cycles
 - Conventional commits: feat/fix/docs/refactor/chore/test
 - realisera and optimera dispatch implementation work to Sonnet agents in worktrees, then verify before committing
+- orkestrera dispatches any skill as a subagent for plan-driven multi-cycle execution with inspektera evaluation gating
 - Visual identity system defined in `references/ecosystem-spec.md` Section 12: skill glyphs, semantic tokens (status, severity, confidence, trend), and composition rules that all skills and artifact templates follow
 - Versioning convention in DOCS.md: `version_files` lists what to bump, `semver_policy` maps commit types to bump levels. Planera flags bump-worthy plans, inspektera checks for unbumped changes, realisera executes bumps
