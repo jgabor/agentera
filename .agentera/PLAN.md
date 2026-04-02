@@ -71,7 +71,7 @@ Style rules applied inline with each change: colons over em-dashes, labeled meta
 ### Task 3: Opener phrasing, inspektera rename, resonera scratchpad
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN any SKILL.md except hej WHEN opener instruction is read THEN uses "Skill introduction:" phrasing
 ▸ GIVEN inspektera SKILL.md WHEN step headings are read THEN Step 4 heading says "Distill" not "Synthesize" (prose "synthesized" in exit signal unchanged)
