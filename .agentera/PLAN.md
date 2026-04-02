@@ -67,7 +67,7 @@ Three layers of change: conventions (ecosystem-spec defines the rules), content 
 
 ### Task 5: Apply conventions to project docs, operational artifacts, and JSON manifests
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN VISION.md, README.md, TODO.md, CLAUDE.md, DECISIONS.md, PROGRESS.md, DESIGN.md, DOCS.md, HEALTH.md WHEN searched for the em-dash character THEN zero matches
 ▸ GIVEN these files WHEN prose paragraphs are examined THEN each is a single line
@@ -76,7 +76,7 @@ Three layers of change: conventions (ecosystem-spec defines the rules), content 
 
 ### Task 6: Correct PROFILE.md em-dash entry
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN ~/.claude/profile/PROFILE.md WHEN the em-dash entry is read THEN double dashes are not listed as an acceptable replacement
 ▸ GIVEN the entry WHEN replacement guidance is read THEN the hierarchy matches Decision 18 (restructure first, then comma/period/colon)

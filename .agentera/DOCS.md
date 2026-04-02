@@ -62,65 +62,65 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 - **Documented**: 11/11 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
-- **Stale**: HEALTH.md — all Audit 3 findings resolved, artifact not yet re-audited. CLAUDE.md and README.md — repo layout needs updating for .agentera/ convention
+- **Stale**: HEALTH.md, all Audit 3 findings resolved, artifact not yet re-audited. CLAUDE.md and README.md, repo layout needs updating for .agentera/ convention
 
 ## Audit Log
 
 ### 2026-03-31 (Audit 3)
 
-- [stale] ecosystem-spec.md + all 11 SKILL.md say "ten-skill" — actually eleven after hej — critical (fixed)
-- [gap] DOCS.md Index listed 6 documents, missing 6 that exist (VISION, PROGRESS, ISSUES, HEALTH, DESIGN, ecosystem-spec) — critical (fixed)
-- [stale] marketplace.json description missing hej and visualisera activities — warning (fixed)
-- [misaligned] DOCS.md version_files path had erroneous space — warning (fixed)
-- [stale] ISSUES.md resolved items appeared after empty "## Open" heading — warning (fixed)
-- [misaligned] registry.json inspirera said "an external link" vs plural elsewhere — warning (fixed)
-- [stale] DOCS.md Index used plain text status instead of visual tokens — warning (fixed)
-- [gap] CLAUDE.md Key conventions missing visual identity and versioning — info (fixed)
-- [stale] HEALTH.md Audit 2 findings all resolved but artifact not re-audited — info (noted)
-- [stale] DOCS.md last audit date said 2026-03-30 — info (fixed)
+- [stale] ecosystem-spec.md + all 11 SKILL.md say "ten-skill", actually eleven after hej · critical (fixed)
+- [gap] DOCS.md Index listed 6 documents, missing 6 that exist (VISION, PROGRESS, ISSUES, HEALTH, DESIGN, ecosystem-spec) · critical (fixed)
+- [stale] marketplace.json description missing hej and visualisera activities · warning (fixed)
+- [misaligned] DOCS.md version_files path had erroneous space · warning (fixed)
+- [stale] ISSUES.md resolved items appeared after empty "## Open" heading · warning (fixed)
+- [misaligned] registry.json inspirera said "an external link" vs plural elsewhere · warning (fixed)
+- [stale] DOCS.md Index used plain text status instead of visual tokens · warning (fixed)
+- [gap] CLAUDE.md Key conventions missing visual identity and versioning · info (fixed)
+- [stale] HEALTH.md Audit 2 findings all resolved but artifact not re-audited · info (noted)
+- [stale] DOCS.md last audit date said 2026-03-30 · info (fixed)
 
 ### 2026-03-30
 
-- [stale] DOCS.md was flat index — upgraded to three-layer documentation contract — info (fixed)
-- [stale] README DOCS.md row said "dokumentera, inspektera" — now consumed by all skills — warning (fixed)
+- [stale] DOCS.md was flat index, upgraded to three-layer documentation contract · info (fixed)
+- [stale] README DOCS.md row said "dokumentera, inspektera", now consumed by all skills · warning (fixed)
 
 ### 2026-03-29
 
-- [stale] README.md said "Six skills" — actually nine — critical (fixed)
-- [stale] CLAUDE.md said "Four skills" then "eight skills" — actually nine — critical (fixed)
-- [stale] CLAUDE.md "What this is" named only 4 of 9 skills — critical (fixed: defers to README)
-- [stale] marketplace.json description undersold the suite — critical (fixed)
-- [stale] registry.json truncated descriptions for optimera, resonera, dokumentera — warning (fixed)
-- [misaligned] plugin.json descriptions for inspirera/realisera/visionera diverged from canonical — warning (fixed)
-- [misaligned] README.md OBJECTIVE.md listed resonera as maintainer; only optimera maintains it — warning (fixed)
-- [redundant] Skill ecosystem described in both README.md and CLAUDE.md — warning (fixed: CLAUDE.md now defers to README)
-- [redundant] Repository layout duplicated in both files — warning (kept: different audiences)
+- [stale] README.md said "Six skills", actually nine · critical (fixed)
+- [stale] CLAUDE.md said "Four skills" then "eight skills", actually nine · critical (fixed)
+- [stale] CLAUDE.md "What this is" named only 4 of 9 skills · critical (fixed: defers to README)
+- [stale] marketplace.json description undersold the suite · critical (fixed)
+- [stale] registry.json truncated descriptions for optimera, resonera, dokumentera · warning (fixed)
+- [misaligned] plugin.json descriptions for inspirera/realisera/visionera diverged from canonical · warning (fixed)
+- [misaligned] README.md OBJECTIVE.md listed resonera as maintainer; only optimera maintains it · warning (fixed)
+- [redundant] Skill ecosystem described in both README.md and CLAUDE.md · warning (fixed: CLAUDE.md now defers to README)
+- [redundant] Repository layout duplicated in both files · warning (kept: different audiences)
 
 <!--
 Status values:
-  ■ current    — doc accurately reflects implementation
-  ▣ stale      — code changed since doc was last updated
-  □ missing    — module/feature has no documentation
-  ▸ intent     — doc written before code (DTC-first), not yet implemented
-  ▸ generated  — auto-generated by tooling listed in Conventions.auto_gen
+  ■ current    · doc accurately reflects implementation
+  ▣ stale      · code changed since doc was last updated
+  □ missing    · module/feature has no documentation
+  ▸ intent     · doc written before code (DTC-first), not yet implemented
+  ▸ generated  · auto-generated by tooling listed in Conventions.auto_gen
 
 Audit finding types:
-  gap         — documented but not implemented
-  stale       — code changed, docs not updated
-  redundant   — same information in multiple places
-  misaligned  — docs contradict implementation
+  gap         · documented but not implemented
+  stale       · code changed, docs not updated
+  redundant   · same information in multiple places
+  misaligned  · docs contradict implementation
 
 Severity:
-  critical — will cause user errors
-  warning  — may cause confusion
-  info     — minor issue
+  critical · will cause user errors
+  warning  · may cause confusion
+  info     · minor issue
 
 Sections:
-  Conventions      — project-level doc config (doc_root, style, auto_gen, versioning)
-  Artifact Mapping — canonical-to-path lookup for skill state files
-  Index            — document registry with status tracking
-  Coverage         — quantitative doc health summary
-  Audit Log        — timestamped findings from dokumentera audits
+  Conventions      · project-level doc config (doc_root, style, auto_gen, versioning)
+  Artifact Mapping · canonical-to-path lookup for skill state files
+  Index            · document registry with status tracking
+  Coverage         · quantitative doc health summary
+  Audit Log        · timestamped findings from dokumentera audits
 
 DTC principle:
   If code diverges from docs, the code is wrong. File to ISSUES.md, don't update docs

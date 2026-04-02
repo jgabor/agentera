@@ -22,7 +22,7 @@ npx skills add jgabor/agentera
 
 ---
 
-Type `/hej` and agentera reads your entire project — code, git history, open issues, health grades — and tells you where things stand:
+Type `/hej` and agentera reads your entire project (code, git history, open issues, health grades) and tells you where things stand:
 
 ```
 ┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
@@ -41,7 +41,7 @@ Type `/hej` and agentera reads your entire project — code, git history, open i
 
 ─── attention ──────────────────────────
 
-  ⇉ test coverage below 60% — degrading since cycle 8
+  ⇉ test coverage below 60%, degrading since cycle 8
   ⇉ task 7 blocked on API schema decision
 
 ─── next ───────────────────────────────
@@ -49,7 +49,7 @@ Type `/hej` and agentera reads your entire project — code, git history, open i
   suggested → ❈ /resonera (resolve API schema to unblock task 7)
 ```
 
-Every skill suggests what to do next when it finishes. You follow the thread — or let agentera run on its own with `/loop`, picking up work, building, verifying, and continuing without intervention.
+Every skill suggests what to do next when it finishes. You follow the thread, or let agentera run on its own with `/loop`, picking up work, building, verifying, and continuing without intervention.
 
 ---
 
@@ -57,21 +57,21 @@ Every skill suggests what to do next when it finishes. You follow the thread —
 
 |     | Skill                                | What it does                                                                                                         |
 | :-: | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-|  🞔  | [hej](./skills/hej/)                 | **Entry point** — Reads your project state, shows what needs attention, suggests where to start.                     |
-|  ⛥  | [visionera](./skills/visionera/)     | **Envision** — Defines and evolves your project's north star through codebase exploration and aspirational challenge. |
-|  ❈  | [resonera](./skills/resonera/)       | **Deliberate** — Thinks through hard decisions via Socratic questioning before you commit.                           |
-|  ⬚  | [inspirera](./skills/inspirera/)     | **Research** — Analyzes an external resource and maps its patterns to your project.                                  |
-|  ≡  | [planera](./skills/planera/)         | **Plan** — Breaks work into tasks with clear done-criteria, scales from quick notes to full plans.                   |
-|  ⧉  | [realisera](./skills/realisera/)     | **Build** — Autonomous development loop that picks up work, implements, verifies, and continues.                     |
-|  ⎘  | [optimera](./skills/optimera/)       | **Tune** — Picks a metric, runs experiments, measures results, iterates until it improves.                           |
-|  ⛶  | [inspektera](./skills/inspektera/)   | **Audit** — Audits code health across six dimensions, tracks trends over time.                                       |
-|  ▤  | [dokumentera](./skills/dokumentera/) | **Document** — Creates and maintains docs, tracks what's covered and what's missing.                                 |
-|  ♾  | [profilera](./skills/profilera/)     | **Know thyself** — Learns your decision patterns so other skills adapt to how you work.                              |
-|  ◰  | [visualisera](./skills/visualisera/) | **Visualize** — Creates and maintains a visual identity system for your project.                                     |
+|  🞔  | [hej](./skills/hej/)                 | **Entry point.** Reads your project state, shows what needs attention, suggests where to start.                     |
+|  ⛥  | [visionera](./skills/visionera/)     | **Envision.** Defines and evolves your project's north star through codebase exploration and aspirational challenge. |
+|  ❈  | [resonera](./skills/resonera/)       | **Deliberate.** Thinks through hard decisions via Socratic questioning before you commit.                           |
+|  ⬚  | [inspirera](./skills/inspirera/)     | **Research.** Analyzes an external resource and maps its patterns to your project.                                  |
+|  ≡  | [planera](./skills/planera/)         | **Plan.** Breaks work into tasks with clear done-criteria, scales from quick notes to full plans.                   |
+|  ⧉  | [realisera](./skills/realisera/)     | **Build.** Autonomous development loop that picks up work, implements, verifies, and continues.                     |
+|  ⎘  | [optimera](./skills/optimera/)       | **Tune.** Picks a metric, runs experiments, measures results, iterates until it improves.                           |
+|  ⛶  | [inspektera](./skills/inspektera/)   | **Audit.** Audits code health across six dimensions, tracks trends over time.                                       |
+|  ▤  | [dokumentera](./skills/dokumentera/) | **Document.** Creates and maintains docs, tracks what's covered and what's missing.                                 |
+|  ♾  | [profilera](./skills/profilera/)     | **Know thyself.** Learns your decision patterns so other skills adapt to how you work.                              |
+|  ◰  | [visualisera](./skills/visualisera/) | **Visualize.** Creates and maintains a visual identity system for your project.                                     |
 
 ## How it works
 
-Skills communicate through markdown files in your project — a vision doc, a plan, a health report, a decision log. Each skill reads what the others have written and acts on it. You don't manage these files; they build up naturally as you work.
+Skills communicate through markdown files in your project: a vision doc, a plan, a health report, a decision log. Each skill reads what the others have written and acts on it. You don't manage these files; they build up naturally as you work.
 
 ```
                        🞔 hej
