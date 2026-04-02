@@ -68,7 +68,7 @@ Tasks 3-5 follow this reference when applying the pattern to other skills.
 
 ### Task 3: Warm up inspektera and optimera output framing
 **Depends on**: Tasks 1, 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN inspektera audit findings WHEN output template is read THEN every data-dense section has interpretive framing before structured data (per Task 1 reference)
 ▸ GIVEN optimera experiment results WHEN output template is read THEN results sections have interpretive framing, not raw metric tables
@@ -76,7 +76,7 @@ Tasks 3-5 follow this reference when applying the pattern to other skills.
 
 ### Task 4: Warm up planera and realisera step instructions
 **Depends on**: Tasks 1, 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN planera's step instructions WHEN read THEN steps describe a colleague's reasoning process, not a form-filling procedure
 ▸ GIVEN realisera's cycle steps WHEN read THEN all steps maintain the same voice, not just the brainstorm phase
@@ -84,7 +84,7 @@ Tasks 3-5 follow this reference when applying the pattern to other skills.
 
 ### Task 5: Warm up profilera, dokumentera, inspirera output
 **Depends on**: Tasks 1, 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN profilera's profile output instructions WHEN read THEN output framing describes a colleague reflecting, not an algorithm reporting
 ▸ GIVEN dokumentera's step instructions WHEN read THEN doc work is framed as a colleague's process, not a procedure engine

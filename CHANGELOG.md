@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Added
-- "Sharp colleague" voice: hej dashboard rewritten with human frame pattern — conversational opener before metrics, selective capability sharing in fresh mode (Decision 16)
+- "Sharp colleague" voice across all 11 skills: human frame pattern (conversational opener before structured data), unified personality in resonera/visionera/visualisera, warm output framing in inspektera/optimera/planera/realisera/profilera/dokumentera/inspirera (Decision 16)
 - Formatting standard across ecosystem: divider hierarchy, exit signal format, step markers with N/M progress, opener phrasing, scratchpad container (Decision 14)
 - Context snapshot in realisera cycle entries (intent, constraints, unknowns, scope) for cross-cycle coherence
 - Unresolved-decision gate in realisera work selection — flags exploratory DECISIONS.md entries before building on them
