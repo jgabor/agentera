@@ -3,12 +3,12 @@
 ## ⇶ Critical
 
 ## ⇉ Degraded
-- [ ] ISS-20: Implement formatting decisions (Decision 14) — update all 11 SKILL.md files with standardized exit signal template, step markers, opener instruction phrasing, verb renames, scratchpad container, and style rules; update ecosystem-spec.md Section 12 with divider hierarchy and exit signal format
 
 ## ⇢ Annoying
 - [ ] ISS-19: Consider explicit phase tracking in PROGRESS.md — define valid skill-chain transitions (envision → deliberate → plan → build → audit) with terminal states; skills check phase and flag out-of-order runs
 
 ## Resolved
+- [x] ~~ISS-20: Implement formatting decisions (Decision 14)~~ — fixed in 8dfb6fe..e73d31e
 - [x] ~~ISS-16: Add context snapshot to realisera cycle start~~ — fixed in 73a5d26
 - [x] ~~ISS-17: Scale inspektera audit depth by change magnitude~~ — fixed in 73a5d26
 - [x] ~~ISS-18: Add unresolved-decision gate to realisera~~ — fixed in 73a5d26
