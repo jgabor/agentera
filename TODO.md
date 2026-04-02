@@ -3,8 +3,14 @@
 ## ⇶ Critical
 
 ## ⇉ Degraded
+- [ ] ISS-26: Refine skill voice to match "sharp colleague" standard (Decision 16) — hej dashboard, inspektera audit output, planera/optimera/profilera steps all read like monitoring tools; update outputs to use dashboard + human frame pattern (structured data stays, bookended by conversational opening and summary); converge resonera/visionera/visualisera personality sections to unified voice
+- [ ] ISS-21: Add separated evaluator to realisera — spawn a fresh `claude -p` session after each task that runs inspektera-style audit against the task's acceptance criteria; gate task completion on evaluator PASS verdict (inspired by harness GAN pattern)
+- [ ] ISS-22: Build headless runner script (`scripts/runner.py`) — batch orchestrator that reads PLAN.md, iterates tasks, launches Claude sessions with synthesized prompts, runs verification + evaluation gates, handles retries (max 2), updates PROGRESS.md; enables overnight autonomous runs and CI integration
 
 ## ⇢ Annoying
+- [ ] ISS-25: Implement four-tier priority system with type tags (Decision 15) — add → Normal tier between Degraded and Annoying; add conventional commit type tags `[feat]`/`[fix]`/etc. after colon in issue format; update ecosystem-spec.md severity section, TODO-template.md, and retroactively tag existing issues
+- [ ] ISS-23: Add structured AC verification to planera → realisera handoff — ensure planera's acceptance criteria are testable and specific enough for mechanical verification; add "Verification" subsection to PLAN.md tasks describing how each AC can be checked
+- [ ] ISS-24: Encode retry caps in ecosystem spec — add `max_retry_cycles` primitive (default: 2) to `references/ecosystem-spec.md` that realisera and the runner both respect; after max retries, task resets to pending and escalates
 - [ ] ISS-19: Consider explicit phase tracking in PROGRESS.md — define valid skill-chain transitions (envision → deliberate → plan → build → audit) with terminal states; skills check phase and flag out-of-order runs
 
 ## Resolved

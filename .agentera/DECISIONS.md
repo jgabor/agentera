@@ -642,3 +642,75 @@ hypothesize → propose) preserves vocabulary stability while fixing the worst o
 
 **Confidence**: ━ firm
 **Feeds into**: All 11 SKILL.md files, ecosystem-spec.md, artifact templates, linter, DOCS.md template
+
+---
+
+## Decision 15 — 2026-04-02
+
+**Question**: How should TODO.md categorize issues beyond bug-severity, and should issues carry type tags?
+**Context**: The inspirera analysis of harness filed four feature issues (ISS-21 through ISS-24)
+into Degraded and Annoying. These are new capabilities, not broken things — the bug-severity
+framing (Critical = broken, Degraded = works poorly, Annoying = cosmetic friction) doesn't
+accommodate features. Additionally, the lack of issue type metadata limits changelog generation
+and analytics.
+**Alternatives**:
+- [Severity-only, stretch definitions] — rejected: forces features into problem language
+- [Separate "Features" section alongside severity] — rejected: splits by type instead of priority
+- [Two-axis system (type × priority)] — rejected: too much taxonomy for a working document
+- [Rename headers to priority language] — rejected: existing names already read as priority tiers
+**Choice**: Four-tier priority system with type tags. Add → Normal (U+2192, Arrows block) between
+Degraded and Annoying. Keep existing header names. Add conventional commit type tags per issue.
+
+**Reasoning**: The three tiers were functioning as priority, not severity — a high-impact feature
+belongs in ⇉ Degraded alongside a degradation. The missing tier was "default/standard work" that
+isn't degraded but isn't trivially annoying either. → Normal fills this. Type tags earn their keep
+through three concrete payoffs: triage (batching fixes vs features), changelog generation
+(dokumentera can auto-categorize), and analytics (feature/fix ratio tracking). Full conventional
+commit vocabulary (feat, fix, docs, refactor, chore, test, perf) eliminates translation between
+TODO and commits.
+
+### Design
+
+**Priority tiers** (all from Unicode Arrows block U+2190–U+21FF):
+
+| Tier | Symbol | Name |
+|------|--------|------|
+| 1 | ⇶ | Critical |
+| 2 | ⇉ | Degraded |
+| 3 | → | Normal |
+| 4 | ⇢ | Annoying |
+
+**Issue format**: `- [ ] ISS-N: [type] Description — details`
+
+**Type tags**: feat, fix, docs, refactor, chore, test, perf (matching conventional commits)
+
+**Confidence**: firm
+**Feeds into**: TODO.md, ecosystem-spec.md, TODO-template.md
+
+## Decision 16 — 2026-04-02
+
+**Question**: How should the ecosystem's voice and tone work across all 11 skills?
+**Context**: An inspektera-style tone audit revealed a systemic split: three skills (resonera,
+visionera, visualisera) have distinct personality sections and feel like teammates; the rest
+(hej, planera, inspektera, optimera, profilera, dokumentera, inspirera, realisera) read like
+monitoring dashboards or workflow engines. The VISION.md promises "a competent team at your
+back" but half the skills feel like a different product. Hej's returning-mode dashboard — the
+first thing a user sees — is pure metrics with no warmth.
+**Alternatives**:
+- [Distinct personalities per skill] — rejected: fragments the team into different-sounding individuals
+- [Add personality sections to every skill] — rejected: mechanical fix; if the vision is strong enough, voice emerges naturally from development
+- [Skills only, no vision change] — rejected: the voice standard needs a source of truth
+- [Ecosystem spec as voice home] — rejected: voice is identity, not a shared primitive
+**Choice**: Define a single "sharp colleague" voice in VISION.md. One voice, many hats — the
+difference between skills is expertise, not personality. Data-dense outputs (dashboards, audit
+findings, plans) use a "dashboard + human frame" pattern: structured data stays for
+scannability, bookended by conversational opening and summary.
+**Reasoning**: The vision already defines aesthetics and identity. Voice belongs there because
+skills developed *in alignment with the vision* should naturally adopt the right tone — adding
+personality sections to each skill treats the symptom. "Sharp colleague" (casual, opinionated,
+occasionally playful, pushes back) was chosen over "workshop-floor" (too terse) and "quiet
+confidence" (warmth through rigor alone is too cold). The dashboard + human frame pattern
+resolves the tension between scannability and warmth: the data is evidence, the voice is
+interpretation.
+**Confidence**: firm
+**Feeds into**: VISION.md (Identity section), skill refinement across all 11 SKILL.md files
