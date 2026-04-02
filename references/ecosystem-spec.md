@@ -1,7 +1,7 @@
 # Ecosystem Spec
 
 <!-- Shared primitives for the agentera ecosystem. -->
-<!-- All 11 skills/*/SKILL.md files must align with this spec. -->
+<!-- All 12 skills/*/SKILL.md files must align with this spec. -->
 <!-- Validated by scripts/validate-ecosystem.py (pre-commit hook). -->
 <!-- See Decisions 7 and 8 in DECISIONS.md for rationale. -->
 
@@ -134,12 +134,12 @@ Three project-facing files at the project root; eight operational files in `.age
 | Artifact | Path | Producer | Consumers | Key structural elements |
 |----------|------|----------|-----------|------------------------|
 | VISION.md | VISION.md | visionera, realisera | realisera, planera, inspektera, dokumentera, visualisera | ## North Star, ## Who It's For, ## Principles, ## Direction, ## Identity |
-| TODO.md | TODO.md | realisera, inspektera | realisera, planera | ## ⇶ Critical, ## ⇉ Degraded, ## ⇢ Annoying, ## Resolved |
+| TODO.md | TODO.md | realisera, inspektera | realisera, planera, orkestrera | ## ⇶ Critical, ## ⇉ Degraded, ## ⇢ Annoying, ## Resolved |
 | CHANGELOG.md | CHANGELOG.md | realisera | project contributors | ## [Unreleased], ### Added/Changed/Fixed |
-| DECISIONS.md | .agentera/DECISIONS.md | resonera | planera, realisera, inspektera, profilera, optimera | ## Decision N · date, **Question/Context/Alternatives/Choice/Reasoning/Confidence/Feeds into** |
-| PLAN.md | .agentera/PLAN.md | planera | realisera, inspektera | <!-- Level/Created/Status -->, ## Tasks with ### Task N, **Status/Depends on/Acceptance** |
-| PROGRESS.md | .agentera/PROGRESS.md | realisera | planera, inspektera, dokumentera, visionera | ## Cycle N · date, **What/Commit/Inspiration/Discovered/Next/Context** |
-| HEALTH.md | .agentera/HEALTH.md | inspektera | realisera, planera | ## Audit N · date, **Dimensions/Findings/Overall/Grades**, per-dimension sections |
+| DECISIONS.md | .agentera/DECISIONS.md | resonera | planera, realisera, inspektera, profilera, optimera, orkestrera | ## Decision N · date, **Question/Context/Alternatives/Choice/Reasoning/Confidence/Feeds into** |
+| PLAN.md | .agentera/PLAN.md | planera | realisera, inspektera, orkestrera | <!-- Level/Created/Status -->, ## Tasks with ### Task N, **Status/Depends on/Acceptance** |
+| PROGRESS.md | .agentera/PROGRESS.md | realisera | planera, inspektera, dokumentera, visionera, orkestrera | ## Cycle N · date, **What/Commit/Inspiration/Discovered/Next/Context** |
+| HEALTH.md | .agentera/HEALTH.md | inspektera | realisera, planera, orkestrera | ## Audit N · date, **Dimensions/Findings/Overall/Grades**, per-dimension sections |
 | OBJECTIVE.md | .agentera/OBJECTIVE.md | optimera | optimera | ## Metric, ## Target, ## Baseline, ## Constraints |
 | EXPERIMENTS.md | .agentera/EXPERIMENTS.md | optimera | optimera | ## Experiment N · date, **Hypothesis/Method/Result/Conclusion** |
 | DESIGN.md | .agentera/DESIGN.md | visualisera | realisera, visionera | Standard sections per DESIGN-spec.md |
@@ -297,7 +297,7 @@ Every SKILL.md MUST contain a `## Cross-skill integration` section. Requirements
 
 ### Ecosystem language
 
-The section MUST open with: "[Skill name] is part of an eleven-skill ecosystem."
+The section MUST open with: "[Skill name] is part of a twelve-skill ecosystem."
 
 ### Required references
 
@@ -305,6 +305,7 @@ The skill dependency graph defines which skills must be referenced:
 
 | Skill | Must reference |
 |-------|---------------|
+| hej | visionera, resonera, planera, realisera, inspektera, optimera, dokumentera, visualisera, profilera, inspirera, orkestrera |
 | inspirera | realisera, optimera, visionera, resonera, profilera |
 | profilera | realisera, optimera, inspirera, resonera, inspektera |
 | realisera | visionera, optimera, inspirera, resonera, planera, inspektera, profilera |
@@ -315,6 +316,7 @@ The skill dependency graph defines which skills must be referenced:
 | visionera | realisera, resonera, profilera, inspirera, inspektera, visualisera |
 | dokumentera | planera, realisera, inspektera, visionera, profilera |
 | visualisera | visionera, realisera, dokumentera, inspektera, profilera, inspirera, resonera |
+| orkestrera | planera, realisera, inspektera, inspirera, dokumentera, profilera, visionera, resonera, optimera, visualisera |
 
 **Linter check**: Deterministic. Section heading presence, ecosystem language match, required skill references present.
 
@@ -375,7 +377,7 @@ Each SKILL.md MUST contain a `## Exit signals` section with:
 
 ## 11. Loop Guard
 
-Skills that run autonomous loops (currently: realisera, optimera) MUST include an escalation rule to prevent runaway cycles producing bad work.
+Skills that run autonomous loops (currently: realisera, optimera, orkestrera) MUST include an escalation rule to prevent runaway cycles producing bad work.
 
 ### The rule
 
@@ -401,17 +403,17 @@ Optimera's existing plateau detection in `analyze_experiments.py` detects experi
 
 ### Applicability
 
-The escalation rule is REQUIRED for autonomous-loop skills: `realisera`, `optimera`.
+The escalation rule is REQUIRED for autonomous-loop skills: `realisera`, `optimera`, `orkestrera`.
+
+Orkestrera uses retry-based failure detection (max 2 retries per task, escalation after 3 consecutive task failures) rather than PROGRESS.md consecutive-failure inspection.
 
 Other skills MAY include loop guard language but are not required to. Their workflows are typically single-invocation and do not risk runaway cycles.
 
 ### SKILL.md structural requirement
 
-Autonomous-loop skills MUST include loop guard language in their
-`## Exit signals` section, referencing the 3-failure threshold and
-PROGRESS.md inspection.
+Autonomous-loop skills MUST include loop guard language in their `## Exit signals` section, referencing the 3-failure threshold and either PROGRESS.md inspection (realisera, optimera) or retry-based task failure detection (orkestrera).
 
-**Linter check**: Deterministic. For skills in the autonomous-loop set (realisera, optimera), check that the `## Exit signals` section contains both "3" (the threshold) and a reference to PROGRESS.md or consecutive failure detection (`loop-guard`). Advisory for all other skills.
+**Linter check**: Deterministic. For skills in the autonomous-loop set (realisera, optimera, orkestrera), check that the `## Exit signals` section contains both "3" (the threshold) and a reference to PROGRESS.md, consecutive failure detection, or retry-based task failure patterns (`loop-guard`). Orkestrera uses retry/task-based patterns instead of PROGRESS.md. Advisory for all other skills.
 
 ## 12. Visual Identity
 

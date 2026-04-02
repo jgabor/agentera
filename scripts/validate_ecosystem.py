@@ -5,7 +5,7 @@
 # ///
 """Ecosystem linter for agentera SKILL.md files.
 
-Validates all 11 SKILL.md files against the ecosystem spec
+Validates all 12 SKILL.md files against the ecosystem spec
 (references/ecosystem-spec.md). Checks frontmatter, confidence scales,
 severity levels, decision labels, artifact path resolution, profile
 consumption, cross-skill integration, safety rails, artifact format
@@ -30,6 +30,7 @@ REQUIRED_REFS: dict[str, list[str]] = {
     "hej": [
         "visionera", "resonera", "planera", "realisera", "inspektera",
         "optimera", "dokumentera", "visualisera", "profilera", "inspirera",
+        "orkestrera",
     ],
     "inspirera": ["realisera", "optimera", "visionera", "resonera", "profilera"],
     "profilera": ["realisera", "optimera", "inspirera", "resonera", "inspektera"],
@@ -58,13 +59,17 @@ REQUIRED_REFS: dict[str, list[str]] = {
         "visionera", "realisera", "dokumentera", "inspektera", "profilera",
         "inspirera", "resonera",
     ],
+    "orkestrera": [
+        "planera", "realisera", "inspektera", "inspirera", "dokumentera",
+        "profilera", "visionera", "resonera", "optimera", "visualisera",
+    ],
 }
 
 SCRIPT_PATTERN_CONSUMERS = {
     "realisera", "optimera", "inspektera", "planera", "inspirera",
 }
 
-AUTONOMOUS_LOOP_SKILLS = {"realisera", "optimera"}
+AUTONOMOUS_LOOP_SKILLS = {"realisera", "optimera", "orkestrera"}
 
 # Artifact format contracts (spec section 4).
 # Key = artifact name, value = (producer skill(s), key structural elements).
@@ -480,26 +485,26 @@ def check_cross_skill_integration(skill: str, text: str, r: Results) -> None:
         r.error(skill, "cross-skill-refs", "Missing ## Cross-skill integration section")
         return
 
-    # Must contain "eleven-skill ecosystem".
-    if "eleven-skill ecosystem" not in section.lower():
+    # Must contain "twelve-skill ecosystem".
+    if "twelve-skill ecosystem" not in section.lower():
         bad_counts = []
-        for n in ("ten", "nine", "eight", "seven", "six", "five"):
+        for n in ("eleven", "ten", "nine", "eight", "seven", "six", "five"):
             if f"{n}-skill" in section.lower():
                 bad_counts.append(f"{n}-skill")
         if bad_counts:
             r.error(
                 skill, "cross-skill-refs",
-                f"Uses '{bad_counts[0]}' instead of 'eleven-skill ecosystem'",
+                f"Uses '{bad_counts[0]}' instead of 'twelve-skill ecosystem'",
             )
         elif "skill ecosystem" in section.lower():
             r.error(
                 skill, "cross-skill-refs",
-                "Says 'skill ecosystem' without specifying 'ten-skill'",
+                "Says 'skill ecosystem' without specifying 'twelve-skill'",
             )
         else:
             r.error(
                 skill, "cross-skill-refs",
-                "Missing 'eleven-skill ecosystem' in cross-skill integration section",
+                "Missing 'twelve-skill ecosystem' in cross-skill integration section",
             )
 
     # Check required references (case-insensitive word boundary match).
@@ -516,7 +521,7 @@ def check_cross_skill_integration(skill: str, text: str, r: Results) -> None:
             f"Missing reference to: {', '.join(missing)}",
         )
 
-    if "eleven-skill ecosystem" in section.lower() and not missing:
+    if "twelve-skill ecosystem" in section.lower() and not missing:
         r.ok(skill, "cross-skill-refs")
 
 
@@ -617,14 +622,19 @@ def check_loop_guard(skill: str, text: str, r: Results) -> None:
     if not re.search(r"\b3\b", section):
         errors.append("Missing reference to '3' (the consecutive-failure threshold)")
 
-    # Must reference PROGRESS.md or consecutive failure detection.
+    # Must reference PROGRESS.md, consecutive failure detection, or retry-based task failure.
     has_progress_ref = "PROGRESS.md" in section
     has_consecutive_ref = bool(
         re.search(r"consecutive\s+fail", section, re.IGNORECASE)
     )
-    if not has_progress_ref and not has_consecutive_ref:
+    has_retry_ref = bool(
+        re.search(r"\bretr", section, re.IGNORECASE)
+        and re.search(r"\btask", section, re.IGNORECASE)
+    )
+    if not has_progress_ref and not has_consecutive_ref and not has_retry_ref:
         errors.append(
-            "Missing reference to PROGRESS.md or consecutive failure detection"
+            "Missing reference to PROGRESS.md, consecutive failure detection, "
+            "or retry-based task failure detection"
         )
 
     if errors:

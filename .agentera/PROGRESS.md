@@ -1,5 +1,23 @@
 # Progress
 
+■ ## Cycle 73 · 2026-04-02
+
+**What**: Wrote skills/orkestrera/SKILL.md (316 lines). Full conductor protocol: Step 0 (assess/bootstrap), Steps 1-5 (select, dispatch, evaluate, resolve, log). Includes routing table, dispatch/evaluation prompt templates, retry logic, lean-conductor discipline table, 8 safety rails, loop guard, cross-skill integration referencing all 11 other skills.
+**Commit**: e71472f feat(orkestrera): write SKILL.md conductor protocol (Task 2)
+**Inspiration**: Decision 20, lira conductor/worker model, OpenAI agent-as-tool pattern
+**Discovered**: Linter expects "eleven-skill" (as the critic predicted). Confirmed Task 3 must patch the linter before Task 4 can change existing SKILL.md files.
+**Next**: Task 3 (update ecosystem-spec.md and linter). Critical path: must unblock Task 4.
+**Context**: intent (write orkestrera SKILL.md, the core deliverable) · constraints (ecosystem-spec compliance, no em-dashes, no hard wraps, no new artifacts) · unknowns (none) · scope (skills/orkestrera/SKILL.md)
+
+■ ## Cycle 72 · 2026-04-02
+
+**What**: Captured Decision 20 (orkestrera), restored lost Decisions 18-19, created PLAN.md with 7 tasks for ISS-29, assigned orkestrera glyph ⎈ (U+2388, helm symbol) in DESIGN.md and ecosystem-spec.md. Filed ISS-29, superseded ISS-21/22/23/24.
+**Commit**: 1858de0 feat(orkestrera): capture Decision 20, plan ISS-29, assign glyph (Task 1)
+**Inspiration**: Decision 20 (resonera deliberation informed by inspirera research on claude-code, lira, and 7 external frameworks)
+**Discovered**: Decisions 18-19 were accidentally dropped during ISS-28 formatting cleanup (em-dash heading separators removed but entries not preserved).
+**Next**: Task 2 (write skills/orkestrera/SKILL.md), the core deliverable.
+**Context**: intent (assign glyph for orkestrera, establish plan and decision foundation) · constraints (glyph must be visually distinct, evoke orchestration) · unknowns (none) · scope (DESIGN.md, ecosystem-spec.md, DECISIONS.md, TODO.md, PLAN.md)
+
 ■ ## Cycle 71 · 2026-04-02
 
 **What**: Added em-dash detection (error) and hard-wrap detection (advisory) to the ecosystem linter. Fixed ~32 remaining hard wraps the batch agents missed. Archived plan, resolved ISS-28. All 7 tasks complete.

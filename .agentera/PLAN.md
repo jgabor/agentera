@@ -38,7 +38,7 @@ The ecosystem-spec, linter, and all 11 existing SKILL.md cross-skill sections ne
 
 ### Task 1: Assign orkestrera glyph
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN DESIGN.md glyph registry WHEN reading orkestrera's entry THEN it has a unique glyph with code point and semantic meaning for orchestration
 ▸ GIVEN ecosystem-spec.md Section 12 glyph table WHEN reading orkestrera's row THEN it matches the DESIGN.md entry
@@ -46,7 +46,7 @@ The ecosystem-spec, linter, and all 11 existing SKILL.md cross-skill sections ne
 
 ### Task 2: Write skills/orkestrera/SKILL.md
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN a project with PLAN.md WHEN orkestrera is invoked THEN it reads the plan, picks the next pending task with satisfied dependencies, infers the target skill, and dispatches it as a subagent
 ▸ GIVEN a project without PLAN.md WHEN orkestrera is invoked THEN it chains inspirera (vision-gap analysis) and planera (plan creation) before proceeding to task dispatch
