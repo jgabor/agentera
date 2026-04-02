@@ -211,6 +211,7 @@ Evaluate test suite quality and coverage:
 - Check: testing behavior or implementation? Excessive mocking? Brittle assertions?
 - Evaluate test naming: can you understand what failed from the name alone?
 - Check test-to-code ratio per major module
+- Check test proportionality against ecosystem-spec Section 16: default is one pass + one fail per testable unit. Flag under-testing (0 tests for a testable unit) and over-testing (significantly exceeding the target without justification). If the project's plan specifies an override target, use that instead of the default.
 
 Don't just report a number. Identify the *highest-risk* coverage gaps.
 
