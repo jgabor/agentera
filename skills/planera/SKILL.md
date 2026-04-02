@@ -121,6 +121,7 @@ Deeper conversation:
   implementation details (functions, line-level changes).
 - **Task decomposition**: 3-8 ordered tasks, each one realisera cycle. Per task: one-line
   description, dependencies, 3-5 behavioral Given/When/Then acceptance criteria
+- **Test proportionality**: for tasks that include writing tests, add a proportionality target to acceptance criteria. Default: one pass + one fail per testable unit. For units with complex parsing, regex, or 3+ branches, state which get edge case expansion and why. Override the default only with explicit rationale alongside the adjusted target.
 - **Version bump check**: if DOCS.md has a `versioning` block and plan includes `feat`/`fix`
   work, add final task "Version bump per DOCS.md convention" depending on all others. No versioning convention = skip entirely.
 - **Overall acceptance criteria**: behavioral criteria for the complete feature
@@ -236,6 +237,10 @@ NOT implementation details.]
 ▸ ...
 
 [Repeat for 3-8 tasks]
+
+<!-- Test tasks: include a proportionality target in Acceptance.
+     Default: "1 pass + 1 fail per testable unit."
+     Override with rationale when complexity warrants more. -->
 
 ## Overall Acceptance
 ▸ GIVEN [context] WHEN [action] THEN [expected outcome]
