@@ -59,7 +59,7 @@ The ecosystem-spec, linter, and all 11 existing SKILL.md cross-skill sections ne
 
 ### Task 3: Update ecosystem-spec.md and linter
 **Depends on**: Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN ecosystem-spec.md Section 7 WHEN reading the cross-skill reference table THEN orkestrera has a row listing its required references (planera, realisera, inspektera, inspirera, dokumentera, profilera, visionera, resonera, optimera, visualisera)
 ▸ GIVEN ecosystem-spec.md Section 11 WHEN reading the autonomous-loop set THEN orkestrera is listed alongside realisera and optimera, with a note that orkestrera uses retry-based failure detection (max 2 per task) rather than PROGRESS.md consecutive-failure detection
@@ -70,7 +70,7 @@ The ecosystem-spec, linter, and all 11 existing SKILL.md cross-skill sections ne
 
 ### Task 4: Update all existing SKILL.md files
 **Depends on**: Task 3
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN any of the 11 existing SKILL.md files WHEN reading the cross-skill integration section THEN the ecosystem language says "twelve-skill ecosystem"
 ▸ GIVEN hej's SKILL.md routing table WHEN reading entries THEN orkestrera appears with its glyph and a trigger description for orchestrated multi-cycle execution
@@ -80,7 +80,7 @@ The ecosystem-spec, linter, and all 11 existing SKILL.md cross-skill sections ne
 
 ### Task 5: Create manifests and registry entries
 **Depends on**: Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN skills/orkestrera/.claude-plugin/plugin.json WHEN parsed as JSON THEN it has name, version (1.5.0), description, and author fields consistent with the SKILL.md frontmatter
 ▸ GIVEN registry.json WHEN parsed as JSON THEN orkestrera entry exists with name, version (1.5.0), description, path, tags, and added date
@@ -88,7 +88,7 @@ The ecosystem-spec, linter, and all 11 existing SKILL.md cross-skill sections ne
 
 ### Task 6: Update project documentation
 **Depends on**: Tasks 2, 3
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN README.md skill table WHEN reading entries THEN orkestrera appears with its glyph, name, and description
 ▸ GIVEN README.md ecosystem diagram WHEN reading THEN orkestrera is represented with its connections to dispatched skills
@@ -97,7 +97,7 @@ The ecosystem-spec, linter, and all 11 existing SKILL.md cross-skill sections ne
 
 ### Task 7: Linter validation and version bump
 **Depends on**: Tasks 3, 4, 5, 6
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the repository WHEN running python3 scripts/validate_ecosystem.py THEN output shows 0 errors and 0 warnings
 ▸ GIVEN all version_files listed in DOCS.md WHEN reading version fields THEN all show 1.5.0
@@ -111,3 +111,4 @@ The ecosystem-spec, linter, and all 11 existing SKILL.md cross-skill sections ne
 ▸ GIVEN orkestrera's SKILL.md WHEN reading the conductor protocol THEN the workflow is deterministic: a fixed state machine that dispatches, evaluates, retries, and loops
 
 ## Surprises
+- profilera at 2.3.0 cannot be bumped to 1.5.0 (downgrade). Bumped to 2.4.0 instead (minor bump respecting its major version track).

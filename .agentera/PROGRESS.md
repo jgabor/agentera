@@ -1,5 +1,41 @@
 # Progress
 
+■ ## Cycle 77 · 2026-04-02
+
+**What**: Linter validation (0/0), version bump to 1.5.0 (profilera to 2.4.0), CHANGELOG promoted to [1.5.0]. Plan archived, ISS-29 resolved. All 7 tasks complete.
+**Commit**: 3decb87 chore(orkestrera): validate linter, bump version to 1.5.0 (Task 7)
+**Inspiration**: None
+**Discovered**: profilera at 2.3.0 is on a separate major version track; cannot bump to 1.5.0 without downgrade. Bumped to 2.4.0 instead.
+**Next**: Plan complete. ISS-29 resolved. Resume vision-driven work.
+**Context**: intent (final validation, version bump, archive plan, resolve ISS-29) · constraints (linter 0/0, all version_files consistent) · unknowns (none) · scope (version_files, CHANGELOG.md, PLAN.md archive, TODO.md)
+
+■ ## Cycle 76 · 2026-04-02
+
+**What**: Tasks 5 and 6 in parallel. Created orkestrera plugin.json (v1.5.0), added to registry.json and marketplace.json. Updated README (skill table, ecosystem diagram with orkestrera between planera and realisera, artifact consumer tables), CLAUDE.md (twelve skills, orkestrera dispatch bullet), DOCS.md (12/12 coverage).
+**Commit**: 62da434 feat(orkestrera): add manifests, registry, and update project docs (Tasks 5-6)
+**Inspiration**: None (mechanical changes following existing patterns)
+**Discovered**: None. Both agents completed cleanly.
+**Next**: Task 7 (linter validation + version bump to 1.5.0). Last task in the plan.
+**Context**: intent (create manifests and update project docs for orkestrera) · constraints (JSON must parse, linter must pass, version 1.5.0) · unknowns (none) · scope (plugin.json, registry.json, marketplace.json, README.md, CLAUDE.md, DOCS.md)
+
+■ ## Cycle 75 · 2026-04-02
+
+**What**: Updated all 11 existing SKILL.md files: eleven-skill → twelve-skill (10 files via batch agent), hej routing table + cross-skill + count references via dedicated agent. Linter: 0 errors, 0 warnings across 12 skills.
+**Commit**: beafea2 feat(orkestrera): update all SKILL.md files for twelve-skill ecosystem (Task 4)
+**Inspiration**: ISS-28 batch agent lessons (dispatch parallel agents, verify with linter)
+**Discovered**: Batch agent also caught article correction ("an eleven" → "a twelve"). Hej agent correctly added orkestrera to routing logic (has plan → /orkestrera, else → /realisera).
+**Next**: Tasks 5 and 6 (manifests/registry and project docs). Both unblocked. Can run in parallel.
+**Context**: intent (update all existing SKILL.md files for twelve-skill ecosystem) · constraints (linter must pass 0/0) · unknowns (none) · scope (11 existing SKILL.md files)
+
+■ ## Cycle 74 · 2026-04-02
+
+**What**: Updated ecosystem-spec.md and linter for 12 skills. Added orkestrera to cross-skill table, autonomous-loop set, format contracts consumers. Patched linter: REQUIRED_REFS, AUTONOMOUS_LOOP_SKILLS, twelve-skill validation, retry-based loop guard check.
+**Commit**: d2a0536 feat(orkestrera): update ecosystem-spec and linter for 12 skills (Task 3)
+**Inspiration**: Adversarial critic issue #1 (linter hardcodes "eleven-skill")
+**Discovered**: None. Worktree agent handled all edits cleanly.
+**Next**: Task 4 (update all 11 existing SKILL.md files: eleven→twelve, hej routing). Now unblocked.
+**Context**: intent (update spec + linter to support 12 skills, unblock Task 4) · constraints (linter must pass for orkestrera, existing files expected to fail on count until Task 4) · unknowns (none) · scope (ecosystem-spec.md, validate_ecosystem.py)
+
 ■ ## Cycle 73 · 2026-04-02
 
 **What**: Wrote skills/orkestrera/SKILL.md (316 lines). Full conductor protocol: Step 0 (assess/bootstrap), Steps 1-5 (select, dispatch, evaluate, resolve, log). Includes routing table, dispatch/evaluation prompt templates, retry logic, lean-conductor discipline table, 8 safety rails, loop guard, cross-skill integration referencing all 11 other skills.
