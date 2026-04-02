@@ -635,6 +635,107 @@ def check_loop_guard(skill: str, text: str, r: Results) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Punctuation and line-break checks (ecosystem-spec sections 14-15)
+# ---------------------------------------------------------------------------
+
+def _strip_code_blocks(text: str) -> str:
+    """Remove fenced code blocks (``` ... ```) from text, including indented ones."""
+    return re.sub(
+        r"^(\s*`{3,})[^\n]*\n.*?^\s*`{3,}\s*$", "", text,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+
+
+def _strip_inline_code(text: str) -> str:
+    """Remove inline code (`...`) from text."""
+    return re.sub(r"`[^`\n]+`", "", text)
+
+
+def _strip_frontmatter(text: str) -> str:
+    """Remove YAML frontmatter (--- ... ---) from the start of text."""
+    if text.startswith("---"):
+        end = text.find("---", 3)
+        if end != -1:
+            return text[end + 3:]
+    return text
+
+
+def check_em_dashes(skill: str, text: str, r: Results) -> None:
+    """Check 12: No em-dash characters in prose (ecosystem-spec section 14).
+
+    Deterministic. Searches for U+2014 outside code blocks and inline code.
+    """
+    cleaned = _strip_frontmatter(text)
+    cleaned = _strip_code_blocks(cleaned)
+    cleaned = _strip_inline_code(cleaned)
+
+    em_dash_lines = []
+    for i, line in enumerate(cleaned.splitlines(), start=1):
+        if "\u2014" in line:
+            em_dash_lines.append(i)
+
+    if em_dash_lines:
+        r.error(
+            skill, "em-dashes",
+            f"Em-dash character found in prose on {len(em_dash_lines)} line(s)",
+        )
+    else:
+        r.ok(skill, "em-dashes")
+
+
+def check_hard_wraps(skill: str, text: str, r: Results) -> None:
+    """Check 13: No hard-wrapped prose paragraphs (ecosystem-spec section 15).
+
+    Advisory. Detects consecutive non-blank prose lines outside code blocks,
+    lists, tables, headings, and frontmatter.
+    """
+    cleaned = _strip_frontmatter(text)
+    cleaned = _strip_code_blocks(cleaned)
+
+    structural_line = re.compile(
+        r"^\s*("
+        r"#"              # heading
+        r"|-\s"           # unordered list
+        r"|\*\s"          # unordered list (asterisk)
+        r"|\d+\w*\.\s"    # ordered list (1. or 3b. or 5c.)
+        r"|\|"            # table row
+        r"|>"             # blockquote
+        r"|<!--"          # HTML comment
+        r"|</?critical>"  # critical tags
+        r"|▸"             # list item glyph
+        r"|\*\*"          # bold label (metadata line)
+        r"|✗\s"           # narration contrast (bad example)
+        r"|✓\s"           # narration contrast (good example)
+        r"|Format:"       # format instruction line
+        r"|$"             # blank line
+        r")"
+    )
+
+    consecutive_prose = 0
+    prev_line = ""
+    violations = 0
+
+    for line in cleaned.splitlines():
+        if structural_line.match(line):
+            consecutive_prose = 0
+            prev_line = ""
+        else:
+            consecutive_prose += 1
+            if consecutive_prose >= 2 and 70 <= len(prev_line.strip()) <= 120:
+                violations += 1
+                consecutive_prose = 0
+            prev_line = line
+
+    if violations > 0:
+        r.warn(
+            skill, "hard-wraps",
+            f"{violations} instance(s) of consecutive prose lines (possible hard wraps)",
+        )
+    else:
+        r.ok(skill, "hard-wraps")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -654,6 +755,8 @@ def validate_skill(path: Path, r: Results) -> None:
     check_artifact_format(skill, text, r)
     check_exit_signals(skill, text, r)
     check_loop_guard(skill, text, r)
+    check_em_dashes(skill, text, r)
+    check_hard_wraps(skill, text, r)
 
 
 def main() -> int:

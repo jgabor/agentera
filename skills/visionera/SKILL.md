@@ -104,8 +104,7 @@ Offer:
 > **Replace**: Start fresh with a deep brainstorm. Archives the current vision and creates a new one from scratch.
 
 If **Refine**, skip to Refine mode.
-If **Replace**, archive current VISION.md to `.agentera/archive/VISION-{date}.md`, then proceed
-to Create mode.
+If **Replace**, archive current VISION.md to `.agentera/archive/VISION-{date}.md`, then proceed to Create mode.
 
 ---
 
@@ -127,8 +126,7 @@ If code exists, read deeply before asking questions. You arrive informed.
 7. Read DESIGN.md for existing visual identity
 8. `git log --oneline -30` for recent story
 
-Synthesize: "The project does X, built with Y, moving toward Z. Strongest patterns: A.
-Gaps: B."
+Synthesize: "The project does X, built with Y, moving toward Z. Strongest patterns: A. Gaps: B."
 
 Greenfield? Skip to Step 2.
 
@@ -153,29 +151,25 @@ Engage the user. One question at a time via `AskUserQuestion` (always include `D
 Follow a narrative arc, not a checklist. Adapt, but cover:
 
 1. **The dream**: "Based on what I see in the codebase [and the domain research], here's
-   where I think this wants to go: [synthesis]. But I bet you're thinking bigger than that.
-   What does this project make possible if it wildly succeeds?"
+   where I think this wants to go: [synthesis]. But I bet you're thinking bigger than that. What does this project make possible if it wildly succeeds?"
 
    Push beyond utility: "It does X faster, but why does that matter? What can they do that they couldn't before?"
 
 2. **The people**: "Who reaches for this? Not 'developers,' a specific person. Their
    Tuesday morning. The frustration that makes them think 'I need something better'?"
 
-   Challenge abstract personas: "'Data engineers': the one at a startup with 3 services,
-   or the one at a bank with 3,000?"
+   Challenge abstract personas: "'Data engineers': the one at a startup with 3 services, or the one at a bank with 3,000?"
 
 3. **The principles**: "What principles should guide every decision? What do you optimize
    for when you can't have everything? What do you actively resist?"
 
-   If decision profile exists, propose principles from it: "Your profile says you value X
-   over Y. Should that be a principle here?"
+   If decision profile exists, propose principles from it: "Your profile says you value X over Y. Should that be a principle here?"
 
 4. **The direction**: "Given all of that, where is this heading? Not features. Capabilities.
    What kind of tool does this become in a year? What would surprise you?"
 
 5. **The identity**: "If this product were a person, bold and direct, or quiet and precise?
-   How does it talk? How should it feel to use? What emotion does a successful interaction
-   leave?" Also naming: "Convention, cultural reference, philosophy?"
+   How does it talk? How should it feel to use? What emotion does a successful interaction leave?" Also naming: "Convention, cultural reference, philosophy?"
 
    If DESIGN.md exists: "Your visual system says X. Does the verbal identity match?"
 
@@ -244,9 +238,7 @@ Show the updated vision as a diff (what changed and why). Get explicit approval 
   visionera sessions only.
 - NEVER produce a clinical, requirements-style document. The vision should inspire, not specify. If it reads like a PRD, rewrite it.
 - NEVER skip the codebase exploration (Step 1) when code exists. Arriving informed is the whole point.
-- NEVER propose a vision so vague it can't guide autonomous development. "Make a great tool"
-  is not a vision. "Make it possible for a solo developer to ship production-grade systems
-  by letting an AI team handle the parts they'd otherwise skip" is.
+- NEVER propose a vision so vague it can't guide autonomous development. "Make a great tool" is not a vision. "Make it possible for a solo developer to ship production-grade systems by letting an AI team handle the parts they'd otherwise skip" is.
 - NEVER dismiss the user's ambition. If they dream big, help them articulate it. If they think small, push them bigger. But never cap their aspiration.
 
 </critical>

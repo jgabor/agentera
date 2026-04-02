@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Linter enforcement for em-dash detection (error) and hard-wrap detection (advisory warning) in validate_ecosystem.py
 - Em-dash removal, hard-wrap elimination, and heading separator migration (to middle dot ·) across all project docs, operational artifacts, and JSON manifests (Decisions 18, 19)
 - Em-dash removal and hard-wrap elimination across all 11 SKILL.md files; heading format templates updated to middle dot (·)
 - Punctuation conventions (Section 14) and line-break conventions (Section 15) in ecosystem-spec; heading separators changed from em-dash to middle dot across all format contracts

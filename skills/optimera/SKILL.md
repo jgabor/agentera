@@ -151,8 +151,7 @@ Steps: orient, analyze, hypothesize, implement, measure, decide, log.
    ```bash
    python3 scripts/effective_profile.py
    ```
-   Entries with effective confidence 65+ are strong constraints; <45 are suggestions.
-   Read full `~/.claude/profile/PROFILE.md` for details when needed.
+   Entries with effective confidence 65+ are strong constraints; <45 are suggestions. Read full `~/.claude/profile/PROFILE.md` for details when needed.
    If missing, proceed without persona grounding but flag it.
 4. **Project discovery** (experiment 1 or when unfamiliar): map directory structure within scope, read dependency manifests, README, CLAUDE.md, identify build/test/lint commands, read key source files in scope
 5. `git log --oneline -20` for recent changes

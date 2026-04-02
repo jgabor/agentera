@@ -1,9 +1,18 @@
 # Progress
 
+■ ## Cycle 71 · 2026-04-02
+
+**What**: Added em-dash detection (error) and hard-wrap detection (advisory) to the ecosystem linter. Fixed ~32 remaining hard wraps the batch agents missed. Archived plan, resolved ISS-28. All 7 tasks complete.
+**Commit**: 7035ece chore: validate formatting conventions, fix residual hard wraps, archive plan, resolve ISS-28
+**Inspiration**: Decisions 18, 19
+**Discovered**: Batch agents left ~32 hard wraps across 9 files. The linter caught them immediately, confirming the enforcement layer works.
+**Next**: Plan complete. ISS-28 resolved. Resume vision-driven work.
+**Context**: intent (add linter enforcement for Decisions 18/19, fix residual hard wraps) · constraints (0 errors 0 warnings on current files) · unknowns (none) · scope (validate_ecosystem.py, 9 SKILL.md files)
+
 ■ ## Cycle 70 · 2026-04-02
 
 **What**: Applied formatting conventions to all project docs, operational artifacts, and JSON manifests (Task 5). Migrated ~55 heading separators to middle dot. Removed ~450 em-dashes across 22 files. Corrected PROFILE.md em-dash entry (Task 6).
-**Commit**: pending
+**Commit**: 21dfe55 feat: apply formatting conventions to project docs, artifacts, and JSON manifests (ISS-28 Tasks 5-6)
 **Inspiration**: Decisions 18, 19
 **Discovered**: Worktree copies overwrite uncommitted changes. Must commit PROGRESS.md and CHANGELOG.md updates before dispatching worktree agents that touch the same files.
 **Next**: Task 7 (linter validation) is the last task. Then archive the plan and resolve ISS-28.

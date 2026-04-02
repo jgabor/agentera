@@ -65,8 +65,7 @@ If uncertain between light and full, default to light. The user can escalate.
 
 ---
 
-Step markers: display `── step N/5: verb` before each step (Step 0 excluded).
-Steps: orient, specify, review, write, handoff.
+Step markers: display `── step N/5: verb` before each step (Step 0 excluded). Steps: orient, specify, review, write, handoff.
 
 ## Step 1: Orient
 
@@ -123,8 +122,7 @@ Deeper conversation:
 - **Task decomposition**: 3-8 ordered tasks, each one realisera cycle. Per task: one-line
   description, dependencies, 3-5 behavioral Given/When/Then acceptance criteria
 - **Version bump check**: if DOCS.md has a `versioning` block and plan includes `feat`/`fix`
-  work, add final task "Version bump per DOCS.md convention" depending on all others. No
-  versioning convention = skip entirely.
+  work, add final task "Version bump per DOCS.md convention" depending on all others. No versioning convention = skip entirely.
 - **Overall acceptance criteria**: behavioral criteria for the complete feature
 
 Present for approval (human-initiated) or proceed to adversarial review (autonomous).
@@ -369,5 +367,4 @@ If realisera logs multiple surprises in PLAN.md, the plan may need revision:
 
 ### Skipping the plan
 
-For trivial work, planera will detect skip level and tell you to run `/realisera` directly.
-No overhead for bug fixes and single-file changes.
+For trivial work, planera will detect skip level and tell you to run `/realisera` directly. No overhead for bug fixes and single-file changes.
