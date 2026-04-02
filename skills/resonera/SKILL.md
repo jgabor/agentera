@@ -222,10 +222,13 @@ For any option the user selects:
 
 Report one of these statuses at workflow completion:
 
-- **complete** — The deliberation reached a conclusion the user chose to act on; any requested artifacts (DECISIONS.md, VISION.md, OBJECTIVE.md, TODO.md) were written with user approval, and the decision confidence level was captured.
-- **flagged** — The deliberation concluded but the decision remains unresolved or provisional: the user wrapped up without a clear choice, the decision has significant tensions that could not be resolved, or the conclusion contradicts prior decisions in DECISIONS.md without explicit acknowledgment.
-- **stuck** — Cannot proceed because the user's topic requires external research the skill cannot access, or writing to an artifact was attempted but failed due to a file access issue.
-- **waiting** — No topic was provided and the user has not responded to "what's on your mind?", or the deliberation has surfaced that a different skill is needed first (e.g., /inspirera to research before deciding) and the user has not confirmed how to proceed.
+Format: `─── ❈ resonera · status ───` followed by a summary sentence.
+For flagged, stuck, and waiting: add `▸` bullet details below the summary.
+
+- **complete**: The deliberation reached a conclusion the user chose to act on; any requested artifacts (DECISIONS.md, VISION.md, OBJECTIVE.md, TODO.md) were written with user approval, and the decision confidence level was captured.
+- **flagged**: The deliberation concluded but the decision remains unresolved or provisional: the user wrapped up without a clear choice, the decision has significant tensions that could not be resolved, or the conclusion contradicts prior decisions in DECISIONS.md without explicit acknowledgment.
+- **stuck**: Cannot proceed because the user's topic requires external research the skill cannot access, or writing to an artifact was attempted but failed due to a file access issue.
+- **waiting**: No topic was provided and the user has not responded to "what's on your mind?", or the deliberation has surfaced that a different skill is needed first (e.g., /inspirera to research before deciding) and the user has not confirmed how to proceed.
 
 ---
 

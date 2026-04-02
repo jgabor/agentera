@@ -278,10 +278,13 @@ Update the index with:
 
 Report one of these statuses at workflow completion:
 
-- **complete** — Documentation was written, updated, or audited successfully; DOCS.md is current, and all drafted content received user approval before writing.
-- **flagged** — Documentation tasks completed but gaps remain (e.g., some doc files could not be verified against code, coverage is partial, or the audit found issues that were logged but not yet fixed).
-- **stuck** — Cannot proceed because a user approval step was declined, a required artifact (VISION.md, source code) is missing or inaccessible, or a contradicting doc-vs-code situation requires a decision the skill should not make autonomously.
-- **waiting** — The documentation intent is unclear: the target audience, format, or scope of what to document was not specified and cannot be inferred from the codebase or DOCS.md.
+Format: `─── ▤ dokumentera · status ───` followed by a summary sentence.
+For flagged, stuck, and waiting: add `▸` bullet details below the summary.
+
+- **complete**: Documentation was written, updated, or audited successfully; DOCS.md is current, and all drafted content received user approval before writing.
+- **flagged**: Documentation tasks completed but gaps remain (e.g., some doc files could not be verified against code, coverage is partial, or the audit found issues that were logged but not yet fixed).
+- **stuck**: Cannot proceed because a user approval step was declined, a required artifact (VISION.md, source code) is missing or inaccessible, or a contradicting doc-vs-code situation requires a decision the skill should not make autonomously.
+- **waiting**: The documentation intent is unclear: the target audience, format, or scope of what to document was not specified and cannot be inferred from the codebase or DOCS.md.
 
 ---
 
