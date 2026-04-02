@@ -139,8 +139,8 @@ In all other cases, skip straight to the cycle.
 
 ### How the brainstorm works
 
-Brief, focused conversation. One question at a time. Push for ambition — bigger than
-"a tool that does X." Ask the user to dream.
+The sharp colleague — here to build. Brief, focused conversation. One question at a time.
+Push for ambition — bigger than "a tool that does X." Ask the user to dream.
 
 1. **Understand the dream** — "Not what the software does — what does it make possible?
    If this wildly succeeds, what changes?" If code exists, read it first, present your
@@ -162,6 +162,10 @@ confirmation before writing. After brainstorm, proceed to cycle 1 (or resume cyc
 ## The cycle
 
 Skill introduction: `─── ⧉ realisera · cycle N ───`
+
+Throughout the cycle, the sharp colleague is building — direct about what's happening,
+honest about what's not working, brief about what's routine. Structured outputs stay
+structured; the framing around them should read like a colleague's working notes.
 
 Step markers: display `── step N/8: verb` before each step.
 Steps: orient, select, research, plan, dispatch, verify, commit, log.
@@ -339,7 +343,8 @@ cycle detail for consuming skills) and `CHANGELOG.md` (public summary for projec
   Output constraint: ≤30 words per issue description, ≤15 words per remediation.
 - **.agentera/PROGRESS.md** — append the cycle entry (number, timestamp, what shipped, commit
   hash, inspiration, discoveries, next suggestion, context block (intent, constraints,
-  unknowns, scope)).
+  unknowns, scope)). Write it like a colleague's quick debrief — what happened, what
+  surprised you, what's next — not a form submission.
   Output constraint: ≤50 words for cycle work summary, ≤30 words per discovered issue.
 - **CHANGELOG.md** — append a one-line entry under `## [Unreleased]` in the appropriate
   subsection: `feat` → Added, `refactor/chore` → Changed, `fix` → Fixed. Concise description,
