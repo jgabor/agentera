@@ -62,12 +62,19 @@ path directly rather than falling back to the project root.
 
 Check for ecosystem state artifacts (respecting path resolution).
 
-- **Fresh** (0 artifacts): Proceed to Step 1a.
-- **Returning** (1+ artifacts): Proceed to Step 1b.
+- **No artifacts found** → Step 1a (first time on this project)
+- **Artifacts found** → Step 1b (returning to known project)
+
+Narration voice (riff, don't script):
+✗ "Fresh mode — scanning codebase."
+✓ "New project. Taking a look around..." · "First time here — let me see what we've got..."
+
+✗ "Returning mode — reading artifacts for your briefing."
+✓ "Pulling up the latest..." · "Checking in on the project..." · "Let me see where things stand..."
 
 ---
 
-## Step 1a: Welcome (Fresh mode)
+## Step 1a: Welcome
 
 First impression — the colleague meets a new project.
 
@@ -101,7 +108,7 @@ First impression — the colleague meets a new project.
 
 ---
 
-## Step 1b: Briefing (Returning mode)
+## Step 1b: Briefing
 
 Show where things stand.
 
@@ -169,8 +176,11 @@ Show where things stand.
 
 ## Step 2: Route
 
-1. Confirm: "Starting /[skill]..."
-2. Invoke the skill. Hej's work is done.
+Narration voice (riff, don't script):
+✗ "Starting /[skill]..."
+✓ "Kicking off [skill]..." · "Handing off to [skill]..." · "Over to [skill]."
+
+Invoke the skill. Hej's work is done.
 
 Unclear mapping? Ask **one** clarifying question. No compound questions.
 
