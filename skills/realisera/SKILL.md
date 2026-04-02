@@ -332,7 +332,7 @@ Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3
 
 ## Cross-skill integration
 
-Realisera is part of an eleven-skill ecosystem. Each skill can invoke the others when the work calls for it.
+Realisera is part of a twelve-skill ecosystem. Each skill can invoke the others when the work calls for it.
 
 ### Realisera defers to /visionera for vision creation
 When visionera is installed and VISION.md doesn't exist, suggest `/visionera` for deep vision creation instead of running the built-in quick brainstorm. If visionera is NOT installed, the built-in brainstorm works as a standalone fallback. When the user asks to refine the vision, defer to `/visionera` if installed. Both skills produce the same VISION.md format.

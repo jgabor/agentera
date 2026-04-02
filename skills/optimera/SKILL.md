@@ -327,7 +327,7 @@ Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3
 
 ## Cross-skill integration
 
-Optimera is part of an eleven-skill ecosystem. Each skill can invoke the others when the work calls for it.
+Optimera is part of a twelve-skill ecosystem. Each skill can invoke the others when the work calls for it.
 
 ### Optimera invokes /inspirera
 When the Hypothesize step needs external techniques (especially after a plateau), search for approaches the way /inspirera would. Read the source deeply, extract transferable patterns, and fold them into the next hypothesis.

@@ -261,7 +261,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Visionera is part of an eleven-skill ecosystem. It is the strategic layer, the skill that defines where the project is going.
+Visionera is part of a twelve-skill ecosystem. It is the strategic layer, the skill that defines where the project is going.
 
 ### Visionera produces what /realisera consumes
 VISION.md is the north star that drives realisera's work selection every cycle. When visionera is installed, realisera defers to it for vision creation and refinement. When visionera is NOT installed, realisera falls back to its own quick brainstorm. Both paths produce the same VISION.md format; the skills are interchangeable at the artifact level.

@@ -312,7 +312,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Planera is part of an eleven-skill ecosystem. It is the bridge between deliberation and execution.
+Planera is part of a twelve-skill ecosystem. It is the bridge between deliberation and execution.
 
 ### Planera is fed by /resonera
 When resonera's deliberation concludes with a decision to build something, the natural next step is `/planera` to plan the work. DECISIONS.md provides the "why" context that planera reads during its Orient step.

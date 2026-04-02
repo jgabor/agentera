@@ -226,7 +226,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Resonera is part of an eleven-skill ecosystem. It is the deliberation layer, the skill you use to think before the other skills act.
+Resonera is part of a twelve-skill ecosystem. It is the deliberation layer, the skill you use to think before the other skills act.
 
 ### Resonera feeds into /realisera
 

@@ -278,7 +278,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Dokumentera is part of an eleven-skill ecosystem. It is the documentation layer, the "D" in DTC.
+Dokumentera is part of a twelve-skill ecosystem. It is the documentation layer, the "D" in DTC.
 
 ### Dokumentera feeds /planera (DTC pipeline)
 In the strict DTC pipeline, dokumentera writes intent docs first, then planera breaks them into implementation tasks. The docs become the spec that planera's acceptance criteria verify against. When the plan includes documentation tasks, dokumentera handles them.

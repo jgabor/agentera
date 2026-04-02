@@ -68,7 +68,7 @@ First impression: the colleague meets a new project.
    Fast, no deep analysis.
 
 2. **Share what's available**: lead with the 2-3 skills most relevant to what the
-   scan revealed. Don't enumerate all ten unless asked. Mention the rest exist and offer the full table on request. The table below is a reference, not a script:
+   scan revealed. Don't enumerate all eleven unless asked. Mention the rest exist and offer the full table on request. The table below is a reference, not a script:
 
    | | If you want to... | Use |
    |---|---------------------|-----|
@@ -82,9 +82,10 @@ First impression: the colleague meets a new project.
    | ▤ | Create or maintain docs | `/dokumentera` |
    | ♾ | Build a decision profile | `/profilera` |
    | ◰ | Define visual identity | `/visualisera` |
+   | ⎈ | Orchestrate multi-cycle plan execution | `/orkestrera` |
 
 3. **Give your honest take**: based on the scan, tell the user where you'd start
-   and why. "If I were you, I'd start with X because Y." Use the same routing logic (no vision → `/visionera`, unknown quality → `/inspektera`, decision needed → `/resonera`, ready to build → `/realisera`, docs gaps → `/dokumentera`) but frame it as judgment, not a lookup table.
+   and why. "If I were you, I'd start with X because Y." Use the same routing logic (no vision → `/visionera`, unknown quality → `/inspektera`, decision needed → `/resonera`, ready to build + has plan → `/orkestrera`, ready to build → `/realisera`, docs gaps → `/dokumentera`) but frame it as judgment, not a lookup table.
 
 4. **Route**: ask what they'd like to do. Invoke the chosen skill.
 
@@ -149,7 +150,7 @@ Show where things stand.
 
 4. **Suggest next action**: one skill based on state. Use the target glyph:
    critical issues → ⧉/⛶, stale vision → ⛥, vision but no plan → ≡,
-   degrading health → ⛶, stalled optimization → ⎘, healthy + open tasks → ⧉, healthy + plan complete → ⛥
+   degrading health → ⛶, stalled optimization → ⎘, healthy + plan ready to execute → ⎈, healthy + open tasks → ⧉, healthy + plan complete → ⛥
 
 5. **Route**: present suggestion, let user choose. No coercion.
 
@@ -196,9 +197,9 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Hej is the entry point to an eleven-skill ecosystem. It reads artifacts from the other ten workflow skills but produces no artifacts of its own and no downstream skill depends on it.
+Hej is the entry point to a twelve-skill ecosystem. It reads artifacts from the other eleven workflow skills but produces no artifacts of its own and no downstream skill depends on it.
 
-**Reads from all ten skills**:
+**Reads from all eleven skills**:
 - **visionera** → VISION.md for project direction and north star
 - **resonera** → DECISIONS.md for pending and recent decisions
 - **planera** → PLAN.md for active task status and completion
@@ -209,6 +210,7 @@ Hej is the entry point to an eleven-skill ecosystem. It reads artifacts from the
 - **visualisera** → DESIGN.md for visual identity status
 - **profilera** → PROFILE.md for decision profile context
 - **inspirera** → no direct artifact, but routes to it when research is needed
+- **orkestrera** → no direct artifact, but hej routes to it for orchestrated multi-cycle plan execution
 
 Hej's unique role: it is the only skill that reads from every other skill's output. It does not feed into any downstream skill. Its output is the ephemeral briefing and the routing decision.
 
