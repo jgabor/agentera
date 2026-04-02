@@ -91,7 +91,7 @@ Style rules applied inline with each change: colons over em-dashes, labeled meta
 ### Task 5: Step markers for multi-mode skills
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN profilera SKILL.md WHEN workflow section is read THEN Full mode has 5-step markers and Validate mode has 4-step markers with per-mode N/M counts
 ▸ GIVEN visionera SKILL.md WHEN workflow section is read THEN Create mode has 4-step markers and Refine mode has 4-step markers
@@ -115,3 +115,5 @@ Style rules applied inline with each change: colons over em-dashes, labeled meta
 ▸ GIVEN the ecosystem linter WHEN run THEN no regressions
 
 ## Surprises
+
+- Task 5: Plan said dokumentera has "four execution modes" — it has 3 execution modes (Intent-first, Explore-and-generate, Update-and-verify) plus a First-run survey. All 4 mode-level sections received markers regardless.
