@@ -3,7 +3,6 @@
 ## ⇶ Critical
 
 ## ⇉ Degraded
-- [ ] ISS-26: Refine skill voice to match "sharp colleague" standard (Decision 16) — hej dashboard, inspektera audit output, planera/optimera/profilera steps all read like monitoring tools; update outputs to use dashboard + human frame pattern (structured data stays, bookended by conversational opening and summary); converge resonera/visionera/visualisera personality sections to unified voice
 - [ ] ISS-21: Add separated evaluator to realisera — spawn a fresh `claude -p` session after each task that runs inspektera-style audit against the task's acceptance criteria; gate task completion on evaluator PASS verdict (inspired by harness GAN pattern)
 - [ ] ISS-22: Build headless runner script (`scripts/runner.py`) — batch orchestrator that reads PLAN.md, iterates tasks, launches Claude sessions with synthesized prompts, runs verification + evaluation gates, handles retries (max 2), updates PROGRESS.md; enables overnight autonomous runs and CI integration
 
@@ -14,6 +13,7 @@
 - [ ] ISS-19: Consider explicit phase tracking in PROGRESS.md — define valid skill-chain transitions (envision → deliberate → plan → build → audit) with terminal states; skills check phase and flag out-of-order runs
 
 ## Resolved
+- [x] ~~ISS-26: Refine skill voice to match "sharp colleague" standard (Decision 16)~~ — fixed in e17d588..067a251
 - [x] ~~ISS-20: Implement formatting decisions (Decision 14)~~ — fixed in 8dfb6fe..e73d31e
 - [x] ~~ISS-16: Add context snapshot to realisera cycle start~~ — fixed in 73a5d26
 - [x] ~~ISS-17: Scale inspektera audit depth by change magnitude~~ — fixed in 73a5d26
