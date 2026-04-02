@@ -45,6 +45,7 @@ TRIGGER_PROMPTS: dict[str, str] = {
     "inspektera": "Run a codebase health audit.",
     "inspirera": "Analyze https://example.com and map patterns to this project.",
     "optimera": "Optimize test suite execution time.",
+    "orkestrera": "Execute the next cycle of the current plan.",
     "planera": "Plan the next feature for this project.",
     "profilera": "Generate a decision profile from session history.",
     "realisera": "Run one autonomous development cycle.",
