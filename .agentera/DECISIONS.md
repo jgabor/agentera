@@ -713,4 +713,32 @@ confidence" (warmth through rigor alone is too cold). The dashboard + human fram
 resolves the tension between scannability and warmth: the data is evidence, the voice is
 interpretation.
 **Confidence**: firm
+**Feeds into**: VISION.md voice section, ecosystem-spec.md narration section
+
+## Decision 17 — 2026-04-02
+
+**Question**: How should skills narrate their process between structural markers?
+**Context**: ISS-26 converged personality sections and output framing to the "sharp colleague"
+voice (Decision 16), but structural narration — mode announcements ("Returning mode"), transition
+messages ("Starting /[skill]..."), and ad-hoc process narration ("Reading artifacts...") — stayed
+mechanical. The first thing a returning user sees is "Returning mode" instead of something that
+sounds like a colleague. 36+ narration points across 11 skills, of which ~20 are in scope
+(step markers and structural dividers are functional and stay).
+**Alternatives**:
+- [Warm up all narration points individually] — rejected: 36 one-offs with no unifying principle
+- [Principle only, no SKILL.md changes] — rejected: skills need concrete examples to hit the register
+- [Exact scripts per narration point] — rejected: fixed conversational text becomes a tic with repetition
+- [Minimize narration, let markers carry it] — rejected: silence during long operations is worse than mechanical narration
+**Choice**: Narration voice principle in ecosystem-spec plus riffable example lines in each
+SKILL.md. Action narration register: brief, casual, tells you what's happening without explaining
+internals. Examples to riff on, not scripts — agent varies naturally within the register.
+**Reasoning**: The sharp colleague doesn't announce subroutines ("Entering Returning mode") —
+she tells you what she's doing ("Pulling up the latest..."). Scripts become tics; examples set
+a register. Structural markers and step markers are functional (you scan them) so they stay
+unchanged. The narration between them is conversational (you read it) so it needs the same
+voice treatment that Decision 16 gave to personality sections and output framing. Principle in
+ecosystem-spec ensures consistency; examples in SKILL.md demonstrate the register for each
+skill's specific narration points.
+**Confidence**: firm
+**Feeds into**: ecosystem-spec.md (new narration voice section), ~5 SKILL.md files (hej, visionera, profilera, visualisera, + ad-hoc narration guidance for all)
 **Feeds into**: VISION.md (Identity section), skill refinement across all 11 SKILL.md files
