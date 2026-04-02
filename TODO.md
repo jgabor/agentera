@@ -5,8 +5,12 @@
 ## ⇉ Degraded
 
 ## ⇢ Annoying
+- [ ] ISS-19: Consider explicit phase tracking in PROGRESS.md — define valid skill-chain transitions (envision → deliberate → plan → build → audit) with terminal states; skills check phase and flag out-of-order runs
 
 ## Resolved
+- [x] ~~ISS-16: Add context snapshot to realisera cycle start~~ — fixed in 73a5d26
+- [x] ~~ISS-17: Scale inspektera audit depth by change magnitude~~ — fixed in 73a5d26
+- [x] ~~ISS-18: Add unresolved-decision gate to realisera~~ — fixed in 73a5d26
 - [x] ~~ISS-1: "Eight-skill ecosystem" in all SKILL.md files~~ — fixed in 19a351f
 - [x] ~~ISS-2: dokumentera doesn't consume PROFILE.md~~ — fixed in 086c059
 - [x] ~~ISS-3: inspirera missing safety rails section~~ — fixed in 086c059
