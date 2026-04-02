@@ -66,7 +66,7 @@ Every skill suggests what to do next when it finishes. You follow the thread, or
 |  ⎘  | [optimera](./skills/optimera/)       | **Tune.** Picks a metric, runs experiments, measures results, iterates until it improves.                           |
 |  ⛶  | [inspektera](./skills/inspektera/)   | **Audit.** Audits code health across six dimensions, tracks trends over time.                                       |
 |  ▤  | [dokumentera](./skills/dokumentera/) | **Document.** Creates and maintains docs, tracks what's covered and what's missing.                                 |
-|  ♾  | [profilera](./skills/profilera/)     | **Know thyself.** Learns your decision patterns so other skills adapt to how you work.                              |
+|  ♾  | [profilera](./skills/profilera/)     | **Compounding memory.** Mines your decision patterns into a profile consumed by every skill, so the 20th cycle adapts to how you work in ways the 1st could not. |
 |  ◰  | [visualisera](./skills/visualisera/) | **Visualize.** Creates and maintains a visual identity system for your project.                                     |
 |  ⎈  | [orkestrera](./skills/orkestrera/) | **Orchestrate.** Dispatches skills as subagents, evaluates each with inspektera, loops through plans. |
 
@@ -75,19 +75,23 @@ Every skill suggests what to do next when it finishes. You follow the thread, or
 Skills communicate through markdown files in your project: a vision doc, a plan, a health report, a decision log. Each skill reads what the others have written and acts on it. You don't manage these files; they build up naturally as you work.
 
 ```
+(simplified: each skill has additional cross-skill edges, see ecosystem spec Section 7)
+
                        🞔 hej
                     (entry point)
                      ↓ routes to
                       ♾ profilera
-                  (decision profile)
-                    ↓ consumed by
+                  (compounding memory)
+                    ↓ consumed by all
 ⛥ visionera ──→ ❈ resonera ──→ ≡ planera ──→ ⎈ orkestrera ──→ ⧉ realisera ←──→ ⎘ optimera
   (envision)      (think)       (plan)        (orchestrate)     (build)          (tune)
-     ↕                         ↑  ↑               ↕                 ↑
-  ◰ visualisera ▤ dokumentera─┘   │       ⛶ inspektera──────────────┘
-    (design)     (document)        │          (evaluate + audit)
-                 ⬚ inspirera ──────┘
-                  (research)
+     ↕              ↑          ↑  ↑               ↕                 ↑
+  ◰ visualisera  ▤ dokumentera┘   │       ⛶ inspektera──────────────┘
+    (design)      (document)      │          (evaluate + audit)
+                  ⬚ inspirera ────┤
+                   (research)     ↓
+                         realisera, optimera,
+                         visionera, resonera
 ```
 
 visionera writes a north star → planera reads it and creates tasks → orkestrera dispatches skills as subagents to execute the plan → realisera builds, inspektera audits, optimera tunes → findings feed back into the next planning cycle. profilera watches how you make decisions and tunes every skill to your preferences. The loop tightens over time.
@@ -103,7 +107,7 @@ Three project-facing files at root, eight operational files in `.agentera/`.
 
 | Artifact       | Maintained by         | Consumed by                    |
 | -------------- | --------------------- | ------------------------------ |
-| `VISION.md`    | visionera, realisera  | realisera, planera, inspektera, orkestrera |
+| `VISION.md`    | visionera, realisera  | realisera, planera, inspektera, dokumentera, visualisera, orkestrera |
 | `TODO.md`      | realisera, inspektera | realisera, planera, orkestrera |
 | `CHANGELOG.md` | realisera             | project contributors           |
 
@@ -111,7 +115,7 @@ Three project-facing files at root, eight operational files in `.agentera/`.
 
 | Artifact         | Maintained by | Consumed by                                         |
 | ---------------- | ------------- | --------------------------------------------------- |
-| `PROGRESS.md`    | realisera     | planera, inspektera, orkestrera                                 |
+| `PROGRESS.md`    | realisera     | planera, inspektera, dokumentera, visionera, orkestrera                     |
 | `DECISIONS.md`   | resonera      | planera, realisera, optimera, inspektera, profilera, orkestrera |
 | `PLAN.md`        | planera       | realisera, inspektera, orkestrera                               |
 | `HEALTH.md`      | inspektera    | realisera, planera, orkestrera                                  |
