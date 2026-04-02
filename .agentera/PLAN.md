@@ -40,7 +40,7 @@ Three layers of change: conventions (ecosystem-spec defines the rules), content 
 
 ### Task 2: Apply conventions to SKILL.md batch 1 (visualisera, realisera, optimera, inspektera)
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN any SKILL.md in this batch WHEN searched for the em-dash character THEN zero matches
 ▸ GIVEN any SKILL.md in this batch WHEN prose paragraphs are examined THEN each is a single line
@@ -49,7 +49,7 @@ Three layers of change: conventions (ecosystem-spec defines the rules), content 
 
 ### Task 3: Apply conventions to SKILL.md batch 2 (profilera, visionera, resonera, dokumentera)
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN any SKILL.md in this batch WHEN searched for the em-dash character THEN zero matches
 ▸ GIVEN any SKILL.md in this batch WHEN prose paragraphs are examined THEN each is a single line
@@ -58,7 +58,7 @@ Three layers of change: conventions (ecosystem-spec defines the rules), content 
 
 ### Task 4: Apply conventions to SKILL.md batch 3 (planera, hej, inspirera)
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN any SKILL.md in this batch WHEN searched for the em-dash character THEN zero matches
 ▸ GIVEN any SKILL.md in this batch WHEN prose paragraphs are examined THEN each is a single line
@@ -96,3 +96,5 @@ Three layers of change: conventions (ecosystem-spec defines the rules), content 
 ▸ GIVEN PROFILE.md WHEN the em-dash entry is read THEN it reflects Decision 18 accurately
 
 ## Surprises
+- Agents correctly avoided code blocks but missed heading format templates inside them (e.g., `## Decision N — date` should have become `## Decision N · date`). Required a manual follow-up pass for ~30 em-dashes in template examples across 8 files.
+- Batch 2 and 3 worktree patches failed to apply via `git apply` despite silent success. Resolved by direct file copy from worktrees.
