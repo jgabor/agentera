@@ -69,12 +69,14 @@ Check for ecosystem state artifacts (respecting path resolution).
 
 ## Step 1a: Welcome (Fresh mode)
 
-Orient a new user.
+First impression — the colleague meets a new project.
 
 1. **Quick scan** — language(s), framework(s), README, last 5 commits, approximate size.
    Fast, no deep analysis.
 
-2. **Present capabilities** by intent:
+2. **Share what's available** — lead with the 2-3 skills most relevant to what the
+   scan revealed. Don't enumerate all ten unless asked. Mention the rest exist and
+   offer the full table on request. The table below is a reference, not a script:
 
    | | If you want to... | Use |
    |---|---------------------|-----|
@@ -89,9 +91,11 @@ Orient a new user.
    | ♾ | Build a decision profile | `/profilera` |
    | ◰ | Define visual identity | `/visualisera` |
 
-3. **Suggest a starting point** based on scan: no vision → `/visionera`, unknown
-   quality → `/inspektera`, decision needed → `/resonera`, ready to build →
-   `/realisera`, docs gaps → `/dokumentera`. Recommend, don't direct.
+3. **Give your honest take** — based on the scan, tell the user where you'd start
+   and why. "If I were you, I'd start with X because Y." Use the same routing logic
+   (no vision → `/visionera`, unknown quality → `/inspektera`, decision needed →
+   `/resonera`, ready to build → `/realisera`, docs gaps → `/dokumentera`) but
+   frame it as judgment, not a lookup table.
 
 4. **Route**: ask what they'd like to do. Invoke the chosen skill.
 
@@ -104,13 +108,17 @@ Show where things stand.
 1. **Read artifacts** — VISION.md, PROGRESS.md, TODO.md, HEALTH.md, PLAN.md, DECISIONS.md
    in parallel. First 20 lines each. Skip absent ones. Extract most recent entry or summary.
 
-2. **Build the dashboard** — concise status, only what exists. No empty sections.
+2. **Brief them** — concise status, only what exists. No empty sections.
    Show the agentera logo.
 
    ```
    ┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
    ├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
    ┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
+
+   [1-2 sentence conversational opener: the colleague's read on
+   the situation. What shipped, what's moving, what needs eyes.
+   Not metrics — interpretation.]
 
    ─── status ─────────────────────────────
 
@@ -119,9 +127,6 @@ Show where things stand.
      ≡ plan      [██████▓▓░░] N/M tasks
      ⎘ optim     [metric] [current] → [target]
      ♾ profile   [loaded | not found]
-
-     [1-2 sentence narrative: what shipped recently,
-     what the current trajectory looks like]
 
    ─── attention ──────────────────────────
 
@@ -134,7 +139,7 @@ Show where things stand.
      suggested → [glyph] /[skill] ([reason])
    ```
 
-   Output constraint: ≤100 words total briefing, ≤15 words per routing suggestion.
+   Output constraint: ≤120 words total briefing, ≤15 words per routing suggestion.
 
    **Formatting rules**:
    - Each status line uses the skill glyph that owns that data
@@ -142,7 +147,7 @@ Show where things stand.
    - Trend arrows (⮉/⮋) show health trajectory
    - Progress bars (█▓░) show plan completion visually
    - The inline separator (·) joins counts on a single line
-   - The narrative summary closes the status section (not opens it)
+   - The conversational opener precedes the status section — it's the colleague's interpretation; the dashboard below is the evidence
    - Omit any line whose source artifact is missing
    - Omit any section that would be empty (e.g., no attention items = no attention section)
 
