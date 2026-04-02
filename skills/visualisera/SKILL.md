@@ -130,6 +130,9 @@ to Create mode.
 
 ## Create mode
 
+Step markers: display `── step N/6: verb` before each step.
+Steps: explore, research, converse, write, validate, next.
+
 ### Step 1: Explore the codebase
 
 If code exists, read deeply before asking questions. Arriving informed distinguishes
@@ -258,6 +261,9 @@ Fix errors and re-validate before presenting.
 
 Evolve an existing design system based on what's changed.
 
+Step markers: display `── step N/3: verb` before each step.
+Steps: read, propose, update.
+
 ### Step 1: Read current state
 
 1. Current DESIGN.md — all token blocks, constraints, prose
@@ -287,6 +293,9 @@ Show diff with rationale. Get approval. Run validation after writing.
 ## Audit mode
 
 Two-phase check: deterministic validation (script), then agent-driven code analysis.
+
+Step markers: display `── step N/3: verb` before each step.
+Steps: validate, check, report.
 
 ### Step 1: Validate structure
 

@@ -79,6 +79,9 @@ If the user chooses **Validate**, skip to Validate Mode.
 
 ## Full Mode
 
+Step markers: display `── step N/5: verb` before each step.
+Steps: extract, read, categorize, generate, validate.
+
 ### Step 1: Run extraction
 
 Run extraction scripts to gather raw decision signals. Scripts handle JSONL parsing and
@@ -282,6 +285,9 @@ Below 3/5: identify categories needing more signal, note in profile header.
 ## Validate Mode
 
 Quick incremental check (~2 minutes).
+
+Step markers: display `── step N/4: verb` before each step.
+Steps: select, present, apply, write.
 
 ### Step V1: Run smart selection
 

@@ -106,6 +106,9 @@ Determine what kind of documentation work is needed:
 When DOCS.md doesn't exist, run a survey first. Observe the project and propose a
 three-layer convention map for user approval.
 
+Step markers: display `── step N/4: verb` before each step.
+Steps: explore, propose, handle, write.
+
 ### Step 1: Explore structure
 
 Detect documentation conventions:
@@ -149,6 +152,9 @@ originally requested mode -- or stop if the survey was the entire request.
 
 DTC-first: document what a feature SHOULD do before building. Docs become the spec.
 
+Step markers: display `── step N/4: verb` before each step.
+Steps: understand, write, update, suggest.
+
 ### Step 1: Understand the intent
 
 Brief conversation (2-4 questions): what, who reads it, what format, what detail level.
@@ -187,6 +193,9 @@ Output constraint: ≤15 words per index entry description.
 
 Code exists, docs don't. Read codebase and generate.
 
+Step markers: display `── step N/4: verb` before each step.
+Steps: explore, gaps, generate, update.
+
 ### Step 1: Explore
 
 1. Map directory structure, read dependency manifests
@@ -219,6 +228,9 @@ status/dates. If DOCS.md doesn't exist, run first-run survey first.
 ## Update-and-verify mode (audit-driven)
 
 Docs exist but may have drifted from implementation.
+
+Step markers: display `── step N/4: verb` before each step.
+Steps: discover, verify, report, update.
 
 ### Step 1: Discover
 
