@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Formatting standard in ecosystem-spec: divider hierarchy, exit signal format, step markers, instruction terms (Decision 14)
 - Context snapshot in realisera cycle entries (intent, constraints, unknowns, scope) for cross-cycle coherence
 - Unresolved-decision gate in realisera work selection — flags exploratory DECISIONS.md entries before building on them
 - Change-magnitude depth scaling in inspektera — advisory audit depth based on commit volume since last audit
