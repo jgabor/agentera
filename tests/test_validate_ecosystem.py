@@ -401,3 +401,505 @@ description: Autonomous development loops
 - **stuck**: Cannot complete a cycle.
 - **waiting**: The project needs user input.
 """
+
+# Additional synthetic content for Task 2 check function tests.
+
+SYNTHETIC_SKILL_MISSING_NAME = """\
+---
+description: A skill without a name
+---
+
+# SKILL
+"""
+
+SYNTHETIC_SKILL_BAD_NAME = """\
+---
+name: NotKebabCase
+description: A skill with bad casing
+---
+
+# SKILL
+"""
+
+SYNTHETIC_SKILL_MISSING_DESCRIPTION = """\
+---
+name: test-skill
+---
+
+# SKILL
+"""
+
+SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_TABLE = """\
+---
+name: inspektera
+description: Audit skill
+---
+
+# INSPEKTERA
+
+| Finding | Severity | Details |
+|---------|----------|---------|
+| Stale docs | high | Docs are outdated |
+| Missing tests | major | No test coverage |
+"""
+
+SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_HEADING = """\
+---
+name: inspektera
+description: Audit skill
+---
+
+# INSPEKTERA
+
+### [high] Missing test coverage
+
+Some findings here.
+"""
+
+SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_SECTION = """\
+---
+name: inspektera
+description: Audit skill
+---
+
+# INSPEKTERA
+
+## Severity
+
+These findings are categorized as low priority items.
+"""
+
+SYNTHETIC_SKILL_CANONICAL_SEVERITY = """\
+---
+name: inspektera
+description: Audit skill
+---
+
+# INSPEKTERA
+
+| Finding | Severity | Details |
+|---------|----------|---------|
+| Stale docs | critical | Must fix now |
+| Small typo | annoying | Cosmetic only |
+| Build slow | degraded | Performance issue |
+"""
+
+SYNTHETIC_SKILL_RESONERA_WITH_LABELS = """\
+---
+name: resonera
+description: Structured deliberation
+---
+
+# RESONERA
+
+Decisions can be classified as firm, provisional, or exploratory.
+"""
+
+SYNTHETIC_SKILL_RESONERA_MISSING_LABELS = """\
+---
+name: resonera
+description: Structured deliberation
+---
+
+# RESONERA
+
+Decisions can be classified as firm only.
+"""
+
+SYNTHETIC_SKILL_EM_DASH_IN_CODE_BLOCK = """\
+---
+name: test-skill
+description: Test skill
+---
+
+# TEST
+
+This is clean prose with no dashes.
+
+```
+code_example \u2014 this em-dash is in a code block
+```
+
+More clean prose here.
+"""
+
+SYNTHETIC_SKILL_EM_DASH_IN_INLINE_CODE = """\
+---
+name: test-skill
+description: Test skill
+---
+
+# TEST
+
+This references `value \u2014 other` in inline code only.
+"""
+
+SYNTHETIC_SKILL_HARD_WRAP_PROSE = """\
+---
+name: test-skill
+description: Test skill
+---
+
+# TEST
+
+This is a prose line that is exactly eighty characters long, which triggers the c
+heck for hard wraps since the next line continues immediately after.
+"""
+
+SYNTHETIC_SKILL_NO_HARD_WRAP = """\
+---
+name: test-skill
+description: Test skill
+---
+
+# TEST
+
+Short prose line.
+
+Another separate paragraph that stands alone.
+"""
+
+SYNTHETIC_SKILL_HARD_WRAP_STRUCTURAL = """\
+---
+name: test-skill
+description: Test skill
+---
+
+# TEST
+
+- This is a list item that is quite long and goes on for a while but should not be flagged
+- Another list item immediately after the first one
+
+| This is a table row that is quite long and goes on for a while but should not be flagged |
+"""
+
+SYNTHETIC_SKILL_EMPTY = ""
+
+
+# ---------------------------------------------------------------------------
+# check_frontmatter
+# ---------------------------------------------------------------------------
+
+
+class TestCheckFrontmatter:
+    def test_valid_frontmatter_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_frontmatter("realisera", SYNTHETIC_SKILL_VALID, r)
+        assert r.error_count == 0
+        assert any(level == "PASS" for level, _, check, _ in r.entries if check == "frontmatter")
+
+    def test_missing_frontmatter_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_frontmatter("realisera", SYNTHETIC_SKILL_MISSING_FRONTMATTER, r)
+        assert r.error_count == 1
+        assert "Missing or malformed" in r.entries[0][3]
+
+    def test_missing_name_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_frontmatter("test-skill", SYNTHETIC_SKILL_MISSING_NAME, r)
+        assert r.error_count >= 1
+        details = [detail for _, _, _, detail in r.entries if "name" in detail.lower()]
+        assert len(details) >= 1
+
+    def test_non_kebab_case_name_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_frontmatter("bad-skill", SYNTHETIC_SKILL_BAD_NAME, r)
+        assert r.error_count >= 1
+        details = [detail for _, _, _, detail in r.entries if "kebab" in detail.lower()]
+        assert len(details) == 1
+
+    def test_missing_description_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_frontmatter("test-skill", SYNTHETIC_SKILL_MISSING_DESCRIPTION, r)
+        assert r.error_count >= 1
+        details = [detail for _, _, _, detail in r.entries if "description" in detail.lower()]
+        assert len(details) >= 1
+
+    def test_empty_content_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_frontmatter("test-skill", SYNTHETIC_SKILL_EMPTY, r)
+        assert r.error_count >= 1
+
+    def test_unclosed_frontmatter_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_frontmatter("broken", UNCLOSED_FRONTMATTER, r)
+        assert r.error_count >= 1
+        assert "Missing or malformed" in r.entries[0][3]
+
+
+# ---------------------------------------------------------------------------
+# check_confidence_scale
+# ---------------------------------------------------------------------------
+
+
+class TestCheckConfidenceScale:
+    def test_valid_content_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_confidence_scale("realisera", SYNTHETIC_SKILL_VALID, r)
+        assert r.error_count == 0
+        assert any(level == "PASS" for level, _, check, _ in r.entries if check == "confidence-scale")
+
+    def test_decimal_confidence_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_confidence_scale("realisera", SYNTHETIC_SKILL_DECIMAL_CONFIDENCE, r)
+        assert r.error_count == 1
+        detail = r.entries[0][3]
+        assert "0.0-1.0" in detail
+
+    def test_tier_boundaries_flagged(self, validate_ecosystem):
+        text = """\
+---
+name: test-skill
+description: Test
+---
+
+Tier boundaries are 0.85-0.95 for high confidence.
+"""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_confidence_scale("test-skill", text, r)
+        assert r.error_count == 1
+        assert "tier boundaries" in r.entries[0][3].lower()
+
+    def test_conf_metadata_flagged(self, validate_ecosystem):
+        text = """\
+---
+name: test-skill
+description: Test
+---
+
+Entries with conf:0.75 are strong.
+"""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_confidence_scale("test-skill", text, r)
+        assert r.error_count == 1
+        assert "conf metadata" in r.entries[0][3].lower()
+
+    def test_integer_confidence_passes(self, validate_ecosystem):
+        text = """\
+---
+name: test-skill
+description: Test
+---
+
+Entries with effective confidence 65+ are strong constraints.
+"""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_confidence_scale("test-skill", text, r)
+        assert r.error_count == 0
+
+    def test_empty_content_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_confidence_scale("test-skill", SYNTHETIC_SKILL_EMPTY, r)
+        assert r.error_count == 0
+
+
+# ---------------------------------------------------------------------------
+# check_severity_levels
+# ---------------------------------------------------------------------------
+
+
+class TestCheckSeverityLevels:
+    def test_canonical_severity_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_severity_levels("inspektera", SYNTHETIC_SKILL_CANONICAL_SEVERITY, r)
+        assert r.error_count == 0
+        assert any(level == "PASS" for level, _, check, _ in r.entries if check == "severity-levels")
+
+    def test_valid_content_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_severity_levels("realisera", SYNTHETIC_SKILL_VALID, r)
+        assert r.error_count == 0
+
+    def test_non_canonical_in_table_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_severity_levels("inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_TABLE, r)
+        assert r.error_count >= 1
+        details = " ".join(detail for _, _, _, detail in r.entries)
+        assert "high" in details.lower() or "major" in details.lower()
+
+    def test_non_canonical_in_heading_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_severity_levels("inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_HEADING, r)
+        assert r.error_count >= 1
+        details = " ".join(detail for _, _, _, detail in r.entries)
+        assert "high" in details.lower()
+
+    def test_non_canonical_in_severity_section_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_severity_levels("inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_SECTION, r)
+        assert r.error_count >= 1
+        details = " ".join(detail for _, _, _, detail in r.entries)
+        assert "low" in details.lower()
+
+    def test_empty_content_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_severity_levels("test-skill", SYNTHETIC_SKILL_EMPTY, r)
+        assert r.error_count == 0
+
+    def test_no_severity_context_passes(self, validate_ecosystem):
+        """Non-canonical terms outside severity-defining contexts should not trigger errors."""
+        text = """\
+---
+name: test-skill
+description: Test
+---
+
+# TEST
+
+The quality of this code is high. The risk is low.
+"""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_severity_levels("test-skill", text, r)
+        assert r.error_count == 0
+
+
+# ---------------------------------------------------------------------------
+# check_decision_labels
+# ---------------------------------------------------------------------------
+
+
+class TestCheckDecisionLabels:
+    def test_resonera_with_all_labels_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_decision_labels("resonera", SYNTHETIC_SKILL_RESONERA_WITH_LABELS, r)
+        assert r.error_count == 0
+        assert any(level == "PASS" for level, _, check, _ in r.entries if check == "decision-labels")
+
+    def test_resonera_missing_labels_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_decision_labels("resonera", SYNTHETIC_SKILL_RESONERA_MISSING_LABELS, r)
+        assert r.error_count == 1
+        detail = r.entries[0][3]
+        assert "provisional" in detail or "exploratory" in detail
+
+    def test_non_resonera_passes_unconditionally(self, validate_ecosystem):
+        """Any skill other than resonera passes this check regardless of content."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_decision_labels("realisera", SYNTHETIC_SKILL_VALID, r)
+        assert r.error_count == 0
+        assert any(level == "PASS" for level, _, check, _ in r.entries if check == "decision-labels")
+
+    def test_non_resonera_empty_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_decision_labels("inspektera", SYNTHETIC_SKILL_EMPTY, r)
+        assert r.error_count == 0
+
+    def test_resonera_empty_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_decision_labels("resonera", SYNTHETIC_SKILL_EMPTY, r)
+        assert r.error_count == 1
+        detail = r.entries[0][3]
+        assert "Missing labels" in detail
+
+    def test_resonera_case_insensitive(self, validate_ecosystem):
+        text = """\
+---
+name: resonera
+description: Deliberation
+---
+
+# RESONERA
+
+Labels: Firm, Provisional, Exploratory.
+"""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_decision_labels("resonera", text, r)
+        assert r.error_count == 0
+
+
+# ---------------------------------------------------------------------------
+# check_em_dashes
+# ---------------------------------------------------------------------------
+
+
+class TestCheckEmDashes:
+    def test_no_em_dashes_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_em_dashes("realisera", SYNTHETIC_SKILL_VALID, r)
+        assert r.error_count == 0
+        assert any(level == "PASS" for level, _, check, _ in r.entries if check == "em-dashes")
+
+    def test_em_dash_in_prose_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_em_dashes("realisera", SYNTHETIC_SKILL_EM_DASHES, r)
+        assert r.error_count == 1
+        assert "Em-dash" in r.entries[0][3]
+
+    def test_em_dash_in_code_block_ignored(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_em_dashes("test-skill", SYNTHETIC_SKILL_EM_DASH_IN_CODE_BLOCK, r)
+        assert r.error_count == 0
+
+    def test_em_dash_in_inline_code_ignored(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_em_dashes("test-skill", SYNTHETIC_SKILL_EM_DASH_IN_INLINE_CODE, r)
+        assert r.error_count == 0
+
+    def test_empty_content_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_em_dashes("test-skill", SYNTHETIC_SKILL_EMPTY, r)
+        assert r.error_count == 0
+
+    def test_multiple_em_dashes_reports_line_count(self, validate_ecosystem):
+        text = """\
+---
+name: test-skill
+description: Test
+---
+
+First \u2014 dash here.
+Second \u2014 dash there.
+Third \u2014 dash everywhere.
+"""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_em_dashes("test-skill", text, r)
+        assert r.error_count == 1
+        assert "3 line(s)" in r.entries[0][3]
+
+
+# ---------------------------------------------------------------------------
+# check_hard_wraps
+# ---------------------------------------------------------------------------
+
+
+class TestCheckHardWraps:
+    def test_no_hard_wraps_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_hard_wraps("test-skill", SYNTHETIC_SKILL_NO_HARD_WRAP, r)
+        assert r.error_count == 0
+        assert r.warn_count == 0
+        assert any(level == "PASS" for level, _, check, _ in r.entries if check == "hard-wraps")
+
+    def test_hard_wrapped_prose_warns(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_hard_wraps("test-skill", SYNTHETIC_SKILL_HARD_WRAP_PROSE, r)
+        assert r.warn_count >= 1
+        assert r.error_count == 0
+        detail = r.entries[0][3]
+        assert "hard wrap" in detail.lower()
+
+    def test_structural_lines_not_flagged(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_hard_wraps("test-skill", SYNTHETIC_SKILL_HARD_WRAP_STRUCTURAL, r)
+        assert r.warn_count == 0
+
+    def test_valid_content_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_hard_wraps("realisera", SYNTHETIC_SKILL_VALID, r)
+        # Valid content should not produce errors (may or may not warn depending on line lengths).
+        assert r.error_count == 0
+
+    def test_empty_content_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_hard_wraps("test-skill", SYNTHETIC_SKILL_EMPTY, r)
+        assert r.error_count == 0
+        assert r.warn_count == 0
+
+    def test_advisory_not_error(self, validate_ecosystem):
+        """Hard wraps produce WARN entries, never ERROR."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_hard_wraps("test-skill", SYNTHETIC_SKILL_HARD_WRAP_PROSE, r)
+        error_entries = [e for e in r.entries if e[0] == "ERROR" and e[2] == "hard-wraps"]
+        warn_entries = [e for e in r.entries if e[0] == "WARN" and e[2] == "hard-wraps"]
+        assert len(error_entries) == 0
+        assert len(warn_entries) >= 1
