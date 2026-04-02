@@ -590,5 +590,55 @@ optional — the deterministic layout is the default.
 **Gitignore**: `.agentera/` hides all operational state. Add TODO.md, CHANGELOG.md,
 VISION.md individually if the project wants full privacy.
 
+## Decision 14 — 2026-04-02
+
+**Question**: How should the ecosystem's user-facing messages be formatted?
+**Context**: The eleven skills had inconsistent formatting for session openers, exit
+signals, step markers, and mid-session chrome. Instruction phrasing varied across
+SKILL.md files ("Output opens with:" vs "Each cycle opens with:"). Exit signals had
+no standard visual format. Long-running skills showed no progress between steps.
+Clinical verb choices (synthesize, hypothesize) clashed with the ecosystem's intended
+warmth.
+**Alternatives**:
+- [Status quo: freeform prose for exits, no step markers] — rejected: no visual consistency across 11 skills
+- [Heavy chrome: frames, progress bars, metadata blocks on every message] — rejected: overweight for most contexts
+- [Minimal tokens: inline status words, no dividers] — rejected: too light, no ecosystem cohesion
+**Choice**: Three-tier divider hierarchy with templated exit signals, step markers for
+long-running skills, and warm bare-verb step names.
+
+**Reasoning**: The opener pattern was already strong. Extending it to exits (symmetric
+bookend) and steps (lighter 2-dash divider) creates a visual hierarchy that communicates
+structure without cluttering. Templated exits (status line + bullet details) solve the
+biggest gap: flagged/stuck/waiting statuses had no standard way to surface concerns.
+Step markers with N/M counts give users progress awareness during 5-8 step workflows.
+Keeping original verb names except for two clinical outliers (synthesize → distill,
+hypothesize → propose) preserves vocabulary stability while fixing the worst offenders.
+
+### Design
+
+**Divider hierarchy**:
+
+| Level | Pattern | Used for |
+|-------|---------|----------|
+| Skill boundary | `─── glyph skill · context ───` | Session opener, exit signal |
+| Step boundary | `── step N/M: verb` | Workflow progress |
+| Container | `── label` | Scratchpad, other mid-session blocks |
+
+**Exit signal template**:
+
+| Status | Format |
+|--------|--------|
+| complete | Divider + one summary sentence |
+| flagged | Divider + summary + `▸` concern bullets |
+| stuck | Divider + summary + `▸` blocker bullets |
+| waiting | Divider + summary + `▸` need bullets |
+
+**Step name changes**: synthesize → distill (inspektera), hypothesize → propose (optimera)
+
+**Style rules**: colons over em-dashes, labeled metadata, generous newlines
+
+**Confidence**: firm
+**Feeds into**: all 11 SKILL.md files, ecosystem-spec.md Section 12
+
 **Confidence**: ━ firm
 **Feeds into**: All 11 SKILL.md files, ecosystem-spec.md, artifact templates, linter, DOCS.md template

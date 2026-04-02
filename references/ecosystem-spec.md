@@ -547,14 +547,91 @@ Six token families express status, urgency, certainty, and direction.
 
 ### Composition rules
 
-- **Skill introduction**: every skill opens with `─── glyph skillname · context ───`
+- **Skill introduction**: every skill opens with `─── glyph skillname · context ───`.
+  SKILL.md files reference this with the canonical instruction: `Skill introduction:` followed
+  by the pattern with the skill's glyph and context word.
+  Exception: hej uses the agentera logo instead of the standard opener.
+- **Skill exit**: every skill closes with the same divider pattern, replacing the context
+  word with the exit status: `─── glyph skillname · status ───`. See Exit signal format below.
+- **Step progress**: skills with 4+ workflow steps show `── step N/M: verb` markers between
+  steps. See Step markers below.
 - **Logo placement**: the agentera logo (box-drawing characters) appears at key moments
-  only — hej dashboard, major completions. Not every skill invocation.
+  only: hej dashboard, major completions. Not every skill invocation.
 - **Open structure**: no outer frames except the logo. Breathing room (blank lines) between
-  sections. Section headers are clean labels — no glyphs in `##` Markdown headers.
+  sections. Section headers are clean labels: no glyphs in `##` Markdown headers.
 - **Narrative position**: summaries close sections, not open them.
 - **Markdown layering**: all artifacts stay valid standard Markdown. Visual tokens layer
   within sections alongside existing `##` headers, `**bold**` labels, and tables.
+
+### Divider hierarchy
+
+Three levels of visual dividers create a consistent hierarchy across skill output.
+
+| Level | Pattern | Use |
+|-------|---------|-----|
+| Skill boundary | `─── glyph skillname · context ───` | Session opener, exit signal |
+| Step boundary | `── step N/M: verb` | Workflow progress between steps |
+| Container | `── label` | Mid-session blocks (scratchpad, etc.) |
+
+Step and container dividers share the same visual weight (2-dash), differentiated by label
+content: step boundaries use `step N/M: verb`, containers use a descriptive label.
+
+### Exit signal format
+
+The exit signal's visual output matches the status reported. All four statuses use the
+skill boundary divider, followed by a summary and (for non-complete statuses) bullet details.
+
+**complete**:
+```
+─── glyph skillname · complete ───
+
+Summary sentence.
+```
+
+**flagged**:
+```
+─── glyph skillname · flagged ───
+
+Summary sentence.
+
+▸ concern one
+▸ concern two
+```
+
+**stuck**:
+```
+─── glyph skillname · stuck ───
+
+Summary sentence.
+
+▸ blocked: what is blocking
+▸ tried: what was attempted
+```
+
+**waiting**:
+```
+─── glyph skillname · waiting ───
+
+Summary sentence.
+
+▸ needs: what is required to proceed
+```
+
+### Step markers
+
+Skills with 4+ workflow steps display progress markers between steps:
+
+```
+── step N/M: verb
+```
+
+N is the current step number, M is the total step count for the current mode, and verb is
+the step's bare-verb name (lowercase).
+
+Rules:
+- Step 0 (mode detection/gates) is excluded from the count: markers start at Step 1
+- Skills with multiple modes use per-mode N/M counts (e.g., Create mode 1/4, Refine mode 1/4)
+- Excluded skills: hej (uses dashboard format), resonera (interactive Q&A with scratchpad)
 
 ### Token-to-artifact mapping
 

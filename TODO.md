@@ -3,6 +3,7 @@
 ## ⇶ Critical
 
 ## ⇉ Degraded
+- [ ] ISS-20: Implement formatting decisions (Decision 14) — update all 11 SKILL.md files with standardized exit signal template, step markers, opener instruction phrasing, verb renames, scratchpad container, and style rules; update ecosystem-spec.md Section 12 with divider hierarchy and exit signal format
 
 ## ⇢ Annoying
 - [ ] ISS-19: Consider explicit phase tracking in PROGRESS.md — define valid skill-chain transitions (envision → deliberate → plan → build → audit) with terminal states; skills check phase and flag out-of-order runs
