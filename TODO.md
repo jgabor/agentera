@@ -5,8 +5,11 @@
 ## ⇉ Degraded
 - [x] ~~ISS-27: Add narration voice principle and warm up skill narration (Decision 17)~~ · fixed in 2ee4e99..de45a45
 - [x] ~~ISS-29: Build orkestrera skill (Decision 20)~~ · fixed in 1858de0..3decb87
+- [x] ~~ISS-30: Overhaul README to properly represent profilera's role~~ · fixed in 70a2fb1
+- [ ] ISS-31: Build test suite for the ecosystem. Test coverage added: 171 tests across 7 files covering all 13 linter check functions, eval runner pure functions, and 4 of 5 skill scripts (145c637, 8b4e389, bdfdcc9, 02a3e0d). Remaining: CI gating deferred, extract_all.py untested
 
 ## ⇢ Annoying
+- [x] ~~ISS-32: README ecosystem diagram understates inspirera connections~~ · fixed in 70a2fb1
 - [ ] ISS-25: Implement four-tier priority system with type tags (Decision 15). Add → Normal tier between Degraded and Annoying; add conventional commit type tags `[feat]`/`[fix]`/etc. after colon in issue format; update ecosystem-spec.md severity section, TODO-template.md, and retroactively tag existing issues
 - [ ] ISS-19: Consider explicit phase tracking in PROGRESS.md. Define valid skill-chain transitions (envision → deliberate → plan → build → audit) with terminal states; skills check phase and flag out-of-order runs
 

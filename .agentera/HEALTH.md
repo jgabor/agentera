@@ -1,5 +1,120 @@
 # Health
 
+## Audit 6 · 2026-04-02
+
+**Dimensions assessed**: test health, architecture alignment, version health (patterns and coupling carried forward from Audit 5)
+**Findings**: 0 critical, 0 warnings, 1 info (0 filtered by confidence)
+**Overall trajectory**: ⮉ improving. Tests D→B (171 tests, all 13 linter checks covered). Architecture B→A (README now accurate). Version A (stable). Patterns A, Coupling A (carried forward).
+**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Tests [B] | Version [A]
+
+### Test health: B
+
+171 tests across 7 files, all passing. Coverage by module:
+
+- **validate_ecosystem.py**: 105 tests across 17 test classes. All 13 check functions tested (check_frontmatter, check_confidence_scale, check_severity_levels, check_decision_labels, check_artifact_path_resolution, check_profile_consumption, check_cross_skill_integration, check_safety_rails, check_artifact_format, check_exit_signals, check_loop_guard, check_em_dashes, check_hard_wraps). Plus Results class, extract_subsection, parse_frontmatter, extract_section.
+- **eval_skills.py**: 26 tests covering TRIGGER_PROMPTS completeness (all 12 skills including orkestrera), _parse_frontmatter_name, discover_skills, build_report, build_dry_run, parse_args.
+- **Skill scripts**: 4 of 5 scripts tested (40 tests total). analyze_experiments.py (10), analyze_progress.py (9), effective_profile.py (11), validate_design.py (10).
+- **Shared fixtures**: conftest.py provides validate_ecosystem and eval_skills module fixtures via importlib.
+
+#### ⇢ extract_all.py (profilera) has no tests · info (confidence: 95)
+- **Location**: `skills/profilera/scripts/extract_all.py`
+- **Evidence**: Only Python script without a corresponding test file. 5 of 6 scripts now tested; extract_all.py is the gap.
+- **Impact**: Profile extraction parsing changes could break silently
+- **Suggested action**: Add test_extract_all.py for parse functions
+
+Remaining gaps: no CI gating (tests exist but are not enforced in a pipeline), no artifact format contract tests (inter-skill communication format validation at test time).
+
+### Architecture alignment: A
+
+README now accurately represents the ecosystem. All three Audit 5 concerns resolved:
+
+1. **profilera table entry**: rewritten from "Know thyself. Learns your decision patterns" to "Compounding memory. Mines your decision patterns into a profile consumed by every skill, so the 20th cycle adapts to how you work in ways the 1st could not." Conveys ecosystem impact, not just feature.
+2. **inspirera diagram**: annotated with `(simplified: each skill has additional cross-skill edges, see ecosystem spec Section 7)` caption. Additional inspirera edges shown: arrows to realisera, optimera, visionera, resonera below the main diagram.
+3. **Consumer tables**: all 12 artifact rows match ecosystem-spec.md Section 4 format contracts exactly (VISION.md, TODO.md, CHANGELOG.md, PROGRESS.md, DECISIONS.md, PLAN.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, DESIGN.md, DOCS.md, PROFILE.md).
+
+No remaining architecture misalignments detected between README and ecosystem spec.
+
+### Version health: A
+
+All 33 version locations consistent: 11 non-profilera plugin.json at 1.5.0, profilera at 2.4.0, marketplace.json at 1.5.0, registry.json entries match. Four post-1.5.0 commits (test, test, docs, test) correctly did not trigger a version bump per semver policy (test and docs are non-bumping commit types). CHANGELOG [Unreleased] empty, [1.5.0] promoted.
+
+### Pattern consistency: A (carried forward)
+
+No SKILL.md files modified in this plan. Linter still passes: 0 errors, 0 warnings. Carried forward from Audit 5.
+
+### Coupling health: A (carried forward)
+
+No cross-skill references modified. 12-node graph intact. Carried forward from Audit 5.
+
+### Trends vs Audit 5
+
+- **Improved**: Tests [D→B] (0 tests to 171; all 13 linter check functions, eval runner pure functions, and 4 of 5 skill scripts covered), Architecture [B→A] (README diagram, profilera entry, consumer tables all resolved)
+- **Stable**: Patterns [A→A], Coupling [A→A], Version [A→A]
+- **Resolved**: README diagram inspirera simplification (Audit 4/5 warning, fixed in 70a2fb1), Test health D (Audit 4/5, elevated to B via 145c637, 8b4e389, bdfdcc9, 02a3e0d)
+- **Still open**: extract_all.py untested (info), CI gating deferred
+
+### Patterns Observed
+
+- Test infrastructure went from zero to mature in a single plan: 171 tests, shared fixtures, modular test classes mirroring source structure. The approach of testing pure functions and check functions independently (not integration tests against real SKILL.md files) keeps tests fast and deterministic.
+- README accuracy tracks ecosystem spec more faithfully after the overhaul. The "simplified" diagram annotation is the right tradeoff: honest about what it omits, with a pointer to the authoritative source.
+- The project now has no D grades for the first time. All five dimensions at A or B.
+
+---
+
+## Audit 5 · 2026-04-02
+
+**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, version health, test health
+**Findings**: 0 critical, 1 warning, 1 info (0 filtered by confidence)
+**Overall trajectory**: ⮉ improving. Architecture B (was C), Patterns A (was B), Coupling A (was B), Version A (was B). Tests still D.
+**Grades**: Architecture [B] | Patterns [A] | Coupling [A] | Tests [D] | Version [A]
+
+### Architecture alignment: B
+
+5 of 6 Audit 4 findings resolved (LICENSE added, installation path fixed, ISSUES-template renamed, README intro updated, CLAUDE.md layout fixed). Orkestrera integrated cleanly across all 12 touchpoints: SKILL.md, ecosystem-spec (Sections 4, 7, 11, 12), linter, all SKILL.md cross-skill sections, hej routing, manifests, README, CLAUDE.md.
+
+#### ⇉ README diagram understates inspirera connections · warning (confidence: 90)
+- **Location**: `README.md:84-91`
+- **Evidence**: Diagram shows single `inspirera → planera` arrow. Spec Section 7 requires references to realisera, optimera, visionera, resonera, profilera. Prose at line 93 is accurate but diagram is simplified without noting it.
+- **Impact**: Diagram understates inspirera's role in the ecosystem graph
+- **Suggested action**: Add `(simplified)` caption or additional inspirera arrows
+
+### Pattern consistency: A
+
+All 12 SKILL.md files pass 11 structural pattern checks. Orkestrera matches peer skills on: frontmatter, section ordering, artifact path resolution, safety rails (8 NEVER rules), exit signals (4 statuses), cross-skill integration (twelve-skill, 10 required refs), getting started, narration voice (5 contrast pairs), loop guard, formatting. Linter: 0 errors, 0 warnings.
+
+### Coupling health: A
+
+12-node cross-skill graph verified: all required references present per Section 7 table. Orkestrera correctly references all 10 dispatched/consumed skills. Hej references all 11 others including orkestrera. No circular dependencies, no asymmetries beyond the expected (orkestrera dispatches to skills, skills don't reference orkestrera back, by design per Decision 20).
+
+### Version health: A
+
+Post-1.5.0 bump: all 11 non-profilera plugin.json at 1.5.0, profilera at 2.4.0, marketplace.json at 1.5.0, registry.json consistent. Two post-bump commits (chore, docs) correctly do not trigger a bump per semver policy. CHANGELOG [1.5.0] promoted, [Unreleased] empty.
+
+### Test health: D
+
+No unit tests for validate_ecosystem.py. No eval smoke tests run via eval_skills.py. Linter is the only automated verification. Same state as Audit 4; orkestrera addition did not improve or degrade test health.
+
+#### ⇢ No automated tests for linter or skills · info (confidence: 95)
+- **Location**: `scripts/validate_ecosystem.py`, `scripts/eval_skills.py`
+- **Evidence**: validate_ecosystem.py has no test file. eval_skills.py exists but no evidence of regular execution.
+- **Impact**: Linter changes (like the orkestrera additions) are verified manually, not by CI
+- **Suggested action**: Add pytest tests for the linter; run eval_skills.py periodically
+
+### Trends vs Audit 4
+
+- **Improved**: Architecture [C→B] (5/6 findings resolved, orkestrera integrated cleanly), Patterns [B→A] (12th skill follows all conventions), Coupling [B→A] (12-node graph verified), Version [B→A] (clean 1.5.0 bump)
+- **Stable**: Tests [D→D] (no tests added)
+- **Resolved**: LICENSE missing, installation path, stale ISSUES-template, README intro, CLAUDE.md layout
+- **Still open**: README diagram inspirera simplification (Audit 4 finding, now warning)
+
+### Patterns Observed
+
+- Module structure: 12 skill directories, each self-contained (SKILL.md + optional references/ + scripts/ + .claude-plugin/)
+- Ecosystem enforcement: single linter (validate_ecosystem.py) validates all 12 skills against shared spec
+- Cross-skill graph: fully connected via SKILL.md cross-skill sections; hej reads all, orkestrera dispatches all
+- State management: markdown artifacts in target projects, not in this repo
+- Versioning: collection-level semver with per-skill versions tracked in 3 file types
+
 ## Audit 4 · 2026-04-01
 
 **Dimensions assessed**: architecture alignment, pattern consistency, coupling health, test health, version health, dependency health
