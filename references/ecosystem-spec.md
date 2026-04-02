@@ -664,3 +664,35 @@ Prose paragraphs in ecosystem text are single lines. The terminal handles wrappi
 | Structured content keeps its line breaks | Code blocks, bullet lists, numbered lists, tables, headings, YAML frontmatter, and HTML comments retain their inherent structure |
 
 **Linter check**: Advisory. Consecutive non-blank prose lines outside structured content (code blocks, lists, tables, frontmatter, headings).
+
+## 16. Test Proportionality
+
+Plans that include test tasks must specify a proportionality target so that test volume stays aligned with the complexity of the code under test. Without a constraint, autonomous agents tend to over-produce tests (3-7 per function) when fewer would cover the critical paths.
+
+### Default rule
+
+One pass test + one fail test per testable unit. A testable unit is a function, method, endpoint, or discrete behavior boundary. Two tests per unit is sufficient to verify the happy path and one meaningful failure mode.
+
+### Edge case expansion
+
+Additional edge case tests are warranted only for units with:
+
+- Complex parsing logic (multiple input formats, escape sequences, nested structures)
+- Regex patterns (boundary conditions, catastrophic backtracking potential)
+- Multi-branch logic (3+ conditional paths, state machines, mode switches)
+
+When expanding, the plan must state which units qualify and why.
+
+### Override
+
+Plans can specify a different proportionality target by including an explicit rationale. Valid reasons include: safety-critical code paths, high-fanout utility functions, or user-specified coverage requirements. The override appears in the task's acceptance criteria alongside the adjusted target.
+
+### Skill integration
+
+| Skill | Role |
+|-------|------|
+| planera | Encodes the proportionality target as an acceptance criteria constraint on test tasks. Uses the default rule unless the plan's context justifies an override |
+| inspektera | Evaluates test volume against the proportionality target during audits. Flags both under-testing (0 tests for a testable unit) and over-testing (significantly exceeding the target without justification) |
+| orkestrera | Dispatches test tasks with the proportionality constraint from the plan. Subagents inherit the target and must not exceed it without the override mechanism |
+
+**Linter check**: None. This convention governs plan content and audit evaluation, not SKILL.md structure.
