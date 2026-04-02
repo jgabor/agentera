@@ -436,6 +436,7 @@ Each skill has a unique Unicode glyph used as a subtle signature in output.
 | profilera | ♾ | U+267E | permanent mark |
 | inspirera | ⬚ | U+2B1A | frame to fill |
 | visualisera | ◰ | U+25F0 | design grid |
+| orkestrera | ⎈ | U+2388 | helm, steering |
 
 ### Semantic tokens
 

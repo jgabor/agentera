@@ -4,16 +4,17 @@
 
 ## ⇉ Degraded
 - [x] ~~ISS-27: Add narration voice principle and warm up skill narration (Decision 17)~~ · fixed in 2ee4e99..de45a45
-- [ ] ISS-21: Add separated evaluator to realisera. Spawn a fresh `claude -p` session after each task that runs inspektera-style audit against the task's acceptance criteria; gate task completion on evaluator PASS verdict (inspired by harness GAN pattern)
-- [ ] ISS-22: Build headless runner script (`scripts/runner.py`). Batch orchestrator that reads PLAN.md, iterates tasks, launches Claude sessions with synthesized prompts, runs verification + evaluation gates, handles retries (max 2), updates PROGRESS.md; enables overnight autonomous runs and CI integration
+- [ ] ISS-29: Build orkestrera skill (Decision 20). Skill-agnostic meta-orchestrator: thin conductor dispatching any skill as subagent, plan-required (chains inspirera → planera if absent), inspektera as evaluator, multi-cycle session, sequential task dispatch, retry with findings (max 2). Supersedes ISS-21, ISS-22, ISS-23, ISS-24
 
 ## ⇢ Annoying
 - [ ] ISS-25: Implement four-tier priority system with type tags (Decision 15). Add → Normal tier between Degraded and Annoying; add conventional commit type tags `[feat]`/`[fix]`/etc. after colon in issue format; update ecosystem-spec.md severity section, TODO-template.md, and retroactively tag existing issues
-- [ ] ISS-23: Add structured AC verification to planera → realisera handoff. Ensure planera's acceptance criteria are testable and specific enough for mechanical verification; add "Verification" subsection to PLAN.md tasks describing how each AC can be checked
-- [ ] ISS-24: Encode retry caps in ecosystem spec. Add `max_retry_cycles` primitive (default: 2) to `references/ecosystem-spec.md` that realisera and the runner both respect; after max retries, task resets to pending and escalates
 - [ ] ISS-19: Consider explicit phase tracking in PROGRESS.md. Define valid skill-chain transitions (envision → deliberate → plan → build → audit) with terminal states; skills check phase and flag out-of-order runs
 
 ## Resolved
+- [x] ~~ISS-21: Separated evaluator for realisera~~ · superseded by ISS-29 (Decision 20: orkestrera)
+- [x] ~~ISS-22: Headless runner script~~ · superseded by ISS-29 (Decision 20: orkestrera)
+- [x] ~~ISS-23: Structured AC verification for planera → realisera handoff~~ · superseded by ISS-29 (Decision 20: orkestrera)
+- [x] ~~ISS-24: Retry caps in ecosystem spec~~ · superseded by ISS-29 (Decision 20: orkestrera)
 - [x] ~~ISS-28: Enforce prose formatting conventions ecosystem-wide (Decisions 18, 19)~~ · fixed in 79b4b0d..7035ece
 - [x] ~~ISS-26: Refine skill voice to match "sharp colleague" standard (Decision 16)~~ · fixed in e17d588..067a251
 - [x] ~~ISS-20: Implement formatting decisions (Decision 14)~~ · fixed in 8dfb6fe..e73d31e
