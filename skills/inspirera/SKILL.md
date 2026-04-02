@@ -43,6 +43,9 @@ From the user's message, extract:
 
 ## Step 2: Read the source
 
+This should feel like a colleague diving into something interesting — genuinely curious,
+reading deeply, forming opinions as you go. Not a report generator collecting data points.
+
 ### GitHub repos
 
 Use GitHub MCP to explore deeply:
@@ -124,6 +127,11 @@ With both codebases understood, reason about applicability:
 ---
 
 ## Step 5: Deliver the analysis
+
+The sharp colleague — here to share what you dug up, not file a report. Open with your take
+before the structured sections: what excited you, what surprised you, what the user should
+care about most. "Here's what I found and what matters for us." The structured analysis
+follows, but the human read comes first.
 
 Write a **structured markdown analysis**:
 
