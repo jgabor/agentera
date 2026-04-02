@@ -92,7 +92,7 @@ Tasks 3-5 follow this reference when applying the pattern to other skills.
 
 ### Task 6: Validate voice alignment across all 11 skills
 **Depends on**: Tasks 1-5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all 11 SKILL.md files WHEN ecosystem linter runs THEN 0 errors (structural integrity preserved after changes)
 ▸ GIVEN all 11 skills' output sections WHEN manually reviewed THEN every data-dense section has interpretive framing — no section opens with raw structured data
