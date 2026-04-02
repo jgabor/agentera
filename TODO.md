@@ -4,7 +4,7 @@
 
 ## ⇉ Degraded
 - [x] ~~ISS-27: Add narration voice principle and warm up skill narration (Decision 17)~~ · fixed in 2ee4e99..de45a45
-- [ ] ISS-29: Build orkestrera skill (Decision 20). Skill-agnostic meta-orchestrator: thin conductor dispatching any skill as subagent, plan-required (chains inspirera → planera if absent), inspektera as evaluator, multi-cycle session, sequential task dispatch, retry with findings (max 2). Supersedes ISS-21, ISS-22, ISS-23, ISS-24
+- [x] ~~ISS-29: Build orkestrera skill (Decision 20)~~ · fixed in 1858de0..3decb87
 
 ## ⇢ Annoying
 - [ ] ISS-25: Implement four-tier priority system with type tags (Decision 15). Add → Normal tier between Degraded and Annoying; add conventional commit type tags `[feat]`/`[fix]`/etc. after colon in issue format; update ecosystem-spec.md severity section, TODO-template.md, and retroactively tag existing issues
