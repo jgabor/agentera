@@ -1,24 +1,16 @@
 # agentera
 
-Visual identity system for the agentera skill ecosystem. Terminal-native,
-layered on standard Markdown, designed for both human reading and agent
-consumption.
+Visual identity system for the agentera skill ecosystem. Terminal-native, layered on standard Markdown, designed for both human reading and agent consumption.
 
 ## Philosophy
 
-The ambitious workshop. Every visual element carries semantic weight —
-craft and density are the same move. Open structure over enclosure: no
-frames except the logo, breathing room between sections, precision in
-alignment. The box-drawing logo is the crown; everything else earns
-distinction through Unicode glyphs and whitespace.
+The ambitious workshop. Every visual element carries semantic weight; craft and density are the same move. Open structure over enclosure: no frames except the logo, breathing room between sections, precision in alignment. The box-drawing logo is the crown; everything else earns distinction through Unicode glyphs and whitespace.
 
 Modern terminal assumed. Full Unicode space available.
 
 ## Logo
 
-The agentera logo uses box-drawing characters exclusively. It appears at
-key moments only — the hej dashboard, major completions, significant
-artifacts. Scarcity keeps it special.
+The agentera logo uses box-drawing characters exclusively. It appears at key moments only: the hej dashboard, major completions, significant artifacts. Scarcity keeps it special.
 
 <!-- design:logo -->
 
@@ -33,9 +25,7 @@ usage: key-moments-only
 
 ## Skill Glyphs
 
-Each skill has a unique Unicode glyph that appears in section headers as
-a subtle signature. The glyphs lean into geometric shapes — angular,
-precise, echoing the logo's sharp corners.
+Each skill has a unique Unicode glyph that appears in section headers as a subtle signature. The glyphs lean into geometric shapes: angular, precise, echoing the logo's sharp corners.
 
 <!-- design:glyphs -->
 
@@ -55,8 +45,7 @@ visualisera: { glyph: "◰", code: "U+25F0", meaning: "design grid" }
 
 ## Status Tokens
 
-Task and item completion states. Square family — fill progression from
-empty to solid.
+Task and item completion states. Square family: fill progression from empty to solid.
 
 <!-- design:status -->
 
@@ -69,7 +58,7 @@ blocked:     { glyph: "▨", code: "U+25A8" }
 
 ## Severity Tokens
 
-Issue urgency. Rightward arrows — more arrows, more serious.
+Issue urgency. Rightward arrows: more arrows, more serious.
 
 <!-- design:severity -->
 
@@ -81,8 +70,7 @@ annoying: { glyph: "⇢", code: "U+21E2", weight: 1 }
 
 ## Confidence Tokens
 
-Decision certainty. Box-drawing line weight — heavier line, firmer
-commitment.
+Decision certainty. Box-drawing line weight: heavier line, firmer commitment.
 
 <!-- design:confidence -->
 

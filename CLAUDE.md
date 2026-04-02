@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-agentera — a Claude Code skill marketplace. Eleven skills — each a self-contained `SKILL.md` with optional `references/` and `scripts/` — that give Claude specialized autonomous behaviors. See the README for the full skill table and ecosystem diagram.
+agentera: a Claude Code skill marketplace. Eleven skills, each a self-contained `SKILL.md` with optional `references/` and `scripts/`, that give Claude specialized autonomous behaviors. See the README for the full skill table and ecosystem diagram.
 
 ## Repository layout
 
@@ -23,7 +23,7 @@ registry.json                        # Skill index with versions and tags
 
 ## Skill ecosystem
 
-The eleven skills form a connected graph — not isolated tools. See the README for the full ecosystem diagram and state artifact reference table. All skills work standalone AND mesh when co-installed. Each skill generates state artifacts in the *target project*, not in this repo. Default layout: three project-facing files at root (VISION.md, TODO.md, CHANGELOG.md) and eight operational files in `.agentera/` (PROGRESS.md, DECISIONS.md, PLAN.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, DESIGN.md, DOCS.md). Skills check `.agentera/DOCS.md` for path overrides; if absent, use the deterministic default layout.
+The eleven skills form a connected graph, not isolated tools. See the README for the full ecosystem diagram and state artifact reference table. All skills work standalone AND mesh when co-installed. Each skill generates state artifacts in the *target project*, not in this repo. Default layout: three project-facing files at root (VISION.md, TODO.md, CHANGELOG.md) and eight operational files in `.agentera/` (PROGRESS.md, DECISIONS.md, PLAN.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, DESIGN.md, DOCS.md). Skills check `.agentera/DOCS.md` for path overrides; if absent, use the deterministic default layout.
 
 ## Adding or modifying a skill
 
@@ -67,10 +67,10 @@ The linter blocks commits with alignment errors and warns on advisory issues.
 
 ## Key conventions
 
-- SKILL.md is the single source of truth for each skill's behavior — workflow steps, trigger patterns, output format, safety rails, and cross-skill integration are all defined there
-- Shared primitives (confidence scale, severity levels, completion status protocol, escalation discipline, structural conventions) are defined in `references/ecosystem-spec.md` — all SKILL.md files must align with this spec
+- SKILL.md is the single source of truth for each skill's behavior: workflow steps, trigger patterns, output format, safety rails, and cross-skill integration are all defined there
+- Shared primitives (confidence scale, severity levels, completion status protocol, escalation discipline, structural conventions) are defined in `references/ecosystem-spec.md`. All SKILL.md files must align with this spec
 - Skills never push to remote repos or modify VISION.md/OBJECTIVE.md during execution cycles
 - Conventional commits: feat/fix/docs/refactor/chore/test
 - realisera and optimera dispatch implementation work to Sonnet agents in worktrees, then verify before committing
-- Visual identity system defined in `references/ecosystem-spec.md` Section 12 — skill glyphs, semantic tokens (status, severity, confidence, trend), and composition rules that all skills and artifact templates follow
-- Versioning convention in DOCS.md — `version_files` lists what to bump, `semver_policy` maps commit types to bump levels. Planera flags bump-worthy plans, inspektera checks for unbumped changes, realisera executes bumps
+- Visual identity system defined in `references/ecosystem-spec.md` Section 12: skill glyphs, semantic tokens (status, severity, confidence, trend), and composition rules that all skills and artifact templates follow
+- Versioning convention in DOCS.md: `version_files` lists what to bump, `semver_policy` maps commit types to bump levels. Planera flags bump-worthy plans, inspektera checks for unbumped changes, realisera executes bumps
