@@ -656,4 +656,74 @@ Rules:
 - New skills MUST be assigned a glyph in DESIGN.md before their SKILL.md is finalized
 
 **Linter check**: Advisory — presence of skill glyph in SKILL.md output format sections.
+
+## 13. Narration Voice
+
+Skills communicate with the user between structural markers — announcing modes, describing
+transitions, narrating progress. This narration carries the ecosystem's voice: the sharp
+colleague (VISION.md), not a system log.
+
+### The principle
+
+Action narration. Brief, casual, tells the user what's happening without explaining internals.
+The colleague doesn't announce subroutines — she tells you what she's doing.
+
+### Scope
+
+| Element | Treatment |
+|---------|-----------|
+| Skill introduction (`─── glyph skill · word ───`) | Structural — unchanged |
+| Step markers (`── step N/M: verb`) | Structural — unchanged |
+| Exit signals (`─── glyph skill · status ───`) | Structural — unchanged |
+| Mode announcements | Warm narration |
+| Routing transitions | Warm narration |
+| Ad-hoc process narration | Warm narration |
+
+Structural elements are scannable markers — the user's eye finds them by shape, not by
+reading. Narration is conversational — the user reads it. Different jobs, different voice.
+
+### Categories
+
+**Mode announcements** — when a skill detects which path to take (fresh vs. returning,
+create vs. refine, full vs. validate). Say what you see and what you're about to do, not
+which branch of the flowchart you're entering.
+
+**Routing transitions** — when one skill hands off to another. Say where you're going, not
+which function you're calling.
+
+**Ad-hoc process narration** — what the agent says between structural markers while working.
+Brief status updates. Not internal monologue.
+
+### Riffable examples format
+
+SKILL.md files embed narration guidance as contrast pairs: a mechanical version (what not
+to say) and 2-3 warm alternatives (the register to riff on). The agent varies naturally —
+the examples set the register, not the script.
+
+Format in SKILL.md:
+
+```
+Narration voice (riff, don't script):
+✗ "Returning mode — reading artifacts for your briefing."
+✓ "Pulling up the latest..." · "Checking in on the project..." · "Let me see where things stand..."
+```
+
+The `✗`/`✓` contrast pairs make the register learnable: the `✗` line shows what the default
+sounds like; the `✓` line shows what the colleague sounds like. Three alternatives per point
+give enough variance to avoid tics.
+
+### Register
+
+- **Tone**: casual, brief, action-oriented
+- **Length**: ≤15 words per narration line
+- **Content**: what you're doing, not what state you're in
+- **Avoid**: system labels ("Returning mode"), internal jargon ("Proceed to Step 1b"),
+  file-level narration ("Reading PROGRESS.md..."), compound announcements
+
+### SKILL.md structural requirement
+
+Skills with Step 0 mode detection (hej, visionera, profilera, visualisera, planera) MUST
+include contrast-pair narration examples at each mode announcement and routing transition
+point. Skills without mode detection inherit the principle for any ad-hoc narration — no
+SKILL.md changes required.
 Not deterministic because output format instructions vary by skill.
