@@ -3,13 +3,14 @@
 ## ⇶ Critical
 
 ## ⇉ Degraded
-- [ ] ISS-31: [test] Build test suite for the ecosystem. Test coverage: 133 proportional tests across 8 files covering all 13 linter check functions, eval runner pure functions, and all 5 skill scripts (145c637, 8b4e389, bdfdcc9, 02a3e0d, 1f4c250, 9bc13b7). Remaining: CI gating deferred
+- [ ] ISS-31: [test] Build test suite for the ecosystem. Test coverage: 160 proportional tests across 9 files covering all 16 linter check functions, eval runner pure functions, all 5 skill scripts, and the ecosystem context generation script (145c637, 8b4e389, bdfdcc9, 02a3e0d, 1f4c250, 9bc13b7, 2c74305). Remaining: CI gating deferred
 
 ## → Normal
 
 ## ⇢ Annoying
 
 ## Resolved
+- [x] ~~ISS-35: [fix] Spec-to-skill semantic drift across 12 duplication points~~ · fixed in 2b208f9..7a8f1b0
 - [x] ~~ISS-34: [feat] Plan-relative staleness detection (Decision 22)~~ · fixed in cd519b0..7e3255b
 - [x] ~~ISS-19: [feat] Phase tracking spec~~ · spec delivered in 2caa9cb, SKILL.md enforcement dropped per Decision 22 (replaced by ISS-34)
 - [x] ~~ISS-33: [docs] Add test proportionality convention (Decision 21)~~ · fixed in 0c67553..61e7f7d
