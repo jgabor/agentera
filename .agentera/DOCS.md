@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-02 -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-03 -->
 
 ## Conventions
 
@@ -49,7 +49,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Progress | .agentera/PROGRESS.md | 2026-04-02 | ■ current |
 | TODO | TODO.md | 2026-04-02 | ■ current |
 | Changelog | CHANGELOG.md | 2026-04-02 | ■ current |
-| Health | .agentera/HEALTH.md | 2026-04-01 | ▣ stale |
+| Health | .agentera/HEALTH.md | 2026-04-02 | ■ current |
 | Plan | .agentera/PLAN.md | 2026-04-02 | ■ current (archived) |
 | DOCS | .agentera/DOCS.md | 2026-04-02 | ■ current |
 | Design | .agentera/DESIGN.md | 2026-04-02 | ■ current |
@@ -57,14 +57,27 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
 | Registry | registry.json | 2026-04-02 | ■ current |
 | Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-02 | ■ current |
+| Test suite | tests/ | 2026-04-02 | ■ current |
 
 ## Coverage
 
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
-- **Stale**: HEALTH.md (Audit 4 predates orkestrera addition, 12th skill not reflected)
+- **Stale**: none
+- **Tests**: 171 tests across 7 files; extract_all.py untested; CI gating deferred
 
 ## Audit Log
+
+### 2026-04-03 (Audit 5)
+
+- [gap] CLAUDE.md repo layout missing tests/ directory · warning (fixed)
+- [stale] DOCS.md HEALTH.md row showed stale status, Audit 6 updated it · warning (fixed)
+- [stale] CHANGELOG.md [Unreleased] empty despite 7 post-1.5.0 commits · warning (fixed)
+- [misaligned] ecosystem-spec Section 16 orkestrera row described proportionality forwarding instead of anti-bias constraint · warning (fixed)
+- [misaligned] ecosystem-spec line 5 comment had hyphen instead of underscore in script name · info (fixed)
+- [stale] DOCS.md DTC comment referenced ISSUES.md instead of TODO.md · info (fixed)
+- [gap] DOCS.md Index missing test suite row · warning (fixed)
+- [stale] DOCS.md Coverage note outdated, missing test count and gaps · warning (fixed)
 
 ### 2026-04-02 (Audit 4)
 
@@ -133,7 +146,7 @@ Sections:
   Audit Log        · timestamped findings from dokumentera audits
 
 DTC principle:
-  If code diverges from docs, the code is wrong. File to ISSUES.md, don't update docs
+  If code diverges from docs, the code is wrong. File to TODO.md, don't update docs
   to match broken code. Exception: if the doc is genuinely wrong (outdated assumption),
   fix the doc explicitly.
 -->

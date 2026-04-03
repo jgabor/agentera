@@ -16,6 +16,7 @@ skills/<name>/.claude-plugin/plugin.json  # Per-skill marketplace plugin manifes
 references/ecosystem-spec.md         # Shared primitives spec (all skills must align)
 scripts/validate_ecosystem.py        # Ecosystem linter (pre-commit hook)
 scripts/eval_skills.py               # Tier 2 eval runner (smoke-tests skills via claude -p)
+tests/                               # pytest suite (linter, eval runner, skill scripts)
 .githooks/pre-commit                 # Git hook running the linter
 registry.json                        # Skill index with versions and tags
 .claude-plugin/marketplace.json      # Plugin marketplace manifest

@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+- 171-test pytest suite covering linter checks, eval runner, and skill scripts across 7 test files
+- Test proportionality convention in ecosystem-spec Section 16 and Decision 21: default 1-pass + 1-fail per testable unit with edge case and override rules
+
+### Changed
+- realisera verify step prioritizes functional verification over test suite
+- orkestrera dispatch template includes anti-bias constraint for implementation tasks
+- planera test acceptance criteria use negative cap framing ("must not exceed N tests per unit")
+
+### Fixed
+- orkestrera added to eval runner trigger prompts
+- README profilera and inspirera skill descriptions corrected
+
 ## [1.5.0] · 2026-04-02
 
 ### Added
