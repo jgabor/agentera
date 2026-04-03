@@ -118,7 +118,7 @@ Show where things stand.
    ─── status ─────────────────────────────
 
      ⛶ health    [⮉|⮋] [grade] ([worst dimension: grade])
-     ⇶ issues    N critical · M degraded · K annoying
+     ⇶ issues    N critical · M degraded · K normal · J annoying
      ≡ plan      [██████▓▓░░] N/M tasks
      ⎘ optim     [metric] [current] → [target]
      ♾ profile   [loaded | not found]
@@ -127,6 +127,7 @@ Show where things stand.
 
      ⇶ [critical items, triple arrow for critical]
      ⇉ [degraded items, double arrow for degraded]
+     → [normal items, single arrow for normal]
      ⇢ [annoying items, dashed arrow for annoying]
 
    ─── next ───────────────────────────────
@@ -149,6 +150,7 @@ Show where things stand.
 3. **Attention items**: priority order with severity arrows:
    - ⇶ Critical issues, degrading health dimensions
    - ⇉ Blocked/overdue plan tasks, stale artifacts (plan-relative per ecosystem context staleness detection; fall back to PROGRESS.md recency heuristic when no plan context exists), loop guard triggers
+   - → Standard work: features, improvements, routine tasks
    - ⇢ Unresolved exploratory decisions
 
    Nothing? Say so. A clean bill of health is useful.
