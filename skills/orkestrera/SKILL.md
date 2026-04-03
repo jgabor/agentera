@@ -111,6 +111,7 @@ prior task results. Keep brief.]
 - Commit your changes with a conventional commit message.
 - You are working on a plan-driven task. Update the task status in PLAN.md
   to ■ complete when done.
+- For implementation tasks: do not write tests unless the acceptance criteria explicitly require them. Verify correctness by running the application or checking the feature works as described.
 ```
 
 Wait for the task-notification result.
