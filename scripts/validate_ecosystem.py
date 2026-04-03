@@ -9,7 +9,9 @@ Validates all 12 SKILL.md files against the ecosystem spec
 (references/ecosystem-spec.md). Checks frontmatter, confidence scales,
 severity levels, decision labels, artifact path resolution, profile
 consumption, cross-skill integration, safety rails, artifact format
-contracts, exit signals, and loop guard.
+contracts, exit signals, loop guard, em-dashes, hard wraps,
+spec_sections declaration, context file existence, and context file
+freshness.
 
 Run from repo root:
     python3 scripts/validate_ecosystem.py
@@ -17,6 +19,7 @@ Run from repo root:
 
 from __future__ import annotations
 
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -746,10 +749,82 @@ def check_hard_wraps(skill: str, text: str, r: Results) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Ecosystem context checks (spec alignment)
+# ---------------------------------------------------------------------------
+
+def check_spec_sections_declared(skill: str, text: str, r: Results) -> None:
+    """Check 14: SKILL.md frontmatter declares spec_sections field."""
+    fm = parse_frontmatter(text)
+    if fm is None:
+        r.error(skill, "spec-sections-declared", "No frontmatter found")
+        return
+
+    if "spec_sections" not in fm:
+        r.error(
+            skill, "spec-sections-declared",
+            "Missing 'spec_sections' field in frontmatter",
+        )
+        return
+
+    # Validate the format: should be a bracketed list of integers.
+    raw = fm["spec_sections"]
+    m = re.fullmatch(r"\[[\d,\s]+]", raw)
+    if not m:
+        r.error(
+            skill, "spec-sections-declared",
+            f"Invalid spec_sections format: {raw!r} (expected [N, N, ...])",
+        )
+        return
+
+    r.ok(skill, "spec-sections-declared")
+
+
+def check_context_file_exists(skill: str, text: str, r: Results, *, skill_path: Path) -> None:
+    """Check 15: references/ecosystem-context.md exists for the skill."""
+    context_path = skill_path.parent / "references" / "ecosystem-context.md"
+    if context_path.exists():
+        r.ok(skill, "context-file-exists")
+    else:
+        r.error(
+            skill, "context-file-exists",
+            f"Missing {context_path.parent.name}/references/ecosystem-context.md",
+        )
+
+
+def check_context_file_current(
+    skill: str, text: str, r: Results, *, skill_path: Path, spec_hash: str,
+) -> None:
+    """Check 16: ecosystem-context.md source hash matches current ecosystem-spec.md."""
+    context_path = skill_path.parent / "references" / "ecosystem-context.md"
+    if not context_path.exists():
+        # Already reported by check_context_file_exists; skip silently.
+        return
+
+    content = context_path.read_text(encoding="utf-8")
+    m = re.search(r"<!-- source: .+?\(sha256: ([a-f0-9]+)\) -->", content)
+    if not m:
+        r.error(
+            skill, "context-file-current",
+            "No source hash found in ecosystem-context.md header",
+        )
+        return
+
+    file_hash = m.group(1)
+    if file_hash == spec_hash:
+        r.ok(skill, "context-file-current")
+    else:
+        r.error(
+            skill, "context-file-current",
+            f"Source hash mismatch: file has {file_hash[:12]}... "
+            f"but ecosystem-spec.md is {spec_hash[:12]}...",
+        )
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
-def validate_skill(path: Path, r: Results) -> None:
+def validate_skill(path: Path, r: Results, *, spec_hash: str) -> None:
     """Run all checks on a single SKILL.md."""
     skill = path.parent.name
     text = path.read_text(encoding="utf-8")
@@ -767,22 +842,34 @@ def validate_skill(path: Path, r: Results) -> None:
     check_loop_guard(skill, text, r)
     check_em_dashes(skill, text, r)
     check_hard_wraps(skill, text, r)
+    check_spec_sections_declared(skill, text, r)
+    check_context_file_exists(skill, text, r, skill_path=path)
+    check_context_file_current(skill, text, r, skill_path=path, spec_hash=spec_hash)
 
 
 def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     skills_dir = repo_root / "skills"
+    spec_path = repo_root / "references" / "ecosystem-spec.md"
 
     skill_files = sorted(skills_dir.glob("*/SKILL.md"))
     if not skill_files:
         print("ERROR: No SKILL.md files found in skills/", file=sys.stderr)
         return 1
 
+    # Compute spec hash for context-file-current checks.
+    if spec_path.exists():
+        spec_hash = hashlib.sha256(
+            spec_path.read_text(encoding="utf-8").encode("utf-8"),
+        ).hexdigest()
+    else:
+        spec_hash = ""
+
     print(f"=== Ecosystem Validation ===\n")
 
     r = Results()
     for path in skill_files:
-        validate_skill(path, r)
+        validate_skill(path, r, spec_hash=spec_hash)
 
     r.print()
 

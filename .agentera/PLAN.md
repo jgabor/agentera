@@ -68,7 +68,7 @@ The 12 ISS-35 drifts are fixed as part of migration (Task 4): generating correct
 
 ### Task 3: Add 3 new linter checks and update pre-commit hook
 **Depends on**: Task 1 (for `--check` mode), Task 2 (for frontmatter to validate)
-**Status**: □ open
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the linter WHEN run on a SKILL.md with `spec_sections` THEN check `spec-sections-declared` passes
 ▸ GIVEN the linter WHEN run on a SKILL.md without `spec_sections` THEN check `spec-sections-declared` fails with error
