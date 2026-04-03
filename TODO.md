@@ -3,10 +3,10 @@
 ## ⇶ Critical
 
 ## ⇉ Degraded
-- [ ] ISS-31: [test] Build test suite for the ecosystem. Test coverage added: 209 tests across 8 files covering all 13 linter check functions, eval runner pure functions, and all 5 skill scripts (145c637, 8b4e389, bdfdcc9, 02a3e0d, 1f4c250). Remaining: CI gating deferred
+- [ ] ISS-31: [test] Build test suite for the ecosystem. Test coverage: 133 proportional tests across 8 files covering all 13 linter check functions, eval runner pure functions, and all 5 skill scripts (145c637, 8b4e389, bdfdcc9, 02a3e0d, 1f4c250, 9bc13b7). Remaining: CI gating deferred
 
 ## → Normal
-- [ ] ISS-19: [feat] Consider explicit phase tracking in PROGRESS.md. Define valid skill-chain transitions (envision → deliberate → plan → build → audit) with terminal states; skills check phase and flag out-of-order runs
+- [ ] ISS-19: [feat] Explicit phase tracking in PROGRESS.md. Spec defined in ecosystem-spec.md Section 17 with five phases, transitions, terminal states, and PROGRESS.md format contract (2caa9cb). Remaining: SKILL.md integration (each skill reading phase and flagging out-of-order runs)
 
 ## ⇢ Annoying
 
