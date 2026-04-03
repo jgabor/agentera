@@ -2,7 +2,7 @@
 
 <!-- Shared primitives for the agentera ecosystem. -->
 <!-- All 12 skills/*/SKILL.md files must align with this spec. -->
-<!-- Validated by scripts/validate-ecosystem.py (pre-commit hook). -->
+<!-- Validated by scripts/validate_ecosystem.py (pre-commit hook). -->
 <!-- See Decisions 7 and 8 in DECISIONS.md for rationale. -->
 
 ## 1. Confidence Scale
@@ -693,6 +693,6 @@ Plans can specify a different proportionality target by including an explicit ra
 |-------|------|
 | planera | Encodes the proportionality target as an acceptance criteria constraint on test tasks. Uses the default rule unless the plan's context justifies an override |
 | inspektera | Evaluates test volume against the proportionality target during audits. Flags both under-testing (0 tests for a testable unit) and over-testing (significantly exceeding the target without justification) |
-| orkestrera | Dispatches test tasks with the proportionality constraint from the plan. Subagents inherit the target and must not exceed it without the override mechanism |
+| orkestrera | Includes anti-bias constraint in dispatch prompts for implementation tasks. Proportionality targets reach subagents through the plan's acceptance criteria, not through a separate orkestrera-level mechanism |
 
 **Linter check**: None. This convention governs plan content and audit evaluation, not SKILL.md structure.
