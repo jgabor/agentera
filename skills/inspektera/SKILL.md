@@ -106,6 +106,7 @@ Choose dimensions based on the codebase and user request. Not every dimension ap
 | **Dependency health** | Outdated deps, security advisories, unused deps, dep sprawl, pinning discipline. | Project has external dependencies |
 | **Version health** | Unreleased significant changes: `feat`/`fix` commits since the last version bump. | DOCS.md has a `versioning` convention block |
 | **Artifact freshness** | Are state artifacts current relative to plan activity or recent development? Detects artifacts that should have been updated but weren't. | Plan context available (PLAN.md with `Created` date) or PROGRESS.md has entries |
+| **Security hygiene** | Hardcoded secrets, dangerous function calls, basic injection patterns. Lightweight regex-based scan, not a replacement for dedicated security tooling. | Any codebase |
 
 ### Depth guidance
 
@@ -266,6 +267,38 @@ Evaluates whether state artifacts are current relative to plan activity or recen
 
 **Handling**: stale artifact findings are reported like any other dimension finding but noted as context for the next plan cycle, not as blocking errors. Include which skill was expected to update the artifact and when the artifact was last modified.
 
+### Security hygiene
+
+Lightweight regex-based scan for common security anti-patterns. This is a surface-level check, not a replacement for dedicated security analysis. Always recommend specialized tools for comprehensive coverage.
+
+**What to scan**:
+
+- **Hardcoded secrets**: API key patterns (`AKIA`, `sk-`, `ghp_`, `glpat-`, `xoxb-`, `xoxp-`), password assignments (`password\s*=\s*["']`), token strings in source (`token\s*=\s*["']`), private keys in files (`-----BEGIN.*PRIVATE KEY`)
+- **Dangerous function calls**: `eval()` on variables or user input, `exec()` with string concatenation, `subprocess`/`os.system`/`child_process.exec` with unsanitized input, `Function()` constructor with dynamic strings
+- **Basic injection patterns**: SQL string concatenation (`"SELECT.*" +` or f-string/format with user input in queries), unsanitized shell command construction (`os.system(f"...{` or backtick interpolation in shell strings)
+
+**How to scan**:
+
+Use Grep with targeted patterns across the codebase. Focus on source files, not vendored dependencies, build artifacts, or lock files. Exclude `.git/`, `node_modules/`, `vendor/`, `__pycache__/`, and similar directories.
+
+**Severity assignment**:
+
+- Hardcoded secrets: warning (confidence 75-90 depending on pattern specificity; `AKIA` is high confidence, generic `password=` is lower)
+- Dangerous function calls: warning or critical depending on whether user input flows into the call. `eval(user_input)` is critical; `eval(constant)` is warning. When data flow is ambiguous, default to warning.
+- Injection patterns: warning (confidence 60-80). String concatenation in SQL is suspicious but may be parameterized elsewhere. Note the ambiguity in the finding.
+
+**Grading**:
+
+- **A**: No secrets, no dangerous calls, no injection patterns found
+- **B**: Minor findings only (e.g., a password assignment that appears to be a test fixture or placeholder)
+- **C**: 1-2 warnings involving real credentials or dangerous calls
+- **D**: Multiple credential leaks or dangerous function patterns
+- **F**: Pervasive secret exposure or dangerous calls throughout the codebase
+
+**Scope limitation notice**: every security hygiene finding MUST include a footer recommending dedicated security tools for comprehensive analysis. Use this text:
+
+> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), npm audit (Node), govulncheck (Go), or similar static analysis and vulnerability scanning tools appropriate to your stack.
+
 ---
 
 ## Step 4: Distill
@@ -304,7 +337,7 @@ Write the audit results to `HEALTH.md` (append new audit, keep prior audits for 
 **Dimensions assessed**: [list]
 **Findings**: X critical, Y warnings, Z info (N filtered by confidence)
 **Overall trajectory**: ⮉ improving | stable | ⮋ degrading vs Audit N-1
-**Grades**: Architecture [B] | Patterns [A] | Coupling [C] | Complexity [B] | Tests [D] | Deps [A]
+**Grades**: Architecture [B] | Patterns [A] | Coupling [C] | Complexity [B] | Tests [D] | Deps [A] | Security [A]
 
 ### [Dimension Name]: [Grade]
 

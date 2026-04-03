@@ -154,6 +154,22 @@ Three project-facing files at the project root; eight operational files in `.age
 
 **Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for project contributors) AND `.agentera/PROGRESS.md` (operational cycle-level detail for consuming skills). Consuming skills that need cycle detail read `.agentera/PROGRESS.md`; project contributors read CHANGELOG.md.
 
+### HEALTH.md audit dimensions
+
+Inspektera assesses codebases across these dimensions, selecting applicable ones per audit. Each dimension produces an A-F grade, confidence-scored findings, and trend tracking.
+
+| Dimension | What it evaluates |
+|-----------|-------------------|
+| Architecture alignment | Code vs stated architecture: pattern drift, boundary violations, layering breaks |
+| Pattern consistency | Naming, error handling, structure, abstractions used consistently |
+| Coupling health | Hidden dependencies, circular imports, god modules, inappropriate intimacy |
+| Complexity hotspots | Long functions, deep nesting, high fan-out, accumulated conditionals |
+| Test health | Coverage gaps, test quality, test-to-code ratio, behavior vs implementation testing |
+| Dependency health | Outdated deps, security advisories, unused deps, pinning discipline |
+| Version health | Unreleased feat/fix commits since last version bump |
+| Artifact freshness | State artifacts current relative to plan activity or recent development |
+| Security hygiene | Hardcoded secrets, dangerous function calls, basic injection patterns (lightweight regex scan; recommends dedicated tools for comprehensive analysis) |
+
 ### CHANGELOG.md format convention
 
 CHANGELOG.md follows the [Keep a Changelog](https://keepachangelog.com/) convention:
