@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-03 -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-03 (post-1.6.0) -->
 
 ## Conventions
 
@@ -36,6 +36,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | EXPERIMENTS.md | .agentera/EXPERIMENTS.md | optimera |
 | DOCS.md | .agentera/DOCS.md | dokumentera |
 | DESIGN.md | .agentera/DESIGN.md | visualisera |
+| SESSION.md | .agentera/SESSION.md | session stop hook |
 | PROFILE.md | ~/.claude/profile/PROFILE.md | profilera |
 
 ## Index
@@ -57,16 +58,33 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
 | Registry | registry.json | 2026-04-02 | ■ current |
 | Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-02 | ■ current |
-| Test suite | tests/ | 2026-04-02 | ■ current |
+| Hooks registry | hooks/hooks.json | 2026-04-03 | ■ current |
+| SessionStart hook | hooks/session_start.py | 2026-04-03 | ■ current |
+| Session stop hook | hooks/session_stop.py | 2026-04-03 | ■ current |
+| Validation hook | hooks/validate_artifact.py | 2026-04-03 | ■ current |
+| Shared hook utils | hooks/common.py | 2026-04-03 | ■ current |
+| Test suite | tests/ | 2026-04-03 | ■ current |
 
 ## Coverage
 
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 171 tests across 7 files; extract_all.py untested; CI gating deferred
+- **Tests**: 233 tests across 10 files; extract_all.py untested; CI gating deferred
 
 ## Audit Log
+
+### 2026-04-03 (Audit 6, post-1.6.0)
+
+- [gap] DOCS.md Artifact Mapping missing SESSION.md (12th artifact, Decision 23) · critical (fixed)
+- [stale] DOCS.md Coverage said 171 tests across 7 files, actual is 233 across 10 · warning (fixed)
+- [gap] DOCS.md Index missing 5 hooks files (hooks.json, session_start.py, session_stop.py, validate_artifact.py, common.py) · warning (fixed)
+- [stale] README.md inspektera description says "six dimensions", now 9 · warning (fixed)
+- [stale] README.md artifact reference says "eight operational files", now nine (SESSION.md) · warning (fixed)
+- [gap] README.md artifact table missing SESSION.md row · warning (fixed)
+- [stale] CLAUDE.md hooks/hooks.json described as "PostToolUse hook registry", registers all 3 hooks · warning (fixed)
+- [gap] CLAUDE.md repository layout missing hooks/session_start.py, hooks/session_stop.py, hooks/common.py · warning (fixed)
+- [stale] CLAUDE.md "eight operational files" should be nine · warning (fixed)
 
 ### 2026-04-03 (Audit 5)
 

@@ -64,7 +64,7 @@ Every skill suggests what to do next when it finishes. You follow the thread, or
 |  ≡  | [planera](./skills/planera/)         | **Plan.** Breaks work into tasks with clear done-criteria, scales from quick notes to full plans.                   |
 |  ⧉  | [realisera](./skills/realisera/)     | **Build.** Autonomous development loop that picks up work, implements, verifies, and continues.                     |
 |  ⎘  | [optimera](./skills/optimera/)       | **Tune.** Picks a metric, runs experiments, measures results, iterates until it improves.                           |
-|  ⛶  | [inspektera](./skills/inspektera/)   | **Audit.** Audits code health across six dimensions, tracks trends over time.                                       |
+|  ⛶  | [inspektera](./skills/inspektera/)   | **Audit.** Audits code health across nine dimensions (architecture, patterns, coupling, complexity, tests, deps, versioning, artifact freshness, security), tracks trends over time. |
 |  ▤  | [dokumentera](./skills/dokumentera/) | **Document.** Creates and maintains docs, tracks what's covered and what's missing.                                 |
 |  ♾  | [profilera](./skills/profilera/)     | **Compounding memory.** Mines your decision patterns into a profile consumed by every skill, so the 20th cycle adapts to how you work in ways the 1st could not. |
 |  ◰  | [visualisera](./skills/visualisera/) | **Visualize.** Creates and maintains a visual identity system for your project.                                     |
@@ -101,7 +101,7 @@ visionera writes a north star → planera reads it and creates tasks → orkestr
 
 <br>
 
-Three project-facing files at root, eight operational files in `.agentera/`.
+Three project-facing files at root, nine operational files in `.agentera/`.
 
 **Root (project-facing)**:
 
@@ -123,6 +123,7 @@ Three project-facing files at root, eight operational files in `.agentera/`.
 | `EXPERIMENTS.md` | optimera      | optimera                                            |
 | `DESIGN.md`      | visualisera   | realisera, visionera                                |
 | `DOCS.md`        | dokumentera   | all skills (path overrides)                         |
+| `SESSION.md`     | session stop hook | session start hook, hej                         |
 
 `PROFILE.md` is global at `~/.claude/profile/PROFILE.md` (maintained by profilera, consumed by all skills).
 

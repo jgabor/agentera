@@ -1,139 +1,135 @@
-# Plan: Selective Ecosystem Context Loading (ISS-35)
+# Plan: Hooks infrastructure and security dimension
 
 <!-- Level: full | Created: 2026-04-03 | Status: complete -->
-<!-- Reviewed: 2026-04-03 | Critic issues: 3 found, 3 addressed, 0 dismissed -->
+<!-- Reviewed: 2026-04-03 | Critic issues: 10 found, 7 addressed, 3 dismissed -->
 
 ## What
 
-Eliminate spec-to-skill semantic drift by replacing embedded authoritative values in SKILL.md files with per-skill generated context files. Each skill declares which ecosystem-spec sections it depends on (frontmatter), a generation script extracts those sections verbatim into `references/ecosystem-context.md`, and SKILL.md references that file instead of embedding values. The 12 existing drifts from ISS-35 are fixed as part of the migration.
+Add Claude Code hooks infrastructure to agentera: session start context preloading, session stop state persistence, real-time artifact write validation, and a lightweight security audit dimension in inspektera.
 
 ## Why
 
-The ecosystem has ~70 duplication points across 12 skills embedding values from the ecosystem spec. An audit found 12 confirmed drifts: wrong token budgets, script syntax mismatches, missing profile consumption, missing phase tracking, missing content exclusion rules, and missing severity classification in TODO.md writes. The linter catches structural violations but not semantic drift in embedded values. This mechanism makes drift impossible by construction: context files are generated verbatim from the spec, and the toolchain enforces they stay current.
+Agentera currently has zero hooks. All safety rails and validation exist only as text instructions in SKILL.md files that rely on model compliance. The only enforcement mechanism is a git pre-commit hook that validates SKILL.md ecosystem alignment at commit time. This work introduces three lifecycle hooks that run mechanically during Claude Code sessions, providing real-time feedback, automatic context loading, and session-to-session continuity. The inspektera security dimension fills a gap: structural health is well-covered but code security is not assessed at all.
 
 ## Constraints
 
-- Linter must pass (0 errors, 0 warnings) after every task touching SKILL.md or ecosystem-spec.md
-- Skills must work standalone (each carries its own `references/ecosystem-context.md`) AND mesh when co-installed
-- No phase enforcement in SKILL.md files (Decision 22, firm)
-- Test proportionality per Decision 21: 1 pass + 1 fail per testable unit; edge cases only for complex parsing/regex/branching
-- Python scripts: stdlib only, no pip dependencies
-- Verbatim section extraction (no summarization, no compression)
-- Pre-commit hook must continue gating on both the context check and the linter
+- Python stdlib only for all hook scripts (per ecosystem convention)
+- Hooks must respect DOCS.md artifact path resolution (Decision 4, firm)
+- Command hooks only: all three capabilities are deterministic, no LLM token spend
+- Security dimension is lightweight: regex-based pattern matching, not a vulnerability database or dynamic analysis
+- Standard Claude Code plugin hook format (hooks/hooks.json with command type)
+- Existing 171 tests must not break
+- PROGRESS.md producer contract stays with realisera: session state goes to SESSION.md (Decision 23, firm)
+- PostToolUse replaces the git pre-commit hook entirely: one validation path (Decision 24, firm)
 
 ## Scope
 
-**In**: frontmatter `spec_sections` in all 12 SKILL.md files, generation script, SKILL.md ecosystem-context read instruction and embedded value removal, 3 new linter checks, pre-commit hook update, tests for the generation script, fix of all 12 ISS-35 drifts as part of migration
-
-**Out**: Section 4 sub-filtering (future enhancement), advisory hardcoded-value grep check (future), version bumps (feat work under development), CI gating
-
-**Deferred**: Section 4 sub-filtering per `spec_artifacts` frontmatter (design doc mentions as future v2)
+**In**: hooks/hooks.json registration, 3 Python hook scripts, new SESSION.md artifact, inspektera SKILL.md security dimension, ecosystem-spec.md updates for hooks and security, removal of .githooks/pre-commit, tests, version bump
+**Out**: CI/CD integration (ISS-31 covers the manual-edit validation gap), hook profiles (minimal/standard/strict), PreToolUse safety enforcement hooks, full security scanning, prompt-based hooks
+**Deferred**: Hook strictness profiles, per-hook disable via env vars, PreToolUse hooks for blocking dangerous operations (git push, VISION.md edits during cycles)
 
 ## Design
 
-Follows the 4-component architecture from `docs/selective-ecosystem-context.md`:
-
-1. **Frontmatter declaration**: each SKILL.md gains `spec_sections: [N, ...]` listing its runtime dependencies on ecosystem-spec sections. The dependency map is defined in the design doc.
-
-2. **Generation script**: `scripts/generate_ecosystem_context.py` parses ecosystem-spec.md by `## N.` heading boundaries, reads each SKILL.md's `spec_sections`, and writes `skills/<name>/references/ecosystem-context.md` with a metadata header (skill name, source hash, section list, timestamp, regeneration command) followed by verbatim section content. Modes: default (regenerate all), `--check` (verify freshness, exit 1 if stale), `--skill <name>` (single skill).
-
-3. **SKILL.md reference pattern**: each SKILL.md gains an `### Ecosystem context` subsection (under State artifacts or as a top-level workflow preamble, per design doc) with a read instruction pointing to `references/ecosystem-context.md`. Embedded authoritative values (token budgets, compaction thresholds, severity vocabulary, confidence tiers, profile consumption syntax, phase tracking, staleness rules, content exclusion) are replaced with references to the ecosystem context.
-
-4. **Toolchain integration**: pre-commit hook runs `--check` before the linter. Linter gains 3 new checks per skill: `spec-sections-declared` (frontmatter field), `context-file-exists` (file present), `context-file-current` (hash matches).
-
-The 12 ISS-35 drifts are fixed as part of migration (Task 4): generating correct context files from the spec and updating SKILL.md files to reference them.
+Three command hooks registered in a root-level hooks/hooks.json, executed by the Claude Code harness at lifecycle events. SessionStart reads .agentera/ artifacts (via DOCS.md path resolution) and emits a compact context digest as raw state for any skill to consume (distinct from hej, which delivers a human-faced interpreted briefing with routing). Session stop checks for modified .agentera/ files and writes a session bookmark to .agentera/SESSION.md (Decision 23: new artifact, not PROGRESS.md, which has a cycle entry format contract owned by realisera). PostToolUse absorbs all validation currently split across the git pre-commit hook and the new artifact validation (Decision 24: one validation path). It runs ecosystem alignment checks (linter + context freshness) on skill definition edits, and structural format contract validation (required headings, markdown structure, token budgets) on operational artifact writes. The .githooks/pre-commit is removed. The manual-edit gap (edits outside Claude Code) is accepted until CI gating (ISS-31) lands. Inspektera gains a 9th audit dimension ("security") with enumerated regex patterns for secrets, dangerous function calls, and injection patterns, graded on the existing A-F scale.
 
 ## Tasks
 
-### Task 1: Write the generation script
+### Task 1: Hooks infrastructure and SessionStart preload
+
 **Depends on**: none
 **Status**: ■ complete
 **Acceptance**:
-▸ GIVEN `scripts/generate_ecosystem_context.py` WHEN run with no arguments THEN 12 `ecosystem-context.md` files are generated under `skills/*/references/`
-▸ GIVEN the script WHEN run with `--check` THEN exit 0 if all files are current, exit 1 if any are stale, with a message naming the stale files
-▸ GIVEN the script WHEN run with `--skill realisera` THEN only `skills/realisera/references/ecosystem-context.md` is regenerated
-▸ GIVEN a generated file WHEN reading its header THEN it contains the skill name, source sha256, section list, generation timestamp, and "do not edit" + "regenerate" instructions
-▸ GIVEN a generated file WHEN comparing section content to ecosystem-spec.md THEN the content is byte-identical (verbatim extraction)
-▸ GIVEN ecosystem-spec.md with 18 sections WHEN parsing THEN all sections are correctly identified by `## N.` heading boundaries
-▸ GIVEN a SKILL.md with `spec_sections: [1, 2, 4]` WHEN generating THEN only sections 1, 2, and 4 appear in the output, in order
+▸ GIVEN a fresh session in a project with operational artifacts WHEN the session starts THEN a compact digest of latest progress, health grades, next planned task, and critical issues is available as context
+▸ GIVEN a project without operational artifacts WHEN the session starts THEN the hook completes silently with no output
+▸ GIVEN a project with custom artifact paths in DOCS.md WHEN the session starts THEN the digest reflects the mapped paths, not defaults
+▸ GIVEN the digest content WHEN compared to a hej briefing THEN the digest is raw state (artifact summaries) while hej is interpreted (routing suggestions, attention items, personality)
+▸ GIVEN a hook script invoked with realistic session arguments WHEN executed directly THEN it exits with correct exit codes and produces well-formed output
+▸ Test proportionality: 1 pass + 1 fail per testable function; entry-point smoke test with realistic arguments
 
-### Task 2: Add `spec_sections` frontmatter to all 12 SKILL.md files
+### Task 2: Session stop hook with SESSION.md
+
+**Depends on**: Task 1
+**Status**: ■ complete
+**Acceptance**:
+▸ GIVEN a session where operational artifacts were modified WHEN the session ends THEN a timestamped session bookmark is written to .agentera/SESSION.md with date and summary of changes
+▸ GIVEN a session where no operational artifacts were modified WHEN the session ends THEN no session bookmark is written
+▸ GIVEN a project with custom artifact paths in DOCS.md WHEN the session ends THEN the bookmark respects the mapped paths
+▸ GIVEN .agentera/SESSION.md already has prior bookmarks WHEN a new bookmark is written THEN older bookmarks are compacted to one-line summaries (keep 5 full, 20 one-line)
+▸ GIVEN a hook script invoked with realistic stop arguments WHEN executed directly THEN it exits with correct exit codes
+▸ GIVEN the new SESSION.md artifact WHEN the ecosystem spec is checked THEN SESSION.md is documented with producers (session stop hook) and consumers (session start hook, hej)
+▸ Test proportionality: 1 pass + 1 fail per testable function; entry-point smoke test
+
+### Task 3: Artifact write validation hook (replaces pre-commit)
+
+**Depends on**: Task 1
+**Status**: ■ complete
+**Acceptance**:
+▸ GIVEN a modification to an operational artifact WHEN the modification completes THEN the artifact is validated for required headings, markdown structure, and token budget compliance, and violations are reported
+▸ GIVEN a modification to a skill definition file WHEN the modification completes THEN ecosystem alignment checks run (linter checks + context freshness) and violations are reported
+▸ GIVEN a modification to ecosystem-spec.md WHEN the modification completes THEN context freshness is checked and stale context files are flagged
+▸ GIVEN a modification to a file outside the operational directory, skill definitions, and ecosystem spec WHEN the modification completes THEN no validation runs
+▸ GIVEN a valid artifact or skill modification WHEN all validation passes THEN no output is produced
+▸ GIVEN "structural validation" for artifacts WHEN scoped THEN it means: required section headings present, markdown well-formed, token budget not exceeded. It does NOT mean: semantic content correctness, cross-artifact reference validity, or content quality
+▸ GIVEN "ecosystem alignment" for skill definitions WHEN scoped THEN it means: the same checks currently in validate_ecosystem.py and generate_ecosystem_context.py --check, run at edit time instead of commit time
+▸ GIVEN the .githooks/pre-commit file WHEN this task is complete THEN it is removed (Decision 24)
+▸ Test proportionality: 1 pass + 1 fail per validation check; artifact type routing (3+ branches) warrants edge case expansion
+
+### Task 4: Inspektera lightweight security dimension
+
 **Depends on**: none
 **Status**: ■ complete
 **Acceptance**:
-▸ GIVEN any SKILL.md WHEN reading frontmatter THEN a `spec_sections` field is present with a list of integers
-▸ GIVEN the section lists WHEN compared to the design doc's dependency map THEN they match exactly
-▸ GIVEN the frontmatter parser in the linter WHEN parsing `spec_sections` THEN it correctly extracts the list
-▸ GIVEN the ecosystem linter WHEN run THEN 0 errors, 0 warnings
+▸ GIVEN a codebase with hardcoded secrets (API keys matching common patterns, passwords in assignment statements, tokens in source) WHEN the security dimension assesses it THEN those patterns are flagged as warnings with file locations, evidence, impact, and suggested action
+▸ GIVEN a codebase with dangerous function calls (eval on user input, unsanitized shell execution, SQL string concatenation) WHEN the security dimension assesses it THEN they are flagged with severity and confidence scores
+▸ GIVEN a codebase with no security findings WHEN the security dimension assesses it THEN it reports a passing grade
+▸ GIVEN security findings WHEN reported THEN the output explicitly recommends dedicated security tools (semgrep, Snyk, etc.) for comprehensive analysis
+▸ GIVEN the security dimension WHEN integrated into inspektera THEN it follows the existing dimension structure: "When to include" criteria, A-F grade, confidence-scored findings with Location/Evidence/Impact/Suggested action, and trend tracking vs prior audits
+▸ GIVEN the security dimension addition WHEN the ecosystem spec is checked THEN the new dimension is documented in the spec's dimension table
 
-### Task 3: Add 3 new linter checks and update pre-commit hook
-**Depends on**: Task 1 (for `--check` mode), Task 2 (for frontmatter to validate)
+### Task 5: Version bump and manifest updates
+
+**Depends on**: Tasks 1, 2, 3, 4
 **Status**: ■ complete
 **Acceptance**:
-▸ GIVEN the linter WHEN run on a SKILL.md with `spec_sections` THEN check `spec-sections-declared` passes
-▸ GIVEN the linter WHEN run on a SKILL.md without `spec_sections` THEN check `spec-sections-declared` fails with error
-▸ GIVEN the linter WHEN `references/ecosystem-context.md` exists for a skill THEN check `context-file-exists` passes
-▸ GIVEN the linter WHEN `references/ecosystem-context.md` is missing for a skill THEN check `context-file-exists` fails with error
-▸ GIVEN the linter WHEN the context file's source hash matches current ecosystem-spec.md THEN check `context-file-current` passes
-▸ GIVEN the linter WHEN the context file's source hash is outdated THEN check `context-file-current` fails with error
-▸ GIVEN `.githooks/pre-commit` WHEN a commit touches skills or spec files THEN the context freshness check runs before the linter
-▸ GIVEN the linter WHEN run against all 12 skills THEN 0 errors, 0 warnings (existing 13 checks + 3 new)
-▸ Tests: 1 pass + 1 fail per check function (6 tests). Edge cases for the hash computation (complex parsing).
-
-### Task 4: Migrate all 12 SKILL.md files (reference pattern + drift fixes)
-**Depends on**: Task 1 (generation script must exist to produce context files), Task 2 (frontmatter already in place)
-**Status**: ■ complete
-**Acceptance**:
-▸ GIVEN any SKILL.md WHEN reading its workflow preamble THEN an `### Ecosystem context` section instructs reading `references/ecosystem-context.md`
-▸ GIVEN any SKILL.md WHEN searching for hardcoded token budgets (≤50 words, ≤30 words, ≤500 words, etc.) used as authoritative limits THEN none remain for values that belong in the ecosystem context (output constraints for individual write operations are skill-behavioral and stay)
-▸ GIVEN realisera SKILL.md WHEN checking cycle summary token budget THEN it references ecosystem context instead of embedding "≤50 words" (drift #1 fix)
-▸ GIVEN inspektera SKILL.md WHEN checking dimension budget THEN it references ecosystem context instead of embedding "≤30 words" (drift #1 fix)
-▸ GIVEN realisera and inspektera SKILL.md WHEN checking profile script invocation THEN it matches spec syntax `python3 scripts/effective_profile.py` (drift #2 already correct, confirmed in audit)
-▸ GIVEN visionera, visualisera, resonera SKILL.md WHEN checking profile consumption THEN the direct-read pattern is referenced via ecosystem context (drift #3 fix)
-▸ GIVEN inspirera SKILL.md WHEN checking TODO.md write THEN severity classification is referenced via ecosystem context (drift #6 fix)
-▸ GIVEN the ecosystem linter WHEN run THEN 0 errors, 0 warnings
-▸ GIVEN `scripts/generate_ecosystem_context.py --check` WHEN run THEN exit 0 (all context files current)
-
-### Task 5: Write tests for the generation script
-**Depends on**: Task 1 (script must exist to test)
-**Status**: ■ complete
-**Acceptance**:
-▸ Tests in `tests/test_generate_ecosystem_context.py` covering the generation script's public functions
-▸ Proportionality: 1 pass + 1 fail per testable unit
-▸ Edge cases for: section parsing (regex, heading boundary detection), frontmatter `spec_sections` extraction (parsing logic), hash computation
-▸ GIVEN the test suite WHEN run with pytest THEN all tests pass
-▸ GIVEN `python3 -m pytest tests/` WHEN run THEN all existing tests continue to pass (no regressions)
-
-### Task 6: Final validation and ISS-35 resolution
-**Depends on**: Tasks 1-5 (all prior work complete)
-**Status**: ■ complete
-**Acceptance**:
-▸ GIVEN `scripts/generate_ecosystem_context.py --check` WHEN run THEN exit 0
-▸ GIVEN `scripts/validate_ecosystem.py` WHEN run THEN 0 errors, 0 warnings across 12 skills with all 16 checks
-▸ GIVEN `python3 -m pytest tests/` WHEN run THEN all tests pass (existing + new)
-▸ GIVEN TODO.md WHEN reading ISS-35 THEN it is moved to Resolved with commit references
-▸ GIVEN the 12 ISS-35 drifts WHEN checking each one THEN all are resolved (token budgets reference context, profile consumption present in all consumers, severity classification available to inspirera via context)
+▸ GIVEN all prior tasks complete WHEN the version bump runs THEN all version_files listed in DOCS.md are bumped per semver policy (feat = minor)
+▸ GIVEN the version bump WHEN CHANGELOG.md is updated THEN a new version section describes the hooks infrastructure, SESSION.md artifact, and security dimension
+▸ GIVEN the complete implementation WHEN the ecosystem linter runs THEN all 12 skills pass alignment checks
+▸ GIVEN the complete implementation WHEN the existing test suite runs THEN all 171+ tests pass
 
 ## Overall Acceptance
 
-▸ GIVEN any SKILL.md WHEN operating standalone THEN `references/ecosystem-context.md` ships with the skill and provides all authoritative values at runtime
-▸ GIVEN the full suite WHEN co-installed THEN all 12 context files are generated from the same spec, values consistent by construction
-▸ GIVEN ecosystem-spec.md WHEN modified THEN `python3 scripts/generate_ecosystem_context.py` regenerates all context files, and `--check` mode catches stale files before commit
-▸ GIVEN the toolchain WHEN a commit touches skills or spec THEN pre-commit runs context freshness check then linter, blocking stale or misaligned commits
-▸ GIVEN the 12 ISS-35 drifts WHEN auditing post-migration THEN zero remain
+▸ GIVEN a fresh session with operational artifacts WHEN any skill is invoked THEN context was already preloaded without requiring /hej first
+▸ GIVEN a session that modified artifacts WHEN the session ends THEN SESSION.md captures what happened without explicit user action
+▸ GIVEN an agent writing a structurally malformed artifact WHEN the write completes THEN the validation hook reports the structural violation immediately, not at commit time
+▸ GIVEN an inspektera audit WHEN all dimensions are assessed THEN security findings appear alongside structural health findings in the same A-F grading system
+▸ GIVEN the git pre-commit hook WHEN the PostToolUse hook is in place THEN the pre-commit is removed and all validation runs at edit time via one mechanism (Decision 24)
 
-## Adversarial Critic Review
+## Adversarial Review
 
-### Issue 1: Task 4 scope is enormous (12 SKILL.md files, each with multiple edits)
-**Risk**: a single task touching all 12 SKILL.md files is the largest unit of work in the plan. If it fails partway, partial migration leaves some skills with the reference pattern and others without.
-**Addressed**: Task 4 is intentionally monolithic because the migration must be atomic from the linter's perspective: you cannot have some skills declaring `spec_sections` and referencing ecosystem-context while others do not, since the linter (Task 3) will enforce all three new checks on all 12 skills. The executing agent should process skills in a systematic order (alphabetical or by dependency count) and verify the linter passes after each batch. If worktree agents are used, they can process 3-4 skills in parallel with a linter check after each batch merge.
+10 issues raised, 7 addressed, 3 dismissed.
 
-### Issue 2: Distinguishing "authoritative values that move" from "skill-behavioral values that stay"
-**Risk**: the boundary between "this token budget belongs in ecosystem-context.md" and "this output constraint is skill-behavioral" is judgment-dependent. An overly aggressive migration strips skill-specific write constraints, making SKILL.md files unreadable. An overly conservative one leaves duplicated values.
-**Addressed**: the design doc provides explicit criteria. What moves: token budgets (exact word counts per artifact), compaction thresholds, severity vocabulary with glyphs, confidence tier boundaries, profile consumption syntax and thresholds, phase names, staleness rules, content exclusion rules. What stays: workflow steps, decision logic, safety rails, cross-skill integration, exit signal definitions, output constraints for individual write operations (these are behavioral instructions, not shared values). The executing agent should use a simple test: if the value appears in ecosystem-spec.md as a shared convention, it moves; if it is a skill's own instruction about how to format a specific output step, it stays.
+### Addressed
 
-### Issue 3: Test file for the generation script duplicates section-parsing logic tested by linter tests
-**Risk**: `test_generate_ecosystem_context.py` and `test_validate_ecosystem.py` both test frontmatter parsing and section extraction. Overlap wastes test budget.
-**Addressed**: the generation script has its own parsing functions (section extraction by `## N.` heading boundaries, which differs from the linter's `## Heading` extraction). The frontmatter parser is shared. Tests for the generation script focus on: (a) section-by-number extraction (unique to this script), (b) `spec_sections` list parsing from frontmatter (new field), (c) hash computation and freshness check, (d) multi-skill generation and `--skill` filtering. The shared `parse_frontmatter` function is already tested in linter tests; generation script tests should import it, not retest it.
+1. **SessionStart duplicates hej** (severity: high). Boundary defined in Design: hook emits raw artifact state (grades, next task, critical items). Hej delivers interpreted briefing with routing suggestions and personality. Different purposes, different outputs.
+
+2. **Stop hook violates PROGRESS.md producer contract** (severity: high). Changed to .agentera/SESSION.md, a new lightweight artifact. Avoids format pollution of realisera's cycle entry schema. Task 2 acceptance includes ecosystem-spec documentation of the new artifact.
+
+3. **Task 3 acceptance criteria leak tool names** (severity: medium). Rewrote to behavioral: "modification to an operational artifact" instead of "Edit or Write to .agentera/*.md". Criteria describe outcomes, not wiring.
+
+4. **Task 4 underspecified on dimension integration** (severity: medium). Added acceptance criteria for A-F grading, confidence-scored findings with Location/Evidence/Impact/Suggested action structure, "When to include" criteria, and trend tracking.
+
+5. **"Malformed" is vague** (severity: medium). Added explicit scoping criterion: "required section headings present, markdown well-formed, token budget not exceeded, required frontmatter fields present. NOT: semantic content correctness, cross-artifact reference validity, or content quality."
+
+6. **Stop hook state detection** (severity: medium). The hook checks repository state (modified files in .agentera/) at stop time. No cross-hook state needed. Acceptance criteria updated to reflect this: "operational artifacts were modified" (verifiable via git status or file mtimes).
+
+7. **Spec changes deferred to Task 5** (severity: low). Moved ecosystem-spec updates into relevant tasks: Task 2 (SESSION.md in artifact table) and Task 4 (security dimension in dimension table). Task 5 is now purely version bump and final validation.
+
+### Revised by deliberation (Decisions 23, 24)
+
+8. **PostToolUse + pre-commit overlap** (severity: low). Originally dismissed as "different concerns." Revisited in deliberation: two validation mechanisms is complexity that accretes. Decision 24 (firm): PostToolUse replaces pre-commit entirely. One validation path.
+
+9. **No integration smoke tests** (severity: low). Addressed within tasks: each task includes "hook script invoked with realistic arguments exits with correct exit codes." This covers the hook entry point contract without requiring a full Claude Code runtime test harness.
+
+10. **Security scope vague** (severity: low). Enumerated in Task 4 acceptance: API keys, passwords, tokens (regex), eval on user input, unsanitized shell execution, SQL string concatenation. The scope constraint already says "not a vulnerability database or dynamic analysis." The boundary is clear: pattern-match what regex can catch, recommend dedicated tools for everything else.
 
 ## Surprises
