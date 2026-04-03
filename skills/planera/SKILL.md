@@ -8,6 +8,7 @@ description: >
   mention of structured task decomposition, or when realisera encounters work too large for
   a single cycle. Also trigger when the user describes a feature that clearly spans multiple
   files or modules.
+spec_sections: [3, 4, 5, 6, 16]
 ---
 
 # PLANERA

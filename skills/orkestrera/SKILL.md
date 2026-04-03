@@ -2,6 +2,7 @@
 name: orkestrera
 description: >
   ORKESTRERA (Orchestration Runtime: Knowledge-coordinated Execution Strategy, Targeted Routing; Evaluate, Resolve, Adapt). ALWAYS use this skill for multi-cycle plan execution, orchestrated autonomous development, and skill-agnostic task dispatch. This skill is REQUIRED whenever the user wants to execute an entire plan autonomously, chain multiple skills together, run multi-cycle development without /loop, or have tasks evaluated by a separate agent. Do NOT attempt multi-skill orchestration without this skill because it contains the critical conductor protocol for plan-driven dispatch, inspektera-gated evaluation, retry handling, and context-lean multi-cycle execution that prevents wasted compute and ensures quality. Trigger on: "orkestrera", "orchestrate", "run the plan", "execute the plan", "run all tasks", "dispatch skills", "multi-cycle", "autonomous plan execution", "keep going until done", "run through the plan", "build everything", any request to execute a complete PLAN.md, any request to chain skills together, or any request for evaluated multi-cycle development.
+spec_sections: [3, 4, 5, 11, 18]
 ---
 
 # ORKESTRERA

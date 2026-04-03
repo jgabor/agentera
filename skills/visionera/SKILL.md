@@ -14,6 +14,7 @@ description: >
   bigger", "rethink the vision", "refine the vision", "update VISION.md", "bootstrap the
   project", "what's the big picture", any request to create or refine a project's strategic
   direction, or when realisera detects no VISION.md and visionera is installed.
+spec_sections: [4, 5, 6, 12]
 ---
 
 # VISIONERA

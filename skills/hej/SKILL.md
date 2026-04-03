@@ -6,6 +6,7 @@ description: >
   "what's next", "status", "dashboard", "pulse", "brief me", "update me",
   "onboard me", "getting started", "what needs attention", any greeting at session
   start, any request for project status or orientation.
+spec_sections: [1, 2, 4, 5, 12, 18]
 ---
 
 # HEJ
