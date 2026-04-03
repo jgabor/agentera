@@ -47,7 +47,7 @@ The 12 ISS-35 drifts are fixed as part of migration (Task 4): generating correct
 
 ### Task 1: Write the generation script
 **Depends on**: none
-**Status**: □ open
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN `scripts/generate_ecosystem_context.py` WHEN run with no arguments THEN 12 `ecosystem-context.md` files are generated under `skills/*/references/`
 ▸ GIVEN the script WHEN run with `--check` THEN exit 0 if all files are current, exit 1 if any are stale, with a message naming the stale files
