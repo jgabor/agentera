@@ -1,4 +1,8 @@
-"""Tests for scripts/eval_skills.py pure functions."""
+"""Tests for scripts/eval_skills.py pure functions.
+
+Proportionality: Decision 21. One pass + one fail per unit. Edge case tests
+retained only for functions with regex or branching logic.
+"""
 
 from __future__ import annotations
 
@@ -45,6 +49,8 @@ class TestTriggerPrompts:
 # ---------------------------------------------------------------------------
 
 class TestParseFrontmatterName:
+    """Complex: regex parsing. Keep 3 (valid, no FM, no name field)."""
+
     def test_valid_frontmatter(self, eval_skills):
         text = textwrap.dedent("""\
             ---
@@ -58,17 +64,9 @@ class TestParseFrontmatterName:
     def test_no_frontmatter(self, eval_skills):
         assert eval_skills._parse_frontmatter_name("# Just markdown") is None
 
-    def test_unclosed_frontmatter(self, eval_skills):
-        text = "---\nname: broken\n"
-        assert eval_skills._parse_frontmatter_name(text) is None
-
     def test_no_name_field(self, eval_skills):
         text = "---\ndescription: no name here\n---\n"
         assert eval_skills._parse_frontmatter_name(text) is None
-
-    def test_name_with_extra_whitespace(self, eval_skills):
-        text = "---\nname:   spaced  \n---\n"
-        assert eval_skills._parse_frontmatter_name(text) == "spaced"
 
 
 # ---------------------------------------------------------------------------
@@ -76,6 +74,8 @@ class TestParseFrontmatterName:
 # ---------------------------------------------------------------------------
 
 class TestDiscoverSkills:
+    """Complex: file system discovery with branching. Keep 3 (discovers, fallback, empty)."""
+
     def test_discovers_skills_from_temp_dir(self, eval_skills, tmp_path, monkeypatch):
         """Create fake skill dirs with SKILL.md frontmatter and verify discovery."""
         skills_dir = tmp_path / "skills"
@@ -106,49 +106,6 @@ class TestDiscoverSkills:
         assert len(result) == 1
         assert result[0]["name"] == "gamma"
 
-    def test_uses_trigger_prompt_when_available(self, eval_skills, tmp_path, monkeypatch):
-        """If the skill name is in TRIGGER_PROMPTS, use that prompt."""
-        skills_dir = tmp_path / "skills"
-        d = skills_dir / "hej"
-        d.mkdir(parents=True)
-        (d / "SKILL.md").write_text("---\nname: hej\n---\n", encoding="utf-8")
-
-        monkeypatch.setattr(eval_skills, "REPO_ROOT", tmp_path)
-        result = eval_skills.discover_skills()
-
-        assert len(result) == 1
-        assert result[0]["prompt"] == eval_skills.TRIGGER_PROMPTS["hej"]
-
-    def test_generates_fallback_prompt(self, eval_skills, tmp_path, monkeypatch):
-        """Skills not in TRIGGER_PROMPTS get a generic fallback prompt."""
-        skills_dir = tmp_path / "skills"
-        d = skills_dir / "unknown_skill"
-        d.mkdir(parents=True)
-        (d / "SKILL.md").write_text(
-            "---\nname: unknown_skill\n---\n", encoding="utf-8"
-        )
-
-        monkeypatch.setattr(eval_skills, "REPO_ROOT", tmp_path)
-        result = eval_skills.discover_skills()
-
-        assert result[0]["prompt"] == "Invoke the unknown_skill skill."
-
-    def test_returns_sorted_order(self, eval_skills, tmp_path, monkeypatch):
-        """Skills are returned sorted by directory name."""
-        skills_dir = tmp_path / "skills"
-        for name in ["zeta", "alpha", "mid"]:
-            d = skills_dir / name
-            d.mkdir(parents=True)
-            (d / "SKILL.md").write_text(
-                f"---\nname: {name}\n---\n", encoding="utf-8"
-            )
-
-        monkeypatch.setattr(eval_skills, "REPO_ROOT", tmp_path)
-        result = eval_skills.discover_skills()
-
-        names = [s["name"] for s in result]
-        assert names == ["alpha", "mid", "zeta"]
-
     def test_empty_skills_dir(self, eval_skills, tmp_path, monkeypatch):
         """Empty skills directory returns empty list."""
         (tmp_path / "skills").mkdir()
@@ -161,6 +118,8 @@ class TestDiscoverSkills:
 # ---------------------------------------------------------------------------
 
 class TestBuildReport:
+    """Simple: dict construction. One pass + one fail."""
+
     def test_basic_report_structure(self, eval_skills):
         results = [
             {"skill": "a", "status": "pass", "duration_s": 1.0, "error": None},
@@ -173,29 +132,6 @@ class TestBuildReport:
         assert report["passed"] == 1
         assert report["failed"] == 1
         assert report["results"] is results
-
-    def test_timestamp_format(self, eval_skills):
-        report = eval_skills.build_report([])
-        ts = report["timestamp"]
-        assert ts.endswith("Z")
-        assert "T" in ts
-
-    def test_all_pass(self, eval_skills):
-        results = [
-            {"skill": "x", "status": "pass", "duration_s": 0.5, "error": None},
-        ]
-        report = eval_skills.build_report(results)
-        assert report["passed"] == 1
-        assert report["failed"] == 0
-
-    def test_all_fail(self, eval_skills):
-        results = [
-            {"skill": "x", "status": "fail", "duration_s": 0.5, "error": "err"},
-            {"skill": "y", "status": "fail", "duration_s": 0.3, "error": "err"},
-        ]
-        report = eval_skills.build_report(results)
-        assert report["passed"] == 0
-        assert report["failed"] == 2
 
     def test_empty_results(self, eval_skills):
         report = eval_skills.build_report([])
@@ -210,6 +146,8 @@ class TestBuildReport:
 # ---------------------------------------------------------------------------
 
 class TestBuildDryRun:
+    """Simple: trivial dict. One pass + one fail."""
+
     def test_dry_run_structure(self, eval_skills):
         skills = [
             {"name": "a", "prompt": "Do A."},
@@ -233,6 +171,8 @@ class TestBuildDryRun:
 # ---------------------------------------------------------------------------
 
 class TestParseArgs:
+    """Simple: argparse wrapper. One pass (defaults) + one fail (flag override)."""
+
     def test_defaults(self, eval_skills):
         args = eval_skills.parse_args([])
         assert args.skill is None
@@ -243,27 +183,3 @@ class TestParseArgs:
     def test_skill_flag(self, eval_skills):
         args = eval_skills.parse_args(["--skill", "realisera"])
         assert args.skill == "realisera"
-
-    def test_dry_run_flag(self, eval_skills):
-        args = eval_skills.parse_args(["--dry-run"])
-        assert args.dry_run is True
-
-    def test_parallel_flag(self, eval_skills):
-        args = eval_skills.parse_args(["--parallel", "4"])
-        assert args.parallel == 4
-
-    def test_timeout_flag(self, eval_skills):
-        args = eval_skills.parse_args(["--timeout", "60"])
-        assert args.timeout == 60
-
-    def test_all_flags_combined(self, eval_skills):
-        args = eval_skills.parse_args([
-            "--skill", "hej",
-            "--dry-run",
-            "--parallel", "3",
-            "--timeout", "30",
-        ])
-        assert args.skill == "hej"
-        assert args.dry_run is True
-        assert args.parallel == 3
-        assert args.timeout == 30

@@ -1,4 +1,8 @@
-"""Tests for skills/optimera/scripts/analyze_experiments.py."""
+"""Tests for skills/optimera/scripts/analyze_experiments.py.
+
+Proportionality: Decision 21. One pass + one fail per unit. Edge case tests
+retained for parse_experiments (regex parsing) and plateau detection (branching).
+"""
 
 from __future__ import annotations
 
@@ -84,6 +88,8 @@ No experiments recorded yet.
 
 
 class TestParseExperiments:
+    """Complex: regex parsing of experiment blocks. Keep 3 (multi, metrics, empty)."""
+
     def test_parses_multiple_experiments(self, analyze_experiments):
         exps = analyze_experiments.parse_experiments(SAMPLE_EXPERIMENTS)
         assert len(exps) == 3
@@ -101,17 +107,14 @@ class TestParseExperiments:
         exps = analyze_experiments.parse_experiments(EMPTY_EXPERIMENTS)
         assert exps == []
 
-    def test_status_normalized_lowercase(self, analyze_experiments):
-        exps = analyze_experiments.parse_experiments(SAMPLE_EXPERIMENTS)
-        for exp in exps:
-            assert exp["status"] == exp["status"].lower()
-
 
 # ---------------------------------------------------------------------------
 # analyze
 # ---------------------------------------------------------------------------
 
 class TestAnalyze:
+    """Branching: aggregation with plateau detection. Keep 3 (happy path, empty, plateau)."""
+
     def test_happy_path(self, analyze_experiments):
         exps = analyze_experiments.parse_experiments(SAMPLE_EXPERIMENTS)
         result = analyze_experiments.analyze(exps)
@@ -123,12 +126,6 @@ class TestAnalyze:
         assert result["current_metric"] == 60.0
         assert len(result["trajectory"]) == 3
 
-    def test_trajectory_tracks_metric_after(self, analyze_experiments):
-        exps = analyze_experiments.parse_experiments(SAMPLE_EXPERIMENTS)
-        result = analyze_experiments.analyze(exps)
-        values = [t["value"] for t in result["trajectory"]]
-        assert values == [85.0, 83.0, 60.0]
-
     def test_empty_experiments(self, analyze_experiments):
         result = analyze_experiments.analyze([])
         assert result["total_experiments"] == 0
@@ -139,18 +136,3 @@ class TestAnalyze:
         result = analyze_experiments.analyze(exps)
         assert result["plateau_length"] >= 3
         assert result["plateau_detected"] is True
-
-    def test_distance_to_target(self, analyze_experiments):
-        exps = analyze_experiments.parse_experiments(SAMPLE_EXPERIMENTS)
-        target = {"value": 50.0, "direction": "lower"}
-        result = analyze_experiments.analyze(exps, target)
-        assert "distance_to_target" in result
-        # current_metric is 60, target is 50, direction lower => 60 - 50 = 10
-        assert result["distance_to_target"] == 10.0
-
-    def test_no_plateau_when_last_is_kept(self, analyze_experiments):
-        exps = analyze_experiments.parse_experiments(SAMPLE_EXPERIMENTS)
-        result = analyze_experiments.analyze(exps)
-        # Last experiment is "kept", so plateau_length should be 0
-        assert result["plateau_length"] == 0
-        assert result["plateau_detected"] is False

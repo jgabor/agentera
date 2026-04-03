@@ -1,8 +1,11 @@
-"""Tests for skills/profilera/scripts/effective_profile.py."""
+"""Tests for skills/profilera/scripts/effective_profile.py.
+
+Proportionality: Decision 21. One pass + one fail per unit. Edge case tests
+retained for compute_effective (math with decay/floor) and parse functions (regex).
+"""
 
 from __future__ import annotations
 
-import math
 from datetime import date
 
 
@@ -19,7 +22,7 @@ SAMPLE_PROFILE = """\
 
 Observed across 4 sessions. Consistently chooses try/except over bare assertions.
 
-`conf:82 | perm:durable | first:2026-01-15 | confirmed:2026-03-01 | challenged:—`
+`conf:82 | perm:durable | first:2026-01-15 | confirmed:2026-03-01 | challenged:\u2014`
 
 ### Favors functional style
 
@@ -31,7 +34,7 @@ Prefers map/filter/reduce patterns where possible.
 
 Always selects dark theme when configuring editors and terminals.
 
-`conf:95 | perm:stable | first:2025-11-01 | confirmed:2026-01-20 | challenged:—`
+`conf:95 | perm:stable | first:2025-11-01 | confirmed:2026-01-20 | challenged:\u2014`
 """
 
 PROFILE_NO_ENTRIES = """\
@@ -42,6 +45,8 @@ No entries yet.
 
 
 class TestParseEntries:
+    """Complex: regex parsing of profile metadata. Keep all 3 (distinct paths)."""
+
     def test_parses_entries_with_metadata(self, effective_profile):
         entries = effective_profile.parse_entries(SAMPLE_PROFILE)
         assert len(entries) == 3
@@ -50,7 +55,7 @@ class TestParseEntries:
         assert entries[0]["perm"] == "durable"
         assert entries[0]["first"] == "2026-01-15"
         assert entries[0]["confirmed"] == "2026-03-01"
-        assert entries[0]["challenged"] == "—"
+        assert entries[0]["challenged"] == "\u2014"
 
     def test_challenged_date_parsed(self, effective_profile):
         entries = effective_profile.parse_entries(SAMPLE_PROFILE)
@@ -65,7 +70,10 @@ class TestParseEntries:
 # compute_effective
 # ---------------------------------------------------------------------------
 
+
 class TestComputeEffective:
+    """Complex: exponential decay math with confidence floor. Keep 3 distinct paths."""
+
     def test_fresh_entry_no_decay(self, effective_profile):
         """Entry confirmed today should have no decay."""
         today = date(2026, 4, 1)
@@ -75,7 +83,7 @@ class TestComputeEffective:
             "perm": "durable",
             "first": "2026-04-01",
             "confirmed": "2026-04-01",
-            "challenged": "—",
+            "challenged": "\u2014",
         }
         lambdas = effective_profile.DEFAULT_LAMBDAS
         result = effective_profile.compute_effective(entry, lambdas, today)
@@ -92,37 +100,17 @@ class TestComputeEffective:
             "perm": "durable",
             "first": "2026-01-01",
             "confirmed": "2026-03-02",
-            "challenged": "—",
+            "challenged": "\u2014",
         }
         lambdas = effective_profile.DEFAULT_LAMBDAS
         result = effective_profile.compute_effective(entry, lambdas, today)
-        # 30 days stale with lambda=0.005 => exp(-0.005*30) = exp(-0.15) ~ 0.861
-        # effective = 80 * 0.861 ~ 68.9
         assert result["days_stale"] == 30
         assert result["effective"] < 80.0
         assert result["effective"] > 60.0
         assert result["decay_gap"] > 0
 
-    def test_heavily_decayed_entry(self, effective_profile):
-        """Entry confirmed 200 days ago with situational decay should decay substantially."""
-        today = date(2026, 4, 1)
-        entry = {
-            "name": "Test",
-            "conf": 70.0,
-            "perm": "situational",
-            "first": "2025-06-01",
-            "confirmed": "2025-09-13",
-            "challenged": "—",
-        }
-        lambdas = effective_profile.DEFAULT_LAMBDAS
-        result = effective_profile.compute_effective(entry, lambdas, today)
-        # 200 days stale with lambda=0.015 => exp(-0.015*200) = exp(-3.0) ~ 0.05
-        # effective = 70 * 0.05 = 3.5, but floor is 20
-        assert result["days_stale"] == 200
-        assert result["effective"] == effective_profile.CONFIDENCE_FLOOR
-
     def test_min_confidence_floor(self, effective_profile):
-        """Entry with minimum confidence should not go below the floor."""
+        """Entry with extreme staleness should not go below the floor."""
         today = date(2026, 4, 1)
         entry = {
             "name": "Test",
@@ -130,28 +118,11 @@ class TestComputeEffective:
             "perm": "situational",
             "first": "2025-01-01",
             "confirmed": "2025-01-01",
-            "challenged": "—",
+            "challenged": "\u2014",
         }
         lambdas = effective_profile.DEFAULT_LAMBDAS
         result = effective_profile.compute_effective(entry, lambdas, today)
         assert result["effective"] >= effective_profile.CONFIDENCE_FLOOR
-
-    def test_uses_confirmed_over_first(self, effective_profile):
-        """When confirmed date exists, staleness should be from confirmed, not first."""
-        today = date(2026, 4, 1)
-        entry = {
-            "name": "Test",
-            "conf": 80.0,
-            "perm": "durable",
-            "first": "2025-01-01",  # very old
-            "confirmed": "2026-03-31",  # yesterday
-            "challenged": "—",
-        }
-        lambdas = effective_profile.DEFAULT_LAMBDAS
-        result = effective_profile.compute_effective(entry, lambdas, today)
-        assert result["days_stale"] == 1
-        # With only 1 day stale, effective should be very close to conf
-        assert result["effective"] > 79.0
 
 
 # ---------------------------------------------------------------------------
@@ -159,7 +130,7 @@ class TestComputeEffective:
 # ---------------------------------------------------------------------------
 
 HEADER_WITH_LAMBDAS = """\
-<!-- Decay parameters: stable λ=0.002 durable λ=0.008 situational λ=0.020 -->
+<!-- Decay parameters: stable \u03bb=0.002 durable \u03bb=0.008 situational \u03bb=0.020 -->
 # Profile
 """
 
@@ -171,6 +142,8 @@ Just a profile with no explicit decay parameters.
 
 
 class TestParseLambdas:
+    """Complex: regex extraction of decay parameters. Keep all 3 (distinct paths)."""
+
     def test_extracts_custom_lambdas(self, effective_profile):
         result = effective_profile.parse_lambdas(HEADER_WITH_LAMBDAS)
         assert result["stable"] == 0.002
@@ -182,9 +155,8 @@ class TestParseLambdas:
         assert result == effective_profile.DEFAULT_LAMBDAS
 
     def test_partial_override(self, effective_profile):
-        text = "<!-- stable λ=0.003 -->"
+        text = "<!-- stable \u03bb=0.003 -->"
         result = effective_profile.parse_lambdas(text)
         assert result["stable"] == 0.003
-        # Others remain at default
         assert result["durable"] == effective_profile.DEFAULT_LAMBDAS["durable"]
         assert result["situational"] == effective_profile.DEFAULT_LAMBDAS["situational"]

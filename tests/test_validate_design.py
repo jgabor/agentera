@@ -1,4 +1,9 @@
-"""Tests for skills/visualisera/scripts/validate_design.py."""
+"""Tests for skills/visualisera/scripts/validate_design.py.
+
+Proportionality: Decision 21. One pass + one fail per unit. Edge case tests
+retained for parse_yaml_subset (complex parsing with nesting, lists, comments)
+and validate (cross-section reference resolution).
+"""
 
 from __future__ import annotations
 
@@ -21,17 +26,10 @@ LIST_YAML = """\
 - caption
 """
 
-NESTED_WITH_COMMENT = """\
-# Color palette
-primary: "#3B82F6"  # Blue
-accent: "#F59E0B"
-shades:
-  light: "#DBEAFE"
-  dark: "#1E3A5F"
-"""
-
 
 class TestParseYamlSubset:
+    """Complex: parsing with nesting, lists, error handling. Keep 3 distinct paths."""
+
     def test_nested_structure(self, validate_design):
         result = validate_design.parse_yaml_subset(NESTED_YAML)
         assert isinstance(result, dict)
@@ -45,16 +43,6 @@ class TestParseYamlSubset:
         result = validate_design.parse_yaml_subset(LIST_YAML)
         assert isinstance(result, list)
         assert result == ["heading", "body", "caption"]
-
-    def test_empty_input(self, validate_design):
-        result = validate_design.parse_yaml_subset("")
-        assert result == {}
-
-    def test_comments_stripped(self, validate_design):
-        result = validate_design.parse_yaml_subset(NESTED_WITH_COMMENT)
-        assert result["primary"] == '"#3B82F6"'
-        assert result["accent"] == '"#F59E0B"'
-        assert isinstance(result["shades"], dict)
 
     def test_malformed_missing_colon(self, validate_design):
         text = "this line has no colon"
@@ -92,6 +80,8 @@ body: "Source Sans Pro"
 
 
 class TestValidate:
+    """Complex: cross-section reference resolution. Keep 3 (valid, unresolved ref, empty)."""
+
     def test_valid_sections(self, validate_design):
         sections = validate_design.extract_sections(VALID_DESIGN)
         result = validate_design.validate("test.md", sections)
@@ -100,13 +90,6 @@ class TestValidate:
         assert "theme" in result["sections_found"]
         assert "fonts" in result["sections_found"]
         assert len(result["errors"]) == 0
-
-    def test_reports_missing_standard_sections(self, validate_design):
-        sections = validate_design.extract_sections(VALID_DESIGN)
-        result = validate_design.validate("test.md", sections)
-        # Many standard sections are not present in VALID_DESIGN
-        assert "spacing" in result["sections_missing"]
-        assert "shadows" in result["sections_missing"]
 
     def test_theme_unresolved_reference(self, validate_design):
         text = """\
@@ -130,13 +113,6 @@ light:
     def test_empty_design(self, validate_design):
         sections = validate_design.extract_sections("")
         result = validate_design.validate("test.md", sections)
-        assert result["valid"] is True  # No errors, just missing sections
+        assert result["valid"] is True
         assert result["sections_found"] == []
         assert len(result["sections_missing"]) == len(validate_design.STANDARD_SECTIONS)
-
-    def test_summary_counts(self, validate_design):
-        sections = validate_design.extract_sections(VALID_DESIGN)
-        result = validate_design.validate("test.md", sections)
-        assert result["summary"]["total_sections"] == 3
-        assert result["summary"]["total_tokens"] > 0
-        assert result["summary"]["has_theme"] is True
