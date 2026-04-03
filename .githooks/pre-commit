@@ -9,6 +9,17 @@ if [ -z "$RELEVANT_FILES" ]; then
     exit 0
 fi
 
+echo "==> Checking ecosystem context freshness..."
+python3 scripts/generate_ecosystem_context.py --check
+CHECK_CODE=$?
+
+if [ $CHECK_CODE -ne 0 ]; then
+    echo ""
+    echo "Commit blocked: ecosystem context files are stale."
+    echo "Run: python3 scripts/generate_ecosystem_context.py"
+    exit $CHECK_CODE
+fi
+
 echo "==> Running ecosystem linter (staged skill/spec changes detected)..."
 python3 scripts/validate_ecosystem.py
 EXIT_CODE=$?

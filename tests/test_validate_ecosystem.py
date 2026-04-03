@@ -7,6 +7,9 @@ exclusion logic.
 
 from __future__ import annotations
 
+import hashlib
+from pathlib import Path
+
 
 # ---------------------------------------------------------------------------
 # parse_frontmatter
@@ -637,6 +640,35 @@ description: Metric-driven optimization
 After 3 failed experiments, stop and report. Retry the task if initial attempt fails, up to the maximum.
 """
 
+SYNTHETIC_SKILL_WITH_SPEC_SECTIONS = """\
+---
+name: realisera
+description: Autonomous development loops
+spec_sections: [1, 2, 4]
+---
+
+# REALISERA
+"""
+
+SYNTHETIC_SKILL_WITHOUT_SPEC_SECTIONS = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+"""
+
+SYNTHETIC_SKILL_BAD_SPEC_SECTIONS_FORMAT = """\
+---
+name: realisera
+description: Autonomous development loops
+spec_sections: not-a-list
+---
+
+# REALISERA
+"""
+
 
 # ---------------------------------------------------------------------------
 # check_frontmatter
@@ -1086,3 +1118,174 @@ class TestCheckLoopGuard:
             "optimera", SYNTHETIC_SKILL_LOOP_GUARD_RETRY_BASED, r,
         )
         assert r.error_count == 0
+
+
+# ---------------------------------------------------------------------------
+# check_spec_sections_declared
+# ---------------------------------------------------------------------------
+
+
+class TestCheckSpecSectionsDeclared:
+    """Simple: frontmatter field presence. One pass + one fail."""
+
+    def test_with_spec_sections_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_spec_sections_declared(
+            "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
+        )
+        assert r.error_count == 0
+        assert any(
+            level == "PASS" for level, _, check, _ in r.entries
+            if check == "spec-sections-declared"
+        )
+
+    def test_without_spec_sections_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_spec_sections_declared(
+            "realisera", SYNTHETIC_SKILL_WITHOUT_SPEC_SECTIONS, r,
+        )
+        assert r.error_count == 1
+        assert "spec_sections" in r.entries[0][3]
+
+    def test_bad_format_errors(self, validate_ecosystem):
+        """Edge case: spec_sections present but not a valid list."""
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_spec_sections_declared(
+            "realisera", SYNTHETIC_SKILL_BAD_SPEC_SECTIONS_FORMAT, r,
+        )
+        assert r.error_count == 1
+        assert "Invalid" in r.entries[0][3]
+
+
+# ---------------------------------------------------------------------------
+# check_context_file_exists
+# ---------------------------------------------------------------------------
+
+
+class TestCheckContextFileExists:
+    """Filesystem: file presence check. One pass + one fail."""
+
+    def test_context_file_present_passes(self, validate_ecosystem, tmp_path):
+        skill_dir = tmp_path / "realisera"
+        skill_dir.mkdir()
+        skill_md = skill_dir / "SKILL.md"
+        skill_md.write_text(SYNTHETIC_SKILL_WITH_SPEC_SECTIONS)
+        refs_dir = skill_dir / "references"
+        refs_dir.mkdir()
+        (refs_dir / "ecosystem-context.md").write_text("<!-- content -->")
+
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_context_file_exists(
+            "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
+            skill_path=skill_md,
+        )
+        assert r.error_count == 0
+        assert any(
+            level == "PASS" for level, _, check, _ in r.entries
+            if check == "context-file-exists"
+        )
+
+    def test_context_file_missing_errors(self, validate_ecosystem, tmp_path):
+        skill_dir = tmp_path / "realisera"
+        skill_dir.mkdir()
+        skill_md = skill_dir / "SKILL.md"
+        skill_md.write_text(SYNTHETIC_SKILL_WITH_SPEC_SECTIONS)
+
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_context_file_exists(
+            "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
+            skill_path=skill_md,
+        )
+        assert r.error_count == 1
+        assert "ecosystem-context.md" in r.entries[0][3]
+
+
+# ---------------------------------------------------------------------------
+# check_context_file_current
+# ---------------------------------------------------------------------------
+
+
+SPEC_CONTENT = "## 1. Shared primitives\n\nSome content.\n"
+SPEC_HASH = hashlib.sha256(SPEC_CONTENT.encode("utf-8")).hexdigest()
+
+
+class TestCheckContextFileCurrent:
+    """Complex: hash matching + missing hash edge case. Keep 3 paths."""
+
+    def test_matching_hash_passes(self, validate_ecosystem, tmp_path):
+        skill_dir = tmp_path / "realisera"
+        skill_dir.mkdir()
+        skill_md = skill_dir / "SKILL.md"
+        skill_md.write_text(SYNTHETIC_SKILL_WITH_SPEC_SECTIONS)
+        refs_dir = skill_dir / "references"
+        refs_dir.mkdir()
+        (refs_dir / "ecosystem-context.md").write_text(
+            f"<!-- source: references/ecosystem-spec.md (sha256: {SPEC_HASH}) -->\n"
+            "## 1. Shared primitives\n\nSome content.\n"
+        )
+
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_context_file_current(
+            "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
+            skill_path=skill_md, spec_hash=SPEC_HASH,
+        )
+        assert r.error_count == 0
+        assert any(
+            level == "PASS" for level, _, check, _ in r.entries
+            if check == "context-file-current"
+        )
+
+    def test_mismatched_hash_errors(self, validate_ecosystem, tmp_path):
+        skill_dir = tmp_path / "realisera"
+        skill_dir.mkdir()
+        skill_md = skill_dir / "SKILL.md"
+        skill_md.write_text(SYNTHETIC_SKILL_WITH_SPEC_SECTIONS)
+        refs_dir = skill_dir / "references"
+        refs_dir.mkdir()
+        (refs_dir / "ecosystem-context.md").write_text(
+            "<!-- source: references/ecosystem-spec.md (sha256: 0000dead) -->\n"
+            "## 1. Shared primitives\n\nOld content.\n"
+        )
+
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_context_file_current(
+            "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
+            skill_path=skill_md, spec_hash=SPEC_HASH,
+        )
+        assert r.error_count == 1
+        assert "mismatch" in r.entries[0][3].lower()
+
+    def test_missing_hash_in_header_errors(self, validate_ecosystem, tmp_path):
+        """Edge case: context file exists but has no source hash line."""
+        skill_dir = tmp_path / "realisera"
+        skill_dir.mkdir()
+        skill_md = skill_dir / "SKILL.md"
+        skill_md.write_text(SYNTHETIC_SKILL_WITH_SPEC_SECTIONS)
+        refs_dir = skill_dir / "references"
+        refs_dir.mkdir()
+        (refs_dir / "ecosystem-context.md").write_text(
+            "<!-- no hash here -->\nSome content.\n"
+        )
+
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_context_file_current(
+            "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
+            skill_path=skill_md, spec_hash=SPEC_HASH,
+        )
+        assert r.error_count == 1
+        assert "No source hash" in r.entries[0][3]
+
+    def test_missing_context_file_skips_silently(self, validate_ecosystem, tmp_path):
+        """Edge case: context file missing entirely, check does nothing (covered by check 15)."""
+        skill_dir = tmp_path / "realisera"
+        skill_dir.mkdir()
+        skill_md = skill_dir / "SKILL.md"
+        skill_md.write_text(SYNTHETIC_SKILL_WITH_SPEC_SECTIONS)
+
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_context_file_current(
+            "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
+            skill_path=skill_md, spec_hash=SPEC_HASH,
+        )
+        assert r.error_count == 0
+        assert len(r.entries) == 0
