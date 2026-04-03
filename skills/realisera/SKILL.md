@@ -228,7 +228,7 @@ You are implementing a focused change for [project].
 - Follow existing code patterns and conventions.
 - Read the files you are modifying before changing them.
 - If docs need updating, update them before the code.
-- Run the project's test/build suite before declaring done.
+- Verify the change works as described, then run the project's test/build suite.
 - If you encounter a bug unrelated to your task, note it but do not fix it.
 ```
 
@@ -239,7 +239,8 @@ For non-trivial design decisions, spawn Opus for design first, then Sonnet for i
 After implementation completes:
 
 1. **Check the diff**: does it match the plan? Any unplanned changes?
-2. **Run the project's verification suite**: use whatever the project provides:
+2. **Functional check**: does the changed behavior actually work end-to-end?
+3. **Run the project's verification suite** (test/build/lint): use whatever the project provides:
    - Look for a top-level `check`, `ci`, `test`, or `verify` target first (Makefile, mage,
      package.json scripts, taskfile, justfile)
    - If none exists, run the language-appropriate defaults:
@@ -247,8 +248,7 @@ After implementation completes:
      Node: `npm test`
      Python: `pytest`
      Rust: `cargo test && cargo clippy`
-3. **Functional check**: does the changed behavior actually work end-to-end?
-4. **Regression check**: do existing tests still pass?
+   - Confirms both new behavior and existing tests still pass.
 
 If verification fails:
 - Diagnose the root cause (never retry blindly)
