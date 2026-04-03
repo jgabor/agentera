@@ -1,6 +1,6 @@
 # Plan: Selective Ecosystem Context Loading (ISS-35)
 
-<!-- Level: full | Created: 2026-04-03 | Status: active -->
+<!-- Level: full | Created: 2026-04-03 | Status: complete -->
 <!-- Reviewed: 2026-04-03 | Critic issues: 3 found, 3 addressed, 0 dismissed -->
 
 ## What
@@ -106,7 +106,7 @@ The 12 ISS-35 drifts are fixed as part of migration (Task 4): generating correct
 
 ### Task 6: Final validation and ISS-35 resolution
 **Depends on**: Tasks 1-5 (all prior work complete)
-**Status**: □ open
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN `scripts/generate_ecosystem_context.py --check` WHEN run THEN exit 0
 ▸ GIVEN `scripts/validate_ecosystem.py` WHEN run THEN 0 errors, 0 warnings across 12 skills with all 16 checks
