@@ -50,12 +50,25 @@ The conductor follows a deterministic state machine. It does not reason creative
 Check for PLAN.md (respecting path resolution).
 
 - **No PLAN.md**: bootstrap mode. Dispatch inspirera for vision-gap analysis, then planera for plan creation. If VISION.md is also absent, suggest `/visionera` first and wait for user confirmation.
-- **PLAN.md exists, all tasks complete**: new plan cycle. Dispatch inspektera for a health check. If clean, chain inspirera then planera for the next plan. If health issues found, include them in the next plan's context.
+- **PLAN.md exists, all tasks complete**: new plan cycle. Run the staleness check (see below), then dispatch inspektera for a health check. If clean, chain inspirera then planera for the next plan. Include both staleness findings and any health issues as context for the next plan.
 - **PLAN.md exists, tasks pending**: proceed to the conductor loop.
+
+#### Staleness check (plan completion)
+
+When all tasks are complete, check whether dispatched skills updated their expected artifacts. This runs before the inspektera health check.
+
+1. **Identify dispatched skills**: review which skills were dispatched during this plan by reading PLAN.md task history and PROGRESS.md cycle entries.
+2. **Look up expected artifacts**: for each dispatched skill, consult the skill-to-expected-artifact mapping in ecosystem-spec.md Section 18. This mapping defines which artifacts each skill is expected to produce.
+3. **Compare modification dates**: for each expected artifact, check its last modification date (`git log -1 --format=%aI -- <path>`). Compare against the plan's `Created` date from PLAN.md's HTML comment metadata.
+4. **Flag stale artifacts**: an artifact is stale if it was not modified since the plan's creation date and the skill expected to update it was dispatched at least once during the plan. Skip artifacts owned by skills that were never dispatched (those are legitimately untouched).
+5. **Surface findings**: include any stale artifact findings as context for the next plan cycle (passed to inspirera/planera). These are informational, not errors. A plan that only dispatched realisera does not expect DESIGN.md updates.
 
 Narration voice (riff, don't script):
 ✗ "No PLAN.md detected. Initiating bootstrap sequence."
 ✓ "No plan yet. Setting one up..." · "Need a plan first. Kicking off inspirera, then planera."
+
+✗ "Running staleness detection algorithm on artifact graph."
+✓ "Checking for stale artifacts..." · "Quick freshness check before moving on."
 
 ✗ "Plan complete. Checking health before next cycle."
 ✓ "Plan's done. Quick health check before the next one..." · "All tasks shipped. Checking health."
