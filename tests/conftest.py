@@ -84,6 +84,15 @@ def validate_design():
 
 
 @pytest.fixture(scope="session")
+def extract_all():
+    """Load skills/profilera/scripts/extract_all.py."""
+    return _load_module(
+        "extract_all",
+        REPO_ROOT / "skills" / "profilera" / "scripts" / "extract_all.py",
+    )
+
+
+@pytest.fixture(scope="session")
 def eval_skills():
     """Load scripts/eval_skills.py."""
     return _load_module(
