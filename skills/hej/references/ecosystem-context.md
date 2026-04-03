@@ -1,7 +1,7 @@
 <!-- ecosystem-context: hej -->
-<!-- source: references/ecosystem-spec.md (sha256: 41017045da560ef5f4deb0e96fe907d253075ceffa74e486c1e6fc614b4ba2b8) -->
+<!-- source: references/ecosystem-spec.md (sha256: 61a64eb6df78f40143e8844fb74050f88a54cd89364680ff84e1005b4f14014b) -->
 <!-- sections: 1, 2, 4, 5, 12, 18 -->
-<!-- generated: 2026-04-03T12:45:25Z -->
+<!-- generated: 2026-04-03T15:26:39Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_ecosystem_context.py -->
 
@@ -141,6 +141,22 @@ Three project-facing files at the project root; eight operational files in `.age
 | PROFILE.md | ~/.claude/profile/PROFILE.md | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
 
 **Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for project contributors) AND `.agentera/PROGRESS.md` (operational cycle-level detail for consuming skills). Consuming skills that need cycle detail read `.agentera/PROGRESS.md`; project contributors read CHANGELOG.md.
+
+### HEALTH.md audit dimensions
+
+Inspektera assesses codebases across these dimensions, selecting applicable ones per audit. Each dimension produces an A-F grade, confidence-scored findings, and trend tracking.
+
+| Dimension | What it evaluates |
+|-----------|-------------------|
+| Architecture alignment | Code vs stated architecture: pattern drift, boundary violations, layering breaks |
+| Pattern consistency | Naming, error handling, structure, abstractions used consistently |
+| Coupling health | Hidden dependencies, circular imports, god modules, inappropriate intimacy |
+| Complexity hotspots | Long functions, deep nesting, high fan-out, accumulated conditionals |
+| Test health | Coverage gaps, test quality, test-to-code ratio, behavior vs implementation testing |
+| Dependency health | Outdated deps, security advisories, unused deps, pinning discipline |
+| Version health | Unreleased feat/fix commits since last version bump |
+| Artifact freshness | State artifacts current relative to plan activity or recent development |
+| Security hygiene | Hardcoded secrets, dangerous function calls, basic injection patterns (lightweight regex scan; recommends dedicated tools for comprehensive analysis) |
 
 ### CHANGELOG.md format convention
 
