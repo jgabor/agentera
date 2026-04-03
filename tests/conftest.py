@@ -99,3 +99,12 @@ def eval_skills():
         "eval_skills",
         REPO_ROOT / "scripts" / "eval_skills.py",
     )
+
+
+@pytest.fixture(scope="session")
+def generate_ecosystem_context():
+    """Load scripts/generate_ecosystem_context.py."""
+    return _load_module(
+        "generate_ecosystem_context",
+        REPO_ROOT / "scripts" / "generate_ecosystem_context.py",
+    )
