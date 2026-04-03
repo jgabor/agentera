@@ -111,9 +111,27 @@ def generate_ecosystem_context():
 
 
 @pytest.fixture(scope="session")
-def session_start():
-    """Load hooks/session_start.py."""
+def hooks_common():
+    """Load hooks/common.py."""
+    return _load_module(
+        "common",
+        REPO_ROOT / "hooks" / "common.py",
+    )
+
+
+@pytest.fixture(scope="session")
+def session_start(hooks_common):
+    """Load hooks/session_start.py (depends on hooks/common.py)."""
     return _load_module(
         "session_start",
         REPO_ROOT / "hooks" / "session_start.py",
+    )
+
+
+@pytest.fixture(scope="session")
+def session_stop(hooks_common):
+    """Load hooks/session_stop.py (depends on hooks/common.py)."""
+    return _load_module(
+        "session_stop",
+        REPO_ROOT / "hooks" / "session_stop.py",
     )
