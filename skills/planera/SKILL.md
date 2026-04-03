@@ -42,6 +42,10 @@ Templates in `references/templates/`. Use as starting structure, adapt to the pr
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/PLAN.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads (VISION.md, .agentera/DECISIONS.md, .agentera/HEALTH.md, TODO.md, .agentera/PROGRESS.md).
 
+### Ecosystem context
+
+Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+
 ---
 
 ## Step 0: Detect level
@@ -77,11 +81,11 @@ Read VISION.md, DECISIONS.md, and TODO.md in parallel. These reads are independe
 3. **HEALTH.md**: latest codebase health grades (if exists)
 4. **TODO.md**: related known issues (if exists)
 5. **PROGRESS.md**: what was built recently (if exists)
-6. **Decision profile**: run the effective profile script:
+6. **Decision profile**: run from the profilera skill directory:
    ```bash
    python3 scripts/effective_profile.py
    ```
-   Run from the profilera skill directory. Use it to calibrate planning depth, pattern preferences, and constraint priorities.
+   Use it to calibrate planning depth, pattern preferences, and constraint priorities per ecosystem context profile consumption conventions.
    If the script or PROFILE.md is missing, proceed without persona grounding.
 7. **Project discovery** (if unfamiliar):
    - Map directory structure
@@ -166,7 +170,7 @@ Address legitimate issues; dismiss false positives with rationale. Be direct abo
 
 Reason through dependencies in response text. Write ONLY tasks with acceptance criteria to PLAN.md without rationale. The conversation preserves reasoning; the artifact preserves the plan.
 
-Output constraint: ≤30 words per task description, ≤20 words per acceptance criterion.
+Output constraint per ecosystem context token budgets.
 
 Write the plan to `.agentera/PLAN.md`.
 

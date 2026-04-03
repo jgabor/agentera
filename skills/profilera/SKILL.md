@@ -40,6 +40,10 @@ One global artifact (written) and project-level artifacts (read).
 
 PROFILE.md is global and lives at `~/.claude/profile/PROFILE.md`, not in the project root or `.agentera/`. `.agentera/DOCS.md` mapping does not apply to PROFILE.md. For project-level artifacts, check if .agentera/DOCS.md exists and use its path mapping; if absent, use the default layout.
 
+### Ecosystem context
+
+Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+
 ---
 
 Two modes:

@@ -43,6 +43,10 @@ Template in `references/templates/`. Individual doc files written to standard lo
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/DOCS.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads (VISION.md, .agentera/PROGRESS.md, .agentera/DECISIONS.md, .agentera/HEALTH.md).
 
+### Ecosystem context
+
+Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+
 ### DOCS.md
 
 ```markdown
@@ -148,7 +152,7 @@ Steps: understand, write, update, suggest.
 
 Brief conversation (2-4 questions): what, who reads it, what format, what detail level.
 
-Read VISION.md for direction/audience and decision profile (`~/.claude/profile/PROFILE.md`) for doc style preferences if they exist.
+Read VISION.md for direction/audience and decision profile per ecosystem context profile consumption conventions for doc style preferences if they exist.
 
 ### Step 2: Write the documentation
 

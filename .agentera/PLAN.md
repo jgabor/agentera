@@ -82,7 +82,7 @@ The 12 ISS-35 drifts are fixed as part of migration (Task 4): generating correct
 
 ### Task 4: Migrate all 12 SKILL.md files (reference pattern + drift fixes)
 **Depends on**: Task 1 (generation script must exist to produce context files), Task 2 (frontmatter already in place)
-**Status**: □ open
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN any SKILL.md WHEN reading its workflow preamble THEN an `### Ecosystem context` section instructs reading `references/ecosystem-context.md`
 ▸ GIVEN any SKILL.md WHEN searching for hardcoded token budgets (≤50 words, ≤30 words, ≤500 words, etc.) used as authoritative limits THEN none remain for values that belong in the ecosystem context (output constraints for individual write operations are skill-behavioral and stay)

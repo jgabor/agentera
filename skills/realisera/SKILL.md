@@ -32,6 +32,10 @@ Templates in `references/templates/`. Use as starting structure, adapt to the pr
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md, TODO.md, .agentera/PROGRESS.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads (.agentera/DECISIONS.md, .agentera/HEALTH.md, .agentera/PLAN.md).
 
+### Ecosystem context
+
+Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+
 ### VISION.md
 
 Evergreen. Created via brainstorm on first run, refined only when the user explicitly asks. Outside those two cases, the agent reads it but never writes it. A constitution, not a backlog. Typical structure:
@@ -157,7 +161,7 @@ Outputs JSON with velocity, work type distribution, and suggestions. Use to info
    ```bash
    python3 scripts/effective_profile.py
    ```
-   Entries with effective confidence 65+ are strong constraints; <45 are suggestions. Read full `~/.claude/profile/PROFILE.md` for details when needed. If missing, proceed without persona grounding but flag it.
+   Apply confidence thresholds per ecosystem context profile consumption conventions. Read full `~/.claude/profile/PROFILE.md` for details when needed. If missing, proceed without persona grounding but flag it.
 5. **Project discovery** (cycle 1 or when unfamiliar):
    - Map the directory structure
    - Read dependency manifests (package.json, go.mod, Cargo.toml, pyproject.toml, etc.)
@@ -275,13 +279,13 @@ If the current task is a version bump (e.g., a PLAN.md task labeled "Version bum
 
 **Dual-write**: realisera maintains two change records, `.agentera/PROGRESS.md` (operational cycle detail for consuming skills) and `CHANGELOG.md` (public summary for project contributors).
 
-- **TODO.md**: add newly discovered issues, mark resolved ones. When updating existing entries (e.g., marking resolved), use the Edit tool on the specific entry rather than rewriting the file.
-  Output constraint: ≤30 words per issue description, ≤15 words per remediation.
+- **TODO.md**: add newly discovered issues, mark resolved ones. Classify each entry by severity per ecosystem context severity levels. When updating existing entries (e.g., marking resolved), use the Edit tool on the specific entry rather than rewriting the file.
+  Output constraint per ecosystem context token budgets.
 - **.agentera/PROGRESS.md**: append the cycle entry (number, timestamp, what shipped, commit hash, inspiration, discoveries, next suggestion, context block (intent, constraints, unknowns, scope)). Write it like a colleague's quick debrief: what happened, what surprised you, what's next. Not a form submission.
-  Output constraint: ≤50 words for cycle work summary, ≤30 words per discovered issue.
+  Output constraint per ecosystem context token budgets.
 - **CHANGELOG.md**: append a one-line entry under `## [Unreleased]` in the appropriate subsection: `feat` → Added, `refactor/chore` → Changed, `fix` → Fixed. Concise description, not the commit message verbatim.
 
-When writing a new cycle entry to .agentera/PROGRESS.md, check entry count. If >10 full-detail entries exist, collapse the oldest to one-line format under `## Archived Cycles` (one line per cycle: `Cycle N (YYYY-MM-DD): ≤15-word summary`). If >40 one-line entries exist in the archive, drop the oldest. See ecosystem-spec.md Section 4 compaction thresholds.
+When writing a new cycle entry to .agentera/PROGRESS.md, apply the PROGRESS.md compaction thresholds from ecosystem context.
 
 Then stop. One cycle complete.
 
@@ -345,7 +349,7 @@ When the picked work is optimization-shaped (improving a measurable metric like 
 In Step 3 (Seek inspiration), search for external approaches the way /inspirera would: read the source deeply, extract transferable patterns, note the source for credit in PROGRESS.md. For deeper analysis, run `/inspirera <url>` directly.
 
 ### Realisera reads /profilera output
-Every cycle runs the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) to get a confidence-weighted summary table. High effective confidence entries are treated as strong constraints; low effective confidence entries are treated as suggestions. Full rules are read from `~/.claude/profile/PROFILE.md` when needed for detailed reasoning about trade-offs and priorities.
+Every cycle runs the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) to get a confidence-weighted summary table. Confidence thresholds per ecosystem context profile consumption conventions determine which entries are strong constraints vs suggestions. Full rules are read from `~/.claude/profile/PROFILE.md` when needed for detailed reasoning about trade-offs and priorities.
 
 ### Realisera uses /resonera for complex decisions
 When the brainstorm session or work selection surfaces a decision too complex for inline resolution (competing architectural approaches, ambiguous scope, or consequential tradeoffs), suggest `/resonera` to deliberate first. Resonera can produce or refine VISION.md directly, and its DECISIONS.md entries give realisera reasoning context for future cycles. If `DECISIONS.md` exists, read it during the Orient step for context on prior deliberations.

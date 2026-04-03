@@ -31,6 +31,10 @@ Full spec at `references/DESIGN-spec.md`: `<!-- design:X -->` marker syntax, sta
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/DESIGN.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads (VISION.md, .agentera/DECISIONS.md, PROFILE.md).
 
+### Ecosystem context
+
+Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+
 ### DESIGN.md format (condensed)
 
 Standard Markdown with structured YAML blocks inside fenced code regions, delineated by HTML comment markers for machine parseability.
@@ -121,7 +125,7 @@ If code exists, read deeply before asking questions. Arriving informed distingui
 4. **Dependency manifests**: UI framework, component library, CSS approach (determines token format)
 5. **Parent DESIGN.md**: for monorepos, the inherited design system (nested overrides)
 6. **CLAUDE.md, AGENTS.md**: existing design instructions
-7. **Decision profile** (`~/.claude/profile/PROFILE.md`): aesthetic preferences
+7. **Decision profile**: read `~/.claude/profile/PROFILE.md` directly per ecosystem context profile consumption conventions. Aesthetic preferences inform the design conversation. If missing, proceed without persona grounding.
 8. `git log --oneline -20`: recent visual story
 
 Synthesize: "The project uses X with Y. Palette is Z. Typography is A. Strongest patterns: B. Inconsistencies: C." If VISION.md Identity exists, connect it to the visual system.

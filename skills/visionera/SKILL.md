@@ -43,6 +43,10 @@ The template in `skills/realisera/references/templates/VISION-template.md` provi
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads (.agentera/DECISIONS.md, .agentera/HEALTH.md, .agentera/PROGRESS.md, TODO.md).
 
+### Ecosystem context
+
+Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+
 ### VISION.md
 
 ```markdown
@@ -125,7 +129,8 @@ If code exists, read deeply before asking questions. You arrive informed.
 5. Read PROGRESS.md, TODO.md, DECISIONS.md for trajectory
 6. Read HEALTH.md for current quality
 7. Read DESIGN.md for existing visual identity
-8. `git log --oneline -30` for recent story
+8. **Decision profile**: read `~/.claude/profile/PROFILE.md` directly per ecosystem context profile consumption conventions. If missing, proceed without persona grounding.
+9. `git log --oneline -30` for recent story
 
 Synthesize: "The project does X, built with Y, moving toward Z. Strongest patterns: A. Gaps: B."
 
