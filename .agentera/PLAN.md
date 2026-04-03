@@ -96,7 +96,7 @@ The 12 ISS-35 drifts are fixed as part of migration (Task 4): generating correct
 
 ### Task 5: Write tests for the generation script
 **Depends on**: Task 1 (script must exist to test)
-**Status**: □ open
+**Status**: ■ complete
 **Acceptance**:
 ▸ Tests in `tests/test_generate_ecosystem_context.py` covering the generation script's public functions
 ▸ Proportionality: 1 pass + 1 fail per testable unit
