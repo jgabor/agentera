@@ -10,6 +10,7 @@
 
 ## ⇢ Annoying
 - [x] ~~ISS-32: README ecosystem diagram understates inspirera connections~~ · fixed in 70a2fb1
+- [x] ~~ISS-33: Add test proportionality convention (Decision 21)~~ · fixed in 0c67553..61e7f7d
 - [ ] ISS-25: Implement four-tier priority system with type tags (Decision 15). Add → Normal tier between Degraded and Annoying; add conventional commit type tags `[feat]`/`[fix]`/etc. after colon in issue format; update ecosystem-spec.md severity section, TODO-template.md, and retroactively tag existing issues
 - [ ] ISS-19: Consider explicit phase tracking in PROGRESS.md. Define valid skill-chain transitions (envision → deliberate → plan → build → audit) with terminal states; skills check phase and flag out-of-order runs
 

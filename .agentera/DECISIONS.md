@@ -627,3 +627,16 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 | Conductor model | Thin: dispatch + receive results + log. Never reads code, never runs tests |
 | Skill independence | All skills stay as-is. Orkestrera passes task prompts; skills adapt naturally |
 | Outer loop | Plan complete → inspektera health check → inspirera gap analysis → planera next plan → continue |
+
+## Decision 21 · 2026-04-02
+
+**Question**: How should autonomous plans constrain test generation to prevent unbounded output?
+**Context**: The first orkestrera-driven test plan (ISS-31) produced 123 new tests in one cycle (48 to 171). The acceptance criteria said "test all 13 check functions with pass/fail/edge cases" without a volume constraint. Each agent wrote 3-7 tests per unit, producing ~6 tests per testable function. Half would have sufficed for a first pass. The root cause: agents optimize for literal acceptance criteria. Without a budget, "comprehensive" is the default.
+**Alternatives**:
+- [No constraint; trust agents to be proportional], rejected: agents default to comprehensive without explicit guidance
+- [Hard cap (e.g., max 50 tests per plan)], rejected: arbitrary numbers ignore context; a large refactor legitimately needs more tests than a config change
+- [Proportionality rule in acceptance criteria], chosen
+**Choice**: Test tasks in plans must include a proportionality target. Default rule: one pass test + one fail test per unit under test. Edge case tests only for units with complex parsing, regex, or branching logic. Planera encodes this as an AC constraint; inspektera evaluates against it.
+**Reasoning**: The problem is not that agents write tests badly; each test was correct and useful. The problem is that unbounded scope compounds across tasks. Three test tasks each producing 40 tests is 120, when 50 total would have covered the critical paths. The fix belongs in the plan (where scope is set), not in the agent (where scope is executed). Proportionality as an AC constraint makes it verifiable without adding new machinery.
+**Confidence**: firm
+**Feeds into**: ecosystem-spec.md (proportionality convention for test tasks), planera SKILL.md (test budget in AC guidance), inspektera SKILL.md (evaluate test proportionality)
