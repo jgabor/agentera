@@ -43,6 +43,10 @@ Before reading any artifact, check if .agentera/DOCS.md exists. If it has an Art
 
 Note: PROFILE.md is global, not project-scoped. Its path is always `~/.claude/profile/PROFILE.md` regardless of .agentera/DOCS.md presence. Check this path directly rather than falling back to the project root.
 
+### Ecosystem context
+
+Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+
 ---
 
 ## Step 0: Detect mode
@@ -144,7 +148,7 @@ Show where things stand.
 
 3. **Attention items**: priority order with severity arrows:
    - ⇶ Critical issues, degrading health dimensions
-   - ⇉ Blocked/overdue plan tasks, stale artifacts (plan-relative per ecosystem-spec Section 18; fall back to PROGRESS.md recency heuristic when no plan context exists), loop guard triggers
+   - ⇉ Blocked/overdue plan tasks, stale artifacts (plan-relative per ecosystem context staleness detection; fall back to PROGRESS.md recency heuristic when no plan context exists), loop guard triggers
    - ⇢ Unresolved exploratory decisions
 
    Nothing? Say so. A clean bill of health is useful.

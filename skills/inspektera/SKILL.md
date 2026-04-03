@@ -29,6 +29,10 @@ Template in `references/templates/`. Use as starting structure, adapt to the pro
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/HEALTH.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads (VISION.md, .agentera/DECISIONS.md, TODO.md, .agentera/PROGRESS.md).
 
+### Ecosystem context
+
+Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+
 ### HEALTH.md
 
 Open with your read on the codebase before the structured data: what's improving, what's sliding, what surprised you. 1-2 sentences of interpretation, then the grades and findings back it up. The colleague says what they think, then shows the evidence.
@@ -77,7 +81,7 @@ Read HEALTH.md, TODO.md, and PROGRESS.md in parallel. These reads are independen
    ```bash
    python3 scripts/effective_profile.py
    ```
-   Calibrates what "healthy" means for this user. If missing, proceed without persona grounding.
+   Calibrates what "healthy" means for this user per ecosystem context profile consumption conventions. If missing, proceed without persona grounding.
 7. **Project discovery**: map directory structure, read dependency manifests, README, CLAUDE.md, identify language/stack/build commands, `git log --oneline -20`
 
 Before proceeding: in your response, list the key structural facts (module boundaries, dependency patterns, test coverage gaps) you observed. These survive context compaction.
@@ -214,7 +218,7 @@ Evaluate test suite quality and coverage:
 - Check: testing behavior or implementation? Excessive mocking? Brittle assertions?
 - Evaluate test naming: can you understand what failed from the name alone?
 - Check test-to-code ratio per major module
-- Check test proportionality against ecosystem-spec Section 16: default is one pass + one fail per testable unit. Flag under-testing (0 tests for a testable unit) and over-testing (significantly exceeding the target without justification). If the project's plan specifies an override target, use that instead of the default.
+- Check test proportionality against ecosystem context (test proportionality section): default is one pass + one fail per testable unit. Flag under-testing (0 tests for a testable unit) and over-testing (significantly exceeding the target without justification). If the project's plan specifies an override target, use that instead of the default.
 
 Don't just report a number. Identify the *highest-risk* coverage gaps.
 
@@ -241,13 +245,13 @@ Only run this dimension if DOCS.md exists and contains a `versioning` convention
 
 ### Artifact freshness
 
-Evaluates whether state artifacts are current relative to plan activity or recent development. Uses the staleness convention defined in ecosystem-spec.md Section 18.
+Evaluates whether state artifacts are current relative to plan activity or recent development. Uses the staleness convention from ecosystem context.
 
 **With plan context** (PLAN.md has a `Created` date and task execution history):
 
 - Read the plan's `Created` date from its HTML comment metadata
 - Identify which skills were dispatched during the plan by scanning task entries and PROGRESS.md cycle logs
-- For each dispatched skill, look up its expected artifacts in the ecosystem-spec Section 18 mapping
+- For each dispatched skill, look up its expected artifacts in the ecosystem context staleness detection mapping
 - Check each expected artifact's last modification date: `git log -1 --format=%aI -- <path>`
 - An artifact is **stale** if its last modification predates the plan's creation date AND the skill that owns it was dispatched at least once during the plan
 - Severity: warning (confidence 70+). Plan-relative staleness carries causal evidence: a skill ran but its artifact didn't update.
@@ -284,9 +288,9 @@ After all agents complete:
 
 ## Step 5: Report
 
-Assess each dimension in your response. Write ONLY grade, trend indicator, and ≤30-word finding per dimension to HEALTH.md. No reasoning in the artifact; the conversation preserves analysis, the artifact preserves conclusions.
+Assess each dimension in your response. Write ONLY grade, trend indicator, and finding summary per dimension to HEALTH.md. No reasoning in the artifact; the conversation preserves analysis, the artifact preserves conclusions.
 
-Output constraint: ≤30 words per finding description, ≤15 words per recommendation. Letter grade + ≤3 sentences justification per dimension.
+Output constraint per ecosystem context token budgets. Letter grade + ≤3 sentences justification per dimension.
 
 When updating existing HEALTH.md entries (e.g., updating Patterns Observed), use the Edit tool on the specific section rather than rewriting the file. Append new audit entries.
 
@@ -336,8 +340,8 @@ This section helps realisera and resonera understand the current reality.]
 Feed actionable findings into the ecosystem:
 
 1. **TODO.md**: for each critical finding not already tracked, offer to add under the appropriate severity section.
-   Severity mapping: critical → `## ⇶ Critical`, warning → `## ⇉ Degraded`, info → `## ⇢ Annoying`. Each entry is a checkbox line: `- [ ] [finding description]`. Get user confirmation before writing.
-   Output constraint: ≤30 words per issue description.
+   Severity mapping per ecosystem context severity levels: critical → `## ⇶ Critical`, warning → `## ⇉ Degraded`, info → `## ⇢ Annoying`. Each entry is a checkbox line: `- [ ] [finding description]`. Get user confirmation before writing.
+   Output constraint per ecosystem context token budgets.
 2. **VISION.md**: if architecture has intentionally evolved past stated architecture, suggest updating via `/resonera`.
 3. **Present findings** and ask if the user wants to: file to TODO.md, deliberate via `/resonera`, deep-dive on a dimension, or investigate a specific finding.
 

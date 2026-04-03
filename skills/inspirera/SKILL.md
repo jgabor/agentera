@@ -186,12 +186,16 @@ No dedicated state file. Writes to other skills' artifacts.
 
 | Artifact | Purpose | Access |
 |----------|---------|--------|
-| TODO.md | File actionable findings for realisera | write |
+| TODO.md | File actionable findings for realisera (severity per ecosystem context) | write |
 | VISION.md | Refine direction when inspiration shifts thinking | write |
 
 ### Artifact path resolution
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (TODO.md, VISION.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill writes (TODO.md, VISION.md).
+
+### Ecosystem context
+
+Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
 
 ---
 
@@ -200,13 +204,13 @@ Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it
 Inspirera is part of a twelve-skill ecosystem. Its analysis feeds naturally into the other skills.
 
 ### Feeding into /realisera
-Add actionable findings to the project's TODO.md, or refine VISION.md's direction if the inspiration shifts thinking. The next realisera cycle picks up the changes automatically.
+Add actionable findings to the project's TODO.md, classifying each by severity per ecosystem context severity levels. Or refine VISION.md's direction if the inspiration shifts thinking. The next realisera cycle picks up the changes automatically.
 
 ### Feeding into /optimera
 When the source contains optimization techniques (performance patterns, algorithm improvements, caching strategies), optimera's Hypothesize step can draw on the analysis for its next experiment.
 
 ### Informed by /profilera
-If a decision profile exists at `~/.claude/profile/PROFILE.md`, run the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) for a confidence-weighted summary. Use effective confidence to weight applicability judgments: high-confidence entries strongly constrain recommendations, while low-confidence entries are treated as tendencies rather than rules.
+If a decision profile exists at `~/.claude/profile/PROFILE.md`, run the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) for a confidence-weighted summary. Use effective confidence to weight applicability judgments per ecosystem context profile consumption conventions.
 If the script or PROFILE.md is missing, proceed without persona grounding.
 
 ### Feeding into /visionera

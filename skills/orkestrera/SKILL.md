@@ -34,6 +34,10 @@ Orkestrera produces no new artifact files. It reads and updates existing artifac
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/PLAN.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads (VISION.md, .agentera/DECISIONS.md, .agentera/HEALTH.md, .agentera/PROGRESS.md, TODO.md).
 
+### Ecosystem context
+
+Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+
 ---
 
 ## Personality
@@ -59,7 +63,7 @@ Check for PLAN.md (respecting path resolution).
 When all tasks are complete, check whether dispatched skills updated their expected artifacts. This runs before the inspektera health check.
 
 1. **Identify dispatched skills**: review which skills were dispatched during this plan by reading PLAN.md task history and PROGRESS.md cycle entries.
-2. **Look up expected artifacts**: for each dispatched skill, consult the skill-to-expected-artifact mapping in ecosystem-spec.md Section 18. This mapping defines which artifacts each skill is expected to produce.
+2. **Look up expected artifacts**: for each dispatched skill, consult the skill-to-expected-artifact mapping in ecosystem context (staleness detection section). This mapping defines which artifacts each skill is expected to produce.
 3. **Compare modification dates**: for each expected artifact, check its last modification date (`git log -1 --format=%aI -- <path>`). Compare against the plan's `Created` date from PLAN.md's HTML comment metadata.
 4. **Flag stale artifacts**: an artifact is stale if it was not modified since the plan's creation date and the skill expected to update it was dispatched at least once during the plan. Skip artifacts owned by skills that were never dispatched (those are legitimately untouched).
 5. **Surface findings**: include any stale artifact findings as context for the next plan cycle (passed to inspirera/planera). These are informational, not errors. A plan that only dispatched realisera does not expect DESIGN.md updates.
@@ -299,7 +303,7 @@ DECISIONS.md provides firm constraints that orkestrera reads during task selecti
 VISION.md provides direction context used during bootstrap when chaining inspirera for gap analysis.
 
 ### Orkestrera reads /profilera output
-The decision profile provides persona context for calibrating dispatch decisions. Read `~/.claude/profile/PROFILE.md` directly. If missing, proceed without persona grounding.
+The decision profile provides persona context for calibrating dispatch decisions. Read `~/.claude/profile/PROFILE.md` directly per ecosystem context profile consumption conventions. If missing, proceed without persona grounding.
 
 ---
 
