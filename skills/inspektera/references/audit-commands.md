@@ -414,6 +414,72 @@ grep -rn "install\|@\|==\|>=\|~=" --include="*.sh" | head -20
 
 ---
 
+## Security Hygiene
+
+### All Languages (pattern-based scan)
+
+```bash
+# Hardcoded secrets: AWS access keys
+grep -rn "AKIA[0-9A-Z]\{16\}" --include="*.ts" --include="*.js" --include="*.py" --include="*.go" --include="*.java" --include="*.rb" --include="*.sh" --include="*.env" | head -10
+
+# Hardcoded secrets: common API key prefixes
+grep -rn "sk-[a-zA-Z0-9]\{20,\}\|ghp_[a-zA-Z0-9]\{36\}\|glpat-[a-zA-Z0-9]\{20\}\|xoxb-\|xoxp-" --include="*.ts" --include="*.js" --include="*.py" --include="*.go" --include="*.java" --include="*.rb" | head -10
+
+# Hardcoded secrets: password and token assignments
+grep -rn "password\s*=\s*[\"'][^\"']\+[\"']\|token\s*=\s*[\"'][^\"']\+[\"']" --include="*.ts" --include="*.js" --include="*.py" --include="*.go" --include="*.java" --include="*.rb" | grep -v "test\|spec\|mock\|fixture\|example\|placeholder" | head -10
+
+# Hardcoded secrets: private keys embedded in source
+grep -rn "BEGIN.*PRIVATE KEY" --include="*.ts" --include="*.js" --include="*.py" --include="*.go" --include="*.java" --include="*.rb" | head -5
+```
+
+### TypeScript / Node
+
+```bash
+# Dangerous function calls: eval and Function constructor
+grep -rn "eval(\|new Function(" src/ --include="*.ts" --include="*.js" | head -10
+
+# Unsanitized shell execution
+grep -rn "child_process\.\|exec(\|execSync(" src/ --include="*.ts" --include="*.js" | head -10
+
+# SQL string concatenation (injection risk)
+grep -rn "query.*+\|execute.*+\|sql.*\`" src/ --include="*.ts" --include="*.js" | head -10
+```
+
+### Python
+
+```bash
+# Dangerous function calls: eval, exec
+grep -rn "eval(\|exec(" --include="*.py" | grep -v "_test\|test_\|conftest" | head -10
+
+# Unsanitized shell execution
+grep -rn "os\.system(\|subprocess\.call(\|subprocess\.run(" --include="*.py" | head -10
+
+# SQL string concatenation (injection risk)
+grep -rn "execute.*%\|execute.*f\"\|execute.*\.format(" --include="*.py" | head -10
+```
+
+### Go
+
+```bash
+# Unsanitized command execution
+grep -rn "exec\.Command(\|os\.system" --include="*.go" | head -10
+
+# SQL string concatenation (injection risk)
+grep -rn 'fmt\.Sprintf.*SELECT\|fmt\.Sprintf.*INSERT\|fmt\.Sprintf.*UPDATE\|fmt\.Sprintf.*DELETE' --include="*.go" | head -10
+```
+
+### Bash
+
+```bash
+# Dangerous eval usage
+grep -rn "eval " --include="*.sh" | head -10
+
+# Unquoted variable expansion in commands (injection risk)
+grep -rn 'rm.*\$[^{]\|mv.*\$[^{]\|cp.*\$[^{]' --include="*.sh" | grep -v '"' | head -10
+```
+
+---
+
 ## Quick Checklist (all languages)
 
 Run this first for a rapid pass/fail before deep analysis:
