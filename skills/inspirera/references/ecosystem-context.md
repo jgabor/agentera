@@ -1,7 +1,7 @@
 <!-- ecosystem-context: inspirera -->
-<!-- source: references/ecosystem-spec.md (sha256: 61a64eb6df78f40143e8844fb74050f88a54cd89364680ff84e1005b4f14014b) -->
+<!-- source: references/ecosystem-spec.md (sha256: 6d0f7e8491aaaedf1c2dadccda1961f37a5e8a43b625304a3e3694481de93181) -->
 <!-- sections: 2, 4, 5, 6, 12 -->
-<!-- generated: 2026-04-03T15:26:39Z -->
+<!-- generated: 2026-04-03T15:42:03Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_ecosystem_context.py -->
 
@@ -75,7 +75,7 @@ Each skill-maintained artifact has an expected structure. Producing skills defin
 
 ### Default layout
 
-Three project-facing files at the project root; eight operational files in `.agentera/`.
+Three project-facing files at the project root; nine operational files in `.agentera/`.
 
 **Root (project-facing)**:
 
@@ -97,6 +97,7 @@ Three project-facing files at the project root; eight operational files in `.age
 | EXPERIMENTS.md | Experiment log |
 | DESIGN.md | Visual identity |
 | DOCS.md | Documentation contract + optional artifact path overrides |
+| SESSION.md | Timestamped session bookmarks with artifact change tracking |
 | archive/ | Completed plans, superseded visions and designs |
 
 **PROFILE.md** is global at `~/.claude/profile/PROFILE.md`, not in the project root or `.agentera/`. Skills read it from this path directly.
@@ -116,6 +117,7 @@ Three project-facing files at the project root; eight operational files in `.age
 | EXPERIMENTS.md | .agentera/EXPERIMENTS.md | optimera | optimera | ## Experiment N · date, **Hypothesis/Method/Result/Conclusion** |
 | DESIGN.md | .agentera/DESIGN.md | visualisera | realisera, visionera | Standard sections per DESIGN-spec.md |
 | DOCS.md | .agentera/DOCS.md | dokumentera | all skills (path resolution) | ## Conventions, ## Artifact Mapping, ## Index |
+| SESSION.md | .agentera/SESSION.md | session stop hook | session start hook, hej | ## YYYY-MM-DD HH:MM, Artifacts modified, Summary; compaction: 5 full + 20 one-line, oldest dropped |
 | PROFILE.md | ~/.claude/profile/PROFILE.md | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
 
 **Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for project contributors) AND `.agentera/PROGRESS.md` (operational cycle-level detail for consuming skills). Consuming skills that need cycle detail read `.agentera/PROGRESS.md`; project contributors read CHANGELOG.md.
