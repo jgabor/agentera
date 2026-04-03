@@ -656,3 +656,29 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Reasoning**: Orkestrera already enforces ordering via artifact presence. Phase labels add a second state layer that could drift just as easily as the artifacts themselves. The real risk is stale artifacts misleading routing decisions. Plan-relative detection ties the clock to meaningful project milestones rather than arbitrary time or cycle counts. Checking only plan-relevant artifacts avoids false positives on slow-changing artifacts like VISION.md.
 **Confidence**: firm
 **Feeds into**: TODO.md (close ISS-19, open staleness detection issue), orkestrera SKILL.md (plan-relative staleness check)
+
+## Decision 23 · 2026-04-03
+
+**Question**: Where should session-to-session state live: new SESSION.md artifact, extend PROGRESS.md, or infrastructure dotfile?
+**Context**: The hooks plan introduces a Stop hook that persists a session narrative (which skills ran, in what order) for the SessionStart hook to preload. The critic flagged that PROGRESS.md has a cycle entry format owned by realisera; writing session bookmarks there violates the producer contract. Three options explored: SESSION.md (new artifact), extending PROGRESS.md with a second entry type, or a non-artifact dotfile (.agentera/.session).
+**Alternatives**:
+- [SESSION.md as artifact #12], chosen: honest about what it is, properly documented in ecosystem spec
+- [Extend PROGRESS.md with session entries], rejected: mixing producers muddies PROGRESS.md's clarity as a single-producer, single-format artifact
+- [Non-artifact dotfile .agentera/.session], rejected: if it's ecosystem state, it should be a real artifact, not infrastructure hiding below the protocol
+**Choice**: SESSION.md as the 12th ecosystem artifact. Produced by the Stop hook, consumed by SessionStart hook and hej. Context loader improvements make the additional artifact weight manageable.
+**Reasoning**: The initial resistance was about cognitive and context weight of a 12th artifact, not architectural principle. Extending PROGRESS.md was rejected because its value comes from being single-producer, single-format. The dotfile option was a pragmatic workaround that dodged the real question. With improved context loading, the honest choice wins: session state is ecosystem state.
+**Confidence**: firm
+**Feeds into**: PLAN.md (hooks infrastructure), ecosystem-spec.md (artifact table)
+
+## Decision 24 · 2026-04-03
+
+**Question**: Should the PostToolUse validation hook coexist with the git pre-commit hook, or replace it?
+**Context**: The hooks plan introduced PostToolUse for real-time artifact validation alongside the existing .githooks/pre-commit (ecosystem linter + context freshness). The plan said they have different concerns: PostToolUse validates individual artifact structure, pre-commit validates cross-skill alignment. But two validation mechanisms for overlapping file sets is messy and will drift.
+**Alternatives**:
+- [PostToolUse replaces pre-commit entirely], chosen: one validation path, cleaner
+- [Coexistence with different concerns], rejected: two mechanisms is complexity that accretes; someone adds a check to one and forgets the other
+- [PostToolUse primary, pre-commit as thin gate], rejected: still two mechanisms, just thinner
+**Choice**: PostToolUse absorbs all validation: ecosystem linter, context freshness, and artifact structure. The git pre-commit hook is removed. The manual-edit gap (edits outside Claude Code) is accepted until CI gating (ISS-31) lands.
+**Reasoning**: Agentera is a Claude Code skill ecosystem developed through Claude Code. The pre-commit was always a stopgap. PostToolUse provides faster feedback (edit-time vs commit-time) and covers the same checks. Two mechanisms for validation will drift. One mechanism is cleaner, and CI gating closes the remaining gap.
+**Confidence**: firm
+**Feeds into**: PLAN.md (hooks infrastructure), .githooks/pre-commit (removal)

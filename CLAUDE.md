@@ -16,8 +16,11 @@ skills/<name>/.claude-plugin/plugin.json  # Per-skill marketplace plugin manifes
 references/ecosystem-spec.md         # Shared primitives spec (all skills must align)
 scripts/validate_ecosystem.py        # Ecosystem linter
 scripts/eval_skills.py               # Tier 2 eval runner (smoke-tests skills via claude -p)
-hooks/hooks.json                     # PostToolUse hook registry
-hooks/validate_artifact.py           # Artifact write validation (replaces .githooks/pre-commit)
+hooks/hooks.json                     # Hook registry (SessionStart, Stop, PostToolUse)
+hooks/common.py                      # Shared artifact path resolution for hooks
+hooks/session_start.py               # SessionStart context preload
+hooks/session_stop.py                # Stop session bookmark persistence
+hooks/validate_artifact.py           # PostToolUse artifact + ecosystem validation
 tests/                               # pytest suite (linter, eval runner, skill scripts, hooks)
 registry.json                        # Skill index with versions and tags
 .claude-plugin/marketplace.json      # Plugin marketplace manifest
@@ -25,7 +28,7 @@ registry.json                        # Skill index with versions and tags
 
 ## Skill ecosystem
 
-The twelve skills form a connected graph, not isolated tools. See the README for the full ecosystem diagram and state artifact reference table. All skills work standalone AND mesh when co-installed. Each skill generates state artifacts in the *target project*, not in this repo. Default layout: three project-facing files at root (VISION.md, TODO.md, CHANGELOG.md) and eight operational files in `.agentera/` (PROGRESS.md, DECISIONS.md, PLAN.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, DESIGN.md, DOCS.md). Skills check `.agentera/DOCS.md` for path overrides; if absent, use the deterministic default layout.
+The twelve skills form a connected graph, not isolated tools. See the README for the full ecosystem diagram and state artifact reference table. All skills work standalone AND mesh when co-installed. Each skill generates state artifacts in the *target project*, not in this repo. Default layout: three project-facing files at root (VISION.md, TODO.md, CHANGELOG.md) and nine operational files in `.agentera/` (PROGRESS.md, DECISIONS.md, PLAN.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, DESIGN.md, DOCS.md, SESSION.md). Skills check `.agentera/DOCS.md` for path overrides; if absent, use the deterministic default layout.
 
 ## Adding or modifying a skill
 
