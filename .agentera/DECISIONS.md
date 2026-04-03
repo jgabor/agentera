@@ -682,3 +682,16 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Reasoning**: Agentera is a Claude Code skill ecosystem developed through Claude Code. The pre-commit was always a stopgap. PostToolUse provides faster feedback (edit-time vs commit-time) and covers the same checks. Two mechanisms for validation will drift. One mechanism is cleaner, and CI gating closes the remaining gap.
 **Confidence**: firm
 **Feeds into**: PLAN.md (hooks infrastructure), .githooks/pre-commit (removal)
+
+## Decision 25 · 2026-04-03
+
+**Question**: Should agentera's North Star evolve from "a solo founder installs an engineering team" to a spec-centric framing?
+**Context**: 80 cycles have proven the compounding model works. The current vision is user-centric (one person, one problem, one transformation). But the domain has moved: Agent Skills is an open standard adopted by multiple platforms, 150+ skills exist in the ecosystem, multi-agent orchestration is mainstream. The Direction section already says "the spec becomes the gravity well," suggesting the North Star was lagging behind the project's actual ambition.
+**Alternatives**:
+- [Keep user-centric North Star, update supporting paragraphs], rejected: the frame has been outgrown; both audience ("solo founder") and transformation ("installs a team") feel past tense
+- [Compounding intelligence as North Star ("the system that gets smarter")], rejected: describes a property of the system, not the ambition
+- [Spec as North Star with adoption arc in Direction], chosen
+**Choice**: North Star becomes "The open standard for turning AI agents into engineering teams." Cool, declarative one-liner. Supporting paragraphs carry the emotional weight: two-layer problem (individual amnesia + ecosystem fragmentation), the insight (artifact contracts = memory, shared primitives = common language), the ambition (the spec as industry gravity well). Solo founder persona stays as the human grounding (the why behind the spec). Direction becomes the adoption arc: reference implementation, third-party skills, platform adoption, industry standard.
+**Reasoning**: The key insight is that the spec is the product, not the twelve skills. The skills are the reference implementation that proves the spec works. This reframes agentera from a tool (install skills, get a team) to a protocol (agents that speak this language become teams). The solo founder persona stays because the spec exists to solve her problem, not as abstract standards work. The problem statement gains a second layer: amnesia is the individual problem, fragmentation is the ecosystem problem. The spec solves both.
+**Confidence**: firm
+**Feeds into**: VISION.md (North Star, Direction, supporting paragraphs)

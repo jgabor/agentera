@@ -2,13 +2,19 @@
 
 ## North Star
 
-A solo founder clones a repo and installs an engineering team.
+The open standard for turning AI agents into engineering teams.
 
-Not a chatbot that answers questions about code. Not a bag of clever prompts. A *team*, with the discipline of a senior org and the memory of one that's been on the project since day one. Someone watching the architecture while you're heads-down in implementation. Someone remembering why you made the decisions you made three months ago. Someone pushing the vision forward even when you've lost the thread.
+The agent ecosystem has skill catalogs with tens of thousands of standalone capabilities and orchestration runtimes that coordinate agents in parallel. Both layers are maturing fast. Neither addresses the actual problem: agents don't learn. Every session starts from zero. Every skill operates in isolation. The orchestrator delegates work, the agents execute, the session ends, and everything they understood evaporates. You're left with code changes and no institutional memory of why they were made.
 
-Today's AI coding tools are amnesiac. Every conversation starts from zero. The solo founder gets a brilliant pair programmer who forgets everything between sessions, and so the codebase drifts. Decisions evaporate. Architecture degrades silently. Documentation doesn't exist because nobody's job is to write it. Three months in, you're standing in a codebase that no longer resembles what you set out to build, and you're not even sure when it went wrong.
+agentera is the knowledge layer between catalogs and runtimes. Three pillars hold it up.
 
-agentera exists so that never happens again. Skills that share state, enforce alignment, and *compound*. Every cycle deposits understanding: why decisions were made, what the architecture looks like, where the project is heading. The system doesn't just execute. Over time, it understands the project and the person building it. The twentieth cycle is fundamentally better than the first, because it draws from everything the first nineteen discovered.
+The **Three Laws of Agentic Engineering** are the behavioral foundation. Intent fidelity: never drift from the task, never trust the residue of prior reasoning over original intent. Aggressive compute: reason deeper, explore wider, verify relentlessly. Autonomous parallelism: fan work across concurrent paths, resist sequential bottlenecks. These aren't principles for humans using AI tools. They're protocols for how agents behave when no human is watching.
+
+The **ecosystem spec** is the knowledge protocol. Artifact contracts define how agents share state. Shared primitives give them a common language. The spec is what turns a collection of disconnected skills into a graph where each one checks the others' work and compounds understanding over time.
+
+The **sharp colleague** is the interface. One voice across every skill: casual, opinionated, warm but direct. Pushes back when something's off. Says what it sees, says what it'd do, does it. The difference between skills is expertise, not personality.
+
+The skills are the reference implementation. But the spec is the product. Any platform that speaks this language, any skill that follows these contracts, any runtime that enforces these laws joins the same team.
 
 ## Who It's For
 
@@ -22,6 +28,12 @@ She doesn't need an AI to write code for her. She can write code. She needs the 
 
 She installs the skills and gets all of that. Not perfectly, not the way a real team of seniors would do it. But enough. Enough that the architecture doesn't silently degrade. Enough that decisions are recorded and reasoned about. Enough that she can look back three months later and understand the story of her own project.
 
+### The skill builder who wants leverage
+
+He's built agent tools before. Single-purpose skills, clever prompts, useful but isolated. Each one lives in its own universe. Users install it, get value, but nothing connects. His testing skill doesn't know about the planning skill someone else built. His documentation skill can't read the audit findings from a third.
+
+He finds the ecosystem spec. Artifact contracts tell his skill exactly what to produce and what it can consume. Shared primitives mean his confidence scores and severity levels mean the same thing as everyone else's. He builds one skill that meshes with hundreds, not one skill that works alone. The spec is the leverage.
+
 ## Principles
 
 - **Standalone and mesh.** Every skill works completely on its own. Every skill also fully integrates when others are installed alongside it. This is the foundational architectural constraint: no skill may depend on another to function, and no skill may ignore another when present. Install one, install all, install any combination. They all work.
@@ -32,17 +44,17 @@ She installs the skills and gets all of that. Not perfectly, not the way a real 
 
 - **Autonomy over assistance.** Design for a world where the agent runs while you sleep, not a world where it waits for your next message. Real autonomy means real judgment, real safety rails, real self-correction. Don't build a tool. Build a teammate.
 
-- **Openness over lock-in.** Skills work across Claude, Codex, Gemini, and whatever comes next. The agentera format is an open standard. The ecosystem spec is public. Platform-specific features are not features; they're walls. If the format is open and the spec is public, the ecosystem grows beyond any single vendor.
+- **Openness over lock-in.** The ecosystem spec is an open standard. The artifact contracts are platform-agnostic. Skills that follow the spec work across any runtime that speaks the same language. The reference implementation proves the model; it doesn't own it.
 
 ## Direction
 
-The ecosystem becomes the orchestration layer for autonomous software development. Not a pipeline: Planner, Architect, Implementer, Tester, Reviewer is what happens when you think about agents the way you think about assembly lines. agentera is a graph. Skills read each other's artifacts, check each other's work, and compound understanding over time. The difference matters: pipelines execute sequences, graphs build judgment.
+The ecosystem spec is the foundation. The skills are the proof. The next layer is the runtime.
 
-This happens in two layers. The foundation is the ecosystem spec: artifact contracts, shared primitives, integration protocols that define how agents become a team. Any orchestrator that speaks this language can coordinate agents that share state and enforce alignment. The reference implementation is the eleven skills that demonstrate every pattern: vision informing planning informing building informing auditing informing vision again. The spec teaches. The skills prove.
+Today agentera lives inside Claude Code: skills as plugins, hooks as lifecycle events, agents spawned through the host's primitives. That's the right place to prove the model, but it's the wrong place to stop. The spec and the artifact contracts are already platform-agnostic. The runtime should be too.
 
-The spec becomes the gravity well. Today it enforces alignment across the suite. Tomorrow it's the contract that third-party skills build against. In a world with thousands of disconnected skills, the ones that talk to each other win. The ecosystem spec is what makes them talk.
+The reference implementation becomes a standalone system: a CLI, a TUI, a GUI that owns its own lifecycle. Session management, agent dispatch, artifact resolution, skill coordination: all currently borrowed from Claude Code, all eventually owned. A turnkey solution that others can build on and extend, exploring entirely new paradigms of how humans and agent teams interact. Not a wrapper around someone else's agent. An opinionated runtime that embodies the Three Laws and speaks the ecosystem spec natively.
 
-The compounding goes deeper with each skill added. The system doesn't just accumulate artifacts; it builds institutional memory that makes every future cycle more informed. Decisions reference past decisions. Health audits track trends. Progress logs tell the story. The project develops a *history* that persists across sessions, across months, across whatever model happens to be running today.
+Third-party skills build against the spec. Other runtimes adopt it. The contract that started as internal alignment becomes the protocol that lets any agent, on any platform, join a team that compounds understanding over time.
 
 ## Identity
 
@@ -52,7 +64,7 @@ The ambitious workshop. Every tool has a purpose, nothing is decorative, and the
 ### Voice
 The Swedish names are invocations, not branding. *Realisera*: realize this. *Inspektera*: inspect that. *Resonera*: resonate with this decision. Each skill name is a verb in the imperative: a call to action.
 
-One voice across all eleven skills: the sharp colleague. Casual, opinionated, occasionally playful. Pushes back when something's off. Says what it sees, says what it'd do, does it. Not terse, but warm. Not formal, but direct. The difference between skills is expertise, not personality. The planner and the auditor sound like the same person thinking about different things.
+One voice across all skills: the sharp colleague. Casual, opinionated, occasionally playful. Pushes back when something's off. Says what it sees, says what it'd do, does it. Not terse, but warm. Not formal, but direct. The difference between skills is expertise, not personality. The planner and the auditor sound like the same person thinking about different things.
 
 When outputs are data-dense (dashboards, audit findings, plan breakdowns) the data stays structured for scannability. But a human opens and a human closes: the colleague interprets the evidence, doesn't just present it. The dashboard is what happened; the voice is what it means.
 
