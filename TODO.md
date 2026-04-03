@@ -6,11 +6,12 @@
 - [ ] ISS-31: [test] Build test suite for the ecosystem. Test coverage: 133 proportional tests across 8 files covering all 13 linter check functions, eval runner pure functions, and all 5 skill scripts (145c637, 8b4e389, bdfdcc9, 02a3e0d, 1f4c250, 9bc13b7). Remaining: CI gating deferred
 
 ## → Normal
-- [ ] ISS-19: [feat] Explicit phase tracking in PROGRESS.md. Spec defined in ecosystem-spec.md Section 17 with five phases, transitions, terminal states, and PROGRESS.md format contract (2caa9cb). Remaining: SKILL.md integration (each skill reading phase and flagging out-of-order runs)
+- [ ] ISS-34: [feat] Plan-relative staleness detection in orkestrera (Decision 22). After each plan cycle, flag plan-relevant artifacts that dispatched skills should have updated but didn't since plan start. Replaces fixed 14-day threshold with plan-scoped detection
 
 ## ⇢ Annoying
 
 ## Resolved
+- [x] ~~ISS-19: [feat] Phase tracking spec~~ · spec delivered in 2caa9cb, SKILL.md enforcement dropped per Decision 22 (replaced by ISS-34)
 - [x] ~~ISS-33: [docs] Add test proportionality convention (Decision 21)~~ · fixed in 0c67553..61e7f7d
 - [x] ~~ISS-32: [docs] README ecosystem diagram understates inspirera connections~~ · fixed in 70a2fb1
 - [x] ~~ISS-30: [docs] Overhaul README to properly represent profilera's role~~ · fixed in 70a2fb1

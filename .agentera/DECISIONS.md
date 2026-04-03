@@ -640,3 +640,19 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Reasoning**: The problem is not that agents write tests badly; each test was correct and useful. The problem is that unbounded scope compounds across tasks. Three test tasks each producing 40 tests is 120, when 50 total would have covered the critical paths. The fix belongs in the plan (where scope is set), not in the agent (where scope is executed). Proportionality as an AC constraint makes it verifiable without adding new machinery.
 **Confidence**: firm
 **Feeds into**: ecosystem-spec.md (proportionality convention for test tasks), planera SKILL.md (test budget in AC guidance), inspektera SKILL.md (evaluate test proportionality)
+
+## Decision 22 · 2026-04-03
+
+**Question**: Should ISS-19 phase tracking be enforced across skills, and how should the ecosystem detect stale artifacts?
+**Context**: ISS-19 spec (ecosystem-spec.md Section 17) defines five phases with transitions. The remaining work was SKILL.md integration: each skill reading phase and flagging out-of-order runs. Deliberation revealed that orkestrera's artifact-based routing already enforces order implicitly (no plan → bootstrap one), and that standalone skills must stay free from phase constraints. The actual concern was stale artifacts causing wrong routing decisions, not missing transition validation.
+**Alternatives**:
+- [Full phase enforcement across 12 skills], rejected: breaks standalone operation, redundant with artifact-based routing
+- [Soft warnings in every skill], rejected: warning fatigue, still redundant
+- [Orkestrera-only phase validation], rejected: artifact presence already serves this function
+- [Fixed time threshold (14 days)], rejected: too coarse for high-velocity projects (77 cycles in 5 days)
+- [Fixed cycle count threshold], rejected: doesn't account for plan scope
+- [Plan-relative staleness detection], chosen
+**Choice**: Drop phase enforcement. Add plan-relative staleness detection to orkestrera: after each plan cycle, flag plan-relevant artifacts that dispatched skills should have updated but didn't since plan start. Phase spec (Section 17) stays as ecosystem documentation. No SKILL.md changes needed.
+**Reasoning**: Orkestrera already enforces ordering via artifact presence. Phase labels add a second state layer that could drift just as easily as the artifacts themselves. The real risk is stale artifacts misleading routing decisions. Plan-relative detection ties the clock to meaningful project milestones rather than arbitrary time or cycle counts. Checking only plan-relevant artifacts avoids false positives on slow-changing artifacts like VISION.md.
+**Confidence**: firm
+**Feeds into**: TODO.md (close ISS-19, open staleness detection issue), orkestrera SKILL.md (plan-relative staleness check)
