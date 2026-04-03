@@ -2,6 +2,7 @@
 name: optimera
 description: >
   OPTIMERA (Objective Pursuit: Targeted Iterative Measurement; Experiment, Record, Advance). ALWAYS use this skill for metric-driven optimization of a measurable objective. This skill is REQUIRED whenever the user wants to improve a concrete, quantifiable property of their codebase: test pass rate, benchmark performance, bundle size, latency, lint score, type coverage, or any other metric that can be measured by running a command. Do NOT attempt iterative optimization without this skill because it contains the critical workflow for objective-driven experimentation, eval harness design, structured keep/discard decisions, and safety rails that prevent regressions. Trigger on: "optimera", "optimize", "improve performance", "reduce latency", "increase test coverage", "lower bundle size", "speed up", "make faster", "make smaller", "get the score up", "hit the target", "improve the metric", "benchmark and iterate", "run experiments", "tune", "experiment until", any mention of iterative optimization against a measurable target, any request to improve a number, or setting up /loop for recurring optimization. Also trigger when the user names a metric and wants it improved through systematic experimentation.
+spec_sections: [1, 3, 4, 5, 6]
 ---
 
 # OPTIMERA

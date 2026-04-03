@@ -14,6 +14,7 @@ description: >
   "docs first", "document before building", "audit docs", "check documentation", "are the
   docs up to date", "docs out of sync", any request to create or maintain documentation, any
   request to verify docs against code, or when planera's plan includes documentation tasks.
+spec_sections: [2, 4, 5]
 ---
 
 # DOKUMENTERA

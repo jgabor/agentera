@@ -14,6 +14,7 @@ description: >
   to evaluate alternatives or think before acting, any mention of structured decision-making,
   or when the user is clearly stuck between options. Also trigger when realisera or optimera
   brainstorm sessions surface decisions too complex for inline resolution.
+spec_sections: [3, 4, 5, 6]
 ---
 
 # RESONERA

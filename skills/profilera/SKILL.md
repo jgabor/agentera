@@ -14,6 +14,7 @@ description: >
   "check my profile", "quick profile check", or "/profilera". Also applies when
   the user wants to understand their own decision-making patterns across sessions, asks
   someone else to predict their decisions, or wants a document that captures how they think.
+spec_sections: [1, 4, 6]
 ---
 
 # PROFILERA
