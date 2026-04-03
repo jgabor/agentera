@@ -1,0 +1,15 @@
+{
+  "description": "agentera ecosystem hooks: session context preloading, session persistence, and tool-use validation",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/session_start.py"
+          }
+        ]
+      }
+    ]
+  }
+}
