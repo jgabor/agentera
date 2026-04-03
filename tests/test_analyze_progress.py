@@ -1,4 +1,8 @@
-"""Tests for skills/realisera/scripts/analyze_progress.py."""
+"""Tests for skills/realisera/scripts/analyze_progress.py.
+
+Proportionality: Decision 21. One pass + one fail per unit. Edge case tests
+retained for parse_cycles (regex parsing with multiple field extraction).
+"""
 
 from __future__ import annotations
 
@@ -43,6 +47,8 @@ No cycles recorded yet.
 
 
 class TestParseCycles:
+    """Complex: regex parsing with multiple field extraction. Keep 3 (multi, fields, empty)."""
+
     def test_parses_multiple_cycles(self, analyze_progress):
         cycles = analyze_progress.parse_cycles(SAMPLE_PROGRESS)
         assert len(cycles) == 3
@@ -62,18 +68,9 @@ class TestParseCycles:
         assert c2["has_inspiration"] is True
         assert c2["has_discoveries"] is True
 
-    def test_inspiration_none_is_false(self, analyze_progress):
-        cycles = analyze_progress.parse_cycles(SAMPLE_PROGRESS)
-        assert cycles[0]["has_inspiration"] is False
-        assert cycles[2]["has_inspiration"] is False
-
     def test_empty_file(self, analyze_progress):
         cycles = analyze_progress.parse_cycles(EMPTY_PROGRESS)
         assert cycles == []
-
-    def test_timestamp_iso_format(self, analyze_progress):
-        cycles = analyze_progress.parse_cycles(SAMPLE_PROGRESS)
-        assert cycles[0]["timestamp"] == "2026-03-28T10:00:00"
 
 
 # ---------------------------------------------------------------------------
@@ -81,6 +78,8 @@ class TestParseCycles:
 # ---------------------------------------------------------------------------
 
 class TestAnalyze:
+    """Simple: aggregation. One pass + one fail."""
+
     def test_happy_path(self, analyze_progress):
         cycles = analyze_progress.parse_cycles(SAMPLE_PROGRESS)
         result = analyze_progress.analyze(cycles)
@@ -100,17 +99,3 @@ class TestAnalyze:
         result = analyze_progress.analyze([])
         assert result["total_cycles"] == 0
         assert "message" in result
-
-    def test_work_distribution_counts(self, analyze_progress):
-        cycles = analyze_progress.parse_cycles(SAMPLE_PROGRESS)
-        result = analyze_progress.analyze(cycles)
-        dist = result["work_distribution"]
-        assert dist["feat"] == 1
-        assert dist["fix"] == 1
-        assert dist["refactor"] == 1
-
-    def test_recent_cycles_capped(self, analyze_progress):
-        cycles = analyze_progress.parse_cycles(SAMPLE_PROGRESS)
-        result = analyze_progress.analyze(cycles)
-        assert len(result["recent"]) <= 5
-        assert result["recent"][-1]["number"] == 3
