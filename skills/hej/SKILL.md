@@ -143,7 +143,7 @@ Show where things stand.
 
 3. **Attention items**: priority order with severity arrows:
    - ⇶ Critical issues, degrading health dimensions
-   - ⇉ Blocked/overdue plan tasks, stale artifacts (>14 days), loop guard triggers
+   - ⇉ Blocked/overdue plan tasks, stale artifacts (plan-relative per ecosystem-spec Section 18; fall back to PROGRESS.md recency heuristic when no plan context exists), loop guard triggers
    - ⇢ Unresolved exploratory decisions
 
    Nothing? Say so. A clean bill of health is useful.
