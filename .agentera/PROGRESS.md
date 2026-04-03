@@ -1,5 +1,33 @@
 # Progress
 
+■ ## Cycle 80 · 2026-04-03
+
+**What**: Selective ecosystem context loading (ISS-35). Eliminated spec-to-skill semantic drift by generating per-skill context files from ecosystem-spec.md. Six tasks: generation script with --check/--skill modes, spec_sections frontmatter in all 12 SKILL.md files, 3 new linter checks (16 total) + pre-commit hook, full SKILL.md migration (ecosystem context references replace embedded values, all 6 drift patterns fixed), 18 tests for the generation script (160 total across 9 files), ISS-35 resolved.
+**Commits**: 2b208f9..9ba01f1 (6 commits)
+**Inspiration**: ISS-35 audit findings, docs/selective-ecosystem-context.md design proposal (inspirera cross-pollination from SMELT query-conditioned retrieval)
+**Discovered**: The move-vs-stay boundary (authoritative shared values vs skill-behavioral constraints) required explicit criteria: values from ecosystem-spec move to context files, per-skill output constraints stay in SKILL.md.
+**Next**: ISS-31 (CI gating) is the only remaining degraded issue. No critical issues.
+**Context**: intent (eliminate spec-to-skill drift by construction via generated context files) · constraints (standalone + meshed operation, Decision 21 test proportionality, Decision 22 no phase enforcement) · unknowns (none) · scope (12 SKILL.md files, generation script, linter, pre-commit hook, tests)
+
+■ ## Cycle 79 · 2026-04-03
+
+**What**: Added Artifact freshness dimension to inspektera SKILL.md. Plan-relative staleness uses plan creation date and dispatched-skill mapping from ecosystem-spec Section 18. Fallback uses PROGRESS.md recency heuristic (advisory). Three surgical additions: Step 1 orient (plan context read), Step 2 dimension table (new row), Step 3 assessment (full instructions).
+**Commit**: 7e3255b feat(inspektera): add plan-context artifact freshness dimension
+**Inspiration**: Decision 22 (plan-relative staleness, firm), ecosystem-spec Section 18 (Task 1 output)
+**Discovered**: None. Clean addition; inspektera had no prior staleness logic to conflict with.
+**Next**: Tasks 2 and 4 remain (orkestrera staleness check, hej threshold update). Both depend only on Task 1.
+**Context**: intent (add artifact freshness evaluation to inspektera per Section 18) · constraints (only modify inspektera SKILL.md, linter 0/0) · unknowns (none) · scope (skills/inspektera/SKILL.md)
+
+■ ## Cycle 78 · 2026-04-03
+
+**Phase**: build
+**What**: Added Section 18 (Staleness Detection) to ecosystem-spec.md. Skill-to-expected-artifact mapping table covers all 12 skills. Plan-relative staleness convention with detection rule, dispatch definition, scope, and handling. Fallback heuristic uses PROGRESS.md recency for standalone operation.
+**Commit**: cd519b0 feat(ecosystem-spec): add staleness detection convention and skill-to-artifact mapping (Section 18)
+**Inspiration**: Decision 22 (plan-relative staleness, firm)
+**Discovered**: None. Clean spec addition with no conflicts.
+**Next**: Tasks 2-4 now unblocked (orkestrera staleness check, inspektera plan-context staleness, hej threshold update). Tasks 2 and 3 can run in parallel.
+**Context**: intent (define staleness convention per Decision 22, unblock downstream tasks) · constraints (no SKILL.md changes, linter 0/0) · unknowns (none) · scope (ecosystem-spec.md Section 18)
+
 ■ ## Cycle 77 · 2026-04-02
 
 **What**: Linter validation (0/0), version bump to 1.5.0 (profilera to 2.4.0), CHANGELOG promoted to [1.5.0]. Plan archived, ISS-29 resolved. All 7 tasks complete.
