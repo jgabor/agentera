@@ -71,6 +71,7 @@ Read HEALTH.md, TODO.md, and PROGRESS.md in parallel. These reads are independen
 4. **TODO.md**: known problems (if exists). Don't re-report unless worsened.
 5. **PROGRESS.md**: last 3 cycle entries only (recent changes = higher-priority audit targets)
 5b. **Change magnitude**: if PROGRESS.md has commit hashes from cycles since the last HEALTH.md audit date, run `git log --stat` on those commits to estimate total change volume (files touched, lines changed). If no PROGRESS.md or no commit hashes, skip; default depth applies.
+5c. **Plan context** (for artifact freshness): if PLAN.md exists, read its metadata comment for the `Created` date and scan task statuses for dispatched skills. This provides the plan-relative staleness baseline for the Artifact freshness dimension. If PLAN.md is absent or has no `Created` date, note that plan context is unavailable; the fallback heuristic will apply.
 6. **Decision profile**: run from the profilera skill directory:
    ```bash
    python3 scripts/effective_profile.py
@@ -99,6 +100,7 @@ Choose dimensions based on the codebase and user request. Not every dimension ap
 | **Test health** | Coverage gaps, test quality, test-to-code ratio, tests testing behavior vs implementation. | Project has tests |
 | **Dependency health** | Outdated deps, security advisories, unused deps, dep sprawl, pinning discipline. | Project has external dependencies |
 | **Version health** | Unreleased significant changes: `feat`/`fix` commits since the last version bump. | DOCS.md has a `versioning` convention block |
+| **Artifact freshness** | Are state artifacts current relative to plan activity or recent development? Detects artifacts that should have been updated but weren't. | Plan context available (PLAN.md with `Created` date) or PROGRESS.md has entries |
 
 ### Depth guidance
 
@@ -235,6 +237,29 @@ Only run this dimension if DOCS.md exists and contains a `versioning` convention
 - Count unbumped `feat`/`fix` commits and note the age of the oldest one
 - Severity: warning if 1–4 unbumped commits or age ≤ 7 days; critical if 5+ unbumped commits or age > 7 days
 - If no `feat`/`fix` commits have landed since the last bump, this dimension is healthy with no finding
+
+### Artifact freshness
+
+Evaluates whether state artifacts are current relative to plan activity or recent development. Uses the staleness convention defined in ecosystem-spec.md Section 18.
+
+**With plan context** (PLAN.md has a `Created` date and task execution history):
+
+- Read the plan's `Created` date from its HTML comment metadata
+- Identify which skills were dispatched during the plan by scanning task entries and PROGRESS.md cycle logs
+- For each dispatched skill, look up its expected artifacts in the ecosystem-spec Section 18 mapping
+- Check each expected artifact's last modification date: `git log -1 --format=%aI -- <path>`
+- An artifact is **stale** if its last modification predates the plan's creation date AND the skill that owns it was dispatched at least once during the plan
+- Severity: warning (confidence 70+). Plan-relative staleness carries causal evidence: a skill ran but its artifact didn't update.
+- Artifacts that a skill reads but does not produce are not staleness candidates for that skill
+
+**Without plan context** (no PLAN.md, or PLAN.md has no `Created` date):
+
+- Fall back to PROGRESS.md recency: an artifact is potentially stale if it was not modified since the most recent PROGRESS.md cycle entry date
+- If PROGRESS.md has no entries (fresh project), no staleness check applies
+- Severity: info (confidence 50-60). The fallback is advisory, not authoritative, because there is no dispatched-skill relationship to confirm expected updates
+- This fallback surfaces artifacts that may need attention but should not drive strong findings
+
+**Handling**: stale artifact findings are reported like any other dimension finding but noted as context for the next plan cycle, not as blocking errors. Include which skill was expected to update the artifact and when the artifact was last modified.
 
 ---
 
