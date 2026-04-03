@@ -14,10 +14,11 @@ skills/<name>/references/            # Supplementary docs, templates, schemas
 skills/<name>/scripts/               # Python helpers (stdlib only, no pip deps)
 skills/<name>/.claude-plugin/plugin.json  # Per-skill marketplace plugin manifest
 references/ecosystem-spec.md         # Shared primitives spec (all skills must align)
-scripts/validate_ecosystem.py        # Ecosystem linter (pre-commit hook)
+scripts/validate_ecosystem.py        # Ecosystem linter
 scripts/eval_skills.py               # Tier 2 eval runner (smoke-tests skills via claude -p)
-tests/                               # pytest suite (linter, eval runner, skill scripts)
-.githooks/pre-commit                 # Git hook running the linter
+hooks/hooks.json                     # PostToolUse hook registry
+hooks/validate_artifact.py           # Artifact write validation (replaces .githooks/pre-commit)
+tests/                               # pytest suite (linter, eval runner, skill scripts, hooks)
 registry.json                        # Skill index with versions and tags
 .claude-plugin/marketplace.json      # Plugin marketplace manifest
 ```
@@ -60,11 +61,15 @@ python3 scripts/eval_skills.py --parallel 3        # test all skills, 3 at a tim
 
 ## Ecosystem linter
 
-A pre-commit hook runs the linter on any commit touching `skills/*/SKILL.md` or `references/ecosystem-spec.md`. Enable with:
+The PostToolUse hook (`hooks/validate_artifact.py`) validates artifact writes in real time. It runs automatically when Claude edits or writes files, routing to the appropriate validator:
+- Operational artifacts (`.agentera/*.md`, root artifacts): structural validation (required headings, markdown well-formedness, token budgets)
+- Skill definitions (`skills/*/SKILL.md`): ecosystem alignment checks via `scripts/validate_ecosystem.py` and context freshness via `scripts/generate_ecosystem_context.py --check`
+- Ecosystem spec (`references/ecosystem-spec.md`): context freshness check
+
+The linter can also be run manually from the repo root:
 ```bash
-git config core.hooksPath .githooks
+python3 scripts/validate_ecosystem.py
 ```
-The linter blocks commits with alignment errors and warns on advisory issues.
 
 ## Key conventions
 

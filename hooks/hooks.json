@@ -1,5 +1,5 @@
 {
-  "description": "agentera ecosystem hooks: session context preloading, session persistence, and tool-use validation",
+  "description": "agentera ecosystem hooks: session context preloading, session persistence, and artifact validation",
   "hooks": {
     "SessionStart": [
       {
@@ -17,6 +17,17 @@
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/session_stop.py"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/validate_artifact.py"
           }
         ]
       }
