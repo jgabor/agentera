@@ -21,7 +21,7 @@ Four files, bootstrapped if absent. VISION.md, TODO.md, and CHANGELOG.md at proj
 | File | Purpose | Bootstrap |
 |------|---------|-----------|
 | `VISION.md` | North star. Direction, principles, aspirations. An evergreen constitution. | Via inline brainstorm session with the user (see below). |
-| `TODO.md` | Tech debt, bugs, discrepancies. Things that need fixing. | `# TODO\n\n## ⇶ Critical\n\n## ⇉ Degraded\n\n## ⇢ Annoying\n\n## Resolved\n` |
+| `TODO.md` | Tech debt, bugs, discrepancies. Things that need fixing. | `# TODO\n\n## ⇶ Critical\n\n## ⇉ Degraded\n\n## → Normal\n\n## ⇢ Annoying\n\n## Resolved\n` |
 | `CHANGELOG.md` | Public change history. Version-level summaries for contributors. | `# Changelog\n\n## [Unreleased]\n` |
 | `PROGRESS.md` | Operational cycle log. What happened each cycle. | `# Progress\n\n` then the first cycle entry. |
 

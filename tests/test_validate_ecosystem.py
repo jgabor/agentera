@@ -254,7 +254,7 @@ description: Autonomous development loops
 | File | Purpose |
 |------|---------|
 | `VISION.md` | North Star direction, Who It's For personas, Principles, Direction, Identity |
-| `TODO.md` | Critical, Degraded, Annoying, Resolved severity buckets |
+| `TODO.md` | Critical, Degraded, Normal, Annoying, Resolved severity buckets |
 | `CHANGELOG.md` | Unreleased, Added, Changed, Fixed sections |
 | `PROGRESS.md` | Cycle log: What, Commit, Inspiration, Discovered, Next |
 

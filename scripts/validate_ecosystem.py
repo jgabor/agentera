@@ -92,7 +92,7 @@ ARTIFACT_CONTRACTS: dict[str, tuple[list[str], list[str]]] = {
     ),
     "TODO.md": (
         ["realisera", "inspektera"],
-        ["Critical", "Degraded", "Annoying", "Resolved"],
+        ["Critical", "Degraded", "Normal", "Annoying", "Resolved"],
     ),
     "CHANGELOG.md": (
         ["realisera"],
@@ -349,7 +349,7 @@ def check_severity_levels(skill: str, text: str, r: Results) -> None:
     # e.g. "- **Info** — minor (cosmetic)" where the pattern is
     # **canonical** — non-canonical
     mapping_pattern = re.compile(
-        rf"\*\*(?:critical|warning|info|degraded|annoying)\*\*\s*[—–]\s*({non_canonical_re})\b",
+        rf"\*\*(?:critical|warning|info|degraded|normal|annoying)\*\*\s*[—–]\s*({non_canonical_re})\b",
         re.IGNORECASE,
     )
     for m in mapping_pattern.finditer(text):
