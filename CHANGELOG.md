@@ -2,20 +2,24 @@
 
 ## [Unreleased]
 
+## [1.6.0] · 2026-04-03
+
 ### Added
+- Claude Code hooks infrastructure: SessionStart context preload, Stop session bookmarks, PostToolUse artifact validation (hooks/hooks.json, hooks/session_start.py, hooks/session_stop.py, hooks/validate_artifact.py, hooks/common.py)
+- SESSION.md: 12th ecosystem artifact for session-to-session continuity (Decision 23)
+- Inspektera security hygiene dimension: 9th audit dimension with regex-based checks for hardcoded secrets, dangerous function calls, and injection patterns
 - Selective ecosystem context loading: per-skill generated context files from ecosystem-spec.md eliminate semantic drift by construction
 - Generation script (scripts/generate_ecosystem_context.py) with --check and --skill modes
 - spec_sections frontmatter field in all 12 SKILL.md files declaring ecosystem-spec dependencies
 - Ecosystem context read instruction in all 12 SKILL.md workflows
 - 3 new linter checks (spec-sections-declared, context-file-exists, context-file-current) bringing total to 16
-- Pre-commit hook context freshness gating before linter
-- 18 tests for the generation script (160 total across 9 files)
 - Staleness detection convention (ecosystem-spec Section 18): skill-to-expected-artifact mapping, plan-relative detection rule, and PROGRESS.md recency fallback
 - Artifact freshness audit dimension in inspektera: plan-relative staleness with PROGRESS.md recency fallback
-- 171-test pytest suite covering linter checks, eval runner, and skill scripts across 7 test files
 - Test proportionality convention in ecosystem-spec Section 16 and Decision 21: default 1-pass + 1-fail per testable unit with edge case and override rules
+- 233-test pytest suite (53 new tests for hooks infrastructure, context generation, linter checks, eval runner, and skill scripts)
 
 ### Changed
+- PostToolUse hook replaces .githooks/pre-commit for artifact validation (Decision 24): one validation path via Claude Code hooks instead of git hooks
 - realisera verify step prioritizes functional verification over test suite
 - orkestrera dispatch template includes anti-bias constraint for implementation tasks
 - planera test acceptance criteria use negative cap framing ("must not exceed N tests per unit")
