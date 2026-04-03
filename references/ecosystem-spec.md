@@ -49,6 +49,7 @@ Used by all skills that file to TODO.md.
 |-------|-------|---------|
 | **critical** | ⇶ | Broken functionality, blocks progress |
 | **degraded** | ⇉ | Works but poorly: slow, fragile, ugly |
+| **normal** | → | Standard work: features, improvements, routine tasks |
 | **annoying** | ⇢ | Cosmetic, minor friction, style nit |
 
 ### Mapping
@@ -58,7 +59,7 @@ When filing audit findings to TODO.md, map as follows:
 | Finding severity | → | Issue severity |
 |-----------------|---|----------------|
 | critical | → | critical |
-| warning | → | degraded |
+| warning | → | degraded or normal |
 | info | → | annoying |
 
 ### TODO.md format convention
@@ -69,17 +70,22 @@ TODO.md uses a conventional checkbox format grouped by severity. Skills write it
 # TODO
 
 ## ⇶ Critical
-- [ ] description
+- [ ] ISS-N: [type] Description
 
 ## ⇉ Degraded
-- [ ] description
+- [ ] ISS-N: [type] Description
+
+## → Normal
+- [ ] ISS-N: [type] Description
 
 ## ⇢ Annoying
-- [ ] description
+- [ ] ISS-N: [type] Description
 
 ## Resolved
-- [x] ~~description~~ · resolved in commit hash
+- [x] ~~ISS-N: [type] Description~~ · resolved in commit hash
 ```
+
+Type tags use the conventional commit vocabulary: feat, fix, docs, refactor, chore, test, perf.
 
 The severity vocabulary (critical/degraded/annoying) is preserved as section headings with severity glyphs. Checkboxes indicate completion state. Resolved items move to the Resolved section with strikethrough and commit reference.
 
@@ -134,11 +140,11 @@ Three project-facing files at the project root; eight operational files in `.age
 | Artifact | Path | Producer | Consumers | Key structural elements |
 |----------|------|----------|-----------|------------------------|
 | VISION.md | VISION.md | visionera, realisera | realisera, planera, inspektera, dokumentera, visualisera, orkestrera | ## North Star, ## Who It's For, ## Principles, ## Direction, ## Identity |
-| TODO.md | TODO.md | realisera, inspektera | realisera, planera, orkestrera | ## ⇶ Critical, ## ⇉ Degraded, ## ⇢ Annoying, ## Resolved |
+| TODO.md | TODO.md | realisera, inspektera | realisera, planera, orkestrera | ## ⇶ Critical, ## ⇉ Degraded, ## → Normal, ## ⇢ Annoying, ## Resolved |
 | CHANGELOG.md | CHANGELOG.md | realisera | project contributors | ## [Unreleased], ### Added/Changed/Fixed |
 | DECISIONS.md | .agentera/DECISIONS.md | resonera | planera, realisera, inspektera, profilera, optimera, orkestrera | ## Decision N · date, **Question/Context/Alternatives/Choice/Reasoning/Confidence/Feeds into** |
 | PLAN.md | .agentera/PLAN.md | planera | realisera, inspektera, orkestrera | <!-- Level/Created/Status -->, ## Tasks with ### Task N, **Status/Depends on/Acceptance** |
-| PROGRESS.md | .agentera/PROGRESS.md | realisera | planera, inspektera, dokumentera, visionera, orkestrera | ## Cycle N · date, **What/Commit/Inspiration/Discovered/Next/Context** |
+| PROGRESS.md | .agentera/PROGRESS.md | realisera | planera, inspektera, dokumentera, visionera, orkestrera | ## Cycle N · date, **Phase/What/Commit/Inspiration/Discovered/Next/Context** |
 | HEALTH.md | .agentera/HEALTH.md | inspektera | realisera, planera, orkestrera | ## Audit N · date, **Dimensions/Findings/Overall/Grades**, per-dimension sections |
 | OBJECTIVE.md | .agentera/OBJECTIVE.md | optimera | optimera | ## Metric, ## Target, ## Baseline, ## Constraints |
 | EXPERIMENTS.md | .agentera/EXPERIMENTS.md | optimera | optimera | ## Experiment N · date, **Hypothesis/Method/Result/Conclusion** |
@@ -453,12 +459,13 @@ Six token families express status, urgency, certainty, and direction.
 | open | □ | U+25A1 |
 | blocked | ▨ | U+25A8 |
 
-**Severity** (issue urgency, rightward arrows, more arrows = more serious):
+**Severity** (issue priority, rightward arrows, more arrows = higher priority):
 
 | Level | Glyph | Code |
 |-------|-------|------|
 | critical | ⇶ | U+21F6 |
 | degraded | ⇉ | U+21C9 |
+| normal | → | U+2192 |
 | annoying | ⇢ | U+21E2 |
 
 **Confidence** (decision certainty, box-drawing line weight):
@@ -569,7 +576,7 @@ Rules:
 | Artifact | Token families used |
 |----------|---------------------|
 | PLAN.md | Status (■/▣/□/▨) for task states |
-| TODO.md | Severity (⇶/⇉/⇢) in section headings, Status (□/■) via checkboxes |
+| TODO.md | Severity (⇶/⇉/→/⇢) in section headings, Status (□/■) via checkboxes |
 | DECISIONS.md | Confidence (━/─/┄) alongside confidence labels |
 | HEALTH.md | Trends (⮉/⮋) for trajectory, severity for findings |
 | PROGRESS.md | Status (■) for cycle completion markers |
@@ -696,3 +703,48 @@ Plans can specify a different proportionality target by including an explicit ra
 | orkestrera | Includes anti-bias constraint in dispatch prompts for implementation tasks. Proportionality targets reach subagents through the plan's acceptance criteria, not through a separate orkestrera-level mechanism |
 
 **Linter check**: None. This convention governs plan content and audit evaluation, not SKILL.md structure.
+
+## 17. Phase Tracking
+
+Every realisera cycle operates in one of five phases. Phases map the ecosystem's skills to a lifecycle model, making it possible for consuming skills to reason about what kind of work a cycle performed and whether phase transitions follow a coherent sequence.
+
+### Phases
+
+| Phase | Skills | Purpose |
+|-------|--------|---------|
+| **envision** | visionera | Define or refine the project's north star |
+| **deliberate** | resonera | Reason through decisions before committing to a direction |
+| **plan** | planera | Structure work into tasks with dependencies and acceptance criteria |
+| **build** | realisera, optimera, dokumentera, visualisera | Implement, optimize, document, or design |
+| **audit** | inspektera | Evaluate structural health and alignment |
+
+### Transitions
+
+Phases have valid successors. A cycle's phase is determined by the primary skill performing work, not by the phase of the previous cycle (phases are not a strict pipeline).
+
+| From | Valid successors |
+|------|-----------------|
+| envision | deliberate, plan, build |
+| deliberate | plan, build, envision |
+| plan | build, deliberate |
+| build | build, audit, plan |
+| audit | build, plan, deliberate, envision |
+
+**Terminal states**: audit and build are terminal in the sense that a project can remain in either phase indefinitely (continuous building, periodic auditing). envision, deliberate, and plan are transitional: they produce artifacts consumed by downstream phases.
+
+**Self-transitions**: only build allows self-transition (consecutive build cycles are the normal case). Other phases produce a discrete output (a vision, a decision, a plan) and transition out.
+
+### PROGRESS.md phase field
+
+Each cycle entry in PROGRESS.md includes a **Phase** field immediately after the cycle heading. The value is one of the five phase names: `envision`, `deliberate`, `plan`, `build`, `audit`.
+
+```markdown
+■ ## Cycle N · YYYY-MM-DD HH:MM
+
+**Phase**: build
+**What**: one-line summary of what shipped
+```
+
+Consuming skills use the phase field for trend analysis (e.g., ratio of build to audit cycles, whether deliberation precedes major architectural changes).
+
+**Linter check**: None. Phase tracking is defined here for producing and consuming skills. SKILL.md integration is handled per-skill, not by the ecosystem linter.
