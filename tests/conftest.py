@@ -108,3 +108,12 @@ def generate_ecosystem_context():
         "generate_ecosystem_context",
         REPO_ROOT / "scripts" / "generate_ecosystem_context.py",
     )
+
+
+@pytest.fixture(scope="session")
+def session_start():
+    """Load hooks/session_start.py."""
+    return _load_module(
+        "session_start",
+        REPO_ROOT / "hooks" / "session_start.py",
+    )
