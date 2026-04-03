@@ -42,7 +42,7 @@ The ecosystem-spec gains a skill-to-expected-artifact mapping (derivable from Se
 
 ### Task 2: Add staleness check step to orkestrera
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN orkestrera SKILL.md WHEN a plan completes (all tasks done) THEN a staleness check runs before the new plan cycle
 ▸ GIVEN the staleness check WHEN comparing dispatched skills against their expected artifacts THEN artifacts not updated since plan start are flagged
