@@ -83,7 +83,7 @@ The linter gains one new check: realisera and orkestrera SKILL.md must reference
 ### Task 4: Linter check and tests
 
 **Depends on**: Task 2, Task 3
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN scripts/validate_ecosystem.py WHEN the new check function runs THEN it verifies realisera and orkestrera SKILL.md each reference Section 19 by name and include the `**Verified**` field in their format examples
 ▸ GIVEN both skills referencing Section 19 correctly WHEN the check runs THEN it reports a pass

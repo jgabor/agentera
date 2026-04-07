@@ -820,6 +820,54 @@ def check_context_file_current(
         )
 
 
+# Skills that must enforce ecosystem-spec Section 19 (Reality Verification Gate).
+REALITY_VERIFICATION_ENFORCERS = {"realisera", "orkestrera"}
+
+
+def check_reality_verification_gate(skill: str, text: str, r: Results) -> None:
+    """Check 17: Reality Verification Gate (spec section 19).
+
+    Realisera and orkestrera must reference ecosystem-spec Section 19 by
+    name and include the `**Verified**` field in their documented format.
+    Other skills pass unconditionally.
+    """
+    if skill not in REALITY_VERIFICATION_ENFORCERS:
+        r.ok(skill, "reality-verification-gate")
+        return
+
+    # Accept any of the explicit spec-anchored phrasings. Plain "Section 19"
+    # alone is not enough: require a qualifying prefix or the "Reality
+    # Verification Gate" descriptor to avoid false positives.
+    section_patterns = [
+        r"ecosystem context Section 19",
+        r"ecosystem-spec Section 19",
+        r"ecosystem-spec\.md Section 19",
+        r"Section 19[,:]?\s*Reality Verification Gate",
+    ]
+    has_section_ref = any(
+        re.search(pat, text, re.IGNORECASE) for pat in section_patterns
+    )
+
+    has_verified_field = "**Verified**" in text
+
+    errors: list[str] = []
+    if not has_section_ref:
+        errors.append(
+            f"{skill}/SKILL.md: missing reference to Section 19 "
+            "(Reality Verification Gate)"
+        )
+    if not has_verified_field:
+        errors.append(
+            f"{skill}/SKILL.md: missing `**Verified**` field in documented format"
+        )
+
+    if errors:
+        for detail in errors:
+            r.error(skill, "reality-verification-gate", detail)
+    else:
+        r.ok(skill, "reality-verification-gate")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -845,6 +893,7 @@ def validate_skill(path: Path, r: Results, *, spec_hash: str) -> None:
     check_spec_sections_declared(skill, text, r)
     check_context_file_exists(skill, text, r, skill_path=path)
     check_context_file_current(skill, text, r, skill_path=path, spec_hash=spec_hash)
+    check_reality_verification_gate(skill, text, r)
 
 
 def main() -> int:
