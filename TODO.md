@@ -2,8 +2,6 @@
 
 ## ⇶ Critical
 
-- [ ] ISS-36: [feat] Realisera and orkestrera lack a "verify against reality" gate before declaring a milestone complete. Evidence from lira (~/git/lira, Audit 6, 2026-04-07): two consecutive milestones — v0.20 (Cycle 16, unified Socratic brainstorm + post-hoc capture flow) and v0.21 (Cycle 17, orientation feature) — both shipped with critical UX bugs that one end-to-end binary run against the production database would have caught. v0.21 produced 115 unfiltered failed-workflow attention items on first invocation of `lira status`; v0.21 also shipped Rule 2 of orientation reading from a `health_audits` table that has zero production writers (only test fixtures). v0.20 shipped a user-facing interactive Socratic capture flow that has never been executed once in production — DB inspection confirms zero brainstorm sessions since v0.20 shipped, zero non-empty `captured_artifacts`, and the only `decisions` and `vision` rows are test seeds with literal `2026-01-01T00:00:00Z` timestamps. In both cycles, PROGRESS.md said "complete", green tests passed, and HEALTH.md grades were good — but neither cycle ran the binary against real data. The DTC pipeline (docs → tests → code) is structurally correct but missing an explicit reality-verification step. Proposed contract change: realisera and orkestrera SKILL.md must require, before marking any cycle complete, (a) executing the new feature's primary entrypoint against the project's real datastore (not an in-memory or fixture DB), (b) observing actual output, (c) confirming it matches the spec's claimed behavior, (d) for LLM-driven features, the run must use a real driver and reach at least one non-trivial milestone of the new flow, and (e) recording the run as evidence in PROGRESS.md. Tests passing is necessary but not sufficient. The verification gate is a precondition for closing a cycle, not an optional polish step. Surfaced by lira Audit 6 (2026-04-07) finding F13 — the methodology meta-finding behind lira F8, F9, F11, and F12.
-
 ## ⇉ Degraded
 - [ ] ISS-31: [test] Build test suite for the ecosystem. Test coverage: 160 proportional tests across 9 files covering all 16 linter check functions, eval runner pure functions, all 5 skill scripts, and the ecosystem context generation script (145c637, 8b4e389, bdfdcc9, 02a3e0d, 1f4c250, 9bc13b7, 2c74305). Remaining: CI gating deferred
 
@@ -12,6 +10,7 @@
 ## ⇢ Annoying
 
 ## Resolved
+- [x] ~~ISS-36: [feat] Realisera and orkestrera reality verification gate (Section 19)~~ · fixed in 1145e6d..4ac09f0 plus plan-level freshness checkpoint
 - [x] ~~ISS-35: [fix] Spec-to-skill semantic drift across 12 duplication points~~ · fixed in 2b208f9..7a8f1b0
 - [x] ~~ISS-34: [feat] Plan-relative staleness detection (Decision 22)~~ · fixed in cd519b0..7e3255b
 - [x] ~~ISS-19: [feat] Phase tracking spec~~ · spec delivered in 2caa9cb, SKILL.md enforcement dropped per Decision 22 (replaced by ISS-34)

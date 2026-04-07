@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+### Fixed
+
+## [1.7.0] · 2026-04-08
+
+### Added
+- Reality verification gate convention (ecosystem-spec Section 19): runtime-agnostic definition of the `**Verified**` PROGRESS.md cycle field with enumerated N/A allowlist (`docs-only`, `refactor-no-behavior-change`, `chore-dep-bump`, `chore-build-config`, `test-only`), project-archetype taxonomy mapping entrypoint forms (CLI tool, library/SDK, web service, skill repo, design system, data pipeline), optional `verification_budget` downgrade convention, and skill-to-gate mapping table
+- `**Verified**` field in PROGRESS.md cycle entry format: mandatory field recording observed output from running the primary entrypoint OR an N/A tag with one-line rationale
+- New linter check `check_reality_verification_gate` in scripts/validate_ecosystem.py (check 17): enforces that realisera and orkestrera SKILL.md each reference Section 19 and include the `**Verified**` field in their format examples; 3 tests (1 pass, 2 fails) bringing test suite from 233 to 236
+
+### Changed
+- realisera Step 6 extended with two named phases: Phase A structural verification (existing test/lint/build suite) and Phase B behavioral verification (run primary entrypoint against real project state). Phase B runs on realisera's main checkout post-merge, never inside a dispatched worktree
+- orkestrera Step 3 Evaluate extended with two enforcement surfaces: conductor-side presence check on PROGRESS.md `**Verified**` field (artifact read only, conductor safety rails preserved) and inspektera dispatch prompt evidence audit that checks whether recorded evidence corresponds to task acceptance criteria
+- orkestrera "Keeping the conductor lean" table now lists PROGRESS.md alongside PLAN.md and HEALTH.md in the conductor-reads column
+- version bump to 1.7.0 across 14 version_files paths (profilera on its own track bumped 2.5.0 to 2.6.0)
+
 ## [1.6.0] · 2026-04-03
 
 ### Added
