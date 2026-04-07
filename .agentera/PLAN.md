@@ -95,7 +95,7 @@ The linter gains one new check: realisera and orkestrera SKILL.md must reference
 ### Task 5: Version bump per DOCS.md convention
 
 **Depends on**: Task 1, Task 2, Task 3, Task 4
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all prior tasks complete and the plan's commits include `feat` work WHEN the version bump runs THEN every path listed in DOCS.md `version_files` is bumped per the semver policy (feat = minor)
 ▸ GIVEN profilera's separate version track WHEN the bump runs THEN profilera is bumped on its own track without downgrade
