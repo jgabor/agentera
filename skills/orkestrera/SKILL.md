@@ -140,7 +140,22 @@ Narration voice (riff, don't script):
 
 ### Step 3: Evaluate
 
-After the dispatched skill completes, spawn inspektera as a subagent to verify the work:
+Evaluation has two surfaces in sequence per ecosystem context Section 19, Reality Verification Gate: a conductor-side presence check that reads the latest PROGRESS.md cycle entry, then an inspektera dispatch whose prompt is extended with a Section 19 evidence-format audit. Both surfaces must run before the task can be resolved.
+
+**Surface 1: Presence check on PROGRESS.md**
+
+When the dispatched skill was realisera (or any skill that produces PROGRESS.md cycle entries), perform a cheap artifact read before dispatching inspektera:
+
+1. Read the latest entry in PROGRESS.md (respecting DOCS.md path resolution).
+2. Look for the `**Verified**` field in that entry.
+3. **Present and non-empty**: proceed to Surface 2 (the inspektera dispatch).
+4. **Missing or empty**: treat the task as a failed evaluation. Go straight into Step 4's FAIL branch (retry path) with "missing or empty `**Verified**` field in PROGRESS.md Cycle N" as the failure reason in the retry dispatch prompt. Do not dispatch inspektera for this surface; the presence check is itself the evaluation signal.
+
+This is an artifact read, not a source code read. Reading `.agentera/PROGRESS.md` is consistent with the conductor's existing artifact-read patterns (PLAN.md, HEALTH.md, DECISIONS.md). The "NEVER read implementation source code" safety rail is unaffected: PROGRESS.md is a cycle log, not source.
+
+**Surface 2: Inspektera dispatch with evidence audit**
+
+Once the presence check passes, spawn inspektera as a subagent to verify the work. The dispatch prompt below extends the base evaluator prompt with a Section 19 "Verification evidence audit" block that instructs inspektera to check whether the recorded `**Verified**` content actually substantiates the acceptance criteria (content quality, not just presence).
 
 ```
 You are evaluating a completed task for [project].
@@ -156,12 +171,22 @@ You are evaluating a completed task for [project].
 - Check for unintended side effects from the implementation.
 - Verify the project's test/build suite still passes.
 
+## Verification evidence audit (per ecosystem-spec Section 19)
+- Read the `**Verified**` field value from the latest PROGRESS.md cycle entry for this task.
+- Compare the recorded evidence to the task's acceptance criteria above.
+- Report whether the evidence substantiates the criteria or is merely trivially populated (e.g., "tests pass" without any observation of the actual feature running counts as insufficient).
+- If the field is `N/A: <tag>`, confirm the tag is drawn from the Section 19 allowlist (`docs-only`, `refactor-no-behavior-change`, `chore-dep-bump`, `chore-build-config`, `test-only`) AND that the tag actually fits the nature of the work.
+- If the field is a free-form N/A rationale, confirm it is at least 8 words long AND actually explains why the change has no observable behavior.
+- Flag the task as FAIL on the evidence audit if the recorded `**Verified**` content does not substantiate the acceptance criteria.
+
 ## Output format
 For each acceptance criterion, report:
 - PASS or FAIL
 - Evidence (what you checked, what you found)
 
-Then give an overall verdict: PASS (all criteria met) or FAIL (any criterion failed).
+Then report the verification evidence audit outcome (PASS or FAIL with reasoning).
+
+Then give an overall verdict: PASS (all criteria met and evidence audit passed) or FAIL (any criterion failed or evidence audit failed).
 ```
 
 Wait for the inspektera verdict.
@@ -221,7 +246,7 @@ The conductor's context window must stay lean. Every expensive operation happens
 
 | The conductor does | The conductor does NOT do |
 |-------------------|--------------------------|
-| Read artifact files (PLAN.md, HEALTH.md, etc.) | Read implementation source code |
+| Read artifact files (PLAN.md, HEALTH.md, PROGRESS.md, etc.) | Read implementation source code |
 | Dispatch skills as subagents | Implement features or fixes |
 | Receive task-notification summaries | Run tests, linters, or builds |
 | Update PLAN.md task statuses | Write to PROGRESS.md or CHANGELOG.md |
@@ -236,7 +261,7 @@ If the conductor finds itself reading source code, running commands, or making i
 
 <critical>
 
-- NEVER read implementation source code. The conductor dispatches; it does not implement.
+- NEVER read implementation source code. The conductor dispatches; it does not implement. Note: artifact files (PLAN.md, HEALTH.md, DECISIONS.md, PROGRESS.md, etc.) are not source code; they are cycle logs and state records. Reading artifacts is expected and required, including the PROGRESS.md presence check in Step 3. The rail specifically forbids reading implementation files (the code under `.go`, `.py`, `.ts`, etc.).
 - NEVER run tests, builds, linters, or any project commands directly. Dispatched skills handle all verification.
 - NEVER modify VISION.md. The conductor reads direction; it does not set it.
 - NEVER dispatch a skill without an active PLAN.md task justifying it (except during bootstrap in Step 0).

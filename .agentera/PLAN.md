@@ -59,7 +59,7 @@ The linter gains one new check: realisera and orkestrera SKILL.md must reference
 ### Task 2: Realisera Step 6 verification extension and PROGRESS format
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN realisera Step 6 WHEN a cycle reaches verification THEN the cycle runs the existing test/lint/build suite AND observes the new behavior by running the project's primary entrypoint against real project state AND records the observation as a `**Verified**` field in the new PROGRESS.md cycle entry
 ▸ GIVEN a cycle whose work has no runnable behavior change WHEN Step 6 runs THEN the `**Verified**` field is populated with `N/A: <tag>` using one of the enumerated allowlist tags from Section 19, or with a free-form rationale ≥ 8 words
@@ -71,7 +71,7 @@ The linter gains one new check: realisera and orkestrera SKILL.md must reference
 ### Task 3: Orkestrera Step 3 evaluation gate
 
 **Depends on**: Task 1, Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN orkestrera Step 3 Evaluate WHEN a task's dispatched skill was realisera THEN the conductor reads the latest PROGRESS.md cycle entry and confirms the `**Verified**` field is present and non-empty (artifact read only, no source code read)
 ▸ GIVEN a `**Verified**` field that is missing or empty WHEN the conductor checks THEN the conductor flags the task as failed and retries via the existing retry path
