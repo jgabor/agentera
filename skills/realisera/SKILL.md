@@ -174,7 +174,18 @@ Before proceeding: in your response, list the 3-5 facts from VISION.md, PROGRESS
 
 Also read the prior cycle's Context block from PROGRESS.md. It captures what the last cycle intended, what was uncertain, and what scope it expected to touch. Use this for cross-cycle continuity.
 
-**Exit-early guard (plan-driven mode only)**: If PLAN.md exists and all tasks are `■ complete` or `skipped`, and no new tasks have been added, archive the plan and report exit signal `complete: plan finished`. Do not proceed to Step 2. This guard does NOT apply in vision-driven mode because realisera always has work when reasoning from the gap between vision and codebase.
+**Exit-early guard (plan-driven mode only)**: If PLAN.md exists and all tasks are `■ complete` or `skipped`, and no new tasks have been added, perform a **plan-completion sweep** before archiving. This guard does NOT apply in vision-driven mode because realisera always has work when reasoning from the gap between vision and codebase.
+
+The plan-completion sweep closes the structural freshness gap that existed when the guard simply archived without running Step 8. Sweep checklist:
+
+1. **PROGRESS.md aggregate cycle entry**: append a cycle entry whose **What** field summarizes the entire plan's work (not just the last task), whose **Commits** field lists the plan's commits in order (use `git log` since the plan's `Created` date), whose **Discovered** field captures any cross-task surprises from `## Surprises`, and whose **Next** field states the next milestone or vision-driven direction. Apply the standard PROGRESS.md compaction thresholds.
+2. **CHANGELOG.md plan-level entries**: verify the `## [Unreleased]` section has at least one Added/Changed/Fixed line covering each completed task's user-facing impact. If entries are missing, append them based on the task titles and acceptance criteria (one short line per task, not commit messages verbatim). If the plan included a version bump task, promote `[Unreleased]` to a versioned heading with today's date.
+3. **TODO.md milestone advance**: mark each plan task as a Resolved entry (referencing the commits), and advance the active milestone to the next planned version. If this was the last planned version, remove the active-milestone line and let realisera resume vision-driven work.
+4. **HEALTH.md cross-reference**: if the plan resolved any prior HEALTH.md findings, mention them in the new PROGRESS.md cycle entry's **Discovered** field so the next inspektera audit can mark them resolved.
+
+If the plan contains a "Plan-level freshness checkpoint" task (per the planera convention), that task's acceptance criteria are the authoritative contract — verify each one is met. If the plan was created before the checkpoint convention landed and has no such task, perform the sweep on a best-effort basis: warn (don't fail) on missing entries, append them where possible, and note the gap in the cycle entry so future audits see it.
+
+Only after the sweep completes does the guard archive PLAN.md to `.agentera/archive/PLAN-{date}.md` and report exit signal `complete: plan finished`. Do not proceed to Step 2.
 
 ### Step 2: Pick work
 
