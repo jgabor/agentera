@@ -38,6 +38,21 @@
 - GIVEN [context] WHEN [action] THEN [expected outcome]
 - GIVEN [context] WHEN [action] THEN [expected outcome]
 
+<!-- The final task on every full plan must be a freshness checkpoint.
+     Keep it last (depends on all prior tasks) so it runs after all
+     feature/fix work and before the plan is archived. Realisera's
+     exit-early guard relies on this task being present to perform the
+     plan-completion sweep. -->
+
+### Task N: Plan-level freshness checkpoint
+**Depends on**: all prior tasks
+**Status**: □ pending | ■ complete | skipped
+**Acceptance**:
+- GIVEN this plan's user-facing work has shipped WHEN CHANGELOG.md is checked THEN it has Added/Changed/Fixed entries under [Unreleased] covering each task's user-visible impact (one short line per task, not commit messages verbatim)
+- GIVEN this plan is otherwise complete WHEN PROGRESS.md is checked THEN it has at least one cycle entry whose **What** field summarizes the plan and whose **Commits** field lists the commits this plan produced
+- GIVEN this plan is otherwise complete WHEN TODO.md is checked THEN every task has a corresponding Resolved entry and the active milestone has been advanced to the next planned version (or removed if this was the final plan)
+- GIVEN this plan resolved any prior HEALTH.md findings WHEN HEALTH.md is read THEN those findings are noted as resolved in the next audit entry (or, if no audit has run since, the resolution is at least mentioned in the PROGRESS.md cycle entry's **Discovered** field)
+
 ## Overall Acceptance
 - GIVEN [context] WHEN [action] THEN [expected outcome]
 - GIVEN [context] WHEN [action] THEN [expected outcome]
