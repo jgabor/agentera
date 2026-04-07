@@ -75,9 +75,12 @@ The vision must be ambitious enough to sustain months of development, personas c
 **Commit**: <hash> <message>
 **Inspiration**: what external source informed the approach (if any)
 **Discovered**: issues or ideas found (also logged in TODO.md)
+**Verified**: observed output from running the primary entrypoint against real project state, OR `N/A: <tag>` from the Section 19 allowlist, OR a free-form rationale of at least 8 words explaining why the change has no observable behavior
 **Next**: what seems most valuable to work on next
 **Context**: intent · constraints · unknowns · scope
 ```
+
+The `**Verified**` field is mandatory for every cycle entry per ecosystem context Section 19, Reality Verification Gate. See Step 6 for how it is populated.
 
 The "Next" field from the previous cycle is a suggestion, not a mandate. Re-evaluate fresh.
 
@@ -183,7 +186,7 @@ The plan-completion sweep closes the structural freshness gap that existed when 
 3. **TODO.md milestone advance**: mark each plan task as a Resolved entry (referencing the commits), and advance the active milestone to the next planned version. If this was the last planned version, remove the active-milestone line and let realisera resume vision-driven work.
 4. **HEALTH.md cross-reference**: if the plan resolved any prior HEALTH.md findings, mention them in the new PROGRESS.md cycle entry's **Discovered** field so the next inspektera audit can mark them resolved.
 
-If the plan contains a "Plan-level freshness checkpoint" task (per the planera convention), that task's acceptance criteria are the authoritative contract — verify each one is met. If the plan was created before the checkpoint convention landed and has no such task, perform the sweep on a best-effort basis: warn (don't fail) on missing entries, append them where possible, and note the gap in the cycle entry so future audits see it.
+If the plan contains a "Plan-level freshness checkpoint" task (per the planera convention), that task's acceptance criteria are the authoritative contract: verify each one is met. If the plan was created before the checkpoint convention landed and has no such task, perform the sweep on a best-effort basis: warn (don't fail) on missing entries, append them where possible, and note the gap in the cycle entry so future audits see it.
 
 Only after the sweep completes does the guard archive PLAN.md to `.agentera/archive/PLAN-{date}.md` and report exit signal `complete: plan finished`. Do not proceed to Step 2.
 
@@ -252,7 +255,11 @@ For non-trivial design decisions, spawn Opus for design first, then Sonnet for i
 
 ### Step 6: Verify
 
-After implementation completes:
+Verification has two phases per ecosystem context Section 19, Reality Verification Gate: structural (tests, lint, build are green) and behavioral (the new feature was actually observed running against real project state). Both phases must pass before the cycle can advance to commit. Passing tests alone are necessary but not sufficient evidence that the work is real.
+
+**Dispatch boundary**: If Step 5 dispatched a sub-agent to implement the work in a worktree, verification runs in realisera's main checkout AFTER the worktree has been merged, not inside the worktree. The sub-agent implements; realisera verifies post-merge. Dispatched agents cannot self-attest verification.
+
+**Phase A, structural verification**: After implementation completes:
 
 1. **Check the diff**: does it match the plan? Any unplanned changes?
 2. **Functional check**: does the changed behavior actually work end-to-end?
@@ -266,7 +273,30 @@ After implementation completes:
      Rust: `cargo test && cargo clippy`
    - Confirms both new behavior and existing tests still pass.
 
-If verification fails:
+**Phase B, behavioral verification (Reality Verification Gate)**: Once structural verification is green, observe the new behavior by running the project's primary entrypoint against real project state. The primary entrypoint depends on the project archetype per ecosystem context Section 19:
+
+- CLI tool: invoke the binary with realistic arguments
+- Library / SDK: run a smoke driver that exercises the public API touched by the change
+- Web service: send a request to a production-shaped endpoint
+- Skill repo: dispatch the skill via the runtime's eval mechanism (for agentera, `python3 scripts/eval_skills.py --skill <name>`)
+- Design system: render a representative component against real design tokens
+- Data pipeline: run the pipeline against a real input sample (not synthetic fixtures)
+
+Projects whose archetype is not listed above carry a `verification_entrypoint` key in `.agentera/DOCS.md`. If a `verification_budget` key is set and the budget is exhausted, downgrade to `**Verified**: partial (budget hit)` with a note capturing what was attempted, what was observed, and which portions remain unverified.
+
+Capture the observation: a short transcript (stdout/stderr snippets), exit code, or summary of what happened. The transcript should be concrete enough that a reader can tell whether the behavior actually happened. This capture populates the `**Verified**` field in the PROGRESS.md cycle entry written in Step 8.
+
+**N/A path**: If the cycle has no runnable behavior change, populate `**Verified**` with `N/A: <tag>` using exactly one of the five enumerated allowlist tags from Section 19:
+
+- `docs-only`: the change touched only documentation with no code path affected
+- `refactor-no-behavior-change`: the change restructured code but preserved observable behavior exactly
+- `chore-dep-bump`: the change updated a dependency version without modifying code that calls it differently
+- `chore-build-config`: the change modified build tooling, linter configuration, or packaging metadata
+- `test-only`: the change added or adjusted tests without modifying the code under test
+
+Any N/A justification outside the allowlist must be a free-form prose rationale of at least 8 words explaining specifically why the change has no observable behavior. Shorter rationales fail the gate. A cycle that bundles runnable work with an N/A-tagged change still requires observed output for the runnable portion; the tag covers only the non-runnable slice.
+
+If verification fails (structural or behavioral):
 - Diagnose the root cause (never retry blindly)
 - Spawn a fix agent with the diagnosis
 - Re-verify after fix
@@ -292,7 +322,7 @@ If the current task is a version bump (e.g., a PLAN.md task labeled "Version bum
 
 - **TODO.md**: add newly discovered issues, mark resolved ones. Classify each entry by severity per ecosystem context severity levels. When updating existing entries (e.g., marking resolved), use the Edit tool on the specific entry rather than rewriting the file.
   Output constraint per ecosystem context token budgets.
-- **.agentera/PROGRESS.md**: append the cycle entry (number, timestamp, what shipped, commit hash, inspiration, discoveries, next suggestion, context block (intent, constraints, unknowns, scope)). Write it like a colleague's quick debrief: what happened, what surprised you, what's next. Not a form submission.
+- **.agentera/PROGRESS.md**: append the cycle entry (number, timestamp, what shipped, commit hash, inspiration, discoveries, verified observation from Step 6, next suggestion, context block (intent, constraints, unknowns, scope)). The `**Verified**` field is mandatory per ecosystem context Section 19; it carries either Step 6's observed output from the primary entrypoint, an allowlisted `N/A: <tag>`, or a free-form rationale of at least 8 words. Write the entry like a colleague's quick debrief: what happened, what surprised you, what's next. Not a form submission.
   Output constraint per ecosystem context token budgets.
 - **CHANGELOG.md**: append a one-line entry under `## [Unreleased]` in the appropriate subsection: `feat` → Added, `refactor/chore` → Changed, `fix` → Fixed. Concise description, not the commit message verbatim.
 
