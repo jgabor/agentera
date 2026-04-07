@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 81 · 2026-04-07
+
+**Phase**: build
+**What**: Added Section 19 (Reality Verification Gate) to ecosystem-spec.md. Defines the `**Verified**` field for PROGRESS.md cycle entries with three shapes: observed output, allowlisted N/A tag (5 tags), or free-form rationale ≥ 8 words. Project-archetype taxonomy maps CLI tool, library/SDK, web service, skill repo, design system, and data pipeline to canonical entrypoint forms. Optional `verification_budget` convention allows partial-verification downgrades. Skill-to-gate mapping lists realisera as primary enforcer (cycle close) and orkestrera as secondary enforcer (task evaluation). Runtime-agnostic per Task 1 constraint. Frontmatter updates in realisera and orkestrera SKILL.md add section 19 to `spec_sections`. All 12 per-skill ecosystem-context.md files regenerated; realisera and orkestrera now carry Section 19 text.
+**Commit**: pending
+**Inspiration**: ISS-36 (lira Audit 6 methodology finding), Section 18 format precedent (commit cd519b0)
+**Discovered**: Baseline linter reports 2 pre-existing em-dash errors in planera and realisera SKILL.md from commit 2a44b12, orthogonal to Task 1 scope; logged as surprise in PLAN.md for Task 2 pickup and a post-Task-5 planera sweep. The Task 1 AC example `**Verified**: partial (budget hit)` is written in Section 19 with parenthetical form instead of the em-dash the AC literal used, because Section 14 prohibits em-dashes in prose; the semantic (downgrade marker plus budget-hit rationale) is preserved.
+**Verified**: ran `python3 scripts/generate_ecosystem_context.py` and confirmed skills/realisera/references/ecosystem-context.md and skills/orkestrera/references/ecosystem-context.md now include Section 19 text. Also confirmed the freshly regenerated headers carry `<!-- sections: 1, 2, 3, 4, 5, 6, 11, 17, 18, 19 -->` and `<!-- sections: 3, 4, 5, 11, 18, 19 -->` respectively. Linter baseline unchanged (2 pre-existing errors, 0 new errors introduced by this cycle); pytest 233 passed. Early adoption of Section 19 convention for this cycle itself.
+**Next**: Task 2 (realisera Step 6 verification extension) and Task 3 (orkestrera Step 3 evaluation gate). Task 2 runs first because Task 3 depends on it. Task 2 should also fix the pre-existing em-dash in realisera line 186 while it is touching the file.
+**Context**: intent (codify reality verification convention in spec so it propagates to any runtime per ISS-36) · constraints (runtime-agnostic text, frontmatter-only touch on realisera/orkestrera, no body changes, linter 0 new errors) · unknowns (none) · scope (ecosystem-spec Section 19, realisera+orkestrera frontmatter, 12 regenerated context files, PLAN.md Task 1 completion, PROGRESS.md entry)
+
 ■ ## Cycle 80 · 2026-04-03
 
 **What**: Selective ecosystem context loading (ISS-35). Eliminated spec-to-skill semantic drift by generating per-skill context files from ecosystem-spec.md. Six tasks: generation script with --check/--skill modes, spec_sections frontmatter in all 12 SKILL.md files, 3 new linter checks (16 total) + pre-commit hook, full SKILL.md migration (ecosystem context references replace embedded values, all 6 drift patterns fixed), 18 tests for the generation script (160 total across 9 files), ISS-35 resolved.

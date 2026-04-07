@@ -1,7 +1,7 @@
 <!-- ecosystem-context: realisera -->
-<!-- source: references/ecosystem-spec.md (sha256: 6d0f7e8491aaaedf1c2dadccda1961f37a5e8a43b625304a3e3694481de93181) -->
-<!-- sections: 1, 2, 3, 4, 5, 6, 11, 17, 18 -->
-<!-- generated: 2026-04-03T15:42:03Z -->
+<!-- source: references/ecosystem-spec.md (sha256: 44ca44a52a9dc066da95a3898762e606d82e4aaa53dd4fe3b22f315eafecddff) -->
+<!-- sections: 1, 2, 3, 4, 5, 6, 11, 17, 18, 19 -->
+<!-- generated: 2026-04-07T22:11:18Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_ecosystem_context.py -->
 
@@ -446,3 +446,71 @@ When no active or recently completed plan exists (standalone skill invocation, a
 The fallback is advisory, not authoritative. It surfaces artifacts that may need attention but does not carry the same signal strength as plan-relative detection (where the dispatched-skill relationship provides causal evidence of staleness).
 
 **Linter check**: None. Staleness detection is a runtime convention consumed by orkestrera and inspektera, not a SKILL.md structural requirement.
+
+## 19. Reality Verification Gate
+
+Passing tests are necessary but not sufficient evidence that a cycle's work is real. A feature can be structurally correct (tests green, build clean, lint clean) and still be behaviorally broken against real project state: stale fixtures, mocked dependencies, or test doubles can hide regressions that only surface when the primary entrypoint runs against production-shaped inputs. The Reality Verification Gate closes this gap by requiring every cycle to observe its own behavior before declaring completion.
+
+This gate is orthogonal to Section 18 Staleness Detection. Section 18 asks: did the dispatched skill update the artifacts it owns? Section 19 asks: did the cycle's new behavior actually run against real state? The two gates enforce different invariants and must both hold for a cycle to be considered verified.
+
+### Evidence format
+
+Every cycle entry in PROGRESS.md carries a `**Verified**` field alongside the existing Phase/What/Commit/Inspiration/Discovered/Next/Context fields. The field is mandatory: no cycle is considered closed without it. The field accepts exactly one of three shapes:
+
+| Shape | Content |
+|-------|---------|
+| Observed output | A short transcript (or summary) of the primary entrypoint running against real project state, with the observable result recorded verbatim. The transcript should be concrete enough that a reader can tell whether the behavior actually happened |
+| Allowlisted N/A tag | `N/A: <tag>` where `<tag>` is drawn from the enumerated allowlist below |
+| Free-form N/A rationale | A prose sentence of at least 8 words explaining specifically why the change has no observable behavior. Shorter rationales fail the gate |
+
+Observed output is always preferred when the change is runnable. The N/A paths exist only for genuinely unrunnable work; they are not an escape hatch for "I didn't feel like running it."
+
+### N/A allowlist
+
+Exactly five tags are recognized. Any other shorthand must fall through to the free-form rationale path.
+
+| Tag | Meaning |
+|-----|---------|
+| `docs-only` | The change touched only documentation files (README, spec, skill instructions, templates) with no code path affected |
+| `refactor-no-behavior-change` | The change restructured code but preserved observable behavior exactly; the existing test suite is the verification surface |
+| `chore-dep-bump` | The change updated a dependency version without modifying any project code that calls that dependency differently |
+| `chore-build-config` | The change modified build tooling, linter configuration, or packaging metadata without altering runtime behavior |
+| `test-only` | The change added or adjusted tests without modifying the code under test |
+
+A cycle that bundles runnable work with an N/A-tagged change still requires observed output for the runnable portion. The tag covers only the non-runnable slice.
+
+### Project-archetype taxonomy
+
+"Primary entrypoint" is defined per project archetype, not asserted per cycle. When a cycle touches multiple subsystems, the primary entrypoint is the one most closely tied to the change under verification.
+
+| Archetype | Canonical entrypoint form |
+|-----------|---------------------------|
+| CLI tool | Invoke the binary with realistic arguments that exercise the changed path, capturing stdout/stderr and exit code |
+| Library / SDK | Run a smoke driver (a short script or REPL session) that exercises the public API surface touched by the change |
+| Web service | Send a request to a production-shaped endpoint (local server with production configuration or a staging instance) and record the response |
+| Skill repo | Dispatch the skill via the runtime's eval mechanism against a representative prompt and capture the observed skill output |
+| Design system | Render a representative component against the real design tokens and visually inspect (screenshot or DOM snapshot) against the expected output |
+| Data pipeline | Run the pipeline against a real input sample (not synthetic fixtures) and record the observed output or side effects |
+
+Projects with an archetype not listed here document their canonical entrypoint form in `.agentera/DOCS.md` under a `verification_entrypoint` key. The taxonomy is extensible; the table above is the minimum coverage.
+
+### Optional verification budget
+
+Some cycles touch slow subsystems (full data pipeline runs, long-running integration scenarios) where a complete reality check exceeds a reasonable per-cycle time budget. Projects that need a cap set a `verification_budget` key in `.agentera/DOCS.md` specifying the maximum wall-clock time per cycle. When a cycle's verification step exceeds the configured budget, the cycle MAY downgrade to a partial verification rather than blocking indefinitely.
+
+Partial verifications record as `**Verified**: partial (budget hit)` followed by a short note capturing what was attempted, what was observed before the budget was hit, and which portions of the behavior remain unverified. Partial verifications are valid cycle closures but are visible to consuming skills as weaker signal: inspektera audits treat a string of partial verifications as a health finding requiring attention.
+
+Projects without a `verification_budget` key have no time cap. The default is: take as long as verification honestly requires.
+
+### Skill-to-gate mapping
+
+The gate is enforced independently by two skills; each holds a different phase and a different slice of the enforcement contract.
+
+| Skill | Role | Phase | What it enforces |
+|-------|------|-------|------------------|
+| realisera | Primary enforcer | Cycle close | Runs the primary entrypoint against real project state and writes the observed output into the cycle's `**Verified**` field. Blocks cycle completion if the field cannot be populated with observed output, an allowlisted tag, or a qualifying free-form rationale |
+| orkestrera | Secondary enforcer | Task evaluation | Reads the latest PROGRESS.md cycle entry for the dispatched task, confirms the `**Verified**` field is present and non-empty (artifact read only; no source code read), and extends its inspektera dispatch prompt to include the Section 19 evidence-format snippet so inspektera audits whether the recorded content corresponds to the task's acceptance criteria |
+
+Realisera holds the primary enforcement contract because it is the skill that actually produces cycle entries. Orkestrera holds a lighter presence-and-quality check because it reads artifacts but never touches code; the full content audit is delegated to inspektera via the dispatch prompt.
+
+**Linter check**: Deterministic. Realisera and orkestrera SKILL.md files must reference Section 19 by name and include the `**Verified**` field in any PROGRESS.md cycle format examples they carry.

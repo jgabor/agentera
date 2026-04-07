@@ -1,7 +1,7 @@
 <!-- ecosystem-context: inspirera -->
-<!-- source: references/ecosystem-spec.md (sha256: 6d0f7e8491aaaedf1c2dadccda1961f37a5e8a43b625304a3e3694481de93181) -->
+<!-- source: references/ecosystem-spec.md (sha256: 44ca44a52a9dc066da95a3898762e606d82e4aaa53dd4fe3b22f315eafecddff) -->
 <!-- sections: 2, 4, 5, 6, 12 -->
-<!-- generated: 2026-04-03T15:42:03Z -->
+<!-- generated: 2026-04-07T22:11:18Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_ecosystem_context.py -->
 
