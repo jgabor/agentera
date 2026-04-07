@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 84 · 2026-04-07
+
+**Phase**: build
+**What**: Added the `check_reality_verification_gate` linter check (check 17) to scripts/validate_ecosystem.py and registered it in the `validate_skill` driver. The check targets realisera and orkestrera only: each must reference ecosystem-spec Section 19 via one of four accepted phrasings ("ecosystem context Section 19", "ecosystem-spec Section 19", "ecosystem-spec.md Section 19", or "Section 19, Reality Verification Gate") AND include the literal `**Verified**` string in its body. Other skills pass unconditionally. Fail messages identify the offending skill by name and the missing piece (Section 19 reference or `**Verified**` field). Added a `TestCheckRealityVerificationGate` class in tests/test_validate_ecosystem.py with 3 tests per Decision 21 override: 1 pass (both skills reference Section 19) plus 2 fails (realisera missing, orkestrera missing) because the check has two subjects and a single fail test would leave the second skill unverified.
+**Commit**: pending
+**Inspiration**: existing check_em_dashes and check_decision_labels patterns for scope-limited checks; Task 4 override rationale in PLAN.md Constraints
+**Discovered**: None. The check landed cleanly without touching any other checks or the existing test fixtures. The REALITY_VERIFICATION_ENFORCERS module-level set mirrors the SCRIPT_PATTERN_CONSUMERS and AUTONOMOUS_LOOP_SKILLS conventions already in the file.
+**Verified**: Ran `python3 scripts/validate_ecosystem.py` BEFORE edits: 1 error (planera line 130 em-dash, pre-existing and out of scope), 0 warnings across 12 skills, baseline confirmed. Ran `python3 scripts/validate_ecosystem.py` AFTER edits: 1 error (same planera line 130 em-dash), 0 warnings, with the new check reporting `PASS realisera reality-verification-gate` and `PASS orkestrera reality-verification-gate` (and PASS for the other 10 skills on their early-return branch), confirming AC5 (0 new errors or warnings). Ran `python3 -m pytest tests/ -q` AFTER edits: 236 passed in 0.19s, up exactly +3 from the 233 baseline, confirming the new tests landed without breaking any existing tests. Ran the new test class specifically via `python3 -m pytest tests/test_validate_ecosystem.py::TestCheckRealityVerificationGate -v`: all 3 tests passed (test_both_skills_reference_section_19_passes, test_realisera_missing_section_19_errors, test_orkestrera_missing_section_19_errors). The fail tests assert that the error message identifies the offending skill (`realisera` or `orkestrera`) and mentions `Section 19`, substantiating that the fail case correctly bifurcates per the Task 4 override rationale.
+**Next**: Task 5 (version bump per DOCS.md convention). Depends on Tasks 1-4, all now complete.
+**Context**: intent (add linter enforcement that realisera and orkestrera reference Section 19 and document the `**Verified**` field per PLAN Task 4 AC1-AC5) · constraints (no changes to realisera/orkestrera/ecosystem-spec, do not fix planera em-dash, exactly 3 tests per override rationale, minimal touch on validate_ecosystem.py) · unknowns (none) · scope (scripts/validate_ecosystem.py new check function + registration at line 827 and line 850, tests/test_validate_ecosystem.py new TestCheckRealityVerificationGate class with 3 tests)
+
 ■ ## Cycle 83 · 2026-04-07
 
 **Phase**: build

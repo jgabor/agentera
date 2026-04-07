@@ -1289,3 +1289,122 @@ class TestCheckContextFileCurrent:
         )
         assert r.error_count == 0
         assert len(r.entries) == 0
+
+
+# ---------------------------------------------------------------------------
+# check_reality_verification_gate
+# ---------------------------------------------------------------------------
+
+
+SYNTHETIC_REALISERA_WITH_GATE = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+Cycle verification follows ecosystem context Section 19, Reality Verification Gate.
+
+PROGRESS.md cycle format:
+- **Commit**: abc123
+- **Verified**: observed output from running the primary entrypoint
+- **Next**: ...
+"""
+
+SYNTHETIC_ORKESTRERA_WITH_GATE = """\
+---
+name: orkestrera
+description: Multi-cycle plan execution conductor
+---
+
+# ORKESTRERA
+
+Evaluation reads the latest PROGRESS.md cycle entry and confirms the
+`**Verified**` field per ecosystem-spec Section 19 (Reality Verification Gate).
+"""
+
+SYNTHETIC_REALISERA_MISSING_GATE = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+Cycle verification runs tests, lint, and build. The PROGRESS.md entry
+records **Verified**: tests pass, but no spec reference is present.
+"""
+
+SYNTHETIC_ORKESTRERA_MISSING_GATE = """\
+---
+name: orkestrera
+description: Multi-cycle plan execution conductor
+---
+
+# ORKESTRERA
+
+Evaluation reads the latest PROGRESS.md cycle entry and confirms the
+`**Verified**` field is present and non-empty. No spec reference here.
+"""
+
+
+class TestCheckRealityVerificationGate:
+    """Check has two subjects (realisera, orkestrera); fail case bifurcates.
+
+    Proportionality override per Decision 21: 1 pass + 2 fails (one fail per
+    missing subject) so a single failing skill cannot mask the other.
+    """
+
+    def test_both_skills_reference_section_19_passes(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_reality_verification_gate(
+            "realisera", SYNTHETIC_REALISERA_WITH_GATE, r,
+        )
+        validate_ecosystem.check_reality_verification_gate(
+            "orkestrera", SYNTHETIC_ORKESTRERA_WITH_GATE, r,
+        )
+        assert r.error_count == 0
+        gate_entries = [
+            entry for entry in r.entries if entry[2] == "reality-verification-gate"
+        ]
+        assert len(gate_entries) == 2
+        assert all(level == "PASS" for level, *_ in gate_entries)
+
+    def test_realisera_missing_section_19_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_reality_verification_gate(
+            "realisera", SYNTHETIC_REALISERA_MISSING_GATE, r,
+        )
+        validate_ecosystem.check_reality_verification_gate(
+            "orkestrera", SYNTHETIC_ORKESTRERA_WITH_GATE, r,
+        )
+        assert r.error_count == 1
+        error_entries = [
+            entry for entry in r.entries
+            if entry[0] == "ERROR" and entry[2] == "reality-verification-gate"
+        ]
+        assert len(error_entries) == 1
+        level, offending_skill, check, detail = error_entries[0]
+        assert offending_skill == "realisera"
+        assert "realisera" in detail
+        assert "Section 19" in detail
+
+    def test_orkestrera_missing_section_19_errors(self, validate_ecosystem):
+        r = validate_ecosystem.Results()
+        validate_ecosystem.check_reality_verification_gate(
+            "realisera", SYNTHETIC_REALISERA_WITH_GATE, r,
+        )
+        validate_ecosystem.check_reality_verification_gate(
+            "orkestrera", SYNTHETIC_ORKESTRERA_MISSING_GATE, r,
+        )
+        assert r.error_count == 1
+        error_entries = [
+            entry for entry in r.entries
+            if entry[0] == "ERROR" and entry[2] == "reality-verification-gate"
+        ]
+        assert len(error_entries) == 1
+        level, offending_skill, check, detail = error_entries[0]
+        assert offending_skill == "orkestrera"
+        assert "orkestrera" in detail
+        assert "Section 19" in detail
