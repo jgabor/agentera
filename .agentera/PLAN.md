@@ -101,7 +101,7 @@ The key design choice is **data model, not path model**. The contract standardiz
 
 ### Task 4: OpenCode proof-of-concept adapter design
 **Depends on**: Task 1, Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN a new document references/adapters/opencode.md WHEN read THEN it maps each of the six host capabilities to OpenCode's specific mechanisms (skill discovery: opencode skill discovery convention, artifact resolution: filesystem, profile path: ~/.config/opencode/ or XDG, sub-agent dispatch: opencode's agent primitives, eval mechanism: opencode pipe mode or equivalent, hook lifecycle: opencode event hooks or no-op shim)
 ▸ GIVEN the same adapter document WHEN read THEN it also maps the Session Corpus Contract to OpenCode-specific sources or export mechanisms for each normalized record family
