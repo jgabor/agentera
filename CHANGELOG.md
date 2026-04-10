@@ -7,6 +7,9 @@
 - Ecosystem spec Section 21: Session Corpus Contract defining normalized record types and degradation rules for profilera portability
 
 ### Changed
+- Annotated all platform-specific references (`~/.claude/`, worktrees, `claude -p`) with `<!-- platform: capability-name -->` comments across all 12 SKILL.md files and SPEC.md Sections 20-21
+- Profilera extraction step scoped as Claude-adapter-specific with Section 21 reference for portable contract
+- README.md updated to reflect Section 21 corpus is defined rather than pending
 - Terminology cleanup (Decision 23): `ecosystem-spec.md` renamed to `SPEC.md` (root), `ecosystem-context.md` renamed to `contract.md` (per skill), "ecosystem" prefix dropped from all scripts, headers, and prose
 - Spec Section 20 host adapter contract: portability claims now distinguish the portable core from host-specific extensions
 - Planera em-dash on line 130 fixed (last remaining em-dash in SKILL.md files)
