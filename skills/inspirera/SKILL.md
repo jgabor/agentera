@@ -210,7 +210,7 @@ Add actionable findings to the project's TODO.md, classifying each by severity p
 When the source contains optimization techniques (performance patterns, algorithm improvements, caching strategies), optimera's Hypothesize step can draw on the analysis for its next experiment.
 
 ### Informed by /profilera
-If a decision profile exists at `~/.claude/profile/PROFILE.md`, run the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) for a confidence-weighted summary. Use effective confidence to weight applicability judgments per contract profile consumption conventions.
+If a decision profile exists at `~/.claude/profile/PROFILE.md`, run the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) for a confidence-weighted summary. <!-- platform: profile-path --> Use effective confidence to weight applicability judgments per contract profile consumption conventions.
 If the script or PROFILE.md is missing, proceed without persona grounding.
 
 ### Feeding into /visionera

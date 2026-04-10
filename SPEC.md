@@ -894,9 +894,9 @@ Each capability specifies what the skill requires, not how the runtime provides 
 |------------|-------------------|------------------------|---------------------------|
 | Skill discovery | Required | A mechanism to find and load SKILL.md files so the runtime can present available skills to the user | `.claude-plugin/plugin.json` manifests and `settings.json` skillPaths |
 | Artifact resolution | Required | Ability to read and write files at paths specified by DOCS.md or the default layout (project root + `.agentera/`) | Direct filesystem access per artifact path resolution rules |
-| Profile path | Required | A global configuration directory where PROFILE.md lives, readable by all skills that consume the generated profile artifact | `~/.claude/profile/PROFILE.md` |
-| Sub-agent dispatch | Capability-gated | Ability to spawn subordinate agents with workspace isolation for parallel implementation tasks | Git worktrees via the `isolation: "worktree"` primitive |
-| Eval mechanism | Capability-gated | Ability to invoke a skill against a prompt and capture the output for behavioral verification | `claude -p --output-format json` pipe mode |
+| Profile path | Required | A global configuration directory where PROFILE.md lives, readable by all skills that consume the generated profile artifact | `~/.claude/profile/PROFILE.md` <!-- platform: profile-path --> |
+| Sub-agent dispatch | Capability-gated | Ability to spawn subordinate agents with workspace isolation for parallel implementation tasks | Git worktrees via the `isolation: "worktree"` primitive <!-- platform: sub-agent-dispatch --> |
+| Eval mechanism | Capability-gated | Ability to invoke a skill against a prompt and capture the output for behavioral verification | `claude -p --output-format json` pipe mode <!-- platform: eval-mechanism --> |
 | Hook lifecycle | Optional but recommended | Callbacks at session start, session stop, and after tool use for artifact validation and context preload | `hooks.json` with SessionStart, Stop, and PostToolUse event types |
 
 Required capabilities are the minimum for artifact-centric interoperability. Capability-gated features preserve the full behavior of the skills that rely on them. Optional capabilities improve continuity and safety rails but are not prerequisites for the portable core.
