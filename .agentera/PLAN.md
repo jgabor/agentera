@@ -119,7 +119,7 @@ The key design choice is **data model, not path model**. The contract standardiz
 
 ### Task 6: Housekeeping - em-dash fix and ISS-31 CI gating
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ partial (em-dash fixed; CI gating deferred)
 **Acceptance**:
 ▸ GIVEN planera/SKILL.md line 130 WHEN the em-dash is replaced THEN validate_spec.py reports 0 errors (the last remaining em-dash error is resolved)
 ▸ GIVEN a CI configuration file (GitHub Actions or equivalent) WHEN pushed THEN the test suite runs automatically on push and PR
@@ -146,21 +146,21 @@ The key design choice is **data model, not path model**. The contract standardiz
 ▸ GIVEN all SKILL.md files WHEN searched for bare platform-specific references (without annotation) THEN zero results in portable-core claims; remaining host-specific dependencies are called out explicitly
 ▸ GIVEN the OpenCode adapter design document WHEN a developer follows it THEN they have enough information to implement portable-core agentera support and a profilera-compatible session corpus in OpenCode without reading SKILL.md source
 ▸ GIVEN the linter and test suite WHEN run THEN 0 errors and all tests pass
-▸ GIVEN all filenames and prose WHEN searched for "the spec" or "ecosystem-context" or "contract" THEN zero results; all references use "SPEC.md", "contract.md", "the spec", or "contract" appropriately
+▸ GIVEN all filenames and prose WHEN searched for "ecosystem-spec" or "ecosystem-context" or "ecosystem context" THEN zero results; all references use "SPEC.md", "contract.md", "the spec", or "contract" appropriately
 
-### Task 9: Terminology cleanup: the spec and ecosystem-context rename
+### Task 9: Terminology cleanup: spec and contract rename
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
-▸ GIVEN references/the spec.md WHEN renamed THEN it becomes SPEC.md at the repo root (uppercase per artifact convention)
-▸ GIVEN skills/*/references/contract.md WHEN renamed THEN each becomes skills/*/references/contract.md (lowercase per reference file convention)
+▸ GIVEN references/ecosystem-spec.md WHEN renamed THEN it becomes SPEC.md at the repo root (uppercase per artifact convention)
+▸ GIVEN skills/*/references/ecosystem-context.md WHEN renamed THEN each becomes skills/*/references/contract.md (lowercase per reference file convention)
 ▸ GIVEN the HTML comment `<!-- ecosystem-context: <skill> -->` WHEN updated THEN it becomes `<!-- contract: <skill> -->`
-▸ GIVEN the source hash comment `<!-- source: references/the spec.md ... -->` WHEN updated THEN it becomes `<!-- source: SPEC.md ... -->`
-▸ GIVEN the section header in SKILL.md files that reads "Ecosystem context" or "contract" WHEN updated THEN it reads "Contract" or "contract" appropriately
-▸ GIVEN scripts/validate_spec.py WHEN renamed THEN it becomes scripts/validate_spec.py and all internal references (path strings, error messages, variable names referencing "ecosystem") are updated
-▸ GIVEN scripts/generate_contracts.py WHEN renamed THEN it becomes scripts/generate_contracts.py and all internal references are updated (filename references, output paths, variable names, help text)
-▸ GIVEN the spec in prose references throughout (SKILL.md files, spec itself, DECISIONS.md, PROGRESS.md, CLAUDE.md) WHEN searched for "the spec" or "contract" THEN all are replaced with "the spec" or "contract" appropriately
-▸ GIVEN the linter WHEN validate_spec.py runs (after rename) THEN all check functions still work, referencing SPEC.md and contract.md paths
+▸ GIVEN the source hash comment `<!-- source: references/ecosystem-spec.md ... -->` WHEN updated THEN it becomes `<!-- source: SPEC.md ... -->`
+▸ GIVEN the section header in SKILL.md files that reads "Ecosystem context" WHEN updated THEN it reads "Contract"
+▸ GIVEN scripts/validate_ecosystem.py WHEN renamed THEN it becomes scripts/validate_spec.py and all internal references are updated
+▸ GIVEN scripts/generate_ecosystem_context.py WHEN renamed THEN it becomes scripts/generate_contracts.py and all internal references are updated
+▸ GIVEN all prose references WHEN searched for "ecosystem-spec" or "ecosystem context" THEN all are replaced with "the spec" or "contract" appropriately
+▸ GIVEN the linter WHEN validate_spec.py runs THEN all check functions work, referencing SPEC.md and contract.md paths
 ▸ GIVEN tests/ WHEN run THEN all tests pass with new filenames and script names
 ▸ GIVEN CHANGELOG.md WHEN read THEN an [Unreleased] entry exists for this terminology change
 
