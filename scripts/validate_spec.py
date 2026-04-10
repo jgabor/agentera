@@ -10,8 +10,8 @@ Validates all 12 SKILL.md files against the spec
 severity levels, decision labels, artifact path resolution, profile
 consumption, cross-skill integration, safety rails, artifact format
 contracts, exit signals, loop guard, em-dashes, hard wraps,
-spec_sections declaration, context file existence, and context file
-freshness.
+spec_sections declaration, context file existence, context file
+freshness, and platform annotation validation.
 
 Run from repo root:
     python3 scripts/validate_spec.py
@@ -926,6 +926,15 @@ def check_context_file_current(
 # Skills that must enforce spec Section 19 (Reality Verification Gate).
 REALITY_VERIFICATION_ENFORCERS = {"realisera", "orkestrera"}
 
+RECOGNIZED_CAPABILITIES = {
+    "skill-discovery",
+    "artifact-resolution",
+    "profile-path",
+    "sub-agent-dispatch",
+    "eval-mechanism",
+    "hook-lifecycle",
+}
+
 
 def check_reality_verification_gate(skill: str, text: str, r: Results) -> None:
     """Check 17: Reality Verification Gate (spec section 19).
@@ -971,6 +980,30 @@ def check_reality_verification_gate(skill: str, text: str, r: Results) -> None:
         r.ok(skill, "reality-verification-gate")
 
 
+def check_platform_annotations(skill: str, text: str, r: Results) -> None:
+    """Check 18: Platform annotations reference recognized capability names.
+
+    Every <!-- platform: NAME --> annotation in a SKILL.md must use a
+    capability name from the recognized set defined in the spec Section 20.
+    """
+    annotations = re.findall(r"<!-- platform: (\S+) -->", text)
+    if not annotations:
+        r.ok(skill, "platform-annotations")
+        return
+
+    unknown = [name for name in annotations if name not in RECOGNIZED_CAPABILITIES]
+    if unknown:
+        for name in sorted(set(unknown)):
+            r.error(
+                skill,
+                "platform-annotations",
+                f"Unrecognized capability name '{name}' "
+                f"(expected one of: {', '.join(sorted(RECOGNIZED_CAPABILITIES))})",
+            )
+    else:
+        r.ok(skill, "platform-annotations")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -998,6 +1031,7 @@ def validate_skill(path: Path, r: Results, *, spec_hash: str) -> None:
     check_context_file_exists(skill, text, r, skill_path=path)
     check_context_file_current(skill, text, r, skill_path=path, spec_hash=spec_hash)
     check_reality_verification_gate(skill, text, r)
+    check_platform_annotations(skill, text, r)
 
 
 def main() -> int:
