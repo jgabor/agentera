@@ -213,23 +213,13 @@ This is functional but adds a Python dependency. For the initial port, the hook 
 
 Profilera mines five canonical record types from host session data. This section maps each record type to OpenCode's data sources.
 
-### memory_entry
+### memory_entry (Claude Code runtime extension)
 
-**Agentera contract**: Durable user or project memory captured by the host.
+**Agentera contract**: This record type is a Claude Code runtime extension, not part of the portable corpus. Claude Code's memory files are emitted as instruction_document records with `doc_type: "claude_memory"`.
 
-**OpenCode source**: OpenCode does not have a built-in memory system comparable to Claude Code's `~/.claude/projects/*/memory/*.md`. However:
+**OpenCode source**: OpenCode does not have a built-in memory system. The memory_entry extension does not apply.
 
-- OpenCode's instructions system (`AGENTS.md`, `~/.config/opencode/AGENTS.md`, and files listed in `opencode.json` `instructions`) serves a similar purpose: durable, explicitly authored preferences.
-
-**Adapter extraction**:
-
-| Source | Extraction |
-|--------|------------|
-| `~/.config/opencode/AGENTS.md` | Global instructions file. Parse as instruction_document with `scope: "global"` and also as a memory_entry with `name: "global-instructions"`. |
-| `<project>/AGENTS.md` | Project instructions. Parse as instruction_document with `scope: "project"`. |
-| `opencode.json` instructions paths | Additional instruction files. Parse each as instruction_document. |
-
-**Degradation**: Without a built-in memory system, only instruction_document records are available (from AGENTS.md files). This puts profilera in "crystallized only" partial mode for the memory_entry source, which produces instruction-heavy profiles with weaker process/workflow patterns.
+**Gap**: None. memory_entry is not a portable requirement. OpenCode adapters need not implement it.
 
 ### instruction_document
 
@@ -380,14 +370,12 @@ Summary of which corpus families the OpenCode adapter can produce:
 
 | Family | Record types | Available? | Mechanism |
 |--------|-------------|------------|-----------|
-| Crystallized decisions | memory_entry, instruction_document | Yes (partial) | instruction_document from AGENTS.md and instructions config; memory_entry unavailable (no built-in memory system) |
+| Crystallized decisions | instruction_document | Yes | AGENTS.md files (global and project), instructions config |
 | Decision history | history_prompt | Yes (CLI) | `opencode session list --format json` enumerates sessions; `opencode export [sessionID]` provides full message JSON for prompt extraction |
 | Conversation exchanges | conversation_turn | Yes (CLI) | `opencode export [sessionID]` provides full session JSON with paired user-assistant turns |
 | Config patterns | project_config_signal | Yes | Direct filesystem scan, identical to Claude Code |
 
-**Initial port profilera mode**: Near-full. Three of four source families are fully available. Crystallized decisions are partial (instruction_document from AGENTS.md files is available; memory_entry is not). Decision history and conversation exchanges come from `opencode export` CLI output. Config patterns come from direct filesystem scan. The missing memory_entry source means profilera produces weaker process/workflow and meta-decision patterns, but the profile is sufficient for most consuming skills.
-
-**Memory limitation**: OpenCode does not include a built-in memory system. The memory_entry record type remains unavailable. AGENTS.md files provide durable instruction_document records that partially compensate, but organic cross-session memory (captured decisions, corrections, evolving preferences) cannot be extracted without a memory layer. This is an inherent limitation of the current OpenCode platform.
+**Initial port profilera mode**: Full. All four source families are available via included OpenCode functionality. Crystallized decisions come from AGENTS.md files and instructions config. Decision history and conversation exchanges come from `opencode export` CLI output. Config patterns come from direct filesystem scan.
 
 ---
 
@@ -451,7 +439,6 @@ cp ~/.config/opencode/skills/agentera/references/adapters/opencode-plugin.js \
 | Sub-agent dispatch lacks built-in worktree isolation | realisera/orkestrera run in same working tree | Strategy A (Task tool) for initial port; manual `git worktree` commands for full isolation |
 | `opencode run --format json` event schema differs from `claude -p --output-format json` | Eval runner needs a separate JSON event parser | Implement an OpenCode-specific parser module in eval_skills.py; event stream structure is straightforward |
 | Session history requires JSON event schema mapping | history_prompt and conversation_turn need export parser | `opencode export [sessionID]` provides full session JSON; adapter parses the export output |
-| No built-in memory system (memory_entry source) | memory_entry records unavailable | AGENTS.md files serve as instruction_document only; no compensation for memory_entry within included OpenCode functionality |
 | Python scripts require Python runtime | Hook plugin calls Python via shell | Python is already a prerequisite for agentera scripts |
 
 ---
@@ -462,7 +449,7 @@ To verify the adapter is sufficient, check each acceptance criterion from PLAN.m
 
 1. **Each of the six host capabilities is mapped**: Yes. Skill discovery, artifact resolution, and profile path have direct OpenCode equivalents with no gaps. Sub-agent dispatch maps to the Task tool (with manual git worktree as an alternative). Eval mechanism maps to `opencode run --format json`. Hook lifecycle maps to the plugin event system.
 
-2. **Session Corpus Contract is mapped per record type**: Yes. instruction_document and project_config_signal have immediate extraction paths. history_prompt and conversation_turn are extractable via `opencode export` CLI output. memory_entry is unavailable due to the absence of a built-in memory system.
+2. **Session Corpus Contract is mapped per record type**: Yes. All four portable record types are mapped. instruction_document and project_config_signal have immediate extraction paths. history_prompt and conversation_turn are extractable via `opencode export` CLI output. The memory_entry Claude Code extension does not apply to OpenCode.
 
 3. **A developer can implement OpenCode support without reading SKILL.md source**: Yes. This document specifies the adapter mapping, installation steps, extraction logic, and remaining gaps independently.
 
