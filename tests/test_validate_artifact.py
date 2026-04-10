@@ -50,7 +50,7 @@ def project_dir(tmp_path):
 
 
 class TestClassifyFile:
-    """Routing has 4 branches: artifact, skill, ecosystem-spec, other."""
+    """Routing has 4 branches: artifact, skill, spec-spec, other."""
 
     def test_operational_artifact_in_agentera(self, validate_artifact, project_dir):
         """File in .agentera/ recognized as artifact."""
@@ -75,14 +75,12 @@ class TestClassifyFile:
         result = validate_artifact.classify_file(str(skill_md), str(project_dir))
         assert result == "skill"
 
-    def test_ecosystem_spec(self, validate_artifact, project_dir):
-        """references/ecosystem-spec.md recognized as ecosystem-spec."""
-        refs = project_dir / "references"
-        refs.mkdir()
-        spec = refs / "ecosystem-spec.md"
-        spec.write_text("# Ecosystem Spec\n", encoding="utf-8")
+    def test_spec(self, validate_artifact, project_dir):
+        """SPEC.md at root recognized as the spec."""
+        spec = project_dir / "SPEC.md"
+        spec.write_text("# Spec\n", encoding="utf-8")
         result = validate_artifact.classify_file(str(spec), str(project_dir))
-        assert result == "ecosystem-spec"
+        assert result == "the spec"
 
     def test_unrelated_file(self, validate_artifact, project_dir):
         """Random file classified as other."""
@@ -95,7 +93,7 @@ class TestClassifyFile:
         """A non-SKILL.md file under skills/ classified as other."""
         skill_dir = project_dir / "skills" / "realisera" / "references"
         skill_dir.mkdir(parents=True)
-        ctx = skill_dir / "ecosystem-context.md"
+        ctx = skill_dir / "contract.md"
         ctx.write_text("<!-- context -->\n", encoding="utf-8")
         result = validate_artifact.classify_file(str(ctx), str(project_dir))
         assert result == "other"
@@ -139,7 +137,8 @@ class TestResolveArtifactPaths:
     def test_overrides_from_docs(self, validate_artifact, project_dir):
         """DOCS.md Artifact Mapping overrides paths."""
         docs = project_dir / ".agentera" / "DOCS.md"
-        docs.write_text(textwrap.dedent("""\
+        docs.write_text(
+            textwrap.dedent("""\
             # Documentation Contract
 
             ## Artifact Mapping
@@ -149,7 +148,9 @@ class TestResolveArtifactPaths:
             | VISION.md | docs/VISION.md | visionera |
 
             ## Index
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         paths = validate_artifact.resolve_artifact_paths(str(project_dir))
         assert paths["VISION.md"] == str(project_dir / "docs" / "VISION.md")
         # Non-overridden artifacts keep defaults
@@ -181,27 +182,35 @@ class TestValidateHealth:
 
     def test_valid_health(self, validate_artifact, project_dir):
         health = project_dir / ".agentera" / "HEALTH.md"
-        health.write_text(textwrap.dedent("""\
+        health.write_text(
+            textwrap.dedent("""\
             # Health
 
             ## Audit 1
 
             Some findings here.
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         violations = validate_artifact.validate_artifact_structure(
-            str(health), "HEALTH.md",
+            str(health),
+            "HEALTH.md",
         )
         assert violations == []
 
     def test_health_missing_audit_heading(self, validate_artifact, project_dir):
         health = project_dir / ".agentera" / "HEALTH.md"
-        health.write_text(textwrap.dedent("""\
+        health.write_text(
+            textwrap.dedent("""\
             # Health
 
             Some content but no audit entries.
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         violations = validate_artifact.validate_artifact_structure(
-            str(health), "HEALTH.md",
+            str(health),
+            "HEALTH.md",
         )
         assert any("Audit" in v for v in violations)
 
@@ -216,28 +225,36 @@ class TestValidatePlan:
 
     def test_valid_plan(self, validate_artifact, project_dir):
         plan = project_dir / ".agentera" / "PLAN.md"
-        plan.write_text(textwrap.dedent("""\
+        plan.write_text(
+            textwrap.dedent("""\
             # Plan: Do something
 
             ## Tasks
 
             ### Task 1: First task
             **Status**: open
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         violations = validate_artifact.validate_artifact_structure(
-            str(plan), "PLAN.md",
+            str(plan),
+            "PLAN.md",
         )
         assert violations == []
 
     def test_plan_missing_tasks(self, validate_artifact, project_dir):
         plan = project_dir / ".agentera" / "PLAN.md"
-        plan.write_text(textwrap.dedent("""\
+        plan.write_text(
+            textwrap.dedent("""\
             # Plan: Something
 
             Just a description, no tasks section.
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         violations = validate_artifact.validate_artifact_structure(
-            str(plan), "PLAN.md",
+            str(plan),
+            "PLAN.md",
         )
         assert any("Task" in v or "Tasks" in v for v in violations)
 
@@ -252,27 +269,35 @@ class TestValidateDecisions:
 
     def test_valid_decisions(self, validate_artifact, project_dir):
         decisions = project_dir / ".agentera" / "DECISIONS.md"
-        decisions.write_text(textwrap.dedent("""\
+        decisions.write_text(
+            textwrap.dedent("""\
             # Decisions
 
             ## Decision 1
 
             Some reasoning.
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         violations = validate_artifact.validate_artifact_structure(
-            str(decisions), "DECISIONS.md",
+            str(decisions),
+            "DECISIONS.md",
         )
         assert violations == []
 
     def test_decisions_missing_heading(self, validate_artifact, project_dir):
         decisions = project_dir / ".agentera" / "DECISIONS.md"
-        decisions.write_text(textwrap.dedent("""\
+        decisions.write_text(
+            textwrap.dedent("""\
             # Some Notes
 
             Just notes, not decisions.
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         violations = validate_artifact.validate_artifact_structure(
-            str(decisions), "DECISIONS.md",
+            str(decisions),
+            "DECISIONS.md",
         )
         assert any("Decisions" in v for v in violations)
 
@@ -287,27 +312,35 @@ class TestValidateProgress:
 
     def test_valid_progress(self, validate_artifact, project_dir):
         progress = project_dir / ".agentera" / "PROGRESS.md"
-        progress.write_text(textwrap.dedent("""\
+        progress.write_text(
+            textwrap.dedent("""\
             # Progress
 
             ## Cycle 1
 
             Did some work.
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         violations = validate_artifact.validate_artifact_structure(
-            str(progress), "PROGRESS.md",
+            str(progress),
+            "PROGRESS.md",
         )
         assert violations == []
 
     def test_progress_missing_cycle(self, validate_artifact, project_dir):
         progress = project_dir / ".agentera" / "PROGRESS.md"
-        progress.write_text(textwrap.dedent("""\
+        progress.write_text(
+            textwrap.dedent("""\
             # Progress
 
             Some notes but no cycles.
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         violations = validate_artifact.validate_artifact_structure(
-            str(progress), "PROGRESS.md",
+            str(progress),
+            "PROGRESS.md",
         )
         assert any("Cycle" in v for v in violations)
 
@@ -322,7 +355,8 @@ class TestValidateTodo:
 
     def test_valid_todo(self, validate_artifact, project_dir):
         todo = project_dir / "TODO.md"
-        todo.write_text(textwrap.dedent("""\
+        todo.write_text(
+            textwrap.dedent("""\
             # TODO
 
             ## \u21f6 Critical
@@ -339,24 +373,31 @@ class TestValidateTodo:
 
             ## Resolved
             - [x] ~~ISS-0: [fix] Fixed thing~~
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         violations = validate_artifact.validate_artifact_structure(
-            str(todo), "TODO.md",
+            str(todo),
+            "TODO.md",
         )
         assert violations == []
 
     def test_todo_missing_severity_section(self, validate_artifact, project_dir):
         todo = project_dir / "TODO.md"
-        todo.write_text(textwrap.dedent("""\
+        todo.write_text(
+            textwrap.dedent("""\
             # TODO
 
             ## \u21f6 Critical
             - [ ] ISS-1: something
 
             ## Resolved
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         violations = validate_artifact.validate_artifact_structure(
-            str(todo), "TODO.md",
+            str(todo),
+            "TODO.md",
         )
         # Should flag missing Degraded, Normal, Annoying
         assert len([v for v in violations if "severity section" in v]) >= 1
@@ -372,13 +413,17 @@ class TestValidateVision:
 
     def test_valid_vision(self, validate_artifact, project_dir):
         vision = project_dir / "VISION.md"
-        vision.write_text(textwrap.dedent("""\
+        vision.write_text(
+            textwrap.dedent("""\
             # My Project Vision
 
             Some aspirational content.
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         violations = validate_artifact.validate_artifact_structure(
-            str(vision), "VISION.md",
+            str(vision),
+            "VISION.md",
         )
         assert violations == []
 
@@ -386,7 +431,8 @@ class TestValidateVision:
         vision = project_dir / "VISION.md"
         vision.write_text("Just text, no headings at all.\n", encoding="utf-8")
         violations = validate_artifact.validate_artifact_structure(
-            str(vision), "VISION.md",
+            str(vision),
+            "VISION.md",
         )
         assert len(violations) >= 1
 
@@ -403,7 +449,8 @@ class TestTokenBudget:
         vision = project_dir / "VISION.md"
         vision.write_text("# Vision\n\n" + "word " * 100 + "\n", encoding="utf-8")
         violations = validate_artifact.validate_artifact_structure(
-            str(vision), "VISION.md",
+            str(vision),
+            "VISION.md",
         )
         assert not any("budget" in v for v in violations)
 
@@ -412,7 +459,8 @@ class TestTokenBudget:
         # VISION.md budget is 1500 words
         vision.write_text("# Vision\n\n" + "word " * 2000 + "\n", encoding="utf-8")
         violations = validate_artifact.validate_artifact_structure(
-            str(vision), "VISION.md",
+            str(vision),
+            "VISION.md",
         )
         assert any("budget" in v for v in violations)
 
@@ -427,7 +475,8 @@ class TestMarkdownWellFormedness:
 
     def test_balanced_code_fences(self, validate_artifact, project_dir):
         health = project_dir / ".agentera" / "HEALTH.md"
-        health.write_text(textwrap.dedent("""\
+        health.write_text(
+            textwrap.dedent("""\
             # Health
 
             ## Audit 1
@@ -435,24 +484,31 @@ class TestMarkdownWellFormedness:
             ```
             some code
             ```
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         violations = validate_artifact.validate_artifact_structure(
-            str(health), "HEALTH.md",
+            str(health),
+            "HEALTH.md",
         )
         assert not any("code fence" in v for v in violations)
 
     def test_unclosed_code_fence(self, validate_artifact, project_dir):
         health = project_dir / ".agentera" / "HEALTH.md"
-        health.write_text(textwrap.dedent("""\
+        health.write_text(
+            textwrap.dedent("""\
             # Health
 
             ## Audit 1
 
             ```
             some code without closing fence
-        """), encoding="utf-8")
+        """),
+            encoding="utf-8",
+        )
         violations = validate_artifact.validate_artifact_structure(
-            str(health), "HEALTH.md",
+            str(health),
+            "HEALTH.md",
         )
         assert any("code fence" in v for v in violations)
 
@@ -467,7 +523,8 @@ class TestUnreadableFile:
 
     def test_nonexistent_file(self, validate_artifact):
         violations = validate_artifact.validate_artifact_structure(
-            "/nonexistent/path/HEALTH.md", "HEALTH.md",
+            "/nonexistent/path/HEALTH.md",
+            "HEALTH.md",
         )
         assert any("Cannot read" in v for v in violations)
 
@@ -480,18 +537,23 @@ class TestUnreadableFile:
 class TestMainIntegration:
     """Tests main() with mocked stdin. 1 pass (no output) + 1 fail (violations)."""
 
-    def test_no_validation_for_unrelated_file(self, validate_artifact, project_dir, monkeypatch):
+    def test_no_validation_for_unrelated_file(
+        self, validate_artifact, project_dir, monkeypatch
+    ):
         """Unrelated file produces no output, exit 0."""
         readme = project_dir / "README.md"
         readme.write_text("# Hello\n", encoding="utf-8")
-        hook_input = json.dumps({
-            "session_id": "test",
-            "cwd": str(project_dir),
-            "hook_event_name": "PostToolUse",
-            "tool_name": "Edit",
-            "tool_input": {"file_path": str(readme)},
-        })
+        hook_input = json.dumps(
+            {
+                "session_id": "test",
+                "cwd": str(project_dir),
+                "hook_event_name": "PostToolUse",
+                "tool_name": "Edit",
+                "tool_input": {"file_path": str(readme)},
+            }
+        )
         import io
+
         monkeypatch.setattr("sys.stdin", io.StringIO(hook_input))
         captured_output = io.StringIO()
         monkeypatch.setattr("sys.stdout", captured_output)
@@ -499,18 +561,23 @@ class TestMainIntegration:
         assert result == 0
         assert captured_output.getvalue() == ""
 
-    def test_validation_runs_for_artifact(self, validate_artifact, project_dir, monkeypatch):
+    def test_validation_runs_for_artifact(
+        self, validate_artifact, project_dir, monkeypatch
+    ):
         """Artifact with missing headings produces validation warnings."""
         health = project_dir / ".agentera" / "HEALTH.md"
         health.write_text("# Health\n\nNo audit entries.\n", encoding="utf-8")
-        hook_input = json.dumps({
-            "session_id": "test",
-            "cwd": str(project_dir),
-            "hook_event_name": "PostToolUse",
-            "tool_name": "Write",
-            "tool_input": {"file_path": str(health)},
-        })
+        hook_input = json.dumps(
+            {
+                "session_id": "test",
+                "cwd": str(project_dir),
+                "hook_event_name": "PostToolUse",
+                "tool_name": "Write",
+                "tool_input": {"file_path": str(health)},
+            }
+        )
         import io
+
         monkeypatch.setattr("sys.stdin", io.StringIO(hook_input))
         captured_output = io.StringIO()
         monkeypatch.setattr("sys.stdout", captured_output)
@@ -521,28 +588,37 @@ class TestMainIntegration:
     def test_empty_stdin_graceful(self, validate_artifact, monkeypatch):
         """Empty stdin exits cleanly."""
         import io
+
         monkeypatch.setattr("sys.stdin", io.StringIO(""))
         result = validate_artifact.main()
         assert result == 0
 
-    def test_valid_artifact_no_output(self, validate_artifact, project_dir, monkeypatch):
+    def test_valid_artifact_no_output(
+        self, validate_artifact, project_dir, monkeypatch
+    ):
         """Valid artifact produces no output."""
         progress = project_dir / ".agentera" / "PROGRESS.md"
-        progress.write_text(textwrap.dedent("""\
+        progress.write_text(
+            textwrap.dedent("""\
             # Progress
 
             ## Cycle 1
 
             Did some work.
-        """), encoding="utf-8")
-        hook_input = json.dumps({
-            "session_id": "test",
-            "cwd": str(project_dir),
-            "hook_event_name": "PostToolUse",
-            "tool_name": "Edit",
-            "tool_input": {"file_path": str(progress)},
-        })
+        """),
+            encoding="utf-8",
+        )
+        hook_input = json.dumps(
+            {
+                "session_id": "test",
+                "cwd": str(project_dir),
+                "hook_event_name": "PostToolUse",
+                "tool_name": "Edit",
+                "tool_input": {"file_path": str(progress)},
+            }
+        )
         import io
+
         monkeypatch.setattr("sys.stdin", io.StringIO(hook_input))
         captured_output = io.StringIO()
         monkeypatch.setattr("sys.stdout", captured_output)

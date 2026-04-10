@@ -11,7 +11,7 @@
 
 171 tests across 7 files, all passing. Coverage by module:
 
-- **validate_ecosystem.py**: 105 tests across 17 test classes. All 13 check functions tested (check_frontmatter, check_confidence_scale, check_severity_levels, check_decision_labels, check_artifact_path_resolution, check_profile_consumption, check_cross_skill_integration, check_safety_rails, check_artifact_format, check_exit_signals, check_loop_guard, check_em_dashes, check_hard_wraps). Plus Results class, extract_subsection, parse_frontmatter, extract_section.
+- **validate_spec.py**: 105 tests across 17 test classes. All 13 check functions tested (check_frontmatter, check_confidence_scale, check_severity_levels, check_decision_labels, check_artifact_path_resolution, check_profile_consumption, check_cross_skill_integration, check_safety_rails, check_artifact_format, check_exit_signals, check_loop_guard, check_em_dashes, check_hard_wraps). Plus Results class, extract_subsection, parse_frontmatter, extract_section.
 - **eval_skills.py**: 26 tests covering TRIGGER_PROMPTS completeness (all 12 skills including orkestrera), _parse_frontmatter_name, discover_skills, build_report, build_dry_run, parse_args.
 - **Skill scripts**: 4 of 5 scripts tested (40 tests total). analyze_experiments.py (10), analyze_progress.py (9), effective_profile.py (11), validate_design.py (10).
 - **Shared fixtures**: conftest.py provides validate_ecosystem and eval_skills module fixtures via importlib.
@@ -30,7 +30,7 @@ README now accurately represents the ecosystem. All three Audit 5 concerns resol
 
 1. **profilera table entry**: rewritten from "Know thyself. Learns your decision patterns" to "Compounding memory. Mines your decision patterns into a profile consumed by every skill, so the 20th cycle adapts to how you work in ways the 1st could not." Conveys ecosystem impact, not just feature.
 2. **inspirera diagram**: annotated with `(simplified: each skill has additional cross-skill edges, see ecosystem spec Section 7)` caption. Additional inspirera edges shown: arrows to realisera, optimera, visionera, resonera below the main diagram.
-3. **Consumer tables**: all 12 artifact rows match ecosystem-spec.md Section 4 format contracts exactly (VISION.md, TODO.md, CHANGELOG.md, PROGRESS.md, DECISIONS.md, PLAN.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, DESIGN.md, DOCS.md, PROFILE.md).
+3. **Consumer tables**: all 12 artifact rows match SPEC.md Section 4 format contracts exactly (VISION.md, TODO.md, CHANGELOG.md, PROGRESS.md, DECISIONS.md, PLAN.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, DESIGN.md, DOCS.md, PROFILE.md).
 
 No remaining architecture misalignments detected between README and ecosystem spec.
 
@@ -70,7 +70,7 @@ No cross-skill references modified. 12-node graph intact. Carried forward from A
 
 ### Architecture alignment: B
 
-5 of 6 Audit 4 findings resolved (LICENSE added, installation path fixed, ISSUES-template renamed, README intro updated, CLAUDE.md layout fixed). Orkestrera integrated cleanly across all 12 touchpoints: SKILL.md, ecosystem-spec (Sections 4, 7, 11, 12), linter, all SKILL.md cross-skill sections, hej routing, manifests, README, CLAUDE.md.
+5 of 6 Audit 4 findings resolved (LICENSE added, installation path fixed, ISSUES-template renamed, README intro updated, CLAUDE.md layout fixed). Orkestrera integrated cleanly across all 12 touchpoints: SKILL.md, the spec (Sections 4, 7, 11, 12), linter, all SKILL.md cross-skill sections, hej routing, manifests, README, CLAUDE.md.
 
 #### ⇉ README diagram understates inspirera connections · warning (confidence: 90)
 - **Location**: `README.md:84-91`
@@ -92,11 +92,11 @@ Post-1.5.0 bump: all 11 non-profilera plugin.json at 1.5.0, profilera at 2.4.0, 
 
 ### Test health: D
 
-No unit tests for validate_ecosystem.py. No eval smoke tests run via eval_skills.py. Linter is the only automated verification. Same state as Audit 4; orkestrera addition did not improve or degrade test health.
+No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. Linter is the only automated verification. Same state as Audit 4; orkestrera addition did not improve or degrade test health.
 
 #### ⇢ No automated tests for linter or skills · info (confidence: 95)
-- **Location**: `scripts/validate_ecosystem.py`, `scripts/eval_skills.py`
-- **Evidence**: validate_ecosystem.py has no test file. eval_skills.py exists but no evidence of regular execution.
+- **Location**: `scripts/validate_spec.py`, `scripts/eval_skills.py`
+- **Evidence**: validate_spec.py has no test file. eval_skills.py exists but no evidence of regular execution.
 - **Impact**: Linter changes (like the orkestrera additions) are verified manually, not by CI
 - **Suggested action**: Add pytest tests for the linter; run eval_skills.py periodically
 
@@ -110,7 +110,7 @@ No unit tests for validate_ecosystem.py. No eval smoke tests run via eval_skills
 ### Patterns Observed
 
 - Module structure: 12 skill directories, each self-contained (SKILL.md + optional references/ + scripts/ + .claude-plugin/)
-- Ecosystem enforcement: single linter (validate_ecosystem.py) validates all 12 skills against shared spec
+- Ecosystem enforcement: single linter (validate_spec.py) validates all 12 skills against shared spec
 - Cross-skill graph: fully connected via SKILL.md cross-skill sections; hej reads all, orkestrera dispatches all
 - State management: markdown artifacts in target projects, not in this repo
 - Versioning: collection-level semver with per-skill versions tracked in 3 file types
@@ -195,7 +195,7 @@ No unit tests for validate_ecosystem.py. No eval smoke tests run via eval_skills
 ### Coupling health: B
 
 #### ⇉ README consumer tables stale vs ecosystem spec · warning (confidence: 88)
-- **Location**: `README.md:58-75` vs `references/ecosystem-spec.md`
+- **Location**: `README.md:58-75` vs `references/SPEC.md`
 - **Evidence**: VISION.md missing dokumentera, visualisera as consumers; PROGRESS.md missing dokumentera, visionera
 - **Impact**: README understates artifact mesh
 - **Suggested action**: Sync with ecosystem spec
@@ -291,7 +291,7 @@ No unit tests for validate_ecosystem.py. No eval smoke tests run via eval_skills
 ### Patterns Observed
 - inspirera is the persistent structural outlier: three consecutive audits have found pattern deviations. It predates structural conventions and has not been fully normalized.
 - Count-staleness pattern appears resolved: linter enforces "eleven-skill" count; no new count errors found.
-- Documentation quality follows a gradient: ecosystem-spec.md (authoritative) > SKILL.md files (aligned) > README.md (simplified, drifts). README is the weakest link.
+- Documentation quality follows a gradient: SPEC.md (authoritative) > SKILL.md files (aligned) > README.md (simplified, drifts). README is the weakest link.
 - Python scripts are well-isolated (stdlib-only, narrow interfaces) but completely untested: the classic "it works until it doesn't" pattern.
 - The ecosystem is structurally mature (11 skills, shared spec, linter, visual identity, versioning) but lacks the test infrastructure expected for a public release.
 

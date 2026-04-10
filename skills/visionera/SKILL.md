@@ -43,9 +43,9 @@ The template in `skills/realisera/references/templates/VISION-template.md` provi
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads (.agentera/DECISIONS.md, .agentera/HEALTH.md, .agentera/PROGRESS.md, TODO.md).
 
-### Ecosystem context
+### Contract
 
-Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+Before starting, read `references/contract.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
 ### VISION.md
 
@@ -129,7 +129,7 @@ If code exists, read deeply before asking questions. You arrive informed.
 5. Read PROGRESS.md, TODO.md, DECISIONS.md for trajectory
 6. Read HEALTH.md for current quality
 7. Read DESIGN.md for existing visual identity
-8. **Decision profile**: read `~/.claude/profile/PROFILE.md` directly per ecosystem context profile consumption conventions. If missing, proceed without persona grounding.
+8. **Decision profile**: read `~/.claude/profile/PROFILE.md` directly per contract profile consumption conventions. If missing, proceed without persona grounding.
 9. `git log --oneline -30` for recent story
 
 Synthesize: "The project does X, built with Y, moving toward Z. Strongest patterns: A. Gaps: B."
@@ -142,7 +142,7 @@ Search for context grounding the vision in reality:
 
 1. **What exists**: similar tools, competing approaches, adjacent projects
 2. **State of the art**: recent developments, emerging patterns
-3. **What's missing**: ecosystem gaps this project could fill
+3. **What's missing**: suite gaps this project could fill
 4. **Who talks about it**: communities, forums, common frustrations
 
 3-5 targeted searches. Synthesize: "The gap is X. The opportunity is Y."
@@ -267,7 +267,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Visionera is part of a twelve-skill ecosystem. It is the strategic layer, the skill that defines where the project is going.
+Visionera is part of a twelve-skill suite. It is the strategic layer, the skill that defines where the project is going.
 
 ### Visionera produces what /realisera consumes
 VISION.md is the north star that drives realisera's work selection every cycle. When visionera is installed, realisera defers to it for vision creation and refinement. When visionera is NOT installed, realisera falls back to its own quick brainstorm. Both paths produce the same VISION.md format; the skills are interchangeable at the artifact level.

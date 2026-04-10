@@ -40,9 +40,9 @@ One global artifact (written) and project-level artifacts (read).
 
 PROFILE.md is global and lives at `~/.claude/profile/PROFILE.md`, not in the project root or `.agentera/`. `.agentera/DOCS.md` mapping does not apply to PROFILE.md. For project-level artifacts, check if .agentera/DOCS.md exists and use its path mapping; if absent, use the default layout.
 
-### Ecosystem context
+### Contract
 
-Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+Before starting, read `references/contract.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
 ---
 
@@ -343,7 +343,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Profilera is part of a twelve-skill ecosystem. The decision profile it produces is consumed by the other skills.
+Profilera is part of a twelve-skill suite. The decision profile it produces is consumed by the other skills.
 
 ### Consumed by /realisera
 Realisera runs the effective profile script in its Orient step to get a confidence-weighted summary table. High effective confidence entries are treated as strong constraints; low effective confidence entries are treated as suggestions. Full rules are read from PROFILE.md when needed for detailed reasoning.

@@ -32,9 +32,9 @@ Templates in `references/templates/`. Use as starting structure, adapt to the pr
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md, TODO.md, .agentera/PROGRESS.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads (.agentera/DECISIONS.md, .agentera/HEALTH.md, .agentera/PLAN.md).
 
-### Ecosystem context
+### Contract
 
-Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+Before starting, read `references/contract.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
 ### VISION.md
 
@@ -80,7 +80,7 @@ The vision must be ambitious enough to sustain months of development, personas c
 **Context**: intent · constraints · unknowns · scope
 ```
 
-The `**Verified**` field is mandatory for every cycle entry per ecosystem context Section 19, Reality Verification Gate. See Step 6 for how it is populated.
+The `**Verified**` field is mandatory for every cycle entry per contract Section 19, Reality Verification Gate. See Step 6 for how it is populated.
 
 The "Next" field from the previous cycle is a suggestion, not a mandate. Re-evaluate fresh.
 
@@ -164,7 +164,7 @@ Outputs JSON with velocity, work type distribution, and suggestions. Use to info
    ```bash
    python3 scripts/effective_profile.py
    ```
-   Apply confidence thresholds per ecosystem context profile consumption conventions. Read full `~/.claude/profile/PROFILE.md` for details when needed. If missing, proceed without persona grounding but flag it.
+   Apply confidence thresholds per contract profile consumption conventions. Read full `~/.claude/profile/PROFILE.md` for details when needed. If missing, proceed without persona grounding but flag it.
 5. **Project discovery** (cycle 1 or when unfamiliar):
    - Map the directory structure
    - Read dependency manifests (package.json, go.mod, Cargo.toml, pyproject.toml, etc.)
@@ -255,7 +255,7 @@ For non-trivial design decisions, spawn Opus for design first, then Sonnet for i
 
 ### Step 6: Verify
 
-Verification has two phases per ecosystem context Section 19, Reality Verification Gate: structural (tests, lint, build are green) and behavioral (the new feature was actually observed running against real project state). Both phases must pass before the cycle can advance to commit. Passing tests alone are necessary but not sufficient evidence that the work is real.
+Verification has two phases per contract Section 19, Reality Verification Gate: structural (tests, lint, build are green) and behavioral (the new feature was actually observed running against real project state). Both phases must pass before the cycle can advance to commit. Passing tests alone are necessary but not sufficient evidence that the work is real.
 
 **Dispatch boundary**: If Step 5 dispatched a sub-agent to implement the work in a worktree, verification runs in realisera's main checkout AFTER the worktree has been merged, not inside the worktree. The sub-agent implements; realisera verifies post-merge. Dispatched agents cannot self-attest verification.
 
@@ -273,7 +273,7 @@ Verification has two phases per ecosystem context Section 19, Reality Verificati
      Rust: `cargo test && cargo clippy`
    - Confirms both new behavior and existing tests still pass.
 
-**Phase B, behavioral verification (Reality Verification Gate)**: Once structural verification is green, observe the new behavior by running the project's primary entrypoint against real project state. The primary entrypoint depends on the project archetype per ecosystem context Section 19:
+**Phase B, behavioral verification (Reality Verification Gate)**: Once structural verification is green, observe the new behavior by running the project's primary entrypoint against real project state. The primary entrypoint depends on the project archetype per contract Section 19:
 
 - CLI tool: invoke the binary with realistic arguments
 - Library / SDK: run a smoke driver that exercises the public API touched by the change
@@ -320,13 +320,13 @@ If the current task is a version bump (e.g., a PLAN.md task labeled "Version bum
 
 **Dual-write**: realisera maintains two change records, `.agentera/PROGRESS.md` (operational cycle detail for consuming skills) and `CHANGELOG.md` (public summary for project contributors).
 
-- **TODO.md**: add newly discovered issues, mark resolved ones. Classify each entry by severity per ecosystem context severity levels. When updating existing entries (e.g., marking resolved), use the Edit tool on the specific entry rather than rewriting the file.
-  Output constraint per ecosystem context token budgets.
-- **.agentera/PROGRESS.md**: append the cycle entry (number, timestamp, what shipped, commit hash, inspiration, discoveries, verified observation from Step 6, next suggestion, context block (intent, constraints, unknowns, scope)). The `**Verified**` field is mandatory per ecosystem context Section 19; it carries either Step 6's observed output from the primary entrypoint, an allowlisted `N/A: <tag>`, or a free-form rationale of at least 8 words. Write the entry like a colleague's quick debrief: what happened, what surprised you, what's next. Not a form submission.
-  Output constraint per ecosystem context token budgets.
+- **TODO.md**: add newly discovered issues, mark resolved ones. Classify each entry by severity per contract severity levels. When updating existing entries (e.g., marking resolved), use the Edit tool on the specific entry rather than rewriting the file.
+  Output constraint per contract token budgets.
+- **.agentera/PROGRESS.md**: append the cycle entry (number, timestamp, what shipped, commit hash, inspiration, discoveries, verified observation from Step 6, next suggestion, context block (intent, constraints, unknowns, scope)). The `**Verified**` field is mandatory per contract Section 19; it carries either Step 6's observed output from the primary entrypoint, an allowlisted `N/A: <tag>`, or a free-form rationale of at least 8 words. Write the entry like a colleague's quick debrief: what happened, what surprised you, what's next. Not a form submission.
+  Output constraint per contract token budgets.
 - **CHANGELOG.md**: append a one-line entry under `## [Unreleased]` in the appropriate subsection: `feat` → Added, `refactor/chore` → Changed, `fix` → Fixed. Concise description, not the commit message verbatim.
 
-When writing a new cycle entry to .agentera/PROGRESS.md, apply the PROGRESS.md compaction thresholds from ecosystem context.
+When writing a new cycle entry to .agentera/PROGRESS.md, apply the PROGRESS.md compaction thresholds from contract.
 
 Then stop. One cycle complete.
 
@@ -378,7 +378,7 @@ Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3
 
 ## Cross-skill integration
 
-Realisera is part of a twelve-skill ecosystem. Each skill can invoke the others when the work calls for it.
+Realisera is part of a twelve-skill suite. Each skill can invoke the others when the work calls for it.
 
 ### Realisera defers to /visionera for vision creation
 When visionera is installed and VISION.md doesn't exist, suggest `/visionera` for deep vision creation instead of running the built-in quick brainstorm. If visionera is NOT installed, the built-in brainstorm works as a standalone fallback. When the user asks to refine the vision, defer to `/visionera` if installed. Both skills produce the same VISION.md format.
@@ -390,7 +390,7 @@ When the picked work is optimization-shaped (improving a measurable metric like 
 In Step 3 (Seek inspiration), search for external approaches the way /inspirera would: read the source deeply, extract transferable patterns, note the source for credit in PROGRESS.md. For deeper analysis, run `/inspirera <url>` directly.
 
 ### Realisera reads /profilera output
-Every cycle runs the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) to get a confidence-weighted summary table. Confidence thresholds per ecosystem context profile consumption conventions determine which entries are strong constraints vs suggestions. Full rules are read from `~/.claude/profile/PROFILE.md` when needed for detailed reasoning about trade-offs and priorities.
+Every cycle runs the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) to get a confidence-weighted summary table. Confidence thresholds per contract profile consumption conventions determine which entries are strong constraints vs suggestions. Full rules are read from `~/.claude/profile/PROFILE.md` when needed for detailed reasoning about trade-offs and priorities.
 
 ### Realisera uses /resonera for complex decisions
 When the brainstorm session or work selection surfaces a decision too complex for inline resolution (competing architectural approaches, ambiguous scope, or consequential tradeoffs), suggest `/resonera` to deliberate first. Resonera can produce or refine VISION.md directly, and its DECISIONS.md entries give realisera reasoning context for future cycles. If `DECISIONS.md` exists, read it during the Orient step for context on prior deliberations.

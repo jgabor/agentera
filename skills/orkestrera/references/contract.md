@@ -1,9 +1,9 @@
-<!-- ecosystem-context: orkestrera -->
-<!-- source: references/ecosystem-spec.md (sha256: 44ca44a52a9dc066da95a3898762e606d82e4aaa53dd4fe3b22f315eafecddff) -->
+<!-- contract: orkestrera -->
+<!-- source: references/SPEC.md (sha256: e778b1fc71aeebf73864824d80a095774b02c438edf6a3cf5ad3ea3d7311578d) -->
 <!-- sections: 3, 4, 5, 11, 18, 19 -->
-<!-- generated: 2026-04-07T22:11:18Z -->
+<!-- generated: 2026-04-10T16:51:16Z -->
 <!-- do not edit manually -->
-<!-- regenerate: python3 scripts/generate_ecosystem_context.py -->
+<!-- regenerate: python3 scripts/generate_contracts.py -->
 
 ## 3. Decision Confidence Labels
 
@@ -48,7 +48,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | SESSION.md | Timestamped session bookmarks with artifact change tracking |
 | archive/ | Completed plans, superseded visions and designs |
 
-**PROFILE.md** is global at `~/.claude/profile/PROFILE.md`, not in the project root or `.agentera/`. Skills read it from this path directly.
+**PROFILE.md** is global. The host runtime provides the path via the profile-path capability (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> Skills read it from the runtime-provided path directly.
 
 ### Format contracts
 
@@ -66,7 +66,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | DESIGN.md | .agentera/DESIGN.md | visualisera | realisera, visionera | Standard sections per DESIGN-spec.md |
 | DOCS.md | .agentera/DOCS.md | dokumentera | all skills (path resolution) | ## Conventions, ## Artifact Mapping, ## Index |
 | SESSION.md | .agentera/SESSION.md | session stop hook | session start hook, hej | ## YYYY-MM-DD HH:MM, Artifacts modified, Summary; compaction: 5 full + 20 one-line, oldest dropped |
-| PROFILE.md | ~/.claude/profile/PROFILE.md | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
+| PROFILE.md | (profile-path capability) <!-- platform: profile-path --> | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
 
 **Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for project contributors) AND `.agentera/PROGRESS.md` (operational cycle-level detail for consuming skills). Consuming skills that need cycle detail read `.agentera/PROGRESS.md`; project contributors read CHANGELOG.md.
 
@@ -262,7 +262,7 @@ Each skill produces specific artifacts as part of its workflow. When a skill is 
 | inspektera | .agentera/HEALTH.md, TODO.md |
 | dokumentera | .agentera/DOCS.md |
 | visualisera | .agentera/DESIGN.md |
-| profilera | ~/.claude/profile/PROFILE.md |
+| profilera | (profile-path capability) <!-- platform: profile-path --> |
 | inspirera | (no owned artifact; findings are filed to TODO.md or fed into other skills) |
 | orkestrera | (conductor; updates .agentera/PLAN.md task statuses and dispatches other skills) |
 | hej | (router; reads artifacts but produces none) |
@@ -332,7 +332,7 @@ A cycle that bundles runnable work with an N/A-tagged change still requires obse
 | CLI tool | Invoke the binary with realistic arguments that exercise the changed path, capturing stdout/stderr and exit code |
 | Library / SDK | Run a smoke driver (a short script or REPL session) that exercises the public API surface touched by the change |
 | Web service | Send a request to a production-shaped endpoint (local server with production configuration or a staging instance) and record the response |
-| Skill repo | Dispatch the skill via the runtime's eval mechanism against a representative prompt and capture the observed skill output |
+| Skill repo | Dispatch the skill via the eval mechanism capability (Section 20) against a representative prompt and capture the observed skill output <!-- platform: eval-mechanism --> |
 | Design system | Render a representative component against the real design tokens and visually inspect (screenshot or DOM snapshot) against the expected output |
 | Data pipeline | Run the pipeline against a real input sample (not synthetic fixtures) and record the observed output or side effects |
 

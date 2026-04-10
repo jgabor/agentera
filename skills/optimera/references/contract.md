@@ -1,9 +1,43 @@
-<!-- ecosystem-context: visionera -->
-<!-- source: references/ecosystem-spec.md (sha256: 44ca44a52a9dc066da95a3898762e606d82e4aaa53dd4fe3b22f315eafecddff) -->
-<!-- sections: 4, 5, 6, 12 -->
-<!-- generated: 2026-04-07T22:11:18Z -->
+<!-- contract: optimera -->
+<!-- source: references/SPEC.md (sha256: e778b1fc71aeebf73864824d80a095774b02c438edf6a3cf5ad3ea3d7311578d) -->
+<!-- sections: 1, 3, 4, 5, 6 -->
+<!-- generated: 2026-04-10T16:51:16Z -->
 <!-- do not edit manually -->
-<!-- regenerate: python3 scripts/generate_ecosystem_context.py -->
+<!-- regenerate: python3 scripts/generate_contracts.py -->
+
+## 1. Confidence Scale
+
+Canonical scale: **0-100 integer**.
+
+Five tiers with shared boundaries. Each skill defines its own domain-specific labels describing what the tier means in its context.
+
+| Tier | Range | Semantic |
+|------|-------|----------|
+| 1 (highest) | 90-100 | Verified / near-certain |
+| 2 | 70-89 | Strong evidence / established |
+| 3 | 50-69 | Moderate evidence / emerging |
+| 4 | 30-49 | Weak evidence / uncertain |
+| 5 (lowest) | 0-29 | Speculative / extrapolated |
+
+**Rules**:
+- Skills producing confidence scores MUST use integer 0-100
+- Skills consuming confidence scores MUST interpret them against these tier boundaries
+- Temporal decay is opt-in: skills with a temporal dimension (e.g., profilera) may apply exponential decay; skills without one (e.g., inspektera) use static scores
+- When referencing profile consumption thresholds, use 65+ for "strong constraint" and <45 for "suggestion" (integer equivalents of the 0.0-1.0 thresholds)
+
+**Linter check**: Deterministic. Regex for tier boundaries in SKILL.md text.
+
+## 3. Decision Confidence Labels
+
+Used in DECISIONS.md entries (produced by resonera, consumed by realisera, planera, inspektera, profilera).
+
+| Label | Meaning | How consuming skills treat it |
+|-------|---------|-------------------------------|
+| **firm** | User is committed | Treat as a hard constraint |
+| **provisional** | Best current answer, open to revision | Treat as a strong default |
+| **exploratory** | Direction to try, expected to be revisited | Treat as a suggestion |
+
+**Linter check**: Deterministic. Enum values in DECISIONS.md format definition.
 
 ## 4. Artifact Format Contracts
 
@@ -36,7 +70,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | SESSION.md | Timestamped session bookmarks with artifact change tracking |
 | archive/ | Completed plans, superseded visions and designs |
 
-**PROFILE.md** is global at `~/.claude/profile/PROFILE.md`, not in the project root or `.agentera/`. Skills read it from this path directly.
+**PROFILE.md** is global. The host runtime provides the path via the profile-path capability (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> Skills read it from the runtime-provided path directly.
 
 ### Format contracts
 
@@ -54,7 +88,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | DESIGN.md | .agentera/DESIGN.md | visualisera | realisera, visionera | Standard sections per DESIGN-spec.md |
 | DOCS.md | .agentera/DOCS.md | dokumentera | all skills (path resolution) | ## Conventions, ## Artifact Mapping, ## Index |
 | SESSION.md | .agentera/SESSION.md | session stop hook | session start hook, hej | ## YYYY-MM-DD HH:MM, Artifacts modified, Summary; compaction: 5 full + 20 one-line, oldest dropped |
-| PROFILE.md | ~/.claude/profile/PROFILE.md | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
+| PROFILE.md | (profile-path capability) <!-- platform: profile-path --> | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
 
 **Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for project contributors) AND `.agentera/PROGRESS.md` (operational cycle-level detail for consuming skills). Consuming skills that need cycle detail read `.agentera/PROGRESS.md`; project contributors read CHANGELOG.md.
 
@@ -210,181 +244,9 @@ Standard threshold language (after migration to 0-100):
 
 ### Direct read pattern (for skills that need qualitative profile context)
 
-Read `~/.claude/profile/PROFILE.md` directly. Mentioned skills: resonera, visionera, dokumentera, visualisera.
+Read PROFILE.md from the runtime-provided profile path (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> Mentioned skills: resonera, visionera, dokumentera, visualisera.
 
 Both patterns MUST include a fallback instruction:
 "If the script or PROFILE.md is missing, proceed without persona grounding."
 
 **Linter check**: Deterministic. Script invocation syntax, threshold values, fallback instruction presence.
-
-## 12. Visual Identity
-
-The ecosystem has a shared visual vocabulary defined in DESIGN.md (the project-level visual identity, maintained by visualisera). This section defines the ecosystem-level conventions that all SKILL.md files follow when formatting output and artifact content.
-
-DESIGN.md is the source of truth for token definitions. This spec defines how skills use those tokens: introduction patterns, semantic roles, and composition rules. Skills include actual glyph characters inline in their output format examples (they run in target projects without access to this repo's DESIGN.md).
-
-### Skill glyphs
-
-Each skill has a unique Unicode glyph used as a subtle signature in output.
-
-| Skill | Glyph | Code | Meaning |
-|-------|-------|------|---------|
-| hej | 🞔 | U+1F794 | angular hub |
-| realisera | ⧉ | U+29C9 | joined building blocks |
-| inspektera | ⛶ | U+26F6 | viewfinder frame |
-| resonera | ❈ | U+2748 | spark of insight |
-| planera | ≡ | U+2261 | structured layers |
-| visionera | ⛥ | U+26E5 | guiding star |
-| optimera | ⎘ | U+2398 | measurement |
-| dokumentera | ▤ | U+25A4 | text on page |
-| profilera | ♾ | U+267E | permanent mark |
-| inspirera | ⬚ | U+2B1A | frame to fill |
-| visualisera | ◰ | U+25F0 | design grid |
-| orkestrera | ⎈ | U+2388 | helm, steering |
-
-### Semantic tokens
-
-Six token families express status, urgency, certainty, and direction.
-
-**Status** (task/item completion, square fill progression):
-
-| State | Glyph | Code |
-|-------|-------|------|
-| complete | ■ | U+25A0 |
-| in-progress | ▣ | U+25A3 |
-| open | □ | U+25A1 |
-| blocked | ▨ | U+25A8 |
-
-**Severity** (issue priority, rightward arrows, more arrows = higher priority):
-
-| Level | Glyph | Code |
-|-------|-------|------|
-| critical | ⇶ | U+21F6 |
-| degraded | ⇉ | U+21C9 |
-| normal | → | U+2192 |
-| annoying | ⇢ | U+21E2 |
-
-**Confidence** (decision certainty, box-drawing line weight):
-
-| Level | Glyph | Code |
-|-------|-------|------|
-| firm | ━ | U+2501 |
-| provisional | ─ | U+2500 |
-| exploratory | ┄ | U+2504 |
-
-**Trends** (direction of change):
-
-| Direction | Glyph | Code |
-|-----------|-------|------|
-| improving | ⮉ | U+2B89 |
-| degrading | ⮋ | U+2B8B |
-
-**Structural** (layout primitives):
-
-| Element | Glyph/Pattern | Code |
-|---------|---------------|------|
-| section divider | `─── label ───────` | U+2500 |
-| list item | ▸ | U+25B8 |
-| inline separator | · | U+00B7 |
-| flow / target | → | U+2192 |
-| progress bar | █▓░ | U+2588/2593/2591 |
-
-### Composition rules
-
-- **Skill introduction**: every skill opens with `─── glyph skillname · context ───`.
-  SKILL.md files reference this with the canonical instruction: `Skill introduction:` followed by the pattern with the skill's glyph and context word. Exception: hej uses the agentera logo instead of the standard opener.
-- **Skill exit**: every skill closes with the same divider pattern, replacing the context word with the exit status: `─── glyph skillname · status ───`. See Exit signal format below.
-- **Step progress**: skills with 4+ workflow steps show `── step N/M: verb` markers between steps. See Step markers below.
-- **Logo placement**: the agentera logo (box-drawing characters) appears at key moments only: hej dashboard, major completions. Not every skill invocation.
-- **Open structure**: no outer frames except the logo. Breathing room (blank lines) between sections. Section headers are clean labels: no glyphs in `##` Markdown headers.
-- **Narrative position**: summaries close sections, not open them.
-- **Markdown layering**: all artifacts stay valid standard Markdown. Visual tokens layer within sections alongside existing `##` headers, `**bold**` labels, and tables.
-
-### Divider hierarchy
-
-Three levels of visual dividers create a consistent hierarchy across skill output.
-
-| Level | Pattern | Use |
-|-------|---------|-----|
-| Skill boundary | `─── glyph skillname · context ───` | Session opener, exit signal |
-| Step boundary | `── step N/M: verb` | Workflow progress between steps |
-| Container | `── label` | Mid-session blocks (scratchpad, etc.) |
-
-Step and container dividers share the same visual weight (2-dash), differentiated by label content: step boundaries use `step N/M: verb`, containers use a descriptive label.
-
-### Exit signal format
-
-The exit signal's visual output matches the status reported. All four statuses use the skill boundary divider, followed by a summary and (for non-complete statuses) bullet details.
-
-**complete**:
-```
-─── glyph skillname · complete ───
-
-Summary sentence.
-```
-
-**flagged**:
-```
-─── glyph skillname · flagged ───
-
-Summary sentence.
-
-▸ concern one
-▸ concern two
-```
-
-**stuck**:
-```
-─── glyph skillname · stuck ───
-
-Summary sentence.
-
-▸ blocked: what is blocking
-▸ tried: what was attempted
-```
-
-**waiting**:
-```
-─── glyph skillname · waiting ───
-
-Summary sentence.
-
-▸ needs: what is required to proceed
-```
-
-### Step markers
-
-Skills with 4+ workflow steps display progress markers between steps:
-
-```
-── step N/M: verb
-```
-
-N is the current step number, M is the total step count for the current mode, and verb is the step's bare-verb name (lowercase).
-
-Rules:
-- Step 0 (mode detection/gates) is excluded from the count: markers start at Step 1
-- Skills with multiple modes use per-mode N/M counts (e.g., Create mode 1/4, Refine mode 1/4)
-- Excluded skills: hej (uses dashboard format), resonera (interactive Q&A with scratchpad)
-
-### Token-to-artifact mapping
-
-| Artifact | Token families used |
-|----------|---------------------|
-| PLAN.md | Status (■/▣/□/▨) for task states |
-| TODO.md | Severity (⇶/⇉/→/⇢) in section headings, Status (□/■) via checkboxes |
-| DECISIONS.md | Confidence (━/─/┄) alongside confidence labels |
-| HEALTH.md | Trends (⮉/⮋) for trajectory, severity for findings |
-| PROGRESS.md | Status (■) for cycle completion markers |
-| VISION.md | Structural (▸, ·) for principles and direction |
-| DOCS.md | Structural (▸, ·) for index, status tokens for coverage |
-
-### Rules
-
-- Skills producing formatted output MUST use their assigned glyph in the skill introduction pattern
-- Skills producing or consuming artifacts SHOULD use the token families specified in the token-to-artifact mapping
-- Semantic tokens augment existing text labels, they do not replace them
-  (`⇶ critical` not just `⇶`)
-- New skills MUST be assigned a glyph in DESIGN.md before their SKILL.md is finalized
-
-**Linter check**: Advisory. Presence of skill glyph in SKILL.md output format sections.

@@ -1,8 +1,8 @@
-# Ecosystem Spec
+# Spec
 
-<!-- Shared primitives for the agentera ecosystem. -->
+<!-- Shared primitives for agentera. -->
 <!-- All 12 skills/*/SKILL.md files must align with this spec. -->
-<!-- Validated by scripts/validate_ecosystem.py (pre-commit hook). -->
+<!-- Validated by scripts/validate_spec.py (pre-commit hook). -->
 <!-- See Decisions 7 and 8 in DECISIONS.md for rationale. -->
 
 ## 1. Confidence Scale
@@ -29,7 +29,7 @@ Five tiers with shared boundaries. Each skill defines its own domain-specific la
 
 ## 2. Severity Levels
 
-Two severity vocabularies serve different purposes in the ecosystem.
+Two severity vocabularies serve different purposes in the suite.
 
 ### Finding severity (audit output)
 
@@ -134,7 +134,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | SESSION.md | Timestamped session bookmarks with artifact change tracking |
 | archive/ | Completed plans, superseded visions and designs |
 
-**PROFILE.md** is global at `~/.claude/profile/PROFILE.md`, not in the project root or `.agentera/`. Skills read it from this path directly.
+**PROFILE.md** is global. The host runtime provides the path via the profile-path capability (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> Skills read it from the runtime-provided path directly.
 
 ### Format contracts
 
@@ -152,7 +152,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | DESIGN.md | .agentera/DESIGN.md | visualisera | realisera, visionera | Standard sections per DESIGN-spec.md |
 | DOCS.md | .agentera/DOCS.md | dokumentera | all skills (path resolution) | ## Conventions, ## Artifact Mapping, ## Index |
 | SESSION.md | .agentera/SESSION.md | session stop hook | session start hook, hej | ## YYYY-MM-DD HH:MM, Artifacts modified, Summary; compaction: 5 full + 20 one-line, oldest dropped |
-| PROFILE.md | ~/.claude/profile/PROFILE.md | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
+| PROFILE.md | (profile-path capability) <!-- platform: profile-path --> | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
 
 **Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for project contributors) AND `.agentera/PROGRESS.md` (operational cycle-level detail for consuming skills). Consuming skills that need cycle detail read `.agentera/PROGRESS.md`; project contributors read CHANGELOG.md.
 
@@ -308,7 +308,7 @@ Standard threshold language (after migration to 0-100):
 
 ### Direct read pattern (for skills that need qualitative profile context)
 
-Read `~/.claude/profile/PROFILE.md` directly. Mentioned skills: resonera, visionera, dokumentera, visualisera.
+Read PROFILE.md from the runtime-provided profile path (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> Mentioned skills: resonera, visionera, dokumentera, visualisera.
 
 Both patterns MUST include a fallback instruction:
 "If the script or PROFILE.md is missing, proceed without persona grounding."
@@ -321,7 +321,7 @@ Every SKILL.md MUST contain a `## Cross-skill integration` section. Requirements
 
 ### Ecosystem language
 
-The section MUST open with: "[Skill name] is part of a twelve-skill ecosystem."
+The section MUST open with: "[Skill name] is part of a twelve-skill suite."
 
 ### Required references
 
@@ -342,7 +342,7 @@ The skill dependency graph defines which skills must be referenced:
 | visualisera | visionera, realisera, dokumentera, inspektera, profilera, inspirera, resonera |
 | orkestrera | planera, realisera, inspektera, inspirera, dokumentera, profilera, visionera, resonera, optimera, visualisera |
 
-**Linter check**: Deterministic. Section heading presence, ecosystem language match, required skill references present.
+**Linter check**: Deterministic. Section heading presence, suite language match, required skill references present.
 
 ## 8. Safety Rails Section
 
@@ -441,7 +441,7 @@ Autonomous-loop skills MUST include loop guard language in their `## Exit signal
 
 ## 12. Visual Identity
 
-The ecosystem has a shared visual vocabulary defined in DESIGN.md (the project-level visual identity, maintained by visualisera). This section defines the ecosystem-level conventions that all SKILL.md files follow when formatting output and artifact content.
+The suite has a shared visual vocabulary defined in DESIGN.md (the project-level visual identity, maintained by visualisera). This section defines the conventions that all SKILL.md files follow when formatting output and artifact content.
 
 DESIGN.md is the source of truth for token definitions. This spec defines how skills use those tokens: introduction patterns, semantic roles, and composition rules. Skills include actual glyph characters inline in their output format examples (they run in target projects without access to this repo's DESIGN.md).
 
@@ -613,7 +613,7 @@ Rules:
 
 ## 13. Narration Voice
 
-Skills communicate with the user between structural markers, announcing modes, describing transitions, and narrating progress. This narration carries the ecosystem's voice: the sharp colleague (VISION.md), not a system log.
+Skills communicate with the user between structural markers, announcing modes, describing transitions, and narrating progress. This narration carries the suite's voice: the sharp colleague (VISION.md), not a system log.
 
 ### The principle
 
@@ -668,11 +668,11 @@ Not deterministic because output format instructions vary by skill.
 
 ## 14. Punctuation Conventions
 
-All ecosystem text (SKILL.md files, this spec, templates, reference docs, agent output) follows a shared punctuation standard to keep prose scannable and consistent.
+All spec text (SKILL.md files, this document, templates, reference docs, agent output) follows a shared punctuation standard to keep prose scannable and consistent.
 
 | Rule | Detail |
 |------|--------|
-| No em-dash (U+2014) | The `—` character is prohibited in all ecosystem text |
+| No em-dash (U+2014) | The `—` character is prohibited in all spec and skill text |
 | No double dash (`--`) as prose punctuation | Double dashes used as word separators or parenthetical markers are prohibited. CLI flags in code blocks and inline code are exempt (they are syntax, not prose) |
 | Replacement hierarchy | First restructure the sentence so no dash is needed. Fall back to commas, periods, or colons only when restructuring reads worse |
 | Colon for label:value | Use colons as label-to-value separators (per Decision 14) |
@@ -681,7 +681,7 @@ All ecosystem text (SKILL.md files, this spec, templates, reference docs, agent 
 
 ## 15. Line-Break Conventions
 
-Prose paragraphs in ecosystem text are single lines. The terminal handles wrapping; hard wraps at arbitrary column widths create noisy diffs and complicate search.
+Prose paragraphs in spec and skill text are single lines. The terminal handles wrapping; hard wraps at arbitrary column widths create noisy diffs and complicate search.
 
 | Rule | Detail |
 |------|--------|
@@ -724,7 +724,7 @@ Plans can specify a different proportionality target by including an explicit ra
 
 ## 17. Phase Tracking
 
-Every realisera cycle operates in one of five phases. Phases map the ecosystem's skills to a lifecycle model, making it possible for consuming skills to reason about what kind of work a cycle performed and whether phase transitions follow a coherent sequence.
+Every realisera cycle operates in one of five phases. Phases map the suite's skills to a lifecycle model, making it possible for consuming skills to reason about what kind of work a cycle performed and whether phase transitions follow a coherent sequence.
 
 ### Phases
 
@@ -765,7 +765,7 @@ Each cycle entry in PROGRESS.md includes a **Phase** field immediately after the
 
 Consuming skills use the phase field for trend analysis (e.g., ratio of build to audit cycles, whether deliberation precedes major architectural changes).
 
-**Linter check**: None. Phase tracking is defined here for producing and consuming skills. SKILL.md integration is handled per-skill, not by the ecosystem linter.
+**Linter check**: None. Phase tracking is defined here for producing and consuming skills. SKILL.md integration is handled per-skill, not by the spec linter.
 
 ## 18. Staleness Detection
 
@@ -785,7 +785,7 @@ Each skill produces specific artifacts as part of its workflow. When a skill is 
 | inspektera | .agentera/HEALTH.md, TODO.md |
 | dokumentera | .agentera/DOCS.md |
 | visualisera | .agentera/DESIGN.md |
-| profilera | ~/.claude/profile/PROFILE.md |
+| profilera | (profile-path capability) <!-- platform: profile-path --> |
 | inspirera | (no owned artifact; findings are filed to TODO.md or fed into other skills) |
 | orkestrera | (conductor; updates .agentera/PLAN.md task statuses and dispatches other skills) |
 | hej | (router; reads artifacts but produces none) |
@@ -855,7 +855,7 @@ A cycle that bundles runnable work with an N/A-tagged change still requires obse
 | CLI tool | Invoke the binary with realistic arguments that exercise the changed path, capturing stdout/stderr and exit code |
 | Library / SDK | Run a smoke driver (a short script or REPL session) that exercises the public API surface touched by the change |
 | Web service | Send a request to a production-shaped endpoint (local server with production configuration or a staging instance) and record the response |
-| Skill repo | Dispatch the skill via the runtime's eval mechanism against a representative prompt and capture the observed skill output |
+| Skill repo | Dispatch the skill via the eval mechanism capability (Section 20) against a representative prompt and capture the observed skill output <!-- platform: eval-mechanism --> |
 | Design system | Render a representative component against the real design tokens and visually inspect (screenshot or DOM snapshot) against the expected output |
 | Data pipeline | Run the pipeline against a real input sample (not synthetic fixtures) and record the observed output or side effects |
 
@@ -881,3 +881,69 @@ The gate is enforced independently by two skills; each holds a different phase a
 Realisera holds the primary enforcement contract because it is the skill that actually produces cycle entries. Orkestrera holds a lighter presence-and-quality check because it reads artifacts but never touches code; the full content audit is delegated to inspektera via the dispatch prompt.
 
 **Linter check**: Deterministic. Realisera and orkestrera SKILL.md files must reference Section 19 by name and include the `**Verified**` field in any PROGRESS.md cycle format examples they carry.
+
+## 20. Host Adapter Contract
+
+This spec defines what the portable core of agentera expects from its runtime environment. The reference implementation is Claude Code; other runtimes implement the same contract in their own way. The contract below is the minimum host surface for portable skills and shared artifacts. It is not a blanket claim that every current skill is fully portable today.
+
+### Capabilities
+
+Each capability specifies what the skill requires, not how the runtime provides it. Runtimes implement these capabilities using their own mechanisms.
+
+| Capability | Requirement level | What the skill requires | Claude Code implementation |
+|------------|-------------------|------------------------|---------------------------|
+| Skill discovery | Required | A mechanism to find and load SKILL.md files so the runtime can present available skills to the user | `.claude-plugin/plugin.json` manifests and `settings.json` skillPaths |
+| Artifact resolution | Required | Ability to read and write files at paths specified by DOCS.md or the default layout (project root + `.agentera/`) | Direct filesystem access per artifact path resolution rules |
+| Profile path | Required | A global configuration directory where PROFILE.md lives, readable by all skills that consume the generated profile artifact | `~/.claude/profile/PROFILE.md` |
+| Sub-agent dispatch | Capability-gated | Ability to spawn subordinate agents with workspace isolation for parallel implementation tasks | Git worktrees via the `isolation: "worktree"` primitive |
+| Eval mechanism | Capability-gated | Ability to invoke a skill against a prompt and capture the output for behavioral verification | `claude -p --output-format json` pipe mode |
+| Hook lifecycle | Optional but recommended | Callbacks at session start, session stop, and after tool use for artifact validation and context preload | `hooks.json` with SessionStart, Stop, and PostToolUse event types |
+
+Required capabilities are the minimum for artifact-centric interoperability. Capability-gated features preserve the full behavior of the skills that rely on them. Optional capabilities improve continuity and safety rails but are not prerequisites for the portable core.
+
+### Portability status by skill
+
+The current suite does not sit at one portability level. Skills fall into three buckets:
+
+| Status | Meaning | Skills |
+|--------|---------|--------|
+| Portable core | Depends only on shared artifacts plus the required host capabilities above | visionera, resonera, planera, dokumentera, visualisera, inspirera, inspektera |
+| Capability-gated | Portable when the host adapter also implements the capability-gated runtime features those skills depend on | hej, realisera, optimera, orkestrera |
+| Host-specific extension | Depends on a host-specific data source not yet standardized by this spec | profilera |
+
+Portable core means the skill's behavioral contract travels with the artifact protocol. Capability-gated means the skill remains portable, but only if the target runtime exposes the extra host primitives it depends on. Host-specific extension means the skill is intentionally outside the current portability claim until a new contract layer is defined.
+
+### Host-specific extensions
+
+Some skills need host data that is not part of the core runtime surface. Today the clearest example is profilera: it does not just read PROFILE.md, it mines host session history, memories, and conversation traces to produce that artifact. That extraction corpus is Claude-specific in the reference implementation and is not standardized by the six capabilities above.
+
+Until a future Session Corpus Contract exists, adapters MUST treat profilera as a host-specific extension. A runtime may implement its own profilera-compatible corpus, but doing so is outside the scope of Section 20.
+
+### Annotation convention
+
+Platform-specific references in SKILL.md files are annotated with HTML comments that map them to the capability they depend on. This lets other runtimes identify every coupling point without rewriting the skills.
+
+Format: `<!-- platform: capability-name -->`
+
+Placed immediately after or adjacent to the platform-specific reference. The six recognized capability names correspond to the table above: `skill-discovery`, `artifact-resolution`, `profile-path`, `sub-agent-dispatch`, `eval-mechanism`, `hook-lifecycle`.
+
+Example:
+
+```markdown
+Read `~/.claude/profile/PROFILE.md` directly per contract profile consumption conventions. <!-- platform: profile-path -->
+```
+
+Runtimes that are not Claude Code replace the annotated reference with their own equivalent. Skills describe what they need; the runtime provides how.
+
+### Profile.md path
+
+The global profile path is the most deeply coupled reference in the suite. Section 4 currently hardcodes `~/.claude/profile/PROFILE.md`. With the host adapter contract, this path becomes a capability: the runtime provides a global configuration directory, and skills read PROFILE.md from it. The default annotation in contract files references the Claude Code path with a `<!-- platform: profile-path -->` comment. Other runtimes substitute their own global config path.
+
+### Linter check
+
+Deterministic. The linter validates two properties:
+
+1. Every `<!-- platform: -->` annotation in a SKILL.md references a recognized capability name from the capability table above.
+2. The capability names in the annotation must exactly match one of: `skill-discovery`, `artifact-resolution`, `profile-path`, `sub-agent-dispatch`, `eval-mechanism`, `hook-lifecycle`.
+
+Annotations on references that have no corresponding capability (e.g., a comment referencing a nonexistent capability) produce a linter error.

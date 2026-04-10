@@ -1,4 +1,4 @@
-"""Tests for scripts/validate-ecosystem.py parsing and check functions.
+"""Tests for scripts/validate_spec.py parsing and check functions.
 
 Proportionality: Decision 21. One pass + one fail per unit. Edge case tests
 retained only for functions with regex, multi-branch parsing, or structural
@@ -40,22 +40,22 @@ trigger: oops
 class TestParseFrontmatter:
     """Complex: regex, multi-line continuation. Keep all 4 (distinct paths)."""
 
-    def test_valid_frontmatter(self, validate_ecosystem):
-        result = validate_ecosystem.parse_frontmatter(VALID_FRONTMATTER)
+    def test_valid_frontmatter(self, validate_spec):
+        result = validate_spec.parse_frontmatter(VALID_FRONTMATTER)
         assert result is not None
         assert result["name"] == "realisera"
         assert result["description"] == "Autonomous development loops"
         assert result["trigger"] == "start building"
 
-    def test_no_frontmatter(self, validate_ecosystem):
-        result = validate_ecosystem.parse_frontmatter(NO_FRONTMATTER)
+    def test_no_frontmatter(self, validate_spec):
+        result = validate_spec.parse_frontmatter(NO_FRONTMATTER)
         assert result is None
 
-    def test_unclosed_frontmatter(self, validate_ecosystem):
-        result = validate_ecosystem.parse_frontmatter(UNCLOSED_FRONTMATTER)
+    def test_unclosed_frontmatter(self, validate_spec):
+        result = validate_spec.parse_frontmatter(UNCLOSED_FRONTMATTER)
         assert result is None
 
-    def test_multiline_value(self, validate_ecosystem):
+    def test_multiline_value(self, validate_spec):
         text = """\
 ---
 name: test-skill
@@ -63,7 +63,7 @@ description: A skill that does
   multiple things across lines
 ---
 """
-        result = validate_ecosystem.parse_frontmatter(text)
+        result = validate_spec.parse_frontmatter(text)
         assert result is not None
         assert "multiple things" in result["description"]
 
@@ -91,22 +91,22 @@ Final section content.
 class TestExtractSection:
     """Complex: regex boundary matching. Keep all 4 (distinct boundary cases)."""
 
-    def test_extract_existing_section(self, validate_ecosystem):
-        result = validate_ecosystem.extract_section(MULTI_SECTION_DOC, "Second section")
+    def test_extract_existing_section(self, validate_spec):
+        result = validate_spec.extract_section(MULTI_SECTION_DOC, "Second section")
         assert result is not None
         assert "Content of the second section" in result
 
-    def test_missing_section(self, validate_ecosystem):
-        result = validate_ecosystem.extract_section(MULTI_SECTION_DOC, "Nonexistent")
+    def test_missing_section(self, validate_spec):
+        result = validate_spec.extract_section(MULTI_SECTION_DOC, "Nonexistent")
         assert result is None
 
-    def test_section_at_end_of_file(self, validate_ecosystem):
-        result = validate_ecosystem.extract_section(MULTI_SECTION_DOC, "Third section")
+    def test_section_at_end_of_file(self, validate_spec):
+        result = validate_spec.extract_section(MULTI_SECTION_DOC, "Third section")
         assert result is not None
         assert "Final section content" in result
 
-    def test_section_does_not_bleed(self, validate_ecosystem):
-        result = validate_ecosystem.extract_section(MULTI_SECTION_DOC, "First section")
+    def test_section_does_not_bleed(self, validate_spec):
+        result = validate_spec.extract_section(MULTI_SECTION_DOC, "First section")
         assert result is not None
         assert "Content of the first section" in result
         assert "Content of the second section" not in result
@@ -120,8 +120,8 @@ class TestExtractSection:
 class TestResults:
     """Simple: data accumulation. One pass + one fail."""
 
-    def test_mixed_entries_counted_correctly(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
+    def test_mixed_entries_counted_correctly(self, validate_spec):
+        r = validate_spec.Results()
         r.ok("s1", "c1")
         r.error("s1", "c2", "bad")
         r.warn("s1", "c3", "meh")
@@ -133,8 +133,8 @@ class TestResults:
         assert r.warn_count == 2
         assert len(r.entries) == 7
 
-    def test_empty_results(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
+    def test_empty_results(self, validate_spec):
+        r = validate_spec.Results()
         assert r.error_count == 0
         assert r.warn_count == 0
         assert r.entries == []
@@ -175,30 +175,30 @@ Content of child gamma.
 class TestExtractSubsection:
     """Complex: regex + parent scoping. Keep 4 distinct paths."""
 
-    def test_extract_existing_subsection(self, validate_ecosystem):
-        result = validate_ecosystem.extract_subsection(
+    def test_extract_existing_subsection(self, validate_spec):
+        result = validate_spec.extract_subsection(
             NESTED_SECTIONS_DOC, "Parent one", "Child alpha",
         )
         assert result is not None
         assert "Content of child alpha under parent one" in result
 
-    def test_subsection_scoped_to_parent(self, validate_ecosystem):
+    def test_subsection_scoped_to_parent(self, validate_spec):
         """Same child heading name under different parents returns different content."""
-        result = validate_ecosystem.extract_subsection(
+        result = validate_spec.extract_subsection(
             NESTED_SECTIONS_DOC, "Parent two", "Child alpha",
         )
         assert result is not None
         assert "under parent two" in result
         assert "under parent one" not in result
 
-    def test_missing_child(self, validate_ecosystem):
-        result = validate_ecosystem.extract_subsection(
+    def test_missing_child(self, validate_spec):
+        result = validate_spec.extract_subsection(
             NESTED_SECTIONS_DOC, "Parent one", "Nonexistent child",
         )
         assert result is None
 
-    def test_missing_parent(self, validate_ecosystem):
-        result = validate_ecosystem.extract_subsection(
+    def test_missing_parent(self, validate_spec):
+        result = validate_spec.extract_subsection(
             NESTED_SECTIONS_DOC, "Nonexistent parent", "Child alpha",
         )
         assert result is None
@@ -231,7 +231,7 @@ Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it
 
 ## Cross-skill integration
 
-Realisera is part of a twelve-skill ecosystem. Each skill can invoke the others when the work calls for it.
+Realisera is part of a twelve-skill suite. Each skill can invoke the others when the work calls for it.
 
 ### Realisera reads visionera output
 ### Realisera delegates to optimera
@@ -312,7 +312,7 @@ description: Autonomous development loops
 
 ## Cross-skill integration
 
-Realisera is part of a ten-skill ecosystem.
+Realisera is part of a ten-skill suite.
 """
 
 SYNTHETIC_SKILL_OLD_ARTIFACT_PATH = """\
@@ -529,7 +529,7 @@ description: Autonomous development loops
 
 ## Cross-skill integration
 
-Realisera is part of a twelve-skill ecosystem.
+Realisera is part of a twelve-skill suite.
 
 ### Artifact path resolution
 
@@ -678,29 +678,29 @@ spec_sections: not-a-list
 class TestCheckFrontmatter:
     """Complex: regex (kebab-case), multi-field branching. Keep 4 distinct paths."""
 
-    def test_valid_frontmatter_passes(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_frontmatter("realisera", SYNTHETIC_SKILL_VALID, r)
+    def test_valid_frontmatter_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_frontmatter("realisera", SYNTHETIC_SKILL_VALID, r)
         assert r.error_count == 0
         assert any(level == "PASS" for level, _, check, _ in r.entries if check == "frontmatter")
 
-    def test_missing_frontmatter_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_frontmatter("realisera", SYNTHETIC_SKILL_MISSING_FRONTMATTER, r)
+    def test_missing_frontmatter_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_frontmatter("realisera", SYNTHETIC_SKILL_MISSING_FRONTMATTER, r)
         assert r.error_count == 1
         assert "Missing or malformed" in r.entries[0][3]
 
-    def test_missing_name_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
+    def test_missing_name_errors(self, validate_spec):
+        r = validate_spec.Results()
         text = "---\ndescription: A skill without a name\n---\n\n# SKILL\n"
-        validate_ecosystem.check_frontmatter("test-skill", text, r)
+        validate_spec.check_frontmatter("test-skill", text, r)
         assert r.error_count >= 1
         details = [detail for _, _, _, detail in r.entries if "name" in detail.lower()]
         assert len(details) >= 1
 
-    def test_non_kebab_case_name_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_frontmatter("bad-skill", SYNTHETIC_SKILL_BAD_NAME, r)
+    def test_non_kebab_case_name_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_frontmatter("bad-skill", SYNTHETIC_SKILL_BAD_NAME, r)
         assert r.error_count >= 1
         details = [detail for _, _, _, detail in r.entries if "kebab" in detail.lower()]
         assert len(details) == 1
@@ -714,23 +714,23 @@ class TestCheckFrontmatter:
 class TestCheckConfidenceScale:
     """Complex: two regex patterns with branching. Keep 3 distinct paths."""
 
-    def test_valid_content_passes(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_confidence_scale("realisera", SYNTHETIC_SKILL_VALID, r)
+    def test_valid_content_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_confidence_scale("realisera", SYNTHETIC_SKILL_VALID, r)
         assert r.error_count == 0
         assert any(level == "PASS" for level, _, check, _ in r.entries if check == "confidence-scale")
 
-    def test_decimal_confidence_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_confidence_scale("realisera", SYNTHETIC_SKILL_DECIMAL_CONFIDENCE, r)
+    def test_decimal_confidence_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_confidence_scale("realisera", SYNTHETIC_SKILL_DECIMAL_CONFIDENCE, r)
         assert r.error_count == 1
         detail = r.entries[0][3]
         assert "0.0-1.0" in detail
 
-    def test_tier_boundaries_flagged(self, validate_ecosystem):
+    def test_tier_boundaries_flagged(self, validate_spec):
         text = "---\nname: test-skill\ndescription: Test\n---\n\nTier boundaries are 0.85-0.95 for high confidence.\n"
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_confidence_scale("test-skill", text, r)
+        r = validate_spec.Results()
+        validate_spec.check_confidence_scale("test-skill", text, r)
         assert r.error_count == 1
         assert "tier boundaries" in r.entries[0][3].lower()
 
@@ -743,29 +743,29 @@ class TestCheckConfidenceScale:
 class TestCheckSeverityLevels:
     """Complex: 4 regex patterns (table, heading, section, mapping). Keep 4 distinct paths."""
 
-    def test_canonical_severity_passes(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_severity_levels("inspektera", SYNTHETIC_SKILL_CANONICAL_SEVERITY, r)
+    def test_canonical_severity_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_severity_levels("inspektera", SYNTHETIC_SKILL_CANONICAL_SEVERITY, r)
         assert r.error_count == 0
         assert any(level == "PASS" for level, _, check, _ in r.entries if check == "severity-levels")
 
-    def test_non_canonical_in_table_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_severity_levels("inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_TABLE, r)
+    def test_non_canonical_in_table_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_severity_levels("inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_TABLE, r)
         assert r.error_count >= 1
         details = " ".join(detail for _, _, _, detail in r.entries)
         assert "high" in details.lower() or "major" in details.lower()
 
-    def test_non_canonical_in_heading_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_severity_levels("inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_HEADING, r)
+    def test_non_canonical_in_heading_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_severity_levels("inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_HEADING, r)
         assert r.error_count >= 1
         details = " ".join(detail for _, _, _, detail in r.entries)
         assert "high" in details.lower()
 
-    def test_non_canonical_in_severity_section_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_severity_levels("inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_SECTION, r)
+    def test_non_canonical_in_severity_section_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_severity_levels("inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_SECTION, r)
         assert r.error_count >= 1
         details = " ".join(detail for _, _, _, detail in r.entries)
         assert "low" in details.lower()
@@ -779,15 +779,15 @@ class TestCheckSeverityLevels:
 class TestCheckDecisionLabels:
     """Simple: set membership check scoped to resonera. One pass + one fail."""
 
-    def test_resonera_with_all_labels_passes(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_decision_labels("resonera", SYNTHETIC_SKILL_RESONERA_WITH_LABELS, r)
+    def test_resonera_with_all_labels_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_decision_labels("resonera", SYNTHETIC_SKILL_RESONERA_WITH_LABELS, r)
         assert r.error_count == 0
         assert any(level == "PASS" for level, _, check, _ in r.entries if check == "decision-labels")
 
-    def test_resonera_missing_labels_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_decision_labels("resonera", SYNTHETIC_SKILL_RESONERA_MISSING_LABELS, r)
+    def test_resonera_missing_labels_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_decision_labels("resonera", SYNTHETIC_SKILL_RESONERA_MISSING_LABELS, r)
         assert r.error_count == 1
         detail = r.entries[0][3]
         assert "provisional" in detail or "exploratory" in detail
@@ -801,21 +801,21 @@ class TestCheckDecisionLabels:
 class TestCheckEmDashes:
     """Complex: regex with code block filtering. Keep 3 (pass, prose error, code block exclusion)."""
 
-    def test_no_em_dashes_passes(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_em_dashes("realisera", SYNTHETIC_SKILL_VALID, r)
+    def test_no_em_dashes_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_em_dashes("realisera", SYNTHETIC_SKILL_VALID, r)
         assert r.error_count == 0
         assert any(level == "PASS" for level, _, check, _ in r.entries if check == "em-dashes")
 
-    def test_em_dash_in_prose_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_em_dashes("realisera", SYNTHETIC_SKILL_EM_DASHES, r)
+    def test_em_dash_in_prose_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_em_dashes("realisera", SYNTHETIC_SKILL_EM_DASHES, r)
         assert r.error_count == 1
         assert "Em-dash" in r.entries[0][3]
 
-    def test_em_dash_in_code_block_ignored(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_em_dashes("test-skill", SYNTHETIC_SKILL_EM_DASH_IN_CODE_BLOCK, r)
+    def test_em_dash_in_code_block_ignored(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_em_dashes("test-skill", SYNTHETIC_SKILL_EM_DASH_IN_CODE_BLOCK, r)
         assert r.error_count == 0
 
 
@@ -827,24 +827,24 @@ class TestCheckEmDashes:
 class TestCheckHardWraps:
     """Complex: line analysis with structural exclusions. Keep 3 distinct paths."""
 
-    def test_no_hard_wraps_passes(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_hard_wraps("test-skill", SYNTHETIC_SKILL_NO_HARD_WRAP, r)
+    def test_no_hard_wraps_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_hard_wraps("test-skill", SYNTHETIC_SKILL_NO_HARD_WRAP, r)
         assert r.error_count == 0
         assert r.warn_count == 0
         assert any(level == "PASS" for level, _, check, _ in r.entries if check == "hard-wraps")
 
-    def test_hard_wrapped_prose_warns(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_hard_wraps("test-skill", SYNTHETIC_SKILL_HARD_WRAP_PROSE, r)
+    def test_hard_wrapped_prose_warns(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_hard_wraps("test-skill", SYNTHETIC_SKILL_HARD_WRAP_PROSE, r)
         assert r.warn_count >= 1
         assert r.error_count == 0
         detail = r.entries[0][3]
         assert "hard wrap" in detail.lower()
 
-    def test_structural_lines_not_flagged(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_hard_wraps("test-skill", SYNTHETIC_SKILL_HARD_WRAP_STRUCTURAL, r)
+    def test_structural_lines_not_flagged(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_hard_wraps("test-skill", SYNTHETIC_SKILL_HARD_WRAP_STRUCTURAL, r)
         assert r.warn_count == 0
 
 
@@ -856,9 +856,9 @@ class TestCheckHardWraps:
 class TestCheckArtifactPathResolution:
     """Complex: multi-branch (old-style, wrong-location, missing). Keep 4 distinct paths."""
 
-    def test_valid_content_passes(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_artifact_path_resolution(
+    def test_valid_content_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_artifact_path_resolution(
             "realisera", SYNTHETIC_SKILL_VALID, r,
         )
         assert r.error_count == 0
@@ -867,27 +867,27 @@ class TestCheckArtifactPathResolution:
             if check == "artifact-path-resolution"
         )
 
-    def test_old_style_wording_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_artifact_path_resolution(
+    def test_old_style_wording_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_artifact_path_resolution(
             "realisera", SYNTHETIC_SKILL_OLD_ARTIFACT_PATH, r,
         )
         assert r.error_count == 1
         detail = r.entries[0][3]
         assert "old-style" in detail.lower() or "DOCS.md exists" in detail
 
-    def test_missing_subsection_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_artifact_path_resolution(
+    def test_missing_subsection_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_artifact_path_resolution(
             "realisera", SYNTHETIC_SKILL_ARTIFACT_PATH_NO_SUBSECTION, r,
         )
         assert r.error_count == 1
         assert "Missing ### Artifact path resolution" in r.entries[0][3]
 
-    def test_wrong_location_errors(self, validate_ecosystem):
+    def test_wrong_location_errors(self, validate_spec):
         """Instruction under Cross-skill instead of State artifacts is an error."""
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_artifact_path_resolution(
+        r = validate_spec.Results()
+        validate_spec.check_artifact_path_resolution(
             "realisera", SYNTHETIC_SKILL_ARTIFACT_PATH_WRONG_LOCATION, r,
         )
         assert r.error_count == 1
@@ -903,9 +903,9 @@ class TestCheckArtifactPathResolution:
 class TestCheckProfileConsumption:
     """Complex: multiple regex checks (script ref, decimal thresholds, fallback). Keep 4 distinct error paths."""
 
-    def test_valid_consumer_passes(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_profile_consumption(
+    def test_valid_consumer_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_profile_consumption(
             "realisera", SYNTHETIC_SKILL_VALID, r,
         )
         assert r.error_count == 0
@@ -914,27 +914,27 @@ class TestCheckProfileConsumption:
             if check == "profile-consumption"
         )
 
-    def test_missing_script_reference_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_profile_consumption(
+    def test_missing_script_reference_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_profile_consumption(
             "realisera", SYNTHETIC_SKILL_PROFILE_MISSING_SCRIPT, r,
         )
         assert r.error_count >= 1
         details = " ".join(d for _, _, _, d in r.entries)
         assert "effective_profile" in details
 
-    def test_decimal_thresholds_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_profile_consumption(
+    def test_decimal_thresholds_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_profile_consumption(
             "realisera", SYNTHETIC_SKILL_PROFILE_DECIMAL_THRESHOLDS, r,
         )
         assert r.error_count >= 1
         details = " ".join(d for _, _, _, d in r.entries)
         assert "0.65" in details or "threshold" in details.lower()
 
-    def test_missing_fallback_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_profile_consumption(
+    def test_missing_fallback_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_profile_consumption(
             "realisera", SYNTHETIC_SKILL_PROFILE_NO_FALLBACK, r,
         )
         assert r.error_count >= 1
@@ -948,11 +948,11 @@ class TestCheckProfileConsumption:
 
 
 class TestCheckCrossSkillIntegration:
-    """Branching: section presence + ecosystem count. Keep 3 (pass, wrong count, missing section)."""
+    """Branching: section presence + suite count. Keep 3 (pass, wrong count, missing section)."""
 
-    def test_valid_content_passes(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_cross_skill_integration(
+    def test_valid_content_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_cross_skill_integration(
             "realisera", SYNTHETIC_SKILL_VALID, r,
         )
         assert r.error_count == 0
@@ -961,18 +961,18 @@ class TestCheckCrossSkillIntegration:
             if check == "cross-skill-refs"
         )
 
-    def test_wrong_ecosystem_count_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_cross_skill_integration(
+    def test_wrong_suite_count_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_cross_skill_integration(
             "realisera", SYNTHETIC_SKILL_BAD_CROSS_SKILL, r,
         )
         assert r.error_count >= 1
         detail = r.entries[0][3]
         assert "ten-skill" in detail
 
-    def test_missing_section_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_cross_skill_integration(
+    def test_missing_section_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_cross_skill_integration(
             "realisera", SYNTHETIC_SKILL_BAD_SAFETY_RAILS, r,
         )
         assert r.error_count >= 1
@@ -988,26 +988,26 @@ class TestCheckCrossSkillIntegration:
 class TestCheckSafetyRails:
     """Branching: section presence, critical tags, NEVER count. Keep 3 distinct paths."""
 
-    def test_valid_content_passes(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_safety_rails("realisera", SYNTHETIC_SKILL_VALID, r)
+    def test_valid_content_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_safety_rails("realisera", SYNTHETIC_SKILL_VALID, r)
         assert r.error_count == 0
         assert any(
             level == "PASS" for level, _, check, _ in r.entries
             if check == "safety-rails"
         )
 
-    def test_no_critical_tags_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_safety_rails(
+    def test_no_critical_tags_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_safety_rails(
             "realisera", SYNTHETIC_SKILL_BAD_SAFETY_RAILS, r,
         )
         assert r.error_count == 1
         assert "critical" in r.entries[0][3].lower()
 
-    def test_too_few_never_bullets_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_safety_rails(
+    def test_too_few_never_bullets_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_safety_rails(
             "realisera", SYNTHETIC_SKILL_SAFETY_RAILS_FEW_NEVERS, r,
         )
         assert r.error_count == 1
@@ -1024,13 +1024,13 @@ class TestCheckSafetyRails:
 class TestCheckArtifactFormat:
     """Simple: string presence checks (advisory only). One pass + one fail."""
 
-    def test_valid_producer_no_warnings(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_artifact_format("realisera", SYNTHETIC_SKILL_VALID, r)
+    def test_valid_producer_no_warnings(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_artifact_format("realisera", SYNTHETIC_SKILL_VALID, r)
         assert r.error_count == 0
         assert r.warn_count == 0
 
-    def test_producer_missing_elements_warns(self, validate_ecosystem):
+    def test_producer_missing_elements_warns(self, validate_spec):
         minimal = """\
 ---
 name: realisera
@@ -1041,8 +1041,8 @@ description: Autonomous development loops
 
 Some content but no artifact format references.
 """
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_artifact_format("realisera", minimal, r)
+        r = validate_spec.Results()
+        validate_spec.check_artifact_format("realisera", minimal, r)
         assert r.error_count == 0
         assert r.warn_count >= 1
         for level, _, check, _ in r.entries:
@@ -1058,18 +1058,18 @@ Some content but no artifact format references.
 class TestCheckExitSignals:
     """Simple: term presence check. One pass + one fail."""
 
-    def test_valid_content_passes(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_exit_signals("realisera", SYNTHETIC_SKILL_VALID, r)
+    def test_valid_content_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_exit_signals("realisera", SYNTHETIC_SKILL_VALID, r)
         assert r.error_count == 0
         assert any(
             level == "PASS" for level, _, check, _ in r.entries
             if check == "exit-signals"
         )
 
-    def test_missing_terms_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_exit_signals(
+    def test_missing_terms_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_exit_signals(
             "realisera", SYNTHETIC_SKILL_BAD_EXIT_SIGNALS, r,
         )
         assert r.error_count == 1
@@ -1086,35 +1086,35 @@ class TestCheckExitSignals:
 class TestCheckLoopGuard:
     """Complex: multiple detection patterns (consecutive failure, retry-based). Keep 4 distinct paths."""
 
-    def test_valid_content_passes(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_loop_guard("realisera", SYNTHETIC_SKILL_VALID, r)
+    def test_valid_content_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_loop_guard("realisera", SYNTHETIC_SKILL_VALID, r)
         assert r.error_count == 0
         assert any(
             level == "PASS" for level, _, check, _ in r.entries
             if check == "loop-guard"
         )
 
-    def test_missing_loop_guard_errors(self, validate_ecosystem):
+    def test_missing_loop_guard_errors(self, validate_spec):
         """Autonomous skill with exit signals but no loop guard elements."""
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_loop_guard(
+        r = validate_spec.Results()
+        validate_spec.check_loop_guard(
             "realisera", SYNTHETIC_SKILL_NO_LOOP_GUARD, r,
         )
         assert r.error_count >= 1
 
-    def test_consecutive_failure_detection_passes(self, validate_ecosystem):
+    def test_consecutive_failure_detection_passes(self, validate_spec):
         """orkestrera-style loop guard using consecutive failure + retry."""
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_loop_guard(
+        r = validate_spec.Results()
+        validate_spec.check_loop_guard(
             "orkestrera", SYNTHETIC_SKILL_LOOP_GUARD_CONSECUTIVE_FAIL, r,
         )
         assert r.error_count == 0
 
-    def test_retry_based_detection_passes(self, validate_ecosystem):
+    def test_retry_based_detection_passes(self, validate_spec):
         """optimera-style loop guard using retry-based task failure."""
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_loop_guard(
+        r = validate_spec.Results()
+        validate_spec.check_loop_guard(
             "optimera", SYNTHETIC_SKILL_LOOP_GUARD_RETRY_BASED, r,
         )
         assert r.error_count == 0
@@ -1128,9 +1128,9 @@ class TestCheckLoopGuard:
 class TestCheckSpecSectionsDeclared:
     """Simple: frontmatter field presence. One pass + one fail."""
 
-    def test_with_spec_sections_passes(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_spec_sections_declared(
+    def test_with_spec_sections_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_spec_sections_declared(
             "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
         )
         assert r.error_count == 0
@@ -1139,18 +1139,18 @@ class TestCheckSpecSectionsDeclared:
             if check == "spec-sections-declared"
         )
 
-    def test_without_spec_sections_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_spec_sections_declared(
+    def test_without_spec_sections_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_spec_sections_declared(
             "realisera", SYNTHETIC_SKILL_WITHOUT_SPEC_SECTIONS, r,
         )
         assert r.error_count == 1
         assert "spec_sections" in r.entries[0][3]
 
-    def test_bad_format_errors(self, validate_ecosystem):
+    def test_bad_format_errors(self, validate_spec):
         """Edge case: spec_sections present but not a valid list."""
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_spec_sections_declared(
+        r = validate_spec.Results()
+        validate_spec.check_spec_sections_declared(
             "realisera", SYNTHETIC_SKILL_BAD_SPEC_SECTIONS_FORMAT, r,
         )
         assert r.error_count == 1
@@ -1165,17 +1165,17 @@ class TestCheckSpecSectionsDeclared:
 class TestCheckContextFileExists:
     """Filesystem: file presence check. One pass + one fail."""
 
-    def test_context_file_present_passes(self, validate_ecosystem, tmp_path):
+    def test_context_file_present_passes(self, validate_spec, tmp_path):
         skill_dir = tmp_path / "realisera"
         skill_dir.mkdir()
         skill_md = skill_dir / "SKILL.md"
         skill_md.write_text(SYNTHETIC_SKILL_WITH_SPEC_SECTIONS)
         refs_dir = skill_dir / "references"
         refs_dir.mkdir()
-        (refs_dir / "ecosystem-context.md").write_text("<!-- content -->")
+        (refs_dir / "contract.md").write_text("<!-- content -->")
 
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_context_file_exists(
+        r = validate_spec.Results()
+        validate_spec.check_context_file_exists(
             "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
             skill_path=skill_md,
         )
@@ -1185,19 +1185,19 @@ class TestCheckContextFileExists:
             if check == "context-file-exists"
         )
 
-    def test_context_file_missing_errors(self, validate_ecosystem, tmp_path):
+    def test_context_file_missing_errors(self, validate_spec, tmp_path):
         skill_dir = tmp_path / "realisera"
         skill_dir.mkdir()
         skill_md = skill_dir / "SKILL.md"
         skill_md.write_text(SYNTHETIC_SKILL_WITH_SPEC_SECTIONS)
 
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_context_file_exists(
+        r = validate_spec.Results()
+        validate_spec.check_context_file_exists(
             "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
             skill_path=skill_md,
         )
         assert r.error_count == 1
-        assert "ecosystem-context.md" in r.entries[0][3]
+        assert "contract.md" in r.entries[0][3]
 
 
 # ---------------------------------------------------------------------------
@@ -1212,20 +1212,20 @@ SPEC_HASH = hashlib.sha256(SPEC_CONTENT.encode("utf-8")).hexdigest()
 class TestCheckContextFileCurrent:
     """Complex: hash matching + missing hash edge case. Keep 3 paths."""
 
-    def test_matching_hash_passes(self, validate_ecosystem, tmp_path):
+    def test_matching_hash_passes(self, validate_spec, tmp_path):
         skill_dir = tmp_path / "realisera"
         skill_dir.mkdir()
         skill_md = skill_dir / "SKILL.md"
         skill_md.write_text(SYNTHETIC_SKILL_WITH_SPEC_SECTIONS)
         refs_dir = skill_dir / "references"
         refs_dir.mkdir()
-        (refs_dir / "ecosystem-context.md").write_text(
-            f"<!-- source: references/ecosystem-spec.md (sha256: {SPEC_HASH}) -->\n"
+        (refs_dir / "contract.md").write_text(
+            f"<!-- source: SPEC.md (sha256: {SPEC_HASH}) -->\n"
             "## 1. Shared primitives\n\nSome content.\n"
         )
 
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_context_file_current(
+        r = validate_spec.Results()
+        validate_spec.check_context_file_current(
             "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
             skill_path=skill_md, spec_hash=SPEC_HASH,
         )
@@ -1235,27 +1235,27 @@ class TestCheckContextFileCurrent:
             if check == "context-file-current"
         )
 
-    def test_mismatched_hash_errors(self, validate_ecosystem, tmp_path):
+    def test_mismatched_hash_errors(self, validate_spec, tmp_path):
         skill_dir = tmp_path / "realisera"
         skill_dir.mkdir()
         skill_md = skill_dir / "SKILL.md"
         skill_md.write_text(SYNTHETIC_SKILL_WITH_SPEC_SECTIONS)
         refs_dir = skill_dir / "references"
         refs_dir.mkdir()
-        (refs_dir / "ecosystem-context.md").write_text(
-            "<!-- source: references/ecosystem-spec.md (sha256: 0000dead) -->\n"
+        (refs_dir / "contract.md").write_text(
+            "<!-- source: SPEC.md (sha256: 0000dead) -->\n"
             "## 1. Shared primitives\n\nOld content.\n"
         )
 
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_context_file_current(
+        r = validate_spec.Results()
+        validate_spec.check_context_file_current(
             "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
             skill_path=skill_md, spec_hash=SPEC_HASH,
         )
         assert r.error_count == 1
         assert "mismatch" in r.entries[0][3].lower()
 
-    def test_missing_hash_in_header_errors(self, validate_ecosystem, tmp_path):
+    def test_missing_hash_in_header_errors(self, validate_spec, tmp_path):
         """Edge case: context file exists but has no source hash line."""
         skill_dir = tmp_path / "realisera"
         skill_dir.mkdir()
@@ -1263,27 +1263,27 @@ class TestCheckContextFileCurrent:
         skill_md.write_text(SYNTHETIC_SKILL_WITH_SPEC_SECTIONS)
         refs_dir = skill_dir / "references"
         refs_dir.mkdir()
-        (refs_dir / "ecosystem-context.md").write_text(
+        (refs_dir / "contract.md").write_text(
             "<!-- no hash here -->\nSome content.\n"
         )
 
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_context_file_current(
+        r = validate_spec.Results()
+        validate_spec.check_context_file_current(
             "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
             skill_path=skill_md, spec_hash=SPEC_HASH,
         )
         assert r.error_count == 1
         assert "No source hash" in r.entries[0][3]
 
-    def test_missing_context_file_skips_silently(self, validate_ecosystem, tmp_path):
+    def test_missing_context_file_skips_silently(self, validate_spec, tmp_path):
         """Edge case: context file missing entirely, check does nothing (covered by check 15)."""
         skill_dir = tmp_path / "realisera"
         skill_dir.mkdir()
         skill_md = skill_dir / "SKILL.md"
         skill_md.write_text(SYNTHETIC_SKILL_WITH_SPEC_SECTIONS)
 
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_context_file_current(
+        r = validate_spec.Results()
+        validate_spec.check_context_file_current(
             "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
             skill_path=skill_md, spec_hash=SPEC_HASH,
         )
@@ -1304,7 +1304,7 @@ description: Autonomous development loops
 
 # REALISERA
 
-Cycle verification follows ecosystem context Section 19, Reality Verification Gate.
+Cycle verification follows contract Section 19, Reality Verification Gate.
 
 PROGRESS.md cycle format:
 - **Commit**: abc123
@@ -1321,7 +1321,7 @@ description: Multi-cycle plan execution conductor
 # ORKESTRERA
 
 Evaluation reads the latest PROGRESS.md cycle entry and confirms the
-`**Verified**` field per ecosystem-spec Section 19 (Reality Verification Gate).
+`**Verified**` field per spec-spec Section 19 (Reality Verification Gate).
 """
 
 SYNTHETIC_REALISERA_MISSING_GATE = """\
@@ -1356,12 +1356,12 @@ class TestCheckRealityVerificationGate:
     missing subject) so a single failing skill cannot mask the other.
     """
 
-    def test_both_skills_reference_section_19_passes(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_reality_verification_gate(
+    def test_both_skills_reference_section_19_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_reality_verification_gate(
             "realisera", SYNTHETIC_REALISERA_WITH_GATE, r,
         )
-        validate_ecosystem.check_reality_verification_gate(
+        validate_spec.check_reality_verification_gate(
             "orkestrera", SYNTHETIC_ORKESTRERA_WITH_GATE, r,
         )
         assert r.error_count == 0
@@ -1371,12 +1371,12 @@ class TestCheckRealityVerificationGate:
         assert len(gate_entries) == 2
         assert all(level == "PASS" for level, *_ in gate_entries)
 
-    def test_realisera_missing_section_19_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_reality_verification_gate(
+    def test_realisera_missing_section_19_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_reality_verification_gate(
             "realisera", SYNTHETIC_REALISERA_MISSING_GATE, r,
         )
-        validate_ecosystem.check_reality_verification_gate(
+        validate_spec.check_reality_verification_gate(
             "orkestrera", SYNTHETIC_ORKESTRERA_WITH_GATE, r,
         )
         assert r.error_count == 1
@@ -1390,12 +1390,12 @@ class TestCheckRealityVerificationGate:
         assert "realisera" in detail
         assert "Section 19" in detail
 
-    def test_orkestrera_missing_section_19_errors(self, validate_ecosystem):
-        r = validate_ecosystem.Results()
-        validate_ecosystem.check_reality_verification_gate(
+    def test_orkestrera_missing_section_19_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_reality_verification_gate(
             "realisera", SYNTHETIC_REALISERA_WITH_GATE, r,
         )
-        validate_ecosystem.check_reality_verification_gate(
+        validate_spec.check_reality_verification_gate(
             "orkestrera", SYNTHETIC_ORKESTRERA_MISSING_GATE, r,
         )
         assert r.error_count == 1

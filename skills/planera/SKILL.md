@@ -42,9 +42,9 @@ Templates in `references/templates/`. Use as starting structure, adapt to the pr
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/PLAN.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads (VISION.md, .agentera/DECISIONS.md, .agentera/HEALTH.md, TODO.md, .agentera/PROGRESS.md).
 
-### Ecosystem context
+### Contract
 
-Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+Before starting, read `references/contract.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
 ---
 
@@ -85,7 +85,7 @@ Read VISION.md, DECISIONS.md, and TODO.md in parallel. These reads are independe
    ```bash
    python3 scripts/effective_profile.py
    ```
-   Use it to calibrate planning depth, pattern preferences, and constraint priorities per ecosystem context profile consumption conventions.
+   Use it to calibrate planning depth, pattern preferences, and constraint priorities per contract profile consumption conventions.
    If the script or PROFILE.md is missing, proceed without persona grounding.
 7. **Project discovery** (if unfamiliar):
    - Map directory structure
@@ -127,7 +127,7 @@ Deeper conversation:
 - **Task decomposition**: 3-8 ordered tasks, each one realisera cycle. Per task: one-line
   description, dependencies, 3-5 behavioral Given/When/Then acceptance criteria
 - **Test proportionality**: for tasks that include writing tests, add a proportionality target to acceptance criteria. Default: one pass + one fail per testable unit. For units with complex parsing, regex, or 3+ branches, state which get edge case expansion and why. Override the default only with explicit rationale alongside the adjusted target. Acceptance criteria must state the budget as a cap: do NOT produce tests beyond the proportionality target without an explicit override rationale in the plan.
-- **Plan-level freshness checkpoint**: every full plan ends with a "Plan-level freshness checkpoint" task that depends on all prior tasks. Its acceptance criteria force CHANGELOG.md, PROGRESS.md, and TODO.md updates that summarize the plan's work at the plan level (not the per-cycle level). This convention exists because realisera's per-cycle Step 8 logging covers individual tasks but historically nobody owned the *aggregate* plan-level entries — leading to recurring artifact freshness findings in HEALTH.md (lira Audits 1, 2, 4, 5 all flagged the same gap). The checkpoint task makes the requirement visible in the artifact, and realisera's exit-early guard performs a plan-completion sweep using this task's acceptance criteria as the contract. The PLAN-template.md ships with this task pre-filled; do not omit it from full plans.
+- **Plan-level freshness checkpoint**: every full plan ends with a "Plan-level freshness checkpoint" task that depends on all prior tasks. Its acceptance criteria force CHANGELOG.md, PROGRESS.md, and TODO.md updates that summarize the plan's work at the plan level (not the per-cycle level). This convention exists because realisera's per-cycle Step 8 logging covers individual tasks but historically nobody owned the *aggregate* plan-level entries : leading to recurring artifact freshness findings in HEALTH.md (lira Audits 1, 2, 4, 5 all flagged the same gap). The checkpoint task makes the requirement visible in the artifact, and realisera's exit-early guard performs a plan-completion sweep using this task's acceptance criteria as the contract. The PLAN-template.md ships with this task pre-filled; do not omit it from full plans.
 - **Version bump check**: if DOCS.md has a `versioning` block and plan includes `feat`/`fix`
   work, add a version bump task "Version bump per DOCS.md convention" that depends on all others *except* the freshness checkpoint, and have the freshness checkpoint depend on it (so the bump is captured in the freshness sweep). No versioning convention = skip entirely.
 - **Overall acceptance criteria**: behavioral criteria for the complete feature
@@ -171,7 +171,7 @@ Address legitimate issues; dismiss false positives with rationale. Be direct abo
 
 Reason through dependencies in response text. Write ONLY tasks with acceptance criteria to PLAN.md without rationale. The conversation preserves reasoning; the artifact preserves the plan.
 
-Output constraint per ecosystem context token budgets.
+Output constraint per contract token budgets.
 
 Write the plan to `.agentera/PLAN.md`.
 
@@ -323,7 +323,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Planera is part of a twelve-skill ecosystem. It is the bridge between deliberation and execution.
+Planera is part of a twelve-skill suite. It is the bridge between deliberation and execution.
 
 ### Planera is fed by /resonera
 When resonera's deliberation concludes with a decision to build something, the natural next step is `/planera` to plan the work. DECISIONS.md provides the "why" context that planera reads during its Orient step.

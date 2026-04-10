@@ -5,7 +5,7 @@
 ┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
 </pre>
 
-<strong>Skill ecosystem</strong> for autonomous software development.
+<strong>Skill suite</strong> for autonomous software development.
 
 Install and type <code>/hej</code> to begin:
 
@@ -75,7 +75,7 @@ Every skill suggests what to do next when it finishes. You follow the thread, or
 Skills communicate through markdown files in your project: a vision doc, a plan, a health report, a decision log. Each skill reads what the others have written and acts on it. You don't manage these files; they build up naturally as you work.
 
 ```
-(simplified: each skill has additional cross-skill edges, see ecosystem spec Section 7)
+(simplified: each skill has additional cross-skill edges, see spec Section 7)
 
                        🞔 hej
                     (entry point)
@@ -125,7 +125,7 @@ Three project-facing files at root, nine operational files in `.agentera/`.
 | `DOCS.md`        | dokumentera   | all skills (path overrides)                         |
 | `SESSION.md`     | session stop hook | session start hook, hej                         |
 
-`PROFILE.md` is global at `~/.claude/profile/PROFILE.md` (maintained by profilera, consumed by all skills).
+`PROFILE.md` is global. In Claude Code, the reference implementation stores it at `~/.claude/profile/PROFILE.md`. Other runtimes provide their own equivalent profile path through the host adapter contract.
 
 </details>
 
@@ -137,7 +137,7 @@ Three project-facing files at root, nine operational files in `.agentera/`.
 <br>
 
 > [!NOTE]
-> Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI, Python 3.10+, and git.
+> The install steps below target [Claude Code](https://docs.anthropic.com/en/docs/claude-code), the current reference implementation. The portable core is defined in the spec; adapters for other runtimes will carry their own install instructions. `profilera` currently mines Claude Code session history and remains Claude-adapter-specific until that corpus is standardized.
 
 ### From the plugin registry
 

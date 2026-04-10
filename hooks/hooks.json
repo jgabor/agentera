@@ -1,5 +1,5 @@
 {
-  "description": "agentera ecosystem hooks: session context preloading, session persistence, and artifact validation",
+  "description": "agentera hooks: session context preloading, session persistence, and artifact validation",
   "hooks": {
     "SessionStart": [
       {

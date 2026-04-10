@@ -31,9 +31,9 @@ Full spec at `references/DESIGN-spec.md`: `<!-- design:X -->` marker syntax, sta
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/DESIGN.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads (VISION.md, .agentera/DECISIONS.md, PROFILE.md).
 
-### Ecosystem context
+### Contract
 
-Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+Before starting, read `references/contract.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
 ### DESIGN.md format (condensed)
 
@@ -125,7 +125,7 @@ If code exists, read deeply before asking questions. Arriving informed distingui
 4. **Dependency manifests**: UI framework, component library, CSS approach (determines token format)
 5. **Parent DESIGN.md**: for monorepos, the inherited design system (nested overrides)
 6. **CLAUDE.md, AGENTS.md**: existing design instructions
-7. **Decision profile**: read `~/.claude/profile/PROFILE.md` directly per ecosystem context profile consumption conventions. Aesthetic preferences inform the design conversation. If missing, proceed without persona grounding.
+7. **Decision profile**: read `~/.claude/profile/PROFILE.md` directly per contract profile consumption conventions. Aesthetic preferences inform the design conversation. If missing, proceed without persona grounding.
 8. `git log --oneline -20`: recent visual story
 
 Synthesize: "The project uses X with Y. Palette is Z. Typography is A. Strongest patterns: B. Inconsistencies: C." If VISION.md Identity exists, connect it to the visual system.
@@ -325,7 +325,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Visualisera is part of a twelve-skill ecosystem. It is the visual identity layer, the skill that defines how the project looks.
+Visualisera is part of a twelve-skill suite. It is the visual identity layer, the skill that defines how the project looks.
 
 ### Visualisera reads /visionera output
 VISION.md's Identity section declares the verbal personality (bold, warm, playful, etc.). Visualisera reads this to propose visual tokens coherent with the declared identity. If Identity says "industrial and direct," visualisera proposes sharp edges and monospace type. Visionera reads DESIGN.md in return; neither writes the other's artifact.
