@@ -3,7 +3,7 @@ name: profilera
 description: >
   PROFILERA: Persona Reconstruction, Observable Footprint Indexing Logic. Examine,
   Reconcile, Articulate. Mines Claude Code session
-  history, memory files, project configs, and conversation data to generate an
+  history, Claude Code memory files (extracted as instruction_document), project configs, and conversation data to generate an
   agent-consumable decision profile with per-entry confidence scoring and dormancy decay.
   Two modes: Full (regenerate from scratch) and Validate (incremental check of existing
   profile). This skill should be used when the user says
@@ -105,7 +105,7 @@ Read `~/.claude/profile/intermediate/extraction_summary.json` to confirm counts.
 
 Read all four intermediate JSON files (paths below are Claude-adapter-specific):
 
-1. `~/.claude/profile/intermediate/crystallized.json`: Memory files, CLAUDE.md, AGENTS.md
+1. `~/.claude/profile/intermediate/crystallized.json`: Claude Code memory files (as instruction_document), CLAUDE.md, AGENTS.md
 2. `~/.claude/profile/intermediate/history_decisions.json`: Decision-rich prompts from history
 3. `~/.claude/profile/intermediate/conversation_decisions.json`: Decision exchanges from conversations
 4. `~/.claude/profile/intermediate/project_configs.json`: Recurring config patterns
@@ -196,7 +196,7 @@ When presenting the profile, frame it as a colleague reflecting on what they've 
 # Decision Profile: [User Name]
 
 <!-- Generated: {date} | Data: {date range from earliest to latest timestamp} -->
-<!-- Sources: {N} memory files, {N} history prompts, {N} conversation exchanges, {N} configs -->
+<!-- Sources: {N} instruction documents, {N} history prompts, {N} conversation exchanges, {N} configs -->
 <!-- Decay parameters: stable λ=0.001, durable λ=0.005, situational λ=0.015 -->
 <!-- Formula: effective_conf = conf × e^(-λ × days_since_confirmed), floor 20 -->
 <!-- Regenerate with /profilera -->
@@ -316,12 +316,12 @@ Write updated PROFILE.md. Report: "Validated {N} entries: {N} confirmed, {N} cha
 <critical>
 
 - NEVER fabricate decision patterns. Every profile entry must be grounded in observed evidence
-  from session history, memory files, configs, or conversation data.
+  from session history, instruction documents (including Claude Code memory files), configs, or conversation data.
 - NEVER assign confidence higher than the evidence warrants. A single data point is 30-49,
   not 70+, regardless of how insightful the decision sounds.
 - NEVER smooth over contradictions. When evidence conflicts, record tensions rather than
   forcing a coherent narrative.
-- NEVER modify the user's session history, memory files, or config files. Profilera reads
+- NEVER modify the user's session history, instruction documents, or config files. Profilera reads
   these sources; it never writes to them.
 - NEVER share profile contents with external services or include them in commits.
 
@@ -403,5 +403,5 @@ All skills read the profile automatically via `python3 scripts/effective_profile
 
 - Extraction scripts handle I/O; Claude's job is synthesis, not parsing.
 - Large intermediate files: use subagents to read in parallel.
-- Signal hierarchy: crystallized.json (highest: memory + CLAUDE.md), conversation exchanges (most nuanced: real-time reasoning), config patterns (most objective: what shipped).
+- Signal hierarchy: crystallized.json (highest: instruction documents including Claude memory + CLAUDE.md), conversation exchanges (most nuanced: real-time reasoning), config patterns (most objective: what shipped).
 - Validate mode: weekly/per-session. Full mode: monthly or when significantly stale.

@@ -171,12 +171,12 @@ def truncate(text: str, max_len: int = 500) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Extract: memory files and CLAUDE.md (from extract_memory.py)
+# Extract: Claude Code memory files (emitted as instruction_document) and CLAUDE.md/AGENTS.md
 # ---------------------------------------------------------------------------
 
 
 def extract_memory_files() -> list[dict]:
-    """Read all memory .md files across projects (excluding MEMORY.md index files)."""
+    """Read all memory .md files across projects, emitting them as instruction_document records."""
     results = []
     for md in sorted(PROJECTS_DIR.glob("*/memory/*.md")):
         if md.name == "MEMORY.md":
@@ -188,7 +188,7 @@ def extract_memory_files() -> list[dict]:
             {
                 "source": str(md),
                 "project": project,
-                "type": fm.get("type", "unknown"),
+                "type": "claude_memory",
                 "name": fm.get("name", md.stem),
                 "description": fm.get("description", ""),
                 "content": body,
@@ -249,6 +249,7 @@ def run_memory(output_path: Path) -> dict:
         "memory_files": len(memory),
         "claude_md_files": len(claude_md),
         "total": len(all_entries),
+        "note": "memory_files emitted as instruction_document with doc_type claude_memory",
     }
 
 
@@ -409,9 +410,7 @@ def extract_conversations(projects_dir: Path | None = None) -> list[dict]:
     return results
 
 
-def run_conversations(
-    output_path: Path, projects_dir: Path | None = None
-) -> dict:
+def run_conversations(output_path: Path, projects_dir: Path | None = None) -> dict:
     """Run conversation extraction and write results. Returns summary stats."""
     results = extract_conversations(projects_dir)
 
@@ -429,9 +428,7 @@ def run_conversations(
 
     return {
         "total_pairs": len(results),
-        "files_scanned": len(
-            list((projects_dir or PROJECTS_DIR).glob("**/*.jsonl"))
-        ),
+        "files_scanned": len(list((projects_dir or PROJECTS_DIR).glob("**/*.jsonl"))),
         "by_signal_type": by_type,
         "top_projects": dict(
             sorted(by_project.items(), key=lambda x: x[1], reverse=True)[:10]
@@ -487,7 +484,11 @@ def _extract_golangci(text: str) -> list[str]:
         if in_enable:
             if stripped.startswith("- "):
                 signals.append(f"linter: {stripped[2:]}")
-            elif not stripped.startswith("#") and stripped and not stripped.startswith("-"):
+            elif (
+                not stripped.startswith("#")
+                and stripped
+                and not stripped.startswith("-")
+            ):
                 in_enable = False
 
     if "gofumpt" in text:
@@ -641,7 +642,9 @@ def main():
     start = time.time()
     summary: dict = {"timestamp": int(time.time() * 1000), "extractors": {}}
 
-    print("Extracting crystallized decisions (memory files, CLAUDE.md)...")
+    print(
+        "Extracting crystallized decisions (Claude memory as instruction_document, CLAUDE.md, AGENTS.md)..."
+    )
     stats = run_memory(output_dir / "crystallized.json")
     summary["extractors"]["memory"] = stats
     print(f"  -> {stats['total']} entries")

@@ -1,7 +1,7 @@
 <!-- contract: inspirera -->
-<!-- source: SPEC.md (sha256: ded2c38c3ebf04a2bd4f7491cf25a7c9365d10a52c8a546b93a8ce1cb9b0b37f) -->
+<!-- source: SPEC.md (sha256: af1c543aa5c2a12b1c3a3ad970cd72bf2c9c58320923f4470ccb484c7d44b0be) -->
 <!-- sections: 2, 4, 5, 6, 12 -->
-<!-- generated: 2026-04-10T17:46:52Z -->
+<!-- generated: 2026-04-10T18:53:31Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 

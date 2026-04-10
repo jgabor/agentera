@@ -956,7 +956,7 @@ The contract is a data model, not a path model. It specifies what profilera need
 
 ### Record types
 
-Five canonical record families capture the decision-relevant signals profilera consumes. Each record is a JSON object with domain fields (varying per type) and provenance metadata (shared across all types).
+Four canonical record families capture the decision-relevant signals profilera consumes. Each record is a JSON object with domain fields (varying per type) and provenance metadata (shared across all types). Adapters MAY define additional runtime-specific record types (see Runtime extensions below).
 
 #### Provenance metadata
 
@@ -969,24 +969,11 @@ Every record includes these fields regardless of type:
 | `project_id` | Yes | string | Project this record belongs to; `"global"` for non-project-scoped data |
 | `project_path` | No | string | Filesystem path to the project, when available |
 | `session_id` | No | string | Host session identifier, when applicable |
-| `source_kind` | Yes | string | Which record family this record belongs to (one of the five canonical names below) |
+| `source_kind` | Yes | string | Which record family this record belongs to (one of the four portable names below, or a runtime extension name) |
 | `runtime` | Yes | string | Host runtime that produced this record (e.g., `"claude-code"`, `"opencode"`) |
 | `adapter_version` | Yes | string | Version of the adapter that extracted this record |
 
 The `source_id` field enables idempotent re-extraction: the same logical record produces the same `source_id` regardless of when extraction runs. The `runtime` and `adapter_version` fields enable profilera to handle schema variations across runtimes.
-
-#### memory_entry
-
-Durable user or project memory captured by the host. Typically persisted as Markdown files with optional frontmatter.
-
-| Field | Required | Type | Purpose |
-|-------|----------|------|---------|
-| `name` | Yes | string | Entry name or title |
-| `description` | No | string | Summary from frontmatter |
-| `memory_type` | No | string | Host-specific categorization |
-| `content` | Yes | string | Full text content (body after frontmatter) |
-
-Claude Code source: `~/.claude/projects/*/memory/*.md` <!-- platform: artifact-resolution -->
 
 #### instruction_document
 
@@ -1040,11 +1027,11 @@ Claude Code source: `~/git/*/` config files scanned per known config type list <
 
 ### Source families
 
-The five record types group into four source families for profilera's consumption. "Crystallized" combines memory_entry and instruction_document because both represent durable, explicitly authored decisions (as opposed to emergent patterns from conversation history).
+The four portable record types group into four source families for profilera's consumption. The "Crystallized decisions" family is powered by instruction_document alone (durable, explicitly authored decisions). Runtime extensions may contribute additional record types to this family.
 
 | Family | Record types | Signal character |
 |--------|-------------|-----------------|
-| Crystallized decisions | memory_entry, instruction_document | Highest signal: explicitly authored preferences and standards |
+| Crystallized decisions | instruction_document | Highest signal: explicitly authored preferences and standards |
 | Decision history | history_prompt | Broad coverage: what the user asked across all sessions |
 | Conversation exchanges | conversation_turn | Most nuanced: how decisions were made and corrected in context |
 | Config patterns | project_config_signal | Most objective: what technology and standards actually shipped |
@@ -1063,7 +1050,27 @@ Profilera operates in two modes: full (all four source families) and partial (on
 
 **Degradation surface rule**: when a source family is missing, profilera MUST note which families were absent in the profile's source metadata comment. This lets consuming skills weight profile entries appropriately: a profile built from config patterns only should not be treated as authoritative for workflow decisions.
 
-**Adapter responsibility**: the host adapter documents which source families it can produce. A minimal adapter that only provides instruction_document (reading a global config file) is valid; profilera produces the best profile it can with what is available. The adapter does not need to implement all five record types.
+**Adapter responsibility**: the host adapter documents which source families it can produce. A minimal adapter that only provides instruction_document (reading a global config file) is valid; profilera produces the best profile it can with what is available. The adapter does not need to implement all four portable record types.
+
+### Runtime extensions
+
+Adapters MAY define additional record types beyond the four portable ones to capture runtime-specific data that enriches profilera's output. These extensions are documented in the adapter's design and are not required for profilera to operate.
+
+**Claude Code extension: memory_entry**
+
+Claude Code provides a built-in memory system that persists user and project memory as Markdown files with optional frontmatter at `~/.claude/projects/*/memory/*.md`. The Claude Code adapter extracts these as instruction_document records with `doc_type: "claude_memory"` rather than as a separate record type, keeping the portable corpus contract clean.
+
+| Field | Required | Type | Purpose |
+|-------|----------|------|---------|
+| `name` | Yes | string | Entry name or title |
+| `description` | No | string | Summary from frontmatter |
+| `memory_type` | No | string | Host-specific categorization |
+| `content` | Yes | string | Full text content (body after frontmatter) |
+
+When the Claude Code adapter encounters memory files, it emits them as instruction_document records with these additional conventions:
+- `doc_type`: `"claude_memory"`
+- `scope`: `"project"` (memory files are project-scoped)
+- `name`: derived from the memory file's frontmatter or filename
 
 ### Relation to Section 20
 

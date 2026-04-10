@@ -5,8 +5,10 @@
 ### Added
 - Ecosystem spec Section 20: Host Adapter Contract defining six runtime capabilities for platform portability
 - Ecosystem spec Section 21: Session Corpus Contract defining normalized record types and degradation rules for profilera portability
+- OpenCode proof-of-concept adapter design mapping all six host capabilities and four portable session corpus record types to OpenCode's mechanisms
 
 ### Changed
+- Demoted memory_entry from portable record type to Claude Code runtime extension in Section 21; portable corpus now has 4 record types; Claude Code memory files emitted as instruction_document with doc_type "claude_memory"
 - Annotated all platform-specific references (`~/.claude/`, worktrees, `claude -p`) with `<!-- platform: capability-name -->` comments across all 12 SKILL.md files and SPEC.md Sections 20-21
 - Profilera extraction step scoped as Claude-adapter-specific with Section 21 reference for portable contract
 - README.md updated to reflect Section 21 corpus is defined rather than pending
