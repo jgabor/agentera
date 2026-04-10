@@ -3,17 +3,17 @@
 # requires-python = ">=3.10"
 # dependencies = []
 # ///
-"""Generate per-skill ecosystem context files from ecosystem-spec.md.
+"""Generate per-skill contract files from SPEC.md.
 
-Parses references/ecosystem-spec.md into sections by ``## N.`` heading
+Parses SPEC.md into sections by ``## N.`` heading
 boundaries, reads each SKILL.md's ``spec_sections`` frontmatter field,
 and writes the declared sections verbatim into
-skills/<name>/references/ecosystem-context.md.
+skills/<name>/references/contract.md.
 
 Run from repo root:
-    python3 scripts/generate_ecosystem_context.py                  # all skills
-    python3 scripts/generate_ecosystem_context.py --skill realisera  # one skill
-    python3 scripts/generate_ecosystem_context.py --check            # freshness check
+    python3 scripts/generate_contracts.py                  # all skills
+    python3 scripts/generate_contracts.py --skill realisera  # one skill
+    python3 scripts/generate_contracts.py --check            # freshness check
 """
 
 from __future__ import annotations
@@ -31,10 +31,10 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SPEC_PATH = REPO_ROOT / "references" / "ecosystem-spec.md"
+SPEC_PATH = REPO_ROOT / "SPEC.md"
 SKILLS_DIR = REPO_ROOT / "skills"
 
-# Regex matching ``## N. Title`` section headings in ecosystem-spec.md.
+# Regex matching ``## N. Title`` section headings in SPEC.md.
 SECTION_HEADING_RE = re.compile(r"^## (\d+)\.\s+(.+)$", re.MULTILINE)
 
 
@@ -61,8 +61,9 @@ def _yellow(text: str) -> str:
 # Parsing helpers
 # ---------------------------------------------------------------------------
 
+
 def parse_spec_sections(spec_text: str) -> dict[int, str]:
-    """Parse ecosystem-spec.md into a dict mapping section number to content.
+    """Parse SPEC.md into a dict mapping section number to content.
 
     Each section starts at a ``## N. Title`` heading and ends just before the
     next ``## N.`` heading (or end of file).  The returned content includes
@@ -113,6 +114,7 @@ def compute_spec_hash(spec_text: str) -> str:
 # Generation
 # ---------------------------------------------------------------------------
 
+
 def build_context_content(
     skill_name: str,
     section_nums: list[int],
@@ -120,16 +122,18 @@ def build_context_content(
     spec_hash: str,
     timestamp: str,
 ) -> str:
-    """Build the full ecosystem-context.md content for a skill."""
+    """Build the full contract.md content for a skill."""
     section_list_str = ", ".join(str(n) for n in section_nums)
-    header = "\n".join([
-        f"<!-- ecosystem-context: {skill_name} -->",
-        f"<!-- source: references/ecosystem-spec.md (sha256: {spec_hash}) -->",
-        f"<!-- sections: {section_list_str} -->",
-        f"<!-- generated: {timestamp} -->",
-        "<!-- do not edit manually -->",
-        "<!-- regenerate: python3 scripts/generate_ecosystem_context.py -->",
-    ])
+    header = "\n".join(
+        [
+            f"<!-- contract: {skill_name} -->",
+            f"<!-- source: SPEC.md (sha256: {spec_hash}) -->",
+            f"<!-- sections: {section_list_str} -->",
+            f"<!-- generated: {timestamp} -->",
+            "<!-- do not edit manually -->",
+            "<!-- regenerate: python3 scripts/generate_contracts.py -->",
+        ]
+    )
     body_parts: list[str] = []
     for num in section_nums:
         if num in sections:
@@ -168,15 +172,18 @@ def generate_for_skill(
     if missing:
         print(
             _red(
-                f"ERROR: {skill_name} requests sections "
-                f"{missing} not found in ecosystem-spec.md"
+                f"ERROR: {skill_name} requests sections {missing} not found in SPEC.md"
             ),
             file=sys.stderr,
         )
         return None
 
     return build_context_content(
-        skill_name, section_nums, sections, spec_hash, timestamp,
+        skill_name,
+        section_nums,
+        sections,
+        spec_hash,
+        timestamp,
     )
 
 
@@ -184,7 +191,7 @@ def write_context_file(skill_name: str, content: str) -> Path:
     """Write the context file and return its path."""
     refs_dir = SKILLS_DIR / skill_name / "references"
     refs_dir.mkdir(parents=True, exist_ok=True)
-    out_path = refs_dir / "ecosystem-context.md"
+    out_path = refs_dir / "contract.md"
     out_path.write_text(content, encoding="utf-8")
     return out_path
 
@@ -192,6 +199,7 @@ def write_context_file(skill_name: str, content: str) -> Path:
 # ---------------------------------------------------------------------------
 # Check mode
 # ---------------------------------------------------------------------------
+
 
 def extract_header_hash(content: str) -> str | None:
     """Extract the sha256 hash from an existing context file's header."""
@@ -208,7 +216,7 @@ def check_freshness(
     """Return list of skill names whose context files are stale or missing."""
     stale: list[str] = []
     for name in skill_names:
-        context_path = SKILLS_DIR / name / "references" / "ecosystem-context.md"
+        context_path = SKILLS_DIR / name / "references" / "contract.md"
 
         # Read the SKILL.md to check if it has spec_sections.
         skill_md = SKILLS_DIR / name / "SKILL.md"
@@ -235,14 +243,22 @@ def check_freshness(
 
         # Check 2: content matches what would be generated.
         expected = build_context_content(
-            name, section_nums, sections, spec_hash, timestamp,
+            name,
+            section_nums,
+            sections,
+            spec_hash,
+            timestamp,
         )
         # Compare without the timestamp line (timestamps differ between runs).
         existing_no_ts = re.sub(
-            r"<!-- generated: .+ -->", "<!-- generated: STRIPPED -->", existing,
+            r"<!-- generated: .+ -->",
+            "<!-- generated: STRIPPED -->",
+            existing,
         )
         expected_no_ts = re.sub(
-            r"<!-- generated: .+ -->", "<!-- generated: STRIPPED -->", expected,
+            r"<!-- generated: .+ -->",
+            "<!-- generated: STRIPPED -->",
+            expected,
         )
         if existing_no_ts != expected_no_ts:
             stale.append(name)
@@ -254,17 +270,17 @@ def check_freshness(
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def get_all_skill_names() -> list[str]:
     """Return sorted list of skill directory names."""
     return sorted(
-        d.name for d in SKILLS_DIR.iterdir()
-        if d.is_dir() and (d / "SKILL.md").exists()
+        d.name for d in SKILLS_DIR.iterdir() if d.is_dir() and (d / "SKILL.md").exists()
     )
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Generate per-skill ecosystem context files.",
+        description="Generate per-skill contract files.",
     )
     parser.add_argument(
         "--check",
@@ -293,7 +309,7 @@ def main() -> int:
 
     if not sections:
         print(
-            _red("ERROR: No sections found in ecosystem-spec.md"),
+            _red("ERROR: No sections found in SPEC.md"),
             file=sys.stderr,
         )
         return 1
@@ -303,7 +319,9 @@ def main() -> int:
         skill_dir = SKILLS_DIR / args.skill
         if not skill_dir.exists():
             print(
-                _red(f"ERROR: Skill '{args.skill}' not found in {SKILLS_DIR.relative_to(REPO_ROOT)}/"),
+                _red(
+                    f"ERROR: Skill '{args.skill}' not found in {SKILLS_DIR.relative_to(REPO_ROOT)}/"
+                ),
                 file=sys.stderr,
             )
             return 1
@@ -315,9 +333,9 @@ def main() -> int:
     if args.check:
         stale = check_freshness(skill_names, sections, spec_hash, timestamp)
         if stale:
-            print(_red(f"Stale ecosystem context files: {', '.join(stale)}"))
+            print(_red(f"Stale contract files: {', '.join(stale)}"))
             return 1
-        print(_green(f"All ecosystem context files are current ({len(skill_names)} checked)."))
+        print(_green(f"All contract files are current ({len(skill_names)} checked)."))
         return 0
 
     # Generation mode.

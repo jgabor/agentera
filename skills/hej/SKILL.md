@@ -1,7 +1,7 @@
 ---
 name: hej
 description: >
-  HEJ (Holistic Entry Junction, Orient, Route, Activate). ALWAYS use this skill as the single point of entry to the agentera ecosystem. This skill is REQUIRED whenever the user starts a session, returns to a project, or needs orientation on what to do next. It detects whether the project is fresh (no state artifacts) or returning (existing artifacts), delivers a situational briefing, and routes to the appropriate skill. Do NOT skip this skill when the user greets you or asks for project status. It contains the critical workflow for ecosystem-aware orientation that prevents disoriented sessions. Trigger on: "hej", "hello",
+  HEJ (Holistic Entry Junction, Orient, Route, Activate). ALWAYS use this skill as the single point of entry to the agentera suite. This skill is REQUIRED whenever the user starts a session, returns to a project, or needs orientation on what to do next. It detects whether the project is fresh (no state artifacts) or returning (existing artifacts), delivers a situational briefing, and routes to the appropriate skill. Do NOT skip this skill when the user greets you or asks for project status. It contains the critical workflow for suite-aware orientation that prevents disoriented sessions. Trigger on: "hej", "hello",
   "hi", "start", "begin", "where were we", "catch me up", "what should I work on",
   "what's next", "status", "dashboard", "pulse", "brief me", "update me",
   "onboard me", "getting started", "what needs attention", any greeting at session
@@ -13,7 +13,7 @@ spec_sections: [1, 2, 4, 5, 12, 18]
 
 **Holistic Entry Junction. Orient, Route, Activate**
 
-Single entry point to the agentera ecosystem. Detects fresh vs returning, delivers a situational briefing, routes to the right skill. Same on first install and 100th session.
+Single entry point to the agentera suite. Detects fresh vs returning, delivers a situational briefing, routes to the right skill. Same on first install and 100th session.
 
 Each invocation = one orientation. Reads everything, writes nothing.
 
@@ -21,7 +21,7 @@ Each invocation = one orientation. Reads everything, writes nothing.
 
 ## State artifacts
 
-No artifacts of its own. Reads all ecosystem artifacts for the briefing:
+No artifacts of its own. Reads all suite artifacts for the briefing:
 
 | Artifact | Read for |
 |----------|----------|
@@ -43,15 +43,15 @@ Before reading any artifact, check if .agentera/DOCS.md exists. If it has an Art
 
 Note: PROFILE.md is global, not project-scoped. Its path is always `~/.claude/profile/PROFILE.md` regardless of .agentera/DOCS.md presence. Check this path directly rather than falling back to the project root.
 
-### Ecosystem context
+### Contract
 
-Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+Before starting, read `references/contract.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
 ---
 
 ## Step 0: Detect mode
 
-Check for ecosystem state artifacts (respecting path resolution).
+Check for suite state artifacts (respecting path resolution).
 
 - **No artifacts found** → Step 1a (first time on this project)
 - **Artifacts found** → Step 1b (returning to known project)
@@ -149,7 +149,7 @@ Show where things stand.
 
 3. **Attention items**: priority order with severity arrows:
    - ⇶ Critical issues, degrading health dimensions
-   - ⇉ Blocked/overdue plan tasks, stale artifacts (plan-relative per ecosystem context staleness detection; fall back to PROGRESS.md recency heuristic when no plan context exists), loop guard triggers
+   - ⇉ Blocked/overdue plan tasks, stale artifacts (plan-relative per contract staleness detection; fall back to PROGRESS.md recency heuristic when no plan context exists), loop guard triggers
    - → Standard work: features, improvements, routine tasks
    - ⇢ Unresolved exploratory decisions
 
@@ -204,7 +204,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Hej is the entry point to a twelve-skill ecosystem. It reads artifacts from the other eleven workflow skills but produces no artifacts of its own and no downstream skill depends on it.
+Hej is the entry point to a twelve-skill suite. It reads artifacts from the other eleven workflow skills but produces no artifacts of its own and no downstream skill depends on it.
 
 **Reads from all eleven skills**:
 - **visionera** → VISION.md for project direction and north star

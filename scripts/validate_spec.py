@@ -3,10 +3,10 @@
 # requires-python = ">=3.10"
 # dependencies = []
 # ///
-"""Ecosystem linter for agentera SKILL.md files.
+"""Spec linter for agentera SKILL.md files.
 
-Validates all 12 SKILL.md files against the ecosystem spec
-(references/ecosystem-spec.md). Checks frontmatter, confidence scales,
+Validates all 12 SKILL.md files against the spec
+(SPEC.md). Checks frontmatter, confidence scales,
 severity levels, decision labels, artifact path resolution, profile
 consumption, cross-skill integration, safety rails, artifact format
 contracts, exit signals, loop guard, em-dashes, hard wraps,
@@ -14,7 +14,7 @@ spec_sections declaration, context file existence, and context file
 freshness.
 
 Run from repo root:
-    python3 scripts/validate_ecosystem.py
+    python3 scripts/validate_spec.py
 """
 
 from __future__ import annotations
@@ -31,45 +31,92 @@ from pathlib import Path
 
 REQUIRED_REFS: dict[str, list[str]] = {
     "hej": [
-        "visionera", "resonera", "planera", "realisera", "inspektera",
-        "optimera", "dokumentera", "visualisera", "profilera", "inspirera",
+        "visionera",
+        "resonera",
+        "planera",
+        "realisera",
+        "inspektera",
+        "optimera",
+        "dokumentera",
+        "visualisera",
+        "profilera",
+        "inspirera",
         "orkestrera",
     ],
     "inspirera": ["realisera", "optimera", "visionera", "resonera", "profilera"],
     "profilera": ["realisera", "optimera", "inspirera", "resonera", "inspektera"],
     "realisera": [
-        "visionera", "optimera", "inspirera", "resonera", "planera",
-        "inspektera", "profilera",
+        "visionera",
+        "optimera",
+        "inspirera",
+        "resonera",
+        "planera",
+        "inspektera",
+        "profilera",
     ],
     "optimera": ["realisera", "resonera", "inspektera", "profilera"],
     "resonera": [
-        "realisera", "optimera", "inspirera", "profilera", "planera",
+        "realisera",
+        "optimera",
+        "inspirera",
+        "profilera",
+        "planera",
         "inspektera",
     ],
     "inspektera": ["realisera", "resonera", "planera", "optimera", "profilera"],
     "planera": [
-        "resonera", "realisera", "optimera", "inspektera", "profilera",
-        "inspirera", "dokumentera",
+        "resonera",
+        "realisera",
+        "optimera",
+        "inspektera",
+        "profilera",
+        "inspirera",
+        "dokumentera",
     ],
     "visionera": [
-        "realisera", "resonera", "profilera", "inspirera", "inspektera",
+        "realisera",
+        "resonera",
+        "profilera",
+        "inspirera",
+        "inspektera",
         "visualisera",
     ],
     "dokumentera": [
-        "planera", "realisera", "inspektera", "visionera", "profilera",
+        "planera",
+        "realisera",
+        "inspektera",
+        "visionera",
+        "profilera",
     ],
     "visualisera": [
-        "visionera", "realisera", "dokumentera", "inspektera", "profilera",
-        "inspirera", "resonera",
+        "visionera",
+        "realisera",
+        "dokumentera",
+        "inspektera",
+        "profilera",
+        "inspirera",
+        "resonera",
     ],
     "orkestrera": [
-        "planera", "realisera", "inspektera", "inspirera", "dokumentera",
-        "profilera", "visionera", "resonera", "optimera", "visualisera",
+        "planera",
+        "realisera",
+        "inspektera",
+        "inspirera",
+        "dokumentera",
+        "profilera",
+        "visionera",
+        "resonera",
+        "optimera",
+        "visualisera",
     ],
 }
 
 SCRIPT_PATTERN_CONSUMERS = {
-    "realisera", "optimera", "inspektera", "planera", "inspirera",
+    "realisera",
+    "optimera",
+    "inspektera",
+    "planera",
+    "inspirera",
 }
 
 AUTONOMOUS_LOOP_SKILLS = {"realisera", "optimera", "orkestrera"}
@@ -83,7 +130,15 @@ ARTIFACT_CONTRACTS: dict[str, tuple[list[str], list[str]]] = {
     ),
     "DECISIONS.md": (
         ["resonera"],
-        ["Question", "Context", "Alternatives", "Choice", "Reasoning", "Confidence", "Feeds into"],
+        [
+            "Question",
+            "Context",
+            "Alternatives",
+            "Choice",
+            "Reasoning",
+            "Confidence",
+            "Feeds into",
+        ],
     ),
     "PLAN.md": (
         ["planera"],
@@ -151,11 +206,14 @@ def _yellow(text: str) -> str:
 # Result accumulator
 # ---------------------------------------------------------------------------
 
+
 class Results:
     """Collects PASS / ERROR / WARN results and prints them."""
 
     def __init__(self) -> None:
-        self.entries: list[tuple[str, str, str, str]] = []  # (level, skill, check, detail)
+        self.entries: list[
+            tuple[str, str, str, str]
+        ] = []  # (level, skill, check, detail)
 
     def ok(self, skill: str, check: str) -> None:
         self.entries.append(("PASS", skill, check, ""))
@@ -191,6 +249,7 @@ class Results:
 # Parsing helpers
 # ---------------------------------------------------------------------------
 
+
 def parse_frontmatter(text: str) -> dict[str, str] | None:
     """Return frontmatter fields as a dict, or None if missing."""
     if not text.startswith("---"):
@@ -222,7 +281,9 @@ def extract_section(text: str, heading: str) -> str | None:
     return m.group(1) if m else None
 
 
-def extract_subsection(text: str, parent_heading: str, child_heading: str) -> str | None:
+def extract_subsection(
+    text: str, parent_heading: str, child_heading: str
+) -> str | None:
     """Extract content of a ### subsection under a specific ## parent."""
     parent = extract_section(text, parent_heading)
     if parent is None:
@@ -238,6 +299,7 @@ def extract_subsection(text: str, parent_heading: str, child_heading: str) -> st
 # ---------------------------------------------------------------------------
 # Individual checks
 # ---------------------------------------------------------------------------
+
 
 def check_frontmatter(skill: str, text: str, r: Results) -> None:
     """Check 1: YAML frontmatter with name and description."""
@@ -287,8 +349,15 @@ def check_severity_levels(skill: str, text: str, r: Results) -> None:
     """
     # Non-canonical severity terms to flag.
     non_canonical = {
-        "high", "medium", "low", "major", "minor", "severe",
-        "fatal", "trivial", "blocker",
+        "high",
+        "medium",
+        "low",
+        "major",
+        "minor",
+        "severe",
+        "fatal",
+        "trivial",
+        "blocker",
     }
     non_canonical_re = "|".join(sorted(non_canonical))
 
@@ -303,7 +372,8 @@ def check_severity_levels(skill: str, text: str, r: Results) -> None:
     # check body rows for non-canonical terms.
     for table_match in re.finditer(
         r"^(\|[^\n]*(?:severity|level)[^\n]*\|)\n\|[-| :]+\|\n((?:\|[^\n]*\n)*)",
-        text, re.IGNORECASE | re.MULTILINE,
+        text,
+        re.IGNORECASE | re.MULTILINE,
     ):
         table_body = table_match.group(2)
         for row in table_body.strip().splitlines():
@@ -382,7 +452,9 @@ def check_decision_labels(skill: str, text: str, r: Results) -> None:
 
     missing = required - found
     if missing:
-        r.error(skill, "decision-labels", f"Missing labels: {', '.join(sorted(missing))}")
+        r.error(
+            skill, "decision-labels", f"Missing labels: {', '.join(sorted(missing))}"
+        )
     else:
         r.ok(skill, "decision-labels")
 
@@ -406,7 +478,8 @@ def check_artifact_path_resolution(skill: str, text: str, r: Results) -> None:
     # Check for old-style wording (pre-D13: "check if DOCS.md exists in the project root").
     if old_sentence.lower() in text.lower():
         r.error(
-            skill, "artifact-path-resolution",
+            skill,
+            "artifact-path-resolution",
             "Uses old-style 'check if DOCS.md exists' — update to "
             "'check if .agentera/DOCS.md exists'",
         )
@@ -417,19 +490,22 @@ def check_artifact_path_resolution(skill: str, text: str, r: Results) -> None:
         cross_skill = extract_section(text, "Cross-skill integration")
         if cross_skill and core_sentence.lower() in cross_skill.lower():
             r.error(
-                skill, "artifact-path-resolution",
+                skill,
+                "artifact-path-resolution",
                 "Artifact path resolution instruction found under Cross-skill integration "
                 "instead of State artifacts",
             )
         else:
             r.error(
-                skill, "artifact-path-resolution",
+                skill,
+                "artifact-path-resolution",
                 "Artifact path resolution instruction exists but not as a ### subsection "
                 "under ## State artifacts",
             )
     else:
         r.error(
-            skill, "artifact-path-resolution",
+            skill,
+            "artifact-path-resolution",
             "Missing ### Artifact path resolution subsection under ## State artifacts",
         )
 
@@ -443,7 +519,10 @@ def check_profile_consumption(skill: str, text: str, r: Results) -> None:
     errors: list[str] = []
 
     # Must reference the effective_profile script.
-    if "scripts/effective_profile.py" not in text and "scripts.effective_profile" not in text:
+    if (
+        "scripts/effective_profile.py" not in text
+        and "scripts.effective_profile" not in text
+    ):
         errors.append("Missing reference to effective_profile script")
 
     # Must use integer thresholds 65+ and <45 (not 0.65+ and <0.45).
@@ -468,9 +547,7 @@ def check_profile_consumption(skill: str, text: str, r: Results) -> None:
         r"(?:missing|absent|doesn't exist|does not exist|not available|unavailable|not found)",
         r"(?:proceed|continue|skip|omit)\s+without",
     ]
-    has_fallback = all(
-        re.search(pat, text, re.IGNORECASE) for pat in fallback_patterns
-    )
+    has_fallback = all(re.search(pat, text, re.IGNORECASE) for pat in fallback_patterns)
     if not has_fallback:
         errors.append("Missing fallback instruction for when profile is unavailable")
 
@@ -488,26 +565,29 @@ def check_cross_skill_integration(skill: str, text: str, r: Results) -> None:
         r.error(skill, "cross-skill-refs", "Missing ## Cross-skill integration section")
         return
 
-    # Must contain "twelve-skill ecosystem".
-    if "twelve-skill ecosystem" not in section.lower():
+    # Must contain "twelve-skill suite".
+    if "twelve-skill suite" not in section.lower():
         bad_counts = []
         for n in ("eleven", "ten", "nine", "eight", "seven", "six", "five"):
             if f"{n}-skill" in section.lower():
                 bad_counts.append(f"{n}-skill")
         if bad_counts:
             r.error(
-                skill, "cross-skill-refs",
-                f"Uses '{bad_counts[0]}' instead of 'twelve-skill ecosystem'",
+                skill,
+                "cross-skill-refs",
+                f"Uses '{bad_counts[0]}' instead of 'twelve-skill suite'",
             )
-        elif "skill ecosystem" in section.lower():
+        elif "skill suite" in section.lower() and "twelve-skill" not in section.lower():
             r.error(
-                skill, "cross-skill-refs",
-                "Says 'skill ecosystem' without specifying 'twelve-skill'",
+                skill,
+                "cross-skill-refs",
+                "Says 'skill suite' without specifying 'twelve-skill'",
             )
         else:
             r.error(
-                skill, "cross-skill-refs",
-                "Missing 'twelve-skill ecosystem' in cross-skill integration section",
+                skill,
+                "cross-skill-refs",
+                "Missing 'twelve-skill suite' in cross-skill integration section",
             )
 
     # Check required references (case-insensitive word boundary match).
@@ -520,11 +600,12 @@ def check_cross_skill_integration(skill: str, text: str, r: Results) -> None:
 
     if missing:
         r.error(
-            skill, "cross-skill-refs",
+            skill,
+            "cross-skill-refs",
             f"Missing reference to: {', '.join(missing)}",
         )
 
-    if "twelve-skill ecosystem" in section.lower() and not missing:
+    if "twelve-skill suite" in section.lower() and not missing:
         r.ok(skill, "cross-skill-refs")
 
 
@@ -546,7 +627,9 @@ def check_safety_rails(skill: str, text: str, r: Results) -> None:
     # Extract content between critical tags.
     m = re.search(r"<critical>(.*?)</critical>", section, re.DOTALL)
     if not m:
-        r.error(skill, "safety-rails", "Could not parse content between <critical> tags")
+        r.error(
+            skill, "safety-rails", "Could not parse content between <critical> tags"
+        )
         return
 
     critical_content = m.group(1)
@@ -554,7 +637,8 @@ def check_safety_rails(skill: str, text: str, r: Results) -> None:
 
     if len(never_bullets) < 3:
         r.error(
-            skill, "safety-rails",
+            skill,
+            "safety-rails",
             f"Only {len(never_bullets)} NEVER bullet(s) found (minimum 3 required)",
         )
     else:
@@ -573,7 +657,8 @@ def check_artifact_format(skill: str, text: str, r: Results) -> None:
         missing = [elem for elem in elements if elem.lower() not in text.lower()]
         if missing:
             r.warn(
-                skill, "artifact-format",
+                skill,
+                "artifact-format",
                 f"{artifact} format missing references to: {', '.join(missing)}",
             )
 
@@ -593,7 +678,8 @@ def check_exit_signals(skill: str, text: str, r: Results) -> None:
     missing = [term for term in required_terms if term not in section]
     if missing:
         r.error(
-            skill, "exit-signals",
+            skill,
+            "exit-signals",
             f"Missing status term(s): {', '.join(missing)}",
         )
     else:
@@ -614,7 +700,8 @@ def check_loop_guard(skill: str, text: str, r: Results) -> None:
     section = extract_section(text, "Exit signals")
     if section is None:
         r.error(
-            skill, "loop-guard",
+            skill,
+            "loop-guard",
             "Missing ## Exit signals section (required for loop guard check)",
         )
         return
@@ -627,9 +714,7 @@ def check_loop_guard(skill: str, text: str, r: Results) -> None:
 
     # Must reference PROGRESS.md, consecutive failure detection, or retry-based task failure.
     has_progress_ref = "PROGRESS.md" in section
-    has_consecutive_ref = bool(
-        re.search(r"consecutive\s+fail", section, re.IGNORECASE)
-    )
+    has_consecutive_ref = bool(re.search(r"consecutive\s+fail", section, re.IGNORECASE))
     has_retry_ref = bool(
         re.search(r"\bretr", section, re.IGNORECASE)
         and re.search(r"\btask", section, re.IGNORECASE)
@@ -648,13 +733,16 @@ def check_loop_guard(skill: str, text: str, r: Results) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Punctuation and line-break checks (ecosystem-spec sections 14-15)
+# Punctuation and line-break checks (spec Sections 14-15)
 # ---------------------------------------------------------------------------
+
 
 def _strip_code_blocks(text: str) -> str:
     """Remove fenced code blocks (``` ... ```) from text, including indented ones."""
     return re.sub(
-        r"^(\s*`{3,})[^\n]*\n.*?^\s*`{3,}\s*$", "", text,
+        r"^(\s*`{3,})[^\n]*\n.*?^\s*`{3,}\s*$",
+        "",
+        text,
         flags=re.MULTILINE | re.DOTALL,
     )
 
@@ -669,12 +757,12 @@ def _strip_frontmatter(text: str) -> str:
     if text.startswith("---"):
         end = text.find("---", 3)
         if end != -1:
-            return text[end + 3:]
+            return text[end + 3 :]
     return text
 
 
 def check_em_dashes(skill: str, text: str, r: Results) -> None:
-    """Check 12: No em-dash characters in prose (ecosystem-spec section 14).
+    """Check 12: No em-dash characters in prose (spec Section 14).
 
     Deterministic. Searches for U+2014 outside code blocks and inline code.
     """
@@ -689,7 +777,8 @@ def check_em_dashes(skill: str, text: str, r: Results) -> None:
 
     if em_dash_lines:
         r.error(
-            skill, "em-dashes",
+            skill,
+            "em-dashes",
             f"Em-dash character found in prose on {len(em_dash_lines)} line(s)",
         )
     else:
@@ -697,7 +786,7 @@ def check_em_dashes(skill: str, text: str, r: Results) -> None:
 
 
 def check_hard_wraps(skill: str, text: str, r: Results) -> None:
-    """Check 13: No hard-wrapped prose paragraphs (ecosystem-spec section 15).
+    """Check 13: No hard-wrapped prose paragraphs (spec Section 15).
 
     Advisory. Detects consecutive non-blank prose lines outside code blocks,
     lists, tables, headings, and frontmatter.
@@ -707,20 +796,20 @@ def check_hard_wraps(skill: str, text: str, r: Results) -> None:
 
     structural_line = re.compile(
         r"^\s*("
-        r"#"              # heading
-        r"|-\s"           # unordered list
-        r"|\*\s"          # unordered list (asterisk)
-        r"|\d+\w*\.\s"    # ordered list (1. or 3b. or 5c.)
-        r"|\|"            # table row
-        r"|>"             # blockquote
-        r"|<!--"          # HTML comment
+        r"#"  # heading
+        r"|-\s"  # unordered list
+        r"|\*\s"  # unordered list (asterisk)
+        r"|\d+\w*\.\s"  # ordered list (1. or 3b. or 5c.)
+        r"|\|"  # table row
+        r"|>"  # blockquote
+        r"|<!--"  # HTML comment
         r"|</?critical>"  # critical tags
-        r"|▸"             # list item glyph
-        r"|\*\*"          # bold label (metadata line)
-        r"|✗\s"           # narration contrast (bad example)
-        r"|✓\s"           # narration contrast (good example)
-        r"|Format:"       # format instruction line
-        r"|$"             # blank line
+        r"|▸"  # list item glyph
+        r"|\*\*"  # bold label (metadata line)
+        r"|✗\s"  # narration contrast (bad example)
+        r"|✓\s"  # narration contrast (good example)
+        r"|Format:"  # format instruction line
+        r"|$"  # blank line
         r")"
     )
 
@@ -741,7 +830,8 @@ def check_hard_wraps(skill: str, text: str, r: Results) -> None:
 
     if violations > 0:
         r.warn(
-            skill, "hard-wraps",
+            skill,
+            "hard-wraps",
             f"{violations} instance(s) of consecutive prose lines (possible hard wraps)",
         )
     else:
@@ -752,6 +842,7 @@ def check_hard_wraps(skill: str, text: str, r: Results) -> None:
 # Ecosystem context checks (spec alignment)
 # ---------------------------------------------------------------------------
 
+
 def check_spec_sections_declared(skill: str, text: str, r: Results) -> None:
     """Check 14: SKILL.md frontmatter declares spec_sections field."""
     fm = parse_frontmatter(text)
@@ -761,7 +852,8 @@ def check_spec_sections_declared(skill: str, text: str, r: Results) -> None:
 
     if "spec_sections" not in fm:
         r.error(
-            skill, "spec-sections-declared",
+            skill,
+            "spec-sections-declared",
             "Missing 'spec_sections' field in frontmatter",
         )
         return
@@ -771,7 +863,8 @@ def check_spec_sections_declared(skill: str, text: str, r: Results) -> None:
     m = re.fullmatch(r"\[[\d,\s]+]", raw)
     if not m:
         r.error(
-            skill, "spec-sections-declared",
+            skill,
+            "spec-sections-declared",
             f"Invalid spec_sections format: {raw!r} (expected [N, N, ...])",
         )
         return
@@ -779,23 +872,31 @@ def check_spec_sections_declared(skill: str, text: str, r: Results) -> None:
     r.ok(skill, "spec-sections-declared")
 
 
-def check_context_file_exists(skill: str, text: str, r: Results, *, skill_path: Path) -> None:
-    """Check 15: references/ecosystem-context.md exists for the skill."""
-    context_path = skill_path.parent / "references" / "ecosystem-context.md"
+def check_context_file_exists(
+    skill: str, text: str, r: Results, *, skill_path: Path
+) -> None:
+    """Check 15: references/contract.md exists for the skill."""
+    context_path = skill_path.parent / "references" / "contract.md"
     if context_path.exists():
         r.ok(skill, "context-file-exists")
     else:
         r.error(
-            skill, "context-file-exists",
-            f"Missing {context_path.parent.name}/references/ecosystem-context.md",
+            skill,
+            "context-file-exists",
+            f"Missing {context_path.parent.name}/references/contract.md",
         )
 
 
 def check_context_file_current(
-    skill: str, text: str, r: Results, *, skill_path: Path, spec_hash: str,
+    skill: str,
+    text: str,
+    r: Results,
+    *,
+    skill_path: Path,
+    spec_hash: str,
 ) -> None:
-    """Check 16: ecosystem-context.md source hash matches current ecosystem-spec.md."""
-    context_path = skill_path.parent / "references" / "ecosystem-context.md"
+    """Check 16: contract.md source hash matches current SPEC.md."""
+    context_path = skill_path.parent / "references" / "contract.md"
     if not context_path.exists():
         # Already reported by check_context_file_exists; skip silently.
         return
@@ -804,8 +905,9 @@ def check_context_file_current(
     m = re.search(r"<!-- source: .+?\(sha256: ([a-f0-9]+)\) -->", content)
     if not m:
         r.error(
-            skill, "context-file-current",
-            "No source hash found in ecosystem-context.md header",
+            skill,
+            "context-file-current",
+            "No source hash found in contract.md header",
         )
         return
 
@@ -814,20 +916,21 @@ def check_context_file_current(
         r.ok(skill, "context-file-current")
     else:
         r.error(
-            skill, "context-file-current",
+            skill,
+            "context-file-current",
             f"Source hash mismatch: file has {file_hash[:12]}... "
-            f"but ecosystem-spec.md is {spec_hash[:12]}...",
+            f"but SPEC.md is {spec_hash[:12]}...",
         )
 
 
-# Skills that must enforce ecosystem-spec Section 19 (Reality Verification Gate).
+# Skills that must enforce spec Section 19 (Reality Verification Gate).
 REALITY_VERIFICATION_ENFORCERS = {"realisera", "orkestrera"}
 
 
 def check_reality_verification_gate(skill: str, text: str, r: Results) -> None:
     """Check 17: Reality Verification Gate (spec section 19).
 
-    Realisera and orkestrera must reference ecosystem-spec Section 19 by
+    Realisera and orkestrera must reference spec Section 19 by
     name and include the `**Verified**` field in their documented format.
     Other skills pass unconditionally.
     """
@@ -839,9 +942,9 @@ def check_reality_verification_gate(skill: str, text: str, r: Results) -> None:
     # alone is not enough: require a qualifying prefix or the "Reality
     # Verification Gate" descriptor to avoid false positives.
     section_patterns = [
-        r"ecosystem context Section 19",
-        r"ecosystem-spec Section 19",
-        r"ecosystem-spec\.md Section 19",
+        r"contract Section 19",
+        r"spec Section 19",
+        r"spec Section 19",
         r"Section 19[,:]?\s*Reality Verification Gate",
     ]
     has_section_ref = any(
@@ -872,6 +975,7 @@ def check_reality_verification_gate(skill: str, text: str, r: Results) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def validate_skill(path: Path, r: Results, *, spec_hash: str) -> None:
     """Run all checks on a single SKILL.md."""
     skill = path.parent.name
@@ -899,7 +1003,7 @@ def validate_skill(path: Path, r: Results, *, spec_hash: str) -> None:
 def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     skills_dir = repo_root / "skills"
-    spec_path = repo_root / "references" / "ecosystem-spec.md"
+    spec_path = repo_root / "SPEC.md"
 
     skill_files = sorted(skills_dir.glob("*/SKILL.md"))
     if not skill_files:

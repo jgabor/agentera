@@ -29,9 +29,9 @@ Three artifacts in `.agentera/`, bootstrapped if absent.
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/OBJECTIVE.md, .agentera/EXPERIMENTS.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads (.agentera/DECISIONS.md).
 
-### Ecosystem context
+### Contract
 
-Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+Before starting, read `references/contract.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
 ### OBJECTIVE.md
 
@@ -156,7 +156,7 @@ Steps: orient, analyze, hypothesize, implement, measure, decide, log.
    ```bash
    python3 scripts/effective_profile.py
    ```
-   Apply confidence thresholds per ecosystem context profile consumption conventions. Read full `~/.claude/profile/PROFILE.md` for details when needed.
+   Apply confidence thresholds per contract profile consumption conventions. Read full `~/.claude/profile/PROFILE.md` for details when needed.
    If missing, proceed without persona grounding but flag it.
 4. **Project discovery** (experiment 1 or when unfamiliar): map directory structure within scope, read dependency manifests, README, CLAUDE.md, identify build/test/lint commands, read key source files in scope
 5. `git log --oneline -20` for recent changes
@@ -276,9 +276,9 @@ If either fails: **discard**. The worktree is abandoned. No merge. No commit.
 Summarize the experiment for the user before writing the log: what moved, what didn't, and what it suggests trying next. Then write the structured record.
 
 Update **EXPERIMENTS.md**: append the experiment entry (number, timestamp, hypothesis, change summary, metric before/after, regression result, status, commit hash if kept, inspiration source if any, suggestion for next experiment).
-Output constraint per ecosystem context token budgets.
+Output constraint per contract token budgets.
 
-When writing a new experiment entry to EXPERIMENTS.md, apply the EXPERIMENTS.md compaction thresholds from ecosystem context.
+When writing a new experiment entry to EXPERIMENTS.md, apply the EXPERIMENTS.md compaction thresholds from contract.
 
 Then stop. One experiment complete.
 
@@ -332,7 +332,7 @@ Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3
 
 ## Cross-skill integration
 
-Optimera is part of a twelve-skill ecosystem. Each skill can invoke the others when the work calls for it.
+Optimera is part of a twelve-skill suite. Each skill can invoke the others when the work calls for it.
 
 ### Optimera invokes /inspirera
 When the Hypothesize step needs external techniques (especially after a plateau), search for approaches the way /inspirera would. Read the source deeply, extract transferable patterns, and fold them into the next hypothesis.
@@ -341,7 +341,7 @@ When the Hypothesize step needs external techniques (especially after a plateau)
 When realisera picks work that is optimization-shaped (e.g., "improve test performance by 20%", "reduce build time", "increase coverage"), it can delegate to optimera. Realisera provides the context; optimera runs the optimization loop.
 
 ### Optimera reads /profilera output
-Every experiment runs the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) to get a confidence-weighted summary table. Confidence thresholds per ecosystem context profile consumption conventions. Effective confidence weighting ensures stale preferences don't over-constrain experiments. How aggressive to be, how much complexity is acceptable, and what trade-offs the user prefers are all modulated by how recently each preference was confirmed.
+Every experiment runs the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) to get a confidence-weighted summary table. Confidence thresholds per contract profile consumption conventions. Effective confidence weighting ensures stale preferences don't over-constrain experiments. How aggressive to be, how much complexity is acceptable, and what trade-offs the user prefers are all modulated by how recently each preference was confirmed.
 
 ### Optimera uses /resonera for objective decisions
 When the brainstorm session surfaces ambiguity about what to optimize (competing metrics, unclear constraints, or tradeoffs between measurement approaches), suggest `/resonera` to deliberate first. Resonera can produce or refine OBJECTIVE.md directly, and its DECISIONS.md entries give optimera context for why the objective was chosen. If `DECISIONS.md` exists, read it during the Orient step for context on prior deliberations.

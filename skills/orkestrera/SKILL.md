@@ -34,9 +34,9 @@ Orkestrera produces no new artifact files. It reads and updates existing artifac
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/PLAN.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads (VISION.md, .agentera/DECISIONS.md, .agentera/HEALTH.md, .agentera/PROGRESS.md, TODO.md).
 
-### Ecosystem context
+### Contract
 
-Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+Before starting, read `references/contract.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
 ---
 
@@ -63,7 +63,7 @@ Check for PLAN.md (respecting path resolution).
 When all tasks are complete, check whether dispatched skills updated their expected artifacts. This runs before the inspektera health check.
 
 1. **Identify dispatched skills**: review which skills were dispatched during this plan by reading PLAN.md task history and PROGRESS.md cycle entries.
-2. **Look up expected artifacts**: for each dispatched skill, consult the skill-to-expected-artifact mapping in ecosystem context (staleness detection section). This mapping defines which artifacts each skill is expected to produce.
+2. **Look up expected artifacts**: for each dispatched skill, consult the skill-to-expected-artifact mapping in contract (staleness detection section). This mapping defines which artifacts each skill is expected to produce.
 3. **Compare modification dates**: for each expected artifact, check its last modification date (`git log -1 --format=%aI -- <path>`). Compare against the plan's `Created` date from PLAN.md's HTML comment metadata.
 4. **Flag stale artifacts**: an artifact is stale if it was not modified since the plan's creation date and the skill expected to update it was dispatched at least once during the plan. Skip artifacts owned by skills that were never dispatched (those are legitimately untouched).
 5. **Surface findings**: include any stale artifact findings as context for the next plan cycle (passed to inspirera/planera). These are informational, not errors. A plan that only dispatched realisera does not expect DESIGN.md updates.
@@ -140,7 +140,7 @@ Narration voice (riff, don't script):
 
 ### Step 3: Evaluate
 
-Evaluation has two surfaces in sequence per ecosystem context Section 19, Reality Verification Gate: a conductor-side presence check that reads the latest PROGRESS.md cycle entry, then an inspektera dispatch whose prompt is extended with a Section 19 evidence-format audit. Both surfaces must run before the task can be resolved.
+Evaluation has two surfaces in sequence per contract Section 19, Reality Verification Gate: a conductor-side presence check that reads the latest PROGRESS.md cycle entry, then an inspektera dispatch whose prompt is extended with a Section 19 evidence-format audit. Both surfaces must run before the task can be resolved.
 
 **Surface 1: Presence check on PROGRESS.md**
 
@@ -171,7 +171,7 @@ You are evaluating a completed task for [project].
 - Check for unintended side effects from the implementation.
 - Verify the project's test/build suite still passes.
 
-## Verification evidence audit (per ecosystem-spec Section 19)
+## Verification evidence audit (per the spec Section 19)
 - Read the `**Verified**` field value from the latest PROGRESS.md cycle entry for this task.
 - Compare the recorded evidence to the task's acceptance criteria above.
 - Report whether the evidence substantiates the criteria or is merely trivially populated (e.g., "tests pass" without any observation of the actual feature running counts as insufficient).
@@ -298,7 +298,7 @@ Orkestrera uses retry-based failure detection: each task gets max 2 retries befo
 
 ## Cross-skill integration
 
-Orkestrera is part of a twelve-skill ecosystem. It is the orchestration layer that chains all other skills together.
+Orkestrera is part of a twelve-skill suite. It is the orchestration layer that chains all other skills together.
 
 ### Orkestrera dispatches /realisera
 Implementation tasks are routed to realisera. Realisera runs its full cycle (orient, select, plan, dispatch, verify, commit, log) as a subagent. It writes to PROGRESS.md and CHANGELOG.md. Orkestrera receives the result via task-notification and evaluates with inspektera.
@@ -328,7 +328,7 @@ DECISIONS.md provides firm constraints that orkestrera reads during task selecti
 VISION.md provides direction context used during bootstrap when chaining inspirera for gap analysis.
 
 ### Orkestrera reads /profilera output
-The decision profile provides persona context for calibrating dispatch decisions. Read `~/.claude/profile/PROFILE.md` directly per ecosystem context profile consumption conventions. If missing, proceed without persona grounding.
+The decision profile provides persona context for calibrating dispatch decisions. Read `~/.claude/profile/PROFILE.md` directly per contract profile consumption conventions. If missing, proceed without persona grounding.
 
 ---
 

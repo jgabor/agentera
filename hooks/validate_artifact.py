@@ -15,8 +15,8 @@ Exit codes:
 
 Routing:
     .agentera/*.md (or DOCS.md-overridden paths) -> artifact structure validation
-    skills/*/SKILL.md -> ecosystem alignment checks
-    references/ecosystem-spec.md -> context freshness check
+    skills/*/SKILL.md -> spec alignment checks
+    SPEC.md (root) -> context freshness check
     anything else -> exit 0 immediately
 """
 
@@ -44,11 +44,17 @@ ROOT_ARTIFACTS = {"VISION.md", "TODO.md", "CHANGELOG.md"}
 
 # Artifacts in .agentera/ by default.
 OP_ARTIFACTS = {
-    "PROGRESS.md", "DECISIONS.md", "PLAN.md", "HEALTH.md",
-    "OBJECTIVE.md", "EXPERIMENTS.md", "DESIGN.md", "DOCS.md",
+    "PROGRESS.md",
+    "DECISIONS.md",
+    "PLAN.md",
+    "HEALTH.md",
+    "OBJECTIVE.md",
+    "EXPERIMENTS.md",
+    "DESIGN.md",
+    "DOCS.md",
 }
 
-# Token budgets (full-file limits) from ecosystem-spec.md Section 4.
+# Token budgets (full-file limits) from SPEC.md Section 4.
 # Per-entry budgets are not validated here (would require entry parsing).
 TOKEN_BUDGETS: dict[str, int] = {
     "PROGRESS.md": 3000,
@@ -104,6 +110,7 @@ TODO_SEVERITY_HEADINGS = [
 # ---------------------------------------------------------------------------
 # DOCS.md artifact path resolution
 # ---------------------------------------------------------------------------
+
 
 def resolve_artifact_paths(project_root: str) -> dict[str, str]:
     """Build a map of canonical artifact name to absolute path.
@@ -186,6 +193,7 @@ def identify_artifact(file_path: str, project_root: str) -> str | None:
 # Artifact structure validation
 # ---------------------------------------------------------------------------
 
+
 def count_words(text: str) -> int:
     """Approximate word count for token budget checking."""
     return len(text.split())
@@ -224,7 +232,9 @@ def validate_artifact_structure(file_path: str, artifact_name: str) -> list[str]
     # Check markdown well-formedness (lightweight: unclosed code blocks)
     open_fences = len(re.findall(r"^```", content, re.MULTILINE))
     if open_fences % 2 != 0:
-        violations.append(f"{artifact_name}: unclosed code fence (odd number of ``` lines)")
+        violations.append(
+            f"{artifact_name}: unclosed code fence (odd number of ``` lines)"
+        )
 
     # Check token budget
     budget = TOKEN_BUDGETS.get(artifact_name)
@@ -242,17 +252,18 @@ def validate_artifact_structure(file_path: str, artifact_name: str) -> list[str]
 # Ecosystem alignment (skill definitions)
 # ---------------------------------------------------------------------------
 
-def validate_skill_definition(file_path: str) -> list[str]:
-    """Run ecosystem linter and context freshness check on a skill change.
 
-    Calls validate_ecosystem.py and generate_ecosystem_context.py --check
+def validate_skill_definition(file_path: str) -> list[str]:
+    """Run spec linter and context freshness check on a skill change.
+
+    Calls validate_spec.py and generate_contracts.py --check
     as subprocesses. Returns a list of violation messages.
     """
     violations: list[str] = []
 
-    # Run ecosystem linter
+    # Run spec linter
     linter_result = subprocess.run(
-        [sys.executable, str(REPO_ROOT / "scripts" / "validate_ecosystem.py")],
+        [sys.executable, str(REPO_ROOT / "scripts" / "validate_spec.py")],
         capture_output=True,
         text=True,
         cwd=str(REPO_ROOT),
@@ -263,7 +274,9 @@ def validate_skill_definition(file_path: str) -> list[str]:
             if "ERROR" in line:
                 violations.append(line.strip())
         if not violations and linter_result.stderr:
-            violations.append(f"Ecosystem linter failed: {linter_result.stderr.strip()}")
+            violations.append(
+                f"Ecosystem linter failed: {linter_result.stderr.strip()}"
+            )
         if not violations:
             violations.append("Ecosystem linter failed (see linter output)")
 
@@ -271,7 +284,7 @@ def validate_skill_definition(file_path: str) -> list[str]:
     freshness_result = subprocess.run(
         [
             sys.executable,
-            str(REPO_ROOT / "scripts" / "generate_ecosystem_context.py"),
+            str(REPO_ROOT / "scripts" / "generate_contracts.py"),
             "--check",
         ],
         capture_output=True,
@@ -289,11 +302,12 @@ def validate_skill_definition(file_path: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Context freshness (ecosystem-spec.md)
+# Context freshness (SPEC.md)
 # ---------------------------------------------------------------------------
 
-def validate_ecosystem_spec() -> list[str]:
-    """Run context freshness check when ecosystem-spec.md is modified.
+
+def validate_spec_spec() -> list[str]:
+    """Run context freshness check when SPEC.md is modified.
 
     Returns a list of violation messages.
     """
@@ -302,7 +316,7 @@ def validate_ecosystem_spec() -> list[str]:
     freshness_result = subprocess.run(
         [
             sys.executable,
-            str(REPO_ROOT / "scripts" / "generate_ecosystem_context.py"),
+            str(REPO_ROOT / "scripts" / "generate_contracts.py"),
             "--check",
         ],
         capture_output=True,
@@ -315,8 +329,8 @@ def validate_ecosystem_spec() -> list[str]:
             violations.append(f"Context freshness: {msg}")
         else:
             violations.append(
-                "Ecosystem context files are stale after spec change. "
-                "Run: python3 scripts/generate_ecosystem_context.py"
+                "Contract files are stale after spec change. "
+                "Run: python3 scripts/generate_contracts.py"
             )
 
     return violations
@@ -326,13 +340,14 @@ def validate_ecosystem_spec() -> list[str]:
 # Routing
 # ---------------------------------------------------------------------------
 
+
 def classify_file(file_path: str, project_root: str) -> str:
     """Classify a file path for validation routing.
 
     Returns one of:
         "artifact"       - operational artifact (.agentera/*.md or root artifacts)
         "skill"          - skill definition file (skills/*/SKILL.md)
-        "ecosystem-spec" - the ecosystem spec (references/ecosystem-spec.md)
+        "the spec" - the spec (SPEC.md at root)
         "other"          - no validation needed
     """
     abs_path = str(Path(file_path).resolve())
@@ -347,10 +362,10 @@ def classify_file(file_path: str, project_root: str) -> str:
     if re.search(r"/skills/[^/]+/SKILL\.md$", abs_path):
         return "skill"
 
-    # Check if it's the ecosystem spec
-    spec_path = str((Path(project_root) / "references" / "ecosystem-spec.md").resolve())
+    # Check if it's the spec
+    spec_path = str((Path(project_root) / "SPEC.md").resolve())
     if abs_path == spec_path:
-        return "ecosystem-spec"
+        return "the spec"
 
     return "other"
 
@@ -358,6 +373,7 @@ def classify_file(file_path: str, project_root: str) -> str:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def main() -> int:
     """Read hook input from stdin, route to validator, report violations."""
@@ -393,15 +409,17 @@ def main() -> int:
     elif category == "skill":
         violations = validate_skill_definition(file_path)
 
-    elif category == "ecosystem-spec":
-        violations = validate_ecosystem_spec()
+    elif category == "the spec":
+        violations = validate_spec_spec()
 
     # Report results
     if not violations:
         return 0
 
     # Non-blocking: report violations on stdout (shown as system message)
-    message = "Artifact validation warnings:\n" + "\n".join(f"  - {v}" for v in violations)
+    message = "Artifact validation warnings:\n" + "\n".join(
+        f"  - {v}" for v in violations
+    )
     print(message)
     return 0
 

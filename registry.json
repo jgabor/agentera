@@ -5,7 +5,7 @@
     {
       "name": "hej",
       "version": "1.7.0",
-      "description": "HEJ: Holistic Entry Junction: Orient, Route, Activate. Single point of entry to the ecosystem. Detects fresh vs returning projects, delivers briefings, and routes to the right skill.",
+      "description": "HEJ: Holistic Entry Junction: Orient, Route, Activate. Single point of entry to the suite. Detects fresh vs returning projects, delivers briefings, and routes to the right skill.",
       "path": "skills/hej",
       "tags": [
         "entry-point",

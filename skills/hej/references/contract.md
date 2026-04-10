@@ -1,13 +1,35 @@
-<!-- ecosystem-context: inspirera -->
-<!-- source: references/ecosystem-spec.md (sha256: 44ca44a52a9dc066da95a3898762e606d82e4aaa53dd4fe3b22f315eafecddff) -->
-<!-- sections: 2, 4, 5, 6, 12 -->
-<!-- generated: 2026-04-07T22:11:18Z -->
+<!-- contract: hej -->
+<!-- source: references/SPEC.md (sha256: e778b1fc71aeebf73864824d80a095774b02c438edf6a3cf5ad3ea3d7311578d) -->
+<!-- sections: 1, 2, 4, 5, 12, 18 -->
+<!-- generated: 2026-04-10T16:51:16Z -->
 <!-- do not edit manually -->
-<!-- regenerate: python3 scripts/generate_ecosystem_context.py -->
+<!-- regenerate: python3 scripts/generate_contracts.py -->
+
+## 1. Confidence Scale
+
+Canonical scale: **0-100 integer**.
+
+Five tiers with shared boundaries. Each skill defines its own domain-specific labels describing what the tier means in its context.
+
+| Tier | Range | Semantic |
+|------|-------|----------|
+| 1 (highest) | 90-100 | Verified / near-certain |
+| 2 | 70-89 | Strong evidence / established |
+| 3 | 50-69 | Moderate evidence / emerging |
+| 4 | 30-49 | Weak evidence / uncertain |
+| 5 (lowest) | 0-29 | Speculative / extrapolated |
+
+**Rules**:
+- Skills producing confidence scores MUST use integer 0-100
+- Skills consuming confidence scores MUST interpret them against these tier boundaries
+- Temporal decay is opt-in: skills with a temporal dimension (e.g., profilera) may apply exponential decay; skills without one (e.g., inspektera) use static scores
+- When referencing profile consumption thresholds, use 65+ for "strong constraint" and <45 for "suggestion" (integer equivalents of the 0.0-1.0 thresholds)
+
+**Linter check**: Deterministic. Regex for tier boundaries in SKILL.md text.
 
 ## 2. Severity Levels
 
-Two severity vocabularies serve different purposes in the ecosystem.
+Two severity vocabularies serve different purposes in the suite.
 
 ### Finding severity (audit output)
 
@@ -100,7 +122,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | SESSION.md | Timestamped session bookmarks with artifact change tracking |
 | archive/ | Completed plans, superseded visions and designs |
 
-**PROFILE.md** is global at `~/.claude/profile/PROFILE.md`, not in the project root or `.agentera/`. Skills read it from this path directly.
+**PROFILE.md** is global. The host runtime provides the path via the profile-path capability (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> Skills read it from the runtime-provided path directly.
 
 ### Format contracts
 
@@ -118,7 +140,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | DESIGN.md | .agentera/DESIGN.md | visualisera | realisera, visionera | Standard sections per DESIGN-spec.md |
 | DOCS.md | .agentera/DOCS.md | dokumentera | all skills (path resolution) | ## Conventions, ## Artifact Mapping, ## Index |
 | SESSION.md | .agentera/SESSION.md | session stop hook | session start hook, hej | ## YYYY-MM-DD HH:MM, Artifacts modified, Summary; compaction: 5 full + 20 one-line, oldest dropped |
-| PROFILE.md | ~/.claude/profile/PROFILE.md | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
+| PROFILE.md | (profile-path capability) <!-- platform: profile-path --> | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
 
 **Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for project contributors) AND `.agentera/PROGRESS.md` (operational cycle-level detail for consuming skills). Consuming skills that need cycle detail read `.agentera/PROGRESS.md`; project contributors read CHANGELOG.md.
 
@@ -256,34 +278,9 @@ The section MUST appear under "## State artifacts" (not under cross-skill integr
 
 **Linter check**: Deterministic. Section presence under correct parent heading, core sentence pattern matching.
 
-## 6. Profile Consumption
-
-Skills that read the decision profile use one of two patterns:
-
-### Script pattern (for skills that need confidence-weighted summaries)
-
-```
-python3 -m scripts.effective_profile
-```
-
-Run from the profilera skill directory. Mentioned skills: realisera, optimera, inspektera, planera, inspirera.
-
-Standard threshold language (after migration to 0-100):
-- "high effective confidence entries (65+) are strong constraints"
-- "low effective confidence entries (<45) are suggestions"
-
-### Direct read pattern (for skills that need qualitative profile context)
-
-Read `~/.claude/profile/PROFILE.md` directly. Mentioned skills: resonera, visionera, dokumentera, visualisera.
-
-Both patterns MUST include a fallback instruction:
-"If the script or PROFILE.md is missing, proceed without persona grounding."
-
-**Linter check**: Deterministic. Script invocation syntax, threshold values, fallback instruction presence.
-
 ## 12. Visual Identity
 
-The ecosystem has a shared visual vocabulary defined in DESIGN.md (the project-level visual identity, maintained by visualisera). This section defines the ecosystem-level conventions that all SKILL.md files follow when formatting output and artifact content.
+The suite has a shared visual vocabulary defined in DESIGN.md (the project-level visual identity, maintained by visualisera). This section defines the conventions that all SKILL.md files follow when formatting output and artifact content.
 
 DESIGN.md is the source of truth for token definitions. This spec defines how skills use those tokens: introduction patterns, semantic roles, and composition rules. Skills include actual glyph characters inline in their output format examples (they run in target projects without access to this repo's DESIGN.md).
 
@@ -452,3 +449,50 @@ Rules:
 - New skills MUST be assigned a glyph in DESIGN.md before their SKILL.md is finalized
 
 **Linter check**: Advisory. Presence of skill glyph in SKILL.md output format sections.
+
+## 18. Staleness Detection
+
+Stale artifacts mislead routing decisions and cause skills to act on outdated context. This section defines how staleness is detected and which artifacts each skill is expected to update.
+
+### Skill-to-expected-artifact mapping
+
+Each skill produces specific artifacts as part of its workflow. When a skill is dispatched (directly or via orkestrera), the artifacts listed here are the ones it is expected to have updated upon completion. This table is the authoritative lookup for staleness checks.
+
+| Skill | Expected artifact outputs |
+|-------|--------------------------|
+| visionera | VISION.md |
+| resonera | .agentera/DECISIONS.md |
+| planera | .agentera/PLAN.md |
+| realisera | .agentera/PROGRESS.md, TODO.md, CHANGELOG.md |
+| optimera | .agentera/EXPERIMENTS.md, .agentera/OBJECTIVE.md |
+| inspektera | .agentera/HEALTH.md, TODO.md |
+| dokumentera | .agentera/DOCS.md |
+| visualisera | .agentera/DESIGN.md |
+| profilera | (profile-path capability) <!-- platform: profile-path --> |
+| inspirera | (no owned artifact; findings are filed to TODO.md or fed into other skills) |
+| orkestrera | (conductor; updates .agentera/PLAN.md task statuses and dispatches other skills) |
+| hej | (router; reads artifacts but produces none) |
+
+Skills that share an artifact (e.g., realisera and inspektera both write to TODO.md) are each expected to update it independently when dispatched. Staleness is checked per-skill, not per-artifact.
+
+### Plan-relative staleness convention
+
+When a plan exists (.agentera/PLAN.md with an active status), staleness is measured relative to the plan's creation date (the `Created` field in the plan's HTML comment metadata).
+
+**Detection rule**: after a plan completes (all tasks `■ complete` or `skipped`), compare each dispatched skill against its expected artifacts. An artifact is **stale** if its last modification date (via `git log -1 --format=%aI -- <path>`) predates the plan's creation date AND the skill was dispatched at least once during the plan.
+
+**What counts as dispatched**: a skill appears in at least one task's execution history during the plan. For orkestrera-driven plans, the dispatch log in PROGRESS.md cycle entries identifies which skills ran.
+
+**Scope**: only artifacts listed in the mapping above are checked. Artifacts that a skill reads but does not produce (e.g., realisera reads VISION.md) are not staleness candidates for that skill.
+
+**Handling stale findings**: stale artifacts are surfaced as context for the next plan cycle, not as errors. The consuming skill (orkestrera, inspektera) reports which artifacts are stale and which dispatched skills were expected to update them. This informs the next plan's task selection without blocking execution.
+
+### Fallback: no plan context
+
+When no active or recently completed plan exists (standalone skill invocation, ad-hoc inspektera audit, or hej session orientation), plan-relative detection is unavailable. The fallback heuristic applies:
+
+**Fallback rule**: an artifact is considered potentially stale if it was not modified since the most recent PROGRESS.md cycle entry. If PROGRESS.md has no entries (fresh project), no staleness check applies.
+
+The fallback is advisory, not authoritative. It surfaces artifacts that may need attention but does not carry the same signal strength as plan-relative detection (where the dispatched-skill relationship provides causal evidence of staleness).
+
+**Linter check**: None. Staleness detection is a runtime convention consumed by orkestrera and inspektera, not a SKILL.md structural requirement.

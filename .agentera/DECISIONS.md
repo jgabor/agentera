@@ -194,7 +194,7 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 - [Per-primitive reference docs], rejected in favor of a single comprehensive spec for
   maintainability.
 
-**Choice**: Single ecosystem spec (`references/ecosystem-spec.md`) defining all shared primitives, enforced by a Python linter (`scripts/validate-ecosystem.py`) running as a pre-commit hook.
+**Choice**: Single ecosystem spec (`references/SPEC.md`) defining all shared primitives, enforced by a Python linter (`scripts/validate-ecosystem.py`) running as a pre-commit hook.
 
 **Reasoning**: The confidence divergence proved that convention-based alignment fails silently. Two skills independently invented scoring systems that use different scales for the same concept. The fix is twofold: (1) define shared primitives in one place so new skills inherit consistency, and (2) validate alignment deterministically so drift can't be committed. A pre-commit hook is the tightest feedback loop, it catches violations at the moment they're introduced, requiring zero discipline. The Anthropic `~~placeholder` + `CONNECTORS.md` pattern from knowledge-work-plugins confirmed the architecture: define once, reference everywhere, validate consistency.
 
@@ -246,10 +246,10 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 | Labels | Domain-specific: each skill defines its own tier descriptions |
 | Decay | Opt-in per skill. Profilera uses it. Inspektera does not. |
 | Migration | Profilera migrates from 0.0-1.0 to 0-100 |
-| Boundary reconciliation | Implementation detail: reconcile during ecosystem-spec authoring |
+| Boundary reconciliation | Implementation detail: reconcile during the spec authoring |
 
 **Confidence**: firm
-**Feeds into**: references/ecosystem-spec.md (Decision 7)
+**Feeds into**: references/SPEC.md (Decision 7)
 
 ---
 
@@ -277,7 +277,7 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Primitive vocabulary convention** (added 2026-03-31): ecosystem primitives use lowercase, single-word terms with personality, matching the register of existing vocabularies (critical/degraded/annoying, firm/provisional/exploratory). New primitives must follow the same convention. ALL_CAPS engineering jargon and corporate headings are rejected in favor of workshop-floor language. Applied to exit signals: `complete/flagged/stuck/waiting`. Section headings: "Exit signals" (peer to "Safety rails"), "Loop guard" (workshop machinery metaphor for runaway prevention).
 
 **Confidence**: firm
-**Feeds into**: rename execution across repo, marketplace manifest, README, CLAUDE.md, registry; ecosystem-spec.md primitive vocabulary
+**Feeds into**: rename execution across repo, marketplace manifest, README, CLAUDE.md, registry; SPEC.md primitive vocabulary
 
 ---
 
@@ -506,10 +506,10 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Style rules**: colons over em-dashes, labeled metadata, generous newlines
 
 **Confidence**: firm
-**Feeds into**: all 11 SKILL.md files, ecosystem-spec.md Section 12
+**Feeds into**: all 11 SKILL.md files, SPEC.md Section 12
 
 **Confidence**: ━ firm
-**Feeds into**: All 11 SKILL.md files, ecosystem-spec.md, artifact templates, linter, DOCS.md template
+**Feeds into**: All 11 SKILL.md files, SPEC.md, artifact templates, linter, DOCS.md template
 
 ---
 
@@ -542,7 +542,7 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Type tags**: feat, fix, docs, refactor, chore, test, perf (matching conventional commits)
 
 **Confidence**: firm
-**Feeds into**: TODO.md, ecosystem-spec.md, TODO-template.md
+**Feeds into**: TODO.md, SPEC.md, TODO-template.md
 
 ## Decision 16 · 2026-04-02
 
@@ -556,7 +556,7 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Choice**: Define a single "sharp colleague" voice in VISION.md. One voice, many hats, the difference between skills is expertise, not personality. Data-dense outputs (dashboards, audit findings, plans) use a "dashboard + human frame" pattern: structured data stays for scannability, bookended by conversational opening and summary.
 **Reasoning**: The vision already defines aesthetics and identity. Voice belongs there because skills developed *in alignment with the vision* should naturally adopt the right tone, adding personality sections to each skill treats the symptom. "Sharp colleague" (casual, opinionated, occasionally playful, pushes back) was chosen over "workshop-floor" (too terse) and "quiet confidence" (warmth through rigor alone is too cold). The dashboard + human frame pattern resolves the tension between scannability and warmth: the data is evidence, the voice is interpretation.
 **Confidence**: firm
-**Feeds into**: VISION.md voice section, ecosystem-spec.md narration section
+**Feeds into**: VISION.md voice section, SPEC.md narration section
 
 ## Decision 17 · 2026-04-02
 
@@ -567,24 +567,24 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 - [Principle only, no SKILL.md changes], rejected: skills need concrete examples to hit the register
 - [Exact scripts per narration point], rejected: fixed conversational text becomes a tic with repetition
 - [Minimize narration, let markers carry it], rejected: silence during long operations is worse than mechanical narration
-**Choice**: Narration voice principle in ecosystem-spec plus riffable example lines in each SKILL.md. Action narration register: brief, casual, tells you what's happening without explaining internals. Examples to riff on, not scripts, agent varies naturally within the register.
-**Reasoning**: The sharp colleague doesn't announce subroutines ("Entering Returning mode"); she tells you what she's doing ("Pulling up the latest..."). Scripts become tics; examples set a register. Structural markers and step markers are functional (you scan them) so they stay unchanged. The narration between them is conversational (you read it) so it needs the same voice treatment that Decision 16 gave to personality sections and output framing. Principle in ecosystem-spec ensures consistency; examples in SKILL.md demonstrate the register for each skill's specific narration points.
+**Choice**: Narration voice principle in the spec plus riffable example lines in each SKILL.md. Action narration register: brief, casual, tells you what's happening without explaining internals. Examples to riff on, not scripts, agent varies naturally within the register.
+**Reasoning**: The sharp colleague doesn't announce subroutines ("Entering Returning mode"); she tells you what she's doing ("Pulling up the latest..."). Scripts become tics; examples set a register. Structural markers and step markers are functional (you scan them) so they stay unchanged. The narration between them is conversational (you read it) so it needs the same voice treatment that Decision 16 gave to personality sections and output framing. Principle in the spec ensures consistency; examples in SKILL.md demonstrate the register for each skill's specific narration points.
 **Confidence**: firm
-**Feeds into**: ecosystem-spec.md (new narration voice section), ~5 SKILL.md files (hej, visionera, profilera, visualisera, + ad-hoc narration guidance for all)
+**Feeds into**: SPEC.md (new narration voice section), ~5 SKILL.md files (hej, visionera, profilera, visualisera, + ad-hoc narration guidance for all)
 **Feeds into**: VISION.md (Identity section), skill refinement across all 11 SKILL.md files
 
 ## Decision 18 · 2026-04-02
 
 **Question**: How should the ecosystem handle em-dashes and double dashes in all text?
-**Context**: The decision profile has a high-confidence, stable entry (since Sep 2025) banning em-dashes because they signal AI-generated text. Decision 14 only enforced this for exit signal label separators (colons instead). The rest of the ecosystem (SKILL.md prose, ecosystem-spec, templates, agent output) continued using em-dashes freely. The profile also incorrectly listed double dashes (--) as an acceptable replacement.
+**Context**: The decision profile has a high-confidence, stable entry (since Sep 2025) banning em-dashes because they signal AI-generated text. Decision 14 only enforced this for exit signal label separators (colons instead). The rest of the ecosystem (SKILL.md prose, the spec, templates, agent output) continued using em-dashes freely. The profile also incorrectly listed double dashes (--) as an acceptable replacement.
 **Alternatives**:
 - [Ban in agent output only, allow in SKILL.md source], rejected: inconsistent standard
 - [Mechanical find-and-replace with double dashes], rejected: double dashes are equally a crutch
 - [Context-sensitive replacement (colons for labels, commas/periods for prose)], rejected: restructuring is better
-**Choice**: Full ban on em-dashes AND double dashes across the entire ecosystem. Replacement hierarchy: restructure the sentence first; fall back to commas, periods, or colons only when restructuring reads worse. Applies to SKILL.md source, ecosystem-spec, templates, and all agent-generated output.
+**Choice**: Full ban on em-dashes AND double dashes across the entire ecosystem. Replacement hierarchy: restructure the sentence first; fall back to commas, periods, or colons only when restructuring reads worse. Applies to SKILL.md source, the spec, templates, and all agent-generated output.
 **Reasoning**: The goal is better prose, not a punctuation swap. Em-dashes and double dashes are a crutch for sentences that should be restructured. Removing them forces cleaner writing. The profile entry that listed double dashes as acceptable was wrong and needs correction.
 **Confidence**: firm
-**Feeds into**: ecosystem-spec.md (punctuation convention), all 11 SKILL.md files, PROFILE.md correction
+**Feeds into**: SPEC.md (punctuation convention), all 11 SKILL.md files, PROFILE.md correction
 
 ## Decision 19 · 2026-04-02
 
@@ -597,7 +597,7 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Choice**: No hard wraps in prose paragraphs. One paragraph = one line. Break only for paragraph boundaries, section boundaries, or list items. Terminal handles wrapping. Structured content (code blocks, lists, tables, frontmatter) keeps its inherent line breaks.
 **Reasoning**: The problem was consistency, not readability. Mixing two wrapping approaches in the same response looked arbitrary. Removing hard wraps entirely eliminates the inconsistency. The tradeoff (whole-paragraph diffs) is acceptable for the consistency gain.
 **Confidence**: firm
-**Feeds into**: ecosystem-spec.md (line-break convention), all 11 SKILL.md files
+**Feeds into**: SPEC.md (line-break convention), all 11 SKILL.md files
 
 ## Decision 20 · 2026-04-02
 
@@ -611,7 +611,7 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Choice**: Orkestrera as a skill-agnostic meta-orchestrator. Thin conductor, fat workers. Dispatches any skill as a subagent based on task semantics.
 **Reasoning**: The core insight is separation of concerns between orchestration and execution. Lira's conductor/worker split (conductor owns state and dispatch, workers execute in isolation) is the right pattern, but implemented as a skill (SKILL.md) rather than infrastructure. The conductor follows a deterministic protocol, keeping its context lean; creativity happens in the dispatched skills. Each dispatched skill runs as a subagent with its own context window, preventing conductor context pollution. Key design decisions: (1) plan-required, delegates to inspirera/planera to create one if absent, (2) inspektera as evaluator (GAN pattern using existing skill), (3) multi-cycle single session with lean conductor, (4) sequential task dispatch (realisera parallelizes internally), (5) retry with inspektera findings, max 2, then block and skip, (6) reuses existing artifacts (PLAN.md, PROGRESS.md, HEALTH.md). Supersedes ISS-21, ISS-22, ISS-23, ISS-24.
 **Confidence**: firm
-**Feeds into**: new skill (skills/orkestrera/SKILL.md), TODO.md (supersede ISS-21, ISS-22, ISS-23, ISS-24), ecosystem-spec.md (12th skill primitives)
+**Feeds into**: new skill (skills/orkestrera/SKILL.md), TODO.md (supersede ISS-21, ISS-22, ISS-23, ISS-24), SPEC.md (12th skill primitives)
 
 ### Design Decisions Summary
 
@@ -639,12 +639,12 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Choice**: Test tasks in plans must include a proportionality target. Default rule: one pass test + one fail test per unit under test. Edge case tests only for units with complex parsing, regex, or branching logic. Planera encodes this as an AC constraint; inspektera evaluates against it.
 **Reasoning**: The problem is not that agents write tests badly; each test was correct and useful. The problem is that unbounded scope compounds across tasks. Three test tasks each producing 40 tests is 120, when 50 total would have covered the critical paths. The fix belongs in the plan (where scope is set), not in the agent (where scope is executed). Proportionality as an AC constraint makes it verifiable without adding new machinery.
 **Confidence**: firm
-**Feeds into**: ecosystem-spec.md (proportionality convention for test tasks), planera SKILL.md (test budget in AC guidance), inspektera SKILL.md (evaluate test proportionality)
+**Feeds into**: SPEC.md (proportionality convention for test tasks), planera SKILL.md (test budget in AC guidance), inspektera SKILL.md (evaluate test proportionality)
 
 ## Decision 22 · 2026-04-03
 
 **Question**: Should ISS-19 phase tracking be enforced across skills, and how should the ecosystem detect stale artifacts?
-**Context**: ISS-19 spec (ecosystem-spec.md Section 17) defines five phases with transitions. The remaining work was SKILL.md integration: each skill reading phase and flagging out-of-order runs. Deliberation revealed that orkestrera's artifact-based routing already enforces order implicitly (no plan → bootstrap one), and that standalone skills must stay free from phase constraints. The actual concern was stale artifacts causing wrong routing decisions, not missing transition validation.
+**Context**: ISS-19 spec (SPEC.md Section 17) defines five phases with transitions. The remaining work was SKILL.md integration: each skill reading phase and flagging out-of-order runs. Deliberation revealed that orkestrera's artifact-based routing already enforces order implicitly (no plan → bootstrap one), and that standalone skills must stay free from phase constraints. The actual concern was stale artifacts causing wrong routing decisions, not missing transition validation.
 **Alternatives**:
 - [Full phase enforcement across 12 skills], rejected: breaks standalone operation, redundant with artifact-based routing
 - [Soft warnings in every skill], rejected: warning fatigue, still redundant
@@ -668,7 +668,7 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Choice**: SESSION.md as the 12th ecosystem artifact. Produced by the Stop hook, consumed by SessionStart hook and hej. Context loader improvements make the additional artifact weight manageable.
 **Reasoning**: The initial resistance was about cognitive and context weight of a 12th artifact, not architectural principle. Extending PROGRESS.md was rejected because its value comes from being single-producer, single-format. The dotfile option was a pragmatic workaround that dodged the real question. With improved context loading, the honest choice wins: session state is ecosystem state.
 **Confidence**: firm
-**Feeds into**: PLAN.md (hooks infrastructure), ecosystem-spec.md (artifact table)
+**Feeds into**: PLAN.md (hooks infrastructure), SPEC.md (artifact table)
 
 ## Decision 24 · 2026-04-03
 
@@ -695,3 +695,16 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Reasoning**: The key insight is that the spec is the product, not the twelve skills. The skills are the reference implementation that proves the spec works. This reframes agentera from a tool (install skills, get a team) to a protocol (agents that speak this language become teams). The solo founder persona stays because the spec exists to solve her problem, not as abstract standards work. The problem statement gains a second layer: amnesia is the individual problem, fragmentation is the ecosystem problem. The spec solves both.
 **Confidence**: firm
 **Feeds into**: VISION.md (North Star, Direction, supporting paragraphs)
+
+## Decision 23 · 2026-04-10
+
+**Question**: Should the terminology for the ecosystem spec and per-skill context files be renamed for clarity and cohesion?
+**Context**: Two filenames (`SPEC.md` and `contract.md`) use a double-word "ecosystem-" prefix that is redundant (agentera IS the ecosystem), mechanically named (the context file is spec excerpts, not "context" in the operational sense), and inconsistent (prose uses "the spec" while filenames use "the spec"). The external AI community (Google Workspace CLI, Justin Poehnelt's agent DX article) uses CONTEXT.md for runtime agent instructions, creating collision risk. The rename cascades into 12 SKILL.md files, 2 Python scripts, the linter, tests, HTML comment conventions, and prose throughout.
+**Alternatives**:
+- [Keep current names], rejected: "ecosystem-context" is opaque, two-word, and collides with emerging CONTEXT.md convention for runtime agent instructions. The file contains binding spec excerpts, not operational context.
+- [Rename to context.md only], rejected: collision with the emerging agent community's CONTEXT.md convention (Google Workspace CLI, Justin Poehnelt). CONTEXT.md means "runtime instructions for agents" externally.
+- [Rename spec-only], rejected: renaming the spec without renaming the per-skill excerpts misses the relationship clarity opportunity
+**Choice**: `SPEC.md` (root, uppercase per artifact convention) and `contract.md` (per skill in references/, lowercase per reference file convention). Drop the "ecosystem-" prefix from all filenames, headers, script names, and prose.
+**Reasoning**: The contract is a binding excerpt: the skill MUST follow these rules. "Contract" carries the obligation that "context" lacks. The pair is clean: the spec defines the rules, your contract is your binding slice. Dropping "ecosystem-" from everywhere eliminates redundancy (agentera IS the ecosystem). Upper/lower case split follows the existing convention: root artifacts are UPPERCASE (VISION.md, TODO.md), skill reference files are lowercase (harness-guide.md, audit-commands.md). The rename makes the spec a first-class root artifact rather than hiding it in references/.
+**Confidence**: firm
+**Feeds into**: PLAN.md (Platform Portability plan)

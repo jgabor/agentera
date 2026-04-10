@@ -54,7 +54,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Plan | .agentera/PLAN.md | 2026-04-02 | ■ current (archived) |
 | DOCS | .agentera/DOCS.md | 2026-04-02 | ■ current |
 | Design | .agentera/DESIGN.md | 2026-04-02 | ■ current |
-| Ecosystem spec | references/ecosystem-spec.md | 2026-04-02 | ■ current |
+| Ecosystem spec | references/the spec.md | 2026-04-02 | ■ current |
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
 | Registry | registry.json | 2026-04-02 | ■ current |
 | Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-02 | ■ current |
@@ -91,8 +91,8 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - [gap] CLAUDE.md repo layout missing tests/ directory · warning (fixed)
 - [stale] DOCS.md HEALTH.md row showed stale status, Audit 6 updated it · warning (fixed)
 - [stale] CHANGELOG.md [Unreleased] empty despite 7 post-1.5.0 commits · warning (fixed)
-- [misaligned] ecosystem-spec Section 16 orkestrera row described proportionality forwarding instead of anti-bias constraint · warning (fixed)
-- [misaligned] ecosystem-spec line 5 comment had hyphen instead of underscore in script name · info (fixed)
+- [misaligned] the spec Section 16 orkestrera row described proportionality forwarding instead of anti-bias constraint · warning (fixed)
+- [misaligned] the spec line 5 comment had hyphen instead of underscore in script name · info (fixed)
 - [stale] DOCS.md DTC comment referenced ISSUES.md instead of TODO.md · info (fixed)
 - [gap] DOCS.md Index missing test suite row · warning (fixed)
 - [stale] DOCS.md Coverage note outdated, missing test count and gaps · warning (fixed)
@@ -101,7 +101,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 - [stale] README.md line 52 referenced /loop without mentioning /orkestrera as primary autonomous execution method · warning (fixed)
 - [misaligned] README.md ecosystem diagram showed orkestrera → realisera but omitted orkestrera ↔ inspektera evaluation link · warning (fixed)
-- [misaligned] README.md and ecosystem-spec.md VISION.md consumers missing orkestrera (reads during bootstrap) · warning (fixed)
+- [misaligned] README.md and the spec.md VISION.md consumers missing orkestrera (reads during bootstrap) · warning (fixed)
 - [stale] DOCS.md coverage notes referenced CLAUDE.md and README.md staleness already resolved by cycles 72-77 · warning (fixed)
 - [stale] DOCS.md Index dates from 2026-03-31 for files updated 2026-04-02 · warning (fixed)
 - [stale] DOCS.md last audit date said 2026-03-31 · info (fixed)
@@ -109,8 +109,8 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 ### 2026-03-31 (Audit 3)
 
-- [stale] ecosystem-spec.md + all 11 SKILL.md say "ten-skill", actually eleven after hej · critical (fixed)
-- [gap] DOCS.md Index listed 6 documents, missing 6 that exist (VISION, PROGRESS, ISSUES, HEALTH, DESIGN, ecosystem-spec) · critical (fixed)
+- [stale] the spec.md + all 11 SKILL.md say "ten-skill", actually eleven after hej · critical (fixed)
+- [gap] DOCS.md Index listed 6 documents, missing 6 that exist (VISION, PROGRESS, ISSUES, HEALTH, DESIGN, the spec) · critical (fixed)
 - [stale] marketplace.json description missing hej and visualisera activities · warning (fixed)
 - [misaligned] DOCS.md version_files path had erroneous space · warning (fixed)
 - [stale] ISSUES.md resolved items appeared after empty "## Open" heading · warning (fixed)

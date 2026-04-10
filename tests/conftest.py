@@ -39,11 +39,11 @@ def _load_module(name: str, file_path: Path) -> ModuleType:
 
 
 @pytest.fixture(scope="session")
-def validate_ecosystem():
-    """Load scripts/validate_ecosystem.py (handles both hyphenated and underscored)."""
+def validate_spec():
+    """Load scripts/validate_spec.py (handles both hyphenated and underscored)."""
     return _load_module(
-        "validate_ecosystem",
-        REPO_ROOT / "scripts" / "validate_ecosystem.py",
+        "validate_spec",
+        REPO_ROOT / "scripts" / "validate_spec.py",
     )
 
 
@@ -102,11 +102,11 @@ def eval_skills():
 
 
 @pytest.fixture(scope="session")
-def generate_ecosystem_context():
-    """Load scripts/generate_ecosystem_context.py."""
+def generate_contracts():
+    """Load scripts/generate_contracts.py."""
     return _load_module(
-        "generate_ecosystem_context",
-        REPO_ROOT / "scripts" / "generate_ecosystem_context.py",
+        "generate_contracts",
+        REPO_ROOT / "scripts" / "generate_contracts.py",
     )
 
 

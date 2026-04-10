@@ -1,73 +1,21 @@
-<!-- ecosystem-context: dokumentera -->
-<!-- source: references/ecosystem-spec.md (sha256: 44ca44a52a9dc066da95a3898762e606d82e4aaa53dd4fe3b22f315eafecddff) -->
-<!-- sections: 2, 4, 5 -->
-<!-- generated: 2026-04-07T22:11:18Z -->
+<!-- contract: planera -->
+<!-- source: references/SPEC.md (sha256: e778b1fc71aeebf73864824d80a095774b02c438edf6a3cf5ad3ea3d7311578d) -->
+<!-- sections: 3, 4, 5, 6, 16 -->
+<!-- generated: 2026-04-10T16:51:16Z -->
 <!-- do not edit manually -->
-<!-- regenerate: python3 scripts/generate_ecosystem_context.py -->
+<!-- regenerate: python3 scripts/generate_contracts.py -->
 
-## 2. Severity Levels
+## 3. Decision Confidence Labels
 
-Two severity vocabularies serve different purposes in the ecosystem.
+Used in DECISIONS.md entries (produced by resonera, consumed by realisera, planera, inspektera, profilera).
 
-### Finding severity (audit output)
+| Label | Meaning | How consuming skills treat it |
+|-------|---------|-------------------------------|
+| **firm** | User is committed | Treat as a hard constraint |
+| **provisional** | Best current answer, open to revision | Treat as a strong default |
+| **exploratory** | Direction to try, expected to be revisited | Treat as a suggestion |
 
-Used by skills that produce audit findings (inspektera, dokumentera, visualisera).
-
-| Level | Meaning |
-|-------|---------|
-| **critical** | Broken functionality, security issue, data loss risk |
-| **warning** | Works but poorly: fragile, confusing, or degraded |
-| **info** | Minor: cosmetic, style, low-impact improvement |
-
-### Issue severity (TODO.md)
-
-Used by all skills that file to TODO.md.
-
-| Level | Glyph | Meaning |
-|-------|-------|---------|
-| **critical** | ⇶ | Broken functionality, blocks progress |
-| **degraded** | ⇉ | Works but poorly: slow, fragile, ugly |
-| **normal** | → | Standard work: features, improvements, routine tasks |
-| **annoying** | ⇢ | Cosmetic, minor friction, style nit |
-
-### Mapping
-
-When filing audit findings to TODO.md, map as follows:
-
-| Finding severity | → | Issue severity |
-|-----------------|---|----------------|
-| critical | → | critical |
-| warning | → | degraded or normal |
-| info | → | annoying |
-
-### TODO.md format convention
-
-TODO.md uses a conventional checkbox format grouped by severity. Skills write items as Markdown checkboxes under severity headings:
-
-```markdown
-# TODO
-
-## ⇶ Critical
-- [ ] ISS-N: [type] Description
-
-## ⇉ Degraded
-- [ ] ISS-N: [type] Description
-
-## → Normal
-- [ ] ISS-N: [type] Description
-
-## ⇢ Annoying
-- [ ] ISS-N: [type] Description
-
-## Resolved
-- [x] ~~ISS-N: [type] Description~~ · resolved in commit hash
-```
-
-Type tags use the conventional commit vocabulary: feat, fix, docs, refactor, chore, test, perf.
-
-The severity vocabulary (critical/degraded/annoying) is preserved as section headings with severity glyphs. Checkboxes indicate completion state. Resolved items move to the Resolved section with strikethrough and commit reference.
-
-**Linter check**: Deterministic. Exact string matching for severity terms in context.
+**Linter check**: Deterministic. Enum values in DECISIONS.md format definition.
 
 ## 4. Artifact Format Contracts
 
@@ -100,7 +48,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | SESSION.md | Timestamped session bookmarks with artifact change tracking |
 | archive/ | Completed plans, superseded visions and designs |
 
-**PROFILE.md** is global at `~/.claude/profile/PROFILE.md`, not in the project root or `.agentera/`. Skills read it from this path directly.
+**PROFILE.md** is global. The host runtime provides the path via the profile-path capability (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> Skills read it from the runtime-provided path directly.
 
 ### Format contracts
 
@@ -118,7 +66,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | DESIGN.md | .agentera/DESIGN.md | visualisera | realisera, visionera | Standard sections per DESIGN-spec.md |
 | DOCS.md | .agentera/DOCS.md | dokumentera | all skills (path resolution) | ## Conventions, ## Artifact Mapping, ## Index |
 | SESSION.md | .agentera/SESSION.md | session stop hook | session start hook, hej | ## YYYY-MM-DD HH:MM, Artifacts modified, Summary; compaction: 5 full + 20 one-line, oldest dropped |
-| PROFILE.md | ~/.claude/profile/PROFILE.md | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
+| PROFILE.md | (profile-path capability) <!-- platform: profile-path --> | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
 
 **Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for project contributors) AND `.agentera/PROGRESS.md` (operational cycle-level detail for consuming skills). Consuming skills that need cycle detail read `.agentera/PROGRESS.md`; project contributors read CHANGELOG.md.
 
@@ -255,3 +203,60 @@ Where:
 The section MUST appear under "## State artifacts" (not under cross-skill integration or elsewhere).
 
 **Linter check**: Deterministic. Section presence under correct parent heading, core sentence pattern matching.
+
+## 6. Profile Consumption
+
+Skills that read the decision profile use one of two patterns:
+
+### Script pattern (for skills that need confidence-weighted summaries)
+
+```
+python3 -m scripts.effective_profile
+```
+
+Run from the profilera skill directory. Mentioned skills: realisera, optimera, inspektera, planera, inspirera.
+
+Standard threshold language (after migration to 0-100):
+- "high effective confidence entries (65+) are strong constraints"
+- "low effective confidence entries (<45) are suggestions"
+
+### Direct read pattern (for skills that need qualitative profile context)
+
+Read PROFILE.md from the runtime-provided profile path (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> Mentioned skills: resonera, visionera, dokumentera, visualisera.
+
+Both patterns MUST include a fallback instruction:
+"If the script or PROFILE.md is missing, proceed without persona grounding."
+
+**Linter check**: Deterministic. Script invocation syntax, threshold values, fallback instruction presence.
+
+## 16. Test Proportionality
+
+Plans that include test tasks must specify a proportionality target so that test volume stays aligned with the complexity of the code under test. Without a constraint, autonomous agents tend to over-produce tests (3-7 per function) when fewer would cover the critical paths.
+
+### Default rule
+
+One pass test + one fail test per testable unit. A testable unit is a function, method, endpoint, or discrete behavior boundary. Two tests per unit is sufficient to verify the happy path and one meaningful failure mode.
+
+### Edge case expansion
+
+Additional edge case tests are warranted only for units with:
+
+- Complex parsing logic (multiple input formats, escape sequences, nested structures)
+- Regex patterns (boundary conditions, catastrophic backtracking potential)
+- Multi-branch logic (3+ conditional paths, state machines, mode switches)
+
+When expanding, the plan must state which units qualify and why.
+
+### Override
+
+Plans can specify a different proportionality target by including an explicit rationale. Valid reasons include: safety-critical code paths, high-fanout utility functions, or user-specified coverage requirements. The override appears in the task's acceptance criteria alongside the adjusted target.
+
+### Skill integration
+
+| Skill | Role |
+|-------|------|
+| planera | Encodes the proportionality target as an acceptance criteria constraint on test tasks. Uses the default rule unless the plan's context justifies an override |
+| inspektera | Evaluates test volume against the proportionality target during audits. Flags both under-testing (0 tests for a testable unit) and over-testing (significantly exceeding the target without justification) |
+| orkestrera | Includes anti-bias constraint in dispatch prompts for implementation tasks. Proportionality targets reach subagents through the plan's acceptance criteria, not through a separate orkestrera-level mechanism |
+
+**Linter check**: None. This convention governs plan content and audit evaluation, not SKILL.md structure.

@@ -43,9 +43,9 @@ Template in `references/templates/`. Use as starting structure, adapt to the pro
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/DECISIONS.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads and writes (VISION.md, .agentera/OBJECTIVE.md, TODO.md).
 
-### Ecosystem context
+### Contract
 
-Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+Before starting, read `references/contract.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
 ### DECISIONS.md
 
@@ -94,7 +94,7 @@ The sharp colleague, here to help you think, not consult.
 ### If a topic is provided
 
 1. Read relevant codebase context (enough to ask informed questions, not a research binge)
-2. If decision profile exists, read `~/.claude/profile/PROFILE.md` directly per ecosystem context profile consumption conventions. Check for high-confidence entries in this domain and surface them: "Your profile says X here. Still true, or is this case different?"
+2. If decision profile exists, read `~/.claude/profile/PROFILE.md` directly per contract profile consumption conventions. Check for high-confidence entries in this domain and surface them: "Your profile says X here. Still true, or is this case different?"
 3. If `DECISIONS.md` exists, reference prior decisions rather than re-deliberating
 4. Reflect your understanding in 1-2 sentences
 5. Ask your first question
@@ -183,7 +183,7 @@ Relevant options only:
 - **Log it**: append to `DECISIONS.md` (always offered)
 - **Feed into VISION.md**: if about direction/scope/principles
 - **Feed into OBJECTIVE.md**: if about what to optimize
-- **File to TODO.md**: if surfaced tech debt (severity per ecosystem context)
+- **File to TODO.md**: if surfaced tech debt (severity per contract)
 - **Just wrap up**: no artifacts needed
 
 ### Step 3: Write artifacts
@@ -191,7 +191,7 @@ Relevant options only:
 For any option the user selects:
 
 - **DECISIONS.md**: reason through alternatives in response text. Write ONLY chosen decision,
-  confidence, and a rationale per ecosystem context token budgets. No deliberation transcript.
+  confidence, and a rationale per contract token budgets. No deliberation transcript.
 - **VISION.md / OBJECTIVE.md**: brief follow-up to fill structure (heavy thinking done).
   Present draft for approval.
 - **TODO.md**: standard format (severity, context, impact).
@@ -231,7 +231,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Resonera is part of a twelve-skill ecosystem. It is the deliberation layer, the skill you use to think before the other skills act.
+Resonera is part of a twelve-skill suite. It is the deliberation layer, the skill you use to think before the other skills act.
 
 ### Resonera feeds into /realisera
 

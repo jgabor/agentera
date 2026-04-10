@@ -43,9 +43,9 @@ Template in `references/templates/`. Individual doc files written to standard lo
 
 Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/DOCS.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads (VISION.md, .agentera/PROGRESS.md, .agentera/DECISIONS.md, .agentera/HEALTH.md).
 
-### Ecosystem context
+### Contract
 
-Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
+Before starting, read `references/contract.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
 ### DOCS.md
 
@@ -152,7 +152,7 @@ Steps: understand, write, update, suggest.
 
 Brief conversation (2-4 questions): what, who reads it, what format, what detail level.
 
-Read VISION.md for direction/audience and decision profile per ecosystem context profile consumption conventions for doc style preferences if they exist.
+Read VISION.md for direction/audience and decision profile per contract profile consumption conventions for doc style preferences if they exist.
 
 ### Step 2: Write the documentation
 
@@ -283,7 +283,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Dokumentera is part of a twelve-skill ecosystem. It is the documentation layer, the "D" in DTC.
+Dokumentera is part of a twelve-skill suite. It is the documentation layer, the "D" in DTC.
 
 ### Dokumentera feeds /planera (DTC pipeline)
 In the strict DTC pipeline, dokumentera writes intent docs first, then planera breaks them into implementation tasks. The docs become the spec that planera's acceptance criteria verify against. When the plan includes documentation tasks, dokumentera handles them.
