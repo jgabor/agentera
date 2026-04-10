@@ -164,7 +164,7 @@ Outputs JSON with velocity, work type distribution, and suggestions. Use to info
    ```bash
    python3 scripts/effective_profile.py
    ```
-   Apply confidence thresholds per contract profile consumption conventions. Read full `~/.claude/profile/PROFILE.md` for details when needed. If missing, proceed without persona grounding but flag it.
+   Apply confidence thresholds per contract profile consumption conventions. Read full `~/.claude/profile/PROFILE.md` for details when needed. <!-- platform: profile-path --> If missing, proceed without persona grounding but flag it.
 5. **Project discovery** (cycle 1 or when unfamiliar):
    - Map the directory structure
    - Read dependency manifests (package.json, go.mod, Cargo.toml, pyproject.toml, etc.)
@@ -230,7 +230,7 @@ Keep small enough for one agent session. Too large? Split and save the rest for 
 
 ### Step 5: Dispatch
 
-Spawn a Sonnet implementation agent in a worktree (`isolation: "worktree"`) with:
+Spawn an implementation sub-agent in a worktree (`isolation: "worktree"`) <!-- platform: sub-agent-dispatch --> with:
 
 - The plan from step 4
 - Relevant context files (architecture docs, decision profile, source files being modified)
@@ -251,13 +251,13 @@ You are implementing a focused change for [project].
 - If you encounter a bug unrelated to your task, note it but do not fix it.
 ```
 
-For non-trivial design decisions, spawn Opus for design first, then Sonnet for implementation. Wait for all dispatched agents to complete before proceeding.
+For non-trivial design decisions, spawn a design sub-agent first, then an implementation sub-agent. Wait for all dispatched agents to complete before proceeding.
 
 ### Step 6: Verify
 
 Verification has two phases per contract Section 19, Reality Verification Gate: structural (tests, lint, build are green) and behavioral (the new feature was actually observed running against real project state). Both phases must pass before the cycle can advance to commit. Passing tests alone are necessary but not sufficient evidence that the work is real.
 
-**Dispatch boundary**: If Step 5 dispatched a sub-agent to implement the work in a worktree, verification runs in realisera's main checkout AFTER the worktree has been merged, not inside the worktree. The sub-agent implements; realisera verifies post-merge. Dispatched agents cannot self-attest verification.
+**Dispatch boundary**: If Step 5 dispatched a sub-agent to implement the work in a worktree <!-- platform: sub-agent-dispatch -->, verification runs in realisera's main checkout AFTER the worktree has been merged, not inside the worktree. The sub-agent implements; realisera verifies post-merge. Dispatched agents cannot self-attest verification.
 
 **Phase A, structural verification**: After implementation completes:
 
@@ -390,7 +390,7 @@ When the picked work is optimization-shaped (improving a measurable metric like 
 In Step 3 (Seek inspiration), search for external approaches the way /inspirera would: read the source deeply, extract transferable patterns, note the source for credit in PROGRESS.md. For deeper analysis, run `/inspirera <url>` directly.
 
 ### Realisera reads /profilera output
-Every cycle runs the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) to get a confidence-weighted summary table. Confidence thresholds per contract profile consumption conventions determine which entries are strong constraints vs suggestions. Full rules are read from `~/.claude/profile/PROFILE.md` when needed for detailed reasoning about trade-offs and priorities.
+Every cycle runs the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) to get a confidence-weighted summary table. Confidence thresholds per contract profile consumption conventions determine which entries are strong constraints vs suggestions. Full rules are read from `~/.claude/profile/PROFILE.md` when needed for detailed reasoning about trade-offs and priorities. <!-- platform: profile-path -->
 
 ### Realisera uses /resonera for complex decisions
 When the brainstorm session or work selection surfaces a decision too complex for inline resolution (competing architectural approaches, ambiguous scope, or consequential tradeoffs), suggest `/resonera` to deliberate first. Resonera can produce or refine VISION.md directly, and its DECISIONS.md entries give realisera reasoning context for future cycles. If `DECISIONS.md` exists, read it during the Orient step for context on prior deliberations.

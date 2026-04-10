@@ -33,12 +33,12 @@ One global artifact (written) and project-level artifacts (read).
 
 | Artifact | Purpose | Path |
 |----------|---------|------|
-| PROFILE.md | Decision profile consumed by all skills | `~/.claude/profile/PROFILE.md` (global, not in project root) |
+| PROFILE.md | Decision profile consumed by all skills | `~/.claude/profile/PROFILE.md` (global, not in project root) <!-- platform: profile-path --> |
 | DECISIONS.md | High-signal source for pattern extraction | project root (via DOCS.md mapping) |
 
 ### Artifact path resolution
 
-PROFILE.md is global and lives at `~/.claude/profile/PROFILE.md`, not in the project root or `.agentera/`. `.agentera/DOCS.md` mapping does not apply to PROFILE.md. For project-level artifacts, check if .agentera/DOCS.md exists and use its path mapping; if absent, use the default layout.
+PROFILE.md is global. The host runtime provides the path via the profile-path capability (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> `.agentera/DOCS.md` mapping does not apply to PROFILE.md. For project-level artifacts, check if .agentera/DOCS.md exists and use its path mapping; if absent, use the default layout.
 
 ### Contract
 
@@ -55,7 +55,7 @@ Two modes:
 
 ## Step 0: Detect mode
 
-Before doing anything else, check if `~/.claude/profile/PROFILE.md` exists.
+Before doing anything else, check if `~/.claude/profile/PROFILE.md` exists. <!-- platform: profile-path -->
 
 **If it does NOT exist**: Proceed directly to Full mode (Step 1).
 
@@ -85,6 +85,8 @@ Steps: extract, read, categorize, generate, validate.
 
 ### Step 1: Run extraction
 
+<!-- The extraction below is Claude-adapter-specific. The Session Corpus Contract (spec Section 21) defines the normalized record types; once a host adapter produces those records, profilera consumes them instead of running Claude-specific extraction scripts. The intermediate file paths, JSONL sources, and extractor scripts are Claude Code implementation details. -->
+
 Run extraction scripts to gather raw decision signals. Scripts handle JSONL parsing and output structured JSON.
 
 ```bash
@@ -101,7 +103,7 @@ Read `~/.claude/profile/intermediate/extraction_summary.json` to confirm counts.
 
 ### Step 2: Read extracted data
 
-Read all four intermediate JSON files:
+Read all four intermediate JSON files (paths below are Claude-adapter-specific):
 
 1. `~/.claude/profile/intermediate/crystallized.json`: Memory files, CLAUDE.md, AGENTS.md
 2. `~/.claude/profile/intermediate/history_decisions.json`: Decision-rich prompts from history
@@ -182,9 +184,9 @@ Look for cross-category patterns and contradictions: stated principle vs shipped
 
 Output constraint: ≤30 words per signal, ≤15 words per evidence line.
 
-Write the decision profile to `~/.claude/profile/PROFILE.md`.
+Write the decision profile to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path -->
 
-If a previous version exists: copy to `~/.claude/profile/history/PROFILE-{timestamp}.md`, generate new version, show change summary (added, updated, removed).
+If a previous version exists: copy to `~/.claude/profile/history/PROFILE-{timestamp}.md` <!-- platform: profile-path -->, generate new version, show change summary (added, updated, removed).
 
 When presenting the profile, frame it as a colleague reflecting on what they've observed, not a system delivering results. Open with what stood out, what surprised you, where the user is most consistent and where they contradict themselves. The structured profile follows, but the human read comes first.
 
@@ -336,7 +338,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 - **complete**: PROFILE.md was written (Full mode) or updated (Validate mode) with all metadata changes applied, prediction accuracy was verified (Full mode), and a summary of what changed was reported.
 - **flagged**: Profile generation or validation completed but with data quality issues: extraction failed for one or more sources, prediction accuracy was below 3/5, or significant tensions were found that could not be resolved from available evidence.
-- **stuck**: Cannot generate or validate a profile because the extraction scripts failed entirely, Python is unavailable, or `~/.claude/` is unreadable and no session data can be accessed.
+- **stuck**: Cannot generate or validate a profile because the extraction scripts failed entirely, Python is unavailable, or `~/.claude/` is unreadable <!-- platform: profile-path --> and no session data can be accessed.
 - **waiting**: The user chose Validate mode but PROFILE.md does not exist or has no valid metadata, requiring a Full mode run that the user has not confirmed; or the user's intent between Full and Validate is genuinely ambiguous.
 
 ---
@@ -384,7 +386,7 @@ Run from the profilera skill directory. Outputs a markdown summary table with ef
 ```
 /profilera
 ```
-Full extraction across all sources. Produces `~/.claude/profile/PROFILE.md`.
+Full extraction across all sources. Produces `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path -->
 
 ### Regular validation
 ```

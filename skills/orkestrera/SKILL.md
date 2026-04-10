@@ -328,7 +328,7 @@ DECISIONS.md provides firm constraints that orkestrera reads during task selecti
 VISION.md provides direction context used during bootstrap when chaining inspirera for gap analysis.
 
 ### Orkestrera reads /profilera output
-The decision profile provides persona context for calibrating dispatch decisions. Read `~/.claude/profile/PROFILE.md` directly per contract profile consumption conventions. If missing, proceed without persona grounding.
+The decision profile provides persona context for calibrating dispatch decisions. Read `~/.claude/profile/PROFILE.md` directly per contract profile consumption conventions. <!-- platform: profile-path --> If missing, proceed without persona grounding.
 
 ---
 

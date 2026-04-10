@@ -156,7 +156,7 @@ Steps: orient, analyze, hypothesize, implement, measure, decide, log.
    ```bash
    python3 scripts/effective_profile.py
    ```
-   Apply confidence thresholds per contract profile consumption conventions. Read full `~/.claude/profile/PROFILE.md` for details when needed.
+   Apply confidence thresholds per contract profile consumption conventions. Read full `~/.claude/profile/PROFILE.md` for details when needed. <!-- platform: profile-path -->
    If missing, proceed without persona grounding but flag it.
 4. **Project discovery** (experiment 1 or when unfamiliar): map directory structure within scope, read dependency manifests, README, CLAUDE.md, identify build/test/lint commands, read key source files in scope
 5. `git log --oneline -20` for recent changes
@@ -200,7 +200,7 @@ Be conservative early; escalate if conservative approaches plateau.
 
 ### Step 4: Implement
 
-Spawn a Sonnet implementation agent in a worktree (`isolation: "worktree"`) with:
+Spawn an implementation sub-agent in a worktree (`isolation: "worktree"`) <!-- platform: sub-agent-dispatch --> with:
 
 - The hypothesis from step 3
 - Relevant context files (OBJECTIVE.md, recent experiments, source files being modified)
@@ -261,7 +261,7 @@ Apply the decision gate. **Both conditions must be true** to keep an experiment:
 1. **Regression check passed** (from Step 5a)
 2. **Metric improved**: the new value is strictly better than the baseline, in the direction declared by the harness (lower for "lower", higher for "higher")
 
-If both pass: **keep**. Merge the worktree branch into the current branch. Commit with a conventional commit message:
+If both pass: **keep**. Merge the worktree <!-- platform: sub-agent-dispatch --> branch into the current branch. Commit with a conventional commit message:
 
 ```
 perf(scope): summary of what improved the metric
@@ -269,7 +269,7 @@ perf(scope): summary of what improved the metric
 Metric: <before> → <after> ⮉ (<unit>)
 ```
 
-If either fails: **discard**. The worktree is abandoned. No merge. No commit.
+If either fails: **discard**. The worktree <!-- platform: sub-agent-dispatch --> is abandoned. No merge. No commit.
 
 ### Step 7: Log
 

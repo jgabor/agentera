@@ -137,7 +137,7 @@ Three project-facing files at root, nine operational files in `.agentera/`.
 <br>
 
 > [!NOTE]
-> The install steps below target [Claude Code](https://docs.anthropic.com/en/docs/claude-code), the current reference implementation. The portable core is defined in the spec; adapters for other runtimes will carry their own install instructions. `profilera` currently mines Claude Code session history and remains Claude-adapter-specific until that corpus is standardized.
+> The install steps below target [Claude Code](https://docs.anthropic.com/en/docs/claude-code), the current reference implementation. The portable core is defined in the spec; adapters for other runtimes will carry their own install instructions. `profilera` requires a session corpus per the Section 21 Session Corpus Contract and remains adapter-specific until the target runtime provides one.
 
 ### From the plugin registry
 

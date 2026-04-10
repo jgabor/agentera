@@ -1,7 +1,7 @@
 <!-- contract: orkestrera -->
-<!-- source: SPEC.md (sha256: 4d9aae8180735bd1f6d3ee45c82e0da256f781f9e7e5100ac05218f85ac67e95) -->
+<!-- source: SPEC.md (sha256: ded2c38c3ebf04a2bd4f7491cf25a7c9365d10a52c8a546b93a8ce1cb9b0b37f) -->
 <!-- sections: 3, 4, 5, 11, 18, 19 -->
-<!-- generated: 2026-04-10T17:24:29Z -->
+<!-- generated: 2026-04-10T17:46:52Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
