@@ -82,7 +82,7 @@ The key design choice is **data model, not path model**. The contract standardiz
 
 ### Task 2: Ecosystem spec Section 21 - Session Corpus Contract
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN a new the spec.md section for the session corpus contract WHEN read THEN it defines canonical record types for memory entries, instruction documents, history prompts, conversation turns, and project config signals
 ▸ GIVEN the contract section WHEN read THEN each record type has a minimum normalized schema including provenance metadata (runtime, adapter_version, source_kind) rather than Claude-specific file paths
@@ -91,7 +91,7 @@ The key design choice is **data model, not path model**. The contract standardiz
 
 ### Task 3: Audit and annotate platform-specific references
 **Depends on**: Task 1, Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all 12 SKILL.md files WHEN platform-specific references are searched THEN every reference to ~/.claude/, .claude-plugin/, worktree isolation, claude -p, or hooks is either annotated, abstracted, or explicitly documented as host-specific
 ▸ GIVEN profilera-related references WHEN searched THEN Claude-specific corpus sources are called out as Claude adapter details, not presented as the portable contract

@@ -1,5 +1,27 @@
 # Progress
 
+■ ## Cycle 90 · 2026-04-10
+
+**Phase**: build
+**What**: Annotated all platform-specific references across 12 SKILL.md files and SPEC.md. Added `<!-- platform: profile-path -->` to every profile-path read, `<!-- platform: sub-agent-dispatch -->` to every worktree reference, and annotated the Section 20 capability table with all three remaining capability comments. Added a scoping HTML comment preamble to profilera's extraction step that frames Claude-specific extraction as adapter behavior with a Section 21 reference. Updated README.md to reflect that the session corpus is now defined (not "until standardized"). Updated profilera's artifact path resolution to reference the profile-path capability.
+**Commit**: 068373b refactor: annotate platform-specific references across all 12 SKILL.md files and SPEC.md
+**Inspiration**: PLAN.md Task 3, reviewer feedback on Cycle 89 (profilera still Claude-bound)
+**Discovered**: The annotation audit was cleaner than expected. Profile-path was the dominant reference (15 sites across 11 skills). Worktree references were limited to realisera and optimera. No `claude -p` or `.claude-plugin` references existed in SKILL.md files (those only appear in SPEC.md's capability table, already annotated). Profilera needed a structural approach (scoping preamble) rather than line-by-line annotation because its extraction is deeply Claude-shaped by design.
+**Verified**: `python3 scripts/validate_spec.py`: 0 errors, 0 warnings. `python3 -m pytest tests/ -q`: 236 passed. `python3 scripts/generate_contracts.py --check`: all 12 current. No unannotated `~/.claude` references remain in SPEC.md or non-profilera SKILL.md files. Profilera's extraction section carries the Claude-adapter-specific HTML comment preamble.
+**Next**: Task 4 (OpenCode proof-of-concept adapter design) or Task 5 (linter update for annotation validation). Both are now unblocked.
+**Context**: intent (annotate all platform-specific refs per PLAN Task 3 AC1-AC5) · constraints (existing behavior unchanged, linter 0/0, regenerate contracts) · unknowns (none after audit) · scope (SPEC.md Section 20 capability table, 12 SKILL.md files, README.md, 12 regenerated contract files)
+
+■ ## Cycle 89 · 2026-04-10
+
+**Phase**: build
+**What**: Added Section 21 (Session Corpus Contract) to SPEC.md defining five canonical record types (memory_entry, instruction_document, history_prompt, conversation_turn, project_config_signal) with provenance metadata, four source families, degradation rules for partial corpus availability, and the portability transition path from host-specific extension to capability-gated. Updated Section 20 host-specific extensions text to reference Section 21 instead of an unspecified future contract. Added Section 21 to profilera's spec_sections frontmatter. Regenerated all 12 contract files.
+**Commit**: 742ba75 feat(spec): add Section 21 Session Corpus Contract for profilera portability
+**Inspiration**: PLAN.md Task 2 design (data model, not path model), profilera's extract_all.py four-source-family extraction pattern
+**Discovered**: The four source families map cleanly to profilera's existing extractor architecture. The degradation rules were straightforward to derive from the signal hierarchy profilera already uses (crystallized > conversations > history > configs). No surprises.
+**Verified**: `python3 scripts/validate_spec.py`: 0 errors, 0 warnings across 12 skills. `python3 -m pytest tests/ -q`: 236 passed in 0.17s. `python3 scripts/generate_contracts.py --check`: all 12 contract files current. `rg "sections:" skills/profilera/references/contract.md`: confirms `<!-- sections: 1, 4, 6, 21 -->`. Section 21 content verified: five record types present, provenance metadata table present, source family table present, degradation table present, relation to Section 20 paragraph present.
+**Next**: Task 3 (audit and annotate platform-specific references across all 12 SKILL.md files) or Task 4 (OpenCode proof-of-concept adapter design). Both depend on Tasks 1 and 2, now both complete.
+**Context**: intent (define Section 21 Session Corpus Contract per PLAN Task 2 AC1-AC4) · constraints (no changes to current experience, spec extends only, linter 0/0, regenerate all contract files) · unknowns (none) · scope (SPEC.md Section 21, Section 20 editorial update, profilera spec_sections frontmatter, 12 regenerated contract files, CHANGELOG.md, PLAN.md task status)
+
 ■ ## Cycle 88 · 2026-04-10
 
 **Phase**: build
