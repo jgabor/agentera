@@ -23,7 +23,7 @@ The updated VISION.md Direction says "any agent CLI that speaks the protocol can
 
 ## Scope
 
-**In**: Ecosystem spec Section 20 (Host Adapter Contract), new Session Corpus Contract section for profilera portability, platform audit of all Claude Code-specific references, SKILL.md annotation convention for platform-specific content, OpenCode proof-of-concept adapter design document, em-dash fix, ISS-31 CI gating
+**In**: Ecosystem spec Section 20 (Host Adapter Contract), new Session Corpus Contract section for profilera portability, platform audit of all Claude Code-specific references, SKILL.md annotation convention for platform-specific content, OpenCode proof-of-concept adapter design document, em-dash fix, ISS-31 CI gating, memory_entry demotion from portable core to Claude Code extension
 **Out**: Building actual adapter implementations for other platforms, changing the current Claude Code plugin experience, refactoring the entire skill structure
 **Deferred**: Adapter implementations (OpenCode, Gemini CLI, Codex CLI), multi-platform CI, per-platform documentation sites
 
@@ -110,7 +110,7 @@ The key design choice is **data model, not path model**. The contract standardiz
 
 ### Task 5: Linter update for annotation validation
 **Depends on**: Task 3
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN validate_spec.py WHEN a SKILL.md contains a `<!-- platform: -->` annotation THEN the referenced capability name exists in Section 20's capability list
 ▸ GIVEN validate_spec.py WHEN a SKILL.md references ~/.claude/, .claude-plugin/, or claude -p THEN the linter does not error (these are legitimate Claude Code references, now annotated)
@@ -127,7 +127,7 @@ The key design choice is **data model, not path model**. The contract standardiz
 
 ### Task 7: Version bump per DOCS.md convention
 **Depends on**: Task 5, Task 6
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all version_files listed in DOCS.md WHEN checked THEN every file is bumped from 1.7.0 to 1.8.0 (feat = minor), profilera from 2.6.0 to 2.7.0
 ▸ GIVEN registry.json and marketplace.json WHEN parsed THEN all version references are consistent
@@ -135,16 +135,16 @@ The key design choice is **data model, not path model**. The contract standardiz
 
 ### Task 8: Plan-level freshness checkpoint
 **Depends on**: Task 7
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN CHANGELOG.md WHEN read THEN it has a version entry with all substantive changes from this plan
 ▸ GIVEN PROGRESS.md WHEN the latest cycle entry is read THEN it summarizes the plan's work at the plan level
 ▸ GIVEN TODO.md WHEN read THEN ISS-31 is resolved and any new issues from this plan are filed
 
 ## Overall Acceptance
-▸ GIVEN the ecosystem spec WHEN Sections 20 and 21 are read THEN a runtime that implements the required capabilities, any needed capability-gated ones, and the normalized session corpus can run the portable core plus profilera's corpus-dependent flow without relying on Claude-specific paths
+▸ GIVEN the ecosystem spec WHEN Sections 20 and 21 are read THEN a runtime that implements the required capabilities, any needed capability-gated ones, and the normalized session corpus (4 portable record types) can run the portable core plus profilera's corpus-dependent flow without relying on Claude-specific paths
 ▸ GIVEN all SKILL.md files WHEN searched for bare platform-specific references (without annotation) THEN zero results in portable-core claims; remaining host-specific dependencies are called out explicitly
-▸ GIVEN the OpenCode adapter design document WHEN a developer follows it THEN they have enough information to implement portable-core agentera support and a profilera-compatible session corpus in OpenCode without reading SKILL.md source
+▸ GIVEN the OpenCode adapter design document WHEN a developer follows it THEN they have enough information to implement portable-core agentera support and a profilera-compatible session corpus (4 portable record types) in OpenCode without reading SKILL.md source
 ▸ GIVEN the linter and test suite WHEN run THEN 0 errors and all tests pass
 ▸ GIVEN all filenames and prose WHEN searched for "ecosystem-spec" or "ecosystem-context" or "ecosystem context" THEN zero results; all references use "SPEC.md", "contract.md", "the spec", or "contract" appropriately
 
@@ -166,3 +166,16 @@ The key design choice is **data model, not path model**. The contract standardiz
 
 ## Surprises
 ▸ ISS-31 (CI gating) has been previously deferred three times. Task 5 includes it but the scope (choosing a CI service, configuring runners, setting up merge gates) may exceed a single realisera cycle. If so, split CI into a separate follow-up plan and only ship the em-dash fix in this cycle.
+
+### Task 10: Demote memory_entry from portable core to Claude Code extension
+**Depends on**: Task 4
+**Status**: ■ complete
+**Acceptance**:
+▸ GIVEN SPEC.md Section 21 WHEN read THEN it defines 4 portable record types (instruction_document, history_prompt, conversation_turn, project_config_signal) with no memory_entry in the portable core
+▸ GIVEN SPEC.md Section 21 WHEN read THEN it contains a "Runtime extensions" subsection that documents memory_entry as a Claude Code adapter extension with a note that adapters MAY define additional record types beyond the portable 4
+▸ GIVEN profilera's contract.md WHEN read THEN memory_entry is absent from the portable record types and present only in a Claude Code extension section
+▸ GIVEN profilera's extract_all.py WHEN run on Claude Code THEN memory files are still extracted but emitted as instruction_document records with doc_type "claude_memory"
+▸ GIVEN the OpenCode adapter doc WHEN read THEN it no longer lists "no memory system" as a gap and the source family table shows crystallized as "Yes" (instruction_document only)
+▸ GIVEN the degradation table in SPEC.md WHEN read THEN it reflects 4 source families without memory_entry-specific language
+▸ GIVEN the linter and test suite WHEN run THEN 0 errors and all tests pass
+▸ GIVEN CHANGELOG.md WHEN read THEN an [Unreleased] Changed entry exists for the memory_entry demotion

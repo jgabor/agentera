@@ -1,11 +1,12 @@
 # Changelog
 
-## [Unreleased]
+## [1.8.0] · 2026-04-10
 
 ### Added
 - Ecosystem spec Section 20: Host Adapter Contract defining six runtime capabilities for platform portability
 - Ecosystem spec Section 21: Session Corpus Contract defining normalized record types and degradation rules for profilera portability
 - OpenCode proof-of-concept adapter design mapping all six host capabilities and four portable session corpus record types to OpenCode's mechanisms
+- Linter check 18 (platform-annotations): validates that `<!-- platform: NAME -->` annotations in SKILL.md files reference recognized capability names from Section 20; 4 tests
 
 ### Changed
 - Demoted memory_entry from portable record type to Claude Code runtime extension in Section 21; portable corpus now has 4 record types; Claude Code memory files emitted as instruction_document with doc_type "claude_memory"
@@ -15,6 +16,7 @@
 - Terminology cleanup (Decision 23): `ecosystem-spec.md` renamed to `SPEC.md` (root), `ecosystem-context.md` renamed to `contract.md` (per skill), "ecosystem" prefix dropped from all scripts, headers, and prose
 - Spec Section 20 host adapter contract: portability claims now distinguish the portable core from host-specific extensions
 - Planera em-dash on line 130 fixed (last remaining em-dash in SKILL.md files)
+- Version bumped to 1.8.0 (profilera 2.7.0)
 
 ### Fixed
 

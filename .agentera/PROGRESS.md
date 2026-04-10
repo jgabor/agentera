@@ -1,5 +1,60 @@
 # Progress
 
+■ ## Cycle 95 · 2026-04-10
+
+**Phase**: build
+**What**: Plan-level freshness checkpoint and plan closure for Platform Portability. Promoted CHANGELOG.md [Unreleased] to [1.8.0]. Archived PLAN.md. The plan delivered: SPEC.md Section 20 (Host Adapter Contract with 6 capabilities), Section 21 (Session Corpus Contract with 4 portable record types), platform annotation audit across all 12 SKILL.md files, linter check 18 for annotation validation (4 tests), OpenCode proof-of-concept adapter design, terminology cleanup (ecosystem-spec -> SPEC.md, ecosystem-context -> contract.md), memory_entry demotion to Claude Code extension, em-dash fix, and version bump to 1.8.0.
+**Commits**: 9eb6773, e6a0928, 742ba75, 6368159, e422fad, 0cd51ff, eb13f4d, c5c8c35, 8c83613
+**Inspiration**: PLAN.md Task 8 + planera freshness checkpoint convention
+**Discovered**: ISS-31 (CI gating) deferred four times across multiple plans. The plan's Surprises section predicted this. Test suite is comprehensive (240 tests) but unenforced by CI. No HEALTH.md findings were resolved by this plan (it was a spec/architecture plan, not a health fix).
+**Verified**: N/A: docs-only (promoted CHANGELOG section heading, updated PLAN.md task status, archived PLAN.md; no code paths affected)
+**Next**: Vision-driven work. ISS-31 (CI gating) remains the most impactful degraded item. An inspektera audit is due (last was Audit 6 on 2026-04-02, ~10 cycles ago).
+**Context**: intent (close Platform Portability plan with freshness checkpoint per Task 8 AC and plan-completion sweep) · constraints (no code changes) · unknowns (ISS-31 AC says "resolved" but CI gating explicitly deferred per plan surprise) · scope (CHANGELOG.md, PROGRESS.md, TODO.md, PLAN.md archive)
+
+■ ## Cycle 94 · 2026-04-10
+
+**Phase**: build
+**What**: Version bump from 1.7.0 to 1.8.0 (profilera 2.6.0 to 2.7.0). Updated 12 plugin.json files, registry.json, and marketplace.json per DOCS.md versioning convention. Multiple feat commits since 1.7.0 justify minor bump per semver_policy.
+**Commit**: 8c83613 chore(release): bump version to 1.8.0 (profilera 2.7.0) (PLAN Task 7)
+**Inspiration**: PLAN.md Task 7 acceptance criteria
+**Discovered**: registry.json has a schema-level "version" field ("1") separate from skill versions; correctly left unchanged.
+**Verified**: N/A: chore-build-config (version metadata bump across 14 JSON files with no code path affected)
+**Next**: Task 8 (plan-level freshness checkpoint). Only remaining pending task in the Platform Portability plan.
+**Context**: intent (version bump per DOCS.md semver_policy for feat-heavy plan) · constraints (only touch version_files in DOCS.md) · unknowns (none) · scope (12 plugin.json, registry.json, marketplace.json)
+
+■ ## Cycle 93 · 2026-04-10
+
+**Phase**: build
+**What**: Added linter check 18 (platform-annotations) to validate_spec.py. Scans all 12 SKILL.md files for `<!-- platform: NAME -->` annotations and verifies each NAME is one of the six recognized capabilities from SPEC.md Section 20 (skill-discovery, artifact-resolution, profile-path, sub-agent-dispatch, eval-mechanism, hook-lifecycle). All 12 skills PASS. 4 new tests covering valid annotations, unrecognized capability, no annotations, and mixed valid/invalid.
+**Commit**: c5c8c35 feat(linter): add platform annotation validation check (PLAN Task 5)
+**Inspiration**: PLAN.md Task 5 acceptance criteria
+**Discovered**: The recognized-capability list is defined as a module-level set (`RECOGNIZED_CAPABILITIES`) matching the pattern of `REALITY_VERIFICATION_ENFORCERS` and `AUTONOMOUS_LOOP_SKILLS` already in the file.
+**Verified**: `python3 scripts/validate_spec.py`: 0 errors, 0 warnings across 12 skills. `python3 -m pytest tests/ -q`: 240 passed (236 baseline + 4 new). `python3 scripts/generate_contracts.py --check`: all 12 current.
+**Next**: Task 7 (version bump per DOCS.md convention). Task 6 is partial (em-dash fixed, CI deferred). Task 8 (freshness checkpoint) depends on Task 7.
+**Context**: intent (add linter validation that platform annotations reference recognized capability names per PLAN Task 5 AC1-AC4) · constraints (0 new linter errors, all tests pass, exactly 4 new tests) · unknowns (none) · scope (scripts/validate_spec.py, tests/test_validate_spec.py)
+
+■ ## Cycle 92 · 2026-04-10
+
+**Phase**: build
+**What**: Demoted memory_entry from portable record type to Claude Code runtime extension in SPEC.md Section 21. Portable corpus drops from 5 to 4 record types. Claude Code memory files are now emitted as instruction_document with doc_type "claude_memory" by extract_all.py. OpenCode adapter doc updated to reflect full profilera mode (all 4 families available, no memory gap). Regenerated all 12 contract files.
+**Commit**: eb13f4d refactor(spec): demote memory_entry from portable core to Claude Code runtime extension (PLAN Task 10)
+**Inspiration**: Prior audit found memory_entry is the only record type no non-Claude runtime can produce, violating the "open standard" principle in VISION.md
+**Discovered**: The demotion eliminated the OpenCode adapter's biggest documented gap. Profilera mode on OpenCode upgrades from "near-full" to "full". The Runtime extensions subsection in Section 21 establishes a pattern for future runtime-specific record types.
+**Verified**: `python3 scripts/validate_spec.py`: 0 errors, 0 warnings across 12 skills. `python3 -m pytest tests/ -q`: 236 passed. `python3 scripts/generate_contracts.py --check`: all 12 current. All 8 Task 10 acceptance criteria verified. Task 4 AC reverified (still passes). N/A: spec refactoring with no runnable code path change; behavioral verification via linter and test suite.
+**Next**: Task 5 (linter update for annotation validation) or Task 7 (version bump, depends on Tasks 5+6). Task 5 is the more substantive remaining task.
+**Context**: intent (demote memory_entry from portable spec to Claude Code adapter extension, making Section 21 honest about what's portable) · constraints (profilera still reads Claude memory files, linter 0/0, tests pass, Task 4 AC still holds) · unknowns (none after prior audit) · scope (SPEC.md Section 21, profilera contract.md and SKILL.md and extract_all.py, opencode.md adapter, CHANGELOG.md, PLAN.md Task 10 status, 12 regenerated contract files)
+
+■ ## Cycle 91 · 2026-04-10
+
+**Phase**: build
+**What**: Created OpenCode proof-of-concept adapter design document mapping all six host adapter capabilities (Section 20) and all five session corpus record types (Section 21) to OpenCode's specific mechanisms. Also wrote a companion OpenCode hook plugin (opencode-plugin.js) providing session preload, artifact validation, and session bookmark persistence.
+**Commit**: 6e067e6 feat(adapters): add OpenCode proof-of-concept adapter design (PLAN Task 4)
+**Inspiration**: PLAN.md Task 4 acceptance criteria, OpenCode docs (skills, config, plugins, agents, rules, ecosystem pages)
+**Discovered**: OpenCode's skill discovery is more flexible than Claude Code's (supports .opencode/, .claude/, and .agents/ paths). The skill frontmatter format matches agentera's exactly. Sub-agent dispatch maps cleanly via the Task tool or opencode-worktree plugin. Session history extraction requires SDK access (not CLI), so history_prompt and conversation_turn are deferred for the initial port, leaving profilera in partial mode (crystallized + config patterns). The eval runner needs a text-output parser since `opencode run` outputs text not JSON.
+**Verified**: `python3 scripts/validate_spec.py`: 0 errors, 0 warnings across 12 skills. `python3 -m pytest tests/ -q`: 236 passed. Verified adapter document maps all 6 capabilities (9 mentions), all 5 record types (25 mentions), all 4 Task 4 acceptance criteria explicitly addressed. N/A: docs-only (adapter design document, no code path affected).
+**Next**: Task 5 (linter update for annotation validation) or Task 7 (version bump, depends on Tasks 5+6). Task 5 is the more substantive remaining task. Task 6 CI gating remains deferred per PLAN Surprises note.
+**Context**: intent (design OpenCode adapter proving Section 20 and 21 contracts are sufficient for an alternative runtime) · constraints (design document only, no code changes, linter 0/0, all tests pass) · unknowns (OpenCode SDK session history access surface, resolved via research) · scope (references/adapters/opencode.md, references/adapters/opencode-plugin.js, PLAN.md Task 4 status)
+
 ■ ## Cycle 90 · 2026-04-10
 
 **Phase**: build
