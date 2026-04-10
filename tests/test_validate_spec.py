@@ -177,7 +177,9 @@ class TestExtractSubsection:
 
     def test_extract_existing_subsection(self, validate_spec):
         result = validate_spec.extract_subsection(
-            NESTED_SECTIONS_DOC, "Parent one", "Child alpha",
+            NESTED_SECTIONS_DOC,
+            "Parent one",
+            "Child alpha",
         )
         assert result is not None
         assert "Content of child alpha under parent one" in result
@@ -185,7 +187,9 @@ class TestExtractSubsection:
     def test_subsection_scoped_to_parent(self, validate_spec):
         """Same child heading name under different parents returns different content."""
         result = validate_spec.extract_subsection(
-            NESTED_SECTIONS_DOC, "Parent two", "Child alpha",
+            NESTED_SECTIONS_DOC,
+            "Parent two",
+            "Child alpha",
         )
         assert result is not None
         assert "under parent two" in result
@@ -193,13 +197,17 @@ class TestExtractSubsection:
 
     def test_missing_child(self, validate_spec):
         result = validate_spec.extract_subsection(
-            NESTED_SECTIONS_DOC, "Parent one", "Nonexistent child",
+            NESTED_SECTIONS_DOC,
+            "Parent one",
+            "Nonexistent child",
         )
         assert result is None
 
     def test_missing_parent(self, validate_spec):
         result = validate_spec.extract_subsection(
-            NESTED_SECTIONS_DOC, "Nonexistent parent", "Child alpha",
+            NESTED_SECTIONS_DOC,
+            "Nonexistent parent",
+            "Child alpha",
         )
         assert result is None
 
@@ -682,11 +690,17 @@ class TestCheckFrontmatter:
         r = validate_spec.Results()
         validate_spec.check_frontmatter("realisera", SYNTHETIC_SKILL_VALID, r)
         assert r.error_count == 0
-        assert any(level == "PASS" for level, _, check, _ in r.entries if check == "frontmatter")
+        assert any(
+            level == "PASS"
+            for level, _, check, _ in r.entries
+            if check == "frontmatter"
+        )
 
     def test_missing_frontmatter_errors(self, validate_spec):
         r = validate_spec.Results()
-        validate_spec.check_frontmatter("realisera", SYNTHETIC_SKILL_MISSING_FRONTMATTER, r)
+        validate_spec.check_frontmatter(
+            "realisera", SYNTHETIC_SKILL_MISSING_FRONTMATTER, r
+        )
         assert r.error_count == 1
         assert "Missing or malformed" in r.entries[0][3]
 
@@ -718,11 +732,17 @@ class TestCheckConfidenceScale:
         r = validate_spec.Results()
         validate_spec.check_confidence_scale("realisera", SYNTHETIC_SKILL_VALID, r)
         assert r.error_count == 0
-        assert any(level == "PASS" for level, _, check, _ in r.entries if check == "confidence-scale")
+        assert any(
+            level == "PASS"
+            for level, _, check, _ in r.entries
+            if check == "confidence-scale"
+        )
 
     def test_decimal_confidence_errors(self, validate_spec):
         r = validate_spec.Results()
-        validate_spec.check_confidence_scale("realisera", SYNTHETIC_SKILL_DECIMAL_CONFIDENCE, r)
+        validate_spec.check_confidence_scale(
+            "realisera", SYNTHETIC_SKILL_DECIMAL_CONFIDENCE, r
+        )
         assert r.error_count == 1
         detail = r.entries[0][3]
         assert "0.0-1.0" in detail
@@ -745,27 +765,39 @@ class TestCheckSeverityLevels:
 
     def test_canonical_severity_passes(self, validate_spec):
         r = validate_spec.Results()
-        validate_spec.check_severity_levels("inspektera", SYNTHETIC_SKILL_CANONICAL_SEVERITY, r)
+        validate_spec.check_severity_levels(
+            "inspektera", SYNTHETIC_SKILL_CANONICAL_SEVERITY, r
+        )
         assert r.error_count == 0
-        assert any(level == "PASS" for level, _, check, _ in r.entries if check == "severity-levels")
+        assert any(
+            level == "PASS"
+            for level, _, check, _ in r.entries
+            if check == "severity-levels"
+        )
 
     def test_non_canonical_in_table_errors(self, validate_spec):
         r = validate_spec.Results()
-        validate_spec.check_severity_levels("inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_TABLE, r)
+        validate_spec.check_severity_levels(
+            "inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_TABLE, r
+        )
         assert r.error_count >= 1
         details = " ".join(detail for _, _, _, detail in r.entries)
         assert "high" in details.lower() or "major" in details.lower()
 
     def test_non_canonical_in_heading_errors(self, validate_spec):
         r = validate_spec.Results()
-        validate_spec.check_severity_levels("inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_HEADING, r)
+        validate_spec.check_severity_levels(
+            "inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_HEADING, r
+        )
         assert r.error_count >= 1
         details = " ".join(detail for _, _, _, detail in r.entries)
         assert "high" in details.lower()
 
     def test_non_canonical_in_severity_section_errors(self, validate_spec):
         r = validate_spec.Results()
-        validate_spec.check_severity_levels("inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_SECTION, r)
+        validate_spec.check_severity_levels(
+            "inspektera", SYNTHETIC_SKILL_NON_CANONICAL_SEVERITY_SECTION, r
+        )
         assert r.error_count >= 1
         details = " ".join(detail for _, _, _, detail in r.entries)
         assert "low" in details.lower()
@@ -781,13 +813,21 @@ class TestCheckDecisionLabels:
 
     def test_resonera_with_all_labels_passes(self, validate_spec):
         r = validate_spec.Results()
-        validate_spec.check_decision_labels("resonera", SYNTHETIC_SKILL_RESONERA_WITH_LABELS, r)
+        validate_spec.check_decision_labels(
+            "resonera", SYNTHETIC_SKILL_RESONERA_WITH_LABELS, r
+        )
         assert r.error_count == 0
-        assert any(level == "PASS" for level, _, check, _ in r.entries if check == "decision-labels")
+        assert any(
+            level == "PASS"
+            for level, _, check, _ in r.entries
+            if check == "decision-labels"
+        )
 
     def test_resonera_missing_labels_errors(self, validate_spec):
         r = validate_spec.Results()
-        validate_spec.check_decision_labels("resonera", SYNTHETIC_SKILL_RESONERA_MISSING_LABELS, r)
+        validate_spec.check_decision_labels(
+            "resonera", SYNTHETIC_SKILL_RESONERA_MISSING_LABELS, r
+        )
         assert r.error_count == 1
         detail = r.entries[0][3]
         assert "provisional" in detail or "exploratory" in detail
@@ -805,7 +845,9 @@ class TestCheckEmDashes:
         r = validate_spec.Results()
         validate_spec.check_em_dashes("realisera", SYNTHETIC_SKILL_VALID, r)
         assert r.error_count == 0
-        assert any(level == "PASS" for level, _, check, _ in r.entries if check == "em-dashes")
+        assert any(
+            level == "PASS" for level, _, check, _ in r.entries if check == "em-dashes"
+        )
 
     def test_em_dash_in_prose_errors(self, validate_spec):
         r = validate_spec.Results()
@@ -815,7 +857,9 @@ class TestCheckEmDashes:
 
     def test_em_dash_in_code_block_ignored(self, validate_spec):
         r = validate_spec.Results()
-        validate_spec.check_em_dashes("test-skill", SYNTHETIC_SKILL_EM_DASH_IN_CODE_BLOCK, r)
+        validate_spec.check_em_dashes(
+            "test-skill", SYNTHETIC_SKILL_EM_DASH_IN_CODE_BLOCK, r
+        )
         assert r.error_count == 0
 
 
@@ -832,7 +876,9 @@ class TestCheckHardWraps:
         validate_spec.check_hard_wraps("test-skill", SYNTHETIC_SKILL_NO_HARD_WRAP, r)
         assert r.error_count == 0
         assert r.warn_count == 0
-        assert any(level == "PASS" for level, _, check, _ in r.entries if check == "hard-wraps")
+        assert any(
+            level == "PASS" for level, _, check, _ in r.entries if check == "hard-wraps"
+        )
 
     def test_hard_wrapped_prose_warns(self, validate_spec):
         r = validate_spec.Results()
@@ -844,7 +890,9 @@ class TestCheckHardWraps:
 
     def test_structural_lines_not_flagged(self, validate_spec):
         r = validate_spec.Results()
-        validate_spec.check_hard_wraps("test-skill", SYNTHETIC_SKILL_HARD_WRAP_STRUCTURAL, r)
+        validate_spec.check_hard_wraps(
+            "test-skill", SYNTHETIC_SKILL_HARD_WRAP_STRUCTURAL, r
+        )
         assert r.warn_count == 0
 
 
@@ -859,18 +907,23 @@ class TestCheckArtifactPathResolution:
     def test_valid_content_passes(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_artifact_path_resolution(
-            "realisera", SYNTHETIC_SKILL_VALID, r,
+            "realisera",
+            SYNTHETIC_SKILL_VALID,
+            r,
         )
         assert r.error_count == 0
         assert any(
-            level == "PASS" for level, _, check, _ in r.entries
+            level == "PASS"
+            for level, _, check, _ in r.entries
             if check == "artifact-path-resolution"
         )
 
     def test_old_style_wording_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_artifact_path_resolution(
-            "realisera", SYNTHETIC_SKILL_OLD_ARTIFACT_PATH, r,
+            "realisera",
+            SYNTHETIC_SKILL_OLD_ARTIFACT_PATH,
+            r,
         )
         assert r.error_count == 1
         detail = r.entries[0][3]
@@ -879,7 +932,9 @@ class TestCheckArtifactPathResolution:
     def test_missing_subsection_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_artifact_path_resolution(
-            "realisera", SYNTHETIC_SKILL_ARTIFACT_PATH_NO_SUBSECTION, r,
+            "realisera",
+            SYNTHETIC_SKILL_ARTIFACT_PATH_NO_SUBSECTION,
+            r,
         )
         assert r.error_count == 1
         assert "Missing ### Artifact path resolution" in r.entries[0][3]
@@ -888,7 +943,9 @@ class TestCheckArtifactPathResolution:
         """Instruction under Cross-skill instead of State artifacts is an error."""
         r = validate_spec.Results()
         validate_spec.check_artifact_path_resolution(
-            "realisera", SYNTHETIC_SKILL_ARTIFACT_PATH_WRONG_LOCATION, r,
+            "realisera",
+            SYNTHETIC_SKILL_ARTIFACT_PATH_WRONG_LOCATION,
+            r,
         )
         assert r.error_count == 1
         detail = r.entries[0][3]
@@ -906,18 +963,23 @@ class TestCheckProfileConsumption:
     def test_valid_consumer_passes(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_profile_consumption(
-            "realisera", SYNTHETIC_SKILL_VALID, r,
+            "realisera",
+            SYNTHETIC_SKILL_VALID,
+            r,
         )
         assert r.error_count == 0
         assert any(
-            level == "PASS" for level, _, check, _ in r.entries
+            level == "PASS"
+            for level, _, check, _ in r.entries
             if check == "profile-consumption"
         )
 
     def test_missing_script_reference_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_profile_consumption(
-            "realisera", SYNTHETIC_SKILL_PROFILE_MISSING_SCRIPT, r,
+            "realisera",
+            SYNTHETIC_SKILL_PROFILE_MISSING_SCRIPT,
+            r,
         )
         assert r.error_count >= 1
         details = " ".join(d for _, _, _, d in r.entries)
@@ -926,7 +988,9 @@ class TestCheckProfileConsumption:
     def test_decimal_thresholds_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_profile_consumption(
-            "realisera", SYNTHETIC_SKILL_PROFILE_DECIMAL_THRESHOLDS, r,
+            "realisera",
+            SYNTHETIC_SKILL_PROFILE_DECIMAL_THRESHOLDS,
+            r,
         )
         assert r.error_count >= 1
         details = " ".join(d for _, _, _, d in r.entries)
@@ -935,7 +999,9 @@ class TestCheckProfileConsumption:
     def test_missing_fallback_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_profile_consumption(
-            "realisera", SYNTHETIC_SKILL_PROFILE_NO_FALLBACK, r,
+            "realisera",
+            SYNTHETIC_SKILL_PROFILE_NO_FALLBACK,
+            r,
         )
         assert r.error_count >= 1
         details = " ".join(d for _, _, _, d in r.entries)
@@ -953,18 +1019,23 @@ class TestCheckCrossSkillIntegration:
     def test_valid_content_passes(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_cross_skill_integration(
-            "realisera", SYNTHETIC_SKILL_VALID, r,
+            "realisera",
+            SYNTHETIC_SKILL_VALID,
+            r,
         )
         assert r.error_count == 0
         assert any(
-            level == "PASS" for level, _, check, _ in r.entries
+            level == "PASS"
+            for level, _, check, _ in r.entries
             if check == "cross-skill-refs"
         )
 
     def test_wrong_suite_count_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_cross_skill_integration(
-            "realisera", SYNTHETIC_SKILL_BAD_CROSS_SKILL, r,
+            "realisera",
+            SYNTHETIC_SKILL_BAD_CROSS_SKILL,
+            r,
         )
         assert r.error_count >= 1
         detail = r.entries[0][3]
@@ -973,7 +1044,9 @@ class TestCheckCrossSkillIntegration:
     def test_missing_section_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_cross_skill_integration(
-            "realisera", SYNTHETIC_SKILL_BAD_SAFETY_RAILS, r,
+            "realisera",
+            SYNTHETIC_SKILL_BAD_SAFETY_RAILS,
+            r,
         )
         assert r.error_count >= 1
         detail = r.entries[0][3]
@@ -993,14 +1066,17 @@ class TestCheckSafetyRails:
         validate_spec.check_safety_rails("realisera", SYNTHETIC_SKILL_VALID, r)
         assert r.error_count == 0
         assert any(
-            level == "PASS" for level, _, check, _ in r.entries
+            level == "PASS"
+            for level, _, check, _ in r.entries
             if check == "safety-rails"
         )
 
     def test_no_critical_tags_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_safety_rails(
-            "realisera", SYNTHETIC_SKILL_BAD_SAFETY_RAILS, r,
+            "realisera",
+            SYNTHETIC_SKILL_BAD_SAFETY_RAILS,
+            r,
         )
         assert r.error_count == 1
         assert "critical" in r.entries[0][3].lower()
@@ -1008,7 +1084,9 @@ class TestCheckSafetyRails:
     def test_too_few_never_bullets_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_safety_rails(
-            "realisera", SYNTHETIC_SKILL_SAFETY_RAILS_FEW_NEVERS, r,
+            "realisera",
+            SYNTHETIC_SKILL_SAFETY_RAILS_FEW_NEVERS,
+            r,
         )
         assert r.error_count == 1
         detail = r.entries[0][3]
@@ -1063,14 +1141,17 @@ class TestCheckExitSignals:
         validate_spec.check_exit_signals("realisera", SYNTHETIC_SKILL_VALID, r)
         assert r.error_count == 0
         assert any(
-            level == "PASS" for level, _, check, _ in r.entries
+            level == "PASS"
+            for level, _, check, _ in r.entries
             if check == "exit-signals"
         )
 
     def test_missing_terms_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_exit_signals(
-            "realisera", SYNTHETIC_SKILL_BAD_EXIT_SIGNALS, r,
+            "realisera",
+            SYNTHETIC_SKILL_BAD_EXIT_SIGNALS,
+            r,
         )
         assert r.error_count == 1
         detail = r.entries[0][3]
@@ -1091,15 +1172,16 @@ class TestCheckLoopGuard:
         validate_spec.check_loop_guard("realisera", SYNTHETIC_SKILL_VALID, r)
         assert r.error_count == 0
         assert any(
-            level == "PASS" for level, _, check, _ in r.entries
-            if check == "loop-guard"
+            level == "PASS" for level, _, check, _ in r.entries if check == "loop-guard"
         )
 
     def test_missing_loop_guard_errors(self, validate_spec):
         """Autonomous skill with exit signals but no loop guard elements."""
         r = validate_spec.Results()
         validate_spec.check_loop_guard(
-            "realisera", SYNTHETIC_SKILL_NO_LOOP_GUARD, r,
+            "realisera",
+            SYNTHETIC_SKILL_NO_LOOP_GUARD,
+            r,
         )
         assert r.error_count >= 1
 
@@ -1107,7 +1189,9 @@ class TestCheckLoopGuard:
         """orkestrera-style loop guard using consecutive failure + retry."""
         r = validate_spec.Results()
         validate_spec.check_loop_guard(
-            "orkestrera", SYNTHETIC_SKILL_LOOP_GUARD_CONSECUTIVE_FAIL, r,
+            "orkestrera",
+            SYNTHETIC_SKILL_LOOP_GUARD_CONSECUTIVE_FAIL,
+            r,
         )
         assert r.error_count == 0
 
@@ -1115,7 +1199,9 @@ class TestCheckLoopGuard:
         """optimera-style loop guard using retry-based task failure."""
         r = validate_spec.Results()
         validate_spec.check_loop_guard(
-            "optimera", SYNTHETIC_SKILL_LOOP_GUARD_RETRY_BASED, r,
+            "optimera",
+            SYNTHETIC_SKILL_LOOP_GUARD_RETRY_BASED,
+            r,
         )
         assert r.error_count == 0
 
@@ -1131,18 +1217,23 @@ class TestCheckSpecSectionsDeclared:
     def test_with_spec_sections_passes(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_spec_sections_declared(
-            "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
+            "realisera",
+            SYNTHETIC_SKILL_WITH_SPEC_SECTIONS,
+            r,
         )
         assert r.error_count == 0
         assert any(
-            level == "PASS" for level, _, check, _ in r.entries
+            level == "PASS"
+            for level, _, check, _ in r.entries
             if check == "spec-sections-declared"
         )
 
     def test_without_spec_sections_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_spec_sections_declared(
-            "realisera", SYNTHETIC_SKILL_WITHOUT_SPEC_SECTIONS, r,
+            "realisera",
+            SYNTHETIC_SKILL_WITHOUT_SPEC_SECTIONS,
+            r,
         )
         assert r.error_count == 1
         assert "spec_sections" in r.entries[0][3]
@@ -1151,7 +1242,9 @@ class TestCheckSpecSectionsDeclared:
         """Edge case: spec_sections present but not a valid list."""
         r = validate_spec.Results()
         validate_spec.check_spec_sections_declared(
-            "realisera", SYNTHETIC_SKILL_BAD_SPEC_SECTIONS_FORMAT, r,
+            "realisera",
+            SYNTHETIC_SKILL_BAD_SPEC_SECTIONS_FORMAT,
+            r,
         )
         assert r.error_count == 1
         assert "Invalid" in r.entries[0][3]
@@ -1176,12 +1269,15 @@ class TestCheckContextFileExists:
 
         r = validate_spec.Results()
         validate_spec.check_context_file_exists(
-            "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
+            "realisera",
+            SYNTHETIC_SKILL_WITH_SPEC_SECTIONS,
+            r,
             skill_path=skill_md,
         )
         assert r.error_count == 0
         assert any(
-            level == "PASS" for level, _, check, _ in r.entries
+            level == "PASS"
+            for level, _, check, _ in r.entries
             if check == "context-file-exists"
         )
 
@@ -1193,7 +1289,9 @@ class TestCheckContextFileExists:
 
         r = validate_spec.Results()
         validate_spec.check_context_file_exists(
-            "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
+            "realisera",
+            SYNTHETIC_SKILL_WITH_SPEC_SECTIONS,
+            r,
             skill_path=skill_md,
         )
         assert r.error_count == 1
@@ -1226,12 +1324,16 @@ class TestCheckContextFileCurrent:
 
         r = validate_spec.Results()
         validate_spec.check_context_file_current(
-            "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
-            skill_path=skill_md, spec_hash=SPEC_HASH,
+            "realisera",
+            SYNTHETIC_SKILL_WITH_SPEC_SECTIONS,
+            r,
+            skill_path=skill_md,
+            spec_hash=SPEC_HASH,
         )
         assert r.error_count == 0
         assert any(
-            level == "PASS" for level, _, check, _ in r.entries
+            level == "PASS"
+            for level, _, check, _ in r.entries
             if check == "context-file-current"
         )
 
@@ -1249,8 +1351,11 @@ class TestCheckContextFileCurrent:
 
         r = validate_spec.Results()
         validate_spec.check_context_file_current(
-            "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
-            skill_path=skill_md, spec_hash=SPEC_HASH,
+            "realisera",
+            SYNTHETIC_SKILL_WITH_SPEC_SECTIONS,
+            r,
+            skill_path=skill_md,
+            spec_hash=SPEC_HASH,
         )
         assert r.error_count == 1
         assert "mismatch" in r.entries[0][3].lower()
@@ -1263,14 +1368,15 @@ class TestCheckContextFileCurrent:
         skill_md.write_text(SYNTHETIC_SKILL_WITH_SPEC_SECTIONS)
         refs_dir = skill_dir / "references"
         refs_dir.mkdir()
-        (refs_dir / "contract.md").write_text(
-            "<!-- no hash here -->\nSome content.\n"
-        )
+        (refs_dir / "contract.md").write_text("<!-- no hash here -->\nSome content.\n")
 
         r = validate_spec.Results()
         validate_spec.check_context_file_current(
-            "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
-            skill_path=skill_md, spec_hash=SPEC_HASH,
+            "realisera",
+            SYNTHETIC_SKILL_WITH_SPEC_SECTIONS,
+            r,
+            skill_path=skill_md,
+            spec_hash=SPEC_HASH,
         )
         assert r.error_count == 1
         assert "No source hash" in r.entries[0][3]
@@ -1284,8 +1390,11 @@ class TestCheckContextFileCurrent:
 
         r = validate_spec.Results()
         validate_spec.check_context_file_current(
-            "realisera", SYNTHETIC_SKILL_WITH_SPEC_SECTIONS, r,
-            skill_path=skill_md, spec_hash=SPEC_HASH,
+            "realisera",
+            SYNTHETIC_SKILL_WITH_SPEC_SECTIONS,
+            r,
+            skill_path=skill_md,
+            spec_hash=SPEC_HASH,
         )
         assert r.error_count == 0
         assert len(r.entries) == 0
@@ -1359,10 +1468,14 @@ class TestCheckRealityVerificationGate:
     def test_both_skills_reference_section_19_passes(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_reality_verification_gate(
-            "realisera", SYNTHETIC_REALISERA_WITH_GATE, r,
+            "realisera",
+            SYNTHETIC_REALISERA_WITH_GATE,
+            r,
         )
         validate_spec.check_reality_verification_gate(
-            "orkestrera", SYNTHETIC_ORKESTRERA_WITH_GATE, r,
+            "orkestrera",
+            SYNTHETIC_ORKESTRERA_WITH_GATE,
+            r,
         )
         assert r.error_count == 0
         gate_entries = [
@@ -1374,14 +1487,19 @@ class TestCheckRealityVerificationGate:
     def test_realisera_missing_section_19_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_reality_verification_gate(
-            "realisera", SYNTHETIC_REALISERA_MISSING_GATE, r,
+            "realisera",
+            SYNTHETIC_REALISERA_MISSING_GATE,
+            r,
         )
         validate_spec.check_reality_verification_gate(
-            "orkestrera", SYNTHETIC_ORKESTRERA_WITH_GATE, r,
+            "orkestrera",
+            SYNTHETIC_ORKESTRERA_WITH_GATE,
+            r,
         )
         assert r.error_count == 1
         error_entries = [
-            entry for entry in r.entries
+            entry
+            for entry in r.entries
             if entry[0] == "ERROR" and entry[2] == "reality-verification-gate"
         ]
         assert len(error_entries) == 1
@@ -1393,14 +1511,19 @@ class TestCheckRealityVerificationGate:
     def test_orkestrera_missing_section_19_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_reality_verification_gate(
-            "realisera", SYNTHETIC_REALISERA_WITH_GATE, r,
+            "realisera",
+            SYNTHETIC_REALISERA_WITH_GATE,
+            r,
         )
         validate_spec.check_reality_verification_gate(
-            "orkestrera", SYNTHETIC_ORKESTRERA_MISSING_GATE, r,
+            "orkestrera",
+            SYNTHETIC_ORKESTRERA_MISSING_GATE,
+            r,
         )
         assert r.error_count == 1
         error_entries = [
-            entry for entry in r.entries
+            entry
+            for entry in r.entries
             if entry[0] == "ERROR" and entry[2] == "reality-verification-gate"
         ]
         assert len(error_entries) == 1
@@ -1408,3 +1531,84 @@ class TestCheckRealityVerificationGate:
         assert offending_skill == "orkestrera"
         assert "orkestrera" in detail
         assert "Section 19" in detail
+
+
+class TestCheckPlatformAnnotations:
+    """Check has no restricted subjects; all skills are validated.
+
+    Proportionality per Decision 21: 1 pass + 1 fail + 1 edge (no annotations)
+    + 1 fail (multiple with one invalid).
+    """
+
+    def test_valid_annotations_pass(self, validate_spec):
+        text = """\
+---
+name: test-skill
+description: Test
+---
+
+PROFILE.md is at ~/.claude/profile/PROFILE.md <!-- platform: profile-path -->
+Dispatch uses worktrees <!-- platform: sub-agent-dispatch -->
+"""
+        r = validate_spec.Results()
+        validate_spec.check_platform_annotations("test-skill", text, r)
+        assert r.error_count == 0
+        entries = [entry for entry in r.entries if entry[2] == "platform-annotations"]
+        assert len(entries) == 1
+        assert entries[0][0] == "PASS"
+
+    def test_unrecognized_capability_errors(self, validate_spec):
+        text = """\
+---
+name: test-skill
+description: Test
+---
+
+Some feature <!-- platform: unknown-capability -->
+"""
+        r = validate_spec.Results()
+        validate_spec.check_platform_annotations("test-skill", text, r)
+        assert r.error_count == 1
+        error_entries = [
+            entry
+            for entry in r.entries
+            if entry[0] == "ERROR" and entry[2] == "platform-annotations"
+        ]
+        assert len(error_entries) == 1
+        assert "unknown-capability" in error_entries[0][3]
+
+    def test_no_annotations_passes(self, validate_spec):
+        text = """\
+---
+name: test-skill
+description: Test
+---
+
+No platform references here.
+"""
+        r = validate_spec.Results()
+        validate_spec.check_platform_annotations("test-skill", text, r)
+        assert r.error_count == 0
+
+    def test_mixed_valid_and_invalid_errors(self, validate_spec):
+        text = """\
+---
+name: test-skill
+description: Test
+---
+
+Valid <!-- platform: profile-path -->
+Invalid <!-- platform: made-up-name -->
+Also valid <!-- platform: eval-mechanism -->
+"""
+        r = validate_spec.Results()
+        validate_spec.check_platform_annotations("test-skill", text, r)
+        assert r.error_count == 1
+        error_entries = [
+            entry
+            for entry in r.entries
+            if entry[0] == "ERROR" and entry[2] == "platform-annotations"
+        ]
+        assert len(error_entries) == 1
+        assert "made-up-name" in error_entries[0][3]
+        assert error_entries[0][3].count("made-up-name") == 1
