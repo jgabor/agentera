@@ -6,8 +6,9 @@
 - Ecosystem spec Section 20: Host Adapter Contract defining six runtime capabilities for platform portability
 
 ### Changed
-- Portability claims now distinguish the portable core from host-specific extensions; `profilera` is explicitly scoped as Claude-adapter-specific until a session-corpus contract exists
-- Section 20 now classifies capabilities as required, capability-gated, or optional so adapters can preserve behavior without implying all runtimes support the same guarantees
+- Terminology cleanup (Decision 23): `ecosystem-spec.md` renamed to `SPEC.md` (root), `ecosystem-context.md` renamed to `contract.md` (per skill), "ecosystem" prefix dropped from all scripts, headers, and prose
+- Spec Section 20 host adapter contract: portability claims now distinguish the portable core from host-specific extensions
+- Planera em-dash on line 130 fixed (last remaining em-dash in SKILL.md files)
 
 ### Fixed
 

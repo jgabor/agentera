@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 88 · 2026-04-10
+
+**Phase**: build
+**What**: Terminology cleanup per Decision 23. Renamed `references/ecosystem-spec.md` to `SPEC.md` (root, uppercase per artifact convention), renamed all 12 `references/ecosystem-context.md` to `references/contract.md` (lowercase per reference file convention), renamed `validate_ecosystem.py` to `validate_spec.py` and `generate_ecosystem_context.py` to `generate_contracts.py`. Dropped "ecosystem" prefix from all HTML comments, prose, variable names, and error messages across 46 files. Updated the linter to check for "twelve-skill suite" instead of "twelve-skill ecosystem". Fixed the last remaining em-dash in planera SKILL.md line 130. All 12 contract files regenerated from SPEC.md.
+**Commit**: 9eb6773 refactor: rename ecosystem-spec to SPEC.md, ecosystem-context to contract.md (Decision 23)
+**Inspiration**: Decision 23 from resonera deliberation: the file is a binding excerpt, not "context" in the operational sense. The pair `SPEC.md` + `contract.md` is cleaner than `ecosystem-spec` + `ecosystem-context`.
+**Discovered**: The sed-based bulk replacement was efficient but mangled some acceptance criteria text in PLAN.md where "ecosystem-spec" appeared in literal Given/When/Then strings. Required manual fix. The "ecosystem" word appeared in more prose contexts than expected (VISION.md, CHANGELOG.md historical entries, TODO.md resolved items).
+**Verified**: `python3 scripts/validate_spec.py`: 0 errors, 0 warnings across 12 skills (planera em-dash fixed). `python3 -m pytest tests/ -q`: 236 passed in 0.18s. `python3 scripts/generate_contracts.py --check`: all 12 contract files current. `rg "ecosystem" --glob '!.git/**'`: zero results outside .git.
+**Next**: Task 2 (Session Corpus Contract), Task 3 (audit and annotate platform-specific references), or Task 4 (OpenCode adapter design). Task 5 (linter update for annotation validation) and Task 6 (CI gating) remain independent.
+**Context**: intent (rename spec and contract files, drop "ecosystem" prefix everywhere per Decision 23) · constraints (0 new linter errors, all tests pass, no behavioral changes, regenerate all contract files) · unknowns (none) · scope (SPEC.md, 12 contract.md files, 2 Python scripts, 12 SKILL.md files, 12 plugin.json files, linter, hooks, tests, CLAUDE.md, README.md, CHANGELOG.md, VISION.md, TODO.md, PROGRESS.md, PLAN.md, DECISIONS.md, DOCS.md, DESIGN.md, HEALTH.md, registry.json, marketplace.json)
+
 ■ ## Cycle 87 · 2026-04-10
 
 **Phase**: build
