@@ -915,9 +915,9 @@ Portable core means the skill's behavioral contract travels with the artifact pr
 
 ### Host-specific extensions
 
-Some skills need host data that is not part of the core runtime surface. Today the clearest example is profilera: it does not just read PROFILE.md, it mines host session history, memories, and conversation traces to produce that artifact. That extraction corpus is Claude-specific in the reference implementation and is not standardized by the six capabilities above.
+Some skills need host data that is not part of the core runtime surface. The clearest example is profilera: it does not just read PROFILE.md, it mines host session history, memories, and conversation traces to produce that artifact. The extraction corpus is Claude-specific in the reference implementation.
 
-Until a future Session Corpus Contract exists, adapters MUST treat profilera as a host-specific extension. A runtime may implement its own profilera-compatible corpus, but doing so is outside the scope of Section 20.
+Section 21 (Session Corpus Contract) defines the normalized data model for this corpus. Once a host adapter implements corpus extraction producing the Section 21 record types, profilera's portability status moves from host-specific extension to capability-gated. Until the adapter provides the corpus, profilera remains host-specific on that runtime.
 
 ### Annotation convention
 
@@ -947,3 +947,128 @@ Deterministic. The linter validates two properties:
 2. The capability names in the annotation must exactly match one of: `skill-discovery`, `artifact-resolution`, `profile-path`, `sub-agent-dispatch`, `eval-mechanism`, `hook-lifecycle`.
 
 Annotations on references that have no corresponding capability (e.g., a comment referencing a nonexistent capability) produce a linter error.
+
+## 21. Session Corpus Contract
+
+Profilera mines decision patterns from host session data to produce PROFILE.md. The extraction currently depends on Claude Code's internal storage layout (JSONL files, memory directories, project-scoped configs). This section defines the normalized data model that any host adapter can produce, decoupling profilera's behavioral contract from a specific runtime's file layout.
+
+The contract is a data model, not a path model. It specifies what profilera needs to observe, not where the host stores it. Claude Code continues to derive this corpus from its native paths; other runtimes produce the same normalized records from their own storage.
+
+### Record types
+
+Five canonical record families capture the decision-relevant signals profilera consumes. Each record is a JSON object with domain fields (varying per type) and provenance metadata (shared across all types).
+
+#### Provenance metadata
+
+Every record includes these fields regardless of type:
+
+| Field | Required | Type | Purpose |
+|-------|----------|------|---------|
+| `source_id` | Yes | string | Stable identifier for deduplication across extractions |
+| `timestamp` | Yes | string (ISO 8601) | When the record was created or observed |
+| `project_id` | Yes | string | Project this record belongs to; `"global"` for non-project-scoped data |
+| `project_path` | No | string | Filesystem path to the project, when available |
+| `session_id` | No | string | Host session identifier, when applicable |
+| `source_kind` | Yes | string | Which record family this record belongs to (one of the five canonical names below) |
+| `runtime` | Yes | string | Host runtime that produced this record (e.g., `"claude-code"`, `"opencode"`) |
+| `adapter_version` | Yes | string | Version of the adapter that extracted this record |
+
+The `source_id` field enables idempotent re-extraction: the same logical record produces the same `source_id` regardless of when extraction runs. The `runtime` and `adapter_version` fields enable profilera to handle schema variations across runtimes.
+
+#### memory_entry
+
+Durable user or project memory captured by the host. Typically persisted as Markdown files with optional frontmatter.
+
+| Field | Required | Type | Purpose |
+|-------|----------|------|---------|
+| `name` | Yes | string | Entry name or title |
+| `description` | No | string | Summary from frontmatter |
+| `memory_type` | No | string | Host-specific categorization |
+| `content` | Yes | string | Full text content (body after frontmatter) |
+
+Claude Code source: `~/.claude/projects/*/memory/*.md` <!-- platform: artifact-resolution -->
+
+#### instruction_document
+
+Global or project-scoped instruction files the host exposes to agents. These encode recurring preferences, constraints, and standards.
+
+| Field | Required | Type | Purpose |
+|-------|----------|------|---------|
+| `doc_type` | Yes | string | Kind of instruction document (e.g., `"claude_md"`, `"agents_md"`) |
+| `name` | Yes | string | Canonical name for this document |
+| `description` | No | string | Human-readable summary |
+| `content` | Yes | string | Full text content |
+| `scope` | Yes | string | `"global"` or `"project"` |
+
+Claude Code source: `~/.claude/CLAUDE.md`, `~/git/*/CLAUDE.md`, `~/git/*/AGENTS.md` <!-- platform: artifact-resolution -->
+
+#### history_prompt
+
+Decision-rich prompts from the host's command history. These capture what the user asked, when, and in what project context.
+
+| Field | Required | Type | Purpose |
+|-------|----------|------|---------|
+| `prompt` | Yes | string | The user's prompt text |
+| `signal_type` | Yes | string | Classification: `"decision"`, `"correction"`, or `"question"` |
+
+Claude Code source: `~/.claude/history.jsonl`, filtered by decision-pattern regex <!-- platform: artifact-resolution -->
+
+#### conversation_turn
+
+Normalized user or assistant turns from host conversation sessions. Profilera uses paired user-assistant exchanges to identify how decisions were made and corrected in context.
+
+| Field | Required | Type | Purpose |
+|-------|----------|------|---------|
+| `actor` | Yes | string | `"user"` or `"assistant"` |
+| `content` | Yes | string | Turn text content |
+| `preceding_context` | No | string | Prior assistant proposal (for user turns that respond to a proposal) |
+| `signal_type` | No | string | Classification of the user's response: `"decision"`, `"correction"`, or `"question"` |
+
+Claude Code source: `~/.claude/projects/**/*.jsonl`, filtered for decision-rich exchanges <!-- platform: artifact-resolution -->
+
+#### project_config_signal
+
+Recurring configuration or toolchain patterns associated with a project. These are objective evidence of technology choices, linting standards, and build conventions.
+
+| Field | Required | Type | Purpose |
+|-------|----------|------|---------|
+| `config_type` | Yes | string | Kind of configuration file (e.g., `"gomod"`, `"golangci"`, `"package_json"`) |
+| `file_path` | No | string | Path to the config file within the project |
+| `signals` | Yes | array of string | Extracted key-value signals (dependencies, linters, targets, etc.) |
+
+Claude Code source: `~/git/*/` config files scanned per known config type list <!-- platform: artifact-resolution -->
+
+### Source families
+
+The five record types group into four source families for profilera's consumption. "Crystallized" combines memory_entry and instruction_document because both represent durable, explicitly authored decisions (as opposed to emergent patterns from conversation history).
+
+| Family | Record types | Signal character |
+|--------|-------------|-----------------|
+| Crystallized decisions | memory_entry, instruction_document | Highest signal: explicitly authored preferences and standards |
+| Decision history | history_prompt | Broad coverage: what the user asked across all sessions |
+| Conversation exchanges | conversation_turn | Most nuanced: how decisions were made and corrected in context |
+| Config patterns | project_config_signal | Most objective: what technology and standards actually shipped |
+
+### Degradation
+
+Profilera operates in two modes: full (all four source families) and partial (one or more families missing). The degradation rules specify what profilera can produce given incomplete corpus availability.
+
+| Available families | Profilera mode | Profile quality |
+|--------------------|---------------|-----------------|
+| All four | Full | Complete profile: all 12 categories, cross-validated confidence scores |
+| Crystallized only | Partial | Instruction-heavy profile: strong in architecture/tooling standards, weak in process/workflow and meta-decision patterns |
+| Crystallized + one other | Partial | Substantially complete: most categories populated, confidence scores may be lower for categories that depend on the missing family |
+| History or conversations only (no crystallized) | Partial | Behavior-only profile: can infer patterns from actions but lacks explicit preferences. Confidence scores capped at 60 |
+| Config patterns only | Minimal | Technology fingerprint only: tooling and dependency patterns, no behavioral decisions. Profilera should warn the user this is not a full profile |
+
+**Degradation surface rule**: when a source family is missing, profilera MUST note which families were absent in the profile's source metadata comment. This lets consuming skills weight profile entries appropriately: a profile built from config patterns only should not be treated as authoritative for workflow decisions.
+
+**Adapter responsibility**: the host adapter documents which source families it can produce. A minimal adapter that only provides instruction_document (reading a global config file) is valid; profilera produces the best profile it can with what is available. The adapter does not need to implement all five record types.
+
+### Relation to Section 20
+
+Section 20 defines the six host adapter capabilities for the portable core. Section 21 defines the data contract that lifts profilera from a host-specific extension to a capability-gated skill. Once a host adapter implements corpus extraction that produces the normalized record types above, profilera can run on that runtime without depending on Claude Code's internal storage layout.
+
+Profilera's portability status in the Section 20 table moves from "Host-specific extension" to "Capability-gated" when the adapter provides the corpus. The contract itself (this section) is what enables that transition; the adapter is what implements it.
+
+**Linter check**: None. This section defines a runtime data contract for adapters, not a SKILL.md structural requirement. The existing linter checks for profilera's SKILL.md continue to apply independently.

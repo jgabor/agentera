@@ -4,6 +4,7 @@
 
 ### Added
 - Ecosystem spec Section 20: Host Adapter Contract defining six runtime capabilities for platform portability
+- Ecosystem spec Section 21: Session Corpus Contract defining normalized record types and degradation rules for profilera portability
 
 ### Changed
 - Terminology cleanup (Decision 23): `ecosystem-spec.md` renamed to `SPEC.md` (root), `ecosystem-context.md` renamed to `contract.md` (per skill), "ecosystem" prefix dropped from all scripts, headers, and prose

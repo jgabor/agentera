@@ -1,7 +1,7 @@
 <!-- contract: planera -->
-<!-- source: references/SPEC.md (sha256: e778b1fc71aeebf73864824d80a095774b02c438edf6a3cf5ad3ea3d7311578d) -->
+<!-- source: SPEC.md (sha256: 4d9aae8180735bd1f6d3ee45c82e0da256f781f9e7e5100ac05218f85ac67e95) -->
 <!-- sections: 3, 4, 5, 6, 16 -->
-<!-- generated: 2026-04-10T16:51:16Z -->
+<!-- generated: 2026-04-10T17:24:29Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
