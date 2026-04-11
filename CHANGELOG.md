@@ -6,9 +6,13 @@
 
 ### Added
 - GitHub Actions CI workflow running spec linter and pytest on every push to main and pull request (closes ISS-31)
+- OpenCode adapter plugin at `.opencode/plugins/agentera.js` with lifecycle hooks for session preload, artifact validation, and session bookmarking
+- Runtime detection in eval runner: `--runtime` flag supporting Claude Code and OpenCode, auto-detection via PATH probing
+- OpenCode installation guide in README with global skill install, plugin install, and profile path convention
 
 ### Changed
 - Refactored check_severity_levels into four pattern-specific helpers, flattening 4-level nesting to 2
+- Adapter design doc upgraded from design document to implementation reference
 
 ## [1.8.1] · 2026-04-11
 

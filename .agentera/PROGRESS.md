@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 99 · 2026-04-11
+
+**Phase**: build
+**What**: OpenCode Adapter Implementation plan. Promoted the proof-of-concept adapter to production: plugin at `.opencode/plugins/agentera.js` with ESM fix, eval runner runtime detection (`--runtime` flag, 6 tests), OpenCode install docs in README, adapter doc upgraded to implementation reference. Version bumped to 1.9.0.
+**Commits**: 8f72655, 78687f6, c51fb0a, 9c65271
+**Inspiration**: OpenCode context7 docs, cross-runtime skill co-existence research
+**Discovered**: SKILL.md format is the de facto cross-runtime standard (87K+ skills on skills.sh). No adapter changes needed for skills themselves. The CJS/ESM syntax mix in the original plugin was a real bug caught by adversarial review.
+**Verified**: N/A: the plan bundles feat, docs, and chore commits; the feat commits (plugin promotion, eval runner) were each verified by inspektera evaluation against their acceptance criteria during orkestrera orchestration
+**Next**: Vision-driven work. Remaining annoying item: analyze_progress.py 114-line function. The OpenCode adapter is implemented but untested on a real OpenCode instance.
+**Context**: intent (uplift OpenCode adapter from design to implementation) · constraints (no Claude Code breakage, stdlib only, text-mode eval only) · unknowns (none remaining) · scope (.opencode/plugins/, scripts/eval_skills.py, README.md, references/adapters/opencode.md, version files)
+
 ■ ## Cycle 98 · 2026-04-11
 
 **Phase**: build
@@ -110,18 +121,9 @@
 **Next**: Task 3 (platform annotation audit) or Task 4 (OpenCode adapter design).
 **Context**: intent (define Section 21 per Task 2 AC) · constraints (no changes to current experience, linter 0/0, regenerate contracts) · unknowns (none) · scope (SPEC.md Section 21, profilera contract.md and SKILL.md, 12 contract files)
 
-■ ## Cycle 88 · 2026-04-10
-
-**Phase**: build
-**What**: Terminology cleanup per Decision 23. Renamed ecosystem-spec.md → SPEC.md (root), ecosystem-context.md → contract.md (per skill), validate_ecosystem.py → validate_spec.py, generate_ecosystem_context.py → generate_contracts.py. Dropped "ecosystem" prefix across 46 files. Updated linter to check for "twelve-skill suite". Fixed last remaining em-dash in planera SKILL.md. Regenerated all 12 contract files.
-**Commit**: 9eb6773 refactor: rename ecosystem-spec to SPEC.md, ecosystem-context to contract.md (Decision 23)
-**Inspiration**: Decision 23: the file is a binding excerpt, not "context" in the operational sense
-**Discovered**: sed-based bulk replacement mangled some PLAN.md acceptance criteria where "ecosystem-spec" appeared in literal Given/When/Then strings.
-**Verified**: `python3 scripts/validate_spec.py`: 0 errors, 0 warnings. `python3 -m pytest tests/ -q`: 236 passed. `rg "ecosystem" --glob '!.git/**'`: zero results outside .git.
-**Next**: Task 2 (Session Corpus Contract), Task 3 (annotation audit), Task 4 (OpenCode adapter).
-**Context**: intent (rename spec and contract files, drop "ecosystem" prefix per Decision 23) · constraints (0 new linter errors, all tests pass, regenerate contracts) · unknowns (none) · scope (SPEC.md, 12 contract.md files, 2 Python scripts, 12 SKILL.md files, manifests, all project docs)
-
 ## Archived Cycles
+
+Cycle 88 (2026-04-10): Terminology cleanup per Decision 23; renamed ecosystem-spec.md to SPEC.md, ecosystem-context.md to contract.md, validate_ecosystem.py to validate_spec.py; dropped "ecosystem" prefix across 46 files; regenerated all 12 contract files
 
 Cycle 87 (2026-04-10): Added Section 20 (Host Adapter Contract) to SPEC.md; six capabilities, portability-status table, `<!-- platform: -->` annotation convention
 
