@@ -45,7 +45,7 @@ Note: PROFILE.md is global, not project-scoped. Its path is provided by the host
 
 ### Contract
 
-Contract values used in this skill are inlined where referenced: severity arrows `⇶/⇉/→/⇢`, trend arrows `⮉/⮋`, skill glyphs `⛥ ❈ ⬚ ≡ ⧉ ⎘ ⛶ ▤ ♾ ◰ ⎈`, and the plan-relative staleness heuristic (fall back to PROGRESS.md recency when no plan context exists). No upfront file read is required.
+Contract values used in this skill are inlined where referenced: severity arrows `⇶/⇉/→/⇢`, trend arrows `⮉/⮋`, skill glyphs `⛥ ❈ ⬚ ≡ ⧉ ⎘ ⛶ ▤ ♾ ◰ ⎈ 🞔` (last one is hej's own glyph, used in the exit marker), and the plan-relative staleness heuristic (fall back to PROGRESS.md recency when no plan context exists). No upfront file read is required.
 
 `references/contract.md` remains available as a full-spec reference: consult it for ambiguous cases, explicit cross-checking against SPEC.md, or when you suspect drift between these inlined values and the canonical spec.
 
@@ -139,6 +139,8 @@ Show where things stand.
 
    Output constraint: ≤120 words total briefing, ≤15 words per routing suggestion.
 
+   **Exit marker**: after the closing code fence of the dashboard, emit `🞔 hej · <status>` on its own line, followed by a one-sentence summary of what you delivered. For `waiting`, `flagged`, or `stuck`, add a `▸` bullet below the summary identifying what the user needs to decide or act on next. The exit marker is mandatory on every invocation regardless of mode (fresh welcome or returning briefing).
+
    **Formatting rules**:
    - Each status line uses the skill glyph that owns that data
    - Severity arrows (⇶/⇉/⇢) mark attention items by urgency
@@ -192,10 +194,9 @@ Unclear mapping? Ask **one** clarifying question. No compound questions.
 
 ## Exit signals
 
-Report one of these statuses at workflow completion:
+Report one of these statuses at workflow completion.
 
-Format: the agentera logo serves as hej's exit boundary. Follow with a summary sentence.
-For flagged, stuck, and waiting: add `▸` bullet details below the summary.
+Format: emit `🞔 hej · <status>` on its own line below the dashboard's closing code fence, followed by a one-sentence summary of what was delivered. For `flagged`, `stuck`, and `waiting`, add a `▸` bullet below the summary identifying what the user needs to decide or act on next. The exit marker is mandatory and uses hej's canonical glyph `🞔` (Unicode U+1F794).
 
 - **complete**: Briefing delivered (or welcome shown) and user successfully routed to a skill.
 - **flagged**: Briefing delivered but critical attention items were found: critical issues, degrading health, loop guard triggers. Each concern is listed explicitly.
