@@ -3,7 +3,7 @@ name: profilera
 description: >
   PROFILERA: Persona Reconstruction, Observable Footprint Indexing Logic. Examine,
   Reconcile, Articulate. Mines Claude Code session
-  history, Claude Code memory files (extracted as instruction_document), project configs, and conversation data to generate an
+  history, memory files, project configs, and conversation data to generate an
   agent-consumable decision profile with per-entry confidence scoring and dormancy decay.
   Two modes: Full (regenerate from scratch) and Validate (incremental check of existing
   profile). This skill should be used when the user says
@@ -14,7 +14,7 @@ description: >
   "check my profile", "quick profile check", or "/profilera". Also applies when
   the user wants to understand their own decision-making patterns across sessions, asks
   someone else to predict their decisions, or wants a document that captures how they think.
-spec_sections: [1, 4, 6, 21]
+spec_sections: [1, 4, 6]
 ---
 
 # PROFILERA
@@ -33,16 +33,16 @@ One global artifact (written) and project-level artifacts (read).
 
 | Artifact | Purpose | Path |
 |----------|---------|------|
-| PROFILE.md | Decision profile consumed by all skills | `~/.claude/profile/PROFILE.md` (global, not in project root) <!-- platform: profile-path --> |
+| PROFILE.md | Decision profile consumed by all skills | `~/.claude/profile/PROFILE.md` (global, not in project root) |
 | DECISIONS.md | High-signal source for pattern extraction | project root (via DOCS.md mapping) |
 
 ### Artifact path resolution
 
-PROFILE.md is global. The host runtime provides the path via the profile-path capability (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> `.agentera/DOCS.md` mapping does not apply to PROFILE.md. For project-level artifacts, check if .agentera/DOCS.md exists and use its path mapping; if absent, use the default layout.
+PROFILE.md is global and lives at `~/.claude/profile/PROFILE.md`, not in the project root or `.agentera/`. `.agentera/DOCS.md` mapping does not apply to PROFILE.md. For project-level artifacts, check if .agentera/DOCS.md exists and use its path mapping; if absent, use the default layout.
 
-### Contract
+### Ecosystem context
 
-Before starting, read `references/contract.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
+Before starting, read `references/ecosystem-context.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the ecosystem context takes precedence.
 
 ---
 
@@ -55,7 +55,7 @@ Two modes:
 
 ## Step 0: Detect mode
 
-Before doing anything else, check if `~/.claude/profile/PROFILE.md` exists. <!-- platform: profile-path -->
+Before doing anything else, check if `~/.claude/profile/PROFILE.md` exists.
 
 **If it does NOT exist**: Proceed directly to Full mode (Step 1).
 
@@ -85,32 +85,30 @@ Steps: extract, read, categorize, generate, validate.
 
 ### Step 1: Run extraction
 
-<!-- The extraction below is Claude-adapter-specific. The Session Corpus Contract (spec Section 21) defines the normalized record types; once a host adapter produces those records, profilera consumes them instead of running Claude-specific extraction scripts. The intermediate file paths, JSONL sources, and extractor scripts are Claude Code implementation details. -->
-
-Run extraction scripts to gather raw decision signals. Scripts handle JSONL parsing and output structured JSON.
+Run extraction to gather raw decision signals into a single corpus file. The script scans memory files, session history, conversations, and project configs, normalizing all records into a unified schema with `source_kind` tags.
 
 ```bash
 python3 scripts/extract_all.py --output-dir ~/.claude/profile/intermediate
 ```
 
-Run from the skill's root directory.
+Run from the skill's root directory. Output: `~/.claude/profile/intermediate/corpus.json`.
 
-Read `~/.claude/profile/intermediate/extraction_summary.json` to confirm counts. Report to the user.
+Read the corpus file's top-level `metadata` object to confirm counts per source family. Report totals to the user.
 
-**If extraction fails**: common causes include Python not found (try `python3`), permission errors, and empty output (no session history). If only some extractors fail, proceed with partial data and note missing sources.
+**If extraction fails**: common causes include Python not found (try `python3`), permission errors, and empty output (no session history). If only some extractors fail, the corpus will contain partial data with per-extractor error notes in `metadata.extractors`; proceed and note missing sources.
 
 ---
 
-### Step 2: Read extracted data
+### Step 2: Read corpus data
 
-Read all four intermediate JSON files (paths below are Claude-adapter-specific):
+Read `~/.claude/profile/intermediate/corpus.json`. Each record carries a `source_kind` field. Group records by source family for synthesis:
 
-1. `~/.claude/profile/intermediate/crystallized.json`: Claude Code memory files (as instruction_document), CLAUDE.md, AGENTS.md
-2. `~/.claude/profile/intermediate/history_decisions.json`: Decision-rich prompts from history
-3. `~/.claude/profile/intermediate/conversation_decisions.json`: Decision exchanges from conversations
-4. `~/.claude/profile/intermediate/project_configs.json`: Recurring config patterns
+1. **instruction_document**: Memory files, CLAUDE.md, AGENTS.md (highest signal: explicit user instructions)
+2. **history_prompt**: Decision-rich prompts from session history
+3. **conversation_turn**: Decision exchanges from conversations (most nuanced: real-time reasoning)
+4. **project_config_signal**: Recurring config patterns across projects (most objective: what shipped)
 
-Read all before proceeding to synthesis. If any file has > 500 entries, focus on highest signal first: history "correction"/"decision" over "question", conversations with longer user responses, configs appearing across multiple projects.
+Read the full corpus before proceeding to synthesis. If total records exceed 500, focus on highest signal first: history "correction"/"decision" kinds over "question", conversation turns with longer user responses, configs appearing across multiple projects.
 
 ---
 
@@ -184,9 +182,9 @@ Look for cross-category patterns and contradictions: stated principle vs shipped
 
 Output constraint: ≤30 words per signal, ≤15 words per evidence line.
 
-Write the decision profile to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path -->
+Write the decision profile to `~/.claude/profile/PROFILE.md`.
 
-If a previous version exists: copy to `~/.claude/profile/history/PROFILE-{timestamp}.md` <!-- platform: profile-path -->, generate new version, show change summary (added, updated, removed).
+If a previous version exists: copy to `~/.claude/profile/history/PROFILE-{timestamp}.md`, generate new version, show change summary (added, updated, removed).
 
 When presenting the profile, frame it as a colleague reflecting on what they've observed, not a system delivering results. Open with what stood out, what surprised you, where the user is most consistent and where they contradict themselves. The structured profile follows, but the human read comes first.
 
@@ -196,7 +194,7 @@ When presenting the profile, frame it as a colleague reflecting on what they've 
 # Decision Profile: [User Name]
 
 <!-- Generated: {date} | Data: {date range from earliest to latest timestamp} -->
-<!-- Sources: {N} instruction documents, {N} history prompts, {N} conversation exchanges, {N} configs -->
+<!-- Sources: {N} memory files, {N} history prompts, {N} conversation exchanges, {N} configs -->
 <!-- Decay parameters: stable λ=0.001, durable λ=0.005, situational λ=0.015 -->
 <!-- Formula: effective_conf = conf × e^(-λ × days_since_confirmed), floor 20 -->
 <!-- Regenerate with /profilera -->
@@ -316,12 +314,12 @@ Write updated PROFILE.md. Report: "Validated {N} entries: {N} confirmed, {N} cha
 <critical>
 
 - NEVER fabricate decision patterns. Every profile entry must be grounded in observed evidence
-  from session history, instruction documents (including Claude Code memory files), configs, or conversation data.
+  from session history, memory files, configs, or conversation data.
 - NEVER assign confidence higher than the evidence warrants. A single data point is 30-49,
   not 70+, regardless of how insightful the decision sounds.
 - NEVER smooth over contradictions. When evidence conflicts, record tensions rather than
   forcing a coherent narrative.
-- NEVER modify the user's session history, instruction documents, or config files. Profilera reads
+- NEVER modify the user's session history, memory files, or config files. Profilera reads
   these sources; it never writes to them.
 - NEVER share profile contents with external services or include them in commits.
 
@@ -338,14 +336,14 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 - **complete**: PROFILE.md was written (Full mode) or updated (Validate mode) with all metadata changes applied, prediction accuracy was verified (Full mode), and a summary of what changed was reported.
 - **flagged**: Profile generation or validation completed but with data quality issues: extraction failed for one or more sources, prediction accuracy was below 3/5, or significant tensions were found that could not be resolved from available evidence.
-- **stuck**: Cannot generate or validate a profile because the extraction scripts failed entirely, Python is unavailable, or `~/.claude/` is unreadable <!-- platform: profile-path --> and no session data can be accessed.
+- **stuck**: Cannot generate or validate a profile because the extraction scripts failed entirely, Python is unavailable, or `~/.claude/` is unreadable and no session data can be accessed.
 - **waiting**: The user chose Validate mode but PROFILE.md does not exist or has no valid metadata, requiring a Full mode run that the user has not confirmed; or the user's intent between Full and Validate is genuinely ambiguous.
 
 ---
 
 ## Cross-skill integration
 
-Profilera is part of a twelve-skill suite. The decision profile it produces is consumed by the other skills.
+Profilera is part of a twelve-skill ecosystem. The decision profile it produces is consumed by the other skills.
 
 ### Consumed by /realisera
 Realisera runs the effective profile script in its Orient step to get a confidence-weighted summary table. High effective confidence entries are treated as strong constraints; low effective confidence entries are treated as suggestions. Full rules are read from PROFILE.md when needed for detailed reasoning.
@@ -386,7 +384,7 @@ Run from the profilera skill directory. Outputs a markdown summary table with ef
 ```
 /profilera
 ```
-Full extraction across all sources. Produces `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path -->
+Full extraction across all sources. Produces `~/.claude/profile/PROFILE.md`.
 
 ### Regular validation
 ```
@@ -403,5 +401,5 @@ All skills read the profile automatically via `python3 scripts/effective_profile
 
 - Extraction scripts handle I/O; Claude's job is synthesis, not parsing.
 - Large intermediate files: use subagents to read in parallel.
-- Signal hierarchy: crystallized.json (highest: instruction documents including Claude memory + CLAUDE.md), conversation exchanges (most nuanced: real-time reasoning), config patterns (most objective: what shipped).
+- Signal hierarchy: crystallized.json (highest: memory + CLAUDE.md), conversation exchanges (most nuanced: real-time reasoning), config patterns (most objective: what shipped).
 - Validate mode: weekly/per-session. Full mode: monthly or when significantly stale.
