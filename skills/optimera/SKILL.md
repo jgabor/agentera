@@ -76,14 +76,14 @@ Wraps the project's own tooling (test runners, benchmarks, linters) and translat
 **Before writing a harness**, read these references (bundled with this skill):
 - `references/harness-guide.md`: principles, patterns, and pitfalls
 - `references/output-schema.md`: formal JSON output specification
-- `references/agent-session-harness.md`: machinery for measuring agent behavior in reproducible sessions (hermetic vehicle, two-condition A/B, stream-JSON telemetry, causal gates) — reach for this when the measurement requires running an agent under controlled conditions rather than parsing one command's output
+- `references/agent-session-harness.md`: machinery for measuring agent behavior in reproducible sessions (hermetic vehicle, two-condition A/B, stream-JSON telemetry, causal gates). Reach for this when the measurement requires running an agent under controlled conditions rather than parsing one command's output
 - `references/examples/`: harness patterns for common metric types:
   - `test-pass-rate.md`: Node (Jest/Vitest), Python (pytest), Go, Rust
   - `benchmark.md`: hyperfine, built-in benchmarks, HTTP latency
   - `bundle-size.md`: JS bundles, Go binaries, Docker images, gzipped size
   - `lint-score.md`: ESLint, Pylint, golangci-lint, Biome
   - `coverage.md`: c8/nyc, coverage.py, go cover, cargo-tarpaulin
-  - `session-token-consumption.md`: agent session token footprint (stream-JSON parsing, causal gate via Skill-tool counting, optional per-artifact attribution) — applies the agent-session-harness machinery
+  - `session-token-consumption.md`: agent session token footprint (stream-JSON parsing, causal gate via Skill-tool counting, optional per-artifact attribution). Applies the agent-session-harness machinery
 
 **Output contract** (minimal):
 ```json
