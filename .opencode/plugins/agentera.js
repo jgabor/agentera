@@ -2,9 +2,9 @@
 // Provides SessionStart context preload, PostToolUse artifact validation, and Stop session bookmark.
 // Install: copy to ~/.config/opencode/plugins/agentera.js or .opencode/plugins/agentera.js
 
-const { execSync } = require("child_process");
-const fs = require("fs");
-const path = require("path");
+import { execSync } from "child_process";
+import fs from "fs";
+import path from "path";
 
 function resolveArtifacts(dir) {
   const docsPath = path.join(dir, ".agentera", "DOCS.md");
