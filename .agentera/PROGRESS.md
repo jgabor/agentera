@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 100 · 2026-04-11
+
+**Phase**: build
+**What**: Updated SPEC.md Section 21 with two new subsections per PLAN Task 1. "Corpus envelope format" specifies the top-level corpus.json structure: a metadata object (extracted_at, runtimes, adapter_version, families with per-family count/status/error, total_records, optional errors array) and a records array containing Section 21 normalized records with full provenance metadata. "Runtime probing convention" describes the probe-then-extract pattern: each runtime registers a probe function checking known filesystem paths, the corpus builder iterates probes, dispatches extractors for detected runtimes, and merges records additively. Also specifies no-runtime behavior (no output, informative exit). Regenerated all 12 contract files.
+**Commit**: pending
+**Inspiration**: Decision 26 (firm): multi-runtime corpus builder with self-describing envelope
+**Discovered**: None. The subsections landed cleanly between "Runtime extensions" and "Relation to Section 20" without structural conflicts. The `families` keys in the envelope use the record type names (instruction_document etc.), not the source family display names, for programmatic filtering consistency with the `source_kind` field on individual records.
+**Verified**: N/A: docs-only
+**Next**: Task 2 (refactor extract_all.py into multi-runtime corpus builder). Depends on Task 1, now complete.
+**Context**: intent (specify corpus envelope and runtime probing convention in SPEC.md Section 21 per PLAN Task 1) · constraints (SPEC.md only, no em-dashes, no hard wraps, no extract_all.py or SKILL.md changes) · unknowns (none) · scope (SPEC.md Section 21 two new subsections, 12 contract.md files regenerated, PLAN.md Task 1 status, PROGRESS.md cycle entry)
+
 ■ ## Cycle 99 · 2026-04-11
 
 **Phase**: build
