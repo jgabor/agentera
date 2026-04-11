@@ -723,6 +723,20 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Confidence**: firm
 **Feeds into**: TODO.md (ISS-37)
 
+## Decision 27 · 2026-04-11
+
+**Question**: Where should PROFILE.md and profilera's generated artifacts live by default, and how should runtime adapters provide path overrides?
+**Context**: PROFILE.md was stored at `~/.claude/profile/PROFILE.md`, coupling it to Claude Code's config directory. This triggers permission prompts when skills read it, doesn't work on Windows, and treats the profile as Claude Code's data rather than agentera's. The `PROFILERA_PROFILE_DIR` env var was added (Decision 26 implementation) but nothing sets it automatically.
+**Alternatives**:
+- [Keep ~/.claude/profile/ default] other runtimes override via env var, rejected: profile belongs to agentera not Claude Code, triggers permission prompts, not cross-platform
+- [Skill derives path from runtime detection] skill detects runtime and maps to path internally, rejected: breaks separation of concerns; the adapter should own path knowledge
+- [Shared config file mapping] a .agentera/runtime.json maps runtime to paths, rejected: unnecessary indirection for a single path
+- [General pattern for all Section 20 capabilities] every capability gets a PROFILERA_* env var, rejected: profile-path is the only capability that maps to a filesystem directory
+**Choice**: Default to XDG-standard data directory: `$XDG_DATA_HOME/agentera/` on Linux (default: `~/.local/share/agentera/`), `~/Library/Application Support/agentera/` on macOS, `%APPDATA%/agentera/` on Windows. Adapter plugins set `PROFILERA_PROFILE_DIR` at init to override. Auto-migrate existing profiles from `~/.claude/profile/` on first run. stdlib-only platform detection.
+**Reasoning**: The profile is agentera's data, not a runtime's. XDG is the standard for user application data on Linux; macOS and Windows have their own equivalents. Moving to an agentera-owned directory eliminates permission friction, enables cross-platform support, and removes the implicit Claude Code coupling. Auto-migration ensures existing users don't lose their profile. The env var remains the adapter injection point (set at plugin init), keeping the skill-adapter separation clean. Only profile-path needs this treatment; other Section 20 capabilities are about runtime mechanisms, not filesystem paths.
+**Confidence**: firm
+**Feeds into**: TODO.md
+
 ## Decision 28 · 2026-04-11
 
 **Question**: How should optimera handle measurement archetypes that go beyond thin command-wrapper harnesses, and what should the first such reference look like?
