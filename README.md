@@ -7,18 +7,49 @@
 
 <strong>Skill suite</strong> for autonomous software development.
 
-Install and type <code>/hej</code> to begin:
+</div>
+
+## Install
 
 ```bash
-npx skills add jgabor/agentera
+npx skills install -g jgabor/agentera
 ```
 
-<br>
+Installs all 12 skills for any supported runtime: Claude Code, OpenCode, Cursor, Codex, Gemini CLI, and [40+ others](https://skills.sh). Type `/hej` to begin.
 
-![](https://img.shields.io/badge/skills-12-444?style=flat-square)
-![](https://img.shields.io/badge/license-Apache_2.0-444?style=flat-square)
+### Lifecycle hooks (optional)
 
-</div>
+Hooks add session context preload, artifact validation, and session bookmarks. Without hooks, skills work independently; with hooks, they behave as a team.
+
+**Claude Code**: hooks auto-load from the installed skill directory. No extra step.
+
+**OpenCode**: copy the hook plugin:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \
+  -o ~/.config/opencode/plugins/agentera.js
+```
+
+### Alternative install methods
+
+**Claude Code plugin registry**: `claude plugin add jgabor/agentera`
+
+**Manual (git clone)**:
+
+```bash
+git clone git@github.com:jgabor/agentera.git ~/.agents/agentera
+```
+
+Then reference globally in your runtime's settings (Claude Code example):
+
+```json
+{
+  "skillPaths": ["~/.agents/agentera/skills"]
+}
+```
+
+> [!NOTE]
+> `profilera` mines runtime-specific session data and remains adapter-specific per the [Section 21 Session Corpus Contract](./SPEC.md). All other skills are fully portable. For OpenCode capability details, see [`references/adapters/opencode.md`](./references/adapters/opencode.md).
 
 ---
 
@@ -129,53 +160,3 @@ Three project-facing files at root, nine operational files in `.agentera/`.
 
 </details>
 
----
-
-<details>
-<summary><strong>Installing</strong></summary>
-
-<br>
-
-### All runtimes
-
-```bash
-npx skills install -g jgabor/agentera
-```
-
-Installs all 12 skills for any supported runtime: Claude Code, OpenCode, Cursor, Codex, Gemini CLI, and [40+ others](https://skills.sh). Skills are symlinked to `~/.agents/skills/` and auto-discovered by each runtime.
-
-### Enable lifecycle hooks (optional)
-
-Hooks add session context preload, artifact validation, and session bookmarks. Without hooks, skills work independently; with hooks, they behave as a team.
-
-**Claude Code**: hooks auto-load from the installed skill directory. No extra step.
-
-**OpenCode**: copy the hook plugin:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \
-  -o ~/.config/opencode/plugins/agentera.js
-```
-
-### Alternative install methods
-
-**Claude Code plugin registry**: `claude plugin add jgabor/agentera`
-
-**Manual (git clone)**:
-
-```bash
-git clone git@github.com:jgabor/agentera.git ~/.agents/agentera
-```
-
-Then reference globally in your runtime's settings (Claude Code example):
-
-```json
-{
-  "skillPaths": ["~/.agents/agentera/skills"]
-}
-```
-
-> [!NOTE]
-> `profilera` mines runtime-specific session data and remains adapter-specific per the [Section 21 Session Corpus Contract](./SPEC.md). All other skills are fully portable. For OpenCode capability details, see [`references/adapters/opencode.md`](./references/adapters/opencode.md).
-
-</details>
