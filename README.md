@@ -95,20 +95,23 @@ Every skill suggests what to do next when it finishes. You follow the thread, or
 Continuing from the `/hej` output above (task 7 blocked on an API schema decision):
 
 ```
-/resonera       deliberates on the API schema tradeoffs
-                writes Decision 8 → DECISIONS.md
+/resonera                                         decide
+├─ Deliberates on the API schema tradeoffs
+├─ Writes Decision 8 → DECISIONS.md
+└─ Suggests → /planera
 
-/planera        reads the decision, breaks remaining work into 4 tasks
-                writes PLAN.md with acceptance criteria
+/planera                                           plan
+├─ Reads the decision, breaks remaining work into 4 tasks
+├─ Each task gets behavioral acceptance criteria
+└─ Suggests → /orkestrera
 
-/orkestrera     executes the plan hands-free:
-                  task 7 → realisera builds → inspektera evaluates → pass
-                  task 8 → realisera builds → inspektera evaluates → pass
-                  task 9 → realisera builds → inspektera evaluates → fail → retry → pass
-                  task 10 → realisera builds → inspektera evaluates → pass
-                plan complete, health B+ → A-
-
-/inspektera     full audit: 0 critical, 1 warning, architecture A
+/orkestrera                                        execute
+├─ Task 7  → realisera builds → inspektera evaluates → PASS
+├─ Task 8  → realisera builds → inspektera evaluates → PASS
+├─ Task 9  → realisera builds → inspektera evaluates → FAIL → retry → PASS
+├─ Task 10 → realisera builds → inspektera evaluates → PASS
+├─ Plan complete. Runs full health audit.
+└─ Health: B+ → A-
 ```
 
 Each skill writes markdown artifacts (a vision, a plan, a health report, a decision log). The next skill reads what the last one wrote and acts on it. You don't manage these files; they build up naturally as you work. profilera watches how you make decisions and tunes every skill to your preferences over time.
