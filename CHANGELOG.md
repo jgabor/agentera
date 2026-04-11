@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- GitHub Actions CI workflow running spec linter and pytest on every push to main and pull request (closes ISS-31)
+
 ## [1.8.1] · 2026-04-11
 
 ### Fixed

@@ -3,7 +3,6 @@
 ## ⇶ Critical
 
 ## ⇉ Degraded
-- [ ] ISS-31: [test] Build test suite for the spec. Test coverage: 160 proportional tests across 9 files covering all 16 linter check functions, eval runner pure functions, all 5 skill scripts, and the contract generation script (145c637, 8b4e389, bdfdcc9, 02a3e0d, 1f4c250, 9bc13b7, 2c74305). Remaining: CI gating deferred
 
 ## → Normal
 
@@ -12,6 +11,7 @@
 - [ ] [refactor] analyze_progress.py::analyze() is 114 lines with 5-branch suggestion engine — extract helper per signal type if new signal added
 
 ## Resolved
+- [x] ~~ISS-31: [test] Build test suite + CI gating~~ · fixed in 145c637..ab4af08 (240 tests across 12 files; GitHub Actions workflow on push/PR)
 - [x] ~~ISS-36: [feat] Realisera and orkestrera reality verification gate (Section 19)~~ · fixed in 1145e6d..4ac09f0 plus plan-level freshness checkpoint
 - [x] ~~ISS-35: [fix] Spec-to-skill semantic drift across 12 duplication points~~ · fixed in 2b208f9..7a8f1b0
 - [x] ~~ISS-34: [feat] Plan-relative staleness detection (Decision 22)~~ · fixed in cd519b0..7e3255b
