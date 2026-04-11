@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [1.10.0] · 2026-04-11
+
+### Added
+- SPEC.md Section 21 corpus envelope format: metadata object (extracted_at, runtimes, adapter_version, families, total_records, errors) and records array with full provenance; runtime probing convention for multi-runtime extraction
+- Profilera extract_all.py refactored into multi-runtime corpus builder producing single corpus.json with Section 21 normalized records, runtime probing infrastructure, and old intermediate file cleanup
+- Self-validation step in corpus builder: validates required provenance fields and source_kind values before writing corpus.json
+- Corpus builder and validation tests for envelope generation, self-validation, runtime probing, provenance attachment, and old file cleanup
+
+### Changed
+- Profilera SKILL.md Steps 1-2 updated to consume unified corpus.json (run extract_all.py, read corpus.json, group by source_kind)
+- Version bumped to 1.10.0 (profilera 2.8.0)
+
 ## [1.9.0] · 2026-04-11
 
 ### Added
