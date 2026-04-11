@@ -53,6 +53,8 @@ Then reference globally in your runtime's settings (Claude Code example):
 
 ---
 
+## Getting started
+
 Type `/hej` and agentera reads your entire project (code, git history, open issues, health grades) and tells you where things stand:
 
 ```
@@ -80,9 +82,37 @@ Type `/hej` and agentera reads your entire project (code, git history, open issu
   suggested → ❈ /resonera (resolve API schema to unblock task 7)
 ```
 
+---
+
+## How it works
+
+Skills communicate through markdown files in your project: a vision doc, a plan, a health report, a decision log. Each skill reads what the others have written and acts on it. You don't manage these files; they build up naturally as you work.
+
 Every skill suggests what to do next when it finishes. You follow the thread, or run `/orkestrera` to execute an entire plan: it dispatches skills, evaluates each task with inspektera, retries failures, and loops until done.
 
----
+### Example workflow
+
+Continuing from the `/hej` output above (task 7 blocked on an API schema decision):
+
+```
+/resonera       deliberates on the API schema tradeoffs
+                writes Decision 8 → DECISIONS.md
+
+/planera        reads the decision, breaks remaining work into 4 tasks
+                writes PLAN.md with acceptance criteria
+
+/orkestrera     executes the plan hands-free:
+                  task 7 → realisera builds → inspektera evaluates → pass
+                  task 8 → realisera builds → inspektera evaluates → pass
+                  task 9 → realisera builds → inspektera evaluates → fail → retry → pass
+                  task 10 → realisera builds → inspektera evaluates → pass
+                plan complete, health B+ → A-
+
+/inspektera     full audit: 0 critical, 1 warning, architecture A
+```
+
+Each skill writes markdown artifacts (a vision, a plan, a health report, a decision log). The next skill reads what the last one wrote and acts on it. You don't manage these files; they build up naturally as you work. profilera watches how you make decisions and tunes every skill to your preferences over time.
+
 
 ## Skills
 
@@ -100,32 +130,6 @@ Every skill suggests what to do next when it finishes. You follow the thread, or
 |  ♾  | [profilera](./skills/profilera/)     | **Compounding memory.** Mines your decision patterns into a profile consumed by every skill, so the 20th cycle adapts to how you work in ways the 1st could not. |
 |  ◰  | [visualisera](./skills/visualisera/) | **Visualize.** Creates and maintains a visual identity system for your project.                                     |
 |  ⎈  | [orkestrera](./skills/orkestrera/) | **Orchestrate.** Dispatches skills as subagents, evaluates each with inspektera, loops through plans. |
-
-## How it works
-
-Skills communicate through markdown files in your project: a vision doc, a plan, a health report, a decision log. Each skill reads what the others have written and acts on it. You don't manage these files; they build up naturally as you work.
-
-```
-(simplified: each skill has additional cross-skill edges, see spec Section 7)
-
-                       🞔 hej
-                    (entry point)
-                     ↓ routes to
-                      ♾ profilera
-                  (compounding memory)
-                    ↓ consumed by all
-⛥ visionera ──→ ❈ resonera ──→ ≡ planera ──→ ⎈ orkestrera ──→ ⧉ realisera ←──→ ⎘ optimera
-  (envision)      (think)       (plan)        (orchestrate)     (build)          (tune)
-     ↕              ↑          ↑  ↑               ↕                 ↑
-  ◰ visualisera  ▤ dokumentera┘   │       ⛶ inspektera──────────────┘
-    (design)      (document)      │          (evaluate + audit)
-                  ⬚ inspirera ────┤
-                   (research)     ↓
-                         realisera, optimera,
-                         visionera, resonera
-```
-
-visionera writes a north star → planera reads it and creates tasks → orkestrera dispatches skills as subagents to execute the plan → realisera builds, inspektera audits, optimera tunes → findings feed back into the next planning cycle. profilera watches how you make decisions and tunes every skill to your preferences. The loop tightens over time.
 
 <details>
 <summary><strong>State artifacts reference</strong></summary>
