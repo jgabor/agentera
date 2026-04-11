@@ -1,5 +1,93 @@
 # Health
 
+## Audit 7 · 2026-04-10
+
+**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, test health, version health, artifact freshness, security hygiene
+**Findings**: 0 critical, 2 warnings, 4 info (0 filtered by confidence)
+**Overall trajectory**: ⮉ improving. Tests B→A (240 tests across 12 files, all 18 linter checks covered, extract_all.py now tested). Architecture A→A (CLAUDE.md stale path; all other dimensions clean). Security A, Coupling A, Version A.
+**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Tests [A] | Version [A] | Security [A] | Artifact freshness [A]
+
+### Architecture alignment: A
+
+README, SPEC.md, registry.json, and the 12-skill structure are fully aligned. The spec linter passes 0/0 across all 216 checks. All contract files current. One stale reference:
+
+#### ⇉ CLAUDE.md references `references/SPEC.md` instead of root `SPEC.md`, warning (confidence: 98)
+- **Location**: `CLAUDE.md:16`
+- **Evidence**: Layout block says `references/SPEC.md` but the file was renamed to root `SPEC.md` in Decision 23 (cycle 88). Code (validate_spec.py, generate_contracts.py, hooks) correctly references root path.
+- **Impact**: Misleading for contributors reading the layout block. Execution unaffected.
+- **Suggested action**: Update CLAUDE.md layout block and prose references to `SPEC.md`.
+
+### Pattern consistency: A
+
+All 12 skills have consistent frontmatter, cross-skill integration ("twelve-skill suite"), artifact path resolution, and safety rails sections. Platform annotations applied across 10 of 12 skills (profilera and visualisera are the other two with annotations). Two skills reference the profile script without annotation:
+
+#### ⇉ inspektera and planera reference effective_profile.py without `<!-- platform: profile-path -->` annotation, warning (confidence: 85)
+- **Location**: `skills/inspektera/SKILL.md`, `skills/planera/SKILL.md`
+- **Evidence**: Both skills include `python3 scripts/effective_profile.py` in their Step 1 workflow (profilera skill directory path). Seven other skills annotate this same reference with `<!-- platform: profile-path -->`. These two omit it.
+- **Impact**: Inconsistent annotation coverage. The linter does not flag un-annotated references (it validates annotation correctness, not annotation completeness).
+- **Suggested action**: Add `<!-- platform: profile-path -->` after the effective_profile references in both skills.
+
+### Coupling health: A
+
+Clean DAG import graph. No circular dependencies. All skill scripts self-contained (stdlib only). Hooks use subprocess boundary to scripts, not imports. Two minor observations:
+
+#### ⇢ validate_spec.py hardcodes 7+ skill-name constants, info (confidence: 80)
+- **Location**: `scripts/validate_spec.py:32-112,114-122,126-183,927-929`
+- **Evidence**: REQUIRED_REFS, ARTIFACT_CONTRACTS, SCRIPT_PATTERN_CONSUMERS, AUTONOMOUS_LOOP_SKILLS, REALITY_VERIFICATION_ENFORCERS, RECOGNIZED_CAPABILITIES all hardcode skill/capability names. Adding a 13th skill requires editing 4+ constants.
+- **Impact**: The linter will silently pass if a new skill is added but not registered. Not a current risk (no skills being added), but a maintenance burden.
+- **Suggested action**: Consider deriving REQUIRED_REFS keys from filesystem discovery in a future refactor.
+
+#### ⇢ Duplicated artifact path resolution in common.py and validate_artifact.py, info (confidence: 75)
+- **Location**: `hooks/common.py:40-92` vs `hooks/validate_artifact.py:115-174`
+- **Evidence**: Both implement artifact path resolution independently with slightly different logic. session_start and session_stop import common.py; validate_artifact.py does not.
+- **Impact**: Could diverge over time if resolution conventions change.
+- **Suggested action**: Extract shared resolution into common.py and import from validate_artifact.py if the hook runtime's import path permits.
+
+### Test health: A
+
+240 tests across 12 files, all passing. 18/18 linter check functions tested. All 8 skill scripts have dedicated test files (extract_all.py gap resolved since Audit 6). Test:production LOC ratio 1.02:1 (below code-crusher 2:1 gate but proportional per Decision 21). Two minor gaps:
+
+#### ⇢ hooks/common.py has no dedicated test file, info (confidence: 75)
+- **Location**: `hooks/common.py`
+- **Evidence**: 3 public functions (parse_artifact_mapping, resolve_artifact_path, load_artifact_overrides) tested indirectly through session_start (6 tests) and session_stop (5 tests) but no isolated assertions for all paths.
+- **Impact**: Failures in common.py would be harder to diagnose.
+- **Suggested action**: Add test_common.py for direct coverage.
+
+#### ⇢ validate_artifact.py::validate_skill_definition has no direct test, info (confidence: 70)
+- **Location**: `hooks/validate_artifact.py:265`
+- **Evidence**: The function runs validate_spec.py and generate_contracts.py as subprocesses. No test exercises this routing. The 7-line validate_spec_spec wrapper is also untested.
+- **Impact**: Low. The function orchestrates already-tested scripts.
+- **Suggested action**: Add an integration test that exercises the subprocess routing.
+
+### Version health: A
+
+All versions at 1.8.0 (profilera 2.7.0), consistent across 12 plugin.json, registry.json, and marketplace.json. The bump from 1.7.0 was performed in cycle 94 (8c83613). No unbumped feat/fix commits since the bump. CHANGELOG [1.8.0] promoted with date. Healthy.
+
+### Artifact freshness: A
+
+No active PLAN.md (archived in cycle 95). Using PROGRESS.md fallback: PROGRESS.md, HEALTH.md, and CHANGELOG.md all modified 2026-04-10 (current). DECISIONS.md modified 2026-04-10 (Decision 23). DESIGN.md last modified 2026-04-02, which predates the Platform Portability plan, but visualisera was not dispatched during that plan. Not stale per the fallback heuristic.
+
+### Security hygiene: A
+
+Zero hardcoded secrets. Zero eval/exec/os.system/shell=True. All 5 subprocess calls use list-form arguments with hardcoded values. No injection vectors. Python stdlib only; no external dependencies to audit.
+
+> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), npm audit (Node), govulncheck (Go), or similar static analysis and vulnerability scanning tools appropriate to your stack.
+
+### Trends vs Audit 6
+
+- **Improved**: Tests B→A (171→240 tests, 7→12 files, extract_all.py gap closed, 18/18 check functions covered). Version health stable at A through three bumps (1.5.0→1.8.0).
+- **Degraded**: None.
+- **New findings**: CLAUDE.md stale path (Decision 23 rename missed). Two skills missing platform annotations (new convention from Section 20).
+- **Resolved**: extract_all.py untested (now has test_extract_all.py with 320 LOC). DOCS.md stale references (fixed by dokumentera Audit 7 earlier this session).
+
+### Patterns Observed
+
+- **Module structure**: 12 skills in skills/<name>/, each with SKILL.md as single source of truth. Scripts (stdlib only) in skills/<name>/scripts/. Contract files generated from SPEC.md.
+- **Hook architecture**: Clean subprocess boundary between hooks and scripts. Hooks share common.py for path resolution. validate_artifact.py stands alone.
+- **Testing approach**: Decision 21 proportionality (1 pass + 1 fail per unit). Synthetic markdown test data. Minimal mocking. conftest.py loads scripts via importlib.
+- **Dependency management**: Zero external dependencies. All Python scripts use stdlib only. No package manager needed.
+- **Version management**: Conventional commits drive semver bumps per DOCS.md policy. Linter constants are the main coupling point for skill-name registration.
+
 ## Audit 6 · 2026-04-02
 
 **Dimensions assessed**: test health, architecture alignment, version health (patterns and coupling carried forward from Audit 5)

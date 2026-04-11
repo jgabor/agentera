@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-03 (post-1.6.0) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-10 (post-1.8.0) -->
 
 ## Conventions
 
@@ -43,21 +43,21 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 | Document | Path | Last Updated | Status |
 |----------|------|-------------|--------|
-| README | README.md | 2026-04-02 | ■ current |
+| README | README.md | 2026-04-10 | ■ current |
 | CLAUDE.md | CLAUDE.md | 2026-04-02 | ■ current |
 | Decisions | .agentera/DECISIONS.md | 2026-04-02 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
-| Progress | .agentera/PROGRESS.md | 2026-04-02 | ■ current |
+| Progress | .agentera/PROGRESS.md | 2026-04-10 | ■ current |
 | TODO | TODO.md | 2026-04-02 | ■ current |
-| Changelog | CHANGELOG.md | 2026-04-02 | ■ current |
+| Changelog | CHANGELOG.md | 2026-04-10 | ■ current |
 | Health | .agentera/HEALTH.md | 2026-04-02 | ■ current |
-| Plan | .agentera/PLAN.md | 2026-04-02 | ■ current (archived) |
-| DOCS | .agentera/DOCS.md | 2026-04-02 | ■ current |
+| Plan | .agentera/PLAN.md | 2026-04-10 | ■ current (archived) |
+| DOCS | .agentera/DOCS.md | 2026-04-10 | ■ current |
 | Design | .agentera/DESIGN.md | 2026-04-02 | ■ current |
-| Ecosystem spec | references/the spec.md | 2026-04-02 | ■ current |
+| Ecosystem spec | SPEC.md | 2026-04-10 | ■ current |
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
-| Registry | registry.json | 2026-04-02 | ■ current |
-| Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-02 | ■ current |
+| Registry | registry.json | 2026-04-10 | ■ current |
+| Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-10 | ■ current |
 | Hooks registry | hooks/hooks.json | 2026-04-03 | ■ current |
 | SessionStart hook | hooks/session_start.py | 2026-04-03 | ■ current |
 | Session stop hook | hooks/session_stop.py | 2026-04-03 | ■ current |
@@ -70,9 +70,16 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 233 tests across 10 files; extract_all.py untested; CI gating deferred
+- **Tests**: 240 tests across 12 files; extract_all.py untested; CI gating deferred
 
 ## Audit Log
+
+### 2026-04-10 (Audit 7, post-1.8.0)
+
+- [stale] DOCS.md Index "Ecosystem spec" path said `references/the spec.md`, renamed to SPEC.md at repo root in Decision 23 · critical (fixed)
+- [stale] DOCS.md Coverage test count said 233 across 10 files, actual is 240 across 12 files (+4 platform-annotation tests, +generate_contracts and hook tests) · warning (fixed)
+- [stale] DOCS.md Index dates for 7 entries showed 2026-04-02/03, updated to 2026-04-10 for files changed by Platform Portability plan · warning (fixed)
+- [stale] DOCS.md last audit date said 2026-04-03 post-1.6.0, now post-1.8.0 · info (fixed)
 
 ### 2026-04-03 (Audit 6, post-1.6.0)
 
