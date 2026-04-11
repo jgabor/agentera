@@ -4,3 +4,6 @@ docs/
 __pycache__/
 *.pyc
 .planera/
+.optimera/runs/
+.optimera/vehicle/claude
+.optimera/vehicle/.image-built

@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /opt/bench/log_reads.py"
+          }
+        ]
+      }
+    ]
+  }
+}
