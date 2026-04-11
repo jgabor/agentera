@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 97 · 2026-04-11
+
+**Phase**: build
+**What**: Added `.github/workflows/ci.yml` — GitHub Actions CI wiring `python3 scripts/validate_spec.py` and `python3 -m pytest tests/ -q` on push to main and pull requests. Closes ISS-31 after four deferrals. Light plan (PLAN.md archived).
+**Commit**: ab4af08 ci: add GitHub Actions workflow for ISS-31
+**Inspiration**: None needed; standard GitHub Actions Python pattern.
+**Discovered**: Nothing unexpected. Workflow file is 20 lines. Zero external dependencies (stdlib only, no pip step). The `ci:` commit type isn't in the conventional commits vocabulary used here, but maps clearly to chore/build-config for semver purposes (no bump).
+**Verified**: N/A: chore-build-config (CI config file; local equivalents confirmed: validate_spec.py 0 errors, pytest 240 passed in 0.17s)
+**Next**: TODO.md is clean (no critical, no degraded). Annoying tier: two complexity refactors (check_severity_levels nesting, analyze_progress size). Vision-driven work is next or a complexity refactor if that's the priority.
+**Context**: intent (close ISS-31: wire existing 240 tests to GitHub Actions CI) · constraints (stdlib only, no pip, no version bump) · unknowns (none) · scope (.github/workflows/ci.yml only)
+
 ■ ## Cycle 96 · 2026-04-11
 
 **Phase**: build
@@ -99,18 +110,9 @@
 **Next**: Task 2 (Session Corpus Contract), Task 3 (annotation audit), Task 4 (OpenCode adapter).
 **Context**: intent (rename spec and contract files, drop "ecosystem" prefix per Decision 23) · constraints (0 new linter errors, all tests pass, regenerate contracts) · unknowns (none) · scope (SPEC.md, 12 contract.md files, 2 Python scripts, 12 SKILL.md files, manifests, all project docs)
 
-■ ## Cycle 87 · 2026-04-10
-
-**Phase**: build
-**What**: Added Section 20 (Host Adapter Contract) to SPEC.md defining six runtime capabilities for the portable core: skill discovery, artifact resolution, profile path, sub-agent dispatch, eval mechanism, hook lifecycle. Portability-status table distinguishes portable core, capability-gated, and host-specific extension. Profilera explicitly scoped as Claude-adapter-specific. Introduced `<!-- platform: capability-name -->` annotation convention. Regenerated all 12 contract files.
-**Commit**: pending
-**Inspiration**: OpenCode discovers skills from multiple paths, confirming multi-platform skill discovery is achievable without structural changes. Host adapter pattern draws from extism/WASI capability model.
-**Discovered**: Profilera is the deepest behavioral coupling point, not just a path reference. The spec now scopes the portable-core claim honestly.
-**Verified**: `python3 scripts/validate_spec.py`: 0 errors, 0 warnings. `python3 -m pytest tests/ -q`: 236 passed. `python3 scripts/generate_contracts.py --check`: all 12 current. Section 20 content verified: requirement levels, portability-status table, profile read convention updated.
-**Next**: Task 2 (Session Corpus Contract), Task 3 (annotation audit), Task 4 (OpenCode adapter design).
-**Context**: intent (define Section 20 Host Adapter Contract honestly with portable-core boundary) · constraints (no changes to current Claude Code experience, spec extends only) · unknowns (what a session-corpus contract should look like) · scope (SPEC.md Section 20, PROFILE.md path refs, 12 contract files)
-
 ## Archived Cycles
+
+Cycle 87 (2026-04-10): Added Section 20 (Host Adapter Contract) to SPEC.md; six capabilities, portability-status table, `<!-- platform: -->` annotation convention
 
 Cycle 86 (2026-04-08): Plan rollup for ISS-36, CHANGELOG promoted to 1.7.0, plan archived
 Cycle 85 (2026-04-07): Version bump 1.6.0 → 1.7.0 (profilera 2.5.0 → 2.6.0)
