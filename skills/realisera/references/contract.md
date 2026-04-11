@@ -1,7 +1,7 @@
 <!-- contract: realisera -->
-<!-- source: SPEC.md (sha256: af1c543aa5c2a12b1c3a3ad970cd72bf2c9c58320923f4470ccb484c7d44b0be) -->
+<!-- source: SPEC.md (sha256: 8c5a8cabb5c14b0ce90c1265babfcc0039a14032de2c0a39fba806f421fb2f0b) -->
 <!-- sections: 1, 2, 3, 4, 5, 6, 11, 17, 18, 19 -->
-<!-- generated: 2026-04-10T18:53:31Z -->
+<!-- generated: 2026-04-11T11:37:00Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 

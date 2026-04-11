@@ -1,0 +1,106 @@
+# Plan: Implement Section 21 Session Corpus Contract
+
+<!-- Level: full | Created: 2026-04-11 | Status: active -->
+<!-- Reviewed: 2026-04-11 | Critic issues: 10 found, 6 addressed, 4 dismissed -->
+
+## What
+Implement the Session Corpus Contract (SPEC.md Section 21) by: updating the spec to include a corpus envelope format, refactoring extract_all.py into a multi-runtime corpus builder that produces a single self-describing corpus.json with Section 21 normalized records, adding self-validation, updating profilera's SKILL.md to consume the unified corpus, and adding test coverage.
+
+## Why
+Section 21 defines a normalized data model for profilera's extraction pipeline, but nothing produces or consumes those normalized records. extract_all.py goes directly from Claude Code internals to four ad-hoc intermediate JSON files, creating spec-code drift and blocking portability. Decision 26 (firm) mandates closing this gap with a multi-runtime corpus builder.
+
+## Constraints
+- stdlib only for all Python scripts
+- Claude Code extractor functions stay Claude-Code-specific; multi-runtime probing wraps them (future runtimes add their own extractors)
+- Profilera Steps 3-5 (categorize, generate, validate) are NOT in scope
+- OpenCode extraction implementation is out of scope; only the probing infrastructure goes in
+- Linter must pass 0/0 after all changes
+- All existing tests must continue passing
+
+## Scope
+**In**: Section 21 envelope spec, extract_all.py refactor, self-validation, SKILL.md Steps 1-2 update, test coverage, contract regeneration, version bump
+**Out**: OpenCode extraction implementation (future adapter task), corpus compression (future optimization per Decision 26), changes to profilera Steps 3-5
+**Deferred**: OpenCode adapter extraction, corpus size optimization
+
+## Design
+SPEC.md Section 21 gains a "Corpus format" subsection specifying the JSON envelope: a metadata object (runtime identifiers, extraction timestamp, per-family counts and status, errors) alongside a records array.
+
+extract_all.py is refactored into a corpus builder that: (a) probes for available runtime data directories, (b) runs the appropriate extractors for each detected runtime, (c) attaches Section 21 provenance metadata to every record, (d) merges all records into a single corpus.json with a metadata envelope. The `--output-dir` flag remains; the output is `{dir}/corpus.json` instead of four separate files. Old intermediate files are cleaned up when the corpus is written. Self-validation is a separate step that checks each record for required provenance fields and valid source_kind values before writing.
+
+The existing Claude Code extractor functions remain Claude-Code-specific. The probing infrastructure wraps them: when Claude Code data is detected, the Claude Code extractors run. Future runtimes would add their own extractor functions registered with the prober. This is aspirational scaffolding; only the Claude Code path is exercised today.
+
+SKILL.md Steps 1-2 simplify: run extract_all.py, read corpus.json, group records by source_kind.
+
+## Tasks
+
+### Task 1: Update SPEC.md Section 21 with corpus envelope format
+**Depends on**: none
+**Status**: ■ complete
+**Acceptance**:
+▸ GIVEN SPEC.md Section 21 WHEN reading the corpus format subsection THEN the envelope structure is fully specified: required metadata fields, records array schema, required vs optional provenance fields
+▸ GIVEN SPEC.md Section 21 WHEN reading the runtime probing convention THEN the mechanism for detecting available runtimes is described
+▸ GIVEN the updated SPEC.md WHEN running the linter THEN 0 errors, 0 warnings
+▸ GIVEN the updated SPEC.md WHEN regenerating contracts THEN all 12 contract files are regenerated successfully
+
+### Task 2: Refactor extract_all.py into multi-runtime corpus builder
+**Depends on**: Task 1
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN extract_all.py WHEN running with `--output-dir` THEN a single corpus.json is produced in the specified directory (not four separate files)
+▸ GIVEN the corpus.json output WHEN inspecting its structure THEN it has a top-level metadata object and a records array
+▸ GIVEN the corpus.json records WHEN inspecting any record THEN it has all required Section 21 provenance fields
+▸ GIVEN extract_all.py WHEN running on a system with Claude Code data THEN records carry the appropriate runtime identifier and source_kind values
+▸ GIVEN the output directory WHEN corpus.json is written THEN any old intermediate files (crystallized.json, history_decisions.json, conversation_decisions.json, project_configs.json, extraction_summary.json) are cleaned up
+▸ GIVEN extract_all.py WHEN running on a system with no recognizable runtime data THEN it exits gracefully with an informative message
+
+### Task 3: Add self-validation to extract_all.py
+**Depends on**: Task 2
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN the corpus builder WHEN all records are well-formed THEN self-validation passes and corpus.json is written
+▸ GIVEN the corpus builder WHEN a record is missing required provenance fields THEN self-validation catches the error and reports it before writing
+▸ GIVEN the corpus builder WHEN a record has an unrecognized source_kind THEN self-validation flags it as a warning (extensions are permitted but noted)
+
+### Task 4: Update profilera SKILL.md Steps 1-2 to consume corpus
+**Depends on**: Task 2
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN profilera SKILL.md Step 1 WHEN reading the extraction instructions THEN they reference corpus.json as the output
+▸ GIVEN profilera SKILL.md Step 2 WHEN reading the data consumption instructions THEN they describe reading corpus.json and grouping by source_kind
+▸ GIVEN the updated SKILL.md WHEN running the linter THEN 0 errors, 0 warnings
+▸ GIVEN the updated SKILL.md WHEN regenerating contracts THEN profilera's contract is updated
+
+### Task 5: Add tests for corpus builder and validation
+**Depends on**: Tasks 2, 3
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN the test suite WHEN running all tests THEN existing tests still pass and new corpus builder tests pass
+▸ GIVEN a test for corpus envelope WHEN the corpus builder runs against test fixtures THEN the output has the expected metadata + records structure
+▸ GIVEN a test for self-validation WHEN a record with missing provenance fields is validated THEN the validation catches the error
+▸ GIVEN a test for runtime probing WHEN a mock filesystem has recognizable runtime data THEN the prober detects the runtime
+▸ GIVEN a test for runtime probing WHEN no runtime data directories exist THEN the prober returns an empty list
+▸ Test proportionality: 1 pass + 1 fail per testable unit. Testable units: corpus envelope generation, self-validation, runtime probing, provenance attachment, old file cleanup. ~12 new tests.
+
+### Task 6: Version bump per DOCS.md convention
+**Depends on**: Tasks 1, 2, 3, 4, 5
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN feat commits from this plan WHEN bumping version per DOCS.md semver_policy THEN minor version is incremented across version_files (collection version for SPEC.md change, profilera version for skill-specific changes)
+▸ GIVEN the version bump WHEN checking version_files THEN all versions are updated consistently per the project's established bump convention
+
+### Task 7: Plan-level freshness checkpoint
+**Depends on**: Task 6
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN this plan's work has shipped WHEN CHANGELOG.md is checked THEN it has Added/Changed/Fixed entries under [Unreleased] covering each task's user-visible impact
+▸ GIVEN this plan is otherwise complete WHEN PROGRESS.md is checked THEN it has at least one cycle entry whose What field summarizes the plan and whose Commits field lists the commits this plan produced
+▸ GIVEN this plan is otherwise complete WHEN TODO.md is checked THEN ISS-37 is marked resolved with commit references
+▸ GIVEN this plan resolved any prior HEALTH.md findings WHEN HEALTH.md is read THEN those findings are noted as resolved or mentioned in the PROGRESS.md Discovered field
+
+## Overall Acceptance
+▸ GIVEN the complete implementation WHEN profilera runs a full extraction THEN it produces a single corpus.json with Section 21 normalized records and provenance metadata
+▸ GIVEN the complete implementation WHEN a future runtime adapter adds records with a different runtime value THEN corpus.json aggregates them alongside existing records
+▸ GIVEN the complete implementation WHEN running the linter and test suite THEN 0 errors, 0 warnings, all tests pass
+
+## Surprises
+[Empty; populated by realisera during execution when reality diverges from plan]

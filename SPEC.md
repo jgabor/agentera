@@ -1072,6 +1072,108 @@ When the Claude Code adapter encounters memory files, it emits them as instructi
 - `scope`: `"project"` (memory files are project-scoped)
 - `name`: derived from the memory file's frontmatter or filename
 
+### Corpus envelope format
+
+The extraction pipeline produces a single `corpus.json` file containing all extracted records and their metadata. This is the canonical output of any adapter's corpus extraction, replacing any prior multi-file output layout.
+
+#### Top-level structure
+
+```json
+{
+  "metadata": { ... },
+  "records": [ ... ]
+}
+```
+
+Both fields are required. A valid corpus file always contains exactly these two top-level keys.
+
+#### Metadata object
+
+The metadata object describes the extraction run, not the records themselves. It provides enough context for consumers to understand what runtimes contributed, how many records were produced, and whether any errors occurred.
+
+| Field | Required | Type | Purpose |
+|-------|----------|------|---------|
+| `extracted_at` | Yes | string (ISO 8601) | When the extraction ran |
+| `runtimes` | Yes | array of string | Runtime identifiers that were probed and found available (e.g., `["claude-code"]`) |
+| `adapter_version` | Yes | string | Version of the corpus builder that produced this file |
+| `families` | Yes | object | Per-source-family extraction summary (see below) |
+| `total_records` | Yes | integer | Total number of records in the `records` array |
+| `errors` | No | array of string | Human-readable error messages from extraction failures; omitted when empty |
+
+The `families` object has one key per source family name (matching the four portable family names from the Source families table: `instruction_document`, `history_prompt`, `conversation_turn`, `project_config_signal`). Each value is an object:
+
+| Field | Required | Type | Purpose |
+|-------|----------|------|---------|
+| `count` | Yes | integer | Number of records extracted for this family |
+| `status` | Yes | string | `"ok"`, `"partial"`, or `"missing"` |
+| `error` | No | string | Explanation when status is `"partial"` or `"missing"`; omitted when `"ok"` |
+
+A family with status `"ok"` extracted all records successfully. `"partial"` means some records were extracted but errors occurred during extraction. `"missing"` means the family could not be extracted at all (e.g., the runtime data directory was not found).
+
+#### Records array
+
+The `records` array contains all extracted records in no guaranteed order. Each element is a JSON object that conforms to one of the four portable record types (or a runtime extension type) defined earlier in this section. Every record carries the full provenance metadata fields from the Provenance metadata table above.
+
+Consumers filter and group records by `source_kind` to access specific families. The `runtime` field on each record identifies which adapter produced it, enabling cross-runtime corpus aggregation.
+
+#### Envelope example
+
+```json
+{
+  "metadata": {
+    "extracted_at": "2026-04-11T14:30:00Z",
+    "runtimes": ["claude-code"],
+    "adapter_version": "2.7.0",
+    "families": {
+      "instruction_document": {"count": 12, "status": "ok"},
+      "history_prompt": {"count": 87, "status": "ok"},
+      "conversation_turn": {"count": 234, "status": "ok"},
+      "project_config_signal": {"count": 5, "status": "ok"}
+    },
+    "total_records": 338,
+    "errors": []
+  },
+  "records": [
+    {
+      "source_id": "claude-md-global-abc123",
+      "timestamp": "2026-04-10T09:00:00Z",
+      "project_id": "global",
+      "source_kind": "instruction_document",
+      "runtime": "claude-code",
+      "adapter_version": "2.7.0",
+      "doc_type": "claude_md",
+      "name": "CLAUDE.md (global)",
+      "content": "...",
+      "scope": "global"
+    }
+  ]
+}
+```
+
+### Runtime probing convention
+
+Before extracting records, the corpus builder probes for available runtimes by checking known filesystem paths. This probe-then-extract pattern decouples runtime detection from record extraction: the prober identifies which runtimes have data on the current system, then the builder dispatches the appropriate adapter for each detected runtime.
+
+#### Probe mechanism
+
+Each runtime registers a probe function that checks for the existence of its data directory. The probe returns a boolean indicating whether that runtime's data is available on the current system.
+
+| Runtime | Probe path | What it checks |
+|---------|-----------|----------------|
+| Claude Code | `~/.claude/` | Directory exists and contains session data (e.g., `projects/` subdirectory or `history.jsonl`) |
+
+Future runtimes add their own probe entries. The corpus builder iterates all registered probes, collects the list of available runtimes, and runs their extractors. Runtimes that are not detected are skipped without error.
+
+#### Multi-runtime aggregation
+
+When multiple runtimes are detected, the corpus builder runs each runtime's extractor independently and merges all records into a single `records` array. The `runtime` field on each record identifies its origin. The `metadata.runtimes` array lists all runtimes that contributed records.
+
+This aggregation is additive: records from different runtimes coexist in the same corpus without deduplication across runtimes. The `source_id` field ensures idempotent re-extraction within a single runtime; cross-runtime deduplication is not performed because the same logical signal (e.g., a user preference) may appear in different forms across runtimes and both forms carry signal value.
+
+#### No-runtime behavior
+
+When no registered runtime is detected (all probes return false), the corpus builder produces no output and exits with an informative message. It does not produce an empty corpus file: an empty corpus has no consumers and would mask a configuration problem.
+
 ### Relation to Section 20
 
 Section 20 defines the six host adapter capabilities for the portable core. Section 21 defines the data contract that lifts profilera from a host-specific extension to a capability-gated skill. Once a host adapter implements corpus extraction that produces the normalized record types above, profilera can run on that runtime without depending on Claude Code's internal storage layout.
