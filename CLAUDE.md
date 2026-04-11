@@ -13,7 +13,7 @@ skills/<name>/SKILL.md               # Frontmatter + full workflow (the skill it
 skills/<name>/references/            # Supplementary docs, templates, schemas
 skills/<name>/scripts/               # Python helpers (stdlib only, no pip deps)
 skills/<name>/.claude-plugin/plugin.json  # Per-skill marketplace plugin manifest
-references/SPEC.md         # Shared primitives spec (all skills must align)
+SPEC.md                    # Shared primitives spec (all skills must align)
 scripts/validate_spec.py        # Ecosystem linter
 scripts/eval_skills.py               # Tier 2 eval runner (smoke-tests skills via claude -p)
 hooks/hooks.json                     # Hook registry (SessionStart, Stop, PostToolUse)
@@ -50,7 +50,7 @@ python3 skills/optimera/scripts/analyze_experiments.py
 python3 skills/realisera/scripts/analyze_progress.py
 ```
 
-The repo-level `scripts/validate_spec.py` checks all 12 SKILL.md files against `references/SPEC.md`. Run from the repo root:
+The repo-level `scripts/validate_spec.py` checks all 12 SKILL.md files against `SPEC.md`. Run from the repo root:
 ```bash
 python3 scripts/validate_spec.py
 ```
@@ -67,7 +67,7 @@ python3 scripts/eval_skills.py --parallel 3        # test all skills, 3 at a tim
 The PostToolUse hook (`hooks/validate_artifact.py`) validates artifact writes in real time. It runs automatically when Claude edits or writes files, routing to the appropriate validator:
 - Operational artifacts (`.agentera/*.md`, root artifacts): structural validation (required headings, markdown well-formedness, token budgets)
 - Skill definitions (`skills/*/SKILL.md`): spec alignment checks via `scripts/validate_spec.py` and context freshness via `scripts/generate_contracts.py --check`
-- Ecosystem spec (`references/SPEC.md`): context freshness check
+- Ecosystem spec (`SPEC.md`): context freshness check
 
 The linter can also be run manually from the repo root:
 ```bash
@@ -77,10 +77,10 @@ python3 scripts/validate_spec.py
 ## Key conventions
 
 - SKILL.md is the single source of truth for each skill's behavior: workflow steps, trigger patterns, output format, safety rails, and cross-skill integration are all defined there
-- Shared primitives (confidence scale, severity levels, completion status protocol, escalation discipline, structural conventions) are defined in `references/SPEC.md`. All SKILL.md files must align with this spec
+- Shared primitives (confidence scale, severity levels, completion status protocol, escalation discipline, structural conventions) are defined in `SPEC.md`. All SKILL.md files must align with this spec
 - Skills never push to remote repos or modify VISION.md/OBJECTIVE.md during execution cycles
 - Conventional commits: feat/fix/docs/refactor/chore/test
 - realisera and optimera dispatch implementation work to Sonnet agents in worktrees, then verify before committing
 - orkestrera dispatches any skill as a subagent for plan-driven multi-cycle execution with inspektera evaluation gating
-- Visual identity system defined in `references/SPEC.md` Section 12: skill glyphs, semantic tokens (status, severity, confidence, trend), and composition rules that all skills and artifact templates follow
+- Visual identity system defined in `SPEC.md` Section 12: skill glyphs, semantic tokens (status, severity, confidence, trend), and composition rules that all skills and artifact templates follow
 - Versioning convention in DOCS.md: `version_files` lists what to bump, `semver_policy` maps commit types to bump levels. Planera flags bump-worthy plans, inspektera checks for unbumped changes, realisera executes bumps

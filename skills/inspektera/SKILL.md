@@ -79,7 +79,7 @@ Read HEALTH.md, TODO.md, and PROGRESS.md in parallel. These reads are independen
 5c. **Plan context** (for artifact freshness): if PLAN.md exists, read its metadata comment for the `Created` date and scan task statuses for dispatched skills. This provides the plan-relative staleness baseline for the Artifact freshness dimension. If PLAN.md is absent or has no `Created` date, note that plan context is unavailable; the fallback heuristic will apply.
 6. **Decision profile**: run from the profilera skill directory:
    ```bash
-   python3 scripts/effective_profile.py
+   python3 scripts/effective_profile.py <!-- platform: profile-path -->
    ```
    Calibrates what "healthy" means for this user per contract profile consumption conventions. If missing, proceed without persona grounding.
 7. **Project discovery**: map directory structure, read dependency manifests, README, CLAUDE.md, identify language/stack/build commands, `git log --oneline -20`

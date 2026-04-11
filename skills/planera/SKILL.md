@@ -83,7 +83,7 @@ Read VISION.md, DECISIONS.md, and TODO.md in parallel. These reads are independe
 5. **PROGRESS.md**: what was built recently (if exists)
 6. **Decision profile**: run from the profilera skill directory:
    ```bash
-   python3 scripts/effective_profile.py
+   python3 scripts/effective_profile.py <!-- platform: profile-path -->
    ```
    Use it to calibrate planning depth, pattern preferences, and constraint priorities per contract profile consumption conventions.
    If the script or PROFILE.md is missing, proceed without persona grounding.
