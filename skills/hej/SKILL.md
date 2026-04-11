@@ -45,7 +45,9 @@ Note: PROFILE.md is global, not project-scoped. Its path is provided by the host
 
 ### Contract
 
-Before starting, read `references/contract.md` (relative to this skill's directory) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
+Contract values used in this skill are inlined where referenced: severity arrows `⇶/⇉/→/⇢`, trend arrows `⮉/⮋`, skill glyphs `⛥ ❈ ⬚ ≡ ⧉ ⎘ ⛶ ▤ ♾ ◰ ⎈`, and the plan-relative staleness heuristic (fall back to PROGRESS.md recency when no plan context exists). No upfront file read is required.
+
+`references/contract.md` remains available as a full-spec reference: consult it for ambiguous cases, explicit cross-checking against SPEC.md, or when you suspect drift between these inlined values and the canonical spec.
 
 ---
 
