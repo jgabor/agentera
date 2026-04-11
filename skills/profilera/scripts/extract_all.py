@@ -56,6 +56,24 @@ _LEGACY_PROFILE_DIR = CLAUDE_DIR / "profile"
 ADAPTER_VERSION = "2.6.0"
 RUNTIME_CLAUDE_CODE = "claude-code"
 
+# Section 21 provenance metadata: required fields on every record
+_REQUIRED_PROVENANCE_FIELDS = (
+    "source_id",
+    "timestamp",
+    "project_id",
+    "source_kind",
+    "runtime",
+    "adapter_version",
+)
+
+# Section 21 portable source_kind values
+_PORTABLE_SOURCE_KINDS = frozenset({
+    "instruction_document",
+    "history_prompt",
+    "conversation_turn",
+    "project_config_signal",
+})
+
 # Old intermediate files to clean up when corpus.json is written
 _LEGACY_FILES = (
     "crystallized.json",
@@ -789,18 +807,67 @@ def _cleanup_legacy_files(output_dir: Path) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Self-validation (Section 21 provenance contract)
+# ---------------------------------------------------------------------------
+
+
+def validate_corpus(records: list[dict]) -> tuple[list[str], list[str]]:
+    """Validate corpus records against the Section 21 provenance contract.
+
+    Checks every record for:
+    - Required provenance fields (source_id, timestamp, project_id,
+      source_kind, runtime, adapter_version). Missing fields are errors.
+    - Recognized source_kind values. Unrecognized values are warnings
+      (runtime extensions are permitted but noted).
+
+    Returns (errors, warnings) where each is a list of human-readable
+    messages. An empty errors list means all records are well-formed.
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    for i, record in enumerate(records):
+        # Check required provenance fields
+        missing = [
+            field for field in _REQUIRED_PROVENANCE_FIELDS
+            if field not in record or record[field] == ""
+        ]
+        if missing:
+            source_id = record.get("source_id", f"record[{i}]")
+            errors.append(
+                f"Record {source_id}: missing required provenance "
+                f"fields: {', '.join(missing)}"
+            )
+
+        # Check source_kind is a recognized portable value
+        kind = record.get("source_kind", "")
+        if kind and kind not in _PORTABLE_SOURCE_KINDS:
+            source_id = record.get("source_id", f"record[{i}]")
+            warnings.append(
+                f"Record {source_id}: unrecognized source_kind "
+                f"'{kind}' (runtime extension)"
+            )
+
+    return errors, warnings
+
+
+# ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
 
 
-def build_corpus() -> dict:
-    """Run all extractors and return the corpus envelope.
+def build_corpus() -> tuple[dict, list[str], list[str]]:
+    """Run all extractors, validate, and return the corpus envelope.
 
-    Returns a dict with top-level ``metadata`` and ``records`` keys. If no
-    runtime data is detected, returns an empty dict.
+    Returns ``(corpus, errors, warnings)`` where *corpus* is a dict with
+    top-level ``metadata`` and ``records`` keys, *errors* is a list of
+    validation error messages (missing required provenance fields), and
+    *warnings* is a list of validation warning messages (unrecognized
+    source_kind values). If no runtime data is detected, returns
+    ``({}, [], [])``.
     """
     if not _probe_claude_code():
-        return {}
+        return {}, [], []
 
     all_records: list[dict] = []
     families: dict[str, dict] = {}
@@ -815,7 +882,7 @@ def build_corpus() -> dict:
         all_records.extend(records)
         families[kind] = {"count": len(records), "status": "ok"}
     except Exception as exc:
-        families[kind] = {"count": 0, "status": "error", "error": str(exc)}
+        families[kind] = {"count": 0, "status": "missing", "error": str(exc)}
         errors.append(f"{kind}: {exc}")
 
     # Family: history_prompt
@@ -826,7 +893,7 @@ def build_corpus() -> dict:
         all_records.extend(records)
         families[kind] = {"count": len(records), "status": "ok"}
     except Exception as exc:
-        families[kind] = {"count": 0, "status": "error", "error": str(exc)}
+        families[kind] = {"count": 0, "status": "missing", "error": str(exc)}
         errors.append(f"{kind}: {exc}")
 
     # Family: conversation_turn
@@ -837,7 +904,7 @@ def build_corpus() -> dict:
         all_records.extend(records)
         families[kind] = {"count": len(records), "status": "ok"}
     except Exception as exc:
-        families[kind] = {"count": 0, "status": "error", "error": str(exc)}
+        families[kind] = {"count": 0, "status": "missing", "error": str(exc)}
         errors.append(f"{kind}: {exc}")
 
     # Family: project_config_signal
@@ -848,8 +915,11 @@ def build_corpus() -> dict:
         all_records.extend(records)
         families[kind] = {"count": len(records), "status": "ok"}
     except Exception as exc:
-        families[kind] = {"count": 0, "status": "error", "error": str(exc)}
+        families[kind] = {"count": 0, "status": "missing", "error": str(exc)}
         errors.append(f"{kind}: {exc}")
+
+    # Self-validate all records before assembling the envelope
+    validation_errors, validation_warnings = validate_corpus(all_records)
 
     metadata = {
         "extracted_at": _iso_now(),
@@ -861,7 +931,8 @@ def build_corpus() -> dict:
     if errors:
         metadata["errors"] = errors
 
-    return {"metadata": metadata, "records": all_records}
+    corpus = {"metadata": metadata, "records": all_records}
+    return corpus, validation_errors, validation_warnings
 
 
 def migrate_legacy_profile() -> str | None:
@@ -921,11 +992,25 @@ def main():
         sys.exit(0)
 
     print("Building corpus from Claude Code runtime data...")
-    corpus = build_corpus()
+    corpus, validation_errors, validation_warnings = build_corpus()
 
     elapsed = time.time() - start
 
-    # Write corpus.json
+    # Report validation results
+    if validation_warnings:
+        print(f"\n  Validation warnings ({len(validation_warnings)}):")
+        for w in validation_warnings:
+            print(f"    WARNING: {w}")
+
+    if validation_errors:
+        print(f"\n  Validation errors ({len(validation_errors)}):")
+        for e in validation_errors:
+            print(f"    ERROR: {e}")
+        print(f"\nAborted in {elapsed:.1f}s. corpus.json NOT written "
+              f"due to {len(validation_errors)} validation error(s).")
+        sys.exit(1)
+
+    # Write corpus.json (validation passed)
     corpus_path = output_dir / "corpus.json"
     corpus_path.write_text(
         json.dumps(corpus, indent=2, ensure_ascii=False), encoding="utf-8"
@@ -941,7 +1026,7 @@ def main():
     print(f"  Runtimes: {', '.join(meta['runtimes'])}")
     print(f"  Adapter version: {meta['adapter_version']}")
     for kind, info in meta["families"].items():
-        status_marker = "ok" if info["status"] == "ok" else "ERROR"
+        status_marker = "ok" if info["status"] == "ok" else "MISSING"
         print(f"  {kind}: {info['count']} records [{status_marker}]")
     print(f"  Total records: {meta['total_records']}")
     if meta.get("errors"):
