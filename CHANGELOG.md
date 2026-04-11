@@ -5,6 +5,9 @@
 ### Added
 - GitHub Actions CI workflow running spec linter and pytest on every push to main and pull request (closes ISS-31)
 
+### Changed
+- Refactored check_severity_levels into four pattern-specific helpers, flattening 4-level nesting to 2
+
 ## [1.8.1] · 2026-04-11
 
 ### Fixed

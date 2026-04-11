@@ -7,7 +7,6 @@
 ## → Normal
 
 ## ⇢ Annoying
-- [ ] [refactor] validate_spec.py::check_severity_levels() has 4-level nesting (98 lines) — extract per-pattern matchers to flatten nesting
 - [ ] [refactor] analyze_progress.py::analyze() is 114 lines with 5-branch suggestion engine — extract helper per signal type if new signal added
 
 ## Resolved
