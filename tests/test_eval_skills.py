@@ -183,3 +183,65 @@ class TestParseArgs:
     def test_skill_flag(self, eval_skills):
         args = eval_skills.parse_args(["--skill", "realisera"])
         assert args.skill == "realisera"
+
+    def test_parse_args_runtime_flag(self, eval_skills):
+        """--runtime accepts auto, claude, opencode and defaults to auto."""
+        assert eval_skills.parse_args([]).runtime == "auto"
+        assert eval_skills.parse_args(["--runtime", "claude"]).runtime == "claude"
+        assert eval_skills.parse_args(["--runtime", "opencode"]).runtime == "opencode"
+
+
+# ---------------------------------------------------------------------------
+# detect_runtime
+# ---------------------------------------------------------------------------
+
+class TestDetectRuntime:
+    """Runtime detection logic. One pass + one fail per unit (4 units = 4 tests)."""
+
+    def test_detect_runtime_prefers_claude(self, eval_skills, monkeypatch):
+        """When both claude and opencode are on PATH, return 'claude'."""
+        monkeypatch.setattr(eval_skills.shutil, "which", lambda name: f"/usr/bin/{name}")
+        assert eval_skills.detect_runtime(None) == "claude"
+
+    def test_detect_runtime_fallback_opencode(self, eval_skills, monkeypatch):
+        """When only opencode is on PATH, return 'opencode'."""
+        monkeypatch.setattr(
+            eval_skills.shutil, "which",
+            lambda name: None if name == "claude" else "/usr/bin/opencode",
+        )
+        assert eval_skills.detect_runtime(None) == "opencode"
+
+    def test_detect_runtime_explicit_override(self, eval_skills, monkeypatch):
+        """Explicit runtime bypasses PATH detection entirely."""
+        monkeypatch.setattr(eval_skills.shutil, "which", lambda name: None)
+        assert eval_skills.detect_runtime("opencode") == "opencode"
+
+    def test_detect_runtime_nothing_available(self, eval_skills, monkeypatch):
+        """When neither binary is on PATH and no explicit runtime, sys.exit(1)."""
+        monkeypatch.setattr(eval_skills.shutil, "which", lambda name: None)
+        import pytest
+        with pytest.raises(SystemExit) as exc_info:
+            eval_skills.detect_runtime(None)
+        assert exc_info.value.code == 1
+
+
+# ---------------------------------------------------------------------------
+# _invoke_skill opencode command
+# ---------------------------------------------------------------------------
+
+class TestInvokeSkillOpencodeCommand:
+    """Verify the command list selected for opencode runtime."""
+
+    def test_invoke_skill_opencode_command(self, eval_skills, monkeypatch):
+        """opencode runtime uses ['opencode', 'run', '--prompt'] as the command."""
+        captured = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+            import subprocess
+            # Simulate a clean zero-exit result.
+            return subprocess.CompletedProcess(cmd, returncode=0, stdout="", stderr="")
+
+        monkeypatch.setattr(eval_skills.subprocess, "run", fake_run)
+        eval_skills._invoke_skill("realisera", "test prompt", timeout=5, runtime="opencode")
+        assert captured["cmd"] == ["opencode", "run", "--prompt"]
