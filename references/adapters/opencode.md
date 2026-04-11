@@ -426,7 +426,7 @@ Optional: configure skill permissions if you want to gate certain skills:
 For artifact validation and session continuity, install the agentera hook plugin:
 
 ```bash
-cp ~/.config/opencode/skills/agentera/references/adapters/opencode-plugin.js \
+cp ~/.config/opencode/skills/agentera/.opencode/plugins/agentera.js \
    ~/.config/opencode/plugins/agentera.js
 ```
 
