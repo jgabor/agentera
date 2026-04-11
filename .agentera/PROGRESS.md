@@ -1,10 +1,76 @@
 # Progress
 
+■ ## Cycle 106 · 2026-04-11
+
+**Phase**: build
+**What**: Plan rollup: Implement Section 21 Session Corpus Contract (ISS-37, Decision 26). Updated SPEC.md Section 21 with corpus envelope format and runtime probing convention. Refactored extract_all.py into a multi-runtime corpus builder producing single corpus.json with Section 21 normalized records, provenance metadata, runtime probing infrastructure, self-validation, and legacy file cleanup. Updated profilera SKILL.md Steps 1-2 to consume corpus.json. Added 14 tests (260 total). Version bumped to 1.10.0 (profilera 2.8.0). Resolved ISS-37, archived plan.
+**Commits**: 74e539c, af82efa, 612054d, 0f21901, f169d6f, 277e559
+**Inspiration**: Decision 26 (firm): multi-runtime corpus builder with self-describing envelope
+**Discovered**: No HEALTH.md findings resolved by this plan (complexity C grade for analyze_progress.py remains, out of scope). SKILL.md line 404 references crystallized.json (legacy filename) outside Steps 1-2 scope; noted for future cleanup.
+**Verified**: N/A: docs-only
+**Next**: Vision-driven work. Remaining annoying item: analyze_progress.py 114-line function.
+**Context**: intent (close ISS-37 plan with freshness checkpoint) · constraints (no code changes, docs/bookkeeping only) · unknowns (none) · scope (TODO.md, PROGRESS.md, PLAN.md archive)
+
+■ ## Cycle 105 · 2026-04-11
+
+**Phase**: build
+**What**: Version bump 1.9.0 → 1.10.0 (collection), 2.7.0 → 2.8.0 (profilera) per PLAN Task 6. Promoted CHANGELOG [Unreleased] to [1.10.0] with Added/Changed entries for the plan's feat commits.
+**Commit**: 277e559
+**Inspiration**: PLAN Task 6, DOCS.md semver_policy (feat = minor)
+**Discovered**: None.
+**Verified**: N/A: chore-build-config
+**Next**: Task 7 (plan-level freshness checkpoint). Final task.
+**Context**: intent (version bump per DOCS.md convention) · constraints (only version_files + CHANGELOG.md) · unknowns (none) · scope (12 plugin.json, registry.json, marketplace.json, CHANGELOG.md)
+
+■ ## Cycle 104 · 2026-04-11
+
+**Phase**: build
+**What**: Added 14 tests for corpus builder and validation per PLAN Task 5. Covers 6 testable units: _generate_source_id (3 tests), _probe_claude_code (2), validate_corpus (3), _records_from_* provenance (2), _cleanup_legacy_files (2), build_corpus envelope (2). Total suite: 260 tests.
+**Commit**: f169d6f
+**Inspiration**: PLAN Task 5 acceptance criteria, test proportionality convention (Decision 21)
+**Discovered**: Main baseline was 246 tests (not 250 as worktree reported). The worktree had synced extract_all.py but had a different test baseline. 14 new tests on main = 260 total.
+**Verified**: N/A: test-only
+**Next**: Task 6 (version bump). Depends on Tasks 1-5, all complete.
+**Context**: intent (add test coverage for corpus builder per PLAN Task 5) · constraints (~12 tests target, 14 delivered, no extract_all.py or SKILL.md changes) · unknowns (none) · scope (tests/test_extract_all.py only)
+
+■ ## Cycle 103 · 2026-04-11
+
+**Phase**: build
+**What**: Updated profilera SKILL.md Steps 1-2 to consume corpus.json per PLAN Task 4. Step 1 now references corpus.json output with metadata for counts. Step 2 now groups records by source_kind instead of reading four named files. Fixed worktree-introduced "twelve-skill ecosystem" back to "twelve-skill suite". Regenerated profilera contract.
+**Commit**: 0f21901
+**Inspiration**: PLAN Task 4 acceptance criteria
+**Discovered**: The worktree checkout introduced a "suite" → "ecosystem" terminology change that the linter caught. Line 404 "Notes on depth vs speed" still references crystallized.json by name, but that section is outside Steps 1-2 scope.
+**Verified**: N/A: docs-only
+**Next**: Task 5 (tests). Depends on Tasks 2 and 3, both complete.
+**Context**: intent (update SKILL.md Steps 1-2 to consume corpus.json per PLAN Task 4) · constraints (Steps 3-5 untouched, no extract_all.py changes) · unknowns (none) · scope (skills/profilera/SKILL.md Steps 1-2, profilera contract.md)
+
+■ ## Cycle 102 · 2026-04-11
+
+**Phase**: build
+**What**: Added self-validation to extract_all.py per PLAN Task 3. validate_corpus() checks all records for required Section 21 provenance fields and flags unrecognized source_kind values as warnings. Validation runs before writing: errors block output, warnings allow writing. Fixed family status vocabulary from "error" to "missing" per SPEC.md Section 21.
+**Commit**: 612054d
+**Inspiration**: PLAN Task 3 acceptance criteria, inspektera Task 2 evaluation finding (status "error" vs spec "missing")
+**Discovered**: The status vocabulary fix ("error" → "missing") was flagged by inspektera during Task 2 evaluation as a latent non-conformance. Addressed in this task alongside validation.
+**Verified**: corpus.json produced with 6634 records, 0 validation errors, 0 warnings. Self-validation passes cleanly for well-formed Claude Code data. 246 tests pass.
+**Next**: Task 5 (tests). Depends on Tasks 2 and 3, both complete.
+**Context**: intent (add self-validation per PLAN Task 3, fix status vocabulary) · constraints (no SKILL.md changes, no new tests) · unknowns (none) · scope (skills/profilera/scripts/extract_all.py only)
+
+■ ## Cycle 101 · 2026-04-11
+
+**Phase**: build
+**What**: Refactored extract_all.py into a multi-runtime corpus builder per PLAN Task 2. Replaced four-file intermediate output with a single corpus.json wrapping each record with Section 21 provenance metadata (source_id, timestamp, project_id, source_kind, runtime, adapter_version). Added runtime probing (_probe_claude_code), legacy file cleanup, graceful no-data exit, and per-family error handling. Internal extractor functions unchanged.
+**Commit**: af82efa
+**Inspiration**: Decision 26 (firm), SPEC.md Section 21 corpus envelope format (Task 1)
+**Discovered**: 6631 records across 4 source families from Claude Code data. The run_* wrapper functions became orphaned (no longer called by main) but retained for potential direct use. source_id generation uses SHA-256 of runtime + source_kind + key content for idempotent re-extraction.
+**Verified**: corpus.json produced with 6631 records. Structure confirmed: top-level keys [metadata, records], metadata keys [extracted_at, runtimes, adapter_version, families, total_records], all 4 source_kind families present, all records carry all 6 required provenance fields. Legacy cleanup verified. No-data exit verified. 246 tests pass.
+**Next**: Task 3 (self-validation) and Task 4 (SKILL.md update), both depend on Task 2.
+**Context**: intent (refactor extract_all.py to produce Section 21 corpus.json per PLAN Task 2) · constraints (stdlib only, no self-validation, no SKILL.md changes, no new tests) · unknowns (none) · scope (skills/profilera/scripts/extract_all.py only)
+
 ■ ## Cycle 100 · 2026-04-11
 
 **Phase**: build
 **What**: Updated SPEC.md Section 21 with two new subsections per PLAN Task 1. "Corpus envelope format" specifies the top-level corpus.json structure: a metadata object (extracted_at, runtimes, adapter_version, families with per-family count/status/error, total_records, optional errors array) and a records array containing Section 21 normalized records with full provenance metadata. "Runtime probing convention" describes the probe-then-extract pattern: each runtime registers a probe function checking known filesystem paths, the corpus builder iterates probes, dispatches extractors for detected runtimes, and merges records additively. Also specifies no-runtime behavior (no output, informative exit). Regenerated all 12 contract files.
-**Commit**: pending
+**Commit**: 74e539c
 **Inspiration**: Decision 26 (firm): multi-runtime corpus builder with self-describing envelope
 **Discovered**: None. The subsections landed cleanly between "Runtime extensions" and "Relation to Section 20" without structural conflicts. The `families` keys in the envelope use the record type names (instruction_document etc.), not the source family display names, for programmatic filtering consistency with the `source_kind` field on individual records.
 **Verified**: N/A: docs-only

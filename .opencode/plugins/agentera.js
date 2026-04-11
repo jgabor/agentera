@@ -62,9 +62,29 @@ function validateArtifact(filePath) {
   } catch {}
 }
 
+function setProfileDir() {
+  if (process.env.PROFILERA_PROFILE_DIR) return;
+  if (process.platform === "darwin") {
+    process.env.PROFILERA_PROFILE_DIR = path.join(
+      process.env.HOME, "Library", "Application Support", "agentera"
+    );
+  } else if (process.platform === "win32") {
+    process.env.PROFILERA_PROFILE_DIR = path.join(
+      process.env.APPDATA || path.join(process.env.USERPROFILE, "AppData", "Roaming"),
+      "agentera"
+    );
+  } else {
+    process.env.PROFILERA_PROFILE_DIR = path.join(
+      process.env.XDG_DATA_HOME || path.join(process.env.HOME, ".local", "share"),
+      "agentera"
+    );
+  }
+}
+
 export const Agentera = async ({ project, client, $, directory, worktree }) => {
   const root = findAgenteraRoot(directory || worktree || process.cwd());
   const agenteraDir = path.join(root, ".agentera");
+  setProfileDir();
 
   return {
     "session.created": async ({ event }) => {
