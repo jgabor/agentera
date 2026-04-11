@@ -5,9 +5,9 @@
 # ///
 """Tier 2 eval runner for agentera skill smoke testing.
 
-Invokes each skill via `claude -p` (Claude Code pipe mode) with a minimal
-trigger prompt and checks for crashes / non-zero exit codes.  Scope is
-crash/error detection only — output correctness is not evaluated.
+Invokes each skill via `claude -p` (Claude Code pipe mode) or `opencode run`
+with a minimal trigger prompt and checks for crashes / non-zero exit codes.
+Scope is crash/error detection only — output correctness is not evaluated.
 
 Run from repo root:
     python3 scripts/eval_skills.py                    # run all skills
@@ -15,6 +15,7 @@ Run from repo root:
     python3 scripts/eval_skills.py --dry-run           # list skills + prompts
     python3 scripts/eval_skills.py --parallel N        # N concurrent workers
     python3 scripts/eval_skills.py --timeout 60        # per-skill timeout (s)
+    python3 scripts/eval_skills.py --runtime opencode  # use OpenCode runtime
 """
 
 from __future__ import annotations
@@ -59,6 +60,37 @@ DEFAULT_PARALLEL = 1    # sequential by default
 
 
 # ---------------------------------------------------------------------------
+# Runtime detection
+# ---------------------------------------------------------------------------
+
+def detect_runtime(explicit: str | None) -> str:
+    """Return the runtime name to use: 'claude' or 'opencode'.
+
+    If *explicit* is 'claude' or 'opencode', return it directly (skip PATH
+    detection).  If *explicit* is 'auto' (or None), probe PATH with
+    shutil.which(), preferring 'claude' when both are present.  Exit with a
+    clear error when neither binary is available.
+    """
+    if explicit and explicit != "auto":
+        return explicit
+
+    has_claude = shutil.which("claude") is not None
+    has_opencode = shutil.which("opencode") is not None
+
+    if has_claude:
+        return "claude"
+    if has_opencode:
+        return "opencode"
+
+    print(
+        "ERROR: Neither 'claude' nor 'opencode' found on PATH. "
+        "Install Claude Code or OpenCode and ensure the binary is accessible.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
+# ---------------------------------------------------------------------------
 # Skill discovery
 # ---------------------------------------------------------------------------
 
@@ -93,20 +125,29 @@ def discover_skills() -> list[dict[str, str]]:
 # Invocation
 # ---------------------------------------------------------------------------
 
-def _invoke_skill(name: str, prompt: str, timeout: int) -> dict:
-    """Run `claude -p --output-format json` with *prompt* on stdin.
+def _invoke_skill(name: str, prompt: str, timeout: int, runtime: str = "claude") -> dict:
+    """Invoke *prompt* via the selected *runtime* and return a result dict.
+
+    Supported runtimes:
+        claude    -- ["claude", "-p", "--output-format", "json"] (prompt on stdin)
+        opencode  -- ["opencode", "run", "--prompt"] (prompt on stdin)
 
     Returns a result dict suitable for inclusion in the JSON report:
         {"skill": str, "status": "pass"|"fail", "duration_s": float,
          "error": str|None}
     """
+    if runtime == "opencode":
+        cmd = ["opencode", "run", "--prompt"]
+    else:
+        cmd = ["claude", "-p", "--output-format", "json"]
+
     start = time.monotonic()
     error: str | None = None
     status = "pass"
 
     try:
         result = subprocess.run(
-            ["claude", "-p", "--output-format", "json"],
+            cmd,
             input=prompt,
             capture_output=True,
             text=True,
@@ -143,10 +184,10 @@ def _invoke_skill(name: str, prompt: str, timeout: int) -> dict:
         error = f"Timed out after {timeout}s"
         status = "fail"
     except FileNotFoundError:
-        # `claude` binary not found — should have been checked before entering
+        # Runtime binary not found — should have been checked before entering
         # this function, but guard here for safety.
         duration = time.monotonic() - start
-        error = "'claude' not found on PATH"
+        error = f"'{runtime}' not found on PATH"
         status = "fail"
     except Exception as exc:  # noqa: BLE001
         duration = time.monotonic() - start
@@ -169,18 +210,19 @@ def run_skills(
     skills: list[dict[str, str]],
     timeout: int,
     parallel: int,
+    runtime: str = "claude",
 ) -> list[dict]:
     """Invoke all skills, possibly in parallel, and return result dicts."""
     results: list[dict] = []
 
     if parallel <= 1:
         for entry in skills:
-            result = _invoke_skill(entry["name"], entry["prompt"], timeout)
+            result = _invoke_skill(entry["name"], entry["prompt"], timeout, runtime)
             results.append(result)
     else:
         with ProcessPoolExecutor(max_workers=parallel) as executor:
             futures = {
-                executor.submit(_invoke_skill, entry["name"], entry["prompt"], timeout): entry["name"]
+                executor.submit(_invoke_skill, entry["name"], entry["prompt"], timeout, runtime): entry["name"]
                 for entry in skills
             }
             # Collect in completion order; re-sort by original order afterwards.
@@ -219,9 +261,10 @@ def build_report(results: list[dict]) -> dict:
     }
 
 
-def build_dry_run(skills: list[dict[str, str]]) -> dict:
+def build_dry_run(skills: list[dict[str, str]], runtime: str = "claude", runtime_source: str = "auto-detected") -> dict:
     return {
         "mode": "dry-run",
+        "runtime": f"{runtime} ({runtime_source})",
         "skills": [
             {"name": s["name"], "prompt": s["prompt"]}
             for s in skills
@@ -236,7 +279,7 @@ def build_dry_run(skills: list[dict[str, str]]) -> dict:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Tier 2 eval runner: smoke-tests agentera skills via `claude -p`. "
+            "Tier 2 eval runner: smoke-tests agentera skills via claude or opencode. "
             "Detects crashes and non-zero exit codes only."
         )
     )
@@ -248,7 +291,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="List skills and prompts as JSON without invoking claude.",
+        help="List skills and prompts as JSON without invoking a runtime.",
     )
     parser.add_argument(
         "--parallel",
@@ -263,6 +306,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_TIMEOUT,
         metavar="SECONDS",
         help=f"Per-skill timeout in seconds (default: {DEFAULT_TIMEOUT}).",
+    )
+    parser.add_argument(
+        "--runtime",
+        choices=["auto", "claude", "opencode"],
+        default="auto",
+        help=(
+            "Runtime to use for skill invocations. 'auto' (default) probes PATH "
+            "and prefers 'claude' when both are available."
+        ),
     )
     return parser.parse_args(argv)
 
@@ -293,22 +345,18 @@ def main(argv: list[str] | None = None) -> int:
     else:
         skills_to_run = all_skills
 
+    # Determine which runtime to use (may sys.exit if none available).
+    explicit = args.runtime if args.runtime != "auto" else None
+    runtime = detect_runtime(explicit)
+    runtime_source = "--runtime flag" if explicit else "auto-detected"
+
     # Dry-run: print skills + prompts and exit.
     if args.dry_run:
-        print(json.dumps(build_dry_run(skills_to_run), indent=2))
+        print(json.dumps(build_dry_run(skills_to_run, runtime, runtime_source), indent=2))
         return 0
 
-    # Verify that `claude` is available before spawning subprocesses.
-    if shutil.which("claude") is None:
-        print(
-            "ERROR: 'claude' not found on PATH. "
-            "Install Claude Code and ensure the 'claude' binary is accessible.",
-            file=sys.stderr,
-        )
-        return 1
-
     # Run the evals.
-    results = run_skills(skills_to_run, timeout=args.timeout, parallel=args.parallel)
+    results = run_skills(skills_to_run, timeout=args.timeout, parallel=args.parallel, runtime=runtime)
     report = build_report(results)
     print(json.dumps(report, indent=2))
 
