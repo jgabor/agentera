@@ -339,6 +339,93 @@ def check_confidence_scale(skill: str, text: str, r: Results) -> None:
         r.ok(skill, "confidence-scale")
 
 
+def _find_severity_in_tables(text: str, non_canonical: set[str]) -> list[str]:
+    """Pattern 1: Table rows within severity-related tables.
+
+    Find tables whose header row contains "severity" or "level", then
+    check body rows for non-canonical terms.
+    """
+    errors: list[str] = []
+    for table_match in re.finditer(
+        r"^(\|[^\n]*(?:severity|level)[^\n]*\|)\n\|[-| :]+\|\n((?:\|[^\n]*\n)*)",
+        text,
+        re.IGNORECASE | re.MULTILINE,
+    ):
+        table_body = table_match.group(2)
+        for row in table_body.strip().splitlines():
+            for term in non_canonical:
+                if re.search(rf"\b{term}\b", row, re.IGNORECASE):
+                    errors.append(
+                        f"Non-canonical severity term '{term}' in table: "
+                        f"{row.strip()[:80]}"
+                    )
+    return errors
+
+
+def _find_severity_in_headings(text: str, non_canonical_re: str) -> list[str]:
+    """Pattern 2: Headings that label findings by severity.
+
+    e.g. "### [high] description" or "#### Finding — high (confidence: N)"
+    Only match when the heading looks like a finding label (contains
+    em-dash or brackets around the term).
+    """
+    errors: list[str] = []
+    heading_pattern = re.compile(
+        rf"^#+\s.*?(?:\[|[—–]\s*)({non_canonical_re})\b",
+        re.IGNORECASE | re.MULTILINE,
+    )
+    for m in heading_pattern.finditer(text):
+        term = m.group(1).lower()
+        line = m.group(0).strip()
+        errors.append(f"Non-canonical severity term '{term}' in heading: {line[:80]}")
+    return errors
+
+
+def _find_severity_in_section(text: str, non_canonical: set[str]) -> list[str]:
+    """Pattern 3: Explicit severity label definitions in a severity section.
+
+    e.g. "severity: high" or "- **Info** — minor" in a severity section.
+    The em/en-dash variant requires the term on the same line and NOT
+    followed by a hyphen (avoids "high-confidence" = certainty, not severity).
+    For this pattern, require nearby severity context words on the same line
+    or in the surrounding section.
+    """
+    errors: list[str] = []
+    severity_section = extract_section(text, "Severity") or ""
+    for section_text in [severity_section]:
+        if not section_text:
+            continue
+        for term in non_canonical:
+            if re.search(rf"\b{term}\b", section_text, re.IGNORECASE):
+                # Find the line for context.
+                for line in section_text.splitlines():
+                    if re.search(rf"\b{term}\b", line, re.IGNORECASE):
+                        errors.append(
+                            f"Non-canonical severity term '{term}' in severity section: "
+                            f"{line.strip()[:80]}"
+                        )
+                        break
+    return errors
+
+
+def _find_severity_in_mappings(text: str, non_canonical_re: str) -> list[str]:
+    """Pattern 4: Lines that explicitly define severity-to-label mappings.
+
+    e.g. "- **Info** — minor (cosmetic)" where the pattern is
+    **canonical** — non-canonical
+    """
+    errors: list[str] = []
+    mapping_pattern = re.compile(
+        rf"\*\*(?:critical|warning|info|degraded|normal|annoying)\*\*\s*[—–]\s*({non_canonical_re})\b",
+        re.IGNORECASE,
+    )
+    for m in mapping_pattern.finditer(text):
+        term = m.group(1).lower()
+        line = text[: m.end()].rsplit("\n", 1)[-1].strip()
+        errors.append(f"Non-canonical severity term '{term}' in mapping: {line[:80]}")
+    return errors
+
+
 def check_severity_levels(skill: str, text: str, r: Results) -> None:
     """Check 3: Severity levels use canonical terms.
 
@@ -361,74 +448,12 @@ def check_severity_levels(skill: str, text: str, r: Results) -> None:
     }
     non_canonical_re = "|".join(sorted(non_canonical))
 
-    errors: list[str] = []
-
-    # Strategy: only flag non-canonical terms in genuine severity-defining
-    # contexts.  We look for sections/paragraphs about severity, and then
-    # check for non-canonical terms within them.
-
-    # Pattern 1: Table rows within severity-related tables.
-    # Find tables whose header row contains "severity" or "level", then
-    # check body rows for non-canonical terms.
-    for table_match in re.finditer(
-        r"^(\|[^\n]*(?:severity|level)[^\n]*\|)\n\|[-| :]+\|\n((?:\|[^\n]*\n)*)",
-        text,
-        re.IGNORECASE | re.MULTILINE,
-    ):
-        table_body = table_match.group(2)
-        for row in table_body.strip().splitlines():
-            for term in non_canonical:
-                if re.search(rf"\b{term}\b", row, re.IGNORECASE):
-                    errors.append(
-                        f"Non-canonical severity term '{term}' in table: "
-                        f"{row.strip()[:80]}"
-                    )
-
-    # Pattern 2: Headings that label findings by severity.
-    # e.g. "### [high] description" or "#### Finding — high (confidence: N)"
-    # Only match when the heading looks like a finding label (contains
-    # em-dash or brackets around the term).
-    heading_pattern = re.compile(
-        rf"^#+\s.*?(?:\[|[—–]\s*)({non_canonical_re})\b",
-        re.IGNORECASE | re.MULTILINE,
+    errors: list[str] = (
+        _find_severity_in_tables(text, non_canonical)
+        + _find_severity_in_headings(text, non_canonical_re)
+        + _find_severity_in_section(text, non_canonical)
+        + _find_severity_in_mappings(text, non_canonical_re)
     )
-    for m in heading_pattern.finditer(text):
-        term = m.group(1).lower()
-        line = m.group(0).strip()
-        errors.append(f"Non-canonical severity term '{term}' in heading: {line[:80]}")
-
-    # Pattern 3: Explicit severity label definitions.
-    # e.g. "severity: high" or "- **Info** — minor" in a severity section.
-    # The em/en-dash variant requires the term on the same line and NOT
-    # followed by a hyphen (avoids "high-confidence" = certainty, not severity).
-    # For this pattern, require nearby severity context words on the same line
-    # or in the surrounding section.
-    severity_section = extract_section(text, "Severity") or ""
-    for section_text in [severity_section]:
-        if not section_text:
-            continue
-        for term in non_canonical:
-            if re.search(rf"\b{term}\b", section_text, re.IGNORECASE):
-                # Find the line for context.
-                for line in section_text.splitlines():
-                    if re.search(rf"\b{term}\b", line, re.IGNORECASE):
-                        errors.append(
-                            f"Non-canonical severity term '{term}' in severity section: "
-                            f"{line.strip()[:80]}"
-                        )
-                        break
-
-    # Pattern 4: Lines that explicitly define severity-to-label mappings.
-    # e.g. "- **Info** — minor (cosmetic)" where the pattern is
-    # **canonical** — non-canonical
-    mapping_pattern = re.compile(
-        rf"\*\*(?:critical|warning|info|degraded|normal|annoying)\*\*\s*[—–]\s*({non_canonical_re})\b",
-        re.IGNORECASE,
-    )
-    for m in mapping_pattern.finditer(text):
-        term = m.group(1).lower()
-        line = text[: m.end()].rsplit("\n", 1)[-1].strip()
-        errors.append(f"Non-canonical severity term '{term}' in mapping: {line[:80]}")
 
     if errors:
         for detail in sorted(set(errors)):
