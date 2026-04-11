@@ -1,3 +1,5 @@
+.claude
+.opencode
 docs/
 __pycache__/
 *.pyc
