@@ -3,10 +3,11 @@
 # requires-python = ">=3.10"
 # dependencies = []
 # ///
-"""Run all profilera extractors and write combined output.
+"""Run all profilera extractors and write a unified corpus.json.
 
-Scans Claude Code session data — memory files, history, conversations, and project
-configs — to extract decision-rich signals for building a decision profile.
+Probes for recognized runtime data (currently Claude Code), runs the appropriate
+extractors, and produces a single corpus.json with per-record provenance metadata.
+If no runtime data is found, exits gracefully with an informative message.
 
 Usage:
     python3 extract_all.py --output-dir ~/.claude/profile/intermediate
@@ -15,11 +16,14 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
+import shutil
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Generator
 
@@ -30,6 +34,36 @@ from typing import Generator
 CLAUDE_DIR = Path.home() / ".claude"
 PROJECTS_DIR = CLAUDE_DIR / "projects"
 GIT_DIR = Path(os.environ.get("PROFILERA_GIT_DIR", Path.home() / "git"))
+
+
+def _default_profile_dir() -> Path:
+    """Platform-appropriate default profile directory (XDG on Linux, native on macOS/Windows)."""
+    override = os.environ.get("PROFILERA_PROFILE_DIR")
+    if override:
+        return Path(override)
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "agentera"
+    if sys.platform == "win32":
+        appdata = os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))
+        return Path(appdata) / "agentera"
+    xdg = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
+    return Path(xdg) / "agentera"
+
+
+PROFILE_DIR = _default_profile_dir()
+_LEGACY_PROFILE_DIR = CLAUDE_DIR / "profile"
+
+ADAPTER_VERSION = "2.6.0"
+RUNTIME_CLAUDE_CODE = "claude-code"
+
+# Old intermediate files to clean up when corpus.json is written
+_LEGACY_FILES = (
+    "crystallized.json",
+    "history_decisions.json",
+    "conversation_decisions.json",
+    "project_configs.json",
+    "extraction_summary.json",
+)
 
 DECISION_PATTERNS = [
     r"\bshould\s+(we|i|it)\b",
@@ -171,12 +205,12 @@ def truncate(text: str, max_len: int = 500) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Extract: Claude Code memory files (emitted as instruction_document) and CLAUDE.md/AGENTS.md
+# Extract: memory files and CLAUDE.md (from extract_memory.py)
 # ---------------------------------------------------------------------------
 
 
 def extract_memory_files() -> list[dict]:
-    """Read all memory .md files across projects, emitting them as instruction_document records."""
+    """Read all memory .md files across projects (excluding MEMORY.md index files)."""
     results = []
     for md in sorted(PROJECTS_DIR.glob("*/memory/*.md")):
         if md.name == "MEMORY.md":
@@ -188,7 +222,7 @@ def extract_memory_files() -> list[dict]:
             {
                 "source": str(md),
                 "project": project,
-                "type": "claude_memory",
+                "type": fm.get("type", "unknown"),
                 "name": fm.get("name", md.stem),
                 "description": fm.get("description", ""),
                 "content": body,
@@ -249,7 +283,6 @@ def run_memory(output_path: Path) -> dict:
         "memory_files": len(memory),
         "claude_md_files": len(claude_md),
         "total": len(all_entries),
-        "note": "memory_files emitted as instruction_document with doc_type claude_memory",
     }
 
 
@@ -410,7 +443,9 @@ def extract_conversations(projects_dir: Path | None = None) -> list[dict]:
     return results
 
 
-def run_conversations(output_path: Path, projects_dir: Path | None = None) -> dict:
+def run_conversations(
+    output_path: Path, projects_dir: Path | None = None
+) -> dict:
     """Run conversation extraction and write results. Returns summary stats."""
     results = extract_conversations(projects_dir)
 
@@ -428,7 +463,9 @@ def run_conversations(output_path: Path, projects_dir: Path | None = None) -> di
 
     return {
         "total_pairs": len(results),
-        "files_scanned": len(list((projects_dir or PROJECTS_DIR).glob("**/*.jsonl"))),
+        "files_scanned": len(
+            list((projects_dir or PROJECTS_DIR).glob("**/*.jsonl"))
+        ),
         "by_signal_type": by_type,
         "top_projects": dict(
             sorted(by_project.items(), key=lambda x: x[1], reverse=True)[:10]
@@ -484,11 +521,7 @@ def _extract_golangci(text: str) -> list[str]:
         if in_enable:
             if stripped.startswith("- "):
                 signals.append(f"linter: {stripped[2:]}")
-            elif (
-                not stripped.startswith("#")
-                and stripped
-                and not stripped.startswith("-")
-            ):
+            elif not stripped.startswith("#") and stripped and not stripped.startswith("-"):
                 in_enable = False
 
     if "gofumpt" in text:
@@ -622,56 +655,298 @@ def run_configs(output_path: Path, git_dir: Path | None = None) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Corpus provenance helpers
+# ---------------------------------------------------------------------------
+
+
+def _generate_source_id(runtime: str, source_kind: str, *key_parts: str) -> str:
+    """Generate a stable, idempotent source_id from provenance components.
+
+    Uses a SHA-256 hash of the runtime, source_kind, and key parts (e.g., file
+    path, timestamp, session ID) to produce a deterministic identifier that is
+    the same across repeated extractions of the same data.
+    """
+    raw = "|".join([runtime, source_kind, *key_parts])
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def _probe_claude_code() -> bool:
+    """Check whether Claude Code runtime data exists on this system.
+
+    Probes for at least one of: ~/.claude/CLAUDE.md, ~/.claude/history.jsonl,
+    or ~/.claude/projects/ directory with content.
+    """
+    if (CLAUDE_DIR / "CLAUDE.md").exists():
+        return True
+    if (CLAUDE_DIR / "history.jsonl").exists():
+        return True
+    if PROJECTS_DIR.exists() and any(PROJECTS_DIR.iterdir()):
+        return True
+    return False
+
+
+def _iso_now() -> str:
+    """Return the current UTC time as an ISO 8601 string."""
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _records_from_memory(entries: list[dict]) -> list[dict]:
+    """Wrap memory/CLAUDE.md extractor output as corpus records."""
+    records = []
+    for entry in entries:
+        source_path = entry.get("source", "")
+        records.append({
+            "source_id": _generate_source_id(
+                RUNTIME_CLAUDE_CODE, "instruction_document", source_path
+            ),
+            "timestamp": _iso_now(),
+            "project_id": entry.get("project", ""),
+            "source_kind": "instruction_document",
+            "runtime": RUNTIME_CLAUDE_CODE,
+            "adapter_version": ADAPTER_VERSION,
+            "data": entry,
+        })
+    return records
+
+
+def _records_from_history(entries: list[dict]) -> list[dict]:
+    """Wrap history extractor output as corpus records."""
+    records = []
+    for entry in entries:
+        ts = entry.get("timestamp", "")
+        session = entry.get("session_id", "")
+        prompt_hash = hashlib.sha256(
+            entry.get("prompt", "").encode("utf-8")
+        ).hexdigest()[:8]
+        records.append({
+            "source_id": _generate_source_id(
+                RUNTIME_CLAUDE_CODE, "history_prompt", str(ts), session, prompt_hash
+            ),
+            "timestamp": ts if ts else _iso_now(),
+            "project_id": entry.get("project", ""),
+            "source_kind": "history_prompt",
+            "runtime": RUNTIME_CLAUDE_CODE,
+            "adapter_version": ADAPTER_VERSION,
+            "data": entry,
+        })
+    return records
+
+
+def _records_from_conversations(entries: list[dict]) -> list[dict]:
+    """Wrap conversation extractor output as corpus records."""
+    records = []
+    for entry in entries:
+        ts = entry.get("timestamp", "")
+        session = entry.get("session_id", "")
+        response_hash = hashlib.sha256(
+            entry.get("user_response", "").encode("utf-8")
+        ).hexdigest()[:8]
+        records.append({
+            "source_id": _generate_source_id(
+                RUNTIME_CLAUDE_CODE, "conversation_turn", str(ts), session, response_hash
+            ),
+            "timestamp": ts if ts else _iso_now(),
+            "project_id": entry.get("project", ""),
+            "source_kind": "conversation_turn",
+            "runtime": RUNTIME_CLAUDE_CODE,
+            "adapter_version": ADAPTER_VERSION,
+            "data": entry,
+        })
+    return records
+
+
+def _records_from_configs(entries: list[dict]) -> list[dict]:
+    """Wrap config extractor output as corpus records."""
+    records = []
+    for entry in entries:
+        file_path = entry.get("file_path", "")
+        records.append({
+            "source_id": _generate_source_id(
+                RUNTIME_CLAUDE_CODE, "project_config_signal", file_path
+            ),
+            "timestamp": _iso_now(),
+            "project_id": entry.get("project", ""),
+            "source_kind": "project_config_signal",
+            "runtime": RUNTIME_CLAUDE_CODE,
+            "adapter_version": ADAPTER_VERSION,
+            "data": entry,
+        })
+    return records
+
+
+def _cleanup_legacy_files(output_dir: Path) -> list[str]:
+    """Remove old intermediate files from the output directory.
+
+    Returns a list of filenames that were removed.
+    """
+    removed = []
+    for name in _LEGACY_FILES:
+        legacy = output_dir / name
+        if legacy.exists():
+            legacy.unlink()
+            removed.append(name)
+    return removed
+
+
+# ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
 
 
+def build_corpus() -> dict:
+    """Run all extractors and return the corpus envelope.
+
+    Returns a dict with top-level ``metadata`` and ``records`` keys. If no
+    runtime data is detected, returns an empty dict.
+    """
+    if not _probe_claude_code():
+        return {}
+
+    all_records: list[dict] = []
+    families: dict[str, dict] = {}
+    errors: list[str] = []
+
+    # Family: instruction_document (memory files + CLAUDE.md)
+    kind = "instruction_document"
+    try:
+        memory = extract_memory_files()
+        claude_md = extract_claude_md_files()
+        records = _records_from_memory(memory + claude_md)
+        all_records.extend(records)
+        families[kind] = {"count": len(records), "status": "ok"}
+    except Exception as exc:
+        families[kind] = {"count": 0, "status": "error", "error": str(exc)}
+        errors.append(f"{kind}: {exc}")
+
+    # Family: history_prompt
+    kind = "history_prompt"
+    try:
+        history = extract_history()
+        records = _records_from_history(history)
+        all_records.extend(records)
+        families[kind] = {"count": len(records), "status": "ok"}
+    except Exception as exc:
+        families[kind] = {"count": 0, "status": "error", "error": str(exc)}
+        errors.append(f"{kind}: {exc}")
+
+    # Family: conversation_turn
+    kind = "conversation_turn"
+    try:
+        conversations = extract_conversations()
+        records = _records_from_conversations(conversations)
+        all_records.extend(records)
+        families[kind] = {"count": len(records), "status": "ok"}
+    except Exception as exc:
+        families[kind] = {"count": 0, "status": "error", "error": str(exc)}
+        errors.append(f"{kind}: {exc}")
+
+    # Family: project_config_signal
+    kind = "project_config_signal"
+    try:
+        configs = extract_configs()
+        records = _records_from_configs(configs)
+        all_records.extend(records)
+        families[kind] = {"count": len(records), "status": "ok"}
+    except Exception as exc:
+        families[kind] = {"count": 0, "status": "error", "error": str(exc)}
+        errors.append(f"{kind}: {exc}")
+
+    metadata = {
+        "extracted_at": _iso_now(),
+        "runtimes": [RUNTIME_CLAUDE_CODE],
+        "adapter_version": ADAPTER_VERSION,
+        "families": families,
+        "total_records": len(all_records),
+    }
+    if errors:
+        metadata["errors"] = errors
+
+    return {"metadata": metadata, "records": all_records}
+
+
+def migrate_legacy_profile() -> str | None:
+    """One-time migration from ~/.claude/profile/ to the XDG location.
+
+    Returns a message if migration occurred, None otherwise.
+    """
+    if not _LEGACY_PROFILE_DIR.exists():
+        return None
+    new_profile = PROFILE_DIR / "PROFILE.md"
+    if new_profile.exists():
+        return None
+    legacy_profile = _LEGACY_PROFILE_DIR / "PROFILE.md"
+    if not legacy_profile.exists():
+        return None
+    PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(legacy_profile, new_profile)
+    # Also migrate history if present
+    legacy_history = _LEGACY_PROFILE_DIR / "history"
+    if legacy_history.is_dir():
+        new_history = PROFILE_DIR / "history"
+        if not new_history.exists():
+            shutil.copytree(legacy_history, new_history)
+    return f"Migrated profile from {_LEGACY_PROFILE_DIR} to {PROFILE_DIR}"
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Run all profilera extractors")
+    parser = argparse.ArgumentParser(
+        description="Run all profilera extractors and produce corpus.json"
+    )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path.home() / ".claude" / "profile" / "intermediate",
-        help="Directory to write intermediate JSON files",
+        default=PROFILE_DIR / "intermediate",
+        help="Directory to write corpus.json",
     )
     args = parser.parse_args()
 
     output_dir = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    migrated = migrate_legacy_profile()
+    if migrated:
+        print(migrated)
+
     start = time.time()
-    summary: dict = {"timestamp": int(time.time() * 1000), "extractors": {}}
 
-    print(
-        "Extracting crystallized decisions (Claude memory as instruction_document, CLAUDE.md, AGENTS.md)..."
-    )
-    stats = run_memory(output_dir / "crystallized.json")
-    summary["extractors"]["memory"] = stats
-    print(f"  -> {stats['total']} entries")
+    # Probe for runtime data
+    if not _probe_claude_code():
+        print(
+            "No Claude Code runtime data found.\n"
+            f"Checked: {CLAUDE_DIR / 'CLAUDE.md'}, "
+            f"{CLAUDE_DIR / 'history.jsonl'}, "
+            f"{PROJECTS_DIR}\n"
+            "No corpus.json written."
+        )
+        sys.exit(0)
 
-    print("Extracting decision-rich history prompts...")
-    stats = run_history(output_dir / "history_decisions.json")
-    summary["extractors"]["history"] = stats
-    print(f"  -> {stats['total']} entries")
-
-    print("Extracting conversation decision exchanges...")
-    stats = run_conversations(output_dir / "conversation_decisions.json")
-    summary["extractors"]["conversations"] = stats
-    print(f"  -> {stats['total_pairs']} pairs")
-
-    print("Extracting project config patterns...")
-    stats = run_configs(output_dir / "project_configs.json")
-    summary["extractors"]["configs"] = stats
-    print(f"  -> {stats['total_configs']} configs")
+    print("Building corpus from Claude Code runtime data...")
+    corpus = build_corpus()
 
     elapsed = time.time() - start
-    summary["elapsed_seconds"] = round(elapsed, 1)
 
-    summary_path = output_dir / "extraction_summary.json"
-    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    # Write corpus.json
+    corpus_path = output_dir / "corpus.json"
+    corpus_path.write_text(
+        json.dumps(corpus, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
 
-    print(f"\nDone in {elapsed:.1f}s. Summary written to {summary_path}")
-    print(json.dumps(summary, indent=2))
+    # Clean up legacy intermediate files
+    removed = _cleanup_legacy_files(output_dir)
+    if removed:
+        print(f"  Cleaned up legacy files: {', '.join(removed)}")
+
+    # Print summary
+    meta = corpus["metadata"]
+    print(f"  Runtimes: {', '.join(meta['runtimes'])}")
+    print(f"  Adapter version: {meta['adapter_version']}")
+    for kind, info in meta["families"].items():
+        status_marker = "ok" if info["status"] == "ok" else "ERROR"
+        print(f"  {kind}: {info['count']} records [{status_marker}]")
+    print(f"  Total records: {meta['total_records']}")
+    if meta.get("errors"):
+        print(f"  Errors: {meta['errors']}")
+    print(f"\nDone in {elapsed:.1f}s. Corpus written to {corpus_path}")
 
 
 if __name__ == "__main__":

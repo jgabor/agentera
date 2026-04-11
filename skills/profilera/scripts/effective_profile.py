@@ -17,12 +17,29 @@ Usage:
 import argparse
 import json
 import math
+import os
 import re
 import sys
 from datetime import date, datetime
 from pathlib import Path
 
-PROFILE_PATH = Path.home() / ".claude" / "profile" / "PROFILE.md"
+def _default_profile_dir() -> Path:
+    """Platform-appropriate default profile directory (XDG on Linux, native on macOS/Windows)."""
+    override = os.environ.get("PROFILERA_PROFILE_DIR")
+    if override:
+        return Path(override)
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "agentera"
+    if sys.platform == "win32":
+        appdata = os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))
+        return Path(appdata) / "agentera"
+    xdg = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
+    return Path(xdg) / "agentera"
+
+
+PROFILE_DIR = _default_profile_dir()
+PROFILE_PATH = PROFILE_DIR / "PROFILE.md"
+_LEGACY_PROFILE_PATH = Path.home() / ".claude" / "profile" / "PROFILE.md"
 
 # Default decay lambdas per permanence class
 DEFAULT_LAMBDAS = {
@@ -231,6 +248,16 @@ def main():
         help="Output summary as JSON instead of markdown table",
     )
     args = parser.parse_args()
+
+    if not args.profile.exists() and _LEGACY_PROFILE_PATH.exists():
+        import shutil
+
+        PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(_LEGACY_PROFILE_PATH, PROFILE_PATH)
+        print(
+            f"Migrated profile from {_LEGACY_PROFILE_PATH.parent} to {PROFILE_DIR}",
+            file=sys.stderr,
+        )
 
     if not args.profile.exists():
         print(f"Profile not found: {args.profile}", file=sys.stderr)
