@@ -1,6 +1,25 @@
-# OpenCode Adapter Design
+# OpenCode Adapter
 
 Maps agentera's host adapter contract (SPEC.md Section 20) and session corpus contract (SPEC.md Section 21) to OpenCode's specific mechanisms. A developer reading only this document can implement portable-core agentera support and a profilera-compatible session corpus in OpenCode without reading any SKILL.md source code.
+
+---
+
+## Implementation Status
+
+Status: production reference (formerly design document).
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| Hook plugin | Shipped | `.opencode/plugins/agentera.js` |
+| Eval runner support | Shipped | `scripts/eval_skills.py --runtime opencode` |
+| Skill install | Documented below | `~/.config/opencode/skills/<name>/` via symlinks |
+| Profile path | Documented below | `~/.config/opencode/profile/PROFILE.md` |
+
+The plugin was promoted from `references/adapters/opencode-plugin.js` to `.opencode/plugins/agentera.js` and is now the production location. Install it with:
+
+```bash
+cp .opencode/plugins/agentera.js ~/.config/opencode/plugins/
+```
 
 ---
 
@@ -426,8 +445,7 @@ Optional: configure skill permissions if you want to gate certain skills:
 For artifact validation and session continuity, install the agentera hook plugin:
 
 ```bash
-cp ~/.config/opencode/skills/agentera/.opencode/plugins/agentera.js \
-   ~/.config/opencode/plugins/agentera.js
+cp .opencode/plugins/agentera.js ~/.config/opencode/plugins/
 ```
 
 ---

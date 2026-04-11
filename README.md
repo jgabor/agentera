@@ -182,3 +182,32 @@ cd ~/.claude/agentera && git pull
 ```
 
 </details>
+
+<details>
+<summary><strong>Using with OpenCode</strong></summary>
+
+<br>
+
+agentera skills are runtime-portable. The SKILL.md files load in OpenCode without modification; only the install paths differ.
+
+**Global skill install** (symlink each skill into OpenCode's global skills directory):
+
+```bash
+for d in skills/*/; do
+  ln -s "$(pwd)/$d" ~/.config/opencode/skills/$(basename "$d")
+done
+```
+
+**Plugin install** (hooks for artifact validation and session continuity):
+
+```bash
+cp .opencode/plugins/agentera.js ~/.config/opencode/plugins/
+```
+
+**Profile path**: profilera writes `PROFILE.md` to `~/.config/opencode/profile/PROFILE.md` when running under OpenCode.
+
+**Compatibility path**: OpenCode also discovers skills from `.claude/skills/` (Claude Code compatibility), so project-local installs work unchanged.
+
+For full capability mapping, session corpus support, and sub-agent dispatch strategies, see [`references/adapters/opencode.md`](./references/adapters/opencode.md).
+
+</details>
