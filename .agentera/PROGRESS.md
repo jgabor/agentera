@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 98 · 2026-04-11
+
+**Phase**: build
+**What**: Refactored `check_severity_levels()` in validate_spec.py: extracted 4 private helpers (`_find_severity_in_tables`, `_find_severity_in_headings`, `_find_severity_in_section`, `_find_severity_in_mappings`), each returning error lists. Main function is now a 15-line dispatcher. 4-level nesting flattened to 2.
+**Commit**: c9e0e64 refactor(linter): extract per-pattern helpers from check_severity_levels
+**Inspiration**: None.
+**Discovered**: The refactored file is +25 net lines (92 added, 67 removed) because helper function signatures and docstrings add overhead, but the nesting reduction is worth it. Pattern 3 (`_find_severity_in_section`) was the deepest at 5 levels; now 3.
+**Verified**: N/A: refactor-no-behavior-change (existing test suite is the verification surface; 240 tests pass identically)
+**Next**: One annoying item remains: analyze_progress.py::analyze() at 114 lines. Or vision-driven work.
+**Context**: intent (flatten 4-level nesting in check_severity_levels per Audit 7 complexity finding) · constraints (linter 0/0, 240 tests pass, identical behavior) · unknowns (none) · scope (scripts/validate_spec.py only)
+
 ■ ## Cycle 97 · 2026-04-11
 
 **Phase**: build
