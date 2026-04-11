@@ -33,12 +33,12 @@ One global artifact (written) and project-level artifacts (read).
 
 | Artifact | Purpose | Path |
 |----------|---------|------|
-| PROFILE.md | Decision profile consumed by all skills | `~/.claude/profile/PROFILE.md` (global, not in project root) |
+| PROFILE.md | Decision profile consumed by all skills | `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) <!-- platform: profile-path --> |
 | DECISIONS.md | High-signal source for pattern extraction | project root (via DOCS.md mapping) |
 
 ### Artifact path resolution
 
-PROFILE.md is global and lives at `~/.claude/profile/PROFILE.md`, not in the project root or `.agentera/`. `.agentera/DOCS.md` mapping does not apply to PROFILE.md. For project-level artifacts, check if .agentera/DOCS.md exists and use its path mapping; if absent, use the default layout.
+PROFILE.md is global. Its base directory defaults to the platform-appropriate data directory (`$XDG_DATA_HOME/agentera/` on Linux, `~/Library/Application Support/agentera/` on macOS, `%APPDATA%/agentera/` on Windows). Override via `PROFILERA_PROFILE_DIR` environment variable. Existing profiles at `~/.claude/profile/` are auto-migrated on first run. <!-- platform: profile-path --> `.agentera/DOCS.md` mapping does not apply to PROFILE.md. For project-level artifacts, check if .agentera/DOCS.md exists and use its path mapping; if absent, use the default layout.
 
 ### Ecosystem context
 
@@ -55,7 +55,7 @@ Two modes:
 
 ## Step 0: Detect mode
 
-Before doing anything else, check if `~/.claude/profile/PROFILE.md` exists.
+Before doing anything else, check if `$PROFILERA_PROFILE_DIR/PROFILE.md` exists (default: `$XDG_DATA_HOME/agentera/PROFILE.md`). <!-- platform: profile-path -->
 
 **If it does NOT exist**: Proceed directly to Full mode (Step 1).
 
@@ -88,10 +88,10 @@ Steps: extract, read, categorize, generate, validate.
 Run extraction to gather raw decision signals into a single corpus file. The script scans memory files, session history, conversations, and project configs, normalizing all records into a unified schema with `source_kind` tags.
 
 ```bash
-python3 scripts/extract_all.py --output-dir ~/.claude/profile/intermediate
+python3 scripts/extract_all.py
 ```
 
-Run from the skill's root directory. Output: `~/.claude/profile/intermediate/corpus.json`.
+Run from the skill's root directory. Output defaults to `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` (default: `$XDG_DATA_HOME/agentera/intermediate/corpus.json`). <!-- platform: profile-path -->
 
 Read the corpus file's top-level `metadata` object to confirm counts per source family. Report totals to the user.
 
@@ -101,7 +101,7 @@ Read the corpus file's top-level `metadata` object to confirm counts per source 
 
 ### Step 2: Read corpus data
 
-Read `~/.claude/profile/intermediate/corpus.json`. Each record carries a `source_kind` field. Group records by source family for synthesis:
+Read the corpus.json produced in Step 1. Each record carries a `source_kind` field. Group records by source family for synthesis:
 
 1. **instruction_document**: Memory files, CLAUDE.md, AGENTS.md (highest signal: explicit user instructions)
 2. **history_prompt**: Decision-rich prompts from session history
@@ -182,9 +182,9 @@ Look for cross-category patterns and contradictions: stated principle vs shipped
 
 Output constraint: ≤30 words per signal, ≤15 words per evidence line.
 
-Write the decision profile to `~/.claude/profile/PROFILE.md`.
+Write the decision profile to `$PROFILERA_PROFILE_DIR/PROFILE.md`. <!-- platform: profile-path -->
 
-If a previous version exists: copy to `~/.claude/profile/history/PROFILE-{timestamp}.md`, generate new version, show change summary (added, updated, removed).
+If a previous version exists: copy to `$PROFILERA_PROFILE_DIR/history/PROFILE-{timestamp}.md`, generate new version, show change summary (added, updated, removed). <!-- platform: profile-path -->
 
 When presenting the profile, frame it as a colleague reflecting on what they've observed, not a system delivering results. Open with what stood out, what surprised you, where the user is most consistent and where they contradict themselves. The structured profile follows, but the human read comes first.
 
@@ -343,7 +343,7 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 ## Cross-skill integration
 
-Profilera is part of a twelve-skill ecosystem. The decision profile it produces is consumed by the other skills.
+Profilera is part of a twelve-skill suite. The decision profile it produces is consumed by the other skills.
 
 ### Consumed by /realisera
 Realisera runs the effective profile script in its Orient step to get a confidence-weighted summary table. High effective confidence entries are treated as strong constraints; low effective confidence entries are treated as suggestions. Full rules are read from PROFILE.md when needed for detailed reasoning.
@@ -384,7 +384,7 @@ Run from the profilera skill directory. Outputs a markdown summary table with ef
 ```
 /profilera
 ```
-Full extraction across all sources. Produces `~/.claude/profile/PROFILE.md`.
+Full extraction across all sources. Produces `$PROFILERA_PROFILE_DIR/PROFILE.md`. <!-- platform: profile-path -->
 
 ### Regular validation
 ```
