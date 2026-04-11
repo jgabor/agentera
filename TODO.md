@@ -10,6 +10,8 @@
 - [ ] [refactor] analyze_progress.py::analyze() is 114 lines with 5-branch suggestion engine — extract helper per signal type if new signal added
 
 ## Resolved
+- [x] ~~ISS-38: [feat] Move profile path to XDG-standard agentera data directory (Decision 27)~~ · fixed in 32cd8c7..4870d80 (XDG default with platform detection, auto-migration from ~/.claude/profile/, OpenCode plugin sets PROFILERA_PROFILE_DIR at init)
+- [x] ~~ISS-37: [feat] Implement Section 21 session corpus contract (Decision 26)~~ · fixed in 74e539c..277e559 (spec envelope format, multi-runtime corpus builder, self-validation, SKILL.md Steps 1-2 update, 14 new tests, version bump 1.10.0)
 - [x] ~~ISS-31: [test] Build test suite + CI gating~~ · fixed in 145c637..ab4af08 (240 tests across 12 files; GitHub Actions workflow on push/PR)
 - [x] ~~ISS-36: [feat] Realisera and orkestrera reality verification gate (Section 19)~~ · fixed in 1145e6d..4ac09f0 plus plan-level freshness checkpoint
 - [x] ~~ISS-35: [fix] Spec-to-skill semantic drift across 12 duplication points~~ · fixed in 2b208f9..7a8f1b0

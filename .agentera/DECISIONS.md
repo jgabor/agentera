@@ -708,3 +708,17 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Reasoning**: The contract is a binding excerpt: the skill MUST follow these rules. "Contract" carries the obligation that "context" lacks. The pair is clean: the spec defines the rules, your contract is your binding slice. Dropping "ecosystem-" from everywhere eliminates redundancy (agentera IS the ecosystem). Upper/lower case split follows the existing convention: root artifacts are UPPERCASE (VISION.md, TODO.md), skill reference files are lowercase (harness-guide.md, audit-commands.md). The rename makes the spec a first-class root artifact rather than hiding it in references/.
 **Confidence**: firm
 **Feeds into**: PLAN.md (Platform Portability plan)
+
+## Decision 26 · 2026-04-11
+
+**Question**: How to implement Section 21's session corpus contract to close the gap between spec and extraction pipeline
+**Context**: Section 21 defines four normalized record types (instruction_document, history_prompt, conversation_turn, project_config_signal) with provenance metadata, but extract_all.py bypasses the contract entirely, going from Claude Code JSONL internals to four ad-hoc intermediate JSON files. The spec exists; the implementation does not. Users may also switch between runtimes (Claude Code, OpenCode) between sessions, so the corpus must be runtime-agnostic.
+**Alternatives**:
+- [Separate adapter layer] new script translates extract_all.py output into Section 21 format, rejected: unnecessary indirection, two scripts maintaining the same knowledge
+- [Runtime-specific adapters] each runtime ships its own adapter, profilera just expects corpus.json, rejected: user may switch runtimes between sessions, corpus must aggregate across all available runtimes
+- [Current runtime only] detect and extract from whichever runtime is active, rejected: decision patterns are runtime-agnostic, older data from a different runtime is still valid signal
+- [Four files, normalized schemas] keep the four-file split but apply Section 21 schemas, rejected: unnecessary complexity when a single file with source_kind filtering is cleaner
+**Choice**: Refactor extract_all.py into a multi-runtime corpus builder that probes for available runtime data, extracts from all detected runtimes, and produces a single self-describing corpus.json with a metadata envelope and normalized Section 21 records. Adapter self-validates. Section 21 updated to specify the envelope format.
+**Reasoning**: Runtime is provenance metadata, not a freshness signal. A user's decision patterns are the same regardless of which tool produced the record. Staleness is time-based, not runtime-based. The 1M context window is sufficient for multi-runtime data, and profilera runs rarely enough that the marginal token cost is justified by a more complete picture. Compression of extracted data before LLM consumption is a future optimization. Self-validation at the adapter catches malformed output at the source rather than letting it propagate to profilera.
+**Confidence**: firm
+**Feeds into**: TODO.md (ISS-37)

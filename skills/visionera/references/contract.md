@@ -1,7 +1,7 @@
 <!-- contract: visionera -->
 <!-- source: SPEC.md (sha256: 8c5a8cabb5c14b0ce90c1265babfcc0039a14032de2c0a39fba806f421fb2f0b) -->
 <!-- sections: 4, 5, 6, 12 -->
-<!-- generated: 2026-04-11T13:50:22Z -->
+<!-- generated: 2026-04-11T13:50:30Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
