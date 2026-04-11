@@ -1,31 +1,19 @@
 # Health
 
-## Audit 7 · 2026-04-10
+## Audit 7 · 2026-04-11
 
-**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, test health, version health, artifact freshness, security hygiene
-**Findings**: 0 critical, 2 warnings, 4 info (0 filtered by confidence)
-**Overall trajectory**: ⮉ improving. Tests B→A (240 tests across 12 files, all 18 linter checks covered, extract_all.py now tested). Architecture A→A (CLAUDE.md stale path; all other dimensions clean). Security A, Coupling A, Version A.
-**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Tests [A] | Version [A] | Security [A] | Artifact freshness [A]
+**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene
+**Findings**: 0 critical, 3 warnings, 5 info (0 filtered by confidence)
+**Overall trajectory**: ⮉ improving vs Audit 6. Tests B→A (240 tests, 18/18 linter checks, all scripts covered). Architecture A, Patterns A, Coupling A, Security A. Version B (one unbumped fix commit since 1.8.0). Complexity C (newly assessed; 2 hotspots in data-processing scripts).
+**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Complexity [C] | Tests [A] | Version [B] | Security [A] | Artifact freshness [A]
 
 ### Architecture alignment: A
 
-README, SPEC.md, registry.json, and the 12-skill structure are fully aligned. The spec linter passes 0/0 across all 216 checks. All contract files current. One stale reference:
-
-#### ⇉ CLAUDE.md references `references/SPEC.md` instead of root `SPEC.md`, warning (confidence: 98)
-- **Location**: `CLAUDE.md:16`
-- **Evidence**: Layout block says `references/SPEC.md` but the file was renamed to root `SPEC.md` in Decision 23 (cycle 88). Code (validate_spec.py, generate_contracts.py, hooks) correctly references root path.
-- **Impact**: Misleading for contributors reading the layout block. Execution unaffected.
-- **Suggested action**: Update CLAUDE.md layout block and prose references to `SPEC.md`.
+README, SPEC.md, registry.json, and the 12-skill structure are fully aligned. The spec linter passes 0/0 across all 216 checks. All contract files current. No findings. (The CLAUDE.md stale path noted in an earlier draft was already fixed by `a1a88a6` before this audit was written.)
 
 ### Pattern consistency: A
 
-All 12 skills have consistent frontmatter, cross-skill integration ("twelve-skill suite"), artifact path resolution, and safety rails sections. Platform annotations applied across 10 of 12 skills (profilera and visualisera are the other two with annotations). Two skills reference the profile script without annotation:
-
-#### ⇉ inspektera and planera reference effective_profile.py without `<!-- platform: profile-path -->` annotation, warning (confidence: 85)
-- **Location**: `skills/inspektera/SKILL.md`, `skills/planera/SKILL.md`
-- **Evidence**: Both skills include `python3 scripts/effective_profile.py` in their Step 1 workflow (profilera skill directory path). Seven other skills annotate this same reference with `<!-- platform: profile-path -->`. These two omit it.
-- **Impact**: Inconsistent annotation coverage. The linter does not flag un-annotated references (it validates annotation correctness, not annotation completeness).
-- **Suggested action**: Add `<!-- platform: profile-path -->` after the effective_profile references in both skills.
+All 12 skills have consistent frontmatter, cross-skill integration ("twelve-skill suite"), artifact path resolution, and safety rails sections. Platform annotations applied across all 12 skills. No findings. (The missing annotations in inspektera and planera noted in an earlier draft were already fixed by `a1a88a6` before this audit was written.)
 
 ### Coupling health: A
 
@@ -59,9 +47,37 @@ Clean DAG import graph. No circular dependencies. All skill scripts self-contain
 - **Impact**: Low. The function orchestrates already-tested scripts.
 - **Suggested action**: Add an integration test that exercises the subprocess routing.
 
-### Version health: A
+### Complexity hotspots: C
 
-All versions at 1.8.0 (profilera 2.7.0), consistent across 12 plugin.json, registry.json, and marketplace.json. The bump from 1.7.0 was performed in cycle 94 (8c83613). No unbumped feat/fix commits since the bump. CHANGELOG [1.8.0] promoted with date. Healthy.
+Not assessed in the prior draft; added in validation pass. The codebase has several data-processing scripts with functions exceeding 50 lines. Two warrant warning-level attention; one is informational.
+
+#### ⇉ analyze_progress.py::analyze() is 114 lines with a 5-branch suggestion engine, warning (confidence: 72)
+- **Location**: `skills/realisera/scripts/analyze_progress.py:96-209`
+- **Evidence**: 114-line function performs velocity, streak, inspiration-rate, and stall detection in a single body. Suggestion generation has 5 conditional branches building diagnostic messages inline. No sub-functions.
+- **Impact**: Adding a new progress signal requires editing a deeply-nested conditional block. Not a current risk (the script is rarely modified), but a growth trap.
+- **Suggested action**: Extract suggestion-building into a helper per signal type if a new signal is added.
+
+#### ⇉ validate_spec.py::check_severity_levels() is 98 lines with 4-level nesting, warning (confidence: 88)
+- **Location**: `scripts/validate_spec.py:342-439`
+- **Evidence**: Loop structure: `for skill → for table_match → for row → for term → if match`. Four overlapping regex patterns for table rows, headings, severity sections, and mapping entries.
+- **Impact**: The linter is actively maintained (most frequently edited Python file). 4-level nesting makes adding a new severity check error-prone.
+- **Suggested action**: Extract per-pattern matchers into named helpers to flatten nesting to 2 levels.
+
+#### ⇢ validate_spec.py is 1073 lines total with 40+ check functions, info (confidence: 85)
+- **Location**: `scripts/validate_spec.py`
+- **Evidence**: 18 check functions, many 50-80 lines. Largest single file in the project. All check functions pass currently (0 errors, 0 warnings), so this is a maintenance signal, not a defect.
+- **Impact**: If the linter continues to grow (new spec sections → new checks), it will become harder to navigate and modify safely.
+- **Suggested action**: No action required now. If it exceeds 1400 lines, consider splitting into modules by check category.
+
+### Version health: B
+
+All versions at 1.8.0 (profilera 2.7.0), consistent across 12 plugin.json, registry.json, and marketplace.json. The bump from 1.7.0 was performed in cycle 94 (8c83613). One unbumped `fix` commit since the bump:
+
+#### ⇉ One unbumped fix commit since 1.8.0, warning (confidence: 78)
+- **Location**: commit `a1a88a6 fix(docs): update CLAUDE.md spec path to root SPEC.md, add missing platform annotations`
+- **Evidence**: `semver_policy: "fix = patch"`. The commit type is `fix`, qualifying for a patch bump to 1.8.1. Two other commits since the bump are `docs` type, which correctly do not trigger a bump.
+- **Impact**: Version files report 1.8.0 but a patch-qualifying fix has shipped. Low severity: the fix was documentation-only with no runtime behavior change.
+- **Suggested action**: Bump to 1.8.1 per DOCS.md policy, or explicitly reclassify the commit as `docs` in CHANGELOG if the team treats doc-only fixes as non-bumping.
 
 ### Artifact freshness: A
 
@@ -75,10 +91,10 @@ Zero hardcoded secrets. Zero eval/exec/os.system/shell=True. All 5 subprocess ca
 
 ### Trends vs Audit 6
 
-- **Improved**: Tests B→A (171→240 tests, 7→12 files, extract_all.py gap closed, 18/18 check functions covered). Version health stable at A through three bumps (1.5.0→1.8.0).
-- **Degraded**: None.
-- **New findings**: CLAUDE.md stale path (Decision 23 rename missed). Two skills missing platform annotations (new convention from Section 20).
-- **Resolved**: extract_all.py untested (now has test_extract_all.py with 320 LOC). DOCS.md stale references (fixed by dokumentera Audit 7 earlier this session).
+- **Improved**: Tests B→A (171→240 tests, 7→12 files, extract_all.py gap closed, 18/18 check functions covered).
+- **Degraded**: Version A→B (one unbumped fix commit). Complexity C (newly assessed; was not tracked in prior audits).
+- **New findings**: Complexity hotspots dimension added for the first time (C grade, 2 warnings). Version health downgraded from A (prior drafts missed the unbumped fix commit).
+- **Resolved**: extract_all.py untested (now has test_extract_all.py with 320 LOC). DOCS.md stale references (fixed by dokumentera). CLAUDE.md spec path and annotation coverage issues both fixed by `a1a88a6` (these were reported as open in the initial Audit 7 draft but were already resolved at write time).
 
 ### Patterns Observed
 
