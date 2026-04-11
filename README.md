@@ -136,78 +136,46 @@ Three project-facing files at root, nine operational files in `.agentera/`.
 
 <br>
 
+### All runtimes
+
+```bash
+npx skills install -g jgabor/agentera
+```
+
+Installs all 12 skills for any supported runtime: Claude Code, OpenCode, Cursor, Codex, Gemini CLI, and [40+ others](https://skills.sh). Skills are symlinked to `~/.agents/skills/` and auto-discovered by each runtime.
+
+### Enable lifecycle hooks (optional)
+
+Hooks add session context preload, artifact validation, and session bookmarks. Without hooks, skills work independently; with hooks, they behave as a team.
+
+**Claude Code**: hooks auto-load from the installed skill directory. No extra step.
+
+**OpenCode**: copy the hook plugin:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \
+  -o ~/.config/opencode/plugins/agentera.js
+```
+
+### Alternative install methods
+
+**Claude Code plugin registry**: `claude plugin add jgabor/agentera`
+
+**Manual (git clone)**:
+
+```bash
+git clone git@github.com:jgabor/agentera.git ~/.agents/agentera
+```
+
+Then reference globally in your runtime's settings (Claude Code example):
+
+```json
+{
+  "skillPaths": ["~/.agents/agentera/skills"]
+}
+```
+
 > [!NOTE]
-> The install steps below target [Claude Code](https://docs.anthropic.com/en/docs/claude-code), the current reference implementation. The portable core is defined in the spec; adapters for other runtimes will carry their own install instructions. `profilera` requires a session corpus per the Section 21 Session Corpus Contract and remains adapter-specific until the target runtime provides one.
-
-### From the plugin registry
-
-```bash
-claude plugin add jgabor/agentera
-```
-
-### With npx
-
-```bash
-npx skills add jgabor/agentera
-```
-
-### Manual (git clone)
-
-Clone the repo:
-
-```bash
-git clone git@github.com:jgabor/agentera.git ~/.claude/agentera
-```
-
-Add individual skills to your project's `.claude/settings.json`:
-
-```json
-{
-  "skills": ["~/.claude/agentera/skills/inspirera"]
-}
-```
-
-Or reference the repo globally in `~/.claude/settings.json` to make all skills available everywhere:
-
-```json
-{
-  "skillPaths": ["~/.claude/agentera/skills"]
-}
-```
-
-Pull updates at any time:
-
-```bash
-cd ~/.claude/agentera && git pull
-```
-
-</details>
-
-<details>
-<summary><strong>Using with OpenCode</strong></summary>
-
-<br>
-
-agentera skills are runtime-portable. The SKILL.md files load in OpenCode without modification; only the install paths differ.
-
-**Global skill install** (symlink each skill into OpenCode's global skills directory):
-
-```bash
-for d in skills/*/; do
-  ln -s "$(pwd)/$d" ~/.config/opencode/skills/$(basename "$d")
-done
-```
-
-**Plugin install** (hooks for artifact validation and session continuity):
-
-```bash
-cp .opencode/plugins/agentera.js ~/.config/opencode/plugins/
-```
-
-**Profile path**: profilera writes `PROFILE.md` to `~/.config/opencode/profile/PROFILE.md` when running under OpenCode.
-
-**Compatibility path**: OpenCode also discovers skills from `.claude/skills/` (Claude Code compatibility), so project-local installs work unchanged.
-
-For full capability mapping, session corpus support, and sub-agent dispatch strategies, see [`references/adapters/opencode.md`](./references/adapters/opencode.md).
+> `profilera` mines runtime-specific session data and remains adapter-specific per the [Section 21 Session Corpus Contract](./SPEC.md). All other skills are fully portable. For OpenCode capability details, see [`references/adapters/opencode.md`](./references/adapters/opencode.md).
 
 </details>
