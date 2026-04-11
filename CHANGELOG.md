@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.8.1] · 2026-04-11
+
+### Fixed
+- Update CLAUDE.md layout block to reference root SPEC.md (post-Decision 23 rename)
+- Add missing `<!-- platform: profile-path -->` annotations to inspektera and planera SKILL.md
+
 ## [1.8.0] · 2026-04-10
 
 ### Added
