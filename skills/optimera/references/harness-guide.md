@@ -106,7 +106,7 @@ Write the harness in whatever language is most natural for the project:
 - **The project's language**: if the project has a build system (Make, Mage, Just, Task),
   consider adding a harness target.
 
-The harness lives at `.optimera/harness` and must be executable (`chmod +x`).
+The harness lives at `.agentera/optimera/<objective-name>/harness` and must be executable (`chmod +x`).
 
 ---
 
