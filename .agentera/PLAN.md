@@ -63,7 +63,7 @@ The migration creates `.agentera/optimera/` as a skill-scoped operational direct
 
 ### Task 4: Update DOCS.md, .gitignore, and hooks
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 - GIVEN .agentera/DOCS.md artifact mapping table WHEN OBJECTIVE.md and EXPERIMENTS.md rows are checked THEN they have been removed
 - GIVEN .gitignore WHEN optimera-related patterns are read THEN runs/ and vehicle/ patterns use `.agentera/optimera/*/runs/` and `.agentera/optimera/*/vehicle/` glob paths
