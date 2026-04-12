@@ -5,12 +5,12 @@
 ## ⇉ Degraded
 
 ## → Normal
-- [ ] [feat] ISS-39: Implement optimera multi-objective support (Decision 30). Move `.optimera/` under `.agentera/optimera/`. Named subdirs per objective (`hej-token/`, `realisera-token/`), each self-contained (OBJECTIVE.md, EXPERIMENTS.md, harness, helpers, vehicle/, runs/). Active objective inferred from context. Drop OBJECTIVE.md/EXPERIMENTS.md from DOCS.md artifact mapping. Update optimera SKILL.md, .gitignore, DOCS.md. One-shot migration of existing data. Surface to /planera.
 
 ## ⇢ Annoying
 - [ ] [refactor] analyze_progress.py::analyze() is 114 lines with 5-branch suggestion engine — extract helper per signal type if new signal added
 
 ## Resolved
+- [x] ~~ISS-39: [feat] Implement optimera multi-objective support (Decision 30)~~ · fixed in bd88f63..845a387 (per-objective subdirs under .agentera/optimera/, active-objective inference, SPEC.md/SKILL.md/hooks/DOCS.md updates, version bump 1.12.0)
 - [x] ~~ISS-38: [feat] Move profile path to XDG-standard agentera data directory (Decision 27)~~ · fixed in 32cd8c7..4870d80 (XDG default with platform detection, auto-migration from ~/.claude/profile/, OpenCode plugin sets PROFILERA_PROFILE_DIR at init)
 - [x] ~~ISS-37: [feat] Implement Section 21 session corpus contract (Decision 26)~~ · fixed in 74e539c..277e559 (spec envelope format, multi-runtime corpus builder, self-validation, SKILL.md Steps 1-2 update, 14 new tests, version bump 1.10.0)
 - [x] ~~ISS-31: [test] Build test suite + CI gating~~ · fixed in 145c637..ab4af08 (240 tests across 12 files; GitHub Actions workflow on push/PR)

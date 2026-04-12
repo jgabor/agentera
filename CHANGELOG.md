@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [1.12.0] · 2026-04-12
+
+### Added
+- Multi-objective support for optimera: named subdirectories under `.agentera/optimera/` with active-objective inference (Decision 30, ISS-39)
+- Active-objective inference in optimera SKILL.md: single dir = use it, multiple = most recent, ambiguous = ask
+
+### Changed
+- `.optimera/` consolidated under `.agentera/optimera/` (single artifact root per Decision 4)
+- SPEC.md Section 4 and 18 updated for per-objective OBJECTIVE.md/EXPERIMENTS.md paths
+- Hooks and DOCS.md updated: OBJECTIVE.md/EXPERIMENTS.md removed from fixed-path tracking (optimera self-manages)
+
 ## [1.11.0] · 2026-04-12
 
 ### Added
