@@ -752,6 +752,19 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 **Confidence**: provisional
 **Feeds into**: `skills/optimera/references/` (expansion), standalone
 
+## Decision 30 · 2026-04-12
+
+**Question**: How should optimera represent multiple objectives, and should `.optimera/` consolidate under `.agentera/`?
+**Context**: Today optimera pins a single OBJECTIVE.md / EXPERIMENTS.md / `.optimera/harness`. Rotating targets (hej-token to realisera-token) requires hand-written archive moves. `.optimera/` lives outside `.agentera/`, splitting artifact roots. Decision 4 established single-root artifact resolution via `.agentera/DOCS.md`.
+**Alternatives**:
+- Flat files + registry: keep OBJECTIVE.md/EXPERIMENTS.md in `.agentera/`, add a registry file with an active pointer. More machinery, single-objective illusion.
+- Active symlink: named subdirs with a symlink marking the active one. Cross-platform fragility.
+- Named subdirs, self-contained: one directory per objective under `.agentera/optimera/`, each containing OBJECTIVE.md, EXPERIMENTS.md, harness, helpers, vehicle/, runs/. No registry, no symlinks. Directory existence is the registry.
+**Choice**: Named subdirs under `.agentera/optimera/`. Each objective is fully self-contained (helpers duplicated per-objective, no shared dir). Active objective inferred from context: single objective = use it, multiple = most recent activity, ambiguous = ask. DOCS.md drops OBJECTIVE.md/EXPERIMENTS.md from artifact mapping (optimera owns its own path resolution). One-shot migration of existing hej-token and realisera-token data.
+**Reasoning**: Convention over configuration. The directory structure IS the multi-objective representation. Self-contained objectives are independently archivable, independently measurable, and require zero coordination. Single root under `.agentera/` aligns with Decision 4. Dropping DOCS.md mapping is correct because OBJECTIVE.md/EXPERIMENTS.md are no longer at fixed paths.
+**Confidence**: firm
+**Feeds into**: TODO.md (implementation), optimera SKILL.md (path changes), DOCS.md (mapping update), .gitignore (path update)
+
 ## Decision 29 · 2026-04-12
 
 **Question**: How should the realisera-token harness be redesigned after three consecutive discarded experiments where run-to-run variance (13-20%) drowned the optimization signal (5-10%)?
