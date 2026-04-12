@@ -2,7 +2,7 @@
 name: realisera
 description: >
   REALISERA (Relentless Execution: Autonomous Loops Iterating Software; Evolve, Refine, Adapt). ALWAYS use this skill for autonomous or continuous development of a project. This skill is REQUIRED whenever the user wants you to independently decide what to build and build it, evolve a project over time, run development cycles, or make autonomous progress on a codebase. Do NOT attempt autonomous development without this skill because it contains the critical workflow for vision-driven development, persona-grounded decisions, structured cycles, and safety rails that prevent wasted work. Trigger on: "realisera", "run a dev cycle", "evolve the project", "develop autonomously", "build the next feature", "keep building", "start building", "work on the project", "refine the vision", any mention of autonomous/continuous development, any request to figure out what to build next, any request to pick up where you left off, any request to make progress on a project without specific instructions, or setting up /loop for recurring development. Also trigger when the user has a codebase and wants you to independently decide what to work on.
-spec_sections: [1, 2, 3, 4, 5, 6, 11, 17, 18, 19]
+spec_sections: [2, 3, 4, 6, 19]
 ---
 
 # REALISERA

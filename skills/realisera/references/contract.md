@@ -1,31 +1,9 @@
 <!-- contract: realisera -->
 <!-- source: SPEC.md (sha256: 8c5a8cabb5c14b0ce90c1265babfcc0039a14032de2c0a39fba806f421fb2f0b) -->
-<!-- sections: 1, 2, 3, 4, 5, 6, 11, 17, 18, 19 -->
-<!-- generated: 2026-04-11T13:50:30Z -->
+<!-- sections: 2, 3, 4, 6, 19 -->
+<!-- generated: 2026-04-12T09:15:11Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
-
-## 1. Confidence Scale
-
-Canonical scale: **0-100 integer**.
-
-Five tiers with shared boundaries. Each skill defines its own domain-specific labels describing what the tier means in its context.
-
-| Tier | Range | Semantic |
-|------|-------|----------|
-| 1 (highest) | 90-100 | Verified / near-certain |
-| 2 | 70-89 | Strong evidence / established |
-| 3 | 50-69 | Moderate evidence / emerging |
-| 4 | 30-49 | Weak evidence / uncertain |
-| 5 (lowest) | 0-29 | Speculative / extrapolated |
-
-**Rules**:
-- Skills producing confidence scores MUST use integer 0-100
-- Skills consuming confidence scores MUST interpret them against these tier boundaries
-- Temporal decay is opt-in: skills with a temporal dimension (e.g., profilera) may apply exponential decay; skills without one (e.g., inspektera) use static scores
-- When referencing profile consumption thresholds, use 65+ for "strong constraint" and <45 for "suggestion" (integer equivalents of the 0.0-1.0 thresholds)
-
-**Linter check**: Deterministic. Regex for tier boundaries in SKILL.md text.
 
 ## 2. Severity Levels
 
@@ -262,34 +240,6 @@ When writing a new cycle: if >10 full-detail entries exist, collapse the oldest 
 
 Same logic: collapse oldest full-detail to one-line when >8 exist. Drop oldest one-line when >22 one-line entries exist. Archive section sits below recent experiments under an `## Archived Experiments` heading.
 
-## 5. Artifact Path Resolution
-
-The default artifact layout is deterministic (see Section 4, Default layout). Skills know where artifacts live by convention, so no discovery step is required for the default case.
-
-`.agentera/DOCS.md` is checked ONLY for path overrides. If a project needs artifacts in non-default locations, dokumentera writes an Artifact Mapping section to `.agentera/DOCS.md` with custom paths. Skills use those paths instead of the defaults.
-
-Every skill that reads or writes artifacts MUST include the artifact path resolution instruction. The canonical template:
-
-```
-### Artifact path resolution
-
-Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an
-Artifact Mapping section, use the path specified for each canonical filename ({OWN_ARTIFACTS},
-etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the
-default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts
-in .agentera/. This applies to all artifact references in this skill, including cross-skill
-{reads_or_writes} ({CROSS_ARTIFACTS}).
-```
-
-Where:
-- `{OWN_ARTIFACTS}` = the skill's own artifact filenames
-- `{reads_or_writes}` = "reads", "writes", or "reads and writes" as appropriate
-- `{CROSS_ARTIFACTS}` = artifacts from other skills that this skill accesses
-
-The section MUST appear under "## State artifacts" (not under cross-skill integration or elsewhere).
-
-**Linter check**: Deterministic. Section presence under correct parent heading, core sentence pattern matching.
-
 ## 6. Profile Consumption
 
 Skills that read the decision profile use one of two patterns:
@@ -314,138 +264,6 @@ Both patterns MUST include a fallback instruction:
 "If the script or PROFILE.md is missing, proceed without persona grounding."
 
 **Linter check**: Deterministic. Script invocation syntax, threshold values, fallback instruction presence.
-
-## 11. Loop Guard
-
-Skills that run autonomous loops (currently: realisera, optimera, orkestrera) MUST include an escalation rule to prevent runaway cycles producing bad work.
-
-### The rule
-
-When the skill detects 3 consecutive failed cycles, it MUST:
-
-1. **Stop**: do not attempt a 4th cycle on the same problem
-2. **Log**: file the failure pattern to TODO.md with context: what was attempted, what failed, and what the skill thinks is wrong
-3. **Surface**: tell the user what happened and recommend a course of action
-   (e.g., "/resonera to deliberate on the approach", "manual investigation needed", "dependency missing")
-
-### Failure detection
-
-Consecutive failures are detected by reading the last 3 entries in PROGRESS.md. A cycle counts as failed when:
-
-- The commit was reverted or the verification step failed
-- The cycle logged a blocker and pivoted to different work 3 times in a row
-  (3 consecutive pivots = the available work surface is exhausted)
-- The cycle's "Discovered" field logs the same issue that was supposed to be fixed
-
-### Complementary mechanisms
-
-Optimera's existing plateau detection in `analyze_experiments.py` detects experiment stagnation (no improvement over N iterations). The loop guard is complementary: plateau detection handles metric stagnation, escalation handles general execution failure. Both can trigger independently.
-
-### Applicability
-
-The escalation rule is REQUIRED for autonomous-loop skills: `realisera`, `optimera`, `orkestrera`.
-
-Orkestrera uses retry-based failure detection (max 2 retries per task, escalation after 3 consecutive task failures) rather than PROGRESS.md consecutive-failure inspection.
-
-Other skills MAY include loop guard language but are not required to. Their workflows are typically single-invocation and do not risk runaway cycles.
-
-### SKILL.md structural requirement
-
-Autonomous-loop skills MUST include loop guard language in their `## Exit signals` section, referencing the 3-failure threshold and either PROGRESS.md inspection (realisera, optimera) or retry-based task failure detection (orkestrera).
-
-**Linter check**: Deterministic. For skills in the autonomous-loop set (realisera, optimera, orkestrera), check that the `## Exit signals` section contains both "3" (the threshold) and a reference to PROGRESS.md, consecutive failure detection, or retry-based task failure patterns (`loop-guard`). Orkestrera uses retry/task-based patterns instead of PROGRESS.md. Advisory for all other skills.
-
-## 17. Phase Tracking
-
-Every realisera cycle operates in one of five phases. Phases map the suite's skills to a lifecycle model, making it possible for consuming skills to reason about what kind of work a cycle performed and whether phase transitions follow a coherent sequence.
-
-### Phases
-
-| Phase | Skills | Purpose |
-|-------|--------|---------|
-| **envision** | visionera | Define or refine the project's north star |
-| **deliberate** | resonera | Reason through decisions before committing to a direction |
-| **plan** | planera | Structure work into tasks with dependencies and acceptance criteria |
-| **build** | realisera, optimera, dokumentera, visualisera | Implement, optimize, document, or design |
-| **audit** | inspektera | Evaluate structural health and alignment |
-
-### Transitions
-
-Phases have valid successors. A cycle's phase is determined by the primary skill performing work, not by the phase of the previous cycle (phases are not a strict pipeline).
-
-| From | Valid successors |
-|------|-----------------|
-| envision | deliberate, plan, build |
-| deliberate | plan, build, envision |
-| plan | build, deliberate |
-| build | build, audit, plan |
-| audit | build, plan, deliberate, envision |
-
-**Terminal states**: audit and build are terminal in the sense that a project can remain in either phase indefinitely (continuous building, periodic auditing). envision, deliberate, and plan are transitional: they produce artifacts consumed by downstream phases.
-
-**Self-transitions**: only build allows self-transition (consecutive build cycles are the normal case). Other phases produce a discrete output (a vision, a decision, a plan) and transition out.
-
-### PROGRESS.md phase field
-
-Each cycle entry in PROGRESS.md includes a **Phase** field immediately after the cycle heading. The value is one of the five phase names: `envision`, `deliberate`, `plan`, `build`, `audit`.
-
-```markdown
-■ ## Cycle N · YYYY-MM-DD HH:MM
-
-**Phase**: build
-**What**: one-line summary of what shipped
-```
-
-Consuming skills use the phase field for trend analysis (e.g., ratio of build to audit cycles, whether deliberation precedes major architectural changes).
-
-**Linter check**: None. Phase tracking is defined here for producing and consuming skills. SKILL.md integration is handled per-skill, not by the spec linter.
-
-## 18. Staleness Detection
-
-Stale artifacts mislead routing decisions and cause skills to act on outdated context. This section defines how staleness is detected and which artifacts each skill is expected to update.
-
-### Skill-to-expected-artifact mapping
-
-Each skill produces specific artifacts as part of its workflow. When a skill is dispatched (directly or via orkestrera), the artifacts listed here are the ones it is expected to have updated upon completion. This table is the authoritative lookup for staleness checks.
-
-| Skill | Expected artifact outputs |
-|-------|--------------------------|
-| visionera | VISION.md |
-| resonera | .agentera/DECISIONS.md |
-| planera | .agentera/PLAN.md |
-| realisera | .agentera/PROGRESS.md, TODO.md, CHANGELOG.md |
-| optimera | .agentera/EXPERIMENTS.md, .agentera/OBJECTIVE.md |
-| inspektera | .agentera/HEALTH.md, TODO.md |
-| dokumentera | .agentera/DOCS.md |
-| visualisera | .agentera/DESIGN.md |
-| profilera | (profile-path capability) <!-- platform: profile-path --> |
-| inspirera | (no owned artifact; findings are filed to TODO.md or fed into other skills) |
-| orkestrera | (conductor; updates .agentera/PLAN.md task statuses and dispatches other skills) |
-| hej | (router; reads artifacts but produces none) |
-
-Skills that share an artifact (e.g., realisera and inspektera both write to TODO.md) are each expected to update it independently when dispatched. Staleness is checked per-skill, not per-artifact.
-
-### Plan-relative staleness convention
-
-When a plan exists (.agentera/PLAN.md with an active status), staleness is measured relative to the plan's creation date (the `Created` field in the plan's HTML comment metadata).
-
-**Detection rule**: after a plan completes (all tasks `■ complete` or `skipped`), compare each dispatched skill against its expected artifacts. An artifact is **stale** if its last modification date (via `git log -1 --format=%aI -- <path>`) predates the plan's creation date AND the skill was dispatched at least once during the plan.
-
-**What counts as dispatched**: a skill appears in at least one task's execution history during the plan. For orkestrera-driven plans, the dispatch log in PROGRESS.md cycle entries identifies which skills ran.
-
-**Scope**: only artifacts listed in the mapping above are checked. Artifacts that a skill reads but does not produce (e.g., realisera reads VISION.md) are not staleness candidates for that skill.
-
-**Handling stale findings**: stale artifacts are surfaced as context for the next plan cycle, not as errors. The consuming skill (orkestrera, inspektera) reports which artifacts are stale and which dispatched skills were expected to update them. This informs the next plan's task selection without blocking execution.
-
-### Fallback: no plan context
-
-When no active or recently completed plan exists (standalone skill invocation, ad-hoc inspektera audit, or hej session orientation), plan-relative detection is unavailable. The fallback heuristic applies:
-
-**Fallback rule**: an artifact is considered potentially stale if it was not modified since the most recent PROGRESS.md cycle entry. If PROGRESS.md has no entries (fresh project), no staleness check applies.
-
-The fallback is advisory, not authoritative. It surfaces artifacts that may need attention but does not carry the same signal strength as plan-relative detection (where the dispatched-skill relationship provides causal evidence of staleness).
-
-**Linter check**: None. Staleness detection is a runtime convention consumed by orkestrera and inspektera, not a SKILL.md structural requirement.
 
 ## 19. Reality Verification Gate
 
