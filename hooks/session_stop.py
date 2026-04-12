@@ -49,8 +49,6 @@ TRACKED_ARTIFACTS = [
     "DECISIONS.md",
     "PLAN.md",
     "HEALTH.md",
-    "OBJECTIVE.md",
-    "EXPERIMENTS.md",
     "DESIGN.md",
     "DOCS.md",
     "SESSION.md",

@@ -29,8 +29,6 @@ DEFAULT_PATHS: dict[str, str] = {
     "PLAN.md": ".agentera/PLAN.md",
     "PROGRESS.md": ".agentera/PROGRESS.md",
     "HEALTH.md": ".agentera/HEALTH.md",
-    "OBJECTIVE.md": ".agentera/OBJECTIVE.md",
-    "EXPERIMENTS.md": ".agentera/EXPERIMENTS.md",
     "DOCS.md": ".agentera/DOCS.md",
     "DESIGN.md": ".agentera/DESIGN.md",
     "SESSION.md": ".agentera/SESSION.md",

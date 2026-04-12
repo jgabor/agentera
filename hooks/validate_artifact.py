@@ -48,8 +48,6 @@ OP_ARTIFACTS = {
     "DECISIONS.md",
     "PLAN.md",
     "HEALTH.md",
-    "OBJECTIVE.md",
-    "EXPERIMENTS.md",
     "DESIGN.md",
     "DOCS.md",
 }
@@ -58,7 +56,6 @@ OP_ARTIFACTS = {
 # Per-entry budgets are not validated here (would require entry parsing).
 TOKEN_BUDGETS: dict[str, int] = {
     "PROGRESS.md": 3000,
-    "EXPERIMENTS.md": 2500,
     "HEALTH.md": 2000,
     "DECISIONS.md": 5000,  # No explicit full-file budget in spec; generous limit
     "PLAN.md": 2500,
@@ -67,7 +64,6 @@ TOKEN_BUDGETS: dict[str, int] = {
     "DOCS.md": 2000,
     "TODO.md": 5000,  # No explicit full-file budget in spec; generous limit
     "CHANGELOG.md": 5000,  # No explicit full-file budget in spec; generous limit
-    "OBJECTIVE.md": 2000,  # No explicit full-file budget in spec; generous limit
 }
 
 # Required heading patterns per artifact type.
