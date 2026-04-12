@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 110 · 2026-04-12
+
+**Phase**: build
+**What**: Plan rollup: Optimera Multi-Objective Support (ISS-39, Decision 30). Migrated `.optimera/` under `.agentera/optimera/` with named subdirs per objective (realisera-token, hej-token). Updated SPEC.md Sections 4 and 18 for per-objective paths. Updated optimera and resonera SKILL.md with per-objective path resolution and active-objective inference. Updated DOCS.md, .gitignore, and hooks to remove flat OBJECTIVE.md/EXPERIMENTS.md tracking. Version bumped to 1.12.0.
+**Commits**: bd88f63, 60587e8, 0ba8821, cd9bf44, 845a387
+**Inspiration**: Decision 30 (firm): convention over configuration, directory structure IS the multi-objective representation
+**Discovered**: hej-token vehicle/ files were recoverable from git history (commit 8450bce). The worktree merge for Task 2 had a conflict on realisera's contract.md due to the earlier spec_sections trimming; resolved by keeping main's trimmed version and regenerating.
+**Verified**: Linter 0/0, 260 tests pass, eval dry-run resolves for optimera. `.agentera/optimera/` contains two self-contained objective subdirs. Old `.optimera/` tracked files removed.
+**Next**: ISS-39 resolved. Remaining: analyze_progress.py refactor (annoying). Vision-driven work or inspektera audit (last was Audit 7, ~4 cycles ago).
+**Context**: intent (implement Decision 30 multi-objective optimera layout) · constraints (one-shot migration, no behavioral changes to harnesses) · unknowns (none) · scope (SPEC.md, SKILL.md x2, DOCS.md, hooks, .gitignore, version files)
+
 ■ ## Cycle 109 · 2026-04-12
 
 **Phase**: build
