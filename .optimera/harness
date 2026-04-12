@@ -1,30 +1,45 @@
 #!/usr/bin/env bash
-# Optimera harness: measure hej session token consumption.
+# Optimera harness: measure realisera cycle-entry token consumption.
 #
-# This is the locked, single source of truth for the hej-token metric.
-# Do NOT modify during optimization cycles; only edit under an explicit
-# /optimera brainstorm refinement, with user approval.
+# This is the locked, single source of truth for the realisera-token
+# metric. Do NOT modify during optimization cycles; only edit under an
+# explicit /optimera brainstorm refinement, with user approval.
 #
 # Pipeline:
-#   1. Ensure the Docker vehicle image is built.
-#   2. Snapshot the target repo into a staging dir (so read-only bind mounts
-#      see a stable copy while experiments modify the source tree).
+#   1. Preconditions: docker, python3, claude binary, target repo, target
+#      commit, realisera plugin dir.
+#   2. Build the Docker vehicle image if not already present (idempotent).
 #   3. Create a timestamped run directory.
-#   4. Run two conditions in sequence:
+#   4. Snapshot the lira repo at the pinned commit via `git archive` into
+#      the run dir so the working tree never leaks into the measurement.
+#   5. Build a realisera-only marketplace snapshot from skills/realisera/
+#      in the run dir.
+#   6. Run two conditions in sequence:
 #        without: no --plugin-dir (baseline)
-#        with:    --plugin-dir /plugins/hej mounted
-#   5. Parse transcripts, apply causal+structural gates, aggregate read log.
-#   6. Emit one JSON line on stdout per optimera output-schema.md.
+#        with:    --plugin-dir /plugins/agentera-realisera mounted
+#   7. Parse transcripts with --slice-before-tool Task,Agent to produce
+#      both full-transcript and pre-dispatch counters.
+#   8. Apply causal + structural gates via check_gates.py; apply the
+#      pre-dispatch composite floor in the harness's final JSON composer.
+#   9. Aggregate the reads log into ranked attribution.
+#   10. Emit one JSON line on stdout per optimera output-schema.md.
 #
 # Environment overrides:
-#   TARGET_REPO       absolute path to the agentera repo under test
-#                     (default: the repo containing this harness)
-#   HEJ_PLUGIN_DIR    absolute path to the hej skill directory to mount
-#                     (default: $TARGET_REPO/skills/hej)
-#   MODEL             model id for claude -p (default: claude-sonnet-4-6)
-#   TRIGGER_PROMPT    prompt that activates hej
-#                     (default: the one from scripts/eval_skills.py)
-#   RUN_ID            identifier for the run dir; defaults to a timestamp
+#   TARGET_REPO          absolute path to the lira repo under test
+#                        (default: $HOME/git/lira)
+#   TARGET_COMMIT        commit hash or ref to pin via `git archive`
+#                        (default: 2a68a65)
+#   AGENTERA_ROOT        absolute path to the agentera repo containing
+#                        skills/realisera/ (default: parent of this script)
+#   REALISERA_PLUGIN_DIR absolute path to skills/realisera/ to mount
+#                        (default: $AGENTERA_ROOT/skills/realisera)
+#   MODEL                model id for claude -p
+#                        (default: claude-sonnet-4-6)
+#   TRIGGER_PROMPT       prompt that activates realisera
+#                        (default: "Run one development cycle on this project.")
+#   RUN_ID               identifier for the run dir; defaults to a timestamp
+#   PRE_DISPATCH_FLOOR   minimum pre-dispatch composite (tokens) required
+#                        by the structural gate (default: 5000)
 #
 set -euo pipefail
 
@@ -34,21 +49,24 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HARNESS_ROOT="$SCRIPT_DIR"
-REPO_DEFAULT="$(cd "$SCRIPT_DIR/.." && pwd)"
+AGENTERA_DEFAULT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-TARGET_REPO="${TARGET_REPO:-$REPO_DEFAULT}"
-HEJ_PLUGIN_DIR="${HEJ_PLUGIN_DIR:-$TARGET_REPO/skills/hej}"
+AGENTERA_ROOT="${AGENTERA_ROOT:-$AGENTERA_DEFAULT}"
+REALISERA_PLUGIN_DIR="${REALISERA_PLUGIN_DIR:-$AGENTERA_ROOT/skills/realisera}"
+TARGET_REPO="${TARGET_REPO:-$HOME/git/lira}"
+TARGET_COMMIT="${TARGET_COMMIT:-5a52fdc}"
 MODEL="${MODEL:-claude-sonnet-4-6}"
-TRIGGER_PROMPT="${TRIGGER_PROMPT:-Start a new session and give me a status briefing on this project.}"
+TRIGGER_PROMPT="${TRIGGER_PROMPT:-Run one development cycle on this project. Focus on Task 2 of the current plan.}"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 RUN_DIR="$HARNESS_ROOT/runs/$RUN_ID"
+PRE_DISPATCH_FLOOR="${PRE_DISPATCH_FLOOR:-5000}"
 
 CLAUDE_BIN="${CLAUDE_BIN:-/opt/claude-code/bin/claude}"
 IMAGE_TAG="${IMAGE_TAG:-agentera-optimera-vehicle:1}"
 IMAGE_BUILD_MARK="$HARNESS_ROOT/vehicle/.image-built"
 
-DOCKER_TIMEOUT_SECONDS="${DOCKER_TIMEOUT_SECONDS:-600}"
-MAX_BUDGET_USD="${MAX_BUDGET_USD:-0.75}"
+DOCKER_TIMEOUT_SECONDS="${DOCKER_TIMEOUT_SECONDS:-900}"
+MAX_BUDGET_USD="${MAX_BUDGET_USD:-1.50}"
 
 HOST_CLAUDE_DIR="${HOST_CLAUDE_DIR:-$HOME/.claude}"
 HOST_CREDS="$HOST_CLAUDE_DIR/.credentials.json"
@@ -70,12 +88,24 @@ die() {
 
 command -v docker >/dev/null 2>&1 || die "docker not found in PATH"
 command -v python3 >/dev/null 2>&1 || die "python3 not found in PATH"
+command -v git >/dev/null 2>&1 || die "git not found in PATH"
+command -v tar >/dev/null 2>&1 || die "tar not found in PATH"
 
+[ -d "$AGENTERA_ROOT" ] || die "AGENTERA_ROOT does not exist: $AGENTERA_ROOT"
 [ -d "$TARGET_REPO" ] || die "TARGET_REPO does not exist: $TARGET_REPO"
-[ -d "$HEJ_PLUGIN_DIR" ] || die "HEJ_PLUGIN_DIR does not exist: $HEJ_PLUGIN_DIR"
-[ -f "$HEJ_PLUGIN_DIR/SKILL.md" ] || die "HEJ_PLUGIN_DIR missing SKILL.md"
+[ -d "$REALISERA_PLUGIN_DIR" ] || die "REALISERA_PLUGIN_DIR does not exist: $REALISERA_PLUGIN_DIR"
+[ -f "$REALISERA_PLUGIN_DIR/SKILL.md" ] || die "REALISERA_PLUGIN_DIR missing SKILL.md"
 [ -f "$CLAUDE_BIN" ] || die "claude binary not found at $CLAUDE_BIN"
 [ -f "$HOST_CREDS" ] || die "OAuth credentials missing at $HOST_CREDS"
+
+# Verify the target commit resolves in the target repo. Fail fast if the
+# pinned commit has been rebased away or never existed.
+git -C "$TARGET_REPO" rev-parse --verify "$TARGET_COMMIT^{commit}" >/dev/null 2>&1 \
+    || die "TARGET_COMMIT '$TARGET_COMMIT' not found in $TARGET_REPO"
+
+# Capture the resolved hash so the meta file records exactly what ran,
+# even if the caller passed a symbolic ref like HEAD or a short prefix.
+TARGET_COMMIT_FULL="$(git -C "$TARGET_REPO" rev-parse "$TARGET_COMMIT")"
 
 # ---------------------------------------------------------------------------
 # Build the vehicle image (idempotent; docker's layer cache handles reuse)
@@ -108,74 +138,112 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Per-run directory
+# Per-run directory + commit-pinned snapshot of the target repo
 # ---------------------------------------------------------------------------
 
 mkdir -p "$RUN_DIR"
 log "run dir: $RUN_DIR"
 
-# Build a hej-only marketplace snapshot. A bare plugin directory does not
-# register its SKILL.md with claude's skill loader; the loader needs a
-# marketplace manifest (.claude-plugin/marketplace.json) listing the
-# plugins by source path. We assemble a minimal hej-only marketplace in
-# the run dir and point the container's --plugin-dir at that instead of
-# the raw hej directory.
+STAGING_DIR="$RUN_DIR/target-clone"
+log "cloning $TARGET_REPO -> $STAGING_DIR (will checkout $TARGET_COMMIT_FULL)"
+git clone --local --no-hardlinks --quiet "$TARGET_REPO" "$STAGING_DIR"
+git -C "$STAGING_DIR" checkout --quiet --detach "$TARGET_COMMIT_FULL"
+
+# The clone is writable and isolated from the lira source tree. Realisera
+# can perform git log, file writes, even commits on this ephemeral clone.
+# Each run starts from an identical state, and the clone lives inside the
+# run dir so mutations are tossable.
+[ -d "$STAGING_DIR/.git" ] || die "clone missing .git/ directory"
+[ -d "$STAGING_DIR/.agentera" ] || die "clone missing .agentera/ directory at pinned commit"
+[ -f "$STAGING_DIR/VISION.md" ] || log "note: clone has no VISION.md at root"
+[ -f "$STAGING_DIR/.agentera/PROGRESS.md" ] || log "note: clone has no .agentera/PROGRESS.md"
+
+# ---------------------------------------------------------------------------
+# Realisera-only marketplace snapshot
+# ---------------------------------------------------------------------------
+#
+# A bare plugin directory does not register its SKILL.md with claude's
+# skill loader; the loader needs a marketplace manifest listing the
+# plugins by source path. Assemble a minimal realisera-only marketplace
+# in the run dir and point the container's --plugin-dir at it.
+
 MARKETPLACE_SNAPSHOT="$RUN_DIR/marketplace-snapshot"
 mkdir -p "$MARKETPLACE_SNAPSHOT/.claude-plugin"
 mkdir -p "$MARKETPLACE_SNAPSHOT/skills"
-cp -a "$HEJ_PLUGIN_DIR/." "$MARKETPLACE_SNAPSHOT/skills/hej/"
+cp -a "$REALISERA_PLUGIN_DIR/." "$MARKETPLACE_SNAPSHOT/skills/realisera/"
+
+# Derive the realisera version from its plugin manifest if available.
+REALISERA_VERSION="unknown"
+if [ -f "$REALISERA_PLUGIN_DIR/.claude-plugin/plugin.json" ]; then
+    REALISERA_VERSION=$(
+        python3 -c '
+import json, sys
+try:
+    with open(sys.argv[1]) as fh:
+        data = json.load(fh)
+    print(data.get("version", "unknown"))
+except Exception:
+    print("unknown")
+' "$REALISERA_PLUGIN_DIR/.claude-plugin/plugin.json"
+    )
+fi
 
 cat > "$MARKETPLACE_SNAPSHOT/.claude-plugin/marketplace.json" <<EOF
 {
   "\$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "agentera-optimera-hej",
+  "name": "agentera-optimera-realisera",
   "version": "1.0.0",
-  "description": "Hej-only marketplace for optimera token-consumption benchmark",
+  "description": "Realisera-only marketplace for optimera token-consumption benchmark",
   "owner": {"name": "optimera-harness"},
   "plugins": [
     {
-      "name": "hej",
-      "description": "HEJ: Holistic Entry Junction. Orient, Route, Activate.",
-      "version": "1.10.0",
+      "name": "realisera",
+      "description": "REALISERA: Relentless Execution. Autonomous Loops Iterating Software.",
+      "version": "$REALISERA_VERSION",
       "author": {"name": "jgabor"},
-      "source": "./skills/hej",
+      "source": "./skills/realisera",
       "category": "development"
     }
   ]
 }
 EOF
 
-# Legacy alias retained so the gate and meta code below still resolves.
-HEJ_SNAPSHOT="$MARKETPLACE_SNAPSHOT/skills/hej"
+REALISERA_SNAPSHOT="$MARKETPLACE_SNAPSHOT/skills/realisera"
 
 # ---------------------------------------------------------------------------
-# Target measurements
+# Target measurements + meta
 # ---------------------------------------------------------------------------
 
-agentera_bytes=0
-if [ -d "$TARGET_REPO/.agentera" ]; then
-    agentera_bytes=$(find "$TARGET_REPO/.agentera" -type f -printf '%s\n' 2>/dev/null \
-                     | awk 'BEGIN{s=0} {s+=$1} END{print s}')
+snapshot_agentera_bytes=0
+if [ -d "$STAGING_DIR/.agentera" ]; then
+    snapshot_agentera_bytes=$(find "$STAGING_DIR/.agentera" -type f -printf '%s\n' 2>/dev/null \
+                              | awk 'BEGIN{s=0} {s+=$1} END{print s}')
 fi
-hej_bytes=$(find "$HEJ_SNAPSHOT" -type f -printf '%s\n' 2>/dev/null \
-            | awk 'BEGIN{s=0} {s+=$1} END{print s}')
-target_total_bytes=$(find "$TARGET_REPO" -type f -not -path '*/.git/*' -printf '%s\n' 2>/dev/null \
-                     | awk 'BEGIN{s=0} {s+=$1} END{print s}')
+realisera_bytes=$(find "$REALISERA_SNAPSHOT" -type f -printf '%s\n' 2>/dev/null \
+                  | awk 'BEGIN{s=0} {s+=$1} END{print s}')
+snapshot_total_bytes=$(find "$STAGING_DIR" -type f -printf '%s\n' 2>/dev/null \
+                       | awk 'BEGIN{s=0} {s+=$1} END{print s}')
 
 cat > "$RUN_DIR/target.meta" <<EOF
 target_repo=$TARGET_REPO
-hej_plugin_dir=$HEJ_PLUGIN_DIR
-hej_snapshot=$HEJ_SNAPSHOT
+target_commit=$TARGET_COMMIT
+target_commit_full=$TARGET_COMMIT_FULL
+agentera_root=$AGENTERA_ROOT
+realisera_plugin_dir=$REALISERA_PLUGIN_DIR
+realisera_version=$REALISERA_VERSION
+realisera_snapshot=$REALISERA_SNAPSHOT
+staging_dir=$STAGING_DIR
 model=$MODEL
 trigger_prompt=$TRIGGER_PROMPT
+pre_dispatch_floor=$PRE_DISPATCH_FLOOR
 measured_at=$(date -Iseconds)
 run_id=$RUN_ID
 image_tag=$IMAGE_TAG
-agentera_bytes=$agentera_bytes
-agentera_token_est=$(( agentera_bytes / 4 ))
-hej_bytes=$hej_bytes
-hej_token_est=$(( hej_bytes / 4 ))
-target_total_bytes=$target_total_bytes
+snapshot_agentera_bytes=$snapshot_agentera_bytes
+snapshot_agentera_token_est=$(( snapshot_agentera_bytes / 4 ))
+realisera_bytes=$realisera_bytes
+realisera_token_est=$(( realisera_bytes / 4 ))
+snapshot_total_bytes=$snapshot_total_bytes
 EOF
 
 # ---------------------------------------------------------------------------
@@ -189,7 +257,6 @@ run_condition() {
 
     local transcript="$RUN_DIR/${name}.jsonl"
     local stderr_file="$RUN_DIR/${name}.stderr"
-    local reads_file="$RUN_DIR/${name}-reads.jsonl"
     local meta_file="$RUN_DIR/${name}.meta"
 
     log "running condition: $name"
@@ -203,20 +270,19 @@ run_condition() {
     # Hermeticity flags:
     #   --tools restricts the tool surface to a minimal explicit set; this
     #     strips default host MCP tools, CronCreate/TaskCreate/etc. from the
-    #     system prompt.
+    #     system prompt. It does NOT include Task/Agent, which is how the
+    #     pre-dispatch slice boundary is enforced: realisera cannot actually
+    #     dispatch its implementation sub-agent.
     #   --strict-mcp-config + --mcp-config with an empty JSON disables all
-    #     MCP server connections (host cloud MCPs like claude.ai Linear and
-    #     Cloudflare would otherwise auto-connect via the OAuth session).
-    #   --agents '{}' overrides the default agents set so host agents do not
-    #     leak into the container.
-    #   --setting-sources "" prevents loading user/project/local settings
-    #     files (the mounted /creds/.claude.json still supplies OAuth).
+    #     MCP server connections.
+    #   --agents '{}' overrides default agents so host agents do not leak.
+    #   --setting-sources "" prevents loading user/project/local settings.
     local exit_code=0
     timeout "${DOCKER_TIMEOUT_SECONDS}s" docker run \
         --rm \
         --network host \
-        -v "$TARGET_REPO:/workspace:ro" \
-        -v "$MARKETPLACE_SNAPSHOT:/plugins/agentera-hej:ro" \
+        -v "$STAGING_DIR:/workspace:rw" \
+        -v "$MARKETPLACE_SNAPSHOT:/plugins/agentera-realisera:ro" \
         -v "$HOST_CREDS:/creds/.credentials.json:ro" \
         -v "$HOST_CFG:/creds/.claude.json:ro" \
         "${profile_mount[@]}" \
@@ -248,7 +314,7 @@ started_at=$started_at
 finished_at=$finished_at
 exit_code=$exit_code
 transcript=$transcript
-reads_log=$reads_file
+reads_log=$RUN_DIR/${name}-reads.jsonl
 EOF
 
     if [ $exit_code -ne 0 ]; then
@@ -266,14 +332,16 @@ without_ok=1
 with_ok=1
 
 run_condition without || without_ok=0
-run_condition with --plugin-dir /plugins/agentera-hej || with_ok=0
+run_condition with --plugin-dir /plugins/agentera-realisera || with_ok=0
 
 # ---------------------------------------------------------------------------
 # Parse + gate + aggregate
 # ---------------------------------------------------------------------------
 
-python3 "$HARNESS_ROOT/parse_tokens.py" "$RUN_DIR/without.jsonl" > "$RUN_DIR/without.tokens.json" || true
-python3 "$HARNESS_ROOT/parse_tokens.py" "$RUN_DIR/with.jsonl"    > "$RUN_DIR/with.tokens.json"    || true
+python3 "$HARNESS_ROOT/parse_tokens.py" --slice-before-tool Task,Agent \
+    "$RUN_DIR/without.jsonl" > "$RUN_DIR/without.tokens.json" || true
+python3 "$HARNESS_ROOT/parse_tokens.py" --slice-before-tool Task,Agent \
+    "$RUN_DIR/with.jsonl"    > "$RUN_DIR/with.tokens.json"    || true
 
 python3 "$HARNESS_ROOT/check_gates.py"  "$RUN_DIR/with.jsonl"    > "$RUN_DIR/with.gates.json"    || true
 python3 "$HARNESS_ROOT/check_gates.py"  "$RUN_DIR/without.jsonl" > "$RUN_DIR/without.gates.json" || true
@@ -285,14 +353,22 @@ python3 "$HARNESS_ROOT/aggregate_reads.py" "$RUN_DIR/without-reads.jsonl" 10 > "
 # Compose final JSON output
 # ---------------------------------------------------------------------------
 
-python3 - "$RUN_DIR" "$without_ok" "$with_ok" <<'PY'
+python3 - "$RUN_DIR" "$without_ok" "$with_ok" "$PRE_DISPATCH_FLOOR" <<'PY'
 import json
 import os
 import sys
 
 run_dir = sys.argv[1]
-without_ok = sys.argv[2] == "1"
-with_ok = sys.argv[3] == "1"
+# argv[2] and argv[3] carry docker exit codes but we no longer use them
+# to determine runs_ok. Budget cap (exit 1) is a valid termination and
+# the captured transcript data is usable for measurement.
+floor = int(sys.argv[4])
+
+
+def transcript_ok(name):
+    path = os.path.join(run_dir, f"{name}.jsonl")
+    return os.path.exists(path) and os.path.getsize(path) > 0
+
 
 def load(name):
     path = os.path.join(run_dir, name)
@@ -304,34 +380,42 @@ def load(name):
         except json.JSONDecodeError:
             return None
 
+
 w_tokens = load("with.tokens.json") or {}
 wo_tokens = load("without.tokens.json") or {}
 w_gates = load("with.gates.json") or {}
 w_reads = load("with.reads.json") or {}
 wo_reads = load("without.reads.json") or {}
 
-def composite(tokens):
-    # primary metric: peak_context + output_total (stable across runs,
-    # captures widest-point work plus generation). See OBJECTIVE.md for
-    # rationale.
+
+def pre_dispatch_composite(tokens):
+    pre = tokens.get("pre_dispatch") or {}
+    return (pre.get("peak_context", 0) or 0) + (pre.get("output_tokens", 0) or 0)
+
+
+def full_composite(tokens):
     return (tokens.get("peak_context", 0) or 0) + (tokens.get("output_tokens", 0) or 0)
 
-primary = composite(w_tokens)
-baseline = composite(wo_tokens)
-delta = primary - baseline
-raw_total_with = w_tokens.get("total", 0)
-raw_total_without = wo_tokens.get("total", 0)
 
-# Gate enforcement: if either run failed to execute, or gates failed,
-# emit a non-zero exit so the cycle logs it as an error.
+primary = full_composite(w_tokens)
+baseline = full_composite(wo_tokens)
+delta = primary - baseline
+
+w_pre = w_tokens.get("pre_dispatch") or {}
+
+# Gate enforcement.
 gates_pass = bool(w_gates.get("both_pass", False))
-runs_ok = with_ok and without_ok
+runs_ok = transcript_ok("without") and transcript_ok("with")
+floor_pass = primary >= floor
 
 status = "ok"
 if not runs_ok:
     status = "run_error"
 elif not gates_pass:
     status = "gate_fail"
+elif not floor_pass:
+    status = "floor_fail"
+
 
 def top_reads(reads_obj):
     out = []
@@ -343,21 +427,25 @@ def top_reads(reads_obj):
         })
     return out
 
+
 breakdown = [
-    {"name": "delta_vs_baseline",       "value": delta,                      "unit": "tokens"},
-    {"name": "baseline_composite",      "value": baseline,                   "unit": "tokens"},
-    {"name": "raw_total_with",          "value": raw_total_with,             "unit": "tokens"},
-    {"name": "raw_total_without",       "value": raw_total_without,          "unit": "tokens"},
-    {"name": "peak_context",            "value": w_tokens.get("peak_context", 0), "unit": "tokens"},
-    {"name": "output_total",            "value": w_tokens.get("output_tokens", 0), "unit": "tokens"},
-    {"name": "cache_read_total",        "value": w_tokens.get("cache_read_tokens", 0), "unit": "tokens"},
-    {"name": "cache_create_total",      "value": w_tokens.get("cache_create_tokens", 0), "unit": "tokens"},
-    {"name": "input_total",             "value": w_tokens.get("input_tokens", 0), "unit": "tokens"},
-    {"name": "cache_efficiency",        "value": w_tokens.get("cache_efficiency", 0.0), "unit": "ratio"},
-    {"name": "turns",                   "value": w_tokens.get("turns", 0), "unit": "count"},
-    {"name": "tool_uses",               "value": w_tokens.get("tool_use_count", 0), "unit": "count"},
-    {"name": "read_total_effective",    "value": w_reads.get("total_effective_bytes", 0), "unit": "bytes"},
-    {"name": "read_count",              "value": w_reads.get("total_reads", 0), "unit": "count"},
+    {"name": "delta_vs_baseline",          "value": delta,                          "unit": "tokens"},
+    {"name": "baseline_composite",        "value": baseline,                       "unit": "tokens"},
+    {"name": "pre_dispatch_peak_context", "value": w_pre.get("peak_context", 0),  "unit": "tokens"},
+    {"name": "pre_dispatch_output_total", "value": w_pre.get("output_tokens", 0), "unit": "tokens"},
+    {"name": "full_peak_context_with",    "value": w_tokens.get("peak_context", 0), "unit": "tokens"},
+    {"name": "full_output_with",          "value": w_tokens.get("output_tokens", 0), "unit": "tokens"},
+    {"name": "cache_read_total_with",     "value": w_tokens.get("cache_read_tokens", 0), "unit": "tokens"},
+    {"name": "cache_create_total_with",   "value": w_tokens.get("cache_create_tokens", 0), "unit": "tokens"},
+    {"name": "cache_efficiency_with",     "value": w_tokens.get("cache_efficiency", 0.0), "unit": "ratio"},
+    {"name": "turns_full",                "value": w_tokens.get("turns", 0), "unit": "count"},
+    {"name": "turns_pre_dispatch",        "value": w_pre.get("turns", 0), "unit": "count"},
+    {"name": "tool_uses_full",            "value": w_tokens.get("tool_use_count", 0), "unit": "count"},
+    {"name": "tool_uses_pre_dispatch",    "value": w_pre.get("tool_use_count", 0), "unit": "count"},
+    {"name": "dispatch_turn_index",       "value": w_tokens.get("dispatch_turn_index") or -1, "unit": "turn"},
+    {"name": "dispatch_found",            "value": 1 if w_tokens.get("dispatch_found") else 0, "unit": "bool"},
+    {"name": "read_total_effective",      "value": w_reads.get("total_effective_bytes", 0), "unit": "bytes"},
+    {"name": "read_count",                "value": w_reads.get("total_reads", 0), "unit": "count"},
 ]
 
 for cls, stats in sorted((w_reads.get("by_class") or {}).items()):
@@ -369,24 +457,26 @@ for cls, stats in sorted((w_reads.get("by_class") or {}).items()):
 
 breakdown.extend(top_reads(w_reads))
 
-gate_detail = (
-    "gates_pass" if gates_pass
-    else f"gates_fail: {json.dumps(w_gates.get('signals', {}))}"
-)
+if gates_pass and floor_pass:
+    gate_detail = "gates_pass"
+elif not gates_pass:
+    gate_detail = f"gates_fail: {json.dumps(w_gates.get('signals', {}))}"
+else:
+    gate_detail = f"floor_fail: pre_dispatch_composite={primary} < {floor}"
 
 output = {
     "metric": primary,
     "direction": "lower",
     "unit": "tokens",
     "detail": (
-        f"hej session peak_context+output (composite), "
+        f"realisera cycle full-cycle peak_context+output (composite), "
         f"model={os.environ.get('MODEL', 'claude-sonnet-4-6')}, "
         f"status={status}, {gate_detail}"
     ),
     "breakdown": breakdown,
 }
 print(json.dumps(output))
-# Non-zero exit signals the harness-level failure even though JSON is written.
-if not runs_ok or not gates_pass:
+
+if not runs_ok or not gates_pass or not floor_pass:
     sys.exit(3)
 PY

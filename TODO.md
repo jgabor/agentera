@@ -5,6 +5,7 @@
 ## ⇉ Degraded
 
 ## → Normal
+- [ ] [feat] optimera: multi-objective support + `.agentera/` consolidation. Today optimera pins a single `OBJECTIVE.md` / `EXPERIMENTS.md` / `.optimera/harness`, so rotating targets (hej-token → realisera-token) requires hand-written archive moves and a subdirectory convention that is not codified anywhere. Related: `.optimera/` lives outside `.agentera/`, splitting artifact roots across two directories even though optimera is the only skill using it. Conduct a /resonera session to deliberate on (a) how optimera should represent multiple objectives (named subdirs, active symlink, registry file), (b) whether `.optimera/` should move under `.agentera/` as part of a single-root consolidation, (c) migration path for existing projects. Capture outcome in `.agentera/DECISIONS.md`, then surface implementation work to /planera.
 
 ## ⇢ Annoying
 - [ ] [refactor] analyze_progress.py::analyze() is 114 lines with 5-branch suggestion engine — extract helper per signal type if new signal added

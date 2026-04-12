@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
-"""Apply causal and structural gates to a claude -p stream-json transcript.
+"""Apply causal and structural gates to a claude -p stream-json transcript
+for the realisera-token optimera objective.
 
-The optimera brainstorm for the hej-token objective pre-registered two
-gates that every experiment run must satisfy to be scoreable:
+Two gates pre-registered in OBJECTIVE.md:
 
-  causal:     hej actually fired. Either a Skill(hej) tool invocation
-              appears in the transcript, OR the assistant output contains
-              hej's signature markers (agentera logo, `─── status ───`,
-              `─── attention ───`, `─── next ───`).
+  causal:     realisera actually fired. Either a Skill(realisera) tool
+              invocation appears, OR one of realisera's step markers
+              appears in assistant text, OR a Task/Agent tool_use event
+              proves that realisera reached step 5 (dispatch).
 
-  structural: the final assistant message delivers a complete briefing:
-              (a) a status-section marker, (b) at least one routing
-              suggestion naming a known agentera skill, (c) non-trivial
-              length (>= 50 words).
+  structural: realisera reached Dispatch (step 5). Signals: a
+              `── step 5/8:` marker in assistant text, OR at least one
+              Task/Agent tool_use event (proves realisera attempted
+              dispatch). Reaching step 5 is the pre-registered threshold
+              because the pre-dispatch slice boundary is the first
+              Task/Agent tool_use; if realisera never reaches that point,
+              the slice is empty and the measurement is meaningless.
 
-Both gates are deterministic; subtler quality regressions need manual
-inspection of the transcript. This script emits a JSON report with a
-pass/fail verdict and the individual signals, suitable for the harness
-to fold into its final output.
+Both gates are deterministic. The additional composite floor check
+(pre-dispatch composite >= 5000 tokens) is applied by the harness, not
+this script, because it needs parse_tokens.py output with slicing.
 
 Usage:
     python3 check_gates.py <transcript.jsonl>
@@ -30,31 +32,29 @@ import sys
 from typing import Any
 
 
-SKILL_NAMES = [
-    "visionera", "resonera", "inspirera", "planera", "realisera",
-    "optimera", "inspektera", "dokumentera", "profilera", "visualisera",
-    "orkestrera", "hej",
+REALISERA_STEP_MARKERS = [
+    "─── ⧉ realisera",
+    "── step 1/8",
+    "── step 2/8",
+    "── step 3/8",
+    "── step 4/8",
+    "── step 5/8",
+    "── step 6/8",
+    "── step 7/8",
+    "── step 8/8",
 ]
 
-AGENTERA_LOGO_MARKERS = [
-    "┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐",
-    "├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤",
-    "┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴",
+STEP_5_MARKER_PATTERN = re.compile(r"──\s*step\s*5/8", re.IGNORECASE)
+
+CANONICAL_ORIENT_ARTIFACTS = [
+    "PROGRESS.md",
+    "VISION.md",
+    "TODO.md",
+    "HEALTH.md",
+    "DECISIONS.md",
 ]
 
-STATUS_SECTION_MARKERS = [
-    "─── status ───",
-    "─── attention ───",
-    "─── next ───",
-    "─── ⎘ hej",
-    "## status",
-    "## attention",
-]
-
-ROUTING_PATTERN = re.compile(
-    r"/(" + "|".join(SKILL_NAMES) + r")\b",
-    re.IGNORECASE,
-)
+DISPATCH_TOOL_NAMES = {"task", "agent"}
 
 
 def load_events(path: str) -> list[dict[str, Any]]:
@@ -99,27 +99,74 @@ def count_skill_invocations(events: list[dict[str, Any]], skill_name: str) -> in
                 continue
             inp = block.get("input") or {}
             raw = str(inp.get("skill", "")).lower()
-            # Marketplace invocations use the `<marketplace>:<skill>` form
-            # (e.g. "agentera-hej:hej"); accept any suffix match after a
-            # colon plus exact matches.
             suffix = raw.rsplit(":", 1)[-1] if ":" in raw else raw
             if suffix == target or raw == target:
                 count += 1
     return count
 
 
+def count_dispatch_attempts(events: list[dict[str, Any]]) -> int:
+    """Count tool_use events for Task or Agent (realisera's sub-agent
+    dispatch). Proves realisera reached step 4."""
+    count = 0
+    for event in events:
+        if event.get("type") != "assistant":
+            continue
+        message = event.get("message") or {}
+        for block in (message.get("content") or []):
+            if not isinstance(block, dict) or block.get("type") != "tool_use":
+                continue
+            name = str(block.get("name") or "").lower()
+            if name in DISPATCH_TOOL_NAMES:
+                count += 1
+    return count
+
+
+def count_canonical_reads(events: list[dict[str, Any]]) -> dict[str, int]:
+    """Count Read tool_use events per canonical Orient artifact."""
+    counts: dict[str, int] = {name: 0 for name in CANONICAL_ORIENT_ARTIFACTS}
+    for event in events:
+        if event.get("type") != "assistant":
+            continue
+        message = event.get("message") or {}
+        for block in (message.get("content") or []):
+            if not isinstance(block, dict) or block.get("type") != "tool_use":
+                continue
+            if block.get("name") != "Read":
+                continue
+            inp = block.get("input") or {}
+            path = str(inp.get("file_path", "") or inp.get("path", ""))
+            for artifact in CANONICAL_ORIENT_ARTIFACTS:
+                if path.endswith("/" + artifact) or path == artifact or path.endswith(artifact):
+                    counts[artifact] += 1
+                    break
+    return counts
+
+
 def check(path: str) -> dict[str, Any]:
     events = load_events(path)
     text = collect_assistant_text(events)
 
-    skill_invocations = count_skill_invocations(events, "hej")
-    logo_present = any(marker in text for marker in AGENTERA_LOGO_MARKERS)
-    status_present = any(marker in text.lower() or marker in text for marker in STATUS_SECTION_MARKERS)
-    routing_match = ROUTING_PATTERN.search(text)
-    word_count = len([w for w in text.split() if w.strip()])
+    skill_invocations = count_skill_invocations(events, "realisera")
+    step_markers_present = any(marker in text for marker in REALISERA_STEP_MARKERS)
+    dispatch_attempts = count_dispatch_attempts(events)
+    step_5_present = bool(STEP_5_MARKER_PATTERN.search(text))
+    canonical_reads = count_canonical_reads(events)
+    distinct_canonical_reads = sum(1 for c in canonical_reads.values() if c > 0)
 
-    causal_pass = skill_invocations >= 1 or logo_present or status_present
-    structural_pass = bool(status_present and routing_match and word_count >= 50)
+    causal_pass = (
+        skill_invocations >= 1
+        or step_markers_present
+        or dispatch_attempts >= 1
+    )
+
+    # Structural gate: realisera reached step 5 (dispatch). Either the
+    # step marker appears in assistant text, or a Task/Agent tool_use
+    # event is present (direct evidence of attempted dispatch).
+    structural_pass = (
+        step_5_present
+        or dispatch_attempts >= 1
+    )
 
     return {
         "causal_pass": causal_pass,
@@ -127,10 +174,11 @@ def check(path: str) -> dict[str, Any]:
         "both_pass": causal_pass and structural_pass,
         "signals": {
             "skill_invocations": skill_invocations,
-            "logo_present": logo_present,
-            "status_present": status_present,
-            "routing_suggestion": routing_match.group(0) if routing_match else None,
-            "word_count": word_count,
+            "step_markers_present": step_markers_present,
+            "dispatch_attempts": dispatch_attempts,
+            "step_5_marker_present": step_5_present,
+            "canonical_reads": canonical_reads,
+            "distinct_canonical_reads": distinct_canonical_reads,
         },
     }
 
@@ -142,7 +190,7 @@ def main() -> int:
 
     report = check(sys.argv[1])
     print(json.dumps(report))
-    return 0 if report["both_pass"] else 0  # exit 0 regardless; harness decides
+    return 0
 
 
 if __name__ == "__main__":
