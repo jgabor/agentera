@@ -407,24 +407,3 @@ DESIGN.md provides visual identity context (design tokens, constraints) that rea
 ### Realisera is audited by /inspektera
 HEALTH.md findings filed to TODO.md become candidates for work selection. Run `/inspektera` every 5-10 cycles to ensure forward progress isn't accumulating structural debt. If HEALTH.md exists, read its latest grades during the Orient step. Poor grades signal that structural fixes should be prioritized over new features.
 
----
-
-## Getting started
-
-### New project
-
-1. `/profilera`: generate or refresh the decision profile (skip if recent)
-2. `/realisera`: the first run detects no VISION.md, runs a brief brainstorm with you to create it, then proceeds to cycle 1
-3. `/loop 10m /realisera`: set up continuous autonomous development
-
-### Existing project with code
-
-1. `/realisera`: if VISION.md exists, starts cycling immediately. If not, brainstorms with you first (reading the existing codebase to inform the conversation), then cycles.
-
-### Course correction
-
-Edit VISION.md directly to sharpen direction, or tell realisera to "refine the vision" for a guided session. The next cycle reads the updated vision and adjusts accordingly.
-
-### Drawing in external inspiration
-
-Run `/inspirera <url>` with a relevant article, repo, or resource. The analysis will surface ideas applicable to the project. Add actionable items to TODO.md, or refine VISION.md's direction if the inspiration shifts your thinking. The next cycle picks it up naturally.
