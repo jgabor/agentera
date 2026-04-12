@@ -36,7 +36,7 @@ The migration creates `.agentera/optimera/` as a skill-scoped operational direct
 
 ### Task 1: Migrate existing data to per-objective subdirectories
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 - GIVEN the migration has run WHEN `.agentera/optimera/realisera-token/` is listed THEN it contains OBJECTIVE.md, EXPERIMENTS.md, harness, helper scripts, and vehicle/
 - GIVEN the migration has run WHEN `.agentera/optimera/hej-token/` is listed THEN it contains OBJECTIVE.md, EXPERIMENTS.md, harness, helper scripts, and vehicle/ recovered from git history
