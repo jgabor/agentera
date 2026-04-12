@@ -45,7 +45,7 @@ The migration creates `.agentera/optimera/` as a skill-scoped operational direct
 
 ### Task 2: Update SPEC.md Section 4 and Section 18
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 - GIVEN SPEC.md Section 4 format contracts table WHEN OBJECTIVE.md and EXPERIMENTS.md rows are read THEN the path column reflects per-objective layout managed by optimera (not fixed .agentera/ paths)
 - GIVEN SPEC.md Section 18 staleness detection WHEN the optimera row is read THEN expected artifact outputs reference the per-objective convention
