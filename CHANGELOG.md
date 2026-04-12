@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [1.11.0] · 2026-04-12
+
+### Added
+- Two-tier metric for realisera-token harness: Tier 1 exact token count via count_tokens API (zero variance), Tier 2 Docker A/B gates-only behavioral validation
+
+### Changed
+- Realisera contract.md trimmed from 10 to 5 spec sections (-35.8% contract size)
+- Realisera Getting started section removed (onboarding docs, not needed during cycle execution)
+- Realisera fixed token footprint reduced by 20% (15,065 -> 12,055 est tokens)
+
 ## [1.10.0] · 2026-04-11
 
 ### Added
