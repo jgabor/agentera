@@ -247,6 +247,25 @@ snapshot_total_bytes=$snapshot_total_bytes
 EOF
 
 # ---------------------------------------------------------------------------
+# Tier 1 token measurement (primary metric per Decision 29)
+# ---------------------------------------------------------------------------
+#
+# Measures the exact token count of SKILL.md + contract.md via the
+# Anthropic count_tokens API (zero variance, deterministic). This is the
+# primary metric for keep/discard decisions. Also writes preflight.json
+# for backward compatibility with the breakdown diagnostics.
+# ANTHROPIC_API_KEY must be set; falls back to byte estimates otherwise.
+# Failure here is fatal: the harness cannot produce a valid primary metric.
+
+log "running Tier 1 token measurement (primary metric)"
+python3 "$HARNESS_ROOT/count_prompt_tokens.py" \
+    --skill-dir "$REALISERA_PLUGIN_DIR" \
+    --model "$MODEL" \
+    --tier1 \
+    --run-dir "$RUN_DIR" 2>&1 | while read -r line; do log "tier1: $line"; done || \
+    die "Tier 1 measurement failed (is ANTHROPIC_API_KEY set?)"
+
+# ---------------------------------------------------------------------------
 # Condition runner
 # ---------------------------------------------------------------------------
 
@@ -386,35 +405,61 @@ wo_tokens = load("without.tokens.json") or {}
 w_gates = load("with.gates.json") or {}
 w_reads = load("with.reads.json") or {}
 wo_reads = load("without.reads.json") or {}
-
-
-def pre_dispatch_composite(tokens):
-    pre = tokens.get("pre_dispatch") or {}
-    return (pre.get("peak_context", 0) or 0) + (pre.get("output_tokens", 0) or 0)
+preflight = load("preflight.json") or {}
+tier1 = load("tier1.json") or {}
 
 
 def full_composite(tokens):
     return (tokens.get("peak_context", 0) or 0) + (tokens.get("output_tokens", 0) or 0)
 
 
-primary = full_composite(w_tokens)
-baseline = full_composite(wo_tokens)
-delta = primary - baseline
+# ---------------------------------------------------------------------------
+# Tier 1 primary metric: exact token count from count_tokens API.
+# ---------------------------------------------------------------------------
+tier1_total = tier1.get("tier1_total") or 0
+tier1_files = tier1.get("files") or {}
+
+# Determine the source label for the detail string (api or estimate).
+# If any file used the API, report "api"; else "estimate".
+tier1_sources = set(fdata.get("source", "estimate") for fdata in tier1_files.values())
+tier1_source = "api" if "api" in tier1_sources else "estimate"
+
+skill_tokens = (tier1_files.get("SKILL.md") or {}).get("tokens", 0)
+contract_tokens = (tier1_files.get("references/contract.md") or {}).get("tokens", 0)
+
+tier1_ok = bool(tier1_total > 0 and not tier1.get("error"))
+
+# ---------------------------------------------------------------------------
+# Tier 2 behavioral validation: Docker A/B run with causal + structural gates.
+# Full-cycle composite is a diagnostic, NOT the primary metric.
+# ---------------------------------------------------------------------------
+full_composite_with = full_composite(w_tokens)
+full_composite_without = full_composite(wo_tokens)
+delta = full_composite_with - full_composite_without
 
 w_pre = w_tokens.get("pre_dispatch") or {}
 
-# Gate enforcement.
 gates_pass = bool(w_gates.get("both_pass", False))
 runs_ok = transcript_ok("without") and transcript_ok("with")
-floor_pass = primary >= floor
+floor_pass = full_composite_with >= floor
 
-status = "ok"
+# Tier 2 status string for the detail field.
 if not runs_ok:
+    tier2_status = "run_error"
+elif not gates_pass:
+    tier2_status = f"gates_fail: {json.dumps(w_gates.get('signals', {}))}"
+else:
+    tier2_status = "gates_pass"
+
+# Overall status for the detail string.
+if not tier1_ok:
+    status = "tier1_fail"
+elif not runs_ok:
     status = "run_error"
 elif not gates_pass:
     status = "gate_fail"
-elif not floor_pass:
-    status = "floor_fail"
+else:
+    status = "ok"
 
 
 def top_reads(reads_obj):
@@ -428,55 +473,82 @@ def top_reads(reads_obj):
     return out
 
 
+# ---------------------------------------------------------------------------
+# Breakdown: Tier 1 per-file entries first, then Tier 2 diagnostics.
+# ---------------------------------------------------------------------------
 breakdown = [
-    {"name": "delta_vs_baseline",          "value": delta,                          "unit": "tokens"},
-    {"name": "baseline_composite",        "value": baseline,                       "unit": "tokens"},
-    {"name": "pre_dispatch_peak_context", "value": w_pre.get("peak_context", 0),  "unit": "tokens"},
-    {"name": "pre_dispatch_output_total", "value": w_pre.get("output_tokens", 0), "unit": "tokens"},
-    {"name": "full_peak_context_with",    "value": w_tokens.get("peak_context", 0), "unit": "tokens"},
-    {"name": "full_output_with",          "value": w_tokens.get("output_tokens", 0), "unit": "tokens"},
-    {"name": "cache_read_total_with",     "value": w_tokens.get("cache_read_tokens", 0), "unit": "tokens"},
-    {"name": "cache_create_total_with",   "value": w_tokens.get("cache_create_tokens", 0), "unit": "tokens"},
-    {"name": "cache_efficiency_with",     "value": w_tokens.get("cache_efficiency", 0.0), "unit": "ratio"},
-    {"name": "turns_full",                "value": w_tokens.get("turns", 0), "unit": "count"},
-    {"name": "turns_pre_dispatch",        "value": w_pre.get("turns", 0), "unit": "count"},
-    {"name": "tool_uses_full",            "value": w_tokens.get("tool_use_count", 0), "unit": "count"},
-    {"name": "tool_uses_pre_dispatch",    "value": w_pre.get("tool_use_count", 0), "unit": "count"},
-    {"name": "dispatch_turn_index",       "value": w_tokens.get("dispatch_turn_index") or -1, "unit": "turn"},
-    {"name": "dispatch_found",            "value": 1 if w_tokens.get("dispatch_found") else 0, "unit": "bool"},
-    {"name": "read_total_effective",      "value": w_reads.get("total_effective_bytes", 0), "unit": "bytes"},
-    {"name": "read_count",                "value": w_reads.get("total_reads", 0), "unit": "count"},
+    # Tier 1: per-file token counts (the primary metric components).
+    {"name": "tier1:SKILL.md",       "value": skill_tokens,    "unit": "tokens"},
+    {"name": "tier1:contract.md",    "value": contract_tokens, "unit": "tokens"},
+    # Tier 2: full-cycle composite diagnostics (NOT the primary metric).
+    {"name": "tier2:full_cycle_composite_with",    "value": full_composite_with,    "unit": "tokens (diagnostic)"},
+    {"name": "tier2:full_cycle_composite_without", "value": full_composite_without, "unit": "tokens (diagnostic)"},
+    {"name": "tier2:delta_vs_baseline",            "value": delta,                  "unit": "tokens"},
+    {"name": "tier2:pre_dispatch_peak_context",    "value": w_pre.get("peak_context", 0),  "unit": "tokens"},
+    {"name": "tier2:pre_dispatch_output_total",    "value": w_pre.get("output_tokens", 0), "unit": "tokens"},
+    {"name": "tier2:full_peak_context_with",       "value": w_tokens.get("peak_context", 0), "unit": "tokens"},
+    {"name": "tier2:full_output_with",             "value": w_tokens.get("output_tokens", 0), "unit": "tokens"},
+    {"name": "tier2:cache_read_total_with",        "value": w_tokens.get("cache_read_tokens", 0), "unit": "tokens"},
+    {"name": "tier2:cache_create_total_with",      "value": w_tokens.get("cache_create_tokens", 0), "unit": "tokens"},
+    {"name": "tier2:cache_efficiency_with",        "value": w_tokens.get("cache_efficiency", 0.0), "unit": "ratio"},
+    {"name": "tier2:turns_full",                   "value": w_tokens.get("turns", 0), "unit": "count"},
+    {"name": "tier2:turns_pre_dispatch",           "value": w_pre.get("turns", 0), "unit": "count"},
+    {"name": "tier2:tool_uses_full",               "value": w_tokens.get("tool_use_count", 0), "unit": "count"},
+    {"name": "tier2:tool_uses_pre_dispatch",       "value": w_pre.get("tool_use_count", 0), "unit": "count"},
+    {"name": "tier2:dispatch_turn_index",          "value": w_tokens.get("dispatch_turn_index") or -1, "unit": "turn"},
+    {"name": "tier2:dispatch_found",               "value": 1 if w_tokens.get("dispatch_found") else 0, "unit": "bool"},
+    {"name": "tier2:read_total_effective",         "value": w_reads.get("total_effective_bytes", 0), "unit": "bytes"},
+    {"name": "tier2:read_count",                   "value": w_reads.get("total_reads", 0), "unit": "count"},
 ]
 
 for cls, stats in sorted((w_reads.get("by_class") or {}).items()):
     breakdown.append({
-        "name": f"read_class:{cls}",
+        "name": f"tier2:read_class:{cls}",
         "value": stats.get("bytes", 0),
         "unit": "bytes",
     })
 
 breakdown.extend(top_reads(w_reads))
 
-if gates_pass and floor_pass:
-    gate_detail = "gates_pass"
-elif not gates_pass:
-    gate_detail = f"gates_fail: {json.dumps(w_gates.get('signals', {}))}"
-else:
-    gate_detail = f"floor_fail: pre_dispatch_composite={primary} < {floor}"
+# Pre-flight probe data for backward compatibility (kept under preflight: prefix).
+pf_files = preflight.get("files") or {}
+for fname, fdata in sorted(pf_files.items()):
+    tok = fdata.get("tokens_api") or fdata.get("tokens_est") or 0
+    src = fdata.get("source", "estimate")
+    breakdown.append({
+        "name": f"preflight:{fname}",
+        "value": tok,
+        "unit": f"tokens ({src})",
+    })
+pf_delta = preflight.get("delta_total_context")
+if pf_delta is not None:
+    breakdown.append({
+        "name": "preflight:skill_delta",
+        "value": pf_delta,
+        "unit": "tokens (probe differential)",
+    })
+
+model = os.environ.get("MODEL", "claude-sonnet-4-6")
 
 output = {
-    "metric": primary,
+    "metric": tier1_total,
     "direction": "lower",
     "unit": "tokens",
     "detail": (
-        f"realisera cycle full-cycle peak_context+output (composite), "
-        f"model={os.environ.get('MODEL', 'claude-sonnet-4-6')}, "
-        f"status={status}, {gate_detail}"
+        f"Tier 1: SKILL.md + contract.md exact token count ({tier1_source}), "
+        f"Tier 2: {tier2_status}, "
+        f"model={model}, status={status}"
     ),
     "breakdown": breakdown,
 }
 print(json.dumps(output))
 
-if not runs_ok or not gates_pass or not floor_pass:
+# Exit codes:
+#   0 -- Tier 1 succeeded AND Tier 2 gates passed
+#   3 -- Tier 2 gates failed (behavioral regression) or run error
+#   1 -- Tier 1 measurement failed (handled upstream; kept as fallback here)
+if not tier1_ok:
+    sys.exit(1)
+if not runs_ok or not gates_pass:
     sys.exit(3)
 PY
