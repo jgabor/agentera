@@ -2,20 +2,33 @@
 
 ## Objective
 
-Reduce the token footprint of a single realisera cycle against the lira repo by **20%** from the established baseline, measured across the **full cycle** (orient through log), with no loss of cycle quality.
+Reduce the fixed token footprint of the realisera package (SKILL.md + contract.md) by **20%** from the established baseline, with no loss of cycle quality.
 
-The primary metric is the **full-cycle composite `peak_context + output_total`** tokens, where:
+### Two-tier metric (Decision 29)
 
-- `peak_context`: the maximum `cache_read_input_tokens + cache_creation_input_tokens` observed at any assistant message across the entire `with` transcript. Captures the widest point of the context window realisera holds at any moment during the cycle.
-- `output_total`: the sum of `output_tokens` across all assistant messages in the `with` transcript. Captures the total verbosity of realisera's reasoning and implementation output.
+**Tier 1 (primary metric)**: the exact token count of `skills/realisera/SKILL.md` + `skills/realisera/references/contract.md`, measured via the Anthropic `count_tokens` API (`POST /v1/messages/count_tokens`). Each file is sent as the `system` parameter with model `claude-sonnet-4-6` and a minimal user message. The sum of both `input_tokens` values is the Tier 1 metric.
 
-Direction: lower. Unit: tokens.
+Direction: lower. Unit: tokens. Variance: zero (deterministic tokenization).
 
-Full-cycle composite was chosen over the originally-proposed pre-dispatch slice because realisera has discretion over whether to dispatch work to a sub-agent or self-implement in the parent session. For small, self-contained changes, realisera implements directly without calling `Task` / `Agent`, so the dispatch-based slice equals the full cycle. Making the metric explicitly full-cycle avoids a dynamic shape where the metric definition depends on realisera's runtime dispatch decision. The `--slice-before-tool` mechanism is retained in the harness as a diagnostic (breakdown includes pre-dispatch counters when dispatch occurs).
+**Tier 2 (behavioral validation)**: the existing Docker A/B harness run against lira@`5a52fdc`. The Tier 2 pass bar is **gates-only**: causal gate (realisera activated) and structural gate (reached step 5, composite >= 5,000 floor) must both pass. The full-cycle composite (`peak_context + output_total`) is logged as a diagnostic in the breakdown but is NOT used for the keep/discard decision.
 
-Raw `total`, underlying `cache_*` counters, `turns`, `tool_uses`, and per-artifact read attribution are preserved in the harness breakdown as secondary diagnostics, but the keep/discard decision uses the composite.
+**Keep gate**: Tier 1 must strictly improve (lower token count than baseline) AND Tier 2 gates must pass. Both conditions required.
 
-Baseline is established by the first harness run and recorded in EXPERIMENTS.md as Experiment 0. The 20% target is computed from that baseline once available. If the baseline is 35,000 tokens, the target is 28,000; a run at 30,000 tokens is a 14% improvement and not yet at target.
+**Discard gate**: Tier 1 does not improve, OR Tier 2 gates fail.
+
+### Why two tiers
+
+Experiments 1-3 (see EXPERIMENTS.md) showed that the full-cycle composite has 13-20% run-to-run variance because the model stochastically chooses which files to read, whether to use the Read tool or Bash/cat, and how deep to go in implementation. SKILL.md edits produce 5-10% signal, which is below the variance floor. The Tier 1 metric isolates the fixed cost (system prompt tokens) that SKILL.md edits actually control, measured with zero variance via the count_tokens API (free, rate-limited separately from messages). Tier 2 confirms behavioral soundness without requiring the noisy composite to improve.
+
+### Baseline
+
+Tier 1 baseline is established by the first count_tokens measurement of the unmodified SKILL.md + contract.md at agentera HEAD. The 20% target is computed from that baseline.
+
+The Experiment 0 full-cycle composite (72,645 tokens) is retained as a diagnostic reference point but is no longer the primary metric.
+
+### Diagnostics
+
+The full-cycle composite, pre-dispatch counters, cache efficiency, turn count, tool use count, per-artifact read attribution, and pre-flight probe data are preserved in the harness breakdown as secondary diagnostics for trend analysis across experiments.
 
 ## Why this matters
 
