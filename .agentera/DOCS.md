@@ -32,8 +32,6 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | PLAN.md | .agentera/PLAN.md | planera |
 | PROGRESS.md | .agentera/PROGRESS.md | realisera |
 | HEALTH.md | .agentera/HEALTH.md | inspektera |
-| OBJECTIVE.md | .agentera/OBJECTIVE.md | optimera |
-| EXPERIMENTS.md | .agentera/EXPERIMENTS.md | optimera |
 | DOCS.md | .agentera/DOCS.md | dokumentera |
 | DESIGN.md | .agentera/DESIGN.md | visualisera |
 | SESSION.md | .agentera/SESSION.md | session stop hook |
