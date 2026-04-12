@@ -94,7 +94,7 @@ When plotting or comparing, group by real numbers, not human-chosen buckets.
 
 ## Harness shape
 
-The harness at `.optimera/harness` typically orchestrates these phases. Pseudo-code, not runnable:
+The harness at `.agentera/optimera/<objective-name>/harness` typically orchestrates these phases. Pseudo-code, not runnable:
 
 ```bash
 #!/usr/bin/env bash
