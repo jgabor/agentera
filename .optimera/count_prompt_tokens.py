@@ -154,7 +154,19 @@ def _count_via_api(text: str, model: str) -> int | None:
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = json.loads(resp.read())
             return data.get("input_tokens")
-    except (urllib.error.URLError, json.JSONDecodeError, KeyError):
+    except urllib.error.HTTPError as e:
+        body = ""
+        try:
+            body = e.read().decode()
+        except Exception:
+            pass
+        print(
+            f"count_tokens API returned HTTP {e.code}: {body}",
+            file=sys.stderr,
+        )
+        return None
+    except (urllib.error.URLError, json.JSONDecodeError, KeyError) as e:
+        print(f"count_tokens API error: {e}", file=sys.stderr)
         return None
 
 
