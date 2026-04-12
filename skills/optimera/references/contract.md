@@ -1,7 +1,7 @@
 <!-- contract: optimera -->
-<!-- source: SPEC.md (sha256: 8c5a8cabb5c14b0ce90c1265babfcc0039a14032de2c0a39fba806f421fb2f0b) -->
+<!-- source: SPEC.md (sha256: f70e7856aadc5fdfc3cac6dfa3dd084fe1fa71207bda40f649ae2c3a3619d57e) -->
 <!-- sections: 1, 3, 4, 5, 6 -->
-<!-- generated: 2026-04-11T13:50:30Z -->
+<!-- generated: 2026-04-12T11:00:33Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -63,8 +63,8 @@ Three project-facing files at the project root; nine operational files in `.agen
 | DECISIONS.md | Reasoning trail |
 | PLAN.md | Active work plan |
 | HEALTH.md | Audit grades and findings |
-| OBJECTIVE.md | Optimization target |
-| EXPERIMENTS.md | Experiment log |
+| OBJECTIVE.md | Optimization target (per-objective, under `.agentera/optimera/<name>/`) |
+| EXPERIMENTS.md | Experiment log (per-objective, under `.agentera/optimera/<name>/`) |
 | DESIGN.md | Visual identity |
 | DOCS.md | Documentation contract + optional artifact path overrides |
 | SESSION.md | Timestamped session bookmarks with artifact change tracking |
@@ -83,14 +83,16 @@ Three project-facing files at the project root; nine operational files in `.agen
 | PLAN.md | .agentera/PLAN.md | planera | realisera, inspektera, orkestrera | <!-- Level/Created/Status -->, ## Tasks with ### Task N, **Status/Depends on/Acceptance** |
 | PROGRESS.md | .agentera/PROGRESS.md | realisera | planera, inspektera, dokumentera, visionera, orkestrera | ## Cycle N · date, **Phase/What/Commit/Inspiration/Discovered/Next/Context** |
 | HEALTH.md | .agentera/HEALTH.md | inspektera | realisera, planera, orkestrera | ## Audit N · date, **Dimensions/Findings/Overall/Grades**, per-dimension sections |
-| OBJECTIVE.md | .agentera/OBJECTIVE.md | optimera | optimera | ## Metric, ## Target, ## Baseline, ## Constraints |
-| EXPERIMENTS.md | .agentera/EXPERIMENTS.md | optimera | optimera | ## Experiment N · date, **Hypothesis/Method/Result/Conclusion** |
+| OBJECTIVE.md | .agentera/optimera/<name>/OBJECTIVE.md | optimera | optimera | ## Metric, ## Target, ## Baseline, ## Constraints |
+| EXPERIMENTS.md | .agentera/optimera/<name>/EXPERIMENTS.md | optimera | optimera | ## Experiment N · date, **Hypothesis/Method/Result/Conclusion** |
 | DESIGN.md | .agentera/DESIGN.md | visualisera | realisera, visionera | Standard sections per DESIGN-spec.md |
 | DOCS.md | .agentera/DOCS.md | dokumentera | all skills (path resolution) | ## Conventions, ## Artifact Mapping, ## Index |
 | SESSION.md | .agentera/SESSION.md | session stop hook | session start hook, hej | ## YYYY-MM-DD HH:MM, Artifacts modified, Summary; compaction: 5 full + 20 one-line, oldest dropped |
 | PROFILE.md | (profile-path capability) <!-- platform: profile-path --> | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
 
 **Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for project contributors) AND `.agentera/PROGRESS.md` (operational cycle-level detail for consuming skills). Consuming skills that need cycle detail read `.agentera/PROGRESS.md`; project contributors read CHANGELOG.md.
+
+**Per-objective layout (optimera)**: OBJECTIVE.md and EXPERIMENTS.md are not placed at fixed paths. Each named optimization objective gets its own subdirectory under `.agentera/optimera/<name>/`, where `<name>` is the slugified objective name. Optimera manages this layout; other skills do not read or write these artifacts directly.
 
 ### HEALTH.md audit dimensions
 
