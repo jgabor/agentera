@@ -33,14 +33,12 @@ def classify(path: str) -> str:
     norm = os.path.normpath(path)
     if "/.agentera/" in norm or norm.endswith("/.agentera") or "/.agentera" in norm:
         return "agentera_artifact"
-    if "/skills/realisera/" in norm or norm.endswith("/skills/realisera"):
-        return "realisera_asset"
     if "/skills/hej/" in norm or norm.endswith("/skills/hej"):
         return "hej_asset"
     if ".claude/profile/" in norm:
         return "profile"
     basename = os.path.basename(norm)
-    if basename in ("VISION.md", "TODO.md", "CHANGELOG.md", "README.md", "CLAUDE.md", "AGENTS.md"):
+    if basename in ("VISION.md", "TODO.md", "CHANGELOG.md", "README.md", "CLAUDE.md"):
         return "root_artifact"
     return "other"
 
