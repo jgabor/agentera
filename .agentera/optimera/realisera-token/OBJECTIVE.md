@@ -1,5 +1,7 @@
 # Reduce realisera cycle entry token consumption
 
+**Status**: closed (2026-04-12). Target met. Tier 1 metric: 15,065 to 12,055 tokens (-20.0%). Two kept experiments: spec_sections trimming (-18.3%) and Getting started removal (-1.7%). Zero-variance deterministic measurement via count_tokens API.
+
 ## Objective
 
 Reduce the fixed token footprint of the realisera package (SKILL.md + contract.md) by **20%** from the established baseline, with no loss of cycle quality.

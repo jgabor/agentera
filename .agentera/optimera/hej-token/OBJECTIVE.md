@@ -1,5 +1,7 @@
 # Reduce hej session token consumption
 
+**Status**: closed (2026-04-12). Target met. Mean composite across 4 post-optimization runs: 23,558 tokens (-24.8% from 31,345 baseline). 3/4 runs pass the 25,076 ceiling; the single miss was +137 tokens (0.4%), within documented variance.
+
 ## Objective
 
 Reduce the token footprint of a single hej session against the agentera repo by **20%** from the established baseline, with no loss of briefing completeness.
