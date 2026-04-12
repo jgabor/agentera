@@ -53,7 +53,7 @@ The migration creates `.agentera/optimera/` as a skill-scoped operational direct
 
 ### Task 3: Update optimera SKILL.md, references, and resonera SKILL.md
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 - GIVEN optimera SKILL.md state artifacts section WHEN path references are read THEN OBJECTIVE.md, EXPERIMENTS.md, and harness all reference `.agentera/optimera/<objective-name>/` layout
 - GIVEN optimera SKILL.md orient step WHEN active-objective inference is described THEN it specifies: single objective dir = use it, multiple = most recent EXPERIMENTS.md modification, ambiguous = ask user
