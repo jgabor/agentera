@@ -41,7 +41,7 @@ Template in `references/templates/`. Use as starting structure, adapt to the pro
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/DECISIONS.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads and writes (VISION.md, .agentera/OBJECTIVE.md, TODO.md).
+Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/DECISIONS.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this skill, including cross-skill reads and writes (VISION.md, TODO.md, .agentera/DECISIONS.md). When feeding a decision into OBJECTIVE.md, write to the active objective's file at `.agentera/optimera/<objective-name>/OBJECTIVE.md` -- use the same active-objective inference rules as optimera (single subdir = use it; multiple = most recently modified EXPERIMENTS.md; ambiguous = ask the user).
 
 ### Contract
 
@@ -182,7 +182,7 @@ Brief, casual: where we landed (2-3 sentences), key insight, confidence (firm / 
 Relevant options only:
 - **Log it**: append to `DECISIONS.md` (always offered)
 - **Feed into VISION.md**: if about direction/scope/principles
-- **Feed into OBJECTIVE.md**: if about what to optimize
+- **Feed into OBJECTIVE.md**: if about what to optimize (writes to `.agentera/optimera/<objective-name>/OBJECTIVE.md`)
 - **File to TODO.md**: if surfaced tech debt (severity per contract)
 - **Just wrap up**: no artifacts needed
 
@@ -239,7 +239,7 @@ When the deliberation is about project direction, scope, or principles, the deci
 
 ### Resonera feeds into /optimera
 
-When the deliberation is about what to optimize (which metric matters, what the target should be, what constraints apply), the decision can be captured in OBJECTIVE.md. Decisions logged with `Feeds into: OBJECTIVE.md` give optimera context for why the objective was chosen.
+When the deliberation is about what to optimize (which metric matters, what the target should be, what constraints apply), the decision can be captured in OBJECTIVE.md at `.agentera/optimera/<objective-name>/OBJECTIVE.md`. Decisions logged with `Feeds into: OBJECTIVE.md` give optimera context for why the objective was chosen.
 
 ### Resonera triggers /inspirera
 
