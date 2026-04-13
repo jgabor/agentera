@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 112 · 2026-04-13
+
+**Phase**: build
+**What**: Added pre-dispatch commit gate to realisera Step 5 per SPEC.md Section 22. The gate checks working tree status, stages only artifact paths, commits with `chore(realisera): checkpoint before worktree dispatch`, and blocks dispatch if hooks reject. Updated spec_sections frontmatter to include section 22 and regenerated the contract.
+**Commit**: 8bbce05
+**Inspiration**: PLAN.md Task 2 (add gate to realisera before worktree dispatch)
+**Discovered**: The gate integrates cleanly as a preamble to the existing dispatch instruction. Four numbered steps before the "Spawn" paragraph, matching the sequential procedure from Section 22.
+**Verified**: N/A: docs-only
+**Next**: Task 3 (add gate to optimera dispatch step), then Task 4 (linter check for gate presence).
+**Context**: intent (add Section 22 pre-dispatch commit gate to realisera Step 5) · constraints (no em-dashes, no hard wraps, match existing step style) · unknowns (none) · scope (skills/realisera/SKILL.md, skills/realisera/references/contract.md, .agentera/PLAN.md)
+
 ■ ## Cycle 111 · 2026-04-13
 
 **Phase**: build
