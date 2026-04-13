@@ -1,7 +1,7 @@
 <!-- contract: realisera -->
 <!-- source: SPEC.md (sha256: b07618545cf796e75aafeecbb25ff312ce6381bcdebd16e7bb936099f78b11fd) -->
-<!-- sections: 2, 3, 4, 6, 19 -->
-<!-- generated: 2026-04-13T17:09:26Z -->
+<!-- sections: 2, 3, 4, 6, 19, 22 -->
+<!-- generated: 2026-04-13T17:13:37Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -334,3 +334,70 @@ The gate is enforced independently by two skills; each holds a different phase a
 Realisera holds the primary enforcement contract because it is the skill that actually produces cycle entries. Orkestrera holds a lighter presence-and-quality check because it reads artifacts but never touches code; the full content audit is delegated to inspektera via the dispatch prompt.
 
 **Linter check**: Deterministic. Realisera and orkestrera SKILL.md files must reference Section 19 by name and include the `**Verified**` field in any PROGRESS.md cycle format examples they carry.
+
+## 22. Pre-dispatch Commit Gate
+
+Git worktrees branch from HEAD (the last commit), not the working tree. When a dispatching skill writes artifacts during its orient or plan steps and then spawns a subagent in a worktree without committing, the subagent receives a stale snapshot missing those artifacts. The Pre-dispatch Commit Gate closes this gap by requiring a checkpoint commit before any `isolation: "worktree"` dispatch.
+
+This gate is the entry-side complement to Section 19 (Reality Verification Gate). Section 19 gates the exit from a cycle: did the work actually run against real state? Section 22 gates the entry to a worktree: does the subagent start from current state? The two gates enforce different invariants at different boundaries and must both hold for worktree-dispatched cycles.
+
+### Applicability
+
+The gate applies to any skill that dispatches a subagent with `isolation: "worktree"`. Currently two skills do this:
+
+| Skill | Dispatch point | What it writes before dispatch |
+|-------|----------------|-------------------------------|
+| realisera | Step 5 (implementation dispatch) | PLAN.md status updates, PROGRESS.md cycle start, context files from orient/plan steps |
+| optimera | Experiment dispatch step | EXPERIMENTS.md updates, OBJECTIVE.md refinements, harness configuration changes |
+
+orkestrera dispatches skills without worktree isolation (it runs realisera or other skills as background subagents in the same working directory). orkestrera is covered transitively: when realisera creates a worktree at its Step 5, the gate commits everything in the working tree, including any uncommitted changes orkestrera wrote before dispatching realisera.
+
+Skills that do not dispatch to worktrees are unaffected. The gate is invisible to them.
+
+### Gate procedure
+
+Before executing the `isolation: "worktree"` dispatch, the dispatching skill runs this procedure:
+
+1. **Check working tree status.** If `git status --porcelain` returns empty output, the working tree is clean. The gate is a no-op: skip to dispatch.
+
+2. **Stage artifact paths only.** Add only the files the skill wrote or modified during the current session. Use explicit paths (e.g., `git add .agentera/PLAN.md .agentera/PROGRESS.md`), not `git add -A` or `git add .`. This scoping prevents committing editor temp files, secrets, or unrelated changes.
+
+3. **Commit with checkpoint message.** Use the conventional commit format:
+
+   ```
+   chore(<skill>): checkpoint before worktree dispatch
+   ```
+
+   Where `<skill>` is the dispatching skill's name (e.g., `chore(realisera): checkpoint before worktree dispatch`). The `chore` type triggers no version bump per the semver_policy convention.
+
+4. **Respect hook results.** Do not pass `--no-verify`. If pre-commit hooks reject the commit, the dispatch is blocked. Fix the issue (typically an artifact validation error) and retry the commit. Invalid artifacts must not be dispatched to a worktree where they would mislead the subagent.
+
+5. **Proceed with dispatch.** After the checkpoint commit succeeds (or was skipped as a no-op), the worktree branches from a HEAD that includes all current artifacts.
+
+### Failure handling
+
+When a hook rejects the checkpoint commit, the dispatching skill must:
+
+1. Report the hook failure in its output (the specific error from the hook).
+2. Attempt to fix the issue (correct the artifact that failed validation).
+3. Re-stage and retry the checkpoint commit.
+4. If the retry also fails, abort the dispatch and report the failure. Do not proceed with a worktree that would branch from stale state.
+
+The skill does not silently skip the commit or bypass hooks. A blocked dispatch is preferable to a worktree operating on incorrect context.
+
+### Identifying checkpoint commits
+
+Checkpoint commits are identifiable in git history by their message format: `chore(<skill>): checkpoint before worktree dispatch`. Consuming tools (CHANGELOG generators, version bump scripts, inspektera audits) can filter these commits by the `chore` type and `checkpoint before worktree dispatch` description. They carry no behavioral change and should not appear in user-facing changelogs.
+
+### Relation to Section 19
+
+The two gates form a coherent pair bracketing the worktree lifecycle:
+
+| Gate | Section | Boundary | Question it answers |
+|------|---------|----------|---------------------|
+| Pre-dispatch Commit Gate | 22 | Entry: before worktree creation | Does the subagent start from current state? |
+| Reality Verification Gate | 19 | Exit: after implementation | Did the work actually run against real state? |
+
+Both gates are mandatory for worktree-dispatched cycles. A cycle that passes Section 19 verification but skipped the Section 22 gate may have verified behavior built on stale context. A cycle that passes the Section 22 gate but skips Section 19 verification has current context but unverified output.
+
+**Linter check**: None. This section defines a runtime convention for dispatching skills. Enforcement is per-skill: each dispatching skill's SKILL.md must include the gate procedure at its worktree dispatch point. The linter validates this through skill-specific checks, not a spec-level structural check.

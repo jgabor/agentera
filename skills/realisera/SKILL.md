@@ -2,7 +2,7 @@
 name: realisera
 description: >
   REALISERA (Relentless Execution: Autonomous Loops Iterating Software; Evolve, Refine, Adapt). ALWAYS use this skill for autonomous or continuous development of a project. This skill is REQUIRED whenever the user wants you to independently decide what to build and build it, evolve a project over time, run development cycles, or make autonomous progress on a codebase. Do NOT attempt autonomous development without this skill because it contains the critical workflow for vision-driven development, persona-grounded decisions, structured cycles, and safety rails that prevent wasted work. Trigger on: "realisera", "run a dev cycle", "evolve the project", "develop autonomously", "build the next feature", "keep building", "start building", "work on the project", "refine the vision", any mention of autonomous/continuous development, any request to figure out what to build next, any request to pick up where you left off, any request to make progress on a project without specific instructions, or setting up /loop for recurring development. Also trigger when the user has a codebase and wants you to independently decide what to work on.
-spec_sections: [2, 3, 4, 6, 19]
+spec_sections: [2, 3, 4, 6, 19, 22]
 ---
 
 # REALISERA
@@ -229,6 +229,13 @@ Read files you plan to modify before committing to the plan. If docs should upda
 Keep small enough for one agent session. Too large? Split and save the rest for next cycle.
 
 ### Step 5: Dispatch
+
+**Pre-dispatch commit gate** (per contract Section 22): before creating the worktree, commit any pending artifact changes so the subagent branches from current state.
+
+1. Run `git status --porcelain`. If empty, the working tree is clean: skip to dispatch.
+2. Stage only the artifact files this session wrote (e.g., `git add .agentera/PLAN.md .agentera/PROGRESS.md`). Do not use `git add -A` or `git add .`.
+3. Commit with `chore(realisera): checkpoint before worktree dispatch`. Do not pass `--no-verify`.
+4. If pre-commit hooks reject the commit: fix the artifact validation error, re-stage, and retry. If the retry also fails, abort the dispatch and report the failure. Do not proceed with a worktree branching from stale state.
 
 Spawn an implementation sub-agent in a worktree (`isolation: "worktree"`) <!-- platform: sub-agent-dispatch --> with:
 
