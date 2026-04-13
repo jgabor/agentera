@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 116 · 2026-04-13
+
+**Phase**: build
+**What**: Version bump 1.12.0 to 1.13.0 per DOCS.md semver_policy (feat = minor). Updated all 12 plugin.json files, registry.json (12 skill entries), marketplace.json (top-level + 11 non-profilera plugin entries). Promoted CHANGELOG.md [Unreleased] to [1.13.0] with entries for Section 22 and Check 19.
+**Commit**: 319935d
+**Inspiration**: PLAN.md Task 6 (version bump per DOCS.md convention)
+**Discovered**: Marketplace plugin versions were at 1.10.0 (lagging behind the 1.12.0 bump which only updated registry.json and per-skill plugin.json). This cycle brought them current.
+**Verified**: N/A: chore-build-config
+**Next**: Task 7 (plan-level freshness checkpoint).
+**Context**: intent (bump version to 1.13.0 for feat-level commits in pre-dispatch commit gate plan) . constraints (only touch version_files from DOCS.md and CHANGELOG.md) . unknowns (none) . scope (registry.json, marketplace.json, 12 plugin.json, CHANGELOG.md, PLAN.md)
+
 ■ ## Cycle 115 · 2026-04-13
 
 **Phase**: build
