@@ -83,7 +83,7 @@ Checkpoint commits use `chore(<skill>): checkpoint before worktree dispatch` as 
 ### Task 6: Version bump per DOCS.md convention
 
 **Depends on**: Task 1, Task 2, Task 3, Task 4, Task 5
-**Status**: pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the plan includes feat-level work (new spec section, new linter check) WHEN the plan completes THEN version files listed in DOCS.md are bumped per semver_policy (feat = minor)
 ▸ GIVEN the CHANGELOG WHEN the bump is applied THEN [Unreleased] entries are promoted to the new version heading
