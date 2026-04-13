@@ -75,7 +75,7 @@ Checkpoint commits use `chore(<skill>): checkpoint before worktree dispatch` as 
 ### Task 5: Add tests for the new linter check
 
 **Depends on**: Task 4
-**Status**: pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the new linter check WHEN tests run THEN 1 pass + 1 fail per testable unit (proportionality target: default)
 ▸ GIVEN all existing tests WHEN the full suite runs THEN no regressions

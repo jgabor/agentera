@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 115 · 2026-04-13
+
+**Phase**: build
+**What**: Added tests for Check 19 (pre-dispatch-commit-gate) in `tests/test_validate_spec.py`. Three tests following the Check 17 proportionality pattern: 1 pass (both realisera and optimera with gate present) + 2 fails (one per subject missing gate). Synthetic SKILL.md content includes all four gate indicators (Section 22 reference, checkpoint commit message, `git status --porcelain`, scoped staging prohibition) for pass cases, and omits them for fail cases.
+**Commit**: pending
+**Inspiration**: PLAN.md Task 5 (add tests for new linter check)
+**Discovered**: The two-subject proportionality override (1 pass + 2 fails) from Check 17 applies identically here since the check targets the same structural pattern: a set of skills that must contain specific indicators, with early return for non-applicable skills.
+**Verified**: 263 passed in 0.22s (260 existing + 3 new, 0 failures, 0 regressions)
+**Next**: Task 6 (version bump per DOCS.md convention).
+**Context**: intent (test Check 19 pre-dispatch-commit-gate linter enforcement) · constraints (proportionality: 1 pass + 1 fail per testable unit, follow existing patterns) · unknowns (none) · scope (tests/test_validate_spec.py, .agentera/PLAN.md, .agentera/PROGRESS.md)
+
 ■ ## Cycle 114 · 2026-04-13
 
 **Phase**: build
