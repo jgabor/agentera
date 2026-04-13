@@ -46,7 +46,7 @@ Checkpoint commits use `chore(<skill>): checkpoint before worktree dispatch` as 
 ### Task 2: Add the gate to realisera before worktree dispatch
 
 **Depends on**: Task 1
-**Status**: pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN realisera with uncommitted artifact changes WHEN Step 5 begins THEN pending artifact changes are committed before the worktree subagent is dispatched
 ▸ GIVEN realisera with a clean working tree WHEN Step 5 begins THEN no checkpoint commit is created and dispatch proceeds normally
