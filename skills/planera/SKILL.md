@@ -260,9 +260,8 @@ NOT implementation details.]
 
 ## Step 5: Handoff
 
-- **Light plans**: suggest `/realisera` with plan's acceptance criteria as exit conditions.
-- **Full plans**: suggest `/realisera` or `/loop`. Realisera picks next pending task with
-  satisfied dependencies.
+- **Single task**: suggest `/realisera` to execute the next pending task in the plan.
+- **Full plan**: suggest `/orkestrera` to execute the entire plan across multiple cycles.
 
 ---
 
@@ -360,7 +359,7 @@ Planera reads the `versioning` block from DOCS.md Conventions (populated by doku
 
 1. `/resonera`: deliberate on what to build and why (produces DECISIONS.md entry)
 2. `/planera`: plan how to build it (produces PLAN.md)
-3. `/realisera` or `/loop 10m /realisera`: execute the plan
+3. `/realisera` (next task) or `/orkestrera` (full plan): execute
 
 ### Planning a remediation
 
