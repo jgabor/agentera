@@ -11,7 +11,8 @@ severity levels, decision labels, artifact path resolution, profile
 consumption, cross-skill integration, safety rails, artifact format
 contracts, exit signals, loop guard, em-dashes, hard wraps,
 spec_sections declaration, context file existence, context file
-freshness, and platform annotation validation.
+freshness, platform annotation validation, and pre-dispatch commit
+gate enforcement.
 
 Run from repo root:
     python3 scripts/validate_spec.py
@@ -951,6 +952,10 @@ def check_context_file_current(
 # Skills that must enforce spec Section 19 (Reality Verification Gate).
 REALITY_VERIFICATION_ENFORCERS = {"realisera", "orkestrera"}
 
+# Skills that dispatch subagents to worktrees and must enforce the
+# pre-dispatch commit gate (spec Section 22).
+WORKTREE_DISPATCH_SKILLS = {"realisera", "optimera"}
+
 RECOGNIZED_CAPABILITIES = {
     "skill-discovery",
     "artifact-resolution",
@@ -1029,6 +1034,83 @@ def check_platform_annotations(skill: str, text: str, r: Results) -> None:
         r.ok(skill, "platform-annotations")
 
 
+def check_pre_dispatch_commit_gate(skill: str, text: str, r: Results) -> None:
+    """Check 19: Pre-dispatch Commit Gate (spec Section 22).
+
+    Skills that dispatch subagents to worktrees (isolation: "worktree")
+    must include the pre-dispatch commit gate procedure: a reference to
+    Section 22, the checkpoint commit message, a clean-tree check via
+    git status, and scoped staging (no git add -A / git add .).
+    Other skills pass unconditionally.
+    """
+    if skill not in WORKTREE_DISPATCH_SKILLS:
+        r.ok(skill, "pre-dispatch-commit-gate")
+        return
+
+    # Detect worktree dispatch language as a sanity check.
+    has_worktree_dispatch = bool(
+        re.search(r'isolation:\s*"worktree"', text)
+    )
+    if not has_worktree_dispatch:
+        # The skill is in the expected set but somehow lacks the dispatch
+        # language. Flag it: the constant and the SKILL.md are out of sync.
+        r.error(
+            skill,
+            "pre-dispatch-commit-gate",
+            "Expected worktree dispatch language "
+            '(isolation: "worktree") but not found',
+        )
+        return
+
+    errors: list[str] = []
+
+    # 1. Reference to Section 22 (the spec section defining the gate).
+    section_patterns = [
+        r"contract Section 22",
+        r"spec Section 22",
+        r"Section 22[,:]?\s*Pre-dispatch Commit Gate",
+        r"Pre-dispatch [Cc]ommit [Gg]ate",
+    ]
+    has_section_ref = any(
+        re.search(pat, text, re.IGNORECASE) for pat in section_patterns
+    )
+    if not has_section_ref:
+        errors.append(
+            "Missing reference to Section 22 (Pre-dispatch Commit Gate)"
+        )
+
+    # 2. Checkpoint commit message format.
+    if "checkpoint before worktree dispatch" not in text:
+        errors.append(
+            "Missing checkpoint commit message "
+            "('checkpoint before worktree dispatch')"
+        )
+
+    # 3. Clean-tree check via git status.
+    if "git status --porcelain" not in text:
+        errors.append(
+            "Missing clean-tree check ('git status --porcelain')"
+        )
+
+    # 4. Scoped staging instruction (must not use git add -A or git add .).
+    has_no_add_all = bool(
+        re.search(r"(?:do not|don't|never)\s+use\s+`?git add -A", text, re.IGNORECASE)
+        or re.search(r"(?:do not|don't|never)\s+use\s+`?git add \.", text, re.IGNORECASE)
+        or re.search(r"not\s+`?git add -A`?\s+or\s+`?git add \.", text, re.IGNORECASE)
+    )
+    if not has_no_add_all:
+        errors.append(
+            "Missing scoped staging instruction "
+            "(must prohibit 'git add -A' or 'git add .')"
+        )
+
+    if errors:
+        for detail in errors:
+            r.error(skill, "pre-dispatch-commit-gate", detail)
+    else:
+        r.ok(skill, "pre-dispatch-commit-gate")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -1057,6 +1139,7 @@ def validate_skill(path: Path, r: Results, *, spec_hash: str) -> None:
     check_context_file_current(skill, text, r, skill_path=path, spec_hash=spec_hash)
     check_reality_verification_gate(skill, text, r)
     check_platform_annotations(skill, text, r)
+    check_pre_dispatch_commit_gate(skill, text, r)
 
 
 def main() -> int:

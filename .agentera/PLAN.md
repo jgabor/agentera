@@ -66,7 +66,7 @@ Checkpoint commits use `chore(<skill>): checkpoint before worktree dispatch` as 
 ### Task 4: Add linter check for the pre-dispatch commit gate
 
 **Depends on**: Task 1
-**Status**: pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN a SKILL.md that contains worktree dispatch language WHEN the linter runs THEN it verifies the pre-dispatch commit gate instruction is present
 ▸ GIVEN a SKILL.md that does not dispatch to worktrees WHEN the linter runs THEN no gate check is performed
