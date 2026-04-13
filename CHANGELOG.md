@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [1.13.0] · 2026-04-13
+
+### Added
+- SPEC.md Section 22 Pre-dispatch Commit Gate: checkpoint commit convention for skills that dispatch subagents to git worktrees, ensuring subagents see current state
+- Linter Check 19 (pre-dispatch-commit-gate): enforces gate presence in realisera and optimera SKILL.md files
+
+### Changed
+- Realisera Step 5 and optimera Step 4 updated with pre-dispatch commit gate procedure
+- Version bumped to 1.13.0
+
 ## [1.12.0] · 2026-04-12
 
 ### Added
