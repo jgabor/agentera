@@ -1612,3 +1612,142 @@ Also valid <!-- platform: eval-mechanism -->
         assert len(error_entries) == 1
         assert "made-up-name" in error_entries[0][3]
         assert error_entries[0][3].count("made-up-name") == 1
+
+
+# ---------------------------------------------------------------------------
+# check_pre_dispatch_commit_gate
+# ---------------------------------------------------------------------------
+
+
+SYNTHETIC_REALISERA_WITH_COMMIT_GATE = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+Dispatch configuration uses isolation: "worktree" for subagent work.
+
+Per contract Section 22 (Pre-dispatch Commit Gate), before dispatching:
+
+1. Create a checkpoint commit with message "checkpoint before worktree dispatch"
+2. Verify tree is clean via `git status --porcelain`
+3. Stage only relevant files; do not use `git add -A` or `git add .`
+"""
+
+SYNTHETIC_OPTIMERA_WITH_COMMIT_GATE = """\
+---
+name: optimera
+description: Metric-driven optimization
+---
+
+# OPTIMERA
+
+Dispatch configuration uses isolation: "worktree" for subagent work.
+
+Per spec Section 22, Pre-dispatch Commit Gate, before dispatching:
+
+1. Create a checkpoint commit with message "checkpoint before worktree dispatch"
+2. Verify tree is clean via `git status --porcelain`
+3. Stage only relevant files; do not use `git add -A` or `git add .`
+"""
+
+SYNTHETIC_REALISERA_MISSING_COMMIT_GATE = """\
+---
+name: realisera
+description: Autonomous development loops
+---
+
+# REALISERA
+
+Dispatch configuration uses isolation: "worktree" for subagent work.
+
+Before dispatching, ensure the tree is ready.
+"""
+
+SYNTHETIC_OPTIMERA_MISSING_COMMIT_GATE = """\
+---
+name: optimera
+description: Metric-driven optimization
+---
+
+# OPTIMERA
+
+Dispatch configuration uses isolation: "worktree" for subagent work.
+
+Before dispatching, ensure the tree is ready.
+"""
+
+
+class TestCheckPreDispatchCommitGate:
+    """Check has two subjects (realisera, optimera); fail case bifurcates.
+
+    Proportionality override per Decision 21: 1 pass + 2 fails (one fail per
+    missing subject) so a single failing skill cannot mask the other.
+    """
+
+    def test_both_skills_with_gate_pass(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_pre_dispatch_commit_gate(
+            "realisera",
+            SYNTHETIC_REALISERA_WITH_COMMIT_GATE,
+            r,
+        )
+        validate_spec.check_pre_dispatch_commit_gate(
+            "optimera",
+            SYNTHETIC_OPTIMERA_WITH_COMMIT_GATE,
+            r,
+        )
+        assert r.error_count == 0
+        gate_entries = [
+            entry for entry in r.entries if entry[2] == "pre-dispatch-commit-gate"
+        ]
+        assert len(gate_entries) == 2
+        assert all(level == "PASS" for level, *_ in gate_entries)
+
+    def test_realisera_missing_gate_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_pre_dispatch_commit_gate(
+            "realisera",
+            SYNTHETIC_REALISERA_MISSING_COMMIT_GATE,
+            r,
+        )
+        validate_spec.check_pre_dispatch_commit_gate(
+            "optimera",
+            SYNTHETIC_OPTIMERA_WITH_COMMIT_GATE,
+            r,
+        )
+        assert r.error_count >= 1
+        error_entries = [
+            entry
+            for entry in r.entries
+            if entry[0] == "ERROR" and entry[2] == "pre-dispatch-commit-gate"
+        ]
+        assert len(error_entries) >= 1
+        offending_skills = {entry[1] for entry in error_entries}
+        assert "realisera" in offending_skills
+        assert "optimera" not in offending_skills
+
+    def test_optimera_missing_gate_errors(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_pre_dispatch_commit_gate(
+            "realisera",
+            SYNTHETIC_REALISERA_WITH_COMMIT_GATE,
+            r,
+        )
+        validate_spec.check_pre_dispatch_commit_gate(
+            "optimera",
+            SYNTHETIC_OPTIMERA_MISSING_COMMIT_GATE,
+            r,
+        )
+        assert r.error_count >= 1
+        error_entries = [
+            entry
+            for entry in r.entries
+            if entry[0] == "ERROR" and entry[2] == "pre-dispatch-commit-gate"
+        ]
+        assert len(error_entries) >= 1
+        offending_skills = {entry[1] for entry in error_entries}
+        assert "optimera" in offending_skills
+        assert "realisera" not in offending_skills
