@@ -2,7 +2,7 @@
 name: optimera
 description: >
   OPTIMERA (Objective Pursuit: Targeted Iterative Measurement; Experiment, Record, Advance). ALWAYS use this skill for metric-driven optimization of a measurable objective. This skill is REQUIRED whenever the user wants to improve a concrete, quantifiable property of their codebase: test pass rate, benchmark performance, bundle size, latency, lint score, type coverage, or any other metric that can be measured by running a command. Do NOT attempt iterative optimization without this skill because it contains the critical workflow for objective-driven experimentation, eval harness design, structured keep/discard decisions, and safety rails that prevent regressions. Trigger on: "optimera", "optimize", "improve performance", "reduce latency", "increase test coverage", "lower bundle size", "speed up", "make faster", "make smaller", "get the score up", "hit the target", "improve the metric", "benchmark and iterate", "run experiments", "tune", "experiment until", any mention of iterative optimization against a measurable target, any request to improve a number, or setting up /loop for recurring optimization. Also trigger when the user names a metric and wants it improved through systematic experimentation.
-spec_sections: [1, 3, 4, 5, 6]
+spec_sections: [1, 3, 4, 5, 6, 22]
 ---
 
 # OPTIMERA
@@ -208,6 +208,13 @@ Formulate a single, focused hypothesis.
 Be conservative early; escalate if conservative approaches plateau.
 
 ### Step 4: Implement
+
+**Pre-dispatch commit gate** (per contract Section 22): before creating the worktree, commit any pending artifact changes so the subagent branches from current state.
+
+1. Run `git status --porcelain`. If empty, the working tree is clean: skip to dispatch.
+2. Stage only the artifact files this session wrote (e.g., `git add .agentera/optimera/<objective-name>/OBJECTIVE.md .agentera/optimera/<objective-name>/EXPERIMENTS.md`). Do not use `git add -A` or `git add .`.
+3. Commit with `chore(optimera): checkpoint before worktree dispatch`. Do not pass `--no-verify`.
+4. If pre-commit hooks reject the commit: fix the artifact validation error, re-stage, and retry. If the retry also fails, abort the dispatch and report the failure. Do not proceed with a worktree branching from stale state.
 
 Spawn an implementation sub-agent in a worktree (`isolation: "worktree"`) <!-- platform: sub-agent-dispatch --> with:
 

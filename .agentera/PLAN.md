@@ -56,7 +56,7 @@ Checkpoint commits use `chore(<skill>): checkpoint before worktree dispatch` as 
 ### Task 3: Add the gate to optimera before worktree dispatch
 
 **Depends on**: Task 1
-**Status**: pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN optimera with uncommitted artifact changes WHEN its dispatch step begins THEN pending artifact changes are committed before the worktree subagent is dispatched
 ▸ GIVEN optimera with a clean working tree WHEN its dispatch step begins THEN no checkpoint commit is created and dispatch proceeds normally
