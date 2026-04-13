@@ -4,7 +4,7 @@
 
 **Phase**: build
 **What**: Added Section 22 (Pre-dispatch Commit Gate) to SPEC.md. Defines the checkpoint commit convention for skills that dispatch subagents to git worktrees: applicability (realisera, optimera), gate procedure (check/stage/commit/respect hooks/dispatch), failure handling, commit identification, and relation to Section 19 (Reality Verification Gate) as a coherent entry/exit pair. Regenerated all 12 contract files.
-**Commit**: (pending)
+**Commit**: fda509e
 **Inspiration**: PLAN.md Task 1 (pre-dispatch commit gate spec definition)
 **Discovered**: The gate procedure maps cleanly to five sequential steps. The relation-to-Section-19 subsection crystallizes the entry/exit pair framing from the plan's design section.
 **Verified**: N/A: docs-only
