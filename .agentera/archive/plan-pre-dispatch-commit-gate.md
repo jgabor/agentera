@@ -1,6 +1,6 @@
 # Plan: Pre-dispatch Commit Gate
 
-<!-- Level: full | Created: 2026-04-13 | Status: active -->
+<!-- Level: full | Created: 2026-04-13 | Status: complete -->
 <!-- Reviewed: 2026-04-13 | Critic issues: 8 found, 6 addressed, 2 dismissed -->
 
 ## What
@@ -91,7 +91,7 @@ Checkpoint commits use `chore(<skill>): checkpoint before worktree dispatch` as 
 ### Task 7: Plan-level freshness checkpoint
 
 **Depends on**: Task 1, Task 2, Task 3, Task 4, Task 5, Task 6
-**Status**: pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all prior tasks complete WHEN the freshness checkpoint runs THEN CHANGELOG.md, PROGRESS.md, and TODO.md are updated to reflect the plan's aggregate work
 ▸ GIVEN this plan WHEN it completes THEN PLAN.md is archived to .agentera/archive/
