@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 114 · 2026-04-13
+
+**Phase**: build
+**What**: Added Check 19 (pre-dispatch-commit-gate) to `scripts/validate_spec.py`. For skills in `WORKTREE_DISPATCH_SKILLS` (realisera, optimera), the check verifies four gate procedure indicators: Section 22 reference, checkpoint commit message, `git status --porcelain` clean-tree check, and scoped staging instruction (no `git add -A`/`git add .`). Non-dispatching skills pass unconditionally.
+**Commit**: pending
+**Inspiration**: PLAN.md Task 4 (add linter check for pre-dispatch commit gate)
+**Discovered**: The check follows the same structure as Check 17 (reality-verification-gate): a constant defines the applicable skill set, early return for non-applicable skills, and multiple pattern checks accumulated into an error list. Both realisera and optimera already have all four indicators from Tasks 2-3.
+**Verified**: `python3 scripts/validate_spec.py` returned 0 error(s), 0 warning(s) across 12 skills. All 12 skills show PASS for the new pre-dispatch-commit-gate check.
+**Next**: Task 5 (tests for the new linter check).
+**Context**: intent (enforce pre-dispatch commit gate in worktree-dispatching skills via linter) · constraints (follow existing check patterns, no scope creep) · unknowns (none) · scope (scripts/validate_spec.py, .agentera/PLAN.md, .agentera/PROGRESS.md)
+
 ■ ## Cycle 113 · 2026-04-13
 
 **Phase**: build
