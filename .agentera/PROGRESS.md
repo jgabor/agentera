@@ -4,7 +4,7 @@
 
 **Phase**: build
 **What**: Added pre-dispatch commit gate to optimera Step 4 (Implement) per SPEC.md Section 22. The gate checks working tree status, stages only per-objective artifact paths, commits with `chore(optimera): checkpoint before worktree dispatch`, and blocks dispatch if hooks reject. Updated spec_sections frontmatter to include section 22 and regenerated the contract.
-**Commit**: pending
+**Commit**: 50b1766
 **Inspiration**: PLAN.md Task 3 (add gate to optimera before worktree dispatch)
 **Discovered**: The pattern mirrors realisera's gate exactly, with artifact path examples scoped to optimera's per-objective layout (`.agentera/optimera/<objective-name>/`).
 **Verified**: N/A: docs-only
