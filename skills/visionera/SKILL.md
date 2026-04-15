@@ -7,13 +7,11 @@ description: >
   create VISION.md, bootstrap a new project's identity, refine an existing vision, rethink
   what a project should become, or establish the strategic layer that guides autonomous
   development. Do NOT create VISION.md without this skill when it is installed. It contains
-  the critical workflow for deep codebase exploration, domain research, aspirational
-  questioning, and persona grounding that produces visions capable of sustaining months of
-  autonomous development. Trigger on: "visionera", "create a vision", "write VISION.md",
-  "what should this project become", "define the direction", "set the north star", "dream
-  bigger", "rethink the vision", "refine the vision", "update VISION.md", "bootstrap the
-  project", "what's the big picture", any request to create or refine a project's strategic
-  direction, or when realisera detects no VISION.md and visionera is installed.
+  the critical workflow for codebase exploration, domain research, aspirational questioning,
+  and persona grounding that produces visions capable of sustaining months of autonomous
+  development. Trigger on: "visionera", "create a vision", "write VISION.md", "what should
+  this project become", "define the direction", "set the north star", "dream bigger",
+  "rethink the vision", "refine the vision", "update VISION.md", "bootstrap the project",\n  or when realisera detects no VISION.md.
 spec_sections: [4, 5, 6, 12]
 ---
 

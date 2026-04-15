@@ -6,14 +6,12 @@ description: >
   auditing project documentation. This skill is REQUIRED whenever the user wants to write
   documentation before building a feature (DTC-first), generate docs for existing code,
   update stale documentation, audit docs against implementation, create README/CLAUDE.md/
-  AGENTS.md, write API documentation, or maintain any project-level documentation. Do NOT
-  create or significantly modify project documentation without this skill. It contains the
-  critical workflow for intent-first documentation, context-detected approach, doc-vs-code
+  AGENTS.md, write API documentation, or maintain project-level documentation. Do NOT
+  create or modify project documentation without this skill. It contains the critical workflow for intent-first documentation, context-detected approach, doc-vs-code
   verification, and DOCS.md coverage tracking. Trigger on: "dokumentera", "write docs",
   "document this", "update the docs", "create README", "write CLAUDE.md", "write AGENTS.md",
-  "docs first", "document before building", "audit docs", "check documentation", "are the
-  docs up to date", "docs out of sync", any request to create or maintain documentation, any
-  request to verify docs against code, or when planera's plan includes documentation tasks.
+  "docs first", "document before building", "audit docs", "check documentation",
+  "docs out of sync", or when planera's plan includes documentation tasks.
 spec_sections: [2, 4, 5]
 ---
 

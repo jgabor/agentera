@@ -1,7 +1,17 @@
 ---
 name: visualisera
 description: >
-  VISUALISERA (Visual Identity: Systematic Unified Aesthetic Language, Intent-driven Style Engineering; Record, Articulate). ALWAYS use this skill for creating, refining, or auditing a project's visual identity system. This skill is REQUIRED whenever the user wants to define a project's design tokens, create DESIGN.md, establish a visual identity system, set up a design system for agent consumption, refine an existing design system, audit design consistency, or maintain the visual layer that guides autonomous UI development. Do NOT create DESIGN.md without this skill when it is installed because it contains the critical workflow for codebase exploration, domain research, aspirational visual questioning, and structured token synthesis that produces design systems capable of sustaining months of consistent autonomous UI development. Trigger on: "visualisera", "create design system", "write DESIGN.md", "design tokens", "visual identity", "define the aesthetic", "set up design system", "audit design", "check design consistency", "refine design system", "update DESIGN.md", any request to create or maintain a project's visual identity system.
+  VISUALISERA (Visual Identity: Systematic Unified Aesthetic Language, Intent-driven Style
+  Engineering; Record, Articulate). ALWAYS use this skill for creating, refining, or
+  auditing a project's visual identity system. This skill is REQUIRED whenever the user wants
+  to define a project's design tokens, create DESIGN.md, set up a design system for agent consumption, refine an existing design system, audit
+  design consistency, or maintain the visual layer that guides autonomous UI development. Do
+  NOT create DESIGN.md without this skill when it is installed. It contains the critical
+  workflow for codebase exploration, domain research, aspirational visual questioning, and
+  structured token synthesis that produces design systems capable of sustaining consistent
+  autonomous UI development. Trigger on: "visualisera", "create design system",
+  "write DESIGN.md", "design tokens", "visual identity", "define the aesthetic", "set up
+  design system", "audit design", "refine design system",\n  "update DESIGN.md".
 spec_sections: [4, 5, 6, 12]
 ---
 
