@@ -10,10 +10,9 @@ description: >
   Use this skill to deliberate first. Trigger on: "resonera", "help me think through",
   "should I", "I'm torn between", "what's the right approach", "let's reason about",
   "help me decide", "think this through with me", "let's deliberate", "what are the
-  tradeoffs", "scope this out", "before I build this", "talk me through", any request
-  to evaluate alternatives or think before acting, any mention of structured decision-making,
-  or when the user is clearly stuck between options. Also trigger when realisera or optimera
-  brainstorm sessions surface decisions too complex for inline resolution.
+  tradeoffs", "scope this out", "before I build this", "talk me through", or when the user
+  is stuck between options. Also trigger when realisera or optimera brainstorm sessions
+  surface decisions too complex for inline resolution.
 spec_sections: [3, 4, 5, 6]
 ---
 

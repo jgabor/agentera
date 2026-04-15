@@ -1,7 +1,17 @@
 ---
 name: inspektera
 description: >
-  INSPEKTERA (Integrity Navigation: Systematic Pattern Evaluation, Knowledge Tracing; Examine, Report, Advise). ALWAYS use this skill for codebase health audits, architecture reviews, and structural quality assessments. This skill is REQUIRED whenever the user wants to assess the overall health of a codebase, detect architecture drift, find pattern inconsistencies, identify complexity hotspots, evaluate test coverage quality, or check dependency health. Do NOT attempt codebase-wide quality assessments without this skill because it contains the critical workflow for multi-dimensional evaluation, evidence-based findings, confidence scoring, and trend tracking that prevents noisy or superficial audits. Trigger on: "inspektera", "audit the codebase", "check code health", "architecture review", "find technical debt", "assess code quality", "how healthy is this codebase", "what needs fixing", "structural review", "pattern audit", "complexity audit", "coupling analysis", "dependency check", "test coverage audit", any request to evaluate overall codebase health, any request to find structural problems, any request to assess architecture alignment, or when realisera has run 5+ cycles without a health check.
+  INSPEKTERA (Integrity Navigation: Systematic Pattern Evaluation, Knowledge Tracing;
+  Examine, Report, Advise). ALWAYS use this skill for codebase health audits, architecture
+  reviews, and structural quality assessments. This skill is REQUIRED whenever the user wants
+  to assess codebase health, detect architecture drift, find pattern
+  inconsistencies, identify complexity hotspots, evaluate test coverage quality, or check
+  dependency health. Do NOT attempt codebase-wide quality assessments without this skill
+  because it contains the critical workflow for multi-dimensional evaluation, evidence-based
+  findings, confidence scoring, and trend tracking that prevents noisy or superficial audits.
+  Trigger on: "inspektera", "audit the codebase", "check code health", "architecture review",
+  "find technical debt", "assess code quality", "how healthy is this codebase", "what needs
+  fixing", "structural review", "pattern audit", "dependency check",\n  "test coverage audit", or when realisera has run 5+ cycles without a health check.
 spec_sections: [1, 2, 4, 5, 6, 16, 17, 18]
 ---
 

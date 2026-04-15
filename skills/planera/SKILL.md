@@ -1,13 +1,17 @@
 ---
 name: planera
 description: >
-  PLANERA (Planning Logic: Adaptive Notation, Executable Requirements Architecture, Explore, Refine, Articulate). ALWAYS use this skill for structured planning of complex work before execution. This skill is REQUIRED whenever the work is too large for a single realisera cycle, involves multi-file changes across multiple modules, requires task decomposition and ordering, or would benefit from explicit acceptance criteria before implementation begins. Do NOT attempt multi-cycle development without this skill. It contains the critical workflow for scale-adaptive planning, behavioral acceptance criteria, adversarial review, and plan-to-cycle integration that prevents wasted work on complex tasks.
-  Trigger on: "planera", "plan this", "write a plan", "break this down", "decompose this",
-  "how should we build this", "spec this out", "plan before building", "multi-step feature",
-  "this is too big for one cycle", any request to plan complex work before execution, any
-  mention of structured task decomposition, or when realisera encounters work too large for
-  a single cycle. Also trigger when the user describes a feature that clearly spans multiple
-  files or modules.
+  PLANERA (Planning Logic: Adaptive Notation, Executable Requirements Architecture, Explore,
+  Refine, Articulate). ALWAYS use this skill for structured planning of complex work before
+  execution. This skill is REQUIRED whenever the work is too large for a single realisera
+  cycle, involves multi-file changes across modules, requires task decomposition and ordering,
+  or would benefit from explicit acceptance criteria before implementation begins. Do NOT
+  attempt multi-cycle development without this skill. It contains the critical workflow for
+  scale-adaptive planning, behavioral acceptance criteria, adversarial review, and plan-to-
+  cycle integration that prevents wasted work on complex tasks. Trigger on: "planera",
+  "plan this", "write a plan", "break this down", "decompose this", "how should we build
+  this", "spec this out", "plan before building", "multi-step feature", "this is too big
+  for one cycle", or when realisera encounters work too large for a single cycle.
 spec_sections: [3, 4, 5, 6, 16]
 ---
 
