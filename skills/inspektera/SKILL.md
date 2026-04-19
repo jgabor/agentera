@@ -339,6 +339,8 @@ When updating existing HEALTH.md entries (e.g., updating Patterns Observed), use
 
 Write the audit results to `HEALTH.md` (append new audit, keep prior audits for trend history) and present to the user.
 
+When writing a new audit entry to HEALTH.md, apply the HEALTH.md compaction thresholds from contract: if >10 full-detail entries exist, collapse the oldest to one-line format under an `## Archived Audits` heading. If >40 one-line entries exist, drop the oldest.
+
 ### Report structure
 
 ```markdown

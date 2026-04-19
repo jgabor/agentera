@@ -294,7 +294,7 @@ Summarize the experiment for the user before writing the log: what moved, what d
 Update **EXPERIMENTS.md**: append the experiment entry (number, timestamp, hypothesis, change summary, metric before/after, regression result, status, commit hash if kept, inspiration source if any, suggestion for next experiment).
 Output constraint per contract token budgets.
 
-When writing a new experiment entry to EXPERIMENTS.md, apply the EXPERIMENTS.md compaction thresholds from contract.
+When writing a new experiment entry to EXPERIMENTS.md, apply the EXPERIMENTS.md compaction thresholds from contract (10 full-detail, 40 one-line archive, drop beyond 50).
 
 Then stop. One experiment complete.
 

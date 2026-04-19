@@ -1,7 +1,7 @@
 <!-- contract: orkestrera -->
-<!-- source: SPEC.md (sha256: 526ebc52655f7a2c7a76fde1e4531214dec5c5e743151f60c906e221ef2579b9) -->
+<!-- source: SPEC.md (sha256: 3fbdd63e2b5710ee49132121a55504e98dcc5890b0eb53d394ab827d9d1a677d) -->
 <!-- sections: 3, 4, 5, 11, 18, 19 -->
-<!-- generated: 2026-04-19T08:17:33Z -->
+<!-- generated: 2026-04-19T08:41:59Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -65,7 +65,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | EXPERIMENTS.md | .agentera/optimera/<name>/EXPERIMENTS.md | optimera | optimera | ## Experiment N · date, **Hypothesis/Method/Result/Conclusion** |
 | DESIGN.md | .agentera/DESIGN.md | visualisera | realisera, visionera | Standard sections per DESIGN-spec.md |
 | DOCS.md | .agentera/DOCS.md | dokumentera | all skills (path resolution) | ## Conventions, ## Artifact Mapping, ## Index |
-| SESSION.md | .agentera/SESSION.md | session stop hook | session start hook, hej | ## YYYY-MM-DD HH:MM, Artifacts modified, Summary; compaction: 5 full + 20 one-line, oldest dropped |
+| SESSION.md | .agentera/SESSION.md | session stop hook | session start hook, hej | ## YYYY-MM-DD HH:MM, Artifacts modified, Summary; compaction: 10 full + 40 one-line, oldest dropped |
 | PROFILE.md | (profile-path capability) <!-- platform: profile-path --> | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
 
 **Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for project contributors) AND `.agentera/PROGRESS.md` (operational cycle-level detail for consuming skills). Consuming skills that need cycle detail read `.agentera/PROGRESS.md`; project contributors read CHANGELOG.md.
@@ -156,7 +156,9 @@ The test: if a reader can reconstruct the information from the project's current
 
 ### Compaction thresholds
 
-Growing artifacts (PROGRESS.md, EXPERIMENTS.md) are compacted to cap read cost for consuming skills. Compaction runs when the producing skill writes a new entry.
+Growing artifacts are compacted to cap read cost for consuming skills. Compaction runs when the producing skill writes a new entry. All growing artifacts follow a uniform 10/40/50 rule: 10 full-detail entries, 40 one-line archive entries, drop beyond 50 total.
+
+**CHANGELOG.md is exempt**: it is the public version-level history and is not compacted.
 
 **PROGRESS.md**, compacted by realisera when writing a new cycle entry:
 
@@ -172,11 +174,51 @@ When writing a new cycle: if >10 full-detail entries exist, collapse the oldest 
 
 | Tier | Entries | Format |
 |------|---------|--------|
-| Full detail | 8 most recent experiments | Standard experiment entry format |
-| One-line archive | Experiments 9 through 30 | `EXP-N: ≤15-word result summary` |
-| Dropped | Experiments older than 30 | Removed entirely |
+| Full detail | 10 most recent experiments | Standard experiment entry format |
+| One-line archive | Experiments 11 through 50 | `EXP-N: ≤15-word result summary` |
+| Dropped | Experiments older than 50 | Removed entirely |
 
-Same logic: collapse oldest full-detail to one-line when >8 exist. Drop oldest one-line when >22 one-line entries exist. Archive section sits below recent experiments under an `## Archived Experiments` heading.
+Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest one-line when >40 one-line entries exist. Archive section sits below recent experiments under an `## Archived Experiments` heading.
+
+**DECISIONS.md**, compacted by resonera when writing a new decision:
+
+| Tier | Entries | Format |
+|------|---------|--------|
+| Full detail | 10 most recent decisions | Standard decision entry format |
+| One-line archive | Decisions 11 through 50 | `Decision N (YYYY-MM-DD): [Choice] — ≤15-word summary` |
+| Dropped | Decisions older than 50 | Removed entirely |
+
+Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest one-line when >40 one-line entries exist. Archive section sits below recent decisions under an `## Archived Decisions` heading. One-line summaries preserve decision number, date, and the chosen alternative.
+
+**HEALTH.md**, compacted by inspektera when writing a new audit:
+
+| Tier | Entries | Format |
+|------|---------|--------|
+| Full detail | 10 most recent audits | Standard audit entry format |
+| One-line archive | Audits 11 through 50 | `Audit N (YYYY-MM-DD): [grade] — ≤15-word summary` |
+| Dropped | Audits older than 50 | Removed entirely |
+
+Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest one-line when >40 one-line entries exist. Archive section sits below recent audits under an `## Archived Audits` heading. One-line summaries preserve audit number, date, overall grade, and trajectory.
+
+**TODO.md Resolved section**, compacted by realisera when marking an item resolved:
+
+| Tier | Entries | Format |
+|------|---------|--------|
+| Full detail | 10 most recent resolved items | Standard resolved entry format |
+| One-line archive | Items 11 through 50 | `- [x] ~~[ISS-NN]: ≤15-word resolution summary~~` |
+| Dropped | Items older than 50 | Removed entirely |
+
+Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest one-line when >40 one-line entries exist. Compaction applies only within the `## Resolved` section; active severity sections are not affected.
+
+**SESSION.md**, compacted by the session stop hook when writing a new bookmark:
+
+| Tier | Entries | Format |
+|------|---------|--------|
+| Full detail | 10 most recent bookmarks | Standard bookmark format |
+| One-line archive | Bookmarks 11 through 50 | `## YYYY-MM-DD HH:MM (≤15-word summary)` |
+| Dropped | Bookmarks older than 50 | Removed entirely |
+
+Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest one-line when >40 one-line entries exist. Compaction is implemented in `hooks/session_stop.py` (constants `MAX_FULL_ENTRIES`, `MAX_ONELINE_ENTRIES`).
 
 ## 5. Artifact Path Resolution
 

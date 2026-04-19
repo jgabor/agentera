@@ -7,8 +7,8 @@
 
 Detects which operational artifacts were modified during the session
 (via git diff and git ls-files), and writes a timestamped bookmark to
-SESSION.md. Compacts older bookmarks to one-line summaries (keep 5
-full entries, 20 one-line summaries, drop oldest beyond 25 total).
+SESSION.md. Compacts older bookmarks to one-line summaries (keep 10
+full entries, 40 one-line summaries, drop oldest beyond 50 total).
 
 Respects DOCS.md artifact path overrides per Decision 4.
 
@@ -39,8 +39,8 @@ from common import (
 # Constants
 # ---------------------------------------------------------------------------
 
-MAX_FULL_ENTRIES = 5
-MAX_ONELINE_ENTRIES = 20
+MAX_FULL_ENTRIES = 10
+MAX_ONELINE_ENTRIES = 40
 MAX_TOTAL_ENTRIES = MAX_FULL_ENTRIES + MAX_ONELINE_ENTRIES
 
 # Canonical artifact names tracked for modification detection.
