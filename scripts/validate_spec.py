@@ -1110,6 +1110,57 @@ def check_pre_dispatch_commit_gate(skill: str, text: str, r: Results) -> None:
     else:
         r.ok(skill, "pre-dispatch-commit-gate")
 
+    check_commit_message_hygiene(skill, text, r)
+
+
+def check_commit_message_hygiene(skill: str, text: str, r: Results) -> None:
+    """Check 20: No task/plan/todo references in commit message guidance (spec Section 22).
+
+    Scans commit-related sections of SKILL.md for patterns like
+    "Task N", "PLAN.md", or "TODO.md" that would leak internal planning
+    artifacts into commit messages.
+    """
+    commit_sections = []
+    for heading in ("commit", "Commit"):
+        section = extract_section(text, heading)
+        if section:
+            commit_sections.append(section)
+    subsection = extract_subsection(text, "Pre-dispatch Commit Gate", "Gate procedure")
+    if subsection:
+        commit_sections.append(subsection)
+    subsection = extract_subsection(text, "Pre-dispatch Commit Gate", "General commit message rules")
+    if subsection:
+        commit_sections.append(subsection)
+
+    if not commit_sections:
+        r.ok(skill, "commit-message-hygiene")
+        return
+
+    combined = "\n".join(commit_sections)
+
+    prohibited = [
+        (r"\bTask\s+\d+", "Task number reference"),
+        (r"\bCycle\s+\d+", "Cycle number reference"),
+        (r"\bDecision\s+\d+", "Decision number reference"),
+        (r"\bSurprise\s+#\d+", "Surprise number reference"),
+        (r"\bPLAN\.md\b", "PLAN.md reference"),
+        (r"\bTODO\.md\b", "TODO.md reference"),
+        (r"\bPROGRESS\.md\b", "PROGRESS.md reference"),
+        (r"\bDECISIONS\.md\b", "DECISIONS.md reference"),
+    ]
+
+    errors: list[str] = []
+    for pattern, label in prohibited:
+        matches = re.findall(pattern, combined)
+        if matches:
+            errors.append(f"{label} found in commit section: {', '.join(set(matches))}")
+
+    if errors:
+        for detail in errors:
+            r.error(skill, "commit-message-hygiene", detail)
+    else:
+        r.ok(skill, "commit-message-hygiene")
+
 
 # ---------------------------------------------------------------------------
 # Main
