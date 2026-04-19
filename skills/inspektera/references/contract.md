@@ -1,7 +1,7 @@
 <!-- contract: inspektera -->
-<!-- source: SPEC.md (sha256: 3fbdd63e2b5710ee49132121a55504e98dcc5890b0eb53d394ab827d9d1a677d) -->
+<!-- source: SPEC.md (sha256: d709f49d2a5f4c848eec88a56e005be805350977968ee051081bcde8e5167e38) -->
 <!-- sections: 1, 2, 4, 5, 6, 16, 17, 18 -->
-<!-- generated: 2026-04-19T08:41:59Z -->
+<!-- generated: 2026-04-19T17:31:40Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 

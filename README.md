@@ -121,7 +121,7 @@ Each skill writes markdown artifacts (a vision, a plan, a health report, a decis
 
 |     | Skill                                | What it does                                                                                                         |
 | :-: | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-|  🞔  | [hej](./skills/hej/)                 | **Entry point.** Reads your project state, shows what needs attention, suggests where to start.                     |
+|  ⌂  | [hej](./skills/hej/)                 | **Entry point.** Reads your project state, shows what needs attention, suggests where to start.                     |
 |  ⛥  | [visionera](./skills/visionera/)     | **Envision.** Defines and evolves your project's north star through codebase exploration and aspirational challenge. |
 |  ❈  | [resonera](./skills/resonera/)       | **Deliberate.** Thinks through hard decisions via Socratic questioning before you commit.                           |
 |  ⬚  | [inspirera](./skills/inspirera/)     | **Research.** Analyzes an external resource and maps its patterns to your project.                                  |

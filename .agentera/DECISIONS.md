@@ -324,7 +324,7 @@ DOCS.md evolves from a flat documentation index into a three-layer contract: 1. 
 
 | Category | Token | Code | Meaning |
 |----------|-------|------|---------|
-| hej | 🞔 | U+1F794 | angular hub |
+| hej | ⌂ | U+2302 | home base |
 | realisera | ⧉ | U+29C9 | joined building blocks |
 | inspektera | ⛶ | U+26F6 | viewfinder frame |
 | resonera | ❈ | U+2748 | spark of insight |

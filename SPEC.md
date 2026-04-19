@@ -495,7 +495,7 @@ Each skill has a unique Unicode glyph used as a subtle signature in output.
 
 | Skill | Glyph | Code | Meaning |
 |-------|-------|------|---------|
-| hej | 🞔 | U+1F794 | angular hub |
+| hej | ⌂ | U+2302 | home base |
 | realisera | ⧉ | U+29C9 | joined building blocks |
 | inspektera | ⛶ | U+26F6 | viewfinder frame |
 | resonera | ❈ | U+2748 | spark of insight |
