@@ -339,6 +339,7 @@ If the current task is a version bump (e.g., a PLAN.md task labeled "Version bum
 
 - **TODO.md**: add newly discovered issues, mark resolved ones. Classify each entry by severity per contract severity levels. When updating existing entries (e.g., marking resolved), use the Edit tool on the specific entry rather than rewriting the file.
   Output constraint per contract token budgets.
+  When marking an item resolved, apply the TODO.md Resolved compaction thresholds from contract: if >10 full-detail resolved items exist in `## Resolved`, collapse the oldest to one-line format. If >40 one-line entries exist, drop the oldest.
 - **.agentera/PROGRESS.md**: append the cycle entry (number, timestamp, what shipped, commit hash, inspiration, discoveries, verified observation from Step 6, next suggestion, context block (intent, constraints, unknowns, scope)). The `**Verified**` field is mandatory per contract Section 19; it carries either Step 6's observed output from the primary entrypoint, an allowlisted `N/A: <tag>`, or a free-form rationale of at least 8 words. Write the entry like a colleague's quick debrief: what happened, what surprised you, what's next. Not a form submission.
   Output constraint per contract token budgets.
 - **CHANGELOG.md**: append a one-line entry under `## [Unreleased]` in the appropriate subsection: `feat` → Added, `refactor/chore` → Changed, `fix` → Fixed. Concise description, not the commit message verbatim.

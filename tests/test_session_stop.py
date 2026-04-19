@@ -153,21 +153,21 @@ class TestCompactEntryToOneline:
 class TestCompactEntries:
     """Boundary: compaction at MAX limits. 1 pass + 1 fail."""
 
-    def test_keeps_five_full_entries(self, session_stop):
+    def test_keeps_ten_full_entries(self, session_stop):
         entries = [
             {"header": f"2026-04-{i:02d} 10:00", "body": f"Summary: Entry {i}", "kind": "full"}
-            for i in range(1, 8)
+            for i in range(1, 13)
         ]
         result = session_stop.compact_entries(entries)
         full_count = sum(1 for e in result if e["kind"] == "full")
         oneline_count = sum(1 for e in result if e["kind"] == "oneline")
-        assert full_count == 5
+        assert full_count == 10
         assert oneline_count == 2
 
     def test_drops_entries_beyond_total_limit(self, session_stop):
         entries = [
             {"header": f"2026-04-{i:02d} 10:00", "body": f"Summary: Entry {i}", "kind": "full"}
-            for i in range(1, 30)
+            for i in range(1, 60)
         ]
         result = session_stop.compact_entries(entries)
         assert len(result) == session_stop.MAX_TOTAL_ENTRIES
@@ -283,17 +283,17 @@ class TestWriteSessionBookmarkCompaction:
         agentera_dir = tmp_path / ".agentera"
         agentera_dir.mkdir()
 
-        # Pre-populate with 6 full entries (one more than MAX_FULL_ENTRIES).
+        # Pre-populate with 11 full entries (one more than MAX_FULL_ENTRIES).
         lines = ["# Sessions", ""]
-        for i in range(6):
+        for i in range(11):
             lines.append(f"## 2026-04-{i + 1:02d} 10:00")
             lines.append("")
             lines.append(f"Artifacts modified: PLAN.md\nSummary: Entry {i + 1}")
             lines.append("")
         (agentera_dir / "SESSION.md").write_text("\n".join(lines), encoding="utf-8")
 
-        # Write a new bookmark (total becomes 7).
-        ts = datetime(2026, 4, 10, 15, 0, tzinfo=timezone.utc)
+        # Write a new bookmark (total becomes 12).
+        ts = datetime(2026, 4, 15, 15, 0, tzinfo=timezone.utc)
         session_stop.write_session_bookmark(
             tmp_path, None, ["HEALTH.md"], timestamp=ts,
         )
@@ -303,8 +303,8 @@ class TestWriteSessionBookmarkCompaction:
 
         full_count = sum(1 for e in entries if e["kind"] == "full")
         oneline_count = sum(1 for e in entries if e["kind"] == "oneline")
-        # 5 full (including the new one) + 2 compacted to one-line.
-        assert full_count == 5
+        # 10 full (including the new one) + 2 compacted to one-line.
+        assert full_count == 10
         assert oneline_count == 2
 
 

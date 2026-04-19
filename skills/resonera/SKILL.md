@@ -191,6 +191,9 @@ For any option the user selects:
 
 - **DECISIONS.md**: reason through alternatives in response text. Write ONLY chosen decision,
   confidence, and a rationale per contract token budgets. No deliberation transcript.
+- **DECISIONS.md compaction**: when writing a new entry, apply thresholds from contract:
+  if >10 full-detail entries exist, collapse oldest to one-line under
+  `## Archived Decisions`. If >40 one-line entries exist, drop the oldest.
 - **VISION.md / OBJECTIVE.md**: brief follow-up to fill structure (heavy thinking done).
   Present draft for approval.
 - **TODO.md**: standard format (severity, context, impact).
