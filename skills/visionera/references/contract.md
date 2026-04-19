@@ -1,7 +1,7 @@
 <!-- contract: visionera -->
-<!-- source: SPEC.md (sha256: 3fbdd63e2b5710ee49132121a55504e98dcc5890b0eb53d394ab827d9d1a677d) -->
+<!-- source: SPEC.md (sha256: d709f49d2a5f4c848eec88a56e005be805350977968ee051081bcde8e5167e38) -->
 <!-- sections: 4, 5, 6, 12 -->
-<!-- generated: 2026-04-19T08:41:59Z -->
+<!-- generated: 2026-04-19T17:31:40Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -273,7 +273,7 @@ Each skill has a unique Unicode glyph used as a subtle signature in output.
 
 | Skill | Glyph | Code | Meaning |
 |-------|-------|------|---------|
-| hej | 🞔 | U+1F794 | angular hub |
+| hej | ⌂ | U+2302 | home base |
 | realisera | ⧉ | U+29C9 | joined building blocks |
 | inspektera | ⛶ | U+26F6 | viewfinder frame |
 | resonera | ❈ | U+2748 | spark of insight |

@@ -30,7 +30,7 @@ Each skill has a unique Unicode glyph that appears in section headers as a subtl
 <!-- design:glyphs -->
 
 ```yaml
-hej:         { glyph: "🞔", code: "U+1F794", meaning: "angular hub" }
+hej:         { glyph: "⌂", code: "U+2302", meaning: "home base" }
 realisera:   { glyph: "⧉", code: "U+29C9", meaning: "joined building blocks" }
 inspektera:  { glyph: "⛶", code: "U+26F6", meaning: "viewfinder frame" }
 resonera:    { glyph: "❈", code: "U+2748", meaning: "spark of insight" }
