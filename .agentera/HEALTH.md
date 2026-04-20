@@ -1,5 +1,104 @@
 # Health
 
+## Audit 8 · 2026-04-20
+
+**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene
+**Findings**: 1 critical, 3 warnings, 4 info (0 filtered by confidence)
+**Overall trajectory**: stable vs Audit 7. Version B→C (6 unbumped feat/fix commits). Complexity C→C (one hotspot resolved, one new). Tests A→A (263 tests). Architecture, Patterns, Coupling, Security all stable at A.
+**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Complexity [C] | Tests [A] | Version [C] | Security [A] | Artifact freshness [B]
+
+### Architecture alignment: A
+
+Linter: 0 errors, 17 advisory warnings across 12 skills (sentence-length and banned-vocabulary from Section 23). Registry: 12/12 skills at 1.13.0. SPEC.md Sections 22-23 confirmed. Lefthook config correct. CI updated with pytest install and contract freshness check. No structural regressions.
+
+### Pattern consistency: A
+
+All 12 skills pass structural checks. Compaction threshold language present in all producing skills. "Twelve-skill suite" consistent. One minor anomaly:
+
+#### ⇢ Literal `\n` in YAML frontmatter description in 3 skills, info (confidence: 90)
+
+- **Location**: `skills/inspektera/SKILL.md:14`, `skills/visionera/SKILL.md:14`, `skills/visualisera/SKILL.md:14`
+- **Evidence**: Trigger list lines end with `,\n  "next phrase"` instead of a real newline. Introduced by the `.md` extension normalization pass (`9daf4b7`).
+- **Impact**: Low. The YAML `>` block scalar folds these anyway, but the literal `\n` is visible in the raw file and inconsistent with other skills.
+- **Suggested action**: Replace `\n` with actual newline + indentation in the 3 files.
+
+### Coupling health: A
+
+Clean DAG. No circular dependencies. Hooks still use subprocess boundary. validate_spec.py constants grew to 8 (added WORKTREE_DISPATCH_SKILLS) but remain manageable. common.py duplication with validate_artifact.py unchanged (known info from Audit 7).
+
+### Complexity hotspots: C
+
+validate_spec.py grew from 1073 to 1367 lines (+27%). One prior warning resolved; one new warning.
+
+#### ⇉ check_pre_dispatch_commit_gate() is 78 lines with 4 pattern checks, warning (confidence: 85)
+
+- **Location**: `scripts/validate_spec.py:1037-1114`
+- **Evidence**: Follows the same structure as check_reality_verification_gate: constant set, early return, 4 pattern checks, error accumulation. Not deeply nested but long.
+- **Impact**: Maintenance burden if the gate evolves. Not urgent.
+- **Suggested action**: Extract pattern-check helpers if the function grows further.
+
+#### ⇢ validate_spec.py at 1367 lines (approaching 1400 threshold), info (confidence: 85)
+
+- **Location**: `scripts/validate_spec.py`
+- **Evidence**: Grew 27% since Audit 7. 35 functions including 22 check functions. Section 23 added 3 new check functions (banned_vocabulary, sentence_length, artifact_writing_conventions).
+- **Impact**: Nearing the module-split threshold noted in Audit 7.
+- **Suggested action**: No action now. If it crosses 1400, consider splitting by check category.
+
+**Resolved**: check_severity_levels refactored from 98 lines to 36 lines with 4 named helpers (`_find_severity_in_tables`, `_find_severity_in_headings`, `_find_severity_in_section`, `_find_severity_in_mappings`). Prior warning closed.
+
+### Test health: A
+
+263 tests across 12 files, all passing (up from 240). 3 new tests for Check 19. Test:source ratio 1.21:1. Prior gaps unchanged: hooks/common.py has no dedicated test file, validate_skill_definition has no direct test. Neither has worsened.
+
+### Version health: C
+
+#### ⇶ 6 unbumped feat/fix commits since 1.13.0, critical (confidence: 100)
+
+- **Location**: commits `4d394b5`, `c9c2a1a`, `9daf4b7`, `1a7ac34`, `3779c34`, `1dea65e` (3 feat, 3 fix since `319935d`)
+- **Evidence**: semver_policy says feat = minor, fix = patch. 3 feat commits require a minor bump to 1.14.0. CHANGELOG.md [Unreleased] is empty.
+- **Impact**: Version files report 1.13.0 but 6 bump-qualifying changes have shipped. All version locations are internally consistent but lag behind actual changes.
+- **Suggested action**: Bump to 1.14.0, populate CHANGELOG.md [Unreleased] with the 6 changes.
+
+### Artifact freshness: B
+
+No active PLAN.md; using PROGRESS.md fallback. Advisory, not authoritative.
+
+#### ⇢ PROGRESS.md, CHANGELOG.md, TODO.md, HEALTH.md older than most recent work, info (confidence: 55)
+
+- **Location**: `.agentera/PROGRESS.md` (2026-04-13), `CHANGELOG.md` (2026-04-13), `TODO.md` (2026-04-12), `.agentera/HEALTH.md` (2026-04-11)
+- **Evidence**: 11 commits landed after these artifacts' last modification dates. PROGRESS.md has no cycle entries for the post-1.13.0 work. CHANGELOG.md [Unreleased] is empty.
+- **Impact**: Consuming skills reading these artifacts see a stale snapshot. HEALTH.md is being updated by this audit.
+- **Suggested action**: HEALTH.md resolved by this audit. CHANGELOG.md and version bump are the priority. PROGRESS.md cycle entries for the post-plan ad-hoc work are optional.
+
+### Security hygiene: A
+
+Zero hardcoded secrets. Zero eval/exec. All subprocess calls list-form. Lefthook hooks are clean shell wrappers with no injection surface.
+
+#### ⇢ .gitignore missing defensive credential patterns, info (confidence: 80)
+
+- **Location**: `.gitignore`
+- **Evidence**: No `.env`, `*.key`, `*.pem`, `credentials*` patterns. No such files exist in the repo.
+- **Impact**: Purely defensive. An accidentally created .env would not be blocked from staging.
+- **Suggested action**: Add `.env`, `*.key`, `*.pem` patterns to .gitignore.
+
+> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), or similar.
+
+### Trends vs Audit 7
+
+- **Improved**: check_severity_levels C→resolved (refactored from 98 to 36 lines with helpers)
+- **Degraded**: Version B→C (1 unbumped fix → 6 unbumped feat/fix). Artifact freshness A→B (4 artifacts older than most recent work).
+- **Stable**: Architecture A, Patterns A, Coupling A, Tests A (240→263), Security A, Complexity C
+- **New findings**: literal `\n` in 3 SKILL.md frontmatters (info), check_pre_dispatch_commit_gate 78 lines (warning), .gitignore credential patterns (info)
+- **Resolved**: check_severity_levels 98-line function (refactored)
+
+### Patterns Observed
+
+- Module structure: 12 skills, consistent. validate_spec.py growing as the single linter but still manageable.
+- Hook architecture: unchanged. Subprocess boundary intact.
+- Testing approach: 263 tests, 1.21:1 ratio. Section 23 checks have 3 tests already. Proportional.
+- Version management: post-plan ad-hoc commits accumulated without a version bump. The plan-driven workflow naturally includes bump tasks; ad-hoc work does not.
+- Infrastructure maturation: lefthook hooks, CI fixes, and Section 23 conventions are all infrastructure hardening that doesn't show up as cycle entries.
+
 ## Audit 7 · 2026-04-11
 
 **Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene
@@ -20,12 +119,14 @@ All 12 skills have consistent frontmatter, cross-skill integration ("twelve-skil
 Clean DAG import graph. No circular dependencies. All skill scripts self-contained (stdlib only). Hooks use subprocess boundary to scripts, not imports. Two minor observations:
 
 #### ⇢ validate_spec.py hardcodes 7+ skill-name constants, info (confidence: 80)
+
 - **Location**: `scripts/validate_spec.py:32-112,114-122,126-183,927-929`
 - **Evidence**: REQUIRED_REFS, ARTIFACT_CONTRACTS, SCRIPT_PATTERN_CONSUMERS, AUTONOMOUS_LOOP_SKILLS, REALITY_VERIFICATION_ENFORCERS, RECOGNIZED_CAPABILITIES all hardcode skill/capability names. Adding a 13th skill requires editing 4+ constants.
 - **Impact**: The linter will silently pass if a new skill is added but not registered. Not a current risk (no skills being added), but a maintenance burden.
 - **Suggested action**: Consider deriving REQUIRED_REFS keys from filesystem discovery in a future refactor.
 
 #### ⇢ Duplicated artifact path resolution in common.py and validate_artifact.py, info (confidence: 75)
+
 - **Location**: `hooks/common.py:40-92` vs `hooks/validate_artifact.py:115-174`
 - **Evidence**: Both implement artifact path resolution independently with slightly different logic. session_start and session_stop import common.py; validate_artifact.py does not.
 - **Impact**: Could diverge over time if resolution conventions change.
@@ -36,12 +137,14 @@ Clean DAG import graph. No circular dependencies. All skill scripts self-contain
 240 tests across 12 files, all passing. 18/18 linter check functions tested. All 8 skill scripts have dedicated test files (extract_all.py gap resolved since Audit 6). Test:production LOC ratio 1.02:1 (below code-crusher 2:1 gate but proportional per Decision 21). Two minor gaps:
 
 #### ⇢ hooks/common.py has no dedicated test file, info (confidence: 75)
+
 - **Location**: `hooks/common.py`
 - **Evidence**: 3 public functions (parse_artifact_mapping, resolve_artifact_path, load_artifact_overrides) tested indirectly through session_start (6 tests) and session_stop (5 tests) but no isolated assertions for all paths.
 - **Impact**: Failures in common.py would be harder to diagnose.
 - **Suggested action**: Add test_common.py for direct coverage.
 
 #### ⇢ validate_artifact.py::validate_skill_definition has no direct test, info (confidence: 70)
+
 - **Location**: `hooks/validate_artifact.py:265`
 - **Evidence**: The function runs validate_spec.py and generate_contracts.py as subprocesses. No test exercises this routing. The 7-line validate_spec_spec wrapper is also untested.
 - **Impact**: Low. The function orchestrates already-tested scripts.
@@ -52,18 +155,21 @@ Clean DAG import graph. No circular dependencies. All skill scripts self-contain
 Not assessed in the prior draft; added in validation pass. The codebase has several data-processing scripts with functions exceeding 50 lines. Two warrant warning-level attention; one is informational.
 
 #### ⇉ analyze_progress.py::analyze() is 114 lines with a 5-branch suggestion engine, warning (confidence: 72)
+
 - **Location**: `skills/realisera/scripts/analyze_progress.py:96-209`
 - **Evidence**: 114-line function performs velocity, streak, inspiration-rate, and stall detection in a single body. Suggestion generation has 5 conditional branches building diagnostic messages inline. No sub-functions.
 - **Impact**: Adding a new progress signal requires editing a deeply-nested conditional block. Not a current risk (the script is rarely modified), but a growth trap.
 - **Suggested action**: Extract suggestion-building into a helper per signal type if a new signal is added.
 
 #### ⇉ validate_spec.py::check_severity_levels() is 98 lines with 4-level nesting, warning (confidence: 88)
+
 - **Location**: `scripts/validate_spec.py:342-439`
 - **Evidence**: Loop structure: `for skill → for table_match → for row → for term → if match`. Four overlapping regex patterns for table rows, headings, severity sections, and mapping entries.
 - **Impact**: The linter is actively maintained (most frequently edited Python file). 4-level nesting makes adding a new severity check error-prone.
 - **Suggested action**: Extract per-pattern matchers into named helpers to flatten nesting to 2 levels.
 
 #### ⇢ validate_spec.py is 1073 lines total with 40+ check functions, info (confidence: 85)
+
 - **Location**: `scripts/validate_spec.py`
 - **Evidence**: 18 check functions, many 50-80 lines. Largest single file in the project. All check functions pass currently (0 errors, 0 warnings), so this is a maintenance signal, not a defect.
 - **Impact**: If the linter continues to grow (new spec sections → new checks), it will become harder to navigate and modify safely.
@@ -74,6 +180,7 @@ Not assessed in the prior draft; added in validation pass. The codebase has seve
 All versions at 1.8.0 (profilera 2.7.0), consistent across 12 plugin.json, registry.json, and marketplace.json. The bump from 1.7.0 was performed in cycle 94 (8c83613). One unbumped `fix` commit since the bump:
 
 #### ⇉ One unbumped fix commit since 1.8.0, warning (confidence: 78)
+
 - **Location**: commit `a1a88a6 fix(docs): update CLAUDE.md spec path to root SPEC.md, add missing platform annotations`
 - **Evidence**: `semver_policy: "fix = patch"`. The commit type is `fix`, qualifying for a patch bump to 1.8.1. Two other commits since the bump are `docs` type, which correctly do not trigger a bump.
 - **Impact**: Version files report 1.8.0 but a patch-qualifying fix has shipped. Low severity: the fix was documentation-only with no runtime behavior change.
@@ -116,11 +223,12 @@ Zero hardcoded secrets. Zero eval/exec/os.system/shell=True. All 5 subprocess ca
 171 tests across 7 files, all passing. Coverage by module:
 
 - **validate_spec.py**: 105 tests across 17 test classes. All 13 check functions tested (check_frontmatter, check_confidence_scale, check_severity_levels, check_decision_labels, check_artifact_path_resolution, check_profile_consumption, check_cross_skill_integration, check_safety_rails, check_artifact_format, check_exit_signals, check_loop_guard, check_em_dashes, check_hard_wraps). Plus Results class, extract_subsection, parse_frontmatter, extract_section.
-- **eval_skills.py**: 26 tests covering TRIGGER_PROMPTS completeness (all 12 skills including orkestrera), _parse_frontmatter_name, discover_skills, build_report, build_dry_run, parse_args.
+- **eval_skills.py**: 26 tests covering TRIGGER_PROMPTS completeness (all 12 skills including orkestrera),_parse_frontmatter_name, discover_skills, build_report, build_dry_run, parse_args.
 - **Skill scripts**: 4 of 5 scripts tested (40 tests total). analyze_experiments.py (10), analyze_progress.py (9), effective_profile.py (11), validate_design.py (10).
 - **Shared fixtures**: conftest.py provides validate_ecosystem and eval_skills module fixtures via importlib.
 
 #### ⇢ extract_all.py (profilera) has no tests · info (confidence: 95)
+
 - **Location**: `skills/profilera/scripts/extract_all.py`
 - **Evidence**: Only Python script without a corresponding test file. 5 of 6 scripts now tested; extract_all.py is the gap.
 - **Impact**: Profile extraction parsing changes could break silently
@@ -177,6 +285,7 @@ No cross-skill references modified. 12-node graph intact. Carried forward from A
 5 of 6 Audit 4 findings resolved (LICENSE added, installation path fixed, ISSUES-template renamed, README intro updated, CLAUDE.md layout fixed). Orkestrera integrated cleanly across all 12 touchpoints: SKILL.md, the spec (Sections 4, 7, 11, 12), linter, all SKILL.md cross-skill sections, hej routing, manifests, README, CLAUDE.md.
 
 #### ⇉ README diagram understates inspirera connections · warning (confidence: 90)
+
 - **Location**: `README.md:84-91`
 - **Evidence**: Diagram shows single `inspirera → planera` arrow. Spec Section 7 requires references to realisera, optimera, visionera, resonera, profilera. Prose at line 93 is accurate but diagram is simplified without noting it.
 - **Impact**: Diagram understates inspirera's role in the ecosystem graph
@@ -199,6 +308,7 @@ Post-1.5.0 bump: all 11 non-profilera plugin.json at 1.5.0, profilera at 2.4.0, 
 No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. Linter is the only automated verification. Same state as Audit 4; orkestrera addition did not improve or degrade test health.
 
 #### ⇢ No automated tests for linter or skills · info (confidence: 95)
+
 - **Location**: `scripts/validate_spec.py`, `scripts/eval_skills.py`
 - **Evidence**: validate_spec.py has no test file. eval_skills.py exists but no evidence of regular execution.
 - **Impact**: Linter changes (like the orkestrera additions) are verified manually, not by CI
@@ -229,36 +339,42 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 ### Architecture alignment: C
 
 #### ⇉ No LICENSE file · warning (confidence: 100)
+
 - **Location**: repo root
 - **Evidence**: No LICENSE/LICENSE.md exists. VISION.md states "openness over lock-in" and "open standard."
 - **Impact**: All rights reserved by default; external use legally blocked
 - **Suggested action**: Add LICENSE (MIT or Apache 2.0)
 
 #### ⇉ Installation path double-nesting · warning (confidence: 95)
+
 - **Location**: `README.md:85-106`
 - **Evidence**: Clone to `~/.claude/skills` produces `~/.claude/skills/skills/inspirera`
 - **Impact**: Confusing path; will generate user questions
 - **Suggested action**: Clone to `~/.claude/agentera` instead
 
 #### ⇉ Stale ISSUES-template.md · warning (confidence: 95)
+
 - **Location**: `skills/realisera/references/templates/ISSUES-template.md`
 - **Evidence**: D13 renamed ISSUES.md→TODO.md; template still says "# Issues"
 - **Impact**: Contributors find deprecated template
 - **Suggested action**: Rename to TODO-template.md, update content
 
 #### ⇉ README intro omits two skills · warning (confidence: 95)
+
 - **Location**: `README.md:3`
 - **Evidence**: Lists 8 workflows, claims 10; missing research (inspirera) and design (visualisera)
 - **Impact**: Two skills invisible in opening pitch
 - **Suggested action**: Add "researching, designing"
 
 #### ⇉ README diagram incomplete for inspirera · warning (confidence: 90)
+
 - **Location**: `README.md:27-48`
 - **Evidence**: Diagram shows inspirera→planera only; text says realisera+optimera; SKILL.md shows 5 connections
 - **Impact**: Ecosystem diagram understates inspirera
 - **Suggested action**: Add edges or note as simplified
 
 #### ⇢ CLAUDE.md layout omits plugin.json · info (confidence: 90)
+
 - **Location**: `CLAUDE.md:10-21`
 - **Evidence**: Layout shows SKILL.md, references/, scripts/ but not .claude-plugin/plugin.json
 - **Impact**: Contributors miss plugin structure
@@ -267,30 +383,35 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 ### Pattern consistency: B
 
 #### ⇉ inspirera section ordering anomaly · warning (confidence: 95)
+
 - **Location**: `skills/inspirera/SKILL.md`
 - **Evidence**: State artifacts after exit signals; safety rails after cross-skill. All 10 others follow canonical order.
 - **Impact**: Inconsistent structure hinders navigation
 - **Suggested action**: Reorder to canonical pattern
 
 #### ⇉ inspirera missing ALWAYS/REQUIRED phrasing · warning (confidence: 95)
+
 - **Location**: `skills/inspirera/SKILL.md:4-14`
 - **Evidence**: Uses "Use this skill whenever" instead of "ALWAYS use"/"This skill is REQUIRED"
 - **Impact**: Claude may skip skill for link analysis
 - **Suggested action**: Add ALWAYS/REQUIRED/DO NOT trinity
 
 #### ⇉ Output opening line placement inconsistency · warning (confidence: 95)
+
 - **Location**: realisera, optimera define in cycle section; others in intro
 - **Evidence**: 7 skills define in intro, 2 in cycle section, 1 (hej) uses dashboard
 - **Impact**: Agents may miss opening line definition
 - **Suggested action**: Standardize to intro paragraph
 
 #### ⇉ inspirera lacks Step 0 · warning (confidence: 85)
+
 - **Location**: `skills/inspirera/SKILL.md`
 - **Evidence**: 8 of 10 other skills with detection start at Step 0; inspirera starts at Step 1
 - **Impact**: Minor numbering inconsistency
 - **Suggested action**: Renumber or accept variance
 
 #### ⇢ Trailing "Notes" section in 2 skills · info (confidence: 90)
+
 - **Location**: inspirera, profilera
 - **Evidence**: "Notes on depth vs. speed" after Getting started; 9 others lack this
 - **Impact**: Minor structural outlier
@@ -299,24 +420,28 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 ### Coupling health: B
 
 #### ⇉ README consumer tables stale vs ecosystem spec · warning (confidence: 88)
+
 - **Location**: `README.md:58-75` vs `references/SPEC.md`
 - **Evidence**: VISION.md missing dokumentera, visualisera as consumers; PROGRESS.md missing dokumentera, visionera
 - **Impact**: README understates artifact mesh
 - **Suggested action**: Sync with ecosystem spec
 
 #### ⇉ .optimera/harness outside standard layout · warning (confidence: 78)
+
 - **Location**: `skills/optimera/SKILL.md:39`
 - **Evidence**: Only artifact outside .agentera/; undocumented in spec format contracts
 - **Impact**: Not caught by .agentera/ tooling
 - **Suggested action**: Document in spec or relocate
 
 #### ⇉ Hardcoded profilera skill directory · warning (confidence: 78)
+
 - **Location**: `skills/realisera/SKILL.md:185`, `skills/inspektera/SKILL.md:92`
 - **Evidence**: Hardcodes `~/.claude/plugins/marketplaces/agentera/skills/profilera`; README suggests different path
 - **Impact**: Profile script may fail if installed differently
 - **Suggested action**: Remove hardcoded path
 
 #### ⇢ Interface width clean · info (confidence: 92)
+
 - **Location**: all cross-skill sections
 - **Evidence**: Skills communicate only through published artifacts and script output
 - **Impact**: None, healthy coupling
@@ -324,24 +449,28 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 ### Test health: D
 
 #### ⇶ Zero unit tests for Python scripts · critical (confidence: 98)
+
 - **Location**: 12 Python files across skills/*/scripts/ and scripts/
-- **Evidence**: No test_*.py or *_test.py files anywhere. Scripts include regex parsing, exponential decay math, custom YAML parsing.
+- **Evidence**: No test_*.py or*_test.py files anywhere. Scripts include regex parsing, exponential decay math, custom YAML parsing.
 - **Impact**: Parsing changes break silently
 - **Suggested action**: Add tests for parse functions in all 5 script modules
 
 #### ⇶ No artifact format contract tests · critical (confidence: 88)
+
 - **Location**: ecosystem-wide
 - **Evidence**: Primary value (inter-skill communication via artifacts) has zero format validation at test time
 - **Impact**: Format drift between producer and consumer undetectable
 - **Suggested action**: Contract tests per artifact in spec format table
 
 #### ⇶ Eval runner gaps · critical (confidence: 85)
+
 - **Location**: `scripts/eval-skills.py:38-49`
 - **Evidence**: hej missing from TRIGGER_PROMPTS. Runner checks crashes only, not output correctness.
 - **Impact**: Entry-point skill untested; behavioral correctness unverified
 - **Suggested action**: Add hej prompt; add output structure checks
 
 #### ⇉ Linter cannot catch semantic correctness · warning (confidence: 90)
+
 - **Location**: `scripts/validate-ecosystem.py`
 - **Evidence**: Checks structural presence (sections, keywords) not workflow logic correctness
 - **Impact**: Broken instructions pass linter
@@ -350,12 +479,14 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 ### Version health: B
 
 #### ⇉ CHANGELOG.md [Unreleased] not promoted · warning (confidence: 95)
+
 - **Location**: `CHANGELOG.md:3`
 - **Evidence**: Version bump to 1.2.0/1.3.0 already shipped but CHANGELOG still says [Unreleased]
 - **Impact**: Consumers believe features are unreleased
 - **Suggested action**: Promote to [1.3.0] heading, add empty [Unreleased]
 
 #### ⇢ All 33 version locations consistent · info (confidence: 100)
+
 - **Location**: registry.json, marketplace.json, 11 plugin.json
 - **Evidence**: Every version matches across all three sources
 - **Impact**: None, excellent alignment
@@ -363,29 +494,34 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 ### Dependency health: B
 
 #### ⇉ Prerequisites undocumented · warning (confidence: 90)
+
 - **Location**: `README.md` (absent section)
 - **Evidence**: Python 3.10+ required (PEP 604 syntax), claude CLI, git; none listed
 - **Impact**: Users hit cryptic errors on older Python
 - **Suggested action**: Add Prerequisites section to README
 
 #### ⇉ No minimum Claude Code version · warning (confidence: 85)
+
 - **Location**: absent from all docs
 - **Evidence**: Uses worktree isolation, pipe mode, model selection; version-dependent features
 - **Impact**: Older CLI versions may fail
 - **Suggested action**: Document minimum version
 
 #### ⇉ .gitignore minimal · warning (confidence: 80)
+
 - **Location**: `.gitignore`
 - **Evidence**: Missing .env, .DS_Store, editor temp patterns; .planera/ stale entry
 - **Impact**: Risk increases with contributors
 - **Suggested action**: Add defensive patterns
 
 #### ⇢ Zero third-party imports · info (confidence: 100)
+
 - **Location**: all 12 Python files
 - **Evidence**: Every import resolves to stdlib or relative
 - **Impact**: None, fully compliant
 
 ### Trends vs Audit 3
+
 - **Degraded**: Architecture B→C, broader release-readiness scope exposed LICENSE gap, installation UX, and stale template
 - **Stable**: Patterns B→B, inspirera remains the structural outlier (3 of 4 warnings). All Audit 3 findings resolved.
 - **New dimensions**: Coupling B, Tests D, Version B, Dependencies B (first assessment)
@@ -393,6 +529,7 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 - **Key risk**: Test health D is the primary blocker for public release confidence. Zero automated coverage for the ecosystem's core value proposition (inter-skill artifact communication).
 
 ### Patterns Observed
+
 - inspirera is the persistent structural outlier: three consecutive audits have found pattern deviations. It predates structural conventions and has not been fully normalized.
 - Count-staleness pattern appears resolved: linter enforces "eleven-skill" count; no new count errors found.
 - Documentation quality follows a gradient: SPEC.md (authoritative) > SKILL.md files (aligned) > README.md (simplified, drifts). README is the weakest link.
@@ -411,23 +548,27 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 ### Architecture alignment: B
 
 #### "Eight-skill ecosystem" in all SKILL.md files · warning (confidence: 95)
+
 - **Location**: all 8 consuming SKILL.md cross-skill sections
 - **Evidence**: every SKILL.md says "part of an eight-skill ecosystem" but suite has 9 skills
 - **Impact**: contradicts README and CLAUDE.md which correctly say nine
 - **Suggested action**: replace "eight-skill" with "nine-skill" across all SKILL.md files
 
 #### dokumentera doesn't consume PROFILE.md · warning (confidence: 90)
+
 - **Location**: dokumentera/SKILL.md
 - **Evidence**: README says PROFILE.md consumed by "all skills"; dokumentera has no profile step
 - **Impact**: dokumentera can't calibrate doc style to user preferences
 - **Suggested action**: add profile reading to dokumentera's orient steps
 
 #### State artifact consumed-by column understates dependencies · info (confidence: 85)
+
 - **Location**: README.md:46-57
 - **Evidence**: VISION.md listed as consumed by 3 skills, actually consumed by 7
 - **Suggested action**: update or note table shows primary consumers only
 
 #### DOCS.md Artifact Mapping lacks "Consumed by" · info (confidence: 80)
+
 - **Location**: DOCS.md:19-30
 - **Evidence**: has Producers column but no consumer info
 - **Suggested action**: consider adding for full dependency visibility
@@ -435,38 +576,45 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 ### Pattern consistency: C
 
 #### inspirera missing safety rails section · warning (confidence: 88)
+
 - **Location**: inspirera/SKILL.md
 - **Evidence**: 7 of 8 other skills have safety rails with critical tags
 - **Impact**: no explicit guardrails on what inspirera must not do
 - **Suggested action**: add safety rails section
 
 #### inspirera and profilera missing "Getting started" · warning (confidence: 87)
+
 - **Location**: inspirera/SKILL.md, profilera/SKILL.md
 - **Evidence**: 7 of 9 skills have this section
 - **Impact**: reduced usability for new users
 - **Suggested action**: add getting started sections to both
 
 #### Artifact path resolution wording inconsistencies · warning (confidence: 85)
+
 - **Location**: inspirera/SKILL.md:205, resonera/SKILL.md:49
 - **Evidence**: inspirera says "Before writing to" (omits reading), resonera says "cross-skill writes"
 - **Suggested action**: standardize to match realisera's canonical pattern
 
 #### Inspirera doesn't reference visionera · warning (confidence: 82)
+
 - **Location**: inspirera/SKILL.md cross-skill section
 - **Evidence**: visionera says "informed by /inspirera" but inspirera doesn't mention visionera
 - **Suggested action**: add bidirectional reference
 
 #### Planera doesn't acknowledge dokumentera (DTC) · info (confidence: 78)
+
 - **Location**: planera/SKILL.md cross-skill section
 - **Evidence**: dokumentera says "feeds /planera" but planera doesn't mention dokumentera
 - **Suggested action**: add "Planera is fed by /dokumentera" section
 
 #### State artifacts table header inconsistency · info (confidence: 77)
+
 - **Location**: realisera/SKILL.md:36, inspektera/SKILL.md:37
 - **Evidence**: use "File" while others use "Artifact"
 - **Suggested action**: standardize column header
 
 ### Patterns Observed
+
 - Skills follow consistent macro-structure: frontmatter → intro → state artifacts → steps → safety rails → cross-skill → getting started
 - Two outliers (inspirera, profilera) predate later skills and lack structural sections
 - Cross-skill references mostly bidirectional with gaps around dokumentera (newest skill)
@@ -484,58 +632,69 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 ### Architecture alignment: B
 
 #### CLAUDE.md claims "Ten skills" · warning (confidence: 100)
+
 - **Location**: `CLAUDE.md:5`
 - **Evidence**: "Ten skills, each a self-contained SKILL.md" should be "Eleven skills" after hej addition
 - **Impact**: Developers setting up the repo read stale count
 - **Suggested action**: Update to "Eleven skills"
 
 #### DOCS.md coverage says 10/10 · warning (confidence: 100)
+
 - **Location**: `DOCS.md:46`
 - **Evidence**: `Documented: 10/10 skills have SKILL.md`, should be 11/11
 - **Impact**: Self-assessment of documentation coverage is off by one
 - **Suggested action**: Update count
 
 #### Some cross-skill references are unidirectional · warning (confidence: 90)
+
 - **Location**: Multiple SKILL.md cross-skill sections
 - **Evidence**: inspektera says "feeds /optimera" but optimera doesn't acknowledge reading HEALTH.md. dokumentera feeds planera/realisera but neither acknowledges dokumentera.
 - **Impact**: Reading friction, not a logic error; all relationships work correctly
 - **Suggested action**: Add reciprocal mentions where missing
 
 #### README state artifacts table shows primary consumers only · info (confidence: 85)
+
 - **Location**: `README.md:52-65`
 - **Evidence**: Table shows primary workflow consumers, not the full mesh. Known from Audit 1. By design.
 
 ### Pattern consistency: B
 
 #### Resonera has duplicate "Getting started" sections · warning (confidence: 98)
+
 - **Location**: `skills/resonera/SKILL.md:98` and `skills/resonera/SKILL.md:312`
 - **Evidence**: Two `## Getting started` headings. First describes workflow initiation, second describes usage patterns. First is misplaced mid-document. All other skills have one section at the end.
 - **Impact**: Breaks structural pattern followed by all 10 other skills
 - **Suggested action**: Merge into one section at the end
 
 #### Hej artifact path resolution under-specified · info (confidence: 75)
+
 - **Location**: `skills/hej/SKILL.md:50-55`
 - **Evidence**: Says "all artifact reads" without listing specific artifacts or noting hej produces nothing. Other skills list explicit examples.
 
 #### Inspirera description differs between registry and marketplace · info (confidence: 100)
+
 - **Location**: `registry.json:7` vs `.claude-plugin/marketplace.json:13`
 - **Evidence**: "an external link" (singular, accurate) vs "external links" (plural)
 
 #### Safety rails count varies 5-9 across skills · info (confidence: 65)
+
 - **Location**: All SKILL.md safety rails sections
 - **Evidence**: optimera 9, inspirera/profilera 5. Variation likely reflects genuine complexity differences.
 
 #### Resonera is the only skill with a "Personality" section · info (confidence: 60)
+
 - **Location**: `skills/resonera/SKILL.md:73-86`
 - **Evidence**: No other skill documents communication personality as a formal section. Makes sense as an exception; resonera's warm Socratic style is central to its function.
 
 ### Trends vs Audit 1
+
 - **Improved**: Patterns C→B. All 6 Audit 1 findings (ISS-1 through ISS-6) resolved.
 - **Stable**: Architecture remains B. No structural regressions from adding hej.
 - **New**: 4 new findings: stale counts (CLAUDE.md, DOCS.md), resonera duplicate section, unidirectional cross-skill refs.
 - **Resolved**: ISS-1 through ISS-7 (all prior issues cleared).
 
 ### Patterns Observed
+
 - Hej integrates cleanly as a meta-skill: reads all artifacts, produces none, passes all linter checks
 - Doc references go stale immediately on skill addition (same pattern as ISS-1). Consider a linter check for count consistency.
 - Pushback discipline addition fits tonally with resonera's personality
@@ -553,18 +712,21 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 ### Architecture alignment: B
 
 #### README ecosystem diagram omits dokumentera · warning (confidence: 95)
+
 - **Location**: `README.md:27-38`
 - **Evidence**: ASCII diagram shows 10 of 11 skills. Dokumentera is absent despite being referenced in the opening line and the state artifacts table. All other skills appear.
 - **Impact**: Users don't see how documentation fits the workflow. Visual representation contradicts the "Eleven skills" claim.
 - **Suggested action**: Add dokumentera to the diagram as a cross-cutting layer (it's consumed by all skills for DOCS.md path resolution)
 
 #### inspirera artifact path resolution in wrong location · warning (confidence: 100)
+
 - **Location**: `skills/inspirera/SKILL.md:217`
 - **Evidence**: Artifact path resolution appears as a subsection of `## Cross-skill integration` instead of under `## State artifacts`. Ecosystem spec Section 5 requires it under State artifacts. inspirera has no State artifacts section at all.
 - **Impact**: Violates spec structural requirement. Linter passes because the instruction text exists, but the placement is wrong.
 - **Suggested action**: Add `## State artifacts` section to inspirera; move artifact path resolution under it
 
 #### hej cross-skill section has count and list gaps · warning (confidence: 90)
+
 - **Location**: `skills/hej/SKILL.md:227,231`
 - **Evidence**: Line 227 says "reads artifacts from all eleven workflow skills", should be "ten other" (hej doesn't read itself). Line 231 heading says "Reads from all ten skills" but lists only 8 (missing profilera → PROFILE.md, inspirera → no direct artifact but should be acknowledged).
 - **Impact**: Incomplete dependency documentation for the entry-point skill
@@ -573,24 +735,28 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 ### Pattern consistency: B
 
 #### profilera lacks State artifacts section · warning (confidence: 95)
+
 - **Location**: `skills/profilera/SKILL.md`
 - **Evidence**: 10 of 11 skills have a `## State artifacts` section with artifact path resolution. profilera is the only one missing it. It reads DECISIONS.md (line 407) and writes PROFILE.md (global path) but documents neither in a structured section.
 - **Impact**: Inconsistent structure. profilera's exceptional artifact path (~/.claude/profile/) makes a State artifacts section MORE important, not less; consumers need to know it's not in the project root.
 - **Suggested action**: Add State artifacts section documenting PROFILE.md (global), DECISIONS.md (reads via DOCS.md mapping), and artifact path resolution
 
 #### DOCS.md Index missing PLAN.md and self-reference · info (confidence: 100)
+
 - **Location**: `DOCS.md:41-54`
 - **Evidence**: Index lists 12 documents but omits PLAN.md (exists at root, active plan) and DOCS.md itself. Both are canonical artifacts in the Artifact Mapping table.
 - **Impact**: Index doesn't fully document its own contents
 - **Suggested action**: Add both entries to the index
 
 ### Trends vs Audit 2
+
 - **Improved**: All Audit 2 findings resolved (ISS-8, ISS-9, ISS-10). Dokumentera Audit 3 fixed 10 additional doc issues. Visual identity system fully deployed. Versioning convention established. Linter updated for eleven-skill count.
 - **Stable**: Both grades remain B. Nature of findings shifted from accuracy (wrong counts, missing sections, duplicate content) to structural placement and completeness.
 - **New**: 5 new findings (4 warnings, 1 info). 1 introduced by Audit 3 fix (hej "all eleven" should be "ten other"). 4 pre-existing but previously undetected.
 - **Resolved**: All Audit 2 findings (ISS-8, ISS-9, ISS-10) cleared.
 
 ### Patterns Observed
+
 - Count-staleness pattern persists: three audits have found wrong skill counts (ISS-1 eight→nine, ISS-8 ten→eleven in CLAUDE.md, Audit 3 ten→eleven in SKILL.md/spec). Linter now validates the count, but the linter itself needed manual updating. Consider making the count dynamic (grep skills/ directory).
 - Two skills (profilera, inspirera) predate the structural conventions established in later skills. Both lack State artifacts sections that all post-convention skills have.
 - Finding quality is improving: Audit 1 found wrong counts and missing safety rails. Audit 2 found stale counts and structural duplicates. Audit 3 finds placement issues and list gaps. Each audit's findings are less severe than the last.

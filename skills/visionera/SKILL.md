@@ -11,7 +11,8 @@ description: >
   and persona grounding that produces visions capable of sustaining months of autonomous
   development. Trigger on: "visionera", "create a vision", "write VISION.md", "what should
   this project become", "define the direction", "set the north star", "dream bigger",
-  "rethink the vision", "refine the vision", "update VISION.md", "bootstrap the project",\n  or when realisera detects no VISION.md.
+  "rethink the vision", "refine the vision", "update VISION.md", "bootstrap the project",
+  or when realisera detects no VISION.md.
 spec_sections: [4, 5, 6, 12]
 ---
 

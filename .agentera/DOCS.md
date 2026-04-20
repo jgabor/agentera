@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-10 (post-1.8.0) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-20 (post-1.13.0) -->
 
 ## Conventions
 
@@ -48,29 +48,40 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Progress | .agentera/PROGRESS.md | 2026-04-10 | ■ current |
 | TODO | TODO.md | 2026-04-02 | ■ current |
 | Changelog | CHANGELOG.md | 2026-04-10 | ■ current |
-| Health | .agentera/HEALTH.md | 2026-04-02 | ■ current |
-| Plan | .agentera/PLAN.md | 2026-04-10 | ■ current (archived) |
-| DOCS | .agentera/DOCS.md | 2026-04-10 | ■ current |
-| Design | .agentera/DESIGN.md | 2026-04-02 | ■ current |
-| Ecosystem spec | SPEC.md | 2026-04-10 | ■ current |
+| Health | .agentera/HEALTH.md | 2026-04-20 | ■ current |
+| Plan | .agentera/PLAN.md | 2026-04-13 | ■ current (archived) |
+| DOCS | .agentera/DOCS.md | 2026-04-20 | ■ current |
+| Design | .agentera/DESIGN.md | 2026-04-19 | ■ current |
+| Ecosystem spec | SPEC.md | 2026-04-20 | ■ current |
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
-| Registry | registry.json | 2026-04-10 | ■ current |
-| Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-10 | ■ current |
+| Registry | registry.json | 2026-04-13 | ■ current |
+| Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-13 | ■ current |
 | Hooks registry | hooks/hooks.json | 2026-04-03 | ■ current |
 | SessionStart hook | hooks/session_start.py | 2026-04-03 | ■ current |
 | Session stop hook | hooks/session_stop.py | 2026-04-03 | ■ current |
 | Validation hook | hooks/validate_artifact.py | 2026-04-03 | ■ current |
 | Shared hook utils | hooks/common.py | 2026-04-03 | ■ current |
-| Test suite | tests/ | 2026-04-03 | ■ current |
+| Test suite | tests/ | 2026-04-13 | ■ current |
+| Lefthook config | .lefthook.yml | 2026-04-20 | ■ current |
+| CI workflow | .github/workflows/ci.yml | 2026-04-11 | ■ current |
 
 ## Coverage
 
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 240 tests across 12 files; extract_all.py untested; CI gating deferred
+- **Tests**: 263 tests across 12 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-20 (Audit 8, post-1.13.0)
+
+- [stale] CHANGELOG.md [Unreleased] empty despite 6 bump-worthy commits since 1.13.0 · warning (fixed)
+- [stale] DOCS.md Coverage test count said 240 across 12 files, actual 263; CI gating note outdated · warning (fixed)
+- [stale] DOCS.md Index dates for HEALTH.md, SPEC.md, Test suite showed pre-1.13.0 dates · warning (fixed)
+- [gap] CLAUDE.md repo layout missing .lefthook.yml · info (fixed)
+- [stale] DOCS.md last audit date said 2026-04-10 post-1.8.0 · info (fixed)
+- [gap] DOCS.md Index missing .lefthook.yml row · info (fixed)
 
 ### 2026-04-10 (Audit 7, post-1.8.0)
 

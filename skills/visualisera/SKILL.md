@@ -11,7 +11,8 @@ description: >
   structured token synthesis that produces design systems capable of sustaining consistent
   autonomous UI development. Trigger on: "visualisera", "create design system",
   "write DESIGN.md", "design tokens", "visual identity", "define the aesthetic", "set up
-  design system", "audit design", "refine design system",\n  "update DESIGN.md".
+  design system", "audit design", "refine design system",
+  "update DESIGN.md".
 spec_sections: [4, 5, 6, 12]
 ---
 

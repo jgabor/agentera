@@ -1034,75 +1034,54 @@ def check_platform_annotations(skill: str, text: str, r: Results) -> None:
         r.ok(skill, "platform-annotations")
 
 
-def check_pre_dispatch_commit_gate(skill: str, text: str, r: Results) -> None:
-    """Check 19: Pre-dispatch Commit Gate (spec Section 22).
-
-    Skills that dispatch subagents to worktrees (isolation: "worktree")
-    must include the pre-dispatch commit gate procedure: a reference to
-    Section 22, the checkpoint commit message, a clean-tree check via
-    git status, and scoped staging (no git add -A / git add .).
-    Other skills pass unconditionally.
-    """
-    if skill not in WORKTREE_DISPATCH_SKILLS:
-        r.ok(skill, "pre-dispatch-commit-gate")
-        return
-
-    # Detect worktree dispatch language as a sanity check.
-    has_worktree_dispatch = bool(
-        re.search(r'isolation:\s*"worktree"', text)
-    )
-    if not has_worktree_dispatch:
-        # The skill is in the expected set but somehow lacks the dispatch
-        # language. Flag it: the constant and the SKILL.md are out of sync.
-        r.error(
-            skill,
-            "pre-dispatch-commit-gate",
-            "Expected worktree dispatch language "
-            '(isolation: "worktree") but not found',
-        )
-        return
-
-    errors: list[str] = []
-
-    # 1. Reference to Section 22 (the spec section defining the gate).
-    section_patterns = [
+def _has_section_22_ref(text: str) -> bool:
+    patterns = [
         r"contract Section 22",
         r"spec Section 22",
         r"Section 22[,:]?\s*Pre-dispatch Commit Gate",
         r"Pre-dispatch [Cc]ommit [Gg]ate",
     ]
-    has_section_ref = any(
-        re.search(pat, text, re.IGNORECASE) for pat in section_patterns
-    )
-    if not has_section_ref:
-        errors.append(
-            "Missing reference to Section 22 (Pre-dispatch Commit Gate)"
-        )
+    return any(re.search(pat, text, re.IGNORECASE) for pat in patterns)
 
-    # 2. Checkpoint commit message format.
-    if "checkpoint before worktree dispatch" not in text:
-        errors.append(
-            "Missing checkpoint commit message "
-            "('checkpoint before worktree dispatch')"
-        )
 
-    # 3. Clean-tree check via git status.
-    if "git status --porcelain" not in text:
-        errors.append(
-            "Missing clean-tree check ('git status --porcelain')"
-        )
-
-    # 4. Scoped staging instruction (must not use git add -A or git add .).
-    has_no_add_all = bool(
+def _has_scoped_staging(text: str) -> bool:
+    return bool(
         re.search(r"(?:do not|don't|never)\s+use\s+`?git add -A", text, re.IGNORECASE)
         or re.search(r"(?:do not|don't|never)\s+use\s+`?git add \.", text, re.IGNORECASE)
         or re.search(r"not\s+`?git add -A`?\s+or\s+`?git add \.", text, re.IGNORECASE)
     )
-    if not has_no_add_all:
-        errors.append(
-            "Missing scoped staging instruction "
-            "(must prohibit 'git add -A' or 'git add .')"
+
+
+_GATE_INDICATORS: list[tuple[str, str]] = [
+    ("section-ref", "Missing reference to Section 22 (Pre-dispatch Commit Gate)"),
+    ("checkpoint-msg", "Missing checkpoint commit message ('checkpoint before worktree dispatch')"),
+    ("clean-tree", "Missing clean-tree check ('git status --porcelain')"),
+    ("scoped-staging", "Missing scoped staging instruction (must prohibit 'git add -A' or 'git add .')"),
+]
+
+
+def check_pre_dispatch_commit_gate(skill: str, text: str, r: Results) -> None:
+    """Check 19: Pre-dispatch Commit Gate (spec Section 22)."""
+    if skill not in WORKTREE_DISPATCH_SKILLS:
+        r.ok(skill, "pre-dispatch-commit-gate")
+        return
+
+    if not re.search(r'isolation:\s*"worktree"', text):
+        r.error(
+            skill,
+            "pre-dispatch-commit-gate",
+            'Expected worktree dispatch language (isolation: "worktree") but not found',
         )
+        return
+
+    checks = {
+        "section-ref": _has_section_22_ref(text),
+        "checkpoint-msg": "checkpoint before worktree dispatch" in text,
+        "clean-tree": "git status --porcelain" in text,
+        "scoped-staging": _has_scoped_staging(text),
+    }
+
+    errors = [msg for key, msg in _GATE_INDICATORS if not checks[key]]
 
     if errors:
         for detail in errors:
