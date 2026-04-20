@@ -190,6 +190,8 @@ Output constraint: ≤20 words per principle.
 
 Present the draft to the user. Get explicit approval before writing.
 
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+
 ---
 
 ## Refine mode
@@ -215,11 +217,13 @@ Search for domain developments since the vision was written: new tools, communit
 Present your assessment:
 
 > Here's what's changed since the vision was written:
+>
 > - The project has built [A, B, C] (from PROGRESS.md)
 > - Decision [X] shifted thinking about [Y] (from DECISIONS.md)
 > - The domain has moved: [Z] (from research)
 >
 > I'd suggest updating:
+>
 > - [Section]: [what to change and why]
 > - [Section]: [what to change and why]
 >
@@ -230,6 +234,8 @@ Brief conversation (2-4 exchanges) to refine proposed changes.
 ### Step 4: Update VISION.md
 
 Show the updated vision as a diff (what changed and why). Get explicit approval before writing.
+
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ---
 
@@ -268,27 +274,35 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 Visionera is part of a twelve-skill suite. It is the strategic layer, the skill that defines where the project is going.
 
 ### Visionera produces what /realisera consumes
+
 VISION.md is the north star that drives realisera's work selection every cycle. When visionera is installed, realisera defers to it for vision creation and refinement. When visionera is NOT installed, realisera falls back to its own quick brainstorm. Both paths produce the same VISION.md format; the skills are interchangeable at the artifact level.
 
 ### Visionera is informed by /resonera
+
 DECISIONS.md entries provide context for vision refinement: what choices have been made and why. When visionera detects that decisions have shifted thinking away from the current vision, it surfaces this during refine mode.
 
 ### Visionera is informed by /profilera
+
 The decision profile calibrates the vision conversation: what patterns the user values, what principles they've established across projects, what they resist. High-confidence entries become proposed principles in the vision.
 
 ### Visionera is informed by /inspirera
+
 When inspirera analysis has shifted thinking about the project's direction, visionera reads DECISIONS.md for these insights and incorporates them into vision refinement.
 
 ### Visionera is informed by /inspektera
+
 HEALTH.md tells visionera what structural realities constrain the vision. A project with D-grade architecture may need a vision adjustment, or the vision may confirm that the architecture needs to change.
 
 ### Visionera reads /visualisera output
+
 If DESIGN.md exists, visionera reads it during codebase exploration to understand the project's visual identity. The Identity section in VISION.md should be coherent with the visual system declared in DESIGN.md. Visionera reads DESIGN.md for context but never writes it; visualisera owns all DESIGN.md writes. If visualisera is not installed, visionera still reads DESIGN.md if present (the file is framework-agnostic markdown).
 
 ### Visionera reads /dokumentera output
+
 DOCS.md provides artifact path resolution for VISION.md placement. Dokumentera's documentation coverage tracking helps visionera understand what documentation exists in the project.
 
 ### Visionera feeds /planera
+
 When a new or refined vision changes the project's direction, planera can produce a plan to realign the codebase with the updated vision.
 
 ---

@@ -1162,6 +1162,138 @@ def check_commit_message_hygiene(skill: str, text: str, r: Results) -> None:
         r.ok(skill, "commit-message-hygiene")
 
 
+def check_artifact_writing_conventions(skill: str, text: str, r: Results) -> None:
+    """Check 21: All artifact-producing skills reference Section 23.
+
+    Deterministic: skills that produce artifacts per Section 4 contracts
+    must contain a reference to 'Section 23' or 'Artifact Writing
+    Conventions' in their SKILL.md.
+    """
+    # Skills that produce artifacts per ARTIFACT_CONTRACTS
+    artifact_producers = set()
+    for producers, _ in ARTIFACT_CONTRACTS.values():
+        artifact_producers.update(producers)
+
+    if skill not in artifact_producers:
+        r.ok(skill, "artifact-writing-conventions")
+        return
+
+    has_ref = (
+        re.search(r"Section\s+23", text) is not None
+        or re.search(r"Artifact\s+Writing\s+Conventions", text) is not None
+    )
+
+    if not has_ref:
+        r.error(
+            skill,
+            "artifact-writing-conventions",
+            f"Missing reference to Section 23 (Artifact Writing Conventions)",
+        )
+    else:
+        r.ok(skill, "artifact-writing-conventions")
+
+
+def check_banned_vocabulary(skill: str, text: str, r: Results) -> None:
+    """Check 22: Advisory check for non-canonical vocabulary in artifact-writing context.
+
+    Scans SKILL.md prose (outside code blocks and frontmatter) for
+    'avoid' terms from the Section 23 vocabulary table when used near
+    artifact-writing keywords.
+    """
+    prose = re.sub(r"```[\s\S]*?```", "", text)
+    prose = re.sub(r"^---.*?---", "", prose, flags=re.DOTALL)
+    prose = re.sub(r"`[^`]+`", "", prose)
+
+    non_canonical = {
+        "problem", "concern", "observation",
+        "iteration",
+        "spawn", "launch",
+        "checked", "confirmed", "validated",
+        "score", "rating",
+        "category",
+        "certainty", "belief", "likelihood",
+        "priority", "importance",
+        "trend", "movement",
+        "outdated", "expired",
+        "snapshot", "backup",
+    }
+
+    context_patterns = [
+        re.compile(rf"\b{cw}\b", re.IGNORECASE)
+        for cw in (
+            "write", "append", "entry", "format", "structure",
+            "artifact", "heading", "log", "record",
+        )
+    ]
+
+    errors: list[str] = []
+    for term in sorted(non_canonical):
+        pattern = re.compile(rf"\b{term}\b", re.IGNORECASE)
+        for match in pattern.finditer(prose):
+            start = max(0, match.start() - 80)
+            end = min(len(prose), match.end() + 80)
+            window = prose[start:end]
+            if any(cp.search(window) for cp in context_patterns):
+                line_num = prose[:match.start()].count("\n") + 1
+                errors.append(
+                    f"Non-canonical term '{term}' near artifact-writing context "
+                    f"(line {line_num})"
+                )
+                break
+
+    if errors:
+        for detail in errors:
+            r.warn(skill, "banned-vocabulary", detail)
+    else:
+        r.ok(skill, "banned-vocabulary")
+
+
+def check_sentence_length(skill: str, text: str, r: Results) -> None:
+    """Check 23: Advisory check for sentences exceeding 25 words in artifact examples.
+
+    Counts words per sentence in artifact format examples within SKILL.md
+    files (inside code blocks showing artifact structure). Flags sentences
+    exceeding 25 words.
+    """
+    code_blocks = re.findall(r"```(?:md|markdown)?\n([\s\S]*?)```", text)
+
+    errors: list[str] = []
+    for block in code_blocks:
+        if not re.search(r"^#{1,3}\s", block, re.MULTILINE):
+            continue
+
+        block_start_line = text[:text.find(block)].count("\n")
+        lines = block.split("\n")
+        for line_offset, line in enumerate(lines):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if re.match(r"^[-*|#>]", stripped):
+                continue
+            if re.match(r"^\*\*\w", stripped):
+                continue
+
+            protected = re.sub(r"`[^`]+`", "CODE", stripped)
+            protected = re.sub(r"https?://\S+", "URL", protected)
+            protected = re.sub(r"\b\w+\.\w+\.\w+", "PATH", protected)
+            protected = re.sub(r"\b(?:e\.g|i\.e|etc|vs)\.", "ABBR", protected)
+
+            sentences = re.split(r"(?<=[.!?])\s+", protected)
+            for sentence in sentences:
+                words = sentence.split()
+                if len(words) > 25:
+                    errors.append(
+                        f"Sentence exceeds 25-word cap ({len(words)} words) "
+                        f"in artifact example (line ~{block_start_line + line_offset + 1})"
+                    )
+
+    if errors:
+        for detail in errors:
+            r.warn(skill, "sentence-length", detail)
+    else:
+        r.ok(skill, "sentence-length")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -1191,6 +1323,9 @@ def validate_skill(path: Path, r: Results, *, spec_hash: str) -> None:
     check_reality_verification_gate(skill, text, r)
     check_platform_annotations(skill, text, r)
     check_pre_dispatch_commit_gate(skill, text, r)
+    check_artifact_writing_conventions(skill, text, r)
+    check_banned_vocabulary(skill, text, r)
+    check_sentence_length(skill, text, r)
 
 
 def main() -> int:

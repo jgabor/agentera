@@ -86,9 +86,11 @@ Read VISION.md, DECISIONS.md, and TODO.md in parallel. These reads are independe
 4. **TODO.md**: related known issues (if exists)
 5. **PROGRESS.md**: what was built recently (if exists)
 6. **Decision profile**: run from the profilera skill directory:
+
    ```bash
    python3 scripts/effective_profile.py <!-- platform: profile-path -->
    ```
+
    Use it to calibrate planning depth, pattern preferences, and constraint priorities per contract profile consumption conventions.
    If the script or PROFILE.md is missing, proceed without persona grounding.
 7. **Project discovery** (if unfamiliar):
@@ -178,6 +180,8 @@ Reason through dependencies in response text. Write ONLY tasks with acceptance c
 Output constraint per contract token budgets.
 
 Write the plan to `.agentera/PLAN.md`.
+
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ### Light plan format
 
@@ -329,30 +333,39 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 Planera is part of a twelve-skill suite. It is the bridge between deliberation and execution.
 
 ### Planera is fed by /resonera
+
 When resonera's deliberation concludes with a decision to build something, the natural next step is `/planera` to plan the work. DECISIONS.md provides the "why" context that planera reads during its Orient step.
 
 ### Planera feeds /realisera
+
 PLAN.md's tasks become realisera's work queue. Each task's acceptance criteria become the cycle's exit conditions. Realisera updates task status and logs surprises. When the plan completes, realisera resumes vision-driven work selection.
 
 ### Planera feeds /optimera
+
 When a plan includes optimization-shaped tasks (improving a measurable metric), those tasks can be delegated to optimera. The plan's acceptance criteria inform the optimization objective.
 
 ### Planera is informed by /inspektera
+
 HEALTH.md findings can trigger remediation plans. When inspektera reveals structural issues, planera can produce a focused plan to address them, with acceptance criteria that inspektera can later verify were met.
 
 ### Planera is informed by /profilera
+
 The decision profile calibrates planning depth and pattern preferences. High-confidence entries about architecture, scope discipline, and quality standards weight the plan's constraints and acceptance criteria.
 
 ### Planera is informed by /inspirera
+
 When inspirera's analysis recommends adopting patterns or libraries, planera can incorporate those recommendations into the plan's design section and task decomposition.
 
 ### Planera reads /visionera output
+
 VISION.md provides the north star that planera reads during its Orient step. When visionera creates or refines the vision, planera's next planning session aligns with the updated direction.
 
 ### Planera is fed by /dokumentera (DTC pipeline)
+
 In the strict DTC pipeline, dokumentera writes intent docs first, then planera decomposes them into implementation tasks. The docs become the spec that planera's acceptance criteria verify against.
 
 ### Planera reads /dokumentera versioning conventions
+
 Planera reads the `versioning` block from DOCS.md Conventions (populated by dokumentera). When the plan's scope includes `feat` or `fix` work, planera appends a version bump task that depends on all other tasks. Realisera executes this bump at the end of the plan.
 
 ---

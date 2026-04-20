@@ -91,6 +91,7 @@ Language, stack, dependencies, architecture, patterns, and problems being solved
 ### Check for existing usage
 
 Does the target already use the source (or a fork/alternative)?
+
 - **Already using**: "Getting the most out of it?" Focus on underused features and better patterns.
 - **Using alternative**: "Worth switching?" Compare approaches and migration cost.
 - **Not using**: "Should you adopt?" This is the default framing.
@@ -164,6 +165,8 @@ Offer to go deeper: prototype a change, explore a concept with code, compare alt
 
 Surface transferable concepts in general terms. Skip Applicability Matrix. Ask if the user wants to map to a specific project.
 
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+
 ---
 
 ## Exit signals
@@ -204,22 +207,28 @@ Before starting, read `references/contract.md` (relative to this skill's directo
 Inspirera is part of a twelve-skill suite. Its analysis feeds naturally into the other skills.
 
 ### Feeding into /realisera
+
 Add actionable findings to the project's TODO.md, classifying each by severity per contract severity levels. Or refine VISION.md's direction if the inspiration shifts thinking. The next realisera cycle picks up the changes automatically.
 
 ### Feeding into /optimera
+
 When the source contains optimization techniques (performance patterns, algorithm improvements, caching strategies), optimera's Hypothesize step can draw on the analysis for its next experiment.
 
 ### Informed by /profilera
+
 If a decision profile exists at `~/.claude/profile/PROFILE.md`, run the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) for a confidence-weighted summary. <!-- platform: profile-path --> Use effective confidence to weight applicability judgments per contract profile consumption conventions.
 If the script or PROFILE.md is missing, proceed without persona grounding.
 
 ### Feeding into /visionera
+
 When the analysis shifts thinking about the project's direction (a new paradigm, a competitor's approach, or a user need not yet captured), the findings can inform vision refinement. Suggest `/visionera` to revisit VISION.md with the new context.
 
 ### Feeding into /planera
+
 When the analysis recommends adopting patterns or libraries, planera can incorporate those recommendations into a plan's design section and task decomposition.
 
 ### Feeding into /resonera
+
 When the analysis surfaces recommendations that require deliberation (competing approaches, unclear adoption cost, or tradeoffs the user needs to resolve), suggest `/resonera` to think it through before acting. Resonera can evaluate which recommendations are actually worth adopting and capture the reasoning in DECISIONS.md.
 
 ---
@@ -244,18 +253,23 @@ When the analysis surfaces recommendations that require deliberation (competing 
 ## Getting started
 
 ### Analyze a GitHub repo
+
 ```
 /inspirera https://github.com/org/repo
 ```
+
 Reads the repo, maps its patterns to your current project.
 
 ### Analyze an article or docs page
+
 ```
 /inspirera https://example.com/blog/interesting-approach
 ```
+
 Extracts transferable concepts and assesses applicability.
 
 ### Feed findings into the development loop
+
 After analysis, file actionable findings to TODO.md for `/realisera` to pick up, or refine VISION.md if the research shifts your project's direction.
 
 ---

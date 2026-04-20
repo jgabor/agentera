@@ -158,6 +158,7 @@ Permanence captures domain *stability*, independent of confidence. You can be hi
 | **situational** | Current project priorities, active initiative choices, recent tech stack picks | Month |
 
 Default permanence mapping by category:
+
 - Architecture & Design Patterns, Meta-decision Style → stable
 - Technology & Tooling, Code Quality & Standards, Process & Workflow, DX & Project Structure,
   Communication Style, Trade-off Heuristics, Anti-patterns → durable
@@ -183,6 +184,8 @@ Look for cross-category patterns and contradictions: stated principle vs shipped
 Output constraint: ≤30 words per signal, ≤15 words per evidence line.
 
 Write the decision profile to `$PROFILERA_PROFILE_DIR/PROFILE.md`. <!-- platform: profile-path -->
+
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 If a previous version exists: copy to `$PROFILERA_PROFILE_DIR/history/PROFILE-{timestamp}.md`, generate new version, show change summary (added, updated, removed). <!-- platform: profile-path -->
 
@@ -295,12 +298,14 @@ For each response:
 - **Confirm**: Bump `conf` by 5 (cap at 95). Update `confirmed` to today's date.
 - **Challenge**: Soften `conf` by 10 (floor at 10). Update `challenged` to today's date.
   Append a tension entry to the `## Tensions` section:
+
   ```
   ### {today}: {decision name} challenged during validation
   **Decision affected**: {decision name}
   **What happened**: Challenged by user during validation
   **Status**: unresolved
   ```
+
 - **Skip**: No changes to this entry.
 
 ### Step V4: Write and report
@@ -346,24 +351,31 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 Profilera is part of a twelve-skill suite. The decision profile it produces is consumed by the other skills.
 
 ### Consumed by /realisera
+
 Realisera runs the effective profile script in its Orient step to get a confidence-weighted summary table. High effective confidence entries are treated as strong constraints; low effective confidence entries are treated as suggestions. Full rules are read from PROFILE.md when needed for detailed reasoning.
 
 ### Consumed by /optimera
+
 Optimera runs the effective profile script to calibrate experimentation style: how aggressive to be, how much complexity is acceptable, what trade-offs the user prefers. Effective confidence weighting ensures stale preferences don't over-constrain experiments.
 
 ### Consumed by /inspirera
+
 Inspirera can run the effective profile script to inform applicability judgments: what patterns the user favors, what they resist, how to weigh recommendations. High-confidence entries strongly constrain recommendations; low-confidence entries are treated as tendencies.
 
 ### Consumed by /resonera
+
 Resonera reads the decision profile at the start of every deliberation. High-confidence entries in the relevant domain are acknowledged upfront to prevent re-deliberating settled preferences. Low-confidence entries are surfaced as hypotheses worth testing during the conversation.
 
 ### Fed by /resonera
+
 DECISIONS.md (maintained by resonera) is a high-signal source for profilera's extraction scripts. Each decision entry captures reasoning, tradeoffs, and confidence, making deliberation sessions one of the richest inputs for decision profile generation.
 
 ### Consumed by /inspektera
+
 Inspektera reads the decision profile to calibrate what "healthy" means for this user. Quality preferences, complexity tolerance, and pattern priorities from the profile weight the grading and determine which findings matter most.
 
 ### Profilera is consumed by /planera
+
 Planera reads the decision profile during its Orient step to calibrate planning depth, pattern preferences, and constraint priorities.
 
 ### Effective profile script
@@ -381,18 +393,23 @@ Run from the profilera skill directory. Outputs a markdown summary table with ef
 ## Getting started
 
 ### First profile generation
+
 ```
 /profilera
 ```
+
 Full extraction across all sources. Produces `$PROFILERA_PROFILE_DIR/PROFILE.md`. <!-- platform: profile-path -->
 
 ### Regular validation
+
 ```
 /profilera validate
 ```
+
 Quick confidence refresh without full regeneration. Run weekly or per-session.
 
 ### Using the profile in other skills
+
 All skills read the profile automatically via `python3 scripts/effective_profile.py`. No manual steps needed; just ensure PROFILE.md exists.
 
 ---

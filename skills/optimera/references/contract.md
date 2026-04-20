@@ -1,7 +1,7 @@
 <!-- contract: optimera -->
-<!-- source: SPEC.md (sha256: d709f49d2a5f4c848eec88a56e005be805350977968ee051081bcde8e5167e38) -->
+<!-- source: SPEC.md (sha256: 6d53de68f1af9febc2a828cc721ee208b742c6e47342dae556b18c461f98ce28) -->
 <!-- sections: 1, 3, 4, 5, 6, 22 -->
-<!-- generated: 2026-04-19T17:31:40Z -->
+<!-- generated: 2026-04-20T15:53:58Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -20,6 +20,7 @@ Five tiers with shared boundaries. Each skill defines its own domain-specific la
 | 5 (lowest) | 0-29 | Speculative / extrapolated |
 
 **Rules**:
+
 - Skills producing confidence scores MUST use integer 0-100
 - Skills consuming confidence scores MUST interpret them against these tier boundaries
 - Temporal decay is opt-in: skills with a temporal dimension (e.g., profilera) may apply exponential decay; skills without one (e.g., inspektera) use static scores
@@ -262,6 +263,7 @@ in .agentera/. This applies to all artifact references in this skill, including 
 ```
 
 Where:
+
 - `{OWN_ARTIFACTS}` = the skill's own artifact filenames
 - `{reads_or_writes}` = "reads", "writes", or "reads and writes" as appropriate
 - `{CROSS_ARTIFACTS}` = artifacts from other skills that this skill accesses
@@ -283,6 +285,7 @@ python3 -m scripts.effective_profile
 Run from the profilera skill directory. Mentioned skills: realisera, optimera, inspektera, planera, inspirera.
 
 Standard threshold language (after migration to 0-100):
+
 - "high effective confidence entries (65+) are strong constraints"
 - "low effective confidence entries (<45) are suggestions"
 
