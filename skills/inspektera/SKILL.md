@@ -11,7 +11,8 @@ description: >
   findings, confidence scoring, and trend tracking that prevents noisy or superficial audits.
   Trigger on: "inspektera", "audit the codebase", "check code health", "architecture review",
   "find technical debt", "assess code quality", "how healthy is this codebase", "what needs
-  fixing", "structural review", "pattern audit", "dependency check",\n  "test coverage audit", or when realisera has run 5+ cycles without a health check.
+  fixing", "structural review", "pattern audit", "dependency check",
+  "test coverage audit", or when realisera has run 5+ cycles without a health check.
 spec_sections: [1, 2, 4, 5, 6, 16, 17, 18]
 ---
 

@@ -3,6 +3,4 @@
 docs/
 __pycache__/
 *.pyc
-.leda/
-.agentera/optimera/*/runs/
-.agentera/optimera/*/vehicle/
+.leda
