@@ -71,7 +71,7 @@ Narration voice (riff, don't script):
 
 First impression: the colleague meets a new project.
 
-1. **Quick scan**: language(s), framework(s), README, last 5 commits, approximate size.
+1. **Quick scan**: language(s), framework(s), README.md, last 5 commits, approximate size.
    Fast, no deep analysis.
 
 2. **Share what's available**: lead with the 2-3 skills most relevant to what the

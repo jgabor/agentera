@@ -99,7 +99,7 @@ Infer which skill handles the task based on its description:
 | Task signals | Target skill |
 |--------------|-------------|
 | Implementation, building, coding, feature, fix, refactor | `/realisera` |
-| Documentation, docs, README, CHANGELOG, DOCS.md | `/dokumentera` |
+| Documentation, docs, README.md, CHANGELOG.md, DOCS.md | `/dokumentera` |
 | Health audit, architecture review, code quality check | `/inspektera` |
 | Research, external patterns, library evaluation | `/inspirera` |
 | Optimization, performance, metric improvement, benchmark | `/optimera` |

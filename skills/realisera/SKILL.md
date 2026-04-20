@@ -178,7 +178,7 @@ Outputs JSON with velocity, work type distribution, and suggestions. Use to info
 5. **Project discovery** (cycle 1 or when unfamiliar):
    - Map the directory structure
    - Read dependency manifests (package.json, go.mod, Cargo.toml, pyproject.toml, etc.)
-   - Read README, CLAUDE.md, AGENTS.md if they exist
+   - Read README.md, CLAUDE.md, AGENTS.md if they exist
    - Identify the build/test/lint commands
    - Read key source files to understand architecture
 6. `git log --oneline -20` for recent changes

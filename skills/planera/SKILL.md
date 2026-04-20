@@ -93,7 +93,7 @@ Read VISION.md, DECISIONS.md, and TODO.md in parallel. These reads are independe
    If the script or PROFILE.md is missing, proceed without persona grounding.
 7. **Project discovery** (if unfamiliar):
    - Map directory structure
-   - Read dependency manifests, README, CLAUDE.md
+   - Read dependency manifests, README.md, CLAUDE.md, AGENTS.md
    - Identify build/test/lint commands
    - Read key source files to understand architecture
 
