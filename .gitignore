@@ -3,7 +3,6 @@
 docs/
 __pycache__/
 *.pyc
-.planera/
+.leda/
 .agentera/optimera/*/runs/
-.agentera/optimera/*/vehicle/claude
-.agentera/optimera/*/vehicle/.image-built
+.agentera/optimera/*/vehicle/
