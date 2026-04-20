@@ -122,7 +122,7 @@ If code exists, read deeply before asking questions. You arrive informed.
 
 1. Map structure: directory layout, key modules, entry points
 2. Read dependency manifests: stack, libraries, what choices reveal
-3. Read README, CLAUDE.md, AGENTS.md if they exist
+3. Read README.md, CLAUDE.md, AGENTS.md if they exist
 4. Read key source files to understand what the software does today
 5. Read PROGRESS.md, TODO.md, DECISIONS.md for trajectory
 6. Read HEALTH.md for current quality

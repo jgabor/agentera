@@ -92,7 +92,7 @@ Read HEALTH.md, TODO.md, and PROGRESS.md in parallel. These reads are independen
    python3 scripts/effective_profile.py <!-- platform: profile-path -->
    ```
    Calibrates what "healthy" means for this user per contract profile consumption conventions. If missing, proceed without persona grounding.
-7. **Project discovery**: map directory structure, read dependency manifests, README, CLAUDE.md, identify language/stack/build commands, `git log --oneline -20`
+7. **Project discovery**: map directory structure, read dependency manifests, README, CLAUDE.md, AGENTS.md, identify language/stack/build commands, `git log --oneline -20`
 
 Before proceeding: in your response, list the key structural facts (module boundaries, dependency patterns, test coverage gaps) you observed. These survive context compaction.
 
@@ -177,7 +177,7 @@ says "hey, I noticed this" instead of just dumping a finding card. Lead with why
 
 Compare codebase to stated architecture:
 
-- Read VISION.md (or README architecture section) for intended structure
+- Read VISION.md (or README.md architecture section) for intended structure
 - Map actual module boundaries, dependency graph, data flow
 - Identify drift from stated architecture
 - Check layering and boundary cleanliness

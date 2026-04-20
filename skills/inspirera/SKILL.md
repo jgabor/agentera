@@ -71,7 +71,7 @@ Choose the exploration strategy based on the target type identified in Step 1.
 Common case. Use filesystem tools (faster, includes uncommitted work):
 
 1. `Glob` to map the directory structure (e.g. `**/*.{ts,go,py,rs}`)
-2. Read the README if one exists
+2. Read README.md if one exists
 3. Check dependency manifests (`package.json`, `go.mod`, `Cargo.toml`, `pyproject.toml`, etc.)
 4. `Grep` for patterns, imports, or abstractions relevant to the source's concepts
 5. Read key source files to understand architecture and current patterns

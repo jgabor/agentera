@@ -197,7 +197,7 @@ Steps: explore, gaps, generate, update.
 
 ### Step 2: Identify gaps
 
-Compare what exists against what should be documented: README accuracy, CLAUDE.md presence, API docs, CLI docs with usage, configuration docs, architectural decision docs.
+Compare what exists against what should be documented: README.md accuracy, CLAUDE.md/AGENTS.md presence, API docs, CLI docs with usage, configuration docs, architectural decision docs.
 
 ### Step 3: Generate
 
