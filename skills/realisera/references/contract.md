@@ -1,7 +1,7 @@
 <!-- contract: realisera -->
-<!-- source: SPEC.md (sha256: d709f49d2a5f4c848eec88a56e005be805350977968ee051081bcde8e5167e38) -->
+<!-- source: SPEC.md (sha256: 6d53de68f1af9febc2a828cc721ee208b742c6e47342dae556b18c461f98ce28) -->
 <!-- sections: 2, 3, 4, 6, 19, 22 -->
-<!-- generated: 2026-04-19T17:31:40Z -->
+<!-- generated: 2026-04-20T15:53:58Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -297,6 +297,7 @@ python3 -m scripts.effective_profile
 Run from the profilera skill directory. Mentioned skills: realisera, optimera, inspektera, planera, inspirera.
 
 Standard threshold language (after migration to 0-100):
+
 - "high effective confidence entries (65+) are strong constraints"
 - "low effective confidence entries (<45) are suggestions"
 

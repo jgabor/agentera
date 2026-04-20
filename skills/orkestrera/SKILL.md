@@ -229,6 +229,8 @@ Narration voice (riff, don't script):
 ✗ "Maximum retries exceeded. Marking task as blocked."
 ✓ "Still failing after 2 retries. Blocking and moving on." · "Can't crack it. Logging to TODO."
 
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+
 ### Step 5: Log and loop
 
 Check the plan state:
@@ -301,33 +303,43 @@ Orkestrera uses retry-based failure detection: each task gets max 2 retries befo
 Orkestrera is part of a twelve-skill suite. It is the orchestration layer that chains all other skills together.
 
 ### Orkestrera dispatches /realisera
+
 Implementation tasks are routed to realisera. Realisera runs its full cycle (orient, select, plan, dispatch, verify, commit, log) as a subagent. It writes to PROGRESS.md and CHANGELOG.md. Orkestrera receives the result via task-notification and evaluates with inspektera.
 
 ### Orkestrera dispatches /inspektera
+
 Two roles: (1) as evaluator after each task completion, verifying acceptance criteria against the codebase, and (2) as health checker after plan completion, producing HEALTH.md grades. Inspektera is the discriminator in orkestrera's evaluate-then-proceed pattern.
 
 ### Orkestrera dispatches /dokumentera
+
 Documentation tasks are routed to dokumentera. DOCS.md updates, README changes, and documentation coverage work are handled by the documentation skill.
 
 ### Orkestrera dispatches /inspirera
+
 Research tasks are routed to inspirera. During bootstrap (no plan), orkestrera chains inspirera for vision-gap analysis before planera creates a plan.
 
 ### Orkestrera dispatches /optimera
+
 Optimization-shaped tasks (metric improvement, performance tuning) are routed to optimera rather than realisera.
 
 ### Orkestrera dispatches /visualisera
+
 Visual identity tasks (DESIGN.md updates, design token changes) are routed to visualisera.
 
 ### Orkestrera chains /planera
+
 When no plan exists or the current plan is complete, orkestrera invokes planera to create the next plan. Planera produces PLAN.md; orkestrera executes it.
 
 ### Orkestrera reads /resonera output
+
 DECISIONS.md provides firm constraints that orkestrera reads during task selection. If a task relates to an exploratory decision, orkestrera notes the uncertainty in the dispatch context.
 
 ### Orkestrera reads /visionera output
+
 VISION.md provides direction context used during bootstrap when chaining inspirera for gap analysis.
 
 ### Orkestrera reads /profilera output
+
 The decision profile provides persona context for calibrating dispatch decisions. Read `~/.claude/profile/PROFILE.md` directly per contract profile consumption conventions. <!-- platform: profile-path --> If missing, proceed without persona grounding.
 
 ---

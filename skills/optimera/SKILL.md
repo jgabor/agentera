@@ -74,6 +74,7 @@ Script that measures the metric and outputs structured JSON. Written during brai
 Wraps the project's own tooling (test runners, benchmarks, linters) and translates output into a consistent format. The project's tooling is the source of truth.
 
 **Before writing a harness**, read these references (bundled with this skill):
+
 - `references/harness-guide.md`: principles, patterns, and pitfalls
 - `references/output-schema.md`: formal JSON output specification
 - `references/agent-session-harness.md`: machinery for measuring agent behavior in reproducible sessions (hermetic vehicle, two-condition A/B, stream-JSON telemetry, causal gates). Reach for this when the measurement requires running an agent under controlled conditions rather than parsing one command's output
@@ -86,11 +87,13 @@ Wraps the project's own tooling (test runners, benchmarks, linters) and translat
   - `session-token-consumption.md`: agent session token footprint (stream-JSON parsing, causal gate via Skill-tool counting, optional per-artifact attribution). Applies the agent-session-harness machinery
 
 **Output contract** (minimal):
+
 ```json
 {"metric": <number>, "direction": "higher"|"lower"}
 ```
 
 **Output contract** (with optional fields for richer signal):
+
 ```json
 {"metric": 85.5, "direction": "higher", "unit": "%", "detail": "42/50 tests passing", "breakdown": [{"name": "unit", "value": 95.0}, {"name": "integration", "value": 60.0}]}
 ```
@@ -123,6 +126,7 @@ The "Next" field from the previous experiment is a suggestion, not a mandate. Re
 ## Brainstorm: bootstrapping or refining the objective
 
 This runs in two situations:
+
 1. **OBJECTIVE.md doesn't exist**: the first time optimera runs on a project
 2. **User explicitly asks** to refine the objective (e.g., "change the target", "update OBJECTIVE.md")
 
@@ -139,6 +143,8 @@ The sharp colleague figuring out what to optimize. One question at a time, push 
 5. **Write OBJECTIVE.md**: synthesize into a precise charter. Write to `.agentera/optimera/<objective-name>/OBJECTIVE.md`. Present for approval.
 6. **Write the eval harness**: read `references/harness-guide.md` and relevant `references/examples/` pattern. Write `.agentera/optimera/<objective-name>/harness` using the project's own tooling, outputting JSON per `references/output-schema.md`. Present, explain, get approval, run once to establish baseline.
 
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+
 When **refining**, read current OBJECTIVE.md, show proposed changes with rationale, get confirmation. If the harness changes, the user must approve the new version. After brainstorm, proceed to experiment 1.
 
 ---
@@ -153,6 +159,7 @@ Steps: orient, analyze, hypothesize, implement, measure, decide, log.
 ### Step 1: Orient
 
 **Active-objective inference**: before reading any per-objective artifact, determine which objective is active by inspecting `.agentera/optimera/`:
+
 - If only one subdirectory exists, use it.
 - If multiple subdirectories exist, run `git log -1 --format=%aI -- .agentera/optimera/<name>/EXPERIMENTS.md` for each and pick the one with the most recent modification timestamp.
 - If the timestamps are the same, no EXPERIMENTS.md exists in any subdirectory, or the result is otherwise ambiguous, ask the user to specify the active objective by name.
@@ -162,9 +169,11 @@ All subsequent references to OBJECTIVE.md, EXPERIMENTS.md, and harness in this s
 1. **EXPERIMENTS.md**: last 5 experiments only (check for plateau patterns)
 2. **OBJECTIVE.md**: the metric, target, constraints, and scope
 3. **Decision profile**: run from the profilera skill directory:
+
    ```bash
    python3 scripts/effective_profile.py
    ```
+
    Apply confidence thresholds per contract profile consumption conventions. Read full `~/.claude/profile/PROFILE.md` for details when needed. <!-- platform: profile-path -->
    If missing, proceed without persona grounding but flag it.
 4. **Project discovery** (experiment 1 or when unfamiliar): map directory structure within scope, read dependency manifests, README.md, CLAUDE.md, AGENTS.md, identify build/test/lint commands, read key source files in scope
@@ -250,6 +259,7 @@ Wait for the implementation agent to complete before proceeding.
 After implementation completes, run two checks in sequence:
 
 **5a. Regression check**: run the project's existing test/build/lint suite:
+
 - Look for a top-level `check`, `ci`, `test`, or `verify` target first (Makefile, mage,
   package.json scripts, taskfile, justfile)
 - If none exists, run the language-appropriate defaults:
@@ -295,6 +305,8 @@ Update **EXPERIMENTS.md**: append the experiment entry (number, timestamp, hypot
 Output constraint per contract token budgets.
 
 When writing a new experiment entry to EXPERIMENTS.md, apply the EXPERIMENTS.md compaction thresholds from contract (10 full-detail, 40 one-line archive, drop beyond 50).
+
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 Then stop. One experiment complete.
 
@@ -350,18 +362,23 @@ Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3
 Optimera is part of a twelve-skill suite. Each skill can invoke the others when the work calls for it.
 
 ### Optimera invokes /inspirera
+
 When the Hypothesize step needs external techniques (especially after a plateau), search for approaches the way /inspirera would. Read the source deeply, extract transferable patterns, and fold them into the next hypothesis.
 
 ### Realisera invokes /optimera
+
 When realisera picks work that is optimization-shaped (e.g., "improve test performance by 20%", "reduce build time", "increase coverage"), it can delegate to optimera. Realisera provides the context; optimera runs the optimization loop.
 
 ### Optimera reads /profilera output
+
 Every experiment runs the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) to get a confidence-weighted summary table. Confidence thresholds per contract profile consumption conventions. Effective confidence weighting ensures stale preferences don't over-constrain experiments. How aggressive to be, how much complexity is acceptable, and what trade-offs the user prefers are all modulated by how recently each preference was confirmed.
 
 ### Optimera uses /resonera for objective decisions
+
 When the brainstorm session surfaces ambiguity about what to optimize (competing metrics, unclear constraints, or tradeoffs between measurement approaches), suggest `/resonera` to deliberate first. Resonera can produce or refine OBJECTIVE.md directly, and its DECISIONS.md entries give optimera context for why the objective was chosen. If `DECISIONS.md` exists, read it during the Orient step for context on prior deliberations.
 
 ### Inspektera feeds /optimera
+
 When an inspektera audit reveals a poor dimension grade with a clearly measurable improvement path (test coverage, complexity score, dependency count), the finding can become an optimization
 objective. `/inspektera` may suggest `/optimera` when the metric and direction are clear.
 
@@ -384,6 +401,7 @@ objective. `/inspektera` may suggest `/optimera` when the metric and direction a
 Edit OBJECTIVE.md directly to adjust the target value or constraints, or tell optimera to "refine the objective" for a guided session. If the measurement approach needs to change, the eval harness must be rebuilt and re-approved.
 
 ### Optimera is fed by /planera
+
 When a plan includes optimization-shaped tasks (improving a measurable metric), planera can delegate those tasks to optimera. The plan's acceptance criteria inform the optimization objective.
 
 ### Drawing in external techniques

@@ -55,10 +55,13 @@ Before starting, read `references/contract.md` (relative to this skill's directo
 ## Conventions
 
 ```
+
 doc_root: docs/
 style:    technical, sections with examples, no badges
 auto_gen:
-  - TypeDoc → docs/api/
+
+- TypeDoc → docs/api/
+
 ```
 
 ## Artifact Mapping
@@ -83,6 +86,7 @@ Status tokens: `■ current`, `▣ stale`, `□ missing`
 ## Step 0: Detect context
 
 Determine what kind of documentation work is needed:
+
 1. Read DOCS.md (if exists) for current state
 2. Parse user request: specific target or broad "write/update docs"?
 3. Check codebase: does the feature exist in code?
@@ -137,6 +141,8 @@ If artifacts exist at root but mapping places them elsewhere:
 
 Write the approved convention map to `.agentera/DOCS.md`. After writing, proceed to the originally requested mode, or stop if the survey was the entire request.
 
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+
 ---
 
 ## Intent-first mode (docs before code)
@@ -165,11 +171,14 @@ Present draft for approval before writing.
 ### Step 3: Update DOCS.md
 
 Add or update the entry in DOCS.md:
+
 - Document name and path
 - Date written
 - Status: `current`
 
 Output constraint: ≤15 words per index entry description.
+
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ### Step 4: Suggest next steps
 
@@ -211,6 +220,8 @@ Present drafts for approval.
 
 Create or update DOCS.md with all items. Use the Edit tool on specific entries when updating status/dates. If DOCS.md doesn't exist, run first-run survey first.
 
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+
 ---
 
 ## Update-and-verify mode (audit-driven)
@@ -242,6 +253,7 @@ By severity: ⇶ critical (causes user errors), ⇉ warning (causes confusion), 
 ### Step 4: Update DOCS.md
 
 Update the index with:
+
 - ▸ Audit date
 - ▸ Status changes (■ current / ▣ stale / □ missing)
 - ▸ Coverage numbers
@@ -284,24 +296,31 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 Dokumentera is part of a twelve-skill suite. It is the documentation layer, the "D" in DTC.
 
 ### Dokumentera feeds /planera (DTC pipeline)
+
 In the strict DTC pipeline, dokumentera writes intent docs first, then planera breaks them into implementation tasks. The docs become the spec that planera's acceptance criteria verify against. When the plan includes documentation tasks, dokumentera handles them.
 
 ### Dokumentera feeds /realisera
+
 When dokumentera writes intent-first docs for a feature that doesn't exist yet, realisera implements code to match those docs. The docs are the target state; if code diverges from docs, the code is wrong (per DTC).
 
 ### Dokumentera is informed by /inspektera
+
 HEALTH.md findings may include documentation gaps. Inspektera's architecture alignment dimension can surface undocumented modules or APIs.
 
 ### Dokumentera is informed by /visionera
+
 VISION.md sets the project's direction and audience. Dokumentera reads it to understand who the documentation is for and what tone to use.
 
 ### Dokumentera is informed by /profilera
+
 The decision profile calibrates documentation style: the user's preferences for detail level, tone, format, and which docs they consider essential.
 
 ### Dokumentera reads /visualisera output
+
 DESIGN.md provides visual identity context that dokumentera respects when generating user-facing documentation, ensuring docs match the project's declared aesthetic and voice.
 
 ### Dokumentera feeds /profilera
+
 Documentation decisions (what to document, how, at what depth) are signal for profilera's extraction scripts.
 
 ---

@@ -87,6 +87,7 @@ structural:
     rule: prohibited
     scope: [colors, spacing]
 ```
+
 ```
 
 Standard sections: `colors`, `font-sizes`, `fonts`, `typography`, `spacing`, `radius`, `shadows`, `theme`, `constraints`, `components`, `tw-merge-preserve`. All optional. Custom sections use the same `design:` prefix with any name.
@@ -206,6 +207,8 @@ Add `theme`, `radius`, `shadows`, `font-sizes`, `fonts` as warranted.
 
 Use established scales: OKLCH for colors, 8pt grid for spacing, modular scale for type. No arbitrary values. Present draft, get explicit approval before writing.
 
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+
 ### Step 5: Validate
 
 Validate the written file:
@@ -243,11 +246,13 @@ Steps: read, propose, update.
 ### Step 2: Propose changes
 
 > Here's what's changed since the design system was written:
+>
 > - New components [A, B] were built that aren't in the component contracts
 > - The color palette has drifted: [file:line] uses [value] not in the token set
 > - VISION.md Identity now says [X], and the visual system [does/doesn't] reflect that
 >
 > I'd suggest updating:
+>
 > - [Section]: [what to change and why]
 
 Brief conversation (2-4 exchanges) to refine proposed changes.
@@ -255,6 +260,8 @@ Brief conversation (2-4 exchanges) to refine proposed changes.
 ### Step 3: Update DESIGN.md
 
 Show diff with rationale. Get approval. Run validation after writing.
+
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ---
 
@@ -338,24 +345,31 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 Visualisera is part of a twelve-skill suite. It is the visual identity layer, the skill that defines how the project looks.
 
 ### Visualisera reads /visionera output
+
 VISION.md's Identity section declares the verbal personality (bold, warm, playful, etc.). Visualisera reads this to propose visual tokens coherent with the declared identity. If Identity says "industrial and direct," visualisera proposes sharp edges and monospace type. Visionera reads DESIGN.md in return; neither writes the other's artifact.
 
 ### Visualisera feeds /realisera
+
 DESIGN.md's tokens and constraints guide autonomous UI development. When realisera builds components or pages, it reads DESIGN.md to understand what colors, typography, spacing, and constraints to use. The design system prevents visual drift across cycles.
 
 ### Visualisera is informed by /dokumentera
+
 DOCS.md tracks DESIGN.md in the artifact mapping. Dokumentera may document the design system as part of project documentation.
 
 ### Visualisera is informed by /inspektera
+
 When inspektera audits architecture alignment or pattern consistency, design system adherence is a relevant dimension. Future integration may include design-specific audit dimensions.
 
 ### Visualisera is informed by /profilera
+
 The decision profile captures aesthetic preferences, specifically the user's established patterns around visual design, typography choices, and UI conventions. Visualisera reads these as defaults during the create conversation.
 
 ### Visualisera is informed by /inspirera
+
 When inspirera analyzes external design systems or visual patterns, the findings can feed into visualisera's research step or refine mode. External design references enrich the conversation.
 
 ### Visualisera is informed by /resonera
+
 When design decisions require deliberation (competing aesthetics, brand evolution, or significant visual pivots), suggest `/resonera` to think it through before committing to a new design direction.
 
 ---
@@ -379,6 +393,7 @@ When design decisions require deliberation (competing aesthetics, brand evolutio
 ```
 /visualisera
 ```
+
 Select "Audit" mode. Validates structure and scans code for drift.
 
 ### Refine after evolution
@@ -386,4 +401,5 @@ Select "Audit" mode. Validates structure and scans code for drift.
 ```
 /visualisera
 ```
+
 Select "Refine" mode. Reviews what's changed and proposes design system updates.

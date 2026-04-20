@@ -63,6 +63,7 @@ Before starting, read `references/contract.md` (relative to this skill's directo
 ```
 
 The "Confidence" field signals how settled the decision is:
+
 - **firm**: the user is committed; other skills treat this as a constraint
 - **provisional**: best current answer, but open to revision if evidence changes
 - **exploratory**: a direction to try, explicitly expected to be revisited
@@ -179,6 +180,7 @@ Brief, casual: where we landed (2-3 sentences), key insight, confidence (firm / 
 ### Step 2: Offer to capture and connect
 
 Relevant options only:
+
 - **Log it**: append to `DECISIONS.md` (always offered)
 - **Feed into VISION.md**: if about direction/scope/principles
 - **Feed into OBJECTIVE.md**: if about what to optimize (writes to `.agentera/optimera/<objective-name>/OBJECTIVE.md`)
@@ -197,6 +199,8 @@ For any option the user selects:
 - **VISION.md / OBJECTIVE.md**: brief follow-up to fill structure (heavy thinking done).
   Present draft for approval.
 - **TODO.md**: standard format (severity, context, impact).
+
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ---
 
@@ -256,6 +260,7 @@ If a decision profile exists, resonera reads it at the start of every session. H
 DECISIONS.md is a high-signal source for profilera's extraction scripts. Each decision entry captures not just what was chosen but *why*: the reasoning, tradeoffs, and confidence level. This makes deliberation sessions one of the richest inputs for decision profile generation.
 
 ### Resonera feeds /planera
+
 When a deliberation concludes with a decision to build something, the natural next step is `/planera` to plan the work. The DECISIONS.md entry provides the "why" context that planera reads during its Orient step.
 
 ### Resonera is triggered by /inspektera

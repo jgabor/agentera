@@ -88,9 +88,11 @@ Read HEALTH.md, TODO.md, and PROGRESS.md in parallel. These reads are independen
 5b. **Change magnitude**: if PROGRESS.md has commit hashes from cycles since the last HEALTH.md audit date, run `git log --stat` on those commits to estimate total change volume (files touched, lines changed). If no PROGRESS.md or no commit hashes, skip; default depth applies.
 5c. **Plan context** (for artifact freshness): if PLAN.md exists, read its metadata comment for the `Created` date and scan task statuses for dispatched skills. This provides the plan-relative staleness baseline for the Artifact freshness dimension. If PLAN.md is absent or has no `Created` date, note that plan context is unavailable; the fallback heuristic will apply.
 6. **Decision profile**: run from the profilera skill directory:
+
    ```bash
    python3 scripts/effective_profile.py <!-- platform: profile-path -->
    ```
+
    Calibrates what "healthy" means for this user per contract profile consumption conventions. If missing, proceed without persona grounding.
 7. **Project discovery**: map directory structure, read dependency manifests, README, CLAUDE.md, AGENTS.md, identify language/stack/build commands, `git log --oneline -20`
 
@@ -341,6 +343,8 @@ Write the audit results to `HEALTH.md` (append new audit, keep prior audits for 
 
 When writing a new audit entry to HEALTH.md, apply the HEALTH.md compaction thresholds from contract: if >10 full-detail entries exist, collapse the oldest to one-line format under an `## Archived Audits` heading. If >40 one-line entries exist, drop the oldest.
 
+Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+
 ### Report structure
 
 ```markdown
@@ -429,27 +433,35 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 Inspektera is part of a twelve-skill suite. It is the feedback loop, the skill that tells realisera whether its work is making things better.
 
 ### Inspektera feeds /realisera
+
 Critical and warning findings filed to TODO.md become candidates for realisera's work selection. The severity mapping ensures structural problems compete fairly with feature work. The "Patterns Observed" section helps realisera understand the codebase's de facto architecture when planning changes.
 
 ### Inspektera feeds /resonera
+
 When the audit reveals architectural drift or structural decisions that need deliberation (the code has evolved past the stated architecture, or competing patterns suggest a design choice is needed), suggest `/resonera` to think it through before anyone starts fixing.
 
 ### Inspektera feeds /planera
+
 When the audit reveals multiple related structural issues, suggest `/planera` to create a remediation plan. The plan's acceptance criteria give inspektera concrete targets to verify in the next audit.
 
 ### Inspektera feeds /optimera
+
 When a dimension grade is poor and the improvement is measurable (test coverage, dependency count, complexity score), the finding can become an optimization objective. Suggest `/optimera` when the metric and direction are clear.
 
 ### Inspektera reads /realisera output
+
 PROGRESS.md tells inspektera what was built recently. Recent changes are higher-priority audit targets because they're the most likely source of regressions or pattern breaks. Cycle count since last audit signals when a health check is overdue.
 
 ### Inspektera reads /resonera output
+
 DECISIONS.md explains why things are the way they are. Findings that contradict deliberate decisions are not findings. This prevents inspektera from flagging intentional tradeoffs as problems.
 
 ### Inspektera reads /visualisera output
+
 DESIGN.md provides visual identity constraints that inspektera can audit for consistency, checking whether the codebase respects the declared design tokens and patterns.
 
 ### Inspektera is informed by /profilera
+
 The decision profile calibrates what "healthy" means for this user. A user who values simplicity over flexibility will have different complexity thresholds than one who values extensibility. High-confidence quality preferences from the profile weight the grading.
 
 ---
@@ -465,6 +477,7 @@ The decision profile calibrates what "healthy" means for this user. A user who v
 ### Periodic health checks
 
 Run `/inspektera` every 5-10 realisera cycles, or when:
+
 - A major feature was added
 - Significant refactoring occurred
 - The codebase "feels" harder to work in

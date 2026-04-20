@@ -1,7 +1,7 @@
 <!-- contract: inspirera -->
-<!-- source: SPEC.md (sha256: d709f49d2a5f4c848eec88a56e005be805350977968ee051081bcde8e5167e38) -->
+<!-- source: SPEC.md (sha256: 6d53de68f1af9febc2a828cc721ee208b742c6e47342dae556b18c461f98ce28) -->
 <!-- sections: 2, 4, 5, 6, 12 -->
-<!-- generated: 2026-04-19T17:31:40Z -->
+<!-- generated: 2026-04-20T15:53:58Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -292,6 +292,7 @@ in .agentera/. This applies to all artifact references in this skill, including 
 ```
 
 Where:
+
 - `{OWN_ARTIFACTS}` = the skill's own artifact filenames
 - `{reads_or_writes}` = "reads", "writes", or "reads and writes" as appropriate
 - `{CROSS_ARTIFACTS}` = artifacts from other skills that this skill accesses
@@ -313,6 +314,7 @@ python3 -m scripts.effective_profile
 Run from the profilera skill directory. Mentioned skills: realisera, optimera, inspektera, planera, inspirera.
 
 Standard threshold language (after migration to 0-100):
+
 - "high effective confidence entries (65+) are strong constraints"
 - "low effective confidence entries (<45) are suggestions"
 
@@ -425,6 +427,7 @@ Step and container dividers share the same visual weight (2-dash), differentiate
 The exit signal's visual output matches the status reported. All four statuses use the skill boundary divider, followed by a summary and (for non-complete statuses) bullet details.
 
 **complete**:
+
 ```
 ─── glyph skillname · complete ───
 
@@ -432,6 +435,7 @@ Summary sentence.
 ```
 
 **flagged**:
+
 ```
 ─── glyph skillname · flagged ───
 
@@ -442,6 +446,7 @@ Summary sentence.
 ```
 
 **stuck**:
+
 ```
 ─── glyph skillname · stuck ───
 
@@ -452,6 +457,7 @@ Summary sentence.
 ```
 
 **waiting**:
+
 ```
 ─── glyph skillname · waiting ───
 
@@ -471,6 +477,7 @@ Skills with 4+ workflow steps display progress markers between steps:
 N is the current step number, M is the total step count for the current mode, and verb is the step's bare-verb name (lowercase).
 
 Rules:
+
 - Step 0 (mode detection/gates) is excluded from the count: markers start at Step 1
 - Skills with multiple modes use per-mode N/M counts (e.g., Create mode 1/4, Refine mode 1/4)
 - Excluded skills: hej (uses dashboard format), resonera (interactive Q&A with scratchpad)

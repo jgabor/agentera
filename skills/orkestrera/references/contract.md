@@ -1,7 +1,7 @@
 <!-- contract: orkestrera -->
-<!-- source: SPEC.md (sha256: d709f49d2a5f4c848eec88a56e005be805350977968ee051081bcde8e5167e38) -->
+<!-- source: SPEC.md (sha256: 6d53de68f1af9febc2a828cc721ee208b742c6e47342dae556b18c461f98ce28) -->
 <!-- sections: 3, 4, 5, 11, 18, 19 -->
-<!-- generated: 2026-04-19T17:31:40Z -->
+<!-- generated: 2026-04-20T15:53:58Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -240,6 +240,7 @@ in .agentera/. This applies to all artifact references in this skill, including 
 ```
 
 Where:
+
 - `{OWN_ARTIFACTS}` = the skill's own artifact filenames
 - `{reads_or_writes}` = "reads", "writes", or "reads and writes" as appropriate
 - `{CROSS_ARTIFACTS}` = artifacts from other skills that this skill accesses

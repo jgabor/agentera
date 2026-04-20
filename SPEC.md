@@ -20,6 +20,7 @@ Five tiers with shared boundaries. Each skill defines its own domain-specific la
 | 5 (lowest) | 0-29 | Speculative / extrapolated |
 
 **Rules**:
+
 - Skills producing confidence scores MUST use integer 0-100
 - Skills consuming confidence scores MUST interpret them against these tier boundaries
 - Temporal decay is opt-in: skills with a temporal dimension (e.g., profilera) may apply exponential decay; skills without one (e.g., inspektera) use static scores
@@ -326,6 +327,7 @@ in .agentera/. This applies to all artifact references in this skill, including 
 ```
 
 Where:
+
 - `{OWN_ARTIFACTS}` = the skill's own artifact filenames
 - `{reads_or_writes}` = "reads", "writes", or "reads and writes" as appropriate
 - `{CROSS_ARTIFACTS}` = artifacts from other skills that this skill accesses
@@ -347,6 +349,7 @@ python3 -m scripts.effective_profile
 Run from the profilera skill directory. Mentioned skills: realisera, optimera, inspektera, planera, inspirera.
 
 Standard threshold language (after migration to 0-100):
+
 - "high effective confidence entries (65+) are strong constraints"
 - "low effective confidence entries (<45) are suggestions"
 
@@ -583,6 +586,7 @@ Step and container dividers share the same visual weight (2-dash), differentiate
 The exit signal's visual output matches the status reported. All four statuses use the skill boundary divider, followed by a summary and (for non-complete statuses) bullet details.
 
 **complete**:
+
 ```
 ─── glyph skillname · complete ───
 
@@ -590,6 +594,7 @@ Summary sentence.
 ```
 
 **flagged**:
+
 ```
 ─── glyph skillname · flagged ───
 
@@ -600,6 +605,7 @@ Summary sentence.
 ```
 
 **stuck**:
+
 ```
 ─── glyph skillname · stuck ───
 
@@ -610,6 +616,7 @@ Summary sentence.
 ```
 
 **waiting**:
+
 ```
 ─── glyph skillname · waiting ───
 
@@ -629,6 +636,7 @@ Skills with 4+ workflow steps display progress markers between steps:
 N is the current step number, M is the total step count for the current mode, and verb is the step's bare-verb name (lowercase).
 
 Rules:
+
 - Step 0 (mode detection/gates) is excluded from the count: markers start at Step 1
 - Skills with multiple modes use per-mode N/M counts (e.g., Create mode 1/4, Refine mode 1/4)
 - Excluded skills: hej (uses dashboard format), resonera (interactive Q&A with scratchpad)
@@ -1112,6 +1120,7 @@ Claude Code provides a built-in memory system that persists user and project mem
 | `content` | Yes | string | Full text content (body after frontmatter) |
 
 When the Claude Code adapter encounters memory files, it emits them as instruction_document records with these additional conventions:
+
 - `doc_type`: `"claude_memory"`
 - `scope`: `"project"` (memory files are project-scoped)
 - `name`: derived from the memory file's frontmatter or filename
@@ -1314,3 +1323,87 @@ The two gates form a coherent pair bracketing the worktree lifecycle:
 Both gates are mandatory for worktree-dispatched cycles. A cycle that passes Section 19 verification but skipped the Section 22 gate may have verified behavior built on stale context. A cycle that passes the Section 22 gate but skips Section 19 verification has current context but unverified output.
 
 **Linter check**: None. This section defines a runtime convention for dispatching skills. Enforcement is per-skill: each dispatching skill's SKILL.md must include the gate procedure at its worktree dispatch point. The linter validates this through skill-specific checks, not a spec-level structural check.
+
+## 23. Artifact Writing Conventions
+
+Artifacts are read by skills, not just humans. Every word costs tokens on every read. This section defines the shared vocabulary, tone, and structural rules that all skills follow when writing artifacts and SKILL.md content.
+
+### The principle
+
+Write like a sharp colleague who respects your time. Say what happened, why it matters, what's next. No padding, no hedging, no meta-commentary about the writing process itself.
+
+### Banned verbosity patterns
+
+These patterns waste tokens and must not appear in artifact content. SKILL.md instruction text is exempt (it teaches the agent how to write, it is not artifact content itself).
+
+| Pattern | Example | Replacement |
+|---------|---------|-------------|
+| Meta-commentary about writing | "Here is the updated plan" | Omit; just write the plan |
+| Hedging qualifiers | "It seems like", "It appears that", "Possibly" | State directly or omit |
+| Redundant transitions | "Moving on to the next step", "Now let's look at" | Omit; structural markers handle transitions |
+| Self-referential process narration | "I am now analyzing", "The agent is checking" | Omit; the action speaks for itself |
+| Filler introductions | "Based on my analysis", "After careful consideration" | Omit; lead with the finding |
+| Summary preambles | "In summary", "To recap", "Overall" | Omit; the content is the summary |
+| Excessive justification | "I chose this approach because..." (when obvious) | One-line rationale only when non-obvious |
+
+### Sentence length limits
+
+Artifact prose follows a 25-word cap per sentence. This covers finding descriptions, cycle summaries, decision rationales, and all prose outside code blocks, tables, and lists. SKILL.md instruction text and examples are exempt.
+
+**Linter check**: Advisory. Counts words per sentence in artifact format examples within SKILL.md files (inside code blocks showing artifact structure). Flags sentences exceeding 25 words.
+
+### Preferred vocabulary
+
+Canonical terms replace synonyms across all artifacts and SKILL.md files.
+
+| Use | Avoid |
+|-----|-------|
+| finding | issue, problem, concern, observation |
+| cycle | iteration, run, pass, loop |
+| artifact | file, document, output |
+| dispatch | spawn, launch, create, start |
+| verified | checked, confirmed, validated, tested |
+| grade | score, rating, assessment |
+| dimension | category, area, section |
+| confidence | certainty, belief, likelihood |
+| severity | priority, level, importance |
+| trajectory | trend, direction, movement |
+| stale | outdated, old, expired |
+| checkpoint | save, snapshot, backup |
+
+**Linter check**: Advisory. Scans SKILL.md prose (outside code blocks and frontmatter) for the "avoid" column terms when used in artifact-writing context (near words like "write", "append", "entry", "format", "structure").
+
+### Structural rules
+
+All artifacts follow these composition rules:
+
+1. **Lead with the conclusion**: the first sentence of any entry states the outcome. Evidence follows. "Architecture: C. Circular dependency between auth/ and db/ modules." Not "After examining the module structure, I noticed that..."
+2. **One fact per sentence**: do not compound findings. Two short sentences beat one long one with "and" or "but".
+3. **Evidence is concrete**: file paths, line numbers, quoted code. No "some files" or "certain modules".
+4. **No empty severity**: every finding includes a suggested action. "Investigate X" is better than no action.
+5. **Numbers are digits**: use "3" not "three" in artifact content. Spell out only when the number begins a sentence (which should be rare given the length limits).
+
+### SKILL.md structural requirement
+
+Every SKILL.md MUST include a reference to this section in its workflow instructions when the skill produces artifacts. The canonical instruction:
+
+```
+Artifact writing follows contract Section 23 (Artifact Writing Conventions):
+banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and
+lead-with-conclusion structure.
+```
+
+This instruction appears in the skill's artifact-writing step (the step where the skill writes to PROGRESS.md, HEALTH.md, DECISIONS.md, or any other artifact).
+
+**Linter check**: Deterministic. All skills that produce artifacts (per the artifact format contracts table in Section 4) must contain a reference to "Section 23" or "Artifact Writing Conventions" in their SKILL.md.
+
+### Tone register
+
+The suite's voice is consistent across all artifacts:
+
+- **Direct**: state facts, not feelings. "Tests fail on auth/" not "It looks like there might be an issue with auth".
+- **Brief**: ≤15 words for cycle summaries, ≤25 words for finding descriptions, ≤50 words for decision rationales.
+- **Concrete**: "circular import in auth/models.py:12" not "there seems to be a coupling issue".
+- **Forward-looking**: every entry ends with what to do next, not a recap of what was done.
+
+This register complements Section 13 (Narration Voice): Section 13 governs how skills talk to the user between structural markers; Section 23 governs what goes inside the artifacts themselves.
