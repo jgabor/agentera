@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 119 · 2026-04-21 · feat(hooks,scripts): deterministic artifact compaction engine
+
+**What**: Operationalized SPEC Section 4 10/40/50 compaction. Added `hooks/compaction.py` (shared engine, ArtifactSpec registry for progress/decisions/health/experiments/todo-resolved), `scripts/compact_artifact.py` (CLI wrapper producer skills invoke from Step 8), extended `hooks/validate_artifact.py` with a non-blocking over-threshold nudge for missed invocations, and updated four producer SKILL.md files (realisera, resonera, inspektera, optimera) to replace prose thresholds with explicit script invocations. `hooks/session_stop.py` refactored to import shared primitives; SESSION.md behavior unchanged.
+**Commit**: 5ff32c0
+**Inspiration**: existing `hooks/session_stop.py:179-262` reference implementation; diagnosis from leda PROGRESS.md audit (81 full-detail cycles vs 10 cap, 89 one-liners vs 40 cap, last manual compaction was commit aa61630 on 2026-04-17 not an automated run).
+**Discovered**: (1) Root cause was not a regression — agent-driven compaction has never reliably run. The April 17 sweep in leda was a one-off manual condensation, and realisera/resonera Step 8 instructions were too terse and passive for agents under cycle load. (2) Inspektera/HEALTH.md looks healthy only because audits cross threshold slowly. (3) Pre-existing bug: `ARTIFACT_HEADINGS["PROGRESS.md"]` in validate_artifact.py uses `^## Cycle \d+` which does not match the `■ ## Cycle` glyph-prefixed format SPEC mandates. Logged to TODO, not fixed in this cycle.
+**Verified**: Synthetic PROGRESS.md with 15 `■ ## Cycle N · date · title` entries written to a tempfile; `python3 scripts/compact_artifact.py progress <path>` emitted `compacted: ... (15->10 full, 0->5 oneline, 0 dropped)`; post-run `grep -c "^■ ## Cycle"` reports 10 and `grep -c "^- Cycle"` reports 5 under a `## Archived Cycles` heading. Hook smoke: `{"tool_name":"Edit","cwd":"/tmp/smoke","tool_input":{"file_path":"..."}}` piped to `hooks/validate_artifact.py` emits `PROGRESS.md: 15 full-detail entries exceeds 10, run scripts/compact_artifact.py progress <path>`. Full suite: 289 passed (was 263, +26). Linter: 0 errors, 16 warnings (all pre-existing).
+**Next**: User to green-light the one-time backfill pass against `~/git/leda` (PROGRESS.md 180→10+40, DECISIONS.md 42→10+32). Hold per cycle instruction until then. After backfill, the next vision-aligned candidates are the analyze_progress.py refactor TODO or a fresh inspektera audit (last was Audit 8 in cycle 118).
+**Context**: intent (stop agent-driven compaction from silently skipping; move enforcement to a deterministic script plus hook nudge) · constraints (no leda backfill this cycle, no SESSION.md behavior change, nudge stays non-blocking, stdlib-only, no plugin version bump) · unknowns (whether SESSION.md refactor would break existing test_session_stop.py — resolved: imports drop-in, all 20 tests still green) · scope (2 new files in hooks/ and scripts/, 1 new test file, 4 SKILL.md edits, 3 hook/test refactors, 1 CHANGELOG line).
+
 ■ ## Cycle 118 · 2026-04-20
 
 **Phase**: build
@@ -99,75 +109,6 @@
 **Next**: ISS-39 resolved. Remaining: analyze_progress.py refactor (annoying). Vision-driven work or inspektera audit (last was Audit 7, ~4 cycles ago).
 **Context**: intent (implement Decision 30 multi-objective optimera layout) · constraints (one-shot migration, no behavioral changes to harnesses) · unknowns (none) · scope (SPEC.md, SKILL.md x2, DOCS.md, hooks, .gitignore, version files)
 
-■ ## Cycle 109 · 2026-04-12
-
-**Phase**: build
-**What**: Removed realisera "Getting started" section (onboarding docs, not needed during cycle execution). Tier 1: 12,310 -> 12,055 tokens (-255). Cumulative from baseline: 15,065 -> 12,055 (-20.0%). Target was 12,052; effectively met (3-token overshoot within byte-estimate rounding).
-**Commit**: 5329d67
-**Inspiration**: Section-size analysis showed Getting started (254 est tokens) was pure discovery-time content never referenced during cycle execution
-**Discovered**: The 20% target is met. Two experiments (spec_sections trimming + Getting started removal) reduced Tier 1 by 3,010 tokens. The byte-estimate metric (bytes/4) is coarse enough that the 3-token overshoot is not meaningful. With the API count_tokens endpoint (when available), the exact number may differ slightly.
-**Verified**: `python3 .optimera/count_prompt_tokens.py --skill-dir skills/realisera --tier1` returned tier1_total=12,055 (SKILL.md 7,125 + contract.md 4,930). Linter 0/0, 260 tests pass, eval dry-run resolves.
-**Next**: Objective met. Record Experiment 5 in EXPERIMENTS.md and close the optimization objective, or continue if more savings are desired (cross-skill integration section at ~872 tokens is the next target).
-**Context**: intent (close the remaining 258-token gap to hit 20% target) · constraints (no behavioral changes, no SPEC.md changes) · unknowns (none) · scope (skills/realisera/SKILL.md only)
-
 ## Archived Cycles
 
-Cycle 108 (2026-04-12): Trimmed realisera spec_sections from 10 to 5; contract.md -35.8%; Tier 1 15,065 → 12,310 tokens (-18.3%)
-Cycle 107 (2026-04-12): Two-tier metric for realisera-token harness; Tier 1 exact token count, Tier 2 Docker A/B gates-only
-Cycle 106 (2026-04-11): Plan rollup for ISS-37 (Session Corpus Contract); corpus builder, 14 tests, version bump to 1.10.0
-Cycle 105 (2026-04-11): Version bump 1.9.0 → 1.10.0 (profilera 2.7.0 → 2.8.0)
-Cycle 104 (2026-04-11): Added 14 tests for corpus builder and validation (260 total)
-Cycle 103 (2026-04-11): Updated profilera SKILL.md Steps 1-2 to consume corpus.json
-Cycle 102 (2026-04-11): Added self-validation to extract_all.py; fixed family status vocabulary
-Cycle 101 (2026-04-11): Refactored extract_all.py into multi-runtime corpus builder producing corpus.json
-Cycle 100 (2026-04-11): Added corpus envelope format and runtime probing convention to SPEC.md Section 21
-Cycle 99 (2026-04-11): OpenCode Adapter plan rollup; plugin, eval runner runtime detection, install docs, version bump to 1.9.0
-Cycle 98 (2026-04-11): Refactored check_severity_levels; extracted 4 helpers, flattened 4-level nesting to 2
-Cycle 97 (2026-04-11): Added GitHub Actions CI workflow (ISS-31); validate_spec.py + pytest on push/PR
-Cycle 96 (2026-04-11): Patch bump to 1.8.1; corrected Audit 7 false positives and missing complexity dimension
-Cycle 95 (2026-04-10): Plan-level freshness checkpoint for Platform Portability; promoted to 1.8.0, archived plan
-Cycle 94 (2026-04-10): Version bump 1.7.0 → 1.8.0 (profilera 2.6.0 → 2.7.0)
-Cycle 93 (2026-04-10): Added linter check 18 (platform-annotations); 4 tests (240 total)
-Cycle 92 (2026-04-10): Demoted memory_entry to Claude Code runtime extension in Section 21
-Cycle 91 (2026-04-10): OpenCode proof-of-concept adapter design mapping 6 host capabilities
-Cycle 90 (2026-04-10): Annotated platform-specific references across 12 SKILL.md files and SPEC.md
-Cycle 89 (2026-04-10): Added Section 21 (Session Corpus Contract) to SPEC.md; 5 record types, degradation rules
-Cycle 88 (2026-04-10): Terminology cleanup per Decision 23; renamed ecosystem-spec.md to SPEC.md, ecosystem-context.md to contract.md, validate_ecosystem.py to validate_spec.py; dropped "ecosystem" prefix across 46 files; regenerated all 12 contract files
-
-Cycle 87 (2026-04-10): Added Section 20 (Host Adapter Contract) to SPEC.md; six capabilities, portability-status table, `<!-- platform: -->` annotation convention
-
-Cycle 86 (2026-04-08): Plan rollup for ISS-36, CHANGELOG promoted to 1.7.0, plan archived
-Cycle 85 (2026-04-07): Version bump 1.6.0 → 1.7.0 (profilera 2.5.0 → 2.6.0)
-Cycle 84 (2026-04-07): Added linter check 17 (reality-verification-gate) to validate_spec.py
-Cycle 83 (2026-04-07): Extended orkestrera Step 3 with dual-layer Reality Verification Gate
-Cycle 82 (2026-04-07): Extended realisera Step 6 with Phase A/B Reality Verification Gate
-Cycle 81 (2026-04-07): Added Section 19 (Reality Verification Gate) to SPEC.md
-Cycle 80 (2026-04-03): ISS-35 resolved; per-skill contract files generated from SPEC.md
-Cycle 79 (2026-04-03): Added Artifact freshness dimension to inspektera SKILL.md
-Cycle 78 (2026-04-03): Added Section 18 (Staleness Detection) to SPEC.md
-Cycle 77 (2026-04-02): Version bump to 1.5.0 (profilera 2.4.0), ISS-29 resolved, plan archived
-Cycle 76 (2026-04-02): Created orkestrera plugin.json; updated README, CLAUDE.md, DOCS.md
-Cycle 75 (2026-04-02): Updated all 11 SKILL.md files: eleven-skill → twelve-skill
-Cycle 74 (2026-04-02): Updated SPEC.md and linter for 12 skills including orkestrera
-Cycle 73 (2026-04-02): Wrote skills/orkestrera/SKILL.md (316 lines, full conductor protocol)
-Cycle 72 (2026-04-02): Decision 20 captured, PLAN.md for ISS-29 (orkestrera), glyph added to DESIGN.md
-Cycle 71 (2026-04-02): Added em-dash/hard-wrap detection to linter; archived plan (ISS-28 resolved)
-Cycle 70 (2026-04-02): Applied formatting conventions to project docs, artifacts, and manifests
-Cycle 69 (2026-04-02): Removed em-dashes and hard wraps from all 11 SKILL.md files
-Cycle 68 (2026-04-02): Codified punctuation and line-break conventions in SPEC.md Sections 14-15
-Cycle 64 (2026-04-02): Validated voice alignment, linter 0/0, archived plan (ISS-26 resolved)
-Cycles 61-63 (2026-04-02): Warmed output framing across 7 skills in parallel (ISS-26 Tasks 3-5)
-Cycle 60 (2026-04-02): Converged resonera/visionera/visualisera to sharp colleague voice
-Cycle 59 (2026-04-02): Rewrote hej with dashboard + human frame pattern (ISS-26 Task 1)
-Cycle 58 (2026-04-02): Validated formatting changes, linter 0/0, archived plan (ISS-20 resolved)
-Cycle 57 (2026-04-02): Added per-mode step markers to 4 multi-mode skills (ISS-20 Task 5)
-Cycle 56 (2026-04-02): Added step markers to 5 single-mode skills (ISS-20 Task 4)
-Cycle 55 (2026-04-02): Standardized opener phrasing, renamed inspektera Synthesize → Distill
-Cycle 54 (2026-04-02): Standardized exit signal sections across all 11 SKILL.md files
-Cycle 53 (2026-04-02): SPEC.md Section 12: formatting standard, divider hierarchy, exit signals
-Cycle 52 (2026-04-02): Context snapshot, decision gate, and tiered audit depth (ISS-16/17/18)
-Cycle 51 (2026-04-01): Minor version bump, collection 1.4.0, plan complete
-Cycle 50 (2026-04-01): Script renames, reference updates, 48 unit tests added
-Cycle 49 (2026-04-01): Consolidated profilera extract pipeline (6 files → 1 script)
-Cycle 48 (2026-04-01): PEP 723 inline metadata on 4 standalone skill scripts
-Cycle 47 (2026-04-01): Minor version bump, collection 1.3.0, plan complete
+- Cycle 109 (2026-04-12): Removed realisera "Getting started" section (onboarding docs, not needed during cycle execution). Tier 1: 12,310 -> 12,055 tokens (-255). Cumulative...

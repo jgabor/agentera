@@ -7,9 +7,12 @@
 ## → Normal
 
 ## ⇢ Annoying
+
 - [ ] [refactor] analyze_progress.py::analyze() is 114 lines with 5-branch suggestion engine — extract helper per signal type if new signal added
+- [ ] [fix] `ARTIFACT_HEADINGS["PROGRESS.md"]` in hooks/validate_artifact.py uses `^## Cycle \d+` which does not match the `■ ## Cycle` glyph-prefixed format SPEC mandates — false-positive "missing required heading" warning on every PROGRESS.md edit (discovered during cycle 119 hook smoke test)
 
 ## Resolved
+
 - [x] ~~ISS-39: [feat] Implement optimera multi-objective support (Decision 30)~~ · fixed in bd88f63..845a387 (per-objective subdirs under .agentera/optimera/, active-objective inference, SPEC.md/SKILL.md/hooks/DOCS.md updates, version bump 1.12.0)
 - [x] ~~ISS-38: [feat] Move profile path to XDG-standard agentera data directory (Decision 27)~~ · fixed in 32cd8c7..4870d80 (XDG default with platform detection, auto-migration from ~/.claude/profile/, OpenCode plugin sets PROFILERA_PROFILE_DIR at init)
 - [x] ~~ISS-37: [feat] Implement Section 21 session corpus contract (Decision 26)~~ · fixed in 74e539c..277e559 (spec envelope format, multi-runtime corpus builder, self-validation, SKILL.md Steps 1-2 update, 14 new tests, version bump 1.10.0)
