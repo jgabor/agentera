@@ -534,6 +534,47 @@ class TestUnreadableFile:
 # ---------------------------------------------------------------------------
 
 
+class TestCompactionOverflowNudge:
+    """Non-blocking nudge when an artifact exceeds 10/40/50 thresholds."""
+
+    def test_over_threshold_emits_nudge(self, validate_artifact, project_dir):
+        progress = project_dir / ".agentera" / "PROGRESS.md"
+        lines = ["# Progress", ""]
+        # 15 full cycles (over 10 threshold).
+        for i in range(15, 0, -1):
+            lines.append(f"## Cycle {i} · 2026-04-{((i - 1) % 28) + 1:02d}")
+            lines.append("")
+            lines.append(f"**What**: item {i}")
+            lines.append("")
+        progress.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+        warnings = validate_artifact.detect_compaction_overflow(
+            str(progress),
+            "PROGRESS.md",
+        )
+        assert len(warnings) == 1
+        assert "compact_artifact.py" in warnings[0]
+        assert "progress" in warnings[0]
+
+    def test_under_threshold_no_nudge(self, validate_artifact, project_dir):
+        progress = project_dir / ".agentera" / "PROGRESS.md"
+        progress.write_text(
+            textwrap.dedent("""\
+            # Progress
+
+            ## Cycle 1
+
+            Did work.
+        """),
+            encoding="utf-8",
+        )
+        warnings = validate_artifact.detect_compaction_overflow(
+            str(progress),
+            "PROGRESS.md",
+        )
+        assert warnings == []
+
+
 class TestMainIntegration:
     """Tests main() with mocked stdin. 1 pass (no output) + 1 fail (violations)."""
 

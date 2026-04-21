@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Compaction script (`scripts/compact_artifact.py`) and shared engine (`hooks/compaction.py`) applying the uniform 10/40/50 rule across PROGRESS, DECISIONS, HEALTH, EXPERIMENTS, and TODO Resolved; `hooks/validate_artifact.py` now emits a non-blocking nudge when an edited artifact is over threshold
+
 ## [1.14.0] · 2026-04-20
 
 ### Added
