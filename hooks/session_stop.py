@@ -33,15 +33,17 @@ from common import (
     load_artifact_overrides,
     resolve_artifact_path,
 )
+from compaction import (
+    MAX_FULL_ENTRIES,
+    MAX_ONELINE_ENTRIES,
+    MAX_TOTAL_ENTRIES,
+    compact_entries as _compact_entries_core,
+)
 
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-
-MAX_FULL_ENTRIES = 10
-MAX_ONELINE_ENTRIES = 40
-MAX_TOTAL_ENTRIES = MAX_FULL_ENTRIES + MAX_ONELINE_ENTRIES
 
 # Canonical artifact names tracked for modification detection.
 TRACKED_ARTIFACTS = [
@@ -229,23 +231,19 @@ def compact_entry_to_oneline(entry: dict[str, str]) -> dict[str, str]:
 def compact_entries(entries: list[dict[str, str]]) -> list[dict[str, str]]:
     """Apply compaction rules to an entry list.
 
-    Keep the first MAX_FULL_ENTRIES as full entries. Convert the next
-    entries to one-line summaries, keeping up to MAX_ONELINE_ENTRIES.
-    Drop anything beyond MAX_TOTAL_ENTRIES.
+    Delegates to hooks.compaction.compact_entries with a SESSION.md
+    -specific one-line formatter (summary line extraction from body).
+    Kept as a thin wrapper so existing tests and callers keep working.
     """
-    result: list[dict[str, str]] = []
+    def _format(entry: dict[str, str]) -> str:
+        return compact_entry_to_oneline(entry)["header"]
 
-    for i, entry in enumerate(entries):
-        if i < MAX_FULL_ENTRIES:
-            result.append(entry)
-        elif i < MAX_TOTAL_ENTRIES:
-            if entry["kind"] == "full":
-                result.append(compact_entry_to_oneline(entry))
-            else:
-                result.append(entry)
-        # Beyond MAX_TOTAL_ENTRIES: drop.
-
-    return result
+    return _compact_entries_core(
+        entries,
+        max_full=MAX_FULL_ENTRIES,
+        max_oneline=MAX_ONELINE_ENTRIES,
+        format_oneline=_format,
+    )
 
 
 def format_session_md(entries: list[dict[str, str]]) -> str:

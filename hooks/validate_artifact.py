@@ -36,6 +36,19 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+# Import compaction utilities (co-located in hooks/).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:
+    from compaction import (  # type: ignore[import-not-found]
+        MAX_FULL_ENTRIES as _COMPACT_MAX_FULL,
+        MAX_ONELINE_ENTRIES as _COMPACT_MAX_ONELINE,
+        detect_overflow as _detect_overflow,
+    )
+except ImportError:
+    _COMPACT_MAX_FULL = 10
+    _COMPACT_MAX_ONELINE = 40
+    _detect_overflow = None  # type: ignore[assignment]
+
 # Default operational artifact directory relative to target project root.
 DEFAULT_OP_DIR = ".agentera"
 
@@ -245,6 +258,56 @@ def validate_artifact_structure(file_path: str, artifact_name: str) -> list[str]
 
 
 # ---------------------------------------------------------------------------
+# Compaction overflow nudge (non-blocking)
+# ---------------------------------------------------------------------------
+
+
+# Map artifact canonical name to (spec, path-relative command hint).
+_COMPACTION_SPECS: dict[str, str] = {
+    "PROGRESS.md": "progress",
+    "DECISIONS.md": "decisions",
+    "HEALTH.md": "health",
+    "EXPERIMENTS.md": "experiments",
+    "TODO.md": "todo-resolved",
+}
+
+
+def detect_compaction_overflow(
+    file_path: str,
+    artifact_name: str,
+) -> list[str]:
+    """Return a warning list if the file exceeds 10/40/50 thresholds.
+
+    Non-blocking: the returned warnings are appended to the existing
+    violation list, which the hook reports without failing.
+    """
+    if _detect_overflow is None:
+        return []
+    spec_name = _COMPACTION_SPECS.get(artifact_name)
+    if spec_name is None:
+        return []
+    try:
+        text = Path(file_path).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return []
+    try:
+        full_count, oneline_count = _detect_overflow(text, spec_name)
+    except Exception:
+        return []
+
+    total = full_count + oneline_count
+    if full_count <= _COMPACT_MAX_FULL and total <= _COMPACT_MAX_FULL + _COMPACT_MAX_ONELINE:
+        return []
+
+    hint = (
+        f"{artifact_name}: {full_count} full-detail entries exceeds "
+        f"{_COMPACT_MAX_FULL}, "
+        f"run scripts/compact_artifact.py {spec_name} {file_path}"
+    )
+    return [hint]
+
+
+# ---------------------------------------------------------------------------
 # Ecosystem alignment (skill definitions)
 # ---------------------------------------------------------------------------
 
@@ -401,6 +464,9 @@ def main() -> int:
         artifact_name = identify_artifact(file_path, project_root)
         if artifact_name:
             violations = validate_artifact_structure(file_path, artifact_name)
+            violations.extend(
+                detect_compaction_overflow(file_path, artifact_name)
+            )
 
     elif category == "skill":
         violations = validate_skill_definition(file_path)
