@@ -469,6 +469,39 @@ def _parse_todo_resolved(text: str, spec: ArtifactSpec) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
+_NUMBER_RE = re.compile(r"(?:Cycle|Decision|Audit|Experiment|EXP-)\s*(\d+)")
+
+
+def _entry_number(entry: dict) -> int:
+    """Extract the numeric identifier from an entry header (0 if absent)."""
+    m = _NUMBER_RE.search(entry["header"])
+    return int(m.group(1)) if m else 0
+
+
+def _detect_direction(entries: list[dict]) -> str:
+    """Return "ascending" or "descending" based on majority of adjacent pairs.
+
+    Robust to out-of-order insertions (agents append entries mid-file
+    under load, so first-vs-last is unreliable). Defaults to "descending"
+    when no signal is available, matching SPEC Section 4 (most recent
+    first, archive below).
+    """
+    asc = 0
+    desc = 0
+    for i in range(len(entries) - 1):
+        a = _entry_number(entries[i])
+        b = _entry_number(entries[i + 1])
+        if a == 0 or b == 0 or a == b:
+            continue
+        if a < b:
+            asc += 1
+        else:
+            desc += 1
+    if asc == 0 and desc == 0:
+        return "descending"
+    return "ascending" if asc > desc else "descending"
+
+
 def compact_entries(
     entries: list[dict],
     max_full: int = MAX_FULL_ENTRIES,
@@ -477,15 +510,25 @@ def compact_entries(
 ) -> list[dict]:
     """Apply 10/40/50 rules to an ordered entry list.
 
-    Assumes entries are newest-first. The first `max_full` stay as
-    their original kind. The next `max_oneline` are converted to
-    one-line via `format_oneline` (if currently full). Beyond
-    `max_full + max_oneline` are dropped.
+    Identifies the 10 most recent entries by numeric identifier (Cycle N,
+    Decision N, etc.) regardless of input order — adjacent-pair majority
+    vote picks the file's ascending-or-descending convention so
+    out-of-sequence insertions don't flip the direction. The next
+    `max_oneline` entries are converted to one-line via `format_oneline`
+    (if currently full). Beyond `max_full + max_oneline` are dropped.
     """
     max_total = max_full + max_oneline
-    result: list[dict] = []
+    if not entries:
+        return []
 
-    for i, entry in enumerate(entries):
+    ascending = _detect_direction(entries) == "ascending"
+
+    # Work internally in newest-first order so slicing applies the
+    # "10 most recent" rule correctly regardless of input ordering.
+    newest_first = sorted(entries, key=_entry_number, reverse=True)
+
+    result: list[dict] = []
+    for i, entry in enumerate(newest_first):
         if i < max_full:
             result.append(entry)
         elif i < max_total:
@@ -498,6 +541,9 @@ def compact_entries(
             else:
                 result.append(entry)
         # else: drop.
+
+    if ascending:
+        result.reverse()
     return result
 
 

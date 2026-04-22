@@ -245,6 +245,58 @@ class TestCompactEntries:
         # None of them should pass through the format_oneline transform.
         assert all("DONOTCALL" not in e["header"] for e in result)
 
+    def test_ascending_input_keeps_most_recent_by_number(self, compaction):
+        """Oldest-first input: the 10 highest-numbered entries must stay
+        full, not the 10 first-in-file entries."""
+        entries = [
+            {"header": f"Decision {i}", "body": "b", "kind": "full"}
+            for i in range(1, 16)  # 1..15 ascending
+        ]
+        result = compaction.compact_entries(
+            entries,
+            format_oneline=lambda e: f"- {e['header']}",
+        )
+        full = [e for e in result if e["kind"] == "full"]
+        oneline = [e for e in result if e["kind"] == "oneline"]
+        full_nums = sorted(compaction._entry_number(e) for e in full)
+        oneline_nums = sorted(compaction._entry_number(e) for e in oneline)
+        assert full_nums == [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        assert oneline_nums == [1, 2, 3, 4, 5]
+
+    def test_ascending_input_preserves_direction(self, compaction):
+        """Ascending input must produce ascending output ordering."""
+        entries = [
+            {"header": f"Decision {i}", "body": "b", "kind": "full"}
+            for i in range(1, 16)
+        ]
+        result = compaction.compact_entries(
+            entries,
+            format_oneline=lambda e: f"- {e['header']}",
+        )
+        nums = [compaction._entry_number(e) for e in result]
+        assert nums == sorted(nums), f"not ascending: {nums}"
+
+    def test_out_of_sequence_insertion_uses_majority(self, compaction):
+        """One swapped pair in an otherwise-ascending file must not flip
+        the detected direction — e.g. Opus sometimes appends Decision 29
+        after Decision 30."""
+        # Build ascending 1..15, then swap 14 and 15.
+        entries = [
+            {"header": f"Decision {i}", "body": "b", "kind": "full"}
+            for i in range(1, 16)
+        ]
+        entries[-1], entries[-2] = entries[-2], entries[-1]  # [..., 15, 14]
+        result = compaction.compact_entries(
+            entries,
+            format_oneline=lambda e: f"- {e['header']}",
+        )
+        full = [e for e in result if e["kind"] == "full"]
+        full_nums = sorted(compaction._entry_number(e) for e in full)
+        assert full_nums == [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        # Majority was ascending, so output should be ascending.
+        nums = [compaction._entry_number(e) for e in result]
+        assert nums == sorted(nums)
+
 
 # ---------------------------------------------------------------------------
 # compact_file: end-to-end
