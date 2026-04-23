@@ -6,16 +6,16 @@
 """Parse PROGRESS.md and output structured analysis for realisera's Orient step.
 
 Usage:
-    python3 scripts/analyze_progress.py [--progress PATH] [--vision PATH]
+    python3 scripts/analyze_progress.py [--progress PATH] [--pretty]
 
-Reads PROGRESS.md (and optionally VISION.md for direction context), outputs JSON with:
+Reads PROGRESS.md, outputs JSON with:
 - Cycle count and date range
 - Velocity (cycles per day)
 - Work type distribution (feat/fix/docs/refactor/chore/test)
 - Inspiration usage rate
 - Issue discovery rate
-- Streak detection (consecutive completed cycles)
 - Recent cycle summaries
+- Heuristic suggestions based on observed patterns
 """
 
 import argparse
@@ -25,131 +25,136 @@ import sys
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
+
+# SPEC Section 4 mandates `■ ## Cycle N · YYYY-MM-DD` with optional time and
+# title suffix. The em-dash form is an older variant retained for back-compat.
+HEADER_RE = re.compile(
+    r"^(?:■\s*)?## Cycle (?P<num>\d+)\s*[·—]\s*(?P<date>\d{4}-\d{2}-\d{2})"
+    r"(?:\s+(?P<time>\d{2}:\d{2}))?"
+    r"(?:\s*[·—]\s*(?P<title>.+?))?\s*$",
+    re.MULTILINE,
+)
+
+FIELD_SPECS = (
+    ("What", "what"),
+    ("Commit", "commit"),
+    ("Inspiration", "inspiration"),
+    ("Discovered", "discovered"),
+    ("Next", "next"),
+)
+
+WORK_TYPE_RE = re.compile(
+    r"(?:`[a-f0-9]+`\s+)?(feat|fix|docs|refactor|chore|test)"
+)
+
+EMPTY_MARKER_RE = re.compile(r"^(none|n/a|no|-|$)", re.IGNORECASE)
 
 
-def parse_cycles(text: str) -> list[dict]:
-    """Parse PROGRESS.md into structured cycle entries."""
-    cycles = []
-    # Split on cycle headers: ## Cycle N — YYYY-MM-DD HH:MM
-    sections = re.split(
-        r"^## Cycle (\d+)\s*—\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})",
-        text,
-        flags=re.MULTILINE,
-    )
+def _build_entry(match: re.Match, body: str) -> dict:
+    num = int(match.group("num"))
+    date_str = match.group("date")
+    time_str = match.group("time")
+    title = match.groupdict().get("title")
 
-    # sections[0] is preamble, then groups of 4: number, date, time, body
-    for i in range(1, len(sections) - 3, 4):
-        num = int(sections[i])
-        date_str = sections[i + 1]
-        time_str = sections[i + 2]
-        body = sections[i + 3]
+    entry: dict = {"number": num, "date": date_str, "time": time_str, "title": title}
 
-        entry = {
-            "number": num,
-            "date": date_str,
-            "time": time_str,
-        }
-
+    if time_str:
         try:
             entry["timestamp"] = datetime.strptime(
                 f"{date_str} {time_str}", "%Y-%m-%d %H:%M"
             ).isoformat()
         except ValueError:
             entry["timestamp"] = None
+    else:
+        try:
+            entry["timestamp"] = datetime.strptime(
+                date_str, "%Y-%m-%d"
+            ).isoformat()
+        except ValueError:
+            entry["timestamp"] = None
 
-        # Extract fields
-        for field, key in [
-            ("What", "what"),
-            ("Commit", "commit"),
-            ("Inspiration", "inspiration"),
-            ("Discovered", "discovered"),
-            ("Next", "next"),
-        ]:
-            match = re.search(rf"\*\*{field}\*\*:\s*(.+?)(?:\n|$)", body)
-            entry[key] = match.group(1).strip() if match else None
+    for field, key in FIELD_SPECS:
+        m = re.search(rf"\*\*{field}\*\*:\s*(.+?)(?:\n|$)", body)
+        entry[key] = m.group(1).strip() if m else None
 
-        # Extract commit type from "type(scope): message" or "`hash` type(scope): message"
-        if entry.get("commit"):
-            type_match = re.search(
-                r"(?:`[a-f0-9]+`\s+)?(feat|fix|docs|refactor|chore|test)",
-                entry["commit"],
-            )
-            entry["work_type"] = type_match.group(1) if type_match else "unknown"
+    # Work type lives in the commit line for the old format, in the header
+    # title for the current format. Check commit first, then title.
+    for source in (entry.get("commit") or "", title or ""):
+        type_match = WORK_TYPE_RE.search(source)
+        if type_match:
+            entry["work_type"] = type_match.group(1)
+            break
+    else:
+        entry["work_type"] = "unknown"
 
-        # Determine if inspiration was used
-        insp = entry.get("inspiration", "") or ""
-        entry["has_inspiration"] = bool(
-            insp and not re.match(r"^(none|n/a|no|-|$)", insp, re.IGNORECASE)
-        )
+    insp = entry.get("inspiration") or ""
+    entry["has_inspiration"] = bool(insp and not EMPTY_MARKER_RE.match(insp))
 
-        # Determine if issues were discovered
-        disc = entry.get("discovered", "") or ""
-        entry["has_discoveries"] = bool(
-            disc and not re.match(r"^(none|n/a|no|-|$)", disc, re.IGNORECASE)
-        )
+    disc = entry.get("discovered") or ""
+    entry["has_discoveries"] = bool(disc and not EMPTY_MARKER_RE.match(disc))
 
-        cycles.append(entry)
+    return entry
 
+
+def parse_cycles(text: str) -> list[dict]:
+    """Parse PROGRESS.md into structured cycle entries."""
+    matches = list(HEADER_RE.finditer(text))
+    cycles: list[dict] = []
+    for i, m in enumerate(matches):
+        body_start = m.end()
+        body_end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        cycles.append(_build_entry(m, text[body_start:body_end]))
     return cycles
 
 
-def analyze(cycles: list[dict]) -> dict:
-    """Produce analysis from parsed cycles."""
-    if not cycles:
-        return {
-            "total_cycles": 0,
-            "message": "No cycles found in PROGRESS.md",
-        }
-
-    total = len(cycles)
-
-    # Date range
+def _date_range_and_velocity(
+    cycles: list[dict],
+) -> tuple[Optional[dict], Optional[float]]:
     dates = []
     for c in cycles:
         try:
             dates.append(datetime.strptime(c["date"], "%Y-%m-%d"))
-        except (ValueError, KeyError):
+        except (ValueError, KeyError, TypeError):
             pass
 
-    date_range = None
-    velocity = None
-    if len(dates) >= 2:
-        first, last = min(dates), max(dates)
-        span_days = (last - first).days or 1  # avoid division by zero for same-day
-        date_range = {"first": first.strftime("%Y-%m-%d"), "last": last.strftime("%Y-%m-%d"), "span_days": span_days}
-        velocity = round(total / span_days, 2)
-    elif len(dates) == 1:
-        date_range = {"first": dates[0].strftime("%Y-%m-%d"), "last": dates[0].strftime("%Y-%m-%d"), "span_days": 1}
-        velocity = float(total)
+    if not dates:
+        return None, None
 
-    # Work type distribution
-    type_counts = Counter(c.get("work_type", "unknown") for c in cycles)
-    work_distribution = dict(type_counts.most_common())
-
-    # Dominant work type
-    build_types = type_counts.get("feat", 0) + type_counts.get("docs", 0)
-    fix_types = type_counts.get("fix", 0)
-    maintain_types = type_counts.get("refactor", 0) + type_counts.get("chore", 0) + type_counts.get("test", 0)
-    dominant = max(
-        [("building", build_types), ("fixing", fix_types), ("maintaining", maintain_types)],
-        key=lambda x: x[1],
+    first, last = min(dates), max(dates)
+    span_days = (last - first).days or 1
+    date_range = {
+        "first": first.strftime("%Y-%m-%d"),
+        "last": last.strftime("%Y-%m-%d"),
+        "span_days": span_days,
+    }
+    velocity = (
+        float(len(cycles)) if len(dates) == 1 else round(len(cycles) / span_days, 2)
     )
+    return date_range, velocity
 
-    # Inspiration rate
-    inspired = sum(1 for c in cycles if c.get("has_inspiration"))
-    inspiration_rate = round(inspired / total, 3)
 
-    # Discovery rate
-    discovering = sum(1 for c in cycles if c.get("has_discoveries"))
-    discovery_rate = round(discovering / total, 3)
+def _dominant_activity(type_counts: Counter) -> str:
+    build = type_counts.get("feat", 0) + type_counts.get("docs", 0)
+    fix = type_counts.get("fix", 0)
+    maintain = (
+        type_counts.get("refactor", 0)
+        + type_counts.get("chore", 0)
+        + type_counts.get("test", 0)
+    )
+    return max(
+        [("building", build), ("fixing", fix), ("maintaining", maintain)],
+        key=lambda x: x[1],
+    )[0]
 
-    # Streak: consecutive cycles from the end (measures current momentum)
-    # A "streak" here just means consecutive cycles exist — realisera always completes
-    # or pivots, so streak length = total cycles from the most recent unbroken date sequence.
-    streak = total  # default: all cycles form one streak
 
-    # Recent cycles for quick context
-    recent = [
+def _rate(cycles: list[dict], key: str) -> tuple[int, float]:
+    count = sum(1 for c in cycles if c.get(key))
+    return count, round(count / len(cycles), 3)
+
+
+def _recent_summary(cycles: list[dict], n: int = 5) -> list[dict]:
+    return [
         {
             "number": c["number"],
             "date": c["date"],
@@ -157,50 +162,98 @@ def analyze(cycles: list[dict]) -> dict:
             "work_type": c.get("work_type"),
             "has_inspiration": c.get("has_inspiration"),
         }
-        for c in cycles[-5:]
+        for c in cycles[-n:]
     ]
 
-    result = {
-        "total_cycles": total,
-        "date_range": date_range,
-        "velocity_cycles_per_day": velocity,
-        "work_distribution": work_distribution,
-        "dominant_activity": dominant[0],
-        "inspiration_rate": inspiration_rate,
-        "inspired_cycles": inspired,
-        "discovery_rate": discovery_rate,
-        "discovering_cycles": discovering,
-        "streak_length": streak,
-        "recent": recent,
-    }
 
-    # Suggestions based on patterns
-    suggestions = []
-    if fix_types > build_types and total >= 5:
-        suggestions.append(
+def _suggest_fix_heavy(
+    total: int, fix_types: int, build_types: int
+) -> Optional[str]:
+    if total >= 5 and fix_types > build_types:
+        return (
             "More cycles spent fixing than building. "
             "Consider stabilizing the codebase before adding features, "
             "or re-evaluate the vision to ensure new work aligns."
         )
-    if inspiration_rate < 0.2 and total >= 5:
-        suggestions.append(
+    return None
+
+
+def _suggest_low_inspiration(
+    total: int, inspired: int, rate: float
+) -> Optional[str]:
+    if total >= 5 and rate < 0.2:
+        return (
             f"Inspiration used in only {inspired}/{total} cycles. "
             "Consider running /inspirera to find external patterns worth adopting."
         )
-    if inspiration_rate > 0.8 and total >= 5:
-        suggestions.append(
+    return None
+
+
+def _suggest_high_inspiration(total: int, rate: float) -> Optional[str]:
+    if total >= 5 and rate > 0.8:
+        return (
             "Nearly every cycle draws on external inspiration. "
             "The project may benefit from more original design work grounded in its own vision."
         )
-    if type_counts.get("test", 0) == 0 and total >= 5:
-        suggestions.append(
-            "No test-focused cycles yet. Consider dedicating a cycle to test coverage."
-        )
-    if type_counts.get("docs", 0) == 0 and total >= 5:
-        suggestions.append(
-            "No docs-focused cycles yet. Documentation may be drifting from implementation."
-        )
+    return None
 
+
+def _suggest_no_tests(total: int, type_counts: Counter) -> Optional[str]:
+    if total >= 5 and type_counts.get("test", 0) == 0:
+        return "No test-focused cycles yet. Consider dedicating a cycle to test coverage."
+    return None
+
+
+def _suggest_no_docs(total: int, type_counts: Counter) -> Optional[str]:
+    if total >= 5 and type_counts.get("docs", 0) == 0:
+        return "No docs-focused cycles yet. Documentation may be drifting from implementation."
+    return None
+
+
+def _build_suggestions(
+    total: int,
+    type_counts: Counter,
+    inspired: int,
+    inspiration_rate: float,
+) -> list[str]:
+    build_types = type_counts.get("feat", 0) + type_counts.get("docs", 0)
+    fix_types = type_counts.get("fix", 0)
+    candidates = [
+        _suggest_fix_heavy(total, fix_types, build_types),
+        _suggest_low_inspiration(total, inspired, inspiration_rate),
+        _suggest_high_inspiration(total, inspiration_rate),
+        _suggest_no_tests(total, type_counts),
+        _suggest_no_docs(total, type_counts),
+    ]
+    return [s for s in candidates if s]
+
+
+def analyze(cycles: list[dict]) -> dict:
+    """Produce analysis from parsed cycles."""
+    if not cycles:
+        return {"total_cycles": 0, "message": "No cycles found in PROGRESS.md"}
+
+    total = len(cycles)
+    date_range, velocity = _date_range_and_velocity(cycles)
+    type_counts = Counter(c.get("work_type", "unknown") for c in cycles)
+    inspired, inspiration_rate = _rate(cycles, "has_inspiration")
+    discovering, discovery_rate = _rate(cycles, "has_discoveries")
+
+    result: dict = {
+        "total_cycles": total,
+        "date_range": date_range,
+        "velocity_cycles_per_day": velocity,
+        "work_distribution": dict(type_counts.most_common()),
+        "dominant_activity": _dominant_activity(type_counts),
+        "inspiration_rate": inspiration_rate,
+        "inspired_cycles": inspired,
+        "discovery_rate": discovery_rate,
+        "discovering_cycles": discovering,
+        "streak_length": total,
+        "recent": _recent_summary(cycles),
+    }
+
+    suggestions = _build_suggestions(total, type_counts, inspired, inspiration_rate)
     if suggestions:
         result["suggestions"] = suggestions
 
@@ -221,7 +274,6 @@ def main():
     )
     args = parser.parse_args()
 
-    # Read PROGRESS.md
     prog_path = Path(args.progress)
     if not prog_path.exists():
         print(json.dumps({"error": f"{prog_path} not found", "total_cycles": 0}))

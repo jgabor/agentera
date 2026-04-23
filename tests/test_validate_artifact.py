@@ -308,7 +308,7 @@ class TestValidateDecisions:
 
 
 class TestValidateProgress:
-    """1 pass + 1 fail."""
+    """1 pass + 1 fail + glyph-prefixed SPEC format."""
 
     def test_valid_progress(self, validate_artifact, project_dir):
         progress = project_dir / ".agentera" / "PROGRESS.md"
@@ -317,6 +317,24 @@ class TestValidateProgress:
             # Progress
 
             ## Cycle 1
+
+            Did some work.
+        """),
+            encoding="utf-8",
+        )
+        violations = validate_artifact.validate_artifact_structure(
+            str(progress),
+            "PROGRESS.md",
+        )
+        assert violations == []
+
+    def test_valid_progress_glyph_prefixed(self, validate_artifact, project_dir):
+        progress = project_dir / ".agentera" / "PROGRESS.md"
+        progress.write_text(
+            textwrap.dedent("""\
+            # Progress
+
+            ■ ## Cycle 1 · 2026-04-23 · feat: ship a thing
 
             Did some work.
         """),

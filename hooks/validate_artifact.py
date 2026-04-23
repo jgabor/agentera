@@ -97,7 +97,7 @@ ARTIFACT_HEADINGS: dict[str, list[str]] = {
     ],
     "PROGRESS.md": [
         r"^# Progress",
-        r"^## Cycle \d+",
+        r"^(?:■\s*)?## Cycle \d+",
     ],
     "TODO.md": [
         r"^# TODO",
