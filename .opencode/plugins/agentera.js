@@ -6,6 +6,133 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
+export const AGENTERA_VERSION = "1.15.0";
+
+export const COMMAND_TEMPLATES = {
+  "hej": `---
+description: "Session entry point: briefing, status, and routing"
+agentera_managed: true
+---
+Load and execute the hej skill for this project.
+`,
+  "visionera": `---
+description: "Create or refine the project vision"
+agentera_managed: true
+---
+Load and execute the visionera skill for this project.
+`,
+  "resonera": `---
+description: "Structured deliberation through Socratic questioning"
+agentera_managed: true
+---
+Load and execute the resonera skill for this project.
+`,
+  "inspirera": `---
+description: "Analyze external sources and map patterns to this project"
+agentera_managed: true
+---
+Load and execute the inspirera skill for this project.
+`,
+  "planera": `---
+description: "Scale-adaptive planning with acceptance criteria"
+agentera_managed: true
+---
+Load and execute the planera skill for this project.
+`,
+  "realisera": `---
+description: "Run one autonomous development cycle"
+agentera_managed: true
+---
+Load and execute the realisera skill for this project.
+`,
+  "optimera": `---
+description: "Metric-driven optimization through experimentation"
+agentera_managed: true
+---
+Load and execute the optimera skill for this project.
+`,
+  "inspektera": `---
+description: "Codebase health audit with grades and findings"
+agentera_managed: true
+---
+Load and execute the inspektera skill for this project.
+`,
+  "dokumentera": `---
+description: "Documentation creation, maintenance, and audit"
+agentera_managed: true
+---
+Load and execute the dokumentera skill for this project.
+`,
+  "profilera": `---
+description: "Mine session history into a decision profile"
+agentera_managed: true
+---
+Load and execute the profilera skill for this project.
+`,
+  "visualisera": `---
+description: "Visual identity system creation and audit"
+agentera_managed: true
+---
+Load and execute the visualisera skill for this project.
+`,
+  "orkestrera": `---
+description: "Multi-cycle plan execution with evaluation gating"
+agentera_managed: true
+---
+Load and execute the orkestrera skill for this project.
+`,
+};
+
+export function resolveOpencodeCommandsDir() {
+  return process.env.OPENCODE_CONFIG_DIR
+    ? path.join(process.env.OPENCODE_CONFIG_DIR, "commands")
+    : path.join(process.env.HOME, ".config", "opencode", "commands");
+}
+
+export function hasManagedMarker(filePath) {
+  let content;
+  try {
+    content = fs.readFileSync(filePath, "utf8");
+  } catch {
+    return false;
+  }
+  const lines = content.split("\n");
+  if (lines[0] !== "---") return false;
+  const closingIdx = lines.indexOf("---", 1);
+  if (closingIdx === -1) return false;
+  const frontmatter = lines.slice(1, closingIdx).join("\n");
+  return frontmatter.includes("agentera_managed: true");
+}
+
+export function bootstrapCommands() {
+  try {
+    const targetDir = resolveOpencodeCommandsDir();
+    fs.mkdirSync(targetDir, { recursive: true });
+
+    const markerFile = path.join(targetDir, ".agentera-version");
+    let existingVersion = null;
+    try {
+      existingVersion = fs.readFileSync(markerFile, "utf8").trim();
+    } catch {
+      // marker absent — proceed
+    }
+    if (existingVersion === AGENTERA_VERSION) return;
+
+    for (const [name, content] of Object.entries(COMMAND_TEMPLATES)) {
+      const targetFile = path.join(targetDir, `${name}.md`);
+      if (fs.existsSync(targetFile) && !hasManagedMarker(targetFile)) {
+        // user-owned file — skip
+        continue;
+      }
+      fs.writeFileSync(targetFile, content);
+    }
+
+    fs.writeFileSync(markerFile, AGENTERA_VERSION);
+  } catch (err) {
+    console.error("[agentera] bootstrapCommands error:", err);
+  }
+}
+
 function resolveArtifacts(dir) {
   const docsPath = path.join(dir, ".agentera", "DOCS.md");
   if (fs.existsSync(docsPath)) {
@@ -88,6 +215,8 @@ export const Agentera = async ({ project, client, $, directory, worktree }) => {
 
   return {
     "session.created": async ({ event }) => {
+      bootstrapCommands();
+
       const progress = readIf(path.join(agenteraDir, "PROGRESS.md"));
       const todo = readIf(path.join(root, "TODO.md"));
       const vision = readIf(path.join(root, "VISION.md"));
