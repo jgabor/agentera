@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.16.0] · 2026-04-23
+
 ### Added
 
 - opencode plugin self-bootstraps 12 slash commands into the user's opencode commands dir on session start; global installs now make `/hej`, `/planera`, etc. available in any project, with collision safety via `agentera_managed: true` frontmatter marker and version-gated refresh on plugin upgrade
