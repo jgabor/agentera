@@ -10,6 +10,8 @@
 
 ### Fixed
 
+- `analyze_progress.py` now reports the newest cycles from current newest-first PROGRESS.md files, so realisera orientation sees the live recent window
+- OpenCode bootstrap versioning now tracks 1.16.0, and the upgrade smoke test verifies stale managed command content is replaced byte-for-byte
 - `.gitignore` gains the four credential patterns (dotenv, `*.key`, `*.pem`, `credentials*`) that the cycle 118 CHANGELOG claimed were added but never actually landed on disk
 
 ## [1.16.0] · 2026-04-23

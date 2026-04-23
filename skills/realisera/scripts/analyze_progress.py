@@ -154,6 +154,10 @@ def _rate(cycles: list[dict], key: str) -> tuple[int, float]:
 
 
 def _recent_summary(cycles: list[dict], n: int = 5) -> list[dict]:
+    if len(cycles) > n and cycles[0]["number"] > cycles[-1]["number"]:
+        selected = cycles[:n]
+    else:
+        selected = cycles[-n:]
     return [
         {
             "number": c["number"],
@@ -162,7 +166,7 @@ def _recent_summary(cycles: list[dict], n: int = 5) -> list[dict]:
             "work_type": c.get("work_type"),
             "has_inspiration": c.get("has_inspiration"),
         }
-        for c in cycles[-n:]
+        for c in selected
     ]
 
 

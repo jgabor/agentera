@@ -109,6 +109,22 @@ class TestAnalyze:
         assert result["total_cycles"] == 0
         assert "message" in result
 
+    def test_recent_uses_first_entries_for_newest_first_progress(self, analyze_progress):
+        cycles = [
+            {"number": n, "date": "2026-04-23"}
+            for n in [127, 126, 125, 124, 123, 122]
+        ]
+        result = analyze_progress.analyze(cycles)
+        assert [c["number"] for c in result["recent"]] == [127, 126, 125, 124, 123]
+
+    def test_recent_uses_last_entries_for_oldest_first_progress(self, analyze_progress):
+        cycles = [
+            {"number": n, "date": "2026-04-23"}
+            for n in [122, 123, 124, 125, 126, 127]
+        ]
+        result = analyze_progress.analyze(cycles)
+        assert [c["number"] for c in result["recent"]] == [123, 124, 125, 126, 127]
+
 
 # ---------------------------------------------------------------------------
 # Suggestion helpers — one trigger case each
