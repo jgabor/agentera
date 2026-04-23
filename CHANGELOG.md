@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- `hooks/compaction.py::_format_todo_oneline` split into three single-responsibility helpers (`_is_todo_oneline_passthrough`, `_extract_iss_id`, `_strip_todo_metadata`) plus a thin orchestrator; behavior preserved exactly
+
 ## [1.16.0] · 2026-04-23
 
 ### Added

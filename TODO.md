@@ -10,6 +10,7 @@
 
 ## Resolved
 
+- [x] ~~[refactor] `_format_todo_oneline` chained 6+ string transformations on same variable (Audit 9 Complexity warning)~~ · fixed in 8b92b91 (extracted 3 module-level regex constants + 3 helpers; orchestrator now 7 lines; 7 proportional tests added)
 - [x] ~~[fix] `ARTIFACT_HEADINGS["PROGRESS.md"]` regex missed `■ ## Cycle` glyph-prefixed format~~ · fixed in 1bf8c18 (regex now accepts optional `■` prefix; added glyph-prefixed structural-validation test case)
 - [x] ~~[refactor] analyze_progress.py::analyze() 5-branch suggestion engine~~ · fixed in 1bf8c18 (extracted 5 per-signal helpers + 6 computation helpers; also fixed latent parser regression where header regex missed the current SPEC glyph+middle-dot format)
 - [x] ~~ISS-40: [fix] Profile path mismatch after Decision 27~~ · fixed — all SKILL.md, SPEC.md, DOCS.md, DOCS template, README.md, opencode adapter doc, and 12 contract.md files updated to `$PROFILERA_PROFILE_DIR/PROFILE.md` with platform-appropriate defaults; 292 tests pass, validate_spec.py 0 errors
