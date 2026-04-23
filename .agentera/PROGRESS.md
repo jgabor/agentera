@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 127 · 2026-04-23 · refactor(hooks): dedup DOCS.md parsing and close gitignore discrepancy
+
+**What**: Closed two Audit 9 info-level findings in one cycle. (a) `hooks/validate_artifact.py` now imports `parse_artifact_mapping` from `hooks/common.py` instead of carrying a 30-line duplicate. `resolve_artifact_paths` filters the raw mapping to `ROOT_ARTIFACTS | OP_ARTIFACTS` (renamed `_CANONICAL_ARTIFACTS`) so the PROFILE.md row and any future non-canonical entries stay ignored exactly as before. Net −38/+16 lines in the one file. (b) `.gitignore` gained the four credential patterns (dotenv, `*.key`, `*.pem`, `credentials*`) that cycle 118's CHANGELOG had claimed but never actually committed.
+**Commit**: 627e30c
+**Inspiration**: none — Audit 9 findings were directly actionable and the cycle 126 stale-base discussion confirmed direct edit (no dispatch) was the right shape for small cleanups.
+**Discovered**: The hook smoke flagged a soft nudge `PROGRESS.md: word count (3060) exceeds budget (3000)` — advisory, not a block. Compaction is entry-count-based (10/40/50), not word-count-based, so the nudge will clear naturally as cycles 127+ push older detail into the archive. Not fixed this cycle (scope).
+**Verified**: `python3 -m pytest tests/ -x -q` → 306 passed (unchanged — the existing `TestResolveArtifactPaths` class already covered both defaults-without-docs and overrides-from-docs paths, and both pass against the common.py-backed implementation). `python3 scripts/validate_spec.py` → 0 errors, 16 warnings (baseline unchanged). Hook smoke: `echo '{"tool_name":"Edit","cwd":"...","tool_input":{"file_path":".agentera/PROGRESS.md"}}' | python3 hooks/validate_artifact.py` exits 0 with only the advisory word-count nudge, and `resolve_artifact_paths` against the real `.agentera/DOCS.md` returns exactly the 9 canonical artifacts mapped to the current default layout — PROFILE.md correctly excluded. `git check-ignore -v` confirmed three of the four new patterns (`*.key`, `*.pem`, `credentials*`); the fourth (dotenv) is present at `.gitignore:7` but couldn't be smoke-tested because the session's own PreToolUse hook blocks creating dotenv files — an independent belt-and-suspenders layer.
+**Next**: (a) fresh inspektera audit — 7 cycles since Audit 9 now, and cycle 125-127 cleared two warning-level and two info-level findings, so grades should advance. (b) `_parse_todo_resolved` depth-5 info finding is the only remaining complexity nit. (c) opencode plugin version-discipline info finding could be closed with a one-line doc addition. (d) return to vision-aligned work.
+**Context**: intent (close two Audit 9 info findings from cycle 124's Next list in one focused cycle, direct-edit to sidestep the stale-base worktree path cycle 126 documented) · constraints (preserve validate_artifact.py's filter-to-known-canonical behavior exactly, preserve all existing .gitignore entries, no SKILL.md edits, no test restructure) · unknowns (whether common.py's broader table-header trigger matches validate_artifact.py's section-heading trigger on current DOCS.md — resolved via smoke: both produce 9-artifact map post-filter) · scope (hooks/validate_artifact.py one function, .gitignore 4 lines appended, PROGRESS/TODO/CHANGELOG updates).
+
 ■ ## Cycle 126 · 2026-04-23 · docs(realisera,optimera): add stale-base awareness to dispatch step
 
 **What**: Added a "Stale-base awareness" paragraph to realisera Step 5 and optimera Step 4, immediately after the Pre-dispatch commit gate. The block instructs the LLM to run `git rev-list --count origin/main..HEAD` before dispatch and, if local HEAD is ahead of origin, to skip merging the worktree branch in the post-dispatch step and instead apply the sub-agent's diff directly onto HEAD via `git apply --index -`. This is the same workaround walked manually in cycle 125.
@@ -92,19 +102,9 @@
 **Next**: User's remaining changes (hej-token deletion) to commit separately. Resume vision-driven work.
 **Context**: intent (bump version to 1.14.0 per semver_policy for 3 feat commits since 1.13.0) · constraints (only touch version_files from DOCS.md and CHANGELOG.md) · unknowns (none) · scope (14 version files, CHANGELOG.md, HEALTH.md, DOCS.md, validate_spec.py, 3 SKILL.md, .gitignore)
 
-■ ## Cycle 117 · 2026-04-13
-
-**Phase**: build
-**What**: Plan-level freshness checkpoint for Pre-dispatch Commit Gate plan (7 tasks, all complete). The plan delivered SPEC.md Section 22 (pre-dispatch commit gate convention), realisera Step 5 gate, optimera Step 4 gate, linter Check 19 with 3 tests, and version bump to 1.13.0. Verified CHANGELOG.md current (already promoted to [1.13.0] in Task 6), TODO.md clean (no items to resolve or file), PROGRESS.md cycles 111-116 covering all tasks. Archived PLAN.md to .agentera/archive/.
-**Commits**: fda509e, 61c65e5, 8bbce05, 37687a7, 50b1766, 859e83c, 7a98f7e, 278000f, 70fa400, f6f8be8, 319935d, 4335837, 1c0ac5f
-**Inspiration**: planera freshness checkpoint convention
-**Discovered**: CHANGELOG.md was fully current from Task 6's version bump cycle, requiring no additional entries. All 12 plan commits produced clean, sequential history with no rework or reverts.
-**Verified**: N/A: docs-only
-**Next**: Resume vision-driven work selection. The pre-dispatch commit gate is fully landed and enforced; next inspektera audit will validate structural health post-plan.
-**Context**: intent (close out pre-dispatch commit gate plan with freshness checkpoint and archive) · constraints (docs-only, no scope creep) · unknowns (none) · scope (PLAN.md, PROGRESS.md, CHANGELOG.md, TODO.md, .agentera/archive/)
-
 ## Archived Cycles
 
+- Cycle 117 (2026-04-13): Plan-level freshness checkpoint for Pre-dispatch Commit Gate plan (7 tasks, all complete). The plan delivered SPEC.md Section 22 (pre-dispatch commit...
 - Cycle 116 (2026-04-13): Version bump 1.12.0 to 1.13.0 per DOCS.md semver_policy (feat = minor). Updated all 12 plugin.json files, registry.json (12 skill entries),...
 - Cycle 115 (2026-04-13): Added tests for Check 19 (pre-dispatch-commit-gate) in `tests/test_validate_spec.py`. Three tests following the Check 17 proportionality pattern: 1 pass (both realisera...
 - Cycle 114 (2026-04-13): Added Check 19 (pre-dispatch-commit-gate) to `scripts/validate_spec.py`. For skills in `WORKTREE_DISPATCH_SKILLS` (realisera, optimera), the check verifies four gate procedure indicators: Section...

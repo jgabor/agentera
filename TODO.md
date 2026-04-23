@@ -10,6 +10,8 @@
 
 ## Resolved
 
+- [x] ~~[refactor] `hooks/common.py` and `hooks/validate_artifact.py` duplicated DOCS.md path resolution (Audit 9 Coupling info)~~ · fixed in 627e30c (validate_artifact now imports parse_artifact_mapping from common; 30 lines of duplicate parser dropped)
+- [x] ~~[fix] `.gitignore` missing credential patterns despite cycle 118 CHANGELOG claim (Audit 9 Security info)~~ · fixed in 627e30c (four credential patterns appended)
 - [x] ~~[refactor] `_format_todo_oneline` chained 6+ string transformations on same variable (Audit 9 Complexity warning)~~ · fixed in 8b92b91 (extracted 3 module-level regex constants + 3 helpers; orchestrator now 7 lines; 7 proportional tests added)
 - [x] ~~[fix] `ARTIFACT_HEADINGS["PROGRESS.md"]` regex missed `■ ## Cycle` glyph-prefixed format~~ · fixed in 1bf8c18 (regex now accepts optional `■` prefix; added glyph-prefixed structural-validation test case)
 - [x] ~~[refactor] analyze_progress.py::analyze() 5-branch suggestion engine~~ · fixed in 1bf8c18 (extracted 5 per-signal helpers + 6 computation helpers; also fixed latent parser regression where header regex missed the current SPEC glyph+middle-dot format)

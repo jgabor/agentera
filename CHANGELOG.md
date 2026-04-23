@@ -6,6 +6,11 @@
 
 - `hooks/compaction.py::_format_todo_oneline` split into three single-responsibility helpers (`_is_todo_oneline_passthrough`, `_extract_iss_id`, `_strip_todo_metadata`) plus a thin orchestrator; behavior preserved exactly
 - realisera Step 5 and optimera Step 4 gain a Stale-base awareness nudge: when local HEAD is ahead of `origin/main`, skip merging the worktree branch and apply the sub-agent's diff onto HEAD directly so verification runs against current code
+- `hooks/validate_artifact.py` now imports DOCS.md parsing from `hooks/common.py` instead of carrying a duplicate parser; filter to known canonical artifacts preserved
+
+### Fixed
+
+- `.gitignore` gains the four credential patterns (dotenv, `*.key`, `*.pem`, `credentials*`) that the cycle 118 CHANGELOG claimed were added but never actually landed on disk
 
 ## [1.16.0] · 2026-04-23
 
