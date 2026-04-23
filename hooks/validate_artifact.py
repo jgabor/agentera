@@ -36,7 +36,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# Import compaction utilities (co-located in hooks/).
+# Import hooks utilities (co-located in hooks/).
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 try:
     from compaction import (  # type: ignore[import-not-found]
@@ -48,6 +48,8 @@ except ImportError:
     _COMPACT_MAX_FULL = 10
     _COMPACT_MAX_ONELINE = 40
     _detect_overflow = None  # type: ignore[assignment]
+
+from common import parse_artifact_mapping  # type: ignore[import-not-found]
 
 # Default operational artifact directory relative to target project root.
 DEFAULT_OP_DIR = ".agentera"
@@ -121,11 +123,16 @@ TODO_SEVERITY_HEADINGS = [
 # ---------------------------------------------------------------------------
 
 
+_CANONICAL_ARTIFACTS = ROOT_ARTIFACTS | OP_ARTIFACTS
+
+
 def resolve_artifact_paths(project_root: str) -> dict[str, str]:
     """Build a map of canonical artifact name to absolute path.
 
     Checks .agentera/DOCS.md for an Artifact Mapping table with path
-    overrides. Falls back to the deterministic default layout.
+    overrides. Falls back to the deterministic default layout. Parsing
+    is delegated to hooks/common.py; this function filters the raw
+    mapping to known canonical artifacts before applying overrides.
     """
     paths: dict[str, str] = {}
     root = Path(project_root)
@@ -141,46 +148,13 @@ def resolve_artifact_paths(project_root: str) -> dict[str, str]:
     if docs_path.is_file():
         try:
             content = docs_path.read_text(encoding="utf-8")
-            overrides = _parse_artifact_mapping(content)
-            for name, rel_path in overrides.items():
-                paths[name] = str(root / rel_path)
+            for name, rel_path in parse_artifact_mapping(content).items():
+                if name in _CANONICAL_ARTIFACTS:
+                    paths[name] = str(root / rel_path)
         except (OSError, UnicodeDecodeError):
             pass  # Fall back to defaults
 
     return paths
-
-
-def _parse_artifact_mapping(docs_content: str) -> dict[str, str]:
-    """Parse the Artifact Mapping table from DOCS.md content.
-
-    Expects rows like: | VISION.md | VISION.md | visionera, realisera |
-    Returns mapping of artifact name to relative path.
-    """
-    overrides: dict[str, str] = {}
-    in_mapping = False
-
-    for line in docs_content.splitlines():
-        if "## Artifact Mapping" in line:
-            in_mapping = True
-            continue
-        if in_mapping and line.startswith("##"):
-            break
-        if not in_mapping or not line.startswith("|"):
-            continue
-        # Skip header separator rows
-        if re.match(r"^\|[-| :]+\|$", line):
-            continue
-
-        cells = [c.strip() for c in line.split("|")]
-        # Split creates empty strings at start/end from leading/trailing |
-        cells = [c for c in cells if c]
-        if len(cells) >= 2:
-            artifact_name = cells[0]
-            rel_path = cells[1]
-            if artifact_name in ROOT_ARTIFACTS or artifact_name in OP_ARTIFACTS:
-                overrides[artifact_name] = rel_path
-
-    return overrides
 
 
 def identify_artifact(file_path: str, project_root: str) -> str | None:
