@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 125 · 2026-04-23 · refactor(hooks): split _format_todo_oneline into per-step helpers
+
+**What**: Closed Audit 9 Complexity warning on `hooks/compaction.py:223-244`. Extracted three module-level regex constants (`_TODO_CHECKBOX_RE`, `_TODO_ISS_RE`, `_TODO_ISS_LABEL_RE`) and three single-responsibility helpers (`_is_todo_oneline_passthrough`, `_extract_iss_id`, `_strip_todo_metadata`). `_format_todo_oneline` is now a 7-line orchestrator with a clear passthrough vs build-from-header branch. Added 7 proportional tests covering each helper (present/missing, full/no-label) plus the three orchestrator paths (passthrough, build, missing-ISS).
+**Commit**: 8b92b91
+**Inspiration**: cycle 123 analyze() refactor precedent (6 computation helpers + 5 per-signal helpers + 7 tests); same extract-helpers-then-thin-orchestrator pattern applied at smaller scale.
+**Discovered**: (1) Audit 9's "68 non-blank lines" evidence line for this finding is miscounted — the function spans 22 lines (223-244) with ~10 body lines. The "chains 6+ string transformations" half of the claim is accurate and justified the refactor; the line count was not. (2) The worktree dispatched in Step 5 branched from an old commit (eed88b5, cycle 119) rather than current HEAD, so the sub-agent's reported "292 baseline" was stale. The generated diff applied cleanly to HEAD because the target function was unchanged between cycle 119 and HEAD. Surface filed as annoying on the next audit if the worktree-base bug recurs.
+**Verified**: `python3 -m pytest tests/ -x -q` → 306 passed (was 299, +7 new in `TestFormatTodoOneline`). `python3 scripts/validate_spec.py` → 0 errors, 16 warnings (baseline unchanged). Behavioral smoke: synthetic TODO.md with 55 resolved entries (alternating full + one-line, ISS-1..ISS-55) run through `python3 scripts/compact_artifact.py todo-resolved` emitted `compacted: /tmp/smoke_todo.md (27->5 full, 28->45 oneline, 5 dropped)` with every ISS-NN label and `~~...~~` wrapper preserved in both passthrough and collapsed lines.
+**Next**: Remaining Audit 9 warning-level work is now exhausted for Complexity dimension (both 78-line and 68-line findings resolved; only the depth-5 `_parse_todo_resolved` info-finding remains). Candidate directions: (a) `common.py` / `validate_artifact.py` path-resolution duplication (persistent info-finding since Audit 7), (b) CHANGELOG vs `.gitignore` discrepancy surfaced in cycle 124 Discovered field, (c) the sub-agent-worktree-base surprise above, (d) fresh inspektera audit since 5 cycles have shipped since Audit 9.
+**Context**: intent (close Audit 9 Complexity warning at `hooks/compaction.py:223-244` via extract-helpers pattern from cycle 123; preserve byte-identical output) · constraints (no SKILL.md edits, stdlib only, no regex semantics change, proportional test count) · unknowns (Audit 9 line-count claim — confirmed miscounted during refactor; worktree dispatch base — discovered mid-cycle, applied patch directly to HEAD) · scope (one function in `hooks/compaction.py`, one test class in `tests/test_compaction.py`, TODO/CHANGELOG/PROGRESS updates).
+
 ■ ## Cycle 124 · 2026-04-23 · chore(release): bump version to 1.16.0
 
 **Phase**: build
@@ -94,19 +104,9 @@
 **Next**: Task 7 (plan-level freshness checkpoint).
 **Context**: intent (bump version to 1.13.0 for feat-level commits in pre-dispatch commit gate plan) . constraints (only touch version_files from DOCS.md and CHANGELOG.md) . unknowns (none) . scope (registry.json, marketplace.json, 12 plugin.json, CHANGELOG.md, PLAN.md)
 
-■ ## Cycle 115 · 2026-04-13
-
-**Phase**: build
-**What**: Added tests for Check 19 (pre-dispatch-commit-gate) in `tests/test_validate_spec.py`. Three tests following the Check 17 proportionality pattern: 1 pass (both realisera and optimera with gate present) + 2 fails (one per subject missing gate). Synthetic SKILL.md content includes all four gate indicators (Section 22 reference, checkpoint commit message, `git status --porcelain`, scoped staging prohibition) for pass cases, and omits them for fail cases.
-**Commit**: 70fa400
-**Inspiration**: PLAN.md Task 5 (add tests for new linter check)
-**Discovered**: The two-subject proportionality override (1 pass + 2 fails) from Check 17 applies identically here since the check targets the same structural pattern: a set of skills that must contain specific indicators, with early return for non-applicable skills.
-**Verified**: 263 passed in 0.22s (260 existing + 3 new, 0 failures, 0 regressions)
-**Next**: Task 6 (version bump per DOCS.md convention).
-**Context**: intent (test Check 19 pre-dispatch-commit-gate linter enforcement) · constraints (proportionality: 1 pass + 1 fail per testable unit, follow existing patterns) · unknowns (none) · scope (tests/test_validate_spec.py, .agentera/PLAN.md, .agentera/PROGRESS.md)
-
 ## Archived Cycles
 
+- Cycle 115 (2026-04-13): Added tests for Check 19 (pre-dispatch-commit-gate) in `tests/test_validate_spec.py`. Three tests following the Check 17 proportionality pattern: 1 pass (both realisera...
 - Cycle 114 (2026-04-13): Added Check 19 (pre-dispatch-commit-gate) to `scripts/validate_spec.py`. For skills in `WORKTREE_DISPATCH_SKILLS` (realisera, optimera), the check verifies four gate procedure indicators: Section...
 - Cycle 113 (2026-04-13): Added pre-dispatch commit gate to optimera Step 4 (Implement) per SPEC.md Section 22. The gate checks working tree status, stages...
 - Cycle 112 (2026-04-13): Added pre-dispatch commit gate to realisera Step 5 per SPEC.md Section 22. The gate checks working tree status, stages only...
