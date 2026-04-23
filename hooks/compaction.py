@@ -220,27 +220,40 @@ def _format_experiment_oneline(entry: dict) -> str:
     return f"- {number_part}: {summary}"
 
 
-def _format_todo_oneline(entry: dict) -> str:
-    """Todo-resolved one-liner.
+_TODO_CHECKBOX_RE = re.compile(r"^-\s*\[x\]\s*")
+_TODO_ISS_RE = re.compile(r"ISS-\d+")
+_TODO_ISS_LABEL_RE = re.compile(r"ISS-\d+:?\s*")
 
-    Preserves the existing checkbox if already one-line; otherwise
-    builds `- [x] ~~[ISS-NN]: <=15-word summary~~`. The parse step for
-    todo-resolved treats every resolved bullet as an entry, so the
-    header already holds the item text.
+
+def _is_todo_oneline_passthrough(entry: dict) -> bool:
+    """True when the resolved entry is already a tilde-wrapped one-liner needing no rebuild."""
+    return entry["kind"] == "oneline" and "~~" in entry["header"]
+
+
+def _extract_iss_id(header: str) -> str:
+    """Return the ISS-NN identifier in the header, or 'ISS-?' if none is present."""
+    match = _TODO_ISS_RE.search(header)
+    return match.group(0) if match else "ISS-?"
+
+
+def _strip_todo_metadata(header: str) -> str:
+    """Strip checkbox prefix, tilde wrappers, and ISS-NN label to leave a free-form summary."""
+    stripped = _TODO_CHECKBOX_RE.sub("", header)
+    stripped = stripped.replace("~~", "").strip()
+    stripped = _TODO_ISS_LABEL_RE.sub("", stripped).strip()
+    return stripped
+
+
+def _format_todo_oneline(entry: dict) -> str:
+    """Todo-resolved one-liner: pass through if already one-line + tilde-wrapped, otherwise
+    build `- [x] ~~ISS-NN: <=15-word summary~~`. Parse treats each resolved bullet as an entry
+    whose header holds the item text.
     """
     header = entry["header"].strip()
-    # Already one-line (no body) and wrapped in tildes: pass through.
-    if entry["kind"] == "oneline" and "~~" in header:
+    if _is_todo_oneline_passthrough(entry):
         return header if header.startswith("- ") else f"- {header}"
-    # Extract ISS-NN if present.
-    iss_match = re.search(r"ISS-\d+", header)
-    iss = iss_match.group(0) if iss_match else "ISS-?"
-    # Build a short summary from header (strip checkbox/tildes/ISS).
-    summary = header
-    summary = re.sub(r"^-\s*\[x\]\s*", "", summary)
-    summary = summary.replace("~~", "").strip()
-    summary = re.sub(r"ISS-\d+:?\s*", "", summary).strip()
-    summary = _truncate_words(summary or "(resolved)", 15)
+    iss = _extract_iss_id(header)
+    summary = _truncate_words(_strip_todo_metadata(header) or "(resolved)", 15)
     return f"- [x] ~~{iss}: {summary}~~"
 
 
