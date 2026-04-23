@@ -225,6 +225,8 @@ Be conservative early; escalate if conservative approaches plateau.
 3. Commit with `chore(optimera): checkpoint before worktree dispatch`. Do not pass `--no-verify`.
 4. If pre-commit hooks reject the commit: fix the artifact validation error, re-stage, and retry. If the retry also fails, abort the dispatch and report the failure. Do not proceed with a worktree branching from stale state.
 
+**Stale-base awareness**: some harnesses create the worktree branch from `origin/main` (or the configured remote default) rather than from local `HEAD`. Before dispatch, run `git rev-list --count origin/main..HEAD`. If the count is greater than zero, the worktree will be based on a stale commit and the sub-agent's keep/discard evaluation will run against out-of-date code. Proceed with dispatch, but in Step 5 do NOT merge the worktree branch: fetch the sub-agent's diff with `git -C <worktree> diff` (including both staged and unstaged changes) and apply it to the main checkout via `git apply --index -`. Re-run the eval harness in the main checkout so keep/discard reflects HEAD, not the stale base. If the patch does not apply cleanly, the sub-agent's change touched a file that diverged between `origin/main` and HEAD; diagnose and resolve before deciding.
+
 Spawn an implementation sub-agent in a worktree (`isolation: "worktree"`) <!-- platform: sub-agent-dispatch --> with:
 
 - The hypothesis from step 3
