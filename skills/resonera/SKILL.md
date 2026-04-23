@@ -94,7 +94,7 @@ The sharp colleague, here to help you think, not consult.
 ### If a topic is provided
 
 1. Read relevant codebase context (enough to ask informed questions, not a research binge)
-2. If decision profile exists, read `~/.claude/profile/PROFILE.md` directly per contract profile consumption conventions. <!-- platform: profile-path --> Check for high-confidence entries in this domain and surface them: "Your profile says X here. Still true, or is this case different?"
+2. If decision profile exists, read `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) directly per contract profile consumption conventions. <!-- platform: profile-path --> Check for high-confidence entries in this domain and surface them: "Your profile says X here. Still true, or is this case different?"
 3. If `DECISIONS.md` exists, reference prior decisions rather than re-deliberating
 4. Reflect your understanding in 1-2 sentences
 5. Ask your first question

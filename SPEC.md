@@ -135,7 +135,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | SESSION.md | Timestamped session bookmarks with artifact change tracking |
 | archive/ | Completed plans, superseded visions and designs |
 
-**PROFILE.md** is global. The host runtime provides the path via the profile-path capability (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> Skills read it from the runtime-provided path directly.
+**PROFILE.md** is global. Profilera determines the platform-appropriate data directory: `$PROFILERA_PROFILE_DIR/PROFILE.md` (defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux, `~/Library/Application Support/agentera/PROFILE.md` on macOS, `%APPDATA%/agentera/PROFILE.md` on Windows). <!-- platform: profile-path --> Skills read it from the profilera-determined path directly.
 
 ### Format contracts
 
@@ -355,7 +355,7 @@ Standard threshold language (after migration to 0-100):
 
 ### Direct read pattern (for skills that need qualitative profile context)
 
-Read PROFILE.md from the runtime-provided profile path (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> Mentioned skills: resonera, visionera, dokumentera, visualisera.
+Read PROFILE.md from the profilera-determined profile path (`$PROFILERA_PROFILE_DIR/PROFILE.md`, defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux). <!-- platform: profile-path --> Mentioned skills: resonera, visionera, dokumentera, visualisera.
 
 Both patterns MUST include a fallback instruction:
 "If the script or PROFILE.md is missing, proceed without persona grounding."
@@ -946,7 +946,7 @@ Each capability specifies what the skill requires, not how the runtime provides 
 |------------|-------------------|------------------------|---------------------------|
 | Skill discovery | Required | A mechanism to find and load SKILL.md files so the runtime can present available skills to the user | `.claude-plugin/plugin.json` manifests and `settings.json` skillPaths |
 | Artifact resolution | Required | Ability to read and write files at paths specified by DOCS.md or the default layout (project root + `.agentera/`) | Direct filesystem access per artifact path resolution rules |
-| Profile path | Required | A global configuration directory where PROFILE.md lives, readable by all skills that consume the generated profile artifact | `~/.claude/profile/PROFILE.md` <!-- platform: profile-path --> |
+| Profile path | Required | A global configuration directory where PROFILE.md lives, readable by all skills that consume the generated profile artifact | `$PROFILERA_PROFILE_DIR/PROFILE.md` (profilera determines platform-appropriate data dir; override via `PROFILERA_PROFILE_DIR` env var) <!-- platform: profile-path --> |
 | Sub-agent dispatch | Capability-gated | Ability to spawn subordinate agents with workspace isolation for parallel implementation tasks | Git worktrees via the `isolation: "worktree"` primitive <!-- platform: sub-agent-dispatch --> |
 | Eval mechanism | Capability-gated | Ability to invoke a skill against a prompt and capture the output for behavioral verification | `claude -p --output-format json` pipe mode <!-- platform: eval-mechanism --> |
 | Hook lifecycle | Optional but recommended | Callbacks at session start, session stop, and after tool use for artifact validation and context preload | `hooks.json` with SessionStart, Stop, and PostToolUse event types |
@@ -982,14 +982,14 @@ Placed immediately after or adjacent to the platform-specific reference. The six
 Example:
 
 ```markdown
-Read `~/.claude/profile/PROFILE.md` directly per contract profile consumption conventions. <!-- platform: profile-path -->
+Read `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) directly per contract profile consumption conventions. <!-- platform: profile-path -->
 ```
 
 Runtimes that are not Claude Code replace the annotated reference with their own equivalent. Skills describe what they need; the runtime provides how.
 
 ### Profile.md path
 
-The global profile path is the most deeply coupled reference in the suite. Section 4 currently hardcodes `~/.claude/profile/PROFILE.md`. With the host adapter contract, this path becomes a capability: the runtime provides a global configuration directory, and skills read PROFILE.md from it. The default annotation in contract files references the Claude Code path with a `<!-- platform: profile-path -->` comment. Other runtimes substitute their own global config path.
+The global profile path is the most deeply coupled reference in the suite. Section 4 references `$PROFILERA_PROFILE_DIR/PROFILE.md` with platform-appropriate defaults. With the host adapter contract, this path is a capability: profilera determines the platform directory, overridable via `PROFILERA_PROFILE_DIR`. The annotation `<!-- platform: profile-path -->` marks substitution points for runtimes that override the default. Other runtimes substitute their own global config path.
 
 ### Linter check
 

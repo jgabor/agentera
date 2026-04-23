@@ -116,7 +116,6 @@ Continuing from the `/hej` output above (task 7 blocked on an API schema decisio
 
 Each skill writes markdown artifacts (a vision, a plan, a health report, a decision log). The next skill reads what the last one wrote and acts on it. You don't manage these files; they build up naturally as you work. profilera watches how you make decisions and tunes every skill to your preferences over time.
 
-
 ## Skills
 
 |     | Skill                                | What it does                                                                                                         |
@@ -163,7 +162,6 @@ Three project-facing files at root, nine operational files in `.agentera/`.
 | `DOCS.md`        | dokumentera   | all skills (path overrides)                         |
 | `SESSION.md`     | session stop hook | session start hook, hej                         |
 
-`PROFILE.md` is global. In Claude Code, the reference implementation stores it at `~/.claude/profile/PROFILE.md`. Other runtimes provide their own equivalent profile path through the host adapter contract.
+`PROFILE.md` is global. Profilera writes to `$PROFILERA_PROFILE_DIR/PROFILE.md` (defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux, platform-appropriate paths on macOS and Windows). Other runtimes override this via the `PROFILERA_PROFILE_DIR` environment variable or the host adapter contract.
 
 </details>
-

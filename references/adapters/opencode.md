@@ -73,15 +73,18 @@ Each agentera SKILL.md already contains YAML frontmatter with `name` and `descri
 
 **Adapter approach**: Place PROFILE.md at `~/.config/opencode/profile/PROFILE.md` (or `~/.config/opencode/PROFILE.md` for simplicity). Update the profile-path references:
 
-- Skills currently reference `~/.claude/profile/PROFILE.md` with `<!-- platform: profile-path -->` annotations
+- Skills reference `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) with `<!-- platform: profile-path -->` annotations
 - The OpenCode adapter substitutes `~/.config/opencode/profile/PROFILE.md`
 - Profilera writes to this path when generating the profile
 
 **Concrete substitution**: In contract.md files, the annotated line:
+
 ```
-Read PROFILE.md from the runtime-provided profile path (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path -->
+Read PROFILE.md from the profilera-determined profile path (`$PROFILERA_PROFILE_DIR/PROFILE.md`, defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux). <!-- platform: profile-path -->
 ```
+
 becomes in the OpenCode context:
+
 ```
 Read PROFILE.md from the runtime-provided profile path (Section 20). In OpenCode, this resolves to `~/.config/opencode/profile/PROFILE.md`.
 ```
@@ -101,12 +104,14 @@ Read PROFILE.md from the runtime-provided profile path (Section 20). In OpenCode
 **Adapter approach**: Map agentera's worktree isolation to one of two strategies:
 
 **Strategy A: Task tool dispatch (recommended for initial port)**
+
 - Define agentera's dispatched agents as OpenCode subagents
 - Each subagent gets a markdown file in `.opencode/agents/` with the appropriate prompt and permissions
 - The orchestrating skill (realisera, orkestrera) uses `@subagent-name` to invoke work
 - Limitation: runs in the same working tree, not isolated. Suitable for non-destructive work.
 
 **Strategy B: Manual git worktree (full isolation parity)**
+
 - Create a git worktree via `git worktree add` before dispatching
 - Dispatch a subagent into the worktree directory
 - Merge the branch and clean up the worktree after completion

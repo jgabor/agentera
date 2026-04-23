@@ -128,7 +128,7 @@ If code exists, read deeply before asking questions. You arrive informed.
 5. Read PROGRESS.md, TODO.md, DECISIONS.md for trajectory
 6. Read HEALTH.md for current quality
 7. Read DESIGN.md for existing visual identity
-8. **Decision profile**: read `~/.claude/profile/PROFILE.md` directly per contract profile consumption conventions. <!-- platform: profile-path --> If missing, proceed without persona grounding.
+8. **Decision profile**: read `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) directly per contract profile consumption conventions. <!-- platform: profile-path --> If missing, proceed without persona grounding.
 9. `git log --oneline -30` for recent story
 
 Synthesize: "The project does X, built with Y, moving toward Z. Strongest patterns: A. Gaps: B."

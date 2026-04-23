@@ -137,7 +137,7 @@ If code exists, read deeply before asking questions. Arriving informed distingui
 4. **Dependency manifests**: UI framework, component library, CSS approach (determines token format)
 5. **Parent DESIGN.md**: for monorepos, the inherited design system (nested overrides)
 6. **CLAUDE.md, AGENTS.md**: existing design instructions
-7. **Decision profile**: read `~/.claude/profile/PROFILE.md` directly per contract profile consumption conventions. <!-- platform: profile-path --> Aesthetic preferences inform the design conversation. If missing, proceed without persona grounding.
+7. **Decision profile**: read `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) directly per contract profile consumption conventions. <!-- platform: profile-path --> Aesthetic preferences inform the design conversation. If missing, proceed without persona grounding.
 8. `git log --oneline -20`: recent visual story
 
 Synthesize: "The project uses X with Y. Palette is Z. Typography is A. Strongest patterns: B. Inconsistencies: C." If VISION.md Identity exists, connect it to the visual system.

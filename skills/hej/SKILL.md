@@ -35,13 +35,13 @@ No artifacts of its own. Reads all suite artifacts for the briefing:
 | `EXPERIMENTS.md` | Experiment status |
 | `DOCS.md` | Documentation coverage and artifact paths |
 | `DESIGN.md` | Visual identity status |
-| `PROFILE.md` | Decision profile (global: `~/.claude/profile/PROFILE.md`) <!-- platform: profile-path --> |
+| `PROFILE.md` | Decision profile (global: `$PROFILERA_PROFILE_DIR/PROFILE.md`, default: `$XDG_DATA_HOME/agentera/PROFILE.md`) <!-- platform: profile-path --> |
 
 ### Artifact path resolution
 
 Before reading any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact reads in this skill.
 
-Note: PROFILE.md is global, not project-scoped. Its path is provided by the host runtime via the profile-path capability (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> Check the runtime-provided path directly rather than falling back to the project root.
+Note: PROFILE.md is global, not project-scoped. Its path is determined by profilera: `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`). <!-- platform: profile-path --> Check the profilera-determined path directly rather than falling back to the project root.
 
 ### Contract
 
@@ -210,6 +210,7 @@ Format: emit `⌂ hej · <status>` on its own line below the dashboard's closing
 Hej is the entry point to a twelve-skill suite. It reads artifacts from the other eleven workflow skills but produces no artifacts of its own and no downstream skill depends on it.
 
 **Reads from all eleven skills**:
+
 - **visionera** → VISION.md for project direction and north star
 - **resonera** → DECISIONS.md for pending and recent decisions
 - **planera** → PLAN.md for active task status and completion

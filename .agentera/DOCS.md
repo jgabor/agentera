@@ -35,7 +35,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | DOCS.md | .agentera/DOCS.md | dokumentera |
 | DESIGN.md | .agentera/DESIGN.md | visualisera |
 | SESSION.md | .agentera/SESSION.md | session stop hook |
-| PROFILE.md | ~/.claude/profile/PROFILE.md | profilera |
+| PROFILE.md | $PROFILERA_PROFILE_DIR/PROFILE.md (default: $XDG_DATA_HOME/agentera/PROFILE.md) | profilera |
 
 ## Index
 
