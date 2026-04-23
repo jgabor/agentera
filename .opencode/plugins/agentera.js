@@ -133,14 +133,6 @@ export function bootstrapCommands() {
   }
 }
 
-function resolveArtifacts(dir) {
-  const docsPath = path.join(dir, ".agentera", "DOCS.md");
-  if (fs.existsSync(docsPath)) {
-    return { docsPath, root: dir, agenteraDir: path.join(dir, ".agentera") };
-  }
-  return { root: dir, agenteraDir: path.join(dir, ".agentera") };
-}
-
 function readIf(filePath) {
   try {
     return fs.readFileSync(filePath, "utf8");
@@ -178,7 +170,7 @@ function findAgenteraRoot(startDir) {
   return startDir;
 }
 
-function validateArtifact(filePath) {
+function validateArtifact() {
   try {
     const scriptPath = path.join(
       process.env.AGENTERA_HOME || path.join(process.env.HOME, ".agents", "skills", "agentera"),
@@ -208,18 +200,17 @@ function setProfileDir() {
   }
 }
 
-export const Agentera = async ({ project, client, $, directory, worktree }) => {
+export const Agentera = async ({ client, directory, worktree }) => {
   const root = findAgenteraRoot(directory || worktree || process.cwd());
   const agenteraDir = path.join(root, ".agentera");
   setProfileDir();
 
   return {
-    "session.created": async ({ event }) => {
+    "session.created": async () => {
       bootstrapCommands();
 
       const progress = readIf(path.join(agenteraDir, "PROGRESS.md"));
       const todo = readIf(path.join(root, "TODO.md"));
-      const vision = readIf(path.join(root, "VISION.md"));
       const health = readIf(path.join(agenteraDir, "HEALTH.md"));
 
       const lines = [];
@@ -253,12 +244,12 @@ export const Agentera = async ({ project, client, $, directory, worktree }) => {
       if (input.tool === "write" || input.tool === "edit") {
         const filePath = output?.args?.filePath || output?.args?.path;
         if (filePath && isArtifactPath(filePath, root)) {
-          validateArtifact(filePath);
+          validateArtifact();
         }
       }
     },
 
-    "session.idle": async ({ event }) => {
+    "session.idle": async () => {
       const sessionPath = path.join(agenteraDir, "SESSION.md");
       const timestamp = new Date().toISOString().replace("T", " ").split(".")[0];
       const entry = `\n- ${timestamp} session idle`;
