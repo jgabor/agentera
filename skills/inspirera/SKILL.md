@@ -216,7 +216,7 @@ When the source contains optimization techniques (performance patterns, algorith
 
 ### Informed by /profilera
 
-If a decision profile exists at `~/.claude/profile/PROFILE.md`, run the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) for a confidence-weighted summary. <!-- platform: profile-path --> Use effective confidence to weight applicability judgments per contract profile consumption conventions.
+If a decision profile exists at `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`), run the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) for a confidence-weighted summary. <!-- platform: profile-path --> Use effective confidence to weight applicability judgments per contract profile consumption conventions.
 If the script or PROFILE.md is missing, proceed without persona grounding.
 
 ### Feeding into /visionera

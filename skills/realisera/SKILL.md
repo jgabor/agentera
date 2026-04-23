@@ -179,7 +179,7 @@ Outputs JSON with velocity, work type distribution, and suggestions. Use to info
    python3 scripts/effective_profile.py
    ```
 
-   Apply confidence thresholds per contract profile consumption conventions. Read full `~/.claude/profile/PROFILE.md` for details when needed. <!-- platform: profile-path --> If missing, proceed without persona grounding but flag it.
+   Apply confidence thresholds per contract profile consumption conventions. Read full profile from `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) for details when needed. <!-- platform: profile-path --> If missing, proceed without persona grounding but flag it.
 5. **Project discovery** (cycle 1 or when unfamiliar):
    - Map the directory structure
    - Read dependency manifests (package.json, go.mod, Cargo.toml, pyproject.toml, etc.)
@@ -420,7 +420,7 @@ In Step 3 (Seek inspiration), search for external approaches the way /inspirera 
 
 ### Realisera reads /profilera output
 
-Every cycle runs the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) to get a confidence-weighted summary table. Confidence thresholds per contract profile consumption conventions determine which entries are strong constraints vs suggestions. Full rules are read from `~/.claude/profile/PROFILE.md` when needed for detailed reasoning about trade-offs and priorities. <!-- platform: profile-path -->
+Every cycle runs the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) to get a confidence-weighted summary table. Confidence thresholds per contract profile consumption conventions determine which entries are strong constraints vs suggestions. Full rules are read from `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) when needed for detailed reasoning about trade-offs and priorities. <!-- platform: profile-path -->
 
 ### Realisera uses /resonera for complex decisions
 

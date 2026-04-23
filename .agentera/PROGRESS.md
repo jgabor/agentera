@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 120 · 2026-04-23 · fix(suite): align profile path references with Decision 27
+
+**What**: Replaced all 19 occurrences of legacy `~/.claude/profile/PROFILE.md` across SPEC.md (5), 9 consumer SKILL.md files (10), DOCS.md (1), DOCS template (1), README.md (1), and opencode adapter doc (2) with profilera's platform-aware pattern (`$PROFILERA_PROFILE_DIR/PROFILE.md` with platform-appropriate defaults). Regenerated all 12 contract.md files from corrected SPEC.md.
+**Commit**: pending
+**Inspiration**: none — mechanical text alignment
+**Discovered**: none
+**Verified**: `rg '~/.claude/profile/PROFILE.md' . --glob '!.agentera/archive/**'` returns only TODO.md ISS-40 description (pre-resolve). `python3 scripts/generate_contracts.py` regenerated all 12 contracts with 0 errors. `python3 scripts/validate_spec.py` reports 0 errors, 16 warnings (all pre-existing). `python3 -m pytest tests/ -x -q` reports 292 passed in 0.31s. N/A: docs-only — no code path changed, only instructional text consumed by agents at runtime.
+**Next**: Follow-up plan for building actual `<!-- platform: profile-path -->` runtime substitution mechanism (ISS-40 phase 2, not yet filed). Or next vision-aligned work.
+**Context**: intent (make agent-consumed instructions match profilera's actual write location per Decision 27) · constraints (retain all platform annotations, don't touch profilera/inspektera/planera/dokumentera SKILL.md, no new features) · unknowns (none — pure text replacement) · scope (SPEC.md, 9 SKILL.md files, DOCS.md, DOCS template, README.md, opencode adapter doc, 12 contract.md regenerations).
+
 ■ ## Cycle 119 · 2026-04-21 · feat(hooks,scripts): deterministic artifact compaction engine
 
 **What**: Operationalized SPEC Section 4 10/40/50 compaction. Added `hooks/compaction.py` (shared engine, ArtifactSpec registry for progress/decisions/health/experiments/todo-resolved), `scripts/compact_artifact.py` (CLI wrapper producer skills invoke from Step 8), extended `hooks/validate_artifact.py` with a non-blocking over-threshold nudge for missed invocations, and updated four producer SKILL.md files (realisera, resonera, inspektera, optimera) to replace prose thresholds with explicit script invocations. `hooks/session_stop.py` refactored to import shared primitives; SESSION.md behavior unchanged.

@@ -1,7 +1,7 @@
 <!-- contract: inspektera -->
-<!-- source: SPEC.md (sha256: 6d53de68f1af9febc2a828cc721ee208b742c6e47342dae556b18c461f98ce28) -->
+<!-- source: SPEC.md (sha256: 5413334feb54169533c2ac62b6f6b627141a6b7ee46a9d492e77e218dd336a5f) -->
 <!-- sections: 1, 2, 4, 5, 6, 16, 17, 18 -->
-<!-- generated: 2026-04-20T15:53:58Z -->
+<!-- generated: 2026-04-23T16:56:28Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -123,7 +123,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | SESSION.md | Timestamped session bookmarks with artifact change tracking |
 | archive/ | Completed plans, superseded visions and designs |
 
-**PROFILE.md** is global. The host runtime provides the path via the profile-path capability (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> Skills read it from the runtime-provided path directly.
+**PROFILE.md** is global. Profilera determines the platform-appropriate data directory: `$PROFILERA_PROFILE_DIR/PROFILE.md` (defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux, `~/Library/Application Support/agentera/PROFILE.md` on macOS, `%APPDATA%/agentera/PROFILE.md` on Windows). <!-- platform: profile-path --> Skills read it from the profilera-determined path directly.
 
 ### Format contracts
 
@@ -343,7 +343,7 @@ Standard threshold language (after migration to 0-100):
 
 ### Direct read pattern (for skills that need qualitative profile context)
 
-Read PROFILE.md from the runtime-provided profile path (Section 20). In Claude Code, this resolves to `~/.claude/profile/PROFILE.md`. <!-- platform: profile-path --> Mentioned skills: resonera, visionera, dokumentera, visualisera.
+Read PROFILE.md from the profilera-determined profile path (`$PROFILERA_PROFILE_DIR/PROFILE.md`, defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux). <!-- platform: profile-path --> Mentioned skills: resonera, visionera, dokumentera, visualisera.
 
 Both patterns MUST include a fallback instruction:
 "If the script or PROFILE.md is missing, proceed without persona grounding."

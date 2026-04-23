@@ -35,7 +35,7 @@ If an artifact has no entry, skills fall back to the project root.
 | EXPERIMENTS.md | EXPERIMENTS.md | optimera |
 | DOCS.md | DOCS.md | dokumentera |
 | DESIGN.md | DESIGN.md | visualisera |
-| PROFILE.md | ~/.claude/profile/PROFILE.md | profilera |
+| PROFILE.md | $PROFILERA_PROFILE_DIR/PROFILE.md (default: $XDG_DATA_HOME/agentera/PROFILE.md) | profilera |
 
 ---
 

@@ -340,7 +340,7 @@ VISION.md provides direction context used during bootstrap when chaining inspire
 
 ### Orkestrera reads /profilera output
 
-The decision profile provides persona context for calibrating dispatch decisions. Read `~/.claude/profile/PROFILE.md` directly per contract profile consumption conventions. <!-- platform: profile-path --> If missing, proceed without persona grounding.
+The decision profile provides persona context for calibrating dispatch decisions. Read `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) directly per contract profile consumption conventions. <!-- platform: profile-path --> If missing, proceed without persona grounding.
 
 ---
 
