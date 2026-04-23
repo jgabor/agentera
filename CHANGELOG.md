@@ -2,13 +2,15 @@
 
 ## [Unreleased]
 
+## [1.15.0] · 2026-04-23
+
 ### Added
+
+- Deterministic artifact compaction engine (`hooks/compaction.py`, `scripts/compact_artifact.py`) with uniform 10/40/50 rule across PROGRESS, DECISIONS, HEALTH, EXPERIMENTS, and TODO Resolved
 
 ### Fixed
 
 - Profile path references across all SKILL.md files, SPEC.md, DOCS.md, README.md, and contract files now match profilera's actual XDG write location per Decision 27
-
-- Compaction script (`scripts/compact_artifact.py`) and shared engine (`hooks/compaction.py`) applying the uniform 10/40/50 rule across PROGRESS, DECISIONS, HEALTH, EXPERIMENTS, and TODO Resolved; `hooks/validate_artifact.py` now emits a non-blocking nudge when an edited artifact is over threshold
 
 ## [1.14.0] · 2026-04-20
 
