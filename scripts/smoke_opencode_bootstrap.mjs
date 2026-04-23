@@ -95,7 +95,14 @@ try {
   fs.writeFileSync(markerFile, "0.0.0");
   // Overwrite visionera.md with managed content to confirm it gets refreshed
   const visioneraPath = path.join(commandsDir, "visionera.md");
-  const staleContent = COMMAND_TEMPLATES["visionera"].replace(AGENTERA_VERSION, "0.0.0-stale");
+  const staleContent = COMMAND_TEMPLATES["visionera"].replace(
+    "Create or refine the project vision",
+    "Stale managed command body"
+  );
+  assert(
+    staleContent !== COMMAND_TEMPLATES["visionera"],
+    "upgrade test setup should create stale managed content"
+  );
   fs.writeFileSync(visioneraPath, staleContent);
 
   bootstrapCommands();
@@ -105,8 +112,8 @@ try {
     ".agentera-version should be updated to AGENTERA_VERSION after upgrade"
   );
   assert(
-    hasManagedMarker(visioneraPath),
-    "visionera.md should be refreshed and contain managed marker after upgrade"
+    fs.readFileSync(visioneraPath, "utf8") === COMMAND_TEMPLATES["visionera"],
+    "visionera.md should be refreshed to current managed content after upgrade"
   );
 
   // hej.md (user-owned) should still be user content

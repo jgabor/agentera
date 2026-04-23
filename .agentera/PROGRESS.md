@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 128 · 2026-04-23 · fix(realisera): address review findings
+
+**What**: Addressed the three review findings from the unpushed-change review. `analyze_progress.py` now chooses the recent window based on PROGRESS.md ordering, so current newest-first files report cycles 127-123 instead of 122-118. The OpenCode plugin bootstrap marker now matches the 1.16.0 release metadata. The bootstrap smoke test now writes genuinely stale managed `visionera.md` content and asserts byte-for-byte refresh to the current template.
+**Commit**: pending (profile says not to commit unless explicitly asked)
+**Inspiration**: code review findings from this session
+**Discovered**: The real PROGRESS analytics output confirmed the stale recent-window bug before the fix and reports cycles 127-123 after the fix. The existing Audit 9 OpenCode version-discipline note should be reassessed by a fresh inspektera audit.
+**Verified**: `pytest -q tests/test_analyze_progress.py` -> 13 passed. `python3 skills/realisera/scripts/analyze_progress.py --progress .agentera/PROGRESS.md --pretty` now reports recent cycles 127-123. `node scripts/smoke_opencode_bootstrap.mjs` -> PASS. `node --check .opencode/plugins/agentera.js` -> no output. `pytest -q` -> 308 passed. `python3 scripts/validate_spec.py` -> 0 errors, 16 warnings (baseline).
+**Next**: Review the remaining Audit 9 info findings with a fresh inspektera pass, especially the stale OpenCode version-discipline note and the `_parse_todo_resolved` nesting nit.
+**Context**: intent (fix all review findings without widening scope) · constraints (no remote push, no commit without explicit ask, preserve legacy PROGRESS ordering, keep OpenCode collision safety) · unknowns (whether inspektera will consider version discipline fully resolved) · scope (analyze_progress.py, parser tests, OpenCode plugin, bootstrap smoke, CHANGELOG/PROGRESS).
+
 ■ ## Cycle 127 · 2026-04-23 · refactor(hooks): dedup DOCS.md parsing and close gitignore discrepancy
 
 **What**: Closed two Audit 9 info-level findings in one cycle. (a) `hooks/validate_artifact.py` now imports `parse_artifact_mapping` from `hooks/common.py` instead of carrying a 30-line duplicate. `resolve_artifact_paths` filters the raw mapping to `ROOT_ARTIFACTS | OP_ARTIFACTS` (renamed `_CANONICAL_ARTIFACTS`) so the PROFILE.md row and any future non-canonical entries stay ignored exactly as before. Net −38/+16 lines in the one file. (b) `.gitignore` gained the four credential patterns (dotenv, `*.key`, `*.pem`, `credentials*`) that cycle 118's CHANGELOG had claimed but never actually committed.
@@ -71,39 +81,11 @@
 **Next**: Plan archived. Candidate directions: (a) clean up 7 pre-existing unused-binding lints in `agentera.js` if touching it again, (b) add `"type": "module"` to `.opencode/package.json` to silence Node ESM warning, (c) return to vision-aligned work — the ISS-40 phase 2 runtime substitution mechanism flagged in cycle 120, or a fresh inspektera audit (last was Audit 8 in cycle 118).
 **Context**: intent (make the 12 slash commands travel with the plugin when installed outside this repo) · constraints (no SKILL.md edits, preserve existing hooks, don't clobber user commands, stdlib only) · unknowns (opencode config dir env var — resolved to `OPENCODE_CONFIG_DIR` fallback `~/.config/opencode`) · scope (1 plugin file, 12 sidecar frontmatter bumps, 1 new smoke script).
 
-■ ## Cycle 120 · 2026-04-23 · fix(suite): align profile path references with Decision 27
-
-**What**: Replaced all 19 occurrences of legacy `~/.claude/profile/PROFILE.md` across SPEC.md (5), 9 consumer SKILL.md files (10), DOCS.md (1), DOCS template (1), README.md (1), and opencode adapter doc (2) with profilera's platform-aware pattern (`$PROFILERA_PROFILE_DIR/PROFILE.md` with platform-appropriate defaults). Regenerated all 12 contract.md files from corrected SPEC.md.
-**Commit**: pending
-**Inspiration**: none — mechanical text alignment
-**Discovered**: none
-**Verified**: `rg '~/.claude/profile/PROFILE.md' . --glob '!.agentera/archive/**'` returns only TODO.md ISS-40 description (pre-resolve). `python3 scripts/generate_contracts.py` regenerated all 12 contracts with 0 errors. `python3 scripts/validate_spec.py` reports 0 errors, 16 warnings (all pre-existing). `python3 -m pytest tests/ -x -q` reports 292 passed in 0.31s. N/A: docs-only — no code path changed, only instructional text consumed by agents at runtime.
-**Next**: Follow-up plan for building actual `<!-- platform: profile-path -->` runtime substitution mechanism (ISS-40 phase 2, not yet filed). Or next vision-aligned work.
-**Context**: intent (make agent-consumed instructions match profilera's actual write location per Decision 27) · constraints (retain all platform annotations, don't touch profilera/inspektera/planera/dokumentera SKILL.md, no new features) · unknowns (none — pure text replacement) · scope (SPEC.md, 9 SKILL.md files, DOCS.md, DOCS template, README.md, opencode adapter doc, 12 contract.md regenerations).
-
-■ ## Cycle 119 · 2026-04-21 · feat(hooks,scripts): deterministic artifact compaction engine
-
-**What**: Operationalized SPEC Section 4 10/40/50 compaction. Added `hooks/compaction.py` (shared engine, ArtifactSpec registry for progress/decisions/health/experiments/todo-resolved), `scripts/compact_artifact.py` (CLI wrapper producer skills invoke from Step 8), extended `hooks/validate_artifact.py` with a non-blocking over-threshold nudge for missed invocations, and updated four producer SKILL.md files (realisera, resonera, inspektera, optimera) to replace prose thresholds with explicit script invocations. `hooks/session_stop.py` refactored to import shared primitives; SESSION.md behavior unchanged.
-**Commit**: 5ff32c0
-**Inspiration**: existing `hooks/session_stop.py:179-262` reference implementation; diagnosis from leda PROGRESS.md audit (81 full-detail cycles vs 10 cap, 89 one-liners vs 40 cap, last manual compaction was commit aa61630 on 2026-04-17 not an automated run).
-**Discovered**: (1) Root cause was not a regression — agent-driven compaction has never reliably run. The April 17 sweep in leda was a one-off manual condensation, and realisera/resonera Step 8 instructions were too terse and passive for agents under cycle load. (2) Inspektera/HEALTH.md looks healthy only because audits cross threshold slowly. (3) Pre-existing bug: `ARTIFACT_HEADINGS["PROGRESS.md"]` in validate_artifact.py uses `^## Cycle \d+` which does not match the `■ ## Cycle` glyph-prefixed format SPEC mandates. Logged to TODO, not fixed in this cycle.
-**Verified**: Synthetic PROGRESS.md with 15 `■ ## Cycle N · date · title` entries written to a tempfile; `python3 scripts/compact_artifact.py progress <path>` emitted `compacted: ... (15->10 full, 0->5 oneline, 0 dropped)`; post-run `grep -c "^■ ## Cycle"` reports 10 and `grep -c "^- Cycle"` reports 5 under a `## Archived Cycles` heading. Hook smoke: `{"tool_name":"Edit","cwd":"/tmp/smoke","tool_input":{"file_path":"..."}}` piped to `hooks/validate_artifact.py` emits `PROGRESS.md: 15 full-detail entries exceeds 10, run scripts/compact_artifact.py progress <path>`. Full suite: 289 passed (was 263, +26). Linter: 0 errors, 16 warnings (all pre-existing).
-**Next**: User to green-light the one-time backfill pass against `~/git/leda` (PROGRESS.md 180→10+40, DECISIONS.md 42→10+32). Hold per cycle instruction until then. After backfill, the next vision-aligned candidates are the analyze_progress.py refactor TODO or a fresh inspektera audit (last was Audit 8 in cycle 118).
-**Context**: intent (stop agent-driven compaction from silently skipping; move enforcement to a deterministic script plus hook nudge) · constraints (no leda backfill this cycle, no SESSION.md behavior change, nudge stays non-blocking, stdlib-only, no plugin version bump) · unknowns (whether SESSION.md refactor would break existing test_session_stop.py — resolved: imports drop-in, all 20 tests still green) · scope (2 new files in hooks/ and scripts/, 1 new test file, 4 SKILL.md edits, 3 hook/test refactors, 1 CHANGELOG line).
-
-■ ## Cycle 118 · 2026-04-20
-
-**Phase**: build
-**What**: Version bump 1.13.0 to 1.14.0 per DOCS.md semver_policy (feat = minor). Updated all 14 version_files. Promoted CHANGELOG.md [Unreleased] to [1.14.0]. Includes inspektera Audit 8 (8 dimensions, 1 critical/3 warning/4 info), dokumentera Audit 8 (6 findings fixed), linter refactors (check_pre_dispatch_commit_gate extracted helpers, check_severity_levels already resolved), frontmatter literal-newline fixes in 3 SKILL.md files, and .gitignore credential patterns.
-**Commit**: e6f991b
-**Inspiration**: inspektera Audit 8 version health finding (6 unbumped commits since 1.13.0, 3 feat + 3 fix)
-**Discovered**: Pre-commit hooks auto-staged user's AGENTS.md creation and CLAUDE.md symlink replacement into the version bump commit. User's deleted .agentera/optimera/hej-token/ directory remains unstaged. HEALTH.md grades: Architecture A, Patterns A, Coupling A, Complexity C, Tests A, Version C (now resolved), Security A, Artifact freshness B.
-**Verified**: N/A: chore-build-config
-**Next**: User's remaining changes (hej-token deletion) to commit separately. Resume vision-driven work.
-**Context**: intent (bump version to 1.14.0 per semver_policy for 3 feat commits since 1.13.0) · constraints (only touch version_files from DOCS.md and CHANGELOG.md) · unknowns (none) · scope (14 version files, CHANGELOG.md, HEALTH.md, DOCS.md, validate_spec.py, 3 SKILL.md, .gitignore)
-
 ## Archived Cycles
 
+- Cycle 120 (2026-04-23): Replaced legacy profile-path references with `$PROFILERA_PROFILE_DIR/PROFILE.md` across SPEC, consumer skills, docs, README, adapter docs, and contracts.
+- Cycle 119 (2026-04-21): Operationalized SPEC Section 4 compaction with shared engine, CLI wrapper, hook nudge, tests, and producer skill instructions.
+- Cycle 118 (2026-04-20): Version bump 1.13.0 to 1.14.0 per DOCS.md semver_policy (feat = minor). Updated all 14 version_files. Promoted CHANGELOG.md [Unreleased] to [1.14.0]....
 - Cycle 117 (2026-04-13): Plan-level freshness checkpoint for Pre-dispatch Commit Gate plan (7 tasks, all complete). The plan delivered SPEC.md Section 22 (pre-dispatch commit...
 - Cycle 116 (2026-04-13): Version bump 1.12.0 to 1.13.0 per DOCS.md semver_policy (feat = minor). Updated all 12 plugin.json files, registry.json (12 skill entries),...
 - Cycle 115 (2026-04-13): Added tests for Check 19 (pre-dispatch-commit-gate) in `tests/test_validate_spec.py`. Three tests following the Check 17 proportionality pattern: 1 pass (both realisera...
