@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 122 · 2026-04-23 · chore(opencode): declare ESM type, drop unused bindings in plugin
+
+**What**: Follow-up cleanup from cycle 121. Added `"type": "module"` to `.opencode/package.json` and removed seven unused bindings from `.opencode/plugins/agentera.js`: the `resolveArtifacts` helper (never called), the `filePath` parameter on `validateArtifact` (also updated its one caller), and the `project`/`$`/`vision`/two `event` destructures in the Agentera handler. All three hooks (session.created, tool.execute.after, session.idle) preserved behaviorally.
+**Commit**: 640aac6
+**Inspiration**: none — direct TS diagnostic follow-up flagged in cycle 121's Next field.
+**Discovered**: `.opencode/package.json` was present on disk but not yet tracked by git (the `.opencode` directory is gitignored; prior contributors used `-f` to track specific files). Re-tracking the manifest alongside the type-module addition is the right move since the plugin now depends on ESM semantics.
+**Verified**: `node scripts/smoke_opencode_bootstrap.mjs` → `PASS: all smoke checks passed` with stderr now clean (previously emitted `MODULE_TYPELESS_PACKAGE_JSON` reparse warning). `node --check .opencode/plugins/agentera.js` reports no syntax errors. Tests: 292 passed. Linter: 0 errors, 16 warnings (baseline). Ran smoke twice to confirm no-op re-run path still triggers early return.
+**Next**: (a) ISS-40 phase 2 — build the runtime substitution mechanism behind `<!-- platform: profile-path -->` markers flagged since cycle 120, (b) fresh inspektera audit since last was Audit 8 in cycle 118 and 4 cycles have shipped since, (c) analyze_progress.py refactor TODO from cycle 119.
+**Context**: intent (resolve Node ESM reparse noise and zero out the 7 TS unused-binding diagnostics from cycle 121) · constraints (preserve all 3 hook behaviors exactly, no public signature changes) · unknowns (none) · scope (one JSON and one JS file, 11 additions / 14 deletions).
+
 ■ ## Cycle 121 · 2026-04-23 · feat(opencode): bootstrap slash commands from plugin into user config
 
 **What**: Executed light plan "Plugin-Bootstrap opencode Commands". Added `AGENTERA_VERSION`, `COMMAND_TEMPLATES` (12 inlined command bodies), `resolveOpencodeCommandsDir`, `hasManagedMarker`, and `bootstrapCommands` to `.opencode/plugins/agentera.js`. `session.created` now runs bootstrap synchronously before context preload. Collision safety via `agentera_managed: true` frontmatter marker; version-gated refresh via `.agentera-version` marker file. All 12 sidecar files in `.opencode/commands/` were updated to carry the same managed marker so dev and installed-plugin surfaces produce identical content. Added `scripts/smoke_opencode_bootstrap.mjs` (Node ESM) covering basic bootstrap, no-op re-run, user-file collision preserved, and upgrade-refresh path.
@@ -96,19 +106,9 @@
 **Next**: Task 4 (linter check for gate presence in worktree-dispatching skills), then Task 5 (tests for the linter check).
 **Context**: intent (add Section 22 pre-dispatch commit gate to optimera Step 4) · constraints (no em-dashes, no hard wraps, match realisera gate pattern) · unknowns (none) · scope (skills/optimera/SKILL.md, skills/optimera/references/contract.md, .agentera/PLAN.md)
 
-■ ## Cycle 112 · 2026-04-13
-
-**Phase**: build
-**What**: Added pre-dispatch commit gate to realisera Step 5 per SPEC.md Section 22. The gate checks working tree status, stages only artifact paths, commits with `chore(realisera): checkpoint before worktree dispatch`, and blocks dispatch if hooks reject. Updated spec_sections frontmatter to include section 22 and regenerated the contract.
-**Commit**: 8bbce05
-**Inspiration**: PLAN.md Task 2 (add gate to realisera before worktree dispatch)
-**Discovered**: The gate integrates cleanly as a preamble to the existing dispatch instruction. Four numbered steps before the "Spawn" paragraph, matching the sequential procedure from Section 22.
-**Verified**: N/A: docs-only
-**Next**: Task 3 (add gate to optimera dispatch step), then Task 4 (linter check for gate presence).
-**Context**: intent (add Section 22 pre-dispatch commit gate to realisera Step 5) · constraints (no em-dashes, no hard wraps, match existing step style) · unknowns (none) · scope (skills/realisera/SKILL.md, skills/realisera/references/contract.md, .agentera/PLAN.md)
-
 ## Archived Cycles
 
+- Cycle 112 (2026-04-13): Added pre-dispatch commit gate to realisera Step 5 per SPEC.md Section 22. The gate checks working tree status, stages only...
 - Cycle 111 (2026-04-13): Added Section 22 (Pre-dispatch Commit Gate) to SPEC.md. Defines the checkpoint commit convention for skills that dispatch subagents to git...
 - Cycle 110 (2026-04-12): Plan rollup: Optimera Multi-Objective Support (ISS-39, Decision 30). Migrated `.optimera/` under `.agentera/optimera/` with named subdirs per objective (realisera-token, hej-token). Updated...
 - Cycle 109 (2026-04-12): Removed realisera "Getting started" section (onboarding docs, not needed during cycle execution). Tier 1: 12,310 -> 12,055 tokens (-255). Cumulative...
