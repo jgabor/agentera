@@ -1,5 +1,130 @@
 # Health
 
+## Audit 9 · 2026-04-23
+
+**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
+**Findings**: 0 critical, 3 warnings, 6 info (0 filtered by confidence)
+**Overall trajectory**: ⮉ improving vs Audit 8. Complexity C→B (Audit 8's 78-line gate collapsed to 30; analyze() 114→26 lines per cycle 123). Version C→B (6 unbumped down to 1 after 1.15.0 bump). Freshness B→A (HEALTH.md was the only stale artifact, resolved here). Architecture, Patterns, Coupling, Tests, Security stable at A. Dependency assessed for first time at A (Node surface entered via `.opencode/`).
+**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Complexity [B] | Tests [A] | Version [B] | Freshness [A] | Security [A] | Deps [A]
+
+### Architecture alignment: A
+
+12/12 skills at 1.15.0 across registry.json, marketplace.json, and per-skill plugin.json. The `.opencode/` plugin directory is the first concrete exercise of VISION.md's "spec as gravity well" thesis and respects standalone+mesh: skills run with or without it. Linter: 0 errors, 16 advisory warnings.
+
+#### ⇢ opencode plugin version bump discipline undocumented, info (confidence: 60)
+
+- **Location**: `.opencode/plugins/agentera.js:9`, `references/adapters/opencode.md`
+- **Evidence**: `AGENTERA_VERSION = "1.15.0"` hardcoded in plugin; adapter doc does not state when this constant must bump relative to `registry.json`.
+- **Impact**: Hook behavior can change without a version bump, producing silent version skew between implementation and declared version.
+- **Suggested action**: Add a line to `references/adapters/opencode.md` Section 20 stating the plugin version tracks registry.json on any hook-behavior change.
+
+### Pattern consistency: A
+
+All 12 skills pass structural checks. Audit 8's literal `\n` in inspektera/visionera/visualisera frontmatters is fixed (confidence 100). Producer skills (realisera, resonera, inspektera, optimera) all reference `scripts/compact_artifact.py` with correct subcommands per cycle 119. Profile-path annotations consistent across all consumer skills per cycle 120. 16 advisory linter warnings remain (sentence-length, banned-vocabulary in artifact example blocks) and are accepted as readability tradeoffs.
+
+### Coupling health: A
+
+Clean DAG. `hooks/compaction.py` introduced in cycle 119 is stdlib-only, imported by `hooks/session_stop.py` in-process, invoked as subprocess by `scripts/compact_artifact.py`. No circular dependencies. Producer/consumer boundary intact across all 12 skills.
+
+#### ⇢ common.py and validate_artifact.py duplicate artifact path resolution, info (confidence: 95)
+
+- **Location**: `hooks/common.py:68-80` vs `hooks/validate_artifact.py:124-183`
+- **Evidence**: Both implement DOCS.md Artifact Mapping parsing independently. 91 lines in common.py, 60 in validate_artifact.py. Unchanged since Audit 7.
+- **Impact**: Semantic drift risk if one is updated without the other.
+- **Suggested action**: Refactor validate_artifact.py to import from common.py (both in same hooks/ boundary).
+
+### Complexity hotspots: B
+
+Resolved from Audit 8: `check_pre_dispatch_commit_gate()` collapsed from 78 lines to 30 (helpers extracted); `analyze_progress.py::analyze()` went from 114 lines to 26 via 6 per-signal helpers per cycle 123. `scripts/validate_spec.py` shrank from 1367 to 1346 lines. New: `hooks/compaction.py` at 722 lines is well-factored (8 formatter functions, 4 parse helpers, single-responsibility).
+
+#### ⇉ _format_todo_oneline() chains 6+ string transformations, warning (confidence: 75)
+
+- **Location**: `hooks/compaction.py:223-244`
+- **Evidence**: 68 non-blank lines for a single formatter applying sequential regex sub, replace, strip, truncate operations on the same variable with interdependent logic.
+- **Impact**: Hard to verify correctness of the transformation sequence; fragile to regex edge cases.
+- **Suggested action**: Extract per-step helpers (`_strip_checkbox`, `_strip_tildes`, `_extract_summary`) or consolidate into one regex.
+
+#### ⇢ _parse_todo_resolved() reaches nesting depth 5, info (confidence: 70)
+
+- **Location**: `hooks/compaction.py:420-464`
+- **Evidence**: Outer `while` → inner `while` → if/elif/else chain reaching depth 5. Detail-line detection spans 8 conditional paths.
+- **Impact**: Harder to test individual branches (blank-then-indented cases).
+- **Suggested action**: Extract detail-line collection into a helper.
+
+### Test health: A
+
+299 tests passing (+36 vs Audit 8's 263). Cycle 119 added 27 compaction tests; cycle 123 added 7 parser/suggestion/glyph-validator tests. Test:source LOC ≈ 1:9.3. Compaction tests proportional to source (state-machine boundary cases warrant the count).
+
+#### ⇢ hooks/common.py has no dedicated test file, info (confidence: 80)
+
+- **Location**: `hooks/common.py`
+- **Evidence**: 4 exported functions (parse_artifact_mapping, resolve_artifact_path, load_artifact_overrides) tested indirectly through session_start/session_stop. Same gap as Audit 6/7/8.
+- **Impact**: Failures in artifact path resolution would be harder to isolate.
+- **Suggested action**: Add `tests/test_common.py` with targeted cases for each function.
+
+#### ⇢ validate_skill_definition has no direct test, info (confidence: 75)
+
+- **Location**: `hooks/validate_artifact.py:315`
+- **Evidence**: Function dispatches to validate_spec.py and generate_contracts.py as subprocesses. Only the classify_file routing is tested, not the dispatch itself.
+- **Impact**: Low. Orchestrator of already-tested scripts.
+- **Suggested action**: Add an integration test exercising the subprocess routing.
+
+### Version health: B
+
+1.15.0 bumped today (cc91b00, 2026-04-23T19:17). Post-bump: 1 feat (307aa33 opencode bootstrap), 1 refactor (1bf8c18), 2 chore, 3 docs. Feat qualifies for minor bump per DOCS.md policy; refactor is not in the policy mapping and is treated as no-bump.
+
+#### ⇉ 1 unbumped feat commit since 1.15.0, warning (confidence: 80)
+
+- **Location**: commit `307aa33 feat(opencode): bootstrap slash commands from plugin into user config`
+- **Evidence**: semver_policy says feat = minor. CHANGELOG.md [Unreleased] already populated with Added/Changed/Fixed entries covering cycles 121-123.
+- **Impact**: Version files lag one feat behind actual changes. Age: hours.
+- **Suggested action**: Bump to 1.16.0 when the next batch of work lands, or immediately if a release is desired today.
+
+### Artifact freshness: A
+
+Fallback heuristic applies (no active PLAN.md). Pre-audit, HEALTH.md (2026-04-20) was the only artifact older than the latest PROGRESS.md cycle (2026-04-23). This audit resolves it. DECISIONS.md last-modified 2026-04-19 is not stale because resonera has not been dispatched since. TODO.md, CHANGELOG.md, PROGRESS.md, DOCS.md all current.
+
+### Security hygiene: A
+
+No hardcoded secrets, no eval/exec/os.system, no `shell=True`, no dynamic command construction in subprocess or execSync calls. `.opencode/plugins/agentera.js` uses `execSync(\`python3 "${scriptPath}"\`)` with a non-user-derived path — no injection surface. Cycle 118 PROGRESS.md claims credential patterns were added to `.gitignore` but the on-disk file does not contain them.
+
+#### ⇢ .gitignore missing credential patterns, info (confidence: 95)
+
+- **Location**: `.gitignore`
+- **Evidence**: Contents: `.claude`, `.opencode`, `docs/`, `__pycache__/`, `*.pyc`, `.leda`. Missing: `.env`, `*.key`, `*.pem`, `credentials*`. Audit 8 treated cycle 118 as resolving this; cycle 118's claim was not reflected on disk.
+- **Impact**: Defensive gap; an accidentally created `.env` would not be blocked from staging.
+- **Suggested action**: Add `.env`, `*.key`, `*.pem`, `credentials*` to `.gitignore`.
+
+> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), npm audit (Node), or similar.
+
+### Dependency health: A
+
+Python: stdlib only across all scripts and hooks. Node: `.opencode/package.json` (new in cycle 122) pins `@opencode-ai/plugin` at exact `1.4.6`. The `.opencode/` directory is gitignored with specific files tracked via `git add -f`.
+
+#### ⇢ No lockfile committed for the opencode plugin dependency, info (confidence: 55)
+
+- **Location**: `.opencode/`
+- **Evidence**: `.opencode/package.json` tracked; no `package-lock.json`, `bun.lockb`, or `yarn.lock` present or tracked. Exact version pin in package.json mitigates resolution drift.
+- **Impact**: Low. Transitive dep resolution can still vary across installs.
+- **Suggested action**: Note in `references/adapters/opencode.md` whether the absence of a lockfile is intentional (plugin dev surface vs. runtime contract), or add one.
+
+### Trends vs Audit 8
+
+- **Improved**: Complexity C→B (two hotspots resolved: check_pre_dispatch_commit_gate 78→30 lines via helper extraction, analyze_progress.py::analyze() 114→26 lines). Version C→B (6 unbumped→1 unbumped after 1.15.0 bump). Freshness B→A (HEALTH.md refreshed by this audit).
+- **Degraded**: none.
+- **Stable**: Architecture A, Patterns A (literal `\n` resolved — internal improvement within A), Coupling A, Tests A (299 vs 263, same two gaps persist as info), Security A.
+- **New dimension**: Dependency health assessed for the first time at A (Node surface entered via `.opencode/`).
+- **New findings**: `_format_todo_oneline` 68-line formatter (warning), `_parse_todo_resolved` nesting depth 5 (info), opencode plugin version discipline (info), no opencode lockfile (info).
+- **Resolved**: check_pre_dispatch_commit_gate 78-line warning (refactored), analyze_progress.py 114-line function (cycle 123), literal `\n` in 3 frontmatters (resolved in cycle 120 sweep).
+
+### Patterns Observed
+
+- **Adapter pattern emerging**: `.opencode/plugins/agentera.js` (cycle 121-122) is the first concrete implementation of the "spec as portable protocol" thesis. The plugin bootstraps slash commands into OpenCode but each skill still runs standalone — the standalone+mesh principle survived its first non-Claude-Code exercise.
+- **Shared primitive for compaction**: cycle 119 extracted what was previously inline prose in producer skills into `hooks/compaction.py` + `scripts/compact_artifact.py`. All four producers (realisera, resonera, inspektera, optimera) converged on the same invocation pattern. This is the pattern of "agent-driven convention silently fails; make it a script and the linter enforces it."
+- **Format-drift parser bugs are a recurring class**: cycle 123 caught two sibling regexes (analyze_progress.py header, validate_artifact.py ARTIFACT_HEADINGS) that had silently drifted from the SPEC PROGRESS.md format and returned zero matches. Test fixtures were aligned with the drifted regexes, so tests passed. Risk: other parsers may have the same latent drift. Worth a targeted sweep.
+- **Helper-extraction refactor is the established remedy for long functions**: Audit 8 resolved check_severity_levels 98→36 via helpers; Audit 9 resolved check_pre_dispatch_commit_gate 78→30 the same way, and cycle 123 applied the same pattern to analyze_progress.py. The pattern works and is now habitual.
+- **Coverage growth has flattened around two persistent gaps**: hooks/common.py and validate_skill_definition. Both are ecosystem-linter-adjacent and would fail loudly if truly broken, which is why they stay info rather than warning, but they've now been open across three audits (6, 7, 8, 9).
+
 ## Audit 8 · 2026-04-20
 
 **Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene
