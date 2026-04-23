@@ -8,11 +8,10 @@
 
 ## ⇢ Annoying
 
-- [ ] [refactor] analyze_progress.py::analyze() is 114 lines with 5-branch suggestion engine — extract helper per signal type if new signal added
-- [ ] [fix] `ARTIFACT_HEADINGS["PROGRESS.md"]` in hooks/validate_artifact.py uses `^## Cycle \d+` which does not match the `■ ## Cycle` glyph-prefixed format SPEC mandates — false-positive "missing required heading" warning on every PROGRESS.md edit (discovered during cycle 119 hook smoke test)
-
 ## Resolved
 
+- [x] ~~[fix] `ARTIFACT_HEADINGS["PROGRESS.md"]` regex missed `■ ## Cycle` glyph-prefixed format~~ · fixed in 1bf8c18 (regex now accepts optional `■` prefix; added glyph-prefixed structural-validation test case)
+- [x] ~~[refactor] analyze_progress.py::analyze() 5-branch suggestion engine~~ · fixed in 1bf8c18 (extracted 5 per-signal helpers + 6 computation helpers; also fixed latent parser regression where header regex missed the current SPEC glyph+middle-dot format)
 - [x] ~~ISS-40: [fix] Profile path mismatch after Decision 27~~ · fixed — all SKILL.md, SPEC.md, DOCS.md, DOCS template, README.md, opencode adapter doc, and 12 contract.md files updated to `$PROFILERA_PROFILE_DIR/PROFILE.md` with platform-appropriate defaults; 292 tests pass, validate_spec.py 0 errors
 - [x] ~~ISS-39: [feat] Implement optimera multi-objective support (Decision 30)~~ · fixed in bd88f63..845a387 (per-objective subdirs under .agentera/optimera/, active-objective inference, SPEC.md/SKILL.md/hooks/DOCS.md updates, version bump 1.12.0)
 - [x] ~~ISS-38: [feat] Move profile path to XDG-standard agentera data directory (Decision 27)~~ · fixed in 32cd8c7..4870d80 (XDG default with platform detection, auto-migration from ~/.claude/profile/, OpenCode plugin sets PROFILERA_PROFILE_DIR at init)

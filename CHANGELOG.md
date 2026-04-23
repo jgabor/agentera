@@ -9,6 +9,12 @@
 ### Changed
 
 - `.opencode/package.json` declares `"type": "module"` and the plugin drops 7 unused bindings; Node no longer emits the ESM reparse warning on plugin load
+- `analyze_progress.py::analyze()` split into small computation and per-signal suggestion helpers; each is testable in isolation
+
+### Fixed
+
+- `analyze_progress.py` header regex now matches the current SPEC PROGRESS.md format (`■ ## Cycle N · YYYY-MM-DD · title`); previously returned zero cycles against real files. Legacy em-dash format still parses for back-compat
+- `hooks/validate_artifact.py` no longer emits a false-positive missing-required-heading warning on every SPEC-conformant PROGRESS.md edit (the `ARTIFACT_HEADINGS` regex now accepts the optional `■` glyph prefix)
 
 ## [1.15.0] · 2026-04-23
 
