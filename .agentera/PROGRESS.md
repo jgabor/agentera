@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 124 · 2026-04-23 · chore(release): bump version to 1.16.0
+
+**Phase**: build
+**What**: Bumped version 1.15.0 to 1.16.0 per DOCS.md semver_policy, closing the Audit 9 Version-health warning. Updated 14 version_files: registry.json (12 skill entries), .claude-plugin/marketplace.json (top-level plus 11 non-profilera plugin entries; profilera's separate 2.8.0 track preserved), and all 12 skills/*/.claude-plugin/plugin.json. CHANGELOG.md [Unreleased] promoted to [1.16.0] with cycles 121-123 entries (opencode bootstrap, ESM type + unused-bindings cleanup, analyze_progress refactor, regex drift fixes).
+**Commit**: 0141657
+**Inspiration**: inspektera Audit 9 Version-health finding (1 unbumped feat: 307aa33 opencode bootstrap)
+**Discovered**: CHANGELOG.md line 50 claims cycle 118 added `.gitignore` credential patterns (`.env`, `*.key`, `*.pem`) but the on-disk `.gitignore` does not contain them. Audit 9 flagged this under Security as info; the CHANGELOG entry is a recorded-but-untruthy claim. Not fixed this cycle (scope).
+**Verified**: N/A: chore-build-config. The change modified packaging metadata (registry, marketplace, plugin manifests) only; no runtime code path changed. Pre-commit hooks (configs, contracts, docs, spec-lint) passed; 299 tests passed; linter 0 errors, 16 warnings (baseline).
+**Next**: Two remaining Audit 9 warning-level candidates. (a) `_format_todo_oneline` refactor in hooks/compaction.py:223-244 (Complexity warning; split chained transformations into per-step helpers, add proportional tests). (b) Followup small cycles on info findings: close the CHANGELOG vs .gitignore discrepancy surfaced above, merge common.py and validate_artifact.py path-resolution duplication (persistent since Audit 7).
+**Context**: intent (close Audit 9's Version-health warning via the established semver_policy workflow) · constraints (preserve profilera's separate marketplace track, touch only version_files plus CHANGELOG, no HEALTH.md or SKILL.md edits) · unknowns (none; cycles 116 and 118 are the direct precedent) · scope (registry.json, marketplace.json, 12 plugin.json, CHANGELOG.md, PROGRESS.md cycle entry).
+
 ■ ## Cycle 123 · 2026-04-23 · refactor(artifacts): restore header-regex match against current SPEC format
 
 **What**: Fixed two sibling regexes that had drifted away from the SPEC PROGRESS.md header format and silently returned zero matches. In `skills/realisera/scripts/analyze_progress.py`, the header regex now accepts both the current `■ ## Cycle N · YYYY-MM-DD · title` shape and the legacy em-dash form, extracts an optional title, and falls through to the title for work-type classification. The 112-line `analyze()` is split into six computation helpers plus five per-signal suggestion helpers (`_suggest_fix_heavy/_low_inspiration/_high_inspiration/_no_tests/_no_docs`), each testable in isolation; `analyze()` is now ~25 lines of orchestration. In `hooks/validate_artifact.py`, `ARTIFACT_HEADINGS["PROGRESS.md"]` now matches an optional `■` glyph prefix, ending the false-positive missing-required-heading warning on every SPEC-conformant PROGRESS.md edit.
@@ -94,19 +105,9 @@
 **Next**: Task 6 (version bump per DOCS.md convention).
 **Context**: intent (test Check 19 pre-dispatch-commit-gate linter enforcement) · constraints (proportionality: 1 pass + 1 fail per testable unit, follow existing patterns) · unknowns (none) · scope (tests/test_validate_spec.py, .agentera/PLAN.md, .agentera/PROGRESS.md)
 
-■ ## Cycle 114 · 2026-04-13
-
-**Phase**: build
-**What**: Added Check 19 (pre-dispatch-commit-gate) to `scripts/validate_spec.py`. For skills in `WORKTREE_DISPATCH_SKILLS` (realisera, optimera), the check verifies four gate procedure indicators: Section 22 reference, checkpoint commit message, `git status --porcelain` clean-tree check, and scoped staging instruction (no `git add -A`/`git add .`). Non-dispatching skills pass unconditionally.
-**Commit**: 7a98f7e
-**Inspiration**: PLAN.md Task 4 (add linter check for pre-dispatch commit gate)
-**Discovered**: The check follows the same structure as Check 17 (reality-verification-gate): a constant defines the applicable skill set, early return for non-applicable skills, and multiple pattern checks accumulated into an error list. Both realisera and optimera already have all four indicators from Tasks 2-3.
-**Verified**: `python3 scripts/validate_spec.py` returned 0 error(s), 0 warning(s) across 12 skills. All 12 skills show PASS for the new pre-dispatch-commit-gate check.
-**Next**: Task 5 (tests for the new linter check).
-**Context**: intent (enforce pre-dispatch commit gate in worktree-dispatching skills via linter) · constraints (follow existing check patterns, no scope creep) · unknowns (none) · scope (scripts/validate_spec.py, .agentera/PLAN.md, .agentera/PROGRESS.md)
-
 ## Archived Cycles
 
+- Cycle 114 (2026-04-13): Added Check 19 (pre-dispatch-commit-gate) to `scripts/validate_spec.py`. For skills in `WORKTREE_DISPATCH_SKILLS` (realisera, optimera), the check verifies four gate procedure indicators: Section...
 - Cycle 113 (2026-04-13): Added pre-dispatch commit gate to optimera Step 4 (Implement) per SPEC.md Section 22. The gate checks working tree status, stages...
 - Cycle 112 (2026-04-13): Added pre-dispatch commit gate to realisera Step 5 per SPEC.md Section 22. The gate checks working tree status, stages only...
 - Cycle 111 (2026-04-13): Added Section 22 (Pre-dispatch Commit Gate) to SPEC.md. Defines the checkpoint commit convention for skills that dispatch subagents to git...
