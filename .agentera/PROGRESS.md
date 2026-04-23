@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 123 · 2026-04-23 · refactor(artifacts): restore header-regex match against current SPEC format
+
+**What**: Fixed two sibling regexes that had drifted away from the SPEC PROGRESS.md header format and silently returned zero matches. In `skills/realisera/scripts/analyze_progress.py`, the header regex now accepts both the current `■ ## Cycle N · YYYY-MM-DD · title` shape and the legacy em-dash form, extracts an optional title, and falls through to the title for work-type classification. The 112-line `analyze()` is split into six computation helpers plus five per-signal suggestion helpers (`_suggest_fix_heavy/_low_inspiration/_high_inspiration/_no_tests/_no_docs`), each testable in isolation; `analyze()` is now ~25 lines of orchestration. In `hooks/validate_artifact.py`, `ARTIFACT_HEADINGS["PROGRESS.md"]` now matches an optional `■` glyph prefix, ending the false-positive missing-required-heading warning on every SPEC-conformant PROGRESS.md edit.
+**Commit**: 1bf8c18
+**Inspiration**: none — cycle 119 HEALTH.md Audit 8 finding + cycle 123's own parser fix surfaced the sibling bug already on TODO.
+**Discovered**: The two regex bugs share a root cause (format drift from the old em-dash/bare-heading shape to the SPEC's glyph/middle-dot shape) but had been filed separately because they failed silently in different layers. Rolled them into a single refactor commit since they share the file-format dependency.
+**Verified**: `python3 skills/realisera/scripts/analyze_progress.py --progress .agentera/PROGRESS.md --pretty` emits `"total_cycles": 10, "velocity_cycles_per_day": 1.0, "work_distribution": {"unknown": 6, "feat": 2, "chore": 1, "fix": 1}` — previously `{"total_cycles": 0}`. Hook smoke `echo '{"tool_name":"Edit","cwd":"'$PWD'","tool_input":{"file_path":"'$PWD'/.agentera/PROGRESS.md"}}' | python3 hooks/validate_artifact.py` emits no output — previously warned about a missing `## Cycle \d+` heading despite the file having 10 `■ ## Cycle` entries. Tests: 299 passed (was 292, +7 parser + suggestion + glyph-validator cases). Linter: 0 errors, 16 warnings (baseline).
+**Next**: (a) fresh inspektera audit — last was Audit 8 in cycle 118 and 5 cycles have shipped since, might surface other drifted validator regexes, (b) ISS-40 phase 2 runtime `platform:` substitution, (c) return to vision-aligned work.
+**Context**: intent (resolve cycle-119 TODO, restore orient-step analytics against real PROGRESS.md, and cut the false-positive hook noise flagged since cycle 119) · constraints (preserve JSON output schema for agent readers, preserve back-compat parsing for legacy em-dash files, no SKILL.md changes) · unknowns (none — both regexes had straightforward SPEC-aligned targets) · scope (one script, one hook, two test files, TODO/CHANGELOG/PROGRESS updates).
+
 ■ ## Cycle 122 · 2026-04-23 · chore(opencode): declare ESM type, drop unused bindings in plugin
 
 **What**: Follow-up cleanup from cycle 121. Added `"type": "module"` to `.opencode/package.json` and removed seven unused bindings from `.opencode/plugins/agentera.js`: the `resolveArtifacts` helper (never called), the `filePath` parameter on `validateArtifact` (also updated its one caller), and the `project`/`$`/`vision`/two `event` destructures in the Agentera handler. All three hooks (session.created, tool.execute.after, session.idle) preserved behaviorally.
@@ -95,19 +105,9 @@
 **Next**: Task 5 (tests for the new linter check).
 **Context**: intent (enforce pre-dispatch commit gate in worktree-dispatching skills via linter) · constraints (follow existing check patterns, no scope creep) · unknowns (none) · scope (scripts/validate_spec.py, .agentera/PLAN.md, .agentera/PROGRESS.md)
 
-■ ## Cycle 113 · 2026-04-13
-
-**Phase**: build
-**What**: Added pre-dispatch commit gate to optimera Step 4 (Implement) per SPEC.md Section 22. The gate checks working tree status, stages only per-objective artifact paths, commits with `chore(optimera): checkpoint before worktree dispatch`, and blocks dispatch if hooks reject. Updated spec_sections frontmatter to include section 22 and regenerated the contract.
-**Commit**: 50b1766
-**Inspiration**: PLAN.md Task 3 (add gate to optimera before worktree dispatch)
-**Discovered**: The pattern mirrors realisera's gate exactly, with artifact path examples scoped to optimera's per-objective layout (`.agentera/optimera/<objective-name>/`).
-**Verified**: N/A: docs-only
-**Next**: Task 4 (linter check for gate presence in worktree-dispatching skills), then Task 5 (tests for the linter check).
-**Context**: intent (add Section 22 pre-dispatch commit gate to optimera Step 4) · constraints (no em-dashes, no hard wraps, match realisera gate pattern) · unknowns (none) · scope (skills/optimera/SKILL.md, skills/optimera/references/contract.md, .agentera/PLAN.md)
-
 ## Archived Cycles
 
+- Cycle 113 (2026-04-13): Added pre-dispatch commit gate to optimera Step 4 (Implement) per SPEC.md Section 22. The gate checks working tree status, stages...
 - Cycle 112 (2026-04-13): Added pre-dispatch commit gate to realisera Step 5 per SPEC.md Section 22. The gate checks working tree status, stages only...
 - Cycle 111 (2026-04-13): Added Section 22 (Pre-dispatch Commit Gate) to SPEC.md. Defines the checkpoint commit convention for skills that dispatch subagents to git...
 - Cycle 110 (2026-04-12): Plan rollup: Optimera Multi-Objective Support (ISS-39, Decision 30). Migrated `.optimera/` under `.agentera/optimera/` with named subdirs per objective (realisera-token, hej-token). Updated...
