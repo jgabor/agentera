@@ -412,6 +412,46 @@ class TestCompactArtifactCli:
         assert result.returncode == 2
 
 
+class TestFormatTodoOneline:
+    def test_extract_iss_id_present(self, compaction):
+        assert compaction._extract_iss_id("ISS-42: fix something") == "ISS-42"
+
+    def test_extract_iss_id_missing(self, compaction):
+        assert compaction._extract_iss_id("random text no identifier") == "ISS-?"
+
+    def test_strip_todo_metadata_full(self, compaction):
+        # Full resolved header: checkbox + tildes + ISS label + summary
+        raw = "- [x] ~~ISS-42: fix something important~~"
+        assert compaction._strip_todo_metadata(raw) == "fix something important"
+
+    def test_strip_todo_metadata_no_iss(self, compaction):
+        # No ISS label: summary passes through (minus checkbox/tildes if any).
+        assert compaction._strip_todo_metadata("something broken") == "something broken"
+
+    def test_format_todo_oneline_passthrough(self, compaction):
+        # Already one-line + tilde-wrapped: preserved verbatim (with leading '- ' if missing).
+        entry = {"kind": "oneline", "header": "- [x] ~~ISS-5: existing one-line~~", "body": ""}
+        assert compaction._format_todo_oneline(entry) == "- [x] ~~ISS-5: existing one-line~~"
+
+    def test_format_todo_oneline_builds_from_multiline(self, compaction):
+        # Full entry: build a fresh one-liner from the header.
+        entry = {
+            "kind": "full",
+            "header": "- [x] ~~ISS-7: refactor compaction module~~",
+            "body": "resolved in abc1234",
+        }
+        assert compaction._format_todo_oneline(entry) == "- [x] ~~ISS-7: refactor compaction module~~"
+
+    def test_format_todo_oneline_missing_iss(self, compaction):
+        # No ISS-NN in header: 'ISS-?' placeholder.
+        entry = {
+            "kind": "full",
+            "header": "- [x] ~~something that never got an ID~~",
+            "body": "",
+        }
+        assert compaction._format_todo_oneline(entry) == "- [x] ~~ISS-?: something that never got an ID~~"
+
+
 # ---------------------------------------------------------------------------
 # detect_overflow helper (used by validate_artifact nudge)
 # ---------------------------------------------------------------------------
