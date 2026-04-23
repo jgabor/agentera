@@ -5,6 +5,7 @@
 ### Changed
 
 - `hooks/compaction.py::_format_todo_oneline` split into three single-responsibility helpers (`_is_todo_oneline_passthrough`, `_extract_iss_id`, `_strip_todo_metadata`) plus a thin orchestrator; behavior preserved exactly
+- realisera Step 5 and optimera Step 4 gain a Stale-base awareness nudge: when local HEAD is ahead of `origin/main`, skip merging the worktree branch and apply the sub-agent's diff onto HEAD directly so verification runs against current code
 
 ## [1.16.0] · 2026-04-23
 

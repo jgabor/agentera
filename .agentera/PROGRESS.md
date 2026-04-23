@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 126 · 2026-04-23 · docs(realisera,optimera): add stale-base awareness to dispatch step
+
+**What**: Added a "Stale-base awareness" paragraph to realisera Step 5 and optimera Step 4, immediately after the Pre-dispatch commit gate. The block instructs the LLM to run `git rev-list --count origin/main..HEAD` before dispatch and, if local HEAD is ahead of origin, to skip merging the worktree branch in the post-dispatch step and instead apply the sub-agent's diff directly onto HEAD via `git apply --index -`. This is the same workaround walked manually in cycle 125.
+**Commit**: f348ff0
+**Inspiration**: cycle 125 root-cause investigation. Reflog confirmed `branch: Created from origin/main` for both today's worktrees. Local HEAD was 14 commits ahead of origin/main because the never-push-to-remote safety rail keeps origin frozen between manual pushes.
+**Discovered**: The harness behavior is a Claude Code-level detail outside this repo. Per user direction, we nudge the LLM rather than try to fix the harness; if the harness changes, the nudge becomes a no-op (count is always zero) and costs one `git rev-list` per cycle.
+**Verified**: `python3 scripts/validate_spec.py` → 0 errors, 16 warnings (baseline unchanged — new prose is instructional, not in an artifact example block, so not subject to the 25-word cap). `python3 -m pytest tests/ -x -q` → 306 passed (same as cycle 125, no test churn). No behavioral entrypoint exists for SKILL.md prose; `N/A: docs-only`.
+**Next**: Now that the stale-base nudge is landed, the remaining Audit 9 info-level candidates are unchanged: (a) common.py / validate_artifact.py path-resolution duplication, (b) CHANGELOG vs .gitignore discrepancy from cycle 124, (c) fresh inspektera audit (6 cycles since Audit 9 now).
+**Context**: intent (document the worktree stale-base workaround in the two dispatching skills so future cycles don't silently verify against stale code) · constraints (nudge-only, no harness fix, keep prose under the 25-word cap or let the non-artifact-example carve-out cover it, no SPEC.md change) · unknowns (none — workaround already walked in cycle 125) · scope (two SKILL.md files, 2 inserted lines each, PROGRESS/TODO/CHANGELOG updates).
+
 ■ ## Cycle 125 · 2026-04-23 · refactor(hooks): split _format_todo_oneline into per-step helpers
 
 **What**: Closed Audit 9 Complexity warning on `hooks/compaction.py:223-244`. Extracted three module-level regex constants (`_TODO_CHECKBOX_RE`, `_TODO_ISS_RE`, `_TODO_ISS_LABEL_RE`) and three single-responsibility helpers (`_is_todo_oneline_passthrough`, `_extract_iss_id`, `_strip_todo_metadata`). `_format_todo_oneline` is now a 7-line orchestrator with a clear passthrough vs build-from-header branch. Added 7 proportional tests covering each helper (present/missing, full/no-label) plus the three orchestrator paths (passthrough, build, missing-ISS).
@@ -93,19 +103,9 @@
 **Next**: Resume vision-driven work selection. The pre-dispatch commit gate is fully landed and enforced; next inspektera audit will validate structural health post-plan.
 **Context**: intent (close out pre-dispatch commit gate plan with freshness checkpoint and archive) · constraints (docs-only, no scope creep) · unknowns (none) · scope (PLAN.md, PROGRESS.md, CHANGELOG.md, TODO.md, .agentera/archive/)
 
-■ ## Cycle 116 · 2026-04-13
-
-**Phase**: build
-**What**: Version bump 1.12.0 to 1.13.0 per DOCS.md semver_policy (feat = minor). Updated all 12 plugin.json files, registry.json (12 skill entries), marketplace.json (top-level + 11 non-profilera plugin entries). Promoted CHANGELOG.md [Unreleased] to [1.13.0] with entries for Section 22 and Check 19.
-**Commit**: 319935d
-**Inspiration**: PLAN.md Task 6 (version bump per DOCS.md convention)
-**Discovered**: Marketplace plugin versions were at 1.10.0 (lagging behind the 1.12.0 bump which only updated registry.json and per-skill plugin.json). This cycle brought them current.
-**Verified**: N/A: chore-build-config
-**Next**: Task 7 (plan-level freshness checkpoint).
-**Context**: intent (bump version to 1.13.0 for feat-level commits in pre-dispatch commit gate plan) . constraints (only touch version_files from DOCS.md and CHANGELOG.md) . unknowns (none) . scope (registry.json, marketplace.json, 12 plugin.json, CHANGELOG.md, PLAN.md)
-
 ## Archived Cycles
 
+- Cycle 116 (2026-04-13): Version bump 1.12.0 to 1.13.0 per DOCS.md semver_policy (feat = minor). Updated all 12 plugin.json files, registry.json (12 skill entries),...
 - Cycle 115 (2026-04-13): Added tests for Check 19 (pre-dispatch-commit-gate) in `tests/test_validate_spec.py`. Three tests following the Check 17 proportionality pattern: 1 pass (both realisera...
 - Cycle 114 (2026-04-13): Added Check 19 (pre-dispatch-commit-gate) to `scripts/validate_spec.py`. For skills in `WORKTREE_DISPATCH_SKILLS` (realisera, optimera), the check verifies four gate procedure indicators: Section...
 - Cycle 113 (2026-04-13): Added pre-dispatch commit gate to optimera Step 4 (Implement) per SPEC.md Section 22. The gate checks working tree status, stages...
