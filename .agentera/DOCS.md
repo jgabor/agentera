@@ -45,7 +45,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 | Document | Path | Last Updated | Status |
 |----------|------|-------------|--------|
-| README | README.md | 2026-04-25 | ■ current |
+| README | README.md | 2026-04-26 | ■ current |
 | CLAUDE.md | CLAUDE.md | 2026-04-02 | ■ current |
 | Decisions | .agentera/DECISIONS.md | 2026-04-02 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
