@@ -52,7 +52,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | TODO | TODO.md | 2026-04-25 | ■ current |
 | Changelog | CHANGELOG.md | 2026-04-25 | ■ current |
 | Health | .agentera/HEALTH.md | 2026-04-23 | ■ current |
-| Plan | .agentera/PLAN.md | 2026-04-25 | ■ current (Audit 11 complete) |
+| Plan | .agentera/PLAN.md | 2026-04-25 | ■ current (live host smoke complete) |
 | DOCS | .agentera/DOCS.md | 2026-04-25 | ■ current |
 | Design | .agentera/DESIGN.md | 2026-04-19 | ■ current |
 | Ecosystem spec | SPEC.md | 2026-04-20 | ■ current |
@@ -80,6 +80,10 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Tests**: 357 tests across 13 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-25 (Live Copilot/Codex smoke)
+
+- [gap] Live host caveat narrowed: Codex `$hej` and installed Copilot skills work, but current-checkout Copilot plugin loading rejects `../../skills` · info (deferred)
 
 ### 2026-04-25 (Audit 11 freshness checkpoint)
 
