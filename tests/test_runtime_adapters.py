@@ -268,12 +268,21 @@ def _validate_readme_copilot_install_guidance(text: str) -> list[str]:
     errors: list[str] = []
     marketplace = "copilot plugin install <plugin>@<marketplace>"
     direct = "copilot plugin install OWNER/REPO"
+    unavailable_source = "No canonical Agentera Copilot marketplace source is currently verified"
+    syntax_only = "`<plugin>@<marketplace>` is Copilot syntax, not evidence that Agentera is published in a marketplace"
+    fallback = "deprecated fallback paths when no verified marketplace source is available"
     if marketplace not in text:
         errors.append("README Copilot install must prefer <plugin>@<marketplace> syntax")
-    if "No canonical Agentera Copilot marketplace source is currently verified" not in text:
+    if unavailable_source not in text:
         errors.append("README Copilot placeholder must not claim Agentera marketplace availability")
+    if syntax_only not in text:
+        errors.append("README Copilot placeholder syntax must be labeled syntax-only")
+    if "copilot plugin install agentera@<marketplace>" in text:
+        errors.append("README Copilot placeholder must not masquerade as a canonical source")
     if direct not in text or "deprecated fallback" not in text:
         errors.append("README Copilot install must mark OWNER/REPO as deprecated fallback")
+    if fallback not in text:
+        errors.append("README Copilot fallback guidance must stay secondary to verified marketplace installs")
     if marketplace in text and direct in text and text.index(marketplace) > text.index(direct):
         errors.append("README Copilot install must mention marketplace before OWNER/REPO")
     if "aggregate `agentera` plugin" not in text:
@@ -302,11 +311,29 @@ class TestCopilotPackaging:
         readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
         assert _validate_readme_copilot_install_guidance(readme) == []
 
-    def test_copilot_readme_install_guidance_fails_without_marketplace_first(self):
+    def test_copilot_readme_install_guidance_fails_on_unverified_availability_claim(self):
         readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-        stale = readme.replace("copilot plugin install <plugin>@<marketplace>", "copilot plugin install stale/agentera")
+        stale = readme.replace(
+            "No canonical Agentera Copilot marketplace source is currently verified",
+            "Agentera is available from the Copilot marketplace",
+        )
         errors = _validate_readme_copilot_install_guidance(stale)
-        assert "README Copilot install must prefer <plugin>@<marketplace> syntax" in errors
+        assert "README Copilot placeholder must not claim Agentera marketplace availability" in errors
+
+    def test_copilot_readme_install_guidance_fails_on_placeholder_as_source(self):
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        stale = readme.replace("copilot plugin install <plugin>@<marketplace>", "copilot plugin install agentera@<marketplace>")
+        errors = _validate_readme_copilot_install_guidance(stale)
+        assert "README Copilot placeholder must not masquerade as a canonical source" in errors
+
+    def test_copilot_readme_install_guidance_fails_on_primary_fallback(self):
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        stale = readme.replace(
+            "deprecated fallback paths when no verified marketplace source is available",
+            "supported canonical install paths",
+        )
+        errors = _validate_readme_copilot_install_guidance(stale)
+        assert "README Copilot fallback guidance must stay secondary to verified marketplace installs" in errors
 
 
 class TestCodexPackaging:

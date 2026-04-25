@@ -6,6 +6,7 @@
 
 ### Changed
 
+- Copilot install guidance validation now rejects unverified marketplace claims, placeholder-as-source wording, and primary deprecated fallback guidance.
 - Copilot install guidance now prefers marketplace-style `plugin@marketplace` installs, with direct repo installs documented as deprecated fallback paths.
 
 ### Fixed

@@ -65,7 +65,7 @@ Use an evidence gate first. Verified marketplace evidence unlocks install-surfac
 ### Task 3: Guard Marketplace Claims
 
 **Depends on**: Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN public install guidance WHEN validation runs THEN unverified marketplace availability language is rejected.
 ▸ GIVEN public install guidance WHEN validation runs THEN placeholder syntax cannot masquerade as a canonical source.
