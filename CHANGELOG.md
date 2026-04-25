@@ -6,22 +6,20 @@
 
 ### Changed
 
-- Live Copilot/Codex host smoke validation narrowed the release caveat: Codex `$hej` and installed Copilot skill discovery work, while current-checkout Copilot plugin loading remains blocked by its escaping skills path.
-- Audit 11 runtime portability cleanup is freshness-complete: state artifacts now summarize the plan, mark resolved cleanup items, and preserve the live Copilot/Codex host-test caveat.
-
 ### Fixed
-
-- Copilot current-checkout plugin loading now uses root `plugin.json` with in-root skill and hook paths, so `copilot --plugin-dir <repo>` can discover agentera skills.
 
 ## [1.18.1] · 2026-04-25
 
 ### Changed
 
+- Live Copilot/Codex host smoke validation narrowed the release caveat: Codex `$hej` and installed Copilot skill discovery work, while current-checkout Copilot plugin loading remained blocked by its escaping skills path until the root plugin fix.
+- Audit 11 runtime portability cleanup is freshness-complete: state artifacts now summarize the plan, mark resolved cleanup items, and preserve the live Copilot/Codex host-test caveat.
 - Profilera corpus orchestration now uses a localized runtime collector registry and shared source-family runner while preserving supported runtime output.
 - Audit 11 runtime portability cleanup completed: contract alignment, runtime metadata drift guards, profilera corpus hardening, and 1.18.1 release targets are now aligned.
 
 ### Fixed
 
+- Copilot current-checkout plugin loading now uses root `plugin.json` with in-root skill and hook paths, so `copilot --plugin-dir <repo>` can discover agentera skills.
 - Profilera corpus validation now rejects incomplete metadata envelopes, malformed family status/count data, and inconsistent aggregate versus per-runtime family counts.
 - OpenCode artifact validation now resolves the documented manual install root, Copilot list-form hooks receive the same lifecycle checks as string hooks, and DOCS version targets include the OpenCode marker.
 - Runtime metadata validation now catches Copilot profilera caveat drift and Codex profilera policy drift across local metadata surfaces.
