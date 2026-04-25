@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 160 · 2026-04-25 18:40 · docs(release): apply copilot release convention
+
+**What**: Completed Task 6 only. Applied DOCS.md version policy to the Copilot marketplace work and tightened release-note caveats without bumping metadata.
+**Commit**: docs(release): apply copilot release convention
+**Inspiration**: Task 5 evidence: no canonical Agentera Copilot marketplace source is verified, so user guidance changed but install support did not gain a new verified capability.
+**Discovered**: CHANGELOG [Unreleased] represented the validation work but one marketplace guidance line needed the no-verified-source caveat to avoid implying availability.
+**Verified**: DOCS.md version policy says `feat = minor`, `fix = patch`, and `docs/chore/test = no bump`; current marketplace work produced docs/test/chore changes and no verified new install capability, so no version files were bumped. CHANGELOG [Unreleased] now says Copilot marketplace-style installs are preferred only when a verified source exists, states no canonical Agentera Copilot marketplace source is currently verified, and keeps direct repo installs as deprecated fallback paths. `python3 scripts/validate_spec.py` and `git diff --check` passed.
+**Next**: Task 7 remains pending for the plan-level freshness checkpoint; do not run it as part of Task 6.
+**Context**: intent (apply release convention only) · constraints (no Task 7 sweep, no invented marketplace source, no unnecessary version bump, commit but do not push) · unknowns (future canonical Agentera Copilot marketplace source) · scope (`CHANGELOG.md`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
+
 ■ ## Cycle 159 · 2026-04-25 18:24 · docs(copilot): update user guidance
 
 **What**: Completed Task 5 only. README now keeps Copilot marketplace guidance evidence-gated, records the verified no-source limitation, and tightens lifecycle language around partial support.

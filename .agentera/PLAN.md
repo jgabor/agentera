@@ -114,11 +114,17 @@ Use an evidence gate first. Verified marketplace evidence unlocks install-surfac
 ### Task 6: Apply Release Convention
 
 **Depends on**: Task 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN user-facing install support changed WHEN release metadata is checked THEN DOCS.md version policy is applied consistently.
 ▸ GIVEN no user-facing support changed WHEN release metadata is checked THEN no unnecessary version bump occurs.
 ▸ GIVEN release notes are reviewed WHEN marketplace work is summarized THEN support and caveats are represented without unsupported claims.
+
+**Evidence**:
+
+- DOCS.md version policy applies `feat = minor`, `fix = patch`, and `docs/chore/test = no bump` across plugin, marketplace, OpenCode, per-skill, and registry version files.
+- Tasks 1-5 changed README guidance, validation tests, host-evidence artifacts, and release notes, but did not verify a new Agentera Copilot marketplace source or add user-facing install capability; no version bump was applied.
+- CHANGELOG [Unreleased] now states marketplace-style Copilot installs are preferred only when a verified source exists, preserves the no-source caveat, and keeps direct repo installs as deprecated fallback paths.
 
 ### Task 7: Plan-Level Freshness Checkpoint
 
