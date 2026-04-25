@@ -6,6 +6,8 @@
 
 ### Changed
 
+- Copilot install guidance now prefers marketplace-style `plugin@marketplace` installs, with direct repo installs documented as deprecated fallback paths.
+
 ### Fixed
 
 ## [1.18.1] · 2026-04-25

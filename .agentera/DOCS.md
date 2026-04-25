@@ -45,7 +45,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 | Document | Path | Last Updated | Status |
 |----------|------|-------------|--------|
-| README | README.md | 2026-04-24 | ■ current |
+| README | README.md | 2026-04-25 | ■ current |
 | CLAUDE.md | CLAUDE.md | 2026-04-02 | ■ current |
 | Decisions | .agentera/DECISIONS.md | 2026-04-02 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
@@ -78,7 +78,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 357 tests across 13 files; CI runs on push/PR via GitHub Actions
+- **Tests**: 359 tests across 13 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
 
