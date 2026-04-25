@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 154 · 2026-04-25 16:10 · docs(copilot): prefer marketplace plugin installs
+
+**What**: Completed the Copilot marketplace guidance plan. README now leads with `plugin@marketplace`, keeps direct installs as deprecated fallback, and explains aggregate versus legacy installed plugin entries.
+**Commit**: d69e069 docs(copilot): prefer marketplace plugin installs
+**Inspiration**: Copilot CLI warning during direct `jgabor/agentera` install plus the inspirera cross-pollination analysis.
+**Discovered**: Copilot has built-in marketplaces available, while local plugin state can show both aggregate `agentera` and older per-skill `@agentera` entries.
+**Verified**: `python3 -m pytest tests/test_runtime_adapters.py -q` -> 24 passed. `python3 -m pytest -q` -> 359 passed. `python3 scripts/validate_spec.py` -> 0 errors, 0 warnings. `copilot plugin marketplace list` showed `copilot-plugins` and `awesome-copilot`; `copilot plugin list` showed aggregate `agentera (v1.18.1)` plus older per-skill entries.
+**Next**: Publish or add an actual Agentera Copilot marketplace source when the canonical source is available.
+**Context**: intent (make Copilot install docs marketplace-first) · constraints (no invented marketplace name, keep partial hook caveat, direct fallback stays) · unknowns (canonical Agentera marketplace source not verified) · scope (`README.md`, adapter tests, state artifacts).
+
 ■ ## Cycle 153 · 2026-04-25 15:23 · fix(copilot): load skills from checkout plugin root
 
 **What**: Completed the Copilot packaging fix. Current-checkout loading now uses root `plugin.json`, so Copilot sees shared `skills/` inside the plugin root.
@@ -90,18 +100,9 @@
 **Next**: Task 4 can repair adapter path and list-form hook validation drift. Keep OpenCode and list-form hook work scoped to that task.
 **Context**: intent (tighten Task 3 runtime metadata drift guards) · constraints (Task 3 only, no Task 4 hook path work, no live host claims, no commit) · unknowns (live Copilot and Codex host behavior remains untested) · scope (`.github/plugin/plugin.json`, `scripts/validate_lifecycle_adapters.py`, `tests/test_runtime_adapters.py`, changelog, TODO, plan/progress bookkeeping).
 
-■ ## Cycle 144 · 2026-04-25 11:40 · fix(profilera): redact Copilot config secrets
-
-**What**: Completed Task 2 only. Copilot JSON config signals now redact sensitive-looking primitive values while retaining bounded non-sensitive signals.
-**Commit**: none (user explicitly requested no commits)
-**Inspiration**: Audit 11 security hygiene finding and the existing Codex config-filtering precedent.
-**Discovered**: Copilot already bounded nested objects and lists by counts. The missing gap was primitive values under credential-like key names.
-**Verified**: `python3 -m pytest tests/test_extract_all.py -q` -> `73 passed in 0.07s`, covering sensitive keys, nested data, list data, false positives, and corpus redaction. `python3 -m pytest -q` -> `343 passed in 0.34s`. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings. Isolated entrypoint sample with `HOME=/tmp/.../home` and `.copilot/settings.json` containing `apiKey`, nested `token`, list `password`, `keyboardLayout`, and `theme` exited 0, produced `Runtimes: copilot-cli`, `project_config_signal: 1 records [ok]`, signals `['apiKey: [redacted]', 'keyboardLayout: vim', 'nested: 2 keys', 'plugins: 2 items', 'theme: dark']`, `secret_leaks=[]`, and checked surfaces only under that temporary `.copilot`: `settings.json`, `installed-plugins`, and `skills`.
-**Next**: Task 3 can tighten runtime metadata drift guards. Do not start Task 5 refactoring until its dependencies are met.
-**Context**: intent (protect Copilot corpus data from sensitive primitive values) · constraints (Task 2 only, no metadata drift, no orchestration refactor, no commit) · unknowns (live Copilot host behavior remains untested) · scope (`extract_all.py`, redaction tests, changelog, plan/progress bookkeeping).
-
 ## Archived Cycles
 
+- Cycle 144 (2026-04-25): fix(profilera): redact Copilot config secrets
 - Cycle 143 (2026-04-25): fix(profilera): align Section 21 corpus record envelope
 - Cycle 142 (2026-04-24): chore(plan): checkpoint runtime portability freshness
 - Cycle 141 (2026-04-24): chore(release): bump suite to 1.18.0
