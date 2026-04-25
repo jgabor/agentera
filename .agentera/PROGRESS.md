@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 153 · 2026-04-25 15:23 · fix(copilot): load skills from checkout plugin root
+
+**What**: Completed the Copilot packaging fix. Current-checkout loading now uses root `plugin.json`, so Copilot sees shared `skills/` inside the plugin root.
+**Commit**: f628cc1 fix(copilot): load skills from checkout plugin root
+**Inspiration**: Cycle 152 live smoke found `skills path escapes plugin directory: ../../skills`.
+**Discovered**: Copilot accepts a repo-root plugin manifest with `skills: "skills"` and `hooks: ".github/hooks"`, avoiding duplicated skill files while preserving `skills/<name>/SKILL.md` as source of truth.
+**Verified**: `copilot --config-dir /tmp/agentera-copilot-smoke --plugin-dir $HOME/git/agentera -p "/skills list" --no-custom-instructions --no-auto-update --output-format text` exited 0 and listed 12 agentera skills. `python3 scripts/validate_lifecycle_adapters.py` -> `lifecycle adapter metadata ok`. `python3 -m pytest tests/test_runtime_adapters.py -q` -> 22 passed. `python3 -m pytest -q` -> 357 passed. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings. Artifact validation and `git diff --check` passed.
+**Next**: Run a follow-up health check if you want Audit 12 updated to reflect the closed Copilot current-checkout caveat.
+**Context**: intent (fix Copilot current-checkout packaging) · constraints (no duplicate skill source, no dependencies, live smoke required) · unknowns (marketplace install behavior still uses installed plugin path) · scope (`plugin.json`, Copilot validators/tests, README, state artifacts).
+
 ■ ## Cycle 152 · 2026-04-25 13:46 · chore(runtime): smoke live Copilot and Codex hosts
 
 **What**: Completed the live host smoke plan. Codex `$hej` ran successfully, installed Copilot skill discovery worked, and current-checkout Copilot plugin loading exposed one blocker.
@@ -90,18 +100,9 @@
 **Next**: Task 3 can tighten runtime metadata drift guards. Do not start Task 5 refactoring until its dependencies are met.
 **Context**: intent (protect Copilot corpus data from sensitive primitive values) · constraints (Task 2 only, no metadata drift, no orchestration refactor, no commit) · unknowns (live Copilot host behavior remains untested) · scope (`extract_all.py`, redaction tests, changelog, plan/progress bookkeeping).
 
-■ ## Cycle 143 · 2026-04-25 11:36 · fix(profilera): align Section 21 corpus record envelope
-
-**What**: Completed Task 1 only. Section 21 now blesses the extractor's existing record shape: provenance fields remain top-level, and source-family payloads live under required `data` objects.
-**Commit**: none (user explicitly requested no commits)
-**Inspiration**: Audit 11 Section 21 shape warning plus Decisions 26 and 27.
-**Discovered**: `validate_spec.py` correctly failed after SPEC changed until generated contract snapshots were refreshed. The extractor already emitted the chosen shape for Claude Code, Copilot CLI, and Codex CLI records.
-**Verified**: `python3 -m pytest tests/test_extract_all.py -q` -> `69 passed in 0.06s`, including rejection of top-level domain fields without `data` and non-object `data`. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings after `python3 scripts/generate_contracts.py`. Bounded extraction sample with `.claude`, `.copilot`, and `.codex` data produced `Runtimes: claude-code, copilot-cli, codex-cli`, `Total records: 3`, `records_have_data=true`, `record_keys=adapter_version,data,project_id,runtime,source_id,source_kind,timestamp`, and record runtimes `claude-code,codex-cli,copilot-cli`.
-**Next**: Task 2 can protect Copilot corpus data from sensitive values. Do not start metadata drift, refactor, or validation-deepening work until dependencies are met.
-**Context**: intent (resolve Section 21 contract ambiguity first) · constraints (Task 1 only, no redaction, no metadata drift, no commit) · unknowns (full family validation remains Task 6) · scope (`SPEC.md`, profilera corpus validator/tests, generated contracts, task bookkeeping).
-
 ## Archived Cycles
 
+- Cycle 143 (2026-04-25): fix(profilera): align Section 21 corpus record envelope
 - Cycle 142 (2026-04-24): chore(plan): checkpoint runtime portability freshness
 - Cycle 141 (2026-04-24): chore(release): bump suite to 1.18.0
 - Cycle 140 (2026-04-24): test(profilera): integrate multi-runtime status validation
