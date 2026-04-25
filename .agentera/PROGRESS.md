@@ -2,13 +2,13 @@
 
 ■ ## Cycle 157 · 2026-04-25 18:10 · test(install): guard copilot marketplace claims
 
-**What**: Completed Task 3 only. README Copilot install guidance validation now blocks unsupported marketplace claims without changing the guidance semantics.
-**Commit**: 1af096c test(install): guard copilot marketplace claims; 2aaa3ab docs(progress): log marketplace claim guards
+**What**: Completed Task 3 final retry only. README Copilot install guidance validation now blocks additive contradictory marketplace and fallback claims without changing README semantics.
+**Commit**: 1af096c test(install): guard copilot marketplace claims; 2aaa3ab docs(progress): log marketplace claim guards; db38bad docs(progress): correct marketplace guard evidence; 4ca5232 test(install): reject contradictory copilot guidance
 **Inspiration**: Task 1 and Task 2 evidence: Copilot has built-in marketplaces, but no canonical Agentera Copilot marketplace source is verified.
-**Discovered**: The existing guard accepted the happy-path README and one stale marketplace command, but did not separately reject availability claims, placeholder-as-source wording, or primary fallback semantics.
-**Verified**: `python3 -m pytest tests/test_runtime_adapters.py::TestCopilotPackaging -q` -> 7 passed, covering one shared pass test plus one fail test for each Task 3 guidance rule: unavailable marketplace claims, placeholder syntax masquerading as `agentera@<marketplace>`, and deprecated fallback wording. `python3 -m pytest -q` -> 361 passed. `python3 scripts/validate_spec.py` -> 0 errors, 0 warnings. `git diff --check` -> no output.
+**Discovered**: The previous guard still allowed additive text saying Agentera is available from the Copilot marketplace and additive text promoting `OWNER/REPO` as the primary install path.
+**Verified**: `python3 -m pytest tests/test_runtime_adapters.py::TestCopilotPackaging -q` -> 7 passed, covering one README pass plus fail tests for additive unavailable marketplace claims, placeholder syntax masquerading as `agentera@<marketplace>`, and additive primary fallback wording. `python3 -m pytest -q` -> 361 passed. `python3 scripts/validate_spec.py` -> 0 errors, 0 warnings. `git diff --check` -> no output.
 **Next**: Task 4 can run later if a verified host-behavior scope is still needed; no live host smoke docs, version bumps, or plan-level freshness work ran here.
-**Context**: intent (guard public Copilot install guidance from unsupported marketplace claims) · constraints (Task 3 only, no invented sources, preserve README semantics, proportional tests) · unknowns (future canonical Agentera marketplace source) · scope (`tests/test_runtime_adapters.py`, `.agentera/PLAN.md`, `CHANGELOG.md`, `.agentera/PROGRESS.md`).
+**Context**: intent (guard public Copilot install guidance from unsupported marketplace claims) · constraints (Task 3 only, no invented sources, preserve README semantics, proportional tests) · unknowns (future canonical Agentera marketplace source) · scope (`tests/test_runtime_adapters.py`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
 
 ■ ## Cycle 156 · 2026-04-25 18:02 · docs(install): clarify copilot marketplace placeholder
 
