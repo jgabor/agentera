@@ -3,7 +3,7 @@
 ■ ## Cycle 155 · 2026-04-25 17:32 · docs(plan): record copilot marketplace evidence
 
 **What**: Completed Task 1 only. PLAN now records the verified Copilot marketplace identities and the absence of a canonical Agentera source.
-**Commit**: pending
+**Commit**: b2fe57b docs(plan): record copilot marketplace evidence
 **Inspiration**: Active evidence-gated plan and Copilot host marketplace commands.
 **Discovered**: Copilot CLI exposes built-in marketplaces `copilot-plugins` and `awesome-copilot`; neither browsed catalog showed an `agentera` plugin.
 **Verified**: `copilot --version` -> `GitHub Copilot CLI 1.0.35`; `copilot plugin marketplace list` -> built-ins `copilot-plugins (GitHub: github/copilot-plugins)` and `awesome-copilot (GitHub: github/awesome-copilot)`; `copilot plugin marketplace browse copilot-plugins` -> `workiq`, `spark`, `advanced-security`; `copilot plugin marketplace browse awesome-copilot` returned a catalog with no `agentera` entry. Therefore no canonical Agentera marketplace source is verified, and no availability claim was added.
