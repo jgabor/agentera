@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 152 · 2026-04-25 13:46 · chore(runtime): smoke live Copilot and Codex hosts
+
+**What**: Completed the live host smoke plan. Codex `$hej` ran successfully, installed Copilot skill discovery worked, and current-checkout Copilot plugin loading exposed one blocker.
+**Commit**: 909522b chore(runtime): record live host smoke results
+**Inspiration**: Active plan plus Audit 12's preserved live-host caveat.
+**Discovered**: Copilot `--plugin-dir $HOME/git/agentera` and `.github/plugin` both failed with `skills path escapes plugin directory: ../../skills`. Installed Copilot plugins still show agentera skills at `1.16.0` and profilera at `2.8.0`, while `--plugin-dir` cannot load the current `1.18.1` checkout.
+**Verified**: `copilot --version` -> `GitHub Copilot CLI 1.0.35`; `codex --version` -> `codex-cli 0.124.0`. `copilot plugin list` showed installed agentera skills, and `copilot -p "/skills list"` exited 0 with available user skills including `realisera`, `planera`, `orkestrera`, `inspektera`, `dokumentera`, `inspirera`, `optimera`, `resonera`, `visionera`, and `visualisera`. `copilot --plugin-dir $HOME/git/agentera -p "..."` exited 1 with `skills path escapes plugin directory: ../../skills`; `.github/plugin` as plugin dir failed the same way. `codex -a never exec --sandbox read-only --ephemeral -C $HOME/git/agentera "Reply with exactly: codex-live-ok"` returned `codex-live-ok`. `codex -a never exec --sandbox read-only --ephemeral -C $HOME/git/agentera '$hej'` invoked hej and produced the agentera dashboard. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings. `python3 -m pytest -q` -> 357 passed. Artifact validation and `git diff --check` passed for changed artifacts.
+**Next**: Fix or package Copilot plugin skills so current-checkout loading cannot escape the plugin root.
+**Context**: intent (validate live Copilot/Codex host behavior) · constraints (read-only host smokes, no secrets, no dependencies) · unknowns (Copilot package layout for shared skill directories) · scope (PLAN, TODO, CHANGELOG, DOCS, PROGRESS).
+
 ■ ## Cycle 151 · 2026-04-25 12:07 · chore(plan): checkpoint Audit 11 freshness
 
 **What**: Completed Task 8 only. Audit 11 Runtime Portability Cleanup now has one completed plan state across CHANGELOG, TODO, DOCS, PLAN, and PROGRESS.
@@ -90,38 +100,11 @@
 **Next**: Task 2 can protect Copilot corpus data from sensitive values. Do not start metadata drift, refactor, or validation-deepening work until dependencies are met.
 **Context**: intent (resolve Section 21 contract ambiguity first) · constraints (Task 1 only, no redaction, no metadata drift, no commit) · unknowns (full family validation remains Task 6) · scope (`SPEC.md`, profilera corpus validator/tests, generated contracts, task bookkeeping).
 
-■ ## Cycle 142 · 2026-04-24 14:35 · chore(plan): checkpoint runtime portability freshness
-
-**What**: Completed Task 8 only. Recorded the Runtime Plugin Install and Profilera Portability freshness checkpoint after Tasks 1-7 passed.
-**Commit**: produced commits: none (user explicitly requested no commits during this orchestration)
-**Inspiration**: Task 8 acceptance plus Audit 10's freshness and runtime-caveat findings.
-**Discovered**: CHANGELOG had promoted detailed notes to `1.18.0`, leaving `[Unreleased]` empty. TODO had prior-plan entries, not this plan. HEALTH's old collector-limitation wording is stale after Tasks 4-6; live Copilot/Codex host-smoke caveat remains.
-**Verified**: Artifact-only checkpoint with no runnable behavior. CHANGELOG `[Unreleased]` has one plan-level Changed line. TODO has resolved/no-issue-needed entries for Tasks 1-8. This entry summarizes the plan and states produced commits were none. HEALTH resolution/caveat is recorded here: collector-unavailable wording is stale/resolved by Copilot and Codex collectors, while live Copilot/Codex host behavior remains metadata-level. `git diff --check -- CHANGELOG.md TODO.md .agentera/PROGRESS.md` -> no output. Artifact hook exits 0 for all touched files. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings.
-**Next**: Orkestrera should evaluate Task 8 and update PLAN status. Do not edit `.agentera/PLAN.md` from this checkpoint.
-**Context**: intent (Task 8 freshness artifacts only) · constraints (no commit, no PLAN edit, no feature work, concise updates) · unknowns (live Copilot/Codex host execution remains unavailable) · scope (`CHANGELOG.md`, `TODO.md`, `.agentera/PROGRESS.md`).
-
-■ ## Cycle 141 · 2026-04-24 14:04 · chore(release): bump suite to 1.18.0
-
-**What**: Completed Task 7 only. Applied DOCS.md `feat = minor` policy to the active plan's feature and fix work, bumping suite-track version targets from 1.17.0 to 1.18.0. Promoted CHANGELOG.md release notes to `1.18.0` with profilera collectors under Added, runtime install refinement under Changed, and schema/runtime metadata repairs under Fixed. Kept the stale marketplace-only profilera `2.8.0` signal absent because Claude validates per-plugin manifests and the current marketplace entry intentionally has no profilera version field.
-**Commit**: none (user explicitly requested no commits)
-**Inspiration**: DOCS.md versioning convention lists `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `skills/*/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `registry.json`; adapter tests also require OpenCode's bootstrap marker to match registry suite metadata.
-**Discovered**: Current version files still carried 1.17.0 before this task. Marketplace profilera no longer had a `version` field, which matches Task 2's validator finding that marketplace entry versions are ignored and stale profilera-only divergence should not be reintroduced.
-**Verified**: Version audit -> `version audit ok: DOCS feat=minor -> 1.18.0; registry 12, skill plugin.json 12, marketplace top/non-profilera, .github, .codex, and OpenCode marker aligned; marketplace profilera version intentionally absent`. CHANGELOG.md now has `## [1.18.0] · 2026-04-24`; Added covers Copilot and Codex profilera collectors plus corpus validation; Changed covers runtime plugin installation refinement; Fixed covers Claude/Copilot schema repair, Codex install-root metadata repair, collector status docs, and OpenCode 1.18.0 marker alignment. `claude plugin validate .` -> `✔ Validation passed`. `for dir in skills/*; do claude plugin validate "$dir" || exit 1; done` -> 12 plugin manifests each `✔ Validation passed`. `python3 scripts/validate_lifecycle_adapters.py` -> `lifecycle adapter metadata ok`. `python3 -m pytest tests/test_runtime_adapters.py -q` -> `14 passed in 0.02s`. `python3 -m pytest tests/test_extract_all.py tests/test_effective_profile.py tests/test_runtime_adapters.py -q` -> `90 passed in 0.05s`. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings.
-**Next**: Run final whitespace diff check, then Orkestrera should evaluate Task 7 and update PLAN status. Do not edit `.agentera/PLAN.md`.
-**Context**: intent (Task 7 version bump only) · constraints (no plan freshness checkpoint, no PLAN edit, no commit, no dependency changes) · scope (DOCS.md version targets, release notes, OpenCode marker required by adapter validation, and PROGRESS evidence).
-
-■ ## Cycle 140 · 2026-04-24 13:37 · test(profilera): integrate multi-runtime status validation
-
-**What**: Completed Task 6 only. Added Section 21 envelope validation for corpus metadata, duplicate `source_id` detection, runtime membership, and no-data envelopes. Added extraction fixtures for multi-runtime, single-runtime, complete, partial, duplicate, invalid, and no-data cases. Updated README, Codex metadata, DOCS, and CHANGELOG so profilera's Copilot/Codex collectors are described as capability-gated degradation instead of missing-collector limitations.
-**Commit**: none (user explicitly requested no commits)
-**Inspiration**: Decision 26 requires one multi-runtime Section 21 corpus with runtime IDs as provenance metadata. Decision 27 keeps generated profile/corpus data under the profilera profile path.
-**Discovered**: The extractor already emitted one envelope for all detected runtimes. The missing integration layer was envelope-level validation and stale Codex-facing status text that still said collectors did not exist.
-**Verified**: Multi-runtime entrypoint sample with isolated `HOME` containing `.claude/CLAUDE.md`, `.copilot/settings.json`, and `.codex/sessions/session.jsonl` produced `Building corpus from supported runtime data...`; `Runtimes: claude-code, copilot-cli, codex-cli`; `Total records: 3`; observed corpus `metadata.runtimes=claude-code,copilot-cli,codex-cli`, record runtimes `claude-code,codex-cli,copilot-cli`. Single-runtime Codex sample produced `Runtimes: codex-cli`; `conversation_turn: 1 records [ok]`; `Total records: 1`; observed record runtimes `codex-cli` with no extra config. No-data sample produced `No supported runtime data found.` and `No corpus.json written.` `python3 -m pytest tests/test_extract_all.py -q` -> `67 passed in 0.06s`, covering complete, partial, duplicate, no-data, invalid envelope, multi-runtime, and single-runtime cases. `python3 -m pytest tests/test_extract_all.py tests/test_effective_profile.py tests/test_runtime_adapters.py -q` -> `90 passed in 0.05s`. `python3 -m pytest tests/test_runtime_adapters.py -q` -> `14 passed in 0.02s`. `python3 scripts/validate_lifecycle_adapters.py` -> `lifecycle adapter metadata ok`. `python3 -m pytest -q` -> `337 passed in 0.34s`. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings.
-**Next**: Orkestrera should evaluate Task 6 and update PLAN status. Do not edit `.agentera/PLAN.md`; do not start Task 7.
-**Context**: intent (Task 6 integration/status/validation only) · constraints (no version bump, no plan freshness checkpoint, no PLAN edit, no commit, preserve Claude Code and OpenCode behavior) · scope (`skills/profilera/scripts/extract_all.py`, `tests/test_extract_all.py`, `tests/test_runtime_adapters.py`, `.codex-plugin/plugin.json`, `agents/openai.yaml`, `skills/profilera/agents/openai.yaml`, `README.md`, `CHANGELOG.md`, `.agentera/DOCS.md`, `.agentera/PROGRESS.md`).
-
 ## Archived Cycles
 
+- Cycle 142 (2026-04-24): chore(plan): checkpoint runtime portability freshness
+- Cycle 141 (2026-04-24): chore(release): bump suite to 1.18.0
+- Cycle 140 (2026-04-24): test(profilera): integrate multi-runtime status validation
 - Cycle 139 (2026-04-24): evidence(profilera): verify Codex extraction entrypoint
 - Cycle 138 (2026-04-24): feat(profilera): collect Codex corpus records
 - Cycle 137 (2026-04-24): feat(profilera): collect Copilot corpus records
