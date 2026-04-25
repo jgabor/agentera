@@ -40,7 +40,16 @@ def _skill_names(root: Path = REPO_ROOT) -> list[str]:
     return sorted(path.name for path in (root / "skills").iterdir() if (path / "SKILL.md").is_file())
 
 
-def _validate_copilot_package(plugin: dict[str, Any]) -> list[str]:
+def _resolve_inside(root: Path, path: str) -> Path | None:
+    resolved = (root / path).resolve()
+    try:
+        resolved.relative_to(root.resolve())
+    except ValueError:
+        return None
+    return resolved
+
+
+def _validate_copilot_package(plugin: dict[str, Any], plugin_root: Path = REPO_ROOT) -> list[str]:
     errors: list[str] = []
     skills = plugin.get("skills")
     if isinstance(skills, str):
@@ -52,7 +61,10 @@ def _validate_copilot_package(plugin: dict[str, Any]) -> list[str]:
 
     found: list[str] = []
     for path in skill_paths:
-        skill_root = (REPO_ROOT / ".github/plugin" / path).resolve()
+        skill_root = _resolve_inside(plugin_root, path)
+        if skill_root is None:
+            errors.append("copilot.skills paths must stay inside plugin root")
+            continue
         found.extend(child.name for child in skill_root.iterdir() if (child / "SKILL.md").is_file())
 
     if sorted(found) != _skill_names():
@@ -61,6 +73,11 @@ def _validate_copilot_package(plugin: dict[str, Any]) -> list[str]:
     hooks = plugin.get("hooks")
     if not isinstance(hooks, str | list):
         errors.append("copilot.hooks must be a string or string array path")
+    else:
+        hook_paths = [hooks] if isinstance(hooks, str) else hooks
+        for path in hook_paths:
+            if not isinstance(path, str) or _resolve_inside(plugin_root, path) is None:
+                errors.append("copilot.hooks paths must stay inside plugin root")
 
     if "lifecycleHooks" in plugin:
         errors.append("copilot: use supported hooks component field, not lifecycleHooks")
@@ -251,18 +268,18 @@ class TestCopilotPackaging:
     """Complex: inventory, paths, support level, and profilera limitation branches."""
 
     def test_copilot_package_passes(self):
-        plugin = _load_json(REPO_ROOT / ".github/plugin/plugin.json")
+        plugin = _load_json(REPO_ROOT / "plugin.json")
         assert _validate_copilot_package(plugin) == []
 
     def test_copilot_package_fails_on_missing_skill(self):
-        plugin = _load_json(REPO_ROOT / ".github/plugin/plugin.json")
+        plugin = _load_json(REPO_ROOT / "plugin.json")
         plugin["skills"] = []
         assert "copilot.skills path must expose skills/*/SKILL.md" in _validate_copilot_package(plugin)
 
-    def test_copilot_package_fails_on_stale_skill_objects(self):
-        plugin = _load_json(REPO_ROOT / ".github/plugin/plugin.json")
-        plugin["skills"] = [{"name": "hej", "path": "../../skills/hej"}]
-        assert "copilot.skills must be a string or string array path" in _validate_copilot_package(plugin)
+    def test_copilot_package_fails_on_escaping_skill_path(self):
+        plugin = _load_json(REPO_ROOT / "plugin.json")
+        plugin["skills"] = "../skills"
+        assert "copilot.skills paths must stay inside plugin root" in _validate_copilot_package(plugin)
 
 
 class TestCodexPackaging:
@@ -284,28 +301,28 @@ class TestLifecycleAdapters:
 
     def test_copilot_lifecycle_passes(self):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
-        plugin = _load_json(REPO_ROOT / ".github/plugin/plugin.json")
-        assert validator.validate_copilot(plugin) == []
+        plugin = _load_json(REPO_ROOT / "plugin.json")
+        assert validator.validate_copilot(plugin, REPO_ROOT) == []
         assert validator.validate_copilot_hooks(REPO_ROOT, plugin) == []
 
     def test_copilot_lifecycle_fails_on_stale_custom_field(self):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
-        plugin = _load_json(REPO_ROOT / ".github/plugin/plugin.json")
+        plugin = _load_json(REPO_ROOT / "plugin.json")
         plugin["lifecycleHooks"] = {"events": {"sessionStart": []}}
-        assert "copilot: use supported hooks component field, not lifecycleHooks" in validator.validate_copilot(plugin)
+        assert "copilot: use supported hooks component field, not lifecycleHooks" in validator.validate_copilot(plugin, REPO_ROOT)
 
     def test_copilot_lifecycle_fails_without_profilera_metadata_limits(self):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
-        plugin = _load_json(REPO_ROOT / ".github/plugin/plugin.json")
+        plugin = _load_json(REPO_ROOT / "plugin.json")
         plugin["description"] = "agentera: portable skills"
         assert "copilot.profilera: description must expose bounded corpus metadata limits" in validator.validate_copilot(
-            plugin
+            plugin, REPO_ROOT
         )
 
     def test_copilot_lifecycle_validates_list_form_hooks(self):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
-        plugin = _load_json(REPO_ROOT / ".github/plugin/plugin.json")
-        plugin["hooks"] = ["../hooks"]
+        plugin = _load_json(REPO_ROOT / "plugin.json")
+        plugin["hooks"] = [".github/hooks"]
         assert validator.validate_copilot_hooks(REPO_ROOT, plugin) == []
 
     def test_copilot_lifecycle_list_form_hooks_fail_on_invalid_handler(self, tmp_path):
@@ -317,7 +334,7 @@ class TestLifecycleAdapters:
             json.dumps({"name": "sessionStart", "type": "command", "command": "python hooks/session_start.py"}),
             encoding="utf-8",
         )
-        errors = validator.validate_copilot_hooks(root, {"hooks": ["../hooks"]})
+        errors = validator.validate_copilot_hooks(root, {"hooks": [".github/hooks"]})
         assert "copilot.sessionStart[0]: use bash/powershell, not Claude-style command" in errors
         assert "copilot.sessionStart[0]: handler must define bash or powershell" in errors
 

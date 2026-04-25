@@ -9,8 +9,9 @@ doc_root: .
 style:    technical, concise, sections with tables, no badges
 auto_gen:
   - none
-versioning:
+  versioning:
   version_files:
+    - plugin.json
     - .github/plugin/plugin.json
     - .codex-plugin/plugin.json
     - skills/*/.claude-plugin/plugin.json
@@ -59,7 +60,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
 | Registry | registry.json | 2026-04-13 | ■ current |
 | Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-13 | ■ current |
-| Copilot plugin manifest | .github/plugin/plugin.json | 2026-04-23 | ■ current |
+| Copilot plugin manifest | plugin.json | 2026-04-25 | ■ current |
 | Codex plugin manifest | .codex-plugin/plugin.json | 2026-04-24 | ■ current |
 | Codex UI metadata | skills/&lt;name&gt;/agents/openai.yaml; agents/openai.yaml | 2026-04-24 | ■ current |
 | Hooks registry | hooks/hooks.json | 2026-04-03 | ■ current |
@@ -80,6 +81,10 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Tests**: 357 tests across 13 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-25 (Copilot packaging fix)
+
+- [gap] Current-checkout Copilot plugin loading rejected `../../skills`; root `plugin.json` now loads shared `skills/` inside plugin root · info (fixed)
 
 ### 2026-04-25 (Live Copilot/Codex smoke)
 

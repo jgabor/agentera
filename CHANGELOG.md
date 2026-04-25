@@ -11,6 +11,8 @@
 
 ### Fixed
 
+- Copilot current-checkout plugin loading now uses root `plugin.json` with in-root skill and hook paths, so `copilot --plugin-dir <repo>` can discover agentera skills.
+
 ## [1.18.1] · 2026-04-25
 
 ### Changed
