@@ -1,0 +1,10 @@
+interface:
+  name: inspirera
+  display_name: inspirera
+  description: "INSPIRERA: Insight Navigation: Source Pattern Identification and Resonance: Evaluate, Reframe, Assimilate. Analyzes external links and maps concepts, patterns, and primitives to your own projects."
+  invocation_hint: "Use $inspirera, or inspect it with /skills."
+policy:
+  allow_implicit_invocation: true
+dependencies:
+  required_capabilities: []
+  limitations: []

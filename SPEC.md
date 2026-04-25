@@ -1008,7 +1008,7 @@ The contract is a data model, not a path model. It specifies what profilera need
 
 ### Record types
 
-Four canonical record families capture the decision-relevant signals profilera consumes. Each record is a JSON object with domain fields (varying per type) and provenance metadata (shared across all types). Adapters MAY define additional runtime-specific record types (see Runtime extensions below).
+Four canonical record families capture the decision-relevant signals profilera consumes. Each record is a JSON object with provenance metadata at top level and domain fields nested under `data`. Adapters MAY define additional runtime-specific record types (see Runtime extensions below).
 
 #### Provenance metadata
 
@@ -1024,8 +1024,11 @@ Every record includes these fields regardless of type:
 | `source_kind` | Yes | string | Which record family this record belongs to (one of the four portable names below, or a runtime extension name) |
 | `runtime` | Yes | string | Host runtime that produced this record (e.g., `"claude-code"`, `"opencode"`) |
 | `adapter_version` | Yes | string | Version of the adapter that extracted this record |
+| `data` | Yes | object | Type-specific payload for this record |
 
 The `source_id` field enables idempotent re-extraction: the same logical record produces the same `source_id` regardless of when extraction runs. The `runtime` and `adapter_version` fields enable profilera to handle schema variations across runtimes.
+
+All fields listed in the record family tables below live inside `data`, not beside provenance fields. This keeps provenance stable across runtimes while allowing each source family to carry its own payload shape.
 
 #### instruction_document
 
@@ -1165,7 +1168,7 @@ A family with status `"ok"` extracted all records successfully. `"partial"` mean
 
 #### Records array
 
-The `records` array contains all extracted records in no guaranteed order. Each element is a JSON object that conforms to one of the four portable record types (or a runtime extension type) defined earlier in this section. Every record carries the full provenance metadata fields from the Provenance metadata table above.
+The `records` array contains all extracted records in no guaranteed order. Each element is a JSON object with the provenance fields from the table above plus a `data` object. The `data` object conforms to one of the four portable record payloads, or to a documented runtime extension payload.
 
 Consumers filter and group records by `source_kind` to access specific families. The `runtime` field on each record identifies which adapter produced it, enabling cross-runtime corpus aggregation.
 
@@ -1194,10 +1197,12 @@ Consumers filter and group records by `source_kind` to access specific families.
       "source_kind": "instruction_document",
       "runtime": "claude-code",
       "adapter_version": "2.7.0",
-      "doc_type": "claude_md",
-      "name": "CLAUDE.md (global)",
-      "content": "...",
-      "scope": "global"
+      "data": {
+        "doc_type": "claude_md",
+        "name": "CLAUDE.md (global)",
+        "content": "...",
+        "scope": "global"
+      }
     }
   ]
 }

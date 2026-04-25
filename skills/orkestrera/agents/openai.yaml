@@ -1,0 +1,10 @@
+interface:
+  name: orkestrera
+  display_name: orkestrera
+  description: "ORKESTRERA: Orchestration Runtime: Knowledge-coordinated Execution Strategy, Targeted Routing: Evaluate, Resolve, Adapt. Skill-agnostic meta-orchestrator that dispatches skills as subagents, evaluates with inspektera, and loops through plans."
+  invocation_hint: "Use $orkestrera, or inspect it with /skills."
+policy:
+  allow_implicit_invocation: true
+dependencies:
+  required_capabilities: []
+  limitations: []

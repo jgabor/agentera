@@ -1,0 +1,10 @@
+interface:
+  name: realisera
+  display_name: realisera
+  description: "REALISERA: Relentless Execution: Autonomous Loops Iterating Software: Evolve, Refine, Adapt. Independently decides what to build, evolves projects, and makes structured progress on a codebase."
+  invocation_hint: "Use $realisera, or inspect it with /skills."
+policy:
+  allow_implicit_invocation: true
+dependencies:
+  required_capabilities: []
+  limitations: []

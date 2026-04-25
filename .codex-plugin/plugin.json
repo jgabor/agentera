@@ -1,0 +1,173 @@
+{
+  "name": "agentera",
+  "version": "1.18.1",
+  "description": "agentera: entry-point routing, vision, deliberation, planning, autonomous development, optimization, auditing, documentation, visual identity, research, decision-profile mining, and orchestration",
+  "skills": "./skills/",
+  "codex": {
+    "uiMetadata": "./agents/openai.yaml",
+    "discovery": {
+      "skills": "/skills",
+      "plugins": "/plugins"
+    },
+    "invocationHint": "Use $skill for explicit invocation, for example $hej. Portable skills may also be invoked implicitly.",
+    "limitations": [
+      "Lifecycle hooks are unavailable for real-time Write/Edit interception in Codex. Run validation commands manually after edits.",
+      "profilera collects bounded Codex session corpus data when present and degrades by reporting missing source families in corpus metadata."
+    ]
+  },
+  "lifecycleHooks": {
+    "runtime": "codex-cli",
+    "status": "experimental-disabled",
+    "configured": false,
+    "limitations": [
+      "Codex hooks are experimental, require host config opt-in, and are not supported on Windows.",
+      "Codex does not currently provide equivalent Write/Edit interception for real-time artifact validation."
+    ],
+    "unsupportedEvents": [
+      {
+        "event": "postToolUse",
+        "reason": "No equivalent Write/Edit interception is available for real-time artifact validation."
+      },
+      {
+        "event": "sessionStart",
+        "reason": "Lifecycle hook support is experimental and disabled by default."
+      },
+      {
+        "event": "stop",
+        "reason": "Lifecycle hook support is experimental and disabled by default."
+      }
+    ]
+  },
+  "skillMetadata": [
+    {
+      "name": "hej",
+      "description": "HEJ: Holistic Entry Junction: Orient, Route, Activate. Single point of entry to the suite. Detects fresh vs returning projects, delivers briefings, and routes to the right skill.",
+      "path": "./skills/hej",
+      "runtimeSupport": "portable",
+      "invocationHint": "$hej",
+      "policy": {
+        "allow_implicit_invocation": true
+      }
+    },
+    {
+      "name": "inspirera",
+      "description": "INSPIRERA: Insight Navigation: Source Pattern Identification and Resonance: Evaluate, Reframe, Assimilate. Analyzes external links and maps concepts, patterns, and primitives to your own projects.",
+      "path": "./skills/inspirera",
+      "runtimeSupport": "portable",
+      "invocationHint": "$inspirera",
+      "policy": {
+        "allow_implicit_invocation": true
+      }
+    },
+    {
+      "name": "profilera",
+      "description": "PROFILERA: Persona Reconstruction: Observable Footprint Indexing Logic: Examine, Reconcile, Articulate. Mines session history to build an agent-consumable decision profile.",
+      "path": "./skills/profilera",
+      "runtimeSupport": "limited",
+      "invocationHint": "$profilera; limited to available Section 21 corpus source families",
+      "policy": {
+        "allow_implicit_invocation": false
+      },
+      "requiredCapabilities": [
+        {
+          "name": "codex_session_corpus",
+          "status": "degraded",
+          "action": "Run profilera extraction; missing Codex source families are reported in corpus metadata instead of blocking extraction."
+        }
+      ],
+      "limitations": [
+        "Codex corpus collection is bounded to known history, session, and config surfaces. Missing source families are reported as degraded metadata."
+      ]
+    },
+    {
+      "name": "realisera",
+      "description": "REALISERA: Relentless Execution: Autonomous Loops Iterating Software: Evolve, Refine, Adapt. Independently decides what to build, evolves projects, and makes structured progress on a codebase.",
+      "path": "./skills/realisera",
+      "runtimeSupport": "portable",
+      "invocationHint": "$realisera",
+      "policy": {
+        "allow_implicit_invocation": true
+      }
+    },
+    {
+      "name": "optimera",
+      "description": "OPTIMERA: Objective Pursuit: Targeted Iterative Measurement: Experiment, Record, Advance. Metric-driven optimization that improves any measurable property of a codebase through systematic experimentation.",
+      "path": "./skills/optimera",
+      "runtimeSupport": "portable",
+      "invocationHint": "$optimera",
+      "policy": {
+        "allow_implicit_invocation": true
+      }
+    },
+    {
+      "name": "resonera",
+      "description": "RESONERA: Reflective Engagement: Socratic Observation Nexus: Explore, Reframe, Articulate. Structured deliberation through Socratic questioning, producing decision artifacts the rest of the suite consumes.",
+      "path": "./skills/resonera",
+      "runtimeSupport": "portable",
+      "invocationHint": "$resonera",
+      "policy": {
+        "allow_implicit_invocation": true
+      }
+    },
+    {
+      "name": "inspektera",
+      "description": "INSPEKTERA: Integrity Navigation: Systematic Pattern Evaluation, Knowledge Tracing: Examine, Report, Advise. Codebase health audit with multi-dimensional evaluation, confidence scoring, and trend tracking.",
+      "path": "./skills/inspektera",
+      "runtimeSupport": "portable",
+      "invocationHint": "$inspektera",
+      "policy": {
+        "allow_implicit_invocation": true
+      }
+    },
+    {
+      "name": "planera",
+      "description": "PLANERA: Planning Logic: Adaptive Notation, Executable Requirements Architecture: Explore, Refine, Articulate. Scale-adaptive planning with behavioral acceptance criteria that bridges deliberation and execution.",
+      "path": "./skills/planera",
+      "runtimeSupport": "portable",
+      "invocationHint": "$planera",
+      "policy": {
+        "allow_implicit_invocation": true
+      }
+    },
+    {
+      "name": "visionera",
+      "description": "VISIONERA: Visionary Inception: Strategic Imagination, Observation Nexus: Explore, Refine, Articulate. Deep creation and stewardship of VISION.md through codebase exploration, domain research, and aspirational challenge.",
+      "path": "./skills/visionera",
+      "runtimeSupport": "portable",
+      "invocationHint": "$visionera",
+      "policy": {
+        "allow_implicit_invocation": true
+      }
+    },
+    {
+      "name": "dokumentera",
+      "description": "DOKUMENTERA: Documentation Origin: Knowledge Unified, Methodology Enforced, Notation Traced: Examine, Record, Articulate. DTC-first documentation creation, maintenance, and verification with DOCS.md coverage tracking.",
+      "path": "./skills/dokumentera",
+      "runtimeSupport": "portable",
+      "invocationHint": "$dokumentera",
+      "policy": {
+        "allow_implicit_invocation": true
+      }
+    },
+    {
+      "name": "visualisera",
+      "description": "VISUALISERA: Visual Identity: Systematic Unified Aesthetic Language, Intent-driven Style Engineering: Record, Articulate. Creates, refines, and audits DESIGN.md visual identity files with bundled spec and validation.",
+      "path": "./skills/visualisera",
+      "runtimeSupport": "portable",
+      "invocationHint": "$visualisera",
+      "policy": {
+        "allow_implicit_invocation": true
+      }
+    },
+    {
+      "name": "orkestrera",
+      "description": "ORKESTRERA: Orchestration Runtime: Knowledge-coordinated Execution Strategy, Targeted Routing: Evaluate, Resolve, Adapt. Skill-agnostic meta-orchestrator that dispatches skills as subagents, evaluates with inspektera, and loops through plans.",
+      "path": "./skills/orkestrera",
+      "runtimeSupport": "portable",
+      "invocationHint": "$orkestrera",
+      "policy": {
+        "allow_implicit_invocation": true
+      }
+    }
+  ]
+}

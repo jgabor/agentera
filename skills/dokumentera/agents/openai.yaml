@@ -1,0 +1,10 @@
+interface:
+  name: dokumentera
+  display_name: dokumentera
+  description: "DOKUMENTERA: Documentation Origin: Knowledge Unified, Methodology Enforced, Notation Traced: Examine, Record, Articulate. DTC-first documentation creation, maintenance, and verification with DOCS.md coverage tracking."
+  invocation_hint: "Use $dokumentera, or inspect it with /skills."
+policy:
+  allow_implicit_invocation: true
+dependencies:
+  required_capabilities: []
+  limitations: []

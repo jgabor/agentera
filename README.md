@@ -15,11 +15,49 @@
 npx skills install -g jgabor/agentera
 ```
 
-Installs all 12 skills for any supported runtime: Claude Code, OpenCode, Cursor, Codex, Gemini CLI, and [40+ others](https://skills.sh). Type `/hej` to begin.
+Installs all 12 skills through the Skills CLI. Runtime-native loading support varies by host.
+
+The Skills CLI path is the cross-runtime install path. Native plugin commands are runtime-specific distribution paths; direct skill folders are local-authoring fallbacks that load the existing `skills/<name>/SKILL.md` directories.
+
+### Runtime support
+
+| Runtime | Distribution install | Local skill-folder fallback | Discovery | Invocation | Hook support |
+|---------|----------------------|-----------------------------|-----------|------------|--------------|
+| Claude Code | Add the marketplace, then install the plugin: `claude plugin marketplace add <source>` and `claude plugin install <plugin>@<marketplace>` | Skills CLI or Claude Code skill paths using `skills/<name>/SKILL.md` | Claude Code skill/plugin discovery; validate plugin metadata with `claude plugin validate .` | `/hej`, `/realisera`, etc. | Full lifecycle support |
+| OpenCode | Local plugins load from `.opencode/plugins/` or `~/.config/opencode/plugins/`; hook plugin is `.opencode/plugins/agentera.js` | `.opencode/skills`, `.claude/skills`, `.agents/skills`, or global equivalents | Native `skill` tool lists available skills | Loaded by name through the `skill` tool | Full lifecycle support via plugin |
+| Copilot CLI | `copilot plugin install plugin@marketplace`, `OWNER/REPO`, `OWNER/REPO:PATH`, Git URL, or local path | Project: `.github/skills`, `.agents/skills`, `.claude/skills`; personal: `~/.copilot/skills`, `~/.agents/skills`, `~/.claude/skills` | `/skills list`, `/skills info`, `/skills reload`; marketplaces via `copilot plugin marketplace add/list/browse/remove` | `/hej`, `/realisera`, etc. | Partial lifecycle support |
+| Codex CLI | Interactive `/plugins`; marketplace sources managed with `codex plugin marketplace add`, `upgrade`, or `remove` | Repo: `.agents/skills`; user: `$HOME/.agents/skills`; admin: `/etc/codex/skills` | `/skills`; plugins via `/plugins` | `$hej`, `$realisera`, etc. | Experimental hooks only; no parity |
+
+Copilot and Codex metadata point at the shared `skills/<name>/SKILL.md` source. `profilera` is capability-gated in native metadata because it depends on runtime-specific Section 21 corpus surfaces; missing source families degrade into corpus metadata instead of blocking supported extraction.
+
+Claude Code plugin metadata is namespaced and the marketplace manifest lives at `.claude-plugin/marketplace.json`. There is no `claude plugin add` command in the local CLI evidence; use the marketplace add plus plugin install flow above.
+
+Copilot plugin management supports `copilot plugin install`, `copilot plugin list`, and `copilot plugin marketplace add/list/browse/remove`. Copilot skill folders are useful for local authoring and direct loading; plugin install is the distribution path.
+
+Codex presentation metadata uses Codex conventions: inspect skills with `/skills`, inspect plugins with `/plugins`, and invoke explicitly with `$skill`, for example `$hej`. Per-skill metadata lives at `skills/<name>/agents/openai.yaml`. Direct `.agents/skills` folders are the local-authoring fallback, not the marketplace install path. Portable skills allow implicit invocation. `profilera` disables implicit invocation in its per-skill Codex metadata because profile extraction remains corpus-dependent and reports missing source families as degraded metadata.
+
+OpenCode reads skills from `.opencode/skills`, `.claude/skills`, `.agents/skills`, and global equivalents. For local plugin loading, place plugins in `.opencode/plugins/` or `~/.config/opencode/plugins/`.
 
 ### Lifecycle hooks (optional)
 
-Hooks add session context preload, artifact validation, and session bookmarks. Without hooks, skills work independently; with hooks, they behave as a team.
+Hooks add session context preload, artifact validation, and session bookmarks. Without hooks, portable skills still read and write the same markdown artifacts.
+
+| Runtime | Session preload | Artifact validation after edits | Session bookmark | Status |
+|---------|-----------------|----------------------------------|------------------|--------|
+| Claude Code | Active | Active via PostToolUse | Active | Full lifecycle support |
+| OpenCode | Active via plugin | Active via `tool.execute.after` | Active via session events | Full lifecycle support |
+| Copilot CLI | Partial via `sessionStart` command handler | Partial via `postToolUse` command handler if validated by runtime metadata | Partial via `agentStop` command handler | `.github/hooks/*.json` use lower-camel events and command handlers |
+| Codex CLI | Experimental behind `[features] codex_hooks = true` | Unsupported for real-time Write/Edit interception parity | Experimental behind `[features] codex_hooks = true` | Disabled on Windows; no real-time artifact validation claim |
+
+Do not assume hook parity between runtimes. Codex skill loading can be portable before Codex lifecycle hooks can enforce real-time artifact validation.
+
+Copilot lifecycle metadata is adapter strategy, not a Claude hook copy. Repo hook files live under `.github/hooks/*.json`; command hooks use `bash`, `powershell`, `cwd`, `env`, and `timeoutSec`. Treat support as partial unless manifest validation proves a specific hook path.
+
+Codex metadata advertises lifecycle limitations only. Codex hooks are experimental behind `[features] codex_hooks = true`, are disabled on Windows, and do not provide current Write/Edit interception parity.
+
+### Hook setup
+
+Hooks are optional. Install them only where the host runtime supports equivalent lifecycle events.
 
 **Claude Code**: hooks auto-load from the installed skill directory. No extra step.
 
@@ -32,7 +70,28 @@ curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plug
 
 ### Alternative install methods
 
-**Claude Code plugin registry**: `claude plugin add jgabor/agentera`
+**Claude Code plugin marketplace**:
+
+```bash
+claude plugin marketplace add <source>
+claude plugin install <plugin>@<marketplace>
+```
+
+Validate local plugin metadata with:
+
+```bash
+claude plugin validate .
+```
+
+**Copilot plugin**:
+
+```bash
+copilot plugin install OWNER/REPO
+```
+
+Copilot also accepts `plugin@marketplace`, `OWNER/REPO:PATH`, Git URLs, and local paths.
+
+**Codex plugin marketplace**: use interactive `/plugins` to install and enable plugins. Manage marketplace sources with `codex plugin marketplace add|upgrade|remove`.
 
 **Manual (git clone)**:
 
@@ -40,16 +99,17 @@ curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plug
 git clone git@github.com:jgabor/agentera.git ~/.agents/agentera
 ```
 
-Then reference globally in your runtime's settings (Claude Code example):
+Then link or reference `skills/<name>/SKILL.md` through your runtime's skill-folder mechanism. OpenCode requires each skill directory one level under a searched `skills` directory:
 
-```json
-{
-  "skillPaths": ["~/.agents/agentera/skills"]
-}
+```bash
+mkdir -p ~/.config/opencode/skills
+for skill in ~/.agents/agentera/skills/*/; do
+  ln -s "$skill" ~/.config/opencode/skills/$(basename "$skill")
+done
 ```
 
 > [!NOTE]
-> `profilera` mines runtime-specific session data and remains adapter-specific per the [Section 21 Session Corpus Contract](./SPEC.md). All other skills are fully portable. For OpenCode capability details, see [`references/adapters/opencode.md`](./references/adapters/opencode.md).
+> `profilera` mines runtime-specific session data and remains adapter-specific per the [Section 21 Session Corpus Contract](./SPEC.md). Copilot CLI and Codex CLI collectors contribute available bounded source families to the unified corpus; missing families are reported as capability-gated degradation metadata. All other skills are portable through shared markdown artifacts. For OpenCode capability details, see [`references/adapters/opencode.md`](./references/adapters/opencode.md).
 
 ---
 

@@ -5,8 +5,8 @@
 # ///
 """Run all profilera extractors and write a unified corpus.json.
 
-Probes for recognized runtime data (currently Claude Code), runs the appropriate
-extractors, and produces a single corpus.json with per-record provenance metadata.
+Probes for recognized runtime data, runs the appropriate extractors, and
+produces a single corpus.json with per-record provenance metadata.
 If no runtime data is found, exits gracefully with an informative message.
 
 Usage:
@@ -33,6 +33,8 @@ from typing import Generator
 
 CLAUDE_DIR = Path.home() / ".claude"
 PROJECTS_DIR = CLAUDE_DIR / "projects"
+COPILOT_DIR = Path.home() / ".copilot"
+CODEX_DIR = Path.home() / ".codex"
 GIT_DIR = Path(os.environ.get("PROFILERA_GIT_DIR", Path.home() / "git"))
 
 
@@ -55,8 +57,39 @@ _LEGACY_PROFILE_DIR = CLAUDE_DIR / "profile"
 
 ADAPTER_VERSION = "2.6.0"
 RUNTIME_CLAUDE_CODE = "claude-code"
+RUNTIME_COPILOT_CLI = "copilot-cli"
+RUNTIME_CODEX_CLI = "codex-cli"
 
-# Section 21 provenance metadata: required fields on every record
+_SOURCE_FAMILIES = (
+    "instruction_document",
+    "history_prompt",
+    "conversation_turn",
+    "project_config_signal",
+)
+
+_SENSITIVE_CONFIG_KEY_WORDS = frozenset((
+    "auth",
+    "credential",
+    "key",
+    "password",
+    "secret",
+    "token",
+))
+
+_SENSITIVE_CONFIG_KEY_COMPOUNDS = (
+    "accesskey",
+    "accesstoken",
+    "apikey",
+    "authtoken",
+    "githubtoken",
+    "privatekey",
+    "refreshtoken",
+    "secretkey",
+)
+
+_REDACTED_CONFIG_VALUE = "[redacted]"
+
+# Section 21 record envelope: top-level provenance plus a payload object
 _REQUIRED_PROVENANCE_FIELDS = (
     "source_id",
     "timestamp",
@@ -66,13 +99,21 @@ _REQUIRED_PROVENANCE_FIELDS = (
     "adapter_version",
 )
 
+_REQUIRED_RECORD_FIELDS = (*_REQUIRED_PROVENANCE_FIELDS, "data")
+
+_REQUIRED_METADATA_FIELDS = (
+    "extracted_at",
+    "runtimes",
+    "adapter_version",
+    "families",
+    "runtime_status",
+    "total_records",
+)
+
+_VALID_FAMILY_STATUSES = frozenset(("ok", "missing", "partial"))
+
 # Section 21 portable source_kind values
-_PORTABLE_SOURCE_KINDS = frozenset({
-    "instruction_document",
-    "history_prompt",
-    "conversation_turn",
-    "project_config_signal",
-})
+_PORTABLE_SOURCE_KINDS = frozenset(_SOURCE_FAMILIES)
 
 # Old intermediate files to clean up when corpus.json is written
 _LEGACY_FILES = (
@@ -703,6 +744,97 @@ def _probe_claude_code() -> bool:
     return False
 
 
+def _copilot_known_surfaces(copilot_dir: Path | None = None) -> dict[str, list[Path]]:
+    """Return the Copilot user-agent surfaces this collector may inspect."""
+    base = copilot_dir or COPILOT_DIR
+    return {
+        "instruction_document": [
+            base / "skills",
+            base / "installed-plugins",
+        ],
+        "history_prompt": [],
+        "conversation_turn": [],
+        "project_config_signal": [
+            base / "settings.json",
+            base / "installed-plugins",
+        ],
+    }
+
+
+def _codex_known_surfaces(codex_dir: Path | None = None) -> dict[str, list[Path]]:
+    """Return the Codex user-agent surfaces this collector may inspect."""
+    base = codex_dir or CODEX_DIR
+    return {
+        "instruction_document": [],
+        "history_prompt": [
+            base / "history.jsonl",
+        ],
+        "conversation_turn": [
+            base / "sessions",
+        ],
+        "project_config_signal": [
+            base / "config.toml",
+        ],
+    }
+
+
+def _surface_has_content(path: Path) -> bool:
+    """Return True when a known runtime surface exists and is non-empty."""
+    if path.is_file():
+        return True
+    if path.is_dir():
+        try:
+            next(path.iterdir())
+        except (StopIteration, OSError):
+            return False
+        return True
+    return False
+
+
+def _probe_copilot_cli(copilot_dir: Path | None = None) -> dict:
+    """Check for Copilot CLI user-agent data without leaving known surfaces."""
+    surfaces = _copilot_known_surfaces(copilot_dir)
+    checked = sorted({str(path) for paths in surfaces.values() for path in paths})
+    available = any(
+        _surface_has_content(path) for paths in surfaces.values() for path in paths
+    )
+    return {
+        "runtime": RUNTIME_COPILOT_CLI,
+        "available": available,
+        "checked_surfaces": checked,
+        "families": {
+            family: {
+                "status": "available" if any(_surface_has_content(p) for p in paths)
+                else "missing",
+                "checked_surfaces": [str(path) for path in paths],
+            }
+            for family, paths in surfaces.items()
+        },
+    }
+
+
+def _probe_codex_cli(codex_dir: Path | None = None) -> dict:
+    """Check for Codex CLI user-agent data without leaving known surfaces."""
+    surfaces = _codex_known_surfaces(codex_dir)
+    checked = sorted({str(path) for paths in surfaces.values() for path in paths})
+    available = any(
+        _surface_has_content(path) for paths in surfaces.values() for path in paths
+    )
+    return {
+        "runtime": RUNTIME_CODEX_CLI,
+        "available": available,
+        "checked_surfaces": checked,
+        "families": {
+            family: {
+                "status": "available" if any(_surface_has_content(p) for p in paths)
+                else "missing",
+                "checked_surfaces": [str(path) for path in paths],
+            }
+            for family, paths in surfaces.items()
+        },
+    }
+
+
 def _iso_now() -> str:
     """Return the current UTC time as an ISO 8601 string."""
     return datetime.now(timezone.utc).isoformat()
@@ -792,6 +924,372 @@ def _records_from_configs(entries: list[dict]) -> list[dict]:
     return records
 
 
+def _copilot_project_from_path(path: Path, copilot_dir: Path | None = None) -> str:
+    """Derive a stable project/plugin label from a Copilot runtime path."""
+    base = copilot_dir or COPILOT_DIR
+    installed = base / "installed-plugins"
+    try:
+        return path.relative_to(installed).parts[0]
+    except (ValueError, IndexError):
+        return "global"
+
+
+def _is_sensitive_config_key(key: str) -> bool:
+    """Detect credential-like config keys without redacting words like tokenizer."""
+    text = str(key)
+    split_camel = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", text)
+    terms = {
+        part
+        for part in re.split(r"[^A-Za-z0-9]+", split_camel.lower())
+        if part
+    }
+    if terms & _SENSITIVE_CONFIG_KEY_WORDS:
+        return True
+
+    compact = re.sub(r"[^a-z0-9]+", "", text.lower())
+    return any(word in compact for word in _SENSITIVE_CONFIG_KEY_COMPOUNDS)
+
+
+def _copilot_json_signals(data: dict) -> list[str]:
+    """Extract bounded config signals without copying full runtime settings."""
+    signals = []
+    for key, value in sorted(data.items()):
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            signal_value = _REDACTED_CONFIG_VALUE if _is_sensitive_config_key(key) else value
+            signals.append(f"{key}: {signal_value}")
+        elif isinstance(value, dict):
+            signals.append(f"{key}: {len(value)} keys")
+        elif isinstance(value, list):
+            signals.append(f"{key}: {len(value)} items")
+        else:
+            signals.append(f"{key}: {type(value).__name__}")
+    return signals
+
+
+def extract_copilot_instruction_documents(
+    copilot_dir: Path | None = None,
+) -> list[dict]:
+    """Read Copilot skill instruction documents from known user-agent paths."""
+    base = copilot_dir or COPILOT_DIR
+    results = []
+    paths: set[Path] = set()
+
+    personal_skills = base / "skills"
+    if personal_skills.exists():
+        paths.update(personal_skills.glob("**/*.md"))
+
+    installed_plugins = base / "installed-plugins"
+    if installed_plugins.exists():
+        paths.update(installed_plugins.glob("*/SKILL.md"))
+        paths.update(installed_plugins.glob("*/skills/*/SKILL.md"))
+
+    for md in sorted(path for path in paths if path.is_file()):
+        text = md.read_text(encoding="utf-8", errors="replace")
+        fm, body = parse_frontmatter(text)
+        results.append({
+            "source": str(md),
+            "project": _copilot_project_from_path(md, base),
+            "type": "copilot_skill_instruction",
+            "name": fm.get("name", md.stem),
+            "description": fm.get("description", ""),
+            "content": body,
+        })
+
+    return results
+
+
+def extract_copilot_configs(copilot_dir: Path | None = None) -> list[dict]:
+    """Read Copilot runtime config signals from known user-agent paths."""
+    base = copilot_dir or COPILOT_DIR
+    results = []
+    config_paths = [base / "settings.json"]
+    installed_plugins = base / "installed-plugins"
+    if installed_plugins.exists():
+        config_paths.extend(installed_plugins.glob("*/.github/plugin/plugin.json"))
+        config_paths.extend(installed_plugins.glob("*/plugin.json"))
+
+    for config_path in sorted(path for path in config_paths if path.is_file()):
+        text = config_path.read_text(encoding="utf-8", errors="replace")
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError:
+            signals = [truncate(text, 1000)]
+        else:
+            signals = _copilot_json_signals(data) if isinstance(data, dict) else []
+        if not signals:
+            continue
+        results.append({
+            "project": _copilot_project_from_path(config_path, base),
+            "config_type": "copilot_runtime_config",
+            "file_path": str(config_path),
+            "signals": signals,
+        })
+
+    return results
+
+
+def _codex_session_id(record: dict, path: Path) -> str:
+    """Extract a Codex session/runtime ID with file-stem fallback."""
+    for key in ("session_id", "sessionId", "conversation_id", "conversationId"):
+        value = record.get(key)
+        if value:
+            return str(value)
+    return path.stem
+
+
+def _codex_timestamp(record: dict, fallback: str = "") -> str:
+    """Extract a timestamp from known Codex record keys."""
+    for key in ("timestamp", "ts", "created_at", "createdAt"):
+        value = record.get(key)
+        if value:
+            return str(value)
+    return fallback
+
+
+def _codex_message_text(record: dict) -> tuple[str, str]:
+    """Extract role and text from common Codex JSONL message shapes."""
+    message = record.get("message")
+    if isinstance(message, dict):
+        role = str(message.get("role", record.get("role", "unknown")))
+        text = extract_text(message.get("content", ""))
+        return role, text
+    role = str(record.get("role", record.get("type", "unknown")))
+    for key in ("content", "text", "prompt"):
+        text = extract_text(record.get(key, ""))
+        if text:
+            return role, text
+    return role, ""
+
+
+def extract_codex_history(codex_dir: Path | None = None) -> list[dict]:
+    """Read Codex prompt history from the bounded user-agent history file."""
+    base = codex_dir or CODEX_DIR
+    history_path = base / "history.jsonl"
+    if not history_path.is_file():
+        return []
+
+    results = []
+    for line_no, record in enumerate(parse_jsonl(history_path), start=1):
+        _, prompt = _codex_message_text(record)
+        if not prompt:
+            continue
+        session_id = _codex_session_id(record, history_path)
+        results.append({
+            "source": str(history_path),
+            "line": line_no,
+            "runtime_session_id": session_id,
+            "runtime_record_id": str(record.get("id", f"line-{line_no}")),
+            "timestamp": _codex_timestamp(record),
+            "project": record.get("cwd") or record.get("project") or "global",
+            "prompt": prompt,
+        })
+    return results
+
+
+def extract_codex_conversations(codex_dir: Path | None = None) -> list[dict]:
+    """Read Codex session JSONL turns from the bounded sessions directory."""
+    base = codex_dir or CODEX_DIR
+    sessions = base / "sessions"
+    if not sessions.is_dir():
+        return []
+
+    results = []
+    for session_path in sorted(sessions.glob("**/*.jsonl")):
+        if not session_path.is_file():
+            continue
+        for line_no, record in enumerate(parse_jsonl(session_path), start=1):
+            role, text = _codex_message_text(record)
+            if not text:
+                continue
+            session_id = _codex_session_id(record, session_path)
+            results.append({
+                "source": str(session_path),
+                "line": line_no,
+                "runtime_session_id": session_id,
+                "runtime_record_id": str(record.get("id", f"line-{line_no}")),
+                "timestamp": _codex_timestamp(record),
+                "project": record.get("cwd") or record.get("project") or session_id,
+                "role": role,
+                "content": text,
+            })
+    return results
+
+
+def _codex_config_signals(text: str) -> list[str]:
+    """Extract safe Codex config signals without copying credentials."""
+    signals = []
+    sensitive = ("auth", "credential", "key", "password", "secret", "token")
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        key = line.split("=", 1)[0].strip().strip('"')
+        if any(word in key.lower() for word in sensitive):
+            continue
+        signals.append(line if line.startswith("[") else key)
+    return signals
+
+
+def extract_codex_configs(codex_dir: Path | None = None) -> list[dict]:
+    """Read Codex runtime config signals from the bounded config file."""
+    base = codex_dir or CODEX_DIR
+    config_path = base / "config.toml"
+    if not config_path.is_file():
+        return []
+    signals = _codex_config_signals(
+        config_path.read_text(encoding="utf-8", errors="replace")
+    )
+    if not signals:
+        return []
+    return [{
+        "project": "global",
+        "config_type": "codex_runtime_config",
+        "file_path": str(config_path),
+        "signals": signals,
+    }]
+
+
+def _records_from_copilot_memory(entries: list[dict]) -> list[dict]:
+    """Wrap Copilot instruction document output as corpus records."""
+    records = []
+    for entry in entries:
+        source_path = entry.get("source", "")
+        records.append({
+            "source_id": _generate_source_id(
+                RUNTIME_COPILOT_CLI, "instruction_document", source_path
+            ),
+            "timestamp": _iso_now(),
+            "project_id": entry.get("project", ""),
+            "source_kind": "instruction_document",
+            "runtime": RUNTIME_COPILOT_CLI,
+            "adapter_version": ADAPTER_VERSION,
+            "data": entry,
+        })
+    return records
+
+
+def _records_from_copilot_configs(entries: list[dict]) -> list[dict]:
+    """Wrap Copilot config output as corpus records."""
+    records = []
+    for entry in entries:
+        file_path = entry.get("file_path", "")
+        records.append({
+            "source_id": _generate_source_id(
+                RUNTIME_COPILOT_CLI, "project_config_signal", file_path
+            ),
+            "timestamp": _iso_now(),
+            "project_id": entry.get("project", ""),
+            "source_kind": "project_config_signal",
+            "runtime": RUNTIME_COPILOT_CLI,
+            "adapter_version": ADAPTER_VERSION,
+            "data": entry,
+        })
+    return records
+
+
+def _records_from_codex_history(entries: list[dict]) -> list[dict]:
+    """Wrap Codex history output as corpus records."""
+    records = []
+    for entry in entries:
+        prompt_hash = hashlib.sha256(
+            entry.get("prompt", "").encode("utf-8")
+        ).hexdigest()[:8]
+        records.append({
+            "source_id": _generate_source_id(
+                RUNTIME_CODEX_CLI,
+                "history_prompt",
+                entry.get("source", ""),
+                str(entry.get("line", "")),
+                entry.get("runtime_session_id", ""),
+                entry.get("runtime_record_id", ""),
+                prompt_hash,
+            ),
+            "timestamp": entry.get("timestamp") or _iso_now(),
+            "project_id": str(entry.get("project", "")),
+            "source_kind": "history_prompt",
+            "runtime": RUNTIME_CODEX_CLI,
+            "adapter_version": ADAPTER_VERSION,
+            "data": entry,
+        })
+    return records
+
+
+def _records_from_codex_conversations(entries: list[dict]) -> list[dict]:
+    """Wrap Codex session turn output as corpus records."""
+    records = []
+    for entry in entries:
+        content_hash = hashlib.sha256(
+            entry.get("content", "").encode("utf-8")
+        ).hexdigest()[:8]
+        records.append({
+            "source_id": _generate_source_id(
+                RUNTIME_CODEX_CLI,
+                "conversation_turn",
+                entry.get("source", ""),
+                str(entry.get("line", "")),
+                entry.get("runtime_session_id", ""),
+                entry.get("runtime_record_id", ""),
+                content_hash,
+            ),
+            "timestamp": entry.get("timestamp") or _iso_now(),
+            "project_id": str(entry.get("project", "")),
+            "source_kind": "conversation_turn",
+            "runtime": RUNTIME_CODEX_CLI,
+            "adapter_version": ADAPTER_VERSION,
+            "data": entry,
+        })
+    return records
+
+
+def _records_from_codex_configs(entries: list[dict]) -> list[dict]:
+    """Wrap Codex config output as corpus records."""
+    records = []
+    for entry in entries:
+        file_path = entry.get("file_path", "")
+        records.append({
+            "source_id": _generate_source_id(
+                RUNTIME_CODEX_CLI, "project_config_signal", file_path
+            ),
+            "timestamp": _iso_now(),
+            "project_id": entry.get("project", ""),
+            "source_kind": "project_config_signal",
+            "runtime": RUNTIME_CODEX_CLI,
+            "adapter_version": ADAPTER_VERSION,
+            "data": entry,
+        })
+    return records
+
+
+def _empty_runtime_families() -> dict[str, dict]:
+    """Return an empty family status map for one runtime."""
+    return {kind: {"count": 0, "status": "missing"} for kind in _SOURCE_FAMILIES}
+
+
+def _aggregate_families(runtime_status: dict[str, dict]) -> dict[str, dict]:
+    """Aggregate per-runtime family status while retaining runtime details."""
+    families = {}
+    for kind in _SOURCE_FAMILIES:
+        by_runtime = {
+            runtime: status["families"][kind]
+            for runtime, status in runtime_status.items()
+            if kind in status.get("families", {})
+        }
+        count = sum(info.get("count", 0) for info in by_runtime.values())
+        statuses = {info.get("status", "missing") for info in by_runtime.values()}
+        if count == 0:
+            status = "missing"
+        elif statuses <= {"ok"}:
+            status = "ok"
+        else:
+            status = "partial"
+        families[kind] = {
+            "count": count,
+            "status": status,
+            "by_runtime": by_runtime,
+        }
+    return families
+
+
 def _cleanup_legacy_files(output_dir: Path) -> list[str]:
     """Remove old intermediate files from the output directory.
 
@@ -812,11 +1310,12 @@ def _cleanup_legacy_files(output_dir: Path) -> list[str]:
 
 
 def validate_corpus(records: list[dict]) -> tuple[list[str], list[str]]:
-    """Validate corpus records against the Section 21 provenance contract.
+    """Validate corpus records against the Section 21 record contract.
 
     Checks every record for:
     - Required provenance fields (source_id, timestamp, project_id,
-      source_kind, runtime, adapter_version). Missing fields are errors.
+      source_kind, runtime, adapter_version) and a data payload object.
+      Missing fields are errors.
     - Recognized source_kind values. Unrecognized values are warnings
       (runtime extensions are permitted but noted).
 
@@ -827,19 +1326,22 @@ def validate_corpus(records: list[dict]) -> tuple[list[str], list[str]]:
     warnings: list[str] = []
 
     for i, record in enumerate(records):
-        # Check required provenance fields
         missing = [
-            field for field in _REQUIRED_PROVENANCE_FIELDS
+            field for field in _REQUIRED_RECORD_FIELDS
             if field not in record or record[field] == ""
         ]
         if missing:
             source_id = record.get("source_id", f"record[{i}]")
             errors.append(
-                f"Record {source_id}: missing required provenance "
+                f"Record {source_id}: missing required record "
                 f"fields: {', '.join(missing)}"
             )
 
-        # Check source_kind is a recognized portable value
+        data = record.get("data")
+        if "data" in record and not isinstance(data, dict):
+            source_id = record.get("source_id", f"record[{i}]")
+            errors.append(f"Record {source_id}: data must be an object")
+
         kind = record.get("source_kind", "")
         if kind and kind not in _PORTABLE_SOURCE_KINDS:
             source_id = record.get("source_id", f"record[{i}]")
@@ -851,9 +1353,353 @@ def validate_corpus(records: list[dict]) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
+def _validate_family_status(path: str, info: object) -> tuple[list[str], int | None, str | None]:
+    """Validate one family status object and return its count/status."""
+    errors: list[str] = []
+    if not isinstance(info, dict):
+        return [f"{path}: must be an object"], None, None
+
+    count = info.get("count")
+    status = info.get("status")
+    if not isinstance(count, int) or count < 0:
+        errors.append(f"{path}.count: must be a non-negative integer")
+        count = None
+    if status not in _VALID_FAMILY_STATUSES:
+        errors.append(
+            f"{path}.status: must be one of {', '.join(sorted(_VALID_FAMILY_STATUSES))}"
+        )
+        status = None
+    return errors, count, status
+
+
+def _validate_runtime_status(
+    runtime_status: dict,
+    runtimes: list[str],
+    records: list[dict],
+) -> list[str]:
+    """Validate per-runtime family metadata against emitted records."""
+    errors: list[str] = []
+    for runtime, status in runtime_status.items():
+        path = f"corpus.metadata.runtime_status.{runtime}"
+        if not isinstance(status, dict):
+            errors.append(f"{path}: must be an object")
+            continue
+        if runtime not in runtimes:
+            errors.append(f"{path}: runtime not listed in metadata.runtimes")
+        if status.get("available") is not True:
+            errors.append(f"{path}.available: must be true for contributing runtimes")
+        checked_surfaces = status.get("checked_surfaces")
+        if not isinstance(checked_surfaces, list) or not all(
+            isinstance(surface, str) for surface in checked_surfaces
+        ):
+            errors.append(f"{path}.checked_surfaces: must be a string list")
+        families = status.get("families")
+        if not isinstance(families, dict):
+            errors.append(f"{path}.families: must be an object")
+            continue
+        for family in _SOURCE_FAMILIES:
+            family_path = f"{path}.families.{family}"
+            if family not in families:
+                errors.append(f"{family_path}: missing required family status")
+                continue
+            family_errors, count, _status = _validate_family_status(
+                family_path, families[family]
+            )
+            errors.extend(family_errors)
+            actual = sum(
+                1 for record in records
+                if record.get("runtime") == runtime and record.get("source_kind") == family
+            )
+            if count is not None and count != actual:
+                errors.append(f"{family_path}.count: must match {actual} emitted records")
+    return errors
+
+
+def _validate_aggregate_families(
+    families: dict,
+    runtime_status: dict,
+    records: list[dict],
+) -> list[str]:
+    """Validate aggregate family metadata against runtime status and records."""
+    errors: list[str] = []
+    for family in _SOURCE_FAMILIES:
+        path = f"corpus.metadata.families.{family}"
+        if family not in families:
+            errors.append(f"{path}: missing required family status")
+            continue
+        family_errors, count, _status = _validate_family_status(path, families[family])
+        errors.extend(family_errors)
+        info = families[family]
+        if not isinstance(info, dict):
+            continue
+        by_runtime = info.get("by_runtime")
+        if not isinstance(by_runtime, dict):
+            errors.append(f"{path}.by_runtime: must be an object")
+            continue
+        expected_runtimes = set(runtime_status)
+        if set(by_runtime) != expected_runtimes:
+            missing = sorted(expected_runtimes - set(by_runtime))
+            extra = sorted(set(by_runtime) - expected_runtimes)
+            detail = []
+            if missing:
+                detail.append("missing " + ", ".join(missing))
+            if extra:
+                detail.append("unexpected " + ", ".join(extra))
+            errors.append(f"{path}.by_runtime: must match runtime_status ({'; '.join(detail)})")
+        expected_count = sum(
+            status.get("families", {}).get(family, {}).get("count", 0)
+            for status in runtime_status.values()
+            if isinstance(status, dict)
+        )
+        actual_records = sum(1 for record in records if record.get("source_kind") == family)
+        if count is not None and count != expected_count:
+            errors.append(f"{path}.count: must equal per-runtime count {expected_count}")
+        if count is not None and count != actual_records:
+            errors.append(f"{path}.count: must match {actual_records} emitted records")
+        for runtime, runtime_family in by_runtime.items():
+            runtime_info = runtime_status.get(runtime, {})
+            expected = runtime_info.get("families", {}).get(family) if isinstance(runtime_info, dict) else None
+            if runtime_family != expected:
+                errors.append(f"{path}.by_runtime.{runtime}: must match runtime_status family data")
+    return errors
+
+
+def validate_corpus_envelope(corpus: dict) -> tuple[list[str], list[str]]:
+    """Validate a Section 21 corpus envelope, including aggregate metadata."""
+    if corpus == {}:
+        return [], []
+
+    errors: list[str] = []
+    warnings: list[str] = []
+    metadata = corpus.get("metadata")
+    records = corpus.get("records")
+    if not isinstance(metadata, dict):
+        return ["corpus.metadata: must be an object"], warnings
+    if not isinstance(records, list):
+        return ["corpus.records: must be a list"], warnings
+
+    missing_metadata = [
+        field for field in _REQUIRED_METADATA_FIELDS
+        if field not in metadata or metadata[field] == ""
+    ]
+    if missing_metadata:
+        errors.append(
+            "corpus.metadata: missing required fields: "
+            + ", ".join(missing_metadata)
+        )
+
+    record_errors, record_warnings = validate_corpus(records)
+    errors.extend(record_errors)
+    warnings.extend(record_warnings)
+
+    runtimes = metadata.get("runtimes")
+    if not isinstance(runtimes, list) or not all(isinstance(r, str) for r in runtimes):
+        errors.append("corpus.metadata.runtimes: must be a string list")
+        runtimes = []
+    elif records and not runtimes:
+        errors.append("corpus.metadata.runtimes: must name contributing runtimes")
+
+    total_records = metadata.get("total_records")
+    if total_records != len(records):
+        errors.append("corpus.metadata.total_records: must match records length")
+
+    if metadata.get("adapter_version") != ADAPTER_VERSION:
+        errors.append("corpus.metadata.adapter_version: must match extractor adapter version")
+
+    seen_source_ids: set[str] = set()
+    for record in records:
+        source_id = record.get("source_id")
+        if isinstance(source_id, str) and source_id:
+            if source_id in seen_source_ids:
+                errors.append(f"Record {source_id}: duplicate source_id")
+            seen_source_ids.add(source_id)
+        runtime = record.get("runtime")
+        if isinstance(runtime, str) and runtimes and runtime not in runtimes:
+            errors.append(f"Record {source_id}: runtime '{runtime}' missing from metadata.runtimes")
+
+    runtime_status = metadata.get("runtime_status")
+    if not isinstance(runtime_status, dict):
+        errors.append("corpus.metadata.runtime_status: must be an object")
+    elif isinstance(runtimes, list):
+        missing = [runtime for runtime in runtimes if runtime not in runtime_status]
+        if missing:
+            errors.append(
+                "corpus.metadata.runtime_status: missing runtimes " + ", ".join(missing)
+            )
+
+    families = metadata.get("families")
+    if not isinstance(families, dict):
+        errors.append("corpus.metadata.families: must be an object")
+
+    if isinstance(runtime_status, dict) and isinstance(runtimes, list):
+        errors.extend(_validate_runtime_status(runtime_status, runtimes, records))
+    if isinstance(families, dict) and isinstance(runtime_status, dict):
+        errors.extend(_validate_aggregate_families(families, runtime_status, records))
+
+    return errors, warnings
+
+
 # ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
+
+
+def _probe_claude_code_runtime() -> dict | None:
+    """Return Claude Code runtime status when supported local data exists."""
+    if not _probe_claude_code():
+        return None
+    return {
+        "runtime": RUNTIME_CLAUDE_CODE,
+        "available": True,
+        "checked_surfaces": [
+            str(CLAUDE_DIR / "CLAUDE.md"),
+            str(CLAUDE_DIR / "history.jsonl"),
+            str(PROJECTS_DIR),
+        ],
+        "families": {},
+    }
+
+
+def _available_probe(probe: dict) -> dict | None:
+    """Normalize probe output to None when a runtime has no data."""
+    return probe if probe["available"] else None
+
+
+def _run_runtime_family(
+    runtime: str,
+    runtime_status: dict,
+    probe_status: dict,
+    family: dict,
+) -> tuple[list[dict], str | None]:
+    """Run one source-family extractor and return records plus any error."""
+    kind = family["kind"]
+    checked_surfaces = family.get("checked_surfaces", lambda _status: None)(probe_status)
+    if family.get("unsupported_reason"):
+        status = {
+            "count": 0,
+            "status": "missing",
+            "reason": family["unsupported_reason"],
+        }
+        if checked_surfaces is not None:
+            status["checked_surfaces"] = checked_surfaces
+        runtime_status["families"][kind] = status
+        return [], None
+
+    try:
+        records = family["to_records"](family["extract"]())
+    except Exception as exc:
+        status = {"count": 0, "status": "missing", "error": str(exc)}
+        if checked_surfaces is not None:
+            status["checked_surfaces"] = checked_surfaces
+        runtime_status["families"][kind] = status
+        return [], f"{runtime}.{kind}: {exc}"
+
+    status = {
+        "count": len(records),
+        "status": "ok" if records else family.get("empty_status", "ok"),
+    }
+    if checked_surfaces is not None:
+        status["checked_surfaces"] = checked_surfaces
+    runtime_status["families"][kind] = status
+    return records, None
+
+
+def _runtime_collectors() -> tuple[dict, ...]:
+    """Return supported runtime collector specs.
+
+    Adding a runtime should extend this registry instead of branching inside
+    build_corpus(). Existing extractor implementations stay runtime-local.
+    """
+    return (
+        {
+            "runtime": RUNTIME_CLAUDE_CODE,
+            "probe": _probe_claude_code_runtime,
+            "families": (
+                {
+                    "kind": "instruction_document",
+                    "extract": lambda: extract_memory_files() + extract_claude_md_files(),
+                    "to_records": _records_from_memory,
+                },
+                {
+                    "kind": "history_prompt",
+                    "extract": extract_history,
+                    "to_records": _records_from_history,
+                },
+                {
+                    "kind": "conversation_turn",
+                    "extract": extract_conversations,
+                    "to_records": _records_from_conversations,
+                },
+                {
+                    "kind": "project_config_signal",
+                    "extract": extract_configs,
+                    "to_records": _records_from_configs,
+                },
+            ),
+        },
+        {
+            "runtime": RUNTIME_COPILOT_CLI,
+            "probe": lambda: _available_probe(_probe_copilot_cli()),
+            "families": (
+                {
+                    "kind": "instruction_document",
+                    "extract": extract_copilot_instruction_documents,
+                    "to_records": _records_from_copilot_memory,
+                    "empty_status": "missing",
+                    "checked_surfaces": lambda status: status["families"]["instruction_document"]["checked_surfaces"],
+                },
+                {
+                    "kind": "history_prompt",
+                    "unsupported_reason": "no documented Copilot CLI local source family surface",
+                    "checked_surfaces": lambda _status: [],
+                },
+                {
+                    "kind": "conversation_turn",
+                    "unsupported_reason": "no documented Copilot CLI local source family surface",
+                    "checked_surfaces": lambda _status: [],
+                },
+                {
+                    "kind": "project_config_signal",
+                    "extract": extract_copilot_configs,
+                    "to_records": _records_from_copilot_configs,
+                    "empty_status": "missing",
+                    "checked_surfaces": lambda status: status["families"]["project_config_signal"]["checked_surfaces"],
+                },
+            ),
+        },
+        {
+            "runtime": RUNTIME_CODEX_CLI,
+            "probe": lambda: _available_probe(_probe_codex_cli()),
+            "families": (
+                {
+                    "kind": "instruction_document",
+                    "unsupported_reason": "no documented Codex CLI local instruction source family surface",
+                    "checked_surfaces": lambda status: status["families"]["instruction_document"]["checked_surfaces"],
+                },
+                {
+                    "kind": "history_prompt",
+                    "extract": extract_codex_history,
+                    "to_records": _records_from_codex_history,
+                    "empty_status": "missing",
+                    "checked_surfaces": lambda status: status["families"]["history_prompt"]["checked_surfaces"],
+                },
+                {
+                    "kind": "conversation_turn",
+                    "extract": extract_codex_conversations,
+                    "to_records": _records_from_codex_conversations,
+                    "empty_status": "missing",
+                    "checked_surfaces": lambda status: status["families"]["conversation_turn"]["checked_surfaces"],
+                },
+                {
+                    "kind": "project_config_signal",
+                    "extract": extract_codex_configs,
+                    "to_records": _records_from_codex_configs,
+                    "empty_status": "missing",
+                    "checked_surfaces": lambda status: status["families"]["project_config_signal"]["checked_surfaces"],
+                },
+            ),
+        },
+    )
 
 
 def build_corpus() -> tuple[dict, list[str], list[str]]:
@@ -866,72 +1712,45 @@ def build_corpus() -> tuple[dict, list[str], list[str]]:
     source_kind values). If no runtime data is detected, returns
     ``({}, [], [])``.
     """
-    if not _probe_claude_code():
-        return {}, [], []
-
     all_records: list[dict] = []
-    families: dict[str, dict] = {}
+    runtime_status: dict[str, dict] = {}
     errors: list[str] = []
 
-    # Family: instruction_document (memory files + CLAUDE.md)
-    kind = "instruction_document"
-    try:
-        memory = extract_memory_files()
-        claude_md = extract_claude_md_files()
-        records = _records_from_memory(memory + claude_md)
-        all_records.extend(records)
-        families[kind] = {"count": len(records), "status": "ok"}
-    except Exception as exc:
-        families[kind] = {"count": 0, "status": "missing", "error": str(exc)}
-        errors.append(f"{kind}: {exc}")
+    for collector in _runtime_collectors():
+        probe = collector["probe"]()
+        if probe is None:
+            continue
+        runtime = collector["runtime"]
+        status = {
+            "available": True,
+            "checked_surfaces": probe["checked_surfaces"],
+            "families": _empty_runtime_families(),
+        }
 
-    # Family: history_prompt
-    kind = "history_prompt"
-    try:
-        history = extract_history()
-        records = _records_from_history(history)
-        all_records.extend(records)
-        families[kind] = {"count": len(records), "status": "ok"}
-    except Exception as exc:
-        families[kind] = {"count": 0, "status": "missing", "error": str(exc)}
-        errors.append(f"{kind}: {exc}")
+        for family in collector["families"]:
+            records, error = _run_runtime_family(runtime, status, probe, family)
+            all_records.extend(records)
+            if error:
+                errors.append(error)
 
-    # Family: conversation_turn
-    kind = "conversation_turn"
-    try:
-        conversations = extract_conversations()
-        records = _records_from_conversations(conversations)
-        all_records.extend(records)
-        families[kind] = {"count": len(records), "status": "ok"}
-    except Exception as exc:
-        families[kind] = {"count": 0, "status": "missing", "error": str(exc)}
-        errors.append(f"{kind}: {exc}")
+        runtime_status[runtime] = status
 
-    # Family: project_config_signal
-    kind = "project_config_signal"
-    try:
-        configs = extract_configs()
-        records = _records_from_configs(configs)
-        all_records.extend(records)
-        families[kind] = {"count": len(records), "status": "ok"}
-    except Exception as exc:
-        families[kind] = {"count": 0, "status": "missing", "error": str(exc)}
-        errors.append(f"{kind}: {exc}")
-
-    # Self-validate all records before assembling the envelope
-    validation_errors, validation_warnings = validate_corpus(all_records)
+    if not runtime_status:
+        return {}, [], []
 
     metadata = {
         "extracted_at": _iso_now(),
-        "runtimes": [RUNTIME_CLAUDE_CODE],
+        "runtimes": list(runtime_status),
         "adapter_version": ADAPTER_VERSION,
-        "families": families,
+        "families": _aggregate_families(runtime_status),
+        "runtime_status": runtime_status,
         "total_records": len(all_records),
     }
     if errors:
         metadata["errors"] = errors
 
     corpus = {"metadata": metadata, "records": all_records}
+    validation_errors, validation_warnings = validate_corpus_envelope(corpus)
     return corpus, validation_errors, validation_warnings
 
 
@@ -981,17 +1800,25 @@ def main():
     start = time.time()
 
     # Probe for runtime data
-    if not _probe_claude_code():
+    copilot_probe = _probe_copilot_cli()
+    codex_probe = _probe_codex_cli()
+    if (
+        not _probe_claude_code()
+        and not copilot_probe["available"]
+        and not codex_probe["available"]
+    ):
         print(
-            "No Claude Code runtime data found.\n"
-            f"Checked: {CLAUDE_DIR / 'CLAUDE.md'}, "
+            "No supported runtime data found.\n"
+            f"Checked Claude Code: {CLAUDE_DIR / 'CLAUDE.md'}, "
             f"{CLAUDE_DIR / 'history.jsonl'}, "
             f"{PROJECTS_DIR}\n"
+            f"Checked Copilot CLI: {', '.join(copilot_probe['checked_surfaces'])}\n"
+            f"Checked Codex CLI: {', '.join(codex_probe['checked_surfaces'])}\n"
             "No corpus.json written."
         )
         sys.exit(0)
 
-    print("Building corpus from Claude Code runtime data...")
+    print("Building corpus from supported runtime data...")
     corpus, validation_errors, validation_warnings = build_corpus()
 
     elapsed = time.time() - start

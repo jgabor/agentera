@@ -1,0 +1,8 @@
+{
+  "name": "postToolUse",
+  "matcher": "Edit|Write",
+  "type": "command",
+  "bash": "python3 hooks/validate_artifact.py",
+  "powershell": "python hooks/validate_artifact.py",
+  "timeoutSec": 10
+}

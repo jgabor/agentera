@@ -10,6 +10,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_PATH = path.join(__dirname, "..", ".opencode", "plugins", "agentera.js");
 
 let tmpdir = null;
+const originalHome = process.env.HOME;
+const originalAgenteraHome = process.env.AGENTERA_HOME;
+const originalOpencodeConfigDir = process.env.OPENCODE_CONFIG_DIR;
 
 function fail(reason) {
   console.error(`FAIL: ${reason}`);
@@ -23,13 +26,24 @@ function assert(condition, reason) {
 try {
   tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-smoke-"));
   process.env.OPENCODE_CONFIG_DIR = tmpdir;
+  process.env.HOME = tmpdir;
+  delete process.env.AGENTERA_HOME;
 
-  const { bootstrapCommands, COMMAND_TEMPLATES, AGENTERA_VERSION, hasManagedMarker, resolveOpencodeCommandsDir } =
+  const { bootstrapCommands, COMMAND_TEMPLATES, AGENTERA_VERSION, hasManagedMarker, resolveAgenteraHome, resolveOpencodeCommandsDir } =
     await import(PLUGIN_PATH);
 
   const commandNames = Object.keys(COMMAND_TEMPLATES);
   const commandsDir = resolveOpencodeCommandsDir();
   assert(commandsDir === path.join(tmpdir, "commands"), "resolveOpencodeCommandsDir should honor OPENCODE_CONFIG_DIR");
+
+  // --- Test 0: Documented manual install root ---
+  const documentedRoot = path.join(tmpdir, ".agents", "agentera");
+  fs.mkdirSync(path.join(documentedRoot, "scripts"), { recursive: true });
+  fs.writeFileSync(path.join(documentedRoot, "scripts", "validate_spec.py"), "#!/usr/bin/env python3\n");
+  assert(
+    resolveAgenteraHome() === documentedRoot,
+    "resolveAgenteraHome should honor ~/.agents/agentera before legacy skills path"
+  );
 
   // --- Test 1: Basic bootstrap ---
   bootstrapCommands();
@@ -124,6 +138,12 @@ try {
 
   console.log("PASS: all smoke checks passed");
 } finally {
+  if (originalHome === undefined) delete process.env.HOME;
+  else process.env.HOME = originalHome;
+  if (originalAgenteraHome === undefined) delete process.env.AGENTERA_HOME;
+  else process.env.AGENTERA_HOME = originalAgenteraHome;
+  if (originalOpencodeConfigDir === undefined) delete process.env.OPENCODE_CONFIG_DIR;
+  else process.env.OPENCODE_CONFIG_DIR = originalOpencodeConfigDir;
   if (tmpdir) {
     fs.rmSync(tmpdir, { recursive: true, force: true });
   }

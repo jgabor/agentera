@@ -1,0 +1,14 @@
+interface:
+  name: profilera
+  display_name: profilera
+  description: "PROFILERA: Persona Reconstruction: Observable Footprint Indexing Logic: Examine, Reconcile, Articulate. Mines session history to build an agent-consumable decision profile. Limited to available Codex Section 21 source families."
+  invocation_hint: "Use $profilera when bounded Codex history, session, or config corpus data is available; inspect limitations with /skills first."
+policy:
+  allow_implicit_invocation: false
+dependencies:
+  required_capabilities:
+    - name: codex_session_corpus
+      status: degraded
+      action: "Run profilera extraction; missing Codex source families are reported in corpus metadata."
+  limitations:
+    - "Codex corpus collection is bounded to known history, session, and config surfaces. Missing source families are reported as degraded metadata."

@@ -6,7 +6,7 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
-export const AGENTERA_VERSION = "1.16.0";
+export const AGENTERA_VERSION = "1.18.1";
 
 export const COMMAND_TEMPLATES = {
   "hej": `---
@@ -170,13 +170,27 @@ function findAgenteraRoot(startDir) {
   return startDir;
 }
 
-function validateArtifact() {
+export function resolveAgenteraHome() {
+  const candidates = [
+    process.env.AGENTERA_HOME,
+    path.join(process.env.HOME, ".agents", "agentera"),
+    path.join(process.env.HOME, ".agents", "skills", "agentera"),
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(path.join(candidate, "scripts", "validate_spec.py"))) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+export function validateArtifact() {
   try {
-    const scriptPath = path.join(
-      process.env.AGENTERA_HOME || path.join(process.env.HOME, ".agents", "skills", "agentera"),
-      "scripts", "validate_spec.py"
-    );
-    if (!fs.existsSync(scriptPath)) return;
+    const agenteraHome = resolveAgenteraHome();
+    if (!agenteraHome) return;
+    const scriptPath = path.join(agenteraHome, "scripts", "validate_spec.py");
     execSync(`python3 "${scriptPath}"`, { timeout: 30000, stdio: "pipe" });
   } catch {}
 }
