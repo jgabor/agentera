@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 156 · 2026-04-25 18:02 · docs(install): clarify copilot marketplace placeholder
+
+**What**: Completed Task 2 only. README now treats Copilot `<plugin>@<marketplace>` as marketplace syntax, not proof that Agentera is published there.
+**Commit**: pending in Task 2 commit.
+**Inspiration**: Task 1 evidence: Copilot CLI 1.0.35, built-in marketplaces `copilot-plugins` and `awesome-copilot`, and no `agentera` entry in browsed catalogs.
+**Discovered**: The README Copilot command and runtime table could be read as a concrete availability claim even though the plan evidence says no canonical Agentera marketplace source is verified.
+**Verified**: README now says no Agentera Copilot marketplace source is currently verified, uses `copilot plugin install <plugin>@<marketplace>` as syntax only, preserves future aggregate `agentera` plugin language for the verified-source branch, and keeps `OWNER/REPO`, `OWNER/REPO:PATH`, Git URL, and local path installs as deprecated fallback paths. `git diff --check -- README.md .agentera/PLAN.md .agentera/PROGRESS.md` passed.
+**Next**: Task 3 may add validation guards later; no validation rules, host smoke docs, version bumps, or plan-level freshness work were done in this cycle.
+**Context**: intent (align install surface without inventing a marketplace source) · constraints (Task 2 only, preserve profilera caveats, direct installs secondary) · unknowns (future canonical Copilot marketplace source) · scope (`README.md`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
+
 ■ ## Cycle 155 · 2026-04-25 17:32 · docs(plan): record copilot marketplace evidence
 
 **What**: Completed Task 1 only. PLAN now records the verified Copilot marketplace identities and the absence of a canonical Agentera source.
@@ -90,28 +100,10 @@
 **Next**: Task 5 can refactor the profilera corpus orchestration boundary. Do not widen Task 4 into corpus validation or freshness work.
 **Context**: intent (repair Task 4 adapter drift only) · constraints (no commit, no new deps, no live host claims, no Task 5 work) · unknowns (live OpenCode host behavior remains local-metadata evidence only) · scope (`.opencode/plugins/agentera.js`, `scripts/validate_lifecycle_adapters.py`, adapter tests, DOCS/TODO/CHANGELOG/PLAN/PROGRESS bookkeeping).
 
-■ ## Cycle 146 · 2026-04-25 11:47 · fix(adapters): catch Codex invocation hint drift
-
-**What**: Retried Task 3 only. Lifecycle validation now fails aggregate Codex profilera `invocationHint` drift when the hint drops its limited Section 21 source-family rule.
-**Commit**: none (user explicitly requested no commits)
-**Inspiration**: Evaluation found Cycle 145 covered Codex runtime support, implicit policy, and capability drift, but not aggregate invocation-rule drift.
-**Discovered**: The lifecycle validator trusted aggregate `invocationHint` while only the packaging test checked that it named `$profilera`, so `$profilera` alone passed local validation.
-**Verified**: `python3 scripts/validate_lifecycle_adapters.py` -> `lifecycle adapter metadata ok`. In-memory probe mutating aggregate `.codex-plugin/plugin.json` `skillMetadata[].name == "profilera"` from `$profilera; limited to available Section 21 corpus source families` to `$profilera` returned `codex.profilera: invocation hint must expose limited Section 21 source-family rules`, substantiating invocation-rule drift coverage. `python3 -m pytest tests/test_runtime_adapters.py -q` -> `17 passed in 0.02s`, with one new fail path for aggregate Codex profilera invocation-hint drift. `python3 -m pytest -q` -> `346 passed in 0.33s`. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings. `git diff --check -- scripts/validate_lifecycle_adapters.py tests/test_runtime_adapters.py .agentera/PROGRESS.md .agentera/PLAN.md` -> no output.
-**Next**: Task 4 can repair adapter path and list-form hook validation drift. Keep OpenCode path and list-hook work out of Task 3.
-**Context**: intent (retry Task 3 evidence failure only) · constraints (no commit, no live host claims, no Task 4 scope) · unknowns (live Copilot and Codex host behavior remains untested) · scope (`scripts/validate_lifecycle_adapters.py`, `tests/test_runtime_adapters.py`, `.agentera/PROGRESS.md`).
-
-■ ## Cycle 145 · 2026-04-25 11:44 · fix(adapters): tighten runtime metadata drift guards
-
-**What**: Completed Task 3 only. Copilot metadata now exposes profilera's bounded corpus caveat, and lifecycle validation catches Codex profilera policy drift across local metadata surfaces.
-**Commit**: none (user explicitly requested no commits)
-**Inspiration**: Audit 11 Pattern consistency findings for Copilot profilera metadata visibility and duplicated Codex profilera policy.
-**Discovered**: Copilot's supported local surface here is the plugin description, not a custom capability object. Codex policy is duplicated in aggregate plugin metadata, root UI metadata, and per-skill UI metadata.
-**Verified**: `python3 scripts/validate_lifecycle_adapters.py` -> `lifecycle adapter metadata ok`, proving Copilot description terms and Codex aggregate/root/per-skill profilera policy are locally consistent. `python3 -m pytest tests/test_runtime_adapters.py -q` -> `16 passed in 0.02s`, with one new Copilot fail case for missing profilera limits and one new Codex fail case for policy drift. `python3 -m pytest -q` -> `345 passed in 0.34s`. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings. `git diff --check` -> no output. Metadata wording is limited to local plugin/corpus metadata and explicitly says it does not imply live host behavior.
-**Next**: Task 4 can repair adapter path and list-form hook validation drift. Keep OpenCode and list-form hook work scoped to that task.
-**Context**: intent (tighten Task 3 runtime metadata drift guards) · constraints (Task 3 only, no Task 4 hook path work, no live host claims, no commit) · unknowns (live Copilot and Codex host behavior remains untested) · scope (`.github/plugin/plugin.json`, `scripts/validate_lifecycle_adapters.py`, `tests/test_runtime_adapters.py`, changelog, TODO, plan/progress bookkeeping).
-
 ## Archived Cycles
 
+- Cycle 146 (2026-04-25): fix(adapters): catch Codex invocation hint drift
+- Cycle 145 (2026-04-25): fix(adapters): tighten runtime metadata drift guards
 - Cycle 144 (2026-04-25): fix(profilera): redact Copilot config secrets
 - Cycle 143 (2026-04-25): fix(profilera): align Section 21 corpus record envelope
 - Cycle 142 (2026-04-24): chore(plan): checkpoint runtime portability freshness
