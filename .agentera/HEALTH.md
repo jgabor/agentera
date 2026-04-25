@@ -1,5 +1,63 @@
 # Health
 
+## Audit 13 · 2026-04-25
+
+**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
+**Findings**: 0 critical, 0 warnings, 0 info (0 filtered by confidence)
+**Overall trajectory**: stable vs Audit 12. The completed Copilot marketplace plan preserved the evidence boundary and did not degrade validation, versioning, or artifacts.
+**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Complexity [A] | Tests [A] | Version [A] | Freshness [A] | Security [A] | Deps [A]
+
+### Architecture alignment: A
+
+The marketplace guidance matches the portability thesis: shared skills stay canonical, runtime install surfaces are adapter-specific, and unverified Copilot marketplace availability is not claimed.
+
+### Pattern consistency: A
+
+README, PLAN, PROGRESS, TODO, and CHANGELOG use the same evidence-gated language. Legacy per-skill Copilot entries are observational, while aggregate `agentera` remains future verified-source guidance.
+
+### Coupling health: A
+
+Validation keeps Copilot install semantics in `tests/test_runtime_adapters.py` without adding runtime coupling. Host evidence remains recorded in artifacts, not encoded as unsupported install behavior.
+
+### Complexity hotspots: A
+
+The new marketplace guards are small and proportional: one README pass plus focused failure cases for availability claims, placeholder-as-source, and primary fallback wording.
+
+### Test health: A
+
+Required checks pass: Copilot packaging 7 passed, runtime adapters 26 passed, full pytest 361 passed, lifecycle validation passed, spec validation passed with 0 warnings.
+
+### Version health: A
+
+The active plan introduced docs, test, and chore commits only after the existing 1.18.1 release state. DOCS.md policy correctly required no new bump.
+
+### Artifact freshness: A
+
+PLAN is complete. PROGRESS, TODO, and CHANGELOG record the final no-verified-source outcome, and DOCS.md does not predate the plan creation date.
+
+### Security hygiene: A
+
+No real secret hits were found. Secret-pattern matches are only documented examples in inspektera source, and subprocess usage remains list-form or fixed-path plugin validation.
+
+> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), npm audit (Node), or similar.
+
+### Dependency health: A
+
+No dependencies changed during the plan. Python remains stdlib-only for validators and tests; the isolated OpenCode Node dependency surface is unchanged.
+
+### Trends vs Audit 12
+
+- **Improved**: Copilot marketplace guidance is now more explicit: syntax-only placeholder, verified built-in marketplaces, no `agentera` source claim.
+- **Degraded**: none.
+- **Stable**: Live host caveats remain explicit; validation and artifact freshness stayed green.
+
+### Patterns Observed
+
+- Module structure: shared skill sources remain canonical; runtime adapters expose host-specific metadata and validation guards.
+- Evidence pattern: live-host observations are recorded as caveats unless a verified source exists.
+- Testing approach: install guidance gets additive negative tests to reject future contradictory wording.
+- Release pattern: docs/test/chore marketplace work does not bump versions without verified new install capability.
+
 ## Audit 12 · 2026-04-25
 
 **Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
@@ -944,67 +1002,9 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 
 ---
 
-## Audit 3 · 2026-03-31
-
-**Dimensions assessed**: architecture alignment, pattern consistency
-**Findings**: 0 critical, 4 warnings, 1 info (0 filtered by confidence)
-**Overall trajectory**: ⮉ improving vs Audit 2
-**Grades**: Architecture [B] | Patterns [B]
-
-### Architecture alignment: B
-
-#### README ecosystem diagram omits dokumentera · warning (confidence: 95)
-
-- **Location**: `README.md:27-38`
-- **Evidence**: ASCII diagram shows 10 of 11 skills. Dokumentera is absent despite being referenced in the opening line and the state artifacts table. All other skills appear.
-- **Impact**: Users don't see how documentation fits the workflow. Visual representation contradicts the "Eleven skills" claim.
-- **Suggested action**: Add dokumentera to the diagram as a cross-cutting layer (it's consumed by all skills for DOCS.md path resolution)
-
-#### inspirera artifact path resolution in wrong location · warning (confidence: 100)
-
-- **Location**: `skills/inspirera/SKILL.md:217`
-- **Evidence**: Artifact path resolution appears as a subsection of `## Cross-skill integration` instead of under `## State artifacts`. Ecosystem spec Section 5 requires it under State artifacts. inspirera has no State artifacts section at all.
-- **Impact**: Violates spec structural requirement. Linter passes because the instruction text exists, but the placement is wrong.
-- **Suggested action**: Add `## State artifacts` section to inspirera; move artifact path resolution under it
-
-#### hej cross-skill section has count and list gaps · warning (confidence: 90)
-
-- **Location**: `skills/hej/SKILL.md:227,231`
-- **Evidence**: Line 227 says "reads artifacts from all eleven workflow skills", should be "ten other" (hej doesn't read itself). Line 231 heading says "Reads from all ten skills" but lists only 8 (missing profilera → PROFILE.md, inspirera → no direct artifact but should be acknowledged).
-- **Impact**: Incomplete dependency documentation for the entry-point skill
-- **Suggested action**: Fix line 227 to "ten other workflow skills", update line 231 list to include profilera and inspirera
-
-### Pattern consistency: B
-
-#### profilera lacks State artifacts section · warning (confidence: 95)
-
-- **Location**: `skills/profilera/SKILL.md`
-- **Evidence**: 10 of 11 skills have a `## State artifacts` section with artifact path resolution. profilera is the only one missing it. It reads DECISIONS.md (line 407) and writes PROFILE.md (global path) but documents neither in a structured section.
-- **Impact**: Inconsistent structure. profilera's exceptional artifact path (~/.claude/profile/) makes a State artifacts section MORE important, not less; consumers need to know it's not in the project root.
-- **Suggested action**: Add State artifacts section documenting PROFILE.md (global), DECISIONS.md (reads via DOCS.md mapping), and artifact path resolution
-
-#### DOCS.md Index missing PLAN.md and self-reference · info (confidence: 100)
-
-- **Location**: `DOCS.md:41-54`
-- **Evidence**: Index lists 12 documents but omits PLAN.md (exists at root, active plan) and DOCS.md itself. Both are canonical artifacts in the Artifact Mapping table.
-- **Impact**: Index doesn't fully document its own contents
-- **Suggested action**: Add both entries to the index
-
-### Trends vs Audit 2
-
-- **Improved**: All Audit 2 findings resolved (ISS-8, ISS-9, ISS-10). Dokumentera Audit 3 fixed 10 additional doc issues. Visual identity system fully deployed. Versioning convention established. Linter updated for eleven-skill count.
-- **Stable**: Both grades remain B. Nature of findings shifted from accuracy (wrong counts, missing sections, duplicate content) to structural placement and completeness.
-- **New**: 5 new findings (4 warnings, 1 info). 1 introduced by Audit 3 fix (hej "all eleven" should be "ten other"). 4 pre-existing but previously undetected.
-- **Resolved**: All Audit 2 findings (ISS-8, ISS-9, ISS-10) cleared.
-
-### Patterns Observed
-
-- Count-staleness pattern persists: three audits have found wrong skill counts (ISS-1 eight→nine, ISS-8 ten→eleven in CLAUDE.md, Audit 3 ten→eleven in SKILL.md/spec). Linter now validates the count, but the linter itself needed manual updating. Consider making the count dynamic (grep skills/ directory).
-- Two skills (profilera, inspirera) predate the structural conventions established in later skills. Both lack State artifacts sections that all post-convention skills have.
-- Finding quality is improving: Audit 1 found wrong counts and missing safety rails. Audit 2 found stale counts and structural duplicates. Audit 3 finds placement issues and list gaps. Each audit's findings are less severe than the last.
-- The ecosystem is settling into a mature pattern: 11 skills, shared spec, linter enforcement, visual identity, versioning convention. Remaining work is polish, not architecture.
-
 ## Archived Audits
+
+### Audit 3 · 2026-03-31 (⮉ improving vs Audit 2)
 
 ### Audit 2 · 2026-03-31 (improving vs Audit 1)
 
