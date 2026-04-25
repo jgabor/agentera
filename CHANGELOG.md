@@ -6,6 +6,7 @@
 
 ### Changed
 
+- Live Copilot/Codex host smoke validation narrowed the release caveat: Codex `$hej` and installed Copilot skill discovery work, while current-checkout Copilot plugin loading remains blocked by its escaping skills path.
 - Audit 11 runtime portability cleanup is freshness-complete: state artifacts now summarize the plan, mark resolved cleanup items, and preserve the live Copilot/Codex host-test caveat.
 
 ### Fixed

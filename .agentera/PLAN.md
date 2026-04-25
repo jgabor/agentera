@@ -1,6 +1,6 @@
 # Plan: Live Copilot and Codex Host Smoke Validation
 
-<!-- Level: light | Created: 2026-04-25 | Status: active -->
+<!-- Level: light | Created: 2026-04-25 | Status: complete -->
 
 ## What
 
