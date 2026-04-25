@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 161 · 2026-04-25 18:55 · chore(plan): checkpoint copilot marketplace freshness
+
+**What**: Completed Task 7 only. Closed the canonical Copilot marketplace plan with a compact state refresh across plan, progress, TODO, and changelog evidence.
+**Commit**: chore(plan): checkpoint copilot marketplace freshness
+**Inspiration**: Tasks 1-6 all passed while preserving the evidence boundary: no canonical Agentera Copilot marketplace source is verified.
+**Discovered**: CHANGELOG [Unreleased] already had one caveated marketplace-support entry and one validation-guard entry; no public availability claim needed removal.
+**Verified**: Progress acceptance is satisfied by this cycle's plan-level outcome summary: README treats `copilot plugin install <plugin>@<marketplace>` as syntax only, records built-in Copilot marketplaces `copilot-plugins` and `awesome-copilot` with no `agentera`, labels legacy per-skill entries, records `/skills list` omissions for `hej`, `inspektera`, and `profilera`, and keeps lifecycle support partial. TODO acceptance is satisfied by one open deferred item for future canonical marketplace publication plus a resolved Task 7 checkpoint item. Changelog acceptance is satisfied by [Unreleased] representing marketplace support/caveats once and validation guards once, without duplicate marketplace availability claims. `python3 scripts/validate_spec.py` and `git diff --check` passed.
+**Next**: Publish or verify a canonical Agentera Copilot marketplace source before changing syntax-only guidance into an availability claim.
+**Context**: intent (Task 7 freshness checkpoint only) · constraints (no README, validation, version, or marketplace semantics changes; commit but do not push) · unknowns (future canonical marketplace source) · scope (`CHANGELOG.md`, `TODO.md`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
+
 ■ ## Cycle 160 · 2026-04-25 18:40 · docs(release): apply copilot release convention
 
 **What**: Completed Task 6 only. Applied DOCS.md version policy to the Copilot marketplace work and tightened release-note caveats without bumping metadata.
