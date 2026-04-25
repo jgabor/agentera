@@ -1,28 +1,27 @@
-# Plan: Copilot Plugin Packaging Fix
+# Plan: Copilot Marketplace-First Install Guidance
 
-<!-- Level: light | Created: 2026-04-25 | Status: complete -->
+<!-- Level: light | Created: 2026-04-25 | Status: active -->
 
 ## What
 
-Fix or repackage the Copilot plugin so a current checkout can load agentera skills through Copilot without the `skills path escapes plugin directory` failure.
+Update Copilot plugin guidance so marketplace-style installs are the preferred path, while direct `OWNER/REPO` installs remain documented only as a deprecated fallback.
 
 ## Why
 
-The live smoke narrowed the remaining portability caveat. Codex `$hej` works and installed Copilot skills are discoverable, but Copilot cannot load the current `1.18.1` checkout through `--plugin-dir` because the plugin points outside its root.
+Copilot now warns that direct plugin installs are deprecated. Agentera's current metadata is valid, but README guidance still leads with the path Copilot says will stop working.
 
 ## Constraints
 
-- Preserve `skills/<name>/SKILL.md` as the source of truth.
-- Keep runtime adapters thin and evidence-bounded.
-- Do not add third-party dependencies.
-- Do not claim Copilot current-checkout support until a live `copilot --plugin-dir` smoke passes.
-- Do not remove marketplace or installed-plugin guidance that still reflects observed behavior.
-- Keep tests proportional: one pass plus one fail for the packaging validator path, with a live smoke outside unit tests.
+- Do not claim a specific marketplace source unless it is verified.
+- Preserve direct install guidance as a temporary fallback.
+- Keep Copilot hook support described as partial.
+- Do not change runtime adapter behavior unless validation requires it.
+- Keep validation proportional: one pass and one fail for the documentation or metadata guard.
 
 ## Acceptance Criteria
 
-▸ GIVEN Copilot loads the plugin from the current checkout WHEN `copilot --plugin-dir` runs against agentera THEN skill discovery succeeds without an escaping-path error.
-▸ GIVEN Copilot package metadata is inspected WHEN local validation runs THEN every referenced skill and hook path stays inside the plugin root or is packaged in a Copilot-supported shape.
-▸ GIVEN shared skill source remains authoritative WHEN packaging artifacts are checked THEN generated or mirrored Copilot surfaces do not diverge silently from `skills/<name>/SKILL.md`.
-▸ GIVEN validator tests are updated WHEN this task is complete THEN coverage includes one valid package shape and one escaping-path failure.
-▸ GIVEN the fix is complete WHEN artifacts are updated THEN TODO, PROGRESS, CHANGELOG, and DOCS agree on whether the Copilot current-checkout caveat is closed or narrowed.
+▸ GIVEN users read Copilot install docs WHEN they choose an install path THEN marketplace-style `plugin@marketplace` is presented as preferred.
+▸ GIVEN users still need direct installs WHEN they read fallback docs THEN `OWNER/REPO` is clearly marked deprecated by Copilot.
+▸ GIVEN Copilot runtime support is described WHEN docs mention hooks THEN lifecycle support remains partial and evidence-bounded.
+▸ GIVEN installed plugin state includes older per-skill entries WHEN docs explain verification THEN users can distinguish aggregate `agentera` from legacy skill entries.
+▸ GIVEN validation runs WHEN marketplace-first guidance regresses THEN a focused test or validator check fails.
