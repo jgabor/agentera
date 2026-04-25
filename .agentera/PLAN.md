@@ -1,6 +1,6 @@
 # Plan: Canonical Copilot Marketplace Path
 
-<!-- Level: full | Created: 2026-04-25 | Status: active -->
+<!-- Level: full | Created: 2026-04-25 | Status: complete -->
 <!-- Reviewed: 2026-04-25 | Critic issues: 10 found, 10 addressed, 0 dismissed -->
 
 ## What
@@ -129,11 +129,17 @@ Use an evidence gate first. Verified marketplace evidence unlocks install-surfac
 ### Task 7: Plan-Level Freshness Checkpoint
 
 **Depends on**: Task 6
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all prior tasks are complete WHEN project state is reviewed THEN progress summarizes the plan-level outcome.
 ▸ GIVEN marketplace work changed open caveats WHEN TODO is reviewed THEN resolved and deferred items reflect the final state.
 ▸ GIVEN public history is reviewed WHEN changelog entries are checked THEN marketplace support and caveats are represented once.
+
+**Evidence**:
+
+- PROGRESS Cycle 161 summarizes the plan outcome: no canonical Agentera Copilot marketplace source is verified, so docs and validation preserve syntax-only marketplace guidance and explicit caveats.
+- TODO keeps the future marketplace publication caveat deferred and records Task 7 resolved.
+- CHANGELOG [Unreleased] has one caveated marketplace-support entry plus one validation-guard entry, with no duplicate availability claim.
 
 ## Overall Acceptance
 
