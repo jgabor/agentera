@@ -67,7 +67,16 @@ def _string_paths(value: Any) -> list[str]:
     return []
 
 
-def validate_copilot(plugin: dict[str, Any]) -> list[str]:
+def _resolve_inside(root: Path, path: str) -> Path | None:
+    resolved = (root / path).resolve()
+    try:
+        resolved.relative_to(root.resolve())
+    except ValueError:
+        return None
+    return resolved
+
+
+def validate_copilot(plugin: dict[str, Any], plugin_root: Path) -> list[str]:
     errors: list[str] = []
     if "lifecycleHooks" in plugin:
         errors.append("copilot: use supported hooks component field, not lifecycleHooks")
@@ -77,12 +86,26 @@ def validate_copilot(plugin: dict[str, Any]) -> list[str]:
         errors.append("copilot.skills must be a string or string array path")
     elif isinstance(skills, list) and not all(isinstance(path, str) for path in skills):
         errors.append("copilot.skills entries must be path strings")
+    else:
+        for path in _string_paths(skills):
+            resolved = _resolve_inside(plugin_root, path)
+            if resolved is None:
+                errors.append("copilot.skills paths must stay inside plugin root")
+            elif not resolved.is_dir():
+                errors.append("copilot.skills paths must resolve to skill directories")
 
     hooks = plugin.get("hooks")
     if not isinstance(hooks, str | list):
         errors.append("copilot.hooks must be a string or string array path")
     elif isinstance(hooks, list) and not all(isinstance(path, str) for path in hooks):
         errors.append("copilot.hooks entries must be path strings")
+    else:
+        for path in _string_paths(hooks):
+            resolved = _resolve_inside(plugin_root, path)
+            if resolved is None:
+                errors.append("copilot.hooks paths must stay inside plugin root")
+            elif not resolved.is_dir():
+                errors.append("copilot.hooks paths must resolve to a hook directory")
 
     description = plugin.get("description")
     if not isinstance(description, str) or any(term not in description for term in COPILOT_PROFILERA_TERMS):
@@ -91,14 +114,17 @@ def validate_copilot(plugin: dict[str, Any]) -> list[str]:
     return errors
 
 
-def validate_copilot_hooks(root: Path, plugin: dict[str, Any]) -> list[str]:
+def validate_copilot_hooks(plugin_root: Path, plugin: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     hook_paths = _string_paths(plugin.get("hooks"))
     if not hook_paths:
         return errors
 
     for hooks in hook_paths:
-        hook_dir = (root / ".github/plugin" / hooks).resolve()
+        hook_dir = _resolve_inside(plugin_root, hooks)
+        if hook_dir is None:
+            errors.append("copilot.hooks paths must stay inside plugin root")
+            continue
         if not hook_dir.is_dir():
             errors.append("copilot.hooks must resolve to a hook directory")
             continue
@@ -193,8 +219,8 @@ def main(argv: list[str] | None = None) -> int:
 
     root = args.root.resolve()
     errors: list[str] = []
-    copilot = _load_json(root / ".github/plugin/plugin.json")
-    errors.extend(validate_copilot(copilot))
+    copilot = _load_json(root / "plugin.json")
+    errors.extend(validate_copilot(copilot, root))
     errors.extend(validate_copilot_hooks(root, copilot))
     codex = _load_json(root / ".codex-plugin/plugin.json")
     errors.extend(validate_codex(codex))

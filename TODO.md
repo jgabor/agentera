@@ -8,10 +8,9 @@
 
 ## ⇢ Annoying
 
-- [ ] [audit-11] Deferred: Copilot current-checkout plugin smoke is blocked by escaping skills path; installed Copilot skills and Codex `$hej` smoke passed · runtime metadata docs
-
 ## Resolved
 
+- [x] ~~[audit-11] Deferred: Copilot current-checkout plugin smoke is blocked by escaping skills path; installed Copilot skills and Codex `$hej` smoke passed~~ · fixed in Cycle 153; root `plugin.json` loads shared `skills/` through `copilot --plugin-dir`
 - [x] ~~[audit-11] Deferred: live Copilot and Codex host behavior remains untested until host smoke tests are available~~ · narrowed by Cycle 152; Codex `$hej` and Copilot installed skills passed, current-checkout Copilot plugin loading remains blocked
 - [x] ~~[audit-11] Refresh DOCS Plan index after the completed runtime portability plan~~ · resolved without commit by explicit user request; Task 8 set DOCS and PLAN to one current completed Audit 11 state
 - [x] ~~[audit-11] Treat Audit 11 as the resolution marker for stale historical collector-unavailable wording~~ · resolved without commit by explicit user request; Task 8 records collector cleanup complete while keeping live host behavior deferred
