@@ -3,7 +3,7 @@
 ■ ## Cycle 159 · 2026-04-25 18:24 · docs(copilot): update user guidance
 
 **What**: Completed Task 5 only. README now keeps Copilot marketplace guidance evidence-gated, records the verified no-source limitation, and tightens lifecycle language around partial support.
-**Commit**: this cycle commit
+**Commit**: 1f006a8 docs(copilot): update user guidance
 **Inspiration**: Task 4 host evidence: no verified marketplace source, aggregate installed state, legacy per-skill entries, and `/skills list` omission of some installed skills.
 **Discovered**: The install guidance already avoided an invented source, but it lacked the concise host discrepancy note users need when comparing `copilot plugin list` with `/skills list`.
 **Verified**: README uses `copilot plugin install <plugin>@<marketplace>` only as syntax and states no canonical Agentera Copilot marketplace source is verified; it cites observed built-in marketplaces `copilot-plugins` and `awesome-copilot` with no `agentera` entry; it preserves aggregate `agentera` install guidance, labels older per-skill entries as legacy, records `/skills list` omitting installed `hej`, `inspektera`, and `profilera`, and keeps Copilot lifecycle support partial without claiming Claude hook parity. `python3 -m pytest tests/test_runtime_adapters.py::TestCopilotPackaging::test_copilot_readme_install_guidance_passes -q`, `python3 scripts/validate_spec.py`, and `git diff --check -- README.md .agentera/PLAN.md .agentera/PROGRESS.md` passed.
