@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 157 · 2026-04-25 18:10 · test(install): guard copilot marketplace claims
+
+**What**: Completed Task 3 only. README Copilot install guidance validation now blocks unsupported marketplace claims without changing the guidance semantics.
+**Commit**: 1af096c test(install): guard copilot marketplace claims
+**Inspiration**: Task 1 and Task 2 evidence: Copilot has built-in marketplaces, but no canonical Agentera Copilot marketplace source is verified.
+**Discovered**: The existing guard accepted the happy-path README and one stale marketplace command, but did not separately reject availability claims, placeholder-as-source wording, or primary fallback semantics.
+**Verified**: `python3 -m pytest tests/test_runtime_adapters.py::TestCopilotPackaging -q` -> 7 passed, covering one pass plus one fail for each Task 3 guidance rule: unavailable marketplace claims, placeholder syntax masquerading as `agentera@<marketplace>`, and deprecated fallback wording. `python3 -m pytest -q` -> 361 passed. `python3 scripts/validate_spec.py` -> 0 errors, 0 warnings. `git diff --check` -> no output.
+**Next**: Task 4 can run later if a verified host-behavior scope is still needed; no live host smoke docs, version bumps, or plan-level freshness work ran here.
+**Context**: intent (guard public Copilot install guidance from unsupported marketplace claims) · constraints (Task 3 only, no invented sources, preserve README semantics, proportional tests) · unknowns (future canonical Agentera marketplace source) · scope (`tests/test_runtime_adapters.py`, `.agentera/PLAN.md`, `CHANGELOG.md`, `.agentera/PROGRESS.md`).
+
 ■ ## Cycle 156 · 2026-04-25 18:02 · docs(install): clarify copilot marketplace placeholder
 
 **What**: Completed Task 2 only. README now treats Copilot `<plugin>@<marketplace>` as marketplace syntax, not proof that Agentera is published there.
@@ -90,18 +100,9 @@
 **Next**: Task 6 can deepen corpus validation and add secondary surface fixtures. Do not backfill Task 6 validation rules into this refactor.
 **Context**: intent (refactor Task 5 corpus orchestration boundary only) · constraints (behavior-preserving, no new runtime collector, no new deps, no live host claims, no commit) · unknowns (full envelope validation remains Task 6) · scope (`skills/profilera/scripts/extract_all.py`, `tests/test_extract_all.py`, required state artifacts).
 
-■ ## Cycle 147 · 2026-04-25 11:51 · fix(adapters): repair OpenCode path and hook drift
-
-**What**: Completed Task 4 only. OpenCode artifact validation now resolves the documented `~/.agents/agentera` manual clone root, Copilot hook validation checks string and list hook declarations consistently, and DOCS version targets include OpenCode's test-enforced marker.
-**Commit**: none (user explicitly requested no commits)
-**Inspiration**: Audit 11 coupling and version-health findings for OpenCode install-root drift, list-form Copilot hooks, and the undocumented OpenCode version marker.
-**Discovered**: OpenCode still keeps the legacy `~/.agents/skills/agentera` fallback after the documented `~/.agents/agentera` root. Copilot hook validation only needed path normalization, not new handler rules.
-**Verified**: `node scripts/smoke_opencode_bootstrap.mjs` -> `PASS: all smoke checks passed`, including `resolveAgenteraHome()` resolving a temporary documented `~/.agents/agentera/scripts/validate_spec.py` root. `python3 scripts/validate_lifecycle_adapters.py` -> `lifecycle adapter metadata ok`, proving current string-form hooks still validate. `python3 -m pytest tests/test_runtime_adapters.py -q` -> `22 passed in 0.02s`, covering list-form hook pass/fail behavior, documented OpenCode install-root drift, and DOCS inclusion of `.opencode/plugins/agentera.js` as the version marker. `python3 -m pytest -q` -> `351 passed in 0.33s`. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings. `node --check .opencode/plugins/agentera.js` and `git diff --check -- .opencode/plugins/agentera.js scripts/smoke_opencode_bootstrap.mjs scripts/validate_lifecycle_adapters.py tests/test_runtime_adapters.py .agentera/DOCS.md` produced no output.
-**Next**: Task 5 can refactor the profilera corpus orchestration boundary. Do not widen Task 4 into corpus validation or freshness work.
-**Context**: intent (repair Task 4 adapter drift only) · constraints (no commit, no new deps, no live host claims, no Task 5 work) · unknowns (live OpenCode host behavior remains local-metadata evidence only) · scope (`.opencode/plugins/agentera.js`, `scripts/validate_lifecycle_adapters.py`, adapter tests, DOCS/TODO/CHANGELOG/PLAN/PROGRESS bookkeeping).
-
 ## Archived Cycles
 
+- Cycle 147 (2026-04-25): fix(adapters): repair OpenCode path and hook drift
 - Cycle 146 (2026-04-25): fix(adapters): catch Codex invocation hint drift
 - Cycle 145 (2026-04-25): fix(adapters): tighten runtime metadata drift guards
 - Cycle 144 (2026-04-25): fix(profilera): redact Copilot config secrets
