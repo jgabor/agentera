@@ -154,6 +154,79 @@ Skills communicate through markdown files in your project: a vision doc, a plan,
 
 Every skill suggests what to do next when it finishes. You follow the thread, or run `/orkestrera` to execute an entire plan: it dispatches skills, evaluates each task with inspektera, retries failures, and loops until done.
 
+```mermaid
+flowchart TD
+  hej["⌂ hej<br/>Orient and route"]
+  visionera["⛥ visionera<br/>Set product direction"]
+  inspirera["⬚ inspirera<br/>Import outside ideas"]
+  resonera["❈ resonera<br/>Resolve tradeoffs"]
+  dokumentera["▤ dokumentera<br/>Document intent and truth"]
+  visualisera["◰ visualisera<br/>Define visual system"]
+  planera["≡ planera<br/>Turn intent into tasks"]
+  orkestrera["⎈ orkestrera<br/>Run the plan"]
+  realisera["⧉ realisera<br/>Build and verify"]
+  optimera["⎘ optimera<br/>Measure and improve"]
+  inspektera["⛶ inspektera<br/>Audit health"]
+  profilera["♾ profilera<br/>Learn decision patterns"]
+
+  hej --> visionera
+  hej --> resonera
+  hej --> planera
+  hej --> orkestrera
+  hej --> realisera
+  hej --> inspektera
+
+  visionera --> dokumentera
+  visionera --> visualisera
+  inspirera --> resonera
+  inspirera --> visionera
+  resonera --> dokumentera
+  dokumentera --> planera
+  visualisera --> planera
+  planera --> orkestrera
+  orkestrera --> realisera
+  realisera --> inspektera
+  inspektera --> orkestrera
+  inspektera --> planera
+  inspektera --> dokumentera
+  realisera --> optimera
+  optimera --> realisera
+  realisera --> dokumentera
+  realisera --> visionera
+  profilera -. calibrates .-> hej
+  profilera -. calibrates .-> resonera
+  profilera -. calibrates .-> dokumentera
+  profilera -. calibrates .-> planera
+  profilera -. calibrates .-> realisera
+  profilera -. calibrates .-> optimera
+  profilera -. calibrates .-> inspektera
+
+  subgraph Strategy["Strategy and discovery"]
+    visionera
+    inspirera
+    resonera
+  end
+
+  subgraph Definition["Definition"]
+    dokumentera
+    visualisera
+    planera
+  end
+
+  subgraph Delivery["Delivery"]
+    orkestrera
+    realisera
+  end
+
+  subgraph Quality["Quality and learning"]
+    inspektera
+    optimera
+    profilera
+  end
+```
+
+Together, the skills cover the full product loop: orient, discover, decide, document, design, plan, build, evaluate, optimize, and learn from each cycle.
+
 ### Example workflow
 
 Continuing from the `/hej` output above (task 7 blocked on an API schema decision):
