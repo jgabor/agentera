@@ -176,7 +176,8 @@ All subsequent references to OBJECTIVE.md, EXPERIMENTS.md, and harness in this s
 
    Apply confidence thresholds per contract profile consumption conventions. Read full profile from `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) for details when needed. <!-- platform: profile-path -->
    If missing, proceed without persona grounding but flag it.
-4. **Project discovery** (experiment 1 or when unfamiliar): map directory structure within scope, read dependency manifests, README.md, CLAUDE.md, AGENTS.md, identify build/test/lint commands, read key source files in scope
+4. **Project discovery** (experiment 1 or when unfamiliar): map directory structure within scope, read dependency manifests, and read README.md, CLAUDE.md, AGENTS.md.
+   Identify build/test/lint commands and read key source files in scope.
 5. `git log --oneline -20` for recent changes
 
 Before experimenting: in your response, list the current baseline, target, and constraints from OBJECTIVE.md. These survive if earlier reads are cleared.

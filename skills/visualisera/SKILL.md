@@ -371,7 +371,9 @@ When inspirera analyzes external design systems or visual patterns, the findings
 
 ### Visualisera is informed by /resonera
 
-When design decisions require deliberation (competing aesthetics, brand evolution, or significant visual pivots), suggest `/resonera` to think it through before committing to a new design direction.
+When design decisions require deliberation, suggest `/resonera` before committing.
+
+Use it for competing aesthetics, brand evolution, or significant visual pivots.
 
 ---
 

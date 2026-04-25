@@ -188,20 +188,31 @@ Outputs JSON with velocity, work type distribution, and suggestions. Use to info
    - Read key source files to understand architecture
 6. `git log --oneline -20` for recent changes
 
-Before proceeding: in your response, list the 3-5 facts from VISION.md, PROGRESS.md, TODO.md, and HEALTH.md that will determine what you build this cycle. These survive if earlier tool results are cleared by context compaction.
+Before proceeding, list the 3-5 facts that determine this cycle.
+
+Use VISION.md, PROGRESS.md, TODO.md, and HEALTH.md. These survive context compaction.
 
 Also read the prior cycle's Context block from PROGRESS.md. It captures what the last cycle intended, what was uncertain, and what scope it expected to touch. Use this for cross-cycle continuity.
 
-**Exit-early guard (plan-driven mode only)**: If PLAN.md exists and all tasks are `■ complete` or `skipped`, and no new tasks have been added, perform a **plan-completion sweep** before archiving. This guard does NOT apply in vision-driven mode because realisera always has work when reasoning from the gap between vision and codebase.
+**Exit-early guard (plan-driven mode only)**: If PLAN.md is done and no tasks were added, perform a **plan-completion sweep** before archiving.
+
+This guard does NOT apply in vision-driven mode.
 
 The plan-completion sweep closes the structural freshness gap that existed when the guard simply archived without running Step 8. Sweep checklist:
 
-1. **PROGRESS.md aggregate cycle entry**: append a cycle entry whose **What** field summarizes the entire plan's work (not just the last task), whose **Commits** field lists the plan's commits in order (use `git log` since the plan's `Created` date), whose **Discovered** field captures any cross-task surprises from `## Surprises`, and whose **Next** field states the next milestone or vision-driven direction. Apply the standard PROGRESS.md compaction thresholds.
-2. **CHANGELOG.md plan-level entries**: verify the `## [Unreleased]` section has at least one Added/Changed/Fixed line covering each completed task's user-facing impact. If entries are missing, append them based on the task titles and acceptance criteria (one short line per task, not commit messages verbatim). If the plan included a version bump task, promote `[Unreleased]` to a versioned heading with today's date.
-3. **TODO.md milestone advance**: mark each plan task as a Resolved entry (referencing the commits), and advance the active milestone to the next planned version. If this was the last planned version, remove the active-milestone line and let realisera resume vision-driven work.
-4. **HEALTH.md cross-reference**: if the plan resolved any prior HEALTH.md findings, mention them in the new PROGRESS.md cycle entry's **Discovered** field so the next inspektera audit can mark them resolved.
+1. **PROGRESS.md aggregate cycle entry**: append a cycle entry summarizing the whole plan.
+   - Include ordered commits, cross-task surprises from `## Surprises`, and the next milestone.
+   - Apply the standard PROGRESS.md compaction thresholds.
+2. **CHANGELOG.md plan-level entries**: verify `## [Unreleased]` covers each completed task's user-facing impact.
+   - If entries are missing, append one short line per task.
+   - If a version bump task ran, promote `[Unreleased]`.
+3. **TODO.md milestone advance**: mark each plan task as a Resolved entry and advance the active milestone.
+   - If this was the last planned version, remove the active-milestone line.
+4. **HEALTH.md cross-reference**: mention any resolved HEALTH.md findings in the PROGRESS.md **Discovered** field.
 
-If the plan contains a "Plan-level freshness checkpoint" task (per the planera convention), that task's acceptance criteria are the authoritative contract: verify each one is met. If the plan was created before the checkpoint convention landed and has no such task, perform the sweep on a best-effort basis: warn (don't fail) on missing entries, append them where possible, and note the gap in the cycle entry so future audits see it.
+If the plan contains a "Plan-level freshness checkpoint" task, its acceptance criteria are authoritative.
+
+If the task is absent, perform the sweep on a best-effort basis. Warn on missing entries.
 
 Only after the sweep completes does the guard archive PLAN.md to `.agentera/archive/PLAN-{date}.md` and report exit signal `complete: plan finished`. Do not proceed to Step 2.
 
@@ -220,7 +231,9 @@ coverage). Realisera builds; optimera tunes.
 
 Write a 1-2 sentence rationale. Scope down aggressively.
 
-Compose a Context block for this cycle: intent (what and why, one line), constraints (what must not break), unknowns (open questions or uncertain foundations), scope (areas expected to be affected). ≤80 words total. This is written to PROGRESS.md in Step 8.
+Compose a Context block for this cycle: intent, constraints, unknowns, and scope.
+
+Keep it ≤80 words. This is written to PROGRESS.md in Step 8.
 
 **Decision gate**: After selecting work, check whether any `exploratory` entries in DECISIONS.md relate to the selected work area. If found: flag the uncertain foundation, suggest `/resonera` to firm up the decision, and note the risk in the cycle's Context unknowns field. In autonomous mode, proceed with the work but log the risk without hard-blocking. If no DECISIONS.md exists or no exploratory entries relate, this gate is a no-op.
 
@@ -252,7 +265,13 @@ Keep small enough for one agent session. Too large? Split and save the rest for 
 3. Commit with `chore(realisera): checkpoint before worktree dispatch`. Do not pass `--no-verify`.
 4. If pre-commit hooks reject the commit: fix the artifact validation error, re-stage, and retry. If the retry also fails, abort the dispatch and report the failure. Do not proceed with a worktree branching from stale state.
 
-**Stale-base awareness**: some harnesses create the worktree branch from `origin/main` (or the configured remote default) rather than from local `HEAD`. Before dispatch, run `git rev-list --count origin/main..HEAD`. If the count is greater than zero, the worktree will be based on a stale commit and the sub-agent will verify against out-of-date code. Proceed with dispatch, but in Step 6 do NOT merge the worktree branch: fetch the sub-agent's diff with `git -C <worktree> diff` (including both staged and unstaged changes) and apply it to the main checkout via `git apply --index -`. Re-run the project's verification suite in the main checkout so the numbers reflect HEAD, not the stale base. If the patch does not apply cleanly, the sub-agent's change touched a file that diverged between `origin/main` and HEAD; diagnose and resolve before committing.
+**Stale-base awareness**: some harnesses create the worktree branch from `origin/main` rather than local `HEAD`.
+
+Before dispatch, run `git rev-list --count origin/main..HEAD`. If count > 0, do not merge the worktree branch.
+
+Fetch the sub-agent's diff and apply it to the main checkout. Re-run verification in the main checkout.
+
+If the patch does not apply cleanly, diagnose the diverged file before committing.
 
 Spawn an implementation sub-agent in a worktree (`isolation: "worktree"`) <!-- platform: sub-agent-dispatch --> with:
 
@@ -279,9 +298,13 @@ For non-trivial design decisions, spawn a design sub-agent first, then an implem
 
 ### Step 6: Verify
 
-Verification has two phases per contract Section 19, Reality Verification Gate: structural (tests, lint, build are green) and behavioral (the new feature was actually observed running against real project state). Both phases must pass before the cycle can advance to commit. Passing tests alone are necessary but not sufficient evidence that the work is real.
+Verification has two phases per contract Section 19: structural and behavioral.
 
-**Dispatch boundary**: If Step 5 dispatched a sub-agent to implement the work in a worktree <!-- platform: sub-agent-dispatch -->, verification runs in realisera's main checkout AFTER the worktree has been merged, not inside the worktree. The sub-agent implements; realisera verifies post-merge. Dispatched agents cannot self-attest verification.
+Both must pass before commit. Passing tests alone is not enough evidence.
+
+**Dispatch boundary**: if Step 5 dispatched a worktree sub-agent, verify in realisera's main checkout after merge. <!-- platform: sub-agent-dispatch -->
+
+The sub-agent implements; realisera verifies. Dispatched agents cannot self-attest verification.
 
 **Phase A, structural verification**: After implementation completes:
 
@@ -306,7 +329,11 @@ Verification has two phases per contract Section 19, Reality Verification Gate: 
 - Design system: render a representative component against real design tokens
 - Data pipeline: run the pipeline against a real input sample (not synthetic fixtures)
 
-Projects whose archetype is not listed above carry a `verification_entrypoint` key in `.agentera/DOCS.md`. If a `verification_budget` key is set and the budget is exhausted, downgrade to `**Verified**: partial (budget hit)` with a note capturing what was attempted, what was observed, and which portions remain unverified.
+Projects outside this list carry a `verification_entrypoint` key in `.agentera/DOCS.md`.
+
+If `verification_budget` is exhausted, use `**Verified**: partial (budget hit)`.
+
+Note what was attempted, observed, and left unverified.
 
 Capture the observation: a short transcript (stdout/stderr snippets), exit code, or summary of what happened. The transcript should be concrete enough that a reader can tell whether the behavior actually happened. This capture populates the `**Verified**` field in the PROGRESS.md cycle entry written in Step 8.
 
@@ -318,7 +345,11 @@ Capture the observation: a short transcript (stdout/stderr snippets), exit code,
 - `chore-build-config`: the change modified build tooling, linter configuration, or packaging metadata
 - `test-only`: the change added or adjusted tests without modifying the code under test
 
-Any N/A justification outside the allowlist must be a free-form prose rationale of at least 8 words explaining specifically why the change has no observable behavior. Shorter rationales fail the gate. A cycle that bundles runnable work with an N/A-tagged change still requires observed output for the runnable portion; the tag covers only the non-runnable slice.
+Any N/A justification outside the allowlist must be at least 8 words.
+
+It must explain why the change has no observable behavior.
+
+Runnable work still requires observed output.
 
 If verification fails (structural or behavioral):
 

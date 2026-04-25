@@ -8,7 +8,7 @@ description: >
   inconsistencies, identify complexity hotspots, evaluate test coverage quality, or check
   dependency health. Do NOT attempt codebase-wide quality assessments without this skill
   because it contains the critical workflow for multi-dimensional evaluation, evidence-based
-  findings, confidence scoring, and trend tracking that prevents noisy or superficial audits.
+  findings, confidence scoring, and trajectory tracking that prevents noisy or superficial audits.
   Trigger on: "inspektera", "audit the codebase", "check code health", "architecture review",
   "find technical debt", "assess code quality", "how healthy is this codebase", "what needs
   fixing", "structural review", "pattern audit", "dependency check",
@@ -20,7 +20,7 @@ spec_sections: [1, 2, 4, 5, 6, 16, 17, 18]
 
 **Integrity Navigation: Systematic Pattern Evaluation, Knowledge Tracing. Examine, Report, Advise.**
 
-Codebase health audit: multi-dimensional structural quality evaluation with evidence-based findings, confidence scores, and trend tracking. The retrospective counterpart to realisera's forward motion: is the codebase getting better or just bigger?
+Codebase health audit: multi-dimensional structural quality evaluation with evidence-based findings, confidence scores, and trajectory tracking. The retrospective counterpart to realisera's forward motion: is the codebase getting better or just bigger?
 
 Each invocation = one audit. Findings feed realisera's work selection via TODO.md. Skill introduction: `─── ⛶ inspektera · audit ───`
 
@@ -32,7 +32,7 @@ One file in `.agentera/`, bootstrapped if absent.
 
 | File | Purpose | Bootstrap |
 |------|---------|-----------|
-| `HEALTH.md` | Codebase health assessment. Findings, dimension grades, trends. | `# Health\n\n` then the first audit entry. |
+| `HEALTH.md` | Codebase health assessment. Findings, dimension grades, trajectory. | `# Health\n\n` then the first audit entry. |
 
 Template in `references/templates/`. Use as starting structure, adapt to the project.
 
@@ -328,19 +328,19 @@ After all agents complete:
    - **A**: No critical/warning findings. **B**: No critical, some warnings.
    - **C**: 1-2 critical or many warnings. **D**: Multiple critical.
    - **F**: Pervasive critical findings.
-5. **Trends**: compare to prior HEALTH.md: improved, degraded, stable dimensions. Calculate overall trajectory: improving / stable / degrading.
+5. **Trajectory**: compare to prior HEALTH.md: improved, degraded, stable dimensions. Calculate overall trajectory: improving / stable / degrading.
 
 ---
 
 ## Step 5: Report
 
-Assess each dimension in your response. Write ONLY grade, trend indicator, and finding summary per dimension to HEALTH.md. No reasoning in the artifact; the conversation preserves analysis, the artifact preserves conclusions.
+Assess each dimension in your response. Write ONLY grade, trajectory marker, and finding summary per dimension to HEALTH.md. No reasoning in the artifact; the conversation preserves analysis, the artifact preserves conclusions.
 
 Output constraint per contract token budgets. Letter grade + ≤3 sentences justification per dimension.
 
 When updating existing HEALTH.md entries (e.g., updating Patterns Observed), use the Edit tool on the specific section rather than rewriting the file. Append new audit entries.
 
-Write the audit results to `HEALTH.md` (append new audit, keep prior audits for trend history) and present to the user.
+Write the audit results to `HEALTH.md` (append new audit, keep prior audits for trajectory history) and present to the user.
 
 After writing a new audit entry to HEALTH.md, compact older audits via the script. Run: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py health <path-to-HEALTH.md>`.
 
@@ -439,7 +439,9 @@ Critical and warning findings filed to TODO.md become candidates for realisera's
 
 ### Inspektera feeds /resonera
 
-When the audit reveals architectural drift or structural decisions that need deliberation (the code has evolved past the stated architecture, or competing patterns suggest a design choice is needed), suggest `/resonera` to think it through before anyone starts fixing.
+When the audit reveals architectural drift, suggest `/resonera` before fixes begin.
+
+Use it when code has moved past stated architecture or competing patterns need a decision.
 
 ### Inspektera feeds /planera
 
