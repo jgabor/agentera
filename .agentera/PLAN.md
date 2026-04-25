@@ -50,11 +50,17 @@ Use an evidence gate first. Verified marketplace evidence unlocks install-surfac
 ### Task 2: Align Install Surface
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN verified marketplace evidence WHEN users follow the preferred Copilot path THEN agentera installs as the aggregate plugin.
 ▸ GIVEN marketplace evidence is missing WHEN install guidance is reviewed THEN existing placeholder syntax does not become an availability claim.
 ▸ GIVEN fallback install paths remain available WHEN guidance is reviewed THEN they are clearly secondary to verified marketplace installs.
+
+**Evidence**:
+
+- README Copilot guidance now states no Agentera marketplace source is currently verified.
+- The Copilot marketplace command uses `<plugin>@<marketplace>` as syntax only, with aggregate `agentera` named only for the future verified-source branch.
+- Direct `OWNER/REPO`, `OWNER/REPO:PATH`, Git URL, and local path installs remain documented as deprecated fallback paths.
 
 ### Task 3: Guard Marketplace Claims
 
