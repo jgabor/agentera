@@ -72,6 +72,13 @@ Use an evidence gate first. Verified marketplace evidence unlocks install-surfac
 ▸ GIVEN fallback guidance WHEN validation runs THEN deprecated paths remain semantically secondary.
 ▸ Test proportionality target: 1 pass + 1 fail per guidance rule; add edge coverage only for verified versus unavailable source branches.
 
+**Evidence**:
+
+- Validation rejects additive unverified availability claims while no canonical Agentera Copilot marketplace source is verified.
+- Validation rejects placeholder-as-source commands such as `agentera@<marketplace>`.
+- Validation rejects additive primary/direct `OWNER/REPO` recommendations while preserving deprecated secondary fallback wording.
+- Test budget remains proportional: one README pass plus three fail tests, one per guidance rule, with additive branches covered by existing fail tests.
+
 ### Task 4: Verify Host Behavior
 
 **Depends on**: Task 3
