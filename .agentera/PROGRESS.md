@@ -3,7 +3,7 @@
 ■ ## Cycle 158 · 2026-04-25 17:53 · chore(runtime): verify copilot host state
 
 **What**: Completed Task 4 only. Read-only Copilot checks preserved the no-verified-source branch and recorded installed-state discrepancies without making marketplace availability claims.
-**Commit**: pending
+**Commit**: 2f154c2 chore(runtime): record copilot host verification
 **Inspiration**: Task 1 through Task 3 evidence: Copilot has built-in marketplaces, README keeps placeholder syntax non-claiming, and validation rejects unverified marketplace claims.
 **Discovered**: Existing host state includes aggregate `agentera (v1.18.1)` plus legacy per-skill `@agentera` installs. `/skills list` showed several Agentera skills but omitted installed `hej`, `inspektera`, and `profilera`.
 **Verified**: No marketplace install smoke ran because no canonical Agentera Copilot marketplace path is verified. Read-only checks: `copilot --version` -> `GitHub Copilot CLI 1.0.35`; `copilot plugin marketplace list` -> `copilot-plugins` and `awesome-copilot`; browsing both catalogs showed no `agentera` entry; `copilot plugin list` showed aggregate `agentera (v1.18.1)` and legacy per-skill entries only; `copilot -p "/skills list" --no-custom-instructions --no-auto-update --output-format text` exited 0 and listed Agentera skills from existing host state while omitting installed `hej`, `inspektera`, and `profilera`.
