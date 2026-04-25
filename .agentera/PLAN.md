@@ -98,11 +98,18 @@ Use an evidence gate first. Verified marketplace evidence unlocks install-surfac
 ### Task 5: Update User Guidance
 
 **Depends on**: Task 4
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN verified host behavior WHEN users read install docs THEN the preferred Copilot command uses the canonical marketplace path.
 ▸ GIVEN no verified source exists WHEN users read install docs THEN docs explain the current limitation without inventing a source.
 ▸ GIVEN support notes mention Copilot WHEN users read them THEN lifecycle support remains described without overstating parity.
+
+**Evidence**:
+
+- README keeps `copilot plugin install <plugin>@<marketplace>` as Copilot marketplace syntax only and does not write a canonical Agentera source because none is verified.
+- README records the verified limitation: built-in Copilot marketplaces `copilot-plugins` and `awesome-copilot` were observed with no `agentera` entry.
+- README keeps the aggregate `agentera` plugin model, labels older per-skill entries as legacy metadata, and records the `/skills list` omission for installed `hej`, `inspektera`, and `profilera`.
+- README lifecycle notes still describe Copilot as partial adapter metadata and explicitly avoid Claude hook parity.
 
 ### Task 6: Apply Release Convention
 

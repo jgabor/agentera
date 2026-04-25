@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 159 · 2026-04-25 18:24 · docs(copilot): update user guidance
+
+**What**: Completed Task 5 only. README now keeps Copilot marketplace guidance evidence-gated, records the verified no-source limitation, and tightens lifecycle language around partial support.
+**Commit**: this cycle commit
+**Inspiration**: Task 4 host evidence: no verified marketplace source, aggregate installed state, legacy per-skill entries, and `/skills list` omission of some installed skills.
+**Discovered**: The install guidance already avoided an invented source, but it lacked the concise host discrepancy note users need when comparing `copilot plugin list` with `/skills list`.
+**Verified**: README uses `copilot plugin install <plugin>@<marketplace>` only as syntax and states no canonical Agentera Copilot marketplace source is verified; it cites observed built-in marketplaces `copilot-plugins` and `awesome-copilot` with no `agentera` entry; it preserves aggregate `agentera` install guidance, labels older per-skill entries as legacy, records `/skills list` omitting installed `hej`, `inspektera`, and `profilera`, and keeps Copilot lifecycle support partial without claiming Claude hook parity. `python3 -m pytest tests/test_runtime_adapters.py::TestCopilotPackaging::test_copilot_readme_install_guidance_passes -q`, `python3 scripts/validate_spec.py`, and `git diff --check -- README.md .agentera/PLAN.md .agentera/PROGRESS.md` passed.
+**Next**: Task 6 may later decide whether DOCS.md version policy requires a release update; Task 6 and Task 7 were not executed here.
+**Context**: intent (update Task 5 user guidance only) · constraints (no invented marketplace source, no canonical path, preserve aggregate model and profilera caveats, no version bump) · unknowns (future canonical Agentera Copilot marketplace source, reason for host skill-discovery omissions) · scope (`README.md`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
+
 ■ ## Cycle 158 · 2026-04-25 17:53 · chore(runtime): verify copilot host state
 
 **What**: Completed Task 4 only. Read-only Copilot checks preserved the no-verified-source branch and recorded installed-state discrepancies without making marketplace availability claims.
@@ -90,18 +100,9 @@
 **Next**: Task 8 can perform the plan-level freshness checkpoint. Do not archive or freshness-sweep the plan before Task 8 runs.
 **Context**: intent (Task 7 version bump only) · constraints (no plan freshness checkpoint, no live host claims, no commits) · unknowns (live Copilot/Codex behavior remains untested) · scope (version files, changelog, runtime version test, PLAN/PROGRESS bookkeeping).
 
-■ ## Cycle 149 · 2026-04-25 12:01 · test(profilera): deepen corpus validation fixtures
-
-**What**: Completed Task 6 only. Profilera corpus validation now rejects incomplete metadata envelopes, malformed family status/count data, and aggregate/runtime family inconsistencies; tests now cover secondary Copilot and Codex local surfaces.
-**Commit**: none (user explicitly requested no commits)
-**Inspiration**: Audit 11 Test health findings for shallow Section 21 envelope validation and missing secondary collector fixtures.
-**Discovered**: The extractor already bounded secondary surface probes through `_copilot_known_surfaces()` and `_codex_known_surfaces()`; the missing work was validator depth and fixtures proving those paths.
-**Verified**: `python3 -m pytest tests/test_extract_all.py -q` -> `79 passed in 0.12s`, covering missing `extracted_at`/`families` metadata errors, invalid family status/count errors, multi-runtime aggregate versus per-runtime count consistency, Copilot `skills` plus `installed-plugins` fixtures, and Codex `history.jsonl` plus `config.toml` fixtures. Entry point sample with isolated `HOME` and only documented local surfaces exited 0, reported `Runtimes: copilot-cli, codex-cli`, `Total records: 4`, record kinds `history_prompt,instruction_document,project_config_signal`, Copilot checked surfaces limited to `.copilot/installed-plugins`, `.copilot/settings.json`, `.copilot/skills`, Codex checked surfaces limited to `.codex/config.toml`, `.codex/history.jsonl`, `.codex/sessions`, and Codex config signals `['model', '[profiles.default]']` with `api_key` omitted. `python3 -m pytest -q` -> `357 passed in 0.37s`. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings. `git diff --check -- skills/profilera/scripts/extract_all.py tests/test_extract_all.py` produced no output.
-**Next**: Task 7 can perform the DOCS.md version bump convention. Do not start the plan-level freshness checkpoint until Task 7 passes.
-**Context**: intent (deepen Task 6 corpus validation and secondary fixtures only) · constraints (no new deps, no live host claims, no version bump, no plan freshness checkpoint, no commit) · unknowns (live Copilot/Codex behavior remains untested) · scope (`skills/profilera/scripts/extract_all.py`, `tests/test_extract_all.py`, required state artifacts).
-
 ## Archived Cycles
 
+- Cycle 149 (2026-04-25): test(profilera): deepen corpus validation fixtures
 - Cycle 148 (2026-04-25): refactor(profilera): localize corpus runtime orchestration
 - Cycle 147 (2026-04-25): fix(adapters): repair OpenCode path and hook drift
 - Cycle 146 (2026-04-25): fix(adapters): catch Codex invocation hint drift
