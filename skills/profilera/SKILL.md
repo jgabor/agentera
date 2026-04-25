@@ -108,7 +108,11 @@ Read the corpus.json produced in Step 1. Each record carries a `source_kind` fie
 3. **conversation_turn**: Decision exchanges from conversations (most nuanced: real-time reasoning)
 4. **project_config_signal**: Recurring config patterns across projects (most objective: what shipped)
 
-Read the full corpus before proceeding to synthesis. If total records exceed 500, focus on highest signal first: history "correction"/"decision" kinds over "question", conversation turns with longer user responses, configs appearing across multiple projects.
+Read the full corpus before synthesis. If total records exceed 500, prioritize high-signal records:
+
+- history correction or decision kinds
+- longer user responses
+- configs shared across projects
 
 ---
 
@@ -170,7 +174,7 @@ Override the default when the evidence suggests otherwise.
 #### Set dates
 
 - **first**: Earliest timestamp from the source data that evidences this decision
-- **confirmed**: Set to today's date (the generation date)
+- **refresh date**: Set to today's date (the generation date)
 - **challenged**: Set to `—` (none yet on a fresh profile)
 
 #### Identify tensions
@@ -213,11 +217,11 @@ This profile captures decision-making patterns extracted from {N} months of Clau
   Line weight tokens: `━` high (90-100), `─` medium (50-89), `┄` low (0-49).
 - **perm**: How stable the decision domain is. stable (decade), durable (year),
   situational (month).
-- **first/confirmed/challenged**: When the decision was first observed, last confirmed,
+- **dates**: When the decision was first observed, refreshed,
   and last challenged.
 
-When consuming this profile, compute effective confidence using the decay formula in the
-header. Stale situational entries should carry less weight than fresh stable ones.
+When consuming this profile, compute effective confidence using the decay formula.
+Stale situational entries carry less weight than fresh stable ones.
 
 **When the profile is silent**: If a situation isn't covered, look for the closest trade-off
 heuristic or meta-decision pattern. When truly uncertain, ask.
@@ -310,7 +314,7 @@ For each response:
 
 ### Step V4: Write and report
 
-Write updated PROFILE.md. Report: "Validated {N} entries: {N} confirmed, {N} challenged, {N} skipped." Mention challenged entries by name.
+Write updated PROFILE.md. Report: "Reviewed {N} entries: {N} accepted, {N} challenged, {N} skipped." Mention challenged entries by name.
 
 ---
 
@@ -339,10 +343,10 @@ Report one of these statuses at workflow completion:
 Format: `─── ♾ profilera · status ───` followed by a summary sentence.
 For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
-- **complete**: PROFILE.md was written (Full mode) or updated (Validate mode) with all metadata changes applied, prediction accuracy was verified (Full mode), and a summary of what changed was reported.
+- **complete**: PROFILE.md was written (Full mode) or updated (Validate mode). Metadata changes were applied, prediction accuracy was assessed, and changes were summarized.
 - **flagged**: Profile generation or validation completed but with data quality issues: extraction failed for one or more sources, prediction accuracy was below 3/5, or significant tensions were found that could not be resolved from available evidence.
 - **stuck**: Cannot generate or validate a profile because the extraction scripts failed entirely, Python is unavailable, or `~/.claude/` is unreadable and no session data can be accessed.
-- **waiting**: The user chose Validate mode but PROFILE.md does not exist or has no valid metadata, requiring a Full mode run that the user has not confirmed; or the user's intent between Full and Validate is genuinely ambiguous.
+- **waiting**: The user chose Validate mode but PROFILE.md lacks valid metadata. A Full mode run needs user approval, or the requested mode is ambiguous.
 
 ---
 
