@@ -266,10 +266,12 @@ def _validate_docs_version_targets(root: Path) -> list[str]:
 
 def _validate_readme_copilot_install_guidance(text: str) -> list[str]:
     errors: list[str] = []
-    marketplace = "copilot plugin install plugin@marketplace"
+    marketplace = "copilot plugin install <plugin>@<marketplace>"
     direct = "copilot plugin install OWNER/REPO"
     if marketplace not in text:
-        errors.append("README Copilot install must prefer plugin@marketplace")
+        errors.append("README Copilot install must prefer <plugin>@<marketplace> syntax")
+    if "No canonical Agentera Copilot marketplace source is currently verified" not in text:
+        errors.append("README Copilot placeholder must not claim Agentera marketplace availability")
     if direct not in text or "deprecated fallback" not in text:
         errors.append("README Copilot install must mark OWNER/REPO as deprecated fallback")
     if marketplace in text and direct in text and text.index(marketplace) > text.index(direct):
@@ -302,9 +304,9 @@ class TestCopilotPackaging:
 
     def test_copilot_readme_install_guidance_fails_without_marketplace_first(self):
         readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-        stale = readme.replace("copilot plugin install plugin@marketplace", "copilot plugin install stale/agentera")
+        stale = readme.replace("copilot plugin install <plugin>@<marketplace>", "copilot plugin install stale/agentera")
         errors = _validate_readme_copilot_install_guidance(stale)
-        assert "README Copilot install must prefer plugin@marketplace" in errors
+        assert "README Copilot install must prefer <plugin>@<marketplace> syntax" in errors
 
 
 class TestCodexPackaging:

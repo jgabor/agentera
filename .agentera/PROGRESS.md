@@ -3,10 +3,10 @@
 ■ ## Cycle 156 · 2026-04-25 18:02 · docs(install): clarify copilot marketplace placeholder
 
 **What**: Completed Task 2 only. README now treats Copilot `<plugin>@<marketplace>` as marketplace syntax, not proof that Agentera is published there.
-**Commit**: pending in Task 2 commit.
+**Commit**: ee62888 docs(install): clarify copilot marketplace placeholder
 **Inspiration**: Task 1 evidence: Copilot CLI 1.0.35, built-in marketplaces `copilot-plugins` and `awesome-copilot`, and no `agentera` entry in browsed catalogs.
 **Discovered**: The README Copilot command and runtime table could be read as a concrete availability claim even though the plan evidence says no canonical Agentera marketplace source is verified.
-**Verified**: README now says no Agentera Copilot marketplace source is currently verified, uses `copilot plugin install <plugin>@<marketplace>` as syntax only, preserves future aggregate `agentera` plugin language for the verified-source branch, and keeps `OWNER/REPO`, `OWNER/REPO:PATH`, Git URL, and local path installs as deprecated fallback paths. `git diff --check -- README.md .agentera/PLAN.md .agentera/PROGRESS.md` passed.
+**Verified**: README says no Agentera Copilot marketplace source is currently verified, uses `copilot plugin install <plugin>@<marketplace>` as syntax only, preserves future aggregate `agentera` plugin language for the verified-source branch, and keeps `OWNER/REPO`, `OWNER/REPO:PATH`, Git URL, and local path installs as deprecated fallback paths. Remediation reran `python3 -m pytest tests/test_runtime_adapters.py::TestCopilotPackaging::test_copilot_readme_install_guidance_passes tests/test_runtime_adapters.py::TestCopilotPackaging::test_copilot_readme_install_guidance_fails_without_marketplace_first -q` -> 2 passed, `python3 -m pytest -q` -> 359 passed, `python3 scripts/validate_spec.py` -> 0 errors, 0 warnings, and `git diff --check` -> no output.
 **Next**: Task 3 may add validation guards later; no validation rules, host smoke docs, version bumps, or plan-level freshness work were done in this cycle.
 **Context**: intent (align install surface without inventing a marketplace source) · constraints (Task 2 only, preserve profilera caveats, direct installs secondary) · unknowns (future canonical Copilot marketplace source) · scope (`README.md`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
 
