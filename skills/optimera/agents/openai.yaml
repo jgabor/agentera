@@ -1,0 +1,10 @@
+interface:
+  name: optimera
+  display_name: optimera
+  description: "OPTIMERA: Objective Pursuit: Targeted Iterative Measurement: Experiment, Record, Advance. Metric-driven optimization that improves any measurable property of a codebase through systematic experimentation."
+  invocation_hint: "Use $optimera, or inspect it with /skills."
+policy:
+  allow_implicit_invocation: true
+dependencies:
+  required_capabilities: []
+  limitations: []

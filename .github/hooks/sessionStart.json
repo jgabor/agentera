@@ -1,0 +1,7 @@
+{
+  "name": "sessionStart",
+  "type": "command",
+  "bash": "python3 hooks/session_start.py",
+  "powershell": "python hooks/session_start.py",
+  "timeoutSec": 10
+}

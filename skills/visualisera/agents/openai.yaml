@@ -1,0 +1,10 @@
+interface:
+  name: visualisera
+  display_name: visualisera
+  description: "VISUALISERA: Visual Identity: Systematic Unified Aesthetic Language, Intent-driven Style Engineering: Record, Articulate. Creates, refines, and audits DESIGN.md visual identity files with bundled spec and validation."
+  invocation_hint: "Use $visualisera, or inspect it with /skills."
+policy:
+  allow_implicit_invocation: true
+dependencies:
+  required_capabilities: []
+  limitations: []

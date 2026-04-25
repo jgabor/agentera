@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-20 (post-1.13.0) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-25 (Audit 11 freshness checkpoint) -->
 
 ## Conventions
 
@@ -11,8 +11,11 @@ auto_gen:
   - none
 versioning:
   version_files:
+    - .github/plugin/plugin.json
+    - .codex-plugin/plugin.json
     - skills/*/.claude-plugin/plugin.json
     - .claude-plugin/marketplace.json
+    - .opencode/plugins/agentera.js
     - registry.json
   semver_policy: "feat = minor, fix = patch, docs/chore/test = no bump"
 ```
@@ -41,27 +44,31 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 | Document | Path | Last Updated | Status |
 |----------|------|-------------|--------|
-| README | README.md | 2026-04-10 | ■ current |
+| README | README.md | 2026-04-24 | ■ current |
 | CLAUDE.md | CLAUDE.md | 2026-04-02 | ■ current |
 | Decisions | .agentera/DECISIONS.md | 2026-04-02 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
-| Progress | .agentera/PROGRESS.md | 2026-04-10 | ■ current |
-| TODO | TODO.md | 2026-04-02 | ■ current |
-| Changelog | CHANGELOG.md | 2026-04-10 | ■ current |
-| Health | .agentera/HEALTH.md | 2026-04-20 | ■ current |
-| Plan | .agentera/PLAN.md | 2026-04-13 | ■ current (archived) |
-| DOCS | .agentera/DOCS.md | 2026-04-20 | ■ current |
+| Progress | .agentera/PROGRESS.md | 2026-04-25 | ■ current |
+| TODO | TODO.md | 2026-04-25 | ■ current |
+| Changelog | CHANGELOG.md | 2026-04-25 | ■ current |
+| Health | .agentera/HEALTH.md | 2026-04-23 | ■ current |
+| Plan | .agentera/PLAN.md | 2026-04-25 | ■ current (Audit 11 complete) |
+| DOCS | .agentera/DOCS.md | 2026-04-25 | ■ current |
 | Design | .agentera/DESIGN.md | 2026-04-19 | ■ current |
 | Ecosystem spec | SPEC.md | 2026-04-20 | ■ current |
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
 | Registry | registry.json | 2026-04-13 | ■ current |
 | Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-13 | ■ current |
+| Copilot plugin manifest | .github/plugin/plugin.json | 2026-04-23 | ■ current |
+| Codex plugin manifest | .codex-plugin/plugin.json | 2026-04-24 | ■ current |
+| Codex UI metadata | skills/&lt;name&gt;/agents/openai.yaml; agents/openai.yaml | 2026-04-24 | ■ current |
 | Hooks registry | hooks/hooks.json | 2026-04-03 | ■ current |
+| Lifecycle adapter validator | scripts/validate_lifecycle_adapters.py | 2026-04-23 | ■ current |
 | SessionStart hook | hooks/session_start.py | 2026-04-03 | ■ current |
 | Session stop hook | hooks/session_stop.py | 2026-04-03 | ■ current |
 | Validation hook | hooks/validate_artifact.py | 2026-04-03 | ■ current |
 | Shared hook utils | hooks/common.py | 2026-04-03 | ■ current |
-| Test suite | tests/ | 2026-04-13 | ■ current |
+| Test suite | tests/ | 2026-04-24 | ■ current |
 | Lefthook config | .lefthook.yml | 2026-04-20 | ■ current |
 | CI workflow | .github/workflows/ci.yml | 2026-04-11 | ■ current |
 
@@ -70,9 +77,31 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 263 tests across 12 files; CI runs on push/PR via GitHub Actions
+- **Tests**: 357 tests across 13 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-25 (Audit 11 freshness checkpoint)
+
+- [stale] Audit 11 PLAN, TODO, PROGRESS, and CHANGELOG needed one current completed state after Tasks 1-7 passed · warning (fixed)
+- [gap] Live Copilot/Codex host behavior remains untested and must stay explicit until smoke-tested · info (deferred)
+
+### 2026-04-24 (Task 6 profilera integration)
+
+- [stale] README.md and Codex metadata still described profilera as missing Copilot/Codex collectors after collectors landed · warning (fixed)
+- [gap] DOCS.md Coverage test count predated Task 6 envelope validation fixtures · warning (fixed)
+
+### 2026-04-24 (Task 1 runtime install audit)
+
+- [stale] README.md listed non-existent `claude plugin add` flow instead of marketplace add plus plugin install · critical (fixed)
+- [misaligned] README.md mixed plugin distribution paths with direct skill-folder loading for Copilot, Codex, and OpenCode · warning (fixed)
+- [misaligned] README.md hook table over-specified parity for runtimes with partial or experimental lifecycle support · warning (fixed)
+
+### 2026-04-24 (Audit 10 follow-up)
+
+- [stale] DOCS.md Coverage test count said 263 across 12 files, actual 320 across 13 after runtime adapter tests · warning (fixed)
+- [stale] DOCS.md Index dates for Progress, TODO, Changelog, Health, Plan, and Test suite predated Copilot/Codex plan updates · warning (fixed)
+- [stale] DOCS.md Plan row said archived while a completed active PLAN.md exists · info (fixed)
 
 ### 2026-04-20 (Audit 8, post-1.13.0)
 

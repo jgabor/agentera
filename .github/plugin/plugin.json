@@ -1,0 +1,7 @@
+{
+  "name": "agentera",
+  "version": "1.18.1",
+  "description": "agentera: entry-point routing, vision, deliberation, planning, autonomous development, optimization, auditing, documentation, visual identity, research, decision-profile mining, and orchestration. profilera uses bounded Copilot corpus metadata when present; missing source families degrade in local metadata and do not imply live host behavior.",
+  "skills": "../../skills",
+  "hooks": "../hooks"
+}

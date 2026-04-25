@@ -1,0 +1,114 @@
+display_name: Agentera
+description: Portable agentera skills for Codex. Use /skills to inspect skills, /plugins to inspect the plugin, and $skill for explicit invocation.
+icon: AG
+brand_color: "#111827"
+default_prompt: Use $hej to inspect project state, or use /skills and /plugins to review available skills first.
+policy:
+  allow_implicit_invocation: true
+support:
+  skill_discovery: /skills
+  plugin_discovery: /plugins
+  explicit_invocation: $skill
+  implicit_invocation: portable skills may be invoked implicitly
+  lifecycle_hooks: experimental-disabled; no real-time Write/Edit interception; use manual validation commands
+skills:
+  - name: hej
+    display_name: hej
+    path: ./skills/hej
+    metadata: ./skills/hej/agents/openai.yaml
+    description: Entry-point orientation and routing for fresh or returning projects.
+    invocation_hint: Use $hej, or inspect it with /skills.
+    policy:
+      allow_implicit_invocation: true
+  - name: inspirera
+    display_name: inspirera
+    path: ./skills/inspirera
+    metadata: ./skills/inspirera/agents/openai.yaml
+    description: External-source analysis mapped onto a project through agentera artifacts.
+    invocation_hint: Use $inspirera, or inspect it with /skills.
+    policy:
+      allow_implicit_invocation: true
+  - name: profilera
+    display_name: profilera
+    path: ./skills/profilera
+    metadata: ./skills/profilera/agents/openai.yaml
+    description: Decision-profile mining. Limited to available Codex Section 21 source families.
+    invocation_hint: Use $profilera when bounded Codex history, session, or config corpus data is available; inspect limitations with /skills first.
+    policy:
+      allow_implicit_invocation: false
+    required_capabilities:
+      - name: codex_session_corpus
+        status: degraded
+        action: Run profilera extraction; missing Codex source families are reported in corpus metadata.
+  - name: realisera
+    display_name: realisera
+    path: ./skills/realisera
+    metadata: ./skills/realisera/agents/openai.yaml
+    description: Autonomous development cycles grounded in VISION.md, TODO.md, and project verification.
+    invocation_hint: Use $realisera, or inspect it with /skills.
+    policy:
+      allow_implicit_invocation: true
+  - name: optimera
+    display_name: optimera
+    path: ./skills/optimera
+    metadata: ./skills/optimera/agents/openai.yaml
+    description: Metric-driven optimization loops for measurable objectives.
+    invocation_hint: Use $optimera, or inspect it with /skills.
+    policy:
+      allow_implicit_invocation: true
+  - name: resonera
+    display_name: resonera
+    path: ./skills/resonera
+    metadata: ./skills/resonera/agents/openai.yaml
+    description: Structured deliberation for consequential decisions and tradeoffs.
+    invocation_hint: Use $resonera, or inspect it with /skills.
+    policy:
+      allow_implicit_invocation: true
+  - name: inspektera
+    display_name: inspektera
+    path: ./skills/inspektera
+    metadata: ./skills/inspektera/agents/openai.yaml
+    description: Codebase health audits with severity, confidence, and trend tracking.
+    invocation_hint: Use $inspektera, or inspect it with /skills.
+    policy:
+      allow_implicit_invocation: true
+  - name: planera
+    display_name: planera
+    path: ./skills/planera
+    metadata: ./skills/planera/agents/openai.yaml
+    description: Scale-adaptive planning with behavioral acceptance criteria.
+    invocation_hint: Use $planera, or inspect it with /skills.
+    policy:
+      allow_implicit_invocation: true
+  - name: visionera
+    display_name: visionera
+    path: ./skills/visionera
+    metadata: ./skills/visionera/agents/openai.yaml
+    description: Project vision creation and refinement for VISION.md.
+    invocation_hint: Use $visionera, or inspect it with /skills.
+    policy:
+      allow_implicit_invocation: true
+  - name: dokumentera
+    display_name: dokumentera
+    path: ./skills/dokumentera
+    metadata: ./skills/dokumentera/agents/openai.yaml
+    description: DTC-first documentation creation, maintenance, and audit.
+    invocation_hint: Use $dokumentera, or inspect it with /skills.
+    policy:
+      allow_implicit_invocation: true
+  - name: visualisera
+    display_name: visualisera
+    path: ./skills/visualisera
+    metadata: ./skills/visualisera/agents/openai.yaml
+    description: Visual identity system creation, refinement, and audit.
+    invocation_hint: Use $visualisera, or inspect it with /skills.
+    policy:
+      allow_implicit_invocation: true
+  - name: orkestrera
+    display_name: orkestrera
+    path: ./skills/orkestrera
+    metadata: ./skills/orkestrera/agents/openai.yaml
+    description: Plan-driven orchestration that dispatches skills and evaluates results.
+    invocation_hint: Use $orkestrera, or inspect it with /skills.
+    policy:
+      allow_implicit_invocation: true

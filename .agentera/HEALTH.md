@@ -1,5 +1,286 @@
 # Health
 
+## Audit 12 · 2026-04-25
+
+**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
+**Findings**: 0 critical, 0 warnings, 0 info (0 filtered by confidence)
+**Overall trajectory**: ⮉ improving vs Audit 11. Audit 11 cleanup resolved the prior portability warnings without widening live-host claims.
+**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Complexity [A] | Tests [A] | Version [A] | Freshness [A] | Security [A] | Deps [A]
+
+### Architecture alignment: A
+
+The portability direction is aligned. Section 21 now names top-level provenance plus required `data`, and runtime adapters remain thin metadata or local-validator surfaces.
+
+### Pattern consistency: A
+
+Copilot and Codex profilera caveats are visible through supported local metadata. Codex duplicate policy surfaces are covered by lifecycle validation.
+
+### Coupling health: A
+
+OpenCode path resolution now checks the documented `~/.agents/agentera` root before legacy paths. Copilot one-vs-many hook validation uses one normalized path flow.
+
+### Complexity hotspots: A
+
+`build_corpus()` is no longer the runtime branching hotspot. Runtime extension is localized in the collector registry and shared family runner.
+
+### Test health: A
+
+Full suite passes at 357 tests. Focused Audit 11 tests pass at 101 tests across profilera extraction and runtime adapters.
+
+### Version health: A
+
+Version targets are aligned at 1.18.1 across registry, per-skill plugins, marketplace metadata and non-profilera entries, Copilot, Codex, and OpenCode.
+
+### Artifact freshness: A
+
+PLAN is complete, TODO has Audit 11 items resolved, PROGRESS records the checkpoint, DOCS marks plan artifacts current, and CHANGELOG preserves the host-test caveat.
+
+### Security hygiene: A
+
+Copilot primitive config values with sensitive-looking keys are redacted. Secret scan only matched documented example patterns in inspektera instructions.
+
+> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), npm audit (Node), or similar.
+
+### Dependency health: A
+
+No new third-party dependencies were introduced. Python remains stdlib-only, with the existing isolated OpenCode Node package unchanged.
+
+### Trends vs Audit 11
+
+- **Improved**: All Audit 11 warnings resolved: contract shape, metadata drift, OpenCode path drift, hook validation, corpus orchestration, validation coverage, version targets, and redaction.
+- **Degraded**: none.
+- **Stable caveat**: Live Copilot/Codex host behavior remains untested by design and is preserved as a release caveat.
+
+### Patterns Observed
+
+- Module structure: shared `skills/<name>/SKILL.md` source, with runtime adapters outside the skill core.
+- Adapter strategy: local validators guard metadata drift; live-host claims stay deferred until host smoke tests exist.
+- Testing approach: pytest covers validators, extractor envelopes, redaction, secondary surfaces, and adapter drift guards.
+- Version pattern: DOCS.md semver policy drove a patch bump after fix-scoped cleanup.
+
+## Audit 11 · 2026-04-24
+
+**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
+**Findings**: 0 critical, 9 warnings, 3 info (0 filtered by confidence)
+**Overall trajectory**: stable vs Audit 10. Runtime portability moved forward, but collector validation and metadata drift guards need one cleanup pass.
+**Grades**: Architecture [B] | Patterns [B] | Coupling [B] | Complexity [B] | Tests [B] | Version [B] | Freshness [B] | Security [B] | Deps [A]
+
+### Architecture alignment: B
+
+The plan matches VISION.md's portable-runtime direction. Shared skill sources remain intact, and runtime adapters stay thin.
+
+#### ⇉ Section 21 record shape conflicts with SPEC, warning (confidence: 80)
+
+- **Location**: `SPEC.md:1011`, `SPEC.md:1168`, `SPEC.md:1191`, `skills/profilera/scripts/extract_all.py:1105`
+- **Evidence**: SPEC examples put domain fields at record top level. The extractor wraps them under `data`.
+- **Impact**: Consumers written against SPEC may miss record fields.
+- **Suggested action**: Flatten records or update SPEC and consumers to bless the `data` envelope.
+
+### Pattern consistency: B
+
+Adapter metadata is mostly consistent. The repeated Codex/profilera policy fields remain a drift risk.
+
+#### ⇉ Copilot profilera gating is documented but not present in Copilot metadata, warning (confidence: 90)
+
+- **Location**: `README.md:31`, `.github/plugin/plugin.json:1`, `.codex-plugin/plugin.json:63`
+- **Evidence**: README says Copilot and Codex metadata gate profilera. Copilot metadata only exposes package-level paths.
+- **Impact**: Copilot users do not see the native profilera caveat through metadata.
+- **Suggested action**: Add supported Copilot metadata if available, or narrow the README claim.
+
+#### ⇉ Codex profilera policy is duplicated across three surfaces, warning (confidence: 75)
+
+- **Location**: `.codex-plugin/plugin.json:63`, `agents/openai.yaml:31`, `skills/profilera/agents/openai.yaml:1`
+- **Evidence**: Runtime support, implicit policy, and capability limits are repeated manually.
+- **Impact**: Capability wording can drift again.
+- **Suggested action**: Validate these fields across all Codex metadata surfaces.
+
+### Coupling health: B
+
+Runtime-specific files remain isolated. Two adapter assumptions should be tightened before another runtime pass.
+
+#### ⇉ OpenCode hook validation can no-op after documented manual install, warning (confidence: 85)
+
+- **Location**: `README.md:64`, `README.md:98`, `.opencode/plugins/agentera.js:175`
+- **Evidence**: README clones to `~/.agents/agentera`; plugin defaults to `~/.agents/skills/agentera` unless `AGENTERA_HOME` is set.
+- **Impact**: Artifact validation can silently skip if the documented path is used.
+- **Suggested action**: Document `AGENTERA_HOME` or align the default path.
+
+#### ⇉ Lifecycle validator skips list-form Copilot hook paths, warning (confidence: 75)
+
+- **Location**: `scripts/validate_lifecycle_adapters.py:65`, `scripts/validate_lifecycle_adapters.py:74`
+- **Evidence**: `hooks` may be a string or list. Hook file validation returns unless it is a string.
+- **Impact**: Future list-form hook metadata could bypass event and handler checks.
+- **Suggested action**: Normalize to a list and validate each path.
+
+### Complexity hotspots: B
+
+`build_corpus()` now carries three runtimes, family status aggregation, exception handling, and validation in one function.
+
+#### ⇉ build_corpus() is a growing orchestration hotspot, warning (confidence: 80)
+
+- **Location**: `skills/profilera/scripts/extract_all.py:1358`
+- **Evidence**: One function orchestrates Claude, Copilot, Codex, statuses, errors, and metadata assembly.
+- **Impact**: New runtimes will add branch duplication and inconsistent status handling risk.
+- **Suggested action**: Extract a small runtime collector abstraction before adding another runtime.
+
+### Test health: B
+
+The full suite passes with 337 tests. New collector tests cover core paths, but validation remains looser than the contract.
+
+#### ⇉ Corpus envelope validation is too shallow, warning (confidence: 85)
+
+- **Location**: `skills/profilera/scripts/extract_all.py:1300`, `tests/test_extract_all.py:690`
+- **Evidence**: Validation checks counts and duplicate IDs, but not required metadata fields or family shape.
+- **Impact**: Invalid Section 21 metadata can pass Task 6 validation.
+- **Suggested action**: Validate `extracted_at`, `adapter_version`, `families`, statuses, and per-runtime consistency.
+
+#### ⇢ Collector tests miss secondary Copilot/Codex paths, info (confidence: 70)
+
+- **Location**: `skills/profilera/scripts/extract_all.py:917`, `skills/profilera/scripts/extract_all.py:1081`, `tests/test_extract_all.py:625`
+- **Evidence**: Tests cover Copilot settings and Codex sessions, not Copilot instruction docs, plugin manifests, Codex history, or config redaction.
+- **Impact**: Regressions in advertised secondary surfaces could pass.
+- **Suggested action**: Add targeted fixtures for each advertised source family path.
+
+### Version health: B
+
+Version values are aligned at 1.18.0 where tests check them. The convention omits one enforced target.
+
+#### ⇉ OpenCode version signal is test-enforced but absent from DOCS version_files, warning (confidence: 80)
+
+- **Location**: `.agentera/DOCS.md:13`, `.opencode/plugins/agentera.js:9`, `tests/test_runtime_adapters.py:219`
+- **Evidence**: Tests require `AGENTERA_VERSION` to match registry. DOCS version_files does not list the OpenCode plugin.
+- **Impact**: Release instructions can miss a CI-enforced version target.
+- **Suggested action**: Add `.opencode/plugins/agentera.js` to DOCS version_files or document the derived marker.
+
+### Artifact freshness: B
+
+Task 8 refreshed TODO, CHANGELOG, PROGRESS, and DOCS. HEALTH needed this audit to replace stale collector wording.
+
+#### ⇉ DOCS Plan index is stale, warning (confidence: 95)
+
+- **Location**: `.agentera/DOCS.md:54`, `.agentera/PLAN.md:3`
+- **Evidence**: DOCS says plan date `2026-04-23` and completed. PLAN is `Created: 2026-04-24` and top-level `Status: active`.
+- **Impact**: Orientation consumers see contradictory plan state.
+- **Suggested action**: Let orkestrera finish plan status, then refresh DOCS Plan row.
+
+#### ⇢ Historical HEALTH collector wording is stale, info (confidence: 90)
+
+- **Location**: `.agentera/HEALTH.md:92`, `.agentera/PROGRESS.md:25`
+- **Evidence**: Audit 10 says collectors do not exist. Cycles 137-140 record Copilot/Codex collectors and validation.
+- **Impact**: Reading only the prior audit can mislead.
+- **Suggested action**: Treat this Audit 11 entry as the resolution marker.
+
+### Security hygiene: B
+
+No committed secrets were found. One collector can copy sensitive local config values into generated corpus data.
+
+#### ⇉ Copilot config extraction can copy sensitive primitive values, warning (confidence: 85)
+
+- **Location**: `skills/profilera/scripts/extract_all.py:902`, `skills/profilera/scripts/extract_all.py:949`, `skills/profilera/scripts/extract_all.py:1066`
+- **Evidence**: Copilot JSON signals include primitive values verbatim. Codex config extraction filters sensitive key names.
+- **Impact**: Tokens in `~/.copilot/settings.json` could be written to `corpus.json`.
+- **Suggested action**: Reuse the Codex sensitive-key filter for Copilot JSON signals and test it.
+
+> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), npm audit (Node), or similar.
+
+### Dependency health: A
+
+No new Python dependencies were added. Adapter validation and profilera collectors stay stdlib-only. OpenCode remains isolated behind its existing exact-pinned Node plugin package.
+
+### Trends vs Audit 10
+
+- **Improved**: DOCS coverage and test count are current at 337 tests. Runtime metadata validates across Claude, Copilot, Codex, and OpenCode local checks.
+- **Degraded**: Tests A→B and Security A→B because new collector breadth exposed validation and redaction gaps.
+- **New findings**: Copilot config redaction, Section 21 schema shape, shallow envelope validation, OpenCode version convention, DOCS Plan row.
+- **Resolved**: Audit 10 DOCS coverage warning and collector-unavailable wording are resolved by this plan.
+
+### Patterns Observed
+
+- Module structure: shared skill sources with host adapters in `.claude-plugin/`, `.github/`, `.codex-plugin/`, `agents/`, and `.opencode/`.
+- Adapter strategy: local validators catch schema drift, while Copilot/Codex live host behavior remains metadata-level.
+- Testing approach: pytest validates metadata and extractor envelopes, but live host smoke tests are still unavailable.
+- Collector pattern: bounded runtime probes report missing families instead of inventing records.
+
+## Audit 10 · 2026-04-23
+
+**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
+**Findings**: 0 critical, 1 warning, 2 info (0 filtered by confidence)
+**Overall trajectory**: ⮉ improving vs Audit 9. Native Copilot and Codex metadata extends the portability thesis without changing skill sources. Adapter tests raise suite evidence from 299 to 320 passing. Version health improves B→A after the 1.17.0 bump. Freshness drops A→B because DOCS.md coverage still reports the pre-plan test count.
+**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Complexity [A] | Tests [A] | Version [A] | Freshness [B] | Security [A] | Deps [A]
+
+### Architecture alignment: A
+
+The plan matches VISION.md's "any agent CLI tomorrow" direction. Copilot and Codex metadata wrap the shared `skills/<name>/SKILL.md` source rather than forking skill behavior. Codex and Copilot correctly mark `profilera` limited until runtime session corpus collectors exist.
+
+#### ⇢ Native host behavior remains unproven, info (confidence: 85)
+
+- **Location**: `README.md:20`, `.github/plugin/plugin.json:5`, `.codex-plugin/plugin.json:18`
+- **Evidence**: Verification covered JSON/YAML structure, paths, policies, and validators. No Copilot or Codex host executed the metadata.
+- **Impact**: Runtime behavior could differ from schema assumptions.
+- **Suggested action**: Keep as release caveat until live host smoke tests are available.
+
+### Pattern consistency: A
+
+All 12 skills have per-skill Codex metadata with `interface`, `policy`, and `dependencies`. Portable skills allow implicit invocation; `profilera` disables it and names `codex_session_corpus` as unavailable. Aggregate root metadata and plugin metadata repeat the same policy without conflict.
+
+### Coupling health: A
+
+Host-specific surfaces stay outside the skill core: `.github/plugin/`, `.codex-plugin/`, `agents/`, and `skills/*/agents/`. `scripts/validate_lifecycle_adapters.py` is a 130-line stdlib validator and does not import hooks or skill internals. Existing Claude Code and OpenCode checks remain in `tests/test_runtime_adapters.py`.
+
+### Complexity hotspots: A
+
+No new complexity hotspot found. The new lifecycle validator is linear and narrow, with separate Copilot and Codex validators. Adapter tests are branch-heavy by intent but remain organized by runtime boundary.
+
+### Test health: A
+
+Full suite passed: `python3 -m pytest -q` -> 320 passed. New adapter coverage adds one pass and one fail per runtime package or hook unit, plus legacy Claude Code and OpenCode compatibility checks. This is proportional to the plan's branch surface.
+
+### Version health: A
+
+Version audit passed. `registry.json`, all 12 per-skill Claude plugin manifests, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, and marketplace top/non-profilera entries are at 1.17.0. Marketplace `profilera` intentionally remains 2.8.0.
+
+### Artifact freshness: B
+
+Freshness is mostly current: PLAN tasks are complete, PROGRESS cycles 129-134 record retries and rollup evidence, TODO has resolved entries for Tasks 1-7, and CHANGELOG [Unreleased] summarizes the plan.
+
+#### ⇉ DOCS.md coverage still reports pre-plan test count, warning (confidence: 95)
+
+- **Location**: `.agentera/DOCS.md:70`, `.agentera/DOCS.md:79`
+- **Evidence**: DOCS says `Test suite | tests/ | 2026-04-13` and `263 tests across 12 files`; current verification is `320 passed`, with `tests/test_runtime_adapters.py` present.
+- **Impact**: Documentation consumers see stale coverage evidence after a test-bearing plan.
+- **Suggested action**: Update DOCS.md Index and Coverage to reflect 320 tests across 13 files.
+
+#### ⇢ PROGRESS.md remains over advisory word budget, info (confidence: 80)
+
+- **Location**: `.agentera/PROGRESS.md`
+- **Evidence**: Cycle 134 records the hook advisory: PROGRESS remains around 3114 words after compaction.
+- **Impact**: Low. Structural validation passes; this only increases read cost slightly.
+- **Suggested action**: Let future cycles compact naturally unless the warning persists after several entries.
+
+### Security hygiene: A
+
+No real secret hits. Pattern scan matched only documented secret examples in inspektera instructions. Dangerous-call scan found list-form `subprocess.run` calls in hooks, tests, and scripts, with no `shell=True`, eval, SQL concatenation, or dynamic shell execution finding.
+
+> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), npm audit (Node), or similar.
+
+### Dependency health: A
+
+The plan added no Python dependencies. New validation uses stdlib JSON and pathlib. Existing OpenCode Node metadata remains isolated under `.opencode/`; runtime adapter work did not expand production dependency sprawl.
+
+### Trends vs Audit 9
+
+- **Improved**: Version B→A after 1.17.0. Tests A→A with stronger runtime-adapter evidence. Coupling A→A with native metadata kept outside skill sources.
+- **Degraded**: Freshness A→B because DOCS.md coverage was partially stale after test additions.
+- **Resolved**: Audit 9 version warning is closed by 1.17.0. Audit 9 OpenCode and compaction findings were addressed before this plan and remain closed.
+- **New findings**: DOCS.md coverage staleness warning; live-host runtime caveat info; PROGRESS word-budget advisory info.
+
+### Patterns Observed
+
+- Module structure: shared skill sources with thin host metadata adapters for Claude Code, OpenCode, Copilot, and Codex.
+- Adapter strategy: claim only public host capabilities; mark unsupported lifecycle behavior explicitly.
+- Testing approach: schema and metadata validation first, live runtime smoke tests still absent for Copilot and Codex.
+- Version pattern: plan-level feature work now correctly drives runtime manifests and suite versions together.
+
 ## Audit 9 · 2026-04-23
 
 **Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
@@ -663,170 +944,6 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 
 ---
 
-## Audit 1 · 2026-03-30
-
-**Dimensions assessed**: architecture alignment, pattern consistency
-**Findings**: 0 critical, 5 warnings, 6 info (1 downgraded by Decision 4 cross-reference)
-**Overall trajectory**: first audit (no prior baseline)
-**Grades**: Architecture [B] | Patterns [C]
-
-### Architecture alignment: B
-
-#### "Eight-skill ecosystem" in all SKILL.md files · warning (confidence: 95)
-
-- **Location**: all 8 consuming SKILL.md cross-skill sections
-- **Evidence**: every SKILL.md says "part of an eight-skill ecosystem" but suite has 9 skills
-- **Impact**: contradicts README and CLAUDE.md which correctly say nine
-- **Suggested action**: replace "eight-skill" with "nine-skill" across all SKILL.md files
-
-#### dokumentera doesn't consume PROFILE.md · warning (confidence: 90)
-
-- **Location**: dokumentera/SKILL.md
-- **Evidence**: README says PROFILE.md consumed by "all skills"; dokumentera has no profile step
-- **Impact**: dokumentera can't calibrate doc style to user preferences
-- **Suggested action**: add profile reading to dokumentera's orient steps
-
-#### State artifact consumed-by column understates dependencies · info (confidence: 85)
-
-- **Location**: README.md:46-57
-- **Evidence**: VISION.md listed as consumed by 3 skills, actually consumed by 7
-- **Suggested action**: update or note table shows primary consumers only
-
-#### DOCS.md Artifact Mapping lacks "Consumed by" · info (confidence: 80)
-
-- **Location**: DOCS.md:19-30
-- **Evidence**: has Producers column but no consumer info
-- **Suggested action**: consider adding for full dependency visibility
-
-### Pattern consistency: C
-
-#### inspirera missing safety rails section · warning (confidence: 88)
-
-- **Location**: inspirera/SKILL.md
-- **Evidence**: 7 of 8 other skills have safety rails with critical tags
-- **Impact**: no explicit guardrails on what inspirera must not do
-- **Suggested action**: add safety rails section
-
-#### inspirera and profilera missing "Getting started" · warning (confidence: 87)
-
-- **Location**: inspirera/SKILL.md, profilera/SKILL.md
-- **Evidence**: 7 of 9 skills have this section
-- **Impact**: reduced usability for new users
-- **Suggested action**: add getting started sections to both
-
-#### Artifact path resolution wording inconsistencies · warning (confidence: 85)
-
-- **Location**: inspirera/SKILL.md:205, resonera/SKILL.md:49
-- **Evidence**: inspirera says "Before writing to" (omits reading), resonera says "cross-skill writes"
-- **Suggested action**: standardize to match realisera's canonical pattern
-
-#### Inspirera doesn't reference visionera · warning (confidence: 82)
-
-- **Location**: inspirera/SKILL.md cross-skill section
-- **Evidence**: visionera says "informed by /inspirera" but inspirera doesn't mention visionera
-- **Suggested action**: add bidirectional reference
-
-#### Planera doesn't acknowledge dokumentera (DTC) · info (confidence: 78)
-
-- **Location**: planera/SKILL.md cross-skill section
-- **Evidence**: dokumentera says "feeds /planera" but planera doesn't mention dokumentera
-- **Suggested action**: add "Planera is fed by /dokumentera" section
-
-#### State artifacts table header inconsistency · info (confidence: 77)
-
-- **Location**: realisera/SKILL.md:36, inspektera/SKILL.md:37
-- **Evidence**: use "File" while others use "Artifact"
-- **Suggested action**: standardize column header
-
-### Patterns Observed
-
-- Skills follow consistent macro-structure: frontmatter → intro → state artifacts → steps → safety rails → cross-skill → getting started
-- Two outliers (inspirera, profilera) predate later skills and lack structural sections
-- Cross-skill references mostly bidirectional with gaps around dokumentera (newest skill)
-- Python scripts well-organized and consistently located in scripts/
-
----
-
-## Audit 2 · 2026-03-31
-
-**Dimensions assessed**: architecture alignment, pattern consistency
-**Findings**: 0 critical, 4 warnings, 6 info (4 filtered by confidence)
-**Overall trajectory**: improving vs Audit 1
-**Grades**: Architecture [B] | Patterns [B]
-
-### Architecture alignment: B
-
-#### CLAUDE.md claims "Ten skills" · warning (confidence: 100)
-
-- **Location**: `CLAUDE.md:5`
-- **Evidence**: "Ten skills, each a self-contained SKILL.md" should be "Eleven skills" after hej addition
-- **Impact**: Developers setting up the repo read stale count
-- **Suggested action**: Update to "Eleven skills"
-
-#### DOCS.md coverage says 10/10 · warning (confidence: 100)
-
-- **Location**: `DOCS.md:46`
-- **Evidence**: `Documented: 10/10 skills have SKILL.md`, should be 11/11
-- **Impact**: Self-assessment of documentation coverage is off by one
-- **Suggested action**: Update count
-
-#### Some cross-skill references are unidirectional · warning (confidence: 90)
-
-- **Location**: Multiple SKILL.md cross-skill sections
-- **Evidence**: inspektera says "feeds /optimera" but optimera doesn't acknowledge reading HEALTH.md. dokumentera feeds planera/realisera but neither acknowledges dokumentera.
-- **Impact**: Reading friction, not a logic error; all relationships work correctly
-- **Suggested action**: Add reciprocal mentions where missing
-
-#### README state artifacts table shows primary consumers only · info (confidence: 85)
-
-- **Location**: `README.md:52-65`
-- **Evidence**: Table shows primary workflow consumers, not the full mesh. Known from Audit 1. By design.
-
-### Pattern consistency: B
-
-#### Resonera has duplicate "Getting started" sections · warning (confidence: 98)
-
-- **Location**: `skills/resonera/SKILL.md:98` and `skills/resonera/SKILL.md:312`
-- **Evidence**: Two `## Getting started` headings. First describes workflow initiation, second describes usage patterns. First is misplaced mid-document. All other skills have one section at the end.
-- **Impact**: Breaks structural pattern followed by all 10 other skills
-- **Suggested action**: Merge into one section at the end
-
-#### Hej artifact path resolution under-specified · info (confidence: 75)
-
-- **Location**: `skills/hej/SKILL.md:50-55`
-- **Evidence**: Says "all artifact reads" without listing specific artifacts or noting hej produces nothing. Other skills list explicit examples.
-
-#### Inspirera description differs between registry and marketplace · info (confidence: 100)
-
-- **Location**: `registry.json:7` vs `.claude-plugin/marketplace.json:13`
-- **Evidence**: "an external link" (singular, accurate) vs "external links" (plural)
-
-#### Safety rails count varies 5-9 across skills · info (confidence: 65)
-
-- **Location**: All SKILL.md safety rails sections
-- **Evidence**: optimera 9, inspirera/profilera 5. Variation likely reflects genuine complexity differences.
-
-#### Resonera is the only skill with a "Personality" section · info (confidence: 60)
-
-- **Location**: `skills/resonera/SKILL.md:73-86`
-- **Evidence**: No other skill documents communication personality as a formal section. Makes sense as an exception; resonera's warm Socratic style is central to its function.
-
-### Trends vs Audit 1
-
-- **Improved**: Patterns C→B. All 6 Audit 1 findings (ISS-1 through ISS-6) resolved.
-- **Stable**: Architecture remains B. No structural regressions from adding hej.
-- **New**: 4 new findings: stale counts (CLAUDE.md, DOCS.md), resonera duplicate section, unidirectional cross-skill refs.
-- **Resolved**: ISS-1 through ISS-7 (all prior issues cleared).
-
-### Patterns Observed
-
-- Hej integrates cleanly as a meta-skill: reads all artifacts, produces none, passes all linter checks
-- Doc references go stale immediately on skill addition (same pattern as ISS-1). Consider a linter check for count consistency.
-- Pushback discipline addition fits tonally with resonera's personality
-- Ecosystem handles skill count changes gracefully at the structural level; staleness is purely documentation
-
----
-
 ## Audit 3 · 2026-03-31
 
 **Dimensions assessed**: architecture alignment, pattern consistency
@@ -886,3 +1003,9 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 - Two skills (profilera, inspirera) predate the structural conventions established in later skills. Both lack State artifacts sections that all post-convention skills have.
 - Finding quality is improving: Audit 1 found wrong counts and missing safety rails. Audit 2 found stale counts and structural duplicates. Audit 3 finds placement issues and list gaps. Each audit's findings are less severe than the last.
 - The ecosystem is settling into a mature pattern: 11 skills, shared spec, linter enforcement, visual identity, versioning convention. Remaining work is polish, not architecture.
+
+## Archived Audits
+
+### Audit 2 · 2026-03-31 (improving vs Audit 1)
+
+### Audit 1 · 2026-03-30 (first audit (no prior baseline))

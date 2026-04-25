@@ -2,16 +2,54 @@
 
 ## [Unreleased]
 
+### Added
+
 ### Changed
 
+- Audit 11 runtime portability cleanup is freshness-complete: state artifacts now summarize the plan, mark resolved cleanup items, and preserve the live Copilot/Codex host-test caveat.
+
+### Fixed
+
+## [1.18.1] · 2026-04-25
+
+### Changed
+
+- Profilera corpus orchestration now uses a localized runtime collector registry and shared source-family runner while preserving supported runtime output.
+- Audit 11 runtime portability cleanup completed: contract alignment, runtime metadata drift guards, profilera corpus hardening, and 1.18.1 release targets are now aligned.
+
+### Fixed
+
+- Profilera corpus validation now rejects incomplete metadata envelopes, malformed family status/count data, and inconsistent aggregate versus per-runtime family counts.
+- OpenCode artifact validation now resolves the documented manual install root, Copilot list-form hooks receive the same lifecycle checks as string hooks, and DOCS version targets include the OpenCode marker.
+- Runtime metadata validation now catches Copilot profilera caveat drift and Codex profilera policy drift across local metadata surfaces.
+- Copilot corpus config extraction now redacts sensitive-looking primitive values while preserving bounded non-sensitive config signals.
+- Section 21 corpus records now unambiguously use top-level provenance fields plus a required `data` payload object, matching profilera extraction and validation.
+
+## [1.18.0] · 2026-04-24
+
+### Added
+
+- Profilera now collects Copilot CLI corpus records from bounded `~/.copilot` runtime surfaces, with per-family status metadata and stable Section 21 provenance IDs
+- Profilera now collects Codex CLI corpus records from bounded `~/.codex` history, session, and config surfaces, with per-family status metadata and stable Section 21 provenance IDs
+- Profilera corpus validation now covers aggregate multi-runtime envelopes, single-runtime extraction, duplicate source IDs, and no-data envelopes
+- Copilot native runtime metadata now declares partial command-handler lifecycle support with lower-camel events and per-skill portability limits
+- Codex native runtime metadata now declares `$skill` invocation hints, portable implicit invocation policy, guarded profilera limits, and experimental disabled hooks
+- `scripts/validate_lifecycle_adapters.py` reports unsupported lifecycle behavior in runtime metadata before it is silently configured
+
+### Changed
+
+- Runtime plugin installation docs now distinguish marketplace installation, direct skill-folder loading, Codex metadata limits, and lifecycle-support differences across Claude Code, Copilot, Codex, and OpenCode
 - `hooks/compaction.py::_format_todo_oneline` split into three single-responsibility helpers (`_is_todo_oneline_passthrough`, `_extract_iss_id`, `_strip_todo_metadata`) plus a thin orchestrator; behavior preserved exactly
 - realisera Step 5 and optimera Step 4 gain a Stale-base awareness nudge: when local HEAD is ahead of `origin/main`, skip merging the worktree branch and apply the sub-agent's diff onto HEAD directly so verification runs against current code
 - `hooks/validate_artifact.py` now imports DOCS.md parsing from `hooks/common.py` instead of carrying a duplicate parser; filter to known canonical artifacts preserved
 
 ### Fixed
 
+- Claude Code marketplace metadata now validates against current CLI schema, and Copilot metadata uses supported `skills` and `hooks` component paths instead of stale custom shapes
+- Codex UI metadata now resolves from the plugin install root, including aggregate and per-skill metadata paths with guarded profilera limitations
+- README and Codex metadata now describe profilera's Copilot/Codex collectors as capability-gated degradation instead of missing-collector limitations
 - `analyze_progress.py` now reports the newest cycles from current newest-first PROGRESS.md files, so realisera orientation sees the live recent window
-- OpenCode bootstrap versioning now tracks 1.16.0, and the upgrade smoke test verifies stale managed command content is replaced byte-for-byte
+- OpenCode bootstrap versioning now tracks 1.18.0, and adapter tests compare the plugin marker against registry release metadata
 - `.gitignore` gains the four credential patterns (dotenv, `*.key`, `*.pem`, `credentials*`) that the cycle 118 CHANGELOG claimed were added but never actually landed on disk
 
 ## [1.16.0] · 2026-04-23
