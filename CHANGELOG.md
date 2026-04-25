@@ -7,7 +7,7 @@
 ### Changed
 
 - Copilot install guidance validation now rejects unverified marketplace claims, placeholder-as-source wording, and primary deprecated fallback guidance.
-- Copilot install guidance now prefers marketplace-style `plugin@marketplace` installs, with direct repo installs documented as deprecated fallback paths.
+- Copilot install guidance now prefers marketplace-style `plugin@marketplace` installs only when a verified source exists; no canonical Agentera Copilot marketplace source is currently verified, so direct repo installs remain deprecated fallback paths.
 
 ### Fixed
 
