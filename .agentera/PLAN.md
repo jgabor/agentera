@@ -82,11 +82,18 @@ Use an evidence gate first. Verified marketplace evidence unlocks install-surfac
 ### Task 4: Verify Host Behavior
 
 **Depends on**: Task 3
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN a verified marketplace path WHEN a read-only host smoke runs THEN skill discovery shows the aggregate agentera plugin.
 ▸ GIVEN legacy per-skill installs appear WHEN installed plugins are listed THEN verification labels them as legacy entries only.
 ▸ GIVEN host behavior differs from local expectations WHEN verification runs THEN the discrepancy is recorded instead of hidden.
+
+**Evidence**:
+
+- No verified marketplace path exists, so the marketplace install smoke branch did not run and no host source was invented.
+- Read-only host evidence on 2026-04-25: `copilot --version` returned `GitHub Copilot CLI 1.0.35`; `copilot plugin marketplace list` returned only `copilot-plugins` and `awesome-copilot`; browsing both catalogs still showed no `agentera` entry.
+- `copilot plugin list` showed aggregate `agentera (v1.18.1)` plus legacy per-skill entries such as `realisera@agentera (v1.16.0)` and `profilera@agentera (v2.8.0)`. Those per-skill entries are verification observations only, not the supported aggregate install model.
+- Discrepancy recorded: read-only `/skills list` showed several Agentera skills from existing host state but omitted installed `hej`, `inspektera`, and `profilera`, so installed plugin entries and skill discovery do not fully agree.
 
 ### Task 5: Update User Guidance
 
@@ -123,4 +130,4 @@ Use an evidence gate first. Verified marketplace evidence unlocks install-surfac
 
 ## Surprises
 
-[Empty; populated by realisera during execution when reality diverges from plan]
+- Task 4: No verified marketplace path exists, so the aggregate marketplace install/discovery branch could not run. Existing installed host state still shows aggregate `agentera` plus legacy per-skill entries, and `/skills list` omits some installed Agentera skills.

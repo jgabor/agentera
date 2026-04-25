@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 158 · 2026-04-25 17:53 · chore(runtime): verify copilot host state
+
+**What**: Completed Task 4 only. Read-only Copilot checks preserved the no-verified-source branch and recorded installed-state discrepancies without making marketplace availability claims.
+**Commit**: pending
+**Inspiration**: Task 1 through Task 3 evidence: Copilot has built-in marketplaces, README keeps placeholder syntax non-claiming, and validation rejects unverified marketplace claims.
+**Discovered**: Existing host state includes aggregate `agentera (v1.18.1)` plus legacy per-skill `@agentera` installs. `/skills list` showed several Agentera skills but omitted installed `hej`, `inspektera`, and `profilera`.
+**Verified**: No marketplace install smoke ran because no canonical Agentera Copilot marketplace path is verified. Read-only checks: `copilot --version` -> `GitHub Copilot CLI 1.0.35`; `copilot plugin marketplace list` -> `copilot-plugins` and `awesome-copilot`; browsing both catalogs showed no `agentera` entry; `copilot plugin list` showed aggregate `agentera (v1.18.1)` and legacy per-skill entries only; `copilot -p "/skills list" --no-custom-instructions --no-auto-update --output-format text` exited 0 and listed Agentera skills from existing host state while omitting installed `hej`, `inspektera`, and `profilera`.
+**Next**: Task 5 may update user guidance later, but only from this recorded no-verified-source evidence unless a canonical marketplace path is separately verified.
+**Context**: intent (verify host behavior for Task 4 without inventing a source) · constraints (read-only checks only, no installs, no Task 5 guidance, no version bump) · unknowns (future canonical Agentera marketplace path, host skill-list omission cause) · scope (`.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
+
 ■ ## Cycle 157 · 2026-04-25 18:10 · test(install): guard copilot marketplace claims
 
 **What**: Completed Task 3 final retry only. README Copilot install guidance validation now blocks additive contradictory marketplace and fallback claims without changing README semantics.
@@ -90,18 +100,9 @@
 **Next**: Task 7 can perform the DOCS.md version bump convention. Do not start the plan-level freshness checkpoint until Task 7 passes.
 **Context**: intent (deepen Task 6 corpus validation and secondary fixtures only) · constraints (no new deps, no live host claims, no version bump, no plan freshness checkpoint, no commit) · unknowns (live Copilot/Codex behavior remains untested) · scope (`skills/profilera/scripts/extract_all.py`, `tests/test_extract_all.py`, required state artifacts).
 
-■ ## Cycle 148 · 2026-04-25 11:57 · refactor(profilera): localize corpus runtime orchestration
-
-**What**: Completed Task 5 only. `build_corpus()` now drives supported runtime extraction through a localized collector registry and shared source-family runner, keeping runtime extractor behavior isolated.
-**Commit**: none (user explicitly requested no commits)
-**Inspiration**: Audit 11 Complexity hotspot for `build_corpus()` plus Task 5 acceptance criteria for localized future-runtime extension and bounded partial-failure status.
-**Discovered**: The refactor initially dropped Copilot/Codex checked-surface metadata by passing mutable runtime status instead of immutable probe status; targeted tests caught it before completion.
-**Verified**: `python3 -m pytest tests/test_extract_all.py -q` -> `74 passed in 0.04s`, covering existing single-runtime, mixed-runtime, no-data behavior plus one new partial-failure aggregation test where Codex history failed, Claude history still counted, aggregate `history_prompt` became `partial`, metadata errors stayed explicit, and checked surfaces stayed bounded to `.codex/history.jsonl`. Entrypoint samples with isolated `HOME` observed: single Copilot -> `Runtimes: copilot-cli`, `Total records: 1`, `project_config_signal: 1 records [ok]`; mixed Claude/Copilot/Codex -> `Runtimes: claude-code, copilot-cli, codex-cli`, `Total records: 3`; no-data -> `No supported runtime data found.` and `No corpus.json written.` `python3 -m pytest -q` -> `352 passed in 0.33s`. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings. `git diff --check -- skills/profilera/scripts/extract_all.py tests/test_extract_all.py` produced no output.
-**Next**: Task 6 can deepen corpus validation and add secondary surface fixtures. Do not backfill Task 6 validation rules into this refactor.
-**Context**: intent (refactor Task 5 corpus orchestration boundary only) · constraints (behavior-preserving, no new runtime collector, no new deps, no live host claims, no commit) · unknowns (full envelope validation remains Task 6) · scope (`skills/profilera/scripts/extract_all.py`, `tests/test_extract_all.py`, required state artifacts).
-
 ## Archived Cycles
 
+- Cycle 148 (2026-04-25): refactor(profilera): localize corpus runtime orchestration
 - Cycle 147 (2026-04-25): fix(adapters): repair OpenCode path and hook drift
 - Cycle 146 (2026-04-25): fix(adapters): catch Codex invocation hint drift
 - Cycle 145 (2026-04-25): fix(adapters): tighten runtime metadata drift guards
