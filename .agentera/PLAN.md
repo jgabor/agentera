@@ -77,7 +77,7 @@ Manual verification protocol (Task 5): three short README sections — "Verify C
 
 **Depends on**: none
 
-**Status**: □ pending
+**Status**: ■ complete
 
 **Acceptance**:
 
