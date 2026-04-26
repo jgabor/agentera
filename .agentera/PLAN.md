@@ -124,7 +124,7 @@ The version bump follows the Cycle 167/173 pattern: every file in DOCS.md `versi
 ### Task 6: Plan-level freshness checkpoint
 
 **Depends on**: Task 1, Task 2, Task 3, Task 4, Task 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 
 - GIVEN this plan's user-facing work has shipped WHEN CHANGELOG.md is checked THEN it has Added entries under [1.21.0] covering each helper's user-visible impact (one short line per helper, not commit messages verbatim)

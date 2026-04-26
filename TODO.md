@@ -8,13 +8,13 @@
 
 - [ ] [copilot-marketplace] Deferred: publish or verify a canonical Agentera Copilot marketplace source before documenting `agentera@<marketplace>` as an available install path.
 - [ ] [opencode-session-events] Replace the SESSION.md bookmark wiring using OpenCode's real `event` mechanism. The legacy `session.idle` hook key is phantom (the `@opencode-ai/plugin` Hooks interface has no such member), so the bookmark write is currently dead under OpenCode. Pair this with reconsidering the OpenCode session-start context preload that lived inside the dropped `session.created` block (Cross-Runtime Portability PLAN T2 Surprise / Cycle 170).
-- [ ] [codex-setup-helper] Optional: ship an idempotent helper that writes the `[shell_environment_policy] set = { AGENTERA_HOME = "<install root>" }` entry to `~/.codex/config.toml`. Cross-Runtime Portability PLAN explicitly kept user-visible config under user control (Out-of-scope) and shipped doc-only setup in T3; a helper is the next step if the manual snippet proves friction-prone.
-- [ ] [copilot-setup-helper] Optional: ship an idempotent helper that appends `export AGENTERA_HOME=<install root>` to the user's shell rc. Same Out-of-scope reasoning as `[codex-setup-helper]`; Copilot has no plugin-level env-injection API, so the user-shell setup documented in T3 remains the official path until a helper lands.
 
 ## ⇢ Annoying
 
 ## Resolved
 
+- [x] ~~[codex-setup-helper] Optional: ship an idempotent helper that writes the `[shell_environment_policy] set = { AGENTERA_HOME = "<install root>" }` entry to `~/.codex/config.toml`.~~ · fixed by Codex+Copilot Completion PLAN Task 1 (commits f82a776 + eb64a60); `scripts/setup_codex.py` ships in 1.21.0
+- [x] ~~[copilot-setup-helper] Optional: ship an idempotent helper that appends `export AGENTERA_HOME=<install root>` to the user's shell rc.~~ · fixed by Codex+Copilot Completion PLAN Task 2 (commits 058ebc6 + 4ff31d2); `scripts/setup_copilot.py` ships in 1.21.0 with bash/zsh/fish branches and unsupported-shell guidance
 - [x] ~~[telemetry] Build `scripts/usage_stats.py` per Decision 31: detect skill invocations via workflow markers across the Claude Code + OpenCode session corpus, pair with exit signals to count completed workflows, tag slash-vs-NL triggers, default cross-project with a `--project` flag, write markdown to `~/.local/share/agentera/USAGE.md` plus a brief stdout summary, and accept `--json` for machine output.~~ · fixed by Suite Usage Analytics PLAN Tasks 1-3 (commits 7f536a0, dcfb872, 4c4b907), documented by Task 4 (e12c628), released in 1.19.0 by Task 5 (cc1eacc)
 - [x] ~~[version] Apply DOCS.md `feat = minor` policy and bump suite metadata from 1.18.1 to 1.19.0 to release the third-party SKILL.md validator entry point added in commit 121e40f.~~ · resolved by Suite Usage Analytics PLAN Task 5; one bump covers commit 121e40f (validator) plus cycles 163-166 (`scripts/usage_stats.py`)
 - [x] ~~Task 7: [chore] Plan-level freshness checkpoint~~ · resolved in checkpoint commit; final state records no verified canonical marketplace source and preserves the deferred publication caveat
