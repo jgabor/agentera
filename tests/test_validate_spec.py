@@ -1751,3 +1751,33 @@ class TestCheckPreDispatchCommitGate:
         offending_skills = {entry[1] for entry in error_entries}
         assert "optimera" in offending_skills
         assert "realisera" not in offending_skills
+
+
+# ---------------------------------------------------------------------------
+# main entrypoint: --skill flag for third-party skill authors
+# ---------------------------------------------------------------------------
+
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+class TestMainSkillFlag:
+    """One pass + one fail per Decision 21 proportionality.
+
+    Pass: --skill PATH validates the given skill file and exits 0 when clean.
+    Fail: --skill PATH on a non-existent file exits 1 with a clear error.
+    """
+
+    def test_skill_flag_validates_single_path(self, validate_spec, capsys):
+        canonical = REPO_ROOT / "skills" / "realisera" / "SKILL.md"
+        assert canonical.exists()
+        rc = validate_spec.main(["--skill", str(canonical)])
+        captured = capsys.readouterr()
+        assert "External Skill Validation" in captured.out
+        assert rc == 0, f"expected clean validation, got rc={rc}"
+
+    def test_skill_flag_missing_path_errors(self, validate_spec, capsys):
+        rc = validate_spec.main(["--skill", "/nonexistent/path/SKILL.md"])
+        captured = capsys.readouterr()
+        assert rc == 1
+        assert "not found" in captured.err.lower()
