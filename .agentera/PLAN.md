@@ -113,7 +113,7 @@ Dependencies: T1 -> {T2, T3} -> T4 -> T5 -> T6. T2 (OpenCode adapter) and T3 (Co
 ### Task 5: [chore] Bump suite metadata 1.19.0 -> 1.20.0 and refactor the test version literal
 
 **Depends on**: Task 4
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN every file listed in DOCS.md `version_files` WHEN inspected THEN it advertises version 1.20.0
 ▸ GIVEN tests/test_runtime_adapters.py WHEN inspected THEN the AGENTERA_VERSION literal that previously hardcoded the version string is refactored to read AGENTERA_VERSION from .opencode/plugins/agentera.js at test time, so future bumps do not require manual literal sync
