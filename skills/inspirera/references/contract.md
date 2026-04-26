@@ -1,7 +1,7 @@
 <!-- contract: inspirera -->
 <!-- source: SPEC.md (sha256: 372c6fb0bf8c4febc3fb313069f6d924023264b778b9d309a0f7cd5d27209c90) -->
-<!-- sections: 2, 4, 5, 6, 12 -->
-<!-- generated: 2026-04-26T11:00:48Z -->
+<!-- sections: 2, 4, 5, 6, 13 -->
+<!-- generated: 2026-04-26T11:35:48Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -329,42 +329,179 @@ Both patterns MUST include a fallback instruction:
 
 PROFILERA_PROFILE_DIR is the sibling of AGENTERA_HOME (Section 7): both are adapter-injected env vars, but they scope to different surfaces. PROFILERA_PROFILE_DIR names the profile data directory (where PROFILE.md lives); AGENTERA_HOME names the agentera install root (where helper scripts referenced by skill prose live).
 
-## 12. Loop Guard
+## 13. Visual Identity
 
-Skills that run autonomous loops (currently: realisera, optimera, orkestrera) MUST include an escalation rule to prevent runaway cycles producing bad work.
+The suite has a shared visual vocabulary defined in DESIGN.md (the project-level visual identity, maintained by visualisera). This section defines the conventions that all SKILL.md files follow when formatting output and artifact content.
 
-### The rule
+DESIGN.md is the source of truth for token definitions. This spec defines how skills use those tokens: introduction patterns, semantic roles, and composition rules. Skills include actual glyph characters inline in their output format examples (they run in target projects without access to this repo's DESIGN.md).
 
-When the skill detects 3 consecutive failed cycles, it MUST:
+### Skill glyphs
 
-1. **Stop**: do not attempt a 4th cycle on the same problem
-2. **Log**: file the failure pattern to TODO.md with context: what was attempted, what failed, and what the skill thinks is wrong
-3. **Surface**: tell the user what happened and recommend a course of action
-   (e.g., "/resonera to deliberate on the approach", "manual investigation needed", "dependency missing")
+Each skill has a unique Unicode glyph used as a subtle signature in output.
 
-### Failure detection
+| Skill | Glyph | Code | Meaning |
+|-------|-------|------|---------|
+| hej | ⌂ | U+2302 | home base |
+| realisera | ⧉ | U+29C9 | joined building blocks |
+| inspektera | ⛶ | U+26F6 | viewfinder frame |
+| resonera | ❈ | U+2748 | spark of insight |
+| planera | ≡ | U+2261 | structured layers |
+| visionera | ⛥ | U+26E5 | guiding star |
+| optimera | ⎘ | U+2398 | measurement |
+| dokumentera | ▤ | U+25A4 | text on page |
+| profilera | ♾ | U+267E | permanent mark |
+| inspirera | ⬚ | U+2B1A | frame to fill |
+| visualisera | ◰ | U+25F0 | design grid |
+| orkestrera | ⎈ | U+2388 | helm, steering |
 
-Consecutive failures are detected by reading the last 3 entries in PROGRESS.md. A cycle counts as failed when:
+### Semantic tokens
 
-- The commit was reverted or the verification step failed
-- The cycle logged a blocker and pivoted to different work 3 times in a row
-  (3 consecutive pivots = the available work surface is exhausted)
-- The cycle's "Discovered" field logs the same issue that was supposed to be fixed
+Six token families express status, urgency, certainty, and direction.
 
-### Complementary mechanisms
+**Status** (task/item completion, square fill progression):
 
-Optimera's existing plateau detection in `analyze_experiments.py` detects experiment stagnation (no improvement over N iterations). The loop guard is complementary: plateau detection handles metric stagnation, escalation handles general execution failure. Both can trigger independently.
+| State | Glyph | Code |
+|-------|-------|------|
+| complete | ■ | U+25A0 |
+| in-progress | ▣ | U+25A3 |
+| open | □ | U+25A1 |
+| blocked | ▨ | U+25A8 |
 
-### Applicability
+**Severity** (issue priority, rightward arrows, more arrows = higher priority):
 
-The escalation rule is REQUIRED for autonomous-loop skills: `realisera`, `optimera`, `orkestrera`.
+| Level | Glyph | Code |
+|-------|-------|------|
+| critical | ⇶ | U+21F6 |
+| degraded | ⇉ | U+21C9 |
+| normal | → | U+2192 |
+| annoying | ⇢ | U+21E2 |
 
-Orkestrera uses retry-based failure detection (max 2 retries per task, escalation after 3 consecutive task failures) rather than PROGRESS.md consecutive-failure inspection.
+**Confidence** (decision certainty, box-drawing line weight):
 
-Other skills MAY include loop guard language but are not required to. Their workflows are typically single-invocation and do not risk runaway cycles.
+| Level | Glyph | Code |
+|-------|-------|------|
+| firm | ━ | U+2501 |
+| provisional | ─ | U+2500 |
+| exploratory | ┄ | U+2504 |
 
-### SKILL.md structural requirement
+**Trends** (direction of change):
 
-Autonomous-loop skills MUST include loop guard language in their `## Exit signals` section, referencing the 3-failure threshold and either PROGRESS.md inspection (realisera, optimera) or retry-based task failure detection (orkestrera).
+| Direction | Glyph | Code |
+|-----------|-------|------|
+| improving | ⮉ | U+2B89 |
+| degrading | ⮋ | U+2B8B |
 
-**Linter check**: Deterministic. For skills in the autonomous-loop set (realisera, optimera, orkestrera), check that the `## Exit signals` section contains both "3" (the threshold) and a reference to PROGRESS.md, consecutive failure detection, or retry-based task failure patterns (`loop-guard`). Orkestrera uses retry/task-based patterns instead of PROGRESS.md. Advisory for all other skills.
+**Structural** (layout primitives):
+
+| Element | Glyph/Pattern | Code |
+|---------|---------------|------|
+| section divider | `─── label ───────` | U+2500 |
+| list item | ▸ | U+25B8 |
+| inline separator | · | U+00B7 |
+| flow / target | → | U+2192 |
+| progress bar | █▓░ | U+2588/2593/2591 |
+
+### Composition rules
+
+- **Skill introduction**: every skill opens with `─── glyph skillname · context ───`.
+  SKILL.md files reference this with the canonical instruction: `Skill introduction:` followed by the pattern with the skill's glyph and context word. Exception: hej uses the agentera logo instead of the standard opener.
+- **Skill exit**: every skill closes with the same divider pattern, replacing the context word with the exit status: `─── glyph skillname · status ───`. See Exit signal format below.
+- **Step progress**: skills with 4+ workflow steps show `── step N/M: verb` markers between steps. See Step markers below.
+- **Logo placement**: the agentera logo (box-drawing characters) appears at key moments only: hej dashboard, major completions. Not every skill invocation.
+- **Open structure**: no outer frames except the logo. Breathing room (blank lines) between sections. Section headers are clean labels: no glyphs in `##` Markdown headers.
+- **Narrative position**: summaries close sections, not open them.
+- **Markdown layering**: all artifacts stay valid standard Markdown. Visual tokens layer within sections alongside existing `##` headers, `**bold**` labels, and tables.
+
+### Divider hierarchy
+
+Three levels of visual dividers create a consistent hierarchy across skill output.
+
+| Level | Pattern | Use |
+|-------|---------|-----|
+| Skill boundary | `─── glyph skillname · context ───` | Session opener, exit signal |
+| Step boundary | `── step N/M: verb` | Workflow progress between steps |
+| Container | `── label` | Mid-session blocks (scratchpad, etc.) |
+
+Step and container dividers share the same visual weight (2-dash), differentiated by label content: step boundaries use `step N/M: verb`, containers use a descriptive label.
+
+### Exit signal format
+
+The exit signal's visual output matches the status reported. All four statuses use the skill boundary divider, followed by a summary and (for non-complete statuses) bullet details.
+
+**complete**:
+
+```
+─── glyph skillname · complete ───
+
+Summary sentence.
+```
+
+**flagged**:
+
+```
+─── glyph skillname · flagged ───
+
+Summary sentence.
+
+▸ concern one
+▸ concern two
+```
+
+**stuck**:
+
+```
+─── glyph skillname · stuck ───
+
+Summary sentence.
+
+▸ blocked: what is blocking
+▸ tried: what was attempted
+```
+
+**waiting**:
+
+```
+─── glyph skillname · waiting ───
+
+Summary sentence.
+
+▸ needs: what is required to proceed
+```
+
+### Step markers
+
+Skills with 4+ workflow steps display progress markers between steps:
+
+```
+── step N/M: verb
+```
+
+N is the current step number, M is the total step count for the current mode, and verb is the step's bare-verb name (lowercase).
+
+Rules:
+
+- Step 0 (mode detection/gates) is excluded from the count: markers start at Step 1
+- Skills with multiple modes use per-mode N/M counts (e.g., Create mode 1/4, Refine mode 1/4)
+- Excluded skills: hej (uses dashboard format), resonera (interactive Q&A with scratchpad)
+
+### Token-to-artifact mapping
+
+| Artifact | Token families used |
+|----------|---------------------|
+| PLAN.md | Status (■/▣/□/▨) for task states |
+| TODO.md | Severity (⇶/⇉/→/⇢) in section headings, Status (□/■) via checkboxes |
+| DECISIONS.md | Confidence (━/─/┄) alongside confidence labels |
+| HEALTH.md | Trends (⮉/⮋) for trajectory, severity for findings |
+| PROGRESS.md | Status (■) for cycle completion markers |
+| VISION.md | Structural (▸, ·) for principles and direction |
+| DOCS.md | Structural (▸, ·) for index, status tokens for coverage |
+
+### Rules
+
+- Skills producing formatted output MUST use their assigned glyph in the skill introduction pattern
+- Skills producing or consuming artifacts SHOULD use the token families specified in the token-to-artifact mapping
+- Semantic tokens augment existing text labels, they do not replace them
+  (`⇶ critical` not just `⇶`)
+- New skills MUST be assigned a glyph in DESIGN.md before their SKILL.md is finalized
+
+**Linter check**: Advisory. Presence of skill glyph in SKILL.md output format sections.

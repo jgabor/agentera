@@ -2,7 +2,7 @@
 name: inspirera
 description: >
   INSPIRERA (Insight Navigation: Source Pattern Identification and Resonance, Evaluate, Reframe, Assimilate). Analyzes an external link (GitHub repo, article, blog post, docs page, HN thread) and maps its concepts, patterns, and primitives to one of the user's own projects. Use this skill whenever the user drops a URL alongside a project name or repo link, or asks something like "could I use this in X?", "how does this apply to my project?", "is this relevant to Y?", "what can I take from this?", "what do you think of this library?", "should I adopt X?", "review this repo for ideas", "anything worth stealing from X?", or "how does X compare to what I'm doing?". Also trigger when the user pastes a link and mentions one of their own repos or codebases in the same message, or when they paste a link while working in a local project directory and the context implies they want to apply the ideas. Produces a structured markdown analysis with applicability matrix and recommended next steps.
-spec_sections: [2, 4, 5, 6, 12]
+spec_sections: [2, 4, 5, 6, 13]
 ---
 
 # INSPIRERA
@@ -165,7 +165,7 @@ Offer to go deeper: prototype a change, explore a concept with code, compare alt
 
 Surface transferable concepts in general terms. Skip Applicability Matrix. Ask if the user wants to map to a specific project.
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ---
 

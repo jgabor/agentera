@@ -2,7 +2,7 @@
 name: optimera
 description: >
   OPTIMERA (Objective Pursuit: Targeted Iterative Measurement; Experiment, Record, Advance). ALWAYS use this skill for metric-driven optimization of a measurable objective. This skill is REQUIRED whenever the user wants to improve a concrete, quantifiable property of their codebase: test pass rate, benchmark performance, bundle size, latency, lint score, type coverage, or any other metric that can be measured by running a command. Do NOT attempt iterative optimization without this skill because it contains the critical workflow for objective-driven experimentation, eval harness design, structured keep/discard decisions, and safety rails that prevent regressions. Trigger on: "optimera", "optimize", "improve performance", "reduce latency", "increase test coverage", "lower bundle size", "speed up", "make faster", "make smaller", "get the score up", "hit the target", "improve the metric", "benchmark and iterate", "run experiments", "tune", "experiment until", or setting up /loop for recurring optimization.
-spec_sections: [1, 3, 4, 5, 6, 22]
+spec_sections: [1, 3, 4, 5, 6, 23]
 ---
 
 # OPTIMERA
@@ -143,7 +143,7 @@ The sharp colleague figuring out what to optimize. One question at a time, push 
 5. **Write OBJECTIVE.md**: synthesize into a precise charter. Write to `.agentera/optimera/<objective-name>/OBJECTIVE.md`. Present for approval.
 6. **Write the eval harness**: read `references/harness-guide.md` and relevant `references/examples/` pattern. Write `.agentera/optimera/<objective-name>/harness` using the project's own tooling, outputting JSON per `references/output-schema.md`. Present, explain, get approval, run once to establish baseline.
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 When **refining**, read current OBJECTIVE.md, show proposed changes with rationale, get confirmation. If the harness changes, the user must approve the new version. After brainstorm, proceed to experiment 1.
 
@@ -219,7 +219,7 @@ Be conservative early; escalate if conservative approaches plateau.
 
 ### Step 4: Implement
 
-**Pre-dispatch commit gate** (per contract Section 22): before creating the worktree, commit any pending artifact changes so the subagent branches from current state.
+**Pre-dispatch commit gate** (per contract Section 23): before creating the worktree, commit any pending artifact changes so the subagent branches from current state.
 
 1. Run `git status --porcelain`. If empty, the working tree is clean: skip to dispatch.
 2. Stage only the artifact files this session wrote (e.g., `git add .agentera/optimera/<objective-name>/OBJECTIVE.md .agentera/optimera/<objective-name>/EXPERIMENTS.md`). Do not use `git add -A` or `git add .`.
@@ -307,9 +307,9 @@ Summarize the experiment for the user before writing the log: what moved, what d
 Update **EXPERIMENTS.md**: append the experiment entry (number, timestamp, hypothesis, change summary, metric before/after, regression result, status, commit hash if kept, inspiration source if any, suggestion for next experiment).
 Output constraint per contract token budgets.
 
-After writing a new experiment entry to EXPERIMENTS.md, compact older experiments via the script. Run: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py experiments <path-to-EXPERIMENTS.md>`.
+After writing a new experiment entry to EXPERIMENTS.md, compact older experiments via the script. Run: `python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py experiments <path-to-EXPERIMENTS.md>`.
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 Then stop. One experiment complete.
 

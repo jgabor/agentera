@@ -950,11 +950,11 @@ def check_context_file_current(
         )
 
 
-# Skills that must enforce spec Section 19 (Reality Verification Gate).
+# Skills that must enforce spec Section 20 (Reality Verification Gate).
 REALITY_VERIFICATION_ENFORCERS = {"realisera", "orkestrera"}
 
 # Skills that dispatch subagents to worktrees and must enforce the
-# pre-dispatch commit gate (spec Section 22).
+# pre-dispatch commit gate (spec Section 23).
 WORKTREE_DISPATCH_SKILLS = {"realisera", "optimera"}
 
 RECOGNIZED_CAPABILITIES = {
@@ -968,9 +968,9 @@ RECOGNIZED_CAPABILITIES = {
 
 
 def check_reality_verification_gate(skill: str, text: str, r: Results) -> None:
-    """Check 17: Reality Verification Gate (spec section 19).
+    """Check 17: Reality Verification Gate (spec section 20).
 
-    Realisera and orkestrera must reference spec Section 19 by
+    Realisera and orkestrera must reference spec Section 20 by
     name and include the `**Verified**` field in their documented format.
     Other skills pass unconditionally.
     """
@@ -978,14 +978,14 @@ def check_reality_verification_gate(skill: str, text: str, r: Results) -> None:
         r.ok(skill, "reality-verification-gate")
         return
 
-    # Accept any of the explicit spec-anchored phrasings. Plain "Section 19"
+    # Accept any of the explicit spec-anchored phrasings. Plain "Section 20"
     # alone is not enough: require a qualifying prefix or the "Reality
     # Verification Gate" descriptor to avoid false positives.
     section_patterns = [
-        r"contract Section 19",
-        r"spec Section 19",
-        r"spec Section 19",
-        r"Section 19[,:]?\s*Reality Verification Gate",
+        r"contract Section 20",
+        r"spec Section 20",
+        r"spec Section 20",
+        r"Section 20[,:]?\s*Reality Verification Gate",
     ]
     has_section_ref = any(
         re.search(pat, text, re.IGNORECASE) for pat in section_patterns
@@ -996,7 +996,7 @@ def check_reality_verification_gate(skill: str, text: str, r: Results) -> None:
     errors: list[str] = []
     if not has_section_ref:
         errors.append(
-            f"{skill}/SKILL.md: missing reference to Section 19 "
+            f"{skill}/SKILL.md: missing reference to Section 20 "
             "(Reality Verification Gate)"
         )
     if not has_verified_field:
@@ -1015,7 +1015,7 @@ def check_platform_annotations(skill: str, text: str, r: Results) -> None:
     """Check 18: Platform annotations reference recognized capability names.
 
     Every <!-- platform: NAME --> annotation in a SKILL.md must use a
-    capability name from the recognized set defined in the spec Section 20.
+    capability name from the recognized set defined in the spec Section 21.
     """
     annotations = re.findall(r"<!-- platform: (\S+) -->", text)
     if not annotations:
@@ -1035,11 +1035,11 @@ def check_platform_annotations(skill: str, text: str, r: Results) -> None:
         r.ok(skill, "platform-annotations")
 
 
-def _has_section_22_ref(text: str) -> bool:
+def _has_section_23_ref(text: str) -> bool:
     patterns = [
-        r"contract Section 22",
-        r"spec Section 22",
-        r"Section 22[,:]?\s*Pre-dispatch Commit Gate",
+        r"contract Section 23",
+        r"spec Section 23",
+        r"Section 23[,:]?\s*Pre-dispatch Commit Gate",
         r"Pre-dispatch [Cc]ommit [Gg]ate",
     ]
     return any(re.search(pat, text, re.IGNORECASE) for pat in patterns)
@@ -1054,7 +1054,7 @@ def _has_scoped_staging(text: str) -> bool:
 
 
 _GATE_INDICATORS: list[tuple[str, str]] = [
-    ("section-ref", "Missing reference to Section 22 (Pre-dispatch Commit Gate)"),
+    ("section-ref", "Missing reference to Section 23 (Pre-dispatch Commit Gate)"),
     ("checkpoint-msg", "Missing checkpoint commit message ('checkpoint before worktree dispatch')"),
     ("clean-tree", "Missing clean-tree check ('git status --porcelain')"),
     ("scoped-staging", "Missing scoped staging instruction (must prohibit 'git add -A' or 'git add .')"),
@@ -1062,7 +1062,7 @@ _GATE_INDICATORS: list[tuple[str, str]] = [
 
 
 def check_pre_dispatch_commit_gate(skill: str, text: str, r: Results) -> None:
-    """Check 19: Pre-dispatch Commit Gate (spec Section 22)."""
+    """Check 19: Pre-dispatch Commit Gate (spec Section 23)."""
     if skill not in WORKTREE_DISPATCH_SKILLS:
         r.ok(skill, "pre-dispatch-commit-gate")
         return
@@ -1076,7 +1076,7 @@ def check_pre_dispatch_commit_gate(skill: str, text: str, r: Results) -> None:
         return
 
     checks = {
-        "section-ref": _has_section_22_ref(text),
+        "section-ref": _has_section_23_ref(text),
         "checkpoint-msg": "checkpoint before worktree dispatch" in text,
         "clean-tree": "git status --porcelain" in text,
         "scoped-staging": _has_scoped_staging(text),
@@ -1094,7 +1094,7 @@ def check_pre_dispatch_commit_gate(skill: str, text: str, r: Results) -> None:
 
 
 def check_commit_message_hygiene(skill: str, text: str, r: Results) -> None:
-    """Check 20: No task/plan/todo references in commit message guidance (spec Section 22).
+    """Check 20: No task/plan/todo references in commit message guidance (spec Section 23).
 
     Scans commit-related sections of SKILL.md for patterns like
     "Task N", "PLAN.md", or "TODO.md" that would leak internal planning
@@ -1143,10 +1143,10 @@ def check_commit_message_hygiene(skill: str, text: str, r: Results) -> None:
 
 
 def check_artifact_writing_conventions(skill: str, text: str, r: Results) -> None:
-    """Check 21: All artifact-producing skills reference Section 23.
+    """Check 21: All artifact-producing skills reference Section 24.
 
     Deterministic: skills that produce artifacts per Section 4 contracts
-    must contain a reference to 'Section 23' or 'Artifact Writing
+    must contain a reference to 'Section 24' or 'Artifact Writing
     Conventions' in their SKILL.md.
     """
     # Skills that produce artifacts per ARTIFACT_CONTRACTS
@@ -1159,7 +1159,7 @@ def check_artifact_writing_conventions(skill: str, text: str, r: Results) -> Non
         return
 
     has_ref = (
-        re.search(r"Section\s+23", text) is not None
+        re.search(r"Section\s+24", text) is not None
         or re.search(r"Artifact\s+Writing\s+Conventions", text) is not None
     )
 
@@ -1167,7 +1167,7 @@ def check_artifact_writing_conventions(skill: str, text: str, r: Results) -> Non
         r.error(
             skill,
             "artifact-writing-conventions",
-            f"Missing reference to Section 23 (Artifact Writing Conventions)",
+            f"Missing reference to Section 24 (Artifact Writing Conventions)",
         )
     else:
         r.ok(skill, "artifact-writing-conventions")
@@ -1177,7 +1177,7 @@ def check_banned_vocabulary(skill: str, text: str, r: Results) -> None:
     """Check 22: Advisory check for non-canonical vocabulary in artifact-writing context.
 
     Scans SKILL.md prose (outside code blocks and frontmatter) for
-    'avoid' terms from the Section 23 vocabulary table when used near
+    'avoid' terms from the Section 24 vocabulary table when used near
     artifact-writing keywords.
     """
     prose = re.sub(r"```[\s\S]*?```", "", text)
@@ -1274,6 +1274,49 @@ def check_sentence_length(skill: str, text: str, r: Results) -> None:
         r.ok(skill, "sentence-length")
 
 
+_BARE_CLAUDE_PLUGIN_ROOT_RE = re.compile(r"\$\{CLAUDE_PLUGIN_ROOT\}")
+_FALLBACK_CLAUDE_PLUGIN_ROOT_RE = re.compile(
+    r"\$\{AGENTERA_HOME:-\$CLAUDE_PLUGIN_ROOT\}"
+)
+
+
+def check_no_bare_claude_plugin_root(skill: str, text: str, r: Results) -> None:
+    """Check 24: Skill prose must not embed bare ``${CLAUDE_PLUGIN_ROOT}``.
+
+    Per spec Section 7 (Install Root), skill prose that names a helper
+    script under the install root must use the bash-fallback form
+    ``${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}`` so the invocation resolves
+    identically across runtimes. A bare ``${CLAUDE_PLUGIN_ROOT}`` form is
+    Claude-Code-specific and breaks under OpenCode, Codex, and Copilot.
+
+    Code blocks (fenced regions) are excluded so example output that
+    mentions the bare token verbatim does not produce noise.
+    """
+    prose = re.sub(r"```[\s\S]*?```", "", text)
+
+    bare_lines: list[int] = []
+    for match in _BARE_CLAUDE_PLUGIN_ROOT_RE.finditer(prose):
+        # Skip occurrences that are part of the fallback form.
+        window_start = max(0, match.start() - len("${AGENTERA_HOME:-"))
+        window = prose[window_start : match.end()]
+        if _FALLBACK_CLAUDE_PLUGIN_ROOT_RE.search(window):
+            continue
+        line_num = prose[: match.start()].count("\n") + 1
+        bare_lines.append(line_num)
+
+    if bare_lines:
+        for line_num in bare_lines:
+            r.warn(
+                skill,
+                "no-bare-claude-plugin-root",
+                f"{skill}/SKILL.md line {line_num}: bare '${{CLAUDE_PLUGIN_ROOT}}' "
+                "in skill prose; use '${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}' "
+                "(spec Section 7 Install Root)",
+            )
+    else:
+        r.ok(skill, "no-bare-claude-plugin-root")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -1306,6 +1349,7 @@ def validate_skill(path: Path, r: Results, *, spec_hash: str) -> None:
     check_artifact_writing_conventions(skill, text, r)
     check_banned_vocabulary(skill, text, r)
     check_sentence_length(skill, text, r)
+    check_no_bare_claude_plugin_root(skill, text, r)
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:

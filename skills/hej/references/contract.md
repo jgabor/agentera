@@ -1,7 +1,7 @@
 <!-- contract: hej -->
 <!-- source: SPEC.md (sha256: 372c6fb0bf8c4febc3fb313069f6d924023264b778b9d309a0f7cd5d27209c90) -->
-<!-- sections: 1, 2, 4, 5, 12, 18 -->
-<!-- generated: 2026-04-26T11:00:48Z -->
+<!-- sections: 1, 2, 4, 5, 13, 19 -->
+<!-- generated: 2026-04-26T11:35:48Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -324,87 +324,226 @@ The section MUST appear under "## State artifacts" (not under cross-skill integr
 
 **Linter check**: Deterministic. Section presence under correct parent heading, core sentence pattern matching.
 
-## 12. Loop Guard
+## 13. Visual Identity
 
-Skills that run autonomous loops (currently: realisera, optimera, orkestrera) MUST include an escalation rule to prevent runaway cycles producing bad work.
+The suite has a shared visual vocabulary defined in DESIGN.md (the project-level visual identity, maintained by visualisera). This section defines the conventions that all SKILL.md files follow when formatting output and artifact content.
 
-### The rule
+DESIGN.md is the source of truth for token definitions. This spec defines how skills use those tokens: introduction patterns, semantic roles, and composition rules. Skills include actual glyph characters inline in their output format examples (they run in target projects without access to this repo's DESIGN.md).
 
-When the skill detects 3 consecutive failed cycles, it MUST:
+### Skill glyphs
 
-1. **Stop**: do not attempt a 4th cycle on the same problem
-2. **Log**: file the failure pattern to TODO.md with context: what was attempted, what failed, and what the skill thinks is wrong
-3. **Surface**: tell the user what happened and recommend a course of action
-   (e.g., "/resonera to deliberate on the approach", "manual investigation needed", "dependency missing")
+Each skill has a unique Unicode glyph used as a subtle signature in output.
 
-### Failure detection
+| Skill | Glyph | Code | Meaning |
+|-------|-------|------|---------|
+| hej | ⌂ | U+2302 | home base |
+| realisera | ⧉ | U+29C9 | joined building blocks |
+| inspektera | ⛶ | U+26F6 | viewfinder frame |
+| resonera | ❈ | U+2748 | spark of insight |
+| planera | ≡ | U+2261 | structured layers |
+| visionera | ⛥ | U+26E5 | guiding star |
+| optimera | ⎘ | U+2398 | measurement |
+| dokumentera | ▤ | U+25A4 | text on page |
+| profilera | ♾ | U+267E | permanent mark |
+| inspirera | ⬚ | U+2B1A | frame to fill |
+| visualisera | ◰ | U+25F0 | design grid |
+| orkestrera | ⎈ | U+2388 | helm, steering |
 
-Consecutive failures are detected by reading the last 3 entries in PROGRESS.md. A cycle counts as failed when:
+### Semantic tokens
 
-- The commit was reverted or the verification step failed
-- The cycle logged a blocker and pivoted to different work 3 times in a row
-  (3 consecutive pivots = the available work surface is exhausted)
-- The cycle's "Discovered" field logs the same issue that was supposed to be fixed
+Six token families express status, urgency, certainty, and direction.
 
-### Complementary mechanisms
+**Status** (task/item completion, square fill progression):
 
-Optimera's existing plateau detection in `analyze_experiments.py` detects experiment stagnation (no improvement over N iterations). The loop guard is complementary: plateau detection handles metric stagnation, escalation handles general execution failure. Both can trigger independently.
+| State | Glyph | Code |
+|-------|-------|------|
+| complete | ■ | U+25A0 |
+| in-progress | ▣ | U+25A3 |
+| open | □ | U+25A1 |
+| blocked | ▨ | U+25A8 |
 
-### Applicability
+**Severity** (issue priority, rightward arrows, more arrows = higher priority):
 
-The escalation rule is REQUIRED for autonomous-loop skills: `realisera`, `optimera`, `orkestrera`.
+| Level | Glyph | Code |
+|-------|-------|------|
+| critical | ⇶ | U+21F6 |
+| degraded | ⇉ | U+21C9 |
+| normal | → | U+2192 |
+| annoying | ⇢ | U+21E2 |
 
-Orkestrera uses retry-based failure detection (max 2 retries per task, escalation after 3 consecutive task failures) rather than PROGRESS.md consecutive-failure inspection.
+**Confidence** (decision certainty, box-drawing line weight):
 
-Other skills MAY include loop guard language but are not required to. Their workflows are typically single-invocation and do not risk runaway cycles.
+| Level | Glyph | Code |
+|-------|-------|------|
+| firm | ━ | U+2501 |
+| provisional | ─ | U+2500 |
+| exploratory | ┄ | U+2504 |
 
-### SKILL.md structural requirement
+**Trends** (direction of change):
 
-Autonomous-loop skills MUST include loop guard language in their `## Exit signals` section, referencing the 3-failure threshold and either PROGRESS.md inspection (realisera, optimera) or retry-based task failure detection (orkestrera).
+| Direction | Glyph | Code |
+|-----------|-------|------|
+| improving | ⮉ | U+2B89 |
+| degrading | ⮋ | U+2B8B |
 
-**Linter check**: Deterministic. For skills in the autonomous-loop set (realisera, optimera, orkestrera), check that the `## Exit signals` section contains both "3" (the threshold) and a reference to PROGRESS.md, consecutive failure detection, or retry-based task failure patterns (`loop-guard`). Orkestrera uses retry/task-based patterns instead of PROGRESS.md. Advisory for all other skills.
+**Structural** (layout primitives):
 
-## 18. Phase Tracking
+| Element | Glyph/Pattern | Code |
+|---------|---------------|------|
+| section divider | `─── label ───────` | U+2500 |
+| list item | ▸ | U+25B8 |
+| inline separator | · | U+00B7 |
+| flow / target | → | U+2192 |
+| progress bar | █▓░ | U+2588/2593/2591 |
 
-Every realisera cycle operates in one of five phases. Phases map the suite's skills to a lifecycle model, making it possible for consuming skills to reason about what kind of work a cycle performed and whether phase transitions follow a coherent sequence.
+### Composition rules
 
-### Phases
+- **Skill introduction**: every skill opens with `─── glyph skillname · context ───`.
+  SKILL.md files reference this with the canonical instruction: `Skill introduction:` followed by the pattern with the skill's glyph and context word. Exception: hej uses the agentera logo instead of the standard opener.
+- **Skill exit**: every skill closes with the same divider pattern, replacing the context word with the exit status: `─── glyph skillname · status ───`. See Exit signal format below.
+- **Step progress**: skills with 4+ workflow steps show `── step N/M: verb` markers between steps. See Step markers below.
+- **Logo placement**: the agentera logo (box-drawing characters) appears at key moments only: hej dashboard, major completions. Not every skill invocation.
+- **Open structure**: no outer frames except the logo. Breathing room (blank lines) between sections. Section headers are clean labels: no glyphs in `##` Markdown headers.
+- **Narrative position**: summaries close sections, not open them.
+- **Markdown layering**: all artifacts stay valid standard Markdown. Visual tokens layer within sections alongside existing `##` headers, `**bold**` labels, and tables.
 
-| Phase | Skills | Purpose |
-|-------|--------|---------|
-| **envision** | visionera | Define or refine the project's north star |
-| **deliberate** | resonera | Reason through decisions before committing to a direction |
-| **plan** | planera | Structure work into tasks with dependencies and acceptance criteria |
-| **build** | realisera, optimera, dokumentera, visualisera | Implement, optimize, document, or design |
-| **audit** | inspektera | Evaluate structural health and alignment |
+### Divider hierarchy
 
-### Transitions
+Three levels of visual dividers create a consistent hierarchy across skill output.
 
-Phases have valid successors. A cycle's phase is determined by the primary skill performing work, not by the phase of the previous cycle (phases are not a strict pipeline).
+| Level | Pattern | Use |
+|-------|---------|-----|
+| Skill boundary | `─── glyph skillname · context ───` | Session opener, exit signal |
+| Step boundary | `── step N/M: verb` | Workflow progress between steps |
+| Container | `── label` | Mid-session blocks (scratchpad, etc.) |
 
-| From | Valid successors |
-|------|-----------------|
-| envision | deliberate, plan, build |
-| deliberate | plan, build, envision |
-| plan | build, deliberate |
-| build | build, audit, plan |
-| audit | build, plan, deliberate, envision |
+Step and container dividers share the same visual weight (2-dash), differentiated by label content: step boundaries use `step N/M: verb`, containers use a descriptive label.
 
-**Terminal states**: audit and build are terminal in the sense that a project can remain in either phase indefinitely (continuous building, periodic auditing). envision, deliberate, and plan are transitional: they produce artifacts consumed by downstream phases.
+### Exit signal format
 
-**Self-transitions**: only build allows self-transition (consecutive build cycles are the normal case). Other phases produce a discrete output (a vision, a decision, a plan) and transition out.
+The exit signal's visual output matches the status reported. All four statuses use the skill boundary divider, followed by a summary and (for non-complete statuses) bullet details.
 
-### PROGRESS.md phase field
+**complete**:
 
-Each cycle entry in PROGRESS.md includes a **Phase** field immediately after the cycle heading. The value is one of the five phase names: `envision`, `deliberate`, `plan`, `build`, `audit`.
+```
+─── glyph skillname · complete ───
 
-```markdown
-■ ## Cycle N · YYYY-MM-DD HH:MM
-
-**Phase**: build
-**What**: one-line summary of what shipped
+Summary sentence.
 ```
 
-Consuming skills use the phase field for trend analysis (e.g., ratio of build to audit cycles, whether deliberation precedes major architectural changes).
+**flagged**:
 
-**Linter check**: None. Phase tracking is defined here for producing and consuming skills. SKILL.md integration is handled per-skill, not by the spec linter.
+```
+─── glyph skillname · flagged ───
+
+Summary sentence.
+
+▸ concern one
+▸ concern two
+```
+
+**stuck**:
+
+```
+─── glyph skillname · stuck ───
+
+Summary sentence.
+
+▸ blocked: what is blocking
+▸ tried: what was attempted
+```
+
+**waiting**:
+
+```
+─── glyph skillname · waiting ───
+
+Summary sentence.
+
+▸ needs: what is required to proceed
+```
+
+### Step markers
+
+Skills with 4+ workflow steps display progress markers between steps:
+
+```
+── step N/M: verb
+```
+
+N is the current step number, M is the total step count for the current mode, and verb is the step's bare-verb name (lowercase).
+
+Rules:
+
+- Step 0 (mode detection/gates) is excluded from the count: markers start at Step 1
+- Skills with multiple modes use per-mode N/M counts (e.g., Create mode 1/4, Refine mode 1/4)
+- Excluded skills: hej (uses dashboard format), resonera (interactive Q&A with scratchpad)
+
+### Token-to-artifact mapping
+
+| Artifact | Token families used |
+|----------|---------------------|
+| PLAN.md | Status (■/▣/□/▨) for task states |
+| TODO.md | Severity (⇶/⇉/→/⇢) in section headings, Status (□/■) via checkboxes |
+| DECISIONS.md | Confidence (━/─/┄) alongside confidence labels |
+| HEALTH.md | Trends (⮉/⮋) for trajectory, severity for findings |
+| PROGRESS.md | Status (■) for cycle completion markers |
+| VISION.md | Structural (▸, ·) for principles and direction |
+| DOCS.md | Structural (▸, ·) for index, status tokens for coverage |
+
+### Rules
+
+- Skills producing formatted output MUST use their assigned glyph in the skill introduction pattern
+- Skills producing or consuming artifacts SHOULD use the token families specified in the token-to-artifact mapping
+- Semantic tokens augment existing text labels, they do not replace them
+  (`⇶ critical` not just `⇶`)
+- New skills MUST be assigned a glyph in DESIGN.md before their SKILL.md is finalized
+
+**Linter check**: Advisory. Presence of skill glyph in SKILL.md output format sections.
+
+## 19. Staleness Detection
+
+Stale artifacts mislead routing decisions and cause skills to act on outdated context. This section defines how staleness is detected and which artifacts each skill is expected to update.
+
+### Skill-to-expected-artifact mapping
+
+Each skill produces specific artifacts as part of its workflow. When a skill is dispatched (directly or via orkestrera), the artifacts listed here are the ones it is expected to have updated upon completion. This table is the authoritative lookup for staleness checks.
+
+| Skill | Expected artifact outputs |
+|-------|--------------------------|
+| visionera | VISION.md |
+| resonera | .agentera/DECISIONS.md |
+| planera | .agentera/PLAN.md |
+| realisera | .agentera/PROGRESS.md, TODO.md, CHANGELOG.md |
+| optimera | .agentera/optimera/<name>/EXPERIMENTS.md, .agentera/optimera/<name>/OBJECTIVE.md (paths are per-objective; staleness check uses glob `.agentera/optimera/*/EXPERIMENTS.md` and `.agentera/optimera/*/OBJECTIVE.md`) |
+| inspektera | .agentera/HEALTH.md, TODO.md |
+| dokumentera | .agentera/DOCS.md |
+| visualisera | .agentera/DESIGN.md |
+| profilera | (profile-path capability) <!-- platform: profile-path --> |
+| inspirera | (no owned artifact; findings are filed to TODO.md or fed into other skills) |
+| orkestrera | (conductor; updates .agentera/PLAN.md task statuses and dispatches other skills) |
+| hej | (router; reads artifacts but produces none) |
+
+Skills that share an artifact (e.g., realisera and inspektera both write to TODO.md) are each expected to update it independently when dispatched. Staleness is checked per-skill, not per-artifact.
+
+### Plan-relative staleness convention
+
+When a plan exists (.agentera/PLAN.md with an active status), staleness is measured relative to the plan's creation date (the `Created` field in the plan's HTML comment metadata).
+
+**Detection rule**: after a plan completes (all tasks `■ complete` or `skipped`), compare each dispatched skill against its expected artifacts. An artifact is **stale** if its last modification date (via `git log -1 --format=%aI -- <path>`) predates the plan's creation date AND the skill was dispatched at least once during the plan.
+
+**What counts as dispatched**: a skill appears in at least one task's execution history during the plan. For orkestrera-driven plans, the dispatch log in PROGRESS.md cycle entries identifies which skills ran.
+
+**Scope**: only artifacts listed in the mapping above are checked. Artifacts that a skill reads but does not produce (e.g., realisera reads VISION.md) are not staleness candidates for that skill.
+
+**Handling stale findings**: stale artifacts are surfaced as context for the next plan cycle, not as errors. The consuming skill (orkestrera, inspektera) reports which artifacts are stale and which dispatched skills were expected to update them. This informs the next plan's task selection without blocking execution.
+
+### Fallback: no plan context
+
+When no active or recently completed plan exists (standalone skill invocation, ad-hoc inspektera audit, or hej session orientation), plan-relative detection is unavailable. The fallback heuristic applies:
+
+**Fallback rule**: an artifact is considered potentially stale if it was not modified since the most recent PROGRESS.md cycle entry. If PROGRESS.md has no entries (fresh project), no staleness check applies.
+
+The fallback is advisory, not authoritative. It surfaces artifacts that may need attention but does not carry the same signal strength as plan-relative detection (where the dispatched-skill relationship provides causal evidence of staleness).
+
+**Linter check**: None. Staleness detection is a runtime convention consumed by orkestrera and inspektera, not a SKILL.md structural requirement.

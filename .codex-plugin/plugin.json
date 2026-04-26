@@ -65,7 +65,7 @@
       "description": "PROFILERA: Persona Reconstruction: Observable Footprint Indexing Logic: Examine, Reconcile, Articulate. Mines session history to build an agent-consumable decision profile.",
       "path": "./skills/profilera",
       "runtimeSupport": "limited",
-      "invocationHint": "$profilera; limited to available Section 21 corpus source families",
+      "invocationHint": "$profilera; limited to available Section 22 corpus source families",
       "policy": {
         "allow_implicit_invocation": false
       },

@@ -195,12 +195,12 @@ For any option the user selects:
   confidence, and a rationale per contract token budgets. No deliberation transcript.
 - **DECISIONS.md compaction**: after writing a new decision entry, compact older
   entries via the script. Run:
-  `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py decisions <path-to-DECISIONS.md>`.
+  `python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py decisions <path-to-DECISIONS.md>`.
 - **VISION.md / OBJECTIVE.md**: brief follow-up to fill structure (heavy thinking done).
   Present draft for approval.
 - **TODO.md**: standard format (severity, context, impact).
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ---
 

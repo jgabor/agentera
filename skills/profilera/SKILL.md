@@ -189,7 +189,7 @@ Output constraint: ≤30 words per signal, ≤15 words per evidence line.
 
 Write the decision profile to `$PROFILERA_PROFILE_DIR/PROFILE.md`. <!-- platform: profile-path -->
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 If a previous version exists: copy to `$PROFILERA_PROFILE_DIR/history/PROFILE-{timestamp}.md`, generate new version, show change summary (added, updated, removed). <!-- platform: profile-path -->
 

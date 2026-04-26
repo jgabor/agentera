@@ -13,7 +13,7 @@ description: >
   "find technical debt", "assess code quality", "how healthy is this codebase", "what needs
   fixing", "structural review", "pattern audit", "dependency check",
   "test coverage audit", or when realisera has run 5+ cycles without a health check.
-spec_sections: [1, 2, 4, 5, 6, 16, 17, 18]
+spec_sections: [1, 2, 4, 5, 6, 17, 18, 19]
 ---
 
 # INSPEKTERA
@@ -342,9 +342,9 @@ When updating existing HEALTH.md entries (e.g., updating Patterns Observed), use
 
 Write the audit results to `HEALTH.md` (append new audit, keep prior audits for trajectory history) and present to the user.
 
-After writing a new audit entry to HEALTH.md, compact older audits via the script. Run: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py health <path-to-HEALTH.md>`.
+After writing a new audit entry to HEALTH.md, compact older audits via the script. Run: `python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py health <path-to-HEALTH.md>`.
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ### Report structure
 

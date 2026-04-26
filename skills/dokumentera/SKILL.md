@@ -141,7 +141,7 @@ If artifacts exist at root but mapping places them elsewhere:
 
 Write the approved convention map to `.agentera/DOCS.md`. After writing, proceed to the originally requested mode, or stop if the survey was the entire request.
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ---
 
@@ -178,7 +178,7 @@ Add or update the entry in DOCS.md:
 
 Output constraint: ≤15 words per index entry description.
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ### Step 4: Suggest next steps
 
@@ -220,7 +220,7 @@ Present drafts for approval.
 
 Create or update DOCS.md with all items. Use the Edit tool on specific entries when updating status/dates. If DOCS.md doesn't exist, run first-run survey first.
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ---
 

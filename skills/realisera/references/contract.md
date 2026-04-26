@@ -1,7 +1,7 @@
 <!-- contract: realisera -->
 <!-- source: SPEC.md (sha256: 372c6fb0bf8c4febc3fb313069f6d924023264b778b9d309a0f7cd5d27209c90) -->
-<!-- sections: 2, 3, 4, 6, 19, 22 -->
-<!-- generated: 2026-04-26T11:00:48Z -->
+<!-- sections: 2, 3, 4, 6, 20, 23 -->
+<!-- generated: 2026-04-26T11:35:48Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -312,289 +312,159 @@ Both patterns MUST include a fallback instruction:
 
 PROFILERA_PROFILE_DIR is the sibling of AGENTERA_HOME (Section 7): both are adapter-injected env vars, but they scope to different surfaces. PROFILERA_PROFILE_DIR names the profile data directory (where PROFILE.md lives); AGENTERA_HOME names the agentera install root (where helper scripts referenced by skill prose live).
 
-## 19. Staleness Detection
+## 20. Reality Verification Gate
 
-Stale artifacts mislead routing decisions and cause skills to act on outdated context. This section defines how staleness is detected and which artifacts each skill is expected to update.
+Passing tests are necessary but not sufficient evidence that a cycle's work is real. A feature can be structurally correct (tests green, build clean, lint clean) and still be behaviorally broken against real project state: stale fixtures, mocked dependencies, or test doubles can hide regressions that only surface when the primary entrypoint runs against production-shaped inputs. The Reality Verification Gate closes this gap by requiring every cycle to observe its own behavior before declaring completion.
 
-### Skill-to-expected-artifact mapping
+This gate is orthogonal to Section 19 Staleness Detection. Section 19 asks: did the dispatched skill update the artifacts it owns? Section 20 asks: did the cycle's new behavior actually run against real state? The two gates enforce different invariants and must both hold for a cycle to be considered verified.
 
-Each skill produces specific artifacts as part of its workflow. When a skill is dispatched (directly or via orkestrera), the artifacts listed here are the ones it is expected to have updated upon completion. This table is the authoritative lookup for staleness checks.
+### Evidence format
 
-| Skill | Expected artifact outputs |
-|-------|--------------------------|
-| visionera | VISION.md |
-| resonera | .agentera/DECISIONS.md |
-| planera | .agentera/PLAN.md |
-| realisera | .agentera/PROGRESS.md, TODO.md, CHANGELOG.md |
-| optimera | .agentera/optimera/<name>/EXPERIMENTS.md, .agentera/optimera/<name>/OBJECTIVE.md (paths are per-objective; staleness check uses glob `.agentera/optimera/*/EXPERIMENTS.md` and `.agentera/optimera/*/OBJECTIVE.md`) |
-| inspektera | .agentera/HEALTH.md, TODO.md |
-| dokumentera | .agentera/DOCS.md |
-| visualisera | .agentera/DESIGN.md |
-| profilera | (profile-path capability) <!-- platform: profile-path --> |
-| inspirera | (no owned artifact; findings are filed to TODO.md or fed into other skills) |
-| orkestrera | (conductor; updates .agentera/PLAN.md task statuses and dispatches other skills) |
-| hej | (router; reads artifacts but produces none) |
+Every cycle entry in PROGRESS.md carries a `**Verified**` field alongside the existing Phase/What/Commit/Inspiration/Discovered/Next/Context fields. The field is mandatory: no cycle is considered closed without it. The field accepts exactly one of three shapes:
 
-Skills that share an artifact (e.g., realisera and inspektera both write to TODO.md) are each expected to update it independently when dispatched. Staleness is checked per-skill, not per-artifact.
+| Shape | Content |
+|-------|---------|
+| Observed output | A short transcript (or summary) of the primary entrypoint running against real project state, with the observable result recorded verbatim. The transcript should be concrete enough that a reader can tell whether the behavior actually happened |
+| Allowlisted N/A tag | `N/A: <tag>` where `<tag>` is drawn from the enumerated allowlist below |
+| Free-form N/A rationale | A prose sentence of at least 8 words explaining specifically why the change has no observable behavior. Shorter rationales fail the gate |
 
-### Plan-relative staleness convention
+Observed output is always preferred when the change is runnable. The N/A paths exist only for genuinely unrunnable work; they are not an escape hatch for "I didn't feel like running it."
 
-When a plan exists (.agentera/PLAN.md with an active status), staleness is measured relative to the plan's creation date (the `Created` field in the plan's HTML comment metadata).
+### N/A allowlist
 
-**Detection rule**: after a plan completes (all tasks `■ complete` or `skipped`), compare each dispatched skill against its expected artifacts. An artifact is **stale** if its last modification date (via `git log -1 --format=%aI -- <path>`) predates the plan's creation date AND the skill was dispatched at least once during the plan.
+Exactly five tags are recognized. Any other shorthand must fall through to the free-form rationale path.
 
-**What counts as dispatched**: a skill appears in at least one task's execution history during the plan. For orkestrera-driven plans, the dispatch log in PROGRESS.md cycle entries identifies which skills ran.
+| Tag | Meaning |
+|-----|---------|
+| `docs-only` | The change touched only documentation files (README, spec, skill instructions, templates) with no code path affected |
+| `refactor-no-behavior-change` | The change restructured code but preserved observable behavior exactly; the existing test suite is the verification surface |
+| `chore-dep-bump` | The change updated a dependency version without modifying any project code that calls that dependency differently |
+| `chore-build-config` | The change modified build tooling, linter configuration, or packaging metadata without altering runtime behavior |
+| `test-only` | The change added or adjusted tests without modifying the code under test |
 
-**Scope**: only artifacts listed in the mapping above are checked. Artifacts that a skill reads but does not produce (e.g., realisera reads VISION.md) are not staleness candidates for that skill.
+A cycle that bundles runnable work with an N/A-tagged change still requires observed output for the runnable portion. The tag covers only the non-runnable slice.
 
-**Handling stale findings**: stale artifacts are surfaced as context for the next plan cycle, not as errors. The consuming skill (orkestrera, inspektera) reports which artifacts are stale and which dispatched skills were expected to update them. This informs the next plan's task selection without blocking execution.
+### Project-archetype taxonomy
 
-### Fallback: no plan context
+"Primary entrypoint" is defined per project archetype, not asserted per cycle. When a cycle touches multiple subsystems, the primary entrypoint is the one most closely tied to the change under verification.
 
-When no active or recently completed plan exists (standalone skill invocation, ad-hoc inspektera audit, or hej session orientation), plan-relative detection is unavailable. The fallback heuristic applies:
+| Archetype | Canonical entrypoint form |
+|-----------|---------------------------|
+| CLI tool | Invoke the binary with realistic arguments that exercise the changed path, capturing stdout/stderr and exit code |
+| Library / SDK | Run a smoke driver (a short script or REPL session) that exercises the public API surface touched by the change |
+| Web service | Send a request to a production-shaped endpoint (local server with production configuration or a staging instance) and record the response |
+| Skill repo | Dispatch the skill via the eval mechanism capability (Section 21) against a representative prompt and capture the observed skill output <!-- platform: eval-mechanism --> |
+| Design system | Render a representative component against the real design tokens and visually inspect (screenshot or DOM snapshot) against the expected output |
+| Data pipeline | Run the pipeline against a real input sample (not synthetic fixtures) and record the observed output or side effects |
 
-**Fallback rule**: an artifact is considered potentially stale if it was not modified since the most recent PROGRESS.md cycle entry. If PROGRESS.md has no entries (fresh project), no staleness check applies.
+Projects with an archetype not listed here document their canonical entrypoint form in `.agentera/DOCS.md` under a `verification_entrypoint` key. The taxonomy is extensible; the table above is the minimum coverage.
 
-The fallback is advisory, not authoritative. It surfaces artifacts that may need attention but does not carry the same signal strength as plan-relative detection (where the dispatched-skill relationship provides causal evidence of staleness).
+### Optional verification budget
 
-**Linter check**: None. Staleness detection is a runtime convention consumed by orkestrera and inspektera, not a SKILL.md structural requirement.
+Some cycles touch slow subsystems (full data pipeline runs, long-running integration scenarios) where a complete reality check exceeds a reasonable per-cycle time budget. Projects that need a cap set a `verification_budget` key in `.agentera/DOCS.md` specifying the maximum wall-clock time per cycle. When a cycle's verification step exceeds the configured budget, the cycle MAY downgrade to a partial verification rather than blocking indefinitely.
 
-## 22. Session Corpus Contract
+Partial verifications record as `**Verified**: partial (budget hit)` followed by a short note capturing what was attempted, what was observed before the budget was hit, and which portions of the behavior remain unverified. Partial verifications are valid cycle closures but are visible to consuming skills as weaker signal: inspektera audits treat a string of partial verifications as a health finding requiring attention.
 
-Profilera mines decision patterns from host session data to produce PROFILE.md. The extraction currently depends on Claude Code's internal storage layout (JSONL files, memory directories, project-scoped configs). This section defines the normalized data model that any host adapter can produce, decoupling profilera's behavioral contract from a specific runtime's file layout.
+Projects without a `verification_budget` key have no time cap. The default is: take as long as verification honestly requires.
 
-The contract is a data model, not a path model. It specifies what profilera needs to observe, not where the host stores it. Claude Code continues to derive this corpus from its native paths; other runtimes produce the same normalized records from their own storage.
+### Skill-to-gate mapping
 
-### Record types
+The gate is enforced independently by two skills; each holds a different phase and a different slice of the enforcement contract.
 
-Four canonical record families capture the decision-relevant signals profilera consumes. Each record is a JSON object with provenance metadata at top level and domain fields nested under `data`. Adapters MAY define additional runtime-specific record types (see Runtime extensions below).
+| Skill | Role | Phase | What it enforces |
+|-------|------|-------|------------------|
+| realisera | Primary enforcer | Cycle close | Runs the primary entrypoint against real project state and writes the observed output into the cycle's `**Verified**` field. Blocks cycle completion if the field cannot be populated with observed output, an allowlisted tag, or a qualifying free-form rationale |
+| orkestrera | Secondary enforcer | Task evaluation | Reads the latest PROGRESS.md cycle entry for the dispatched task, confirms the `**Verified**` field is present and non-empty (artifact read only; no source code read), and extends its inspektera dispatch prompt to include the Section 20 evidence-format snippet so inspektera audits whether the recorded content corresponds to the task's acceptance criteria |
 
-#### Provenance metadata
+Realisera holds the primary enforcement contract because it is the skill that actually produces cycle entries. Orkestrera holds a lighter presence-and-quality check because it reads artifacts but never touches code; the full content audit is delegated to inspektera via the dispatch prompt.
 
-Every record includes these fields regardless of type:
+**Linter check**: Deterministic. Realisera and orkestrera SKILL.md files must reference Section 20 by name and include the `**Verified**` field in any PROGRESS.md cycle format examples they carry.
 
-| Field | Required | Type | Purpose |
-|-------|----------|------|---------|
-| `source_id` | Yes | string | Stable identifier for deduplication across extractions |
-| `timestamp` | Yes | string (ISO 8601) | When the record was created or observed |
-| `project_id` | Yes | string | Project this record belongs to; `"global"` for non-project-scoped data |
-| `project_path` | No | string | Filesystem path to the project, when available |
-| `session_id` | No | string | Host session identifier, when applicable |
-| `source_kind` | Yes | string | Which record family this record belongs to (one of the four portable names below, or a runtime extension name) |
-| `runtime` | Yes | string | Host runtime that produced this record (e.g., `"claude-code"`, `"opencode"`) |
-| `adapter_version` | Yes | string | Version of the adapter that extracted this record |
-| `data` | Yes | object | Type-specific payload for this record |
+## 23. Pre-dispatch Commit Gate
 
-The `source_id` field enables idempotent re-extraction: the same logical record produces the same `source_id` regardless of when extraction runs. The `runtime` and `adapter_version` fields enable profilera to handle schema variations across runtimes.
+Git worktrees branch from HEAD (the last commit), not the working tree. When a dispatching skill writes artifacts during its orient or plan steps and then spawns a subagent in a worktree without committing, the subagent receives a stale snapshot missing those artifacts. The Pre-dispatch Commit Gate closes this gap by requiring a checkpoint commit before any `isolation: "worktree"` dispatch.
 
-All fields listed in the record family tables below live inside `data`, not beside provenance fields. This keeps provenance stable across runtimes while allowing each source family to carry its own payload shape.
+This gate is the entry-side complement to Section 20 (Reality Verification Gate). Section 20 gates the exit from a cycle: did the work actually run against real state? Section 23 gates the entry to a worktree: does the subagent start from current state? The two gates enforce different invariants at different boundaries and must both hold for worktree-dispatched cycles.
 
-#### instruction_document
+### Applicability
 
-Global or project-scoped instruction files the host exposes to agents. These encode recurring preferences, constraints, and standards.
+The gate applies to any skill that dispatches a subagent with `isolation: "worktree"`. Currently two skills do this:
 
-| Field | Required | Type | Purpose |
-|-------|----------|------|---------|
-| `doc_type` | Yes | string | Kind of instruction document (e.g., `"claude_md"`, `"agents_md"`) |
-| `name` | Yes | string | Canonical name for this document |
-| `description` | No | string | Human-readable summary |
-| `content` | Yes | string | Full text content |
-| `scope` | Yes | string | `"global"` or `"project"` |
+| Skill | Dispatch point | What it writes before dispatch |
+|-------|----------------|-------------------------------|
+| realisera | Step 5 (implementation dispatch) | PLAN.md status updates, PROGRESS.md cycle start, context files from orient/plan steps |
+| optimera | Experiment dispatch step | EXPERIMENTS.md updates, OBJECTIVE.md refinements, harness configuration changes |
 
-Claude Code source: `~/.claude/CLAUDE.md`, `~/git/*/CLAUDE.md`, `~/git/*/AGENTS.md` <!-- platform: artifact-resolution -->
+orkestrera dispatches skills without worktree isolation (it runs realisera or other skills as background subagents in the same working directory). orkestrera is covered transitively: when realisera creates a worktree at its Step 5, the gate commits everything in the working tree, including any uncommitted changes orkestrera wrote before dispatching realisera.
 
-#### history_prompt
+Skills that do not dispatch to worktrees are unaffected. The gate is invisible to them.
 
-Decision-rich prompts from the host's command history. These capture what the user asked, when, and in what project context.
+### Gate procedure
 
-| Field | Required | Type | Purpose |
-|-------|----------|------|---------|
-| `prompt` | Yes | string | The user's prompt text |
-| `signal_type` | Yes | string | Classification: `"decision"`, `"correction"`, or `"question"` |
+Before executing the `isolation: "worktree"` dispatch, the dispatching skill runs this procedure:
 
-Claude Code source: `~/.claude/history.jsonl`, filtered by decision-pattern regex <!-- platform: artifact-resolution -->
+1. **Check working tree status.** If `git status --porcelain` returns empty output, the working tree is clean. The gate is a no-op: skip to dispatch.
 
-#### conversation_turn
+2. **Stage artifact paths only.** Add only the files the skill wrote or modified during the current session. Use explicit paths (e.g., `git add .agentera/PLAN.md .agentera/PROGRESS.md`), not `git add -A` or `git add .`. This scoping prevents committing editor temp files, secrets, or unrelated changes.
 
-Normalized user or assistant turns from host conversation sessions. Profilera uses paired user-assistant exchanges to identify how decisions were made and corrected in context.
+3. **Commit with checkpoint message.** Use the conventional commit format:
 
-| Field | Required | Type | Purpose |
-|-------|----------|------|---------|
-| `actor` | Yes | string | `"user"` or `"assistant"` |
-| `content` | Yes | string | Turn text content |
-| `preceding_context` | No | string | Prior assistant proposal (for user turns that respond to a proposal) |
-| `signal_type` | No | string | Classification of the user's response: `"decision"`, `"correction"`, or `"question"` |
+   ```
+   chore(<skill>): checkpoint before worktree dispatch
+   ```
 
-Claude Code source: `~/.claude/projects/**/*.jsonl`, filtered for decision-rich exchanges <!-- platform: artifact-resolution -->
+   Where `<skill>` is the dispatching skill's name (e.g., `chore(realisera): checkpoint before worktree dispatch`). The `chore` type triggers no version bump per the semver_policy convention.
 
-#### project_config_signal
+4. **Respect hook results.** Do not pass `--no-verify`. If pre-commit hooks reject the commit, the dispatch is blocked. Fix the issue (typically an artifact validation error) and retry the commit. Invalid artifacts must not be dispatched to a worktree where they would mislead the subagent.
 
-Recurring configuration or toolchain patterns associated with a project. These are objective evidence of technology choices, linting standards, and build conventions.
+5. **Proceed with dispatch.** After the checkpoint commit succeeds (or was skipped as a no-op), the worktree branches from a HEAD that includes all current artifacts.
 
-| Field | Required | Type | Purpose |
-|-------|----------|------|---------|
-| `config_type` | Yes | string | Kind of configuration file (e.g., `"gomod"`, `"golangci"`, `"package_json"`) |
-| `file_path` | No | string | Path to the config file within the project |
-| `signals` | Yes | array of string | Extracted key-value signals (dependencies, linters, targets, etc.) |
+### Failure handling
 
-Claude Code source: `~/git/*/` config files scanned per known config type list <!-- platform: artifact-resolution -->
+When a hook rejects the checkpoint commit, the dispatching skill must:
 
-### Source families
+1. Report the hook failure in its output (the specific error from the hook).
+2. Attempt to fix the issue (correct the artifact that failed validation).
+3. Re-stage and retry the checkpoint commit.
+4. If the retry also fails, abort the dispatch and report the failure. Do not proceed with a worktree that would branch from stale state.
 
-The four portable record types group into four source families for profilera's consumption. The "Crystallized decisions" family is powered by instruction_document alone (durable, explicitly authored decisions). Runtime extensions may contribute additional record types to this family.
+The skill does not silently skip the commit or bypass hooks. A blocked dispatch is preferable to a worktree operating on incorrect context.
 
-| Family | Record types | Signal character |
-|--------|-------------|-----------------|
-| Crystallized decisions | instruction_document | Highest signal: explicitly authored preferences and standards |
-| Decision history | history_prompt | Broad coverage: what the user asked across all sessions |
-| Conversation exchanges | conversation_turn | Most nuanced: how decisions were made and corrected in context |
-| Config patterns | project_config_signal | Most objective: what technology and standards actually shipped |
+### Identifying checkpoint commits
 
-### Degradation
+Checkpoint commits are identifiable in git history by their message format: `chore(<skill>): checkpoint before worktree dispatch`. Consuming tools (CHANGELOG generators, version bump scripts, inspektera audits) can filter these commits by the `chore` type and `checkpoint before worktree dispatch` description. They carry no behavioral change and should not appear in user-facing changelogs.
 
-Profilera operates in two modes: full (all four source families) and partial (one or more families missing). The degradation rules specify what profilera can produce given incomplete corpus availability.
+### General commit message rules
 
-| Available families | Profilera mode | Profile quality |
-|--------------------|---------------|-----------------|
-| All four | Full | Complete profile: all 12 categories, cross-validated confidence scores |
-| Crystallized only | Partial | Instruction-heavy profile: strong in architecture/tooling standards, weak in process/workflow and meta-decision patterns |
-| Crystallized + one other | Partial | Substantially complete: most categories populated, confidence scores may be lower for categories that depend on the missing family |
-| History or conversations only (no crystallized) | Partial | Behavior-only profile: can infer patterns from actions but lacks explicit preferences. Confidence scores capped at 60 |
-| Config patterns only | Minimal | Technology fingerprint only: tooling and dependency patterns, no behavioral decisions. Profilera should warn the user this is not a full profile |
+Commit messages must describe *what* changed and *why*, without referencing internal planning artifacts. A commit message is a permanent public record: it should make sense to someone who has never seen PLAN.md, TODO.md, or the current sprint's task list.
 
-**Degradation surface rule**: when a source family is missing, profilera MUST note which families were absent in the profile's source metadata comment. This lets consuming skills weight profile entries appropriately: a profile built from config patterns only should not be treated as authoritative for workflow decisions.
+**Prohibited patterns** (each with examples from real commit history):
 
-**Adapter responsibility**: the host adapter documents which source families it can produce. A minimal adapter that only provides instruction_document (reading a global config file) is valid; profilera produces the best profile it can with what is available. The adapter does not need to implement all four portable record types.
+| Pattern | Example | Why |
+|---------|---------|-----|
+| `Task N` / `PLAN Task N` | `feat(resolve): add Rust import resolver (PLAN Task 5)` | Requires PLAN.md to interpret |
+| `Cycle N` | `feat(cli): default --max-files=8 for docs corpus (Cycle 114, B38 ship)` | Requires PROGRESS.md to interpret |
+| `Decision N` | `chore(bench): recall audit + calibration drift HALT (Decision 21)` | Requires DECISIONS.md to interpret |
+| `Surprise #N` | `chore(benchmarks): remove non-b*-* historical stragglers (Surprise #2)` | Requires PROGRESS.md to interpret |
+| `close Task N` / `mark PLAN Task N` / `record Task N` | `docs(plan): close Task 4 (B37 FAIL) + Cycle 112 PROGRESS` | Planning bookkeeping, not change description |
+| `PLAN.md` / `TODO.md` file references | `chore(plan): close PreToolUse interception plan — archive PLAN.md` | Internal artifact names |
+| `PROGRESS` / `DECISIONS` as commit focus | `docs: cycle 22 log, TODO resolved, changelog entry for edge weights` | Bookkeeping noise |
 
-### Runtime extensions
+**Permitted**: conventional commit prefixes (`feat`, `fix`, `docs`, `refactor`, `chore`, `test`), scope annotations (`feat(ui):`), imperative-mood summaries, explanatory bodies that describe the change in domain terms. Benchmark run identifiers like `B24` are permitted: they reference objective measurements, not planning state.
 
-Adapters MAY define additional record types beyond the four portable ones to capture runtime-specific data that enriches profilera's output. These extensions are documented in the adapter's design and are not required for profilera to operate.
+This rule applies to all commits produced by any skill: checkpoint commits, realisera cycle commits, optimera experiment commits, and any other git operation the suite performs.
 
-**Claude Code extension: memory_entry**
+**Linter check**: Deterministic. Regex for internal-reference patterns in commit message templates and guidance within SKILL.md files: `Task \d+`, `Cycle \d+`, `Decision \d+`, `Surprise #\d+`, `PLAN\.md`, `TODO\.md`, `PROGRESS` (as commit focus), `DECISIONS` (as commit focus).
 
-Claude Code provides a built-in memory system that persists user and project memory as Markdown files with optional frontmatter at `~/.claude/projects/*/memory/*.md`. The Claude Code adapter extracts these as instruction_document records with `doc_type: "claude_memory"` rather than as a separate record type, keeping the portable corpus contract clean.
+### Relation to Section 20
 
-| Field | Required | Type | Purpose |
-|-------|----------|------|---------|
-| `name` | Yes | string | Entry name or title |
-| `description` | No | string | Summary from frontmatter |
-| `memory_type` | No | string | Host-specific categorization |
-| `content` | Yes | string | Full text content (body after frontmatter) |
+The two gates form a coherent pair bracketing the worktree lifecycle:
 
-When the Claude Code adapter encounters memory files, it emits them as instruction_document records with these additional conventions:
+| Gate | Section | Boundary | Question it answers |
+|------|---------|----------|---------------------|
+| Pre-dispatch Commit Gate | 23 | Entry: before worktree creation | Does the subagent start from current state? |
+| Reality Verification Gate | 20 | Exit: after implementation | Did the work actually run against real state? |
 
-- `doc_type`: `"claude_memory"`
-- `scope`: `"project"` (memory files are project-scoped)
-- `name`: derived from the memory file's frontmatter or filename
+Both gates are mandatory for worktree-dispatched cycles. A cycle that passes Section 20 verification but skipped the Section 23 gate may have verified behavior built on stale context. A cycle that passes the Section 23 gate but skips Section 20 verification has current context but unverified output.
 
-### Corpus envelope format
-
-The extraction pipeline produces a single `corpus.json` file containing all extracted records and their metadata. This is the canonical output of any adapter's corpus extraction, replacing any prior multi-file output layout.
-
-#### Top-level structure
-
-```json
-{
-  "metadata": { ... },
-  "records": [ ... ]
-}
-```
-
-Both fields are required. A valid corpus file always contains exactly these two top-level keys.
-
-#### Metadata object
-
-The metadata object describes the extraction run, not the records themselves. It provides enough context for consumers to understand what runtimes contributed, how many records were produced, and whether any errors occurred.
-
-| Field | Required | Type | Purpose |
-|-------|----------|------|---------|
-| `extracted_at` | Yes | string (ISO 8601) | When the extraction ran |
-| `runtimes` | Yes | array of string | Runtime identifiers that were probed and found available (e.g., `["claude-code"]`) |
-| `adapter_version` | Yes | string | Version of the corpus builder that produced this file |
-| `families` | Yes | object | Per-source-family extraction summary (see below) |
-| `total_records` | Yes | integer | Total number of records in the `records` array |
-| `errors` | No | array of string | Human-readable error messages from extraction failures; omitted when empty |
-
-The `families` object has one key per source family name (matching the four portable family names from the Source families table: `instruction_document`, `history_prompt`, `conversation_turn`, `project_config_signal`). Each value is an object:
-
-| Field | Required | Type | Purpose |
-|-------|----------|------|---------|
-| `count` | Yes | integer | Number of records extracted for this family |
-| `status` | Yes | string | `"ok"`, `"partial"`, or `"missing"` |
-| `error` | No | string | Explanation when status is `"partial"` or `"missing"`; omitted when `"ok"` |
-
-A family with status `"ok"` extracted all records successfully. `"partial"` means some records were extracted but errors occurred during extraction. `"missing"` means the family could not be extracted at all (e.g., the runtime data directory was not found).
-
-#### Records array
-
-The `records` array contains all extracted records in no guaranteed order. Each element is a JSON object with the provenance fields from the table above plus a `data` object. The `data` object conforms to one of the four portable record payloads, or to a documented runtime extension payload.
-
-Consumers filter and group records by `source_kind` to access specific families. The `runtime` field on each record identifies which adapter produced it, enabling cross-runtime corpus aggregation.
-
-#### Envelope example
-
-```json
-{
-  "metadata": {
-    "extracted_at": "2026-04-11T14:30:00Z",
-    "runtimes": ["claude-code"],
-    "adapter_version": "2.7.0",
-    "families": {
-      "instruction_document": {"count": 12, "status": "ok"},
-      "history_prompt": {"count": 87, "status": "ok"},
-      "conversation_turn": {"count": 234, "status": "ok"},
-      "project_config_signal": {"count": 5, "status": "ok"}
-    },
-    "total_records": 338,
-    "errors": []
-  },
-  "records": [
-    {
-      "source_id": "claude-md-global-abc123",
-      "timestamp": "2026-04-10T09:00:00Z",
-      "project_id": "global",
-      "source_kind": "instruction_document",
-      "runtime": "claude-code",
-      "adapter_version": "2.7.0",
-      "data": {
-        "doc_type": "claude_md",
-        "name": "CLAUDE.md (global)",
-        "content": "...",
-        "scope": "global"
-      }
-    }
-  ]
-}
-```
-
-### Runtime probing convention
-
-Before extracting records, the corpus builder probes for available runtimes by checking known filesystem paths. This probe-then-extract pattern decouples runtime detection from record extraction: the prober identifies which runtimes have data on the current system, then the builder dispatches the appropriate adapter for each detected runtime.
-
-#### Probe mechanism
-
-Each runtime registers a probe function that checks for the existence of its data directory. The probe returns a boolean indicating whether that runtime's data is available on the current system.
-
-| Runtime | Probe path | What it checks |
-|---------|-----------|----------------|
-| Claude Code | `~/.claude/` | Directory exists and contains session data (e.g., `projects/` subdirectory or `history.jsonl`) |
-
-Future runtimes add their own probe entries. The corpus builder iterates all registered probes, collects the list of available runtimes, and runs their extractors. Runtimes that are not detected are skipped without error.
-
-#### Multi-runtime aggregation
-
-When multiple runtimes are detected, the corpus builder runs each runtime's extractor independently and merges all records into a single `records` array. The `runtime` field on each record identifies its origin. The `metadata.runtimes` array lists all runtimes that contributed records.
-
-This aggregation is additive: records from different runtimes coexist in the same corpus without deduplication across runtimes. The `source_id` field ensures idempotent re-extraction within a single runtime; cross-runtime deduplication is not performed because the same logical signal (e.g., a user preference) may appear in different forms across runtimes and both forms carry signal value.
-
-#### No-runtime behavior
-
-When no registered runtime is detected (all probes return false), the corpus builder produces no output and exits with an informative message. It does not produce an empty corpus file: an empty corpus has no consumers and would mask a configuration problem.
-
-### Relation to Section 21
-
-Section 21 defines the six host adapter capabilities for the portable core. Section 22 defines the data contract that lifts profilera from a host-specific extension to a capability-gated skill. Once a host adapter implements corpus extraction that produces the normalized record types above, profilera can run on that runtime without depending on Claude Code's internal storage layout.
-
-Profilera's portability status in the Section 21 table moves from "Host-specific extension" to "Capability-gated" when the adapter provides the corpus. The contract itself (this section) is what enables that transition; the adapter is what implements it.
-
-**Linter check**: None. This section defines a runtime data contract for adapters, not a SKILL.md structural requirement. The existing linter checks for profilera's SKILL.md continue to apply independently.
+**Linter check**: None. This section defines a runtime convention for dispatching skills. Enforcement is per-skill: each dispatching skill's SKILL.md must include the gate procedure at its worktree dispatch point. The linter validates this through skill-specific checks, not a spec-level structural check.

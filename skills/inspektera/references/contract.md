@@ -1,7 +1,7 @@
 <!-- contract: inspektera -->
 <!-- source: SPEC.md (sha256: 372c6fb0bf8c4febc3fb313069f6d924023264b778b9d309a0f7cd5d27209c90) -->
-<!-- sections: 1, 2, 4, 5, 6, 16, 17, 18 -->
-<!-- generated: 2026-04-26T11:00:48Z -->
+<!-- sections: 1, 2, 4, 5, 6, 17, 18, 19 -->
+<!-- generated: 2026-04-26T11:35:48Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -352,17 +352,6 @@ Both patterns MUST include a fallback instruction:
 
 PROFILERA_PROFILE_DIR is the sibling of AGENTERA_HOME (Section 7): both are adapter-injected env vars, but they scope to different surfaces. PROFILERA_PROFILE_DIR names the profile data directory (where PROFILE.md lives); AGENTERA_HOME names the agentera install root (where helper scripts referenced by skill prose live).
 
-## 16. Line-Break Conventions
-
-Prose paragraphs in spec and skill text are single lines. The terminal handles wrapping; hard wraps at arbitrary column widths create noisy diffs and complicate search.
-
-| Rule | Detail |
-|------|--------|
-| One paragraph = one line | Do not manually wrap prose at 80 or 100 columns |
-| Structured content keeps its line breaks | Code blocks, bullet lists, numbered lists, tables, headings, YAML frontmatter, and HTML comments retain their inherent structure |
-
-**Linter check**: Advisory. Consecutive non-blank prose lines outside structured content (code blocks, lists, tables, frontmatter, headings).
-
 ## 17. Test Proportionality
 
 Plans that include test tasks must specify a proportionality target so that test volume stays aligned with the complexity of the code under test. Without a constraint, autonomous agents tend to over-produce tests (3-7 per function) when fewer would cover the critical paths.
@@ -439,3 +428,50 @@ Each cycle entry in PROGRESS.md includes a **Phase** field immediately after the
 Consuming skills use the phase field for trend analysis (e.g., ratio of build to audit cycles, whether deliberation precedes major architectural changes).
 
 **Linter check**: None. Phase tracking is defined here for producing and consuming skills. SKILL.md integration is handled per-skill, not by the spec linter.
+
+## 19. Staleness Detection
+
+Stale artifacts mislead routing decisions and cause skills to act on outdated context. This section defines how staleness is detected and which artifacts each skill is expected to update.
+
+### Skill-to-expected-artifact mapping
+
+Each skill produces specific artifacts as part of its workflow. When a skill is dispatched (directly or via orkestrera), the artifacts listed here are the ones it is expected to have updated upon completion. This table is the authoritative lookup for staleness checks.
+
+| Skill | Expected artifact outputs |
+|-------|--------------------------|
+| visionera | VISION.md |
+| resonera | .agentera/DECISIONS.md |
+| planera | .agentera/PLAN.md |
+| realisera | .agentera/PROGRESS.md, TODO.md, CHANGELOG.md |
+| optimera | .agentera/optimera/<name>/EXPERIMENTS.md, .agentera/optimera/<name>/OBJECTIVE.md (paths are per-objective; staleness check uses glob `.agentera/optimera/*/EXPERIMENTS.md` and `.agentera/optimera/*/OBJECTIVE.md`) |
+| inspektera | .agentera/HEALTH.md, TODO.md |
+| dokumentera | .agentera/DOCS.md |
+| visualisera | .agentera/DESIGN.md |
+| profilera | (profile-path capability) <!-- platform: profile-path --> |
+| inspirera | (no owned artifact; findings are filed to TODO.md or fed into other skills) |
+| orkestrera | (conductor; updates .agentera/PLAN.md task statuses and dispatches other skills) |
+| hej | (router; reads artifacts but produces none) |
+
+Skills that share an artifact (e.g., realisera and inspektera both write to TODO.md) are each expected to update it independently when dispatched. Staleness is checked per-skill, not per-artifact.
+
+### Plan-relative staleness convention
+
+When a plan exists (.agentera/PLAN.md with an active status), staleness is measured relative to the plan's creation date (the `Created` field in the plan's HTML comment metadata).
+
+**Detection rule**: after a plan completes (all tasks `■ complete` or `skipped`), compare each dispatched skill against its expected artifacts. An artifact is **stale** if its last modification date (via `git log -1 --format=%aI -- <path>`) predates the plan's creation date AND the skill was dispatched at least once during the plan.
+
+**What counts as dispatched**: a skill appears in at least one task's execution history during the plan. For orkestrera-driven plans, the dispatch log in PROGRESS.md cycle entries identifies which skills ran.
+
+**Scope**: only artifacts listed in the mapping above are checked. Artifacts that a skill reads but does not produce (e.g., realisera reads VISION.md) are not staleness candidates for that skill.
+
+**Handling stale findings**: stale artifacts are surfaced as context for the next plan cycle, not as errors. The consuming skill (orkestrera, inspektera) reports which artifacts are stale and which dispatched skills were expected to update them. This informs the next plan's task selection without blocking execution.
+
+### Fallback: no plan context
+
+When no active or recently completed plan exists (standalone skill invocation, ad-hoc inspektera audit, or hej session orientation), plan-relative detection is unavailable. The fallback heuristic applies:
+
+**Fallback rule**: an artifact is considered potentially stale if it was not modified since the most recent PROGRESS.md cycle entry. If PROGRESS.md has no entries (fresh project), no staleness check applies.
+
+The fallback is advisory, not authoritative. It surfaces artifacts that may need attention but does not carry the same signal strength as plan-relative detection (where the dispatched-skill relationship provides causal evidence of staleness).
+
+**Linter check**: None. Staleness detection is a runtime convention consumed by orkestrera and inspektera, not a SKILL.md structural requirement.
