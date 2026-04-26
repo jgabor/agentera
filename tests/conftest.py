@@ -111,6 +111,15 @@ def generate_contracts():
 
 
 @pytest.fixture(scope="session")
+def usage_stats():
+    """Load scripts/usage_stats.py."""
+    return _load_module(
+        "usage_stats",
+        REPO_ROOT / "scripts" / "usage_stats.py",
+    )
+
+
+@pytest.fixture(scope="session")
 def hooks_common():
     """Load hooks/common.py."""
     return _load_module(

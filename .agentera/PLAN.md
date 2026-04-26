@@ -1,152 +1,107 @@
-# Plan: Canonical Copilot Marketplace Path
+# Plan: Suite Usage Analytics
 
-<!-- Level: full | Created: 2026-04-25 | Status: complete -->
-<!-- Reviewed: 2026-04-25 | Critic issues: 10 found, 10 addressed, 0 dismissed -->
+<!-- Level: full | Created: 2026-04-26 | Status: active -->
+<!-- Reviewed: 2026-04-26 | Critic issues: 6 found, 6 addressed, 0 dismissed -->
 
 ## What
 
-Establish an evidence-backed Copilot marketplace install path for agentera. If no canonical source can be verified, keep the current placeholder guidance from becoming a false availability claim.
+Build `scripts/usage_stats.py` reading the existing Section 21 corpus to count agentera skill invocations across host runtimes. Detect introduction and exit markers in assistant turns, pair them within a conversation to measure completion, classify trigger phrasing as slash or natural language, and emit per-skill totals to a global USAGE.md plus stdout summary, with `--json` and `--project PATH` flags.
 
 ## Why
 
-Copilot now prefers marketplace installs, but agentera still documents generic marketplace syntax. Closing that gap improves adoption while preserving the project rule: no live-host or marketplace claims without evidence.
+Agentera mines user sessions for the user's own profile (PROFILE.md) but ships nothing that observes the suite itself. Decision 31 closes that gap: a script (no SKILL.md ceremony) reuses the corpus pipeline so the next adoption question (which skills get invoked, which complete, slash-vs-NL mix) has data behind it. Without a baseline, friction and failure analysis cannot be prioritized later. The output sits in the global XDG directory next to PROFILE.md so cross-project usage aggregates naturally.
 
 ## Constraints
 
-- Do not claim marketplace availability without host evidence.
-- Keep deprecated direct installs secondary.
-- Preserve the aggregate `agentera` plugin model.
-- Preserve profilera capability caveats.
-- Apply DOCS.md versioning only when user-facing install support changes.
+- Stdlib-only Python (per CLAUDE.md scripts convention)
+- Reads `corpus.json` produced by `extract_all.py`; never re-extracts sessions itself
+- Output path follows the same XDG default as PROFILE.md, not the per-project `.agentera/`
+- No SKILL.md, no plugin entry, no hook (script only)
+- Counts only markers in `actor: assistant` turns
 
 ## Scope
 
-**In**: source evidence, install guidance, validation guards, host smoke evidence, release and freshness updates.
-**Out**: skill behavior changes, hook semantics changes, unsupported lifecycle parity claims.
-**Deferred**: external publication steps requiring unavailable credentials, ownership, or approval.
+**In**: marker detection, exit-signal pairing, slash-vs-NL classification, USAGE.md markdown output, stdout summary, `--json`, `--project PATH`, generated-at and corpus-extracted-at timestamps, tests, DOCS.md and README documentation, version bump per DOCS.md policy.
+**Out**: friction analysis, failure-mode diagnostics, recommendations, hook scheduling, runtime-specific extension fields, profilera chaining.
+**Deferred**: scheduled refresh, per-runtime breakdown, marker false-positive filtering for quoted examples.
 
 ## Design
 
-Use an evidence gate first. Verified marketplace evidence unlocks install-surface, validation, documentation, and release work. Missing evidence produces no availability claim and leaves later tasks limited to preserving accurate caveats.
+A single self-contained script consumes the Section 21 corpus and produces three output surfaces from one analysis pass: a markdown report (USAGE.md), a stdout summary, and a JSON document. Records group by their per-conversation identifier and sort by timestamp; assistant turns within a conversation are walked to detect introduction markers and matching exit signals; the immediately preceding user turn in the same conversation classifies the trigger phrasing. Cross-project is the default; a path filter scopes to one project's records when supplied.
 
 ## Tasks
 
-### Task 1: Establish Marketplace Evidence
+### Task 1: Detect invocations and pair them with exit signals
 
 **Depends on**: none
 **Status**: ■ complete
 **Acceptance**:
-▸ GIVEN a candidate Copilot marketplace source WHEN the host lists or browses it THEN the verified source identity is recorded with repeatable evidence.
-▸ GIVEN no canonical source is available WHEN verification runs THEN no marketplace availability claim is added.
-▸ GIVEN evidence is recorded WHEN later tasks use it THEN they distinguish verified source data from assumptions.
+▸ GIVEN a corpus containing assistant turns with skill introduction markers WHEN the script runs THEN every well-formed introduction marker is counted exactly once per skill.
+▸ GIVEN an introduction marker followed by a matching exit signal in the same conversation WHEN pairing runs THEN the invocation is recorded as completed and tagged with the exit status.
+▸ GIVEN an introduction marker with no later matching exit signal in its conversation WHEN pairing runs THEN the invocation is recorded as incomplete.
+▸ GIVEN markers appearing only in user turns or in non-conversation_turn records WHEN the script runs THEN those markers are ignored.
+▸ GIVEN a conversation containing multiple invocations of the same skill WHEN pairing runs THEN introductions are matched to exits in order of appearance.
+▸ Test proportionality target: 1 pass + 1 fail per testable unit (marker detector, exit-signal matcher, pairing walker, conversation grouper). Marker detector qualifies for edge expansion: cover each exit status value and at least three skill glyphs.
 
-**Evidence**:
-
-- Verified by host command on 2026-04-25: `copilot --version` returned `GitHub Copilot CLI 1.0.35`.
-- Verified source identities: `copilot plugin marketplace list` returned built-in marketplaces `copilot-plugins` as `GitHub: github/copilot-plugins` and `awesome-copilot` as `GitHub: github/awesome-copilot`.
-- Verified catalog contents: `copilot plugin marketplace browse copilot-plugins` listed `workiq`, `spark`, and `advanced-security`; `copilot plugin marketplace browse awesome-copilot` listed many plugins but no `agentera` entry.
-- Assumption boundary: no canonical Agentera Copilot marketplace source was verified, so later tasks must not turn `plugin@marketplace` placeholder syntax into an availability claim.
-
-### Task 2: Align Install Surface
+### Task 2: Classify trigger phrasing and scope output
 
 **Depends on**: Task 1
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN verified marketplace evidence WHEN users follow the preferred Copilot path THEN agentera installs as the aggregate plugin.
-▸ GIVEN marketplace evidence is missing WHEN install guidance is reviewed THEN existing placeholder syntax does not become an availability claim.
-▸ GIVEN fallback install paths remain available WHEN guidance is reviewed THEN they are clearly secondary to verified marketplace installs.
+▸ GIVEN an invocation whose preceding user turn carries a slash-command signature WHEN classification runs THEN the invocation is tagged as slash-triggered.
+▸ GIVEN an invocation whose preceding user turn lacks a slash-command signature WHEN classification runs THEN the invocation is tagged as natural-language triggered.
+▸ GIVEN classification rules WHEN runtimes other than Claude Code are present THEN at least one non-Claude-Code slash convention is recognized and the rule set is documented in code comments.
+▸ GIVEN a `--project PATH` argument WHEN the script runs THEN only records whose project identifier matches the supplied path are analyzed.
+▸ GIVEN no `--project` argument WHEN the script runs THEN records from all projects in the corpus are analyzed and the output distinguishes the cross-project total from per-project subtotals.
+▸ Test proportionality target: 1 pass + 1 fail per testable unit (slash classifier, project filter). Slash classifier qualifies for edge expansion: cover the Claude Code form and at least one non-Claude-Code form.
 
-**Evidence**:
-
-- README Copilot guidance now states no Agentera marketplace source is currently verified.
-- The Copilot marketplace command uses `<plugin>@<marketplace>` as syntax only, with aggregate `agentera` named only for the future verified-source branch.
-- Direct `OWNER/REPO`, `OWNER/REPO:PATH`, Git URL, and local path installs remain documented as deprecated fallback paths.
-
-### Task 3: Guard Marketplace Claims
+### Task 3: Emit USAGE.md, stdout summary, and JSON
 
 **Depends on**: Task 2
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN public install guidance WHEN validation runs THEN unverified marketplace availability language is rejected.
-▸ GIVEN public install guidance WHEN validation runs THEN placeholder syntax cannot masquerade as a canonical source.
-▸ GIVEN fallback guidance WHEN validation runs THEN deprecated paths remain semantically secondary.
-▸ Test proportionality target: 1 pass + 1 fail per guidance rule; add edge coverage only for verified versus unavailable source branches.
+▸ GIVEN a successful analysis pass WHEN no `--json` flag is set THEN a markdown report is written to the global agentera data directory at the same XDG-default location as PROFILE.md, alongside a brief multi-line summary printed to stdout.
+▸ GIVEN a `--json` flag WHEN the script runs THEN the full per-skill data structure is printed to stdout in JSON form and no markdown file is written.
+▸ GIVEN any successful run WHEN output is produced THEN it includes both the time the script ran and the corpus's extracted-at timestamp, so staleness is visible.
+▸ GIVEN the corpus file does not exist or contains no conversation_turn records WHEN the script runs THEN it exits with a clear message naming the extractor command to run.
+▸ GIVEN the markdown report WHEN a reader scans it THEN per-skill rows show invocations, completed-by-status counts, incomplete count, slash count, natural-language count, and last-seen timestamp.
+▸ Test proportionality target: 1 pass + 1 fail per testable unit (markdown writer, stdout summarizer, JSON emitter, missing-corpus error path).
 
-**Evidence**:
-
-- Validation rejects additive unverified availability claims while no canonical Agentera Copilot marketplace source is verified.
-- Validation rejects placeholder-as-source commands such as `agentera@<marketplace>`.
-- Validation rejects additive primary/direct `OWNER/REPO` recommendations while preserving deprecated secondary fallback wording.
-- Test budget remains proportional: one README pass plus three fail tests, one per guidance rule, with additive branches covered by existing fail tests.
-
-### Task 4: Verify Host Behavior
+### Task 4: Document the script
 
 **Depends on**: Task 3
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN a verified marketplace path WHEN a read-only host smoke runs THEN skill discovery shows the aggregate agentera plugin.
-▸ GIVEN legacy per-skill installs appear WHEN installed plugins are listed THEN verification labels them as legacy entries only.
-▸ GIVEN host behavior differs from local expectations WHEN verification runs THEN the discrepancy is recorded instead of hidden.
+▸ GIVEN the README scripts section WHEN a reader looks for usage analytics THEN the new script is listed with its invocation, output path, and the flags it accepts.
+▸ GIVEN DOCS.md WHEN a reader audits documented artifacts THEN USAGE.md appears in the artifact mapping or coverage notes with its global XDG path and producer identified as the new script.
+▸ GIVEN CLAUDE.md WHEN a reader scans the Python scripts section THEN the new script is included in the list of repo-level utilities runnable from the repo root.
+▸ GIVEN any documentation update WHEN it is reviewed THEN it does not invent capabilities the script does not have (no scheduled refresh, no friction scoring, no runtime breakdown beyond what Task 2 produces).
 
-**Evidence**:
-
-- No verified marketplace path exists, so the marketplace install smoke branch did not run and no host source was invented.
-- Read-only host evidence on 2026-04-25: `copilot --version` returned `GitHub Copilot CLI 1.0.35`; `copilot plugin marketplace list` returned only `copilot-plugins` and `awesome-copilot`; browsing both catalogs still showed no `agentera` entry.
-- `copilot plugin list` showed aggregate `agentera (v1.18.1)` plus legacy per-skill entries such as `realisera@agentera (v1.16.0)` and `profilera@agentera (v2.8.0)`. Those per-skill entries are verification observations only, not the supported aggregate install model.
-- Discrepancy recorded: read-only `/skills list` showed several Agentera skills from existing host state but omitted installed `hej`, `inspektera`, and `profilera`, so installed plugin entries and skill discovery do not fully agree.
-
-### Task 5: Update User Guidance
+### Task 5: Apply DOCS.md version policy
 
 **Depends on**: Task 4
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN verified host behavior WHEN users read install docs THEN the preferred Copilot command uses the canonical marketplace path.
-▸ GIVEN no verified source exists WHEN users read install docs THEN docs explain the current limitation without inventing a source.
-▸ GIVEN support notes mention Copilot WHEN users read them THEN lifecycle support remains described without overstating parity.
+▸ GIVEN the new script ships as a `feat` and the unreleased third-party validator entry point also ships as a `feat` WHEN release metadata is updated THEN every file listed in DOCS.md `version_files` moves from 1.18.1 to 1.19.0 in one consistent bump.
+▸ GIVEN the version bump WHEN CHANGELOG.md is reviewed THEN the unreleased section is promoted to a 1.19.0 heading dated today and lists both shipped feats without inventing extras.
+▸ GIVEN the bump WHEN TODO.md is reviewed THEN the existing pending validator-bump item is resolved and references this plan's version task as the resolution point.
 
-**Evidence**:
-
-- README keeps `copilot plugin install <plugin>@<marketplace>` as Copilot marketplace syntax only and does not write a canonical Agentera source because none is verified.
-- README records the verified limitation: built-in Copilot marketplaces `copilot-plugins` and `awesome-copilot` were observed with no `agentera` entry.
-- README keeps the aggregate `agentera` plugin model, labels older per-skill entries as legacy metadata, and records the `/skills list` omission for installed `hej`, `inspektera`, and `profilera`.
-- README lifecycle notes still describe Copilot as partial adapter metadata and explicitly avoid Claude hook parity.
-
-### Task 6: Apply Release Convention
+### Task 6: Plan-level freshness checkpoint
 
 **Depends on**: Task 5
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN user-facing install support changed WHEN release metadata is checked THEN DOCS.md version policy is applied consistently.
-▸ GIVEN no user-facing support changed WHEN release metadata is checked THEN no unnecessary version bump occurs.
-▸ GIVEN release notes are reviewed WHEN marketplace work is summarized THEN support and caveats are represented without unsupported claims.
-
-**Evidence**:
-
-- DOCS.md version policy applies `feat = minor`, `fix = patch`, and `docs/chore/test = no bump` across plugin, marketplace, OpenCode, per-skill, and registry version files.
-- Tasks 1-5 changed README guidance, validation tests, host-evidence artifacts, and release notes, but did not verify a new Agentera Copilot marketplace source or add user-facing install capability; no version bump was applied.
-- CHANGELOG [Unreleased] now states marketplace-style Copilot installs are preferred only when a verified source exists, preserves the no-source caveat, and keeps direct repo installs as deprecated fallback paths.
-
-### Task 7: Plan-Level Freshness Checkpoint
-
-**Depends on**: Task 6
-**Status**: ■ complete
-**Acceptance**:
-▸ GIVEN all prior tasks are complete WHEN project state is reviewed THEN progress summarizes the plan-level outcome.
-▸ GIVEN marketplace work changed open caveats WHEN TODO is reviewed THEN resolved and deferred items reflect the final state.
-▸ GIVEN public history is reviewed WHEN changelog entries are checked THEN marketplace support and caveats are represented once.
-
-**Evidence**:
-
-- PROGRESS Cycle 161 summarizes the plan outcome: no canonical Agentera Copilot marketplace source is verified, so docs and validation preserve syntax-only marketplace guidance and explicit caveats.
-- TODO keeps the future marketplace publication caveat deferred and records Task 7 resolved.
-- CHANGELOG [Unreleased] has one caveated marketplace-support entry plus one validation-guard entry, with no duplicate availability claim.
+▸ GIVEN all prior tasks are complete WHEN PROGRESS.md is reviewed THEN one cycle entry summarizes the plan's outcome at the plan level (not per-cycle restatements).
+▸ GIVEN the plan is complete WHEN TODO.md is reviewed THEN the Decision 31 telemetry item and the version-bump item both appear in the Resolved section with this plan's commits cited.
+▸ GIVEN the plan is complete WHEN CHANGELOG.md 1.19.0 section is reviewed THEN it represents the suite usage analytics feature and the validator entry point in one coherent release block.
 
 ## Overall Acceptance
 
-▸ GIVEN a canonical Copilot marketplace source exists WHEN users follow the documented path THEN agentera installs as the aggregate plugin.
-▸ GIVEN no canonical source can be verified WHEN the plan completes or pauses THEN no unsupported marketplace claim ships.
-▸ GIVEN validation and host smoke run WHEN the plan completes THEN docs, Copilot-facing metadata, and release state agree.
+▸ GIVEN a Section 21 corpus on disk WHEN the script runs THEN per-skill invocation, completion, and trigger-phrasing counts are produced for the configured scope without requiring re-extraction.
+▸ GIVEN the script's outputs WHEN a user inspects USAGE.md, stdout, or JSON THEN the same analysis appears consistently across surfaces and includes the corpus extracted-at and the script's run-at timestamps.
+▸ GIVEN the plan completes WHEN release metadata, README, DOCS.md, CHANGELOG.md, and TODO.md are reviewed THEN they describe the new capability accurately at version 1.19.0 with no unsupported claims.
 
 ## Surprises
 
-- Task 4: No verified marketplace path exists, so the aggregate marketplace install/discovery branch could not run. Existing installed host state still shows aggregate `agentera` plus legacy per-skill entries, and `/skills list` omits some installed Agentera skills.
+- Task 1 dispatch: the realisera subagent worktree branched before the planera write was committed, so it saw the prior marketplace plan still resident, archived it under a different filename, and authored its own version of this plan. Conductor reconciled by keeping the planera-authored PLAN.md and pulling the script, tests, conftest, CHANGELOG, and PROGRESS.md cycle 163 from the subagent's commit. Implication for Tasks 2-6: dispatch from the main tree (not a worktree) so the dispatched skill sees the live plan, OR commit plan changes before dispatching.
+- Task 1 design choice: same-skill pairing is LIFO so nested invocations of the same skill match correctly (intro_a, intro_b, exit_b, exit_a). For purely sequential invocations LIFO and FIFO produce identical output, so the acceptance-criteria phrasing "in order of appearance" remains satisfied.

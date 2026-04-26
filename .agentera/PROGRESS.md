@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 163 · 2026-04-26 07:30 · feat(usage): detect skill invocations and pair with exit signals
+
+**What**: Landed `scripts/usage_stats.py` core pipeline (Task 1 of the new Suite Usage Analytics plan). Stdlib-only marker detector, conversation grouper, and pairing walker that turn a Section 21 corpus into completed/incomplete invocations per skill. Output surfaces (USAGE.md, stdout summary, --json, --project) deferred to Tasks 2 and 3.
+**Commit**: 0251a35 feat(usage): detect skill invocations and pair with exit signals
+**Inspiration**: Decision 31 (provisional) plus the existing TODO `[telemetry]` entry. Workflow marker grammar grounded in SPEC sections 5 and 12; no external pattern needed.
+**Discovered**: Repo carried a stale PLAN.md (canonical Copilot marketplace path, all 7 tasks complete). Archived it before authoring the Suite Usage Analytics plan. Also: pairing same-skill invocations LIFO handles both sequential and nested cases; FIFO would fail nested pairing.
+**Verified**: `python3 -m pytest tests/test_usage_stats.py -v` -> 18 passed in 0.02s (every testable unit covered: marker detector with 4 statuses + 3 glyphs, turn predicate, conversation grouper, pairing walker, top-level orchestrator). `python3 -m pytest -q` -> 381 passed (was 363 before, +18 new). `python3 scripts/validate_spec.py` -> 0 errors, 0 warnings across 12 skills. Behavioral smoke: `python3 scripts/usage_stats.py --corpus /tmp/usage_smoke_corpus.json` exited 0 and printed the expected analysis dict for a corpus with one user-quoted marker (ignored), one assistant intro+exit pair (recorded as completed realisera, status=complete), and one orphan planera intro (recorded as incomplete). Per-skill counts agreed: `realisera {total:1, completed:1, incomplete:0}`, `planera {total:1, completed:0, incomplete:1}`. `git diff --check` clean.
+**Next**: Task 2 (slash-vs-NL trigger tagging plus stdout summary) reuses this pipeline; the `Invocation` dataclass already exposes `intro_source_id` and `intro_timestamp` so the prior-user-turn lookup is straightforward.
+**Context**: intent (land core invocation/exit pairing pipeline for Decision 31) · constraints (stdlib only, no output surfaces yet, ~1 pass + 1 fail per testable unit, no worktree dispatch, single commit) · unknowns (whether sequential vs nested pairing rule will surface different behavior in real corpora) · scope (`scripts/usage_stats.py`, `tests/test_usage_stats.py`, `tests/conftest.py`, `.agentera/PLAN.md`, `.agentera/archive/PLAN-2026-04-25-canonical-copilot-marketplace-path.md`, `.agentera/PROGRESS.md`).
+
 ■ ## Cycle 162 · 2026-04-26 06:35 · feat(validator): accept arbitrary SKILL.md paths for third-party authoring
 
 **What**: Spec validator now takes `--skill PATH` (repeatable). External skill authors can run `python3 scripts/validate_spec.py --skill path/to/SKILL.md` against SPEC.md without forking the repo. Default glob over the canonical 12 stays unchanged.
