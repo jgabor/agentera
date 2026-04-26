@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-26 (Codex+Copilot Setup Helpers Task 4) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-26 (Live-Host Verification Task 5) -->
 
 ## Conventions
 
@@ -71,6 +71,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Codex setup helper | scripts/setup_codex.py | 2026-04-26 | ■ current |
 | Copilot setup helper | scripts/setup_copilot.py | 2026-04-26 | ■ current |
 | Setup helper smoke runner | scripts/smoke_setup_helpers.py | 2026-04-26 | ■ current |
+| Live-host smoke runner | scripts/smoke_live_hosts.py | 2026-04-26 | ■ current |
 | SessionStart hook | hooks/session_start.py | 2026-04-03 | ■ current |
 | Session stop hook | hooks/session_stop.py | 2026-04-03 | ■ current |
 | Validation hook | hooks/validate_artifact.py | 2026-04-03 | ■ current |
@@ -87,6 +88,13 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Tests**: 433 tests across 17 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-26 (Live-Host Verification Task 5)
+
+- [gap] DOCS.md Index missing row for `scripts/smoke_live_hosts.py` (T2-T4 harness shipped without an Index entry) · warning (fixed)
+- [gap] README Codex setup section had no manual verification protocol; users without `--live` access (no auth, no API budget, behind firewall) had no documented path to verify AGENTERA_HOME inheritance · warning (fixed)
+- [gap] README Copilot setup section had no manual verification protocol; same untested path for non-`--live` users · warning (fixed)
+- [gap] README Scripts section did not enumerate `scripts/smoke_live_hosts.py` alongside `validate_spec.py`, `eval_skills.py`, `usage_stats.py`, `setup_codex.py`, `setup_copilot.py`, and `smoke_setup_helpers.py`; default-mode and `--live` cost semantics were undocumented · warning (fixed)
 
 ### 2026-04-26 (Codex+Copilot Setup Helpers Task 4)
 
