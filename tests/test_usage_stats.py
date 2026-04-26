@@ -1,15 +1,19 @@
 """Tests for scripts/usage_stats.py.
 
-Test budget per the Suite Usage Analytics plan, Task 1: 1 pass + 1 fail per
-testable unit. The marker detector qualifies for edge expansion: each of the
-four exit statuses (complete, flagged, stuck, waiting) and at least three
-distinct skill glyphs.
+Test budget per the Suite Usage Analytics plan:
+  - Task 1: 1 pass + 1 fail per testable unit. The marker detector
+    qualifies for edge expansion (the four exit statuses + three glyphs).
+  - Task 2: 1 pass + 1 fail per testable unit. The slash classifier
+    qualifies for edge expansion (Claude Code XML form, Claude Code bare
+    form, OpenCode bare form).
 
 Testable units:
-  - find_markers (marker detector + exit-signal classification)
-  - is_assistant_conversation_turn (turn predicate)
-  - group_by_conversation (conversation grouper)
-  - pair_invocations (pairing walker)
+  - find_markers (marker detector + exit-signal classification) - Task 1
+  - is_assistant_conversation_turn (turn predicate) - Task 1
+  - group_by_conversation (conversation grouper) - Task 1
+  - pair_invocations (pairing walker) - Task 1
+  - classify_trigger (slash-vs-NL classifier) - Task 2
+  - filter_records_by_project (project filter) - Task 2
 """
 
 from __future__ import annotations
@@ -34,11 +38,12 @@ def _turn(
     actor: str,
     content: str,
     source_kind: str = "conversation_turn",
+    project_id: str = "agentera",
 ) -> dict:
     return {
         "source_id": source_id,
         "timestamp": timestamp,
-        "project_id": "agentera",
+        "project_id": project_id,
         "source_kind": source_kind,
         "runtime": "claude-code",
         "adapter_version": "test",
@@ -255,6 +260,172 @@ class TestAnalyzeCorpus:
         }
         analysis = usage_stats.analyze_corpus(corpus)
         assert len(analysis.invocations) == 1
-        assert analysis.skills == {
-            "realisera": {"total": 1, "completed": 1, "incomplete": 0}
+        # The bucket shape grew in Task 2 to carry trigger counters; assert
+        # only the totals/pairing fields (the ignore-user-quoted invariant).
+        bucket = analysis.skills["realisera"]
+        assert bucket["total"] == 1
+        assert bucket["completed"] == 1
+        assert bucket["incomplete"] == 0
+
+
+# ---------------------------------------------------------------------------
+# classify_trigger (slash-vs-NL classifier) - Task 2
+# ---------------------------------------------------------------------------
+
+
+class TestClassifyTrigger:
+    def test_pass_natural_language_user_turn(self, usage_stats):
+        # No slash signature anywhere — plain English request.
+        text = "Please run a development cycle on this project."
+        assert usage_stats.classify_trigger(text) == usage_stats.TRIGGER_NATURAL
+
+    def test_fail_empty_or_missing_user_turn_defaults_to_natural(self, usage_stats):
+        # Defensive default: no preceding user turn must not crash and must
+        # not spuriously tag the invocation as slash-triggered.
+        assert usage_stats.classify_trigger(None) == usage_stats.TRIGGER_NATURAL
+        assert usage_stats.classify_trigger("") == usage_stats.TRIGGER_NATURAL
+        assert usage_stats.classify_trigger("   \n  ") == usage_stats.TRIGGER_NATURAL
+
+    # ---------- edge expansion: Claude Code XML-tag form ----------
+
+    def test_edge_claude_code_xml_command_tag(self, usage_stats):
+        text = (
+            "<command-name>/realisera</command-name>"
+            "<command-message>realisera</command-message>"
+            "<command-args>cycle now</command-args>"
+        )
+        assert usage_stats.classify_trigger(text) == usage_stats.TRIGGER_SLASH
+
+    # ---------- edge expansion: Claude Code bare-line form ----------
+
+    def test_edge_claude_code_bare_slash_line(self, usage_stats):
+        text = "/realisera\n\nplease do a cycle"
+        assert usage_stats.classify_trigger(text) == usage_stats.TRIGGER_SLASH
+
+    # ---------- edge expansion: OpenCode bare form ----------
+
+    def test_edge_opencode_bare_slash_first_line(self, usage_stats):
+        # OpenCode never wraps slash invocations in XML; the runtime emits
+        # the slash as a plain line at the start of the user turn.
+        text = "/planera draft a plan for the new feature"
+        assert usage_stats.classify_trigger(text) == usage_stats.TRIGGER_SLASH
+
+    def test_edge_inline_slash_inside_prose_is_not_slash(self, usage_stats):
+        # A slash that appears mid-sentence (e.g. inside a path or URL) is
+        # not a runtime slash-command invocation.
+        text = "look at /home/me/git/repo for the latest changes"
+        assert usage_stats.classify_trigger(text) == usage_stats.TRIGGER_NATURAL
+
+
+# ---------------------------------------------------------------------------
+# filter_records_by_project (project filter) - Task 2
+# ---------------------------------------------------------------------------
+
+
+class TestFilterRecordsByProject:
+    def test_pass_filter_keeps_matching_records_only(self, usage_stats):
+        records = [
+            _turn("s1", "2026-04-26T00:00:00Z", "assistant", "in agentera",
+                  project_id="agentera"),
+            _turn("s2", "2026-04-26T00:00:00Z", "assistant", "in lira",
+                  project_id="lira"),
+            _turn("s3", "2026-04-26T00:00:00Z", "assistant", "also agentera",
+                  project_id="agentera"),
+        ]
+        kept = usage_stats.filter_records_by_project(records, "agentera")
+        assert len(kept) == 2
+        assert all(r["project_id"] == "agentera" for r in kept)
+
+    def test_fail_no_filter_returns_all_records(self, usage_stats):
+        records = [
+            _turn("s1", "2026-04-26T00:00:00Z", "assistant", "x",
+                  project_id="agentera"),
+            _turn("s2", "2026-04-26T00:00:00Z", "assistant", "y",
+                  project_id="lira"),
+        ]
+        # Cross-project default (None) must preserve every record.
+        assert usage_stats.filter_records_by_project(records, None) == records
+
+    def test_path_form_matches_short_project_id(self, usage_stats):
+        # Substring matching works in both directions: a long path filter
+        # like '/home/me/git/agentera' matches a short id like 'agentera'.
+        records = [
+            _turn("s1", "2026-04-26T00:00:00Z", "assistant", "x",
+                  project_id="agentera"),
+            _turn("s2", "2026-04-26T00:00:00Z", "assistant", "y",
+                  project_id="lira"),
+        ]
+        kept = usage_stats.filter_records_by_project(
+            records, "/home/me/git/agentera"
+        )
+        assert len(kept) == 1
+        assert kept[0]["project_id"] == "agentera"
+
+
+# ---------------------------------------------------------------------------
+# analyze_corpus (Task 2 integration: trigger tagging + project scoping)
+# ---------------------------------------------------------------------------
+
+
+class TestAnalyzeCorpusTask2:
+    def _slash_corpus(self) -> dict:
+        # Conversation s1 (project agentera): user types '/realisera', the
+        # assistant runs a cycle. Conversation s2 (project lira): user
+        # asks in natural language, the assistant runs a planera plan.
+        return {
+            "records": [
+                _turn("s1", "2026-04-26T00:00:00Z", "user",
+                      "<command-name>/realisera</command-name>",
+                      project_id="agentera"),
+                _turn("s1", "2026-04-26T00:01:00Z", "assistant",
+                      _intro("⧉", "realisera", "cycle 1"),
+                      project_id="agentera"),
+                _turn("s1", "2026-04-26T00:02:00Z", "assistant",
+                      _exit("⧉", "realisera", "complete"),
+                      project_id="agentera"),
+                _turn("s2", "2026-04-26T01:00:00Z", "user",
+                      "please plan out the feature",
+                      project_id="lira"),
+                _turn("s2", "2026-04-26T01:01:00Z", "assistant",
+                      _intro("≡", "planera", "planning"),
+                      project_id="lira"),
+                _turn("s2", "2026-04-26T01:02:00Z", "assistant",
+                      _exit("≡", "planera", "complete"),
+                      project_id="lira"),
+            ]
         }
+
+    def test_trigger_classification_tags_invocations(self, usage_stats):
+        analysis = usage_stats.analyze_corpus(self._slash_corpus())
+        triggers = {inv.skill: inv.trigger for inv in analysis.invocations}
+        assert triggers == {
+            "realisera": usage_stats.TRIGGER_SLASH,
+            "planera": usage_stats.TRIGGER_NATURAL,
+        }
+        # Counters should reflect the tagging.
+        assert analysis.skills["realisera"]["trigger_slash"] == 1
+        assert analysis.skills["realisera"]["trigger_natural"] == 0
+        assert analysis.skills["planera"]["trigger_slash"] == 0
+        assert analysis.skills["planera"]["trigger_natural"] == 1
+
+    def test_no_project_flag_yields_per_project_breakdown(self, usage_stats):
+        analysis = usage_stats.analyze_corpus(self._slash_corpus())
+        assert analysis.project_filter is None
+        # Cross-project total covers both skills.
+        assert set(analysis.skills) == {"realisera", "planera"}
+        # Per-project breakdown distinguishes the two source projects.
+        assert set(analysis.per_project) == {"agentera", "lira"}
+        assert analysis.per_project["agentera"]["realisera"]["total"] == 1
+        assert analysis.per_project["lira"]["planera"]["total"] == 1
+
+    def test_project_flag_scopes_analysis_to_one_project(self, usage_stats):
+        analysis = usage_stats.analyze_corpus(
+            self._slash_corpus(), project_filter="agentera"
+        )
+        assert analysis.project_filter == "agentera"
+        # Only the realisera invocation from agentera should remain.
+        assert [inv.skill for inv in analysis.invocations] == ["realisera"]
+        assert set(analysis.skills) == {"realisera"}
+        # Per-project breakdown is intentionally empty when filtered: the
+        # global ``skills`` dict already represents the single project.
+        assert analysis.per_project == {}

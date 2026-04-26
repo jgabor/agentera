@@ -46,7 +46,7 @@ A single self-contained script consumes the Section 21 corpus and produces three
 ### Task 2: Classify trigger phrasing and scope output
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN an invocation whose preceding user turn carries a slash-command signature WHEN classification runs THEN the invocation is tagged as slash-triggered.
 ▸ GIVEN an invocation whose preceding user turn lacks a slash-command signature WHEN classification runs THEN the invocation is tagged as natural-language triggered.
@@ -105,3 +105,4 @@ A single self-contained script consumes the Section 21 corpus and produces three
 
 - Task 1 dispatch: the realisera subagent worktree branched before the planera write was committed, so it saw the prior marketplace plan still resident, archived it under a different filename, and authored its own version of this plan. Conductor reconciled by keeping the planera-authored PLAN.md and pulling the script, tests, conftest, CHANGELOG, and PROGRESS.md cycle 163 from the subagent's commit. Implication for Tasks 2-6: dispatch from the main tree (not a worktree) so the dispatched skill sees the live plan, OR commit plan changes before dispatching.
 - Task 1 design choice: same-skill pairing is LIFO so nested invocations of the same skill match correctly (intro_a, intro_b, exit_b, exit_a). For purely sequential invocations LIFO and FIFO produce identical output, so the acceptance-criteria phrasing "in order of appearance" remains satisfied.
+- Task 2 ripple: extending the per-skill bucket shape with `trigger_slash` / `trigger_natural` counters broke the Task 1 `test_user_quoted_markers_are_ignored` exact-dict assertion. Loosened it to assert only the totals/pairing fields (the original invariant), preserving the test's intent. Task 3 should expect the same shape extension when adding output surfaces.
