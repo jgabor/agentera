@@ -215,9 +215,14 @@ def _validate_opencode_package(root: Path = REPO_ROOT) -> list[str]:
     if command_names != expected:
         errors.append("opencode command templates must match skills/*/SKILL.md")
 
-    for hook in ('"session.created"', '"tool.execute.after"', '"session.idle"'):
+    # Real `@opencode-ai/plugin` Hooks interface members. `session.created` and
+    # `session.idle` were phantom keys in the legacy plugin and never fired.
+    for hook in ('"shell.env"', '"tool.execute.after"'):
         if hook not in plugin_text:
             errors.append(f"opencode plugin missing {hook} hook")
+    for phantom in ('"session.created"', '"session.idle"'):
+        if phantom in plugin_text:
+            errors.append(f"opencode plugin must not register phantom hook {phantom}")
 
     for name in expected:
         command_path = root / ".opencode/commands" / f"{name}.md"
@@ -483,7 +488,44 @@ class TestLegacyRuntimeCompatibility:
         )
         (root / ".opencode/package.json").write_text(json.dumps({"type": "module"}), encoding="utf-8")
         (root / ".opencode/plugins/agentera.js").write_text(
-            'export const AGENTERA_VERSION = "1.18.0";\n  "hej": `\n"session.created"\n"tool.execute.after"\n"session.idle"\n',
+            'export const AGENTERA_VERSION = "1.18.0";\n  "hej": `\n"shell.env"\n"tool.execute.after"\n',
             encoding="utf-8",
         )
         assert "opencode.hej: missing command file" in _validate_opencode_package(root)
+
+    def test_opencode_package_fails_on_phantom_hook_regression(self, tmp_path):
+        """Phantom hooks (`session.created`, `session.idle`) must not reappear.
+
+        Verified against `@opencode-ai/plugin` Hooks interface in
+        `.opencode/node_modules/@opencode-ai/plugin/dist/index.d.ts` lines 142-268;
+        neither key exists, so registering against them is a silent no-op.
+        """
+        plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
+        assert '"session.created"' not in plugin_text
+        assert '"session.idle"' not in plugin_text
+        assert '"shell.env"' in plugin_text
+        assert '"tool.execute.after"' in plugin_text
+
+        root = tmp_path / "repo"
+        commands_dir = root / ".opencode/commands"
+        commands_dir.mkdir(parents=True)
+        (root / ".opencode/plugins").mkdir(parents=True)
+        (root / "skills/hej").mkdir(parents=True)
+        (root / "skills/hej/SKILL.md").write_text("# hej\n", encoding="utf-8")
+        (commands_dir / "hej.md").write_text(
+            "---\nagentera_managed: true\n---\nLoad and execute the hej skill\n",
+            encoding="utf-8",
+        )
+        (root / "registry.json").write_text(
+            json.dumps({"skills": [{"name": "hej", "version": "1.18.0"}]}), encoding="utf-8"
+        )
+        (root / ".opencode/package.json").write_text(json.dumps({"type": "module"}), encoding="utf-8")
+        # Regression fixture re-registers the phantom keys; validator must catch it.
+        (root / ".opencode/plugins/agentera.js").write_text(
+            'export const AGENTERA_VERSION = "1.18.0";\n  "hej": `\n'
+            '"session.created"\n"session.idle"\n"shell.env"\n"tool.execute.after"\n',
+            encoding="utf-8",
+        )
+        errors = _validate_opencode_package(root)
+        assert any('"session.created"' in err and "phantom" in err for err in errors)
+        assert any('"session.idle"' in err and "phantom" in err for err in errors)

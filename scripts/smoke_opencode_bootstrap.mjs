@@ -1,4 +1,5 @@
-// Smoke test for agentera.js bootstrapCommands()
+// Smoke test for agentera.js: bootstrapCommands() at plugin init,
+// lifecycle counter behavior, and shell.env injection (3 branches).
 // Run from the repo root: node scripts/smoke_opencode_bootstrap.mjs
 
 import fs from "fs";
@@ -13,6 +14,7 @@ let tmpdir = null;
 const originalHome = process.env.HOME;
 const originalAgenteraHome = process.env.AGENTERA_HOME;
 const originalOpencodeConfigDir = process.env.OPENCODE_CONFIG_DIR;
+const originalProfileDir = process.env.PROFILERA_PROFILE_DIR;
 
 function fail(reason) {
   console.error(`FAIL: ${reason}`);
@@ -28,9 +30,18 @@ try {
   process.env.OPENCODE_CONFIG_DIR = tmpdir;
   process.env.HOME = tmpdir;
   delete process.env.AGENTERA_HOME;
+  delete process.env.PROFILERA_PROFILE_DIR;
 
-  const { bootstrapCommands, COMMAND_TEMPLATES, AGENTERA_VERSION, hasManagedMarker, resolveAgenteraHome, resolveOpencodeCommandsDir } =
-    await import(PLUGIN_PATH);
+  const {
+    Agentera,
+    bootstrapCommands,
+    COMMAND_TEMPLATES,
+    AGENTERA_VERSION,
+    hasManagedMarker,
+    resolveAgenteraHome,
+    resolveOpencodeCommandsDir,
+    lifecycle,
+  } = await import(PLUGIN_PATH);
 
   const commandNames = Object.keys(COMMAND_TEMPLATES);
   const commandsDir = resolveOpencodeCommandsDir();
@@ -45,7 +56,7 @@ try {
     "resolveAgenteraHome should honor ~/.agents/agentera before legacy skills path"
   );
 
-  // --- Test 1: Basic bootstrap ---
+  // --- Test 1: Basic bootstrap (call directly, as legacy smoke did) ---
   bootstrapCommands();
 
   assert(fs.existsSync(commandsDir), "commands dir should exist after bootstrap");
@@ -70,13 +81,11 @@ try {
   // --- Test 2: No-op on re-run with same version ---
   const hejPath = path.join(commandsDir, "hej.md");
   const hejContentBefore = fs.readFileSync(hejPath, "utf8");
-  // Touch the file to change mtime — bootstrap should be a no-op
   bootstrapCommands();
   const hejContentAfter = fs.readFileSync(hejPath, "utf8");
   assert(hejContentBefore === hejContentAfter, "re-run with same version should be no-op (hej.md unchanged)");
 
   // --- Test 3: Collision test (user-owned file without managed marker) ---
-  // Remove marker to force re-run
   fs.unlinkSync(markerFile);
   const userContent = "---\ndescription: my custom hej\n---\nMy custom hej command.\n";
   fs.writeFileSync(hejPath, userContent);
@@ -89,7 +98,6 @@ try {
     "user-owned hej.md (no managed marker) should NOT be overwritten"
   );
 
-  // All other 11 commands should have been refreshed (marker absent means bootstrap ran)
   for (const name of commandNames) {
     if (name === "hej") continue;
     const filePath = path.join(commandsDir, `${name}.md`);
@@ -99,7 +107,6 @@ try {
     );
   }
 
-  // Marker should now be written again
   assert(
     fs.readFileSync(markerFile, "utf8").trim() === AGENTERA_VERSION,
     ".agentera-version should be refreshed after collision-test run"
@@ -107,7 +114,6 @@ try {
 
   // --- Test 4: Upgrade test (older version triggers refresh) ---
   fs.writeFileSync(markerFile, "0.0.0");
-  // Overwrite visionera.md with managed content to confirm it gets refreshed
   const visioneraPath = path.join(commandsDir, "visionera.md");
   const staleContent = COMMAND_TEMPLATES["visionera"].replace(
     "Create or refine the project vision",
@@ -130,10 +136,109 @@ try {
     "visionera.md should be refreshed to current managed content after upgrade"
   );
 
-  // hej.md (user-owned) should still be user content
   assert(
     fs.readFileSync(hejPath, "utf8") === userContent,
     "user-owned hej.md should remain untouched after upgrade run"
+  );
+
+  // --- Test 5: Bootstrap-at-init via the Agentera plugin function ---
+  // Wipe the commands dir to confirm calling Agentera() rebuilds it without
+  // any explicit bootstrapCommands() call from the harness.
+  fs.rmSync(commandsDir, { recursive: true, force: true });
+  const lifecycleCountBefore = lifecycle.initCount;
+  const hooks1 = await Agentera({}, {});
+  assert(typeof hooks1 === "object" && hooks1 !== null, "Agentera() must return a Hooks object");
+  assert(lifecycle.initCount === lifecycleCountBefore + 1, "lifecycle.initCount should increment once per Agentera() call");
+  assert(typeof lifecycle.lastInitAt === "string", "lifecycle.lastInitAt should be set");
+  assert(fs.existsSync(commandsDir), "commands dir should be recreated by Agentera() init");
+  for (const name of commandNames) {
+    assert(
+      fs.existsSync(path.join(commandsDir, `${name}.md`)),
+      `${name}.md should exist after Agentera() init`
+    );
+  }
+  assert(
+    fs.readFileSync(markerFile, "utf8").trim() === AGENTERA_VERSION,
+    ".agentera-version should match AGENTERA_VERSION after Agentera() init"
+  );
+
+  // --- Test 6: Hook surface (real OpenCode interface keys only) ---
+  const hookKeys = Object.keys(hooks1).sort();
+  assert(
+    hookKeys.includes("shell.env"),
+    `Agentera() return must include shell.env hook (got: ${hookKeys.join(", ")})`
+  );
+  assert(
+    hookKeys.includes("tool.execute.after"),
+    `Agentera() return must include tool.execute.after hook (got: ${hookKeys.join(", ")})`
+  );
+  assert(
+    !hookKeys.includes("session.created"),
+    "Agentera() return must NOT include phantom session.created hook"
+  );
+  assert(
+    !hookKeys.includes("session.idle"),
+    "Agentera() return must NOT include phantom session.idle hook"
+  );
+
+  // --- Test 7: shell.env injection — discoverable branch ---
+  // Documented install root exists at ~/.agents/agentera (from Test 0).
+  delete process.env.AGENTERA_HOME;
+  const hooksDiscoverable = await Agentera({}, {});
+  const envOut1 = { env: {} };
+  await hooksDiscoverable["shell.env"]({ cwd: tmpdir }, envOut1);
+  assert(
+    envOut1.env.AGENTERA_HOME === documentedRoot,
+    `shell.env should inject documented install root, got ${envOut1.env.AGENTERA_HOME}`
+  );
+
+  // --- Test 8: shell.env injection — not-discoverable branch ---
+  // Move the marker script away so resolveAgenteraHome returns null.
+  const stagedScript = path.join(documentedRoot, "scripts", "validate_spec.py");
+  const parkedScript = path.join(tmpdir, "_parked_validate_spec.py");
+  fs.renameSync(stagedScript, parkedScript);
+  delete process.env.AGENTERA_HOME;
+  const hooksMissing = await Agentera({}, {});
+  const envOut2 = { env: {} };
+  await hooksMissing["shell.env"]({ cwd: tmpdir }, envOut2);
+  assert(
+    !("AGENTERA_HOME" in envOut2.env),
+    "shell.env must leave AGENTERA_HOME unset (not empty string) when install root is not discoverable"
+  );
+  // Restore for subsequent assertions.
+  fs.renameSync(parkedScript, stagedScript);
+
+  // --- Test 9: shell.env injection — user pre-set branch (process env) ---
+  const userPreset = path.join(tmpdir, "user-chosen-root");
+  process.env.AGENTERA_HOME = userPreset;
+  const hooksPreset = await Agentera({}, {});
+  const envOut3 = { env: {} };
+  await hooksPreset["shell.env"]({ cwd: tmpdir }, envOut3);
+  assert(
+    !("AGENTERA_HOME" in envOut3.env),
+    "shell.env must not overwrite a pre-existing AGENTERA_HOME (process.env): user value already inherited downstream"
+  );
+  delete process.env.AGENTERA_HOME;
+
+  // --- Test 10: shell.env injection — pre-set branch (already in output env) ---
+  const hooksAlreadyMerged = await Agentera({}, {});
+  const envOut4 = { env: { AGENTERA_HOME: "/already/merged/by/opencode" } };
+  await hooksAlreadyMerged["shell.env"]({ cwd: tmpdir }, envOut4);
+  assert(
+    envOut4.env.AGENTERA_HOME === "/already/merged/by/opencode",
+    "shell.env must preserve a pre-merged AGENTERA_HOME value"
+  );
+
+  // --- Test 11: Lifecycle counter monotonicity ---
+  // initCount should now reflect every Agentera() call: Test 5, 7, 8, 9, 10.
+  // (At least 5 calls; exact value depends on Test 5 baseline.)
+  assert(
+    lifecycle.initCount === lifecycleCountBefore + 5,
+    `lifecycle.initCount expected to be ${lifecycleCountBefore + 5}, got ${lifecycle.initCount}`
+  );
+  console.error(
+    `[smoke] lifecycle observation: Agentera() fired ${lifecycle.initCount - lifecycleCountBefore} time(s) ` +
+    `across this harness; last init at ${lifecycle.lastInitAt}`
   );
 
   console.log("PASS: all smoke checks passed");
@@ -144,6 +249,8 @@ try {
   else process.env.AGENTERA_HOME = originalAgenteraHome;
   if (originalOpencodeConfigDir === undefined) delete process.env.OPENCODE_CONFIG_DIR;
   else process.env.OPENCODE_CONFIG_DIR = originalOpencodeConfigDir;
+  if (originalProfileDir === undefined) delete process.env.PROFILERA_PROFILE_DIR;
+  else process.env.PROFILERA_PROFILE_DIR = originalProfileDir;
   if (tmpdir) {
     fs.rmSync(tmpdir, { recursive: true, force: true });
   }
