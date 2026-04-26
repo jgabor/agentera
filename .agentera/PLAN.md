@@ -68,7 +68,7 @@ The version bump follows the Cycle 167/173 pattern: every file in DOCS.md `versi
 ### Task 2: [feat] Copilot setup helper
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 
 - GIVEN a user whose `$SHELL` is `/bin/bash` with no `~/.bashrc` WHEN they run `python3 scripts/setup_copilot.py` THEN the helper creates `~/.bashrc` containing the marker comment `# agentera: AGENTERA_HOME (managed)` and `export AGENTERA_HOME=<install root>` on the next line
