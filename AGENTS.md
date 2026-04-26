@@ -77,7 +77,8 @@ The PostToolUse hook (`hooks/validate_artifact.py`) validates artifact writes in
 The linter can also be run manually from the repo root:
 
 ```bash
-python3 scripts/validate_spec.py
+python3 scripts/validate_spec.py                                # all 12 canonical skills
+python3 scripts/validate_spec.py --skill path/to/SKILL.md       # arbitrary skill (e.g. third-party authoring)
 ```
 
 ## Key conventions

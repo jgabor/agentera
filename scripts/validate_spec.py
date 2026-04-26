@@ -20,6 +20,7 @@ Run from repo root:
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import re
 import sys
@@ -1307,15 +1308,50 @@ def validate_skill(path: Path, r: Results, *, spec_hash: str) -> None:
     check_sentence_length(skill, text, r)
 
 
-def main() -> int:
+def _build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Validate SKILL.md files against SPEC.md. "
+            "Default: validates all 12 canonical skills under skills/. "
+            "Use --skill PATH (repeatable) to validate arbitrary SKILL.md "
+            "files, e.g. when authoring a third-party skill against the spec."
+        ),
+    )
+    parser.add_argument(
+        "--skill",
+        action="append",
+        dest="skills",
+        metavar="PATH",
+        help=(
+            "Path to a SKILL.md file to validate. May be repeated. "
+            "When omitted, all canonical skills under skills/*/SKILL.md are validated."
+        ),
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _build_arg_parser().parse_args(argv)
+
     repo_root = Path(__file__).resolve().parent.parent
-    skills_dir = repo_root / "skills"
     spec_path = repo_root / "SPEC.md"
 
-    skill_files = sorted(skills_dir.glob("*/SKILL.md"))
-    if not skill_files:
-        print("ERROR: No SKILL.md files found in skills/", file=sys.stderr)
-        return 1
+    if args.skills:
+        skill_files: list[Path] = []
+        for raw in args.skills:
+            path = Path(raw).resolve()
+            if not path.exists():
+                print(f"ERROR: SKILL.md not found: {raw}", file=sys.stderr)
+                return 1
+            skill_files.append(path)
+        header = "=== External Skill Validation ===\n"
+    else:
+        skills_dir = repo_root / "skills"
+        skill_files = sorted(skills_dir.glob("*/SKILL.md"))
+        if not skill_files:
+            print("ERROR: No SKILL.md files found in skills/", file=sys.stderr)
+            return 1
+        header = "=== Ecosystem Validation ===\n"
 
     # Compute spec hash for context-file-current checks.
     if spec_path.exists():
@@ -1325,7 +1361,7 @@ def main() -> int:
     else:
         spec_hash = ""
 
-    print(f"=== Ecosystem Validation ===\n")
+    print(header)
 
     r = Results()
     for path in skill_files:
