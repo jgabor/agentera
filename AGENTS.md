@@ -66,6 +66,17 @@ python3 scripts/eval_skills.py --skill realisera   # test one skill
 python3 scripts/eval_skills.py --parallel 3        # test all skills, 3 at a time
 ```
 
+The repo-level `scripts/usage_stats.py` reads the Section 21 corpus produced by `skills/profilera/scripts/extract_all.py` and reports per-skill invocation counts, exit-status pairings, and slash-vs-natural-language trigger splits. Default mode writes `USAGE.md` to the global agentera data directory (`~/.local/share/agentera/USAGE.md` on Linux, `~/Library/Application Support/agentera/USAGE.md` on macOS, `%APPDATA%/agentera/USAGE.md` on Windows) and prints a brief summary to stdout. Run from the repo root:
+
+```bash
+python3 scripts/usage_stats.py                          # write USAGE.md + stdout summary
+python3 scripts/usage_stats.py --project agentera       # scope to one project
+python3 scripts/usage_stats.py --corpus path/to/corpus.json  # override corpus location
+python3 scripts/usage_stats.py --json                   # emit full JSON to stdout, no file
+```
+
+The `AGENTERA_USAGE_DIR` env var overrides the output directory (mirrors `PROFILERA_PROFILE_DIR` for PROFILE.md). Both surfaces include the script's run-at timestamp and the corpus's extracted-at timestamp. Missing or empty corpus exits non-zero with the extractor command in the message.
+
 ## Ecosystem linter
 
 The PostToolUse hook (`hooks/validate_artifact.py`) validates artifact writes in real time. It runs automatically when Claude edits or writes files, routing to the appropriate validator:

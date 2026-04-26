@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-25 (Audit 11 freshness checkpoint) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-26 (Suite Usage Analytics Task 4) -->
 
 ## Conventions
 
@@ -40,6 +40,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | DESIGN.md | .agentera/DESIGN.md | visualisera |
 | SESSION.md | .agentera/SESSION.md | session stop hook |
 | PROFILE.md | $PROFILERA_PROFILE_DIR/PROFILE.md (default: $XDG_DATA_HOME/agentera/PROFILE.md) | profilera |
+| USAGE.md | $AGENTERA_USAGE_DIR/USAGE.md (default: $XDG_DATA_HOME/agentera/USAGE.md, sibling of PROFILE.md) | scripts/usage_stats.py |
 
 ## Index
 
@@ -65,6 +66,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Codex UI metadata | skills/&lt;name&gt;/agents/openai.yaml; agents/openai.yaml | 2026-04-24 | ■ current |
 | Hooks registry | hooks/hooks.json | 2026-04-03 | ■ current |
 | Lifecycle adapter validator | scripts/validate_lifecycle_adapters.py | 2026-04-23 | ■ current |
+| Usage analytics script | scripts/usage_stats.py | 2026-04-26 | ■ current |
 | SessionStart hook | hooks/session_start.py | 2026-04-03 | ■ current |
 | Session stop hook | hooks/session_stop.py | 2026-04-03 | ■ current |
 | Validation hook | hooks/validate_artifact.py | 2026-04-03 | ■ current |
@@ -81,6 +83,13 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Tests**: 359 tests across 13 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-26 (Suite Usage Analytics Task 4)
+
+- [gap] DOCS.md Artifact Mapping missing USAGE.md (new global artifact, sibling of PROFILE.md, produced by `scripts/usage_stats.py`) · warning (fixed)
+- [gap] DOCS.md Index missing `scripts/usage_stats.py` row · info (fixed)
+- [gap] README.md had no Scripts section listing repo-level utilities (`validate_spec.py`, `eval_skills.py`, `usage_stats.py`) · warning (fixed)
+- [gap] CLAUDE.md (symlink to AGENTS.md) Python scripts section did not list `scripts/usage_stats.py` · warning (fixed)
 
 ### 2026-04-25 (Copilot packaging fix)
 

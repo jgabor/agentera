@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 166 · 2026-04-26 09:30 · docs(usage): document scripts/usage_stats.py across README, DOCS.md, AGENTS.md
+
+**What**: Task 4 of the Suite Usage Analytics plan. Documented `scripts/usage_stats.py` in three places: added a `## Scripts` section to README.md listing all three repo-level utilities (`validate_spec.py`, `eval_skills.py`, `usage_stats.py`) with invocation, output paths, and flags; added USAGE.md to `.agentera/DOCS.md` Artifact Mapping (XDG default `$XDG_DATA_HOME/agentera/USAGE.md`, sibling of PROFILE.md, producer `scripts/usage_stats.py`) plus an Index row and an Audit Log entry; added a usage_stats.py paragraph to AGENTS.md (CLAUDE.md symlink) Python scripts section covering invocation, the four flags (`--corpus`, `--project`, `--json`, plus default mode), the `AGENTERA_USAGE_DIR` override, the platform-specific output paths, and the missing-corpus exit behavior.
+**Commit**: <pending>
+**Inspiration**: Existing AGENTS.md Python-scripts pattern (one paragraph + fenced bash block per script) and the existing DOCS.md Artifact Mapping shape ($VAR/path defaults with producer column) — kept the new entries DRY and consistent with what was already there. No external pattern needed.
+**Discovered**: README.md had no `## Scripts` section at all before this cycle (only Install, Runtime support, Getting started, How it works, Skills, and the State artifacts details block). Adding one means future repo-level utilities have a clear home; chose to list all three scripts (not just the new one) so the section is useful, not a one-row stub.
+**Verified**: N/A: docs-only.
+**Next**: Task 5 (apply DOCS.md `feat = minor` policy: bump every file in `version_files` from 1.18.1 to 1.19.0 covering both the validator entry point and `usage_stats.py`, promote CHANGELOG [Unreleased] to a 1.19.0 dated heading, and resolve the validator-bump TODO item). Then Task 6 closes the plan with a freshness checkpoint.
+**Context**: intent (document the new usage analytics script in README, DOCS.md, and CLAUDE.md per Task 4 acceptance) · constraints (no version bump, no script/test changes, single conventional commit, no push, do not invent capabilities the script does not have — no scheduled refresh, no friction scoring, no per-runtime breakdown beyond Task 2 output) · unknowns (none) · scope (`README.md`, `.agentera/DOCS.md`, `AGENTS.md`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
+
 ■ ## Cycle 165 · 2026-04-26 08:50 · feat(usage): emit USAGE.md, stdout summary, and JSON
 
 **What**: Task 3 of the Suite Usage Analytics plan. Wired the three output surfaces on top of the Task 1+2 pipeline: a markdown USAGE.md report written to the global agentera data dir (XDG sibling of PROFILE.md, overrideable via `AGENTERA_USAGE_DIR`), a brief 5-line stdout summary printed alongside it, and a `--json` mode that prints the full per-skill payload to stdout with no markdown side effect. Both surfaces carry `generated_at` (script run time, UTC ISO 8601) and `extracted_at` (corpus envelope timestamp). Missing or empty corpus exits 2 with a clear message naming `python3 skills/profilera/scripts/extract_all.py`.
