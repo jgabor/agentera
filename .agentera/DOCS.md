@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-26 (Suite Usage Analytics Task 4) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-26 (Cross-Runtime Portability Task 3) -->
 
 ## Conventions
 
@@ -61,8 +61,9 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
 | Registry | registry.json | 2026-04-13 | ■ current |
 | Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-13 | ■ current |
-| Copilot plugin manifest | plugin.json | 2026-04-25 | ■ current |
-| Codex plugin manifest | .codex-plugin/plugin.json | 2026-04-24 | ■ current |
+| Copilot plugin manifest | plugin.json | 2026-04-26 | ■ current |
+| Copilot repo plugin manifest | .github/plugin/plugin.json | 2026-04-26 | ■ current |
+| Codex plugin manifest | .codex-plugin/plugin.json | 2026-04-26 | ■ current |
 | Codex UI metadata | skills/&lt;name&gt;/agents/openai.yaml; agents/openai.yaml | 2026-04-24 | ■ current |
 | Hooks registry | hooks/hooks.json | 2026-04-03 | ■ current |
 | Lifecycle adapter validator | scripts/validate_lifecycle_adapters.py | 2026-04-23 | ■ current |
@@ -83,6 +84,12 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Tests**: 359 tests across 13 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-26 (Cross-Runtime Portability Task 3)
+
+- [gap] README.md alternative install methods lacked AGENTERA_HOME setup steps for Codex (`~/.codex/config.toml` `[shell_environment_policy]`) and Copilot (shell rc export); SPEC Section 7 mechanism table needed user-facing surface · warning (fixed)
+- [gap] .codex-plugin/plugin.json `codex.limitations` array did not flag the AGENTERA_HOME setup requirement · warning (fixed)
+- [gap] plugin.json (Copilot root) and .github/plugin/plugin.json descriptions did not flag the AGENTERA_HOME setup requirement · warning (fixed)
 
 ### 2026-04-26 (Suite Usage Analytics Task 4)
 

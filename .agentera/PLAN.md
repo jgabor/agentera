@@ -86,7 +86,7 @@ Dependencies: T1 -> {T2, T3} -> T4 -> T5 -> T6. T2 (OpenCode adapter) and T3 (Co
 ### Task 3: [docs] Codex and Copilot AGENTERA_HOME setup documentation
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN a Codex user reading README.md install instructions WHEN they reach the Codex section THEN they find an explicit setup step naming `~/.codex/config.toml` and showing the exact `[shell_environment_policy]` `set = { AGENTERA_HOME = "<plugin install root>" }` snippet, plus a one-line rationale citing Codex's official config reference
 ▸ GIVEN .codex-plugin/plugin.json WHEN read THEN the `codex.limitations` array contains an entry naming the AGENTERA_HOME setup requirement and pointing at README
