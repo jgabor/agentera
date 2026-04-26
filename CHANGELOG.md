@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+## [1.22.0] · 2026-04-26
+
+### Added
+
+- `scripts/smoke_live_hosts.py`: live-host AGENTERA_HOME inheritance and SKILL.md compaction smoke harness for Codex and Copilot. Default mode runs the profilera Codex collection audit and delegates to `scripts/smoke_setup_helpers.py` (no live CLI invocations, no cost). `--live` mode prints a one-line cost estimate and consent prompt, then issues exactly one `codex exec` and one `bash -c '...copilot -p ... --allow-all-tools'` invocation per runtime, each carrying a combined prompt that exercises both AGENTERA_HOME echo and `compact_artifact.py` execution, with snapshot/restore plus SHA256 round-trip on `~/.codex/config.toml` and shell rc files. Closes Audit 15 finding 2 ("Codex and Copilot live-host AGENTERA_HOME inheritance still untested").
+- README "Verify Codex AGENTERA_HOME by hand" and "Verify Copilot AGENTERA_HOME by hand" subsections: copy-pasteable bash one-liners that exercise both AGENTERA_HOME inheritance and the bash-fallback compaction-script resolution, for users without `--live` access (no auth, no API budget, behind a firewall).
+- README Scripts section now enumerates `scripts/smoke_live_hosts.py` alongside `validate_spec.py`, `eval_skills.py`, `usage_stats.py`, `setup_codex.py`, `setup_copilot.py`, and `smoke_setup_helpers.py`, naming default-mode and `--live` cost semantics and the gap closed.
+
+### Changed
+
+- `.codex-plugin/plugin.json` `requiredCapabilities[codex_session_corpus].status` flipped `degraded` → `ok` after the profilera Codex collection audit verified end-to-end record extraction (252 history_prompt records plus 1 project_config_signal record land in the corpus). Mirrored across `agents/openai.yaml` and `skills/profilera/agents/openai.yaml`. Companion limitation prose now describes accurate behavior without reusing the word "degraded" as a status label.
+- `scripts/validate_lifecycle_adapters.py` and `tests/test_runtime_adapters.py` accept `status` of either `ok` or `degraded` (back-compat preserved); explicit `status:` declaration is now required in YAML surfaces.
+- `.agentera/DOCS.md` Index gained a `Live-host smoke runner` row and a new Audit Log block listing the four (fixed) findings the README and DOCS surfaces resolved.
+
+### Note
+
+- The duplicate-source_id corpus failure surfaced during the Codex audit is unrelated to Codex (all 21 errors come from `claude-code/conversation_turn`); filed as TODO `[claude-code-extract-duplicate-source-ids]` and out of scope for this plan.
+
 ## [1.21.0] · 2026-04-26
 
 ### Added
