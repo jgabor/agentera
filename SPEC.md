@@ -135,7 +135,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | SESSION.md | Timestamped session bookmarks with artifact change tracking |
 | archive/ | Completed plans, superseded visions and designs |
 
-**PROFILE.md** is global. Profilera determines the platform-appropriate data directory: `$PROFILERA_PROFILE_DIR/PROFILE.md` (defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux, `~/Library/Application Support/agentera/PROFILE.md` on macOS, `%APPDATA%/agentera/PROFILE.md` on Windows). <!-- platform: profile-path --> Skills read it from the profilera-determined path directly.
+**PROFILE.md** is global. Profilera determines the platform-appropriate data directory: `$PROFILERA_PROFILE_DIR/PROFILE.md` (defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux, `~/Library/Application Support/agentera/PROFILE.md` on macOS, `%APPDATA%/agentera/PROFILE.md` on Windows). <!-- platform: profile-path --> Skills read it from the profilera-determined path directly. PROFILERA_PROFILE_DIR is the sibling of AGENTERA_HOME (Section 7): both are adapter-injected env vars. PROFILERA_PROFILE_DIR scopes to profile data; AGENTERA_HOME scopes to the install root that hosts the helper scripts skill prose invokes.
 
 ### Format contracts
 
@@ -362,7 +362,42 @@ Both patterns MUST include a fallback instruction:
 
 **Linter check**: Deterministic. Script invocation syntax, threshold values, fallback instruction presence.
 
-## 7. Cross-Skill Integration Section
+PROFILERA_PROFILE_DIR is the sibling of AGENTERA_HOME (Section 7): both are adapter-injected env vars, but they scope to different surfaces. PROFILERA_PROFILE_DIR names the profile data directory (where PROFILE.md lives); AGENTERA_HOME names the agentera install root (where helper scripts referenced by skill prose live).
+
+## 7. Install Root (AGENTERA_HOME)
+
+Skill prose carries cross-runtime helper script invocations (e.g., compaction scripts under `scripts/`). Those invocations must resolve identically across hosts. AGENTERA_HOME is the shared primitive that names the agentera install root: the directory containing `scripts/`, `hooks/`, `skills/`, and `SPEC.md`. With AGENTERA_HOME defined, a skill instruction like `python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py <spec> <path>` resolves the same way on every supported runtime.
+
+AGENTERA_HOME is the sibling of PROFILERA_PROFILE_DIR (Section 6, Profile Consumption; Section 4, Artifact Format Contracts): both are adapter-injected env vars. PROFILERA_PROFILE_DIR scopes to profile data; AGENTERA_HOME scopes to install-root helper scripts. Together they cover the two cross-runtime path surfaces the suite needs.
+
+### Scope
+
+The contract governs SKILL.md prose that references the install root from a shell-tool invocation. It does not govern adapter-internal config files (`hooks/hooks.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, root `plugin.json`). Those files are loaded by their host runtime directly and use whichever path token that runtime expects; they are per-runtime by design.
+
+### Adapter responsibility
+
+The host adapter sets AGENTERA_HOME in the agent's shell-tool environment so any `python3 ${AGENTERA_HOME:-...}/scripts/<name>.py` invocation resolves to the install root. Each runtime uses its native, documented mechanism for shell-tool environment injection; the adapter does not invent a custom layer. When the install root cannot be discovered, the adapter leaves AGENTERA_HOME unset rather than assigning an empty string, and pre-set user values are preserved.
+
+### Skill responsibility
+
+Skill prose references AGENTERA_HOME via the bash-fallback form `${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}` for any helper script under the install root. The fallback to `$CLAUDE_PLUGIN_ROOT` keeps Claude Code working without a Claude-side env-injection mechanism (Claude Code already sets `CLAUDE_PLUGIN_ROOT` to the plugin root). Skills do not embed bare `${CLAUDE_PLUGIN_ROOT}` references in prose: that form is host-specific and breaks on every other runtime.
+
+### Per-runtime mechanism
+
+Each supported runtime has one official, documented mechanism for injecting AGENTERA_HOME into the agent's shell-tool environment. Adapters use that mechanism; users may need to apply a host-level setup step where the runtime has no plugin-level env-injection API.
+
+| Runtime | Mechanism | Source |
+|---------|-----------|--------|
+| Claude Code | Bash fallback to `CLAUDE_PLUGIN_ROOT` (the env var Claude Code already sets at the plugin root). The form `${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}` resolves to AGENTERA_HOME when set and falls back to the existing Claude Code variable otherwise; no Claude-side adapter change is required. | Claude Code plugin docs: `${CLAUDE_PLUGIN_ROOT}` reference (see hooks-development guidance) |
+| OpenCode | `shell.env` plugin hook from `@opencode-ai/plugin`. The hook returns an environment fragment that OpenCode merges into every shell-tool subprocess; the adapter sets AGENTERA_HOME there at plugin load. | `@opencode-ai/plugin` Hooks interface (`dist/index.d.ts`, `shell.env` member) |
+| Codex | `~/.codex/config.toml` `[shell_environment_policy]` `set` table. Codex applies the policy to every shell-tool process; the user adds `set = { AGENTERA_HOME = "<install root>" }`. This is the runtime's native, non-experimental mechanism for shell-tool env propagation. | Codex config schema: `ShellEnvironmentPolicyToml` (`https://github.com/openai/codex/blob/main/codex-rs/core/config.schema.json`) and Codex config reference (`https://developers.openai.com/codex/config-reference`) |
+| Copilot | Shell rc export (`export AGENTERA_HOME=<install root>` in `~/.bashrc`, `~/.zshrc`, etc.). Copilot has no plugin-level env-injection API, so user-shell setup is the documented best practice; Copilot inherits the parent shell environment. | Copilot CLI plugin reference (`https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-plugin-reference`) and Copilot hooks reference (`https://docs.github.com/en/copilot/reference/hooks-configuration`) |
+
+The rows double as install guidance for adapter authors: each names the official mechanism and the source that documents it.
+
+**Linter check**: None at this revision. A future spec validator rule will warn on bare `${CLAUDE_PLUGIN_ROOT}` in SKILL.md prose; that rule is owned by a separate task and is not active in this revision.
+
+## 8. Cross-Skill Integration Section
 
 Every SKILL.md MUST contain a `## Cross-skill integration` section. Requirements:
 
@@ -391,7 +426,7 @@ The skill dependency graph defines which skills must be referenced:
 
 **Linter check**: Deterministic. Section heading presence, suite language match, required skill references present.
 
-## 8. Safety Rails Section
+## 9. Safety Rails Section
 
 Every SKILL.md MUST contain a `## Safety rails` section with:
 
@@ -403,7 +438,7 @@ Each constraint MUST begin with "NEVER" to clearly signal what the skill must no
 
 **Linter check**: Deterministic. Section heading, `<critical>` tag presence, minimum constraint count, "NEVER" prefix pattern.
 
-## 9. SKILL.md Frontmatter
+## 10. SKILL.md Frontmatter
 
 Every SKILL.md MUST begin with YAML frontmatter containing:
 
@@ -416,7 +451,7 @@ The description field serves as the skill's trigger specification. It MUST conta
 
 **Linter check**: Deterministic. Frontmatter presence, required field presence, name format (kebab-case).
 
-## 10. Exit Signals
+## 11. Exit Signals
 
 Every skill MUST report a completion status at the end of its workflow. This enables downstream skills, orchestration layers, and the user to determine what happened without parsing natural language.
 
@@ -446,7 +481,7 @@ Each SKILL.md MUST contain a `## Exit signals` section with:
 
 **Linter check**: Deterministic. `## Exit signals` heading presence, all four status terms present in the section content (`exit-signals`).
 
-## 11. Loop Guard
+## 12. Loop Guard
 
 Skills that run autonomous loops (currently: realisera, optimera, orkestrera) MUST include an escalation rule to prevent runaway cycles producing bad work.
 
@@ -486,7 +521,7 @@ Autonomous-loop skills MUST include loop guard language in their `## Exit signal
 
 **Linter check**: Deterministic. For skills in the autonomous-loop set (realisera, optimera, orkestrera), check that the `## Exit signals` section contains both "3" (the threshold) and a reference to PROGRESS.md, consecutive failure detection, or retry-based task failure patterns (`loop-guard`). Orkestrera uses retry/task-based patterns instead of PROGRESS.md. Advisory for all other skills.
 
-## 12. Visual Identity
+## 13. Visual Identity
 
 The suite has a shared visual vocabulary defined in DESIGN.md (the project-level visual identity, maintained by visualisera). This section defines the conventions that all SKILL.md files follow when formatting output and artifact content.
 
@@ -663,7 +698,7 @@ Rules:
 
 **Linter check**: Advisory. Presence of skill glyph in SKILL.md output format sections.
 
-## 13. Narration Voice
+## 14. Narration Voice
 
 Skills communicate with the user between structural markers, announcing modes, describing transitions, and narrating progress. This narration carries the suite's voice: the sharp colleague (VISION.md), not a system log.
 
@@ -718,7 +753,7 @@ The `✗`/`✓` contrast pairs make the register learnable: the `✗` line shows
 Skills with Step 0 mode detection (hej, visionera, profilera, visualisera, planera) MUST include contrast-pair narration examples at each mode announcement and routing transition point. Skills without mode detection inherit the principle for any ad-hoc narration; no SKILL.md changes required.
 Not deterministic because output format instructions vary by skill.
 
-## 14. Punctuation Conventions
+## 15. Punctuation Conventions
 
 All spec text (SKILL.md files, this document, templates, reference docs, agent output) follows a shared punctuation standard to keep prose scannable and consistent.
 
@@ -731,7 +766,7 @@ All spec text (SKILL.md files, this document, templates, reference docs, agent o
 
 **Linter check**: Deterministic. Regex for the em-dash character (U+2014) in SKILL.md files.
 
-## 15. Line-Break Conventions
+## 16. Line-Break Conventions
 
 Prose paragraphs in spec and skill text are single lines. The terminal handles wrapping; hard wraps at arbitrary column widths create noisy diffs and complicate search.
 
@@ -742,7 +777,7 @@ Prose paragraphs in spec and skill text are single lines. The terminal handles w
 
 **Linter check**: Advisory. Consecutive non-blank prose lines outside structured content (code blocks, lists, tables, frontmatter, headings).
 
-## 16. Test Proportionality
+## 17. Test Proportionality
 
 Plans that include test tasks must specify a proportionality target so that test volume stays aligned with the complexity of the code under test. Without a constraint, autonomous agents tend to over-produce tests (3-7 per function) when fewer would cover the critical paths.
 
@@ -774,7 +809,7 @@ Plans can specify a different proportionality target by including an explicit ra
 
 **Linter check**: None. This convention governs plan content and audit evaluation, not SKILL.md structure.
 
-## 17. Phase Tracking
+## 18. Phase Tracking
 
 Every realisera cycle operates in one of five phases. Phases map the suite's skills to a lifecycle model, making it possible for consuming skills to reason about what kind of work a cycle performed and whether phase transitions follow a coherent sequence.
 
@@ -819,7 +854,7 @@ Consuming skills use the phase field for trend analysis (e.g., ratio of build to
 
 **Linter check**: None. Phase tracking is defined here for producing and consuming skills. SKILL.md integration is handled per-skill, not by the spec linter.
 
-## 18. Staleness Detection
+## 19. Staleness Detection
 
 Stale artifacts mislead routing decisions and cause skills to act on outdated context. This section defines how staleness is detected and which artifacts each skill is expected to update.
 
@@ -866,11 +901,11 @@ The fallback is advisory, not authoritative. It surfaces artifacts that may need
 
 **Linter check**: None. Staleness detection is a runtime convention consumed by orkestrera and inspektera, not a SKILL.md structural requirement.
 
-## 19. Reality Verification Gate
+## 20. Reality Verification Gate
 
 Passing tests are necessary but not sufficient evidence that a cycle's work is real. A feature can be structurally correct (tests green, build clean, lint clean) and still be behaviorally broken against real project state: stale fixtures, mocked dependencies, or test doubles can hide regressions that only surface when the primary entrypoint runs against production-shaped inputs. The Reality Verification Gate closes this gap by requiring every cycle to observe its own behavior before declaring completion.
 
-This gate is orthogonal to Section 18 Staleness Detection. Section 18 asks: did the dispatched skill update the artifacts it owns? Section 19 asks: did the cycle's new behavior actually run against real state? The two gates enforce different invariants and must both hold for a cycle to be considered verified.
+This gate is orthogonal to Section 19 Staleness Detection. Section 19 asks: did the dispatched skill update the artifacts it owns? Section 20 asks: did the cycle's new behavior actually run against real state? The two gates enforce different invariants and must both hold for a cycle to be considered verified.
 
 ### Evidence format
 
@@ -907,7 +942,7 @@ A cycle that bundles runnable work with an N/A-tagged change still requires obse
 | CLI tool | Invoke the binary with realistic arguments that exercise the changed path, capturing stdout/stderr and exit code |
 | Library / SDK | Run a smoke driver (a short script or REPL session) that exercises the public API surface touched by the change |
 | Web service | Send a request to a production-shaped endpoint (local server with production configuration or a staging instance) and record the response |
-| Skill repo | Dispatch the skill via the eval mechanism capability (Section 20) against a representative prompt and capture the observed skill output <!-- platform: eval-mechanism --> |
+| Skill repo | Dispatch the skill via the eval mechanism capability (Section 21) against a representative prompt and capture the observed skill output <!-- platform: eval-mechanism --> |
 | Design system | Render a representative component against the real design tokens and visually inspect (screenshot or DOM snapshot) against the expected output |
 | Data pipeline | Run the pipeline against a real input sample (not synthetic fixtures) and record the observed output or side effects |
 
@@ -928,13 +963,13 @@ The gate is enforced independently by two skills; each holds a different phase a
 | Skill | Role | Phase | What it enforces |
 |-------|------|-------|------------------|
 | realisera | Primary enforcer | Cycle close | Runs the primary entrypoint against real project state and writes the observed output into the cycle's `**Verified**` field. Blocks cycle completion if the field cannot be populated with observed output, an allowlisted tag, or a qualifying free-form rationale |
-| orkestrera | Secondary enforcer | Task evaluation | Reads the latest PROGRESS.md cycle entry for the dispatched task, confirms the `**Verified**` field is present and non-empty (artifact read only; no source code read), and extends its inspektera dispatch prompt to include the Section 19 evidence-format snippet so inspektera audits whether the recorded content corresponds to the task's acceptance criteria |
+| orkestrera | Secondary enforcer | Task evaluation | Reads the latest PROGRESS.md cycle entry for the dispatched task, confirms the `**Verified**` field is present and non-empty (artifact read only; no source code read), and extends its inspektera dispatch prompt to include the Section 20 evidence-format snippet so inspektera audits whether the recorded content corresponds to the task's acceptance criteria |
 
 Realisera holds the primary enforcement contract because it is the skill that actually produces cycle entries. Orkestrera holds a lighter presence-and-quality check because it reads artifacts but never touches code; the full content audit is delegated to inspektera via the dispatch prompt.
 
-**Linter check**: Deterministic. Realisera and orkestrera SKILL.md files must reference Section 19 by name and include the `**Verified**` field in any PROGRESS.md cycle format examples they carry.
+**Linter check**: Deterministic. Realisera and orkestrera SKILL.md files must reference Section 20 by name and include the `**Verified**` field in any PROGRESS.md cycle format examples they carry.
 
-## 20. Host Adapter Contract
+## 21. Host Adapter Contract
 
 This spec defines what the portable core of agentera expects from its runtime environment. The reference implementation is Claude Code; other runtimes implement the same contract in their own way. The contract below is the minimum host surface for portable skills and shared artifacts. It is not a blanket claim that every current skill is fully portable today.
 
@@ -969,7 +1004,7 @@ Portable core means the skill's behavioral contract travels with the artifact pr
 
 Some skills need host data that is not part of the core runtime surface. The clearest example is profilera: it does not just read PROFILE.md, it mines host session history, memories, and conversation traces to produce that artifact. The extraction corpus is Claude-specific in the reference implementation.
 
-Section 21 (Session Corpus Contract) defines the normalized data model for this corpus. Once a host adapter implements corpus extraction producing the Section 21 record types, profilera's portability status moves from host-specific extension to capability-gated. Until the adapter provides the corpus, profilera remains host-specific on that runtime.
+Section 22 (Session Corpus Contract) defines the normalized data model for this corpus. Once a host adapter implements corpus extraction producing the Section 22 record types, profilera's portability status moves from host-specific extension to capability-gated. Until the adapter provides the corpus, profilera remains host-specific on that runtime.
 
 ### Annotation convention
 
@@ -1000,7 +1035,7 @@ Deterministic. The linter validates two properties:
 
 Annotations on references that have no corresponding capability (e.g., a comment referencing a nonexistent capability) produce a linter error.
 
-## 21. Session Corpus Contract
+## 22. Session Corpus Contract
 
 Profilera mines decision patterns from host session data to produce PROFILE.md. The extraction currently depends on Claude Code's internal storage layout (JSONL files, memory directories, project-scoped configs). This section defines the normalized data model that any host adapter can produce, decoupling profilera's behavioral contract from a specific runtime's file layout.
 
@@ -1232,19 +1267,19 @@ This aggregation is additive: records from different runtimes coexist in the sam
 
 When no registered runtime is detected (all probes return false), the corpus builder produces no output and exits with an informative message. It does not produce an empty corpus file: an empty corpus has no consumers and would mask a configuration problem.
 
-### Relation to Section 20
+### Relation to Section 21
 
-Section 20 defines the six host adapter capabilities for the portable core. Section 21 defines the data contract that lifts profilera from a host-specific extension to a capability-gated skill. Once a host adapter implements corpus extraction that produces the normalized record types above, profilera can run on that runtime without depending on Claude Code's internal storage layout.
+Section 21 defines the six host adapter capabilities for the portable core. Section 22 defines the data contract that lifts profilera from a host-specific extension to a capability-gated skill. Once a host adapter implements corpus extraction that produces the normalized record types above, profilera can run on that runtime without depending on Claude Code's internal storage layout.
 
-Profilera's portability status in the Section 20 table moves from "Host-specific extension" to "Capability-gated" when the adapter provides the corpus. The contract itself (this section) is what enables that transition; the adapter is what implements it.
+Profilera's portability status in the Section 21 table moves from "Host-specific extension" to "Capability-gated" when the adapter provides the corpus. The contract itself (this section) is what enables that transition; the adapter is what implements it.
 
 **Linter check**: None. This section defines a runtime data contract for adapters, not a SKILL.md structural requirement. The existing linter checks for profilera's SKILL.md continue to apply independently.
 
-## 22. Pre-dispatch Commit Gate
+## 23. Pre-dispatch Commit Gate
 
 Git worktrees branch from HEAD (the last commit), not the working tree. When a dispatching skill writes artifacts during its orient or plan steps and then spawns a subagent in a worktree without committing, the subagent receives a stale snapshot missing those artifacts. The Pre-dispatch Commit Gate closes this gap by requiring a checkpoint commit before any `isolation: "worktree"` dispatch.
 
-This gate is the entry-side complement to Section 19 (Reality Verification Gate). Section 19 gates the exit from a cycle: did the work actually run against real state? Section 22 gates the entry to a worktree: does the subagent start from current state? The two gates enforce different invariants at different boundaries and must both hold for worktree-dispatched cycles.
+This gate is the entry-side complement to Section 20 (Reality Verification Gate). Section 20 gates the exit from a cycle: did the work actually run against real state? Section 23 gates the entry to a worktree: does the subagent start from current state? The two gates enforce different invariants at different boundaries and must both hold for worktree-dispatched cycles.
 
 ### Applicability
 
@@ -1316,20 +1351,20 @@ This rule applies to all commits produced by any skill: checkpoint commits, real
 
 **Linter check**: Deterministic. Regex for internal-reference patterns in commit message templates and guidance within SKILL.md files: `Task \d+`, `Cycle \d+`, `Decision \d+`, `Surprise #\d+`, `PLAN\.md`, `TODO\.md`, `PROGRESS` (as commit focus), `DECISIONS` (as commit focus).
 
-### Relation to Section 19
+### Relation to Section 20
 
 The two gates form a coherent pair bracketing the worktree lifecycle:
 
 | Gate | Section | Boundary | Question it answers |
 |------|---------|----------|---------------------|
-| Pre-dispatch Commit Gate | 22 | Entry: before worktree creation | Does the subagent start from current state? |
-| Reality Verification Gate | 19 | Exit: after implementation | Did the work actually run against real state? |
+| Pre-dispatch Commit Gate | 23 | Entry: before worktree creation | Does the subagent start from current state? |
+| Reality Verification Gate | 20 | Exit: after implementation | Did the work actually run against real state? |
 
-Both gates are mandatory for worktree-dispatched cycles. A cycle that passes Section 19 verification but skipped the Section 22 gate may have verified behavior built on stale context. A cycle that passes the Section 22 gate but skips Section 19 verification has current context but unverified output.
+Both gates are mandatory for worktree-dispatched cycles. A cycle that passes Section 20 verification but skipped the Section 23 gate may have verified behavior built on stale context. A cycle that passes the Section 23 gate but skips Section 20 verification has current context but unverified output.
 
 **Linter check**: None. This section defines a runtime convention for dispatching skills. Enforcement is per-skill: each dispatching skill's SKILL.md must include the gate procedure at its worktree dispatch point. The linter validates this through skill-specific checks, not a spec-level structural check.
 
-## 23. Artifact Writing Conventions
+## 24. Artifact Writing Conventions
 
 Artifacts are read by skills, not just humans. Every word costs tokens on every read. This section defines the shared vocabulary, tone, and structural rules that all skills follow when writing artifacts and SKILL.md content.
 
@@ -1393,14 +1428,14 @@ All artifacts follow these composition rules:
 Every SKILL.md MUST include a reference to this section in its workflow instructions when the skill produces artifacts. The canonical instruction:
 
 ```
-Artifact writing follows contract Section 23 (Artifact Writing Conventions):
+Artifact writing follows contract Section 24 (Artifact Writing Conventions):
 banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and
 lead-with-conclusion structure.
 ```
 
 This instruction appears in the skill's artifact-writing step (the step where the skill writes to PROGRESS.md, HEALTH.md, DECISIONS.md, or any other artifact).
 
-**Linter check**: Deterministic. All skills that produce artifacts (per the artifact format contracts table in Section 4) must contain a reference to "Section 23" or "Artifact Writing Conventions" in their SKILL.md.
+**Linter check**: Deterministic. All skills that produce artifacts (per the artifact format contracts table in Section 4) must contain a reference to "Section 24" or "Artifact Writing Conventions" in their SKILL.md.
 
 ### Tone register
 
@@ -1411,4 +1446,4 @@ The suite's voice is consistent across all artifacts:
 - **Concrete**: "circular import in auth/models.py:12" not "there seems to be a coupling issue".
 - **Forward-looking**: every entry ends with what to do next, not a recap of what was done.
 
-This register complements Section 13 (Narration Voice): Section 13 governs how skills talk to the user between structural markers; Section 23 governs what goes inside the artifacts themselves.
+This register complements Section 14 (Narration Voice): Section 14 governs how skills talk to the user between structural markers; Section 24 governs what goes inside the artifacts themselves.
