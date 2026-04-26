@@ -1,20 +1,26 @@
 """Suite usage analytics: detect skill invocations from a Section 21 corpus.
 
-Task 1 (committed) landed marker detection, conversation grouping, and
-intro/exit pairing. Task 2 (this file's current scope) layers two things
-on top:
+Task 1 landed marker detection, conversation grouping, and intro/exit
+pairing. Task 2 layered trigger classification (slash vs natural
+language) and project scoping. Task 3 (this file's current scope) wires
+the three output surfaces on top of that pipeline:
 
-1. **Trigger classification** — each invocation is tagged ``slash`` or
-   ``natural`` based on the user turn that immediately precedes the
-   introduction marker within the same conversation.
-2. **Project scoping** — a ``--project PATH`` flag scopes the analysis to
-   one project's records; without the flag the analysis spans every
-   project in the corpus and exposes a per-project breakdown alongside
-   the cross-project totals.
+1. **USAGE.md markdown report** — written to the global agentera data
+   directory (XDG default, sibling of PROFILE.md) when no ``--json``
+   flag is supplied. A brief multi-line summary is also printed to
+   stdout so the operator sees headline numbers without opening the
+   file.
+2. **JSON document** — when ``--json`` is supplied the full per-skill
+   data structure is printed to stdout and no markdown is written.
+3. **Missing-corpus error path** — if the corpus does not exist or
+   contains no ``conversation_turn`` records, the script exits with a
+   clear message naming the extractor command to run.
 
-Output surfaces (USAGE.md, stdout summary, --json) remain out of scope
-and belong to Task 3. The CLI extension here exists so tests can exercise
-the new behavior end-to-end.
+Both surfaces include the script's run-at timestamp and the corpus's
+``extracted_at`` timestamp so staleness is visible. Output path can be
+overridden for tests via the ``AGENTERA_USAGE_DIR`` env var (mirrors
+``PROFILERA_PROFILE_DIR``); the corpus path defaults to the standard
+``$PROFILERA_PROFILE_DIR/intermediate/corpus.json`` location.
 
 Marker format (per SPEC.md sections 5 + 12)::
 
@@ -27,20 +33,23 @@ introduction or an exit status (``complete``, ``flagged``, ``stuck``,
 
 Usage::
 
+    python3 scripts/usage_stats.py
     python3 scripts/usage_stats.py --corpus path/to/corpus.json
-    python3 scripts/usage_stats.py --corpus corpus.json --project agentera
+    python3 scripts/usage_stats.py --project agentera
+    python3 scripts/usage_stats.py --json
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
-from pprint import pprint
 from typing import Iterable
 
 # ---------------------------------------------------------------------------
@@ -509,27 +518,335 @@ def analyze_corpus(
 
 
 # ---------------------------------------------------------------------------
-# Minimal CLI (debug-only)
+# Output paths (XDG-default, mirrors PROFILE.md location)
+# ---------------------------------------------------------------------------
+#
+# USAGE.md sits next to PROFILE.md in the global agentera data directory so
+# cross-project usage aggregates naturally. The lookup mirrors the helper
+# in ``skills/profilera/scripts/extract_all.py`` so both files land in the
+# same directory: Linux honors ``$XDG_DATA_HOME``, macOS uses Application
+# Support, Windows uses ``%APPDATA%``. The ``AGENTERA_USAGE_DIR`` override
+# exists for tests (mirrors ``PROFILERA_PROFILE_DIR``); production callers
+# should not set it. The corpus path defaults to the same location's
+# ``intermediate/corpus.json`` because that is where ``extract_all.py``
+# writes its output.
+
+EXTRACTOR_COMMAND = "python3 skills/profilera/scripts/extract_all.py"
+
+
+def _default_usage_dir() -> Path:
+    """Platform-appropriate default usage directory.
+
+    Mirrors ``profilera._default_profile_dir`` so USAGE.md lands beside
+    PROFILE.md. Honors ``AGENTERA_USAGE_DIR`` first (for tests), then
+    ``PROFILERA_PROFILE_DIR`` (so an operator-overridden profile dir keeps
+    USAGE.md and PROFILE.md together), then platform defaults.
+    """
+    override = os.environ.get("AGENTERA_USAGE_DIR")
+    if override:
+        return Path(override)
+    profilera_override = os.environ.get("PROFILERA_PROFILE_DIR")
+    if profilera_override:
+        return Path(profilera_override)
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "agentera"
+    if sys.platform == "win32":
+        appdata = os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))
+        return Path(appdata) / "agentera"
+    xdg = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
+    return Path(xdg) / "agentera"
+
+
+def _default_corpus_path() -> Path:
+    """Default corpus.json location written by ``extract_all.py``."""
+    # Honor PROFILERA_PROFILE_DIR for the corpus location even when
+    # AGENTERA_USAGE_DIR is set, because the corpus is produced by
+    # profilera; the AGENTERA_USAGE_DIR override only relocates USAGE.md.
+    profilera_override = os.environ.get("PROFILERA_PROFILE_DIR")
+    if profilera_override:
+        return Path(profilera_override) / "intermediate" / "corpus.json"
+    if sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support" / "agentera"
+    elif sys.platform == "win32":
+        appdata = os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))
+        base = Path(appdata) / "agentera"
+    else:
+        xdg = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
+        base = Path(xdg) / "agentera"
+    return base / "intermediate" / "corpus.json"
+
+
+# ---------------------------------------------------------------------------
+# Corpus loading + missing-corpus error path
 # ---------------------------------------------------------------------------
 
 
-def _read_corpus(path: Path) -> dict:
+class CorpusUnavailable(RuntimeError):
+    """Raised when the corpus file is missing or has no conversation turns.
+
+    Carries a user-facing message that names the extractor command so the
+    operator can fix it in one step. The CLI catches this and exits 2 with
+    that message; tests catch it directly.
+    """
+
+
+def load_corpus_or_raise(path: Path) -> dict:
+    """Load ``corpus.json`` or raise ``CorpusUnavailable`` with guidance.
+
+    The corpus is unavailable in two distinct ways: the file may not exist
+    (extractor never ran) or it may exist but contain zero
+    ``conversation_turn`` records (no usable signal). Both conditions
+    raise the same exception type with a tailored message naming
+    ``EXTRACTOR_COMMAND`` so the operator sees the fix.
+    """
+    if not path.exists():
+        raise CorpusUnavailable(
+            f"corpus.json not found at {path}. Run the extractor first:\n"
+            f"  {EXTRACTOR_COMMAND}"
+        )
     with path.open("r", encoding="utf-8") as fh:
-        return json.load(fh)
+        corpus = json.load(fh)
+    records = corpus.get("records", []) if isinstance(corpus, dict) else []
+    if not any(
+        isinstance(r, dict) and r.get("source_kind") == "conversation_turn"
+        for r in records
+    ):
+        raise CorpusUnavailable(
+            f"corpus at {path} contains no conversation_turn records. "
+            f"Re-run the extractor:\n  {EXTRACTOR_COMMAND}"
+        )
+    return corpus
+
+
+# ---------------------------------------------------------------------------
+# Output surface: JSON
+# ---------------------------------------------------------------------------
+
+
+def build_json_payload(
+    analysis: CorpusAnalysis, *, generated_at: str, extracted_at: str | None
+) -> dict:
+    """Shape the analysis as a JSON-serializable dict.
+
+    Both timestamps live at the top level so consumers see freshness
+    without parsing nested structures. ``generated_at`` is the script's
+    run time; ``extracted_at`` is the corpus envelope timestamp (None
+    when the corpus envelope omits it, which is unusual).
+    """
+    return {
+        "generated_at": generated_at,
+        "extracted_at": extracted_at,
+        "project_filter": analysis.project_filter,
+        "skills": analysis.skills,
+        "per_project": analysis.per_project,
+        "invocations": [vars(inv) for inv in analysis.invocations],
+    }
+
+
+def render_json(
+    analysis: CorpusAnalysis, *, generated_at: str, extracted_at: str | None
+) -> str:
+    """Render the JSON payload as a pretty-printed string."""
+    return json.dumps(
+        build_json_payload(
+            analysis, generated_at=generated_at, extracted_at=extracted_at
+        ),
+        indent=2,
+        sort_keys=False,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Output surface: markdown report
+# ---------------------------------------------------------------------------
+
+
+def _exit_status_counts(analysis: CorpusAnalysis, skill: str) -> dict[str, int]:
+    """Aggregate completed invocations by exit status for one skill."""
+    counts: dict[str, int] = {status: 0 for status in sorted(EXIT_STATUSES)}
+    for inv in analysis.invocations:
+        if inv.skill != skill or not inv.completed or inv.exit_status is None:
+            continue
+        counts[inv.exit_status] = counts.get(inv.exit_status, 0) + 1
+    return counts
+
+
+def _last_seen(analysis: CorpusAnalysis, skill: str) -> str:
+    """Latest intro_timestamp seen for the skill, or '-' when none."""
+    timestamps = [
+        inv.intro_timestamp for inv in analysis.invocations if inv.skill == skill
+    ]
+    return max(timestamps) if timestamps else "-"
+
+
+def render_markdown(
+    analysis: CorpusAnalysis, *, generated_at: str, extracted_at: str | None
+) -> str:
+    """Render a human-scannable USAGE.md report.
+
+    Layout: header carrying both timestamps + scope, then a per-skill
+    table with invocations, completed-by-status counts, incomplete count,
+    slash count, natural-language count, and last-seen timestamp. Skills
+    sort by total invocations descending so the most-used skill is first.
+    """
+    scope = analysis.project_filter or "all projects"
+    extracted_line = extracted_at or "unknown (corpus omitted extracted_at)"
+
+    lines: list[str] = []
+    lines.append("# Suite Usage")
+    lines.append("")
+    lines.append(f"- Generated: {generated_at}")
+    lines.append(f"- Corpus extracted: {extracted_line}")
+    lines.append(f"- Scope: {scope}")
+    lines.append("")
+
+    if not analysis.skills:
+        lines.append("No skill invocations found in the corpus for this scope.")
+        lines.append("")
+        return "\n".join(lines)
+
+    total_invocations = sum(b["total"] for b in analysis.skills.values())
+    total_completed = sum(b["completed"] for b in analysis.skills.values())
+    lines.append(
+        f"- Skills observed: {len(analysis.skills)} · "
+        f"Invocations: {total_invocations} · Completed: {total_completed}"
+    )
+    lines.append("")
+
+    # Per-skill table. Status columns use the four allowlisted exit values
+    # plus an incomplete column; trigger columns split slash vs NL.
+    statuses = sorted(EXIT_STATUSES)
+    header_cols = (
+        ["Skill", "Invocations"]
+        + [s.capitalize() for s in statuses]
+        + ["Incomplete", "Slash", "Natural", "Last seen"]
+    )
+    lines.append("| " + " | ".join(header_cols) + " |")
+    lines.append("| " + " | ".join("---" for _ in header_cols) + " |")
+
+    skill_order = sorted(
+        analysis.skills.items(), key=lambda kv: (-kv[1]["total"], kv[0])
+    )
+    for skill, bucket in skill_order:
+        status_counts = _exit_status_counts(analysis, skill)
+        row = [
+            skill,
+            str(bucket["total"]),
+            *[str(status_counts[s]) for s in statuses],
+            str(bucket["incomplete"]),
+            str(bucket["trigger_slash"]),
+            str(bucket["trigger_natural"]),
+            _last_seen(analysis, skill),
+        ]
+        lines.append("| " + " | ".join(row) + " |")
+
+    # Per-project breakdown only present in cross-project mode (Task 2).
+    if analysis.project_filter is None and analysis.per_project:
+        lines.append("")
+        lines.append("## Per-project totals")
+        lines.append("")
+        lines.append("| Project | Skill | Invocations | Completed | Incomplete |")
+        lines.append("| --- | --- | --- | --- | --- |")
+        for pid in sorted(analysis.per_project):
+            for skill in sorted(analysis.per_project[pid]):
+                b = analysis.per_project[pid][skill]
+                lines.append(
+                    f"| {pid} | {skill} | {b['total']} | "
+                    f"{b['completed']} | {b['incomplete']} |"
+                )
+        lines.append("")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def write_markdown(
+    analysis: CorpusAnalysis,
+    *,
+    generated_at: str,
+    extracted_at: str | None,
+    output_dir: Path,
+) -> Path:
+    """Write USAGE.md to ``output_dir`` and return the resolved path."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    out_path = output_dir / "USAGE.md"
+    out_path.write_text(
+        render_markdown(
+            analysis, generated_at=generated_at, extracted_at=extracted_at
+        ),
+        encoding="utf-8",
+    )
+    return out_path
+
+
+# ---------------------------------------------------------------------------
+# Output surface: stdout summary
+# ---------------------------------------------------------------------------
+
+
+def render_stdout_summary(
+    analysis: CorpusAnalysis,
+    *,
+    generated_at: str,
+    extracted_at: str | None,
+    report_path: Path,
+) -> str:
+    """Brief multi-line summary printed to stdout in default mode.
+
+    Three to six lines: scope, skills observed, total invocations,
+    completion rate, where the full report was written, and a freshness
+    line carrying both timestamps.
+    """
+    total = sum(b["total"] for b in analysis.skills.values())
+    completed = sum(b["completed"] for b in analysis.skills.values())
+    rate = f"{(completed / total * 100):.0f}%" if total else "n/a"
+    scope = analysis.project_filter or "all projects"
+    extracted_line = extracted_at or "unknown"
+    return "\n".join(
+        [
+            f"Suite usage · scope: {scope}",
+            f"Skills observed: {len(analysis.skills)}",
+            f"Invocations: {total} · completed: {completed} ({rate})",
+            f"Report: {report_path}",
+            f"Run-at: {generated_at} · Corpus extracted-at: {extracted_line}",
+        ]
+    )
+
+
+# ---------------------------------------------------------------------------
+# Timestamp helper
+# ---------------------------------------------------------------------------
+
+
+def _now_iso() -> str:
+    """ISO 8601 UTC timestamp for the script's run-at field."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="usage_stats",
-        description="Detect skill invocations, pair them with exit signals, "
-                    "and classify trigger phrasing (Tasks 1 + 2 pipeline; "
-                    "USAGE.md / stdout / JSON surfaces land in Task 3).",
+        description=(
+            "Detect skill invocations across the Section 21 corpus and emit "
+            "a USAGE.md report (default) or a JSON document (--json). Both "
+            "surfaces include slash-vs-NL trigger counts, completed-by-status "
+            "tallies, and the corpus extracted-at timestamp."
+        ),
     )
     parser.add_argument(
         "--corpus",
         type=Path,
-        required=True,
-        help="Path to a Section 21 corpus.json envelope.",
+        default=None,
+        help=(
+            "Path to a Section 21 corpus.json envelope. Defaults to the "
+            "standard profilera location "
+            "($PROFILERA_PROFILE_DIR/intermediate/corpus.json or the "
+            "platform XDG default)."
+        ),
     )
     parser.add_argument(
         "--project",
@@ -542,18 +859,55 @@ def main(argv: list[str] | None = None) -> int:
             "Default: cross-project analysis with a per-project breakdown."
         ),
     )
+    parser.add_argument(
+        "--json",
+        dest="emit_json",
+        action="store_true",
+        help=(
+            "Emit the full per-skill data structure as JSON on stdout and "
+            "do NOT write USAGE.md. Default: write USAGE.md and print a "
+            "brief multi-line summary to stdout."
+        ),
+    )
     args = parser.parse_args(argv)
-    corpus = _read_corpus(args.corpus)
+
+    corpus_path = args.corpus or _default_corpus_path()
+    try:
+        corpus = load_corpus_or_raise(corpus_path)
+    except CorpusUnavailable as err:
+        print(str(err), file=sys.stderr)
+        return 2
+
     analysis = analyze_corpus(corpus, project_filter=args.project)
-    pprint(
-        {
-            "project_filter": analysis.project_filter,
-            "skills": analysis.skills,
-            "per_project": analysis.per_project,
-            "invocations": [vars(inv) for inv in analysis.invocations],
-        },
-        stream=sys.stdout,
-        sort_dicts=False,
+    generated_at = _now_iso()
+    extracted_at = (
+        corpus.get("metadata", {}).get("extracted_at")
+        if isinstance(corpus, dict)
+        else None
+    )
+
+    if args.emit_json:
+        print(
+            render_json(
+                analysis, generated_at=generated_at, extracted_at=extracted_at
+            )
+        )
+        return 0
+
+    output_dir = _default_usage_dir()
+    out_path = write_markdown(
+        analysis,
+        generated_at=generated_at,
+        extracted_at=extracted_at,
+        output_dir=output_dir,
+    )
+    print(
+        render_stdout_summary(
+            analysis,
+            generated_at=generated_at,
+            extracted_at=extracted_at,
+            report_path=out_path,
+        )
     )
     return 0
 

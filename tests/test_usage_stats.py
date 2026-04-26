@@ -6,6 +6,8 @@ Test budget per the Suite Usage Analytics plan:
   - Task 2: 1 pass + 1 fail per testable unit. The slash classifier
     qualifies for edge expansion (Claude Code XML form, Claude Code bare
     form, OpenCode bare form).
+  - Task 3: 1 pass + 1 fail per testable unit (markdown writer, stdout
+    summarizer, JSON emitter, missing-corpus error path).
 
 Testable units:
   - find_markers (marker detector + exit-signal classification) - Task 1
@@ -14,9 +16,16 @@ Testable units:
   - pair_invocations (pairing walker) - Task 1
   - classify_trigger (slash-vs-NL classifier) - Task 2
   - filter_records_by_project (project filter) - Task 2
+  - render_markdown / write_markdown (markdown writer) - Task 3
+  - render_stdout_summary (stdout summarizer) - Task 3
+  - render_json (JSON emitter) - Task 3
+  - load_corpus_or_raise (missing-corpus error path) - Task 3
 """
 
 from __future__ import annotations
+
+import json
+from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
@@ -429,3 +438,346 @@ class TestAnalyzeCorpusTask2:
         # Per-project breakdown is intentionally empty when filtered: the
         # global ``skills`` dict already represents the single project.
         assert analysis.per_project == {}
+
+
+# ---------------------------------------------------------------------------
+# Task 3 fixtures: synthetic corpus + analysis builder
+# ---------------------------------------------------------------------------
+
+
+def _task3_corpus() -> dict:
+    """Two-skill corpus used across all Task 3 unit tests.
+
+    Conversation s1 (project agentera): user types '/realisera', the
+    assistant runs a cycle that completes. Conversation s2 (project
+    lira): user asks naturally, the assistant runs planera which goes
+    incomplete (no exit marker). Together this exercises every column the
+    markdown writer renders: completed-by-status, incomplete, slash, NL,
+    last-seen, and the per-project breakdown.
+    """
+    return {
+        "metadata": {"extracted_at": "2026-04-26T07:00:00Z"},
+        "records": [
+            _turn("s1", "2026-04-26T00:00:00Z", "user",
+                  "<command-name>/realisera</command-name>",
+                  project_id="agentera"),
+            _turn("s1", "2026-04-26T00:01:00Z", "assistant",
+                  _intro("⧉", "realisera", "cycle 1"),
+                  project_id="agentera"),
+            _turn("s1", "2026-04-26T00:02:00Z", "assistant",
+                  _exit("⧉", "realisera", "complete"),
+                  project_id="agentera"),
+            _turn("s2", "2026-04-26T01:00:00Z", "user",
+                  "please plan out the feature",
+                  project_id="lira"),
+            _turn("s2", "2026-04-26T01:01:00Z", "assistant",
+                  _intro("≡", "planera", "planning"),
+                  project_id="lira"),
+        ],
+    }
+
+
+def _task3_analysis(usage_stats):
+    return usage_stats.analyze_corpus(_task3_corpus())
+
+
+# ---------------------------------------------------------------------------
+# render_markdown / write_markdown (markdown writer) - Task 3
+# ---------------------------------------------------------------------------
+
+
+class TestMarkdownWriter:
+    def test_pass_renders_per_skill_rows_with_required_columns(self, usage_stats):
+        analysis = _task3_analysis(usage_stats)
+        md = usage_stats.render_markdown(
+            analysis,
+            generated_at="2026-04-26T08:00:00Z",
+            extracted_at="2026-04-26T07:00:00Z",
+        )
+        # Header carries both timestamps so staleness is visible.
+        assert "Generated: 2026-04-26T08:00:00Z" in md
+        assert "Corpus extracted: 2026-04-26T07:00:00Z" in md
+        # Per-skill rows include every required column from acceptance:
+        # invocations, completed-by-status, incomplete, slash, natural,
+        # last-seen.
+        assert "| Skill |" in md
+        assert "Invocations" in md
+        assert "Complete" in md and "Flagged" in md
+        assert "Stuck" in md and "Waiting" in md
+        assert "Incomplete" in md
+        assert "Slash" in md and "Natural" in md
+        assert "Last seen" in md
+        # realisera row: 1 total, 1 complete, 0 incomplete, slash trigger.
+        assert "| realisera |" in md
+        # planera row: 1 total, 0 complete, 1 incomplete, natural trigger.
+        assert "| planera |" in md
+        # Per-project breakdown shows up in cross-project mode.
+        assert "Per-project totals" in md
+        assert "agentera" in md and "lira" in md
+
+    def test_fail_writes_no_markdown_when_corpus_has_no_invocations(
+        self, usage_stats, tmp_path
+    ):
+        empty = usage_stats.analyze_corpus({"metadata": {}, "records": []})
+        md = usage_stats.render_markdown(
+            empty,
+            generated_at="2026-04-26T08:00:00Z",
+            extracted_at=None,
+        )
+        # Empty-scope branch must produce a clear message instead of an
+        # empty table, and must surface that extracted_at was missing.
+        assert "No skill invocations found" in md
+        assert "unknown" in md
+        # The unknown-extracted-at sentinel must appear next to the
+        # corpus-extracted line specifically.
+        assert "Corpus extracted: unknown" in md
+
+    def test_write_markdown_creates_file_at_USAGE_md(self, usage_stats, tmp_path):
+        analysis = _task3_analysis(usage_stats)
+        out_path = usage_stats.write_markdown(
+            analysis,
+            generated_at="2026-04-26T08:00:00Z",
+            extracted_at="2026-04-26T07:00:00Z",
+            output_dir=tmp_path,
+        )
+        assert out_path == tmp_path / "USAGE.md"
+        assert out_path.exists()
+        body = out_path.read_text(encoding="utf-8")
+        assert "# Suite Usage" in body
+        assert "| realisera |" in body
+
+
+# ---------------------------------------------------------------------------
+# render_stdout_summary (stdout summarizer) - Task 3
+# ---------------------------------------------------------------------------
+
+
+class TestStdoutSummarizer:
+    def test_pass_summary_includes_headline_numbers(self, usage_stats, tmp_path):
+        analysis = _task3_analysis(usage_stats)
+        summary = usage_stats.render_stdout_summary(
+            analysis,
+            generated_at="2026-04-26T08:00:00Z",
+            extracted_at="2026-04-26T07:00:00Z",
+            report_path=tmp_path / "USAGE.md",
+        )
+        # Brief multi-line shape: 3-6 lines per the plan.
+        line_count = len(summary.splitlines())
+        assert 3 <= line_count <= 6
+        assert "Skills observed: 2" in summary
+        # 2 invocations total, 1 completed -> 50% completion rate.
+        assert "Invocations: 2" in summary
+        assert "completed: 1" in summary
+        assert "50%" in summary
+        # Report path must be referenced so the operator can find the file.
+        assert str(tmp_path / "USAGE.md") in summary
+        # Both timestamps in one freshness line.
+        assert "2026-04-26T08:00:00Z" in summary
+        assert "2026-04-26T07:00:00Z" in summary
+
+    def test_fail_summary_handles_zero_invocations_without_division_by_zero(
+        self, usage_stats, tmp_path
+    ):
+        # Empty corpus -> total=0; the percentage cannot be divided by 0.
+        empty = usage_stats.analyze_corpus({"metadata": {}, "records": []})
+        summary = usage_stats.render_stdout_summary(
+            empty,
+            generated_at="2026-04-26T08:00:00Z",
+            extracted_at=None,
+            report_path=tmp_path / "USAGE.md",
+        )
+        assert "Skills observed: 0" in summary
+        assert "Invocations: 0" in summary
+        # Completion rate must degrade gracefully, not crash.
+        assert "n/a" in summary
+        # Missing extracted_at must render as the documented sentinel.
+        assert "unknown" in summary
+
+
+# ---------------------------------------------------------------------------
+# render_json / build_json_payload (JSON emitter) - Task 3
+# ---------------------------------------------------------------------------
+
+
+class TestJsonEmitter:
+    def test_pass_payload_carries_full_per_skill_structure(self, usage_stats):
+        analysis = _task3_analysis(usage_stats)
+        payload = usage_stats.build_json_payload(
+            analysis,
+            generated_at="2026-04-26T08:00:00Z",
+            extracted_at="2026-04-26T07:00:00Z",
+        )
+        assert payload["generated_at"] == "2026-04-26T08:00:00Z"
+        assert payload["extracted_at"] == "2026-04-26T07:00:00Z"
+        assert payload["project_filter"] is None
+        # Per-skill structure preserved verbatim from the analysis.
+        assert set(payload["skills"]) == {"realisera", "planera"}
+        assert payload["skills"]["realisera"]["total"] == 1
+        assert payload["skills"]["realisera"]["completed"] == 1
+        assert payload["skills"]["planera"]["incomplete"] == 1
+        # Per-project breakdown forwarded as-is.
+        assert set(payload["per_project"]) == {"agentera", "lira"}
+        # Each invocation forwarded as a plain dict (vars(Invocation)).
+        assert len(payload["invocations"]) == 2
+        assert payload["invocations"][0]["skill"] in {"realisera", "planera"}
+
+    def test_fail_render_json_emits_well_formed_json_string(self, usage_stats):
+        # The string surface must round-trip through json.loads or the
+        # CLI's stdout consumer (jq, scripts) will break.
+        analysis = _task3_analysis(usage_stats)
+        rendered = usage_stats.render_json(
+            analysis,
+            generated_at="2026-04-26T08:00:00Z",
+            extracted_at="2026-04-26T07:00:00Z",
+        )
+        parsed = json.loads(rendered)
+        assert parsed["generated_at"] == "2026-04-26T08:00:00Z"
+        assert parsed["extracted_at"] == "2026-04-26T07:00:00Z"
+        assert "skills" in parsed and "invocations" in parsed
+
+
+# ---------------------------------------------------------------------------
+# load_corpus_or_raise (missing-corpus error path) - Task 3
+# ---------------------------------------------------------------------------
+
+
+class TestMissingCorpusErrorPath:
+    def test_pass_loads_corpus_when_present(self, usage_stats, tmp_path):
+        path = tmp_path / "corpus.json"
+        path.write_text(json.dumps(_task3_corpus()), encoding="utf-8")
+        loaded = usage_stats.load_corpus_or_raise(path)
+        assert loaded["metadata"]["extracted_at"] == "2026-04-26T07:00:00Z"
+
+    def test_fail_missing_file_raises_with_extractor_command(
+        self, usage_stats, tmp_path
+    ):
+        path = tmp_path / "absent" / "corpus.json"
+        try:
+            usage_stats.load_corpus_or_raise(path)
+        except usage_stats.CorpusUnavailable as err:
+            msg = str(err)
+            assert str(path) in msg
+            # The error message must name the extractor command so the
+            # operator can run it without having to look it up.
+            assert "extract_all.py" in msg
+        else:
+            raise AssertionError(
+                "load_corpus_or_raise must raise CorpusUnavailable for "
+                "missing files"
+            )
+
+    def test_fail_corpus_with_no_conversation_turns_raises(
+        self, usage_stats, tmp_path
+    ):
+        # File exists but contains only non-conversation_turn records.
+        path = tmp_path / "corpus.json"
+        path.write_text(
+            json.dumps(
+                {
+                    "metadata": {"extracted_at": "2026-04-26T07:00:00Z"},
+                    "records": [
+                        {"source_id": "x", "source_kind": "history_prompt"},
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        try:
+            usage_stats.load_corpus_or_raise(path)
+        except usage_stats.CorpusUnavailable as err:
+            assert "no conversation_turn records" in str(err)
+            assert "extract_all.py" in str(err)
+        else:
+            raise AssertionError(
+                "load_corpus_or_raise must raise on empty conversation set"
+            )
+
+
+# ---------------------------------------------------------------------------
+# Default usage dir (XDG sibling of PROFILE.md) - Task 3
+# ---------------------------------------------------------------------------
+
+
+class TestDefaultUsageDir:
+    def test_pass_AGENTERA_USAGE_DIR_overrides_default(
+        self, usage_stats, tmp_path, monkeypatch
+    ):
+        # Tests must NOT touch the real XDG dir; the override exists for
+        # exactly this reason.
+        monkeypatch.setenv("AGENTERA_USAGE_DIR", str(tmp_path))
+        assert usage_stats._default_usage_dir() == tmp_path
+
+    def test_fail_without_override_resolves_under_home(
+        self, usage_stats, monkeypatch
+    ):
+        # Without the override the default path lives under $HOME so it
+        # never lands at the filesystem root or in the test repo.
+        monkeypatch.delenv("AGENTERA_USAGE_DIR", raising=False)
+        monkeypatch.delenv("PROFILERA_PROFILE_DIR", raising=False)
+        resolved = usage_stats._default_usage_dir()
+        assert str(resolved).startswith(str(Path.home()))
+
+
+# ---------------------------------------------------------------------------
+# CLI integration: default mode + --json mode + missing-corpus exit code
+# ---------------------------------------------------------------------------
+
+
+class TestCli:
+    def _write_corpus(self, tmp_path: Path) -> Path:
+        path = tmp_path / "corpus.json"
+        path.write_text(json.dumps(_task3_corpus()), encoding="utf-8")
+        return path
+
+    def test_default_mode_writes_USAGE_md_and_prints_summary(
+        self, usage_stats, tmp_path, monkeypatch, capsys
+    ):
+        corpus_path = self._write_corpus(tmp_path)
+        out_dir = tmp_path / "usage_dir"
+        monkeypatch.setenv("AGENTERA_USAGE_DIR", str(out_dir))
+
+        rc = usage_stats.main(["--corpus", str(corpus_path)])
+        assert rc == 0
+        # Markdown report written to the override dir.
+        report = out_dir / "USAGE.md"
+        assert report.exists()
+        body = report.read_text(encoding="utf-8")
+        assert "# Suite Usage" in body
+        assert "| realisera |" in body
+        # Stdout summary mentions the report path and headline numbers.
+        captured = capsys.readouterr()
+        assert "Suite usage" in captured.out
+        assert str(report) in captured.out
+        assert "Skills observed: 2" in captured.out
+
+    def test_json_mode_prints_json_and_writes_no_markdown(
+        self, usage_stats, tmp_path, monkeypatch, capsys
+    ):
+        corpus_path = self._write_corpus(tmp_path)
+        out_dir = tmp_path / "usage_dir"
+        monkeypatch.setenv("AGENTERA_USAGE_DIR", str(out_dir))
+
+        rc = usage_stats.main(["--corpus", str(corpus_path), "--json"])
+        assert rc == 0
+        # No markdown side effect in --json mode.
+        assert not (out_dir / "USAGE.md").exists()
+        # Stdout is a parseable JSON document carrying the analysis.
+        captured = capsys.readouterr()
+        parsed = json.loads(captured.out)
+        assert parsed["extracted_at"] == "2026-04-26T07:00:00Z"
+        assert "generated_at" in parsed
+        assert set(parsed["skills"]) == {"realisera", "planera"}
+
+    def test_missing_corpus_exits_with_clear_message(
+        self, usage_stats, tmp_path, monkeypatch, capsys
+    ):
+        absent = tmp_path / "no-such-corpus.json"
+        monkeypatch.setenv("AGENTERA_USAGE_DIR", str(tmp_path / "out"))
+
+        rc = usage_stats.main(["--corpus", str(absent)])
+        # Missing corpus must be a non-zero exit so callers (CI, scripts)
+        # detect the failure rather than seeing an empty USAGE.md.
+        assert rc != 0
+        captured = capsys.readouterr()
+        # The extractor command appears in stderr so the operator sees it.
+        assert "extract_all.py" in captured.err
