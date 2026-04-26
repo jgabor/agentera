@@ -238,6 +238,21 @@ def _validate_opencode_package(root: Path = REPO_ROOT) -> list[str]:
     return errors
 
 
+_AGENTERA_VERSION_RE = re.compile(r'AGENTERA_VERSION\s*=\s*"([^"]+)"')
+
+
+def _read_opencode_agentera_version(plugin_text: str) -> str:
+    """Extract the current AGENTERA_VERSION literal from agentera.js source.
+
+    Centralizes version discovery so drift fixtures stay in sync with the live
+    suite version automatically. Matches `export const AGENTERA_VERSION = "X"`.
+    """
+    match = _AGENTERA_VERSION_RE.search(plugin_text)
+    if match is None:
+        raise AssertionError("opencode plugin source missing AGENTERA_VERSION literal")
+    return match.group(1)
+
+
 def _validate_opencode_version(root: Path, plugin_text: str) -> list[str]:
     errors: list[str] = []
     registry = _load_json(root / "registry.json")
@@ -472,10 +487,32 @@ class TestLegacyRuntimeCompatibility:
 
     def test_opencode_package_fails_on_version_drift(self):
         plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
-        stale = plugin_text.replace('AGENTERA_VERSION = "1.19.0"', 'AGENTERA_VERSION = "1.16.0"')
+        current_version = _read_opencode_agentera_version(plugin_text)
+        stale_version = "0.0.0-stale-fixture"
+        assert stale_version != current_version
+        stale = plugin_text.replace(
+            f'AGENTERA_VERSION = "{current_version}"',
+            f'AGENTERA_VERSION = "{stale_version}"',
+        )
+        assert f'AGENTERA_VERSION = "{stale_version}"' in stale
         assert "opencode AGENTERA_VERSION must match registry suite version" in _validate_opencode_version(
             REPO_ROOT, stale
         )
+
+    def test_opencode_agentera_version_reader_extracts_current_literal(self):
+        """The drift test must read the live AGENTERA_VERSION from agentera.js at test
+        time so future suite bumps do not require manually syncing a hardcoded literal
+        in this fixture (logged as Cycle 167 Surprise; resolved in 1.20.0)."""
+        plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
+        current_version = _read_opencode_agentera_version(plugin_text)
+        assert re.fullmatch(r"\d+\.\d+\.\d+", current_version)
+        registry = _load_json(REPO_ROOT / "registry.json")
+        suite_versions = {
+            skill.get("version")
+            for skill in registry.get("skills", [])
+            if isinstance(skill, dict) and skill.get("name") != "profilera"
+        }
+        assert suite_versions == {current_version}
 
     def test_opencode_package_fails_on_missing_command_file(self, tmp_path):
         root = tmp_path / "repo"

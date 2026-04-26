@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [1.20.0] · 2026-04-26
+
+### Added
+
+- AGENTERA_HOME contract (SPEC.md Section 7) standardizes the env var that names the agentera install root, with a per-runtime mechanism table covering Claude Code, OpenCode, Codex, and Copilot.
+- OpenCode plugin bootstraps slash commands at plugin init (was wired to a phantom hook that never fired) and injects AGENTERA_HOME into every shell-tool subprocess via the `@opencode-ai/plugin` `shell.env` hook.
+- Codex and Copilot install documentation: README adds the runtime-specific AGENTERA_HOME setup snippets (`[shell_environment_policy]` for Codex; shell rc export for Copilot, since Copilot has no plugin-level env-injection API). Codex plugin limitations and Copilot manifest descriptions surface the requirement.
+- Spec validator lint rule warns when SKILL.md prose uses bare `${CLAUDE_PLUGIN_ROOT}` (the bash-fallback form `${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}` passes).
+
+### Changed
+
+- 5 SKILL.md compaction-script invocations (realisera ×2, resonera, optimera, inspektera) now use `${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}` so the script resolves under any host that adheres to the contract.
+- SPEC.md sections 7-23 renumbered to 8-24 to make room for the new Section 7 (Install Root); SKILL.md `spec_sections` frontmatter, prose Section refs, validator code, and test fixtures shifted accordingly.
+- `tests/test_runtime_adapters.py` AGENTERA_VERSION drift test reads the version from `.opencode/plugins/agentera.js` at test time instead of carrying a hardcoded literal.
+
 ## [1.19.0] · 2026-04-26
 
 ### Added

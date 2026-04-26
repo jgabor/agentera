@@ -1,6 +1,6 @@
 {
   "name": "orkestrera",
-  "version": "1.19.0",
+  "version": "1.20.0",
   "description": "ORKESTRERA: Orchestration Runtime: Knowledge-coordinated Execution Strategy, Targeted Routing: Evaluate, Resolve, Adapt. Skill-agnostic meta-orchestrator that dispatches skills as subagents, evaluates with inspektera, and loops through plans.",
   "author": {
     "name": "jgabor"
