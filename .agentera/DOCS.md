@@ -54,7 +54,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | TODO | TODO.md | 2026-04-25 | ■ current |
 | Changelog | CHANGELOG.md | 2026-04-25 | ■ current |
 | Health | .agentera/HEALTH.md | 2026-04-23 | ■ current |
-| Plan | .agentera/PLAN.md | 2026-04-25 | ■ current (no active plan) |
+| Plan | .agentera/PLAN.md | 2026-04-26 | ■ current |
 | DOCS | .agentera/DOCS.md | 2026-04-25 | ■ current |
 | Design | .agentera/DESIGN.md | 2026-04-19 | ■ current |
 | Ecosystem spec | SPEC.md | 2026-04-20 | ■ current |
