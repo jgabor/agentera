@@ -133,8 +133,10 @@ def _validate_codex_package(plugin: dict[str, Any]) -> list[str]:
             capabilities = skill.get("requiredCapabilities")
             if not capabilities:
                 errors.append("codex.profilera: requiredCapabilities must name corpus capability")
-            elif capabilities[0].get("status") != "degraded":
-                errors.append("codex.profilera: corpus capability must degrade, not stay unavailable")
+            elif capabilities[0].get("name") != "codex_session_corpus":
+                errors.append("codex.profilera: corpus capability must be named codex_session_corpus")
+            elif capabilities[0].get("status") not in ("ok", "degraded"):
+                errors.append("codex.profilera: corpus capability status must be ok or degraded")
             for text in skill.get("limitations", []) + [skill.get("invocationHint", "")]:
                 if "collector exists" in text or "not implemented" in text:
                     errors.append("codex.profilera: stale missing-collector limitation")
@@ -167,8 +169,8 @@ def _validate_codex_ui_metadata(path: Path) -> list[str]:
         errors.append("codex.ui.profilera: implicit invocation must be disabled")
     if "codex_session_corpus" not in text:
         errors.append("codex.ui.profilera: missing actionable corpus capability")
-    if "status: degraded" not in text:
-        errors.append("codex.ui.profilera: corpus capability must be degraded")
+    if not any(f"status: {value}" in text for value in ("ok", "degraded")):
+        errors.append("codex.ui.profilera: corpus capability status must be ok or degraded")
     if "collector exists" in text or "not implemented" in text:
         errors.append("codex.ui.profilera: stale missing-collector limitation")
 
