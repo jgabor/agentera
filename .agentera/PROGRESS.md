@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 167 · 2026-04-26 10:00 · chore(release): bump suite to 1.19.0
+
+**What**: Task 5 of the Suite Usage Analytics plan. Bumped suite metadata from 1.18.1 to 1.19.0 across every file in DOCS.md `version_files` (Copilot root `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `.opencode/plugins/agentera.js` `AGENTERA_VERSION`, `registry.json` 12 entries, `.claude-plugin/marketplace.json` 12 versions, and 12 `skills/*/.claude-plugin/plugin.json` files). Promoted CHANGELOG `## [Unreleased]` to `## [1.19.0] · 2026-04-26` (empty Unreleased block left at top); the release block lists the third-party validator entrypoint feat (commit 121e40f) and the suite usage analytics script feat (cycles 163-166), plus two pre-existing Copilot install-guidance Changed entries that were already on the unreleased line. Resolved the pending `[version]` TODO.md item with a Resolved entry pointing at this plan's Task 5. Updated PLAN.md Task 5 to ■ complete. Per `feat = minor` policy, two unreleased feats trigger one minor bump.
+**Commit**: <set after commit>
+**Inspiration**: DOCS.md `versioning.semver_policy` (`feat = minor`) and the existing PROGRESS cycle 124/116/150 version-bump pattern. No external pattern needed.
+**Discovered**: One latent test brittleness: `tests/test_runtime_adapters.py::test_opencode_package_fails_on_version_drift` hardcoded `'AGENTERA_VERSION = "1.18.1"'` in its drift simulation. After the bump the literal no longer matched, so the `.replace()` no-op caused the validator to see no drift and the assertion failed. Updated the literal to `1.19.0` per the same pattern that 1.18.0 → 1.18.1 used. Logged as a Surprise so future bumps know the test needs syncing too. Also confirmed `.claude-plugin/marketplace.json` profilera entry has no `version` key (deliberate omission from prior cycles); did not introduce one.
+**Verified**: N/A: chore-build-config. Validators stayed green: `python3 scripts/validate_spec.py` -> `0 error(s), 0 warning(s) across 12 skills`. `python3 scripts/validate_lifecycle_adapters.py` -> `lifecycle adapter metadata ok`. `python3 -m pytest -q` -> `408 passed in 0.38s` (was 408, no change after the test literal sync). `grep -c '"version": "1.18.1"'` across all version_files returns 0; counts at 1.19.0 confirm the bump landed in every listed file (1 in each standalone, 12 in registry, 12 in marketplace, 1 in opencode constant, 1 per skill plugin.json).
+**Next**: Task 6 (plan-level freshness checkpoint) closes the Suite Usage Analytics plan with one aggregate cycle summary, marks the Decision 31 telemetry item resolved, and confirms CHANGELOG 1.19.0 represents the release coherently.
+**Context**: intent (apply DOCS.md feat=minor policy for two unreleased feats in one consistent bump) · constraints (every file in version_files, no others; CHANGELOG promoted without inventing entries; TODO `[version]` item resolved with reference; PLAN Task 5 marked complete; validators stay green; one conventional commit; no push) · unknowns (whether marketplace.json profilera entry should also gain a version key for full sync — left as-is per prior pattern) · scope (`plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, `registry.json`, `skills/*/.claude-plugin/plugin.json`, `CHANGELOG.md`, `TODO.md`, `tests/test_runtime_adapters.py`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
+
 ■ ## Cycle 166 · 2026-04-26 09:30 · docs(usage): document scripts/usage_stats.py across README, DOCS.md, AGENTS.md
 
 **What**: Task 4 of the Suite Usage Analytics plan. Documented `scripts/usage_stats.py` in three places: added a `## Scripts` section to README.md listing all three repo-level utilities (`validate_spec.py`, `eval_skills.py`, `usage_stats.py`) with invocation, output paths, and flags; added USAGE.md to `.agentera/DOCS.md` Artifact Mapping (XDG default `$XDG_DATA_HOME/agentera/USAGE.md`, sibling of PROFILE.md, producer `scripts/usage_stats.py`) plus an Index row and an Audit Log entry; added a usage_stats.py paragraph to AGENTS.md (CLAUDE.md symlink) Python scripts section covering invocation, the four flags (`--corpus`, `--project`, `--json`, plus default mode), the `AGENTERA_USAGE_DIR` override, the platform-specific output paths, and the missing-corpus exit behavior.
@@ -90,38 +100,11 @@
 **Next**: Task 5 may update user guidance later, but only from this recorded no-verified-source evidence unless a canonical marketplace path is separately verified.
 **Context**: intent (verify host behavior for Task 4 without inventing a source) · constraints (read-only checks only, no installs, no Task 5 guidance, no version bump) · unknowns (future canonical Agentera marketplace path, host skill-list omission cause) · scope (`.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
 
-■ ## Cycle 157 · 2026-04-25 18:10 · test(install): guard copilot marketplace claims
-
-**What**: Completed Task 3 final retry only. README Copilot install guidance validation now blocks additive contradictory marketplace and fallback claims without changing README semantics.
-**Commit**: 1af096c test(install): guard copilot marketplace claims; 2aaa3ab docs(progress): log marketplace claim guards; db38bad docs(progress): correct marketplace guard evidence; 4ca5232 test(install): reject contradictory copilot guidance
-**Inspiration**: Task 1 and Task 2 evidence: Copilot has built-in marketplaces, but no canonical Agentera Copilot marketplace source is verified.
-**Discovered**: The previous guard still allowed additive text saying Agentera is available from the Copilot marketplace and additive text promoting `OWNER/REPO` as the primary install path.
-**Verified**: `python3 -m pytest tests/test_runtime_adapters.py::TestCopilotPackaging -q` -> 7 passed, covering one README pass plus fail tests for additive unavailable marketplace claims, placeholder syntax masquerading as `agentera@<marketplace>`, and additive primary fallback wording. `python3 -m pytest -q` -> 361 passed. `python3 scripts/validate_spec.py` -> 0 errors, 0 warnings. `git diff --check` -> no output.
-**Next**: Task 4 can run later if a verified host-behavior scope is still needed; no live host smoke docs, version bumps, or plan-level freshness work ran here.
-**Context**: intent (guard public Copilot install guidance from unsupported marketplace claims) · constraints (Task 3 only, no invented sources, preserve README semantics, proportional tests) · unknowns (future canonical Agentera marketplace source) · scope (`tests/test_runtime_adapters.py`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
-
-■ ## Cycle 156 · 2026-04-25 18:02 · docs(install): clarify copilot marketplace placeholder
-
-**What**: Completed Task 2 only. README now treats Copilot `<plugin>@<marketplace>` as marketplace syntax, not proof that Agentera is published there.
-**Commit**: ee62888 docs(install): clarify copilot marketplace placeholder; 0dedcaa test(install): accept copilot marketplace placeholder
-**Inspiration**: Task 1 evidence: Copilot CLI 1.0.35, built-in marketplaces `copilot-plugins` and `awesome-copilot`, and no `agentera` entry in browsed catalogs.
-**Discovered**: The README Copilot command and runtime table could be read as a concrete availability claim even though the plan evidence says no canonical Agentera marketplace source is verified.
-**Verified**: README says no Agentera Copilot marketplace source is currently verified, uses `copilot plugin install <plugin>@<marketplace>` as syntax only, preserves future aggregate `agentera` plugin language for the verified-source branch, and keeps `OWNER/REPO`, `OWNER/REPO:PATH`, Git URL, and local path installs as deprecated fallback paths. Remediation reran `python3 -m pytest tests/test_runtime_adapters.py::TestCopilotPackaging::test_copilot_readme_install_guidance_passes tests/test_runtime_adapters.py::TestCopilotPackaging::test_copilot_readme_install_guidance_fails_without_marketplace_first -q` -> 2 passed, `python3 -m pytest -q` -> 359 passed, `python3 scripts/validate_spec.py` -> 0 errors, 0 warnings, and `git diff --check` -> no output. Operational evidence correction verified this cycle now records both Task 2 commits: `ee62888` and `0dedcaa`.
-**Next**: Task 3 may add validation guards later; no validation rules, host smoke docs, version bumps, or plan-level freshness work were done in this cycle.
-**Context**: intent (align install surface without inventing a marketplace source) · constraints (Task 2 only, preserve profilera caveats, direct installs secondary) · unknowns (future canonical Copilot marketplace source) · scope (`README.md`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
-
-■ ## Cycle 155 · 2026-04-25 17:32 · docs(plan): record copilot marketplace evidence
-
-**What**: Completed Task 1 only. PLAN now records the verified Copilot marketplace identities and the absence of a canonical Agentera source.
-**Commit**: b2fe57b docs(plan): record copilot marketplace evidence
-**Inspiration**: Active evidence-gated plan and Copilot host marketplace commands.
-**Discovered**: Copilot CLI exposes built-in marketplaces `copilot-plugins` and `awesome-copilot`; neither browsed catalog showed an `agentera` plugin.
-**Verified**: `copilot --version` -> `GitHub Copilot CLI 1.0.35`; `copilot plugin marketplace list` -> built-ins `copilot-plugins (GitHub: github/copilot-plugins)` and `awesome-copilot (GitHub: github/awesome-copilot)`; `copilot plugin marketplace browse copilot-plugins` -> `workiq`, `spark`, `advanced-security`; `copilot plugin marketplace browse awesome-copilot` returned a catalog with no `agentera` entry. Therefore no canonical Agentera marketplace source is verified, and no availability claim was added.
-**Next**: Task 2 can align install surface while preserving the no-verified-source branch.
-**Context**: intent (establish repeatable marketplace evidence) · constraints (Task 1 only, no README or validation changes, no invented sources) · unknowns (whether Agentera will later be published to a Copilot marketplace) · scope (`.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
-
 ## Archived Cycles
 
+- Cycle 157 (2026-04-25): test(install): guard copilot marketplace claims
+- Cycle 156 (2026-04-25): docs(install): clarify copilot marketplace placeholder
+- Cycle 155 (2026-04-25): docs(plan): record copilot marketplace evidence
 - Cycle 154 (2026-04-25): docs(copilot): prefer marketplace plugin installs
 - Cycle 153 (2026-04-25): fix(copilot): load skills from checkout plugin root
 - Cycle 152 (2026-04-25): chore(runtime): smoke live Copilot and Codex hosts
@@ -159,6 +142,3 @@
 - Cycle 120 (2026-04-23): Replaced legacy profile-path references with `$PROFILERA_PROFILE_DIR/PROFILE.md` across SPEC, consumer skills, docs, README, adapter docs, and contracts.
 - Cycle 119 (2026-04-21): Operationalized SPEC Section 4 compaction with shared engine, CLI wrapper, hook nudge, tests, and producer skill instructions.
 - Cycle 118 (2026-04-20): Version bump 1.13.0 to 1.14.0 per DOCS.md semver_policy (feat = minor). Updated all 14 version_files. Promoted CHANGELOG.md [Unreleased] to [1.14.0]....
-- Cycle 117 (2026-04-13): Plan-level freshness checkpoint for Pre-dispatch Commit Gate plan (7 tasks, all complete). The plan delivered SPEC.md Section 22 (pre-dispatch commit...
-- Cycle 116 (2026-04-13): Version bump 1.12.0 to 1.13.0 per DOCS.md semver_policy (feat = minor). Updated all 12 plugin.json files, registry.json (12 skill entries),...
-- Cycle 115 (2026-04-13): Added tests for Check 19 (pre-dispatch-commit-gate) in `tests/test_validate_spec.py`. Three tests following the Check 17 proportionality pattern: 1 pass (both realisera...

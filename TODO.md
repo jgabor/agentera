@@ -7,13 +7,13 @@
 ## → Normal
 
 - [ ] [telemetry] Build `scripts/usage_stats.py` per Decision 31: detect skill invocations via workflow markers across the Claude Code + OpenCode session corpus, pair with exit signals to count completed workflows, tag slash-vs-NL triggers, default cross-project with a `--project` flag, write markdown to `~/.local/share/agentera/USAGE.md` plus a brief stdout summary, and accept `--json` for machine output.
-- [ ] [version] Apply DOCS.md `feat = minor` policy and bump suite metadata from 1.18.1 to 1.19.0 to release the third-party SKILL.md validator entry point added in commit 121e40f.
 - [ ] [copilot-marketplace] Deferred: publish or verify a canonical Agentera Copilot marketplace source before documenting `agentera@<marketplace>` as an available install path.
 
 ## ⇢ Annoying
 
 ## Resolved
 
+- [x] ~~[version] Apply DOCS.md `feat = minor` policy and bump suite metadata from 1.18.1 to 1.19.0 to release the third-party SKILL.md validator entry point added in commit 121e40f.~~ · resolved by Suite Usage Analytics PLAN Task 5; one bump covers commit 121e40f (validator) plus cycles 163-166 (`scripts/usage_stats.py`)
 - [x] ~~Task 7: [chore] Plan-level freshness checkpoint~~ · resolved in checkpoint commit; final state records no verified canonical marketplace source and preserves the deferred publication caveat
 - [x] ~~[audit-11] Deferred: Copilot current-checkout plugin smoke is blocked by escaping skills path; installed Copilot skills and Codex `$hej` smoke passed~~ · fixed in Cycle 153; root `plugin.json` loads shared `skills/` through `copilot --plugin-dir`
 - [x] ~~[audit-11] Deferred: live Copilot and Codex host behavior remains untested until host smoke tests are available~~ · narrowed by Cycle 152; Codex `$hej` and Copilot installed skills passed, current-checkout Copilot plugin loading remains blocked

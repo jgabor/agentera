@@ -2,17 +2,17 @@
 
 ## [Unreleased]
 
+## [1.19.0] · 2026-04-26
+
 ### Added
 
-- `scripts/usage_stats.py` core analysis pipeline detects skill workflow markers in Section 21 corpus assistant turns and pairs introductions with exit signals per conversation. Output surfaces (USAGE.md, stdout summary, JSON) land in later tasks.
+- `scripts/usage_stats.py` reads the Section 21 corpus and reports per-skill invocation counts, exit-status pairings, slash-vs-natural-language trigger splits, and a per-project breakdown. Default mode writes USAGE.md to the global agentera data directory (sibling of PROFILE.md, overrideable via `AGENTERA_USAGE_DIR`) and prints a brief stdout summary; `--json` emits the full payload with no markdown side effect; `--project PATH` scopes to one project.
 - Spec validator accepts arbitrary SKILL.md paths via `--skill PATH` (repeatable) so third-party skill authors can validate their own SKILL.md against SPEC.md without forking the repo.
 
 ### Changed
 
 - Copilot install guidance validation now rejects unverified marketplace claims, placeholder-as-source wording, and primary deprecated fallback guidance.
 - Copilot install guidance now prefers marketplace-style `plugin@marketplace` installs only when a verified source exists; no canonical Agentera Copilot marketplace source is currently verified, so direct repo installs remain deprecated fallback paths.
-
-### Fixed
 
 ## [1.18.1] · 2026-04-25
 
