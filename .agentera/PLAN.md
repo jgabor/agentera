@@ -89,7 +89,7 @@ A single self-contained script consumes the Section 21 corpus and produces three
 ### Task 6: Plan-level freshness checkpoint
 
 **Depends on**: Task 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all prior tasks are complete WHEN PROGRESS.md is reviewed THEN one cycle entry summarizes the plan's outcome at the plan level (not per-cycle restatements).
 ▸ GIVEN the plan is complete WHEN TODO.md is reviewed THEN the Decision 31 telemetry item and the version-bump item both appear in the Resolved section with this plan's commits cited.
