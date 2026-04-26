@@ -125,7 +125,7 @@ Dependencies: T1 -> {T2, T3} -> T4 -> T5 -> T6. T2 (OpenCode adapter) and T3 (Co
 ### Task 6: [chore] Plan-level freshness checkpoint
 
 **Depends on**: Task 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN PLAN.md after Task 5 commits WHEN read THEN tasks 1 through 5 show ■ complete and Surprises captures any reality divergences logged during execution
 ▸ GIVEN PROGRESS.md WHEN read THEN one plan-level cycle entry summarizes the cross-runtime portability outcome at the plan level (does not restate per-cycle detail)

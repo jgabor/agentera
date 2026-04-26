@@ -7,6 +7,9 @@
 ## → Normal
 
 - [ ] [copilot-marketplace] Deferred: publish or verify a canonical Agentera Copilot marketplace source before documenting `agentera@<marketplace>` as an available install path.
+- [ ] [opencode-session-events] Replace the SESSION.md bookmark wiring using OpenCode's real `event` mechanism. The legacy `session.idle` hook key is phantom (the `@opencode-ai/plugin` Hooks interface has no such member), so the bookmark write is currently dead under OpenCode. Pair this with reconsidering the OpenCode session-start context preload that lived inside the dropped `session.created` block (Cross-Runtime Portability PLAN T2 Surprise / Cycle 170).
+- [ ] [codex-setup-helper] Optional: ship an idempotent helper that writes the `[shell_environment_policy] set = { AGENTERA_HOME = "<install root>" }` entry to `~/.codex/config.toml`. Cross-Runtime Portability PLAN explicitly kept user-visible config under user control (Out-of-scope) and shipped doc-only setup in T3; a helper is the next step if the manual snippet proves friction-prone.
+- [ ] [copilot-setup-helper] Optional: ship an idempotent helper that appends `export AGENTERA_HOME=<install root>` to the user's shell rc. Same Out-of-scope reasoning as `[codex-setup-helper]`; Copilot has no plugin-level env-injection API, so the user-shell setup documented in T3 remains the official path until a helper lands.
 
 ## ⇢ Annoying
 
