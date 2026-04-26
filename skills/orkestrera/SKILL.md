@@ -2,7 +2,7 @@
 name: orkestrera
 description: >
   ORKESTRERA (Orchestration Runtime: Knowledge-coordinated Execution Strategy, Targeted Routing; Evaluate, Resolve, Adapt). ALWAYS use this skill for multi-cycle plan execution, orchestrated autonomous development, and skill-agnostic task dispatch. This skill is REQUIRED whenever the user wants to execute an entire plan autonomously, chain multiple skills together, run multi-cycle development without /loop, or have tasks evaluated by a separate agent. Do NOT attempt multi-skill orchestration without this skill because it contains the critical conductor protocol for plan-driven dispatch, inspektera-gated evaluation, retry handling, and context-lean multi-cycle execution that prevents wasted compute and ensures quality. Trigger on: "orkestrera", "orchestrate", "run the plan", "execute the plan", "run all tasks", "dispatch skills", "multi-cycle", "autonomous plan execution", "keep going until done", "run through the plan", "build everything", or any request for evaluated multi-cycle development.
-spec_sections: [3, 4, 5, 11, 18, 19]
+spec_sections: [3, 4, 5, 12, 19, 20]
 ---
 
 # ORKESTRERA
@@ -140,7 +140,7 @@ Narration voice (riff, don't script):
 
 ### Step 3: Evaluate
 
-Evaluation has two surfaces in sequence per contract Section 19, Reality Verification Gate: a conductor-side presence check that reads the latest PROGRESS.md cycle entry, then an inspektera dispatch whose prompt is extended with a Section 19 evidence-format audit. Both surfaces must run before the task can be resolved.
+Evaluation has two surfaces in sequence per contract Section 20, Reality Verification Gate: a conductor-side presence check that reads the latest PROGRESS.md cycle entry, then an inspektera dispatch whose prompt is extended with a Section 20 evidence-format audit. Both surfaces must run before the task can be resolved.
 
 **Surface 1: Presence check on PROGRESS.md**
 
@@ -155,7 +155,7 @@ This is an artifact read, not a source code read. Reading `.agentera/PROGRESS.md
 
 **Surface 2: Inspektera dispatch with evidence audit**
 
-Once the presence check passes, spawn inspektera as a subagent to verify the work. The dispatch prompt below extends the base evaluator prompt with a Section 19 "Verification evidence audit" block that instructs inspektera to check whether the recorded `**Verified**` content actually substantiates the acceptance criteria (content quality, not just presence).
+Once the presence check passes, spawn inspektera as a subagent to verify the work. The dispatch prompt below extends the base evaluator prompt with a Section 20 "Verification evidence audit" block that instructs inspektera to check whether the recorded `**Verified**` content actually substantiates the acceptance criteria (content quality, not just presence).
 
 ```
 You are evaluating a completed task for [project].
@@ -171,11 +171,11 @@ You are evaluating a completed task for [project].
 - Check for unintended side effects from the implementation.
 - Verify the project's test/build suite still passes.
 
-## Verification evidence audit (per the spec Section 19)
+## Verification evidence audit (per the spec Section 20)
 - Read the `**Verified**` field value from the latest PROGRESS.md cycle entry for this task.
 - Compare the recorded evidence to the task's acceptance criteria above.
 - Report whether the evidence substantiates the criteria or is merely trivially populated (e.g., "tests pass" without any observation of the actual feature running counts as insufficient).
-- If the field is `N/A: <tag>`, confirm the tag is drawn from the Section 19 allowlist (`docs-only`, `refactor-no-behavior-change`, `chore-dep-bump`, `chore-build-config`, `test-only`) AND that the tag actually fits the nature of the work.
+- If the field is `N/A: <tag>`, confirm the tag is drawn from the Section 20 allowlist (`docs-only`, `refactor-no-behavior-change`, `chore-dep-bump`, `chore-build-config`, `test-only`) AND that the tag actually fits the nature of the work.
 - If the field is a free-form N/A rationale, confirm it is at least 8 words long AND actually explains why the change has no observable behavior.
 - Flag the task as FAIL on the evidence audit if the recorded `**Verified**` content does not substantiate the acceptance criteria.
 
@@ -229,7 +229,7 @@ Narration voice (riff, don't script):
 ✗ "Maximum retries exceeded. Marking task as blocked."
 ✓ "Still failing after 2 retries. Blocking and moving on." · "Can't crack it. Logging to TODO."
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ### Step 5: Log and loop
 

@@ -1,4 +1,4 @@
-"""Suite usage analytics: detect skill invocations from a Section 21 corpus.
+"""Suite usage analytics: detect skill invocations from a Section 22 corpus.
 
 Task 1 landed marker detection, conversation grouping, and intro/exit
 pairing. Task 2 layered trigger classification (slash vs natural
@@ -163,7 +163,7 @@ def group_by_conversation(records: Iterable[dict]) -> dict[str, list[dict]]:
     """Group assistant conversation turns by ``source_id`` (one bucket per
     record), then sort each bucket by ``timestamp``.
 
-    Section 21 records carry no guaranteed order. The corpus envelope assigns
+    Section 22 records carry no guaranteed order. The corpus envelope assigns
     a stable ``source_id`` per logical record; we treat that as the
     conversation key for grouping. Within a bucket we sort by ISO 8601
     timestamp, falling back to original list order on ties.
@@ -304,7 +304,7 @@ def classify_trigger(user_turn_text: str | None) -> str:
 # Project scoping
 # ---------------------------------------------------------------------------
 #
-# Section 21 records carry a ``project_id`` field (a derived short name
+# Section 22 records carry a ``project_id`` field (a derived short name
 # such as ``agentera`` or ``jg-go`` for Claude Code, or ``"global"`` for
 # non-project-scoped data). The Claude Code adapter derives this from the
 # project's directory path via ``project_name_from_dir``.
@@ -448,7 +448,7 @@ def _accumulate(bucket: dict[str, int], inv: Invocation) -> None:
 def analyze_corpus(
     corpus: dict, project_filter: str | None = None
 ) -> CorpusAnalysis:
-    """Run the full pipeline against a Section 21 corpus envelope.
+    """Run the full pipeline against a Section 22 corpus envelope.
 
     When ``project_filter`` is set, only records whose ``project_id``
     matches the filter contribute to the analysis (substring match in
@@ -831,7 +831,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="usage_stats",
         description=(
-            "Detect skill invocations across the Section 21 corpus and emit "
+            "Detect skill invocations across the Section 22 corpus and emit "
             "a USAGE.md report (default) or a JSON document (--json). Both "
             "surfaces include slash-vs-NL trigger counts, completed-by-status "
             "tallies, and the corpus extracted-at timestamp."
@@ -842,7 +842,7 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=None,
         help=(
-            "Path to a Section 21 corpus.json envelope. Defaults to the "
+            "Path to a Section 22 corpus.json envelope. Defaults to the "
             "standard profilera location "
             "($PROFILERA_PROFILE_DIR/intermediate/corpus.json or the "
             "platform XDG default)."

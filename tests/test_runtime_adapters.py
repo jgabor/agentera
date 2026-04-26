@@ -429,7 +429,7 @@ class TestLifecycleAdapters:
         profilera = next(skill for skill in plugin["skillMetadata"] if skill["name"] == "profilera")
         profilera["invocationHint"] = "$profilera"
         assert (
-            "codex.profilera: invocation hint must expose limited Section 21 source-family rules"
+            "codex.profilera: invocation hint must expose limited Section 22 source-family rules"
             in validator.validate_codex_profilera_metadata(REPO_ROOT, plugin)
         )
 

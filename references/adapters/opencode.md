@@ -1,6 +1,6 @@
 # OpenCode Adapter
 
-Maps agentera's host adapter contract (SPEC.md Section 20) and session corpus contract (SPEC.md Section 21) to OpenCode's specific mechanisms. A developer reading only this document can implement portable-core agentera support and a profilera-compatible session corpus in OpenCode without reading any SKILL.md source code.
+Maps agentera's host adapter contract (SPEC.md Section 21) and session corpus contract (SPEC.md Section 22) to OpenCode's specific mechanisms. A developer reading only this document can implement portable-core agentera support and a profilera-compatible session corpus in OpenCode without reading any SKILL.md source code.
 
 ---
 
@@ -23,7 +23,7 @@ cp .opencode/plugins/agentera.js ~/.config/opencode/plugins/
 
 ---
 
-## Section 20: Host Adapter Capability Mapping
+## Section 21: Host Adapter Capability Mapping
 
 ### Skill discovery (Required)
 
@@ -86,7 +86,7 @@ Read PROFILE.md from the profilera-determined profile path (`$PROFILERA_PROFILE_
 becomes in the OpenCode context:
 
 ```
-Read PROFILE.md from the runtime-provided profile path (Section 20). In OpenCode, this resolves to `~/.config/opencode/profile/PROFILE.md`.
+Read PROFILE.md from the runtime-provided profile path (Section 21). In OpenCode, this resolves to `~/.config/opencode/profile/PROFILE.md`.
 ```
 
 **Gap**: None. The path convention is straightforward. The XDG-compliant location is well-established.
@@ -233,7 +233,7 @@ This is functional but adds a Python dependency. For the initial port, the hook 
 
 ---
 
-## Section 21: Session Corpus Mapping
+## Section 22: Session Corpus Mapping
 
 Profilera mines five canonical record types from host session data. This section maps each record type to OpenCode's data sources.
 

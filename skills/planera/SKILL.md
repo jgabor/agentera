@@ -12,7 +12,7 @@ description: >
   "plan this", "write a plan", "break this down", "decompose this", "how should we build
   this", "spec this out", "plan before building", "multi-step feature", "this is too big
   for one cycle", or when realisera encounters work too large for a single cycle.
-spec_sections: [3, 4, 5, 6, 16]
+spec_sections: [3, 4, 5, 6, 17]
 ---
 
 # PLANERA
@@ -181,7 +181,7 @@ Output constraint per contract token budgets.
 
 Write the plan to `.agentera/PLAN.md`.
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ### Light plan format
 

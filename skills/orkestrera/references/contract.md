@@ -1,7 +1,7 @@
 <!-- contract: orkestrera -->
 <!-- source: SPEC.md (sha256: 372c6fb0bf8c4febc3fb313069f6d924023264b778b9d309a0f7cd5d27209c90) -->
-<!-- sections: 3, 4, 5, 11, 18, 19 -->
-<!-- generated: 2026-04-26T11:00:48Z -->
+<!-- sections: 3, 4, 5, 12, 19, 20 -->
+<!-- generated: 2026-04-26T11:35:48Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -249,80 +249,45 @@ The section MUST appear under "## State artifacts" (not under cross-skill integr
 
 **Linter check**: Deterministic. Section presence under correct parent heading, core sentence pattern matching.
 
-## 11. Exit Signals
+## 12. Loop Guard
 
-Every skill MUST report a completion status at the end of its workflow. This enables downstream skills, orchestration layers, and the user to determine what happened without parsing natural language.
+Skills that run autonomous loops (currently: realisera, optimera, orkestrera) MUST include an escalation rule to prevent runaway cycles producing bad work.
 
-### Statuses
+### The rule
 
-| Status | Meaning | When to use |
-|--------|---------|-------------|
-| **complete** | All steps completed successfully | The skill's workflow ran to completion and all acceptance criteria (if any) were met |
-| **flagged** | Completed, but with issues the user should know about | The workflow completed but discovered problems, made compromises, or has caveats worth surfacing |
-| **stuck** | Cannot proceed | A hard blocker prevents completion: missing dependency, permission issue, ambiguous requirement too consequential to resolve autonomously |
-| **waiting** | Missing information required to continue | The skill needs input, clarification, or a decision from the user or another skill before it can proceed |
+When the skill detects 3 consecutive failed cycles, it MUST:
 
-### Rules
+1. **Stop**: do not attempt a 4th cycle on the same problem
+2. **Log**: file the failure pattern to TODO.md with context: what was attempted, what failed, and what the skill thinks is wrong
+3. **Surface**: tell the user what happened and recommend a course of action
+   (e.g., "/resonera to deliberate on the approach", "manual investigation needed", "dependency missing")
 
-- Skills MUST report exactly one status at workflow completion
-- The status MUST appear in a `## Exit signals` section in each SKILL.md, defining when the skill reports each status with skill-specific guidance
-- `flagged` MUST list each concern. A bare status without details is not acceptable
-- `stuck` and `waiting` MUST state what is blocking / what is needed and what was attempted
-- The `## Exit signals` section is a peer to `## Safety rails` (not nested inside it)
+### Failure detection
+
+Consecutive failures are detected by reading the last 3 entries in PROGRESS.md. A cycle counts as failed when:
+
+- The commit was reverted or the verification step failed
+- The cycle logged a blocker and pivoted to different work 3 times in a row
+  (3 consecutive pivots = the available work surface is exhausted)
+- The cycle's "Discovered" field logs the same issue that was supposed to be fixed
+
+### Complementary mechanisms
+
+Optimera's existing plateau detection in `analyze_experiments.py` detects experiment stagnation (no improvement over N iterations). The loop guard is complementary: plateau detection handles metric stagnation, escalation handles general execution failure. Both can trigger independently.
+
+### Applicability
+
+The escalation rule is REQUIRED for autonomous-loop skills: `realisera`, `optimera`, `orkestrera`.
+
+Orkestrera uses retry-based failure detection (max 2 retries per task, escalation after 3 consecutive task failures) rather than PROGRESS.md consecutive-failure inspection.
+
+Other skills MAY include loop guard language but are not required to. Their workflows are typically single-invocation and do not risk runaway cycles.
 
 ### SKILL.md structural requirement
 
-Each SKILL.md MUST contain a `## Exit signals` section with:
+Autonomous-loop skills MUST include loop guard language in their `## Exit signals` section, referencing the 3-failure threshold and either PROGRESS.md inspection (realisera, optimera) or retry-based task failure detection (orkestrera).
 
-1. All four status terms (complete, flagged, stuck, waiting)
-2. Skill-specific guidance on when each status applies in that skill's context
-
-**Linter check**: Deterministic. `## Exit signals` heading presence, all four status terms present in the section content (`exit-signals`).
-
-## 18. Phase Tracking
-
-Every realisera cycle operates in one of five phases. Phases map the suite's skills to a lifecycle model, making it possible for consuming skills to reason about what kind of work a cycle performed and whether phase transitions follow a coherent sequence.
-
-### Phases
-
-| Phase | Skills | Purpose |
-|-------|--------|---------|
-| **envision** | visionera | Define or refine the project's north star |
-| **deliberate** | resonera | Reason through decisions before committing to a direction |
-| **plan** | planera | Structure work into tasks with dependencies and acceptance criteria |
-| **build** | realisera, optimera, dokumentera, visualisera | Implement, optimize, document, or design |
-| **audit** | inspektera | Evaluate structural health and alignment |
-
-### Transitions
-
-Phases have valid successors. A cycle's phase is determined by the primary skill performing work, not by the phase of the previous cycle (phases are not a strict pipeline).
-
-| From | Valid successors |
-|------|-----------------|
-| envision | deliberate, plan, build |
-| deliberate | plan, build, envision |
-| plan | build, deliberate |
-| build | build, audit, plan |
-| audit | build, plan, deliberate, envision |
-
-**Terminal states**: audit and build are terminal in the sense that a project can remain in either phase indefinitely (continuous building, periodic auditing). envision, deliberate, and plan are transitional: they produce artifacts consumed by downstream phases.
-
-**Self-transitions**: only build allows self-transition (consecutive build cycles are the normal case). Other phases produce a discrete output (a vision, a decision, a plan) and transition out.
-
-### PROGRESS.md phase field
-
-Each cycle entry in PROGRESS.md includes a **Phase** field immediately after the cycle heading. The value is one of the five phase names: `envision`, `deliberate`, `plan`, `build`, `audit`.
-
-```markdown
-■ ## Cycle N · YYYY-MM-DD HH:MM
-
-**Phase**: build
-**What**: one-line summary of what shipped
-```
-
-Consuming skills use the phase field for trend analysis (e.g., ratio of build to audit cycles, whether deliberation precedes major architectural changes).
-
-**Linter check**: None. Phase tracking is defined here for producing and consuming skills. SKILL.md integration is handled per-skill, not by the spec linter.
+**Linter check**: Deterministic. For skills in the autonomous-loop set (realisera, optimera, orkestrera), check that the `## Exit signals` section contains both "3" (the threshold) and a reference to PROGRESS.md, consecutive failure detection, or retry-based task failure patterns (`loop-guard`). Orkestrera uses retry/task-based patterns instead of PROGRESS.md. Advisory for all other skills.
 
 ## 19. Staleness Detection
 
@@ -370,3 +335,71 @@ When no active or recently completed plan exists (standalone skill invocation, a
 The fallback is advisory, not authoritative. It surfaces artifacts that may need attention but does not carry the same signal strength as plan-relative detection (where the dispatched-skill relationship provides causal evidence of staleness).
 
 **Linter check**: None. Staleness detection is a runtime convention consumed by orkestrera and inspektera, not a SKILL.md structural requirement.
+
+## 20. Reality Verification Gate
+
+Passing tests are necessary but not sufficient evidence that a cycle's work is real. A feature can be structurally correct (tests green, build clean, lint clean) and still be behaviorally broken against real project state: stale fixtures, mocked dependencies, or test doubles can hide regressions that only surface when the primary entrypoint runs against production-shaped inputs. The Reality Verification Gate closes this gap by requiring every cycle to observe its own behavior before declaring completion.
+
+This gate is orthogonal to Section 19 Staleness Detection. Section 19 asks: did the dispatched skill update the artifacts it owns? Section 20 asks: did the cycle's new behavior actually run against real state? The two gates enforce different invariants and must both hold for a cycle to be considered verified.
+
+### Evidence format
+
+Every cycle entry in PROGRESS.md carries a `**Verified**` field alongside the existing Phase/What/Commit/Inspiration/Discovered/Next/Context fields. The field is mandatory: no cycle is considered closed without it. The field accepts exactly one of three shapes:
+
+| Shape | Content |
+|-------|---------|
+| Observed output | A short transcript (or summary) of the primary entrypoint running against real project state, with the observable result recorded verbatim. The transcript should be concrete enough that a reader can tell whether the behavior actually happened |
+| Allowlisted N/A tag | `N/A: <tag>` where `<tag>` is drawn from the enumerated allowlist below |
+| Free-form N/A rationale | A prose sentence of at least 8 words explaining specifically why the change has no observable behavior. Shorter rationales fail the gate |
+
+Observed output is always preferred when the change is runnable. The N/A paths exist only for genuinely unrunnable work; they are not an escape hatch for "I didn't feel like running it."
+
+### N/A allowlist
+
+Exactly five tags are recognized. Any other shorthand must fall through to the free-form rationale path.
+
+| Tag | Meaning |
+|-----|---------|
+| `docs-only` | The change touched only documentation files (README, spec, skill instructions, templates) with no code path affected |
+| `refactor-no-behavior-change` | The change restructured code but preserved observable behavior exactly; the existing test suite is the verification surface |
+| `chore-dep-bump` | The change updated a dependency version without modifying any project code that calls that dependency differently |
+| `chore-build-config` | The change modified build tooling, linter configuration, or packaging metadata without altering runtime behavior |
+| `test-only` | The change added or adjusted tests without modifying the code under test |
+
+A cycle that bundles runnable work with an N/A-tagged change still requires observed output for the runnable portion. The tag covers only the non-runnable slice.
+
+### Project-archetype taxonomy
+
+"Primary entrypoint" is defined per project archetype, not asserted per cycle. When a cycle touches multiple subsystems, the primary entrypoint is the one most closely tied to the change under verification.
+
+| Archetype | Canonical entrypoint form |
+|-----------|---------------------------|
+| CLI tool | Invoke the binary with realistic arguments that exercise the changed path, capturing stdout/stderr and exit code |
+| Library / SDK | Run a smoke driver (a short script or REPL session) that exercises the public API surface touched by the change |
+| Web service | Send a request to a production-shaped endpoint (local server with production configuration or a staging instance) and record the response |
+| Skill repo | Dispatch the skill via the eval mechanism capability (Section 21) against a representative prompt and capture the observed skill output <!-- platform: eval-mechanism --> |
+| Design system | Render a representative component against the real design tokens and visually inspect (screenshot or DOM snapshot) against the expected output |
+| Data pipeline | Run the pipeline against a real input sample (not synthetic fixtures) and record the observed output or side effects |
+
+Projects with an archetype not listed here document their canonical entrypoint form in `.agentera/DOCS.md` under a `verification_entrypoint` key. The taxonomy is extensible; the table above is the minimum coverage.
+
+### Optional verification budget
+
+Some cycles touch slow subsystems (full data pipeline runs, long-running integration scenarios) where a complete reality check exceeds a reasonable per-cycle time budget. Projects that need a cap set a `verification_budget` key in `.agentera/DOCS.md` specifying the maximum wall-clock time per cycle. When a cycle's verification step exceeds the configured budget, the cycle MAY downgrade to a partial verification rather than blocking indefinitely.
+
+Partial verifications record as `**Verified**: partial (budget hit)` followed by a short note capturing what was attempted, what was observed before the budget was hit, and which portions of the behavior remain unverified. Partial verifications are valid cycle closures but are visible to consuming skills as weaker signal: inspektera audits treat a string of partial verifications as a health finding requiring attention.
+
+Projects without a `verification_budget` key have no time cap. The default is: take as long as verification honestly requires.
+
+### Skill-to-gate mapping
+
+The gate is enforced independently by two skills; each holds a different phase and a different slice of the enforcement contract.
+
+| Skill | Role | Phase | What it enforces |
+|-------|------|-------|------------------|
+| realisera | Primary enforcer | Cycle close | Runs the primary entrypoint against real project state and writes the observed output into the cycle's `**Verified**` field. Blocks cycle completion if the field cannot be populated with observed output, an allowlisted tag, or a qualifying free-form rationale |
+| orkestrera | Secondary enforcer | Task evaluation | Reads the latest PROGRESS.md cycle entry for the dispatched task, confirms the `**Verified**` field is present and non-empty (artifact read only; no source code read), and extends its inspektera dispatch prompt to include the Section 20 evidence-format snippet so inspektera audits whether the recorded content corresponds to the task's acceptance criteria |
+
+Realisera holds the primary enforcement contract because it is the skill that actually produces cycle entries. Orkestrera holds a lighter presence-and-quality check because it reads artifacts but never touches code; the full content audit is delegated to inspektera via the dispatch prompt.
+
+**Linter check**: Deterministic. Realisera and orkestrera SKILL.md files must reference Section 20 by name and include the `**Verified**` field in any PROGRESS.md cycle format examples they carry.

@@ -32,7 +32,7 @@ skills:
     display_name: profilera
     path: ./skills/profilera
     metadata: ./skills/profilera/agents/openai.yaml
-    description: Decision-profile mining. Limited to available Codex Section 21 source families.
+    description: Decision-profile mining. Limited to available Codex Section 22 source families.
     invocation_hint: Use $profilera when bounded Codex history, session, or config corpus data is available; inspect limitations with /skills first.
     policy:
       allow_implicit_invocation: false

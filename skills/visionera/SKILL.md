@@ -13,7 +13,7 @@ description: >
   this project become", "define the direction", "set the north star", "dream bigger",
   "rethink the vision", "refine the vision", "update VISION.md", "bootstrap the project",
   or when realisera detects no VISION.md.
-spec_sections: [4, 5, 6, 12]
+spec_sections: [4, 5, 6, 13]
 ---
 
 # VISIONERA
@@ -191,7 +191,7 @@ Output constraint: ≤20 words per principle.
 
 Present the draft to the user. Get explicit approval before writing.
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ---
 
@@ -236,7 +236,7 @@ Brief conversation (2-4 exchanges) to refine proposed changes.
 
 Show the updated vision as a diff (what changed and why). Get explicit approval before writing.
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 ---
 

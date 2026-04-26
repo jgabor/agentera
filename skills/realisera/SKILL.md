@@ -12,7 +12,7 @@ description: >
   "keep building", "start building", "work on the project", "refine the vision", or setting
   up /loop for recurring development. Also trigger when the user has a codebase and wants
   you to independently decide what to work on.
-spec_sections: [2, 3, 4, 6, 19, 22]
+spec_sections: [2, 3, 4, 6, 20, 23]
 ---
 
 # REALISERA
@@ -85,12 +85,12 @@ The vision must be ambitious enough to sustain months of development, personas c
 **Commit**: <hash> <message>
 **Inspiration**: what external source informed the approach (if any)
 **Discovered**: issues or ideas found (also logged in TODO.md)
-**Verified**: observed output from running the primary entrypoint against real project state, OR `N/A: <tag>` from the Section 19 allowlist, OR a free-form rationale of at least 8 words explaining why the change has no observable behavior
+**Verified**: observed output from running the primary entrypoint against real project state, OR `N/A: <tag>` from the Section 20 allowlist, OR a free-form rationale of at least 8 words explaining why the change has no observable behavior
 **Next**: what seems most valuable to work on next
 **Context**: intent · constraints · unknowns · scope
 ```
 
-The `**Verified**` field is mandatory for every cycle entry per contract Section 19, Reality Verification Gate. See Step 6 for how it is populated.
+The `**Verified**` field is mandatory for every cycle entry per contract Section 20, Reality Verification Gate. See Step 6 for how it is populated.
 
 The "Next" field from the previous cycle is a suggestion, not a mandate. Re-evaluate fresh.
 
@@ -141,7 +141,7 @@ The sharp colleague, here to build. Brief, focused conversation. One question at
 4. **Set the direction**: "Where is this heading? Not features, but what capabilities should it grow toward?"
 5. **Write VISION.md**: synthesize into an aspirational north star. Tone: evocative, not clinical. Present for approval before writing.
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 When **refining**, read current VISION.md, show proposed changes with rationale, get confirmation before writing. After brainstorm, proceed to cycle 1 (or resume cycling).
 
@@ -258,7 +258,7 @@ Keep small enough for one agent session. Too large? Split and save the rest for 
 
 ### Step 5: Dispatch
 
-**Pre-dispatch commit gate** (per contract Section 22): before creating the worktree, commit any pending artifact changes so the subagent branches from current state.
+**Pre-dispatch commit gate** (per contract Section 23): before creating the worktree, commit any pending artifact changes so the subagent branches from current state.
 
 1. Run `git status --porcelain`. If empty, the working tree is clean: skip to dispatch.
 2. Stage only the artifact files this session wrote (e.g., `git add .agentera/PLAN.md .agentera/PROGRESS.md`). Do not use `git add -A` or `git add .`.
@@ -298,7 +298,7 @@ For non-trivial design decisions, spawn a design sub-agent first, then an implem
 
 ### Step 6: Verify
 
-Verification has two phases per contract Section 19: structural and behavioral.
+Verification has two phases per contract Section 20: structural and behavioral.
 
 Both must pass before commit. Passing tests alone is not enough evidence.
 
@@ -320,7 +320,7 @@ The sub-agent implements; realisera verifies. Dispatched agents cannot self-atte
      Rust: `cargo test && cargo clippy`
    - Confirms both new behavior and existing tests still pass.
 
-**Phase B, behavioral verification (Reality Verification Gate)**: Once structural verification is green, observe the new behavior by running the project's primary entrypoint against real project state. The primary entrypoint depends on the project archetype per contract Section 19:
+**Phase B, behavioral verification (Reality Verification Gate)**: Once structural verification is green, observe the new behavior by running the project's primary entrypoint against real project state. The primary entrypoint depends on the project archetype per contract Section 20:
 
 - CLI tool: invoke the binary with realistic arguments
 - Library / SDK: run a smoke driver that exercises the public API touched by the change
@@ -337,7 +337,7 @@ Note what was attempted, observed, and left unverified.
 
 Capture the observation: a short transcript (stdout/stderr snippets), exit code, or summary of what happened. The transcript should be concrete enough that a reader can tell whether the behavior actually happened. This capture populates the `**Verified**` field in the PROGRESS.md cycle entry written in Step 8.
 
-**N/A path**: If the cycle has no runnable behavior change, populate `**Verified**` with `N/A: <tag>` using exactly one of the five enumerated allowlist tags from Section 19:
+**N/A path**: If the cycle has no runnable behavior change, populate `**Verified**` with `N/A: <tag>` using exactly one of the five enumerated allowlist tags from Section 20:
 
 - `docs-only`: the change touched only documentation with no code path affected
 - `refactor-no-behavior-change`: the change restructured code but preserved observable behavior exactly
@@ -378,14 +378,14 @@ If the current task is a version bump (e.g., a PLAN.md task labeled "Version bum
 
 - **TODO.md**: add newly discovered issues, mark resolved ones. Classify each entry by severity per contract severity levels. When updating existing entries (e.g., marking resolved), use the Edit tool on the specific entry rather than rewriting the file.
   Output constraint per contract token budgets.
-  When marking an item resolved, compact the `## Resolved` section via the script. Run: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py todo-resolved <path-to-TODO.md>`.
-- **.agentera/PROGRESS.md**: append the cycle entry (number, timestamp, what shipped, commit hash, inspiration, discoveries, verified observation from Step 6, next suggestion, context block (intent, constraints, unknowns, scope)). The `**Verified**` field is mandatory per contract Section 19; it carries either Step 6's observed output from the primary entrypoint, an allowlisted `N/A: <tag>`, or a free-form rationale of at least 8 words. Write the entry like a colleague's quick debrief: what happened, what surprised you, what's next. Not a form submission.
+  When marking an item resolved, compact the `## Resolved` section via the script. Run: `python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py todo-resolved <path-to-TODO.md>`.
+- **.agentera/PROGRESS.md**: append the cycle entry (number, timestamp, what shipped, commit hash, inspiration, discoveries, verified observation from Step 6, next suggestion, context block (intent, constraints, unknowns, scope)). The `**Verified**` field is mandatory per contract Section 20; it carries either Step 6's observed output from the primary entrypoint, an allowlisted `N/A: <tag>`, or a free-form rationale of at least 8 words. Write the entry like a colleague's quick debrief: what happened, what surprised you, what's next. Not a form submission.
   Output constraint per contract token budgets.
 - **CHANGELOG.md**: append a one-line entry under `## [Unreleased]` in the appropriate subsection: `feat` → Added, `refactor/chore` → Changed, `fix` → Fixed. Concise description, not the commit message verbatim.
 
-After appending a new cycle to PROGRESS.md, compact older entries via the script. Run: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py progress <path-to-PROGRESS.md>`.
+After appending a new cycle to PROGRESS.md, compact older entries via the script. Run: `python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py progress <path-to-PROGRESS.md>`.
 
-Artifact writing follows contract Section 23 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
+Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
 Then stop. One cycle complete.
 

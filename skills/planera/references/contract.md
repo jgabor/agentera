@@ -1,7 +1,7 @@
 <!-- contract: planera -->
 <!-- source: SPEC.md (sha256: 372c6fb0bf8c4febc3fb313069f6d924023264b778b9d309a0f7cd5d27209c90) -->
-<!-- sections: 3, 4, 5, 6, 16 -->
-<!-- generated: 2026-04-26T11:00:48Z -->
+<!-- sections: 3, 4, 5, 6, 17 -->
+<!-- generated: 2026-04-26T11:35:48Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -277,13 +277,34 @@ Both patterns MUST include a fallback instruction:
 
 PROFILERA_PROFILE_DIR is the sibling of AGENTERA_HOME (Section 7): both are adapter-injected env vars, but they scope to different surfaces. PROFILERA_PROFILE_DIR names the profile data directory (where PROFILE.md lives); AGENTERA_HOME names the agentera install root (where helper scripts referenced by skill prose live).
 
-## 16. Line-Break Conventions
+## 17. Test Proportionality
 
-Prose paragraphs in spec and skill text are single lines. The terminal handles wrapping; hard wraps at arbitrary column widths create noisy diffs and complicate search.
+Plans that include test tasks must specify a proportionality target so that test volume stays aligned with the complexity of the code under test. Without a constraint, autonomous agents tend to over-produce tests (3-7 per function) when fewer would cover the critical paths.
 
-| Rule | Detail |
-|------|--------|
-| One paragraph = one line | Do not manually wrap prose at 80 or 100 columns |
-| Structured content keeps its line breaks | Code blocks, bullet lists, numbered lists, tables, headings, YAML frontmatter, and HTML comments retain their inherent structure |
+### Default rule
 
-**Linter check**: Advisory. Consecutive non-blank prose lines outside structured content (code blocks, lists, tables, frontmatter, headings).
+One pass test + one fail test per testable unit. A testable unit is a function, method, endpoint, or discrete behavior boundary. Two tests per unit is sufficient to verify the happy path and one meaningful failure mode.
+
+### Edge case expansion
+
+Additional edge case tests are warranted only for units with:
+
+- Complex parsing logic (multiple input formats, escape sequences, nested structures)
+- Regex patterns (boundary conditions, catastrophic backtracking potential)
+- Multi-branch logic (3+ conditional paths, state machines, mode switches)
+
+When expanding, the plan must state which units qualify and why.
+
+### Override
+
+Plans can specify a different proportionality target by including an explicit rationale. Valid reasons include: safety-critical code paths, high-fanout utility functions, or user-specified coverage requirements. The override appears in the task's acceptance criteria alongside the adjusted target.
+
+### Skill integration
+
+| Skill | Role |
+|-------|------|
+| planera | Encodes the proportionality target as an acceptance criteria constraint on test tasks. Uses the default rule unless the plan's context justifies an override |
+| inspektera | Evaluates test volume against the proportionality target during audits. Flags both under-testing (0 tests for a testable unit) and over-testing (significantly exceeding the target without justification) |
+| orkestrera | Includes anti-bias constraint in dispatch prompts for implementation tasks. Proportionality targets reach subagents through the plan's acceptance criteria, not through a separate orkestrera-level mechanism |
+
+**Linter check**: None. This convention governs plan content and audit evaluation, not SKILL.md structure.

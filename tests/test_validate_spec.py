@@ -1413,7 +1413,7 @@ description: Autonomous development loops
 
 # REALISERA
 
-Cycle verification follows contract Section 19, Reality Verification Gate.
+Cycle verification follows contract Section 20, Reality Verification Gate.
 
 PROGRESS.md cycle format:
 - **Commit**: abc123
@@ -1430,7 +1430,7 @@ description: Multi-cycle plan execution conductor
 # ORKESTRERA
 
 Evaluation reads the latest PROGRESS.md cycle entry and confirms the
-`**Verified**` field per spec-spec Section 19 (Reality Verification Gate).
+`**Verified**` field per spec-spec Section 20 (Reality Verification Gate).
 """
 
 SYNTHETIC_REALISERA_MISSING_GATE = """\
@@ -1465,7 +1465,7 @@ class TestCheckRealityVerificationGate:
     missing subject) so a single failing skill cannot mask the other.
     """
 
-    def test_both_skills_reference_section_19_passes(self, validate_spec):
+    def test_both_skills_reference_section_20_passes(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_reality_verification_gate(
             "realisera",
@@ -1484,7 +1484,7 @@ class TestCheckRealityVerificationGate:
         assert len(gate_entries) == 2
         assert all(level == "PASS" for level, *_ in gate_entries)
 
-    def test_realisera_missing_section_19_errors(self, validate_spec):
+    def test_realisera_missing_section_20_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_reality_verification_gate(
             "realisera",
@@ -1506,9 +1506,9 @@ class TestCheckRealityVerificationGate:
         level, offending_skill, check, detail = error_entries[0]
         assert offending_skill == "realisera"
         assert "realisera" in detail
-        assert "Section 19" in detail
+        assert "Section 20" in detail
 
-    def test_orkestrera_missing_section_19_errors(self, validate_spec):
+    def test_orkestrera_missing_section_20_errors(self, validate_spec):
         r = validate_spec.Results()
         validate_spec.check_reality_verification_gate(
             "realisera",
@@ -1530,7 +1530,7 @@ class TestCheckRealityVerificationGate:
         level, offending_skill, check, detail = error_entries[0]
         assert offending_skill == "orkestrera"
         assert "orkestrera" in detail
-        assert "Section 19" in detail
+        assert "Section 20" in detail
 
 
 class TestCheckPlatformAnnotations:
@@ -1629,7 +1629,7 @@ description: Autonomous development loops
 
 Dispatch configuration uses isolation: "worktree" for subagent work.
 
-Per contract Section 22 (Pre-dispatch Commit Gate), before dispatching:
+Per contract Section 23 (Pre-dispatch Commit Gate), before dispatching:
 
 1. Create a checkpoint commit with message "checkpoint before worktree dispatch"
 2. Verify tree is clean via `git status --porcelain`
@@ -1646,7 +1646,7 @@ description: Metric-driven optimization
 
 Dispatch configuration uses isolation: "worktree" for subagent work.
 
-Per spec Section 22, Pre-dispatch Commit Gate, before dispatching:
+Per spec Section 23, Pre-dispatch Commit Gate, before dispatching:
 
 1. Create a checkpoint commit with message "checkpoint before worktree dispatch"
 2. Verify tree is clean via `git status --porcelain`
@@ -1751,6 +1751,77 @@ class TestCheckPreDispatchCommitGate:
         offending_skills = {entry[1] for entry in error_entries}
         assert "optimera" in offending_skills
         assert "realisera" not in offending_skills
+
+
+# ---------------------------------------------------------------------------
+# check_no_bare_claude_plugin_root
+# ---------------------------------------------------------------------------
+
+
+SYNTHETIC_SKILL_FALLBACK_FORM = """\
+---
+name: example
+description: Test
+---
+
+# EXAMPLE
+
+After writing a new entry, compact older entries via the script. Run:
+`python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py example <path>`.
+"""
+
+
+SYNTHETIC_SKILL_BARE_FORM = """\
+---
+name: example
+description: Test
+---
+
+# EXAMPLE
+
+After writing a new entry, compact older entries via the script. Run:
+`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py example <path>`.
+"""
+
+
+class TestCheckNoBareClaudePluginRoot:
+    """Lint rule activated by Task 4 (Cross-Runtime Portability plan).
+
+    Proportionality per Decision 21: 1 pass + 1 fail.
+    """
+
+    def test_fallback_form_passes(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_no_bare_claude_plugin_root(
+            "example",
+            SYNTHETIC_SKILL_FALLBACK_FORM,
+            r,
+        )
+        assert r.warn_count == 0
+        entries = [
+            entry for entry in r.entries if entry[2] == "no-bare-claude-plugin-root"
+        ]
+        assert len(entries) == 1
+        assert entries[0][0] == "PASS"
+
+    def test_bare_form_warns(self, validate_spec):
+        r = validate_spec.Results()
+        validate_spec.check_no_bare_claude_plugin_root(
+            "example",
+            SYNTHETIC_SKILL_BARE_FORM,
+            r,
+        )
+        assert r.warn_count == 1
+        warn_entries = [
+            entry
+            for entry in r.entries
+            if entry[0] == "WARN" and entry[2] == "no-bare-claude-plugin-root"
+        ]
+        assert len(warn_entries) == 1
+        level, offending_skill, check, detail = warn_entries[0]
+        assert offending_skill == "example"
+        assert "example/SKILL.md" in detail
+        assert "${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}" in detail
 
 
 # ---------------------------------------------------------------------------

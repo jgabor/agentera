@@ -89,7 +89,7 @@ _SENSITIVE_CONFIG_KEY_COMPOUNDS = (
 
 _REDACTED_CONFIG_VALUE = "[redacted]"
 
-# Section 21 record envelope: top-level provenance plus a payload object
+# Section 22 record envelope: top-level provenance plus a payload object
 _REQUIRED_PROVENANCE_FIELDS = (
     "source_id",
     "timestamp",
@@ -112,7 +112,7 @@ _REQUIRED_METADATA_FIELDS = (
 
 _VALID_FAMILY_STATUSES = frozenset(("ok", "missing", "partial"))
 
-# Section 21 portable source_kind values
+# Section 22 portable source_kind values
 _PORTABLE_SOURCE_KINDS = frozenset(_SOURCE_FAMILIES)
 
 # Old intermediate files to clean up when corpus.json is written
@@ -1305,12 +1305,12 @@ def _cleanup_legacy_files(output_dir: Path) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Self-validation (Section 21 provenance contract)
+# Self-validation (Section 22 provenance contract)
 # ---------------------------------------------------------------------------
 
 
 def validate_corpus(records: list[dict]) -> tuple[list[str], list[str]]:
-    """Validate corpus records against the Section 21 record contract.
+    """Validate corpus records against the Section 22 record contract.
 
     Checks every record for:
     - Required provenance fields (source_id, timestamp, project_id,
@@ -1465,7 +1465,7 @@ def _validate_aggregate_families(
 
 
 def validate_corpus_envelope(corpus: dict) -> tuple[list[str], list[str]]:
-    """Validate a Section 21 corpus envelope, including aggregate metadata."""
+    """Validate a Section 22 corpus envelope, including aggregate metadata."""
     if corpus == {}:
         return [], []
 

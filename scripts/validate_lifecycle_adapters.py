@@ -26,7 +26,7 @@ CODEX_PROFILERA_TERMS = (
     "status: degraded",
     "bounded Codex history, session, or config corpus data",
 )
-CODEX_PROFILERA_INVOCATION_TERMS = ("$profilera", "limited", "Section 21", "source families")
+CODEX_PROFILERA_INVOCATION_TERMS = ("$profilera", "limited", "Section 22", "source families")
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -190,7 +190,7 @@ def validate_codex_profilera_metadata(root: Path, plugin: dict[str, Any]) -> lis
         errors.append("codex.profilera: implicit invocation must stay disabled across metadata surfaces")
     invocation_hint = profilera.get("invocationHint")
     if not isinstance(invocation_hint, str) or any(term not in invocation_hint for term in CODEX_PROFILERA_INVOCATION_TERMS):
-        errors.append("codex.profilera: invocation hint must expose limited Section 21 source-family rules")
+        errors.append("codex.profilera: invocation hint must expose limited Section 22 source-family rules")
     capabilities = profilera.get("requiredCapabilities")
     if not isinstance(capabilities, list) or not capabilities:
         errors.append("codex.profilera: requiredCapabilities must describe corpus degradation")
