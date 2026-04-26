@@ -58,7 +58,7 @@ A single self-contained script consumes the Section 21 corpus and produces three
 ### Task 3: Emit USAGE.md, stdout summary, and JSON
 
 **Depends on**: Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN a successful analysis pass WHEN no `--json` flag is set THEN a markdown report is written to the global agentera data directory at the same XDG-default location as PROFILE.md, alongside a brief multi-line summary printed to stdout.
 ▸ GIVEN a `--json` flag WHEN the script runs THEN the full per-skill data structure is printed to stdout in JSON form and no markdown file is written.
@@ -106,3 +106,4 @@ A single self-contained script consumes the Section 21 corpus and produces three
 - Task 1 dispatch: the realisera subagent worktree branched before the planera write was committed, so it saw the prior marketplace plan still resident, archived it under a different filename, and authored its own version of this plan. Conductor reconciled by keeping the planera-authored PLAN.md and pulling the script, tests, conftest, CHANGELOG, and PROGRESS.md cycle 163 from the subagent's commit. Implication for Tasks 2-6: dispatch from the main tree (not a worktree) so the dispatched skill sees the live plan, OR commit plan changes before dispatching.
 - Task 1 design choice: same-skill pairing is LIFO so nested invocations of the same skill match correctly (intro_a, intro_b, exit_b, exit_a). For purely sequential invocations LIFO and FIFO produce identical output, so the acceptance-criteria phrasing "in order of appearance" remains satisfied.
 - Task 2 ripple: extending the per-skill bucket shape with `trigger_slash` / `trigger_natural` counters broke the Task 1 `test_user_quoted_markers_are_ignored` exact-dict assertion. Loosened it to assert only the totals/pairing fields (the original invariant), preserving the test's intent. Task 3 should expect the same shape extension when adding output surfaces.
+- Task 3 dual-override: `AGENTERA_USAGE_DIR` only relocates USAGE.md, not the corpus. The corpus still resolves under `PROFILERA_PROFILE_DIR`/XDG default because `extract_all.py` writes there. Tests and operators who want to relocate both must set both env vars. Documented in code comments at `_default_corpus_path`.
