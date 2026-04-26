@@ -944,47 +944,351 @@ def _extract_between(text: str, begin: str, end: str) -> str | None:
     return text[bi_end:ei]
 
 
+# Wall-clock cap for the substantive `copilot -p` invocation. Mirrors the
+# Codex section's 300s ceiling: comfortably above any normal model latency
+# for a two-step shell-tool prompt; below the 10-minute Bash tool cap so a
+# hung run cannot strand the harness.
+COPILOT_EXEC_TIMEOUT_SECONDS = 300
+
+# Shell rc files the harness snapshots for byte-identity verification (AC4).
+# `bash -c 'export ...'` does NOT touch any rc file, but defense-in-depth
+# (mirrors the Codex section's SHA256 round-trip on `~/.codex/config.toml`)
+# catches any regression that accidentally modified the user's real rc.
+_COPILOT_RC_CANDIDATES = (".bashrc", ".bash_profile", ".profile", ".zshrc")
+
+
 def run_copilot_live_section(
     snapshots: SnapshotRegistry,
     skips: list[tuple[str, str]],
 ) -> None:
-    """Copilot live section — Task 2 cut wires probe + snapshot only.
+    """Copilot live section — exactly one `bash -c '… copilot -p …'` per Task 4.
 
-    Tasks 3 / 4 wire the actual
-    ``bash -c 'export AGENTERA_HOME=...; copilot -p ... --allow-all-tools'``
-    invocation that issues the combined prompt. Like Codex, the Task 2
-    cut terminates at the probe; if the probe succeeds we register the
-    user's shell rc as a snapshot candidate so the framework is ready
-    for Task 4 to plug in the mutation.
+    Sequence:
+
+    1. PATH probe (``shutil.which("copilot")``); skip ``not-on-path`` on
+       miss without invoking the binary.
+    2. ``copilot --version`` sanity probe; skip ``not-authed`` on
+       non-zero / timeout (covers a half-broken install).
+    3. Auth probe (AC5): ``bash -c 'copilot -p "reply OK" --allow-all-tools'``
+       with a 30s timeout. Timeout, non-zero exit, or output that does not
+       contain ``OK`` records a SKIP with guidance pointing at GitHub
+       Copilot CLI's auth flow.
+    4. Snapshot every shell rc file in :data:`_COPILOT_RC_CANDIDATES` that
+       exists, hash each via SHA256 BEFORE any mutation. The harness uses
+       ``bash -c 'export …'`` rather than sourcing any rc, so none should
+       change; the SHA256 round-trip is defense-in-depth that mirrors the
+       Codex section's contract on ``~/.codex/config.toml``.
+    5. Build a tmp install root directory (``AGENTERA_HOME`` value for the
+       export) and seed a tmp ``PROGRESS.md`` fixture with 14 cycles.
+    6. Compose a combined prompt with the same marker brackets as Task 3
+       (``===AGENTERA_HOME_ECHO_BEGIN===`` / ``===COMPACTION_OUTPUT_BEGIN===``)
+       instructing the agent to (a) echo ``AGENTERA_HOME`` from a shell
+       tool call and (b) run ``compact_artifact.py progress <fixture>``.
+    7. Issue exactly ONE invocation of the AC1 shape:
+       ``bash -c 'export AGENTERA_HOME=<tmp>; copilot -p "<prompt>"
+       --allow-all-tools'`` via ``subprocess.run(["bash", "-c", "..."])``.
+       The literal bash-export form is required by AC1 to prove that
+       Copilot inherits ``AGENTERA_HOME`` from a parent bash shell that
+       exported it (matching the real-user shell-rc setup pattern).
+    8. Parse the agent output between the markers and assert
+       ``AGENTERA_HOME=<tmp install root>`` echoed back, fixture mtime
+       advanced, and either line count shrank or
+       ``## Archived Cycles`` heading is present (compaction effect).
+    9. SHA256 each rc file AFTER and assert byte-identity vs the BEFORE
+       hash for every snapshotted candidate (AC4).
+
+    On any substantive failure step, hard-fail via :func:`fail` (the
+    top-level ``finally`` still restores snapshots). The skip path covers
+    only "binary missing or unauthenticated" cases per AC5; the user
+    pre-authorized live spend and expects assertive verification.
     """
     info("--- copilot live section ---")
-    status = probe_runtime(
-        binary="copilot",
-        version_args=["--version"],
-        # Task 2 placeholder: a deterministic "reply OK" prompt under
-        # `copilot -p` non-interactive mode. --allow-all-tools is
-        # required for non-interactive Copilot, named explicitly in the
-        # consent line so the operator knows what they granted.
-        auth_probe_args=[
-            "-p",
-            "reply with the literal text OK",
-            "--allow-all-tools",
-        ],
-        skips=skips,
-    )
-    if status != "ok":
+
+    # Step 1: PATH probe.
+    if shutil.which("copilot") is None:
+        skip("copilot", "not on PATH", skips)
         return
-    # Probe healthy: snapshot a shell rc candidate. Tasks 4 will pick
-    # the actual rc target via the same shell-detection logic as
-    # setup_copilot.py; the Task 2 cut snapshots ~/.bashrc as the
-    # most-common case so the operator can see the plumbing in place.
-    bashrc = Path.home() / ".bashrc"
-    snapshots.snapshot(bashrc)
-    info(
-        "copilot: probe healthy; Task 2 cut terminates here. "
-        "Tasks 4 plug in `bash -c 'export AGENTERA_HOME=...; copilot -p "
-        "... --allow-all-tools'` invocation under this snapshot guard."
+    info(f"probe: copilot resolved to {shutil.which('copilot')}")
+
+    # Step 2: --version sanity probe.
+    try:
+        version_result = subprocess.run(
+            ["copilot", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        skip(
+            "copilot",
+            "binary present but `copilot --version` timed out",
+            skips,
+        )
+        return
+    if version_result.returncode != 0:
+        skip(
+            "copilot",
+            f"binary present but `copilot --version` exited "
+            f"{version_result.returncode}",
+            skips,
+        )
+        return
+    info(f"probe: copilot {version_result.stdout.strip().splitlines()[0]}")
+
+    # Step 3: AC5 auth probe via a deterministic 30s prompt under the
+    # bash-export form (same shape as the substantive call so the probe
+    # exercises the real surface). No `gh auth status` equivalent exists
+    # for `copilot`; timeout / non-zero / missing-OK are all treated as
+    # auth-required.
+    auth_probe_cmd = (
+        'copilot -p "reply with the literal text OK and nothing else" '
+        '--allow-all-tools'
     )
+    try:
+        auth_result = subprocess.run(
+            ["bash", "-c", auth_probe_cmd],
+            capture_output=True,
+            text=True,
+            timeout=AUTH_PROBE_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        skip(
+            "copilot",
+            f"binary present but auth probe timed out at "
+            f"{AUTH_PROBE_TIMEOUT_SECONDS}s; run `copilot` interactively "
+            f"to complete GitHub auth, then retry",
+            skips,
+        )
+        return
+    if auth_result.returncode != 0:
+        skip(
+            "copilot",
+            f"binary present but auth probe exited "
+            f"{auth_result.returncode}; run `copilot` interactively to "
+            f"complete GitHub auth, then retry "
+            f"(stderr={auth_result.stderr.strip()[:120]!r})",
+            skips,
+        )
+        return
+    if "OK" not in auth_result.stdout:
+        skip(
+            "copilot",
+            f"auth probe returned 0 but output missing 'OK'; likely "
+            f"unauthed or degraded; run `copilot` interactively to "
+            f"complete GitHub auth "
+            f"(stdout={auth_result.stdout.strip()[:120]!r})",
+            skips,
+        )
+        return
+    info("probe: copilot auth probe healthy (output contains 'OK')")
+
+    # Step 4: snapshot real shell rc files BEFORE any mutation. Compute
+    # SHA256 for each so the post-run check can prove byte-identity.
+    rc_paths = [Path.home() / name for name in _COPILOT_RC_CANDIDATES]
+    rc_paths = [p for p in rc_paths if p.exists()]
+    rc_sha_before: dict[Path, str] = {}
+    for rc in rc_paths:
+        snapshots.snapshot(rc)
+        rc_sha_before[rc] = _sha256(rc)
+        info(f"copilot-rc sha256 (before) {rc}: {rc_sha_before[rc]}")
+
+    # Step 5: build a tmp install root directory + tmp PROGRESS.md fixture.
+    # Using a tmp install root (not REPO_ROOT) cleanly proves that the
+    # bash-exported AGENTERA_HOME value is what propagates to copilot —
+    # there is no way for the harness's parent process to have set it to
+    # this fresh tmp path.
+    with tempfile.TemporaryDirectory(
+        prefix="agentera-smoke-copilot-home-"
+    ) as tmp_install_root_str:
+        tmp_install_root = Path(tmp_install_root_str)
+        info(f"copilot: tmp AGENTERA_HOME={tmp_install_root}")
+
+        with tempfile.TemporaryDirectory(
+            prefix="agentera-smoke-copilot-fixture-"
+        ) as tmp_workdir_str:
+            tmp_workdir = Path(tmp_workdir_str)
+            fixture = tmp_workdir / "PROGRESS.md"
+            _build_progress_fixture(fixture, num_cycles=14)
+            mtime_before = fixture.stat().st_mtime
+            lines_before = len(fixture.read_text(encoding="utf-8").splitlines())
+            info(
+                f"copilot: seeded fixture {fixture} "
+                f"(lines={lines_before}, mtime={mtime_before:.0f})"
+            )
+
+            # Step 6: compose the combined prompt. Same marker shape as
+            # Task 3 so the parser code path is shared. The prompt
+            # contains no single quotes so it can be embedded inside the
+            # bash -c '...' form without escape gymnastics.
+            compact_script = REPO_ROOT / "scripts" / "compact_artifact.py"
+            prompt = (
+                "Run exactly these two shell commands (in order) using your "
+                "shell tool. After running them, print the markers below "
+                "with the captured outputs filled in.\n\n"
+                'Command 1: echo "AGENTERA_HOME=$AGENTERA_HOME"\n'
+                f"Command 2: python3 {compact_script} progress {fixture}\n\n"
+                "Then print this block as your final message, replacing "
+                "<value1> and <value2> with the literal stdout you observed:\n\n"
+                "===AGENTERA_HOME_ECHO_BEGIN===\n"
+                "<value1>\n"
+                "===AGENTERA_HOME_ECHO_END===\n"
+                "===COMPACTION_OUTPUT_BEGIN===\n"
+                "<value2>\n"
+                "===COMPACTION_OUTPUT_END==="
+            )
+
+            # Step 7: exactly ONE bash -c invocation of the AC1 shape.
+            # The prompt is wrapped in double quotes inside the bash -c
+            # single-quoted script. Embedded double quotes inside the
+            # prompt (e.g. `echo "AGENTERA_HOME=$AGENTERA_HOME"`) MUST
+            # be escaped so bash does not terminate the outer "..."
+            # early. shlex-style: replace " with \" and $ with \$ to
+            # keep the prompt literal at the bash layer; copilot then
+            # sees the unescaped form.
+            escaped_prompt = (
+                prompt.replace("\\", "\\\\")
+                .replace('"', '\\"')
+                .replace("$", "\\$")
+                .replace("`", "\\`")
+            )
+            bash_script = (
+                f"export AGENTERA_HOME={tmp_install_root}; "
+                f'copilot -p "{escaped_prompt}" --allow-all-tools'
+            )
+            info(
+                f"copilot: invoking `bash -c 'export AGENTERA_HOME={tmp_install_root}; "
+                f"copilot -p \"...\" --allow-all-tools'`"
+            )
+            t0 = time.time()
+            try:
+                exec_result = subprocess.run(
+                    ["bash", "-c", bash_script],
+                    capture_output=True,
+                    text=True,
+                    timeout=COPILOT_EXEC_TIMEOUT_SECONDS,
+                    check=False,
+                )
+            except subprocess.TimeoutExpired as exc:
+                fail(
+                    f"`copilot -p` timed out at "
+                    f"{COPILOT_EXEC_TIMEOUT_SECONDS}s "
+                    f"(partial stdout={exc.stdout!r})"
+                )
+                return  # unreachable; satisfies type checker
+            elapsed = time.time() - t0
+            info(
+                f"copilot: `bash -c 'copilot -p ...'` returned "
+                f"exit={exec_result.returncode} in {elapsed:.1f}s"
+            )
+
+            if exec_result.returncode != 0:
+                stderr_lower = exec_result.stderr.lower()
+                if "auth" in stderr_lower or "login" in stderr_lower:
+                    skip(
+                        "copilot",
+                        f"`copilot -p` returned auth-style failure "
+                        f"(exit {exec_result.returncode}); see stderr",
+                        skips,
+                    )
+                    info(f"copilot: stdout={exec_result.stdout!r}")
+                    info(f"copilot: stderr={exec_result.stderr!r}")
+                    # fall through to rc SHA256 check before returning
+                    _assert_rc_unchanged(rc_sha_before)
+                    return
+                fail(
+                    f"`copilot -p` exit {exec_result.returncode}: "
+                    f"stdout={exec_result.stdout!r} "
+                    f"stderr={exec_result.stderr!r}"
+                )
+
+            agent_output = exec_result.stdout
+            info("copilot: --- captured agent output begin ---")
+            for line in agent_output.rstrip("\n").splitlines():
+                info(f"  {line}")
+            info("copilot: --- captured agent output end ---")
+
+            # Step 8a: parse the AGENTERA_HOME echo between markers.
+            ah_value = _extract_between(
+                agent_output,
+                "===AGENTERA_HOME_ECHO_BEGIN===",
+                "===AGENTERA_HOME_ECHO_END===",
+            )
+            assert_true(
+                ah_value is not None,
+                "copilot: could not find AGENTERA_HOME echo markers in output",
+            )
+            assert ah_value is not None  # for type checker
+            ah_value = ah_value.strip()
+            expected_marker = f"AGENTERA_HOME={tmp_install_root}"
+            assert_true(
+                expected_marker in ah_value,
+                f"copilot: AGENTERA_HOME echo {ah_value!r} does not "
+                f"contain expected {expected_marker!r}",
+            )
+            info(f"copilot: AGENTERA_HOME echo verified: {ah_value}")
+
+            # Step 8b: assert the fixture was compacted in place.
+            mtime_after = fixture.stat().st_mtime
+            text_after = fixture.read_text(encoding="utf-8")
+            lines_after = len(text_after.splitlines())
+            assert_true(
+                mtime_after > mtime_before,
+                f"copilot: fixture mtime did not advance "
+                f"(before={mtime_before} after={mtime_after})",
+            )
+            compaction_effect = (
+                lines_after < lines_before
+                or "## Archived Cycles" in text_after
+            )
+            assert_true(
+                compaction_effect,
+                f"copilot: fixture shows no compaction effect "
+                f"(lines {lines_before} -> {lines_after}, "
+                f"archived heading present: "
+                f"{'## Archived Cycles' in text_after})",
+            )
+            info(
+                f"copilot: fixture compaction verified "
+                f"(lines {lines_before} -> {lines_after}, "
+                f"archived heading: "
+                f"{'present' if '## Archived Cycles' in text_after else 'absent'})"
+            )
+
+            compaction_output = _extract_between(
+                agent_output,
+                "===COMPACTION_OUTPUT_BEGIN===",
+                "===COMPACTION_OUTPUT_END===",
+            )
+            if compaction_output:
+                info(f"copilot: compaction stdout: {compaction_output.strip()}")
+
+    # Step 9: post-run SHA256 round-trip on every snapshotted rc file.
+    _assert_rc_unchanged(rc_sha_before)
+
+    info(
+        "copilot: verified under `bash -c 'export AGENTERA_HOME=…; "
+        "copilot -p … --allow-all-tools'`; user shell rc files "
+        "byte-identical (SHA256 round-trip)"
+    )
+
+
+def _assert_rc_unchanged(rc_sha_before: dict[Path, str]) -> None:
+    """Assert each snapshotted rc file's SHA256 matches the pre-run hash.
+
+    Hard-fails on any mismatch so a regression that accidentally wrote
+    to the user's real rc surfaces loudly. Logs each file's after-hash
+    for operator audit even on the success path.
+    """
+    for rc, sha_before in rc_sha_before.items():
+        sha_after = _sha256(rc)
+        info(f"copilot-rc sha256 (after)  {rc}: {sha_after}")
+        assert_true(
+            sha_before == sha_after,
+            f"copilot: rc SHA256 changed during harness run: "
+            f"{rc} before={sha_before} after={sha_after}",
+        )
 
 
 # ---------------------------------------------------------------------------
