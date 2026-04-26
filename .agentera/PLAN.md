@@ -98,7 +98,7 @@ The version bump follows the Cycle 167/173 pattern: every file in DOCS.md `versi
 ### Task 4: [docs] README + DOCS surface and Audit 14 Freshness fix
 
 **Depends on**: Task 1, Task 2, Task 3
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 
 - GIVEN the helpers are implemented WHEN a user reads README's Codex setup section THEN it shows `python3 scripts/setup_codex.py` as the recommended path with the manual TOML snippet retained as the alternative
