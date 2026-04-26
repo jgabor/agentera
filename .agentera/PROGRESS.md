@@ -3,7 +3,7 @@
 ■ ## Cycle 166 · 2026-04-26 09:30 · docs(usage): document scripts/usage_stats.py across README, DOCS.md, AGENTS.md
 
 **What**: Task 4 of the Suite Usage Analytics plan. Documented `scripts/usage_stats.py` in three places: added a `## Scripts` section to README.md listing all three repo-level utilities (`validate_spec.py`, `eval_skills.py`, `usage_stats.py`) with invocation, output paths, and flags; added USAGE.md to `.agentera/DOCS.md` Artifact Mapping (XDG default `$XDG_DATA_HOME/agentera/USAGE.md`, sibling of PROFILE.md, producer `scripts/usage_stats.py`) plus an Index row and an Audit Log entry; added a usage_stats.py paragraph to AGENTS.md (CLAUDE.md symlink) Python scripts section covering invocation, the four flags (`--corpus`, `--project`, `--json`, plus default mode), the `AGENTERA_USAGE_DIR` override, the platform-specific output paths, and the missing-corpus exit behavior.
-**Commit**: <pending>
+**Commit**: e12c628 docs(usage): document scripts/usage_stats.py across README, DOCS.md, AGENTS.md
 **Inspiration**: Existing AGENTS.md Python-scripts pattern (one paragraph + fenced bash block per script) and the existing DOCS.md Artifact Mapping shape ($VAR/path defaults with producer column) — kept the new entries DRY and consistent with what was already there. No external pattern needed.
 **Discovered**: README.md had no `## Scripts` section at all before this cycle (only Install, Runtime support, Getting started, How it works, Skills, and the State artifacts details block). Adding one means future repo-level utilities have a clear home; chose to list all three scripts (not just the new one) so the section is useful, not a one-row stub.
 **Verified**: N/A: docs-only.
