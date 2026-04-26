@@ -1,5 +1,84 @@
 # Health
 
+## Audit 15 · 2026-04-26
+
+**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
+**Findings**: 0 critical, 0 warnings, 3 info (0 filtered by confidence)
+**Overall trajectory**: ⮉ improving vs Audit 14. The Codex+Copilot Completion plan landed two well-factored stdlib helpers, a Python smoke harness covering 11 black-box cases, and a clean 1.21.0 release. Audit 14 finding 1 (DOCS.md staleness) is resolved; finding 3 (live-host inheritance) is narrowed to a smaller residual gap on the runtime CLI side.
+**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Complexity [A] | Tests [A] | Version [A] | Freshness [A] | Security [A] | Deps [A]
+
+### Architecture alignment: A
+
+`scripts/setup_codex.py` and `scripts/setup_copilot.py` slot into the existing repo-level utilities surface alongside `compact_artifact.py`, `usage_stats.py`, and `smoke_opencode_bootstrap.mjs`. They close the user-side install-friction gap on runtimes that have no plugin-level env-injection API, advancing VISION.md's portable-runtime thesis without forking skill behavior.
+
+### Pattern consistency: A
+
+#### ⇢ Two-helper shape is a nascent setup_*.py pattern, info (confidence: 55)
+
+- **Location**: `scripts/setup_codex.py`, `scripts/setup_copilot.py`
+- **Evidence**: Both files share `verify_install_root` → `auto_detect_install_root` → `resolve_install_root` → state-classify → `plan_change` → emit-or-write, the same `--install-root` / `--dry-run` / `--force` CLI surface, and identical four-entry canonical verification (scripts/validate_spec.py, hooks/, skills/, SPEC.md).
+- **Impact**: At two instances the duplication is correct per YAGNI. A third runtime helper would justify lifting the shared shape into a small shared module.
+- **Suggested action**: Defer until a third helper is needed; revisit if Gemini CLI or another runtime requires the same setup pattern.
+
+### Coupling health: A
+
+The new helpers are stdlib-only and import nothing from `hooks/`, `skills/`, or each other. `scripts/smoke_setup_helpers.py` invokes both as black-box subprocesses, so the harness survives helper internals refactors. Test files use the standard `conftest.py` importlib pattern.
+
+### Complexity hotspots: A
+
+`setup_codex.py` (795 lines, 19 functions) and `setup_copilot.py` (717 lines, 16 functions) are the two largest stdlib scripts but stay well-factored: clear section banners, single-responsibility functions, linear `main()` orchestration, no nested-loop hotspots. The 541-line smoke harness uses 11 sequential numbered cases — the right shape for "the harness IS the test."
+
+### Test health: A
+
+#### ⇢ Codex and Copilot live-host AGENTERA_HOME inheritance still untested, info (confidence: 50)
+
+- **Location**: `scripts/smoke_setup_helpers.py`, `tests/test_runtime_adapters.py`
+- **Evidence**: 412 → 433 tests (+10 codex, +11 copilot). The smoke harness verifies the WRITE side of the AGENTERA_HOME contract (helpers correctly emit `[shell_environment_policy]` and shell-rc export blocks). Whether Codex and Copilot CLIs actually inherit AGENTERA_HOME at runtime from those files remains unverified by an automated test.
+- **Impact**: Narrower than Audit 14 finding 3 (write side is now covered). Future runtime updates could still regress the read-side inheritance without the suite catching it.
+- **Suggested action**: Continue treating as a deferred caveat until a live-host harness lands. No standalone action recommended.
+
+### Version health: A
+
+Two minor bumps today (1.19.0 → 1.20.0 → 1.21.0), both justified per `feat = minor`: 1.20.0 carried the AGENTERA_HOME contract plus OpenCode bootstrap, 1.21.0 carries the two setup helpers plus smoke harness. Splitting was correct because Audit 14 had already snapshotted 1.20.0 as a coherent unit. No unbumped commits since 9773f35.
+
+### Artifact freshness: A
+
+Audit 14 finding 1 resolved by T4 (commit 8e57ef4): DOCS.md Index now reads 433 tests across 17 files, the six previously-stale rows show 2026-04-26, and three new Index rows for `setup_codex.py`, `setup_copilot.py`, `smoke_setup_helpers.py` are present. PROGRESS, TODO, CHANGELOG, README, HEALTH all touched today. SPEC.md, DESIGN.md, VISION.md older than the plan, but the owning skills (visualisera, visionera) were not dispatched.
+
+### Security hygiene: A
+
+`setup_copilot.py` writes user shell rc files but the injection surface is well-controlled. Install-root verification rejects malicious paths before any write (a path lacking the four canonical entries fails). `_quote_for_shell` escapes `\` and `"` for bash/zsh/fish, and `_toml_basic_string` handles all TOML 1.0 basic-string escapes plus unicode-escapes control characters. Idempotency anchors on a literal marker comment, so user-written `AGENTERA_HOME` lines stay untouched. No `eval`, `exec`, `os.system`, or `shell=True`; subprocess calls are list-form with hardcoded args.
+
+#### ⇢ PROFILERA_PROFILE_DIR and AGENTERA_HOME injection asymmetry, info (confidence: 60)
+
+- **Location**: `.opencode/plugins/agentera.js:191`, `.opencode/plugins/agentera.js:231`, `SPEC.md` Section 7
+- **Evidence**: Carry-forward from Audit 14. PROFILERA_PROFILE_DIR is set by mutating `process.env`; AGENTERA_HOME is set via the `shell.env` hook. Both correct for their consumers, surface still looks inconsistent.
+- **Impact**: Same as Audit 14 — readability tax, not a defect.
+- **Suggested action**: One sentence in SPEC Section 7 naming the asymmetry as principled. Defer until SPEC.md sees its next substantive edit.
+
+> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), npm audit (Node), or similar.
+
+### Dependency health: A
+
+No new third-party dependencies. Both helpers are stdlib-only (argparse, pathlib, re, sys, os, tomllib, NamedTuple). `tomllib` is Python 3.11+ stdlib already implicit in the project. OpenCode Node dep unchanged.
+
+### Trends vs Audit 14
+
+- **Improved**: Freshness B → A (Audit 14's DOCS.md Index/Coverage warning resolved by T4). Tests stay A but the live-host gap narrowed: helpers + smoke harness cover the write side, residual confidence drops 65 → 50.
+- **Degraded**: none.
+- **Stable**: Architecture A, Patterns A (one new info on shape duplication, advisory only), Coupling A, Complexity A, Version A, Security A, Deps A.
+- **Resolved**: Audit 14 finding 1 (DOCS.md Index dates + Coverage line stale).
+- **Carried forward**: Audit 14 finding 2 (PROFILERA_PROFILE_DIR vs AGENTERA_HOME asymmetry, conf 60). Audit 14 finding 3 narrowed (live-host inheritance, conf 65 → 50).
+- **New findings**: Two-helper shape is a nascent pattern (info, conf 55, advisory).
+
+### Patterns Observed
+
+- Module structure: repo-level `scripts/` is the canonical surface for stdlib utilities. `setup_*.py` is the third archetype after `compact_artifact.py` (artifact compaction), `usage_stats.py` (corpus analytics), and the validators.
+- Helper shape: `verify_install_root` → `auto_detect_install_root` → `resolve_install_root` → state-classify → `plan_change` → emit-or-write is now a duplicated-but-parallel structure across two files. Pattern in waiting.
+- Idempotency pattern: literal marker comment + line-anchored read/rewrite, with byte-identity preservation of unrelated lines. Both helpers converged on this independently.
+- Smoke testing: language matches the system under test (Node smoke for OpenCode JS plugin, Python smoke for Python helpers). Black-box subprocess invocation rather than internal imports.
+- Release pattern: same-day double minor bumps remain acceptable when each bump represents a coherent unit; the prior audit snapshot determines the split point.
+
 ## Audit 14 · 2026-04-26
 
 **Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
@@ -811,63 +890,9 @@ No cross-skill references modified. 12-node graph intact. Carried forward from A
 
 ---
 
-## Audit 5 · 2026-04-02
-
-**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, version health, test health
-**Findings**: 0 critical, 1 warning, 1 info (0 filtered by confidence)
-**Overall trajectory**: ⮉ improving. Architecture B (was C), Patterns A (was B), Coupling A (was B), Version A (was B). Tests still D.
-**Grades**: Architecture [B] | Patterns [A] | Coupling [A] | Tests [D] | Version [A]
-
-### Architecture alignment: B
-
-5 of 6 Audit 4 findings resolved (LICENSE added, installation path fixed, ISSUES-template renamed, README intro updated, CLAUDE.md layout fixed). Orkestrera integrated cleanly across all 12 touchpoints: SKILL.md, the spec (Sections 4, 7, 11, 12), linter, all SKILL.md cross-skill sections, hej routing, manifests, README, CLAUDE.md.
-
-#### ⇉ README diagram understates inspirera connections · warning (confidence: 90)
-
-- **Location**: `README.md:84-91`
-- **Evidence**: Diagram shows single `inspirera → planera` arrow. Spec Section 7 requires references to realisera, optimera, visionera, resonera, profilera. Prose at line 93 is accurate but diagram is simplified without noting it.
-- **Impact**: Diagram understates inspirera's role in the ecosystem graph
-- **Suggested action**: Add `(simplified)` caption or additional inspirera arrows
-
-### Pattern consistency: A
-
-All 12 SKILL.md files pass 11 structural pattern checks. Orkestrera matches peer skills on: frontmatter, section ordering, artifact path resolution, safety rails (8 NEVER rules), exit signals (4 statuses), cross-skill integration (twelve-skill, 10 required refs), getting started, narration voice (5 contrast pairs), loop guard, formatting. Linter: 0 errors, 0 warnings.
-
-### Coupling health: A
-
-12-node cross-skill graph verified: all required references present per Section 7 table. Orkestrera correctly references all 10 dispatched/consumed skills. Hej references all 11 others including orkestrera. No circular dependencies, no asymmetries beyond the expected (orkestrera dispatches to skills, skills don't reference orkestrera back, by design per Decision 20).
-
-### Version health: A
-
-Post-1.5.0 bump: all 11 non-profilera plugin.json at 1.5.0, profilera at 2.4.0, marketplace.json at 1.5.0, registry.json consistent. Two post-bump commits (chore, docs) correctly do not trigger a bump per semver policy. CHANGELOG [1.5.0] promoted, [Unreleased] empty.
-
-### Test health: D
-
-No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. Linter is the only automated verification. Same state as Audit 4; orkestrera addition did not improve or degrade test health.
-
-#### ⇢ No automated tests for linter or skills · info (confidence: 95)
-
-- **Location**: `scripts/validate_spec.py`, `scripts/eval_skills.py`
-- **Evidence**: validate_spec.py has no test file. eval_skills.py exists but no evidence of regular execution.
-- **Impact**: Linter changes (like the orkestrera additions) are verified manually, not by CI
-- **Suggested action**: Add pytest tests for the linter; run eval_skills.py periodically
-
-### Trends vs Audit 4
-
-- **Improved**: Architecture [C→B] (5/6 findings resolved, orkestrera integrated cleanly), Patterns [B→A] (12th skill follows all conventions), Coupling [B→A] (12-node graph verified), Version [B→A] (clean 1.5.0 bump)
-- **Stable**: Tests [D→D] (no tests added)
-- **Resolved**: LICENSE missing, installation path, stale ISSUES-template, README intro, CLAUDE.md layout
-- **Still open**: README diagram inspirera simplification (Audit 4 finding, now warning)
-
-### Patterns Observed
-
-- Module structure: 12 skill directories, each self-contained (SKILL.md + optional references/ + scripts/ + .claude-plugin/)
-- Ecosystem enforcement: single linter (validate_spec.py) validates all 12 skills against shared spec
-- Cross-skill graph: fully connected via SKILL.md cross-skill sections; hej reads all, orkestrera dispatches all
-- State management: markdown artifacts in target projects, not in this repo
-- Versioning: collection-level semver with per-skill versions tracked in 3 file types
-
 ## Archived Audits
+
+### Audit 5 · 2026-04-02 (⮉ improving. Architecture B (was C), Patterns A (was B),...)
 
 ### Audit 4 · 2026-04-01 (first full audit (6 dimensions vs prior 2); architecture ⮋...)
 
