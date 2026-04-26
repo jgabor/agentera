@@ -1,5 +1,6 @@
 // Agentera plugin for OpenCode
-// Provides SessionStart context preload, PostToolUse artifact validation, and Stop session bookmark.
+// Bootstraps slash commands at plugin init, injects AGENTERA_HOME via shell.env,
+// and validates artifact writes via tool.execute.after.
 // Install: copy to ~/.config/opencode/plugins/agentera.js or .opencode/plugins/agentera.js
 
 import { execSync } from "child_process";
@@ -133,14 +134,6 @@ export function bootstrapCommands() {
   }
 }
 
-function readIf(filePath) {
-  try {
-    return fs.readFileSync(filePath, "utf8");
-  } catch {
-    return null;
-  }
-}
-
 function isArtifactPath(filePath, root) {
   const rel = path.relative(root, filePath);
   if (!rel) return false;
@@ -214,65 +207,44 @@ function setProfileDir() {
   }
 }
 
-export const Agentera = async ({ client, directory, worktree }) => {
-  const root = findAgenteraRoot(directory || worktree || process.cwd());
-  const agenteraDir = path.join(root, ".agentera");
+// Lifecycle counter: increments every time OpenCode invokes the Agentera
+// plugin function. Exported (and reset by) the smoke runner so the test
+// harness can confirm the plan's "once per plugin load" assumption empirically.
+export const lifecycle = { initCount: 0, lastInitAt: null };
+
+export const Agentera = async (_input, _options) => {
+  lifecycle.initCount += 1;
+  lifecycle.lastInitAt = new Date().toISOString();
+  if (process.env.AGENTERA_DEBUG_LIFECYCLE) {
+    console.error(`[agentera] plugin init fired at ${lifecycle.lastInitAt} (count=${lifecycle.initCount})`);
+  }
+
   setProfileDir();
+  bootstrapCommands();
+
+  // Resolve install root once at init. Each shell.env invocation re-reads the
+  // user-set AGENTERA_HOME so a value injected after plugin load (e.g. by a
+  // wrapping shell) is preserved.
+  const initialAgenteraHome = resolveAgenteraHome();
 
   return {
-    "session.created": async () => {
-      bootstrapCommands();
-
-      const progress = readIf(path.join(agenteraDir, "PROGRESS.md"));
-      const todo = readIf(path.join(root, "TODO.md"));
-      const health = readIf(path.join(agenteraDir, "HEALTH.md"));
-
-      const lines = [];
-      if (progress) {
-        const firstCycle = progress.split("\n").filter((l) => l.startsWith("■ ## Cycle"))[0];
-        if (firstCycle) lines.push(`Last progress: ${firstCycle.replace("■ ## ", "")}`);
-      }
-      if (health) {
-        const gradeLine = health.split("\n").find((l) => l.startsWith("**Grades**"));
-        if (gradeLine) lines.push(gradeLine.replace(/\*\*/g, ""));
-      }
-      if (todo) {
-        const criticals = todo.split("\n").filter((l) => l.includes("⇶") && l.includes("- [ ]"));
-        if (criticals.length > 0) lines.push(`${criticals.length} critical issue(s) in TODO.md`);
-      }
-
-      if (lines.length > 0) {
-        const ctx = [
-          "Agentera context preload:",
-          ...lines,
-          "",
-          "Read the relevant artifacts before starting work.",
-        ].join("\n");
-        try {
-          await client.session.create({ message: ctx });
-        } catch {}
-      }
+    "shell.env": async (_input, output) => {
+      const env = output && output.env;
+      if (!env || typeof env !== "object") return;
+      // Honor any pre-existing value (process env or already-merged shell env).
+      if (env.AGENTERA_HOME || process.env.AGENTERA_HOME) return;
+      if (!initialAgenteraHome) return;
+      env.AGENTERA_HOME = initialAgenteraHome;
     },
 
     "tool.execute.after": async (input, output) => {
       if (input.tool === "write" || input.tool === "edit") {
         const filePath = output?.args?.filePath || output?.args?.path;
+        const root = findAgenteraRoot(process.cwd());
         if (filePath && isArtifactPath(filePath, root)) {
           validateArtifact();
         }
       }
-    },
-
-    "session.idle": async () => {
-      const sessionPath = path.join(agenteraDir, "SESSION.md");
-      const timestamp = new Date().toISOString().replace("T", " ").split(".")[0];
-      const entry = `\n- ${timestamp} session idle`;
-
-      try {
-        fs.mkdirSync(agenteraDir, { recursive: true });
-        const existing = readIf(sessionPath) || "# Session\n";
-        fs.writeFileSync(sessionPath, existing + entry);
-      } catch {}
     },
   };
 };
