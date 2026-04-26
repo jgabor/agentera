@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-26 (Cross-Runtime Portability Task 3) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-26 (Codex+Copilot Setup Helpers Task 4) -->
 
 ## Conventions
 
@@ -50,12 +50,12 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | CLAUDE.md | CLAUDE.md | 2026-04-02 | ■ current |
 | Decisions | .agentera/DECISIONS.md | 2026-04-02 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
-| Progress | .agentera/PROGRESS.md | 2026-04-25 | ■ current |
-| TODO | TODO.md | 2026-04-25 | ■ current |
-| Changelog | CHANGELOG.md | 2026-04-25 | ■ current |
-| Health | .agentera/HEALTH.md | 2026-04-23 | ■ current |
+| Progress | .agentera/PROGRESS.md | 2026-04-26 | ■ current |
+| TODO | TODO.md | 2026-04-26 | ■ current |
+| Changelog | CHANGELOG.md | 2026-04-26 | ■ current |
+| Health | .agentera/HEALTH.md | 2026-04-26 | ■ current |
 | Plan | .agentera/PLAN.md | 2026-04-26 | ■ current |
-| DOCS | .agentera/DOCS.md | 2026-04-25 | ■ current |
+| DOCS | .agentera/DOCS.md | 2026-04-26 | ■ current |
 | Design | .agentera/DESIGN.md | 2026-04-19 | ■ current |
 | Ecosystem spec | SPEC.md | 2026-04-20 | ■ current |
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
@@ -68,6 +68,9 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Hooks registry | hooks/hooks.json | 2026-04-03 | ■ current |
 | Lifecycle adapter validator | scripts/validate_lifecycle_adapters.py | 2026-04-23 | ■ current |
 | Usage analytics script | scripts/usage_stats.py | 2026-04-26 | ■ current |
+| Codex setup helper | scripts/setup_codex.py | 2026-04-26 | ■ current |
+| Copilot setup helper | scripts/setup_copilot.py | 2026-04-26 | ■ current |
+| Setup helper smoke runner | scripts/smoke_setup_helpers.py | 2026-04-26 | ■ current |
 | SessionStart hook | hooks/session_start.py | 2026-04-03 | ■ current |
 | Session stop hook | hooks/session_stop.py | 2026-04-03 | ■ current |
 | Validation hook | hooks/validate_artifact.py | 2026-04-03 | ■ current |
@@ -81,9 +84,17 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 359 tests across 13 files; CI runs on push/PR via GitHub Actions
+- **Tests**: 433 tests across 17 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-26 (Codex+Copilot Setup Helpers Task 4)
+
+- [gap] DOCS.md Index missing rows for `scripts/setup_codex.py`, `scripts/setup_copilot.py`, and `scripts/smoke_setup_helpers.py` (T1+T2+T3 helpers shipped without Index entries) · warning (fixed)
+- [gap] README Codex and Copilot setup sections did not surface the new helpers as the recommended path; manual snippets were the only documented option · warning (fixed)
+- [gap] README Scripts section did not enumerate the new helpers alongside `validate_spec.py`, `eval_skills.py`, and `usage_stats.py` · warning (fixed)
+- [stale] Audit 14 finding 1: Index dates for Progress, TODO, Changelog, Health, Plan, and DOCS reflected pre-2026-04-26 commits despite same-day commits to each artifact · warning (fixed)
+- [stale] Audit 14 finding 1: Coverage line said "359 tests across 13 files"; actual is 433 across 17 (412 post-1.20.0 baseline + 10 Codex helper tests + 11 Copilot helper tests) · warning (fixed)
 
 ### 2026-04-26 (Cross-Runtime Portability Task 3)
 

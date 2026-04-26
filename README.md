@@ -95,7 +95,15 @@ Use `copilot plugin marketplace list` to inspect available marketplaces. Direct 
 
 After a successful aggregate install, `copilot plugin list` should show the `agentera` plugin. Older per-skill entries such as `hej@agentera` may also appear if they were installed through earlier metadata. Host discovery can differ from install state: Task 4 observed `/skills list` exiting 0 while omitting installed `hej`, `inspektera`, and `profilera`.
 
-After install, export `AGENTERA_HOME` in your shell rc so SKILL.md helper-script invocations resolve to the install root:
+After install, set `AGENTERA_HOME` in your shell rc so SKILL.md helper-script invocations resolve to the install root. Recommended path:
+
+```bash
+python3 scripts/setup_copilot.py
+```
+
+The helper detects your shell from `$SHELL` (bash, zsh, fish), writes a marker-commented block to the matching rc file, and is safe to re-run. Pass `--dry-run` to preview without writing, or `--rc-file PATH` to target a specific file. Auto-detected install roots are verified against canonical entries (`scripts/validate_spec.py`, `hooks/`, `skills/`, `SPEC.md`) before any write.
+
+If you prefer a manual edit:
 
 ```bash
 echo 'export AGENTERA_HOME=<plugin install root>' >> ~/.bashrc  # or ~/.zshrc
@@ -105,7 +113,15 @@ Substitute `<plugin install root>` with the directory that contains `scripts/`, 
 
 **Codex plugin marketplace**: use interactive `/plugins` to install and enable plugins. Manage marketplace sources with `codex plugin marketplace add|upgrade|remove`.
 
-After install, add `AGENTERA_HOME` to `~/.codex/config.toml` so Codex injects it into every shell-tool subprocess:
+After install, add `AGENTERA_HOME` to `~/.codex/config.toml` so Codex injects it into every shell-tool subprocess. Recommended path:
+
+```bash
+python3 scripts/setup_codex.py
+```
+
+The helper reads `~/.codex/config.toml` via stdlib `tomllib`, writes only the missing pieces, and preserves every other table byte-identically. Re-running is a no-op when the value is already set; if `[shell_environment_policy].set` already contains conflicting sibling keys, the helper refuses with a printed diff (pass `--force` to merge). Pass `--dry-run` to preview without writing. Auto-detected install roots are verified against canonical entries (`scripts/validate_spec.py`, `hooks/`, `skills/`, `SPEC.md`) before any write.
+
+If you prefer a manual edit:
 
 ```toml
 [shell_environment_policy]
@@ -329,3 +345,6 @@ Repo-level utilities live in `scripts/` and run from the repo root using only Py
 | `scripts/validate_spec.py` | Lints SKILL.md files against `SPEC.md`. Defaults to all 12 canonical skills; pass `--skill PATH` (repeatable) to validate arbitrary skills (third-party authoring). | exit code, stdout report |
 | `scripts/eval_skills.py` | Tier 2 smoke-test runner that exercises skills via `claude -p`. Flags: `--dry-run`, `--skill <name>`, `--parallel <N>`. | stdout report |
 | `scripts/usage_stats.py` | Reads the Section 21 corpus produced by `skills/profilera/scripts/extract_all.py` and reports per-skill invocation counts, exit-status pairings (complete/flagged/stuck/waiting/incomplete), and slash-vs-natural-language trigger splits. Flags: `--corpus PATH`, `--project PATH` (substring match against `project_id`), `--json`. Env: `AGENTERA_USAGE_DIR` overrides the output directory. | `USAGE.md` in the global agentera data directory (`~/.local/share/agentera/USAGE.md` on Linux, `~/Library/Application Support/agentera/USAGE.md` on macOS, `%APPDATA%/agentera/USAGE.md` on Windows) plus a brief stdout summary; `--json` mode prints the full payload to stdout and writes no file. Both surfaces include the script's run-at timestamp and the corpus's extracted-at timestamp. Missing or empty corpus exits non-zero with the extractor command in the message. |
+| `scripts/setup_codex.py` | Idempotently sets `[shell_environment_policy].set.AGENTERA_HOME` in `~/.codex/config.toml` so Codex propagates `AGENTERA_HOME` into every shell-tool subprocess. Stdlib-only; preserves all other tables byte-identically; refuses to overwrite conflicting sibling keys without `--force`. Flags: `--install-root PATH`, `--config-file PATH`, `--dry-run`, `--force`. | exit code (0 = no-op or applied, 1 = would change under `--dry-run` or refused), printed diff |
+| `scripts/setup_copilot.py` | Idempotently sets `AGENTERA_HOME` in the user's shell rc file (`~/.bashrc`, `~/.zshrc`, or `~/.config/fish/config.fish`) using a marker-commented block so Copilot CLI inherits `AGENTERA_HOME` from the surrounding shell. Stdlib-only; preserves unrelated lines. Flags: `--install-root PATH`, `--rc-file PATH`, `--dry-run`. | exit code (0 = no-op or applied, 1 = would change under `--dry-run`), printed diff |
+| `scripts/smoke_setup_helpers.py` | Smoke-tests both setup helpers in temp directories using injected env vars. Exercises Codex (fresh-write, idempotent re-run, sibling-preservation, dry-run) and Copilot (bash, zsh, fish, unsupported-shell, marker update) cases without requiring a live Codex or Copilot CLI. | `PASS: all smoke checks passed` (exit 0) or `FAIL: <reason>` (exit 1) |
