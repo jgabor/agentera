@@ -6,6 +6,7 @@
 
 ## → Normal
 
+- [ ] [version] Apply DOCS.md `feat = minor` policy and bump suite metadata from 1.18.1 to 1.19.0 to release the third-party SKILL.md validator entry point added in commit 121e40f.
 - [ ] [copilot-marketplace] Deferred: publish or verify a canonical Agentera Copilot marketplace source before documenting `agentera@<marketplace>` as an available install path.
 
 ## ⇢ Annoying

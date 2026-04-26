@@ -4,6 +4,8 @@
 
 ### Added
 
+- Spec validator accepts arbitrary SKILL.md paths via `--skill PATH` (repeatable) so third-party skill authors can validate their own SKILL.md against SPEC.md without forking the repo.
+
 ### Changed
 
 - Copilot install guidance validation now rejects unverified marketplace claims, placeholder-as-source wording, and primary deprecated fallback guidance.
