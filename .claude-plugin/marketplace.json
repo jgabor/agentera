@@ -4,14 +4,14 @@
     "name": "jgabor"
   },
   "metadata": {
-    "version": "1.21.0",
+    "version": "1.22.0",
     "description": "agentera: entry-point routing, vision, deliberation, planning, autonomous development, optimization, auditing, documentation, visual identity, research, decision-profile mining, and orchestration"
   },
   "plugins": [
     {
       "name": "hej",
       "description": "HEJ: Holistic Entry Junction: Orient, Route, Activate. Single point of entry to the suite. Detects fresh vs returning projects, delivers briefings, and routes to the right skill.",
-      "version": "1.21.0",
+      "version": "1.22.0",
       "author": {
         "name": "jgabor"
       },
@@ -22,7 +22,7 @@
     {
       "name": "inspirera",
       "description": "INSPIRERA: Insight Navigation: Source Pattern Identification and Resonance: Evaluate, Reframe, Assimilate. Analyzes external links and maps concepts, patterns, and primitives to your own projects.",
-      "version": "1.21.0",
+      "version": "1.22.0",
       "author": {
         "name": "jgabor"
       },
@@ -43,7 +43,7 @@
     {
       "name": "realisera",
       "description": "REALISERA: Relentless Execution: Autonomous Loops Iterating Software: Evolve, Refine, Adapt. Independently decides what to build, evolves projects, and makes structured progress on a codebase.",
-      "version": "1.21.0",
+      "version": "1.22.0",
       "author": {
         "name": "jgabor"
       },
@@ -54,7 +54,7 @@
     {
       "name": "optimera",
       "description": "OPTIMERA: Objective Pursuit: Targeted Iterative Measurement: Experiment, Record, Advance. Metric-driven optimization that improves any measurable property of a codebase through systematic experimentation.",
-      "version": "1.21.0",
+      "version": "1.22.0",
       "author": {
         "name": "jgabor"
       },
@@ -65,7 +65,7 @@
     {
       "name": "resonera",
       "description": "RESONERA: Reflective Engagement: Socratic Observation Nexus: Explore, Reframe, Articulate. Structured deliberation through Socratic questioning, producing decision artifacts the rest of the suite consumes.",
-      "version": "1.21.0",
+      "version": "1.22.0",
       "author": {
         "name": "jgabor"
       },
@@ -76,7 +76,7 @@
     {
       "name": "inspektera",
       "description": "INSPEKTERA: Integrity Navigation: Systematic Pattern Evaluation, Knowledge Tracing: Examine, Report, Advise. Codebase health audit with multi-dimensional evaluation, confidence scoring, and trend tracking.",
-      "version": "1.21.0",
+      "version": "1.22.0",
       "author": {
         "name": "jgabor"
       },
@@ -87,7 +87,7 @@
     {
       "name": "planera",
       "description": "PLANERA: Planning Logic: Adaptive Notation, Executable Requirements Architecture: Explore, Refine, Articulate. Scale-adaptive planning with behavioral acceptance criteria that bridges deliberation and execution.",
-      "version": "1.21.0",
+      "version": "1.22.0",
       "author": {
         "name": "jgabor"
       },
@@ -98,7 +98,7 @@
     {
       "name": "visionera",
       "description": "VISIONERA: Visionary Inception: Strategic Imagination, Observation Nexus: Explore, Refine, Articulate. Deep creation and stewardship of VISION.md through codebase exploration, domain research, and aspirational challenge.",
-      "version": "1.21.0",
+      "version": "1.22.0",
       "author": {
         "name": "jgabor"
       },
@@ -109,7 +109,7 @@
     {
       "name": "dokumentera",
       "description": "DOKUMENTERA: Documentation Origin: Knowledge Unified, Methodology Enforced, Notation Traced: Examine, Record, Articulate. DTC-first documentation creation, maintenance, and verification with DOCS.md coverage tracking.",
-      "version": "1.21.0",
+      "version": "1.22.0",
       "author": {
         "name": "jgabor"
       },
@@ -120,7 +120,7 @@
     {
       "name": "visualisera",
       "description": "VISUALISERA: Visual Identity: Systematic Unified Aesthetic Language, Intent-driven Style Engineering: Record, Articulate. Creates, refines, and audits DESIGN.md visual identity files with bundled spec and validation.",
-      "version": "1.21.0",
+      "version": "1.22.0",
       "author": {
         "name": "jgabor"
       },
@@ -131,7 +131,7 @@
     {
       "name": "orkestrera",
       "description": "ORKESTRERA: Orchestration Runtime: Knowledge-coordinated Execution Strategy, Targeted Routing: Evaluate, Resolve, Adapt. Skill-agnostic meta-orchestrator that dispatches skills as subagents, evaluates with inspektera, and loops through plans.",
-      "version": "1.21.0",
+      "version": "1.22.0",
       "author": {
         "name": "jgabor"
       },
