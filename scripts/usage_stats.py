@@ -1,13 +1,20 @@
 """Suite usage analytics: detect skill invocations from a Section 21 corpus.
 
-This is the core analysis pipeline (Task 1 of the Suite Usage Analytics plan,
-Decision 31). It reads a Section 21 corpus envelope, finds skill workflow
-markers in assistant `conversation_turn` records, and pairs introduction
-markers with their matching exit signals within each conversation.
+Task 1 (committed) landed marker detection, conversation grouping, and
+intro/exit pairing. Task 2 (this file's current scope) layers two things
+on top:
 
-Output surfaces (USAGE.md, stdout summary, --json, --project filter) are out
-of scope for this task and belong to later tasks. The minimal CLI here exists
-only so tests can exercise the pipeline.
+1. **Trigger classification** — each invocation is tagged ``slash`` or
+   ``natural`` based on the user turn that immediately precedes the
+   introduction marker within the same conversation.
+2. **Project scoping** — a ``--project PATH`` flag scopes the analysis to
+   one project's records; without the flag the analysis spans every
+   project in the corpus and exposes a per-project breakdown alongside
+   the cross-project totals.
+
+Output surfaces (USAGE.md, stdout summary, --json) remain out of scope
+and belong to Task 3. The CLI extension here exists so tests can exercise
+the new behavior end-to-end.
 
 Marker format (per SPEC.md sections 5 + 12)::
 
@@ -21,6 +28,7 @@ introduction or an exit status (``complete``, ``flagged``, ``stuck``,
 Usage::
 
     python3 scripts/usage_stats.py --corpus path/to/corpus.json
+    python3 scripts/usage_stats.py --corpus corpus.json --project agentera
 """
 
 from __future__ import annotations
@@ -40,6 +48,11 @@ from typing import Iterable
 # ---------------------------------------------------------------------------
 
 EXIT_STATUSES: frozenset[str] = frozenset({"complete", "flagged", "stuck", "waiting"})
+
+# Trigger classification labels. Stored on each Invocation so downstream
+# Task 3 surfaces (USAGE.md, stdout, JSON) can render slash-vs-NL splits.
+TRIGGER_SLASH = "slash"
+TRIGGER_NATURAL = "natural"
 
 # Divider runs of U+2500 (one or more), padded by spaces, around the body.
 # Body = "<glyph> <skillname> · <word>" where:
@@ -81,6 +94,9 @@ class Invocation:
     exit_status: str | None = None           # one of EXIT_STATUSES, or None
     exit_source_id: str | None = None
     exit_timestamp: str | None = None
+    # Task 2 additions: trigger phrasing + project scoping context.
+    trigger: str = TRIGGER_NATURAL           # one of TRIGGER_SLASH / TRIGGER_NATURAL
+    project_id: str = ""                     # project this invocation came from
 
 
 # ---------------------------------------------------------------------------
@@ -218,7 +234,166 @@ def pair_invocations(turns: Iterable[dict]) -> list[Invocation]:
 
 
 # ---------------------------------------------------------------------------
-# Top-level orchestrator (debug-only for Task 1)
+# Trigger classification
+# ---------------------------------------------------------------------------
+#
+# Two slash-command runtime conventions are recognized. Anything else falls
+# through to natural-language. Codex / Copilot are intentionally out of
+# scope for this task (per the plan's Task 2 acceptance) and are documented
+# here so future work knows where to extend.
+#
+#   1. **Claude Code**: the user turn wraps the slash command in a
+#      ``<command-name>/X</command-name>`` tag (sometimes accompanied by
+#      ``<command-message>`` and ``<command-args>`` siblings). The same
+#      runtime also accepts a bare line beginning with ``/skillname``
+#      followed by whitespace or end-of-line.
+#
+#   2. **OpenCode**: the user turn carries the slash invocation as a plain
+#      line whose first non-whitespace characters match
+#      ``/skillname(\s|$)``. There is no XML wrapping. We treat any user
+#      turn whose first non-whitespace line matches that shape as
+#      slash-triggered.
+#
+# Future runtimes (Codex, Copilot, others) can extend this by adding a
+# new pattern and listing it in the comment above; the classifier function
+# returns slash on the first match and natural otherwise.
+
+# Claude Code XML tag form: <command-name>/anything</command-name>.
+_CLAUDE_CODE_XML_RE = re.compile(
+    r"<command-name>\s*/[A-Za-z0-9._:-]+\s*</command-name>",
+)
+
+# Bare slash form, e.g. ``/realisera`` or ``/realisera arg`` as the first
+# non-whitespace token on a line. Covers both Claude Code (when the user
+# types the slash directly) and OpenCode (which never uses XML wrapping).
+_BARE_SLASH_RE = re.compile(
+    r"(?m)^\s*/[A-Za-z0-9._:-]+(?:\s|$)",
+)
+
+
+def classify_trigger(user_turn_text: str | None) -> str:
+    """Return ``TRIGGER_SLASH`` if the user turn carries a slash signature.
+
+    Falls back to ``TRIGGER_NATURAL`` when no signature is present (the
+    common case for free-form prompts) or when the preceding user turn is
+    missing entirely (the conversation opened with the assistant for some
+    reason — defensive default, not a real corpus shape).
+
+    Recognized signatures: Claude Code ``<command-name>`` XML tag, and the
+    bare ``/skillname`` shape used by both Claude Code and OpenCode.
+    """
+    if not user_turn_text:
+        return TRIGGER_NATURAL
+    if _CLAUDE_CODE_XML_RE.search(user_turn_text):
+        return TRIGGER_SLASH
+    if _BARE_SLASH_RE.search(user_turn_text):
+        return TRIGGER_SLASH
+    return TRIGGER_NATURAL
+
+
+# ---------------------------------------------------------------------------
+# Project scoping
+# ---------------------------------------------------------------------------
+#
+# Section 21 records carry a ``project_id`` field (a derived short name
+# such as ``agentera`` or ``jg-go`` for Claude Code, or ``"global"`` for
+# non-project-scoped data). The Claude Code adapter derives this from the
+# project's directory path via ``project_name_from_dir``.
+#
+# ``--project PATH`` accepts either the short project_id directly (e.g.
+# ``--project agentera``) or a longer filesystem-style path whose final
+# component is the project name (e.g. ``--project /home/me/git/agentera``).
+# The match is a substring check in either direction so both forms work
+# without the caller knowing which encoding the corpus uses. This is
+# documented at the CLI flag and re-stated here so callers do not have to
+# guess: substring matching against ``project_id`` is the contract.
+
+
+def _project_match(record_project_id: str, requested: str) -> bool:
+    """True iff ``record_project_id`` matches the user-supplied filter.
+
+    Uses bidirectional substring matching so a short id like ``agentera``
+    matches a long path like ``/home/me/git/agentera`` and vice versa.
+    Empty record ids never match (they would otherwise spuriously match
+    any non-empty filter via the substring rule).
+    """
+    if not record_project_id or not requested:
+        return False
+    return record_project_id in requested or requested in record_project_id
+
+
+def filter_records_by_project(
+    records: Iterable[dict], requested: str | None
+) -> list[dict]:
+    """Return only records whose ``project_id`` matches ``requested``.
+
+    When ``requested`` is None (the cross-project default), all records
+    pass through unchanged. When supplied, records without a
+    ``project_id`` field or with a non-matching value are dropped.
+    """
+    if requested is None:
+        return list(records)
+    out: list[dict] = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        pid = record.get("project_id", "")
+        if isinstance(pid, str) and _project_match(pid, requested):
+            out.append(record)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Preceding-user-turn lookup
+# ---------------------------------------------------------------------------
+#
+# Pair_invocations runs over assistant-only turns. To classify a trigger
+# we need the user turn that immediately precedes the assistant turn that
+# carried the introduction marker — within the same conversation. We build
+# a per-conversation timeline of user turns once and binary-search-style
+# walk it per invocation. Linear scans are fine in practice (corpora are
+# small and conversations are bounded) so we keep the implementation
+# straightforward.
+
+
+def _user_turns_by_conversation(records: Iterable[dict]) -> dict[str, list[dict]]:
+    """Group user conversation turns by source_id, sorted by timestamp."""
+    buckets: dict[str, list[dict]] = defaultdict(list)
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        if record.get("source_kind") != "conversation_turn":
+            continue
+        data = record.get("data")
+        if not isinstance(data, dict):
+            continue
+        if data.get("actor") != "user":
+            continue
+        sid = record.get("source_id")
+        if not isinstance(sid, str):
+            continue
+        buckets[sid].append(record)
+    for items in buckets.values():
+        items.sort(key=lambda r: r.get("timestamp", ""))
+    return dict(buckets)
+
+
+def _preceding_user_turn(
+    user_turns: list[dict], assistant_timestamp: str
+) -> dict | None:
+    """Return the latest user turn strictly before ``assistant_timestamp``."""
+    candidate: dict | None = None
+    for turn in user_turns:
+        ts = turn.get("timestamp", "")
+        if ts < assistant_timestamp:
+            candidate = turn
+        else:
+            break
+    return candidate
+
+
+# ---------------------------------------------------------------------------
+# Top-level orchestrator
 # ---------------------------------------------------------------------------
 
 
@@ -226,30 +401,111 @@ def pair_invocations(turns: Iterable[dict]) -> list[Invocation]:
 class CorpusAnalysis:
     """Aggregated invocation analysis. Output surfaces are not yet attached.
 
-    Task 1 only exposes the pipeline; later tasks will derive USAGE.md /
-    stdout / JSON output from the same `invocations` list.
+    Task 1 exposed the pipeline; Task 2 adds trigger classification, the
+    project filter, and a per-project breakdown alongside the cross-project
+    totals. Output surfaces (USAGE.md / stdout / JSON) come in Task 3.
+
+    ``project_filter`` is the value of the ``--project`` flag (None when
+    unset). When None, ``per_project`` is populated so Task 3 can render
+    cross-project totals plus per-project subtotals; when set, the filter
+    is already applied to ``invocations`` and ``per_project`` is left
+    empty (the global ``skills`` dict already reflects the single project).
     """
 
     invocations: list[Invocation] = field(default_factory=list)
     skills: dict[str, dict[str, int]] = field(default_factory=dict)
+    project_filter: str | None = None
+    per_project: dict[str, dict[str, dict[str, int]]] = field(default_factory=dict)
 
 
-def analyze_corpus(corpus: dict) -> CorpusAnalysis:
-    """Run the full pipeline against a Section 21 corpus envelope."""
-    records = corpus.get("records", []) if isinstance(corpus, dict) else []
+def _empty_skill_bucket() -> dict[str, int]:
+    """Per-skill counter shape. Kept in one place so Task 3 stays in sync."""
+    return {
+        "total": 0,
+        "completed": 0,
+        "incomplete": 0,
+        "trigger_slash": 0,
+        "trigger_natural": 0,
+    }
+
+
+def _accumulate(bucket: dict[str, int], inv: Invocation) -> None:
+    """Fold one invocation into a per-skill counter bucket."""
+    bucket["total"] += 1
+    bucket["completed" if inv.completed else "incomplete"] += 1
+    bucket["trigger_slash" if inv.trigger == TRIGGER_SLASH else "trigger_natural"] += 1
+
+
+def analyze_corpus(
+    corpus: dict, project_filter: str | None = None
+) -> CorpusAnalysis:
+    """Run the full pipeline against a Section 21 corpus envelope.
+
+    When ``project_filter`` is set, only records whose ``project_id``
+    matches the filter contribute to the analysis (substring match in
+    either direction; see ``_project_match``). When ``project_filter`` is
+    None, every project in the corpus contributes and the result carries a
+    ``per_project`` breakdown alongside the cross-project ``skills`` total.
+    """
+    raw_records = corpus.get("records", []) if isinstance(corpus, dict) else []
+    records = filter_records_by_project(raw_records, project_filter)
+
+    # Build user-turn timelines once: classification needs the latest user
+    # turn strictly before each assistant turn that carried an intro marker.
+    user_turns_by_conv = _user_turns_by_conversation(records)
+
     grouped = group_by_conversation(records)
     invocations: list[Invocation] = []
-    for turns in grouped.values():
-        invocations.extend(pair_invocations(turns))
+    for sid, turns in grouped.items():
+        # Map intro_timestamp -> project_id for fast post-pairing tagging.
+        # All assistant turns within a conversation share the same source_id
+        # but each turn carries its own project_id (they should agree, but we
+        # do not assume — we attach per-invocation rather than per-conversation).
+        ts_to_project = {
+            t.get("timestamp", ""): str(t.get("project_id", ""))
+            for t in turns
+        }
+        for inv in pair_invocations(turns):
+            inv.project_id = ts_to_project.get(inv.intro_timestamp, "")
+            preceding = _preceding_user_turn(
+                user_turns_by_conv.get(sid, []), inv.intro_timestamp
+            )
+            preceding_text = ""
+            if preceding is not None:
+                data = preceding.get("data") or {}
+                preceding_text = data.get("content") or ""
+            inv.trigger = classify_trigger(preceding_text)
+            invocations.append(inv)
+
     invocations.sort(
         key=lambda inv: (inv.intro_timestamp, inv.intro_source_id, inv.skill)
     )
-    skills: dict[str, dict[str, int]] = defaultdict(lambda: {"total": 0, "completed": 0, "incomplete": 0})
+
+    skills: dict[str, dict[str, int]] = defaultdict(_empty_skill_bucket)
+    per_project: dict[str, dict[str, dict[str, int]]] = defaultdict(
+        lambda: defaultdict(_empty_skill_bucket)
+    )
     for inv in invocations:
-        bucket = skills[inv.skill]
-        bucket["total"] += 1
-        bucket[("completed" if inv.completed else "incomplete")] += 1
-    return CorpusAnalysis(invocations=invocations, skills=dict(skills))
+        _accumulate(skills[inv.skill], inv)
+        # Per-project breakdown only matters in cross-project mode; when the
+        # caller filtered to a single project, ``skills`` already reflects it.
+        if project_filter is None and inv.project_id:
+            _accumulate(per_project[inv.project_id][inv.skill], inv)
+
+    # Convert nested defaultdicts to plain dicts so JSON serialization in
+    # Task 3 stays predictable. defaultdict round-trips fine but plain
+    # dicts make tests easier to read.
+    per_project_plain: dict[str, dict[str, dict[str, int]]] = {
+        pid: {skill: dict(counts) for skill, counts in skill_map.items()}
+        for pid, skill_map in per_project.items()
+    }
+
+    return CorpusAnalysis(
+        invocations=invocations,
+        skills={k: dict(v) for k, v in skills.items()},
+        project_filter=project_filter,
+        per_project=per_project_plain,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -265,8 +521,9 @@ def _read_corpus(path: Path) -> dict:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="usage_stats",
-        description="Detect skill invocations and pair them with exit signals "
-                    "(Task 1 core pipeline; output surfaces land in later tasks).",
+        description="Detect skill invocations, pair them with exit signals, "
+                    "and classify trigger phrasing (Tasks 1 + 2 pipeline; "
+                    "USAGE.md / stdout / JSON surfaces land in Task 3).",
     )
     parser.add_argument(
         "--corpus",
@@ -274,12 +531,25 @@ def main(argv: list[str] | None = None) -> int:
         required=True,
         help="Path to a Section 21 corpus.json envelope.",
     )
+    parser.add_argument(
+        "--project",
+        type=str,
+        default=None,
+        help=(
+            "Scope analysis to a single project. Accepts either a short "
+            "project_id (e.g. 'agentera') or a path-like value whose final "
+            "component matches a project_id (substring match either way). "
+            "Default: cross-project analysis with a per-project breakdown."
+        ),
+    )
     args = parser.parse_args(argv)
     corpus = _read_corpus(args.corpus)
-    analysis = analyze_corpus(corpus)
+    analysis = analyze_corpus(corpus, project_filter=args.project)
     pprint(
         {
+            "project_filter": analysis.project_filter,
             "skills": analysis.skills,
+            "per_project": analysis.per_project,
             "invocations": [vars(inv) for inv in analysis.invocations],
         },
         stream=sys.stdout,

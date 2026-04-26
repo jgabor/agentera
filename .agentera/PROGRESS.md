@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 164 · 2026-04-26 08:10 · feat(usage): classify trigger phrasing and scope by project
+
+**What**: Task 2 of the Suite Usage Analytics plan. Extended `scripts/usage_stats.py` with a slash-vs-natural classifier (Claude Code XML `<command-name>` tag, Claude Code bare `/skillname` line, OpenCode bare `/skillname` line) and a `--project PATH` filter that scopes analysis to one project. Cross-project default now also surfaces a `per_project` breakdown alongside the global totals so Task 3 can render both without recomputing. Output surfaces (USAGE.md, stdout summary text, `--json`) remain Task 3's job.
+**Commit**: 902efc0 feat(usage): classify trigger phrasing and scope by project
+**Inspiration**: Decision 31 trigger-classification rules grounded in the slash-command signature reference shipped with the task brief; classifier rule set documented in `scripts/usage_stats.py` so future Codex / Copilot extensions know where to plug in.
+**Discovered**: Extending the per-skill bucket shape with `trigger_slash` / `trigger_natural` rippled into the existing Task 1 `test_user_quoted_markers_are_ignored` assertion (exact dict match no longer held). Loosened it to check only the totals/pairing fields, preserving the original invariant. Logged as a Surprise in PLAN.md so Task 3 expects the same shape extension when wiring output surfaces.
+**Verified**: `python3 -m pytest tests/test_usage_stats.py -v` -> 30 passed (was 18; +12 new tests covering classifier pass/fail + 3 edge forms + an inline-slash negative, project filter pass/fail + path-form match, and 3 analyze_corpus integrations for trigger tagging, per-project breakdown, and the `--project` scope). `python3 -m pytest -q` -> 393 passed (was 381). `python3 scripts/validate_spec.py` -> 0 errors, 0 warnings across 12 skills. Behavioral smoke against `/tmp/usage_smoke_task2.json` (synthetic Section 21 corpus with three projects: agentera/realisera triggered via Claude Code XML, lira/planera triggered via OpenCode bare slash, jg-go/inspektera triggered in natural language): cross-project run produced `realisera {trigger_slash:1}`, `planera {trigger_slash:1}`, `inspektera {trigger_natural:1}` with a populated `per_project` dict for all three project_ids; `--project agentera` narrowed to one realisera invocation with `per_project={}`; `--project /home/me/git/lira` matched the short id `lira` via substring and returned the single planera invocation. Three classification rules and the project filter all observably hold. `git diff --check` clean.
+**Next**: Task 3 (USAGE.md write, stdout summary text, `--json` flag, missing-corpus error path). The `CorpusAnalysis` dataclass already exposes `project_filter`, `skills`, `per_project`, and per-invocation `trigger` / `project_id` fields, so Task 3 is purely a rendering layer over the analysis dict.
+**Context**: intent (land trigger classification + project scoping for Decision 31's Task 2) · constraints (stdlib only, no output surfaces, no changes to Task 1 marker/grouper/pairing internals, ~1 pass + 1 fail per testable unit with edge expansion for the slash classifier, no worktree dispatch, single conventional commit) · unknowns (whether real Claude Code corpora carry XML wrapping consistently or only when the slash arrived via the `/command` palette vs typed inline) · scope (`scripts/usage_stats.py`, `tests/test_usage_stats.py`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
+
 ■ ## Cycle 163 · 2026-04-26 07:30 · feat(usage): detect skill invocations and pair with exit signals
 
 **What**: Landed `scripts/usage_stats.py` core pipeline (Task 1 of the new Suite Usage Analytics plan). Stdlib-only marker detector, conversation grouper, and pairing walker that turn a Section 21 corpus into completed/incomplete invocations per skill. Output surfaces (USAGE.md, stdout summary, --json, --project) deferred to Tasks 2 and 3.
@@ -90,28 +100,10 @@
 **Next**: Task 2 can align install surface while preserving the no-verified-source branch.
 **Context**: intent (establish repeatable marketplace evidence) · constraints (Task 1 only, no README or validation changes, no invented sources) · unknowns (whether Agentera will later be published to a Copilot marketplace) · scope (`.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
 
-■ ## Cycle 154 · 2026-04-25 16:10 · docs(copilot): prefer marketplace plugin installs
-
-**What**: Completed the Copilot marketplace guidance plan. README now leads with `plugin@marketplace`, keeps direct installs as deprecated fallback, and explains aggregate versus legacy installed plugin entries.
-**Commit**: d69e069 docs(copilot): prefer marketplace plugin installs
-**Inspiration**: Copilot CLI warning during direct `jgabor/agentera` install plus the inspirera cross-pollination analysis.
-**Discovered**: Copilot has built-in marketplaces available, while local plugin state can show both aggregate `agentera` and older per-skill `@agentera` entries.
-**Verified**: `python3 -m pytest tests/test_runtime_adapters.py -q` -> 24 passed. `python3 -m pytest -q` -> 359 passed. `python3 scripts/validate_spec.py` -> 0 errors, 0 warnings. `copilot plugin marketplace list` showed `copilot-plugins` and `awesome-copilot`; `copilot plugin list` showed aggregate `agentera (v1.18.1)` plus older per-skill entries.
-**Next**: Publish or add an actual Agentera Copilot marketplace source when the canonical source is available.
-**Context**: intent (make Copilot install docs marketplace-first) · constraints (no invented marketplace name, keep partial hook caveat, direct fallback stays) · unknowns (canonical Agentera marketplace source not verified) · scope (`README.md`, adapter tests, state artifacts).
-
-■ ## Cycle 153 · 2026-04-25 15:23 · fix(copilot): load skills from checkout plugin root
-
-**What**: Completed the Copilot packaging fix. Current-checkout loading now uses root `plugin.json`, so Copilot sees shared `skills/` inside the plugin root.
-**Commit**: f628cc1 fix(copilot): load skills from checkout plugin root
-**Inspiration**: Cycle 152 live smoke found `skills path escapes plugin directory: ../../skills`.
-**Discovered**: Copilot accepts a repo-root plugin manifest with `skills: "skills"` and `hooks: ".github/hooks"`, avoiding duplicated skill files while preserving `skills/<name>/SKILL.md` as source of truth.
-**Verified**: `copilot --config-dir /tmp/agentera-copilot-smoke --plugin-dir $HOME/git/agentera -p "/skills list" --no-custom-instructions --no-auto-update --output-format text` exited 0 and listed 12 agentera skills. `python3 scripts/validate_lifecycle_adapters.py` -> `lifecycle adapter metadata ok`. `python3 -m pytest tests/test_runtime_adapters.py -q` -> 22 passed. `python3 -m pytest -q` -> 357 passed. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings. Artifact validation and `git diff --check` passed.
-**Next**: Run a follow-up health check if you want Audit 12 updated to reflect the closed Copilot current-checkout caveat.
-**Context**: intent (fix Copilot current-checkout packaging) · constraints (no duplicate skill source, no dependencies, live smoke required) · unknowns (marketplace install behavior still uses installed plugin path) · scope (`plugin.json`, Copilot validators/tests, README, state artifacts).
-
 ## Archived Cycles
 
+- Cycle 154 (2026-04-25): docs(copilot): prefer marketplace plugin installs
+- Cycle 153 (2026-04-25): fix(copilot): load skills from checkout plugin root
 - Cycle 152 (2026-04-25): chore(runtime): smoke live Copilot and Codex hosts
 - Cycle 151 (2026-04-25): chore(plan): checkpoint Audit 11 freshness
 - Cycle 150 (2026-04-25): chore(release): bump suite to 1.18.1
@@ -150,5 +142,3 @@
 - Cycle 117 (2026-04-13): Plan-level freshness checkpoint for Pre-dispatch Commit Gate plan (7 tasks, all complete). The plan delivered SPEC.md Section 22 (pre-dispatch commit...
 - Cycle 116 (2026-04-13): Version bump 1.12.0 to 1.13.0 per DOCS.md semver_policy (feat = minor). Updated all 12 plugin.json files, registry.json (12 skill entries),...
 - Cycle 115 (2026-04-13): Added tests for Check 19 (pre-dispatch-commit-gate) in `tests/test_validate_spec.py`. Three tests following the Check 17 proportionality pattern: 1 pass (both realisera...
-- Cycle 114 (2026-04-13): Added Check 19 (pre-dispatch-commit-gate) to `scripts/validate_spec.py`. For skills in `WORKTREE_DISPATCH_SKILLS` (realisera, optimera), the check verifies four gate procedure indicators: Section...
-- Cycle 113 (2026-04-13): Added pre-dispatch commit gate to optimera Step 4 (Implement) per SPEC.md Section 22. The gate checks working tree status, stages...
