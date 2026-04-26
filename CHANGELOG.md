@@ -4,6 +4,7 @@
 
 ### Added
 
+- `scripts/usage_stats.py` core analysis pipeline detects skill workflow markers in Section 21 corpus assistant turns and pairs introductions with exit signals per conversation. Output surfaces (USAGE.md, stdout summary, JSON) land in later tasks.
 - Spec validator accepts arbitrary SKILL.md paths via `--skill PATH` (repeatable) so third-party skill authors can validate their own SKILL.md against SPEC.md without forking the repo.
 
 ### Changed
