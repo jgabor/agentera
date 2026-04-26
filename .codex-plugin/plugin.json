@@ -12,7 +12,7 @@
     "invocationHint": "Use $skill for explicit invocation, for example $hej. Portable skills may also be invoked implicitly.",
     "limitations": [
       "Lifecycle hooks are unavailable for real-time Write/Edit interception in Codex. Run validation commands manually after edits.",
-      "profilera collects bounded Codex session corpus data when present and degrades by reporting missing source families in corpus metadata.",
+      "profilera collects bounded Codex session corpus data when present and reports any absent source families in corpus metadata.",
       "AGENTERA_HOME must be set in ~/.codex/config.toml under [shell_environment_policy].set so SKILL.md helper-script invocations resolve to the install root; see README install instructions."
     ]
   },
@@ -72,12 +72,12 @@
       "requiredCapabilities": [
         {
           "name": "codex_session_corpus",
-          "status": "degraded",
-          "action": "Run profilera extraction; missing Codex source families are reported in corpus metadata instead of blocking extraction."
+          "status": "ok",
+          "action": "Run profilera extraction; Codex history, session, and config surfaces land in the Section 22 corpus when present, with absent surfaces reported in corpus metadata."
         }
       ],
       "limitations": [
-        "Codex corpus collection is bounded to known history, session, and config surfaces. Missing source families are reported as degraded metadata."
+        "Codex corpus collection is bounded to known history, session, and config surfaces. Absent surfaces are reported in corpus metadata."
       ]
     },
     {

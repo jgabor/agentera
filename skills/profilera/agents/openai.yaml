@@ -8,7 +8,7 @@ policy:
 dependencies:
   required_capabilities:
     - name: codex_session_corpus
-      status: degraded
-      action: "Run profilera extraction; missing Codex source families are reported in corpus metadata."
+      status: ok
+      action: "Run profilera extraction; Codex history, session, and config surfaces land in the Section 22 corpus when present, with absent surfaces reported in corpus metadata."
   limitations:
-    - "Codex corpus collection is bounded to known history, session, and config surfaces. Missing source families are reported as degraded metadata."
+    - "Codex corpus collection is bounded to known history, session, and config surfaces. Absent surfaces are reported in corpus metadata."

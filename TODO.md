@@ -8,6 +8,7 @@
 
 - [ ] [copilot-marketplace] Deferred: publish or verify a canonical Agentera Copilot marketplace source before documenting `agentera@<marketplace>` as an available install path.
 - [ ] [opencode-session-events] Replace the SESSION.md bookmark wiring using OpenCode's real `event` mechanism. The legacy `session.idle` hook key is phantom (the `@opencode-ai/plugin` Hooks interface has no such member), so the bookmark write is currently dead under OpenCode. Pair this with reconsidering the OpenCode session-start context preload that lived inside the dropped `session.created` block (Cross-Runtime Portability PLAN T2 Surprise / Cycle 170).
+- [ ] [claude-code-extract-duplicate-source-ids] `skills/profilera/scripts/extract_all.py::_records_from_conversations` builds `source_id` from `(runtime, source_kind, timestamp, session_id, response_hash)` only — the same `(timestamp, session_id, user_response)` tuple appears in multiple `~/.claude/projects/*.jsonl` files (resumed conversations, exported sessions), producing duplicate source_ids and blocking corpus.json writes (21 errors observed against live data on 2026-04-26). Fix by adding `str(jsonl_path)` (the source file) to the key parts in `_generate_source_id` and threading the path through `_process_conversation`/`extract_conversations` into the entry dict. Out of scope for Live-Host Verification Task 1 (Codex audit only); filed during that audit (PLAN.md Surprise).
 
 ## ⇢ Annoying
 

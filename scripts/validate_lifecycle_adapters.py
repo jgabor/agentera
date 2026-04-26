@@ -23,9 +23,9 @@ COPILOT_PROFILERA_TERMS = ("profilera", "bounded", "corpus", "metadata", "missin
 CODEX_PROFILERA_TERMS = (
     "allow_implicit_invocation: false",
     "codex_session_corpus",
-    "status: degraded",
     "bounded Codex history, session, or config corpus data",
 )
+CODEX_PROFILERA_STATUS_VALUES = ("ok", "degraded")
 CODEX_PROFILERA_INVOCATION_TERMS = ("$profilera", "limited", "Section 22", "source families")
 
 
@@ -193,9 +193,14 @@ def validate_codex_profilera_metadata(root: Path, plugin: dict[str, Any]) -> lis
         errors.append("codex.profilera: invocation hint must expose limited Section 22 source-family rules")
     capabilities = profilera.get("requiredCapabilities")
     if not isinstance(capabilities, list) or not capabilities:
-        errors.append("codex.profilera: requiredCapabilities must describe corpus degradation")
-    elif capabilities[0].get("name") != "codex_session_corpus" or capabilities[0].get("status") != "degraded":
-        errors.append("codex.profilera: corpus capability must remain degraded and named consistently")
+        errors.append("codex.profilera: requiredCapabilities must declare the corpus capability")
+    elif capabilities[0].get("name") != "codex_session_corpus":
+        errors.append("codex.profilera: corpus capability must be named codex_session_corpus")
+    elif capabilities[0].get("status") not in CODEX_PROFILERA_STATUS_VALUES:
+        errors.append(
+            "codex.profilera: corpus capability status must be one of "
+            + ", ".join(CODEX_PROFILERA_STATUS_VALUES)
+        )
 
     metadata_paths = [root / "agents/openai.yaml", root / "skills/profilera/agents/openai.yaml"]
     for path in metadata_paths:
@@ -206,6 +211,11 @@ def validate_codex_profilera_metadata(root: Path, plugin: dict[str, Any]) -> lis
         for term in CODEX_PROFILERA_TERMS:
             if term not in text:
                 errors.append(f"codex.profilera: {path.relative_to(root)} missing {term!r}")
+        if not any(f"status: {value}" in text for value in CODEX_PROFILERA_STATUS_VALUES):
+            errors.append(
+                f"codex.profilera: {path.relative_to(root)} missing status declaration "
+                "(expected one of " + ", ".join(CODEX_PROFILERA_STATUS_VALUES) + ")"
+            )
         if "collector exists" in text or "not implemented" in text:
             errors.append(f"codex.profilera: {path.relative_to(root)} contains stale missing-collector wording")
 
