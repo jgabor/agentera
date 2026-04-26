@@ -70,7 +70,7 @@ A single self-contained script consumes the Section 21 corpus and produces three
 ### Task 4: Document the script
 
 **Depends on**: Task 3
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the README scripts section WHEN a reader looks for usage analytics THEN the new script is listed with its invocation, output path, and the flags it accepts.
 ▸ GIVEN DOCS.md WHEN a reader audits documented artifacts THEN USAGE.md appears in the artifact mapping or coverage notes with its global XDG path and producer identified as the new script.

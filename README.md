@@ -302,3 +302,13 @@ Three project-facing files at root, nine operational files in `.agentera/`.
 `PROFILE.md` is global. Profilera writes to `$PROFILERA_PROFILE_DIR/PROFILE.md` (defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux, platform-appropriate paths on macOS and Windows). Other runtimes override this via the `PROFILERA_PROFILE_DIR` environment variable or the host adapter contract.
 
 </details>
+
+## Scripts
+
+Repo-level utilities live in `scripts/` and run from the repo root using only Python stdlib.
+
+| Script | Purpose | Output |
+|--------|---------|--------|
+| `scripts/validate_spec.py` | Lints SKILL.md files against `SPEC.md`. Defaults to all 12 canonical skills; pass `--skill PATH` (repeatable) to validate arbitrary skills (third-party authoring). | exit code, stdout report |
+| `scripts/eval_skills.py` | Tier 2 smoke-test runner that exercises skills via `claude -p`. Flags: `--dry-run`, `--skill <name>`, `--parallel <N>`. | stdout report |
+| `scripts/usage_stats.py` | Reads the Section 21 corpus produced by `skills/profilera/scripts/extract_all.py` and reports per-skill invocation counts, exit-status pairings (complete/flagged/stuck/waiting/incomplete), and slash-vs-natural-language trigger splits. Flags: `--corpus PATH`, `--project PATH` (substring match against `project_id`), `--json`. Env: `AGENTERA_USAGE_DIR` overrides the output directory. | `USAGE.md` in the global agentera data directory (`~/.local/share/agentera/USAGE.md` on Linux, `~/Library/Application Support/agentera/USAGE.md` on macOS, `%APPDATA%/agentera/USAGE.md` on Windows) plus a brief stdout summary; `--json` mode prints the full payload to stdout and writes no file. Both surfaces include the script's run-at timestamp and the corpus's extracted-at timestamp. Missing or empty corpus exits non-zero with the extractor command in the message. |
