@@ -85,7 +85,7 @@ The version bump follows the Cycle 167/173 pattern: every file in DOCS.md `versi
 ### Task 3: [test] Smoke harness for both setup helpers
 
 **Depends on**: Task 1, Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 
 - GIVEN both helpers are implemented WHEN `python3 scripts/smoke_setup_helpers.py` runs THEN it exercises the Codex helper across fresh-write, idempotent re-run, sibling-preservation, and dry-run cases against a temp `~/.codex/config.toml`
