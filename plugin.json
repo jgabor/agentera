@@ -1,6 +1,6 @@
 {
   "name": "agentera",
-  "version": "1.20.0",
+  "version": "1.21.0",
   "description": "agentera: entry-point routing, vision, deliberation, planning, autonomous development, optimization, auditing, documentation, visual identity, research, decision-profile mining, and orchestration. profilera uses bounded Copilot corpus metadata when present; missing source families degrade in local metadata and do not imply live host behavior. Requires AGENTERA_HOME exported in your shell rc so SKILL.md helper-script invocations resolve to the install root; see README install instructions.",
   "skills": "skills",
   "hooks": ".github/hooks"

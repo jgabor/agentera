@@ -112,7 +112,7 @@ The version bump follows the Cycle 167/173 pattern: every file in DOCS.md `versi
 ### Task 5: [chore] Bump suite to 1.21.0
 
 **Depends on**: Task 1, Task 2, Task 3, Task 4
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 
 - GIVEN two new feats shipped (Codex helper, Copilot helper) WHEN the bump runs THEN every file listed in DOCS.md `version_files` shows `1.21.0` and zero files show `1.20.0`
