@@ -103,7 +103,11 @@ First impression: the colleague meets a new project.
 Show where things stand.
 
 1. **Read artifacts**: VISION.md, PROGRESS.md, TODO.md, HEALTH.md, PLAN.md, DECISIONS.md
-   in parallel. First 20 lines each. Skip absent ones. Extract most recent entry or summary.
+   - Read in parallel. First 20 lines each. Skip absent ones.
+   - Extract the most recent entry or summary.
+   - If TODO.md, PLAN.md, OBJECTIVE.md, or DECISIONS.md hints at active work, keep reading.
+   - Identify the first concrete open item or current plan task before routing.
+   - Do not route from a heading or summary alone when an executable follow-up exists nearby.
 
 2. **Brief them**: concise status, only what exists. No empty sections.
    Show the agentera logo.
@@ -159,11 +163,25 @@ Show where things stand.
 
    Nothing? Say so. A clean bill of health is useful.
 
-4. **Suggest next action**: one skill based on state. Use the target glyph:
-   critical issues → ⧉/⛶, stale vision → ⛥, vision but no plan → ≡,
-   degrading health → ⛶, stalled optimization → ⎘, healthy + plan ready to execute → ⎈, healthy + open tasks → ⧉, healthy + plan complete → ⛥
+4. **Select the concrete next action before selecting the skill**.
+   - The routing suggestion MUST name the artifact item it would act on.
+   - Valid objects: `PLAN Task N: <title>`, `TODO: <item>`, `DECISION N follow-up`, `OBJECTIVE: <metric>`, or `VISION refresh`.
+   - A skill name without a concrete object is not a valid suggestion.
 
-5. **Route**: present suggestion, let user choose. No coercion.
+   Priority order:
+   - Active PLAN with pending tasks → suggest ⎈ `/orkestrera` for the first unblocked pending task.
+   - Critical or degrading health → suggest ⛶ `/inspektera` or ⧉ `/realisera` for the named finding.
+   - Active OBJECTIVE with stalled or missing metric evidence → suggest ⎘ `/optimera` for that metric.
+   - TODO.md open items → suggest ⧉ `/realisera` for the highest-severity open item; prefer items that unlock product evidence or future plans.
+   - Pending DECISIONS.md follow-up → suggest ❈ `/resonera` for the named unresolved decision.
+   - Vision exists but no plan, objective, decision follow-up, or TODO work is active → suggest ≡ `/planera`.
+   - Healthy, no executable follow-ups, and the plan is complete → suggest ⛥ `/visionera` to choose a new direction.
+
+   Do not let `healthy + plan complete → ⛥` override active TODO, OBJECTIVE, DECISIONS, or a newer active PLAN. A completed plan means "look for the next executable follow-up," not automatically "refresh vision."
+
+5. **Route**: present one concrete suggestion and let the user choose. No coercion.
+   - Do not list generic skill options unless the user asks for the full menu.
+   - The waiting bullet should ask whether to run the named action, not ask the user to pick from skills.
 
 ---
 
