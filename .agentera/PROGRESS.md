@@ -1,5 +1,15 @@
 # Progress
 
+■ ## Cycle 162 · 2026-04-26 06:35 · feat(validator): accept arbitrary SKILL.md paths for third-party authoring
+
+**What**: Spec validator now takes `--skill PATH` (repeatable). External skill authors can run `python3 scripts/validate_spec.py --skill path/to/SKILL.md` against SPEC.md without forking the repo. Default glob over the canonical 12 stays unchanged.
+**Commit**: 121e40f feat(validator): accept arbitrary SKILL.md paths for third-party authoring
+**Inspiration**: Vision direction names third-party skills building against the spec. Analytics flagged 12/12 prior cycles drew on external inspiration and asked for original design grounded in the project's own vision.
+**Discovered**: `check_cross_skill_integration` already handled unknown skill names gracefully via `REQUIRED_REFS.get(skill, [])`, so no bypass logic was needed. CLAUDE.md turned out to be a symlink to AGENTS.md, which is the canonical file.
+**Verified**: `python3 scripts/validate_spec.py --skill skills/realisera/SKILL.md` exited 0 and printed `Results: 0 error(s), 0 warning(s) across 1 skills`. `python3 scripts/validate_spec.py --skill /tmp/nonexistent/SKILL.md` exited 1 with `ERROR: SKILL.md not found: /tmp/nonexistent/SKILL.md`. `python3 scripts/validate_spec.py --help` rendered the new flag with third-party authoring context. Default `python3 scripts/validate_spec.py` still reported 0 errors and 0 warnings across 12 skills. `python3 -m pytest -q` returned 363 passed (was 361 before, +2 new TestMainSkillFlag tests). `python3 scripts/validate_lifecycle_adapters.py` returned `lifecycle adapter metadata ok`. `git diff --check` was clean.
+**Next**: Apply DOCS.md `feat = minor` policy and bump suite metadata from 1.18.1 to 1.19.0. This cycle deferred the bump to keep scope on the validator surface.
+**Context**: intent (open the spec validator to third-party skill authors) · constraints (preserve default behavior, two-test budget, no version bump this cycle, no worktree dispatch) · unknowns (whether external authors will need `twelve-skill suite` phrasing softened later) · scope (`scripts/validate_spec.py`, `tests/test_validate_spec.py`, `AGENTS.md`).
+
 ■ ## Cycle 161 · 2026-04-25 18:55 · chore(plan): checkpoint copilot marketplace freshness
 
 **What**: Completed Task 7 only. Closed the canonical Copilot marketplace plan with a compact state refresh across plan, progress, TODO, and changelog evidence.
@@ -90,38 +100,11 @@
 **Next**: Run a follow-up health check if you want Audit 12 updated to reflect the closed Copilot current-checkout caveat.
 **Context**: intent (fix Copilot current-checkout packaging) · constraints (no duplicate skill source, no dependencies, live smoke required) · unknowns (marketplace install behavior still uses installed plugin path) · scope (`plugin.json`, Copilot validators/tests, README, state artifacts).
 
-■ ## Cycle 152 · 2026-04-25 13:46 · chore(runtime): smoke live Copilot and Codex hosts
-
-**What**: Completed the live host smoke plan. Codex `$hej` ran successfully, installed Copilot skill discovery worked, and current-checkout Copilot plugin loading exposed one blocker.
-**Commit**: 909522b chore(runtime): record live host smoke results
-**Inspiration**: Active plan plus Audit 12's preserved live-host caveat.
-**Discovered**: Copilot `--plugin-dir $HOME/git/agentera` and `.github/plugin` both failed with `skills path escapes plugin directory: ../../skills`. Installed Copilot plugins still show agentera skills at `1.16.0` and profilera at `2.8.0`, while `--plugin-dir` cannot load the current `1.18.1` checkout.
-**Verified**: `copilot --version` -> `GitHub Copilot CLI 1.0.35`; `codex --version` -> `codex-cli 0.124.0`. `copilot plugin list` showed installed agentera skills, and `copilot -p "/skills list"` exited 0 with available user skills including `realisera`, `planera`, `orkestrera`, `inspektera`, `dokumentera`, `inspirera`, `optimera`, `resonera`, `visionera`, and `visualisera`. `copilot --plugin-dir $HOME/git/agentera -p "..."` exited 1 with `skills path escapes plugin directory: ../../skills`; `.github/plugin` as plugin dir failed the same way. `codex -a never exec --sandbox read-only --ephemeral -C $HOME/git/agentera "Reply with exactly: codex-live-ok"` returned `codex-live-ok`. `codex -a never exec --sandbox read-only --ephemeral -C $HOME/git/agentera '$hej'` invoked hej and produced the agentera dashboard. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings. `python3 -m pytest -q` -> 357 passed. Artifact validation and `git diff --check` passed for changed artifacts.
-**Next**: Fix or package Copilot plugin skills so current-checkout loading cannot escape the plugin root.
-**Context**: intent (validate live Copilot/Codex host behavior) · constraints (read-only host smokes, no secrets, no dependencies) · unknowns (Copilot package layout for shared skill directories) · scope (PLAN, TODO, CHANGELOG, DOCS, PROGRESS).
-
-■ ## Cycle 151 · 2026-04-25 12:07 · chore(plan): checkpoint Audit 11 freshness
-
-**What**: Completed Task 8 only. Audit 11 Runtime Portability Cleanup now has one completed plan state across CHANGELOG, TODO, DOCS, PLAN, and PROGRESS.
-**Commit**: produced commits: none (user explicitly requested no commits during this orchestration)
-**Inspiration**: Task 8 acceptance criteria and the realisera plan-completion sweep contract for plan-level freshness.
-**Discovered**: `[Unreleased]` was empty after the 1.18.1 promotion, and TODO still carried two Audit 11 cleanup entries open. Live Copilot/Codex host behavior remains untested.
-**Verified**: Artifact-only checkpoint with no runnable behavior. CHANGELOG `[Unreleased]` has one plan-level Changed line for Audit 11. This PROGRESS entry summarizes the plan and lists produced commits as none. TODO has Audit 11 cleanup entries resolved plus an explicit deferred live-host caveat. DOCS marks Progress, TODO, Changelog, Plan, and DOCS current for 2026-04-25, and PLAN status is complete with Task 8 complete. The live Copilot/Codex host caveat remains explicit in PLAN Deferred, TODO, and this entry. `git diff --check -- CHANGELOG.md TODO.md .agentera/DOCS.md .agentera/PLAN.md .agentera/PROGRESS.md` -> no output. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings. `python3 -m pytest -q` -> 357 passed in 0.35s.
-**Next**: Orkestrera can evaluate the completed Audit 11 plan. Live Copilot/Codex host smoke tests remain the deferred release caveat.
-**Context**: intent (Task 8 freshness artifacts only) · constraints (no feature work, no commits, concise plan-level updates) · unknowns (live Copilot/Codex host behavior remains untested) · scope (`CHANGELOG.md`, `TODO.md`, `.agentera/DOCS.md`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
-
-■ ## Cycle 150 · 2026-04-25 12:05 · chore(release): bump suite to 1.18.1
-
-**What**: Completed Task 7 only. Applied DOCS.md `fix = patch` policy to the Audit 11 fix work, bumping documented suite version targets from 1.18.0 to 1.18.1 and promoting release notes.
-**Commit**: none (user explicitly requested no commits)
-**Inspiration**: DOCS.md versioning convention and Task 7 acceptance criteria for semver, release-note category coverage, and version-signal consistency.
-**Discovered**: `tests/test_runtime_adapters.py` still mutated `1.18.0` for the OpenCode drift test; after the bump that fixture no longer changed the plugin text, so the version-signal test was updated to mutate `1.18.1`.
-**Verified**: Version audit -> `DOCS fix=patch -> 1.18.1; registry 12, skill plugin.json 12, marketplace top/non-profilera, .github, .codex, and OpenCode marker aligned; release notes cover contract alignment, metadata validation, redaction, and validation hardening without live host claims`, substantiating all three acceptance criteria. `python3 scripts/validate_lifecycle_adapters.py` -> `lifecycle adapter metadata ok`. `python3 -m pytest tests/test_runtime_adapters.py -q` -> `22 passed in 0.03s`. `python3 -m pytest -q` -> `357 passed in 0.35s`. `node --check .opencode/plugins/agentera.js` -> no output. `claude plugin validate .` -> `Validation passed`; per-skill plugin validation -> 12 manifests passed. `python3 scripts/validate_spec.py` -> 0 errors, 16 baseline warnings. `git diff --check -- <touched Task 7 files>` -> no output.
-**Next**: Task 8 can perform the plan-level freshness checkpoint. Do not archive or freshness-sweep the plan before Task 8 runs.
-**Context**: intent (Task 7 version bump only) · constraints (no plan freshness checkpoint, no live host claims, no commits) · unknowns (live Copilot/Codex behavior remains untested) · scope (version files, changelog, runtime version test, PLAN/PROGRESS bookkeeping).
-
 ## Archived Cycles
 
+- Cycle 152 (2026-04-25): chore(runtime): smoke live Copilot and Codex hosts
+- Cycle 151 (2026-04-25): chore(plan): checkpoint Audit 11 freshness
+- Cycle 150 (2026-04-25): chore(release): bump suite to 1.18.1
 - Cycle 149 (2026-04-25): test(profilera): deepen corpus validation fixtures
 - Cycle 148 (2026-04-25): refactor(profilera): localize corpus runtime orchestration
 - Cycle 147 (2026-04-25): fix(adapters): repair OpenCode path and hook drift
@@ -159,7 +142,3 @@
 - Cycle 115 (2026-04-13): Added tests for Check 19 (pre-dispatch-commit-gate) in `tests/test_validate_spec.py`. Three tests following the Check 17 proportionality pattern: 1 pass (both realisera...
 - Cycle 114 (2026-04-13): Added Check 19 (pre-dispatch-commit-gate) to `scripts/validate_spec.py`. For skills in `WORKTREE_DISPATCH_SKILLS` (realisera, optimera), the check verifies four gate procedure indicators: Section...
 - Cycle 113 (2026-04-13): Added pre-dispatch commit gate to optimera Step 4 (Implement) per SPEC.md Section 22. The gate checks working tree status, stages...
-- Cycle 112 (2026-04-13): Added pre-dispatch commit gate to realisera Step 5 per SPEC.md Section 22. The gate checks working tree status, stages only...
-- Cycle 111 (2026-04-13): Added Section 22 (Pre-dispatch Commit Gate) to SPEC.md. Defines the checkpoint commit convention for skills that dispatch subagents to git...
-- Cycle 110 (2026-04-12): Plan rollup: Optimera Multi-Objective Support (ISS-39, Decision 30). Migrated `.optimera/` under `.agentera/optimera/` with named subdirs per objective (realisera-token, hej-token). Updated...
-- Cycle 109 (2026-04-12): Removed realisera "Getting started" section (onboarding docs, not needed during cycle execution). Tier 1: 12,310 -> 12,055 tokens (-255). Cumulative...
