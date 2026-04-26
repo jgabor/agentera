@@ -1,5 +1,79 @@
 # Health
 
+## Audit 14 · 2026-04-26
+
+**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
+**Findings**: 0 critical, 1 warning, 2 info (0 filtered by confidence)
+**Overall trajectory**: stable vs Audit 13. Cross-Runtime Portability landed the AGENTERA_HOME contract cleanly across SPEC, OpenCode, Codex, and Copilot, and 1.20.0 shipped coherent. One DOCS.md staleness gap surfaced because dokumentera updated only the Audit Log, not the Index.
+**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Complexity [A] | Tests [A] | Version [A] | Freshness [B] | Security [A] | Deps [A]
+
+### Architecture alignment: A
+
+SPEC.md Section 7 formalizes AGENTERA_HOME with a per-runtime mechanism table. The 7-23 to 8-24 renumber landed atomically across SKILL.md frontmatter, prose Section refs, validator code, test fixtures, and regenerated contract.md files.
+
+### Pattern consistency: A
+
+#### ⇢ PROFILERA_PROFILE_DIR and AGENTERA_HOME injection asymmetry, info (confidence: 60)
+
+- **Location**: `.opencode/plugins/agentera.js:191`, `.opencode/plugins/agentera.js:231`, `SPEC.md:367`
+- **Evidence**: PROFILERA_PROFILE_DIR is set by mutating `process.env` at plugin init; AGENTERA_HOME is set via the `shell.env` hook returning an env fragment merged into shell-tool subprocesses.
+- **Impact**: Both correct for their consumers (PROFILE.md is read by helpers in the plugin Node process; AGENTERA_HOME is for shell-tool subprocesses), but the surface looks inconsistent.
+- **Suggested action**: One sentence in SPEC Section 6 or 7 names the asymmetry as principled so future readers do not normalize them.
+
+### Coupling health: A
+
+The `.codex-plugin/plugin.json` + `scripts/validate_lifecycle_adapters.py` + `tests/test_runtime_adapters.py` triplet is properly coupled around Section 22 invocationHint flow. Cycle 172 documented and synced all three atomically.
+
+### Complexity hotspots: A
+
+`check_no_bare_claude_plugin_root` is small, single-responsibility, code-block-aware, and unit-tested with one pass plus one fail.
+
+### Test health: A
+
+#### ⇢ Codex and Copilot live-host AGENTERA_HOME inheritance untested, info (confidence: 65)
+
+- **Location**: `tests/test_runtime_adapters.py`, `scripts/smoke_opencode_bootstrap.mjs`
+- **Evidence**: The OpenCode `shell.env` branch is smoke-tested. Codex `shell_environment_policy.set` and Copilot rc inheritance are documented but unverified by an automated test against a live host.
+- **Impact**: Future runtime updates could regress AGENTERA_HOME propagation under Codex or Copilot without the suite catching it; same caveat pattern as Audit 11's deferred live Copilot/Codex host smoke.
+- **Suggested action**: Treat as continuation of the existing live-host caveat; reconsider if a host smoke harness lands.
+
+### Version health: A
+
+12/12 per-skill `plugin.json`, marketplace, registry, root and `.github` Copilot manifests, `.codex-plugin/plugin.json`, and `.opencode/plugins/agentera.js` AGENTERA_VERSION all at 1.20.0. CHANGELOG records three feats, one docs, one refactor coherently.
+
+### Artifact freshness: B
+
+#### ⇉ DOCS.md Index dates and Coverage test count are stale, warning (confidence: 92)
+
+- **Location**: `.agentera/DOCS.md:53-58`, `.agentera/DOCS.md:84`
+- **Evidence**: Index rows for Progress, TODO, Changelog, Health, Plan, and DOCS show 2026-04-25 or 2026-04-23 but `git log -1` reports 2026-04-26 for each. Coverage line says "359 tests across 13 files"; actual is 412 tests across 14 test files.
+- **Impact**: Plan-relative staleness: dokumentera was dispatched in T3 but updated only the Audit Log section; Index rows and Coverage row carried into the post-plan state. Consuming skills reading DOCS.md see stale ground truth.
+- **Suggested action**: Bump six Index rows to 2026-04-26 and update Coverage to "412 tests across 14 files" in a single dokumentera or chore cycle.
+
+### Security hygiene: A
+
+Secret-pattern matches were limited to inspektera's own documented examples. No `eval()`, `exec()`, `os.system()`, or `subprocess shell=True` calls in agentera scripts, hooks, or the OpenCode plugin.
+
+> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), npm audit (Node), or similar.
+
+### Dependency health: A
+
+Python remains stdlib-only across validators, hooks, and tests. The OpenCode `@opencode-ai/plugin` Node dependency is unchanged this cycle.
+
+### Trends vs Audit 13
+
+- **Improved**: Cross-runtime portability surface is materially stronger: OpenCode plugin moved from broken-by-phantom-hook to actually working; Codex and Copilot users have copy-pasteable setup snippets backed by verified-source authority; spec validator gained a deterministic guard against future bare `${CLAUDE_PLUGIN_ROOT}` regressions.
+- **Degraded**: One new warning under Freshness (DOCS.md Index and Coverage drift). Two new info items (PROFILERA_PROFILE_DIR vs AGENTERA_HOME injection asymmetry, Codex/Copilot live-host coverage gap).
+- **Stable**: Validators, version targets, security posture, and dependency footprint held green at the post-1.20.0 baseline.
+- **Resolved**: Audit 11 deferred items remained closed; the cross-runtime helper-path defect that motivated the plan is gone.
+
+### Patterns Observed
+
+- Module structure: SPEC primitives are now two adapter-injected env vars (PROFILERA_PROFILE_DIR for profile data, AGENTERA_HOME for install root) plus host-specific adapter manifests; SKILL.md prose stays runtime-agnostic via bash-fallback forms.
+- Adapter strategy: each runtime uses its own native, documented mechanism (Claude Code bash fallback, OpenCode `shell.env`, Codex `shell_environment_policy`, Copilot rc export); no custom abstraction layer.
+- Testing approach: lint rules added with one-pass + one-fail proportionality; smoke harness covers OpenCode plugin lifecycle; live-host paths for Codex and Copilot remain explicit caveats.
+- Release pattern: DOCS.md `feat = minor` policy continues to drive minor bumps; CHANGELOG promotion atomic with the bump cycle.
+
 ## Audit 13 · 2026-04-25
 
 **Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
@@ -793,216 +867,9 @@ No unit tests for validate_spec.py. No eval smoke tests run via eval_skills.py. 
 - State management: markdown artifacts in target projects, not in this repo
 - Versioning: collection-level semver with per-skill versions tracked in 3 file types
 
-## Audit 4 · 2026-04-01
-
-**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, test health, version health, dependency health
-**Findings**: 3 critical, 14 warnings, 6 info (0 filtered by confidence)
-**Overall trajectory**: first full audit (6 dimensions vs prior 2); architecture ⮋ B→C, patterns stable B→B
-**Grades**: Architecture [C] | Patterns [B] | Coupling [B] | Tests [D] | Version [B] | Deps [B]
-
-### Architecture alignment: C
-
-#### ⇉ No LICENSE file · warning (confidence: 100)
-
-- **Location**: repo root
-- **Evidence**: No LICENSE/LICENSE.md exists. VISION.md states "openness over lock-in" and "open standard."
-- **Impact**: All rights reserved by default; external use legally blocked
-- **Suggested action**: Add LICENSE (MIT or Apache 2.0)
-
-#### ⇉ Installation path double-nesting · warning (confidence: 95)
-
-- **Location**: `README.md:85-106`
-- **Evidence**: Clone to `~/.claude/skills` produces `~/.claude/skills/skills/inspirera`
-- **Impact**: Confusing path; will generate user questions
-- **Suggested action**: Clone to `~/.claude/agentera` instead
-
-#### ⇉ Stale ISSUES-template.md · warning (confidence: 95)
-
-- **Location**: `skills/realisera/references/templates/ISSUES-template.md`
-- **Evidence**: D13 renamed ISSUES.md→TODO.md; template still says "# Issues"
-- **Impact**: Contributors find deprecated template
-- **Suggested action**: Rename to TODO-template.md, update content
-
-#### ⇉ README intro omits two skills · warning (confidence: 95)
-
-- **Location**: `README.md:3`
-- **Evidence**: Lists 8 workflows, claims 10; missing research (inspirera) and design (visualisera)
-- **Impact**: Two skills invisible in opening pitch
-- **Suggested action**: Add "researching, designing"
-
-#### ⇉ README diagram incomplete for inspirera · warning (confidence: 90)
-
-- **Location**: `README.md:27-48`
-- **Evidence**: Diagram shows inspirera→planera only; text says realisera+optimera; SKILL.md shows 5 connections
-- **Impact**: Ecosystem diagram understates inspirera
-- **Suggested action**: Add edges or note as simplified
-
-#### ⇢ CLAUDE.md layout omits plugin.json · info (confidence: 90)
-
-- **Location**: `CLAUDE.md:10-21`
-- **Evidence**: Layout shows SKILL.md, references/, scripts/ but not .claude-plugin/plugin.json
-- **Impact**: Contributors miss plugin structure
-- **Suggested action**: Add to layout block
-
-### Pattern consistency: B
-
-#### ⇉ inspirera section ordering anomaly · warning (confidence: 95)
-
-- **Location**: `skills/inspirera/SKILL.md`
-- **Evidence**: State artifacts after exit signals; safety rails after cross-skill. All 10 others follow canonical order.
-- **Impact**: Inconsistent structure hinders navigation
-- **Suggested action**: Reorder to canonical pattern
-
-#### ⇉ inspirera missing ALWAYS/REQUIRED phrasing · warning (confidence: 95)
-
-- **Location**: `skills/inspirera/SKILL.md:4-14`
-- **Evidence**: Uses "Use this skill whenever" instead of "ALWAYS use"/"This skill is REQUIRED"
-- **Impact**: Claude may skip skill for link analysis
-- **Suggested action**: Add ALWAYS/REQUIRED/DO NOT trinity
-
-#### ⇉ Output opening line placement inconsistency · warning (confidence: 95)
-
-- **Location**: realisera, optimera define in cycle section; others in intro
-- **Evidence**: 7 skills define in intro, 2 in cycle section, 1 (hej) uses dashboard
-- **Impact**: Agents may miss opening line definition
-- **Suggested action**: Standardize to intro paragraph
-
-#### ⇉ inspirera lacks Step 0 · warning (confidence: 85)
-
-- **Location**: `skills/inspirera/SKILL.md`
-- **Evidence**: 8 of 10 other skills with detection start at Step 0; inspirera starts at Step 1
-- **Impact**: Minor numbering inconsistency
-- **Suggested action**: Renumber or accept variance
-
-#### ⇢ Trailing "Notes" section in 2 skills · info (confidence: 90)
-
-- **Location**: inspirera, profilera
-- **Evidence**: "Notes on depth vs. speed" after Getting started; 9 others lack this
-- **Impact**: Minor structural outlier
-- **Suggested action**: Consider folding into workflow steps
-
-### Coupling health: B
-
-#### ⇉ README consumer tables stale vs ecosystem spec · warning (confidence: 88)
-
-- **Location**: `README.md:58-75` vs `references/SPEC.md`
-- **Evidence**: VISION.md missing dokumentera, visualisera as consumers; PROGRESS.md missing dokumentera, visionera
-- **Impact**: README understates artifact mesh
-- **Suggested action**: Sync with ecosystem spec
-
-#### ⇉ .optimera/harness outside standard layout · warning (confidence: 78)
-
-- **Location**: `skills/optimera/SKILL.md:39`
-- **Evidence**: Only artifact outside .agentera/; undocumented in spec format contracts
-- **Impact**: Not caught by .agentera/ tooling
-- **Suggested action**: Document in spec or relocate
-
-#### ⇉ Hardcoded profilera skill directory · warning (confidence: 78)
-
-- **Location**: `skills/realisera/SKILL.md:185`, `skills/inspektera/SKILL.md:92`
-- **Evidence**: Hardcodes `~/.claude/plugins/marketplaces/agentera/skills/profilera`; README suggests different path
-- **Impact**: Profile script may fail if installed differently
-- **Suggested action**: Remove hardcoded path
-
-#### ⇢ Interface width clean · info (confidence: 92)
-
-- **Location**: all cross-skill sections
-- **Evidence**: Skills communicate only through published artifacts and script output
-- **Impact**: None, healthy coupling
-
-### Test health: D
-
-#### ⇶ Zero unit tests for Python scripts · critical (confidence: 98)
-
-- **Location**: 12 Python files across skills/*/scripts/ and scripts/
-- **Evidence**: No test_*.py or*_test.py files anywhere. Scripts include regex parsing, exponential decay math, custom YAML parsing.
-- **Impact**: Parsing changes break silently
-- **Suggested action**: Add tests for parse functions in all 5 script modules
-
-#### ⇶ No artifact format contract tests · critical (confidence: 88)
-
-- **Location**: ecosystem-wide
-- **Evidence**: Primary value (inter-skill communication via artifacts) has zero format validation at test time
-- **Impact**: Format drift between producer and consumer undetectable
-- **Suggested action**: Contract tests per artifact in spec format table
-
-#### ⇶ Eval runner gaps · critical (confidence: 85)
-
-- **Location**: `scripts/eval-skills.py:38-49`
-- **Evidence**: hej missing from TRIGGER_PROMPTS. Runner checks crashes only, not output correctness.
-- **Impact**: Entry-point skill untested; behavioral correctness unverified
-- **Suggested action**: Add hej prompt; add output structure checks
-
-#### ⇉ Linter cannot catch semantic correctness · warning (confidence: 90)
-
-- **Location**: `scripts/validate-ecosystem.py`
-- **Evidence**: Checks structural presence (sections, keywords) not workflow logic correctness
-- **Impact**: Broken instructions pass linter
-- **Suggested action**: Accept scope; rely on eval for behavioral coverage
-
-### Version health: B
-
-#### ⇉ CHANGELOG.md [Unreleased] not promoted · warning (confidence: 95)
-
-- **Location**: `CHANGELOG.md:3`
-- **Evidence**: Version bump to 1.2.0/1.3.0 already shipped but CHANGELOG still says [Unreleased]
-- **Impact**: Consumers believe features are unreleased
-- **Suggested action**: Promote to [1.3.0] heading, add empty [Unreleased]
-
-#### ⇢ All 33 version locations consistent · info (confidence: 100)
-
-- **Location**: registry.json, marketplace.json, 11 plugin.json
-- **Evidence**: Every version matches across all three sources
-- **Impact**: None, excellent alignment
-
-### Dependency health: B
-
-#### ⇉ Prerequisites undocumented · warning (confidence: 90)
-
-- **Location**: `README.md` (absent section)
-- **Evidence**: Python 3.10+ required (PEP 604 syntax), claude CLI, git; none listed
-- **Impact**: Users hit cryptic errors on older Python
-- **Suggested action**: Add Prerequisites section to README
-
-#### ⇉ No minimum Claude Code version · warning (confidence: 85)
-
-- **Location**: absent from all docs
-- **Evidence**: Uses worktree isolation, pipe mode, model selection; version-dependent features
-- **Impact**: Older CLI versions may fail
-- **Suggested action**: Document minimum version
-
-#### ⇉ .gitignore minimal · warning (confidence: 80)
-
-- **Location**: `.gitignore`
-- **Evidence**: Missing .env, .DS_Store, editor temp patterns; .planera/ stale entry
-- **Impact**: Risk increases with contributors
-- **Suggested action**: Add defensive patterns
-
-#### ⇢ Zero third-party imports · info (confidence: 100)
-
-- **Location**: all 12 Python files
-- **Evidence**: Every import resolves to stdlib or relative
-- **Impact**: None, fully compliant
-
-### Trends vs Audit 3
-
-- **Degraded**: Architecture B→C, broader release-readiness scope exposed LICENSE gap, installation UX, and stale template
-- **Stable**: Patterns B→B, inspirera remains the structural outlier (3 of 4 warnings). All Audit 3 findings resolved.
-- **New dimensions**: Coupling B, Tests D, Version B, Dependencies B (first assessment)
-- **Resolved**: All Audit 3 findings (4 warnings, 1 info) cleared. DOCS.md index, hej count, profilera State artifacts, inspirera placement, all fixed.
-- **Key risk**: Test health D is the primary blocker for public release confidence. Zero automated coverage for the ecosystem's core value proposition (inter-skill artifact communication).
-
-### Patterns Observed
-
-- inspirera is the persistent structural outlier: three consecutive audits have found pattern deviations. It predates structural conventions and has not been fully normalized.
-- Count-staleness pattern appears resolved: linter enforces "eleven-skill" count; no new count errors found.
-- Documentation quality follows a gradient: SPEC.md (authoritative) > SKILL.md files (aligned) > README.md (simplified, drifts). README is the weakest link.
-- Python scripts are well-isolated (stdlib-only, narrow interfaces) but completely untested: the classic "it works until it doesn't" pattern.
-- The ecosystem is structurally mature (11 skills, shared spec, linter, visual identity, versioning) but lacks the test infrastructure expected for a public release.
-
----
-
 ## Archived Audits
+
+### Audit 4 · 2026-04-01 (first full audit (6 dimensions vs prior 2); architecture ⮋...)
 
 ### Audit 3 · 2026-03-31 (⮉ improving vs Audit 2)
 
