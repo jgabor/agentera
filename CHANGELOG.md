@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [1.21.0] · 2026-04-26
+
+### Added
+
+- `scripts/setup_codex.py`: idempotent Codex setup helper that writes `[shell_environment_policy].set.AGENTERA_HOME` to `~/.codex/config.toml`. Auto-detects install root, supports `--install-root` and `--dry-run`, refuses to overwrite sibling keys without `--force`.
+- `scripts/setup_copilot.py`: idempotent Copilot setup helper that appends a marker block + `AGENTERA_HOME` export to the user's shell rc (bash, zsh, fish supported). Detects shell from `$SHELL`, supports `--rc-file` and `--dry-run`, preserves user-owned bare lines.
+- `scripts/smoke_setup_helpers.py`: stdlib black-box smoke harness exercising both setup helpers across 11 sequential cases (4 Codex + 4 Copilot + 3 cross-cutting).
+
+### Changed
+
+- README install instructions for Codex and Copilot now lead with the helper invocation; manual snippets retained as alternatives.
+- DOCS.md Index dates and Coverage line refreshed (Audit 14 finding 1 resolved); three new helper rows added.
+
 ## [1.20.0] · 2026-04-26
 
 ### Added
