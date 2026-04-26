@@ -467,7 +467,7 @@ class TestLegacyRuntimeCompatibility:
 
     def test_opencode_package_fails_on_version_drift(self):
         plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
-        stale = plugin_text.replace('AGENTERA_VERSION = "1.18.1"', 'AGENTERA_VERSION = "1.16.0"')
+        stale = plugin_text.replace('AGENTERA_VERSION = "1.19.0"', 'AGENTERA_VERSION = "1.16.0"')
         assert "opencode AGENTERA_VERSION must match registry suite version" in _validate_opencode_version(
             REPO_ROOT, stale
         )

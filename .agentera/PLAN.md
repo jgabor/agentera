@@ -80,7 +80,7 @@ A single self-contained script consumes the Section 21 corpus and produces three
 ### Task 5: Apply DOCS.md version policy
 
 **Depends on**: Task 4
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the new script ships as a `feat` and the unreleased third-party validator entry point also ships as a `feat` WHEN release metadata is updated THEN every file listed in DOCS.md `version_files` moves from 1.18.1 to 1.19.0 in one consistent bump.
 ▸ GIVEN the version bump WHEN CHANGELOG.md is reviewed THEN the unreleased section is promoted to a 1.19.0 heading dated today and lists both shipped feats without inventing extras.
