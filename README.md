@@ -111,6 +111,14 @@ echo 'export AGENTERA_HOME=<plugin install root>' >> ~/.bashrc  # or ~/.zshrc
 
 Substitute `<plugin install root>` with the directory that contains `scripts/`, `hooks/`, `skills/`, and `SPEC.md` for your install. Copilot CLI has no plugin-level env-injection mechanism (the [CLI plugin reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-plugin-reference) defines no `env` field, and the [hooks reference](https://docs.github.com/en/copilot/reference/hooks-configuration) marks hook stdout `Ignored`), so Copilot inherits the parent shell environment instead. SPEC.md Section 7 defines the contract.
 
+**Verify Copilot AGENTERA_HOME by hand**: open a fresh shell so the new rc export is sourced, start an interactive `copilot` session, and paste this one-liner at the prompt:
+
+```bash
+bash -c 'echo "AGENTERA_HOME=$AGENTERA_HOME"; python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py'
+```
+
+Two outcomes confirm a healthy install. The `echo` prints `AGENTERA_HOME=<plugin install root>` matching what `setup_copilot.py` wrote. The `compact_artifact.py` invocation prints its `usage: compact_artifact.py <spec-name> <path>` line, which proves the bash-fallback form `${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}` resolved to a real script path. Use this protocol when `python3 scripts/smoke_live_hosts.py --live` is unavailable: no auth, no API budget, behind a firewall, or any host where invoking the model is undesirable. The same one-liner doubles as the AGENTERA_HOME and compaction check, so one paste exercises both halves of the SPEC.md Section 7 contract.
+
 **Codex plugin marketplace**: use interactive `/plugins` to install and enable plugins. Manage marketplace sources with `codex plugin marketplace add|upgrade|remove`.
 
 After install, add `AGENTERA_HOME` to `~/.codex/config.toml` so Codex injects it into every shell-tool subprocess. Recommended path:
@@ -129,6 +137,14 @@ set = { AGENTERA_HOME = "<plugin install root>" }
 ```
 
 Substitute `<plugin install root>` with the directory that contains `scripts/`, `hooks/`, `skills/`, and `SPEC.md` for your install. `[shell_environment_policy]` is Codex's native, non-experimental mechanism for shell-tool env propagation; see the [Codex config reference](https://developers.openai.com/codex/config-reference) and the `ShellEnvironmentPolicyToml` entry in the [config schema](https://github.com/openai/codex/blob/main/codex-rs/core/config.schema.json). SPEC.md Section 7 defines the contract.
+
+**Verify Codex AGENTERA_HOME by hand**: start an interactive `codex` session and paste this one-liner at the prompt so Codex routes it through a shell tool:
+
+```bash
+bash -c 'echo "AGENTERA_HOME=$AGENTERA_HOME"; python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py'
+```
+
+Two outcomes confirm a healthy install. The `echo` prints `AGENTERA_HOME=<plugin install root>` matching the value `setup_codex.py` wrote under `[shell_environment_policy].set`. The `compact_artifact.py` invocation prints its `usage: compact_artifact.py <spec-name> <path>` line, which proves the bash-fallback form `${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}` resolved to a real script path. Use this protocol when `python3 scripts/smoke_live_hosts.py --live` is unavailable: no auth, no API budget, behind a firewall, or any host where invoking the model is undesirable. Verification scope is the `codex exec` non-interactive mode plus this interactive paste; the `[shell_environment_policy].set` semantics propagate `AGENTERA_HOME` to both surfaces.
 
 **Manual (git clone)**:
 
@@ -348,3 +364,4 @@ Repo-level utilities live in `scripts/` and run from the repo root using only Py
 | `scripts/setup_codex.py` | Idempotently sets `[shell_environment_policy].set.AGENTERA_HOME` in `~/.codex/config.toml` so Codex propagates `AGENTERA_HOME` into every shell-tool subprocess. Stdlib-only; preserves all other tables byte-identically; refuses to overwrite conflicting sibling keys without `--force`. Flags: `--install-root PATH`, `--config-file PATH`, `--dry-run`, `--force`. | exit code (0 = no-op or applied, 1 = would change under `--dry-run` or refused), printed diff |
 | `scripts/setup_copilot.py` | Idempotently sets `AGENTERA_HOME` in the user's shell rc file (`~/.bashrc`, `~/.zshrc`, or `~/.config/fish/config.fish`) using a marker-commented block so Copilot CLI inherits `AGENTERA_HOME` from the surrounding shell. Stdlib-only; preserves unrelated lines. Flags: `--install-root PATH`, `--rc-file PATH`, `--dry-run`. | exit code (0 = no-op or applied, 1 = would change under `--dry-run`), printed diff |
 | `scripts/smoke_setup_helpers.py` | Smoke-tests both setup helpers in temp directories using injected env vars. Exercises Codex (fresh-write, idempotent re-run, sibling-preservation, dry-run) and Copilot (bash, zsh, fish, unsupported-shell, marker update) cases without requiring a live Codex or Copilot CLI. | `PASS: all smoke checks passed` (exit 0) or `FAIL: <reason>` (exit 1) |
+| `scripts/smoke_live_hosts.py` | End-to-end live-host AGENTERA_HOME inheritance and SKILL.md compaction smoke. Default mode (no flags) runs the profilera Codex collection audit and delegates to `scripts/smoke_setup_helpers.py`; no live CLI is invoked, so cost is $0. `--live` mode prints `Estimated cost: $0.20-1.00 across two model calls` and a one-line consent prompt, then probes `codex` and `copilot` (PATH + auth), snapshots `~/.codex/config.toml` and shell rc files via SHA256 round-trip, issues exactly one `codex exec` and one `bash -c 'export AGENTERA_HOME=...; copilot -p "..." --allow-all-tools'` invocation each carrying a combined prompt that exercises both AGENTERA_HOME echo and `compact_artifact.py` execution, and restores user files in a top-level `finally` block. Closes Audit 15 finding 2 (Codex and Copilot live-host AGENTERA_HOME inheritance untested). Skip semantics: missing binary or 30s auth-probe timeout produces a per-runtime SKIP without failing the run. Flags: `--live`. | `PASS: all smoke checks passed` (exit 0) or `FAIL: <reason>` (exit 1); `--live` mode logs every snapshot path and SHA256 round-trip for operator audit |

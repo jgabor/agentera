@@ -120,7 +120,7 @@ Manual verification protocol (Task 5): three short README sections — "Verify C
 
 **Depends on**: Task 1, Task 2, Task 3, Task 4
 
-**Status**: □ pending
+**Status**: ■ complete
 
 **Acceptance**:
 
