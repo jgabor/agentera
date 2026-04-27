@@ -5,7 +5,7 @@ description: >
   Examine, Report, Advise). ALWAYS use this skill for codebase health audits, architecture
   reviews, and structural quality assessments. This skill is REQUIRED whenever the user wants
   to assess codebase health, detect architecture drift, find pattern
-  inconsistencies, identify complexity hotspots, evaluate test coverage quality, or check
+  inconsistencies, identify complexity hotspots, evaluate test coverage, or check
   dependency health. Do NOT attempt codebase-wide quality assessments without this skill
   because it contains the critical workflow for multi-dimensional evaluation, evidence-based
   findings, confidence scoring, and trajectory tracking that prevents noisy or superficial audits.
