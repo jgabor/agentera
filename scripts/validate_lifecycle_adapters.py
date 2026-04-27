@@ -17,7 +17,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 
-COPILOT_EVENTS = {"sessionStart", "postToolUse", "stop"}
+COPILOT_EVENTS = {"sessionStart", "postToolUse", "sessionEnd"}
 CODEX_EVENTS = {
     "SessionStart",
     "Stop",
