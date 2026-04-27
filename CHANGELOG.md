@@ -4,7 +4,9 @@
 
 ## [1.20.0] · 2026-04-27
 
-Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code, OpenCode, Codex, and Copilot; ships idempotent setup helpers for the runtimes without plugin-level env injection; and verifies end-to-end inheritance plus SKILL.md compaction execution with a live-host smoke harness.
+Scope refined post-research to address verified cross-runtime parity gaps; consolidates Move 1 renumber and Move 2 parity completion per explicit user direction.
+
+Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code, OpenCode, Codex, and Copilot; ships idempotent setup helpers for the runtimes without plugin-level env injection; verifies end-to-end inheritance plus SKILL.md compaction execution with a live-host smoke harness; closes the Codex apply_patch real-time-validation gap with a wired hook; ships Codex marketplace install plus per-skill agent stubs; refreshes README/SPEC/structured runtime metadata against current Codex/Copilot capability evidence; revives the dead Copilot session-end hook; documents orkestrera/realisera/optimera dispatch substrates per runtime.
 
 ### Added
 
@@ -14,6 +16,12 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 - **`scripts/setup_copilot.py`**: idempotent Copilot setup helper that writes a marker-commented `AGENTERA_HOME` export block to the user's shell rc. Stdlib-only; supports bash, zsh, and fish; auto-detects shell from `$SHELL`; supports `--rc-file` and `--dry-run`; preserves user-owned bare lines.
 - **`scripts/smoke_setup_helpers.py`**: stdlib black-box smoke harness exercising both setup helpers across 11 sequential cases (5 Codex + 4 Copilot + 2 cross-cutting), no live CLI required.
 - **`scripts/smoke_live_hosts.py`**: live-host AGENTERA_HOME inheritance and SKILL.md compaction smoke harness for Codex and Copilot. Default mode runs the profilera Codex collection audit and delegates to `scripts/smoke_setup_helpers.py` (no live CLI invocations, no cost). `--live` mode prints a one-line cost estimate and consent prompt, then issues exactly one `codex exec` and one `bash -c '...copilot -p ... --allow-all-tools'` invocation per runtime, each carrying a combined prompt that exercises both AGENTERA_HOME echo and `compact_artifact.py` execution, with snapshot + SHA256 round-trip on `~/.codex/config.toml` and shell rc files plus orphan-snapshot auto-recovery on the next run.
+- **Codex `apply_patch` hook config** (`hooks/codex-hooks.json`): PreToolUse + PostToolUse `apply_patch` matchers wire `validate_artifact.py` for real-time artifact validation, parity with Claude Code PostToolUse and OpenCode `tool.execute.after`.
+- **`.agents/plugins/marketplace.json`**: Codex marketplace manifest enables `codex plugin marketplace add jgabor/agentera` plus `codex plugin install <skill>@agentera`, cross-runtime install symmetry with Copilot.
+- **12 per-skill `agents/<name>.toml` Codex agent stubs** with explicit `model = "gpt-5-codex"`, `model_reasoning_effort`, and `developer_instructions` fields pointing at bundled SKILL.md paths.
+- **`scripts/setup_codex.py --enable-agents`** flag writes `[agents.<name>]` entries to `~/.codex/config.toml` for all 12 agentera skills so orkestrera dispatch maps natively to Codex `[agents.*]`.
+- **`scripts/smoke_live_hosts.py --yes` flag plus `AGENTERA_LIVE_CONSENT=1` env var**: bypass the interactive consent prompt for non-interactive realisera/orkestrera invocation; cost line still prints; explicit `auto-consented via flag` audit line emitted to stdout.
+- **Codex apply_patch hook firing verification section** in `smoke_live_hosts.py`: one extra `codex exec` invocation under a tmp `CODEX_HOME` with sentinel-recording wrapper proves the `hooks/codex-hooks.json` wiring fires PreToolUse + PostToolUse end-to-end.
 - **README install documentation**: runtime-specific AGENTERA_HOME setup paths (recommended `setup_codex.py` / `setup_copilot.py` plus manual snippet alternatives). Codex plugin limitations and Copilot manifest descriptions surface the requirement.
 - **README "Verify Codex AGENTERA_HOME by hand" and "Verify Copilot AGENTERA_HOME by hand" subsections**: copy-pasteable bash one-liners that exercise both AGENTERA_HOME inheritance and the bash-fallback compaction-script resolution, for users without `--live` access (no auth, no API budget, behind a firewall).
 - **README Scripts section** enumerates the new helpers (`setup_codex.py`, `setup_copilot.py`, `smoke_setup_helpers.py`, `smoke_live_hosts.py`) alongside the existing `validate_spec.py`, `eval_skills.py`, `usage_stats.py`, with default-mode and `--live` cost semantics named.
@@ -27,6 +35,16 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 - **`scripts/validate_lifecycle_adapters.py` and `tests/test_runtime_adapters.py`** accept `status` of either `ok` or `degraded` (back-compat preserved); explicit `status:` declaration is now required in YAML surfaces.
 - **`tests/test_runtime_adapters.py`** AGENTERA_VERSION drift test reads the version from `.opencode/plugins/agentera.js` at test time instead of carrying a hardcoded literal, so future bumps require no test edits.
 - **`.agentera/DOCS.md` Index** gained rows for all four new helpers and the live-host smoke runner; Audit Log block records the README and DOCS surfaces resolved.
+- **README runtime support table** reflects Codex `multi_agent`/`codex_hooks` stable + default-on as of v0.124.0, `apply_patch` Write/Edit interception per `openai/codex#18391`, and verified Copilot marketplace install (granular + umbrella both functional).
+- **README lifecycle hooks table** adds Supported Events column with all 6 events per runtime; names the Copilot preToolUse-blocks vs postToolUse-output-ignored asymmetry explicitly.
+- **`.codex-plugin/plugin.json` `lifecycleHooks.status`** flipped `experimental-disabled` → `stable`; `supportedEvents` array added; `unsupportedEvents` rewritten to genuinely-unsupported Claude-Code-specific events; stale `codex.limitations[0]` removed.
+- **`agents/openai.yaml` `support.lifecycle_hooks`** mirrors the new metadata story.
+- **`scripts/validate_lifecycle_adapters.py` `CODEX_EVENTS` and `COPILOT_EVENTS`** populated with the genuine event lists; predicates reject stale-marker phrases.
+- **README Copilot install** documents granular (`<skill>@agentera`) as the recommended path until `copilot-cli#2390` lands; umbrella retained as alternative with the bug caveat noted.
+- **`.github/hooks/stop.json` → `.github/hooks/sessionEnd.json`** (was silently dead under Copilot since shipping; `stop` is not a valid Copilot hook event).
+- **All 12 SKILL.md frontmatter** audited for Copilot bug `github/copilot-cli#951`: trailing `metadata:` field as the last entry no longer leaves the parser in an inconsistent state; affected skills get `license: MIT` appended as the harmless trailing field.
+- **`hooks/validate_artifact.py`** Codex stdin branch handles the `apply_patch` matcher per the captured Codex hook stdin schema.
+- **`skills/orkestrera/SKILL.md`, `skills/realisera/SKILL.md`, `skills/optimera/SKILL.md`** document runtime-aware dispatch substrates: Claude Code Task tool, OpenCode plugin path, Codex `[agents.*]` post-`--enable-agents` setup, Copilot user-driven `/fleet` workaround.
 
 ### Note
 
