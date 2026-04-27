@@ -159,24 +159,44 @@ def is_assistant_conversation_turn(record: dict) -> bool:
     return data.get("actor") == "assistant"
 
 
-def group_by_conversation(records: Iterable[dict]) -> dict[str, list[dict]]:
-    """Group assistant conversation turns by ``source_id`` (one bucket per
-    record), then sort each bucket by ``timestamp``.
+def _conversation_key(record: dict) -> str | None:
+    """Return the conversation grouping key for a record.
 
-    Section 22 records carry no guaranteed order. The corpus envelope assigns
-    a stable ``source_id`` per logical record; we treat that as the
-    conversation key for grouping. Within a bucket we sort by ISO 8601
-    timestamp, falling back to original list order on ties.
+    Per-record uniqueness of ``source_id`` is an envelope invariant, so
+    multiple turns of one session must declare their conversation key
+    out-of-band. Extractors put it in ``data.session_id``; we fall back
+    to ``source_id`` so legacy corpora and synthetic test fixtures (which
+    used ``source_id`` directly as the conversation key) keep working.
+    """
+    data = record.get("data")
+    if isinstance(data, dict):
+        sid = data.get("session_id")
+        if isinstance(sid, str) and sid:
+            return sid
+    sid = record.get("source_id")
+    if isinstance(sid, str) and sid:
+        return sid
+    return None
+
+
+def group_by_conversation(records: Iterable[dict]) -> dict[str, list[dict]]:
+    """Group assistant conversation turns by conversation key, sorted by
+    ``timestamp``.
+
+    The conversation key is ``data.session_id`` when present (current
+    extractors) or ``source_id`` (legacy / test fixtures). Within a bucket
+    we sort by ISO 8601 timestamp, falling back to original list order on
+    ties.
     """
     buckets: dict[str, list[dict]] = defaultdict(list)
     for record in records:
         if not is_assistant_conversation_turn(record):
             continue
-        sid = record.get("source_id")
-        if not isinstance(sid, str):
+        key = _conversation_key(record)
+        if key is None:
             continue
-        buckets[sid].append(record)
-    for sid, items in buckets.items():
+        buckets[key].append(record)
+    for items in buckets.values():
         items.sort(key=lambda r: r.get("timestamp", ""))
     return dict(buckets)
 
@@ -366,7 +386,7 @@ def filter_records_by_project(
 
 
 def _user_turns_by_conversation(records: Iterable[dict]) -> dict[str, list[dict]]:
-    """Group user conversation turns by source_id, sorted by timestamp."""
+    """Group user conversation turns by conversation key, sorted by timestamp."""
     buckets: dict[str, list[dict]] = defaultdict(list)
     for record in records:
         if not isinstance(record, dict):
@@ -378,10 +398,10 @@ def _user_turns_by_conversation(records: Iterable[dict]) -> dict[str, list[dict]
             continue
         if data.get("actor") != "user":
             continue
-        sid = record.get("source_id")
-        if not isinstance(sid, str):
+        key = _conversation_key(record)
+        if key is None:
             continue
-        buckets[sid].append(record)
+        buckets[key].append(record)
     for items in buckets.values():
         items.sort(key=lambda r: r.get("timestamp", ""))
     return dict(buckets)
