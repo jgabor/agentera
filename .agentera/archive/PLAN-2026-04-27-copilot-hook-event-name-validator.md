@@ -1,6 +1,6 @@
 # Plan: Copilot Hook Event Name Validator
 
-<!-- Level: light | Created: 2026-04-27 | Status: active -->
+<!-- Level: light | Created: 2026-04-27 | Status: complete -->
 
 ## What
 
