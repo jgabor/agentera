@@ -108,7 +108,7 @@ Infer which skill handles the task based on its description:
 
 If the task does not clearly map, default to `/realisera`.
 
-Spawn the target skill as a background subagent:
+Spawn the target skill as a background subagent. <!-- platform: sub-agent-dispatch --> Substrate per runtime is resolved by the host adapter, not the conductor. See `Runtime dispatch substrates` in Cross-skill integration for the per-runtime mapping (Claude Code Task tool, OpenCode plugin path, Codex `[agents.<name>]` via `setup_codex.py --enable-agents`, Copilot user-driven `/fleet` fallback).
 
 ```
 You are executing a planned task for [project].
@@ -301,6 +301,19 @@ Orkestrera uses retry-based failure detection: each task gets max 2 retries befo
 ## Cross-skill integration
 
 Orkestrera is part of a twelve-skill suite. It is the orchestration layer that chains all other skills together.
+
+### Runtime dispatch substrates
+
+The conductor protocol in Step 2 (Dispatch) is runtime-agnostic: it always spawns the target skill as a background subagent. <!-- platform: sub-agent-dispatch --> What that spawn maps to differs per runtime, and the table below names each substrate honestly.
+
+| Runtime | Substrate | Notes |
+|---------|-----------|-------|
+| Claude Code | Task tool | Native programmatic in-session subagent dispatch. |
+| OpenCode | Plugin background-agent path | Programmatic in-session dispatch via the OpenCode plugin runtime. |
+| Codex CLI | `[agents.<name>]` config tables in `~/.codex/config.toml` | Wired by `python3 scripts/setup_codex.py --enable-agents`, which writes one `[agents.<name>]` entry per agentera skill pointing at the bundled `agents/<name>.toml` stub. After setup, conversational dispatch works natively. |
+| Copilot CLI | None programmatically; user-driven `/fleet` fallback | Copilot exposes no in-session subagent tool call equivalent to the Claude Code Task tool. The conductor surfaces the dispatch as a `/fleet` recommendation; the user runs `/fleet` to execute the parallel subagent. ACP (Agent Client Protocol) is in public preview but the engineering overhead is disproportionate to current value. |
+
+The conductor's prose is the same on every runtime. Step 2 (Dispatch) does not branch by runtime; the host adapter resolves the substrate. Conductor-side instructions, retry logic, and inspektera evaluation gating are unchanged.
 
 ### Orkestrera dispatches /realisera
 

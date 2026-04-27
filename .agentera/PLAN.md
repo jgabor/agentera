@@ -116,7 +116,7 @@ The work splits cleanly into three layers.
 
 **Depends on**: Task 1a, Task 4
 
-**Status**: □ pending
+**Status**: ■ complete
 
 **Acceptance**:
 

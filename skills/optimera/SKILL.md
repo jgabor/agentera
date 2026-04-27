@@ -234,6 +234,15 @@ Spawn an implementation sub-agent in a worktree (`isolation: "worktree"`) <!-- p
 - Relevant context files (OBJECTIVE.md, recent experiments, source files being modified)
 - Clear constraint: implement the hypothesis and nothing else
 
+Per-runtime substrate for the spawn:
+
+- Claude Code: Task tool.
+- OpenCode: plugin background-agent path.
+- Codex: `[agents.<name>]` entries in `~/.codex/config.toml`, wired by `python3 scripts/setup_codex.py --enable-agents`.
+- Copilot: no programmatic in-session equivalent; surface the dispatch as a user-driven `/fleet` recommendation.
+
+See orkestrera SKILL.md `Runtime dispatch substrates` for the full table.
+
 ```
 You are implementing one optimization experiment for [project].
 
