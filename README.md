@@ -68,6 +68,15 @@ curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plug
   -o ~/.config/opencode/plugins/agentera.js
 ```
 
+**Codex CLI**: copy `hooks/codex-hooks.json` into the Codex config folder so `codex_hooks` discovers it as `~/.codex/hooks.json`:
+
+```bash
+mkdir -p ~/.codex && \
+  cp "${AGENTERA_HOME:-$(pwd)}/hooks/codex-hooks.json" ~/.codex/hooks.json
+```
+
+The config declares PreToolUse and PostToolUse handlers with matcher `^apply_patch$` per `openai/codex#18391`; both shell out to `python3 ${AGENTERA_HOME}/hooks/validate_artifact.py`. Set `AGENTERA_HOME` first via `python3 scripts/setup_codex.py` so `[shell_environment_policy].set` propagates the install root into the hook subprocess. The same `validate_artifact.py` script runs under all four runtimes; the Codex stdin shape (`tool_name: "apply_patch"`, `tool_input.command` carrying the raw patch body) is parsed for every touched file path. Project-scoped install: drop the file at `<repo>/.codex/hooks.json` instead.
+
 ### Alternative install methods
 
 **Claude Code plugin marketplace**:

@@ -684,3 +684,77 @@ class TestMainIntegration:
         result = validate_artifact.main()
         assert result == 0
         assert captured_output.getvalue() == ""
+
+
+class TestCodexApplyPatchStdin:
+    """Codex apply_patch stdin parsing per openai/codex#18391.
+
+    Test budget: 2 cases (one valid pass + one malformed fail) per
+    plan T3 proportionality cap. Schema captured from
+    codex-rs/hooks/schema/generated/{pre,post}-tool-use.command.input.schema.json.
+    """
+
+    def test_valid_codex_apply_patch_validates_each_touched_file(
+        self, validate_artifact, project_dir, monkeypatch
+    ):
+        """Valid Codex PostToolUse stdin: parse patch body, validate each path."""
+        # Seed an artifact with missing required heading so validation produces
+        # a concrete warning we can assert on (proves the parser routed correctly).
+        health = project_dir / ".agentera" / "HEALTH.md"
+        health.write_text("# Health\n\n", encoding="utf-8")
+        patch_body = (
+            "*** Begin Patch\n"
+            "*** Update File: .agentera/HEALTH.md\n"
+            "@@\n"
+            "-old\n"
+            "+new\n"
+            "*** End Patch\n"
+        )
+        hook_input = json.dumps(
+            {
+                "session_id": "codex-test",
+                "turn_id": "turn-1",
+                "cwd": str(project_dir),
+                "transcript_path": None,
+                "model": "gpt-5",
+                "permission_mode": "default",
+                "hook_event_name": "PostToolUse",
+                "tool_name": "apply_patch",
+                "tool_use_id": "call-apply-patch",
+                "tool_input": {"command": patch_body},
+                "tool_response": "Success. Updated files.",
+            }
+        )
+        import io
+
+        monkeypatch.setattr("sys.stdin", io.StringIO(hook_input))
+        captured_output = io.StringIO()
+        monkeypatch.setattr("sys.stdout", captured_output)
+        result = validate_artifact.main()
+        assert result == 0
+        # HEALTH.md is missing the required Audit heading; validation must report it.
+        assert "validation warnings" in captured_output.getvalue().lower()
+        assert "HEALTH.md" in captured_output.getvalue()
+
+    def test_malformed_codex_patch_body_skips_silently(
+        self, validate_artifact, project_dir, monkeypatch
+    ):
+        """Malformed patch body (no file headers) yields no validation, no error."""
+        hook_input = json.dumps(
+            {
+                "session_id": "codex-test",
+                "cwd": str(project_dir),
+                "hook_event_name": "PreToolUse",
+                "tool_name": "apply_patch",
+                "tool_use_id": "call-malformed",
+                "tool_input": {"command": "this is not a valid patch body"},
+            }
+        )
+        import io
+
+        monkeypatch.setattr("sys.stdin", io.StringIO(hook_input))
+        captured_output = io.StringIO()
+        monkeypatch.setattr("sys.stdout", captured_output)
+        result = validate_artifact.main()
+        assert result == 0
+        assert captured_output.getvalue() == ""
