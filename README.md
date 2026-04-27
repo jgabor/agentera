@@ -25,16 +25,16 @@ The Skills CLI path is the cross-runtime install path. Native plugin commands ar
 |---------|----------------------|-----------------------------|-----------|------------|--------------|
 | Claude Code | Add the marketplace, then install the plugin: `claude plugin marketplace add <source>` and `claude plugin install <plugin>@<marketplace>` | Skills CLI or Claude Code skill paths using `skills/<name>/SKILL.md` | Claude Code skill/plugin discovery; validate plugin metadata with `claude plugin validate .` | `/hej`, `/realisera`, etc. | Full lifecycle support |
 | OpenCode | Local plugins load from `.opencode/plugins/` or `~/.config/opencode/plugins/`; hook plugin is `.opencode/plugins/agentera.js` | `.opencode/skills`, `.claude/skills`, `.agents/skills`, or global equivalents | Native `skill` tool lists available skills | Loaded by name through the `skill` tool | Full lifecycle support via plugin |
-| Copilot CLI | Verified marketplace install is preferred when a canonical source exists: `copilot plugin install <plugin>@<marketplace>`; no canonical Agentera marketplace source is currently verified. Deprecated fallback: `OWNER/REPO`, `OWNER/REPO:PATH`, Git URL, or local path | Project: `.github/skills`, `.agents/skills`, `.claude/skills`; personal: `~/.copilot/skills`, `~/.agents/skills`, `~/.claude/skills` | `/skills list`, `/skills info`, `/skills reload`; marketplaces via `copilot plugin marketplace add/list/browse/remove` | `/hej`, `/realisera`, etc. | Partial lifecycle support |
-| Codex CLI | Interactive `/plugins`; marketplace sources managed with `codex plugin marketplace add`, `upgrade`, or `remove` | Repo: `.agents/skills`; user: `$HOME/.agents/skills`; admin: `/etc/codex/skills` | `/skills`; plugins via `/plugins` | `$hej`, `$realisera`, etc. | Experimental hooks only; no parity |
+| Copilot CLI | Verified marketplace path: `copilot plugin marketplace add jgabor/agentera` then `copilot plugin install <skill>@agentera` (granular) or `copilot plugin install jgabor/agentera` (umbrella). Both resolve against the same source; granular sidesteps the umbrella discovery bug `github/copilot-cli#2390`. Direct repo, Git URL, and local path installs work but Copilot warns they are deprecated | Project: `.github/skills`, `.agents/skills`, `.claude/skills`; personal: `~/.copilot/skills`, `~/.agents/skills`, `~/.claude/skills` | `/skills list`, `/skills info`, `/skills reload`; marketplaces via `copilot plugin marketplace add/list/browse/remove` | `/hej`, `/realisera`, etc.; `/fleet` enables user-driven parallel subagent execution | Partial lifecycle support: `preToolUse` blocks, `postToolUse` output is logging-only |
+| Codex CLI | Verified marketplace path: `codex plugin marketplace add jgabor/agentera` then interactive `/plugins` to install. `multi_agent` and `codex_hooks` feature flags ship stable + default-on as of v0.124.0 (2026-04-23); `[agents.<name>]` config tables in `~/.codex/config.toml` provide the conversational dispatch substrate for orkestrera | Repo: `.agents/skills`; user: `$HOME/.agents/skills` (canonical user path; `~/.codex/skills` is the system-bundled cache); admin: `/etc/codex/skills` | `/skills`; plugins via `/plugins` | `$hej`, `$realisera`, etc. | Full lifecycle support via `codex_hooks`: real-time `apply_patch` Write/Edit interception per `openai/codex#18391` |
 
 Copilot and Codex metadata point at the shared `skills/<name>/SKILL.md` source. `profilera` is capability-gated in native metadata because it depends on runtime-specific Section 21 corpus surfaces; missing source families degrade into corpus metadata instead of blocking supported extraction.
 
 Claude Code plugin metadata is namespaced and the marketplace manifest lives at `.claude-plugin/marketplace.json`. There is no `claude plugin add` command in the local CLI evidence; use the marketplace add plus plugin install flow above.
 
-Copilot plugin management supports `copilot plugin install`, `copilot plugin list`, and `copilot plugin marketplace add/list/browse/remove`. Prefer verified marketplace installs when a canonical source is available; `<plugin>@<marketplace>` is Copilot syntax, not evidence that Agentera is published in a marketplace. Current host evidence found only the built-in `copilot-plugins` and `awesome-copilot` marketplaces, with no `agentera` entry. Direct repo, Git URL, and local path installs currently work but Copilot warns they are deprecated. The current-checkout plugin manifest is `plugin.json`, so `copilot --plugin-dir <repo>` loads shared `skills/` without escaping the plugin root.
+Copilot plugin management supports `copilot plugin install`, `copilot plugin list`, and `copilot plugin marketplace add/list/browse/remove`. The agentera marketplace install path is verified working: `copilot plugin marketplace add jgabor/agentera` registers the source, then `copilot plugin install <skill>@agentera` (granular) or `copilot plugin install jgabor/agentera` (umbrella) installs against it. Granular install is currently recommended because umbrella discovery hits Copilot bug `github/copilot-cli#2390` (plugin from a GitHub repo with `.github/plugin/plugin.json` is not discovered when `cache_path` is the repo root). Default Copilot marketplaces (`github/copilot-plugins`, `github/awesome-copilot`) ship the built-in catalog; agentera's source is the user-added `jgabor/agentera` marketplace. The current-checkout plugin manifest is `plugin.json`, so `copilot --plugin-dir <repo>` loads shared `skills/` without escaping the plugin root.
 
-Codex presentation metadata uses Codex conventions: inspect skills with `/skills`, inspect plugins with `/plugins`, and invoke explicitly with `$skill`, for example `$hej`. Per-skill metadata lives at `skills/<name>/agents/openai.yaml`. Direct `.agents/skills` folders are the local-authoring fallback, not the marketplace install path. Portable skills allow implicit invocation. `profilera` disables implicit invocation in its per-skill Codex metadata because profile extraction remains corpus-dependent and reports missing source families as degraded metadata.
+Codex presentation metadata uses Codex conventions: inspect skills with `/skills`, inspect plugins with `/plugins`, and invoke explicitly with `$skill`, for example `$hej`. Per-skill metadata lives at `skills/<name>/agents/openai.yaml`. The canonical user skill path is `$HOME/.agents/skills/`; `~/.codex/skills/` is the system-bundled cache, not the user install path. The marketplace.json schema lives at `<repo>/.agents/plugins/marketplace.json`. Portable skills allow implicit invocation. `profilera` disables implicit invocation in its per-skill Codex metadata because profile extraction remains corpus-dependent and reports missing source families as degraded metadata.
 
 OpenCode reads skills from `.opencode/skills`, `.claude/skills`, `.agents/skills`, and global equivalents. For local plugin loading, place plugins in `.opencode/plugins/` or `~/.config/opencode/plugins/`.
 
@@ -42,18 +42,18 @@ OpenCode reads skills from `.opencode/skills`, `.claude/skills`, `.agents/skills
 
 Hooks add session context preload, artifact validation, and session bookmarks. Without hooks, portable skills still read and write the same markdown artifacts.
 
-| Runtime | Session preload | Artifact validation after edits | Session bookmark | Status |
-|---------|-----------------|----------------------------------|------------------|--------|
-| Claude Code | Active | Active via PostToolUse | Active | Full lifecycle support |
-| OpenCode | Active via plugin | Active via `tool.execute.after` | Active via session events | Full lifecycle support |
-| Copilot CLI | Partial via `sessionStart` command handler | Partial via `postToolUse` command handler when supported by host metadata | Partial via `agentStop` command handler | Adapter metadata only; not Claude hook parity |
-| Codex CLI | Experimental behind `[features] codex_hooks = true` | Unsupported for real-time Write/Edit interception parity | Experimental behind `[features] codex_hooks = true` | Disabled on Windows; no real-time artifact validation claim |
+| Runtime | Session preload | Artifact validation after edits | Session bookmark | Supported events | Status |
+|---------|-----------------|----------------------------------|------------------|------------------|--------|
+| Claude Code | Active via SessionStart | Active via PostToolUse | Active via Stop | SessionStart, Stop, UserPromptSubmit, PreToolUse, PostToolUse, SubagentStop, PreCompact, Notification | Full lifecycle support |
+| OpenCode | Active via plugin | Active via `tool.execute.after` | Active via session events | Plugin hook events per `@opencode-ai/plugin` Hooks interface | Full lifecycle support |
+| Copilot CLI | Active via `sessionStart` | Active via `preToolUse` (blocks via `permissionDecision: deny`) | Active via `sessionEnd` | sessionStart, sessionEnd, userPromptSubmitted, preToolUse, postToolUse, errorOccurred | Asymmetric parity: `preToolUse` blocks, `postToolUse` output is logging-only (no model-feedback parity with Claude Code PostToolUse) |
+| Codex CLI | Active via SessionStart | Active via PreToolUse + PostToolUse on `apply_patch` matcher | Active via Stop | SessionStart, Stop, UserPromptSubmit, PreToolUse, PostToolUse, PermissionRequest | Full lifecycle support: `codex_hooks` stable + default-on as of v0.124.0; real-time `apply_patch` Write/Edit interception per `openai/codex#18391` |
 
-Do not assume hook parity between runtimes. Codex skill loading can be portable before Codex lifecycle hooks can enforce real-time artifact validation.
+Hook event coverage now reaches functional parity across all four runtimes for the artifact-validation use case. Per-event semantics still differ: Copilot's `postToolUse` returns no model-visible output (logging only), so artifact validation enforcement happens at `preToolUse`; Codex routes Write/Edit interception through `apply_patch` with compatibility aliases (`apply_patch`, `Write`, `Edit`) for hook matchers.
 
-Copilot lifecycle metadata is adapter strategy, not a Claude hook copy. Repo hook files live under `.github/hooks/*.json`; command hooks use `bash`, `powershell`, `cwd`, `env`, and `timeoutSec`. Treat support as partial unless manifest validation proves a specific hook path.
+Copilot hook config files live under `.github/hooks/*.json` (per-event filenames like `sessionStart.json`, `preToolUse.json`, `postToolUse.json`) or as a single `hooks.json` with `{version: 1, hooks: {...}}` shape. Command hooks use `bash`, `powershell`, `cwd`, `env`, and `timeoutSec`. Stdin carries timestamp, cwd, and tool details as JSON. Reference: [Copilot hooks configuration](https://docs.github.com/en/copilot/reference/hooks-configuration).
 
-Codex metadata advertises lifecycle limitations only. Codex hooks are experimental behind `[features] codex_hooks = true`, are disabled on Windows, and do not provide current Write/Edit interception parity.
+Codex hook config lives at `~/.codex/hooks.json` (user) or `<repo>/.codex/hooks.json` (project), or inline as `[hooks]` tables in the equivalent `config.toml`. The runtime emits hooks for `apply_patch` edits since `openai/codex#18391` (merged 2026-04-22), giving real-time Write/Edit interception parity with Claude Code PostToolUse. Reference: [Codex hooks](https://developers.openai.com/codex/hooks).
 
 ### Hook setup
 
@@ -86,14 +86,17 @@ claude plugin validate .
 **Copilot plugin**:
 
 ```bash
-copilot plugin install <plugin>@<marketplace>
+copilot plugin marketplace add jgabor/agentera
+copilot plugin install <skill>@agentera        # granular install per skill
+# or
+copilot plugin install jgabor/agentera         # umbrella install (all 12 skills)
 ```
 
-This command shows Copilot's marketplace syntax only. No canonical Agentera Copilot marketplace source is currently verified. When one is verified, use that source to install the aggregate `agentera` plugin.
+The agentera marketplace install path is verified working through both granular and umbrella forms. Granular install (one `<skill>@agentera` invocation per skill) sidesteps Copilot bug `github/copilot-cli#2390` (umbrella discovery misses the `.github/plugin/plugin.json` manifest when `cache_path` is the repo root). Umbrella install ships all 12 skills in one command and currently works against this repo.
 
-Use `copilot plugin marketplace list` to inspect available marketplaces. Direct installs such as `copilot plugin install OWNER/REPO`, `OWNER/REPO:PATH`, Git URLs, and local paths are deprecated fallback paths when no verified marketplace source is available.
+Use `copilot plugin marketplace list` to inspect available marketplaces. Default Copilot marketplaces are `copilot-plugins` (`github/copilot-plugins`) and `awesome-copilot` (`github/awesome-copilot`); the agentera marketplace is the user-added `jgabor/agentera` source. Direct installs such as `copilot plugin install OWNER/REPO`, `OWNER/REPO:PATH`, Git URLs, and local paths still work but Copilot warns they are deprecated.
 
-After a successful aggregate install, `copilot plugin list` should show the `agentera` plugin. Older per-skill entries such as `hej@agentera` may also appear if they were installed through earlier metadata. Host discovery can differ from install state: Task 4 observed `/skills list` exiting 0 while omitting installed `hej`, `inspektera`, and `profilera`.
+After install, `copilot plugin list` shows the installed entries: granular installs surface as `<skill>@agentera`, umbrella as `agentera`. Both can coexist when both forms have been used. Host discovery can lag install state on early Copilot CLI versions, so `/skills list` may omit installed entries until the host caches refresh.
 
 After install, set `AGENTERA_HOME` in your shell rc so SKILL.md helper-script invocations resolve to the install root. Recommended path:
 
@@ -119,7 +122,7 @@ bash -c 'echo "AGENTERA_HOME=$AGENTERA_HOME"; python3 ${AGENTERA_HOME:-$CLAUDE_P
 
 Two outcomes confirm a healthy install. The `echo` prints `AGENTERA_HOME=<plugin install root>` matching what `setup_copilot.py` wrote. The `compact_artifact.py` invocation prints its `usage: compact_artifact.py <spec-name> <path>` line, which proves the bash-fallback form `${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}` resolved to a real script path. Use this protocol when `python3 scripts/smoke_live_hosts.py --live` is unavailable: no auth, no API budget, behind a firewall, or any host where invoking the model is undesirable. The same one-liner doubles as the AGENTERA_HOME and compaction check, so one paste exercises both halves of the SPEC.md Section 7 contract.
 
-**Codex plugin marketplace**: use interactive `/plugins` to install and enable plugins. Manage marketplace sources with `codex plugin marketplace add|upgrade|remove`.
+**Codex plugin marketplace**: register the agentera source with `codex plugin marketplace add jgabor/agentera`, then use interactive `/plugins` to install and enable plugins. The `add` command accepts GitHub `owner/repo[@ref]`, HTTPS git URLs, SSH URLs, or local directories. Manage marketplace sources with `codex plugin marketplace add|upgrade|remove`.
 
 After install, add `AGENTERA_HOME` to `~/.codex/config.toml` so Codex injects it into every shell-tool subprocess. Recommended path:
 
