@@ -409,6 +409,61 @@ class TestLifecycleAdapters:
         plugin["hooks"] = [".github/hooks"]
         assert validator.validate_copilot_hooks(REPO_ROOT, plugin) == []
 
+    def test_copilot_lifecycle_accepts_documented_hook_events(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        root = tmp_path / "repo"
+        hook_dir = root / ".github/hooks"
+        hook_dir.mkdir(parents=True)
+        for event in validator.COPILOT_EVENTS:
+            (hook_dir / f"{event}.json").write_text(
+                json.dumps(
+                    {
+                        "name": event,
+                        "type": "command",
+                        "bash": "python3 hooks/validate_artifact.py",
+                    }
+                ),
+                encoding="utf-8",
+            )
+        assert validator.validate_copilot_hooks(root, {"hooks": ".github/hooks"}) == []
+
+    def test_copilot_lifecycle_rejects_unsupported_hook_event(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        root = tmp_path / "repo"
+        hook_dir = root / ".github/hooks"
+        hook_dir.mkdir(parents=True)
+        (hook_dir / "stop.json").write_text(
+            json.dumps(
+                {
+                    "name": "stop",
+                    "type": "command",
+                    "bash": "python3 hooks/session_stop.py",
+                }
+            ),
+            encoding="utf-8",
+        )
+        errors = validator.validate_copilot_hooks(root, {"hooks": ".github/hooks"})
+        assert "copilot: unsupported lifecycle hook file configured: stop.json" in errors
+        assert "copilot: unsupported lifecycle event configured: stop" in errors
+
+    def test_copilot_lifecycle_rejects_hook_filename_mismatch(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        root = tmp_path / "repo"
+        hook_dir = root / ".github/hooks"
+        hook_dir.mkdir(parents=True)
+        (hook_dir / "sessionStart.json").write_text(
+            json.dumps(
+                {
+                    "name": "sessionEnd",
+                    "type": "command",
+                    "bash": "python3 hooks/session_stop.py",
+                }
+            ),
+            encoding="utf-8",
+        )
+        errors = validator.validate_copilot_hooks(root, {"hooks": ".github/hooks"})
+        assert "copilot.sessionStart.json: hook filename must match event name sessionEnd" in errors
+
     def test_copilot_lifecycle_list_form_hooks_fail_on_invalid_handler(self, tmp_path):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
         root = tmp_path / "repo"
