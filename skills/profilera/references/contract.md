@@ -1,7 +1,7 @@
 <!-- contract: profilera -->
-<!-- source: SPEC.md (sha256: 372c6fb0bf8c4febc3fb313069f6d924023264b778b9d309a0f7cd5d27209c90) -->
+<!-- source: SPEC.md (sha256: be859af5d195da79982fce7734eb4271b6b30b54716f40dfbf5d2aa79c733c69) -->
 <!-- sections: 1, 4, 6 -->
-<!-- generated: 2026-04-26T11:35:48Z -->
+<!-- generated: 2026-04-27T06:57:30Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 

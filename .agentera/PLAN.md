@@ -45,7 +45,7 @@ The work splits cleanly into three layers.
 
 **Depends on**: none
 
-**Status**: □ pending
+**Status**: ■ complete
 
 **Acceptance**:
 

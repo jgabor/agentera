@@ -370,6 +370,8 @@ Skill prose carries cross-runtime helper script invocations (e.g., compaction sc
 
 AGENTERA_HOME is the sibling of PROFILERA_PROFILE_DIR (Section 6, Profile Consumption; Section 4, Artifact Format Contracts): both are adapter-injected env vars. PROFILERA_PROFILE_DIR scopes to profile data; AGENTERA_HOME scopes to install-root helper scripts. Together they cover the two cross-runtime path surfaces the suite needs.
 
+The injection asymmetry between PROFILERA_PROFILE_DIR and AGENTERA_HOME is principled, not accidental: profile data is global and adapter-owned (one writer, many readers across projects), so adapters set PROFILERA_PROFILE_DIR directly per host conventions; install-root path resolution is per-invocation and skill-owned via the bash-fallback form, so AGENTERA_HOME flows through whichever per-runtime env-injection mechanism each host already provides.
+
 ### Scope
 
 The contract governs SKILL.md prose that references the install root from a shell-tool invocation. It does not govern adapter-internal config files (`hooks/hooks.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, root `plugin.json`). Those files are loaded by their host runtime directly and use whichever path token that runtime expects; they are per-runtime by design.
@@ -388,7 +390,7 @@ Each supported runtime has one official, documented mechanism for injecting AGEN
 
 | Runtime | Mechanism | Source |
 |---------|-----------|--------|
-| Claude Code | Bash fallback to `CLAUDE_PLUGIN_ROOT` (the env var Claude Code already sets at the plugin root). The form `${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}` resolves to AGENTERA_HOME when set and falls back to the existing Claude Code variable otherwise; no Claude-side adapter change is required. | Claude Code plugin docs: `${CLAUDE_PLUGIN_ROOT}` reference (see hooks-development guidance) |
+| Claude Code | Bash fallback to `CLAUDE_PLUGIN_ROOT` (the env var Claude Code already sets at the plugin root). The form `${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}` resolves to AGENTERA_HOME when set and falls back to the existing Claude Code variable otherwise; no Claude-side adapter change is required. | Claude Code plugin reference: `${CLAUDE_PLUGIN_ROOT}` token (`https://docs.claude.com/en/docs/claude-code/plugins-reference#hooks-and-mcp-servers`) |
 | OpenCode | `shell.env` plugin hook from `@opencode-ai/plugin`. The hook returns an environment fragment that OpenCode merges into every shell-tool subprocess; the adapter sets AGENTERA_HOME there at plugin load. | `@opencode-ai/plugin` Hooks interface (`dist/index.d.ts`, `shell.env` member) |
 | Codex | `~/.codex/config.toml` `[shell_environment_policy]` `set` table. Codex applies the policy to every shell-tool process; the user adds `set = { AGENTERA_HOME = "<install root>" }`. This is the runtime's native, non-experimental mechanism for shell-tool env propagation. | Codex config schema: `ShellEnvironmentPolicyToml` (`https://github.com/openai/codex/blob/main/codex-rs/core/config.schema.json`) and Codex config reference (`https://developers.openai.com/codex/config-reference`) |
 | Copilot | Shell rc export (`export AGENTERA_HOME=<install root>` in `~/.bashrc`, `~/.zshrc`, etc.). Copilot has no plugin-level env-injection API, so user-shell setup is the documented best practice; Copilot inherits the parent shell environment. | Copilot CLI plugin reference (`https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-plugin-reference`) and Copilot hooks reference (`https://docs.github.com/en/copilot/reference/hooks-configuration`) |
