@@ -89,6 +89,25 @@ DEFAULT_CONFIG_PATH = Path.home() / ".codex" / "config.toml"
 # script-location walk-up so an explicit override always wins.
 ENV_FALLBACKS: tuple[str, ...] = ("AGENTERA_HOME", "CLAUDE_PLUGIN_ROOT")
 
+# The 12 canonical agentera skill names. Source of truth for which
+# `[agents.<name>]` blocks the --enable-agents flag emits. Order matches
+# `.claude-plugin/marketplace.json` plugin ordering for consistency
+# across runtime surfaces.
+AGENTERA_SKILLS: tuple[tuple[str, str], ...] = (
+    ("hej",          "agentera entry-point router; orient, route, activate"),
+    ("inspirera",    "external-link analysis mapped onto the user's projects"),
+    ("profilera",    "decision-profile mining from session history"),
+    ("realisera",    "autonomous development cycle that evolves a project"),
+    ("optimera",     "metric-driven optimization through experimentation"),
+    ("resonera",     "structured Socratic deliberation; produces decision artifacts"),
+    ("inspektera",   "codebase health audit with multi-dimensional evaluation"),
+    ("planera",      "scale-adaptive planning with behavioral acceptance criteria"),
+    ("visionera",    "create or refine VISION.md with codebase exploration"),
+    ("dokumentera",  "DTC-first documentation creation, maintenance, and verification"),
+    ("visualisera",  "create, refine, and audit DESIGN.md visual identity files"),
+    ("orkestrera",   "skill-agnostic orchestrator; dispatches skills as subagents"),
+)
+
 
 # ---------------------------------------------------------------------------
 # Install-root resolution
@@ -636,6 +655,239 @@ def plan_change(
     )
 
 
+# ---------------------------------------------------------------------------
+# --enable-agents planner: writes [agents.<name>] config.toml blocks
+# ---------------------------------------------------------------------------
+#
+# Codex resolves `[agents.<name>]` tables into spawnable subagent roles per
+# the AgentRoleToml schema in ``codex-rs/config/src/config_toml.rs`` (commit
+# pinned in the cycle's PROGRESS Discovered field). Each block carries a
+# ``description`` (required) and a ``config_file`` path that points at the
+# bundled ``skills/<name>/agents/<name>.toml``. Once these blocks are
+# present, orkestrera's "spawn the target skill as a subagent" prose
+# dispatches natively under Codex via the same ``[agents.<name>]``
+# conversational substrate ``$realisera``-style prompts already use.
+#
+# Idempotency follows the same shape as the AGENTERA_HOME branch: if every
+# expected block already declares the desired ``config_file`` and
+# ``description``, the planner reports a no-op. If some blocks are missing,
+# they are appended verbatim (no rewriting of existing tables). If a block
+# exists for one of the 12 names but points at a different ``config_file``
+# (or carries unexpected keys), the planner refuses without ``--force``;
+# with ``--force``, agentera-managed blocks are rewritten (siblings inside
+# the block are dropped, since they would conflict with our managed schema).
+
+
+def expected_agent_blocks(install_root: Path) -> dict[str, dict[str, str]]:
+    """Return the desired ``[agents.<name>]`` shape for all 12 skills.
+
+    Each entry maps the skill name to the inline-table contents we want
+    written: a ``description`` string and a ``config_file`` path
+    pointing at the bundled ``skills/<name>/agents/<name>.toml``. Paths
+    are absolute so the user's ``~/.codex/config.toml`` resolves them
+    independently of any layered relative-path convention.
+    """
+    blocks: dict[str, dict[str, str]] = {}
+    for name, description in AGENTERA_SKILLS:
+        config_file = str(
+            install_root / "skills" / name / "agents" / f"{name}.toml"
+        )
+        blocks[name] = {
+            "description": description,
+            "config_file": config_file,
+        }
+    return blocks
+
+
+def classify_agents_state(
+    text: str | None,
+    expected: dict[str, dict[str, str]],
+) -> tuple[list[str], list[str], list[str]]:
+    """Split the 12 skill names by current agents-block state.
+
+    Returns three name lists:
+
+    - ``missing``: no ``[agents.<name>]`` block in the file (will be
+      appended).
+    - ``matching``: block present and ``config_file`` + ``description``
+      already at the desired values (no-op).
+    - ``conflicting``: block present but value disagrees, or unexpected
+      keys live alongside the managed pair (needs ``--force``).
+    """
+    missing: list[str] = []
+    matching: list[str] = []
+    conflicting: list[str] = []
+
+    if text is None or not text.strip():
+        return list(expected.keys()), [], []
+
+    parsed = tomllib.loads(text)
+    agents = parsed.get("agents")
+    if not isinstance(agents, dict):
+        return list(expected.keys()), [], []
+
+    managed_keys = {"description", "config_file"}
+    for name, want in expected.items():
+        block = agents.get(name)
+        if not isinstance(block, dict):
+            missing.append(name)
+            continue
+        existing_managed = {k: block.get(k) for k in managed_keys}
+        unexpected = set(block) - managed_keys
+        if existing_managed == want and not unexpected:
+            matching.append(name)
+        else:
+            conflicting.append(name)
+
+    return missing, matching, conflicting
+
+
+def render_agents_blocks(
+    install_root: Path,
+    names: list[str],
+    expected: dict[str, dict[str, str]],
+) -> str:
+    """Render ``[agents.<name>]`` block syntax for each name in order.
+
+    Uses standard-form (multi-line) section headers rather than inline
+    tables so the resulting config.toml stays readable when the user
+    inspects it. Each block carries one blank line of separation so the
+    appended region is visually distinct from existing content.
+    """
+    chunks: list[str] = []
+    for name in names:
+        want = expected[name]
+        chunks.append(
+            f"[agents.{name}]\n"
+            f"description = {_toml_basic_string(want['description'])}\n"
+            f"config_file = {_toml_basic_string(want['config_file'])}\n"
+        )
+    return "\n".join(chunks)
+
+
+def remove_existing_agent_blocks(text: str, names: list[str]) -> str:
+    """Strip every ``[agents.<name>]`` section listed in ``names``.
+
+    Used by the ``--force`` rewrite path so conflicting agentera-managed
+    blocks can be replaced without leaving stale keys behind. Operates
+    line-by-line: drops the section header plus every following line
+    until the next section header or EOF. Other sections are preserved
+    byte-identically.
+    """
+    if not names:
+        return text
+
+    lines_with_ends = text.splitlines(keepends=True)
+    plain_lines = [line.rstrip("\r\n") for line in lines_with_ends]
+    targets = {f"[agents.{name}]" for name in names}
+
+    output: list[str] = []
+    skip = False
+    for plain, with_end in zip(plain_lines, lines_with_ends, strict=True):
+        stripped = plain.strip()
+        if stripped.startswith("["):
+            skip = stripped in targets
+        if not skip:
+            output.append(with_end)
+
+    # Collapse 3+ consecutive blank lines that the removal may have left
+    # behind, keeping at most one blank-line separator between sections.
+    result = "".join(output)
+    while "\n\n\n\n" in result:
+        result = result.replace("\n\n\n\n", "\n\n\n")
+    return result
+
+
+def plan_agents_change(
+    current_text: str | None,
+    install_root: Path,
+    *,
+    force: bool,
+) -> Outcome:
+    """Decide what `--enable-agents` would write.
+
+    Mirrors ``plan_change`` (the AGENTERA_HOME planner): no I/O, returns
+    an ``Outcome`` describing the decision. Five possible actions:
+
+    - ``noop``: every expected block already matches.
+    - ``fresh``: file is empty/absent or has no ``[agents]`` content.
+    - ``insert``: some blocks are missing; append them.
+    - ``conflict``: a name has a divergent block and ``--force`` was not
+      passed.
+    - ``force-merge``: ``--force`` rewrites conflicting blocks while
+      preserving every other table byte-identically.
+    """
+    expected = expected_agent_blocks(install_root)
+    missing, _matching, conflicting = classify_agents_state(current_text, expected)
+
+    if not missing and not conflicting:
+        return Outcome(
+            action="noop",
+            new_text=current_text or "",
+            message=(
+                f"all 12 [agents.<name>] blocks already point at "
+                f"{install_root}/skills/<name>/agents/<name>.toml; nothing to do"
+            ),
+            diff="",
+        )
+
+    # Conflict path: some blocks exist but disagree.
+    if conflicting and not force:
+        return Outcome(
+            action="conflict",
+            new_text="",
+            message=(
+                f"[agents.<name>] block(s) for "
+                f"{', '.join(sorted(conflicting))} disagree with the bundled "
+                f"agent.toml paths. Re-run with --force to rewrite; existing "
+                f"non-managed [agents.*] blocks (e.g. user-defined roles) "
+                f"are preserved."
+            ),
+            diff="",
+        )
+
+    # Build the new text. Strip conflicting blocks first when --force,
+    # then append the missing + (rewritten) conflicting names.
+    base_text = current_text or ""
+    if conflicting and force:
+        base_text = remove_existing_agent_blocks(base_text, conflicting)
+
+    to_append = sorted(missing + (conflicting if force else []))
+    appended = render_agents_blocks(install_root, to_append, expected)
+
+    # Ensure a clean separator before the appended region. Two newlines
+    # between existing content and the first new block; emitter already
+    # places one blank line between consecutive blocks.
+    if base_text and not base_text.endswith("\n"):
+        base_text = base_text + "\n"
+    if base_text and not base_text.endswith("\n\n"):
+        base_text = base_text + "\n"
+    new_text = base_text + appended
+
+    diff = _unified_diff(current_text or "", new_text)
+    if conflicting and force:
+        action = "force-merge"
+        message = (
+            f"would rewrite {len(conflicting)} conflicting "
+            f"[agents.<name>] block(s) ({', '.join(sorted(conflicting))}) "
+            f"and add {len(missing)} missing block(s)"
+        )
+    elif missing and (current_text is None or not current_text.strip()):
+        action = "fresh"
+        message = (
+            f"would write fresh config with all 12 [agents.<name>] blocks "
+            f"pointing at {install_root}/skills/<name>/agents/<name>.toml"
+        )
+    else:
+        action = "insert"
+        message = (
+            f"would append {len(to_append)} [agents.<name>] block(s) "
+            f"({', '.join(to_append)}) pointing at "
+            f"{install_root}/skills/<name>/agents/<name>.toml"
+        )
+    return Outcome(action=action, new_text=new_text, message=message, diff=diff)
+
+
 def _unified_diff(before: str, after: str) -> str:
     """Pretty unified diff between two text blobs."""
     diff_lines = difflib.unified_diff(
@@ -722,7 +974,20 @@ def main(argv: list[str] | None = None) -> int:
         help=(
             "Merge AGENTERA_HOME alongside existing sibling keys in "
             "[shell_environment_policy].set instead of refusing. Has no "
-            "effect when there are no sibling keys."
+            "effect when there are no sibling keys. Also rewrites "
+            "conflicting [agents.<name>] blocks under --enable-agents."
+        ),
+    )
+    parser.add_argument(
+        "--enable-agents",
+        action="store_true",
+        help=(
+            "Additionally write [agents.<name>] blocks for all 12 agentera "
+            "skills, each pointing at the bundled "
+            "skills/<name>/agents/<name>.toml so orkestrera's 'spawn a "
+            "subagent' prose dispatches natively under Codex via the "
+            "AgentRoleToml schema. Idempotent re-run is a no-op; conflicting "
+            "existing [agents.*] entries require --force."
         ),
     )
     args = parser.parse_args(argv)
@@ -756,8 +1021,35 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 2
 
-    # Step 4: plan the change.
+    # Step 4: plan the AGENTERA_HOME change.
     outcome = plan_change(current_text, install_root, force=args.force)
+
+    # Step 4b: if --enable-agents was requested, layer the agents-blocks
+    # plan on top of whatever AGENTERA_HOME left in new_text (so both
+    # writes land in one pass when both are needed).
+    if args.enable_agents:
+        # Pick the post-AGENTERA_HOME text as the base for the agents
+        # planner unless the AGENTERA_HOME planner refused (conflict).
+        if outcome.action == "conflict":
+            # Surface the AGENTERA_HOME conflict first; the agents work
+            # cannot proceed against an unresolvable base. The user
+            # repairs the AGENTERA_HOME conflict (or re-runs with
+            # --force) before retrying.
+            print(outcome.message, file=sys.stderr)
+            if outcome.diff:
+                print(outcome.diff, file=sys.stderr)
+            return 2
+        intermediate_text = (
+            outcome.new_text if outcome.action != "noop" else current_text
+        )
+        agents_outcome = plan_agents_change(
+            intermediate_text, install_root, force=args.force
+        )
+
+        # Combine the two outcomes. The combined action is the more
+        # urgent of the two: conflict beats anything else, then any
+        # write action beats noop.
+        outcome = _combine_outcomes(outcome, agents_outcome, current_text)
 
     # Step 5: dispatch on the outcome.
     if outcome.action == "noop":
@@ -789,6 +1081,46 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"wrote {config_path}: {outcome.message.replace('would ', '')}")
     return 0
+
+
+def _combine_outcomes(
+    env_outcome: Outcome, agents_outcome: Outcome, original_text: str | None
+) -> Outcome:
+    """Merge AGENTERA_HOME and agents-blocks outcomes into one decision.
+
+    Conflict beats every other action: if either planner refuses, the
+    combined outcome refuses with both messages. Otherwise the agents
+    planner's ``new_text`` is the final text (it was computed against
+    the AGENTERA_HOME planner's output, so it already includes both
+    edits). Both messages and a single diff against the original text
+    populate the combined Outcome.
+    """
+    if agents_outcome.action == "conflict":
+        return agents_outcome
+
+    if env_outcome.action == "noop" and agents_outcome.action == "noop":
+        return Outcome(
+            action="noop",
+            new_text=env_outcome.new_text,
+            message=(
+                f"{env_outcome.message}; {agents_outcome.message}"
+            ),
+            diff="",
+        )
+
+    final_text = agents_outcome.new_text or env_outcome.new_text
+    combined_diff = _unified_diff(original_text or "", final_text)
+    parts = [env_outcome.message, agents_outcome.message]
+    return Outcome(
+        action=(
+            agents_outcome.action
+            if agents_outcome.action != "noop"
+            else env_outcome.action
+        ),
+        new_text=final_text,
+        message="; ".join(parts),
+        diff=combined_diff,
+    )
 
 
 if __name__ == "__main__":
