@@ -130,7 +130,7 @@ The work splits cleanly into three layers.
 
 **Depends on**: Task 3
 
-**Status**: □ pending
+**Status**: ■ complete
 
 **Acceptance**:
 

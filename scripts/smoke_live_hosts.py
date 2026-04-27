@@ -74,6 +74,7 @@ from __future__ import annotations
 import argparse
 import glob
 import hashlib
+import json
 import os
 import shutil
 import subprocess
@@ -427,16 +428,21 @@ def run_setup_helpers_smoke() -> None:
 
 
 COST_LINE = (
-    "Estimated cost: $0.20-1.00 across two model calls "
-    "(one per runtime; --live mode only)"
+    "Estimated cost: $0.30-1.50 across three model calls "
+    "(codex exec AGENTERA_HOME + compaction probe, codex exec "
+    "apply_patch hook firing probe, copilot -p AGENTERA_HOME + "
+    "compaction probe; --live mode only)"
 )
 CONSENT_LINE = (
-    "Proceed with live CLI invocations (codex exec + copilot -p "
+    "Proceed with live CLI invocations (codex exec x2 + copilot -p "
     "--allow-all-tools)? [y/N]: "
 )
 
 
-def cost_gate() -> bool:
+CONSENT_ENV_VAR = "AGENTERA_LIVE_CONSENT"
+
+
+def cost_gate(auto_consent: bool = False) -> bool:
     """Print the cost line and a one-line consent prompt.
 
     Returns ``True`` on ``y`` / ``yes`` (case-insensitive), ``False``
@@ -444,8 +450,21 @@ def cost_gate() -> bool:
     so the operator can dry-probe the harness UX without spending any
     model budget. ``--allow-all-tools`` is named in the consent line
     per Task 4 AC3 so the operator knows what permission they grant.
+
+    Bypass paths (T6):
+        ``auto_consent=True`` (set by ``--yes``) or
+        ``$AGENTERA_LIVE_CONSENT=1`` short-circuits the interactive
+        prompt and logs an explicit ``auto-consented via flag`` audit
+        line so realisera/orkestrera dispatch can drive the harness
+        non-interactively without altering the cost-visibility contract
+        (the cost line still prints).
     """
     print(COST_LINE)
+    env_consent = os.environ.get(CONSENT_ENV_VAR, "").strip() == "1"
+    if auto_consent or env_consent:
+        source = "--yes flag" if auto_consent else f"${CONSENT_ENV_VAR}=1"
+        info(f"consent: auto-consented via flag ({source}); skipping prompt")
+        return True
     try:
         response = input(CONSENT_LINE).strip().lower()
     except EOFError:
@@ -926,6 +945,462 @@ def run_codex_live_section(
     )
 
 
+# Wall-clock cap for the apply_patch hook-firing `codex exec` invocation.
+# Mirrors CODEX_EXEC_TIMEOUT_SECONDS: comfortably above any normal model
+# latency for a one-step apply_patch prompt; below the 10-minute Bash tool
+# ceiling so a hung run cannot strand the harness.
+CODEX_HOOK_EXEC_TIMEOUT_SECONDS = 300
+
+
+# Codex hook config relative path inside CODEX_HOME (per `codex-rs/hooks/
+# src/engine/discovery.rs::load_hooks_json`: `$CODEX_HOME/hooks.json`
+# is the user-layer discovery path; with CODEX_HOME pointed at a tmp dir,
+# Codex reads our wrapper config without ever touching `~/.codex/hooks.json`).
+CODEX_HOOKS_FILENAME = "hooks.json"
+
+
+def run_codex_hook_section(
+    snapshots: SnapshotRegistry,
+    skips: list[tuple[str, str]],
+) -> None:
+    """Codex apply_patch hook section — exactly one ``codex exec`` per Task 6.
+
+    Verifies the T3 (Cycle 191) ``hooks/codex-hooks.json`` wiring fires
+    end-to-end on a live Codex invocation: PreToolUse + PostToolUse
+    matchers on ``apply_patch`` shell out to ``validate_artifact.py``
+    when the agent edits a file via the apply_patch tool.
+
+    Sequence:
+
+    1. PATH probe (``shutil.which("codex")``); skip ``not-on-path`` on
+       miss without invoking the binary. Same shape as Task 3 section.
+    2. Hook-config-absent gate: if ``hooks/codex-hooks.json`` is missing
+       from the install root, SKIP with a distinct ``hook config absent``
+       reason so this case is visibly different from ``hook didn't fire``
+       and ``hook fired but returned non-zero``.
+    3. Snapshot ``~/.codex/hooks.json`` and SHA256-hash it BEFORE any
+       mutation. Defense-in-depth (the harness sets ``CODEX_HOME`` to a
+       tmp dir so Codex never reads the real ``~/.codex/hooks.json``);
+       the post-run round-trip catches any regression that accidentally
+       targeted the real path.
+    4. Build a tmp ``CODEX_HOME`` directory; copy the user's
+       ``auth.json`` so codex is authenticated; write a wrapper hooks
+       config that records every hook firing to a sentinel file AND
+       invokes the real ``hooks/validate_artifact.py``. The wrapper's
+       exit code is the real hook's exit code, so the wiring is
+       byte-faithful to T3 plus we get observable evidence on disk.
+    5. Issue exactly ONE ``codex exec`` invocation in a tmp workdir with
+       a prompt asking the agent to create a one-line file via the
+       apply_patch tool. ``CODEX_HOME`` exports the tmp config; the same
+       ``--dangerously-bypass-approvals-and-sandbox`` flag the Task 3
+       section uses lets apply_patch run without an approval round-trip.
+    6. Distinct PASS/FAIL/SKIP per AC3:
+
+       - ``hook config absent`` (step 2 already returned): SKIP
+       - ``codex exec`` returned auth failure: SKIP (no Codex auth)
+       - sentinel file does not exist: FAIL ``hook didn't fire``
+       - sentinel records non-zero hook exit: FAIL
+         ``hook fired but returned non-zero``
+       - sentinel records both Pre+Post entries with exit 0: PASS
+
+    7. SHA256 the real ``~/.codex/hooks.json`` AFTER and assert
+       byte-identity vs the BEFORE hash (defense-in-depth, mirrors the
+       Task 3 SHA256 round-trip on ``~/.codex/config.toml``).
+
+    On substantive failures, raise via :func:`fail` (the top-level
+    ``finally`` still restores snapshots). The skip path covers the AC3
+    ``hook config absent`` and Codex-auth-missing cases; substantive
+    failures are hard fails by design (the user authorized live spend
+    and expects assertive verification).
+
+    Pre-authorized live model spend bounded at one ``codex exec`` per
+    runtime per AC3; this is the second ``codex exec`` invocation in the
+    live path (Task 3 section issued the first). Cost is captured from
+    the agent output on stdout and surfaced for operator audit.
+    """
+    info("--- codex apply_patch hook section ---")
+
+    # Step 1: PATH probe.
+    if shutil.which("codex") is None:
+        skip("codex-hook", "not on PATH", skips)
+        return
+    info(f"probe: codex resolved to {shutil.which('codex')}")
+
+    # Step 2: hook-config-absent gate. Distinct skip per AC3.
+    real_hook_config = REPO_ROOT / "hooks" / "codex-hooks.json"
+    if not real_hook_config.exists():
+        skip(
+            "codex-hook",
+            f"hook config absent ({real_hook_config} not found; "
+            f"T3 wiring not present in this checkout)",
+            skips,
+        )
+        return
+    info(f"codex-hook: hook config present at {real_hook_config}")
+
+    # Step 3: snapshot + SHA256 the real ~/.codex/hooks.json BEFORE
+    # any mutation. The harness writes hooks.json into CODEX_HOME=<tmp>,
+    # never to the real ~/.codex, but the snapshot + hash defends against
+    # a regression that accidentally targeted the real path.
+    real_codex_hooks = Path.home() / ".codex" / "hooks.json"
+    snapshots.snapshot(real_codex_hooks)
+    sha_before = _sha256(real_codex_hooks)
+    info(f"codex-hook: ~/.codex/hooks.json sha256 (before): {sha_before}")
+
+    install_root = REPO_ROOT
+    validate_artifact_py = REPO_ROOT / "hooks" / "validate_artifact.py"
+    if not validate_artifact_py.exists():
+        fail(f"codex-hook: validate_artifact.py missing at {validate_artifact_py}")
+
+    with tempfile.TemporaryDirectory(
+        prefix="agentera-smoke-codex-hook-home-"
+    ) as tmp_codex_home_str:
+        tmp_codex_home = Path(tmp_codex_home_str)
+        info(f"codex-hook: tmp CODEX_HOME={tmp_codex_home}")
+
+        # Mirror real auth.json into the tmp dir so codex is authenticated.
+        real_auth = Path.home() / ".codex" / "auth.json"
+        if real_auth.exists():
+            shutil.copy2(real_auth, tmp_codex_home / "auth.json")
+            info("codex-hook: copied auth.json into tmp CODEX_HOME (authed)")
+        else:
+            skip(
+                "codex-hook",
+                "no ~/.codex/auth.json on host; cannot run authed codex exec",
+                skips,
+            )
+            sha_after = _sha256(real_codex_hooks)
+            info(f"codex-hook: ~/.codex/hooks.json sha256 (after): {sha_after}")
+            assert_true(
+                sha_before == sha_after,
+                f"codex-hook: ~/.codex/hooks.json SHA256 changed: "
+                f"before={sha_before} after={sha_after}",
+            )
+            return
+
+        # Step 4: write the sentinel-recording wrapper hook config. The
+        # wrapper script appends a one-line trace to <sentinel> on every
+        # firing, then execs the real validate_artifact.py with the same
+        # stdin so the wiring is byte-faithful to T3. Hook exit code is
+        # the wrapper's exit code (== validate_artifact.py exit code).
+        sentinel_path = tmp_codex_home / "hook-fired.log"
+        wrapper_script = tmp_codex_home / "hook_wrapper.py"
+        wrapper_script.write_text(
+            "#!/usr/bin/env python3\n"
+            "# Sentinel-recording wrapper for the agentera Codex apply_patch hook.\n"
+            "# Reads the Codex hook stdin once, appends a one-line trace to the\n"
+            "# sentinel path, then re-feeds stdin to validate_artifact.py and\n"
+            "# exits with that script's exit code so the wiring is byte-faithful.\n"
+            "import json\n"
+            "import os\n"
+            "import subprocess\n"
+            "import sys\n"
+            "\n"
+            f"SENTINEL = {str(sentinel_path)!r}\n"
+            f"VALIDATE = {str(validate_artifact_py)!r}\n"
+            "\n"
+            "raw = sys.stdin.read()\n"
+            "event = '<unknown>'\n"
+            "tool = '<unknown>'\n"
+            "try:\n"
+            "    parsed = json.loads(raw) if raw.strip() else {}\n"
+            "    event = parsed.get('hook_event_name', '<unknown>')\n"
+            "    tool = parsed.get('tool_name', '<unknown>')\n"
+            "except (json.JSONDecodeError, AttributeError):\n"
+            "    pass\n"
+            "\n"
+            "# Run the real validate_artifact.py with the same stdin.\n"
+            "result = subprocess.run(\n"
+            "    [sys.executable, VALIDATE],\n"
+            "    input=raw,\n"
+            "    capture_output=True,\n"
+            "    text=True,\n"
+            ")\n"
+            "\n"
+            "# Append sentinel trace BEFORE re-emitting stdout/stderr so a\n"
+            "# crash inside the validator still leaves an observable trace.\n"
+            "with open(SENTINEL, 'a', encoding='utf-8') as fh:\n"
+            "    fh.write(\n"
+            "        f'event={event} tool={tool} '\n"
+            "        f'exit={result.returncode} '\n"
+            "        f'stdout_len={len(result.stdout)} '\n"
+            "        f'stderr_len={len(result.stderr)}\\n'\n"
+            "    )\n"
+            "\n"
+            "if result.stdout:\n"
+            "    sys.stdout.write(result.stdout)\n"
+            "if result.stderr:\n"
+            "    sys.stderr.write(result.stderr)\n"
+            "sys.exit(result.returncode)\n",
+            encoding="utf-8",
+        )
+        os.chmod(wrapper_script, 0o755)
+
+        # Codex hook config that points PreToolUse + PostToolUse
+        # apply_patch matchers at the wrapper. AGENTERA_HOME is exported
+        # so the real validate_artifact.py inside the wrapper resolves
+        # the install root the way it does in production. Quoting the
+        # command path defends against any future install root that
+        # contains spaces.
+        tmp_hooks_config = tmp_codex_home / CODEX_HOOKS_FILENAME
+        hook_command = f'python3 "{wrapper_script}"'
+        tmp_hooks_config.write_text(
+            json.dumps(
+                {
+                    "description": (
+                        "agentera Codex hook smoke wrapper: records every "
+                        "apply_patch hook firing to a sentinel file then "
+                        "delegates to the real validate_artifact.py"
+                    ),
+                    "hooks": {
+                        "PreToolUse": [
+                            {
+                                "matcher": "^apply_patch$",
+                                "hooks": [
+                                    {
+                                        "type": "command",
+                                        "command": hook_command,
+                                        "timeout": 10,
+                                        "statusMessage": "validating artifact (smoke)",
+                                    }
+                                ],
+                            }
+                        ],
+                        "PostToolUse": [
+                            {
+                                "matcher": "^apply_patch$",
+                                "hooks": [
+                                    {
+                                        "type": "command",
+                                        "command": hook_command,
+                                        "timeout": 10,
+                                        "statusMessage": "validating artifact (smoke)",
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        info(f"codex-hook: wrote tmp hooks.json to {tmp_hooks_config}")
+
+        # Step 5: spawn an apply_patch via codex exec. The prompt names
+        # exactly one tiny file edit so the agent uses apply_patch
+        # without scope creep; tmp workdir keeps the touched file off
+        # the real tree. cwd is set so the validator inside the wrapper
+        # gets a consistent project_root.
+        with tempfile.TemporaryDirectory(
+            prefix="agentera-smoke-codex-hook-workdir-"
+        ) as tmp_workdir_str:
+            tmp_workdir = Path(tmp_workdir_str)
+            target_file = tmp_workdir / "hook_probe.txt"
+            prompt = (
+                "Use the apply_patch tool to create a NEW file at "
+                f"{target_file} with EXACTLY one line of content: "
+                "'agentera hook probe' (no quotes, no trailing newline "
+                "metadata). After the apply_patch completes, print the "
+                "literal text DONE on its own line and end your turn."
+            )
+
+            env = dict(os.environ)
+            env["CODEX_HOME"] = str(tmp_codex_home)
+            env["AGENTERA_HOME"] = str(install_root)
+
+            output_last = tmp_workdir / "codex-hook-last-message.txt"
+            # Mirror run_codex_live_section: do NOT pin --model so Codex
+            # picks the account-default model. ChatGPT-account auth
+            # rejects `gpt-5-codex` even though it is the documented
+            # default for API-key auth; letting Codex resolve the model
+            # keeps the section working under both auth modes.
+            cmd = [
+                "codex",
+                "exec",
+                "--cd",
+                str(tmp_workdir),
+                "--skip-git-repo-check",
+                "--dangerously-bypass-approvals-and-sandbox",
+                "--output-last-message",
+                str(output_last),
+                prompt,
+            ]
+            info(
+                f"codex-hook: invoking `codex exec` "
+                f"(CODEX_HOME={tmp_codex_home}; model resolves from account default)"
+            )
+            t0 = time.time()
+            try:
+                exec_result = subprocess.run(
+                    cmd,
+                    env=env,
+                    capture_output=True,
+                    text=True,
+                    timeout=CODEX_HOOK_EXEC_TIMEOUT_SECONDS,
+                    check=False,
+                )
+            except subprocess.TimeoutExpired as exc:
+                fail(
+                    f"codex-hook: `codex exec` timed out at "
+                    f"{CODEX_HOOK_EXEC_TIMEOUT_SECONDS}s "
+                    f"(partial stdout={exc.stdout!r})"
+                )
+                return  # unreachable; satisfies type checker
+            elapsed = time.time() - t0
+            info(
+                f"codex-hook: `codex exec` returned "
+                f"exit={exec_result.returncode} in {elapsed:.1f}s"
+            )
+
+            if exec_result.returncode != 0:
+                stderr_lower = exec_result.stderr.lower()
+                if "auth" in stderr_lower or "login" in stderr_lower:
+                    skip(
+                        "codex-hook",
+                        f"`codex exec` returned auth-style failure "
+                        f"(exit {exec_result.returncode}); see stderr",
+                        skips,
+                    )
+                    info(f"codex-hook: stdout={exec_result.stdout!r}")
+                    info(f"codex-hook: stderr={exec_result.stderr!r}")
+                    sha_after = _sha256(real_codex_hooks)
+                    info(
+                        f"codex-hook: ~/.codex/hooks.json sha256 (after): "
+                        f"{sha_after}"
+                    )
+                    assert_true(
+                        sha_before == sha_after,
+                        f"codex-hook: ~/.codex/hooks.json SHA256 changed: "
+                        f"before={sha_before} after={sha_after}",
+                    )
+                    return
+                fail(
+                    f"codex-hook: `codex exec` exit {exec_result.returncode}: "
+                    f"stdout={exec_result.stdout!r} "
+                    f"stderr={exec_result.stderr!r}"
+                )
+
+            # Step 6: distinct PASS/FAIL outcomes per AC3.
+            agent_output = ""
+            if output_last.exists():
+                agent_output = output_last.read_text(encoding="utf-8")
+            if not agent_output.strip():
+                agent_output = exec_result.stdout
+            info("codex-hook: --- captured agent output begin ---")
+            for line in agent_output.rstrip("\n").splitlines():
+                info(f"  {line}")
+            info("codex-hook: --- captured agent output end ---")
+
+            # Surface the cost summary line Codex prints at the end of
+            # `codex exec` so the operator can pin actual live spend.
+            cost_lines = [
+                line
+                for line in exec_result.stdout.splitlines()
+                if "tokens" in line.lower() or "cost" in line.lower()
+            ]
+            for line in cost_lines:
+                info(f"codex-hook: cost summary: {line.strip()}")
+
+            # Verify the agent actually used apply_patch by checking the
+            # target file landed. If not, the prompt was misinterpreted
+            # and the hook had nothing to fire on; surface that distinctly.
+            if not target_file.exists():
+                fail(
+                    f"codex-hook: target file {target_file} not created; "
+                    f"agent likely did not invoke apply_patch (no hook to fire)"
+                )
+            info(
+                f"codex-hook: target file created at {target_file} "
+                f"(size={target_file.stat().st_size} bytes)"
+            )
+
+            # AC3 distinct outcomes: hook didn't fire vs hook fired but
+            # returned non-zero vs hook fired clean.
+            if not sentinel_path.exists():
+                fail(
+                    f"codex-hook: hook didn't fire (sentinel "
+                    f"{sentinel_path} not created); apply_patch ran but "
+                    f"PreToolUse + PostToolUse handlers did not execute. "
+                    f"Likely causes: hooks.json discovery path mismatch, "
+                    f"matcher regex did not match tool_name, or Codex hook "
+                    f"feature disabled in this build"
+                )
+
+            sentinel_text = sentinel_path.read_text(encoding="utf-8")
+            sentinel_lines = [
+                line for line in sentinel_text.splitlines() if line.strip()
+            ]
+            info(
+                f"codex-hook: sentinel recorded "
+                f"{len(sentinel_lines)} hook firing(s)"
+            )
+            for line in sentinel_lines:
+                info(f"  sentinel: {line}")
+
+            # Parse each sentinel line into key=value pairs for assertions.
+            firings: list[dict[str, str]] = []
+            for line in sentinel_lines:
+                fields: dict[str, str] = {}
+                for token in line.split():
+                    if "=" in token:
+                        k, _, v = token.partition("=")
+                        fields[k] = v
+                firings.append(fields)
+
+            non_zero = [f for f in firings if f.get("exit", "0") != "0"]
+            if non_zero:
+                fail(
+                    f"codex-hook: hook fired but returned non-zero on "
+                    f"{len(non_zero)}/{len(firings)} firing(s); "
+                    f"first failing entry: {non_zero[0]}"
+                )
+
+            events_seen = {f.get("event", "<unknown>") for f in firings}
+            tools_seen = {f.get("tool", "<unknown>") for f in firings}
+            assert_true(
+                "apply_patch" in tools_seen,
+                f"codex-hook: no apply_patch firing recorded "
+                f"(tools seen: {sorted(tools_seen)})",
+            )
+            # Expect both PreToolUse and PostToolUse per the T3 wiring.
+            # Surface as a warning rather than fail if only one fired:
+            # Codex MAY skip PreToolUse for synthetic patches in some
+            # bypass-sandbox modes; PostToolUse alone still proves the
+            # wiring works. AC2 says PreToolUse and/or PostToolUse.
+            if "PreToolUse" not in events_seen:
+                info(
+                    "codex-hook: PreToolUse not observed in sentinel; "
+                    "PostToolUse alone satisfies AC2 (PreToolUse and/or "
+                    "PostToolUse) but flagging for operator audit"
+                )
+            if "PostToolUse" not in events_seen:
+                info(
+                    "codex-hook: PostToolUse not observed in sentinel; "
+                    "PreToolUse alone satisfies AC2 (PreToolUse and/or "
+                    "PostToolUse) but flagging for operator audit"
+                )
+            assert_true(
+                bool(events_seen & {"PreToolUse", "PostToolUse"}),
+                f"codex-hook: neither PreToolUse nor PostToolUse fired "
+                f"(events seen: {sorted(events_seen)})",
+            )
+            info(
+                f"codex-hook: PASS — apply_patch hook fired clean "
+                f"(events={sorted(events_seen)}, exits=0/0, "
+                f"firings={len(firings)})"
+            )
+
+    # Step 7: post-run SHA256 round-trip on the real ~/.codex/hooks.json.
+    sha_after = _sha256(real_codex_hooks)
+    info(f"codex-hook: ~/.codex/hooks.json sha256 (after): {sha_after}")
+    assert_true(
+        sha_before == sha_after,
+        f"codex-hook: ~/.codex/hooks.json SHA256 changed during run: "
+        f"before={sha_before} after={sha_after}",
+    )
+
+
 def _extract_between(text: str, begin: str, end: str) -> str | None:
     """Return the substring strictly between ``begin`` and ``end`` markers.
 
@@ -1314,6 +1789,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "audit and delegated setup helpers smoke only."
         ),
     )
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help=(
+            "Bypass the interactive consent prompt for non-interactive "
+            "realisera/orkestrera dispatch. The cost line still prints "
+            "and an explicit 'auto-consented via flag' audit line is "
+            "emitted. Equivalent to setting "
+            f"${CONSENT_ENV_VAR}=1 in the environment."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -1334,10 +1820,11 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.live:
             info("--- live mode: cost gate ---")
-            if not cost_gate():
+            if not cost_gate(auto_consent=args.yes):
                 info("aborted: consent declined; no live CLI invoked")
                 return 1
             run_codex_live_section(snapshots, skips)
+            run_codex_hook_section(snapshots, skips)
             run_copilot_live_section(snapshots, skips)
 
         if skips:
