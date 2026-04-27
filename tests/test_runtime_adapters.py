@@ -430,8 +430,8 @@ class TestLifecycleAdapters:
     def test_codex_lifecycle_fails_on_configured_event(self):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
         plugin = _load_json(REPO_ROOT / ".codex-plugin/plugin.json")
-        plugin["lifecycleHooks"]["events"] = {"postToolUse": []}
-        assert "codex: unsupported lifecycle event configured: postToolUse" in validator.validate_codex(plugin)
+        plugin["lifecycleHooks"]["events"] = {"SubagentStop": []}
+        assert "codex: unsupported lifecycle event configured: SubagentStop" in validator.validate_codex(plugin)
 
     def test_codex_lifecycle_fails_on_profilera_policy_drift(self):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")

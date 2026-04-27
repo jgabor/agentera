@@ -18,7 +18,16 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 
 COPILOT_EVENTS = {"sessionStart", "postToolUse", "stop"}
-CODEX_EVENTS: set[str] = set()
+CODEX_EVENTS = {
+    "SessionStart",
+    "Stop",
+    "UserPromptSubmit",
+    "PreToolUse",
+    "PostToolUse",
+    "PermissionRequest",
+}
+CODEX_LIFECYCLE_STATUS_VALUES = ("stable", "beta")
+CODEX_LIFECYCLE_REQUIRED_LIMITATION_TERMS = ("codex_hooks", "apply_patch", "openai/codex#18391")
 COPILOT_PROFILERA_TERMS = ("profilera", "bounded", "corpus", "metadata", "missing source families")
 CODEX_PROFILERA_TERMS = (
     "allow_implicit_invocation: false",
@@ -153,8 +162,11 @@ def validate_codex(plugin: dict[str, Any]) -> list[str]:
 
     if lifecycle.get("configured") is not False:
         errors.append("codex: lifecycleHooks.configured must be false")
-    if lifecycle.get("status") != "experimental-disabled":
-        errors.append("codex: lifecycleHooks.status must be experimental-disabled")
+    if lifecycle.get("status") not in CODEX_LIFECYCLE_STATUS_VALUES:
+        errors.append(
+            "codex: lifecycleHooks.status must be one of "
+            + ", ".join(CODEX_LIFECYCLE_STATUS_VALUES)
+        )
 
     events = lifecycle.get("events", {})
     if not isinstance(events, dict):
@@ -164,13 +176,41 @@ def validate_codex(plugin: dict[str, Any]) -> list[str]:
             if event not in CODEX_EVENTS:
                 errors.append(f"codex: unsupported lifecycle event configured: {event}")
 
+    supported = lifecycle.get("supportedEvents")
+    if not isinstance(supported, list) or set(supported) != CODEX_EVENTS:
+        errors.append(
+            "codex: supportedEvents must list every Codex codex_hooks event "
+            "(SessionStart, Stop, UserPromptSubmit, PreToolUse, PostToolUse, PermissionRequest)"
+        )
+
     unsupported = lifecycle.get("unsupportedEvents")
     if not isinstance(unsupported, list) or not unsupported:
-        errors.append("codex: unsupportedEvents must list disabled lifecycle behavior")
+        errors.append("codex: unsupportedEvents must list Claude-Code-specific events with no Codex equivalent")
+    else:
+        for entry in unsupported:
+            if not isinstance(entry, dict):
+                errors.append("codex: unsupportedEvents entries must be objects with event and reason fields")
+                continue
+            event = entry.get("event")
+            if event in CODEX_EVENTS:
+                errors.append(
+                    f"codex: unsupportedEvents must not list event {event!r} that codex_hooks now supports"
+                )
 
     limitations = lifecycle.get("limitations")
     if not isinstance(limitations, list) or not limitations:
-        errors.append("codex: limitations must explain experimental/disabled hooks")
+        errors.append("codex: limitations must document codex_hooks status and apply_patch interception")
+    else:
+        joined = " ".join(item for item in limitations if isinstance(item, str))
+        for term in CODEX_LIFECYCLE_REQUIRED_LIMITATION_TERMS:
+            if term not in joined:
+                errors.append(
+                    f"codex: limitations must cite {term!r} so apply_patch interception ground truth stays surfaced"
+                )
+        stale_markers = ("experimental, require host config opt-in", "experimental-disabled", "no real-time")
+        for marker in stale_markers:
+            if marker in joined:
+                errors.append(f"codex: limitations carry stale wording {marker!r}; remove it")
 
     return errors
 
