@@ -2,51 +2,35 @@
 
 ## [Unreleased]
 
-## [1.22.0] · 2026-04-26
+## [1.20.0] · 2026-04-27
+
+Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code, OpenCode, Codex, and Copilot; ships idempotent setup helpers for the runtimes without plugin-level env injection; and verifies end-to-end inheritance plus SKILL.md compaction execution with a live-host smoke harness.
 
 ### Added
 
-- `scripts/smoke_live_hosts.py`: live-host AGENTERA_HOME inheritance and SKILL.md compaction smoke harness for Codex and Copilot. Default mode runs the profilera Codex collection audit and delegates to `scripts/smoke_setup_helpers.py` (no live CLI invocations, no cost). `--live` mode prints a one-line cost estimate and consent prompt, then issues exactly one `codex exec` and one `bash -c '...copilot -p ... --allow-all-tools'` invocation per runtime, each carrying a combined prompt that exercises both AGENTERA_HOME echo and `compact_artifact.py` execution, with snapshot/restore plus SHA256 round-trip on `~/.codex/config.toml` and shell rc files. Closes Audit 15 finding 2 ("Codex and Copilot live-host AGENTERA_HOME inheritance still untested").
-- README "Verify Codex AGENTERA_HOME by hand" and "Verify Copilot AGENTERA_HOME by hand" subsections: copy-pasteable bash one-liners that exercise both AGENTERA_HOME inheritance and the bash-fallback compaction-script resolution, for users without `--live` access (no auth, no API budget, behind a firewall).
-- README Scripts section now enumerates `scripts/smoke_live_hosts.py` alongside `validate_spec.py`, `eval_skills.py`, `usage_stats.py`, `setup_codex.py`, `setup_copilot.py`, and `smoke_setup_helpers.py`, naming default-mode and `--live` cost semantics and the gap closed.
+- **AGENTERA_HOME contract** (SPEC.md Section 7): standardizes the env var that names the agentera install root, with a per-runtime mechanism table covering Claude Code (bash fallback to `CLAUDE_PLUGIN_ROOT`), OpenCode (`shell.env` plugin hook), Codex (`[shell_environment_policy].set` in `~/.codex/config.toml`), and Copilot (shell rc export).
+- **OpenCode plugin** bootstraps 12 slash commands at plugin init (was previously wired to a phantom hook that never fired) and injects AGENTERA_HOME into every shell-tool subprocess via the `@opencode-ai/plugin` `shell.env` hook.
+- **`scripts/setup_codex.py`**: idempotent Codex setup helper that writes `[shell_environment_policy].set.AGENTERA_HOME` to `~/.codex/config.toml`. Stdlib-only; auto-detects install root; supports `--install-root`, `--config-file`, `--dry-run`, `--force`; refuses to overwrite conflicting sibling keys without `--force`.
+- **`scripts/setup_copilot.py`**: idempotent Copilot setup helper that writes a marker-commented `AGENTERA_HOME` export block to the user's shell rc. Stdlib-only; supports bash, zsh, and fish; auto-detects shell from `$SHELL`; supports `--rc-file` and `--dry-run`; preserves user-owned bare lines.
+- **`scripts/smoke_setup_helpers.py`**: stdlib black-box smoke harness exercising both setup helpers across 11 sequential cases (5 Codex + 4 Copilot + 2 cross-cutting), no live CLI required.
+- **`scripts/smoke_live_hosts.py`**: live-host AGENTERA_HOME inheritance and SKILL.md compaction smoke harness for Codex and Copilot. Default mode runs the profilera Codex collection audit and delegates to `scripts/smoke_setup_helpers.py` (no live CLI invocations, no cost). `--live` mode prints a one-line cost estimate and consent prompt, then issues exactly one `codex exec` and one `bash -c '...copilot -p ... --allow-all-tools'` invocation per runtime, each carrying a combined prompt that exercises both AGENTERA_HOME echo and `compact_artifact.py` execution, with snapshot + SHA256 round-trip on `~/.codex/config.toml` and shell rc files plus orphan-snapshot auto-recovery on the next run.
+- **README install documentation**: runtime-specific AGENTERA_HOME setup paths (recommended `setup_codex.py` / `setup_copilot.py` plus manual snippet alternatives). Codex plugin limitations and Copilot manifest descriptions surface the requirement.
+- **README "Verify Codex AGENTERA_HOME by hand" and "Verify Copilot AGENTERA_HOME by hand" subsections**: copy-pasteable bash one-liners that exercise both AGENTERA_HOME inheritance and the bash-fallback compaction-script resolution, for users without `--live` access (no auth, no API budget, behind a firewall).
+- **README Scripts section** enumerates the new helpers (`setup_codex.py`, `setup_copilot.py`, `smoke_setup_helpers.py`, `smoke_live_hosts.py`) alongside the existing `validate_spec.py`, `eval_skills.py`, `usage_stats.py`, with default-mode and `--live` cost semantics named.
+- **Spec validator lint rule** warns when SKILL.md prose uses bare `${CLAUDE_PLUGIN_ROOT}` (the bash-fallback form `${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}` passes).
 
 ### Changed
 
-- `.codex-plugin/plugin.json` `requiredCapabilities[codex_session_corpus].status` flipped `degraded` → `ok` after the profilera Codex collection audit verified end-to-end record extraction (252 history_prompt records plus 1 project_config_signal record land in the corpus). Mirrored across `agents/openai.yaml` and `skills/profilera/agents/openai.yaml`. Companion limitation prose now describes accurate behavior without reusing the word "degraded" as a status label.
-- `scripts/validate_lifecycle_adapters.py` and `tests/test_runtime_adapters.py` accept `status` of either `ok` or `degraded` (back-compat preserved); explicit `status:` declaration is now required in YAML surfaces.
-- `.agentera/DOCS.md` Index gained a `Live-host smoke runner` row and a new Audit Log block listing the four (fixed) findings the README and DOCS surfaces resolved.
+- **5 SKILL.md compaction-script invocations** (realisera ×2, resonera, optimera, inspektera) now use `${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}` so the script resolves under any host that adheres to the contract.
+- **SPEC.md sections 7-23 renumbered to 8-24** to make room for the new Section 7 (Install Root); SKILL.md `spec_sections` frontmatter, prose Section refs, validator code, and test fixtures shifted accordingly.
+- **`.codex-plugin/plugin.json` `requiredCapabilities[codex_session_corpus].status`** flipped `degraded` → `ok` after the profilera Codex collection audit verified end-to-end record extraction (252 history_prompt + 1 project_config_signal records). Mirrored across `agents/openai.yaml` and `skills/profilera/agents/openai.yaml`. Companion limitation prose now describes accurate behavior without reusing the word "degraded" as a status label.
+- **`scripts/validate_lifecycle_adapters.py` and `tests/test_runtime_adapters.py`** accept `status` of either `ok` or `degraded` (back-compat preserved); explicit `status:` declaration is now required in YAML surfaces.
+- **`tests/test_runtime_adapters.py`** AGENTERA_VERSION drift test reads the version from `.opencode/plugins/agentera.js` at test time instead of carrying a hardcoded literal, so future bumps require no test edits.
+- **`.agentera/DOCS.md` Index** gained rows for all four new helpers and the live-host smoke runner; Audit Log block records the README and DOCS surfaces resolved.
 
 ### Note
 
-- The duplicate-source_id corpus failure surfaced during the Codex audit is unrelated to Codex (all 21 errors come from `claude-code/conversation_turn`); filed as TODO `[claude-code-extract-duplicate-source-ids]` and out of scope for this plan.
-
-## [1.21.0] · 2026-04-26
-
-### Added
-
-- `scripts/setup_codex.py`: idempotent Codex setup helper that writes `[shell_environment_policy].set.AGENTERA_HOME` to `~/.codex/config.toml`. Auto-detects install root, supports `--install-root` and `--dry-run`, refuses to overwrite sibling keys without `--force`.
-- `scripts/setup_copilot.py`: idempotent Copilot setup helper that appends a marker block + `AGENTERA_HOME` export to the user's shell rc (bash, zsh, fish supported). Detects shell from `$SHELL`, supports `--rc-file` and `--dry-run`, preserves user-owned bare lines.
-- `scripts/smoke_setup_helpers.py`: stdlib black-box smoke harness exercising both setup helpers across 11 sequential cases (4 Codex + 4 Copilot + 3 cross-cutting).
-
-### Changed
-
-- README install instructions for Codex and Copilot now lead with the helper invocation; manual snippets retained as alternatives.
-- DOCS.md Index dates and Coverage line refreshed (Audit 14 finding 1 resolved); three new helper rows added.
-
-## [1.20.0] · 2026-04-26
-
-### Added
-
-- AGENTERA_HOME contract (SPEC.md Section 7) standardizes the env var that names the agentera install root, with a per-runtime mechanism table covering Claude Code, OpenCode, Codex, and Copilot.
-- OpenCode plugin bootstraps slash commands at plugin init (was wired to a phantom hook that never fired) and injects AGENTERA_HOME into every shell-tool subprocess via the `@opencode-ai/plugin` `shell.env` hook.
-- Codex and Copilot install documentation: README adds the runtime-specific AGENTERA_HOME setup snippets (`[shell_environment_policy]` for Codex; shell rc export for Copilot, since Copilot has no plugin-level env-injection API). Codex plugin limitations and Copilot manifest descriptions surface the requirement.
-- Spec validator lint rule warns when SKILL.md prose uses bare `${CLAUDE_PLUGIN_ROOT}` (the bash-fallback form `${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}` passes).
-
-### Changed
-
-- 5 SKILL.md compaction-script invocations (realisera ×2, resonera, optimera, inspektera) now use `${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}` so the script resolves under any host that adheres to the contract.
-- SPEC.md sections 7-23 renumbered to 8-24 to make room for the new Section 7 (Install Root); SKILL.md `spec_sections` frontmatter, prose Section refs, validator code, and test fixtures shifted accordingly.
-- `tests/test_runtime_adapters.py` AGENTERA_VERSION drift test reads the version from `.opencode/plugins/agentera.js` at test time instead of carrying a hardcoded literal.
+- The duplicate-source_id corpus failure surfaced during the Codex audit is unrelated to Codex (all 21 errors come from `claude-code/conversation_turn`); filed as TODO `[claude-code-extract-duplicate-source-ids]` for follow-up and out of scope for this release.
 
 ## [1.19.0] · 2026-04-26
 
