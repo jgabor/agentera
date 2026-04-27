@@ -1,13 +1,14 @@
 // Agentera plugin for OpenCode
 // Bootstraps slash commands at plugin init, injects AGENTERA_HOME via shell.env,
-// and validates artifact writes via tool.execute.after.
+// writes SESSION.md bookmarks via the generic event hook, and validates
+// artifact writes via tool.execute.after.
 // Install: copy to ~/.config/opencode/plugins/agentera.js or .opencode/plugins/agentera.js
 
-import { execSync } from "child_process";
+import { execFileSync, execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
-export const AGENTERA_VERSION = "1.20.0";
+export const AGENTERA_VERSION = "1.20.1";
 
 export const COMMAND_TEMPLATES = {
   "hej": `---
@@ -188,6 +189,24 @@ export function validateArtifact() {
   } catch {}
 }
 
+export function writeSessionBookmark(projectRoot) {
+  try {
+    const agenteraHome = resolveAgenteraHome();
+    if (!agenteraHome) return;
+    const scriptPath = path.join(agenteraHome, "hooks", "session_stop.py");
+    if (!fs.existsSync(scriptPath)) return;
+    const payload = JSON.stringify({
+      cwd: projectRoot,
+      hook_event_name: "session.idle",
+    });
+    execFileSync("python3", [scriptPath], {
+      input: payload,
+      timeout: 30000,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+  } catch {}
+}
+
 function setProfileDir() {
   if (process.env.PROFILERA_PROFILE_DIR) return;
   if (process.platform === "darwin") {
@@ -212,7 +231,7 @@ function setProfileDir() {
 // harness can confirm the plan's "once per plugin load" assumption empirically.
 export const lifecycle = { initCount: 0, lastInitAt: null };
 
-export const Agentera = async (_input, _options) => {
+export const Agentera = async (input = {}, _options) => {
   lifecycle.initCount += 1;
   lifecycle.lastInitAt = new Date().toISOString();
   if (process.env.AGENTERA_DEBUG_LIFECYCLE) {
@@ -226,8 +245,17 @@ export const Agentera = async (_input, _options) => {
   // user-set AGENTERA_HOME so a value injected after plugin load (e.g. by a
   // wrapping shell) is preserved.
   const initialAgenteraHome = resolveAgenteraHome();
+  const projectRoot = findAgenteraRoot(input.worktree || input.directory || process.cwd());
 
   return {
+    event: async (payload) => {
+      const event = payload?.event;
+      if (!event) return;
+      if (event.type === "session.created") return;
+      if (event.type !== "session.idle") return;
+      writeSessionBookmark(projectRoot);
+    },
+
     "shell.env": async (_input, output) => {
       const env = output && output.env;
       if (!env || typeof env !== "object") return;

@@ -45,7 +45,7 @@ Hooks add session context preload, artifact validation, and session bookmarks. W
 | Runtime | Session preload | Artifact validation after edits | Session bookmark | Supported events | Status |
 |---------|-----------------|----------------------------------|------------------|------------------|--------|
 | Claude Code | Active via SessionStart | Active via PostToolUse | Active via Stop | SessionStart, Stop, UserPromptSubmit, PreToolUse, PostToolUse, SubagentStop, PreCompact, Notification | Full lifecycle support |
-| OpenCode | Active via plugin | Active via `tool.execute.after` | Active via session events | Plugin hook events per `@opencode-ai/plugin` Hooks interface | Full lifecycle support |
+| OpenCode | Deferred: `session.created` is observable through `event`, but no model-context injection path is verified | Active via `tool.execute.after` | Active via generic `event` hook on `session.idle` | Plugin hook events per `@opencode-ai/plugin` Hooks interface | Artifact validation and bookmarks active; preload deferred |
 | Copilot CLI | Active via `sessionStart` | Active via `preToolUse` (blocks via `permissionDecision: deny`) | Active via `sessionEnd` | sessionStart, sessionEnd, userPromptSubmitted, preToolUse, postToolUse, errorOccurred | Asymmetric parity: `preToolUse` blocks, `postToolUse` output is logging-only (no model-feedback parity with Claude Code PostToolUse) |
 | Codex CLI | Active via SessionStart | Active via PreToolUse + PostToolUse on `apply_patch` matcher | Active via Stop | SessionStart, Stop, UserPromptSubmit, PreToolUse, PostToolUse, PermissionRequest | Full lifecycle support: `codex_hooks` stable + default-on as of v0.124.0; real-time `apply_patch` Write/Edit interception per `openai/codex#18391` |
 

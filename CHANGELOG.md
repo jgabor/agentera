@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [1.20.1] · 2026-04-27
+
+### Fixed
+
+- OpenCode plugin now handles `session.idle` through the generic `event` hook and writes SESSION.md bookmarks for modified agentera artifacts. The old direct hook keys stay forbidden, and OpenCode session-start preload is documented as deferred until a supported context-injection path is verified.
+
 ## [1.20.0] · 2026-04-27
 
 Scope refined post-research to address verified cross-runtime parity gaps; consolidates Move 1 renumber and Move 2 parity completion per explicit user direction.

@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-27 (1.20.0 release-readiness audit) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-27 (OpenCode session-events checkpoint) -->
 
 ## Conventions
 
@@ -50,23 +50,24 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | CLAUDE.md | CLAUDE.md | 2026-04-27 | ■ current |
 | Decisions | .agentera/DECISIONS.md | 2026-04-02 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
-| Progress | .agentera/PROGRESS.md | 2026-04-26 | ■ current |
-| TODO | TODO.md | 2026-04-26 | ■ current |
-| Changelog | CHANGELOG.md | 2026-04-26 | ■ current |
+| Progress | .agentera/PROGRESS.md | 2026-04-27 | ■ current |
+| TODO | TODO.md | 2026-04-27 | ■ current |
+| Changelog | CHANGELOG.md | 2026-04-27 | ■ current |
 | Health | .agentera/HEALTH.md | 2026-04-26 | ■ current |
-| Plan | .agentera/PLAN.md | 2026-04-26 | ■ current |
-| DOCS | .agentera/DOCS.md | 2026-04-26 | ■ current |
+| Plan | .agentera/PLAN.md | 2026-04-27 | ■ current |
+| DOCS | .agentera/DOCS.md | 2026-04-27 | ■ current |
 | Design | .agentera/DESIGN.md | 2026-04-19 | ■ current |
 | Ecosystem spec | SPEC.md | 2026-04-20 | ■ current |
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
-| Registry | registry.json | 2026-04-13 | ■ current |
-| Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-13 | ■ current |
-| Copilot plugin manifest | plugin.json | 2026-04-26 | ■ current |
-| Copilot repo plugin manifest | .github/plugin/plugin.json | 2026-04-26 | ■ current |
-| Codex plugin manifest | .codex-plugin/plugin.json | 2026-04-26 | ■ current |
+| Registry | registry.json | 2026-04-27 | ■ current |
+| Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-27 | ■ current |
+| Copilot plugin manifest | plugin.json | 2026-04-27 | ■ current |
+| Copilot repo plugin manifest | .github/plugin/plugin.json | 2026-04-27 | ■ current |
+| Codex plugin manifest | .codex-plugin/plugin.json | 2026-04-27 | ■ current |
+| OpenCode adapter reference | references/adapters/opencode.md | 2026-04-27 | ■ current |
 | Codex UI metadata | skills/&lt;name&gt;/agents/openai.yaml; agents/openai.yaml | 2026-04-24 | ■ current |
 | Hooks registry | hooks/hooks.json | 2026-04-03 | ■ current |
-| Lifecycle adapter validator | scripts/validate_lifecycle_adapters.py | 2026-04-23 | ■ current |
+| Lifecycle adapter validator | scripts/validate_lifecycle_adapters.py | 2026-04-27 | ■ current |
 | Usage analytics script | scripts/usage_stats.py | 2026-04-26 | ■ current |
 | Codex setup helper | scripts/setup_codex.py | 2026-04-26 | ■ current |
 | Copilot setup helper | scripts/setup_copilot.py | 2026-04-26 | ■ current |
@@ -77,7 +78,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Session stop hook | hooks/session_stop.py | 2026-04-03 | ■ current |
 | Validation hook | hooks/validate_artifact.py | 2026-04-03 | ■ current |
 | Shared hook utils | hooks/common.py | 2026-04-03 | ■ current |
-| Test suite | tests/ | 2026-04-24 | ■ current |
+| Test suite | tests/ | 2026-04-27 | ■ current |
 | Lefthook config | .lefthook.yml | 2026-04-20 | ■ current |
 | CI workflow | .github/workflows/ci.yml | 2026-04-11 | ■ current |
 
@@ -86,9 +87,15 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 438 tests across 17 files; CI runs on push/PR via GitHub Actions
+- **Tests**: 441 tests across 17 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-27 (OpenCode session-events checkpoint)
+
+- [gap] OpenCode SESSION.md bookmark wiring was absent after phantom direct `session.idle` hook keys were removed; plugin now handles `session.idle` through the generic `event` hook and smoke-tests write/no-op/created-event behavior · warning (fixed)
+- [stale] README lifecycle table implied OpenCode session preload was active; it is now explicitly deferred until a supported context-injection path is verified · info (fixed)
+- [stale] Coverage line said "438 tests across 17 files"; actual is 441 after OpenCode event-hook smoke and adapter validation coverage · info (fixed)
 
 ### 2026-04-27 (1.20.0 release-readiness audit)
 
