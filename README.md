@@ -83,16 +83,22 @@ Validate local plugin metadata with:
 claude plugin validate .
 ```
 
-**Copilot plugin**:
+**Copilot plugin** (recommended: granular install per skill):
 
 ```bash
 copilot plugin marketplace add jgabor/agentera
-copilot plugin install <skill>@agentera        # granular install per skill
-# or
+copilot plugin install <skill>@agentera        # granular install per skill (recommended)
+```
+
+Granular install is the recommended path until Copilot bug `github/copilot-cli#2390` (umbrella discovery misses the `.github/plugin/plugin.json` manifest when `cache_path` is the repo root) lands upstream. Run `copilot plugin install <skill>@agentera` once per skill you want; the marketplace path itself is verified working.
+
+Alternative — umbrella install (all 12 skills in one command):
+
+```bash
 copilot plugin install jgabor/agentera         # umbrella install (all 12 skills)
 ```
 
-The agentera marketplace install path is verified working through both granular and umbrella forms. Granular install (one `<skill>@agentera` invocation per skill) sidesteps Copilot bug `github/copilot-cli#2390` (umbrella discovery misses the `.github/plugin/plugin.json` manifest when `cache_path` is the repo root). Umbrella install ships all 12 skills in one command and currently works against this repo.
+The umbrella form currently works against this repo but trips Copilot bug `github/copilot-cli#2390` on hosts where the discovery cache lands at the repo root; prefer the granular form above until the upstream bug ships a fix.
 
 Use `copilot plugin marketplace list` to inspect available marketplaces. Default Copilot marketplaces are `copilot-plugins` (`github/copilot-plugins`) and `awesome-copilot` (`github/awesome-copilot`); the agentera marketplace is the user-added `jgabor/agentera` source. Direct installs such as `copilot plugin install OWNER/REPO`, `OWNER/REPO:PATH`, Git URLs, and local paths still work but Copilot warns they are deprecated.
 

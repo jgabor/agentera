@@ -1,5 +1,5 @@
 {
-  "name": "stop",
+  "name": "sessionEnd",
   "type": "command",
   "bash": "python3 hooks/session_stop.py",
   "powershell": "python hooks/session_stop.py",
