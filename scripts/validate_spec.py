@@ -11,8 +11,8 @@ severity levels, decision labels, artifact path resolution, profile
 consumption, cross-skill integration, safety rails, artifact format
 contracts, exit signals, loop guard, em-dashes, hard wraps,
 spec_sections declaration, context file existence, context file
-freshness, platform annotation validation, and pre-dispatch commit
-gate enforcement.
+freshness, platform annotation validation, description length, and
+pre-dispatch commit gate enforcement.
 
 Run from repo root:
     python3 scripts/validate_spec.py
@@ -30,6 +30,9 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
+
+MAX_SKILL_DESCRIPTION_LENGTH = 1024
+YAML_BLOCK_SCALAR_MARKERS = {">", ">-", ">+", "|", "|-", "|+"}
 
 REQUIRED_REFS: dict[str, list[str]] = {
     "hej": [
@@ -266,10 +269,15 @@ def parse_frontmatter(text: str) -> dict[str, str] | None:
         m = re.match(r"^(\w[\w-]*):\s*(.*)", line)
         if m:
             current_key = m.group(1)
-            result[current_key] = m.group(2).strip()
+            value = m.group(2).strip()
+            result[current_key] = "" if value in YAML_BLOCK_SCALAR_MARKERS else value
         elif current_key and line.startswith("  "):
             # Continuation of a multi-line value.
-            result[current_key] += " " + line.strip()
+            continuation = line.strip()
+            if result[current_key]:
+                result[current_key] += " " + continuation
+            else:
+                result[current_key] = continuation
     return result
 
 
@@ -306,18 +314,30 @@ def extract_subsection(
 def check_frontmatter(skill: str, text: str, r: Results) -> None:
     """Check 1: YAML frontmatter with name and description."""
     fm = parse_frontmatter(text)
+    ok = True
     if fm is None:
         r.error(skill, "frontmatter", "Missing or malformed YAML frontmatter")
         return
     if "name" not in fm:
         r.error(skill, "frontmatter", "Missing 'name' field")
+        ok = False
     elif not re.fullmatch(r"[a-z][a-z0-9-]*", fm["name"]):
         r.error(skill, "frontmatter", f"Name '{fm['name']}' is not kebab-case")
+        ok = False
     if "description" not in fm:
         r.error(skill, "frontmatter", "Missing 'description' field")
-    if fm and "name" in fm and "description" in fm:
-        if re.fullmatch(r"[a-z][a-z0-9-]*", fm.get("name", "")):
-            r.ok(skill, "frontmatter")
+        ok = False
+    elif len(fm["description"]) > MAX_SKILL_DESCRIPTION_LENGTH:
+        r.error(
+            skill,
+            "frontmatter",
+            "Description is "
+            f"{len(fm['description'])} characters; maximum is "
+            f"{MAX_SKILL_DESCRIPTION_LENGTH}",
+        )
+        ok = False
+    if ok:
+        r.ok(skill, "frontmatter")
 
 
 def check_confidence_scale(skill: str, text: str, r: Results) -> None:

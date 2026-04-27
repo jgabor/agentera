@@ -38,7 +38,7 @@ trigger: oops
 
 
 class TestParseFrontmatter:
-    """Complex: regex, multi-line continuation. Keep all 4 (distinct paths)."""
+    """Complex: regex, multi-line continuation. Keep all 5 (distinct paths)."""
 
     def test_valid_frontmatter(self, validate_spec):
         result = validate_spec.parse_frontmatter(VALID_FRONTMATTER)
@@ -66,6 +66,19 @@ description: A skill that does
         result = validate_spec.parse_frontmatter(text)
         assert result is not None
         assert "multiple things" in result["description"]
+
+    def test_folded_block_scalar_marker_is_not_value(self, validate_spec):
+        text = """\
+---
+name: test-skill
+description: >
+  Folded skill
+  description
+---
+"""
+        result = validate_spec.parse_frontmatter(text)
+        assert result is not None
+        assert result["description"] == "Folded skill description"
 
 
 # ---------------------------------------------------------------------------
@@ -684,7 +697,7 @@ spec_sections: not-a-list
 
 
 class TestCheckFrontmatter:
-    """Complex: regex (kebab-case), multi-field branching. Keep 4 distinct paths."""
+    """Complex: regex (kebab-case), multi-field branching. Keep 6 distinct paths."""
 
     def test_valid_frontmatter_passes(self, validate_spec):
         r = validate_spec.Results()
@@ -718,6 +731,21 @@ class TestCheckFrontmatter:
         assert r.error_count >= 1
         details = [detail for _, _, _, detail in r.entries if "kebab" in detail.lower()]
         assert len(details) == 1
+
+    def test_description_at_max_length_passes(self, validate_spec):
+        r = validate_spec.Results()
+        desc = "x" * validate_spec.MAX_SKILL_DESCRIPTION_LENGTH
+        text = f"---\nname: test-skill\ndescription: {desc}\n---\n\n# SKILL\n"
+        validate_spec.check_frontmatter("test-skill", text, r)
+        assert r.error_count == 0
+
+    def test_description_too_long_errors(self, validate_spec):
+        r = validate_spec.Results()
+        desc = "x" * (validate_spec.MAX_SKILL_DESCRIPTION_LENGTH + 1)
+        text = f"---\nname: test-skill\ndescription: {desc}\n---\n\n# SKILL\n"
+        validate_spec.check_frontmatter("test-skill", text, r)
+        assert r.error_count == 1
+        assert "maximum is 1024" in r.entries[0][3]
 
 
 # ---------------------------------------------------------------------------
