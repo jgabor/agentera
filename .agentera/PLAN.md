@@ -1,6 +1,6 @@
 # Plan: Cross-Runtime Parity Completion
 
-<!-- Level: full · Created: 2026-04-27 · Status: active -->
+<!-- Level: full · Created: 2026-04-27 · Status: complete -->
 <!-- Reviewed: 2026-04-27 | Critic issues: 8 found, 7 addressed, 1 deferred to TODO -->
 
 ## What
@@ -144,7 +144,7 @@ The work splits cleanly into three layers.
 
 **Depends on**: Task 1a, Task 1b, Task 2, Task 3, Task 4, Task 5, Task 6
 
-**Status**: □ pending
+**Status**: ■ complete
 
 **Acceptance**:
 
