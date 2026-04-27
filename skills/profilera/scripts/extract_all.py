@@ -23,7 +23,8 @@ import re
 import shutil
 import sys
 import time
-from datetime import datetime, timezone
+import sqlite3
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Generator
 
@@ -533,6 +534,134 @@ def run_conversations(
 
 
 # ---------------------------------------------------------------------------
+# Extract: per-turn conversation messages (workflow-marker scoped)
+# ---------------------------------------------------------------------------
+#
+# Downstream analytics (scripts/usage_stats.py) need per-turn assistant
+# content keyed by conversation so intro/exit markers can pair across
+# turns. The decision-rich pair extractor above truncates assistant text
+# to 500 chars and only fires on user replies, so most marker-bearing
+# turns are missed. This extractor emits full per-turn records (actor +
+# content) bounded to sessions that actually contain a workflow marker —
+# keeps the corpus small while preserving every signal usage_stats needs.
+
+# Cheap pre-filter: SPEC marker grammar always contains the U+2500 divider
+# run, the U+00B7 middle dot, and a skill name ending in "era". Anything
+# missing the divider or the middle dot can't be a marker.
+_MARKER_DIVIDER = "─"
+_MARKER_DOT = "·"
+
+
+def _turn_has_marker(text: str) -> bool:
+    """True iff the text plausibly contains a SPEC workflow marker."""
+    if not text:
+        return False
+    return _MARKER_DIVIDER in text and _MARKER_DOT in text
+
+
+def _process_conversation_turns(jsonl_path: Path) -> list[dict]:
+    """Emit per-turn entries for assistant turns with markers + their cue.
+
+    Walks the session in order. Tracks the most recent user turn so when
+    an assistant turn carrying a workflow marker appears we can emit the
+    user turn that prompted it (needed for slash-vs-natural classification
+    in ``usage_stats.py``). Sidechain (subagent) turns are included — the
+    marker grammar is identical and subagent invocations count.
+    """
+    entries: list[dict] = []
+    last_user: dict | None = None
+    last_user_emitted_at: str | None = None
+
+    for entry in parse_jsonl(jsonl_path):
+        msg_type = entry.get("type")
+        if msg_type not in ("user", "assistant"):
+            continue
+
+        message = entry.get("message") or {}
+        text = extract_text(message.get("content"))
+        ts = entry.get("timestamp") or ""
+        session_id = entry.get("sessionId") or ""
+
+        if msg_type == "user":
+            if not text:
+                continue
+            last_user = {
+                "timestamp": ts,
+                "session_id": session_id,
+                "actor": "user",
+                "content": text,
+            }
+            continue
+
+        if not _turn_has_marker(text):
+            continue
+
+        if last_user is not None and last_user_emitted_at != last_user["timestamp"]:
+            entries.append(dict(last_user))
+            last_user_emitted_at = last_user["timestamp"]
+
+        entries.append({
+            "timestamp": ts,
+            "session_id": session_id,
+            "actor": "assistant",
+            "content": text,
+        })
+
+    return entries
+
+
+def extract_conversation_turns(projects_dir: Path | None = None) -> list[dict]:
+    """Scan project session JSONLs and emit per-turn marker-bearing turns.
+
+    Each entry carries ``timestamp``, ``session_id``, ``actor``,
+    ``content``, and the originating ``project``/``source_file`` for
+    provenance. Consumed by ``_records_from_conversation_turns`` to build
+    corpus envelopes whose ``data.actor``/``data.content`` schema matches
+    the analytics walker in ``scripts/usage_stats.py``.
+
+    Sessions are often shadowed across JSONL files: the parent transcript
+    plus per-subagent transcripts replay the same turns. We dedupe by
+    ``(session_id, timestamp, actor, content_hash)`` so each logical turn
+    appears once and the per-record source_id stays unique.
+    """
+    if projects_dir is None:
+        projects_dir = PROJECTS_DIR
+
+    if not projects_dir.exists():
+        return []
+
+    results: list[dict] = []
+    seen: set[tuple[str, str, str, str]] = set()
+    for jsonl_path in sorted(projects_dir.glob("**/*.jsonl")):
+        if jsonl_path.stat().st_size < 1024:
+            continue
+
+        project_dir = jsonl_path.parent
+        while project_dir.parent != projects_dir and project_dir != projects_dir:
+            project_dir = project_dir.parent
+        project_name = project_name_from_dir(project_dir.name)
+
+        for turn in _process_conversation_turns(jsonl_path):
+            content_hash = hashlib.sha256(
+                turn.get("content", "").encode("utf-8")
+            ).hexdigest()[:16]
+            key = (
+                turn.get("session_id", ""),
+                turn.get("timestamp", ""),
+                turn.get("actor", ""),
+                content_hash,
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            turn["project"] = project_name
+            turn["source_file"] = str(jsonl_path)
+            results.append(turn)
+
+    return results
+
+
+# ---------------------------------------------------------------------------
 # Extract: project configs (from extract_configs.py)
 # ---------------------------------------------------------------------------
 
@@ -753,7 +882,9 @@ def _copilot_known_surfaces(copilot_dir: Path | None = None) -> dict[str, list[P
             base / "installed-plugins",
         ],
         "history_prompt": [],
-        "conversation_turn": [],
+        "conversation_turn": [
+            base / "session-store.db",
+        ],
         "project_config_signal": [
             base / "settings.json",
             base / "installed-plugins",
@@ -883,7 +1014,13 @@ def _records_from_history(entries: list[dict]) -> list[dict]:
 
 
 def _records_from_conversations(entries: list[dict]) -> list[dict]:
-    """Wrap conversation extractor output as corpus records."""
+    """Wrap legacy decision-rich pair output as corpus records.
+
+    Retained for the standalone ``run_conversations`` CLI path. The corpus
+    pipeline now uses ``_records_from_conversation_turns`` so analytics
+    that expect per-turn ``data.actor``/``data.content`` (usage_stats.py)
+    work.
+    """
     records = []
     for entry in entries:
         ts = entry.get("timestamp", "")
@@ -901,6 +1038,48 @@ def _records_from_conversations(entries: list[dict]) -> list[dict]:
             "runtime": RUNTIME_CLAUDE_CODE,
             "adapter_version": ADAPTER_VERSION,
             "data": entry,
+        })
+    return records
+
+
+def _records_from_conversation_turns(entries: list[dict]) -> list[dict]:
+    """Wrap per-turn conversation entries as corpus records.
+
+    Each turn gets a unique ``source_id`` (per-record uniqueness invariant
+    held by ``validate_corpus_envelope``). ``data.session_id`` is the
+    conversation key the analytics grouper buckets by. ``data.actor`` and
+    ``data.content`` are what the marker walker reads.
+    """
+    records = []
+    for entry in entries:
+        ts = entry.get("timestamp", "")
+        session = entry.get("session_id", "")
+        actor = entry.get("actor", "")
+        content_hash = hashlib.sha256(
+            entry.get("content", "").encode("utf-8")
+        ).hexdigest()[:8]
+        records.append({
+            "source_id": _generate_source_id(
+                RUNTIME_CLAUDE_CODE,
+                "conversation_turn",
+                session,
+                str(ts),
+                actor,
+                content_hash,
+            ),
+            "timestamp": ts if ts else _iso_now(),
+            "project_id": entry.get("project", ""),
+            "source_kind": "conversation_turn",
+            "runtime": RUNTIME_CLAUDE_CODE,
+            "adapter_version": ADAPTER_VERSION,
+            "data": {
+                "actor": actor,
+                "content": entry.get("content", ""),
+                "session_id": session,
+                "timestamp": ts,
+                "project": entry.get("project", ""),
+                "source_file": entry.get("source_file", ""),
+            },
         })
     return records
 
@@ -1024,6 +1203,128 @@ def extract_copilot_configs(copilot_dir: Path | None = None) -> list[dict]:
             "file_path": str(config_path),
             "signals": signals,
         })
+
+    return results
+
+
+def _copilot_session_db_path(copilot_dir: Path | None = None) -> Path:
+    """Path to the Copilot CLI SQLite session store."""
+    base = copilot_dir or COPILOT_DIR
+    return base / "session-store.db"
+
+
+def _copilot_normalize_timestamp(row_timestamp: str) -> str:
+    """Return the row timestamp in ISO 8601 form (T separator).
+
+    SQLite's default ``datetime('now')`` format uses a space between
+    date and time, which sorts incorrectly against ISO 8601 strings
+    elsewhere in the corpus. Normalizing to ``T`` keeps lexicographic
+    ordering aligned. Returns the original string if parsing fails.
+    """
+    if not row_timestamp:
+        return row_timestamp
+    candidate = row_timestamp.replace(" ", "T")
+    try:
+        return datetime.fromisoformat(candidate).isoformat()
+    except ValueError:
+        return candidate
+
+
+def _copilot_user_timestamp(row_timestamp: str) -> str:
+    """Return a sortable timestamp for the user side of a Copilot turn.
+
+    Each row in ``turns`` stores one user→assistant exchange with a
+    single ``timestamp``, but the analytics walker needs the user turn
+    to sort strictly before the paired assistant turn so trigger
+    classification can find the prompt that drove the invocation. We
+    subtract 1 ms from the row timestamp for the user record; the
+    assistant record keeps the row timestamp (normalized via
+    ``_copilot_normalize_timestamp``).
+    """
+    if not row_timestamp:
+        return row_timestamp
+    candidate = row_timestamp.replace(" ", "T")
+    try:
+        ts = datetime.fromisoformat(candidate)
+    except ValueError:
+        return candidate
+    return (ts - timedelta(milliseconds=1)).isoformat()
+
+
+def extract_copilot_conversations(copilot_dir: Path | None = None) -> list[dict]:
+    """Read Copilot CLI conversation turns from the SQLite session store.
+
+    Each ``turns`` row stores one user→assistant exchange (``user_message``
+    + ``assistant_response``). We emit the pair as two per-turn entries
+    so the analytics schema (``data.actor`` + ``data.content``) lines up
+    with Claude Code and Codex. Sessions whose rows have neither a user
+    nor an assistant message are skipped.
+    """
+    db_path = _copilot_session_db_path(copilot_dir)
+    if not db_path.is_file():
+        return []
+
+    results: list[dict] = []
+    try:
+        # Read-only URI prevents accidental writes to the live store.
+        uri = f"file:{db_path}?mode=ro"
+        conn = sqlite3.connect(uri, uri=True)
+    except sqlite3.Error:
+        return []
+
+    try:
+        conn.row_factory = sqlite3.Row
+        try:
+            rows = conn.execute(
+                "SELECT t.id, t.session_id, t.turn_index, t.user_message, "
+                "t.assistant_response, t.timestamp, "
+                "s.cwd AS session_cwd, s.repository AS session_repo "
+                "FROM turns AS t "
+                "LEFT JOIN sessions AS s ON s.id = t.session_id "
+                "ORDER BY t.session_id, t.turn_index"
+            ).fetchall()
+        except sqlite3.Error:
+            return []
+    finally:
+        conn.close()
+
+    for row in rows:
+        session_id = row["session_id"] or ""
+        ts = row["timestamp"] or ""
+        cwd = row["session_cwd"] or ""
+        repo = row["session_repo"] or ""
+        # Prefer the explicit cwd path; fall back to repo or session id so
+        # project_id is non-empty for filter_records_by_project to work.
+        project = (
+            project_name_from_dir(Path(cwd).name) if cwd
+            else (repo or session_id)
+        )
+        record_id = str(row["id"])
+        user_text = row["user_message"] or ""
+        assistant_text = row["assistant_response"] or ""
+
+        if user_text:
+            results.append({
+                "source": str(db_path),
+                "runtime_session_id": session_id,
+                "runtime_record_id": f"{record_id}:user",
+                "turn_index": row["turn_index"],
+                "timestamp": _copilot_user_timestamp(ts),
+                "project": project,
+                "actor": "user",
+                "content": user_text,
+            })
+        if assistant_text:
+            results.append({
+                "source": str(db_path),
+                "runtime_session_id": session_id,
+                "runtime_record_id": f"{record_id}:assistant",
+                "turn_index": row["turn_index"],
+                "timestamp": _copilot_normalize_timestamp(ts),
+                "project": project,
+                "actor": "assistant",
+                "content": assistant_text,
+            })
 
     return results
 
@@ -1168,6 +1469,44 @@ def _records_from_copilot_memory(entries: list[dict]) -> list[dict]:
     return records
 
 
+def _records_from_copilot_conversations(entries: list[dict]) -> list[dict]:
+    """Wrap Copilot session-store turn output as corpus records.
+
+    Each turn gets a unique ``source_id`` (per-record uniqueness invariant
+    held by ``validate_corpus_envelope``). ``data.session_id`` is the
+    conversation key the analytics grouper buckets by; ``data.actor`` and
+    ``data.content`` are what the marker walker reads.
+    """
+    records = []
+    for entry in entries:
+        session = entry.get("runtime_session_id", "")
+        records.append({
+            "source_id": _generate_source_id(
+                RUNTIME_COPILOT_CLI,
+                "conversation_turn",
+                session,
+                entry.get("runtime_record_id", ""),
+            ),
+            "timestamp": entry.get("timestamp") or _iso_now(),
+            "project_id": str(entry.get("project", "")),
+            "source_kind": "conversation_turn",
+            "runtime": RUNTIME_COPILOT_CLI,
+            "adapter_version": ADAPTER_VERSION,
+            "data": {
+                "actor": entry.get("actor", ""),
+                "content": entry.get("content", ""),
+                "session_id": session,
+                "runtime_session_id": session,
+                "runtime_record_id": entry.get("runtime_record_id", ""),
+                "turn_index": entry.get("turn_index", 0),
+                "source": entry.get("source", ""),
+                "timestamp": entry.get("timestamp", ""),
+                "project": entry.get("project", ""),
+            },
+        })
+    return records
+
+
 def _records_from_copilot_configs(entries: list[dict]) -> list[dict]:
     """Wrap Copilot config output as corpus records."""
     records = []
@@ -1215,9 +1554,18 @@ def _records_from_codex_history(entries: list[dict]) -> list[dict]:
 
 
 def _records_from_codex_conversations(entries: list[dict]) -> list[dict]:
-    """Wrap Codex session turn output as corpus records."""
+    """Wrap Codex session turn output as corpus records.
+
+    Each turn gets a unique ``source_id`` (per-record uniqueness invariant
+    held by ``validate_corpus_envelope``). ``data.actor`` mirrors ``role``
+    so the analytics predicate (``data.actor == "assistant"``) catches
+    Codex turns; ``data.session_id`` is the conversation key the analytics
+    grouper buckets by.
+    """
     records = []
     for entry in entries:
+        session = entry.get("runtime_session_id", "")
+        role = str(entry.get("role", ""))
         content_hash = hashlib.sha256(
             entry.get("content", "").encode("utf-8")
         ).hexdigest()[:8]
@@ -1227,7 +1575,7 @@ def _records_from_codex_conversations(entries: list[dict]) -> list[dict]:
                 "conversation_turn",
                 entry.get("source", ""),
                 str(entry.get("line", "")),
-                entry.get("runtime_session_id", ""),
+                session,
                 entry.get("runtime_record_id", ""),
                 content_hash,
             ),
@@ -1236,7 +1584,18 @@ def _records_from_codex_conversations(entries: list[dict]) -> list[dict]:
             "source_kind": "conversation_turn",
             "runtime": RUNTIME_CODEX_CLI,
             "adapter_version": ADAPTER_VERSION,
-            "data": entry,
+            "data": {
+                "actor": role,
+                "content": entry.get("content", ""),
+                "role": role,
+                "session_id": session,
+                "runtime_session_id": session,
+                "runtime_record_id": entry.get("runtime_record_id", ""),
+                "source": entry.get("source", ""),
+                "line": entry.get("line", 0),
+                "timestamp": entry.get("timestamp", ""),
+                "project": entry.get("project", ""),
+            },
         })
     return records
 
@@ -1627,8 +1986,8 @@ def _runtime_collectors() -> tuple[dict, ...]:
                 },
                 {
                     "kind": "conversation_turn",
-                    "extract": extract_conversations,
-                    "to_records": _records_from_conversations,
+                    "extract": extract_conversation_turns,
+                    "to_records": _records_from_conversation_turns,
                 },
                 {
                     "kind": "project_config_signal",
@@ -1655,8 +2014,10 @@ def _runtime_collectors() -> tuple[dict, ...]:
                 },
                 {
                     "kind": "conversation_turn",
-                    "unsupported_reason": "no documented Copilot CLI local source family surface",
-                    "checked_surfaces": lambda _status: [],
+                    "extract": extract_copilot_conversations,
+                    "to_records": _records_from_copilot_conversations,
+                    "empty_status": "missing",
+                    "checked_surfaces": lambda status: status["families"]["conversation_turn"]["checked_surfaces"],
                 },
                 {
                     "kind": "project_config_signal",

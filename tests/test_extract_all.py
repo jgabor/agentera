@@ -550,8 +550,100 @@ class TestRecordsProvenance:
         assert rec["source_kind"] == "conversation_turn"
         assert rec["data"]["runtime_session_id"] == "sess-1"
         assert rec["data"]["runtime_record_id"] == "turn-1"
+        # Analytics-facing schema: data.actor mirrors role; data.session_id
+        # is the conversation grouping key for usage_stats.py.
+        assert rec["data"]["actor"] == "user"
+        assert rec["data"]["session_id"] == "sess-1"
+        assert rec["data"]["content"] == "Should we keep this?"
         for field in ("source_id", "timestamp", "project_id", "adapter_version"):
             assert rec[field]
+
+    def test_codex_records_have_unique_source_ids_per_turn(self, extract_all):
+        # Two turns in the same session must yield distinct source_ids so
+        # the per-record uniqueness invariant of validate_corpus_envelope
+        # holds, while sharing data.session_id for analytics grouping.
+        entries = [
+            {
+                "source": "/tmp/sess.jsonl", "line": 1,
+                "runtime_session_id": "S", "runtime_record_id": "t1",
+                "timestamp": "2026-04-24T00:00:00Z", "project": "p",
+                "role": "user", "content": "/realisera",
+            },
+            {
+                "source": "/tmp/sess.jsonl", "line": 2,
+                "runtime_session_id": "S", "runtime_record_id": "t2",
+                "timestamp": "2026-04-24T00:00:01Z", "project": "p",
+                "role": "assistant", "content": "─── ⧈ realisera · cycle ───",
+            },
+        ]
+        records = extract_all._records_from_codex_conversations(entries)
+        assert records[0]["source_id"] != records[1]["source_id"]
+        assert records[0]["data"]["session_id"] == records[1]["data"]["session_id"] == "S"
+
+    def test_copilot_records_carry_actor_content_session_id(self, extract_all):
+        entries = [{
+            "source": "/tmp/.copilot/session-store.db",
+            "runtime_session_id": "copilot-sess-1",
+            "runtime_record_id": "42:assistant",
+            "turn_index": 0,
+            "timestamp": "2026-04-25T00:00:00",
+            "project": "agentera",
+            "actor": "assistant",
+            "content": "─── ≡ planera · status ───",
+        }]
+        records = extract_all._records_from_copilot_conversations(entries)
+        assert len(records) == 1
+        rec = records[0]
+        assert rec["runtime"] == "copilot-cli"
+        assert rec["source_kind"] == "conversation_turn"
+        assert rec["data"]["actor"] == "assistant"
+        assert rec["data"]["session_id"] == "copilot-sess-1"
+        assert rec["data"]["content"].startswith("───")
+        for field in ("source_id", "timestamp", "project_id", "adapter_version"):
+            assert rec[field]
+
+    def test_extract_copilot_conversations_reads_session_db(
+        self, extract_all, tmp_path
+    ):
+        import sqlite3
+
+        copilot = tmp_path / ".copilot"
+        copilot.mkdir()
+        db = copilot / "session-store.db"
+        conn = sqlite3.connect(db)
+        try:
+            conn.executescript(
+                "CREATE TABLE sessions ("
+                "id TEXT PRIMARY KEY, cwd TEXT, repository TEXT, "
+                "branch TEXT, summary TEXT, created_at TEXT, updated_at TEXT, "
+                "host_type TEXT);"
+                "CREATE TABLE turns ("
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, "
+                "turn_index INTEGER, user_message TEXT, "
+                "assistant_response TEXT, timestamp TEXT);"
+            )
+            conn.execute(
+                "INSERT INTO sessions(id, cwd, repository) VALUES (?, ?, ?)",
+                ("S1", "/home/u/git/agentera", "agentera"),
+            )
+            conn.execute(
+                "INSERT INTO turns(session_id, turn_index, user_message, "
+                "assistant_response, timestamp) VALUES (?, ?, ?, ?, ?)",
+                ("S1", 0, "/planera", "─── ≡ planera · status ───",
+                 "2026-04-25 12:00:00"),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        entries = extract_all.extract_copilot_conversations(copilot)
+        # One row -> two entries (user + assistant).
+        actors = sorted(e["actor"] for e in entries)
+        assert actors == ["assistant", "user"]
+        # User entry must sort strictly before assistant for trigger lookup.
+        ts_by_actor = {e["actor"]: e["timestamp"] for e in entries}
+        assert ts_by_actor["user"] < ts_by_actor["assistant"]
+        assert all(e["runtime_session_id"] == "S1" for e in entries)
 
 
 # ---------------------------------------------------------------------------
@@ -1032,6 +1124,7 @@ class TestValidateCorpusEnvelope:
         checked = corpus["metadata"]["runtime_status"]["copilot-cli"]["checked_surfaces"]
         assert checked == [
             str(fake_copilot / "installed-plugins"),
+            str(fake_copilot / "session-store.db"),
             str(fake_copilot / "settings.json"),
             str(fake_copilot / "skills"),
         ]

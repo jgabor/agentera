@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-26 (Live-Host Verification Task 5) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-27 (1.20.0 release-readiness audit) -->
 
 ## Conventions
 
@@ -46,8 +46,8 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 | Document | Path | Last Updated | Status |
 |----------|------|-------------|--------|
-| README | README.md | 2026-04-26 | ■ current |
-| CLAUDE.md | CLAUDE.md | 2026-04-02 | ■ current |
+| README | README.md | 2026-04-27 | ■ current |
+| CLAUDE.md | CLAUDE.md | 2026-04-27 | ■ current |
 | Decisions | .agentera/DECISIONS.md | 2026-04-02 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
 | Progress | .agentera/PROGRESS.md | 2026-04-26 | ■ current |
@@ -71,6 +71,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Codex setup helper | scripts/setup_codex.py | 2026-04-26 | ■ current |
 | Copilot setup helper | scripts/setup_copilot.py | 2026-04-26 | ■ current |
 | Setup helper smoke runner | scripts/smoke_setup_helpers.py | 2026-04-26 | ■ current |
+| OpenCode bootstrap smoke runner | scripts/smoke_opencode_bootstrap.mjs | 2026-04-27 | ■ current |
 | Live-host smoke runner | scripts/smoke_live_hosts.py | 2026-04-26 | ■ current |
 | SessionStart hook | hooks/session_start.py | 2026-04-03 | ■ current |
 | Session stop hook | hooks/session_stop.py | 2026-04-03 | ■ current |
@@ -85,9 +86,16 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 433 tests across 17 files; CI runs on push/PR via GitHub Actions
+- **Tests**: 438 tests across 17 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-27 (1.20.0 release-readiness audit)
+
+- [stale] README.md and AGENTS.md (CLAUDE.md symlink) referenced "Section 21" for the Session Corpus Contract; SPEC.md was renumbered in 1.20.0 (Session Corpus is now Section 22). Four occurrences across README.md (lines 31, 183, 381) and AGENTS.md (line 69) · warning (fixed)
+- [gap] README Scripts section omitted `scripts/smoke_opencode_bootstrap.mjs`; closes open TODO `[live-host-smoke-mjs-doc-row]`. Index gained a row for the same script · warning (fixed)
+- [stale] Coverage line said "433 tests across 17 files"; actual is 438 (+3 from this session's Codex/Copilot/Claude Code per-turn extractor work; full breakdown lands under [Unreleased] in CHANGELOG when the next release is cut) · info (fixed)
+- v1.20.0 scope expanded: per user direction, the Codex/Copilot/Claude Code per-turn extractor fix is folded into 1.20.0 (was previously called out as out-of-scope in the CHANGELOG Note). CHANGELOG Note replaced by a `### Fixed` section covering `[claude-code-extract-duplicate-source-ids]` and `[live-host-smoke-mjs-doc-row]`; both TODOs flipped to Resolved; v1.20.0 tag re-pointed to the new HEAD.
 
 ### 2026-04-26 (Live-Host Verification Task 5)
 
