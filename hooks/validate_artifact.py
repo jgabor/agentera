@@ -18,6 +18,17 @@ Routing:
     skills/*/SKILL.md -> spec alignment checks
     SPEC.md (root) -> context freshness check
     anything else -> exit 0 immediately
+
+Supported stdin shapes:
+    Claude Code (PostToolUse): {tool_input: {file_path: <path>}, ...}
+    Codex (PreToolUse/PostToolUse, tool_name == "apply_patch"):
+        {tool_name: "apply_patch", tool_input: {command: <patch body>}, cwd: <dir>, ...}
+        Patch body parsed for *** Add/Update/Delete/Move headers per
+        codex-rs/core/prompt_with_apply_patch_instructions.md grammar.
+        Schema captured from openai/codex#18391 (merged 2026-04-22):
+        codex-rs/hooks/schema/generated/{pre,post}-tool-use.command.input.schema.json.
+        Exit 0 = success (stdout printed as system message);
+        exit 2 with stderr = block the apply_patch (PreToolUse only).
 """
 
 from __future__ import annotations
@@ -370,6 +381,33 @@ def validate_spec_spec() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Codex apply_patch stdin parsing
+# ---------------------------------------------------------------------------
+
+
+# apply_patch file headers per codex-rs/core/prompt_with_apply_patch_instructions.md.
+# Examples: "*** Add File: path/to/file.md", "*** Update File: .agentera/PROGRESS.md",
+# "*** Delete File: x.md", "*** Move to: new/path.md" (follows an Update header).
+_APPLY_PATCH_FILE_HEADER = re.compile(
+    r"^\*\*\*\s+(Add File|Update File|Delete File|Move to):\s+(.+?)\s*$",
+    re.MULTILINE,
+)
+
+
+def extract_codex_patch_paths(command: str) -> list[str]:
+    """Extract every file path the apply_patch body touches.
+
+    The grammar emits one of three operation headers per file
+    (Add/Update/Delete File) plus an optional Move-to rename header.
+    Returns the list of paths in patch order; duplicates preserved so
+    each touched file gets validated.
+    """
+    if not isinstance(command, str):
+        return []
+    return [match.group(2).strip() for match in _APPLY_PATCH_FILE_HEADER.finditer(command)]
+
+
+# ---------------------------------------------------------------------------
 # Routing
 # ---------------------------------------------------------------------------
 
@@ -408,6 +446,42 @@ def classify_file(file_path: str, project_root: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _validate_one_path(
+    file_path: str,
+    project_root: str,
+    skip_if_missing: bool = False,
+) -> list[str]:
+    """Validate a single file path; return violation messages.
+
+    skip_if_missing: when True (Codex apply_patch path), silently skip
+    paths that do not yet exist on disk. PreToolUse fires before the
+    patch lands, so Add File targets and not-yet-applied Update targets
+    must not surface as 'cannot read' errors.
+    """
+    category = classify_file(file_path, project_root)
+    if category == "other":
+        return []
+
+    if skip_if_missing and not Path(file_path).is_file():
+        return []
+
+    if category == "artifact":
+        artifact_name = identify_artifact(file_path, project_root)
+        if artifact_name:
+            violations = validate_artifact_structure(file_path, artifact_name)
+            violations.extend(detect_compaction_overflow(file_path, artifact_name))
+            return violations
+        return []
+
+    if category == "skill":
+        return validate_skill_definition(file_path)
+
+    if category == "the spec":
+        return validate_spec_spec()
+
+    return []
+
+
 def main() -> int:
     """Read hook input from stdin, route to validator, report violations."""
     try:
@@ -418,35 +492,39 @@ def main() -> int:
     except (json.JSONDecodeError, KeyError):
         return 0  # Malformed input, skip validation silently
 
-    # Extract file path from tool_input
-    tool_input = hook_input.get("tool_input", {})
-    file_path = tool_input.get("file_path")
-    if not file_path:
-        return 0
-
     project_root = hook_input.get("cwd", os.getcwd())
+    tool_input = hook_input.get("tool_input") or {}
+    tool_name = hook_input.get("tool_name", "")
 
-    # Route to appropriate validator
-    category = classify_file(file_path, project_root)
+    # Codex apply_patch path: tool_input.command holds the raw patch body;
+    # parse for every touched file and validate each one.
+    # Schema: codex-rs/hooks/schema/generated/{pre,post}-tool-use.command.input.schema.json
+    file_paths: list[str] = []
+    is_codex_patch = tool_name == "apply_patch" and isinstance(tool_input, dict)
+    if is_codex_patch:
+        command = tool_input.get("command", "")
+        patch_paths = extract_codex_patch_paths(command)
+        # Resolve patch-relative paths against cwd so downstream classifiers
+        # can compare against the absolute artifact paths in resolve_artifact_paths.
+        for p in patch_paths:
+            if os.path.isabs(p):
+                file_paths.append(p)
+            else:
+                file_paths.append(str(Path(project_root) / p))
+    else:
+        # Claude Code / OpenCode shape: tool_input.file_path is the modified file.
+        file_path = tool_input.get("file_path") if isinstance(tool_input, dict) else None
+        if file_path:
+            file_paths.append(file_path)
 
-    if category == "other":
+    if not file_paths:
         return 0
 
     violations: list[str] = []
-
-    if category == "artifact":
-        artifact_name = identify_artifact(file_path, project_root)
-        if artifact_name:
-            violations = validate_artifact_structure(file_path, artifact_name)
-            violations.extend(
-                detect_compaction_overflow(file_path, artifact_name)
-            )
-
-    elif category == "skill":
-        violations = validate_skill_definition(file_path)
-
-    elif category == "the spec":
-        violations = validate_spec_spec()
+    for path in file_paths:
+        violations.extend(
+            _validate_one_path(path, project_root, skip_if_missing=is_codex_patch)
+        )
 
     # Report results
     if not violations:
