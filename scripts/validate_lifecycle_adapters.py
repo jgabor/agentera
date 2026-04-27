@@ -36,6 +36,7 @@ CODEX_PROFILERA_TERMS = (
 )
 CODEX_PROFILERA_STATUS_VALUES = ("ok", "degraded")
 CODEX_PROFILERA_INVOCATION_TERMS = ("$profilera", "limited", "Section 22", "source families")
+OPENCODE_EVENT_TYPES = {"session.created", "session.idle"}
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -262,6 +263,27 @@ def validate_codex_profilera_metadata(root: Path, plugin: dict[str, Any]) -> lis
     return errors
 
 
+def validate_opencode(root: Path) -> list[str]:
+    errors: list[str] = []
+    plugin_path = root / ".opencode/plugins/agentera.js"
+    if not plugin_path.is_file():
+        return ["opencode: missing .opencode/plugins/agentera.js"]
+
+    text = plugin_path.read_text(encoding="utf-8")
+    if "event: async" not in text:
+        errors.append("opencode: session lifecycle must use the generic event hook")
+    for event_type in OPENCODE_EVENT_TYPES:
+        if f'event.type !== "{event_type}"' not in text and f'event.type === "{event_type}"' not in text:
+            errors.append(f"opencode: event hook must handle or explicitly skip {event_type}")
+        if f'"{event_type}":' in text:
+            errors.append(f"opencode: must not register phantom direct hook {event_type}")
+    for hook in ('"shell.env"', '"tool.execute.after"'):
+        if hook not in text:
+            errors.append(f"opencode: missing {hook} hook")
+
+    return errors
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
@@ -275,6 +297,7 @@ def main(argv: list[str] | None = None) -> int:
     codex = _load_json(root / ".codex-plugin/plugin.json")
     errors.extend(validate_codex(codex))
     errors.extend(validate_codex_profilera_metadata(root, codex))
+    errors.extend(validate_opencode(root))
 
     if errors:
         print("lifecycle adapter validation failed:")

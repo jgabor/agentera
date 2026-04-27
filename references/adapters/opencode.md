@@ -189,27 +189,30 @@ def dispatch_opencode(skill_name: str, prompt: str) -> dict:
 
 **What agentera requires**: Callbacks at session start, session stop, and after tool use for artifact validation and context preload.
 
-**OpenCode mechanism**: OpenCode provides a rich plugin event system with hooks for:
+**OpenCode mechanism**: OpenCode provides a rich plugin event system. Session lifecycle events arrive through the generic `event` hook as `event.type` payload values. The documented plugin example branches on `event.type === "session.idle"` inside `event`, and the local `@opencode-ai/plugin` types expose `event?: ({ event }) => Promise<void>`.
 
 | Agentera hook | OpenCode event | Notes |
 |---------------|----------------|-------|
-| SessionStart | `session.created` | Fires when a new session begins |
-| Stop | `session.idle` or `session.updated` | Fires when session reaches idle state |
+| SessionStart | `event` hook with `event.type === "session.created"` | Observation only unless a supported context-injection hook is also used |
+| Stop | `event` hook with `event.type === "session.idle"` | Fires when a session reaches idle state |
 | PostToolUse | `tool.execute.after` | Fires after every tool execution |
 
-OpenCode plugins subscribe to events by exporting hook functions:
+OpenCode plugins subscribe to session events by exporting one generic `event` hook:
 
 ```javascript
 export const AgenteraPlugin = async ({ project, client, $, directory, worktree }) => {
   return {
-    "session.created": async ({ event }) => {
-      // SessionStart equivalent: preload context
+    event: async ({ event }) => {
+      if (event.type === "session.idle") {
+        // Stop equivalent: persist session bookmark
+      }
+
+      if (event.type === "session.created") {
+        // SessionStart observation point.
+      }
     },
     "tool.execute.after": async (input, output) => {
       // PostToolUse equivalent: validate artifacts
-    },
-    "session.idle": async ({ event }) => {
-      // Stop equivalent: persist session bookmark
     }
   }
 }
@@ -217,11 +220,11 @@ export const AgenteraPlugin = async ({ project, client, $, directory, worktree }
 
 **Adapter approach**: Implement agentera's three hooks as an OpenCode plugin in `.opencode/plugins/agentera.js`:
 
-1. **SessionStart** (session.created): Read PROGRESS.md, TODO.md, VISION.md, and HEALTH.md. Inject key facts into the session context via the compaction hook or by sending an initial context message.
+1. **SessionStart** (`event.type === "session.created"`): Observe session creation through the event hook. Session-start context preload remains deferred because no supported model-context injection path is verified for this adapter. Do not attach dead preload code to event observation alone.
 
 2. **PostToolUse** (tool.execute.after): When the tool is `write` or `edit`, check if the target file is an agentera artifact (matches paths in DOCS.md). If so, run the validation logic from `scripts/validate_spec.py` against the written content.
 
-3. **Stop** (session.idle): Append a bookmark entry to `.agentera/SESSION.md` capturing the session's last activity for next-session continuity.
+3. **Stop** (`event.type === "session.idle"`): Append a bookmark entry to `.agentera/SESSION.md` capturing artifact changes for next-session continuity.
 
 **Gap**: OpenCode plugins run in-process (JavaScript/TypeScript), not as separate Python scripts. The Python validation scripts (`validate_spec.py`, `generate_contracts.py`) would need to be invoked via the `$` shell API:
 

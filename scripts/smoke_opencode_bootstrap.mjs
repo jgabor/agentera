@@ -5,6 +5,7 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { execFileSync } from "child_process";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -40,6 +41,7 @@ try {
     hasManagedMarker,
     resolveAgenteraHome,
     resolveOpencodeCommandsDir,
+    writeSessionBookmark,
     lifecycle,
   } = await import(PLUGIN_PATH);
 
@@ -165,6 +167,10 @@ try {
   // --- Test 6: Hook surface (real OpenCode interface keys only) ---
   const hookKeys = Object.keys(hooks1).sort();
   assert(
+    hookKeys.includes("event"),
+    `Agentera() return must include generic event hook (got: ${hookKeys.join(", ")})`
+  );
+  assert(
     hookKeys.includes("shell.env"),
     `Agentera() return must include shell.env hook (got: ${hookKeys.join(", ")})`
   );
@@ -181,7 +187,52 @@ try {
     "Agentera() return must NOT include phantom session.idle hook"
   );
 
-  // --- Test 7: shell.env injection — discoverable branch ---
+  // --- Test 7: Direct bookmark helper — missing hook script no-op ---
+  const noHookProject = path.join(tmpdir, "no-hook-project");
+  fs.mkdirSync(noHookProject, { recursive: true });
+  writeSessionBookmark(noHookProject);
+  assert(
+    !fs.existsSync(path.join(noHookProject, ".agentera", "SESSION.md")),
+    "writeSessionBookmark must no-op when hooks/session_stop.py is unavailable"
+  );
+
+  // --- Test 8: event hook — idle writes SESSION.md for modified artifacts ---
+  const repoRoot = path.resolve(__dirname, "..");
+  process.env.AGENTERA_HOME = repoRoot;
+  const projectWithArtifact = path.join(tmpdir, "event-project");
+  fs.mkdirSync(path.join(projectWithArtifact, ".agentera"), { recursive: true });
+  execFileSync("git", ["init", "-q"], { cwd: projectWithArtifact });
+  fs.writeFileSync(path.join(projectWithArtifact, "TODO.md"), "# TODO\n\n## \u21f6 Critical\n\n## \u21c9 Degraded\n\n## \u2192 Normal\n\n- [ ] event smoke\n\n## \u21e2 Annoying\n\n## Resolved\n");
+  const hooksForEvents = await Agentera({ worktree: projectWithArtifact }, {});
+  await hooksForEvents.event({ event: { type: "session.idle", properties: { sessionID: "s1" } } });
+  const sessionPath = path.join(projectWithArtifact, ".agentera", "SESSION.md");
+  assert(fs.existsSync(sessionPath), "session.idle event should write SESSION.md when artifacts changed");
+  const sessionText = fs.readFileSync(sessionPath, "utf8");
+  assert(sessionText.includes("Artifacts modified:"), "SESSION.md bookmark should include modified artifact summary");
+  assert(sessionText.includes("TODO.md"), "SESSION.md bookmark should name modified TODO.md");
+
+  // --- Test 9: event hook — created and malformed events do not bookmark ---
+  const beforeCreated = fs.readFileSync(sessionPath, "utf8");
+  await hooksForEvents.event({ event: { type: "session.created", properties: { sessionID: "s1" } } });
+  await hooksForEvents.event({});
+  assert(
+    fs.readFileSync(sessionPath, "utf8") === beforeCreated,
+    "session.created and malformed events must not write SESSION.md bookmarks"
+  );
+
+  // --- Test 10: event hook — idle no-op without modified artifacts ---
+  const cleanProject = path.join(tmpdir, "clean-event-project");
+  fs.mkdirSync(cleanProject, { recursive: true });
+  execFileSync("git", ["init", "-q"], { cwd: cleanProject });
+  const cleanHooks = await Agentera({ worktree: cleanProject }, {});
+  await cleanHooks.event({ event: { type: "session.idle", properties: { sessionID: "s2" } } });
+  assert(
+    !fs.existsSync(path.join(cleanProject, ".agentera", "SESSION.md")),
+    "session.idle event must not create SESSION.md when no artifacts changed"
+  );
+  delete process.env.AGENTERA_HOME;
+
+  // --- Test 11: shell.env injection — discoverable branch ---
   // Documented install root exists at ~/.agents/agentera (from Test 0).
   delete process.env.AGENTERA_HOME;
   const hooksDiscoverable = await Agentera({}, {});
@@ -192,7 +243,7 @@ try {
     `shell.env should inject documented install root, got ${envOut1.env.AGENTERA_HOME}`
   );
 
-  // --- Test 8: shell.env injection — not-discoverable branch ---
+  // --- Test 12: shell.env injection — not-discoverable branch ---
   // Move the marker script away so resolveAgenteraHome returns null.
   const stagedScript = path.join(documentedRoot, "scripts", "validate_spec.py");
   const parkedScript = path.join(tmpdir, "_parked_validate_spec.py");
@@ -208,7 +259,7 @@ try {
   // Restore for subsequent assertions.
   fs.renameSync(parkedScript, stagedScript);
 
-  // --- Test 9: shell.env injection — user pre-set branch (process env) ---
+  // --- Test 13: shell.env injection — user pre-set branch (process env) ---
   const userPreset = path.join(tmpdir, "user-chosen-root");
   process.env.AGENTERA_HOME = userPreset;
   const hooksPreset = await Agentera({}, {});
@@ -220,7 +271,7 @@ try {
   );
   delete process.env.AGENTERA_HOME;
 
-  // --- Test 10: shell.env injection — pre-set branch (already in output env) ---
+  // --- Test 14: shell.env injection — pre-set branch (already in output env) ---
   const hooksAlreadyMerged = await Agentera({}, {});
   const envOut4 = { env: { AGENTERA_HOME: "/already/merged/by/opencode" } };
   await hooksAlreadyMerged["shell.env"]({ cwd: tmpdir }, envOut4);
@@ -229,12 +280,12 @@ try {
     "shell.env must preserve a pre-merged AGENTERA_HOME value"
   );
 
-  // --- Test 11: Lifecycle counter monotonicity ---
-  // initCount should now reflect every Agentera() call: Test 5, 7, 8, 9, 10.
+  // --- Test 15: Lifecycle counter monotonicity ---
+  // initCount should now reflect every Agentera() call: Test 5, 8, 10, 11, 12, 13, 14.
   // (At least 5 calls; exact value depends on Test 5 baseline.)
   assert(
-    lifecycle.initCount === lifecycleCountBefore + 5,
-    `lifecycle.initCount expected to be ${lifecycleCountBefore + 5}, got ${lifecycle.initCount}`
+    lifecycle.initCount === lifecycleCountBefore + 7,
+    `lifecycle.initCount expected to be ${lifecycleCountBefore + 7}, got ${lifecycle.initCount}`
   );
   console.error(
     `[smoke] lifecycle observation: Agentera() fired ${lifecycle.initCount - lifecycleCountBefore} time(s) ` +
