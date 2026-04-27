@@ -1,159 +1,171 @@
-# Plan: Live-Host Verification
+# Plan: Cross-Runtime Parity Completion
 
-<!-- Level: full · Created: 2026-04-26 · Status: active -->
-<!-- Reviewed: 2026-04-26 | Critic issues: 10 found, 10 addressed, 0 dismissed -->
+<!-- Level: full · Created: 2026-04-27 · Status: active -->
+<!-- Reviewed: 2026-04-27 | Critic issues: 8 found, 7 addressed, 1 deferred to TODO -->
 
 ## What
 
-Bundle three live-host verification gaps from Audit 15: (1) AGENTERA_HOME inheritance under live `codex` and `copilot` CLIs, (2) end-to-end SKILL.md compaction smoke under both runtimes, (3) Codex profilera collection audit. Build `scripts/smoke_live_hosts.py` that exercises (1) and (2) via subprocess against the real CLIs, audit (3) against the live `~/.codex/history.jsonl` and reconcile metadata claims, and document a manual verification protocol for users who cannot run the live smoke.
+Close the actual cross-runtime parity gaps the Codex+Copilot capabilities research surfaced. Mostly documentation honesty + three small wiring pieces: Codex `apply_patch` hook for real-time artifact validation, `.agents/plugins/marketplace.json` plus `setup_codex.py --enable-agents` for Codex install ergonomics, smoke harness extension verifying the new hook fires. All work folds into the un-pushed 1.20.0 release; no new version bump.
 
 ## Why
 
-The Codex+Copilot Completion plan (1.21.0) shipped the WRITE side: `setup_codex.py` and `setup_copilot.py` correctly emit `[shell_environment_policy]` and shell-rc export blocks. The READ side — does `codex` actually inherit AGENTERA_HOME at runtime, does `copilot` resolve the bash-fallback, does the SKILL.md compaction command actually execute — is documented as untested (HEALTH.md Audit 15 finding 2, conf 50, narrowed from Audit 14 conf 65). VISION compounding: every install path the user might hit needs end-to-end verification or an explicit manual protocol so future runtime updates cannot silently regress the cross-runtime promise.
+The original 1.20.0 plan defined parity as specification (per-runtime mechanism table in SPEC Section 7), not working software. The 1.21.0 setup helpers and 1.22.0 live-host verification (now consolidated by Move 1) addressed pieces but not the actual stale-claim and missing-wiring gaps. The Codex+Copilot capabilities research now provides ground truth: Codex `multi_agent` and `codex_hooks` are stable + default-on; `apply_patch` Write/Edit interception works as of v0.124.0; Copilot marketplace install path is verified working; orkestrera dispatch under Codex maps to `[agents.*]` config tables. This plan delivers the coherent 1.20.0 release the user originally expected, with every documented claim verifiable against current runtime behavior.
 
 ## Constraints
 
-- Stdlib-only Python per CLAUDE.md scripts convention
-- Snapshot ~/.codex/config.toml and shell rc files via copy-to-tmpfile before any mutation; restore in `finally` so a crash mid-run cannot corrupt user config
-- Use `env AGENTERA_HOME=...` invocation patterns, never `source ~/.bashrc` (which would pollute the harness's own shell)
-- Live CLI sections gated behind explicit `--live` flag with printed cost estimate ($0.20-1.00 per run, two model calls covering both AGENTERA_HOME inheritance and compaction in one combined prompt per runtime)
-- Probe both `codex --version` AND auth state (e.g. `codex login status` or equivalent) before any model call; CLI-not-on-PATH and CLI-not-authed must surface as distinct skip messages
-- Verification scope is limited to `codex exec` non-interactive mode; interactive-mode behavior is inferred per Codex's `[shell_environment_policy]` semantics
-- Profilera Codex audit must NOT modify the existing extractor; only metadata claims (`.codex-plugin/plugin.json` `requiredCapabilities[].status`) and one targeted lifecycle test may evolve
-- The duplicate-source_id corpus failure surfaced during plan orient is OUT OF SCOPE unless Task 1 root-causes it to Codex specifically; otherwise log as Surprise and file a TODO follow-up
-- Copilot non-interactive runs require `--allow-all-tools`; the harness must print a one-line consent prompt before invoking
-- One conventional commit per task per CLAUDE.md convention; no push
+- No new version bump; folds into pre-push 1.20.0 per user direction
+- No push, no remote operations, no aggregator submissions during the plan (filed as TODOs in T7)
+- Conventional commits per CLAUDE.md; SHA-pin every cycle
+- Test proportionality cap: 2 new pytest cases total (T3 hook code only; T6 IS the test surface per Cycle 177)
+- Live model spend bounded at $0.10–0.50 for one `codex exec` invocation in T6
+- Mandatory `**Verified**` field per SPEC Section 19 in every PROGRESS cycle
+- Marketplace.json profilera entry continues to omit a `version` key per long-standing convention
 
 ## Scope
 
-**In**: `scripts/smoke_live_hosts.py` harness, profilera Codex collection audit, `.codex-plugin/plugin.json` `requiredCapabilities[].status` reconciliation if warranted, README + DOCS.md surface for the new harness and manual verification protocol, version bump if Tasks 2-4 land the runnable harness, plan-level freshness checkpoint.
+**In**: README + SPEC stale-claim cleanup (prose); structured runtime metadata claim cleanup; dead Copilot `stop.json` hook fix; SKILL.md frontmatter audit for Copilot bug `github/copilot-cli#951`; README install-path swap (granular over umbrella per Copilot bug `#2390`); Codex `apply_patch` hook wiring with stdin schema verification; `.agents/plugins/marketplace.json` plus 12 per-skill `agents/<name>.toml` Codex agent stubs; `setup_codex.py --enable-agents` extension; orkestrera SKILL.md dispatch doc update; `smoke_live_hosts.py` Codex hook verification extension with `--yes` bypass; plan-level freshness checkpoint with CHANGELOG reframing preamble, TODO/HEALTH updates, PLAN.md archival, Move 3 push-readiness verification.
 
-**Out**: rewriting `extract_all.py`; fixing the duplicate-source_id corpus validation failure unless Codex is root cause; OpenCode live-host smoke (already covered in-process by `smoke_opencode_bootstrap.mjs`); Gemini CLI or other future runtimes; new orchestration layer; pytest expansion of the harness body (the harness IS the test surface per Cycle 177 precedent).
+**Out**: aggregator PRs to `github/awesome-copilot` and `hashgraph-online/awesome-codex-plugins` (filed as TODOs in T7); Copilot ACP wiring as programmatic dispatch path (engineering overhead disproportionate); Copilot hook event-name validator (filed as TODO in T7); claude-code/conversation_turn duplicate-source_id fix (separate TODO already filed); opencode-session-events (separate TODO already filed); version bump to 1.21.0 (consolidates into 1.20.0 per user direction).
 
-**Deferred**: similar live-host smoke for OpenCode beyond what already exists; full pre-flight authentication automation for the CLIs (the smoke verifies auth state, it does not automate `codex login` or `copilot auth`).
+**Deferred**: aggregator submissions are post-1.20.0 follow-up work; Copilot hook event-name validator becomes a small lint rule once another regression triggers it.
 
 ## Design
 
-The harness lives at `scripts/smoke_live_hosts.py` — stdlib Python, repo-level utility, mirrors `scripts/smoke_setup_helpers.py` shape: sequential numbered cases, `PASS:` / `FAIL:` to stdout, fail-fast, cleanup in `finally`, exit 0 / exit 1.
+The work splits cleanly into three layers.
 
-Top-level flow:
+**Documentation layer (T1a, T1b, T2 partial, T5)**: rewrites README runtime support and lifecycle hook tables, SPEC Section 7 per-runtime mechanism table, `.codex-plugin/plugin.json` limitations and `agents/openai.yaml` UI metadata to reflect current Codex + Copilot capability evidence. orkestrera SKILL.md gets a runtime-aware dispatch section naming Codex `[agents.*]` as the conversational substrate plus an honest Copilot `/fleet` user-driven workaround.
 
-1. Default mode: run profilera Codex audit (zero cost), run the in-process setup helper smoke (delegated via subprocess to `smoke_setup_helpers.py`), report pass and exit 0.
-2. `--live` mode: probe each CLI, snapshot user config files to tmpfiles, run setup helpers against tmp install root, run one combined `codex exec` prompt that asks the agent to print `$AGENTERA_HOME` and run `python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py progress <fixture>` against a pre-seeded fixture, parse stream-JSON for both observations, repeat for `copilot -p` invoked via `bash -c 'export AGENTERA_HOME=...; copilot -p "..." --allow-all-tools'`, restore user config from tmpfiles, report.
+**Wiring layer (T2 partial, T3, T4)**: fixes the dead `stop.json` Copilot hook (rename or restructure to canonical `hooks.json` shape per Copilot spec); ports `validate_artifact.py` invocation to a Codex `apply_patch` hook with schema-verified stdin parsing; adds `.agents/plugins/marketplace.json` per Codex marketplace schema plus 12 per-skill `agents/<name>.toml` stubs that map Codex agent names to bundled SKILL.md paths; extends `setup_codex.py` with an `--enable-agents` flag that writes `[agents.<name>]` entries to `~/.codex/config.toml` pointing at the bundled `agents/<name>.toml` files.
 
-Per-runtime probe:
-
-- Codex: `codex --version` (PATH check), then a deterministic auth probe (e.g. `codex exec --skip-git-repo-check --output-last-message <tmp> 'reply with the literal text OK'` with a hard 30s timeout treated as auth-required if no output)
-- Copilot: `copilot --version` (PATH check), then `gh auth status` or `copilot --allow-all-tools -p 'reply OK'` with same 30s timeout
-
-Profilera Codex audit (Task 1):
-
-- Run `extract_all.py` with `CODEX_DIR=~/.codex` (or default — the live data is there)
-- Count records by `runtime` field; expect codex-cli > 0 (orient confirmed 252 history records present)
-- If extraction succeeds: read `.codex-plugin/plugin.json` `skillMetadata[name=profilera].requiredCapabilities[name=codex_session_corpus].status` — if the audit shows the path actually works, propose `degraded` → `ok` with updated action text
-- If duplicate-source_id failure reproduces: identify which runtime contributes the duplicates via record-by-runtime grouping, log as Surprise, defer fix unless Codex is the cause
-
-Cost guardrail: each `--live` run prints "Estimated cost: $0.20-1.00 across two model calls (one per runtime)" before any subprocess invocation. The combined-prompt design (AGENTERA_HOME echo + compact_artifact.py invocation in one prompt) keeps it to two calls total, not four.
-
-Manual verification protocol (Task 5): three short README sections — "Verify Codex AGENTERA_HOME by hand" (one bash one-liner the user pastes into a real `codex` session), "Verify Copilot AGENTERA_HOME by hand" (same shape), "Verify SKILL.md compaction by hand" (a third one-liner). For users who cannot run `--live` (no auth, no API budget, behind firewall), these protocols are the verification path.
+**Verification layer (T6, T7)**: extends `smoke_live_hosts.py` with one Codex `apply_patch` hook firing test (one `codex exec` invocation triggering an apply_patch and verifying the hook fired) plus a `--yes` flag that bypasses the interactive consent prompt for non-interactive realisera/orkestrera invocation; freshness checkpoint consolidates CHANGELOG/PROGRESS/TODO/HEALTH updates with a reframing preamble explaining the post-research scope refinement, archives the prior Live-Host Verification PLAN.md, and verifies Move 3 push-readiness.
 
 ## Tasks
 
-### Task 1: Profilera Codex collection audit and metadata reconciliation
+### Task 1a: Stale-claim cleanup — README + SPEC prose
 
 **Depends on**: none
 
-**Status**: ■ complete
+**Status**: □ pending
 
 **Acceptance**:
 
-- GIVEN a live `~/.codex/history.jsonl` with prior session data WHEN `extract_all.py` runs against it THEN the resulting corpus.json `metadata.runtimes` field includes `codex-cli` with a non-zero record count, OR the audit produces a numbered list of which records the extractor recognizes vs drops with line citations
-- GIVEN the audit confirms Codex extraction works end-to-end WHEN `.codex-plugin/plugin.json` `skillMetadata[name=profilera].requiredCapabilities[name=codex_session_corpus].status` is read THEN it is updated from `degraded` to `ok` with action text reflecting the verified path; OR if a real limitation is discovered, `degraded` is preserved with action text naming the specific limitation
-- GIVEN `extract_all.py` reproduces the duplicate-source_id corpus failure observed during plan orient WHEN the failing records are grouped by runtime THEN the audit names which runtime contributes the duplicates and either patches it (if Codex is the cause) or files a TODO follow-up (if any other runtime is the cause)
-- GIVEN any metadata change to `.codex-plugin/plugin.json` lands WHEN `python3 scripts/validate_lifecycle_adapters.py` runs THEN it reports `lifecycle adapter metadata ok` without new errors
-- GIVEN this task introduces no new logic in `extract_all.py` WHEN test files are inspected THEN no new pytest cases are added beyond what `validate_lifecycle_adapters.py` already covers (no proportionality budget for verification-only audits)
+▸ GIVEN README "Runtime support" table WHEN read THEN Codex row reflects `multi_agent` stable + `codex_hooks` stable as of v0.124.0 + `[agents.*]` conversational dispatch substrate + plugin marketplace verified path; Copilot row reflects marketplace verified working (granular and umbrella both functional) and `/fleet` user-driven dispatch
+▸ GIVEN README "Lifecycle hooks" table WHEN read THEN Codex row reflects 6 supported events (SessionStart, Stop, UserPromptSubmit, PreToolUse, PostToolUse, PermissionRequest) with real-time apply_patch Write/Edit interception working per `openai/codex#18391`; Copilot row reflects 6 supported events (sessionStart, sessionEnd, userPromptSubmitted, preToolUse, postToolUse, errorOccurred) with the preToolUse-blocks vs postToolUse-output-ignored asymmetry named explicitly
+▸ GIVEN SPEC.md Section 7 per-runtime mechanism table WHEN read THEN every row points at current authoritative source URLs and the PROFILERA_PROFILE_DIR vs AGENTERA_HOME injection asymmetry is named as principled (one sentence per HEALTH Audit 14 finding 2 carry-forward)
+▸ GIVEN any other README or SPEC prose mentioning Codex/Copilot capability gaps WHEN read THEN it reflects current evidence (no stale "experimental disabled", "no canonical source verified", "unverified", or "no real-time interception" wording)
+▸ GIVEN this task changes prose only WHEN test files inspected THEN no new pytest cases are added
 
-### Task 2: Live-host smoke harness scaffold
+### Task 1b: Stale-claim cleanup — structured runtime metadata
 
-**Depends on**: none
+**Depends on**: Task 1a
 
-**Status**: ■ complete
-
-**Acceptance**:
-
-- GIVEN `scripts/smoke_live_hosts.py` is executed without flags WHEN the run completes THEN it runs the profilera Codex audit (Task 1 path) and delegates to `scripts/smoke_setup_helpers.py` and exits 0 with `PASS: all smoke checks passed` (no live CLI invocations)
-- GIVEN `scripts/smoke_live_hosts.py --live` is executed WHEN the run starts THEN it prints "Estimated cost: $0.20-1.00 across two model calls" and a one-line consent prompt that the user must accept before any subprocess CLI call
-- GIVEN `--live` mode runs WHEN each runtime CLI is probed THEN the harness distinguishes "not on PATH" (no `codex` binary) from "not authenticated" (binary present but auth probe times out at 30s) with distinct skip messages, and skipped sections do not fail the overall run
-- GIVEN the harness mutates `~/.codex/config.toml` or any shell rc THEN the original file content is copied to a tmp file BEFORE the mutation, the tmp path is logged, and the original is restored in a top-level `finally` block even on crash
-- GIVEN no live CLI is available on the host WHEN `--live` runs THEN both per-runtime sections skip cleanly and the run still exits 0 with a summary noting which sections were skipped and why
-- GIVEN the harness is the test surface (per Cycle 177 precedent) WHEN test files are inspected THEN no new pytest cases are added for the harness body itself
-
-### Task 3: Codex live-host AGENTERA_HOME and compaction smoke
-
-**Depends on**: Task 2
-
-**Status**: ■ complete
+**Status**: □ pending
 
 **Acceptance**:
 
-- GIVEN `--live` mode and a live `codex` CLI with valid auth WHEN the Codex section runs THEN exactly ONE `codex exec` invocation issues a combined prompt asking the agent to (a) print the value of `$AGENTERA_HOME` from a bash tool call AND (b) run `python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py progress <fixture-path>` against a pre-seeded PROGRESS.md fixture in a tmp dir
-- GIVEN the `codex exec` invocation completes WHEN the harness parses the output THEN it confirms (a) the printed AGENTERA_HOME value matches the install root that `setup_codex.py` wrote to the (snapshotted) tmp `~/.codex/config.toml`, and (b) the fixture file's modification time advanced and its content reflects compaction (line count reduced or `## Archived Cycles` heading present)
-- GIVEN the verification scope is `codex exec` non-interactive mode WHEN the harness reports results THEN the output explicitly states "verified under codex exec; interactive mode inferred via shell_environment_policy semantics" so the limitation is legible
-- GIVEN the test runs THEN the user's actual `~/.codex/config.toml` is byte-identical before and after the harness exits (verified via SHA256 comparison logged at exit)
-- GIVEN the harness fails for any reason mid-run WHEN the next invocation starts THEN the previous run's tmpfile snapshot is detected and restored automatically (or the harness refuses to start with a clear message naming the orphan snapshot file)
+▸ GIVEN `.codex-plugin/plugin.json` `lifecycleHooks` block WHEN read THEN `status` reflects current state (no longer `experimental-disabled`); `unsupportedEvents` array updated to reflect actually unsupported events only; `limitations` prose updated to remove stale "experimental, require host config opt-in" claims and add real-time apply_patch interception capability
+▸ GIVEN `.codex-plugin/plugin.json` `codex.limitations` array WHEN read THEN no entry claims hooks are unavailable for real-time Write/Edit interception; the AGENTERA_HOME setup limitation entry stays
+▸ GIVEN `agents/openai.yaml` and `skills/profilera/agents/openai.yaml` WHEN read THEN any `support.lifecycle_hooks` field that claims "experimental-disabled" is updated to reflect current state; per-skill metadata updates do not break existing `validate_lifecycle_adapters.py` checks
+▸ GIVEN this task touches structured metadata WHEN `python3 scripts/validate_lifecycle_adapters.py` runs THEN it reports `lifecycle adapter metadata ok` without new errors
+▸ GIVEN this task adds no functional code WHEN test files inspected THEN no new pytest cases are added
 
-### Task 4: Copilot live-host AGENTERA_HOME and compaction smoke
+### Task 2: Fix dead Copilot hook + SKILL.md frontmatter audit + README install-path swap
 
-**Depends on**: Task 2
+**Depends on**: Task 1a
 
-**Status**: ■ complete
-
-**Acceptance**:
-
-- GIVEN `--live` mode and a live `copilot` CLI with valid GitHub auth WHEN the Copilot section runs THEN exactly ONE `bash -c 'export AGENTERA_HOME=<tmp install root>; copilot -p "..." --allow-all-tools'` invocation issues the same combined prompt shape as Task 3 (echo AGENTERA_HOME + run compact_artifact.py via the bash-fallback form)
-- GIVEN the `copilot -p` invocation completes WHEN the harness parses the output THEN it confirms (a) the printed AGENTERA_HOME value matches the export, and (b) the pre-seeded fixture was compacted in place
-- GIVEN `--allow-all-tools` is required for non-interactive Copilot mode WHEN the consent prompt from Task 2 is displayed THEN it explicitly names the `--allow-all-tools` requirement so the user knows what permission they are granting
-- GIVEN the harness uses `bash -c 'export ...'` rather than sourcing the user's shell rc WHEN the test runs THEN the user's actual `~/.bashrc` (and any rc file) is byte-identical before and after the harness exits (verified via SHA256 comparison)
-- GIVEN no `gh auth status` equivalent exists for `copilot` WHEN auth probing runs THEN the harness uses a 30s-timeout deterministic prompt (e.g. "reply OK") and treats timeout as auth-required with a skip-with-guidance message
-
-### Task 5: Document manual verification protocol and surface the harness
-
-**Depends on**: Task 1, Task 2, Task 3, Task 4
-
-**Status**: ■ complete
+**Status**: □ pending
 
 **Acceptance**:
 
-- GIVEN README has Codex and Copilot setup sections WHEN the manual verification protocol section is read THEN each runtime has a copy-pasteable one-liner the user runs interactively to verify AGENTERA_HOME inheritance plus a one-liner that triggers a compaction script via the bash-fallback form
-- GIVEN README Scripts section WHEN the new `scripts/smoke_live_hosts.py` is added THEN the row names default mode (no cost), `--live` mode (one-line cost estimate), and which gaps it closes (Audit 15 finding 2)
-- GIVEN `.agentera/DOCS.md` Index section WHEN the new harness lands THEN it has a row at 2026-04-26 with `■ current` status alongside `smoke_setup_helpers.py` and `smoke_opencode_bootstrap.mjs`
-- GIVEN `.agentera/DOCS.md` Audit Log WHEN this task ships THEN one entry under "2026-04-26 (Live-Host Verification Task 5)" lists the README and DOCS surfaces touched with `(fixed)` status per the existing audit log convention
-- GIVEN no new functional code lands in this task WHEN test files are inspected THEN no new pytest cases are added (docs-only)
+▸ GIVEN `.github/hooks/stop.json` WHEN inspected THEN the file is renamed to `sessionEnd.json` with `name: sessionEnd` (or restructured to a single canonical `hooks.json` with `{version: 1, hooks: {...}}` shape per Copilot hooks spec); `.github/plugin/plugin.json` `hooks` field updated to point at the correct file or directory
+▸ GIVEN all 12 SKILL.md files WHEN frontmatter is inspected THEN no SKILL.md ends frontmatter with a `metadata:` field as the last entry; skills affected get a trailing harmless field appended (specifically `license: MIT` per Copilot bug `github/copilot-cli#951` workaround)
+▸ GIVEN README install instructions WHEN read THEN the granular install path (`copilot plugin marketplace add jgabor/agentera && copilot plugin install <skill>@agentera`) is documented as the recommended path until Copilot bug `github/copilot-cli#2390` lands upstream; the umbrella install (`copilot plugin install jgabor/agentera`) is retained as alternative with the bug caveat noted
+▸ GIVEN `python3 scripts/validate_spec.py` runs after the frontmatter audit WHEN inspected THEN reports `0 error(s), 0 warning(s) across 12 skills`
+▸ GIVEN this task adds no Python code WHEN test files inspected THEN no new pytest cases are added
 
-### Task 6: Plan-level freshness checkpoint and conditional version bump
+### Task 3: Codex apply_patch hook for real-time artifact validation
 
-**Depends on**: Task 1, Task 2, Task 3, Task 4, Task 5
+**Depends on**: Task 1b
 
-**Status**: ■ complete
+**Status**: □ pending
 
 **Acceptance**:
 
-- GIVEN `scripts/smoke_live_hosts.py` lands as a new repo-level utility (Tasks 2-4) WHEN DOCS.md `versioning.semver_policy` (`feat = minor`) is applied THEN the suite version bumps from 1.21.0 to 1.22.0 across every file in DOCS.md `version_files` (Copilot root `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `.opencode/plugins/agentera.js` AGENTERA_VERSION, `registry.json`, `.claude-plugin/marketplace.json` preserving the profilera entry without a version key, all 12 `skills/*/.claude-plugin/plugin.json`)
-- GIVEN the bump lands WHEN CHANGELOG.md is read THEN `## [Unreleased]` is promoted to `## [1.22.0] · 2026-04-26` and the release block lists the live-host smoke harness as Added and any profilera metadata reconciliation under Changed
-- GIVEN this plan's user-facing work has shipped WHEN CHANGELOG.md is checked THEN it has Added/Changed/Fixed entries under `## [1.22.0]` covering each task's user-visible impact (one short line per task, not commit messages verbatim)
-- GIVEN this plan is otherwise complete WHEN PROGRESS.md is checked THEN it has at least one cycle entry whose **What** field summarizes the plan and whose **Commits** field lists the commits this plan produced
-- GIVEN this plan is otherwise complete WHEN TODO.md is checked THEN any per-task follow-ups (e.g. duplicate-source_id deferral if surfaced by Task 1) are present as `[topic]`-prefixed Normal items, and the active milestone is advanced or removed
-- GIVEN this plan resolves Audit 15 finding 2 ("Codex and Copilot live-host AGENTERA_HOME inheritance still untested") WHEN HEALTH.md is read THEN the resolution is mentioned in the next audit entry (or, if no audit has run since, in this plan's PROGRESS.md cycle entry's **Discovered** field)
-- GIVEN this is a chore-build-config commit per SPEC Section 20 WHEN the Verified field is populated THEN it carries the `N/A: chore-build-config` allowlist tag plus validator outputs (`validate_spec.py`, `validate_lifecycle_adapters.py`, `generate_contracts.py --check`, `pytest`) as supporting evidence
+▸ GIVEN T3.0 setup gate WHEN any code is written THEN the Codex hook stdin JSON schema is captured first (from `openai/codex#18391` PR diff or a live `codex exec` apply_patch hook capture) and documented in the cycle's PROGRESS entry's Discovered field with explicit field-name and exit-code semantics; ONLY after this is the parser branch implemented
+▸ GIVEN a Codex hook config file at `hooks/codex-hooks.json` (or equivalent canonical path) WHEN inspected THEN it declares PreToolUse and PostToolUse entries with `apply_patch` matcher pointing at `hooks/validate_artifact.py` (or a thin Codex-shim wrapper) with the canonical Codex hook config schema
+▸ GIVEN `hooks/validate_artifact.py` (or its Codex shim) WHEN invoked from the Codex hook entry point THEN it accepts the captured Codex stdin JSON shape and returns the same exit-code semantics the Claude Code wiring expects (0 for valid, non-zero or `permissionDecision: deny` for blocking depending on Codex's actual schema)
+▸ GIVEN README hook setup section WHEN read THEN it documents the Codex hook configuration path and contents alongside the existing OpenCode curl one-liner; setup is a one-command path or a copy-paste block
+▸ GIVEN tests/test_validate_artifact.py (or new tests/test_codex_hook.py) WHEN pytest runs THEN at most 2 new test cases verify the Codex stdin parser (one valid input pass + one malformed input fail) per the test proportionality cap
+▸ GIVEN this task adds Python hook code WHEN validators run THEN `scripts/validate_spec.py` and `scripts/validate_lifecycle_adapters.py` both stay green
+
+### Task 4: Codex marketplace.json + agent stubs + setup_codex.py --enable-agents
+
+**Depends on**: Task 1a
+
+**Status**: □ pending
+
+**Acceptance**:
+
+▸ GIVEN `.agents/plugins/marketplace.json` WHEN inspected THEN it conforms to the Codex marketplace schema (`name`, `interface.displayName`, `plugins[]` with each plugin's `source.source: local` and `source.path` pointing at relative paths within the agentera repo) and lists all 12 skills as plugin entries
+▸ GIVEN per-skill `skills/<name>/agents/<name>.toml` files WHEN inspected THEN all 12 files exist as Codex agent definition stubs with `model`, `model_reasoning_effort`, and `developer_instructions` fields per the Codex agent.toml format; `developer_instructions` references the bundled SKILL.md path
+▸ GIVEN `scripts/setup_codex.py --enable-agents` WHEN invoked THEN it writes `[agents.<name>]` entries to `~/.codex/config.toml` for all 12 agentera skills, each pointing at the bundled `agents/<name>.toml` file path; idempotent re-run is a no-op; `--dry-run` previews without writing; `--force` resolves conflicts with existing `[agents.*]` entries
+▸ GIVEN README and SPEC.md Codex skill discovery paths WHEN read THEN the canonical user skill path is named as `$HOME/.agents/skills/` (not `~/.codex/skills/` which is system-bundled cache)
+▸ GIVEN tests/test_setup_codex.py WHEN pytest runs THEN at most 1 new test case verifies the `--enable-agents` flag writes the expected `[agents.*]` block (the additional case lives within T3's 2-case overall budget if needed; otherwise no new pytest cases are added since the existing setup_codex test surface covers the `[shell_environment_policy]` write path and `--enable-agents` reuses the same idempotent state-classifier)
+
+### Task 5: orkestrera runtime-aware dispatch documentation
+
+**Depends on**: Task 1a, Task 4
+
+**Status**: □ pending
+
+**Acceptance**:
+
+▸ GIVEN `skills/orkestrera/SKILL.md` cross-skill integration section WHEN read THEN dispatch-mechanism prose names Codex `[agents.<name>]` config tables as the conversational dispatch substrate; the existing "spawn the target skill as a background subagent" prose maps to Codex via the `setup_codex.py --enable-agents` install path from T4
+▸ GIVEN the same SKILL.md section WHEN read THEN the Copilot programmatic-dispatch gap is explicitly named (no in-session subagent tool call equivalent to Claude Code Task tool) with the user-driven `/fleet` workaround as the documented fallback for Copilot users running orkestrera
+▸ GIVEN any other SKILL.md that mentions subagent dispatch (realisera, optimera) WHEN inspected THEN the prose is consistent with orkestrera's runtime-aware framing; existing Claude Code-centric language gets a one-sentence per-runtime translation note where appropriate
+▸ GIVEN the existing dispatch protocol in orkestrera SKILL.md Step 2 WHEN read THEN the conductor-side instructions remain unchanged (the work is documentation honesty, not architectural rewrite); the SKILL.md prose continues to work natively on Claude Code Task tool, OpenCode plugin path, Codex `[agents.*]` (via T4 wiring), and degrades to user-driven `/fleet` on Copilot
+▸ GIVEN this task changes prose only WHEN test files inspected THEN no new pytest cases are added
+
+### Task 6: Live-host hook verification with --yes consent bypass
+
+**Depends on**: Task 3
+
+**Status**: □ pending
+
+**Acceptance**:
+
+▸ GIVEN `scripts/smoke_live_hosts.py` WHEN inspected THEN a `--yes` flag (or `AGENTERA_LIVE_CONSENT=1` env var) bypasses the interactive consent prompt for non-interactive realisera/orkestrera invocation; interactive sessions without the flag still see the prompt; the bypass logs explicit "auto-consented via flag" to the harness output for audit
+▸ GIVEN `scripts/smoke_live_hosts.py --live --yes` WHEN run THEN it issues exactly ONE additional codex exec invocation (beyond the existing AGENTERA_HOME echo + compaction) that triggers an apply_patch (e.g., a tiny tmpfile edit via the `apply_patch` tool) and verifies the new Codex apply_patch hook fired (PreToolUse and/or PostToolUse trace observable in the hook's logged output)
+▸ GIVEN the harness section runs WHEN it completes THEN distinct PASS/FAIL/SKIP messages distinguish "hook didn't fire" from "hook fired but returned non-zero" from "hook config absent"; total live model spend bounded at one codex exec invocation per runtime (Codex hook test only; Copilot section unchanged)
+▸ GIVEN the harness IS the test surface per Cycle 177 WHEN test files inspected THEN no new pytest cases are added beyond T3's 2-case budget
+▸ GIVEN T6 invokes live model spend WHEN executed THEN the user has pre-authorized this invocation via the plan dispatch; explicit cost is logged in the cycle's PROGRESS entry's Verified field
+
+### Task 7: Plan-level freshness checkpoint
+
+**Depends on**: Task 1a, Task 1b, Task 2, Task 3, Task 4, Task 5, Task 6
+
+**Status**: □ pending
+
+**Acceptance**:
+
+▸ GIVEN CHANGELOG.md `## [1.20.0] · 2026-04-27` block WHEN read THEN it carries a one-line preamble noting "Scope refined post-research to address verified cross-runtime parity gaps; consolidates Move 1 renumber and Move 2 parity completion per explicit user direction"; the block is augmented in place (NOT promoted from Unreleased; NO new version bump) with this plan's user-visible changes added under the existing Added/Changed sections
+▸ GIVEN PROGRESS.md WHEN read THEN at least one cycle entry summarizes this plan at the plan level (not per-task restatement) with a Commits field listing every commit the plan produced (substantive + SHA-pin pairs across T1a–T6 plus this checkpoint)
+▸ GIVEN TODO.md WHEN read THEN `[copilot-marketplace]` is moved to Resolved with citation to the capabilities research that proved the path verified working; new TODOs filed as Normal items: `[awesome-copilot-pr]` (PR submission to `github/awesome-copilot`), `[awesome-codex-plugins-pr]` (PR submission to `hashgraph-online/awesome-codex-plugins`), `[copilot-hook-event-name-validator]` (small lint rule preventing future dead-hook regressions like the original `stop.json` typo)
+▸ GIVEN HEALTH.md WHEN read THEN this plan's resolution of any prior-audit findings about Codex/Copilot capability claims is mentioned in the plan's PROGRESS cycle entry's Discovered field; no new audit required during the plan
+▸ GIVEN `.agentera/archive/` WHEN inspected THEN the prior Live-Host Verification PLAN.md is archived as `.agentera/archive/PLAN-2026-04-26-live-host-verification.md`; this archival happens at planera time (before T1a starts), not at T7
+▸ GIVEN every file in DOCS.md `version_files` WHEN inspected THEN every surface still reads `"version": "1.20.0"` (no bump occurred during the plan); `grep -c '"version": "1.21.0"'` returns 0 across all version_files
+▸ GIVEN Move 3 push-readiness verification WHEN inspected THEN working tree is clean post-T1b through T6, no `v1.20.0` tag exists upstream (`git ls-remote --tags origin v1.20.0` returns empty), all four validators report green (validate_spec.py, validate_lifecycle_adapters.py, generate_contracts.py --check, pytest)
+▸ GIVEN this is a chore-build-config + docs commit per SPEC Section 19 WHEN the Verified field is populated THEN it carries the `N/A: chore-build-config` allowlist tag plus all four validator outputs as supporting evidence
 
 ## Overall Acceptance
 
-- GIVEN a user runs `python3 scripts/smoke_live_hosts.py` on this host with both `codex` and `copilot` authenticated and on PATH WHEN they pass `--live` and accept the consent prompt THEN the harness exits 0 with `PASS: all smoke checks passed` after exercising both runtimes' AGENTERA_HOME inheritance AND a SKILL.md-cited compaction command end-to-end with at most two model calls total
-- GIVEN a user has neither `codex` nor `copilot` available WHEN they run `python3 scripts/smoke_live_hosts.py --live` THEN both per-runtime sections skip with clear "binary not on PATH" messages, the profilera audit still runs, and the harness exits 0 with a skipped-sections summary
-- GIVEN the user's `~/.codex/config.toml` and shell rc files exist before the harness runs WHEN the harness exits (success or failure) THEN those files are byte-identical to their pre-run state, verified via SHA256
-- GIVEN the Codex profilera collection works against the live `~/.codex/history.jsonl` WHEN `.codex-plugin/plugin.json` `requiredCapabilities[].status` is inspected THEN it reflects the verified state rather than the unverified `degraded` placeholder
-- GIVEN HEALTH.md Audit 15 finding 2 (live-host inheritance, conf 50) is the trigger for this plan WHEN the next inspektera audit runs THEN it can mark the finding resolved with reference to the live smoke harness and the manual verification protocol
+▸ GIVEN a user reads the agentera README on 2026-04-27 WHEN they look at the runtime support and lifecycle hook tables THEN every claim is verifiable against current Codex/Copilot/OpenCode/Claude Code documentation; no stale "experimental", "unverified", or "no canonical source" wording remains for capabilities that have shipped
+▸ GIVEN a Codex user installs agentera and edits an artifact WHEN apply_patch fires THEN the Codex hook config triggers `validate_artifact.py` in real time (parity with Claude Code PostToolUse and OpenCode `tool.execute.after`)
+▸ GIVEN a Codex user runs `codex plugin marketplace add jgabor/agentera` then `codex plugin install <skill>@agentera` WHEN the install completes THEN the skill resolves via `.agents/plugins/marketplace.json` (cross-runtime install symmetry with Copilot's verified granular path)
+▸ GIVEN a Codex user runs `python3 scripts/setup_codex.py --enable-agents` WHEN the next interactive `codex` session starts THEN `[agents.<name>]` entries map agentera skill names to bundled SKILL.md paths so orkestrera's "spawn a subagent" prose dispatches natively
+▸ GIVEN orkestrera SKILL.md WHEN read on any of the four runtimes THEN the dispatch protocol either works natively (Claude Code Task tool, OpenCode plugin, Codex `[agents.*]` post-T4 setup) or honestly documents the gap with a workaround (Copilot user-driven `/fleet`)
+▸ GIVEN this plan completes WHEN the suite is at 1.20.0 still un-pushed THEN Move 3 (push + tag `v1.20.0`) is the next move; no new release block needed in CHANGELOG; the TODO list contains the aggregator-PR follow-ups
 
 ## Surprises
 
-- Task 1 (2026-04-26): The 21 duplicate-source_id corpus errors that block `extract_all.py` from writing corpus.json are entirely from `claude-code/conversation_turn` (39 records contributing to 18 duplicate groups, including three triple-duplicates), not Codex. Codex extraction itself is healthy: 252 history_prompt records and 1 project_config_signal record land in the in-memory corpus, with `instruction_document` and `conversation_turn` families correctly reported as `missing` (no documented surface and empty `~/.codex/sessions` respectively). Per Task 1 constraints, the claude-code root cause was filed as TODO `[claude-code-extract-duplicate-source-ids]` (out-of-scope patch path) rather than fixed inline; root cause documented in the TODO entry. Codex `requiredCapabilities[codex_session_corpus].status` was updated `degraded` → `ok` with action text reflecting the verified extraction path because the audit confirmed Codex records DO land in the corpus when produced — the unrelated claude-code blocker is not a Codex limitation and using it to keep `degraded` would misrepresent reality.
+[Empty; populated by realisera during execution when reality diverges from plan]
