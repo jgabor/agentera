@@ -17,7 +17,14 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 
-COPILOT_EVENTS = {"sessionStart", "postToolUse", "sessionEnd"}
+COPILOT_EVENTS = {
+    "sessionStart",
+    "sessionEnd",
+    "userPromptSubmitted",
+    "preToolUse",
+    "postToolUse",
+    "errorOccurred",
+}
 CODEX_EVENTS = {
     "SessionStart",
     "Stop",
@@ -142,12 +149,16 @@ def validate_copilot_hooks(plugin_root: Path, plugin: dict[str, Any]) -> list[st
         for path in sorted(hook_dir.glob("*.json")):
             hook = _load_json(path)
             event = hook.get("name")
+            if path.stem not in COPILOT_EVENTS:
+                errors.append(f"copilot: unsupported lifecycle hook file configured: {path.name}")
             if not isinstance(event, str):
                 errors.append(f"copilot.{path.name}: hook name must be a string")
                 continue
             if event not in COPILOT_EVENTS:
                 errors.append(f"copilot: unsupported lifecycle event configured: {event}")
                 continue
+            if path.stem != event:
+                errors.append(f"copilot.{path.name}: hook filename must match event name {event}")
             if event != event[:1].lower() + event[1:]:
                 errors.append(f"copilot: event must be lower-camel: {event}")
             _validate_command_handler(errors, "copilot", event, 0, hook)
