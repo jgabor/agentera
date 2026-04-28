@@ -78,7 +78,7 @@ Skill-local scripts remain owned by their skills. Suite-level tools such as doct
 ### Task 4: Doctor Smoke Evidence
 
 **Depends on**: Task 3
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN no live model permission is supplied WHEN smoke checks run THEN no live model call is attempted.
 ▸ GIVEN bounded smoke checks run WHEN helper and hook surfaces are available THEN they prove artifact validation and helper reachability.

@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 210 · 2026-04-28 21:09 · feat(setup): add doctor smoke evidence
+
+**Phase**: implementation
+**What**: Completed Task 4 of the Unified Setup Bundle Doctor And Installer plan. `scripts/setup_doctor.py --smoke` now adds bounded offline evidence for shared helper reachability, artifact-hook validation, and runtime host availability while recording that no live model calls were attempted.
+**Commit**: this commit, `feat(setup): add doctor smoke evidence`
+**Inspiration**: Active PLAN.md Task 4 and Decision 33. Doctor should prove setup surfaces without crossing into installer writes or live model spend.
+**Discovered**: The artifact hook can prove validation non-mutatingly by denying a synthetic invalid TODO.md pre-write candidate, so doctor smoke does not need to create user-facing artifacts.
+**Verified**: `python3 -m pytest tests/test_setup_doctor.py -q` passed with 7 tests covering smoke success, helper failure, hook failure, host-binary skip, and no live host subprocess invocation. `python3 scripts/setup_doctor.py --smoke --runtime codex --json` returned `modelCallsAttempted: false` with helper, hook, and host smoke evidence. `PATH=/tmp/agentera-empty-path /usr/bin/python3 scripts/setup_doctor.py --smoke --runtime codex` marked the Codex host smoke skip while helper and hook smoke checks passed.
+**Next**: Task 5, Confirmed-Write Installer.
+**Context**: intent (execute only Task 4) · constraints (no installer writes, no version bump, no docs refresh, default no-live model behavior, commit locally) · unknowns (installer will decide confirmed-write planning and post-write doctor re-run shape) · scope (`scripts/setup_doctor.py`, focused doctor tests, PLAN, PROGRESS, CHANGELOG).
+
 ■ ## Cycle 209 · 2026-04-28 21:00 · feat(setup): add non-mutating setup doctor
 
 **Phase**: implementation
@@ -88,30 +99,10 @@
 **Next**: Task 4, Single 1.20.0 Release Metadata.
 **Context**: intent (complete only Task 3 by creating the tracked parity reference and aligning README with it) · constraints (no Task 4 release metadata fold-down, keep OpenCode preload deferred, avoid universal hard-gate parity claims, update DOCS and PLAN, commit locally) · unknowns (none after comparing the hook configs and validator implementation) · scope (`references/adapters/runtime-feature-parity.md`, README, Codex plugin metadata, DOCS, PLAN, PROGRESS).
 
-■ ## Cycle 201 · 2026-04-28 12:55 · fix(opencode): preserve empty prewrite candidates
-
-**Phase**: implementation retry
-**What**: Closed the failed Task 2 retry gap. OpenCode pre-write candidate reconstruction now chooses the first string-valued argument by presence, so `content: ""` and `newString: ""` remain valid candidates instead of being skipped by truthiness fallback. The existing single deny smoke branch now denies an empty `.agentera/HEALTH.md` write while the allow and non-artifact no-op branches stay intact. Task 2 remains complete because the retry blocks reconstructable empty-string invalid artifacts before mutation and preserves the session event behavior.
-**Commit**: 3f9de12 `fix(opencode): preserve empty prewrite candidates`
-**Inspiration**: Evaluator finding for Task 2: OpenCode `write` and `edit` payloads with empty-string candidates were allowed because `args.content || ...` and `args.newString || ...` treated empty strings as missing.
-**Discovered**: The hard gate logic was structurally correct, but candidate selection needed presence semantics instead of truthiness semantics. No Task 3 work was needed.
-**Verified**: `node scripts/smoke_opencode_bootstrap.mjs` passed and now covers the capped pre-write smoke branches: empty-string invalid artifact write denied, valid artifact write allowed, and non-artifact write no-op, plus preserved `session.idle` SESSION.md bookmark write and `session.created` no-op behavior. Manual OpenCode-shaped `edit` probe with `newString: ""` deleting `## Audit 1` from `.agentera/HEALTH.md` returned `PASS: empty-string edit candidate denied`. `node --check .opencode/plugins/agentera.js` passed. `python3 scripts/generate_contracts.py --check` passed with 12 current contracts. `python3 scripts/validate_spec.py` passed with 0 errors and 0 warnings. `python3 scripts/validate_lifecycle_adapters.py` printed `lifecycle adapter metadata ok`. `python3 -m pytest -q` passed with 449 tests.
-**Next**: Task 3, Tracked Feature Parity Reference.
-**Context**: intent (retry only failed Task 2 edge case) · constraints (preserve smoke cap one allow/deny/no-op branch, no Task 3 work, keep generic OpenCode event lifecycle and no preload claim, commit locally, no push) · unknowns (`apply_patch` patchText full-content reconstruction remains deferred) · scope (`.opencode/plugins/agentera.js`, `scripts/smoke_opencode_bootstrap.mjs`, `.agentera/PROGRESS.md`).
-
-■ ## Cycle 200 · 2026-04-28 12:48 · fix(opencode): hard gate artifact prewrites
-
-**Phase**: implementation
-**What**: Completed Task 2 of the v1.20 parity plan. OpenCode now exposes `tool.execute.before` alongside the existing generic `event`, `shell.env`, and `tool.execute.after` hooks. The pre-write hook reconstructs write/edit artifact candidates from OpenCode args, delegates candidate validation to `hooks/validate_artifact.py`, and throws an error to block invalid artifact content before mutation. Valid artifact candidates and non-artifact edits continue. The session lifecycle behavior from Cycle 197 is preserved: `session.idle` still writes SESSION.md bookmarks, and `session.created` remains a documented no-op because no model-context injection path is proven. Docs now state the `apply_patch` patchText limitation rather than claiming universal hard-gate parity.
-**Commit**: 9431fe7 `fix(opencode): hard gate artifact prewrites`
-**Inspiration**: Active `.agentera/PLAN.md` Task 2 plus OpenCode plugin docs and local `@opencode-ai/plugin` types. Official docs show `tool.execute.before` can mutate args or throw to block, list `session.idle` as an `event` payload, and note `apply_patch` uses `output.args.patchText`.
-**Discovered**: OpenCode has enough documented surface for a conditional hard gate on reconstructable write/edit candidates. It does not yet give this adapter a full-content candidate for `apply_patch` patchText, so that path stays allowed and explicitly documented as evidence-insufficient.
-**Verified**: `python3 scripts/generate_contracts.py --check` passed with 12 current contracts. `python3 scripts/validate_spec.py` passed with 0 errors and 0 warnings. `python3 scripts/validate_lifecycle_adapters.py` printed `lifecycle adapter metadata ok`. `node --check .opencode/plugins/agentera.js` passed. `node scripts/smoke_opencode_bootstrap.mjs` passed and covered pre-write deny, allow, and no-op branches plus idle bookmark write and created-event no-op. `python3 -m pytest -q` passed with 449 tests.
-**Next**: Task 3, Tracked Feature Parity Reference.
-**Context**: intent (close only Task 2) · constraints (stdlib-only Python, preserve generic OpenCode event lifecycle, no model-visible preload claim, test cap one allow/deny/no-op smoke branch, no Task 3 work) · unknowns (`apply_patch` patchText full-content reconstruction remains deferred) · scope (`.opencode/plugins/agentera.js`, shared artifact validator, OpenCode smoke, lifecycle validator/tests, README, adapter reference, CHANGELOG, DOCS, PLAN, PROGRESS).
-
 ## Archived Cycles
 
+- Cycle 201 (2026-04-28): fix(opencode): preserve empty prewrite candidates
+- Cycle 200 (2026-04-28): fix(opencode): hard gate artifact prewrites
 - Cycle 199 (2026-04-28): fix(copilot): hard gate artifact prewrites
 - Cycle 198 (2026-04-27): fix(copilot): validate documented hook event names
 - Cycle 197 (2026-04-27): fix(opencode): restore session bookmarks via event hook
@@ -151,4 +142,3 @@
 - Cycle 163 (2026-04-26): feat(usage): detect skill invocations and pair with exit signals
 - Cycle 162 (2026-04-26): feat(validator): accept arbitrary SKILL.md paths for third-party authoring
 - Cycle 161 (2026-04-25): chore(plan): checkpoint copilot marketplace freshness
-- Cycle 160 (2026-04-25): docs(release): apply copilot release convention

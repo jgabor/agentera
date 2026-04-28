@@ -7,6 +7,7 @@
 - Runtime package metadata now declares the Agentera suite bundle surface for Claude Code, Codex, Copilot, and OpenCode, with validation that shared skills, scripts, hooks, manifests, and docs resolve from one install root.
 - Packaged executable suite scripts now use uv script headers with stdlib-only inline metadata, and lifecycle validation catches missing shebangs, missing metadata, non-empty dependencies, and missing uv runtime guidance.
 - `scripts/setup_doctor.py` now diagnoses the Agentera install root and Claude Code, OpenCode, Copilot, and Codex helper-script access without writing files, with stable JSON output for downstream tools.
+- `scripts/setup_doctor.py --smoke` now runs bounded offline helper, artifact-hook, and host-binary smoke checks with human-readable and JSON evidence.
 
 ## [1.20.1] · 2026-04-28
 

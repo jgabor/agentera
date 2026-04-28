@@ -1,6 +1,7 @@
 """Tests for the non-mutating setup doctor.
 
 Task 3 cap: one pass, one warn/fail, and one skip per runtime family.
+Task 4 cap: one success and one failure branch per smoke-check category.
 """
 
 from __future__ import annotations
@@ -175,3 +176,112 @@ def test_setup_doctor_cli_json_is_stable_and_non_mutating(tmp_path: Path) -> Non
     assert before == after == []
     assert payload["schemaVersion"] == doctor.SCHEMA_VERSION
     assert payload["summary"] == {"fail": 0, "pass": 0, "skip": 4, "warn": 0}
+
+
+def test_setup_doctor_smoke_proves_helpers_hooks_and_host_status_without_live_calls(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    doctor = _load_doctor()
+    real_run = doctor.subprocess.run
+    calls: list[list[str]] = []
+
+    def record_run(command, *args, **kwargs):
+        executable = Path(command[0]).name
+        assert executable not in set(doctor.RUNTIME_BINARIES.values())
+        calls.append(list(command))
+        return real_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(doctor.subprocess, "run", record_run)
+    path = _path_with_binary(tmp_path, "codex")
+
+    report = doctor.build_report(
+        install_root=REPO_ROOT,
+        env={"PATH": path},
+        runtimes=("codex", "copilot"),
+        run_smoke=True,
+    )
+    smoke = report["smoke"]
+    smoke_by_name = {check["name"]: check for check in smoke["checks"]}
+
+    assert report["ok"] is True
+    assert smoke["modelCallsAttempted"] is False
+    assert smoke_by_name["helper.validate_spec"]["status"] == "pass"
+    assert smoke_by_name["hook.artifact_validation"]["status"] == "pass"
+    assert smoke_by_name["host.codex"]["status"] == "pass"
+    assert smoke_by_name["host.copilot"]["status"] == "skip"
+    assert len(calls) == 2
+
+
+def test_setup_doctor_smoke_helper_failure_is_visible_in_human_and_json(
+    tmp_path: Path,
+) -> None:
+    doctor = _load_doctor()
+    root = tmp_path / "agentera"
+    _write_install_root(root, doctor)
+    skill = root / "skills" / "realisera" / "SKILL.md"
+    skill.parent.mkdir(parents=True, exist_ok=True)
+    skill.write_text("---\nname: realisera\n---\n", encoding="utf-8")
+    (root / "scripts" / "validate_spec.py").write_text(
+        "import sys\nprint('fixture helper failed')\nsys.exit(7)\n",
+        encoding="utf-8",
+    )
+    (root / "hooks" / "validate_artifact.py").write_text(
+        "import json\n"
+        "print(json.dumps({"
+        "'permissionDecision': 'deny', "
+        "'permissionDecisionReason': 'fixture'"
+        "}))\n",
+        encoding="utf-8",
+    )
+
+    report = doctor.build_report(
+        install_root=root,
+        env={"PATH": ""},
+        runtimes=(),
+        run_smoke=True,
+    )
+    human = doctor.render_human(report)
+    helper = next(
+        check for check in report["smoke"]["checks"] if check["category"] == "helper"
+    )
+
+    assert report["ok"] is False
+    assert helper["status"] == "fail"
+    assert "validate_spec.py exited 7" in helper["message"]
+    assert "helper.validate_spec: fail" in human
+
+
+def test_setup_doctor_smoke_hook_failure_is_visible_in_human_and_json(
+    tmp_path: Path,
+) -> None:
+    doctor = _load_doctor()
+    root = tmp_path / "agentera"
+    _write_install_root(root, doctor)
+    skill = root / "skills" / "realisera" / "SKILL.md"
+    skill.parent.mkdir(parents=True, exist_ok=True)
+    skill.write_text("---\nname: realisera\n---\n", encoding="utf-8")
+    (root / "scripts" / "validate_spec.py").write_text(
+        "import sys\nsys.exit(0)\n",
+        encoding="utf-8",
+    )
+    (root / "hooks" / "validate_artifact.py").write_text(
+        "import json\nprint(json.dumps({'permissionDecision': 'allow'}))\n",
+        encoding="utf-8",
+    )
+
+    report = doctor.build_report(
+        install_root=root,
+        env={"PATH": ""},
+        runtimes=(),
+        run_smoke=True,
+    )
+    human = doctor.render_human(report)
+    hook = next(
+        check for check in report["smoke"]["checks"] if check["category"] == "hook"
+    )
+
+    assert report["ok"] is False
+    assert hook["status"] == "fail"
+    assert "allowed an invalid TODO.md candidate" in hook["message"]
+    assert "hook.artifact_validation: fail" in human
