@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-28 (OpenCode pre-write gate checkpoint) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-28 (runtime parity reference checkpoint) -->
 
 ## Conventions
 
@@ -65,6 +65,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Copilot repo plugin manifest | .github/plugin/plugin.json | 2026-04-27 | ■ current |
 | Codex plugin manifest | .codex-plugin/plugin.json | 2026-04-27 | ■ current |
 | OpenCode adapter reference | references/adapters/opencode.md | 2026-04-28 | ■ current |
+| Runtime parity reference | references/adapters/runtime-feature-parity.md | 2026-04-28 | ■ current |
 | Codex UI metadata | skills/&lt;name&gt;/agents/openai.yaml; agents/openai.yaml | 2026-04-24 | ■ current |
 | Hooks registry | hooks/hooks.json | 2026-04-03 | ■ current |
 | Lifecycle adapter validator | scripts/validate_lifecycle_adapters.py | 2026-04-28 | ■ current |
@@ -90,6 +91,12 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Tests**: 449 tests across 17 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-28 (runtime parity reference checkpoint)
+
+- [gap] Release-relevant runtime parity comparison lived only in plan context; added a tracked adapter reference with explicit Claude Code, OpenCode, Copilot, and Codex behavior · warning (fixed)
+- [misaligned] README overclaimed Codex lifecycle and hard-gate behavior; it now limits Codex to shipped `apply_patch` validation hooks and names missing final-content reconstruction · warning (fixed)
+- [guard] Hard-gate parity language is scoped to reconstructable OpenCode and Copilot artifact candidates; Claude Code and Codex remain advisory validation surfaces · info (fixed)
 
 ### 2026-04-28 (OpenCode pre-write gate checkpoint)
 

@@ -20,8 +20,8 @@
     "status": "stable",
     "configured": false,
     "limitations": [
-      "codex_hooks ships stable and default-on as of v0.124.0 (2026-04-23). Real-time apply_patch Write/Edit interception is wired through PreToolUse and PostToolUse per openai/codex#18391 (merged 2026-04-22), giving artifact-validation parity with Claude Code PostToolUse.",
-      "agentera does not currently bundle a Codex hooks config file. Users wire hooks manually via ~/.codex/hooks.json (user) or <repo>/.codex/hooks.json (project), or inline as [hooks] tables in config.toml. Plugin-bundled wiring is tracked under Task 3 of the Cross-Runtime Parity Completion plan."
+      "codex_hooks ships stable and default-on as of v0.124.0 (2026-04-23). The bundled hooks/codex-hooks.json wires apply_patch PreToolUse and PostToolUse handlers per openai/codex#18391 (merged 2026-04-22).",
+      "The shipped Codex hook config validates touched artifact paths through hooks/validate_artifact.py, but it does not reconstruct final patch content for hard-gate validation. SessionStart and Stop are supported by the runtime but are not wired by the bundled config."
     ],
     "supportedEvents": [
       "SessionStart",

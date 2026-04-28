@@ -68,7 +68,7 @@ The release layer folds all version surfaces back to `1.20.0`, verifies the fina
 ### Task 3: Tracked Feature Parity Reference
 
 **Depends on**: Task 1, Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the parity comparison is release-relevant WHEN the repo is checked THEN it lives at a tracked adapter-reference path.
 ▸ GIVEN README and the parity reference are read WHEN runtime behavior is compared THEN Copilot, OpenCode, Codex, and Claude claims agree.
