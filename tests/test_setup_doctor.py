@@ -54,6 +54,15 @@ def _path_with_binary(tmp_path: Path, binary: str) -> str:
     return str(bin_dir)
 
 
+def _path_with_non_executable_binary(tmp_path: Path, binary: str) -> str:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir(exist_ok=True)
+    executable = bin_dir / binary
+    executable.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    os.chmod(executable, 0o644)
+    return str(bin_dir)
+
+
 def _base_env(path: str, **extra: str) -> dict[str, str]:
     env = {"PATH": path}
     env.update(extra)
@@ -285,3 +294,52 @@ def test_setup_doctor_smoke_hook_failure_is_visible_in_human_and_json(
     assert hook["status"] == "fail"
     assert "allowed an invalid TODO.md candidate" in hook["message"]
     assert "hook.artifact_validation: fail" in human
+
+
+def test_setup_doctor_smoke_runtime_host_failure_is_visible_at_process_level(
+    tmp_path: Path,
+) -> None:
+    doctor = _load_doctor()
+    home = tmp_path / "home"
+    home.mkdir()
+    path = _path_with_non_executable_binary(tmp_path, "codex")
+    command = [
+        sys.executable,
+        str(REPO_ROOT / "scripts" / "setup_doctor.py"),
+        "--install-root",
+        str(REPO_ROOT),
+        "--home",
+        str(home),
+        "--runtime",
+        "codex",
+        "--smoke",
+    ]
+
+    human = subprocess.run(
+        command,
+        env={"PATH": path},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    machine = subprocess.run(
+        [*command, "--json"],
+        env={"PATH": path},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    payload = json.loads(machine.stdout)
+    host = next(
+        check for check in payload["smoke"]["checks"] if check["category"] == "runtime_host"
+    )
+
+    assert human.returncode == 1
+    assert machine.returncode == 1
+    assert "host.codex: fail" in human.stdout
+    assert "PATH candidate is not executable" in human.stdout
+    assert payload["ok"] is False
+    assert host["status"] == "fail"
+    assert "PATH candidate is not executable" in host["message"]
+    assert "runtime host was not invoked" in host["details"]
+    assert payload["smoke"]["modelCallsAttempted"] is False

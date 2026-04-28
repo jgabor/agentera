@@ -263,6 +263,22 @@ def _binary_path(runtime: str, env: Mapping[str, str]) -> str | None:
     return shutil.which(RUNTIME_BINARIES[runtime], path=env.get("PATH"))
 
 
+def _runtime_host_path_problem(
+    runtime: str,
+    env: Mapping[str, str],
+) -> tuple[Path, str] | None:
+    binary = RUNTIME_BINARIES[runtime]
+    for entry in env.get("PATH", "").split(os.pathsep):
+        if not entry:
+            continue
+        candidate = Path(entry) / binary
+        if candidate.is_dir():
+            return candidate, f"{binary} PATH candidate is a directory, not an executable"
+        if candidate.exists() and not os.access(candidate, os.X_OK):
+            return candidate, f"{binary} PATH candidate is not executable"
+    return None
+
+
 def _runtime_result(
     runtime: str,
     env: Mapping[str, str],
@@ -476,6 +492,23 @@ def _run_runtime_host_smokes(
     for runtime in runtimes:
         binary = _binary_path(runtime, env)
         if binary is None:
+            path_problem = _runtime_host_path_problem(runtime, env)
+            if path_problem is not None:
+                path, message = path_problem
+                checks.append(
+                    _smoke_check(
+                        f"host.{runtime}",
+                        "runtime_host",
+                        "fail",
+                        message,
+                        path=path,
+                        details=[
+                            "runtime host was not invoked",
+                            "no live model call attempted",
+                        ],
+                    )
+                )
+                continue
             checks.append(
                 _smoke_check(
                     f"host.{runtime}",
