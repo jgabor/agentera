@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 213 · 2026-04-28 21:38 · chore(release): bump suite to 1.21.0
+
+**Phase**: release metadata
+**What**: Completed Task 6 of the Unified Setup Bundle Doctor And Installer plan. Applied the DOCS.md `feat = minor` policy by bumping suite version surfaces from `1.20.1` to `1.21.0`, promoted setup changelog entries into `1.21.0`, and marked Task 6 complete.
+**Commit**: this commit, `chore(release): bump suite to 1.21.0`
+**Inspiration**: Active PLAN.md Task 6. The setup bundle, doctor, smoke, and installer work landed as feature commits after `1.20.1`, so the suite metadata needed the next minor release identifier.
+**Discovered**: `.agents/plugins/marketplace.json` is listed in DOCS.md `version_files` but carries no standalone release version field; the scan left that Codex marketplace index schema unchanged while requiring every actual suite version field to read `1.21.0`.
+**Verified**: A stdlib JSON/version scan checked the DOCS.md version targets and reported 40 suite version fields matching `1.21.0`, with registry schema version `1` excluded and no release field in `.agents/plugins/marketplace.json`. `rg -n '1\.20\.1'` across those targets returned no matches. `python3 scripts/generate_contracts.py --check` passed with 12 current contracts. `python3 scripts/validate_spec.py` passed with 0 errors and 0 warnings. `python3 scripts/validate_lifecycle_adapters.py` printed `lifecycle adapter metadata ok`. `node --check .opencode/plugins/agentera.js` passed. `node scripts/smoke_opencode_bootstrap.mjs` printed `PASS: all smoke checks passed`. `python3 -m pytest -q` passed with 477 tests.
+**Next**: Task 7, Documentation Refresh.
+**Context**: intent (execute only Task 6 version metadata) · constraints (no README or setup guidance refresh, no Task 8 freshness sweep, no remote push, commit locally) · unknowns (Task 7 will decide release-facing setup guidance) · scope (version targets from DOCS.md, CHANGELOG, PLAN, PROGRESS).
+
 ■ ## Cycle 212 · 2026-04-28 21:29 · feat(setup): add confirmed doctor installer
 
 **Phase**: implementation
@@ -99,19 +110,9 @@
 **Next**: Task 6, Plan-Level Freshness And Publish.
 **Context**: intent (complete only Task 5 release verification) · constraints (no publish, no tag changes, no Task 6 freshness sweep, keep release version at 1.20.0, avoid live model spend) · unknowns (none after unavailable live-host smoke and full verification) · scope (`scripts/validate_lifecycle_adapters.py`, `tests/test_runtime_adapters.py`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
 
-■ ## Cycle 203 · 2026-04-28 13:17 · chore(release): fold metadata to 1.20.0
-
-**Phase**: release metadata
-**What**: Completed Task 4 of the v1.20 parity plan. Folded local suite metadata back to the single pre-tag `1.20.0` identifier across DOCS.md version targets. Removed the standalone `1.20.1` changelog section and folded the OpenCode session-events fix into the existing `1.20.0` Fixed list. Rewrote TODO release claims so setup helpers and session-event work ship under folded `1.20.0` release metadata. Refreshed DOCS release index rows and marked Task 4 complete.
-**Commit**: this commit, `chore(release): fold metadata to 1.20.0`
-**Inspiration**: Active `.agentera/PLAN.md` Task 4. The release is still pre-tag, so local patch/minor claims needed one coherent 1.20.0 story.
-**Discovered**: `registry.json` has a schema-level `"version": "1"` that is not a suite release surface. The version-file check preserves it while requiring all skill and adapter release entries to read `1.20.0`.
-**Verified**: N/A: chore-build-config. Metadata checks passed. A stdlib JSON/version scan checked 18 version files and reported all suite version surfaces read `1.20.0`, with registry schema version `1` preserved. A changelog count check reported one `1.20.0` section and zero `1.20.1` sections. `rg -n "1\.20\.1|1\.21\.0|1\.22\.0"` across TODO, README, AGENTS, CLAUDE, CHANGELOG, DOCS, references, docs, and version files returned no matches. A DOCS check confirmed `449 tests across 17 files` plus 2026-04-28 release index rows for registry, marketplace, Copilot manifests, and Codex manifest. `python3 scripts/validate_spec.py` passed with 0 errors and 0 warnings across 12 skills. `python3 scripts/validate_lifecycle_adapters.py` printed `lifecycle adapter metadata ok`. `node --check .opencode/plugins/agentera.js` passed.
-**Next**: Task 5, Release Verification Surface.
-**Context**: intent (complete only Task 4 release metadata fold-down) · constraints (no Task 5 verification sweep, no publish, no tags, no normal patch bump, commit locally) · unknowns (none after DOCS version_files and release-facing docs checks) · scope (`plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, `registry.json`, `skills/*/.claude-plugin/plugin.json`, `CHANGELOG.md`, `TODO.md`, `.agentera/DOCS.md`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
-
 ## Archived Cycles
 
+- Cycle 203 (2026-04-28): chore(release): fold metadata to 1.20.0
 - Cycle 202 (2026-04-28): docs(runtime): add tracked parity reference
 - Cycle 201 (2026-04-28): fix(opencode): preserve empty prewrite candidates
 - Cycle 200 (2026-04-28): fix(opencode): hard gate artifact prewrites
@@ -151,4 +152,3 @@
 - Cycle 166 (2026-04-26): docs(usage): document scripts/usage_stats.py across README, DOCS.md, AGENTS.md
 - Cycle 165 (2026-04-26): feat(usage): emit USAGE.md, stdout summary, and JSON
 - Cycle 164 (2026-04-26): feat(usage): classify trigger phrasing and scope by project
-- Cycle 163 (2026-04-26): feat(usage): detect skill invocations and pair with exit signals

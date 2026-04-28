@@ -8,7 +8,7 @@ import { execFileSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
-export const AGENTERA_VERSION = "1.20.1";
+export const AGENTERA_VERSION = "1.21.0";
 
 export const COMMAND_TEMPLATES = {
   "hej": `---
