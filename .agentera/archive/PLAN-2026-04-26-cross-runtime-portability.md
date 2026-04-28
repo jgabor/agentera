@@ -20,7 +20,7 @@ The fix standardizes on `AGENTERA_HOME` as the single env var that names the age
 
 VISION.md Direction (line 55): "any agent runtime that speaks the protocol can run the portable core of agentera." Today an OpenCode user sees no agentera slash commands and no working compaction. Codex users had no path either. Copilot users were on the same broken footing. The portable core was Claude-Code-only by accident of one hardcoded env var.
 
-Fixing this means doing the right thing per each runtime's conventions, not inventing a new abstraction. Decision 27 already established adapter-injected env vars (PROFILERA_PROFILE_DIR) as the cross-runtime pattern. AGENTERA_HOME is the natural sibling. OpenCode's `shell.env` hook, Codex's `shell_environment_policy.set`, and Copilot's parent-shell-inheritance model are each the platform-blessed path; the plan adopts each rather than fighting them.
+Fixing this means doing the right thing per each runtime's conventions, not inventing a new abstraction. Decision 28 already established adapter-injected env vars (PROFILERA_PROFILE_DIR) as the cross-runtime pattern. AGENTERA_HOME is the natural sibling. OpenCode's `shell.env` hook, Codex's `shell_environment_policy.set`, and Copilot's parent-shell-inheritance model are each the platform-blessed path; the plan adopts each rather than fighting them.
 
 ## Constraints
 

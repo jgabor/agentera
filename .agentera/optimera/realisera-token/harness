@@ -247,7 +247,7 @@ snapshot_total_bytes=$snapshot_total_bytes
 EOF
 
 # ---------------------------------------------------------------------------
-# Tier 1 token measurement (primary metric per Decision 29)
+# Tier 1 token measurement (primary metric per Decision 30)
 # ---------------------------------------------------------------------------
 #
 # Measures the exact token count of SKILL.md + contract.md via the

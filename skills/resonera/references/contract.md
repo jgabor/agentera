@@ -1,7 +1,7 @@
 <!-- contract: resonera -->
-<!-- source: SPEC.md (sha256: be859af5d195da79982fce7734eb4271b6b30b54716f40dfbf5d2aa79c733c69) -->
+<!-- source: SPEC.md (sha256: c91d5abd6c573a2fbcde46e63d784e655fa484ec392365d2d41fe4e9ac1b3539) -->
 <!-- sections: 3, 4, 5, 6 -->
-<!-- generated: 2026-04-27T06:57:30Z -->
+<!-- generated: 2026-04-28T17:29:03Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -189,6 +189,10 @@ Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest 
 | Dropped | Decisions older than 50 | Removed entirely |
 
 Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest one-line when >40 one-line entries exist. Archive section sits below recent decisions under an `## Archived Decisions` heading. One-line summaries preserve decision number, date, and the chosen alternative.
+
+When writing a new decision, choose `N` as one greater than the highest decision number in active and archived entries. Insert the new full entry in the active section immediately before `## Archived Decisions`; if no archive exists, append it at the end of the file. Active decision entries must have unique numbers and remain ascending by decision number. Do not reuse or renumber decisions except when repairing artifact corruption.
+
+**Linter check**: Deterministic. Artifact validation rejects duplicate decision numbers and descending active decision order.
 
 **HEALTH.md**, compacted by inspektera when writing a new audit:
 

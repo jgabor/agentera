@@ -68,6 +68,13 @@ The "Confidence" field signals how settled the decision is:
 - **provisional**: best current answer, but open to revision if evidence changes
 - **exploratory**: a direction to try, explicitly expected to be revisited
 
+Decision numbering and placement:
+
+- Use `N = highest existing decision number + 1`, counting active and archived entries.
+- Insert the new full entry before `## Archived Decisions`; if no archive exists, append at the end.
+- Keep active entries unique and ascending by decision number.
+- Do not reuse or renumber decisions except when repairing artifact corruption.
+
 ---
 
 ## Personality
@@ -181,7 +188,7 @@ Brief, casual: where we landed (2-3 sentences), key insight, confidence (firm / 
 
 Relevant options only:
 
-- **Log it**: append to `DECISIONS.md` (always offered)
+- **Log it**: add a new numbered entry to `DECISIONS.md` (always offered)
 - **Feed into VISION.md**: if about direction/scope/principles
 - **Feed into OBJECTIVE.md**: if about what to optimize (writes to `.agentera/optimera/<objective-name>/OBJECTIVE.md`)
 - **File to TODO.md**: if surfaced tech debt (severity per contract)
@@ -193,6 +200,8 @@ For any option the user selects:
 
 - **DECISIONS.md**: reason through alternatives in response text. Write ONLY chosen decision,
   confidence, and a rationale per contract token budgets. No deliberation transcript.
+- **DECISIONS.md placement**: compute the next decision number before writing. Insert the
+  full entry before `## Archived Decisions`, preserving unique ascending active entries.
 - **DECISIONS.md compaction**: after writing a new decision entry, compact older
   entries via the script. Run:
   `python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py decisions <path-to-DECISIONS.md>`.
