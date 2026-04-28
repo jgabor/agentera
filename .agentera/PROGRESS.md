@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 209 · 2026-04-28 21:00 · feat(setup): add non-mutating setup doctor
+
+**Phase**: implementation
+**What**: Completed Task 3 of the Unified Setup Bundle Doctor And Installer plan. Added a read-only setup doctor that reports install-root validity, classifies Claude Code, OpenCode, Copilot, and Codex helper-script access as pass, warn, fail, or skip, and emits a stable JSON summary for downstream tools.
+**Commit**: this commit, `feat(setup): add non-mutating setup doctor`
+**Inspiration**: Active PLAN.md Task 3 and Decision 33. Doctor should inspect bundle/runtime state before any installer writes exist.
+**Discovered**: Runtime diagnosis needs distinct gap labels: missing configured roots are runtime config, missing binaries or unloaded shell env are user environment, and configured roots without shared helper scripts are bundle packaging.
+**Verified**: `pytest -q tests/test_setup_doctor.py` passed with 4 tests covering one pass, one warn/fail, and one skip per runtime family plus CLI JSON non-mutation. `python3 scripts/validate_lifecycle_adapters.py` printed `lifecycle adapter metadata ok`, including packaged executable script metadata for the new doctor. `python3 scripts/validate_spec.py` passed with 0 errors and 0 warnings. `python3 -m pytest -q` passed with 469 tests.
+**Next**: Task 4, Doctor Smoke Evidence.
+**Context**: intent (execute only Task 3) · constraints (non-mutating default, no installer writes, no Task 4 smoke evidence, no version bump or docs refresh) · unknowns (Task 4 will decide live/no-model smoke attachment) · scope (`scripts/setup_doctor.py`, focused doctor tests, PLAN, PROGRESS, CHANGELOG).
+
 ■ ## Cycle 208 · 2026-04-28 20:50 · feat(setup): validate uv script hygiene
 
 **Phase**: implementation
@@ -99,19 +110,9 @@
 **Next**: Task 3, Tracked Feature Parity Reference.
 **Context**: intent (close only Task 2) · constraints (stdlib-only Python, preserve generic OpenCode event lifecycle, no model-visible preload claim, test cap one allow/deny/no-op smoke branch, no Task 3 work) · unknowns (`apply_patch` patchText full-content reconstruction remains deferred) · scope (`.opencode/plugins/agentera.js`, shared artifact validator, OpenCode smoke, lifecycle validator/tests, README, adapter reference, CHANGELOG, DOCS, PLAN, PROGRESS).
 
-■ ## Cycle 199 · 2026-04-28 11:40 · fix(copilot): hard gate artifact prewrites
-
-**Phase**: implementation
-**What**: Completed Task 1 of the v1.20 parity plan. Copilot now ships `.github/hooks/preToolUse.json`, which runs the shared artifact validator before tools mutate files. `hooks/validate_artifact.py` parses Copilot `toolName` / JSON-string `toolArgs`, reconstructs candidate content from full-content payloads or old/new replacement payloads, denies invalid artifact candidates with `permissionDecision: deny`, and allows valid, non-artifact, malformed, or evidence-insufficient payloads. Lifecycle validation now requires the shipped pre-write gate, and README wording no longer claims broader hard-gate parity than the payload evidence proves.
-**Commit**: 35afaaf `fix(copilot): hard gate artifact prewrites`
-**Inspiration**: Active `.agentera/PLAN.md` Task 1 and GitHub Copilot hook docs: `preToolUse` receives `toolName` plus JSON-string `toolArgs`, and blocking is expressed through `permissionDecision: deny`.
-**Discovered**: Copilot gives enough documented hook evidence for a conditional hard gate, not for every edit shape. The implementation therefore denies only reconstructable candidates and treats sparse payloads as allowed.
-**Verified**: `python3 -m pytest tests/test_validate_artifact.py tests/test_runtime_adapters.py -q` passed with 74 tests. `python3 -m pytest -q` passed with 449 tests. `python3 scripts/validate_lifecycle_adapters.py` printed `lifecycle adapter metadata ok`. `python3 scripts/validate_spec.py` passed with 0 errors and 0 warnings. `python3 scripts/generate_contracts.py --check` printed `All contract files are current (12 checked)`. Manual Copilot-shaped stdin probe returned deny for invalid `.agentera/HEALTH.md` candidate and allow for non-artifact `README.md`.
-**Next**: Task 2, OpenCode Artifact Validation Hard Gate.
-**Context**: intent (close only Task 1) · constraints (stdlib-only Python, extend existing validators, no unsupported parity claim, no Task 2 work, no push) · unknowns (live Copilot host payload variants may include sparse toolArgs) · scope (`preToolUse` hook config, shared artifact validator, lifecycle validator, focused tests, README/CHANGELOG/DOCS, PLAN, PROGRESS).
-
 ## Archived Cycles
 
+- Cycle 199 (2026-04-28): fix(copilot): hard gate artifact prewrites
 - Cycle 198 (2026-04-27): fix(copilot): validate documented hook event names
 - Cycle 197 (2026-04-27): fix(opencode): restore session bookmarks via event hook
 - Cycle 196 (2026-04-27): chore(plan): freshness checkpoint for Cross-Runtime Parity Completion
@@ -151,4 +152,3 @@
 - Cycle 162 (2026-04-26): feat(validator): accept arbitrary SKILL.md paths for third-party authoring
 - Cycle 161 (2026-04-25): chore(plan): checkpoint copilot marketplace freshness
 - Cycle 160 (2026-04-25): docs(release): apply copilot release convention
-- Cycle 159 (2026-04-25): docs(copilot): update user guidance
