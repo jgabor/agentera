@@ -117,4 +117,4 @@ The release layer folds all version surfaces back to `1.20.0`, verifies the fina
 
 ## Surprises
 
-[Empty; populated by realisera during execution when reality diverges from plan]
+- 2026-04-28: Realisera can prepare local freshness, but final retag and remote publish are release operations outside its safety rails. Local `v1.20.0` still points at `17c6141`; no remote `v1.20*` tags were found.
