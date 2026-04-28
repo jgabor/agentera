@@ -207,19 +207,26 @@ function resolveToolFilePath(args, root) {
   return path.isAbsolute(rawPath) ? rawPath : path.join(root, rawPath);
 }
 
+function firstStringArg(args, names) {
+  for (const name of names) {
+    if (typeof args[name] === "string") return args[name];
+  }
+  return undefined;
+}
+
 function reconstructCandidate(tool, args, root) {
   if (!args || typeof args !== "object") return null;
   const filePath = resolveToolFilePath(args, root);
   if (!filePath) return null;
 
   if (tool === "write") {
-    const content = args.content || args.text || args.newContent || args.new_content;
+    const content = firstStringArg(args, ["content", "text", "newContent", "new_content"]);
     return typeof content === "string" ? { filePath, content } : null;
   }
 
   if (tool !== "edit") return null;
-  const oldText = args.oldString || args.old_string || args.oldText || args.old_text;
-  const newText = args.newString || args.new_string || args.newText || args.new_text;
+  const oldText = firstStringArg(args, ["oldString", "old_string", "oldText", "old_text"]);
+  const newText = firstStringArg(args, ["newString", "new_string", "newText", "new_text"]);
   if (typeof oldText !== "string" || typeof newText !== "string") return null;
 
   let current;
