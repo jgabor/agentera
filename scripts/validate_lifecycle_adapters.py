@@ -45,6 +45,36 @@ CODEX_PROFILERA_STATUS_VALUES = ("ok", "degraded")
 CODEX_PROFILERA_INVOCATION_TERMS = ("$profilera", "limited", "Section 22", "source families")
 OPENCODE_EVENT_TYPES = {"session.created", "session.idle"}
 COPILOT_REQUIRED_PREWRITE_HOOK = "preToolUse"
+HARD_GATE_DOC_REQUIREMENTS = {
+    "README.md": {
+        "OpenCode": (
+            "tool.execute.before",
+            "reconstructable write/edit candidates",
+            "apply_patch patchText without reconstructed full content are allowed",
+        ),
+        "Copilot": (
+            "preToolUse",
+            "reconstructable invalid artifact edits are denied",
+            "insufficient payload evidence is allowed",
+        ),
+    },
+    "references/adapters/runtime-feature-parity.md": {
+        "OpenCode": (
+            "Conditional hard gate for reconstructable `write` and `edit` candidates",
+            "Sparse payloads and `apply_patch` `patchText` without reconstructed full content are allowed",
+        ),
+        "Copilot": (
+            "Conditional hard gate via `preToolUse`",
+            "Malformed, sparse, or non-reconstructable `toolArgs` are allowed",
+        ),
+    },
+    "references/adapters/opencode.md": {
+        "OpenCode": (
+            "Blocks invalid reconstructable artifact candidates",
+            "Sparse payloads and `apply_patch` `patchText` without reconstructed full content are allowed",
+        ),
+    },
+}
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -316,6 +346,29 @@ def validate_opencode(root: Path) -> list[str]:
     return errors
 
 
+def _normalized_doc_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8").replace("`", "")
+
+
+def validate_hard_gate_docs(root: Path) -> list[str]:
+    errors: list[str] = []
+    for relative_path, runtime_requirements in HARD_GATE_DOC_REQUIREMENTS.items():
+        path = root / relative_path
+        if not path.is_file():
+            errors.append(f"{relative_path}: missing hard-gate documentation surface")
+            continue
+        text = _normalized_doc_text(path)
+        for runtime, terms in runtime_requirements.items():
+            for term in terms:
+                normalized_term = term.replace("`", "")
+                if normalized_term not in text:
+                    errors.append(
+                        f"{relative_path}: {runtime} hard-gate docs must keep scoped claim term "
+                        f"{term!r}"
+                    )
+    return errors
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
@@ -330,6 +383,7 @@ def main(argv: list[str] | None = None) -> int:
     errors.extend(validate_codex(codex))
     errors.extend(validate_codex_profilera_metadata(root, codex))
     errors.extend(validate_opencode(root))
+    errors.extend(validate_hard_gate_docs(root))
 
     if errors:
         print("lifecycle adapter validation failed:")
