@@ -2,6 +2,8 @@
 
 Task 3 cap: one pass, one warn/fail, and one skip per runtime family.
 Task 4 cap: one success and one failure branch per smoke-check category.
+Task 5 cap: one dry-run, one denied write, one confirmed write, and one
+idempotent re-run per writable runtime.
 """
 
 from __future__ import annotations
@@ -86,6 +88,43 @@ def _prepare_pass(runtime: str, home: Path, root: Path, env: dict[str, str]) -> 
             '[shell_environment_policy]\nset = { AGENTERA_HOME = "' + str(root) + '" }\n',
             encoding="utf-8",
         )
+
+
+def _installer_env(tmp_path: Path, doctor: ModuleType, runtime: str) -> dict[str, str]:
+    env = {
+        "PATH": _path_with_binary(tmp_path, doctor.RUNTIME_BINARIES[runtime]),
+        "SHELL": "/bin/bash",
+    }
+    return env
+
+
+def _installer_command(
+    doctor: ModuleType,
+    root: Path,
+    home: Path,
+    runtime: str,
+    *extra: str,
+) -> list[str]:
+    return [
+        sys.executable,
+        str(REPO_ROOT / "scripts" / "setup_doctor.py"),
+        "--install-root",
+        str(root),
+        "--home",
+        str(home),
+        "--runtime",
+        runtime,
+        "--install",
+        *extra,
+    ]
+
+
+def _installer_target(home: Path, runtime: str) -> Path:
+    if runtime == "codex":
+        return home / ".codex" / "config.toml"
+    if runtime == "copilot":
+        return home / ".bashrc"
+    raise AssertionError(f"unexpected writable runtime: {runtime}")
 
 
 def test_setup_doctor_passes_for_each_runtime_family(tmp_path: Path) -> None:
@@ -343,3 +382,116 @@ def test_setup_doctor_smoke_runtime_host_failure_is_visible_at_process_level(
     assert "PATH candidate is not executable" in host["message"]
     assert "runtime host was not invoked" in host["details"]
     assert payload["smoke"]["modelCallsAttempted"] is False
+
+
+def test_setup_installer_dry_run_shows_target_runtime_file_and_reason_per_writable_runtime(
+    tmp_path: Path,
+) -> None:
+    doctor = _load_doctor()
+    for runtime in doctor.WRITABLE_RUNTIMES:
+        root = tmp_path / runtime / "agentera"
+        home = tmp_path / runtime / "home"
+        _write_install_root(root, doctor)
+        target = _installer_target(home, runtime)
+
+        result = subprocess.run(
+            _installer_command(doctor, root, home, runtime, "--dry-run"),
+            env=_installer_env(tmp_path / runtime, doctor, runtime),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert result.returncode == 0
+        assert not target.exists()
+        assert f"{runtime}: pending" in result.stdout
+        assert f"target: {target}" in result.stdout
+        assert "reason:" in result.stdout
+
+
+def test_setup_installer_without_confirmation_does_not_write_per_writable_runtime(
+    tmp_path: Path,
+) -> None:
+    doctor = _load_doctor()
+    for runtime in doctor.WRITABLE_RUNTIMES:
+        root = tmp_path / runtime / "agentera"
+        home = tmp_path / runtime / "home"
+        _write_install_root(root, doctor)
+        target = _installer_target(home, runtime)
+
+        result = subprocess.run(
+            _installer_command(doctor, root, home, runtime),
+            env=_installer_env(tmp_path / runtime, doctor, runtime),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert result.returncode == 1
+        assert not target.exists()
+        assert "confirmation required" in result.stdout
+
+
+def test_setup_installer_confirmed_write_fixes_each_writable_runtime(
+    tmp_path: Path,
+) -> None:
+    doctor = _load_doctor()
+    for runtime in doctor.WRITABLE_RUNTIMES:
+        root = tmp_path / runtime / "agentera"
+        home = tmp_path / runtime / "home"
+        _write_install_root(root, doctor)
+        target = _installer_target(home, runtime)
+
+        result = subprocess.run(
+            _installer_command(doctor, root, home, runtime, "--yes", "--json"),
+            env=_installer_env(tmp_path / runtime, doctor, runtime),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        payload = json.loads(result.stdout)
+        installer = payload["installer"]
+        after = installer["afterDoctor"]["runtimes"][runtime]
+
+        assert result.returncode == 0
+        assert target.is_file()
+        assert installer["summary"]["applied"] == 1
+        assert after["status"] == "pass"
+
+
+def test_setup_installer_idempotent_rerun_writes_nothing_per_writable_runtime(
+    tmp_path: Path,
+) -> None:
+    doctor = _load_doctor()
+    for runtime in doctor.WRITABLE_RUNTIMES:
+        root = tmp_path / runtime / "agentera"
+        home = tmp_path / runtime / "home"
+        _write_install_root(root, doctor)
+        target = _installer_target(home, runtime)
+        env = _installer_env(tmp_path / runtime, doctor, runtime)
+
+        first = subprocess.run(
+            _installer_command(doctor, root, home, runtime, "--yes"),
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        before = target.read_text(encoding="utf-8")
+        second = subprocess.run(
+            _installer_command(doctor, root, home, runtime, "--yes", "--json"),
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        payload = json.loads(second.stdout)
+
+        assert first.returncode == 0
+        assert second.returncode == 0
+        assert target.read_text(encoding="utf-8") == before
+        assert payload["installer"]["summary"]["pending"] == 0
+        assert (
+            payload["installer"]["afterDoctor"]["runtimes"][runtime]["status"]
+            == "pass"
+        )

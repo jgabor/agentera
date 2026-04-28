@@ -89,7 +89,7 @@ Skill-local scripts remain owned by their skills. Suite-level tools such as doct
 ### Task 5: Confirmed-Write Installer
 
 **Depends on**: Task 4
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN doctor findings include fixable setup gaps WHEN installer plans changes THEN it shows the target runtime, target file, and reason.
 ▸ GIVEN confirmation is absent WHEN writes would be needed THEN installer exits without changing user config.
