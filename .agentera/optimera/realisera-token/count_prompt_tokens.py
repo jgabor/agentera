@@ -29,7 +29,7 @@ increase in the probe, even though the full-run metric can't detect it.
 
 The Tier 1 metric (--tier1) goes further: it directly counts SKILL.md and
 contract.md tokens via the Anthropic count_tokens API, giving an exact,
-sub-token-variance primary metric for the Decision 29 two-tier design.
+sub-token-variance primary metric for the Decision 30 two-tier design.
 
 Limitation: prompt caching means the probe's total_context includes the
 Claude Code base system prompt. The delta between conditions (with - without)

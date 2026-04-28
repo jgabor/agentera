@@ -2,50 +2,6 @@
 
 Reasoning trail maintained by resonera. Each deliberation session appends one entry. Decisions are referenced by realisera, optimera, and profilera for context on why choices were made.
 
-## Decision 32 · 2026-04-28
-
-**Question**: How should Agentera make multi-runtime setup feel simple while
-keeping the 1.20 release stable?
-**Context**: The 1.20 release now supports Claude Code, OpenCode, Copilot CLI,
-and Codex CLI, but README setup still mixes normal install, optional hooks,
-helper scripts, and clone-only commands. A unified setup flow similar in spirit
-to `npx skills` would make Agentera feel like one suite instead of four runtime
-stories. Implementing that installer during release polish would widen the
-blast radius after the release tag had already been rewritten.
-**Alternatives**:
-
-- [Ship a unified installer in 1.20], rejected: best product direction, but too
-  much behavior change for final release stabilization.
-- [Only tweak README wording], rejected: hides the real product decision and
-  leaves future agents without the reason.
-- [Log the installer decision and polish docs now], chosen: stabilizes 1.20
-  while preserving the direction for a future version.
-**Choice**: Keep 1.20 to documentation polish and packaging stabilization. Make
-the README clearer for Claude Code, OpenCode, Copilot CLI, and Codex CLI. Defer
-the unified `setup` and `doctor` experience to a later release, backed by this
-decision.
-**Reasoning**: Agentera should eventually expose one setup surface that detects
-available runtimes, installs the suite, recommends hooks, respects existing
-`AGENTERA_HOME`, and verifies the result. That is product work, not copy
-editing. The release needs stable guidance now, so the docs should be honest
-about current helper-script limits without promising a not-yet-built installer.
-**Confidence**: firm
-**Feeds into**: README.md, future setup/doctor plan
-
-## Decision 23 · 2026-04-10
-
-**Question**: Should the terminology for the ecosystem spec and per-skill context files be renamed for clarity and cohesion?
-**Context**: Two filenames (`SPEC.md` and `contract.md`) use a double-word "ecosystem-" prefix that is redundant (agentera IS the ecosystem), mechanically named (the context file is spec excerpts, not "context" in the operational sense), and inconsistent (prose uses "the spec" while filenames use "the spec"). The external AI community (Google Workspace CLI, Justin Poehnelt's agent DX article) uses CONTEXT.md for runtime agent instructions, creating collision risk. The rename cascades into 12 SKILL.md files, 2 Python scripts, the linter, tests, HTML comment conventions, and prose throughout.
-**Alternatives**:
-
-- [Keep current names], rejected: "ecosystem-context" is opaque, two-word, and collides with emerging CONTEXT.md convention for runtime agent instructions. The file contains binding spec excerpts, not operational context.
-- [Rename to context.md only], rejected: collision with the emerging agent community's CONTEXT.md convention (Google Workspace CLI, Justin Poehnelt). CONTEXT.md means "runtime instructions for agents" externally.
-- [Rename spec-only], rejected: renaming the spec without renaming the per-skill excerpts misses the relationship clarity opportunity
-**Choice**: `SPEC.md` (root, uppercase per artifact convention) and `contract.md` (per skill in references/, lowercase per reference file convention). Drop the "ecosystem-" prefix from all filenames, headers, script names, and prose.
-**Reasoning**: The contract is a binding excerpt: the skill MUST follow these rules. "Contract" carries the obligation that "context" lacks. The pair is clean: the spec defines the rules, your contract is your binding slice. Dropping "ecosystem-" from everywhere eliminates redundancy (agentera IS the ecosystem). Upper/lower case split follows the existing convention: root artifacts are UPPERCASE (VISION.md, TODO.md), skill reference files are lowercase (harness-guide.md, audit-commands.md). The rename makes the spec a first-class root artifact rather than hiding it in references/.
-**Confidence**: firm
-**Feeds into**: PLAN.md (Platform Portability plan)
-
 ## Decision 23 · 2026-04-03
 
 **Question**: Where should session-to-session state live: new SESSION.md artifact, extend PROGRESS.md, or infrastructure dotfile?
@@ -88,7 +44,21 @@ about current helper-script limits without promising a not-yet-built installer.
 **Confidence**: firm
 **Feeds into**: VISION.md (North Star, Direction, supporting paragraphs)
 
-## Decision 26 · 2026-04-11
+## Decision 26 · 2026-04-10
+
+**Question**: Should the terminology for the ecosystem spec and per-skill context files be renamed for clarity and cohesion?
+**Context**: Two filenames (`SPEC.md` and `contract.md`) use a double-word "ecosystem-" prefix that is redundant (agentera IS the ecosystem), mechanically named (the context file is spec excerpts, not "context" in the operational sense), and inconsistent (prose uses "the spec" while filenames use "the spec"). The external AI community (Google Workspace CLI, Justin Poehnelt's agent DX article) uses CONTEXT.md for runtime agent instructions, creating collision risk. The rename cascades into 12 SKILL.md files, 2 Python scripts, the linter, tests, HTML comment conventions, and prose throughout.
+**Alternatives**:
+
+- [Keep current names], rejected: "ecosystem-context" is opaque, two-word, and collides with emerging CONTEXT.md convention for runtime agent instructions. The file contains binding spec excerpts, not operational context.
+- [Rename to context.md only], rejected: collision with the emerging agent community's CONTEXT.md convention (Google Workspace CLI, Justin Poehnelt). CONTEXT.md means "runtime instructions for agents" externally.
+- [Rename spec-only], rejected: renaming the spec without renaming the per-skill excerpts misses the relationship clarity opportunity
+**Choice**: `SPEC.md` (root, uppercase per artifact convention) and `contract.md` (per skill in references/, lowercase per reference file convention). Drop the "ecosystem-" prefix from all filenames, headers, script names, and prose.
+**Reasoning**: The contract is a binding excerpt: the skill MUST follow these rules. "Contract" carries the obligation that "context" lacks. The pair is clean: the spec defines the rules, your contract is your binding slice. Dropping "ecosystem-" from everywhere eliminates redundancy (agentera IS the ecosystem). Upper/lower case split follows the existing convention: root artifacts are UPPERCASE (VISION.md, TODO.md), skill reference files are lowercase (harness-guide.md, audit-commands.md). The rename makes the spec a first-class root artifact rather than hiding it in references/.
+**Confidence**: firm
+**Feeds into**: PLAN.md (Platform Portability plan)
+
+## Decision 27 · 2026-04-11
 
 **Question**: How to implement Section 21's session corpus contract to close the gap between spec and extraction pipeline
 **Context**: Section 21 defines four normalized record types (instruction_document, history_prompt, conversation_turn, project_config_signal) with provenance metadata, but extract_all.py bypasses the contract entirely, going from Claude Code JSONL internals to four ad-hoc intermediate JSON files. The spec exists; the implementation does not. Users may also switch between runtimes (Claude Code, OpenCode) between sessions, so the corpus must be runtime-agnostic.
@@ -103,10 +73,10 @@ about current helper-script limits without promising a not-yet-built installer.
 **Confidence**: firm
 **Feeds into**: TODO.md (ISS-37)
 
-## Decision 27 · 2026-04-11
+## Decision 28 · 2026-04-11
 
 **Question**: Where should PROFILE.md and profilera's generated artifacts live by default, and how should runtime adapters provide path overrides?
-**Context**: PROFILE.md was stored at `~/.claude/profile/PROFILE.md`, coupling it to Claude Code's config directory. This triggers permission prompts when skills read it, doesn't work on Windows, and treats the profile as Claude Code's data rather than agentera's. The `PROFILERA_PROFILE_DIR` env var was added (Decision 26 implementation) but nothing sets it automatically.
+**Context**: PROFILE.md was stored at `~/.claude/profile/PROFILE.md`, coupling it to Claude Code's config directory. This triggers permission prompts when skills read it, doesn't work on Windows, and treats the profile as Claude Code's data rather than agentera's. The `PROFILERA_PROFILE_DIR` env var was added (Decision 27 implementation) but nothing sets it automatically.
 **Alternatives**:
 
 - [Keep ~/.claude/profile/ default] other runtimes override via env var, rejected: profile belongs to agentera not Claude Code, triggers permission prompts, not cross-platform
@@ -118,7 +88,7 @@ about current helper-script limits without promising a not-yet-built installer.
 **Confidence**: firm
 **Feeds into**: TODO.md
 
-## Decision 28 · 2026-04-11
+## Decision 29 · 2026-04-11
 
 **Question**: How should optimera handle measurement archetypes that go beyond thin command-wrapper harnesses, and what should the first such reference look like?
 **Context**: A /inspirera analysis of leda's benchmark suite proposed shipping `scripts/benchmark_skill.sh` at agentera's repo root plus a thin `.optimera/harness` wrapper (leda's own pattern). Two things didn't sit right: (1) that shape imposes leda-style infrastructure where optimera's philosophy says the harness is bespoke per project, and (2) a sketched `--repo-size` flag encodes fake precision because users can mislabel the target. A broader question surfaced — should optimera's brainstorm route to archetypes explicitly, or keep its conversation-driven model? Optimera's existing reference library (`test-pass-rate.md`, `bundle-size.md`, `coverage.md`, `lint-score.md`, `benchmark.md`) covers only thin-wrapper archetypes; nothing in it describes measuring agent behavior under controlled conditions.
@@ -134,7 +104,7 @@ about current helper-script limits without promising a not-yet-built installer.
 **Confidence**: provisional
 **Feeds into**: `skills/optimera/references/` (expansion), standalone
 
-## Decision 29 · 2026-04-12
+## Decision 30 · 2026-04-12
 
 **Question**: How should the realisera-token harness be redesigned after three consecutive discarded experiments where run-to-run variance (13-20%) drowned the optimization signal (5-10%)?
 **Context**: Experiments 1-3 all measured the full-cycle composite (peak_context + output_total) via a single Docker A/B run. The composite conflates fixed cost (SKILL.md in the system prompt) and variable cost (which files the model reads, tool choice non-determinism). SKILL.md edits change the fixed cost deterministically, but the metric can't detect them because the variable cost swings 10-15K tokens between runs with identical code. The hej-token objective succeeded (29.5% signal vs 5% noise) because hej's session is short and deterministic; realisera's session is long and stochastic. A pre-flight token probe was built but couldn't isolate SKILL.md tokens via the CLI due to prompt caching. An API key is available for the Anthropic count_tokens endpoint.
@@ -148,7 +118,7 @@ about current helper-script limits without promising a not-yet-built installer.
 **Confidence**: firm
 **Feeds into**: OBJECTIVE.md (metric redefinition), .optimera/harness (redesign)
 
-## Decision 30 · 2026-04-12
+## Decision 31 · 2026-04-12
 
 **Question**: How should optimera represent multiple objectives, and should `.optimera/` consolidate under `.agentera/`?
 **Context**: Today optimera pins a single OBJECTIVE.md / EXPERIMENTS.md / `.optimera/harness`. Rotating targets (hej-token to realisera-token) requires hand-written archive moves. `.optimera/` lives outside `.agentera/`, splitting artifact roots. Decision 4 established single-root artifact resolution via `.agentera/DOCS.md`.
@@ -162,10 +132,10 @@ about current helper-script limits without promising a not-yet-built installer.
 **Confidence**: firm
 **Feeds into**: TODO.md (implementation), optimera SKILL.md (path changes), DOCS.md (mapping update), .gitignore (path update)
 
-## Decision 31 · 2026-04-26
+## Decision 32 · 2026-04-26
 
 **Question**: How should agentera observe its own usage across host runtimes and feed adoption signal back into the suite?
-**Context**: Profilera mines Claude Code, OpenCode, Copilot, and Codex sessions into a Section 21 corpus envelope (Decision 26). The corpus is consumed only by PROFILE.md generation. Agentera ships no mechanism to ask "how is the suite being used?": adoption stats, completion ratios, slash-vs-NL trigger reliability.
+**Context**: Profilera mines Claude Code, OpenCode, Copilot, and Codex sessions into a Section 21 corpus envelope (Decision 27). The corpus is consumed only by PROFILE.md generation. Agentera ships no mechanism to ask "how is the suite being used?": adoption stats, completion ratios, slash-vs-NL trigger reliability.
 **Alternatives**:
 
 - One-off diagnostic script: cheap, throw-away; no recurring value.
@@ -175,6 +145,57 @@ about current helper-script limits without promising a not-yet-built installer.
 **Reasoning**: Workflow markers unify slash and NL triggering, especially in OpenCode where slash UX differs. Completed workflows measure follow-through, not just intent. Global XDG path matches PROFILE.md and fits cross-project scope naturally. A script avoids skill-lifecycle overhead while leveraging the existing corpus pipeline. Friction and failure analysis are deferred until an adoption baseline exists.
 **Confidence**: provisional
 **Feeds into**: TODO.md (implementation), standalone
+
+## Decision 33 · 2026-04-28
+
+**Question**: How should Agentera make multi-runtime setup feel simple while
+keeping the 1.20 release stable?
+**Context**: The 1.20 release now supports Claude Code, OpenCode, Copilot CLI,
+and Codex CLI, but README setup still mixes normal install, optional hooks,
+helper scripts, and clone-only commands. A unified setup flow similar in spirit
+to `npx skills` would make Agentera feel like one suite instead of four runtime
+stories. Runtime packaging must still use each host's real conventions. Codex's
+documented repo marketplace path is `.agents/plugins/marketplace.json`, with
+plugin folders commonly under `plugins/<name>/`, a `.codex-plugin/plugin.json`
+inside each plugin root, and `source.path` values like `./plugins/<name>`. The
+`source.path` must be `./`-prefixed and resolves relative to the marketplace
+root, not the `.agents/plugins/` folder. Therefore `.agents/plugins` is a
+Codex marketplace adapter surface, not a generic plugin convention shared with
+OpenCode, Copilot, or Claude Code. Implementing that installer during release
+polish would widen the blast radius after the release tag had already been
+rewritten.
+**Alternatives**:
+
+- [Ship a unified installer in 1.20], rejected: best product direction, but too
+  much behavior change for final release stabilization.
+- [Only tweak README wording], rejected: hides the real product decision and
+  leaves future agents without the reason.
+- [Remove `.agents/plugins` as non-portable], rejected: it is non-portable by
+  design, but it is the documented Codex repo marketplace path and must remain
+  for Codex marketplace installs.
+- [Treat `.agents/plugins` as a cross-runtime plugin directory], rejected: false
+  portability; runtimes need their own adapter surfaces while skills and
+  artifacts remain the shared core.
+- [Log the installer decision and polish docs now], chosen: stabilizes 1.20
+  while preserving the direction for a future version.
+**Choice**: Keep 1.20 to documentation polish and packaging stabilization. Make
+the README clearer for Claude Code, OpenCode, Copilot CLI, and Codex CLI. Defer
+the unified `setup` and `doctor` experience to a later release, backed by this
+decision. Future setup work must preserve runtime-native directories:
+`.agents/plugins/marketplace.json` for Codex marketplaces, `.opencode/plugins/`
+for OpenCode, Copilot's plugin manifests, and Claude Code's plugin surfaces.
+For Codex, the docs-aligned target shape is `plugins/agentera/.codex-plugin/`
+plus a marketplace entry pointing to `./plugins/agentera`; pointing at `.`
+causes current Codex CLI to skip the plugin instead of showing it in
+`/plugins`.
+**Reasoning**: Agentera should eventually expose one setup surface that detects
+available runtimes, installs the suite, recommends hooks, respects existing
+`AGENTERA_HOME`, validates runtime-native path shapes, and verifies the result.
+That is product work, not copy editing. The release needs stable guidance now,
+so the docs should be honest about current helper-script limits without
+promising a not-yet-built installer.
+**Confidence**: firm
+**Feeds into**: README.md, future setup/doctor plan
 
 ## Archived Decisions
 

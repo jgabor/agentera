@@ -805,7 +805,7 @@ All versions at 1.8.0 (profilera 2.7.0), consistent across 12 plugin.json, regis
 
 ### Artifact freshness: A
 
-No active PLAN.md (archived in cycle 95). Using PROGRESS.md fallback: PROGRESS.md, HEALTH.md, and CHANGELOG.md all modified 2026-04-10 (current). DECISIONS.md modified 2026-04-10 (Decision 23). DESIGN.md last modified 2026-04-02, which predates the Platform Portability plan, but visualisera was not dispatched during that plan. Not stale per the fallback heuristic.
+No active PLAN.md (archived in cycle 95). Using PROGRESS.md fallback: PROGRESS.md, HEALTH.md, and CHANGELOG.md all modified 2026-04-10 (current). DECISIONS.md modified 2026-04-10 (Decision 26). DESIGN.md last modified 2026-04-02, which predates the Platform Portability plan, but visualisera was not dispatched during that plan. Not stale per the fallback heuristic.
 
 ### Security hygiene: A
 

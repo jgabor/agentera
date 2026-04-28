@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [1.20.1] · 2026-04-28
+
+### Fixed
+
+- DECISIONS.md guidance now defines next-number selection, active-section
+  insertion, and unique ascending active entries; artifact validation rejects
+  duplicate decision numbers or descending active entries.
+
 ## [1.20.0] · 2026-04-27
 
 Scope refined post-research to address verified cross-runtime parity gaps; consolidates Move 1 renumber and Move 2 parity completion per explicit user direction.
@@ -37,7 +45,7 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 - **`.agentera/DOCS.md` Index** gained rows for all four new helpers and the live-host smoke runner; Audit Log block records the README and DOCS surfaces resolved.
 - **README runtime support table** reflects Codex `multi_agent`/`codex_hooks` stable + default-on as of v0.124.0, `apply_patch` Write/Edit interception per `openai/codex#18391`, and verified Copilot marketplace install (granular + umbrella both functional).
 - **README lifecycle hooks table** adds Supported Events column with all 6 events per runtime; names the Copilot preToolUse-blocks vs postToolUse-output-ignored asymmetry explicitly.
-- **README onboarding polish** separates per-runtime quick starts from optional hook/helper setup, fixes linked navigation, corrects the OpenCode path to install skills before adding the plugin, and documents that the unified setup/doctor experience is deferred by Decision 32.
+- **README onboarding polish** separates per-runtime quick starts from optional hook/helper setup, fixes linked navigation, corrects the OpenCode path to install skills before adding the plugin, and documents that the unified setup/doctor experience is deferred by Decision 33.
 - **`.codex-plugin/plugin.json` `lifecycleHooks.status`** flipped `experimental-disabled` → `stable`; `supportedEvents` array added; `unsupportedEvents` rewritten to genuinely-unsupported Claude-Code-specific events; stale `codex.limitations[0]` removed.
 - **`agents/openai.yaml` `support.lifecycle_hooks`** mirrors the new metadata story.
 - **`scripts/validate_lifecycle_adapters.py` `CODEX_EVENTS` and `COPILOT_EVENTS`** populated with the genuine event lists; predicates reject stale-marker phrases.
@@ -141,7 +149,7 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 
 ### Fixed
 
-- Profile path references across all SKILL.md files, SPEC.md, DOCS.md, README.md, and contract files now match profilera's actual XDG write location per Decision 27
+- Profile path references across all SKILL.md files, SPEC.md, DOCS.md, README.md, and contract files now match profilera's actual XDG write location per Decision 28
 
 ## [1.14.0] · 2026-04-20
 
@@ -182,7 +190,7 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 
 ### Added
 
-- Multi-objective support for optimera: named subdirectories under `.agentera/optimera/` with active-objective inference (Decision 30, ISS-39)
+- Multi-objective support for optimera: named subdirectories under `.agentera/optimera/` with active-objective inference (Decision 31, ISS-39)
 - Active-objective inference in optimera SKILL.md: single dir = use it, multiple = most recent, ambiguous = ask
 
 ### Changed
@@ -235,7 +243,7 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 
 ### Fixed
 
-- Update CLAUDE.md layout block to reference root SPEC.md (post-Decision 23 rename)
+- Update CLAUDE.md layout block to reference root SPEC.md (post-Decision 26 rename)
 - Add missing `<!-- platform: profile-path -->` annotations to inspektera and planera SKILL.md
 
 ## [1.8.0] · 2026-04-10
@@ -253,7 +261,7 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 - Annotated all platform-specific references (`~/.claude/`, worktrees, `claude -p`) with `<!-- platform: capability-name -->` comments across all 12 SKILL.md files and SPEC.md Sections 20-21
 - Profilera extraction step scoped as Claude-adapter-specific with Section 21 reference for portable contract
 - README.md updated to reflect Section 21 corpus is defined rather than pending
-- Terminology cleanup (Decision 23): `ecosystem-spec.md` renamed to `SPEC.md` (root), `ecosystem-context.md` renamed to `contract.md` (per skill), "ecosystem" prefix dropped from all scripts, headers, and prose
+- Terminology cleanup (Decision 26): `ecosystem-spec.md` renamed to `SPEC.md` (root), `ecosystem-context.md` renamed to `contract.md` (per skill), "ecosystem" prefix dropped from all scripts, headers, and prose
 - Spec Section 20 host adapter contract: portability claims now distinguish the portable core from host-specific extensions
 - Planera em-dash on line 130 fixed (last remaining em-dash in SKILL.md files)
 - Version bumped to 1.8.0 (profilera 2.7.0)

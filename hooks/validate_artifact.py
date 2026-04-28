@@ -137,6 +137,44 @@ TODO_SEVERITY_HEADINGS = [
 ]
 
 
+def validate_decision_numbering(content: str) -> list[str]:
+    """Validate DECISIONS.md numbering hygiene."""
+    active = re.split(
+        r"^## Archived Decisions\b",
+        content,
+        maxsplit=1,
+        flags=re.MULTILINE,
+    )[0]
+    numbers = [
+        int(match.group(1))
+        for match in re.finditer(r"^## Decision\s+(\d+)\b", active, re.MULTILINE)
+    ]
+    all_numbers = [
+        int(match.group(1) or match.group(2))
+        for match in re.finditer(
+            r"^## Decision\s+(\d+)\b|^- Decision\s+(\d+)\s+\(",
+            content,
+            re.MULTILINE,
+        )
+    ]
+    violations: list[str] = []
+
+    seen: set[int] = set()
+    duplicates: list[int] = []
+    for number in all_numbers:
+        if number in seen and number not in duplicates:
+            duplicates.append(number)
+        seen.add(number)
+    if duplicates:
+        joined = ", ".join(str(number) for number in duplicates)
+        violations.append(f"DECISIONS.md: duplicate decision numbers: {joined}")
+
+    if numbers != sorted(numbers):
+        violations.append("DECISIONS.md: active decision numbers must be ascending")
+
+    return violations
+
+
 # ---------------------------------------------------------------------------
 # DOCS.md artifact path resolution
 # ---------------------------------------------------------------------------
@@ -234,6 +272,9 @@ def validate_artifact_text(content: str, artifact_name: str) -> list[str]:
                 violations.append(
                     f"TODO.md: missing severity section matching /{pattern}/"
                 )
+
+    if artifact_name == "DECISIONS.md":
+        violations.extend(validate_decision_numbering(content))
 
     # Check markdown well-formedness (lightweight: unclosed code blocks)
     open_fences = len(re.findall(r"^```", content, re.MULTILINE))
