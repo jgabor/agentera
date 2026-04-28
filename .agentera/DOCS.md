@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-28 (Copilot pre-write gate checkpoint) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-28 (OpenCode pre-write gate checkpoint) -->
 
 ## Conventions
 
@@ -64,7 +64,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Copilot plugin manifest | plugin.json | 2026-04-27 | ■ current |
 | Copilot repo plugin manifest | .github/plugin/plugin.json | 2026-04-27 | ■ current |
 | Codex plugin manifest | .codex-plugin/plugin.json | 2026-04-27 | ■ current |
-| OpenCode adapter reference | references/adapters/opencode.md | 2026-04-27 | ■ current |
+| OpenCode adapter reference | references/adapters/opencode.md | 2026-04-28 | ■ current |
 | Codex UI metadata | skills/&lt;name&gt;/agents/openai.yaml; agents/openai.yaml | 2026-04-24 | ■ current |
 | Hooks registry | hooks/hooks.json | 2026-04-03 | ■ current |
 | Lifecycle adapter validator | scripts/validate_lifecycle_adapters.py | 2026-04-28 | ■ current |
@@ -72,7 +72,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Codex setup helper | scripts/setup_codex.py | 2026-04-26 | ■ current |
 | Copilot setup helper | scripts/setup_copilot.py | 2026-04-26 | ■ current |
 | Setup helper smoke runner | scripts/smoke_setup_helpers.py | 2026-04-26 | ■ current |
-| OpenCode bootstrap smoke runner | scripts/smoke_opencode_bootstrap.mjs | 2026-04-27 | ■ current |
+| OpenCode bootstrap smoke runner | scripts/smoke_opencode_bootstrap.mjs | 2026-04-28 | ■ current |
 | Live-host smoke runner | scripts/smoke_live_hosts.py | 2026-04-26 | ■ current |
 | SessionStart hook | hooks/session_start.py | 2026-04-03 | ■ current |
 | Session stop hook | hooks/session_stop.py | 2026-04-03 | ■ current |
@@ -90,6 +90,12 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Tests**: 449 tests across 17 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-28 (OpenCode pre-write gate checkpoint)
+
+- [gap] OpenCode shipped only post-write artifact validation; `tool.execute.before` now blocks invalid reconstructable artifact write/edit candidates before mutation · warning (fixed)
+- [guard] OpenCode docs now name the `apply_patch` patchText limitation instead of claiming universal hard-gate parity · info (fixed)
+- [verified] OpenCode smoke still proves `session.idle` bookmark writes and `session.created` no-op behavior after adding the pre-write gate · info (fixed)
 
 ### 2026-04-28 (Copilot pre-write gate checkpoint)
 
