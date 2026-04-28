@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 215 · 2026-04-28 22:13 · chore(plan): close setup bundle checkpoint
+
+**Phase**: verification
+**What**: Completed Task 8 and closed the Unified Setup Bundle Doctor And Installer plan. The final checkpoint verified the 1.21.0 setup bundle surface end to end, recorded the Task 4 runtime-host smoke retry as the only plan surprise, and refreshed PROGRESS, TODO, CHANGELOG, DOCS, and PLAN to summarize the plan-level result.
+**Commit**: this commit, `chore(plan): close setup bundle checkpoint`
+**Inspiration**: Active PLAN.md Task 8. The plan needed one final evidence pass after implementation, release metadata, and docs were already accepted.
+**Discovered**: The local setup doctor remains healthy with documented warnings for missing Claude `CLAUDE_PLUGIN_ROOT` and Codex `shell_environment_policy.set.AGENTERA_HOME`; bounded smoke still reports `ok: true` and `modelCallsAttempted: false`.
+**Verified**: `python3 scripts/generate_contracts.py --check` passed with 12 current contracts. `python3 scripts/validate_spec.py` passed with 0 errors and 0 warnings. `python3 scripts/validate_lifecycle_adapters.py --check-uv-runtime` printed `lifecycle adapter metadata ok`, covering lifecycle and package-shape checks. `python3 -m pytest tests/test_validate_artifact.py tests/test_runtime_adapters.py -q` passed with 90 tests. `python3 scripts/setup_doctor.py --install-root . --smoke --json` returned `ok: true`, 6 smoke passes, 0 smoke failures, and `modelCallsAttempted: false`. `python3 scripts/smoke_live_hosts.py` passed default non-live smoke with 6319 corpus records and delegated setup helper smoke passing. `node scripts/smoke_opencode_bootstrap.mjs` printed `PASS: all smoke checks passed`. `node --check .opencode/plugins/agentera.js` passed. `python3 -m pytest -q` passed with 477 tests.
+**Next**: The setup bundle plan is complete; the next useful work is a fresh post-1.21 direction.
+**Context**: intent (execute only Task 8 final verification and freshness checkpoint) · constraints (no new feature scope, no remote push, commit intended artifact changes only) · unknowns (none after final verification and clean pre-edit worktree) · scope (PLAN, PROGRESS, TODO, CHANGELOG, DOCS).
+
 ■ ## Cycle 214 · 2026-04-28 22:03 · docs(setup): refresh bundle doctor guidance
 
 **Phase**: documentation
@@ -99,19 +110,9 @@
 **Next**: No release-artifact follow-up remains; the next session can choose a fresh post-1.20 direction.
 **Context**: intent (update only live artifacts to reflect out-of-band `1.20.1` push and commit) · constraints (no remote operations, preserve pushed history, keep the patch release distinct from the `1.20.0` parity release) · unknowns (none after remote-ref verification) · scope (`.agentera/PLAN.md`, `.agentera/DOCS.md`, `.agentera/PROGRESS.md`).
 
-■ ## Cycle 205 · 2026-04-28 16:21 · docs(release): record 1.20 readiness handoff
-
-**Phase**: release readiness
-**What**: Prepared the local Task 6 release-readiness handoff without publishing. Folded the remaining Copilot and OpenCode hard-gate changelog entries into the single `1.20.0` section. Updated DOCS coverage to the Task 5 verified 452 tests. Added a TODO for the explicit retag, fast-forward publish, tag push, and remote-ref verification steps. Logged the realisera safety boundary in PLAN because final tag movement and remote publish require explicit release action.
-**Commit**: this commit, `docs(release): record 1.20 readiness handoff`
-**Inspiration**: Active `.agentera/PLAN.md` Task 6. The plan needs truthful release artifacts before the final publish step, but realisera must not push or force-retag.
-**Discovered**: Local `v1.20.0` points at `17c6141`, not the current release head. Remote `v1.20*` tags are absent when checked with `GIT_SSH_COMMAND='ssh -F /dev/null'`.
-**Verified**: N/A: docs-only. The cycle changes only release artifacts. `python3 scripts/compact_artifact.py progress .agentera/PROGRESS.md` compacted 11 to 10 full entries. `python3 scripts/generate_contracts.py --check` passed with 12 current contracts. `python3 scripts/validate_spec.py` passed with 0 errors and 0 warnings. `python3 scripts/validate_lifecycle_adapters.py` printed `lifecycle adapter metadata ok`. `node --check .opencode/plugins/agentera.js` passed. `node scripts/smoke_opencode_bootstrap.mjs` printed `PASS: all smoke checks passed`. `python3 -m pytest -q` passed with 452 tests. `git rev-parse v1.20.0` returned `17c6141a48648a19e9460b424ad9cb03f742a197`, while HEAD before this cycle was `7143e4acb949680ce336e1be22274fbe947e36c8`. `GIT_SSH_COMMAND='ssh -F /dev/null' git ls-remote --tags origin 'v1.20*'` returned no remote tags. `rg -n "1\.20\.1|1\.21\.0|1\.22\.0"` across release-facing surfaces returned no matches.
-**Next**: Release publish is authorized: retag `v1.20.0` at this final artifact commit, fast-forward `origin/main`, push the tag, and verify both remote refs.
-**Context**: intent (prepare Task 6 local freshness before publishing) · constraints (explicit user authorization required for remote push and tag movement, keep one 1.20.0 release story) · unknowns (none after release authorization) · scope (`CHANGELOG.md`, `TODO.md`, `.agentera/DOCS.md`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
-
 ## Archived Cycles
 
+- Cycle 205 (2026-04-28): docs(release): record 1.20 readiness handoff
 - Cycle 204 (2026-04-28): fix(release): guard hard-gate docs drift
 - Cycle 203 (2026-04-28): chore(release): fold metadata to 1.20.0
 - Cycle 202 (2026-04-28): docs(runtime): add tracked parity reference
@@ -151,4 +152,3 @@
 - Cycle 168 (2026-04-26): chore(plan): freshness checkpoint for Suite Usage Analytics
 - Cycle 167 (2026-04-26): chore(release): bump suite to 1.19.0
 - Cycle 166 (2026-04-26): docs(usage): document scripts/usage_stats.py across README, DOCS.md, AGENTS.md
-- Cycle 165 (2026-04-26): feat(usage): emit USAGE.md, stdout summary, and JSON

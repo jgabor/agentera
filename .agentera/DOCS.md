@@ -95,6 +95,16 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 ## Audit Log
 
+### 2026-04-28 (setup bundle final verification)
+
+- [checked] Unified setup bundle final checkpoint passed contracts, spec
+  validation, lifecycle and package-shape validation, artifact validation
+  coverage, setup doctor smoke, default live-host smoke, OpenCode bootstrap
+  smoke, Node syntax check, and 477 pytest tests · info (fixed)
+- [freshness] PROGRESS, TODO, CHANGELOG, DOCS, and PLAN now summarize the
+  completed setup bundle doctor and installer plan, including the Task 4
+  runtime-host smoke retry surprise · info (fixed)
+
 ### 2026-04-28 (setup bundle docs refresh)
 
 - [stale] README still described the unified doctor and installer as future
