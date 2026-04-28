@@ -1,13 +1,15 @@
 # Plan: Complete v1.20 Feature Parity Release
 
-<!-- Level: full | Created: 2026-04-28 | Status: active -->
+<!-- Level: full | Created: 2026-04-28 | Status: complete -->
 <!-- Reviewed: 2026-04-28 | Critic issues: 4 found, 4 addressed, 0 dismissed -->
 
 ## What
 
 Close the remaining closeable cross-runtime parity gaps, publish an accurate parity reference, and fold local patch-release state into one `v1.20.0` release.
 
-The final release keeps pushed branch history intact, resets the local `v1.20.0` tag to the final verified commit, and publishes main plus the tag.
+The final release kept pushed branch history intact, published `v1.20.0`,
+then accepted a follow-up `v1.20.1` patch release for decision-numbering
+hygiene.
 
 ## Why
 
@@ -17,7 +19,7 @@ agentera's vision is a portable agent engineering protocol. v1.20 should read as
 
 - Preserve pushed remote history. `origin/main` already contains earlier v1.20 work through `03caca9`.
 - Use fast-forward publishing only. No force-push unless the user separately asks.
-- No remote `v1.20*` tag exists, so the final tag can be created at the release commit.
+- Remote `v1.20.0` exists at `629ed22`; remote `v1.20.1` exists at `e9474c6`.
 - Treat this as pre-tag release consolidation. Do not apply the normal patch-bump rule.
 - Do not claim OpenCode model-visible preload unless a supported injection path is proven.
 - Keep Python scripts stdlib-only and extend existing validator surfaces.
@@ -39,7 +41,9 @@ The adapter layer closes hard-gating gaps where host hooks support pre-write blo
 
 The documentation layer turns the ignored parity comparison into a tracked reference and reconciles README, CHANGELOG, TODO, DOCS, and adapter prose.
 
-The release layer folds all version surfaces back to `1.20.0`, verifies the final state, retags locally, then publishes only by fast-forward.
+The release layer folded all parity work into `1.20.0`, verified the final
+state, and published only by fast-forward. The later `1.20.1` patch release
+updates decision-numbering hygiene without changing the parity-release scope.
 
 ## Tasks
 
@@ -81,7 +85,7 @@ The release layer folds all version surfaces back to `1.20.0`, verifies the fina
 **Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN version files are inspected WHEN the fold-down is complete THEN every suite version surface reads `1.20.0`.
-▸ GIVEN CHANGELOG.md is read WHEN the fold-down is complete THEN there is one `1.20.0` section and no `1.20.1` section.
+▸ GIVEN CHANGELOG.md is read WHEN the fold-down is complete THEN there is one `1.20.0` section and no stale pre-publish `1.20.1` section.
 ▸ GIVEN TODO.md and release-facing docs are searched WHEN complete THEN stale `1.20.1`, `1.21.0`, and `1.22.0` release claims are absent.
 ▸ GIVEN `.agentera/DOCS.md` is read WHEN complete THEN coverage and release index rows match the final verified test count.
 
@@ -103,18 +107,21 @@ The release layer folds all version surfaces back to `1.20.0`, verifies the fina
 **Acceptance**:
 ▸ GIVEN plan work is complete WHEN artifacts are read THEN PROGRESS, TODO, CHANGELOG, DOCS, and PLAN summarize the plan-level result.
 ▸ GIVEN the final commit is checked WHEN release publishing begins THEN the worktree is clean.
-▸ GIVEN remote tags are checked WHEN publishing begins THEN no remote `v1.20*` tag conflicts.
+▸ GIVEN remote tags are checked WHEN publishing begins THEN no conflicting remote `v1.20*` tag blocks fast-forward release.
 ▸ GIVEN the local `v1.20.0` tag exists WHEN finalizing THEN it points at the final verified commit.
-▸ GIVEN publishing completes WHEN remote state is checked THEN origin main and `v1.20.0` resolve to the final verified commit.
+▸ GIVEN publishing completes WHEN remote state is checked THEN origin main and release tags resolve to the verified commits.
 
 ## Overall Acceptance
 
-▸ GIVEN v1.20 is inspected after publish WHEN version surfaces are checked THEN `1.20.0` is the only release identifier for this work.
+▸ GIVEN v1.20 is inspected after publish WHEN version surfaces are checked THEN `1.20.0` remains the parity-release identifier and `1.20.1` is the follow-up patch identifier.
 ▸ GIVEN artifact validation is compared across runtimes WHEN release docs are read THEN all closeable hard-gate paths are implemented or explicitly blocked.
 ▸ GIVEN OpenCode preload is read WHEN no model-visible injection path exists THEN it is marked deferred, not shipped.
 ▸ GIVEN package metadata, docs, and tests are checked WHEN verification completes THEN they agree on the final runtime behavior.
-▸ GIVEN origin is checked after publishing WHEN tags and main are resolved THEN `v1.20.0` points at the final verified commit.
+▸ GIVEN origin is checked after publishing WHEN tags and main are resolved THEN `v1.20.0`, `v1.20.1`, and `origin/main` point at the expected verified commits.
 
 ## Surprises
 
 - 2026-04-28: Realisera could prepare local freshness, but final retag and remote publish required explicit release authorization. Authorization was granted after the readiness handoff; preflight found no remote `v1.20*` tags.
+- 2026-04-28: `v1.20.1` was pushed out of band after the `v1.20.0`
+  release. Remote verification now shows `v1.20.0` at `629ed22`,
+  `v1.20.1` at `e9474c6`, and `origin/main` at `06a81e2`.

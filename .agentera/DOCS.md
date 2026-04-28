@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-28 (runtime onboarding polish) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-28 (release state reconciliation) -->
 
 ## Conventions
 
@@ -54,7 +54,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Progress | .agentera/PROGRESS.md | 2026-04-28 | ■ current |
 | TODO | TODO.md | 2026-04-28 | ■ current |
 | Changelog | CHANGELOG.md | 2026-04-28 | ■ current |
-| Health | .agentera/HEALTH.md | 2026-04-26 | ■ current |
+| Health | .agentera/HEALTH.md | 2026-04-28 | ■ current |
 | Plan | .agentera/PLAN.md | 2026-04-28 | ■ current |
 | DOCS | .agentera/DOCS.md | 2026-04-28 | ■ current |
 | Design | .agentera/DESIGN.md | 2026-04-19 | ■ current |
@@ -93,6 +93,15 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Tests**: 457 tests across 17 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-28 (release state reconciliation)
+
+- [stale] PLAN.md still described the v1.20 release as active and pre-tag
+  after `v1.20.0` and `v1.20.1` existed remotely; it now records the pushed
+  tag state and marks the plan complete · warning (fixed)
+- [stale] PROGRESS.md still pointed to the old publish-next handoff; a new
+  cycle records the verified remote refs and out-of-band `1.20.1` patch state ·
+  warning (fixed)
 
 ### 2026-04-28 (decision numbering hygiene)
 
