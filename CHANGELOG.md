@@ -6,6 +6,8 @@
 
 ### Changed
 
+- Unified setup bundle work is now freshness-closed: final validators, offline smoke checks, default live-host smoke, OpenCode bootstrap smoke, and the 477-test suite passed after the 1.21.0 release metadata and setup docs landed.
+
 ### Fixed
 
 ## [1.21.0] · 2026-04-28

@@ -1,6 +1,6 @@
 # Plan: Unified Setup Bundle Doctor And Installer
 
-<!-- Level: full | Created: 2026-04-28 | Status: active -->
+<!-- Level: full | Created: 2026-04-28 | Status: complete -->
 <!-- Reviewed: 2026-04-28 | Critic issues: 3 found, 3 addressed, 0 dismissed -->
 <!-- Revised: 2026-04-28 | Reason: Decision 33 bundle-first ownership refinement -->
 
@@ -121,7 +121,7 @@ Skill-local scripts remain owned by their skills. Suite-level tools such as doct
 ### Task 8: Verification And Freshness Checkpoint
 
 **Depends on**: Task 7
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN validators run WHEN final verification executes THEN spec, lifecycle, contracts, package-shape, and artifact checks pass.
 ▸ GIVEN smoke checks run WHEN final verification executes THEN setup, live-host unavailable, and OpenCode bootstrap smoke pass or skip by documented rules.
@@ -140,3 +140,7 @@ Skill-local scripts remain owned by their skills. Suite-level tools such as doct
 ## Surprises
 
 - Task 4 retry: evaluation treated `runtime_host` as a smoke-check category needing a failure branch. Doctor now fails a host-named but non-executable PATH candidate without invoking the runtime.
+
+## Result
+
+Completed 2026-04-28. The suite bundle surface, uv-packaged shared scripts, read-only doctor, offline smoke evidence, confirmed installer, 1.21.0 metadata, setup docs, and final verification checkpoint are all closed. Final verification passed contracts, spec validation, lifecycle and package-shape validation, artifact validation coverage, setup doctor smoke, default live-host smoke, OpenCode bootstrap smoke, Node syntax check, and the full 477-test pytest suite.
