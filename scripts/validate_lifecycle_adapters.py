@@ -45,6 +45,21 @@ CODEX_PROFILERA_STATUS_VALUES = ("ok", "degraded")
 CODEX_PROFILERA_INVOCATION_TERMS = ("$profilera", "limited", "Section 22", "source families")
 OPENCODE_EVENT_TYPES = {"session.created", "session.idle"}
 COPILOT_REQUIRED_PREWRITE_HOOK = "preToolUse"
+SUITE_BUNDLE_REQUIRED_PATHS = {
+    "skills": "dir",
+    "scripts": "dir",
+    "hooks": "dir",
+    "registry.json": "file",
+    "plugin.json": "file",
+    "README.md": "file",
+    "SPEC.md": "file",
+}
+RUNTIME_PACKAGE_SURFACES = {
+    "claude": ".claude-plugin/marketplace.json",
+    "codex": ".codex-plugin/plugin.json",
+    "copilot": "plugin.json",
+    "opencode": ".opencode/package.json",
+}
 HARD_GATE_DOC_REQUIREMENTS = {
     "references/adapters/runtime-feature-parity.md": {
         "OpenCode": (
@@ -117,6 +132,89 @@ def _resolve_inside(root: Path, path: str) -> Path | None:
     except ValueError:
         return None
     return resolved
+
+
+def _resolve_from_manifest(root: Path, manifest: Path, path: str) -> Path | None:
+    resolved = (manifest.parent / path).resolve()
+    try:
+        resolved.relative_to(root.resolve())
+    except ValueError:
+        return None
+    return resolved
+
+
+def validate_suite_bundle_surface(
+    root: Path,
+    runtime_names: set[str] | None = None,
+) -> list[str]:
+    """Validate aggregate runtime metadata for the shared bundle root.
+
+    The ``agentera`` block is interpreted from each runtime manifest location:
+    ``installRoot`` points back to the installed Agentera package root, and
+    ``sharedPaths`` are resolved from that root.
+    """
+    errors: list[str] = []
+    active = runtime_names if runtime_names is not None else set(RUNTIME_PACKAGE_SURFACES)
+
+    for runtime in sorted(active):
+        relative_manifest = RUNTIME_PACKAGE_SURFACES.get(runtime)
+        if relative_manifest is None:
+            errors.append(f"{runtime}: unknown runtime package surface")
+            continue
+        manifest = root / relative_manifest
+        if not manifest.is_file():
+            errors.append(f"{runtime}: missing package metadata {relative_manifest}")
+            continue
+
+        try:
+            package = _load_json(manifest)
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            errors.append(f"{runtime}: could not read package metadata {relative_manifest}: {exc}")
+            continue
+
+        metadata = package.get("agentera")
+        if not isinstance(metadata, dict):
+            errors.append(f"{runtime}: missing agentera suite bundle metadata")
+            continue
+        if metadata.get("packageShape") != "suite-bundle":
+            errors.append(f"{runtime}: agentera.packageShape must be suite-bundle")
+
+        install_root_value = metadata.get("installRoot")
+        if not isinstance(install_root_value, str) or not install_root_value:
+            errors.append(f"{runtime}: agentera.installRoot must point at the bundle root")
+            continue
+        install_root = _resolve_from_manifest(root, manifest, install_root_value)
+        if install_root is None:
+            errors.append(f"{runtime}: agentera.installRoot must stay inside package root")
+            continue
+        if install_root != root.resolve():
+            errors.append(f"{runtime}: AGENTERA_HOME must resolve to the package root")
+
+        shared_paths = metadata.get("sharedPaths")
+        if not isinstance(shared_paths, list) or not all(isinstance(path, str) for path in shared_paths):
+            errors.append(f"{runtime}: agentera.sharedPaths must list bundle paths")
+            continue
+        listed = set(shared_paths)
+        for path, expected_kind in SUITE_BUNDLE_REQUIRED_PATHS.items():
+            if path not in listed:
+                errors.append(f"{runtime}: shared tool path {path} missing from package metadata")
+                continue
+            resolved = _resolve_inside(install_root, path)
+            if resolved is None:
+                errors.append(f"{runtime}: shared tool path {path} must stay inside install root")
+            elif expected_kind == "dir" and not resolved.is_dir():
+                errors.append(f"{runtime}: shared tool path {path} must resolve to a directory")
+            elif expected_kind == "file" and not resolved.is_file():
+                errors.append(f"{runtime}: shared tool path {path} must resolve to a file")
+
+        single_skill = metadata.get("singleSkillInstall")
+        if not isinstance(single_skill, str) or "core" not in single_skill or "suite" not in single_skill:
+            errors.append(
+                f"{runtime}: agentera.singleSkillInstall must state core skill behavior "
+                "does not require suite tools"
+            )
+
+    return errors
 
 
 def validate_copilot(plugin: dict[str, Any], plugin_root: Path) -> list[str]:
@@ -371,6 +469,7 @@ def main(argv: list[str] | None = None) -> int:
     errors.extend(validate_codex(codex))
     errors.extend(validate_codex_profilera_metadata(root, codex))
     errors.extend(validate_opencode(root))
+    errors.extend(validate_suite_bundle_surface(root))
     errors.extend(validate_hard_gate_docs(root))
 
     if errors:

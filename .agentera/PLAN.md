@@ -43,7 +43,7 @@ Skill-local scripts remain owned by their skills. Suite-level tools such as doct
 ### Task 1: Suite Bundle Tool Surface
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN an aggregate Agentera install WHEN its package root is inspected THEN skills, shared scripts, hooks, manifests, and docs are reachable from one root.
 ▸ GIVEN a single skill install WHEN the skill runs THEN core workflow behavior does not require suite-level tools.

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Runtime package metadata now declares the Agentera suite bundle surface for Claude Code, Codex, Copilot, and OpenCode, with validation that shared skills, scripts, hooks, manifests, and docs resolve from one install root.
+
 ## [1.20.1] · 2026-04-28
 
 ### Fixed

@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 207 · 2026-04-28 20:39 · feat(setup): define suite bundle surface
+
+**Phase**: implementation
+**What**: Completed Task 1 of the Unified Setup Bundle Doctor And Installer plan. Claude Code, Codex, Copilot, and OpenCode aggregate metadata now declare an Agentera suite bundle surface: package shape, install root, shared paths, and the single-skill boundary. Lifecycle validation now checks those runtime package shapes and fails with the owning runtime name when shared paths are absent.
+**Commit**: this commit, `feat(setup): define suite bundle surface`
+**Inspiration**: Decision 33 and active PLAN.md Task 1. Suite installs should carry shared tools from one root while standalone skills keep core SKILL.md behavior independent from suite infrastructure.
+**Discovered**: The existing lifecycle adapter validator was the right owner for package-shape validation because it already guards runtime metadata and bounded runtime claims.
+**Verified**: `python3 -m pytest tests/test_runtime_adapters.py -q` passed with 39 tests, including one pass and one missing-`scripts` failure per runtime package shape. `python3 scripts/validate_lifecycle_adapters.py` printed `lifecycle adapter metadata ok`. `python3 -m json.tool` accepted `plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `.opencode/package.json`.
+**Next**: Task 2, Packaged Script Runtime Hygiene.
+**Context**: intent (execute only Task 1) · constraints (no doctor or installer behavior, no uv script metadata, preserve single-skill core behavior, commit locally) · unknowns (future doctor will decide report format) · scope (aggregate runtime metadata, lifecycle validator, focused runtime adapter tests, PLAN, PROGRESS, CHANGELOG).
+
 ■ ## Cycle 206 · 2026-04-28 19:43 · docs(release): reconcile 1.20.1 artifact state
 
 **Phase**: release freshness
@@ -99,19 +110,9 @@
 **Next**: The remaining Normal TODOs are external aggregator PRs for Copilot and Codex plugin listings.
 **Context**: intent (execute the active Copilot hook event-name validator plan) · constraints (one focused validator cycle, no runtime behavior changes, preserve existing handler checks, no remote operations) · unknowns (worker dispatch did not produce code, so main-checkout implementation completed the same scope) · scope (`scripts/validate_lifecycle_adapters.py`, `tests/test_runtime_adapters.py`, `CHANGELOG.md`, `TODO.md`, PLAN archive, PROGRESS).
 
-■ ## Cycle 197 · 2026-04-27 20:05 · fix(opencode): restore session bookmarks via event hook
-
-**Phase**: implementation
-**What**: Executed the OpenCode Session Events plan. Replaced the dead SESSION.md bookmark path with real OpenCode event handling: `.opencode/plugins/agentera.js` now returns a generic `event` hook, explicitly ignores `session.created`, and delegates `session.idle` to the existing `hooks/session_stop.py` bookmark writer. Updated `references/adapters/opencode.md` and README to describe `session.created` / `session.idle` as event payload values, not direct hook keys; OpenCode session-start preload is now documented as deferred because no supported model-context injection path is verified. Extended `scripts/smoke_opencode_bootstrap.mjs`, `tests/test_runtime_adapters.py`, and `scripts/validate_lifecycle_adapters.py` to require the generic event hook, reject phantom direct keys, and prove idle write, idle no-op, created-event no-op, and malformed-event no-op behavior. Applied patch release metadata to 1.20.1 across DOCS.md version targets, promoted CHANGELOG, resolved `[opencode-session-events]`, marked the plan complete, and refreshed DOCS.md coverage to 441 tests.
-**Commit**: a4d7d19 `fix(opencode): restore session bookmarks via event hook`
-**Inspiration**: OpenCode plugin docs show `event: async ({ event })` with `event.type === "session.idle"`; local `@opencode-ai/plugin` types expose `event?: ({ event }) => Promise<void>` and no direct session hook members. Decision 23 keeps SESSION.md as the continuity artifact, so the fix reuses the existing Python bookmark writer instead of inventing a second format.
-**Discovered**: Session-start preload remains unsupported for OpenCode in this adapter. The `session.created` event is observable, but observation alone does not inject digest text into model context. The plan therefore documents preload as deferred and leaves no dead preload branch behind. The smoke harness can exercise event payload behavior without a live OpenCode session by invoking the exported hook object against temp git projects.
-**Verified**: `node --check .opencode/plugins/agentera.js` passed. `node scripts/smoke_opencode_bootstrap.mjs` passed and reported 7 plugin init calls, idle bookmark write, created-event no-op, malformed-event no-op, and idle no-op. `python3 scripts/validate_lifecycle_adapters.py` passed. `python3 scripts/validate_spec.py` passed with 0 errors and 0 warnings. `python3 -m pytest tests/test_runtime_adapters.py -q` passed with 28 tests. `python3 -m pytest -q` passed with 441 tests.
-**Next**: Commit the 1.20.1 OpenCode session-events fix locally; no push or tag has been performed.
-**Context**: intent (execute the active OpenCode Session Events plan through a patch release, restore SESSION.md bookmark behavior on real OpenCode event semantics, and keep preload claims honest) · constraints (generic event hook only, no direct session hook keys, reuse SESSION.md contract, patch bump per DOCS.md, no remote operations) · scope (`.opencode/plugins/agentera.js`, `scripts/smoke_opencode_bootstrap.mjs`, `tests/test_runtime_adapters.py`, `scripts/validate_lifecycle_adapters.py`, `references/adapters/opencode.md`, README, version files, CHANGELOG, TODO, DOCS, PLAN, PROGRESS).
-
 ## Archived Cycles
 
+- Cycle 197 (2026-04-27): fix(opencode): restore session bookmarks via event hook
 - Cycle 196 (2026-04-27): chore(plan): freshness checkpoint for Cross-Runtime Parity Completion
 - Cycle 195 (2026-04-27): feat(smoke): add --yes consent bypass and live Codex apply_patch hook firing verification
 - Cycle 194 (2026-04-27): docs(orkestrera): document runtime-aware dispatch substrates
@@ -151,4 +152,3 @@
 - Cycle 160 (2026-04-25): docs(release): apply copilot release convention
 - Cycle 159 (2026-04-25): docs(copilot): update user guidance
 - Cycle 158 (2026-04-25): chore(runtime): verify copilot host state
-- Cycle 157 (2026-04-25): test(install): guard copilot marketplace claims
