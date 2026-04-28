@@ -100,7 +100,7 @@ Skill-local scripts remain owned by their skills. Suite-level tools such as doct
 ### Task 6: Version Metadata
 
 **Depends on**: Task 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN DOCS.md version policy is applied WHEN feature metadata is updated THEN suite version targets receive the required minor bump.
 ▸ GIVEN version files are inspected WHEN the bump is complete THEN every listed suite version surface agrees.
