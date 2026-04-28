@@ -409,6 +409,24 @@ class TestLifecycleAdapters:
         plugin["hooks"] = [".github/hooks"]
         assert validator.validate_copilot_hooks(REPO_ROOT, plugin) == []
 
+    def test_copilot_lifecycle_requires_prewrite_artifact_gate(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        root = tmp_path / "repo"
+        hook_dir = root / ".github/hooks"
+        hook_dir.mkdir(parents=True)
+        (hook_dir / "postToolUse.json").write_text(
+            json.dumps(
+                {
+                    "name": "postToolUse",
+                    "type": "command",
+                    "bash": "python3 hooks/validate_artifact.py",
+                }
+            ),
+            encoding="utf-8",
+        )
+        errors = validator.validate_copilot_hooks(root, {"hooks": ".github/hooks"})
+        assert "copilot: missing required preToolUse artifact validation hook" in errors
+
     def test_copilot_lifecycle_accepts_documented_hook_events(self, tmp_path):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
         root = tmp_path / "repo"

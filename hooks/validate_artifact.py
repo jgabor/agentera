@@ -21,6 +21,10 @@ Routing:
 
 Supported stdin shapes:
     Claude Code (PostToolUse): {tool_input: {file_path: <path>}, ...}
+    Copilot CLI (preToolUse): {toolName: <name>, toolArgs: <json string>, cwd: <dir>, ...}
+        If toolArgs carries a path plus reconstructable candidate content,
+        artifact content is validated before mutation. Invalid artifacts emit
+        {"permissionDecision":"deny", ...}; insufficient evidence is allowed.
     Codex (PreToolUse/PostToolUse, tool_name == "apply_patch"):
         {tool_name: "apply_patch", tool_input: {command: <patch body>}, cwd: <dir>, ...}
         Patch body parsed for *** Add/Update/Delete/Move headers per
@@ -198,13 +202,17 @@ def validate_artifact_structure(file_path: str, artifact_name: str) -> list[str]
 
     Returns a list of violation messages. Empty list means all checks pass.
     """
-    violations: list[str] = []
-
     try:
         content = Path(file_path).read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
-        violations.append(f"Cannot read {artifact_name}: {exc}")
-        return violations
+        return [f"Cannot read {artifact_name}: {exc}"]
+
+    return validate_artifact_text(content, artifact_name)
+
+
+def validate_artifact_text(content: str, artifact_name: str) -> list[str]:
+    """Validate candidate artifact content without reading from disk."""
+    violations: list[str] = []
 
     # Check required headings
     required = ARTIFACT_HEADINGS.get(artifact_name, [])
@@ -408,6 +416,117 @@ def extract_codex_patch_paths(command: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Copilot preToolUse stdin parsing
+# ---------------------------------------------------------------------------
+
+
+_COPILOT_PATH_KEYS = ("path", "filePath", "file_path")
+_COPILOT_CONTENT_KEYS = ("content", "text", "newContent", "new_content")
+_COPILOT_OLD_KEYS = ("oldString", "old_string", "oldText", "old_text")
+_COPILOT_NEW_KEYS = ("newString", "new_string", "newText", "new_text")
+
+
+def parse_copilot_tool_args(value: object) -> dict[str, object] | None:
+    """Return Copilot toolArgs as an object.
+
+    Copilot CLI documents toolArgs as a JSON string. The SDK exposes an object.
+    Support both shapes so the hook stays portable across Copilot surfaces.
+    """
+    if isinstance(value, dict):
+        return value
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        return None
+    if isinstance(parsed, dict):
+        return parsed
+    return None
+
+
+def _first_string(args: dict[str, object], keys: tuple[str, ...]) -> str | None:
+    for key in keys:
+        value = args.get(key)
+        if isinstance(value, str):
+            return value
+    return None
+
+
+def reconstruct_copilot_candidate(
+    tool_args: object,
+    project_root: str,
+) -> tuple[str, str] | None:
+    """Reconstruct a candidate file path and content from Copilot toolArgs.
+
+    Returns None when the payload does not carry enough evidence. The pre-write
+    gate must allow that case rather than guessing at host-specific tool shapes.
+    """
+    args = parse_copilot_tool_args(tool_args)
+    if args is None:
+        return None
+
+    raw_path = _first_string(args, _COPILOT_PATH_KEYS)
+    if raw_path is None:
+        return None
+    file_path = raw_path if os.path.isabs(raw_path) else str(Path(project_root) / raw_path)
+
+    content = _first_string(args, _COPILOT_CONTENT_KEYS)
+    if content is not None:
+        return file_path, content
+
+    old_text = _first_string(args, _COPILOT_OLD_KEYS)
+    new_text = _first_string(args, _COPILOT_NEW_KEYS)
+    if old_text is None or new_text is None:
+        return None
+
+    try:
+        current = Path(file_path).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+
+    replace_all = args.get("replaceAll") is True or args.get("replace_all") is True
+    if replace_all:
+        if old_text not in current:
+            return None
+        return file_path, current.replace(old_text, new_text)
+
+    if current.count(old_text) != 1:
+        return None
+    return file_path, current.replace(old_text, new_text, 1)
+
+
+def _print_copilot_decision(decision: str, reason: str | None = None) -> None:
+    payload = {"permissionDecision": decision}
+    if reason:
+        payload["permissionDecisionReason"] = reason
+    print(json.dumps(payload, separators=(",", ":")))
+
+
+def handle_copilot_pre_tool_use(hook_input: dict[str, object], project_root: str) -> int:
+    """Validate reconstructable Copilot edit candidates before mutation."""
+    candidate = reconstruct_copilot_candidate(hook_input.get("toolArgs"), project_root)
+    if candidate is None:
+        _print_copilot_decision("allow")
+        return 0
+
+    file_path, content = candidate
+    artifact_name = identify_artifact(file_path, project_root)
+    if artifact_name is None:
+        _print_copilot_decision("allow")
+        return 0
+
+    violations = validate_artifact_text(content, artifact_name)
+    if not violations:
+        _print_copilot_decision("allow")
+        return 0
+
+    reason = "Artifact validation failed: " + "; ".join(violations)
+    _print_copilot_decision("deny", reason)
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # Routing
 # ---------------------------------------------------------------------------
 
@@ -495,6 +614,16 @@ def main() -> int:
     project_root = hook_input.get("cwd", os.getcwd())
     tool_input = hook_input.get("tool_input") or {}
     tool_name = hook_input.get("tool_name", "")
+
+    is_copilot_pre_tool = (
+        isinstance(hook_input, dict)
+        and "toolName" in hook_input
+        and "toolArgs" in hook_input
+        and "toolResult" not in hook_input
+        and hook_input.get("hook_event_name", "preToolUse") == "preToolUse"
+    )
+    if is_copilot_pre_tool:
+        return handle_copilot_pre_tool_use(hook_input, str(project_root))
 
     # Codex apply_patch path: tool_input.command holds the raw patch body;
     # parse for every touched file and validate each one.

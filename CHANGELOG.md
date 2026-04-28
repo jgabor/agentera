@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Copilot `preToolUse` now hard-gates reconstructable invalid artifact edits before mutation and lifecycle validation requires the shipped pre-write hook.
 - Copilot lifecycle validation now rejects unsupported hook event names and mismatched per-event hook filenames.
 
 ## [1.20.1] · 2026-04-27

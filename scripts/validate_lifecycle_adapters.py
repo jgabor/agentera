@@ -44,6 +44,7 @@ CODEX_PROFILERA_TERMS = (
 CODEX_PROFILERA_STATUS_VALUES = ("ok", "degraded")
 CODEX_PROFILERA_INVOCATION_TERMS = ("$profilera", "limited", "Section 22", "source families")
 OPENCODE_EVENT_TYPES = {"session.created", "session.idle"}
+COPILOT_REQUIRED_PREWRITE_HOOK = "preToolUse"
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -74,6 +75,13 @@ def _validate_command_handler(
     timeout = handler.get("timeoutSec")
     if timeout is not None and not isinstance(timeout, int):
         errors.append(f"{prefix}: timeoutSec must be an integer")
+
+
+def _handler_command_text(handler: Any) -> str:
+    if not isinstance(handler, dict):
+        return ""
+    parts = [handler.get("bash"), handler.get("powershell")]
+    return " ".join(part for part in parts if isinstance(part, str))
 
 
 def _string_paths(value: Any) -> list[str]:
@@ -146,6 +154,7 @@ def validate_copilot_hooks(plugin_root: Path, plugin: dict[str, Any]) -> list[st
             errors.append("copilot.hooks must resolve to a hook directory")
             continue
 
+        seen_events: set[str] = set()
         for path in sorted(hook_dir.glob("*.json")):
             hook = _load_json(path)
             event = hook.get("name")
@@ -162,6 +171,16 @@ def validate_copilot_hooks(plugin_root: Path, plugin: dict[str, Any]) -> list[st
             if event != event[:1].lower() + event[1:]:
                 errors.append(f"copilot: event must be lower-camel: {event}")
             _validate_command_handler(errors, "copilot", event, 0, hook)
+            seen_events.add(event)
+            if event == COPILOT_REQUIRED_PREWRITE_HOOK:
+                command_text = _handler_command_text(hook)
+                if "hooks/validate_artifact.py" not in command_text:
+                    errors.append(
+                        "copilot.preToolUse: artifact hard gate must run hooks/validate_artifact.py"
+                    )
+
+        if COPILOT_REQUIRED_PREWRITE_HOOK not in seen_events:
+            errors.append("copilot: missing required preToolUse artifact validation hook")
 
     return errors
 

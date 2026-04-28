@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-27 (OpenCode session-events checkpoint) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-28 (Copilot pre-write gate checkpoint) -->
 
 ## Conventions
 
@@ -46,16 +46,16 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 | Document | Path | Last Updated | Status |
 |----------|------|-------------|--------|
-| README | README.md | 2026-04-27 | ■ current |
+| README | README.md | 2026-04-28 | ■ current |
 | CLAUDE.md | CLAUDE.md | 2026-04-27 | ■ current |
 | Decisions | .agentera/DECISIONS.md | 2026-04-02 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
-| Progress | .agentera/PROGRESS.md | 2026-04-27 | ■ current |
+| Progress | .agentera/PROGRESS.md | 2026-04-28 | ■ current |
 | TODO | TODO.md | 2026-04-27 | ■ current |
-| Changelog | CHANGELOG.md | 2026-04-27 | ■ current |
+| Changelog | CHANGELOG.md | 2026-04-28 | ■ current |
 | Health | .agentera/HEALTH.md | 2026-04-26 | ■ current |
-| Plan | .agentera/PLAN.md | 2026-04-27 | ■ current |
-| DOCS | .agentera/DOCS.md | 2026-04-27 | ■ current |
+| Plan | .agentera/PLAN.md | 2026-04-28 | ■ current |
+| DOCS | .agentera/DOCS.md | 2026-04-28 | ■ current |
 | Design | .agentera/DESIGN.md | 2026-04-19 | ■ current |
 | Ecosystem spec | SPEC.md | 2026-04-20 | ■ current |
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
@@ -67,7 +67,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | OpenCode adapter reference | references/adapters/opencode.md | 2026-04-27 | ■ current |
 | Codex UI metadata | skills/&lt;name&gt;/agents/openai.yaml; agents/openai.yaml | 2026-04-24 | ■ current |
 | Hooks registry | hooks/hooks.json | 2026-04-03 | ■ current |
-| Lifecycle adapter validator | scripts/validate_lifecycle_adapters.py | 2026-04-27 | ■ current |
+| Lifecycle adapter validator | scripts/validate_lifecycle_adapters.py | 2026-04-28 | ■ current |
 | Usage analytics script | scripts/usage_stats.py | 2026-04-26 | ■ current |
 | Codex setup helper | scripts/setup_codex.py | 2026-04-26 | ■ current |
 | Copilot setup helper | scripts/setup_copilot.py | 2026-04-26 | ■ current |
@@ -76,9 +76,9 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Live-host smoke runner | scripts/smoke_live_hosts.py | 2026-04-26 | ■ current |
 | SessionStart hook | hooks/session_start.py | 2026-04-03 | ■ current |
 | Session stop hook | hooks/session_stop.py | 2026-04-03 | ■ current |
-| Validation hook | hooks/validate_artifact.py | 2026-04-03 | ■ current |
+| Validation hook | hooks/validate_artifact.py | 2026-04-28 | ■ current |
 | Shared hook utils | hooks/common.py | 2026-04-03 | ■ current |
-| Test suite | tests/ | 2026-04-27 | ■ current |
+| Test suite | tests/ | 2026-04-28 | ■ current |
 | Lefthook config | .lefthook.yml | 2026-04-20 | ■ current |
 | CI workflow | .github/workflows/ci.yml | 2026-04-11 | ■ current |
 
@@ -87,9 +87,14 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 441 tests across 17 files; CI runs on push/PR via GitHub Actions
+- **Tests**: 449 tests across 17 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-28 (Copilot pre-write gate checkpoint)
+
+- [gap] README claimed broad artifact-validation parity before Copilot payload evidence supported every edit shape; docs now limit the claim to reconstructable preToolUse candidates · warning (fixed)
+- [gap] Copilot shipped only postToolUse artifact validation, whose output is logging-only; preToolUse now blocks invalid reconstructable artifact edits · warning (fixed)
 
 ### 2026-04-27 (OpenCode session-events checkpoint)
 
