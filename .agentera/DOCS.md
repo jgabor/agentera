@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-28 (release state reconciliation) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-28 (setup bundle docs refresh) -->
 
 ## Conventions
 
@@ -75,6 +75,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Codex setup helper | scripts/setup_codex.py | 2026-04-26 | ■ current |
 | Copilot setup helper | scripts/setup_copilot.py | 2026-04-26 | ■ current |
 | Setup helper smoke runner | scripts/smoke_setup_helpers.py | 2026-04-26 | ■ current |
+| Setup doctor and installer | scripts/setup_doctor.py | 2026-04-28 | ■ current |
 | OpenCode bootstrap smoke runner | scripts/smoke_opencode_bootstrap.mjs | 2026-04-28 | ■ current |
 | Live-host smoke runner | scripts/smoke_live_hosts.py | 2026-04-26 | ■ current |
 | SessionStart hook | hooks/session_start.py | 2026-04-03 | ■ current |
@@ -90,9 +91,22 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 457 tests across 17 files; CI runs on push/PR via GitHub Actions
+- **Tests**: 477 tests across 17 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-28 (setup bundle docs refresh)
+
+- [stale] README still described the unified doctor and installer as future
+  work after `scripts/setup_doctor.py` shipped; setup guidance now recommends
+  bundle-first doctor checks, offline smoke evidence, and confirmed installer
+  writes · warning (fixed)
+- [gap] DOCS.md Index had no row for the setup doctor and still reported 457
+  tests; it now tracks the doctor/installer script and 477 collected tests ·
+  warning (fixed)
+- [checked] Adapter setup notes still preserve runtime-native boundaries:
+  granular Copilot installs are core-only, while suite tools require the bundle
+  or clone root · info (fixed)
 
 ### 2026-04-28 (release state reconciliation)
 

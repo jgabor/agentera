@@ -110,7 +110,7 @@ Skill-local scripts remain owned by their skills. Suite-level tools such as doct
 ### Task 7: Documentation Refresh
 
 **Depends on**: Task 6
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN README setup guidance is read WHEN the plan is complete THEN bundle-first doctor flow is the recommended path.
 ▸ GIVEN single-skill install guidance is read WHEN suite tools are mentioned THEN core-only behavior and bundle-enhanced behavior are distinguished.

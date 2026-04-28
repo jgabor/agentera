@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 214 · 2026-04-28 22:03 · docs(setup): refresh bundle doctor guidance
+
+**Phase**: documentation
+**What**: Completed Task 7 of the Unified Setup Bundle Doctor And Installer plan. README now recommends the bundle-first setup doctor flow, distinguishes core single-skill behavior from bundle-enhanced tools, and documents confirmed Codex/Copilot installer writes plus no-live-default smoke behavior. DOCS.md now tracks the setup doctor/installer row and 477 collected tests. Runtime parity notes keep granular Copilot installs core-only and suite tools bundle-owned.
+**Commit**: this commit, `docs(setup): refresh bundle doctor guidance`
+**Inspiration**: Active PLAN.md Task 7. Setup docs needed to move from future-tense helper setup to the shipped doctor and confirmed installer surface.
+**Discovered**: The local Codex smoke check can be healthy while still warning about missing `shell_environment_policy.set.AGENTERA_HOME`; that warning is the doctor doing its job, not a docs failure.
+**Verified**: `python3 -m pytest --collect-only -q` collected 477 tests. `python3 scripts/setup_doctor.py --help` showed read-only defaults, `--smoke`, `--install`, `--yes`, `--dry-run`, and no-live permission wording. `python3 scripts/setup_doctor.py --install-root . --smoke --runtime codex --json` returned `ok: true`, helper and hook smoke passes, `modelCallsAttempted: false`, and a Codex runtime-config warning for this local config. `python3 scripts/validate_spec.py` passed with 0 errors and 0 warnings. `python3 scripts/validate_lifecycle_adapters.py` printed `lifecycle adapter metadata ok`. `python3 -m pytest tests/test_setup_doctor.py tests/test_runtime_adapters.py -q` passed with 57 tests.
+**Next**: Task 8, Verification And Freshness Checkpoint.
+**Context**: intent (execute only Task 7 documentation refresh) · constraints (no Task 8 final sweep, preserve runtime-native adapter boundaries, no remote push, commit locally) · unknowns (Task 8 will decide plan-level freshness and full verification scope) · scope (README setup guidance, runtime parity install note, DOCS index/audit, PLAN, PROGRESS).
+
 ■ ## Cycle 213 · 2026-04-28 21:38 · chore(release): bump suite to 1.21.0
 
 **Phase**: release metadata
@@ -99,19 +110,9 @@
 **Next**: Release publish is authorized: retag `v1.20.0` at this final artifact commit, fast-forward `origin/main`, push the tag, and verify both remote refs.
 **Context**: intent (prepare Task 6 local freshness before publishing) · constraints (explicit user authorization required for remote push and tag movement, keep one 1.20.0 release story) · unknowns (none after release authorization) · scope (`CHANGELOG.md`, `TODO.md`, `.agentera/DOCS.md`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
 
-■ ## Cycle 204 · 2026-04-28 13:27 · fix(release): guard hard-gate docs drift
-
-**Phase**: release verification
-**What**: Completed Task 5 of the v1.20 parity plan. Strengthened `scripts/validate_lifecycle_adapters.py` so lifecycle validation now guards the release-facing hard-gate documentation surfaces, not only the shipped hook wiring. Added focused regression tests proving Copilot overclaim drift and OpenCode `apply_patch` limitation drift are caught. Ran the release verification surface and marked Task 5 complete.
-**Commit**: this commit, `fix(release): guard hard-gate docs drift`
-**Inspiration**: Active `.agentera/PLAN.md` Task 5. The release needed verification to protect both shipped gates and the scoped Copilot/OpenCode claims that explain their limits.
-**Discovered**: The existing lifecycle validator required the Copilot `preToolUse` hook and OpenCode `tool.execute.before` hook, but it did not yet fail if docs later broadened those conditional hard-gate claims.
-**Verified**: `python3 scripts/generate_contracts.py --check` passed with 12 current contracts. `python3 scripts/validate_spec.py` passed with 0 errors and 0 warnings across 12 skills. `python3 scripts/validate_lifecycle_adapters.py` printed `lifecycle adapter metadata ok`. `node --check .opencode/plugins/agentera.js` passed. `node scripts/smoke_opencode_bootstrap.mjs` printed `PASS: all smoke checks passed`. `python3 -m pytest -q` passed with 452 tests. Live-host unavailable behavior was verified without model calls by running `PATH=/tmp/agentera-no-live-bin /bin/python3 scripts/smoke_live_hosts.py --live --yes`; it reported `SKIP: codex (not on PATH)`, `SKIP: codex-hook (not on PATH)`, `SKIP: copilot (not on PATH)`, then `PASS: all smoke checks passed`. `python3 -m pytest tests/test_runtime_adapters.py -q` passed with 35 tests, including drift fixtures that remove the Copilot insufficient-evidence constraint and the OpenCode `apply_patch` limitation.
-**Next**: Task 6, Plan-Level Freshness And Publish.
-**Context**: intent (complete only Task 5 release verification) · constraints (no publish, no tag changes, no Task 6 freshness sweep, keep release version at 1.20.0, avoid live model spend) · unknowns (none after unavailable live-host smoke and full verification) · scope (`scripts/validate_lifecycle_adapters.py`, `tests/test_runtime_adapters.py`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
-
 ## Archived Cycles
 
+- Cycle 204 (2026-04-28): fix(release): guard hard-gate docs drift
 - Cycle 203 (2026-04-28): chore(release): fold metadata to 1.20.0
 - Cycle 202 (2026-04-28): docs(runtime): add tracked parity reference
 - Cycle 201 (2026-04-28): fix(opencode): preserve empty prewrite candidates
@@ -151,4 +152,3 @@
 - Cycle 167 (2026-04-26): chore(release): bump suite to 1.19.0
 - Cycle 166 (2026-04-26): docs(usage): document scripts/usage_stats.py across README, DOCS.md, AGENTS.md
 - Cycle 165 (2026-04-26): feat(usage): emit USAGE.md, stdout summary, and JSON
-- Cycle 164 (2026-04-26): feat(usage): classify trigger phrasing and scope by project
