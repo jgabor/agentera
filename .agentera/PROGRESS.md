@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 208 · 2026-04-28 20:50 · feat(setup): validate uv script hygiene
+
+**Phase**: implementation
+**What**: Completed Task 2 of the Unified Setup Bundle Doctor And Installer plan. Executable suite scripts now use uv script shebangs and inline stdlib-only metadata. Lifecycle adapter validation now checks packaged executable script headers, empty dependency declarations, library-module exclusions, and optional uv runtime availability with install guidance.
+**Commit**: this commit, `feat(setup): validate uv script hygiene`
+**Inspiration**: Active PLAN.md Task 2 and Decision 33. Suite infrastructure should be package-root owned and runnable from an installed bundle before doctor or installer behavior is added.
+**Discovered**: `scripts/usage_stats.py` and `scripts/validate_lifecycle_adapters.py` were executable packaged scripts without inline script metadata, while the older executable scripts already declared `dependencies = []` but used the old Python shebang.
+**Verified**: `python3 -m pytest tests/test_runtime_adapters.py -q` passed with 45 tests, covering one pass fixture, missing uv shebang, missing metadata, non-empty dependency metadata, library-module exclusion, and missing-uv install guidance. `python3 scripts/validate_lifecycle_adapters.py --check-uv-runtime` and `./scripts/validate_lifecycle_adapters.py --check-uv-runtime` printed `lifecycle adapter metadata ok`. `PATH=/tmp/agentera-empty-path /usr/bin/python3 scripts/validate_lifecycle_adapters.py --check-uv-runtime` failed cleanly with uv install guidance and no traceback. Representative uv invocations passed: `uv run --script scripts/validate_lifecycle_adapters.py --check-uv-runtime`, `uv run --script scripts/setup_codex.py --help`, `uv run --script scripts/usage_stats.py --help`, `uv run --script scripts/validate_spec.py`, and `uv run --script scripts/generate_contracts.py --check`. Full verification passed with `python3 scripts/validate_spec.py`, `python3 scripts/generate_contracts.py --check`, and `python3 -m pytest -q` at 465 tests.
+**Next**: Task 3, Non-Mutating Setup Doctor.
+**Context**: intent (execute only Task 2) · constraints (no doctor, installer, smoke-evidence, version bump, or docs-refresh work; keep behavioral skill scripts in their owning skills; extend existing validator and smoke surfaces) · unknowns (doctor output schema remains Task 3 scope) · scope (executable root script headers, lifecycle validator, focused runtime adapter tests, PLAN, PROGRESS, CHANGELOG).
+
 ■ ## Cycle 207 · 2026-04-28 20:39 · feat(setup): define suite bundle surface
 
 **Phase**: implementation
@@ -99,19 +110,9 @@
 **Next**: Task 2, OpenCode Artifact Validation Hard Gate.
 **Context**: intent (close only Task 1) · constraints (stdlib-only Python, extend existing validators, no unsupported parity claim, no Task 2 work, no push) · unknowns (live Copilot host payload variants may include sparse toolArgs) · scope (`preToolUse` hook config, shared artifact validator, lifecycle validator, focused tests, README/CHANGELOG/DOCS, PLAN, PROGRESS).
 
-■ ## Cycle 198 · 2026-04-27 22:15 · fix(copilot): validate documented hook event names
-
-**Phase**: implementation
-**What**: Executed the Copilot Hook Event Name Validator plan. `scripts/validate_lifecycle_adapters.py` now uses the full documented Copilot event allowlist, accepts all six supported hook names, rejects stale names such as `stop`, and rejects per-event hook files whose filename does not match the declared event. `tests/test_runtime_adapters.py` gained focused coverage for accepted documented events, unsupported events, filename mismatch, and preserved handler validation.
-**Commit**: 73f19dd `fix(copilot): validate documented hook event names`
-**Inspiration**: Active PLAN.md and prior Cycle 190 evidence. The earlier `stop` typo showed that the validator must encode the host event allowlist, not only the currently shipped hook files.
-**Discovered**: The worker dispatch produced no code, so the scoped edit was completed directly in the main checkout after the pre-dispatch plan checkpoint. No exploratory decisions blocked the work. The active light plan is archived because all acceptance criteria are satisfied.
-**Verified**: `python3 -m pytest tests/test_runtime_adapters.py -q` passed with 31 tests. `python3 scripts/validate_lifecycle_adapters.py` printed `lifecycle adapter metadata ok`. `python3 scripts/validate_spec.py` passed with 0 errors and 0 warnings. `python3 -m pytest -q` passed with 444 tests.
-**Next**: The remaining Normal TODOs are external aggregator PRs for Copilot and Codex plugin listings.
-**Context**: intent (execute the active Copilot hook event-name validator plan) · constraints (one focused validator cycle, no runtime behavior changes, preserve existing handler checks, no remote operations) · unknowns (worker dispatch did not produce code, so main-checkout implementation completed the same scope) · scope (`scripts/validate_lifecycle_adapters.py`, `tests/test_runtime_adapters.py`, `CHANGELOG.md`, `TODO.md`, PLAN archive, PROGRESS).
-
 ## Archived Cycles
 
+- Cycle 198 (2026-04-27): fix(copilot): validate documented hook event names
 - Cycle 197 (2026-04-27): fix(opencode): restore session bookmarks via event hook
 - Cycle 196 (2026-04-27): chore(plan): freshness checkpoint for Cross-Runtime Parity Completion
 - Cycle 195 (2026-04-27): feat(smoke): add --yes consent bypass and live Codex apply_patch hook firing verification
@@ -151,4 +152,3 @@
 - Cycle 161 (2026-04-25): chore(plan): checkpoint copilot marketplace freshness
 - Cycle 160 (2026-04-25): docs(release): apply copilot release convention
 - Cycle 159 (2026-04-25): docs(copilot): update user guidance
-- Cycle 158 (2026-04-25): chore(runtime): verify copilot host state

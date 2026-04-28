@@ -5,6 +5,7 @@
 ### Added
 
 - Runtime package metadata now declares the Agentera suite bundle surface for Claude Code, Codex, Copilot, and OpenCode, with validation that shared skills, scripts, hooks, manifests, and docs resolve from one install root.
+- Packaged executable suite scripts now use uv script headers with stdlib-only inline metadata, and lifecycle validation catches missing shebangs, missing metadata, non-empty dependencies, and missing uv runtime guidance.
 
 ## [1.20.1] · 2026-04-28
 

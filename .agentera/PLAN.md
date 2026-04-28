@@ -54,7 +54,7 @@ Skill-local scripts remain owned by their skills. Suite-level tools such as doct
 ### Task 2: Packaged Script Runtime Hygiene
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN packaged executable Python scripts WHEN their headers are inspected THEN each uses the uv script shebang and inline metadata.
 ▸ GIVEN stdlib-only executable scripts WHEN metadata is inspected THEN dependencies are declared as an empty list.

@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
 """Suite usage analytics: detect skill invocations from a Section 22 corpus.
 
 Task 1 landed marker detection, conversation grouping, and intro/exit

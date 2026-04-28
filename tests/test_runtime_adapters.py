@@ -708,6 +708,89 @@ class TestSuiteBundleSurface:
         manifest.write_text(json.dumps(package), encoding="utf-8")
 
 
+class TestPackagedScriptRuntimeHygiene:
+    """Task 2 cap: one pass and one fail per script metadata rule."""
+
+    def test_packaged_script_headers_pass(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        script = self._write_script(tmp_path, validator)
+        os.chmod(script, 0o755)
+        assert validator.validate_packaged_python_scripts(tmp_path) == []
+
+    def test_packaged_script_headers_fail_without_uv_shebang(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        script = self._write_script(tmp_path, validator, shebang="#!/usr/bin/env python3")
+        os.chmod(script, 0o755)
+        assert (
+            "scripts/tool.py: packaged executable Python script must use uv script shebang"
+            in validator.validate_packaged_python_scripts(tmp_path)
+        )
+
+    def test_packaged_script_headers_fail_without_inline_metadata(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        script = self._write_script(tmp_path, validator, metadata="")
+        os.chmod(script, 0o755)
+        assert (
+            "scripts/tool.py: packaged executable Python script must declare inline script metadata"
+            in validator.validate_packaged_python_scripts(tmp_path)
+        )
+
+    def test_packaged_script_headers_fail_without_empty_dependencies(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        script = self._write_script(
+            tmp_path,
+            validator,
+            metadata=(
+                "# /// script\n"
+                "# requires-python = \">=3.10\"\n"
+                "# dependencies = [\n"
+                "#   \"requests\",\n"
+                "# ]\n"
+                "# ///\n"
+            ),
+        )
+        os.chmod(script, 0o755)
+        assert (
+            "scripts/tool.py: stdlib-only packaged script must declare dependencies = []"
+            in validator.validate_packaged_python_scripts(tmp_path)
+        )
+
+    def test_non_executable_library_modules_are_excluded(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        script_dir = tmp_path / "scripts"
+        script_dir.mkdir()
+        (script_dir / "library.py").write_text("def helper():\n    return 1\n", encoding="utf-8")
+        assert validator.validate_packaged_python_scripts(tmp_path) == []
+
+    @staticmethod
+    def _write_script(
+        root: Path,
+        validator: ModuleType,
+        *,
+        shebang: str | None = None,
+        metadata: str | None = None,
+    ) -> Path:
+        script_dir = root / "scripts"
+        script_dir.mkdir(parents=True, exist_ok=True)
+        script = script_dir / "tool.py"
+        if shebang is None:
+            shebang = validator.UV_SCRIPT_SHEBANG
+        if metadata is None:
+            metadata = (
+                "# /// script\n"
+                "# requires-python = \">=3.10\"\n"
+                "# dependencies = []\n"
+                "# ///\n"
+            )
+        script.write_text(f"{shebang}\n{metadata}print('ok')\n", encoding="utf-8")
+        return script
+
+    def test_uv_runtime_check_guides_install_when_unavailable(self):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        errors = validator.validate_uv_runtime(path="/tmp/agentera-empty-path")
+        assert errors == [validator.UV_INSTALL_GUIDANCE]
+
+
 class TestLegacyRuntimeCompatibility:
     """Complex: legacy compatibility spans marketplace metadata and command shims."""
 
