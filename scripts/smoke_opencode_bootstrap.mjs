@@ -215,7 +215,7 @@ try {
   assert(sessionText.includes("Artifacts modified:"), "SESSION.md bookmark should include modified artifact summary");
   assert(sessionText.includes("TODO.md"), "SESSION.md bookmark should name modified TODO.md");
 
-  // --- Test 8b: tool.execute.before hard gate — invalid artifact is denied ---
+  // --- Test 8b: tool.execute.before hard gate — invalid empty artifact is denied ---
   let denied = false;
   try {
     await hooksForEvents["tool.execute.before"](
@@ -223,7 +223,7 @@ try {
       {
         args: {
           filePath: ".agentera/HEALTH.md",
-          content: "# Health\n\nNo audit entries.\n",
+          content: "",
         },
       }
     );
