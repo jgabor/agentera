@@ -8,6 +8,7 @@
 - Packaged executable suite scripts now use uv script headers with stdlib-only inline metadata, and lifecycle validation catches missing shebangs, missing metadata, non-empty dependencies, and missing uv runtime guidance.
 - `scripts/setup_doctor.py` now diagnoses the Agentera install root and Claude Code, OpenCode, Copilot, and Codex helper-script access without writing files, with stable JSON output for downstream tools.
 - `scripts/setup_doctor.py --smoke` now runs bounded offline helper, artifact-hook, and host-binary smoke checks with human-readable and JSON evidence.
+- `scripts/setup_doctor.py --install` now plans confirmed runtime-native Codex and Copilot config writes, refuses unconfirmed writes, and re-runs doctor after confirmed fixes.
 
 ### Fixed
 

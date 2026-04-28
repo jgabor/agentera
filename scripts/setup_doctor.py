@@ -3,10 +3,11 @@
 # requires-python = ">=3.11"
 # dependencies = []
 # ///
-"""Read-only setup diagnosis for an Agentera suite bundle.
+"""Setup diagnosis and confirmed installation for an Agentera suite bundle.
 
-The doctor answers one question without mutating anything: can the current
-runtime reach the Agentera install root and its shared helper scripts?
+The default doctor mode answers one question without mutating anything: can
+the current runtime reach the Agentera install root and its shared helper
+scripts?
 
 It reports the aggregate bundle root first, then classifies runtime-native
 setup shapes for Claude Code, OpenCode, Copilot CLI, and Codex CLI as
@@ -17,6 +18,7 @@ stable so later installer and smoke-check tasks can consume the same envelope.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
 import shutil
@@ -33,6 +35,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_VERSION = "agentera.setupDoctor.v1"
 STATUSES = ("pass", "warn", "fail", "skip")
 RUNTIMES = ("claude", "opencode", "copilot", "codex")
+WRITABLE_RUNTIMES = ("copilot", "codex")
 RUNTIME_BINARIES = {
     "claude": "claude",
     "opencode": "opencode",
@@ -53,6 +56,7 @@ HELPER_ENTRIES = (
 SMOKE_TIMEOUT_SECONDS = 30
 ENV_FALLBACKS = ("AGENTERA_HOME", "CLAUDE_PLUGIN_ROOT")
 COPILOT_MARKER = "# agentera: AGENTERA_HOME (managed)"
+INSTALLER_SCHEMA_VERSION = "agentera.setupInstaller.v1"
 
 
 def verify_install_root(root: Path) -> list[str]:
@@ -693,10 +697,8 @@ def diagnose_copilot(install_root: Path, home: Path, env: Mapping[str, str]) -> 
             str(rc_path),
         )
         if check["status"] == "pass":
-            check["status"] = "warn"
-            check["gap"] = "user_environment"
             check["message"] = (
-                "Copilot rc file is configured, but this shell has not loaded AGENTERA_HOME"
+                "Copilot rc file is configured; restart the shell to load AGENTERA_HOME"
             )
         return _runtime_result("copilot", env, [check])
 
@@ -764,6 +766,277 @@ DIAGNOSTICS = {
     "copilot": diagnose_copilot,
     "codex": diagnose_codex,
 }
+
+
+def _load_setup_helper(name: str) -> Any:
+    path = ROOT / "scripts" / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"could not load setup helper at {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _read_text_or_none(path: Path) -> str | None:
+    if not path.exists():
+        return None
+    return path.read_text(encoding="utf-8")
+
+
+def _installer_change(
+    *,
+    runtime: str,
+    target: Path | None,
+    reason: str,
+    status: str,
+    action: str,
+    message: str,
+    new_text: str = "",
+    diff: str = "",
+) -> dict[str, Any]:
+    return {
+        "runtime": runtime,
+        "target": str(target) if target is not None else None,
+        "reason": reason,
+        "status": status,
+        "action": action,
+        "message": message,
+        "newText": new_text,
+        "diff": diff,
+    }
+
+
+def _fixable_reason(
+    runtime_report: Mapping[str, Any],
+    check_name: str,
+    *,
+    gaps: tuple[str, ...] = ("runtime_config", "user_environment"),
+) -> str | None:
+    if not runtime_report.get("available"):
+        return None
+    for check in runtime_report.get("checks", []):
+        if check.get("name") != check_name:
+            continue
+        if check.get("status") not in ("warn", "fail"):
+            continue
+        if check.get("gap") not in gaps:
+            continue
+        return str(check.get("message") or "doctor found a fixable setup gap")
+    return None
+
+
+def _plan_codex_installer_change(
+    install_root: Path,
+    home: Path,
+    runtime_report: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    reason = _fixable_reason(
+        runtime_report,
+        "config.AGENTERA_HOME",
+        gaps=("runtime_config",),
+    )
+    if reason is None:
+        return None
+
+    target = home / ".codex" / "config.toml"
+    helper = _load_setup_helper("setup_codex")
+    try:
+        current_text = _read_text_or_none(target)
+        outcome = helper.plan_change(current_text, install_root, force=False)
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        return _installer_change(
+            runtime="codex",
+            target=target,
+            reason=reason,
+            status="blocked",
+            action="blocked",
+            message=f"cannot safely plan Codex config change: {exc}",
+        )
+
+    if outcome.action == "noop":
+        return _installer_change(
+            runtime="codex",
+            target=target,
+            reason=reason,
+            status="noop",
+            action=outcome.action,
+            message=outcome.message,
+        )
+    if outcome.action == "conflict":
+        return _installer_change(
+            runtime="codex",
+            target=target,
+            reason=reason,
+            status="blocked",
+            action=outcome.action,
+            message=outcome.message,
+            diff=outcome.diff,
+        )
+    return _installer_change(
+        runtime="codex",
+        target=target,
+        reason=reason,
+        status="pending",
+        action=outcome.action,
+        message=outcome.message,
+        new_text=outcome.new_text,
+        diff=outcome.diff,
+    )
+
+
+def _copilot_target(
+    home: Path,
+    env: Mapping[str, str],
+) -> tuple[Path | None, str | None, str]:
+    shell_name = Path(env.get("SHELL", "")).name if env.get("SHELL") else ""
+    if shell_name == "bash":
+        return home / ".bashrc", "export", "bash"
+    if shell_name == "zsh":
+        return home / ".zshrc", "export", "zsh"
+    if shell_name == "fish":
+        return home / ".config" / "fish" / "config.fish", "fish", "fish"
+    return None, None, shell_name or "(unset $SHELL)"
+
+
+def _plan_copilot_installer_change(
+    install_root: Path,
+    home: Path,
+    env: Mapping[str, str],
+    runtime_report: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    reason = _fixable_reason(runtime_report, "AGENTERA_HOME")
+    if reason is None:
+        return None
+
+    target, syntax, shell_name = _copilot_target(home, env)
+    if target is None or syntax is None:
+        return _installer_change(
+            runtime="copilot",
+            target=None,
+            reason=reason,
+            status="blocked",
+            action="unsupported-shell",
+            message=(
+                f"Copilot installer supports bash, zsh, and fish rc files; "
+                f"detected {shell_name}"
+            ),
+        )
+
+    helper = _load_setup_helper("setup_copilot")
+    try:
+        current_text = _read_text_or_none(target)
+        outcome = helper.plan_change(current_text, install_root, syntax)
+    except OSError as exc:
+        return _installer_change(
+            runtime="copilot",
+            target=target,
+            reason=reason,
+            status="blocked",
+            action="blocked",
+            message=f"cannot safely plan Copilot rc change: {exc}",
+        )
+
+    if outcome.action == "noop":
+        return _installer_change(
+            runtime="copilot",
+            target=target,
+            reason=reason,
+            status="noop",
+            action=outcome.action,
+            message=outcome.message,
+        )
+    return _installer_change(
+        runtime="copilot",
+        target=target,
+        reason=reason,
+        status="pending",
+        action=outcome.action,
+        message=outcome.message,
+        new_text=outcome.new_text,
+        diff=outcome.diff,
+    )
+
+
+def _summarize_installer(changes: list[dict[str, Any]]) -> dict[str, int]:
+    statuses = ("pending", "applied", "noop", "blocked", "failed")
+    summary = {status: 0 for status in statuses}
+    for change in changes:
+        summary[change["status"]] += 1
+    return summary
+
+
+def build_installer_plan(
+    report: Mapping[str, Any],
+    *,
+    home: Path,
+    env: Mapping[str, str],
+    runtimes: tuple[str, ...],
+    confirmed: bool,
+    dry_run: bool,
+) -> dict[str, Any]:
+    changes: list[dict[str, Any]] = []
+    root_path = report.get("installRoot", {}).get("path")
+    if not root_path or report.get("installRoot", {}).get("status") == "fail":
+        return {
+            "schemaVersion": INSTALLER_SCHEMA_VERSION,
+            "confirmed": confirmed,
+            "dryRun": dry_run,
+            "changes": changes,
+            "summary": _summarize_installer(changes),
+            "afterDoctor": None,
+            "message": "installer requires a valid Agentera install root",
+        }
+
+    install_root = Path(root_path)
+    for runtime in runtimes:
+        runtime_report = report["runtimes"][runtime]
+        if runtime == "codex":
+            change = _plan_codex_installer_change(install_root, home, runtime_report)
+        elif runtime == "copilot":
+            change = _plan_copilot_installer_change(
+                install_root,
+                home,
+                env,
+                runtime_report,
+            )
+        else:
+            change = None
+        if change is not None:
+            changes.append(change)
+
+    return {
+        "schemaVersion": INSTALLER_SCHEMA_VERSION,
+        "confirmed": confirmed,
+        "dryRun": dry_run,
+        "changes": changes,
+        "summary": _summarize_installer(changes),
+        "afterDoctor": None,
+        "message": (
+            "no installer changes needed"
+            if not changes
+            else "installer changes planned"
+        ),
+    }
+
+
+def apply_installer_plan(plan: dict[str, Any]) -> None:
+    for change in plan["changes"]:
+        if change["status"] != "pending":
+            continue
+        target = Path(change["target"])
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(change["newText"], encoding="utf-8")
+        except OSError as exc:
+            change["status"] = "failed"
+            change["message"] = f"error writing {target}: {exc}"
+            continue
+        change["status"] = "applied"
+        change["message"] = (
+            f"wrote {target}: {change['message'].replace('would ', '')}"
+        )
+    plan["summary"] = _summarize_installer(plan["changes"])
 
 
 def _summarize(runtimes: Mapping[str, dict[str, Any]]) -> dict[str, int]:
@@ -871,12 +1144,69 @@ def render_human(report: Mapping[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def render_installer(installer: Mapping[str, Any]) -> str:
+    lines = ["Agentera setup installer", f"status: {installer['message']}"]
+    if not installer["changes"]:
+        return "\n".join(lines)
+
+    for change in installer["changes"]:
+        lines.append(f"{change['runtime']}: {change['status']}")
+        lines.append(f"  target: {change['target'] or '(none)'}")
+        lines.append(f"  reason: {change['reason']}")
+        lines.append(f"  action: {change['action']} - {change['message']}")
+    if installer.get("afterDoctor") is not None:
+        after = installer["afterDoctor"]
+        lines.append(
+            "doctor after install: "
+            f"{'pass' if after.get('ok') else 'fail'} "
+            f"(summary: {after.get('summary')})"
+        )
+    elif installer["summary"]["pending"] and not installer.get("dryRun"):
+        lines.append("confirmation required: re-run with --yes to apply these changes")
+    return "\n".join(lines)
+
+
+def _public_installer(installer: Mapping[str, Any] | None) -> Mapping[str, Any] | None:
+    if installer is None:
+        return None
+    public = dict(installer)
+    public["changes"] = [
+        {
+            key: value
+            for key, value in change.items()
+            if key not in {"newText", "diff"}
+        }
+        for change in installer["changes"]
+    ]
+    return public
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Diagnose Agentera setup without writing files.")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Diagnose Agentera setup without writing files by default. "
+            "Use --install --yes for confirmed runtime-native config writes."
+        )
+    )
     parser.add_argument("--install-root", type=Path, default=None)
     parser.add_argument("--home", type=Path, default=None, help=argparse.SUPPRESS)
     parser.add_argument("--runtime", choices=RUNTIMES, action="append", help="limit diagnosis to one runtime")
     parser.add_argument("--smoke", action="store_true", help="run bounded offline smoke checks")
+    parser.add_argument(
+        "--install",
+        action="store_true",
+        help="plan runtime-native fixes for doctor findings; writes only with --yes",
+    )
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="confirm installer writes selected runtime-native config files",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="with --install, print planned changes without writing",
+    )
     parser.add_argument(
         "--allow-live-model",
         action="store_true",
@@ -885,19 +1215,70 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true", help="emit the stable machine-readable summary")
     args = parser.parse_args(argv)
 
+    if args.yes and not args.install:
+        parser.error("--yes requires --install")
+    if args.dry_run and not args.install:
+        parser.error("--dry-run requires --install")
+
     runtimes = tuple(args.runtime) if args.runtime else RUNTIMES
+    source_env = dict(os.environ)
+    home = (args.home or Path.home()).expanduser().resolve()
     report = build_report(
         install_root=args.install_root,
-        home=args.home,
+        home=home,
+        env=source_env,
         runtimes=runtimes,
         run_smoke=args.smoke,
         live_model_allowed=args.allow_live_model,
     )
+
+    installer: dict[str, Any] | None = None
+    if args.install:
+        installer = build_installer_plan(
+            report,
+            home=home,
+            env=source_env,
+            runtimes=runtimes,
+            confirmed=args.yes,
+            dry_run=args.dry_run,
+        )
+        if args.yes:
+            apply_installer_plan(installer)
+            installer["afterDoctor"] = build_report(
+                install_root=args.install_root,
+                home=home,
+                env=source_env,
+                runtimes=runtimes,
+                run_smoke=args.smoke,
+                live_model_allowed=args.allow_live_model,
+            )
+
     if args.json:
-        print(json.dumps(report, indent=2, sort_keys=True))
+        payload: Mapping[str, Any] = (
+            {"doctor": report, "installer": _public_installer(installer)}
+            if installer is not None
+            else report
+        )
+        print(json.dumps(payload, indent=2, sort_keys=True))
     else:
         print(render_human(report))
-    return 0 if report["ok"] else 1
+        if installer is not None:
+            print()
+            print(render_installer(installer))
+
+    if installer is None:
+        return 0 if report["ok"] else 1
+    if installer["summary"]["failed"] or installer["summary"]["blocked"]:
+        return 1
+    if installer["summary"]["pending"] and not args.dry_run and not args.yes:
+        return 1
+    if installer.get("afterDoctor") is not None and not installer["afterDoctor"]["ok"]:
+        return 1
+    if not report["ok"] and not (
+        installer["summary"]["pending"] or installer["summary"]["applied"]
+    ):
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

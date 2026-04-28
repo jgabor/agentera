@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 212 · 2026-04-28 21:29 · feat(setup): add confirmed doctor installer
+
+**Phase**: implementation
+**What**: Completed Task 5 of the Unified Setup Bundle Doctor And Installer plan. `scripts/setup_doctor.py --install` now reuses doctor findings to plan fixable Codex and Copilot runtime-native config writes, names the runtime, target file, and reason, refuses unconfirmed writes, applies only confirmed selected config files, and re-runs doctor after confirmed changes.
+**Commit**: this commit, `feat(setup): add confirmed doctor installer`
+**Inspiration**: Active PLAN.md Task 5 and Decision 33. Installer writes should be a confirmed layer on top of doctor evidence, not a separate unchecked setup path.
+**Discovered**: Copilot rc configuration should count as a fixed runtime-native setup surface even before the current shell reloads `AGENTERA_HOME`; the doctor now reports a matching managed rc block as pass with restart guidance.
+**Verified**: `python3 -m pytest tests/test_setup_doctor.py -q` passed with 12 tests, covering dry-run, denied write, confirmed write, and idempotent re-run for Codex and Copilot temp homes. `python3 scripts/setup_doctor.py --install --runtime codex --dry-run --json` returned a pending Codex change with target and reason while omitting proposed config contents. `python3 scripts/generate_contracts.py --check`, `python3 scripts/validate_spec.py`, `python3 scripts/validate_lifecycle_adapters.py`, and `python3 -m pytest -q` passed; full pytest reported 477 tests.
+**Next**: Task 6, Version Metadata.
+**Context**: intent (execute only Task 5) · constraints (no version bump, no README or DOCS refresh, no real user config mutation in tests, confirmed writes only) · unknowns (Task 6 will decide release version targets) · scope (`scripts/setup_doctor.py`, focused setup-doctor tests, PLAN, PROGRESS, CHANGELOG).
+
 ■ ## Cycle 211 · 2026-04-28 21:18 · fix(setup): prove runtime-host smoke failures
 
 **Phase**: implementation
@@ -99,19 +110,9 @@
 **Next**: Task 5, Release Verification Surface.
 **Context**: intent (complete only Task 4 release metadata fold-down) · constraints (no Task 5 verification sweep, no publish, no tags, no normal patch bump, commit locally) · unknowns (none after DOCS version_files and release-facing docs checks) · scope (`plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, `registry.json`, `skills/*/.claude-plugin/plugin.json`, `CHANGELOG.md`, `TODO.md`, `.agentera/DOCS.md`, `.agentera/PLAN.md`, `.agentera/PROGRESS.md`).
 
-■ ## Cycle 202 · 2026-04-28 13:04 · docs(runtime): add tracked parity reference
-
-**Phase**: documentation
-**What**: Completed Task 3 of the v1.20 parity plan. Added `references/adapters/runtime-feature-parity.md` as the tracked adapter-reference comparison for Claude Code, OpenCode, Copilot, and Codex. README now points at the reference and aligns runtime claims with shipped behavior: OpenCode and Copilot hard-gate only reconstructable artifact candidates, Claude Code remains PostToolUse advisory, and Codex ships `apply_patch` PreToolUse/PostToolUse validation without final patch-content reconstruction. Codex plugin metadata now names the bundled hook config and its limits.
-**Commit**: this commit, `docs(runtime): add tracked parity reference`
-**Inspiration**: Active `.agentera/PLAN.md` Task 3 and the Task 1/Task 2 verification notes. The release needed one tracked comparison that prevents broad hard-gate parity claims from creeping back into README.
-**Discovered**: Codex hook firing evidence proves the `apply_patch` hooks run, but it does not prove candidate-content blocking. The reference therefore treats Codex as an active validation surface, not a functional hard gate.
-**Verified**: Docs-only evidence check passed. `git ls-files references/adapters/runtime-feature-parity.md README.md .agentera/DOCS.md .agentera/PROGRESS.md` proved the parity reference is tracked and indexed beside README and progress evidence. README links `references/adapters/runtime-feature-parity.md` and its runtime tables agree with the reference: Claude Code stays PostToolUse advisory, OpenCode gates reconstructable write/edit candidates, Copilot gates reconstructable preToolUse candidates, and Codex ships only `apply_patch` PreToolUse/PostToolUse validation. The reference names runtime reasons for degraded or blocked paths: OpenCode preload lacks a model-context injection path, OpenCode `apply_patch` lacks full-content reconstruction, Copilot sparse edits lack enough payload evidence, Codex preload/bookmarks are not wired in the shipped config, and Codex artifact validation does not reconstruct final candidate content. The hard-gate no-overclaim check passed because docs claim functional blocking only for implemented and verified closeable paths: OpenCode and Copilot reconstructable artifact candidates. `python3 scripts/generate_contracts.py --check`, `python3 scripts/validate_spec.py`, `python3 scripts/validate_lifecycle_adapters.py`, `node --check .opencode/plugins/agentera.js`, and `python3 -m pytest -q` passed after the documentation update.
-**Next**: Task 4, Single 1.20.0 Release Metadata.
-**Context**: intent (complete only Task 3 by creating the tracked parity reference and aligning README with it) · constraints (no Task 4 release metadata fold-down, keep OpenCode preload deferred, avoid universal hard-gate parity claims, update DOCS and PLAN, commit locally) · unknowns (none after comparing the hook configs and validator implementation) · scope (`references/adapters/runtime-feature-parity.md`, README, Codex plugin metadata, DOCS, PLAN, PROGRESS).
-
 ## Archived Cycles
 
+- Cycle 202 (2026-04-28): docs(runtime): add tracked parity reference
 - Cycle 201 (2026-04-28): fix(opencode): preserve empty prewrite candidates
 - Cycle 200 (2026-04-28): fix(opencode): hard gate artifact prewrites
 - Cycle 199 (2026-04-28): fix(copilot): hard gate artifact prewrites
@@ -151,4 +152,3 @@
 - Cycle 165 (2026-04-26): feat(usage): emit USAGE.md, stdout summary, and JSON
 - Cycle 164 (2026-04-26): feat(usage): classify trigger phrasing and scope by project
 - Cycle 163 (2026-04-26): feat(usage): detect skill invocations and pair with exit signals
-- Cycle 162 (2026-04-26): feat(validator): accept arbitrary SKILL.md paths for third-party authoring
