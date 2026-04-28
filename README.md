@@ -92,7 +92,8 @@ you to the most useful next skill.
 ## Quick start
 
 Pick the agent you use, install Agentera, then open a project and run the
-entry skill.
+entry skill. Full-suite installs provide the shared Agentera bundle: skills,
+hooks, manifests, and setup scripts in one install root.
 
 ### Claude Code
 
@@ -144,6 +145,36 @@ Codex's cache:
 ```bash
 codex plugin marketplace upgrade agentera
 ```
+
+### Check the bundle
+
+Use the setup doctor before editing runtime config by hand. It reads the
+installed bundle or local clone, classifies each runtime, and does not write
+files by default.
+
+```bash
+python3 scripts/setup_doctor.py --smoke
+```
+
+If doctor reports fixable Codex or Copilot setup gaps, preview the
+runtime-native write first:
+
+```bash
+python3 scripts/setup_doctor.py --install --dry-run --runtime codex
+python3 scripts/setup_doctor.py --install --dry-run --runtime copilot
+```
+
+Apply only after reviewing the target runtime, target file, and reason:
+
+```bash
+python3 scripts/setup_doctor.py --install --yes --runtime codex
+python3 scripts/setup_doctor.py --install --yes --runtime copilot
+```
+
+Doctor smoke checks are bounded and offline. They verify helper-script access,
+artifact-hook behavior, and host availability without invoking live model
+sessions. `--allow-live-model` records permission for future probes; this
+doctor still makes no live calls.
 
 ## Why it works
 
@@ -227,14 +258,21 @@ and hooks can resolve repo helper scripts such as `compact_artifact.py`.
 Claude Code and OpenCode can set that automatically. Codex and Copilot may need
 a host-level setup step when you want helper-script execution.
 
-The current helper scripts assume you know the Agentera install root. If you
-installed from a marketplace and your runtime does not expose that path, normal
-skills still work. A unified installer and doctor command are planned for a
-future release.
+Start with the bundle doctor:
 
-The helpers use an existing valid `AGENTERA_HOME` to find the install root.
-They may still write persistent runtime config so future agent sessions can see
-the same value.
+```bash
+python3 scripts/setup_doctor.py --smoke
+```
+
+Single-skill installs keep core `SKILL.md` workflow behavior. Bundle-enhanced
+tools such as doctor, installer, validation, compaction, and setup helpers
+require the full Agentera bundle or a local clone with the shared `scripts/`
+directory.
+
+The installer layer reuses doctor findings. Without `--yes`, it only reports
+pending changes and exits before writing user config. With `--yes`, it writes
+only selected runtime-native Codex and Copilot config surfaces, then re-runs
+doctor to show the result.
 
 <details>
 <summary><strong>Claude Code hooks</strong></summary>

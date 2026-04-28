@@ -57,6 +57,10 @@ copilot plugin install jgabor/agentera
 The marketplace install path is verified working. Granular installs avoid
 umbrella discovery bug `github/copilot-cli#2390`.
 
+Granular installs provide core `SKILL.md` behavior. Bundle-only tools such as
+doctor, installer, validators, and shared setup helpers require the umbrella
+suite bundle or a local clone with the shared `scripts/` directory.
+
 Deprecated fallback: `copilot plugin install OWNER/REPO`, Git URLs, and local
 paths still work, but Copilot warns they are deprecated.
 
