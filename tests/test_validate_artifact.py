@@ -758,3 +758,83 @@ class TestCodexApplyPatchStdin:
         result = validate_artifact.main()
         assert result == 0
         assert captured_output.getvalue() == ""
+
+
+class TestCopilotPreToolUse:
+    """Copilot preToolUse hard gate: one allow/deny per boundary plus malformed."""
+
+    def _run_hook(self, validate_artifact, monkeypatch, hook_input: dict) -> dict:
+        import io
+
+        monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(hook_input)))
+        captured_output = io.StringIO()
+        monkeypatch.setattr("sys.stdout", captured_output)
+        result = validate_artifact.main()
+        assert result == 0
+        output = captured_output.getvalue()
+        assert output
+        parsed = json.loads(output)
+        assert isinstance(parsed, dict)
+        return parsed
+
+    def test_reconstructable_invalid_artifact_is_denied(
+        self, validate_artifact, project_dir, monkeypatch
+    ):
+        hook_input = {
+            "timestamp": 1704614600000,
+            "cwd": str(project_dir),
+            "toolName": "create",
+            "toolArgs": json.dumps(
+                {
+                    "path": ".agentera/HEALTH.md",
+                    "content": "# Health\n\nNo audit entries.\n",
+                }
+            ),
+        }
+        decision = self._run_hook(validate_artifact, monkeypatch, hook_input)
+        assert decision["permissionDecision"] == "deny"
+        assert "HEALTH.md" in decision["permissionDecisionReason"]
+
+    def test_reconstructable_valid_artifact_edit_is_allowed(
+        self, validate_artifact, project_dir, monkeypatch
+    ):
+        health = project_dir / ".agentera" / "HEALTH.md"
+        health.write_text("# Health\n\nNo audit entries.\n", encoding="utf-8")
+        hook_input = {
+            "timestamp": 1704614600000,
+            "cwd": str(project_dir),
+            "toolName": "edit",
+            "toolArgs": json.dumps(
+                {
+                    "path": ".agentera/HEALTH.md",
+                    "oldString": "No audit entries.",
+                    "newString": "## Audit 1\n\nAll clear.",
+                }
+            ),
+        }
+        decision = self._run_hook(validate_artifact, monkeypatch, hook_input)
+        assert decision == {"permissionDecision": "allow"}
+
+    def test_reconstructable_non_artifact_edit_is_allowed(
+        self, validate_artifact, project_dir, monkeypatch
+    ):
+        hook_input = {
+            "timestamp": 1704614600000,
+            "cwd": str(project_dir),
+            "toolName": "create",
+            "toolArgs": json.dumps({"path": "src/app.py", "content": "print('ok')\n"}),
+        }
+        decision = self._run_hook(validate_artifact, monkeypatch, hook_input)
+        assert decision == {"permissionDecision": "allow"}
+
+    def test_malformed_tool_args_are_allowed(
+        self, validate_artifact, project_dir, monkeypatch
+    ):
+        hook_input = {
+            "timestamp": 1704614600000,
+            "cwd": str(project_dir),
+            "toolName": "edit",
+            "toolArgs": "{not json",
+        }
+        decision = self._run_hook(validate_artifact, monkeypatch, hook_input)
+        assert decision == {"permissionDecision": "allow"}
