@@ -5,148 +5,16 @@
   },
   "plugins": [
     {
-      "name": "hej",
+      "name": "agentera",
       "source": {
         "source": "local",
-        "path": "../../skills/hej"
+        "path": "."
       },
       "policy": {
         "installation": "AVAILABLE",
         "authentication": "ON_USE"
       },
-      "category": "development"
-    },
-    {
-      "name": "inspirera",
-      "source": {
-        "source": "local",
-        "path": "../../skills/inspirera"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_USE"
-      },
-      "category": "development"
-    },
-    {
-      "name": "profilera",
-      "source": {
-        "source": "local",
-        "path": "../../skills/profilera"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_USE"
-      },
-      "category": "development"
-    },
-    {
-      "name": "realisera",
-      "source": {
-        "source": "local",
-        "path": "../../skills/realisera"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_USE"
-      },
-      "category": "development"
-    },
-    {
-      "name": "optimera",
-      "source": {
-        "source": "local",
-        "path": "../../skills/optimera"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_USE"
-      },
-      "category": "development"
-    },
-    {
-      "name": "resonera",
-      "source": {
-        "source": "local",
-        "path": "../../skills/resonera"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_USE"
-      },
-      "category": "development"
-    },
-    {
-      "name": "inspektera",
-      "source": {
-        "source": "local",
-        "path": "../../skills/inspektera"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_USE"
-      },
-      "category": "development"
-    },
-    {
-      "name": "planera",
-      "source": {
-        "source": "local",
-        "path": "../../skills/planera"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_USE"
-      },
-      "category": "development"
-    },
-    {
-      "name": "visionera",
-      "source": {
-        "source": "local",
-        "path": "../../skills/visionera"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_USE"
-      },
-      "category": "development"
-    },
-    {
-      "name": "dokumentera",
-      "source": {
-        "source": "local",
-        "path": "../../skills/dokumentera"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_USE"
-      },
-      "category": "development"
-    },
-    {
-      "name": "visualisera",
-      "source": {
-        "source": "local",
-        "path": "../../skills/visualisera"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_USE"
-      },
-      "category": "development"
-    },
-    {
-      "name": "orkestrera",
-      "source": {
-        "source": "local",
-        "path": "../../skills/orkestrera"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_USE"
-      },
-      "category": "development"
+      "category": "Coding"
     }
   ]
 }

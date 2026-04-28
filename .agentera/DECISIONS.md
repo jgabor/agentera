@@ -2,6 +2,36 @@
 
 Reasoning trail maintained by resonera. Each deliberation session appends one entry. Decisions are referenced by realisera, optimera, and profilera for context on why choices were made.
 
+## Decision 32 · 2026-04-28
+
+**Question**: How should Agentera make multi-runtime setup feel simple while
+keeping the 1.20 release stable?
+**Context**: The 1.20 release now supports Claude Code, OpenCode, Copilot CLI,
+and Codex CLI, but README setup still mixes normal install, optional hooks,
+helper scripts, and clone-only commands. A unified setup flow similar in spirit
+to `npx skills` would make Agentera feel like one suite instead of four runtime
+stories. Implementing that installer during release polish would widen the
+blast radius after the release tag had already been rewritten.
+**Alternatives**:
+
+- [Ship a unified installer in 1.20], rejected: best product direction, but too
+  much behavior change for final release stabilization.
+- [Only tweak README wording], rejected: hides the real product decision and
+  leaves future agents without the reason.
+- [Log the installer decision and polish docs now], chosen: stabilizes 1.20
+  while preserving the direction for a future version.
+**Choice**: Keep 1.20 to documentation polish and packaging stabilization. Make
+the README clearer for Claude Code, OpenCode, Copilot CLI, and Codex CLI. Defer
+the unified `setup` and `doctor` experience to a later release, backed by this
+decision.
+**Reasoning**: Agentera should eventually expose one setup surface that detects
+available runtimes, installs the suite, recommends hooks, respects existing
+`AGENTERA_HOME`, and verifies the result. That is product work, not copy
+editing. The release needs stable guidance now, so the docs should be honest
+about current helper-script limits without promising a not-yet-built installer.
+**Confidence**: firm
+**Feeds into**: README.md, future setup/doctor plan
+
 ## Decision 23 · 2026-04-10
 
 **Question**: Should the terminology for the ecosystem spec and per-skill context files be renamed for clarity and cohesion?

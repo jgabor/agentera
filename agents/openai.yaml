@@ -10,7 +10,7 @@ support:
   plugin_discovery: /plugins
   explicit_invocation: $skill
   implicit_invocation: portable skills may be invoked implicitly
-  lifecycle_hooks: stable via codex_hooks (default-on as of v0.124.0); real-time apply_patch Write/Edit interception per openai/codex#18391; agentera does not yet bundle a Codex hooks config (Task 3 of Cross-Runtime Parity Completion plan); users wire hooks manually via ~/.codex/hooks.json or inline [hooks] tables in config.toml
+  lifecycle_hooks: stable via codex_hooks (default-on as of v0.124.0); bundled config lives at hooks/codex-hooks.json and users copy it to ~/.codex/hooks.json or a project .codex/hooks.json when they want apply_patch artifact validation
 skills:
   - name: hej
     display_name: hej

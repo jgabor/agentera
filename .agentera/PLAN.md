@@ -99,7 +99,7 @@ The release layer folds all version surfaces back to `1.20.0`, verifies the fina
 ### Task 6: Plan-Level Freshness And Publish
 
 **Depends on**: Task 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN plan work is complete WHEN artifacts are read THEN PROGRESS, TODO, CHANGELOG, DOCS, and PLAN summarize the plan-level result.
 ▸ GIVEN the final commit is checked WHEN release publishing begins THEN the worktree is clean.
@@ -117,4 +117,4 @@ The release layer folds all version surfaces back to `1.20.0`, verifies the fina
 
 ## Surprises
 
-- 2026-04-28: Realisera can prepare local freshness, but final retag and remote publish are release operations outside its safety rails. Local `v1.20.0` still points at `17c6141`; no remote `v1.20*` tags were found.
+- 2026-04-28: Realisera could prepare local freshness, but final retag and remote publish required explicit release authorization. Authorization was granted after the readiness handoff; preflight found no remote `v1.20*` tags.
