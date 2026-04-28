@@ -2,20 +2,6 @@
 
 Reasoning trail maintained by resonera. Each deliberation session appends one entry. Decisions are referenced by realisera, optimera, and profilera for context on why choices were made.
 
-## Decision 23 · 2026-04-03
-
-**Question**: Where should session-to-session state live: new SESSION.md artifact, extend PROGRESS.md, or infrastructure dotfile?
-**Context**: The hooks plan introduces a Stop hook that persists a session narrative (which skills ran, in what order) for the SessionStart hook to preload. The critic flagged that PROGRESS.md has a cycle entry format owned by realisera; writing session bookmarks there violates the producer contract. Three options explored: SESSION.md (new artifact), extending PROGRESS.md with a second entry type, or a non-artifact dotfile (.agentera/.session).
-**Alternatives**:
-
-- [SESSION.md as artifact #12], chosen: honest about what it is, properly documented in ecosystem spec
-- [Extend PROGRESS.md with session entries], rejected: mixing producers muddies PROGRESS.md's clarity as a single-producer, single-format artifact
-- [Non-artifact dotfile .agentera/.session], rejected: if it's ecosystem state, it should be a real artifact, not infrastructure hiding below the protocol
-**Choice**: SESSION.md as the 12th ecosystem artifact. Produced by the Stop hook, consumed by SessionStart hook and hej. Context loader improvements make the additional artifact weight manageable.
-**Reasoning**: The initial resistance was about cognitive and context weight of a 12th artifact, not architectural principle. Extending PROGRESS.md was rejected because its value comes from being single-producer, single-format. The dotfile option was a pragmatic workaround that dodged the real question. With improved context loading, the honest choice wins: session state is ecosystem state.
-**Confidence**: firm
-**Feeds into**: PLAN.md (hooks infrastructure), SPEC.md (artifact table)
-
 ## Decision 24 · 2026-04-03
 
 **Question**: Should the PostToolUse validation hook coexist with the git pre-commit hook, or replace it?
@@ -150,52 +136,31 @@ Reasoning trail maintained by resonera. Each deliberation session appends one en
 
 **Question**: How should Agentera make multi-runtime setup feel simple while
 keeping the 1.20 release stable?
-**Context**: The 1.20 release now supports Claude Code, OpenCode, Copilot CLI,
-and Codex CLI, but README setup still mixes normal install, optional hooks,
-helper scripts, and clone-only commands. A unified setup flow similar in spirit
-to `npx skills` would make Agentera feel like one suite instead of four runtime
-stories. Runtime packaging must still use each host's real conventions. Codex's
-documented repo marketplace path is `.agents/plugins/marketplace.json`, with
-plugin folders commonly under `plugins/<name>/`, a `.codex-plugin/plugin.json`
-inside each plugin root, and `source.path` values like `./plugins/<name>`. The
-`source.path` must be `./`-prefixed and resolves relative to the marketplace
-root, not the `.agents/plugins/` folder. Therefore `.agents/plugins` is a
-Codex marketplace adapter surface, not a generic plugin convention shared with
-OpenCode, Copilot, or Claude Code. Implementing that installer during release
-polish would widen the blast radius after the release tag had already been
-rewritten.
+**Context**: The 1.20 release supports Claude Code, OpenCode, Copilot CLI, and
+Codex CLI, but setup still reads as four runtime stories plus helper scripts.
+Marketplace users should not need a git clone to access shared tools. Skill
+workflow scripts can live inside their owning skill, but doctor, installer,
+hooks, validators, and compaction are suite infrastructure. No behavioral skill
+should own them. Single-skill installs must still work for core behavior.
 **Alternatives**:
 
-- [Ship a unified installer in 1.20], rejected: best product direction, but too
-  much behavior change for final release stabilization.
-- [Only tweak README wording], rejected: hides the real product decision and
-  leaves future agents without the reason.
-- [Remove `.agents/plugins` as non-portable], rejected: it is non-portable by
-  design, but it is the documented Codex repo marketplace path and must remain
-  for Codex marketplace installs.
-- [Treat `.agents/plugins` as a cross-runtime plugin directory], rejected: false
-  portability; runtimes need their own adapter surfaces while skills and
-  artifacts remain the shared core.
-- [Log the installer decision and polish docs now], chosen: stabilizes 1.20
-  while preserving the direction for a future version.
-**Choice**: Keep 1.20 to documentation polish and packaging stabilization. Make
-the README clearer for Claude Code, OpenCode, Copilot CLI, and Codex CLI. Defer
-the unified `setup` and `doctor` experience to a later release, backed by this
-decision. Future setup work must preserve runtime-native directories:
-`.agents/plugins/marketplace.json` for Codex marketplaces, `.opencode/plugins/`
-for OpenCode, Copilot's plugin manifests, and Claude Code's plugin surfaces.
-For Codex, the docs-aligned target shape is `plugins/agentera/.codex-plugin/`
-plus a marketplace entry pointing to `./plugins/agentera`; pointing at `.`
-causes current Codex CLI to skip the plugin instead of showing it in
-`/plugins`.
-**Reasoning**: Agentera should eventually expose one setup surface that detects
-available runtimes, installs the suite, recommends hooks, respects existing
-`AGENTERA_HOME`, validates runtime-native path shapes, and verifies the result.
-That is product work, not copy editing. The release needs stable guidance now,
-so the docs should be honest about current helper-script limits without
-promising a not-yet-built installer.
+- [Docs-only setup polish], rejected: leaves the real product gap unresolved.
+- [Root scripts only], rejected: requires a clone and weakens marketplace installs.
+- [One skill owns doctor/install], rejected: violates standalone-and-mesh ownership.
+- [External CLI first], rejected: useful later, but adds another distribution surface.
+- [Suite bundle first], chosen: aggregate installs carry shared infrastructure.
+**Choice**: Make the installable Agentera suite bundle the primary home for
+shared tools. Runtime marketplace installs should include skills, shared
+scripts, hooks, manifests, and docs in one package root. `AGENTERA_HOME` points
+to that installed root, not necessarily a clone. Doctor validates that bundle
+without mutation; installer applies confirmed runtime-native fixes. External
+CLI support is deferred.
+**Reasoning**: Standalone skills mean core workflow independence, not that each
+skill must carry every shared helper. Suite installs should provide suite
+infrastructure. This keeps behavioral skill ownership clean while letting
+co-installed skills mesh through one verified package root.
 **Confidence**: firm
-**Feeds into**: README.md, future setup/doctor plan
+**Feeds into**: PLAN.md, README.md, scripts/
 
 ## Archived Decisions
 
@@ -221,3 +186,4 @@ promising a not-yet-built installer.
 - Decision 20 (2026-04-02): **Question**: Should the agentera ecosystem add an orchestration skill, and what should it own?
 - Decision 21 (2026-04-02): **Question**: How should autonomous plans constrain test generation to prevent unbounded output?
 - Decision 22 (2026-04-03): **Question**: Should ISS-19 phase tracking be enforced across skills, and how should the ecosystem detect stale artifacts?
+- Decision 23 (2026-04-03): **Question**: Where should session-to-session state live: new SESSION.md artifact, extend PROGRESS.md, or infrastructure dotfile?
