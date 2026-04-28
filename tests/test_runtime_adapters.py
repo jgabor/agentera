@@ -527,6 +527,60 @@ class TestLifecycleAdapters:
             in validator.validate_codex_profilera_metadata(REPO_ROOT, plugin)
         )
 
+    def test_hard_gate_docs_pass(self):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        assert validator.validate_hard_gate_docs(REPO_ROOT) == []
+
+    def test_hard_gate_docs_fail_on_copilot_overclaim_drift(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        self._write_hard_gate_docs(
+            tmp_path,
+            readme=(REPO_ROOT / "README.md").read_text(encoding="utf-8").replace(
+                "insufficient payload evidence is allowed",
+                "every Copilot artifact payload is blocked",
+            ),
+        )
+        errors = validator.validate_hard_gate_docs(tmp_path)
+        assert any("README.md: Copilot hard-gate docs" in error for error in errors)
+
+    def test_hard_gate_docs_fail_on_opencode_apply_patch_drift(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        self._write_hard_gate_docs(
+            tmp_path,
+            opencode=(REPO_ROOT / "references/adapters/opencode.md").read_text(encoding="utf-8").replace(
+                "Sparse payloads and `apply_patch` `patchText` without reconstructed full content are allowed",
+                "Every OpenCode artifact payload is blocked",
+            ),
+        )
+        errors = validator.validate_hard_gate_docs(tmp_path)
+        assert any("references/adapters/opencode.md: OpenCode hard-gate docs" in error for error in errors)
+
+    @staticmethod
+    def _write_hard_gate_docs(
+        root: Path,
+        *,
+        readme: str | None = None,
+        parity: str | None = None,
+        opencode: str | None = None,
+    ) -> None:
+        (root / "references/adapters").mkdir(parents=True)
+        (root / "README.md").write_text(
+            readme if readme is not None else (REPO_ROOT / "README.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        (root / "references/adapters/runtime-feature-parity.md").write_text(
+            parity
+            if parity is not None
+            else (REPO_ROOT / "references/adapters/runtime-feature-parity.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        (root / "references/adapters/opencode.md").write_text(
+            opencode
+            if opencode is not None
+            else (REPO_ROOT / "references/adapters/opencode.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+
 
 class TestLegacyRuntimeCompatibility:
     """Complex: legacy compatibility spans marketplace metadata and command shims."""

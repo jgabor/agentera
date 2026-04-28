@@ -88,7 +88,7 @@ The release layer folds all version surfaces back to `1.20.0`, verifies the fina
 ### Task 5: Release Verification Surface
 
 **Depends on**: Task 4
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN validators run WHEN release verification executes THEN spec, lifecycle, and contract checks pass.
 ▸ GIVEN smoke checks run WHEN release verification executes THEN OpenCode syntax and bootstrap smoke pass.
