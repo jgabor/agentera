@@ -15,6 +15,7 @@
 **Delta (realisera vs native)**: -25,270 tokens (-26%). Realisera's structured workflow is substantially cheaper than an unstructured native-tools cycle on the same task.
 
 **Context shape**:
+
 - peak_context: 69,719 tokens
 - output_total: 2,926 tokens
 - turns: 101
@@ -208,7 +209,7 @@ Recommended course of action: `/resonera` to deliberate on whether to (a) switch
 
 **Status**: ■ kept. Tier 1 improved by 18.3%. Committed as 3f62dd8.
 
-**Conclusion**: contract.md is the highest-leverage Tier 1 attack surface. Removing 5 of 10 sections saved 2,750 est tokens (35.8% of contract.md). The experiment demonstrates that the Tier 1 metric works exactly as Decision 29 predicted: deterministic, zero-variance, and able to detect the 18.3% improvement that the old composite metric could never have distinguished from noise.
+**Conclusion**: contract.md is the highest-leverage Tier 1 attack surface. Removing 5 of 10 sections saved 2,750 est tokens (35.8% of contract.md). The experiment demonstrates that the Tier 1 metric works exactly as Decision 30 predicted: deterministic, zero-variance, and able to detect the 18.3% improvement that the old composite metric could never have distinguished from noise.
 
 **Target progress**: 15,065 -> 12,310 (-18.3%). Target is 12,052 (-20%). Need 258 more tokens.
 

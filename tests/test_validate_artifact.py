@@ -265,7 +265,7 @@ class TestValidatePlan:
 
 
 class TestValidateDecisions:
-    """1 pass + 1 fail."""
+    """1 pass + 4 fails."""
 
     def test_valid_decisions(self, validate_artifact, project_dir):
         decisions = project_dir / ".agentera" / "DECISIONS.md"
@@ -300,6 +300,72 @@ class TestValidateDecisions:
             "DECISIONS.md",
         )
         assert any("Decisions" in v for v in violations)
+
+    def test_decisions_duplicate_number(self, validate_artifact, project_dir):
+        decisions = project_dir / ".agentera" / "DECISIONS.md"
+        decisions.write_text(
+            textwrap.dedent("""\
+            # Decisions
+
+            ## Decision 1
+
+            First.
+
+            ## Decision 1
+
+            Duplicate.
+        """),
+            encoding="utf-8",
+        )
+        violations = validate_artifact.validate_artifact_structure(
+            str(decisions),
+            "DECISIONS.md",
+        )
+        assert any("duplicate decision numbers: 1" in v for v in violations)
+
+    def test_decisions_duplicate_archived_number(self, validate_artifact, project_dir):
+        decisions = project_dir / ".agentera" / "DECISIONS.md"
+        decisions.write_text(
+            textwrap.dedent("""\
+            # Decisions
+
+            ## Decision 1
+
+            First.
+
+            ## Archived Decisions
+
+            - Decision 1 (2026-01-01): [Choice] same number
+        """),
+            encoding="utf-8",
+        )
+        violations = validate_artifact.validate_artifact_structure(
+            str(decisions),
+            "DECISIONS.md",
+        )
+        assert any("duplicate decision numbers: 1" in v for v in violations)
+
+    def test_decisions_out_of_order_number(self, validate_artifact, project_dir):
+        decisions = project_dir / ".agentera" / "DECISIONS.md"
+        decisions.write_text(
+            textwrap.dedent("""\
+            # Decisions
+
+            ## Decision 2
+
+            Later.
+
+            ## Decision 1
+
+            Earlier.
+        """),
+            encoding="utf-8",
+        )
+        violations = validate_artifact.validate_artifact_structure(
+            str(decisions),
+            "DECISIONS.md",
+        )
+        assert any("active decision numbers must be ascending" in v for v in violations)
 
 
 # ---------------------------------------------------------------------------

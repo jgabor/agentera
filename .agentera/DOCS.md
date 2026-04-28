@@ -58,7 +58,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Plan | .agentera/PLAN.md | 2026-04-28 | ■ current |
 | DOCS | .agentera/DOCS.md | 2026-04-28 | ■ current |
 | Design | .agentera/DESIGN.md | 2026-04-19 | ■ current |
-| Ecosystem spec | SPEC.md | 2026-04-20 | ■ current |
+| Ecosystem spec | SPEC.md | 2026-04-28 | ■ current |
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
 | Registry | registry.json | 2026-04-28 | ■ current |
 | Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-28 | ■ current |
@@ -90,15 +90,22 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 454 tests across 17 files; CI runs on push/PR via GitHub Actions
+- **Tests**: 457 tests across 17 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-28 (decision numbering hygiene)
+
+- [gap] DECISIONS.md had duplicate Decision 23 entries and mixed ordering;
+  active decisions now run 23-33, references are aligned, spec and resonera
+  define insertion rules, and the validator rejects duplicate or descending
+  decision numbers · warning (fixed)
 
 ### 2026-04-28 (runtime onboarding polish)
 
 - [cleanup] README still mixed runtime install, optional hooks, and clone-only
   helper commands; quick start now separates runtime entry points from
-  helper-script setup, with the unified installer deferred by Decision 32 ·
+  helper-script setup, with the unified installer deferred by Decision 33 ·
   info (fixed)
 - [gap] OpenCode quick start implied the plugin alone installed Agentera; it
   now installs skills with `npx skills add` before adding the plugin that
@@ -235,7 +242,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 ### 2026-04-10 (Audit 7, post-1.8.0)
 
-- [stale] DOCS.md Index "Ecosystem spec" path said `references/the spec.md`, renamed to SPEC.md at repo root in Decision 23 · critical (fixed)
+- [stale] DOCS.md Index "Ecosystem spec" path said `references/the spec.md`, renamed to SPEC.md at repo root in Decision 26 · critical (fixed)
 - [stale] DOCS.md Coverage test count said 233 across 10 files, actual is 240 across 12 files (+4 platform-annotation tests, +generate_contracts and hook tests) · warning (fixed)
 - [stale] DOCS.md Index dates for 7 entries showed 2026-04-02/03, updated to 2026-04-10 for files changed by Platform Portability plan · warning (fixed)
 - [stale] DOCS.md last audit date said 2026-04-03 post-1.6.0, now post-1.8.0 · info (fixed)

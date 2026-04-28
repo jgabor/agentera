@@ -6,7 +6,7 @@
 
 Reduce the fixed token footprint of the realisera package (SKILL.md + contract.md) by **20%** from the established baseline, with no loss of cycle quality.
 
-### Two-tier metric (Decision 29)
+### Two-tier metric (Decision 30)
 
 **Tier 1 (primary metric)**: the exact token count of `skills/realisera/SKILL.md` + `skills/realisera/references/contract.md`, measured via the Anthropic `count_tokens` API (`POST /v1/messages/count_tokens`). Each file is sent as the `system` parameter with model `claude-sonnet-4-6` and a minimal user message. The sum of both `input_tokens` values is the Tier 1 metric.
 

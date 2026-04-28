@@ -9,7 +9,7 @@ Build `scripts/usage_stats.py` reading the existing Section 21 corpus to count a
 
 ## Why
 
-Agentera mines user sessions for the user's own profile (PROFILE.md) but ships nothing that observes the suite itself. Decision 31 closes that gap: a script (no SKILL.md ceremony) reuses the corpus pipeline so the next adoption question (which skills get invoked, which complete, slash-vs-NL mix) has data behind it. Without a baseline, friction and failure analysis cannot be prioritized later. The output sits in the global XDG directory next to PROFILE.md so cross-project usage aggregates naturally.
+Agentera mines user sessions for the user's own profile (PROFILE.md) but ships nothing that observes the suite itself. Decision 32 closes that gap: a script (no SKILL.md ceremony) reuses the corpus pipeline so the next adoption question (which skills get invoked, which complete, slash-vs-NL mix) has data behind it. Without a baseline, friction and failure analysis cannot be prioritized later. The output sits in the global XDG directory next to PROFILE.md so cross-project usage aggregates naturally.
 
 ## Constraints
 
@@ -92,7 +92,7 @@ A single self-contained script consumes the Section 21 corpus and produces three
 **Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all prior tasks are complete WHEN PROGRESS.md is reviewed THEN one cycle entry summarizes the plan's outcome at the plan level (not per-cycle restatements).
-▸ GIVEN the plan is complete WHEN TODO.md is reviewed THEN the Decision 31 telemetry item and the version-bump item both appear in the Resolved section with this plan's commits cited.
+▸ GIVEN the plan is complete WHEN TODO.md is reviewed THEN the Decision 32 telemetry item and the version-bump item both appear in the Resolved section with this plan's commits cited.
 ▸ GIVEN the plan is complete WHEN CHANGELOG.md 1.19.0 section is reviewed THEN it represents the suite usage analytics feature and the validator entry point in one coherent release block.
 
 ## Overall Acceptance
