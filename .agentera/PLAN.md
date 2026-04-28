@@ -66,7 +66,7 @@ Skill-local scripts remain owned by their skills. Suite-level tools such as doct
 ### Task 3: Non-Mutating Setup Doctor
 
 **Depends on**: Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN an installed bundle or local clone WHEN doctor runs THEN it reports install-root validity without writing files.
 ▸ GIVEN Claude Code, OpenCode, Copilot, or Codex setup is present WHEN doctor runs THEN runtime-native path shapes are classified as pass, warn, fail, or skip.
