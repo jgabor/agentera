@@ -78,7 +78,7 @@ The release layer folds all version surfaces back to `1.20.0`, verifies the fina
 ### Task 4: Single 1.20.0 Release Metadata
 
 **Depends on**: Task 3
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN version files are inspected WHEN the fold-down is complete THEN every suite version surface reads `1.20.0`.
 ▸ GIVEN CHANGELOG.md is read WHEN the fold-down is complete THEN there is one `1.20.0` section and no `1.20.1` section.

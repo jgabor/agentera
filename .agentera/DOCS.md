@@ -51,7 +51,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Decisions | .agentera/DECISIONS.md | 2026-04-02 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
 | Progress | .agentera/PROGRESS.md | 2026-04-28 | ■ current |
-| TODO | TODO.md | 2026-04-27 | ■ current |
+| TODO | TODO.md | 2026-04-28 | ■ current |
 | Changelog | CHANGELOG.md | 2026-04-28 | ■ current |
 | Health | .agentera/HEALTH.md | 2026-04-26 | ■ current |
 | Plan | .agentera/PLAN.md | 2026-04-28 | ■ current |
@@ -59,11 +59,11 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Design | .agentera/DESIGN.md | 2026-04-19 | ■ current |
 | Ecosystem spec | SPEC.md | 2026-04-20 | ■ current |
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
-| Registry | registry.json | 2026-04-27 | ■ current |
-| Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-27 | ■ current |
-| Copilot plugin manifest | plugin.json | 2026-04-27 | ■ current |
-| Copilot repo plugin manifest | .github/plugin/plugin.json | 2026-04-27 | ■ current |
-| Codex plugin manifest | .codex-plugin/plugin.json | 2026-04-27 | ■ current |
+| Registry | registry.json | 2026-04-28 | ■ current |
+| Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-28 | ■ current |
+| Copilot plugin manifest | plugin.json | 2026-04-28 | ■ current |
+| Copilot repo plugin manifest | .github/plugin/plugin.json | 2026-04-28 | ■ current |
+| Codex plugin manifest | .codex-plugin/plugin.json | 2026-04-28 | ■ current |
 | OpenCode adapter reference | references/adapters/opencode.md | 2026-04-28 | ■ current |
 | Runtime parity reference | references/adapters/runtime-feature-parity.md | 2026-04-28 | ■ current |
 | Codex UI metadata | skills/&lt;name&gt;/agents/openai.yaml; agents/openai.yaml | 2026-04-24 | ■ current |

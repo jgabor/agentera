@@ -8,12 +8,6 @@
 - OpenCode `tool.execute.before` now hard-gates reconstructable invalid artifact write/edit candidates before mutation while preserving session idle bookmarks and created-event no-op behavior.
 - Copilot lifecycle validation now rejects unsupported hook event names and mismatched per-event hook filenames.
 
-## [1.20.1] · 2026-04-27
-
-### Fixed
-
-- OpenCode plugin now handles `session.idle` through the generic `event` hook and writes SESSION.md bookmarks for modified agentera artifacts. The old direct hook keys stay forbidden, and OpenCode session-start preload is documented as deferred until a supported context-injection path is verified.
-
 ## [1.20.0] · 2026-04-27
 
 Scope refined post-research to address verified cross-runtime parity gaps; consolidates Move 1 renumber and Move 2 parity completion per explicit user direction.
@@ -64,6 +58,7 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 
 - **`[claude-code-extract-duplicate-source-ids]`** (filed during Live-Host Verification Task 1, blocked corpus.json writes for any host with substantial Claude Code history): `_records_from_conversation_turns`, `_records_from_codex_conversations`, and `_records_from_copilot_conversations` now generate per-turn-unique `source_id` so the envelope uniqueness invariant in `validate_corpus_envelope` holds. The conversation grouping key moves to `data.session_id` (with `source_id` fallback for legacy fixtures); `scripts/usage_stats.py:group_by_conversation` and `_user_turns_by_conversation` route through a new `_conversation_key()` helper. End-to-end against this system's session corpus: 4370 Claude Code + 145 Copilot conversation_turn records → 1302 paired/orphan invocations across 11 skills (was 0 before the fix because the actor/content shape never matched the analytics predicate).
 - **`[live-host-smoke-mjs-doc-row]`** (filed during Live-Host Verification Task 5): README Scripts section and `.agentera/DOCS.md` Index now carry rows for `scripts/smoke_opencode_bootstrap.mjs`, the existing peer of `smoke_setup_helpers.py`.
+- **`[opencode-session-events]`**: OpenCode plugin now handles `session.idle` through the generic `event` hook and writes SESSION.md bookmarks for modified agentera artifacts. The old direct hook keys stay forbidden, and session-start preload remains deferred until a supported context-injection path is verified.
 - **README and AGENTS.md "Section 21" Session Corpus references**: SPEC was renumbered in 1.20.0 (Session Corpus Contract is Section 22). Four occurrences across `README.md` (lines 31, 183, 381) and `AGENTS.md` (line 69, mirrored to `CLAUDE.md` via symlink) now point at Section 22.
 
 ## [1.19.0] · 2026-04-26
