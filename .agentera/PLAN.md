@@ -1,127 +1,142 @@
-# Plan: Complete v1.20 Feature Parity Release
+# Plan: Unified Setup Bundle Doctor And Installer
 
-<!-- Level: full | Created: 2026-04-28 | Status: complete -->
-<!-- Reviewed: 2026-04-28 | Critic issues: 4 found, 4 addressed, 0 dismissed -->
+<!-- Level: full | Created: 2026-04-28 | Status: active -->
+<!-- Reviewed: 2026-04-28 | Critic issues: 3 found, 3 addressed, 0 dismissed -->
+<!-- Revised: 2026-04-28 | Reason: Decision 33 bundle-first ownership refinement -->
 
 ## What
 
-Close the remaining closeable cross-runtime parity gaps, publish an accurate parity reference, and fold local patch-release state into one `v1.20.0` release.
-
-The final release kept pushed branch history intact, published `v1.20.0`,
-then accepted a follow-up `v1.20.1` patch release for decision-numbering
-hygiene.
+Build the post-1.20 setup surface from Decision 33 around an installable Agentera suite bundle. Define the shared package root, make shared tools available without a clone, add a non-mutating doctor, then add a confirmed-write installer.
 
 ## Why
 
-agentera's vision is a portable agent engineering protocol. v1.20 should read as one coherent feature-parity release, not as split local patch metadata and contradictory docs.
+Agentera's portable-runtime story should feel like one suite, not four fragmented setup paths. Marketplace users should not need a git clone to run shared setup tools. Trust comes first: users and future agents should inspect setup state before any tool mutates runtime configuration.
 
 ## Constraints
 
-- Preserve pushed remote history. `origin/main` already contains earlier v1.20 work through `03caca9`.
-- Use fast-forward publishing only. No force-push unless the user separately asks.
-- Remote `v1.20.0` exists at `629ed22`; remote `v1.20.1` exists at `e9474c6`.
-- Treat this as pre-tag release consolidation. Do not apply the normal patch-bump rule.
-- Do not claim OpenCode model-visible preload unless a supported injection path is proven.
-- Keep Python scripts stdlib-only and extend existing validator surfaces.
-- Do not submit external aggregator PRs during this plan.
+- Preserve runtime-native adapter surfaces for Claude Code, OpenCode, Copilot CLI, and Codex CLI.
+- Keep behavioral skill scripts inside their owning skills.
+- Keep suite infrastructure out of any one behavioral skill.
+- Make aggregate suite installs carry shared tools without requiring a clone.
+- Keep single-skill installs functional for core skill behavior.
+- Keep doctor mode non-mutating by default.
+- Require explicit confirmation before installer writes user config.
+- Avoid live model calls by default; live host checks may skip when unavailable.
+- Extend existing validator and smoke surfaces before adding new ad hoc checks.
 
 ## Scope
 
-**In**: Copilot pre-write artifact gate, OpenCode pre-write artifact gate, tracked feature parity reference, release docs, version metadata, validators, smoke tests, final tag, and fast-forward publish.
+**In**: suite bundle/root definition, runtime package shape validation, shared tool availability, uv script metadata for packaged executable Python scripts, setup doctor, bounded no-model smoke checks, confirmed-write installer, README and DOCS updates, version bump, and tests.
 
-**Out**: Rewriting pushed branch history, upstream runtime changes, new runtime support, and aggregator submissions.
+**Out**: external CLI distribution, external marketplace submissions, force-pushing, live model spend by default, non-runtime-native plugin directory unification, and converting pytest files into executable scripts.
 
-**Deferred**: OpenCode session-start preload remains deferred if no model-visible injection path is proven.
+**Deferred**: richer live-host proof and standalone external CLI access can come after the bundle-first path is verified.
 
 ## Design
 
-The work separates capability closure from release hygiene.
+The plan first defines where shared tools live after marketplace install. Runtime adapters should expose or discover one installed Agentera root containing skills, shared scripts, hooks, manifests, and docs. `AGENTERA_HOME` points to that root, whether it is a clone or a runtime-installed package.
 
-The adapter layer closes hard-gating gaps where host hooks support pre-write blocking. Copilot and OpenCode each get a proof gate before any docs claim parity.
-
-The documentation layer turns the ignored parity comparison into a tracked reference and reconciles README, CHANGELOG, TODO, DOCS, and adapter prose.
-
-The release layer folded all parity work into `1.20.0`, verified the final
-state, and published only by fast-forward. The later `1.20.1` patch release
-updates decision-numbering hygiene without changing the parity-release scope.
+Skill-local scripts remain owned by their skills. Suite-level tools such as doctor, installer, validation, compaction, and runtime setup helpers belong to the aggregate bundle. Doctor reads this bundle and runtime state without mutation. Installer reuses doctor findings, asks for confirmation, writes only selected runtime-native changes, and re-runs doctor to prove the result.
 
 ## Tasks
 
-### Task 1: Copilot Artifact Validation Hard Gate
+### Task 1: Suite Bundle Tool Surface
 
 **Depends on**: none
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN a Copilot pre-write hook payload for an artifact edit WHEN candidate content can be reconstructed THEN invalid artifact content is denied before mutation.
-▸ GIVEN a valid artifact edit or non-artifact edit WHEN the pre-write hook runs THEN the edit is allowed.
-▸ GIVEN Copilot payload evidence is insufficient WHEN docs are updated THEN no hard-gate parity claim is made.
-▸ GIVEN lifecycle validation runs WHEN Copilot hooks are checked THEN the shipped pre-write gate is required.
-▸ Test cap: one allow and one deny per decision boundary, plus one malformed-payload edge case if parser branches exceed two.
+▸ GIVEN an aggregate Agentera install WHEN its package root is inspected THEN skills, shared scripts, hooks, manifests, and docs are reachable from one root.
+▸ GIVEN a single skill install WHEN the skill runs THEN core workflow behavior does not require suite-level tools.
+▸ GIVEN a runtime adapter exposes install-root state WHEN tools resolve paths THEN `AGENTERA_HOME` points at the installed bundle root or documented clone root.
+▸ GIVEN package metadata is validated WHEN a shared tool path is missing THEN validation fails with the owning runtime surface named.
+▸ Test cap: one pass and one fail per runtime package shape.
 
-### Task 2: OpenCode Artifact Validation Hard Gate
+### Task 2: Packaged Script Runtime Hygiene
 
 **Depends on**: Task 1
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN an OpenCode pre-write hook payload for an artifact edit WHEN candidate content can be validated THEN invalid artifact content is blocked before mutation.
-▸ GIVEN a valid artifact edit or non-artifact edit WHEN the hook runs THEN the edit continues.
-▸ GIVEN session idle occurs WHEN the plugin handles events THEN SESSION.md bookmark behavior still works.
-▸ GIVEN session created occurs WHEN no injection path is proven THEN it remains a documented no-op.
-▸ Test cap: one allow, one deny, and one no-op smoke branch for the pre-write hook.
+▸ GIVEN packaged executable Python scripts WHEN their headers are inspected THEN each uses the uv script shebang and inline metadata.
+▸ GIVEN stdlib-only executable scripts WHEN metadata is inspected THEN dependencies are declared as an empty list.
+▸ GIVEN uv is unavailable WHEN a user-facing check runs THEN the failure gives install guidance instead of a traceback.
+▸ GIVEN representative packaged scripts run through uv WHEN invoked with harmless arguments THEN current behavior is preserved.
+▸ GIVEN the script convention is validated WHEN fixtures omit shebang or metadata THEN the check fails.
+▸ Test cap: one pass and one fail per metadata rule; edge cases only for library-module exclusions.
 
-### Task 3: Tracked Feature Parity Reference
+### Task 3: Non-Mutating Setup Doctor
 
-**Depends on**: Task 1, Task 2
-**Status**: ■ complete
+**Depends on**: Task 2
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN the parity comparison is release-relevant WHEN the repo is checked THEN it lives at a tracked adapter-reference path.
-▸ GIVEN README and the parity reference are read WHEN runtime behavior is compared THEN Copilot, OpenCode, Codex, and Claude claims agree.
-▸ GIVEN a capability remains degraded or blocked WHEN docs describe it THEN the runtime reason is explicit.
-▸ GIVEN docs claim functional artifact-validation parity WHEN checked THEN every closeable hard-gate path is implemented and verified.
+▸ GIVEN an installed bundle or local clone WHEN doctor runs THEN it reports install-root validity without writing files.
+▸ GIVEN Claude Code, OpenCode, Copilot, or Codex setup is present WHEN doctor runs THEN runtime-native path shapes are classified as pass, warn, fail, or skip.
+▸ GIVEN a runtime is unavailable WHEN doctor runs THEN it reports skip without failing the whole diagnosis.
+▸ GIVEN helper-script access is missing WHEN doctor runs THEN it reports whether the gap is bundle packaging, runtime config, or user environment.
+▸ GIVEN doctor output is requested by another tool WHEN it runs THEN a stable machine-readable summary is available.
+▸ Test cap: one pass, one warn or fail, and one skip per runtime family.
 
-### Task 4: Single 1.20.0 Release Metadata
+### Task 4: Doctor Smoke Evidence
 
 **Depends on**: Task 3
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN version files are inspected WHEN the fold-down is complete THEN every suite version surface reads `1.20.0`.
-▸ GIVEN CHANGELOG.md is read WHEN the fold-down is complete THEN there is one `1.20.0` section and no stale pre-publish `1.20.1` section.
-▸ GIVEN TODO.md and release-facing docs are searched WHEN complete THEN stale `1.20.1`, `1.21.0`, and `1.22.0` release claims are absent.
-▸ GIVEN `.agentera/DOCS.md` is read WHEN complete THEN coverage and release index rows match the final verified test count.
+▸ GIVEN no live model permission is supplied WHEN smoke checks run THEN no live model call is attempted.
+▸ GIVEN bounded smoke checks run WHEN helper and hook surfaces are available THEN they prove artifact validation and helper reachability.
+▸ GIVEN a host binary is absent WHEN doctor summarizes smoke results THEN the unavailable host is marked skip.
+▸ GIVEN a smoke check fails WHEN doctor exits THEN the failure is visible in human-readable and machine-readable output.
+▸ Test cap: one success and one failure branch per smoke-check category.
 
-### Task 5: Release Verification Surface
+### Task 5: Confirmed-Write Installer
 
 **Depends on**: Task 4
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN validators run WHEN release verification executes THEN spec, lifecycle, and contract checks pass.
-▸ GIVEN smoke checks run WHEN release verification executes THEN OpenCode syntax and bootstrap smoke pass.
-▸ GIVEN pytest runs WHEN release verification executes THEN the full suite passes.
-▸ GIVEN live host smoke is unavailable WHEN verification runs THEN it reports SKIP rather than failing the release.
-▸ GIVEN hard-gate docs drift later WHEN lifecycle validation runs THEN the new Copilot and OpenCode claims are caught.
+▸ GIVEN doctor findings include fixable setup gaps WHEN installer plans changes THEN it shows the target runtime, target file, and reason.
+▸ GIVEN confirmation is absent WHEN writes would be needed THEN installer exits without changing user config.
+▸ GIVEN confirmation is present WHEN installer applies changes THEN only selected runtime-native config surfaces are changed.
+▸ GIVEN installer completes WHEN doctor is re-run THEN fixed surfaces report pass or documented skip.
+▸ Test cap: one dry-run, one denied write, one confirmed write, and one idempotent re-run per writable runtime.
 
-### Task 6: Plan-Level Freshness And Publish
+### Task 6: Version Metadata
 
 **Depends on**: Task 5
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
+▸ GIVEN DOCS.md version policy is applied WHEN feature metadata is updated THEN suite version targets receive the required minor bump.
+▸ GIVEN version files are inspected WHEN the bump is complete THEN every listed suite version surface agrees.
+▸ GIVEN CHANGELOG.md is read WHEN the bump is complete THEN unified setup work is recorded under the release section.
+▸ GIVEN version validation runs WHEN metadata is checked THEN no stale pre-bump version remains.
+
+### Task 7: Documentation Refresh
+
+**Depends on**: Task 6
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN README setup guidance is read WHEN the plan is complete THEN bundle-first doctor flow is the recommended path.
+▸ GIVEN single-skill install guidance is read WHEN suite tools are mentioned THEN core-only behavior and bundle-enhanced behavior are distinguished.
+▸ GIVEN runtime setup docs are read WHEN installer behavior is described THEN confirmed writes and no-live-default behavior are explicit.
+▸ GIVEN DOCS.md is read WHEN the plan is complete THEN bundle, doctor, installer, and test rows are current.
+▸ GIVEN adapter references are read WHEN setup behavior is compared THEN runtime-native boundaries remain accurate.
+
+### Task 8: Verification And Freshness Checkpoint
+
+**Depends on**: Task 7
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN validators run WHEN final verification executes THEN spec, lifecycle, contracts, package-shape, and artifact checks pass.
+▸ GIVEN smoke checks run WHEN final verification executes THEN setup, live-host unavailable, and OpenCode bootstrap smoke pass or skip by documented rules.
+▸ GIVEN pytest runs WHEN final verification executes THEN the full suite passes.
 ▸ GIVEN plan work is complete WHEN artifacts are read THEN PROGRESS, TODO, CHANGELOG, DOCS, and PLAN summarize the plan-level result.
-▸ GIVEN the final commit is checked WHEN release publishing begins THEN the worktree is clean.
-▸ GIVEN remote tags are checked WHEN publishing begins THEN no conflicting remote `v1.20*` tag blocks fast-forward release.
-▸ GIVEN the local `v1.20.0` tag exists WHEN finalizing THEN it points at the final verified commit.
-▸ GIVEN publishing completes WHEN remote state is checked THEN origin main and release tags resolve to the verified commits.
+▸ GIVEN the worktree is inspected WHEN the handoff completes THEN only intended files are changed.
 
 ## Overall Acceptance
 
-▸ GIVEN v1.20 is inspected after publish WHEN version surfaces are checked THEN `1.20.0` remains the parity-release identifier and `1.20.1` is the follow-up patch identifier.
-▸ GIVEN artifact validation is compared across runtimes WHEN release docs are read THEN all closeable hard-gate paths are implemented or explicitly blocked.
-▸ GIVEN OpenCode preload is read WHEN no model-visible injection path exists THEN it is marked deferred, not shipped.
-▸ GIVEN package metadata, docs, and tests are checked WHEN verification completes THEN they agree on the final runtime behavior.
-▸ GIVEN origin is checked after publishing WHEN tags and main are resolved THEN `v1.20.0`, `v1.20.1`, and `origin/main` point at the expected verified commits.
+▸ GIVEN Agentera is installed as a suite bundle WHEN doctor runs THEN it finds shared tools without requiring a clone.
+▸ GIVEN only one skill is installed WHEN that skill runs THEN core behavior does not depend on suite-level scripts.
+▸ GIVEN fixable setup gaps exist WHEN installer runs without confirmation THEN no user config changes.
+▸ GIVEN installer applies confirmed changes WHEN doctor runs again THEN configured runtimes report pass or documented skip.
+▸ GIVEN release-facing docs are read WHEN the plan completes THEN setup guidance matches shipped bundle behavior.
 
 ## Surprises
 
-- 2026-04-28: Realisera could prepare local freshness, but final retag and remote publish required explicit release authorization. Authorization was granted after the readiness handoff; preflight found no remote `v1.20*` tags.
-- 2026-04-28: `v1.20.1` was pushed out of band after the `v1.20.0`
-  release. Remote verification now shows `v1.20.0` at `629ed22`,
-  `v1.20.1` at `e9474c6`, and `origin/main` at `06a81e2`.
+[Empty; populated by realisera during execution when reality diverges from plan]
