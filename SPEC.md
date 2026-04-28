@@ -277,6 +277,10 @@ Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest 
 
 Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest one-line when >40 one-line entries exist. Archive section sits below recent decisions under an `## Archived Decisions` heading. One-line summaries preserve decision number, date, and the chosen alternative.
 
+When writing a new decision, choose `N` as one greater than the highest decision number in active and archived entries. Insert the new full entry in the active section immediately before `## Archived Decisions`; if no archive exists, append it at the end of the file. Active decision entries must have unique numbers and remain ascending by decision number. Do not reuse or renumber decisions except when repairing artifact corruption.
+
+**Linter check**: Deterministic. Artifact validation rejects duplicate decision numbers and descending active decision order.
+
 **HEALTH.md**, compacted by inspektera when writing a new audit:
 
 | Tier | Entries | Format |

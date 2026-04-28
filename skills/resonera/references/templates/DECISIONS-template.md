@@ -8,8 +8,6 @@ are referenced by realisera, optimera, and profilera for context on why choices 
 **Question**: what was being decided
 **Context**: relevant constraints, triggers, or prior decisions
 **Alternatives**:
-- [Option A]: tradeoffs
-- [Option B]: tradeoffs
 **Choice**: what was chosen
 **Reasoning**: the key insight or tradeoff that resolved it
 **Confidence**: ━ firm | ─ provisional | ┄ exploratory
@@ -29,6 +27,11 @@ Entry format reference:
   **Reasoning**: [key insight or tradeoff that resolved it]
   **Confidence**: ━ firm | ─ provisional | ┄ exploratory
   **Feeds into**: VISION.md | OBJECTIVE.md | TODO.md | standalone
+
+Numbering and placement:
+  N is one greater than the highest active or archived decision number.
+  New full entries go before ## Archived Decisions, or at EOF if no archive exists.
+  Active decision entries stay unique and ascending by decision number.
 
 Confidence levels:
   firm         : committed; other skills treat this as a constraint
