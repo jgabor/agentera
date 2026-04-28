@@ -1,5 +1,71 @@
 # Health
 
+## Audit 16 · 2026-04-28
+
+**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
+**Findings**: 0 critical, 0 warnings, 1 info (0 filtered by confidence)
+**Overall trajectory**: ⮉ improving vs Audit 15. The setup bundle plan landed the shared package-root story, read-only doctor, offline smoke evidence, confirmed installer, and 1.21.0 release metadata without breaking validators or tests. The only new risk is concentration in `setup_doctor.py`, which is acceptable until another runtime or installer path expands it.
+**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Complexity [A] | Tests [A] | Version [A] | Freshness [A] | Security [A] | Deps [A]
+
+### Architecture alignment: A
+
+Decision 33's suite-bundle boundary is reflected in aggregate runtime metadata and lifecycle validation. Shared infrastructure lives at the bundle root; skill-local scripts remain in owning skills; single-skill core behavior is still described as independent of suite tools.
+
+### Pattern consistency: A
+
+Executable suite scripts now share uv script headers and empty dependency metadata. Doctor output keeps the existing pass, warn, fail, skip status vocabulary, and installer planning reuses the existing Codex and Copilot helper logic instead of inventing a parallel writer.
+
+### Coupling health: A
+
+Runtime package-shape checks stay centralized in `scripts/validate_lifecycle_adapters.py`, while `scripts/setup_doctor.py` depends only on stdlib code and the existing setup helpers. Tests exercise the doctor mostly through subprocess or public module functions, so internal reshaping remains possible.
+
+### Complexity hotspots: A
+
+#### ⇢ Setup doctor is the new setup hotspot, info (confidence: 65)
+
+- **Location**: `scripts/setup_doctor.py:332`, `scripts/setup_doctor.py:588`, `scripts/setup_doctor.py:969`, `scripts/setup_doctor.py:1184`
+- **Evidence**: One 1285-line script now owns smoke checks, four runtime diagnoses, installer planning and writes, report rendering, and CLI flow.
+- **Impact**: Current shape is sectioned and tested, but the next writable runtime or live-host branch could make the file harder to change safely.
+- **Suggested action**: Keep it whole for now; split doctor, smoke, and installer helpers only when another setup path lands.
+
+### Test health: A
+
+Coverage is proportional to the risk surface: bundle metadata has pass/fail fixtures, script hygiene has one failure per rule, and setup doctor tests cover runtime pass, classified gaps, skips, non-mutation, smoke failure visibility, denied writes, confirmed writes, and idempotent reruns. Full collection reports 477 tests across 17 files.
+
+### Version health: A
+
+The setup feature and fix commits are covered by the `1.21.0` bump, and no `feat` or `fix` commits landed after the bump. Version target scans found no stale `1.20.x` or local `1.22.0` residues in listed suite surfaces.
+
+### Artifact freshness: A
+
+PLAN, PROGRESS, TODO, CHANGELOG, and DOCS were all updated at `2026-04-28T21:55:28+02:00`, after the plan creation date. README setup guidance was updated during Task 7, and this audit updates HEALTH for the post-plan check.
+
+### Security hygiene: A
+
+Secret-pattern hits are limited to inspektera's own documented examples. Setup doctor and smoke subprocess calls use list-form commands with timeouts and no `shell=True`; installer writes are limited to confirmed Codex and Copilot runtime-native config targets.
+
+> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), npm audit (Node), or similar.
+
+### Dependency health: A
+
+No new third-party Python dependencies were introduced; executable suite scripts declare `dependencies = []`. The only external runtime dependency remains the pinned OpenCode plugin package in `.opencode/package.json`.
+
+### Trends vs Audit 15
+
+- **Improved**: Architecture and freshness now capture the suite-bundle setup surface rather than two separate setup helpers. Tests grew from 433 to 477 and cover doctor, smoke, installer, package-shape, and uv metadata behavior.
+- **Degraded**: none.
+- **Stable**: Version, security, and dependency posture remain green.
+- **New findings**: `setup_doctor.py` is a large but acceptable setup hotspot.
+- **Resolved**: Audit 15's "two-helper shape" note is absorbed into the bundle-owned doctor and installer surface.
+- **Carried forward**: Richer live-host proof remains deferred by plan, but default doctor smoke explicitly avoids live model calls.
+
+### Patterns Observed
+
+- Module structure: shared suite infrastructure lives in root `scripts/`, `hooks/`, manifests, and references; behavioral scripts remain inside owning skills.
+- Validation ownership: lifecycle/package-shape drift belongs to `scripts/validate_lifecycle_adapters.py`; spec and contract drift stay in `validate_spec.py` and `generate_contracts.py`.
+- Testing approach: setup behavior is verified by focused subprocess smoke tests plus public-function fixtures, not by reaching through private runtime internals.
+- Dependency patterns: Python remains stdlib-only; runtime-specific metadata carries host requirements rather than adding a common abstraction layer.
+
 ## Audit 15 · 2026-04-26
 
 **Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
@@ -828,69 +894,9 @@ Zero hardcoded secrets. Zero eval/exec/os.system/shell=True. All 5 subprocess ca
 - **Dependency management**: Zero external dependencies. All Python scripts use stdlib only. No package manager needed.
 - **Version management**: Conventional commits drive semver bumps per DOCS.md policy. Linter constants are the main coupling point for skill-name registration.
 
-## Audit 6 · 2026-04-02
-
-**Dimensions assessed**: test health, architecture alignment, version health (patterns and coupling carried forward from Audit 5)
-**Findings**: 0 critical, 0 warnings, 1 info (0 filtered by confidence)
-**Overall trajectory**: ⮉ improving. Tests D→B (171 tests, all 13 linter checks covered). Architecture B→A (README now accurate). Version A (stable). Patterns A, Coupling A (carried forward).
-**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Tests [B] | Version [A]
-
-### Test health: B
-
-171 tests across 7 files, all passing. Coverage by module:
-
-- **validate_spec.py**: 105 tests across 17 test classes. All 13 check functions tested (check_frontmatter, check_confidence_scale, check_severity_levels, check_decision_labels, check_artifact_path_resolution, check_profile_consumption, check_cross_skill_integration, check_safety_rails, check_artifact_format, check_exit_signals, check_loop_guard, check_em_dashes, check_hard_wraps). Plus Results class, extract_subsection, parse_frontmatter, extract_section.
-- **eval_skills.py**: 26 tests covering TRIGGER_PROMPTS completeness (all 12 skills including orkestrera),_parse_frontmatter_name, discover_skills, build_report, build_dry_run, parse_args.
-- **Skill scripts**: 4 of 5 scripts tested (40 tests total). analyze_experiments.py (10), analyze_progress.py (9), effective_profile.py (11), validate_design.py (10).
-- **Shared fixtures**: conftest.py provides validate_ecosystem and eval_skills module fixtures via importlib.
-
-#### ⇢ extract_all.py (profilera) has no tests · info (confidence: 95)
-
-- **Location**: `skills/profilera/scripts/extract_all.py`
-- **Evidence**: Only Python script without a corresponding test file. 5 of 6 scripts now tested; extract_all.py is the gap.
-- **Impact**: Profile extraction parsing changes could break silently
-- **Suggested action**: Add test_extract_all.py for parse functions
-
-Remaining gaps: no CI gating (tests exist but are not enforced in a pipeline), no artifact format contract tests (inter-skill communication format validation at test time).
-
-### Architecture alignment: A
-
-README now accurately represents the ecosystem. All three Audit 5 concerns resolved:
-
-1. **profilera table entry**: rewritten from "Know thyself. Learns your decision patterns" to "Compounding memory. Mines your decision patterns into a profile consumed by every skill, so the 20th cycle adapts to how you work in ways the 1st could not." Conveys ecosystem impact, not just feature.
-2. **inspirera diagram**: annotated with `(simplified: each skill has additional cross-skill edges, see ecosystem spec Section 7)` caption. Additional inspirera edges shown: arrows to realisera, optimera, visionera, resonera below the main diagram.
-3. **Consumer tables**: all 12 artifact rows match SPEC.md Section 4 format contracts exactly (VISION.md, TODO.md, CHANGELOG.md, PROGRESS.md, DECISIONS.md, PLAN.md, HEALTH.md, OBJECTIVE.md, EXPERIMENTS.md, DESIGN.md, DOCS.md, PROFILE.md).
-
-No remaining architecture misalignments detected between README and ecosystem spec.
-
-### Version health: A
-
-All 33 version locations consistent: 11 non-profilera plugin.json at 1.5.0, profilera at 2.4.0, marketplace.json at 1.5.0, registry.json entries match. Four post-1.5.0 commits (test, test, docs, test) correctly did not trigger a version bump per semver policy (test and docs are non-bumping commit types). CHANGELOG [Unreleased] empty, [1.5.0] promoted.
-
-### Pattern consistency: A (carried forward)
-
-No SKILL.md files modified in this plan. Linter still passes: 0 errors, 0 warnings. Carried forward from Audit 5.
-
-### Coupling health: A (carried forward)
-
-No cross-skill references modified. 12-node graph intact. Carried forward from Audit 5.
-
-### Trends vs Audit 5
-
-- **Improved**: Tests [D→B] (0 tests to 171; all 13 linter check functions, eval runner pure functions, and 4 of 5 skill scripts covered), Architecture [B→A] (README diagram, profilera entry, consumer tables all resolved)
-- **Stable**: Patterns [A→A], Coupling [A→A], Version [A→A]
-- **Resolved**: README diagram inspirera simplification (Audit 4/5 warning, fixed in 70a2fb1), Test health D (Audit 4/5, elevated to B via 145c637, 8b4e389, bdfdcc9, 02a3e0d)
-- **Still open**: extract_all.py untested (info), CI gating deferred
-
-### Patterns Observed
-
-- Test infrastructure went from zero to mature in a single plan: 171 tests, shared fixtures, modular test classes mirroring source structure. The approach of testing pure functions and check functions independently (not integration tests against real SKILL.md files) keeps tests fast and deterministic.
-- README accuracy tracks ecosystem spec more faithfully after the overhaul. The "simplified" diagram annotation is the right tradeoff: honest about what it omits, with a pointer to the authoritative source.
-- The project now has no D grades for the first time. All five dimensions at A or B.
-
----
-
 ## Archived Audits
+
+### Audit 6 · 2026-04-02 (⮉ improving. Tests D→B (171 tests, all 13 linter checks...)
 
 ### Audit 5 · 2026-04-02 (⮉ improving. Architecture B (was C), Patterns A (was B),...)
 
