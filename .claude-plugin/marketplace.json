@@ -7,6 +7,20 @@
     "version": "1.20.1",
     "description": "agentera: entry-point routing, vision, deliberation, planning, autonomous development, optimization, auditing, documentation, visual identity, research, decision-profile mining, and orchestration"
   },
+  "agentera": {
+    "packageShape": "suite-bundle",
+    "installRoot": "..",
+    "sharedPaths": [
+      "skills",
+      "scripts",
+      "hooks",
+      "registry.json",
+      "plugin.json",
+      "README.md",
+      "SPEC.md"
+    ],
+    "singleSkillInstall": "Single-skill installs keep core SKILL.md workflow behavior; suite tools are bundle-only enhancements."
+  },
   "plugins": [
     {
       "name": "hej",

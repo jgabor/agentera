@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import re
 from pathlib import Path
 from types import ModuleType
@@ -651,6 +652,60 @@ class TestLifecycleAdapters:
             else (REPO_ROOT / "references/adapters/opencode.md").read_text(encoding="utf-8"),
             encoding="utf-8",
         )
+
+
+class TestSuiteBundleSurface:
+    """Task 1 cap: one pass and one fail per runtime package shape."""
+
+    def test_suite_bundle_surface_passes_for_each_runtime_shape(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        for runtime in sorted(validator.RUNTIME_PACKAGE_SURFACES):
+            root = tmp_path / runtime
+            self._write_bundle_fixture(root, validator, runtime)
+            assert validator.validate_suite_bundle_surface(root, {runtime}) == []
+
+    def test_suite_bundle_surface_fails_with_owning_runtime_name(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        for runtime in sorted(validator.RUNTIME_PACKAGE_SURFACES):
+            root = tmp_path / runtime
+            self._write_bundle_fixture(root, validator, runtime, omit_shared_path="scripts")
+            errors = validator.validate_suite_bundle_surface(root, {runtime})
+            assert f"{runtime}: shared tool path scripts missing from package metadata" in errors
+
+    @staticmethod
+    def _write_bundle_fixture(
+        root: Path,
+        validator: ModuleType,
+        runtime: str,
+        *,
+        omit_shared_path: str | None = None,
+    ) -> None:
+        root.mkdir(parents=True)
+        for path, kind in validator.SUITE_BUNDLE_REQUIRED_PATHS.items():
+            target = root / path
+            if kind == "dir":
+                target.mkdir(parents=True)
+            else:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text("fixture\n", encoding="utf-8")
+
+        manifest = root / validator.RUNTIME_PACKAGE_SURFACES[runtime]
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        shared_paths = [
+            path for path in validator.SUITE_BUNDLE_REQUIRED_PATHS if path != omit_shared_path
+        ]
+        package = {
+            "agentera": {
+                "packageShape": "suite-bundle",
+                "installRoot": os.path.relpath(root, manifest.parent),
+                "sharedPaths": shared_paths,
+                "singleSkillInstall": (
+                    "Single-skill installs keep core SKILL.md workflow behavior; "
+                    "suite tools are bundle-only enhancements."
+                ),
+            }
+        }
+        manifest.write_text(json.dumps(package), encoding="utf-8")
 
 
 class TestLegacyRuntimeCompatibility:

@@ -46,6 +46,20 @@
       "AGENTERA_HOME must be set in ~/.codex/config.toml under [shell_environment_policy].set so SKILL.md helper-script invocations resolve to the install root; see README install instructions."
     ]
   },
+  "agentera": {
+    "packageShape": "suite-bundle",
+    "installRoot": "..",
+    "sharedPaths": [
+      "skills",
+      "scripts",
+      "hooks",
+      "registry.json",
+      "plugin.json",
+      "README.md",
+      "SPEC.md"
+    ],
+    "singleSkillInstall": "Single-skill installs keep core SKILL.md workflow behavior; suite tools are bundle-only enhancements."
+  },
   "lifecycleHooks": {
     "runtime": "codex-cli",
     "status": "stable",
