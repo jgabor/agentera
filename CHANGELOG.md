@@ -9,6 +9,10 @@
 - `scripts/setup_doctor.py` now diagnoses the Agentera install root and Claude Code, OpenCode, Copilot, and Codex helper-script access without writing files, with stable JSON output for downstream tools.
 - `scripts/setup_doctor.py --smoke` now runs bounded offline helper, artifact-hook, and host-binary smoke checks with human-readable and JSON evidence.
 
+### Fixed
+
+- Doctor smoke now reports malformed runtime-host PATH candidates as failures without invoking live model CLIs.
+
 ## [1.20.1] · 2026-04-28
 
 ### Fixed

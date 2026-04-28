@@ -139,4 +139,4 @@ Skill-local scripts remain owned by their skills. Suite-level tools such as doct
 
 ## Surprises
 
-[Empty; populated by realisera during execution when reality diverges from plan]
+- Task 4 retry: evaluation treated `runtime_host` as a smoke-check category needing a failure branch. Doctor now fails a host-named but non-executable PATH candidate without invoking the runtime.

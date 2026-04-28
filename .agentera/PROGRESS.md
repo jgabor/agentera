@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 211 · 2026-04-28 21:18 · fix(setup): prove runtime-host smoke failures
+
+**Phase**: implementation
+**What**: Retried Task 4 after evaluation found the runtime-host smoke category lacked a failure branch and explicit process-level failure evidence. Doctor smoke now marks a host-named but non-executable PATH candidate as `runtime_host` failure without invoking the runtime or attempting a model call.
+**Commit**: this commit, `fix(setup): prove runtime-host smoke failures`
+**Inspiration**: Task 4 retry evaluation. The acceptance wording treats helper, hook, and runtime-host smoke as separate categories, each needing success and failure evidence.
+**Discovered**: Runtime-host failure can be proven without crossing the no-live boundary by inspecting PATH candidates that exist but are not executable.
+**Verified**: `python3 -m pytest tests/test_setup_doctor.py -q` passed with 8 tests, adding the runtime-host failure branch beside helper and hook failure branches. `python3 scripts/setup_doctor.py --smoke --runtime codex --json` returned `modelCallsAttempted: false` with helper, hook, and host smoke passing against the available Codex binary. Process-level failure probes used a temp PATH containing a non-executable `codex`: human output exited 1 and printed `host.codex: fail - codex PATH candidate is not executable`; JSON output exited 1 with `ok: false`, `smoke.summary.fail: 1`, `host.codex.status: fail`, and details `runtime host was not invoked` plus `no live model call attempted`.
+**Next**: Task 5, Confirmed-Write Installer.
+**Context**: intent (satisfy Task 4 retry evaluation only) · constraints (no installer, no version bump, no docs refresh, preserve default no-live model behavior) · unknowns (none after process-level human and JSON failure probes) · scope (`scripts/setup_doctor.py`, focused doctor tests, PLAN, PROGRESS, CHANGELOG).
+
 ■ ## Cycle 210 · 2026-04-28 21:09 · feat(setup): add doctor smoke evidence
 
 **Phase**: implementation
@@ -141,4 +152,3 @@
 - Cycle 164 (2026-04-26): feat(usage): classify trigger phrasing and scope by project
 - Cycle 163 (2026-04-26): feat(usage): detect skill invocations and pair with exit signals
 - Cycle 162 (2026-04-26): feat(validator): accept arbitrary SKILL.md paths for third-party authoring
-- Cycle 161 (2026-04-25): chore(plan): checkpoint copilot marketplace freshness
