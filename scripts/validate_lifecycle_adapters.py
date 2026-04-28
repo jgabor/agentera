@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
 """Validate runtime lifecycle hook adapter metadata.
 
 The check is intentionally small: Task 5 owns full test coverage. This helper
@@ -10,6 +14,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
+import stat
 import sys
 from pathlib import Path
 from typing import Any
@@ -54,6 +60,11 @@ SUITE_BUNDLE_REQUIRED_PATHS = {
     "README.md": "file",
     "SPEC.md": "file",
 }
+UV_SCRIPT_SHEBANG = "#!/usr/bin/env -S uv run --script"
+UV_INSTALL_GUIDANCE = (
+    "uv is required to run packaged Agentera Python scripts; install it from "
+    "https://docs.astral.sh/uv/getting-started/installation/ and then rerun the check"
+)
 RUNTIME_PACKAGE_SURFACES = {
     "claude": ".claude-plugin/marketplace.json",
     "codex": ".codex-plugin/plugin.json",
@@ -141,6 +152,76 @@ def _resolve_from_manifest(root: Path, manifest: Path, path: str) -> Path | None
     except ValueError:
         return None
     return resolved
+
+
+def _is_executable(path: Path) -> bool:
+    executable_bits = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+    return bool(path.stat().st_mode & executable_bits)
+
+
+def _packaged_executable_python_scripts(root: Path) -> list[Path]:
+    script_root = root / "scripts"
+    if not script_root.is_dir():
+        return []
+    return sorted(
+        path for path in script_root.glob("*.py")
+        if path.is_file() and _is_executable(path)
+    )
+
+
+def _extract_inline_script_metadata(text: str) -> list[str] | None:
+    lines = text.splitlines()
+    try:
+        start = lines.index("# /// script")
+    except ValueError:
+        return None
+    for index in range(start + 1, len(lines)):
+        if lines[index] == "# ///":
+            return lines[start + 1:index]
+    return None
+
+
+def _metadata_declares_empty_dependencies(metadata: list[str]) -> bool:
+    dependencies_index = None
+    for index, line in enumerate(metadata):
+        if line.strip() == "# dependencies = []":
+            return True
+        if line.strip() == "# dependencies = [":
+            dependencies_index = index
+            break
+    if dependencies_index is None:
+        return False
+    for line in metadata[dependencies_index + 1:]:
+        stripped = line.strip()
+        if stripped == "# ]":
+            return True
+        if stripped and stripped != "#":
+            return False
+    return False
+
+
+def validate_packaged_python_scripts(root: Path) -> list[str]:
+    errors: list[str] = []
+    for path in _packaged_executable_python_scripts(root):
+        relative = path.relative_to(root)
+        text = path.read_text(encoding="utf-8")
+        lines = text.splitlines()
+        first_line = lines[0] if lines else ""
+        if first_line != UV_SCRIPT_SHEBANG:
+            errors.append(f"{relative}: packaged executable Python script must use uv script shebang")
+        metadata = _extract_inline_script_metadata(text)
+        if metadata is None:
+            errors.append(f"{relative}: packaged executable Python script must declare inline script metadata")
+            continue
+        if not _metadata_declares_empty_dependencies(metadata):
+            errors.append(f"{relative}: stdlib-only packaged script must declare dependencies = []")
+    return errors
+
+
+def validate_uv_runtime(path: str | None = None) -> list[str]:
+    if shutil.which("uv", path=path) is None:
+        return [UV_INSTALL_GUIDANCE]
+    return []
 
 
 def validate_suite_bundle_surface(
@@ -458,6 +539,11 @@ def validate_hard_gate_docs(root: Path) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
+    parser.add_argument(
+        "--check-uv-runtime",
+        action="store_true",
+        help="also verify the uv executable is available for packaged script shebangs",
+    )
     args = parser.parse_args(argv)
 
     root = args.root.resolve()
@@ -470,6 +556,9 @@ def main(argv: list[str] | None = None) -> int:
     errors.extend(validate_codex_profilera_metadata(root, codex))
     errors.extend(validate_opencode(root))
     errors.extend(validate_suite_bundle_surface(root))
+    errors.extend(validate_packaged_python_scripts(root))
+    if args.check_uv_runtime:
+        errors.extend(validate_uv_runtime())
     errors.extend(validate_hard_gate_docs(root))
 
     if errors:
