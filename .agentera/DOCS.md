@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-28 (runtime parity reference checkpoint) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-28 (runtime onboarding polish) -->
 
 ## Conventions
 
@@ -15,6 +15,7 @@ auto_gen:
     - .github/plugin/plugin.json
     - .codex-plugin/plugin.json
     - skills/*/.claude-plugin/plugin.json
+    - .agents/plugins/marketplace.json
     - .claude-plugin/marketplace.json
     - .opencode/plugins/agentera.js
     - registry.json
@@ -48,7 +49,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 |----------|------|-------------|--------|
 | README | README.md | 2026-04-28 | ■ current |
 | CLAUDE.md | CLAUDE.md | 2026-04-27 | ■ current |
-| Decisions | .agentera/DECISIONS.md | 2026-04-02 | ■ current |
+| Decisions | .agentera/DECISIONS.md | 2026-04-28 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
 | Progress | .agentera/PROGRESS.md | 2026-04-28 | ■ current |
 | TODO | TODO.md | 2026-04-28 | ■ current |
@@ -61,6 +62,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
 | Registry | registry.json | 2026-04-28 | ■ current |
 | Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-28 | ■ current |
+| Codex marketplace manifest | .agents/plugins/marketplace.json | 2026-04-28 | ■ current |
 | Copilot plugin manifest | plugin.json | 2026-04-28 | ■ current |
 | Copilot repo plugin manifest | .github/plugin/plugin.json | 2026-04-28 | ■ current |
 | Codex plugin manifest | .codex-plugin/plugin.json | 2026-04-28 | ■ current |
@@ -88,15 +90,51 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 452 tests across 17 files; CI runs on push/PR via GitHub Actions
+- **Tests**: 454 tests across 17 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-28 (runtime onboarding polish)
+
+- [cleanup] README still mixed runtime install, optional hooks, and clone-only
+  helper commands; quick start now separates runtime entry points from
+  helper-script setup, with the unified installer deferred by Decision 32 ·
+  info (fixed)
+- [gap] OpenCode quick start implied the plugin alone installed Agentera; it
+  now installs skills with `npx skills add` before adding the plugin that
+  provides commands and hooks · warning (fixed)
+
+### 2026-04-28 (Codex marketplace visibility)
+
+- [gap] Codex marketplace entries pointed at skill folders instead of the
+  aggregate plugin root; the marketplace now exposes one installable Agentera
+  plugin and adapter tests guard the path shape · warning (fixed)
+
+### 2026-04-28 (README memory and hooks refinement)
+
+- [cleanup] README underplayed profilera and exposed hook adapter internals in
+  user-facing runtime sections; highlighted the memory layer and moved
+  low-level runtime claims back to adapter references · info (fixed)
+
+### 2026-04-28 (README feature and hook refinement)
+
+- [cleanup] README feature list still repeated skill names and exposed runtime
+  internals too early; refocused it on product capabilities, moved adapter
+  details under hooks, and restored glyphs in the skill table · info (fixed)
+
+### 2026-04-28 (README product rewrite)
+
+- [cleanup] README led with dense install/runtime reference material; rewrote it around product promise, visual briefing, quick start, workflows, and compact runtime details · info (fixed)
+
+### 2026-04-28 (README runtime support readability)
+
+- [cleanup] README runtime support and lifecycle matrices were hard to scan; replaced them with per-runtime details blocks that preserve the same claims · info (fixed)
 
 ### 2026-04-28 (plan-level release readiness)
 
 - [stale] Coverage line still reported 449 tests after Task 5 full-suite verification passed with 452 tests across 17 files · info (fixed)
 - [cleanup] CHANGELOG moved the remaining Copilot/OpenCode hard-gate entries from Unreleased into the single `1.20.0` section · info (fixed)
-- [handoff] Local `v1.20.0` still points at `17c6141`; no remote `v1.20*` tags were found, so final retag and publish remain explicit release actions · warning (deferred)
+- [handoff] Final retag and publish required explicit release authorization; authorization was granted after the readiness handoff, with no remote `v1.20*` tags found at preflight · warning (fixed)
 
 ### 2026-04-28 (runtime parity reference checkpoint)
 

@@ -46,18 +46,6 @@ CODEX_PROFILERA_INVOCATION_TERMS = ("$profilera", "limited", "Section 22", "sour
 OPENCODE_EVENT_TYPES = {"session.created", "session.idle"}
 COPILOT_REQUIRED_PREWRITE_HOOK = "preToolUse"
 HARD_GATE_DOC_REQUIREMENTS = {
-    "README.md": {
-        "OpenCode": (
-            "tool.execute.before",
-            "reconstructable write/edit candidates",
-            "apply_patch patchText without reconstructed full content are allowed",
-        ),
-        "Copilot": (
-            "preToolUse",
-            "reconstructable invalid artifact edits are denied",
-            "insufficient payload evidence is allowed",
-        ),
-    },
     "references/adapters/runtime-feature-parity.md": {
         "OpenCode": (
             "Conditional hard gate for reconstructable `write` and `edit` candidates",

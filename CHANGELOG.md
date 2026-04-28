@@ -17,7 +17,7 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 - **`scripts/smoke_setup_helpers.py`**: stdlib black-box smoke harness exercising both setup helpers across 11 sequential cases (5 Codex + 4 Copilot + 2 cross-cutting), no live CLI required.
 - **`scripts/smoke_live_hosts.py`**: live-host AGENTERA_HOME inheritance and SKILL.md compaction smoke harness for Codex and Copilot. Default mode runs the profilera Codex collection audit and delegates to `scripts/smoke_setup_helpers.py` (no live CLI invocations, no cost). `--live` mode prints a one-line cost estimate and consent prompt, then issues exactly one `codex exec` and one `bash -c '...copilot -p ... --allow-all-tools'` invocation per runtime, each carrying a combined prompt that exercises both AGENTERA_HOME echo and `compact_artifact.py` execution, with snapshot + SHA256 round-trip on `~/.codex/config.toml` and shell rc files plus orphan-snapshot auto-recovery on the next run.
 - **Codex `apply_patch` hook config** (`hooks/codex-hooks.json`): PreToolUse + PostToolUse `apply_patch` matchers wire `validate_artifact.py` for real-time artifact validation, parity with Claude Code PostToolUse and OpenCode `tool.execute.after`.
-- **`.agents/plugins/marketplace.json`**: Codex marketplace manifest enables `codex plugin marketplace add jgabor/agentera` plus `codex plugin install <skill>@agentera`, cross-runtime install symmetry with Copilot.
+- **`.agents/plugins/marketplace.json`**: Codex marketplace manifest enables `codex plugin marketplace add jgabor/agentera` plus interactive `/plugins` installation of the aggregate Agentera plugin.
 - **12 per-skill `agents/<name>.toml` Codex agent stubs** with explicit `model = "gpt-5-codex"`, `model_reasoning_effort`, and `developer_instructions` fields pointing at bundled SKILL.md paths.
 - **`scripts/setup_codex.py --enable-agents`** flag writes `[agents.<name>]` entries to `~/.codex/config.toml` for all 12 agentera skills so orkestrera dispatch maps natively to Codex `[agents.*]`.
 - **`scripts/smoke_live_hosts.py --yes` flag plus `AGENTERA_LIVE_CONSENT=1` env var**: bypass the interactive consent prompt for non-interactive realisera/orkestrera invocation; cost line still prints; explicit `auto-consented via flag` audit line emitted to stdout.
@@ -37,6 +37,7 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 - **`.agentera/DOCS.md` Index** gained rows for all four new helpers and the live-host smoke runner; Audit Log block records the README and DOCS surfaces resolved.
 - **README runtime support table** reflects Codex `multi_agent`/`codex_hooks` stable + default-on as of v0.124.0, `apply_patch` Write/Edit interception per `openai/codex#18391`, and verified Copilot marketplace install (granular + umbrella both functional).
 - **README lifecycle hooks table** adds Supported Events column with all 6 events per runtime; names the Copilot preToolUse-blocks vs postToolUse-output-ignored asymmetry explicitly.
+- **README onboarding polish** separates per-runtime quick starts from optional hook/helper setup, fixes linked navigation, corrects the OpenCode path to install skills before adding the plugin, and documents that the unified setup/doctor experience is deferred by Decision 32.
 - **`.codex-plugin/plugin.json` `lifecycleHooks.status`** flipped `experimental-disabled` → `stable`; `supportedEvents` array added; `unsupportedEvents` rewritten to genuinely-unsupported Claude-Code-specific events; stale `codex.limitations[0]` removed.
 - **`agents/openai.yaml` `support.lifecycle_hooks`** mirrors the new metadata story.
 - **`scripts/validate_lifecycle_adapters.py` `CODEX_EVENTS` and `COPILOT_EVENTS`** populated with the genuine event lists; predicates reject stale-marker phrases.
@@ -50,6 +51,7 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 
 ### Fixed
 
+- **Codex marketplace visibility**: `.agents/plugins/marketplace.json` now points at the aggregate plugin root instead of skill folders, and `.codex-plugin/plugin.json` carries standard interface metadata so Agentera appears as an installable plugin after the marketplace cache is refreshed.
 - **Copilot `preToolUse` artifact gate**: reconstructable invalid artifact edits are denied before mutation, while valid, non-artifact, malformed, or evidence-insufficient payloads remain allowed.
 - **OpenCode `tool.execute.before` artifact gate**: reconstructable invalid artifact write/edit candidates are blocked before mutation while session idle bookmarks and `session.created` no-op behavior stay intact.
 - **Lifecycle drift guards**: validation now requires the shipped Copilot pre-write hook, rejects unsupported Copilot hook event names and filename mismatches, and catches Copilot/OpenCode hard-gate docs drift.

@@ -2,7 +2,38 @@
   "name": "agentera",
   "version": "1.20.0",
   "description": "agentera: entry-point routing, vision, deliberation, planning, autonomous development, optimization, auditing, documentation, visual identity, research, decision-profile mining, and orchestration",
+  "author": {
+    "name": "Jonathan Gabor",
+    "url": "https://github.com/jgabor"
+  },
+  "homepage": "https://github.com/jgabor/agentera",
+  "repository": "https://github.com/jgabor/agentera",
+  "license": "Apache-2.0",
+  "keywords": [
+    "agentera",
+    "skills",
+    "agents",
+    "coding",
+    "memory",
+    "orchestration"
+  ],
   "skills": "./skills/",
+  "interface": {
+    "displayName": "Agentera",
+    "shortDescription": "Portable skills that give Codex project memory, planning, execution, and review workflows.",
+    "longDescription": "Agentera turns Codex into a coordinated engineering partner with shared project artifacts, decision memory, planning, autonomous execution, audits, documentation, visual identity, research, optimization, and orchestration.",
+    "developerName": "Jonathan Gabor",
+    "category": "Coding",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://github.com/jgabor/agentera",
+    "privacyPolicyURL": "https://github.com/jgabor/agentera",
+    "termsOfServiceURL": "https://github.com/jgabor/agentera/blob/main/LICENSE",
+    "defaultPrompt": [
+      "Use $hej to inspect this project and suggest the next best action."
+    ],
+    "brandColor": "#111827",
+    "screenshots": []
+  },
   "codex": {
     "uiMetadata": "./agents/openai.yaml",
     "discovery": {

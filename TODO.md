@@ -6,8 +6,6 @@
 
 ## → Normal
 
-- [ ] [release-publish-1.20.0] Repoint local v1.20.0 to the final verified commit, fast-forward origin/main, push the tag, and verify both remote refs.
-
 ## ⇢ Annoying
 
 ## Resolved
@@ -37,6 +35,7 @@
 - [x] ~~[refactor] `hooks/common.py` and `hooks/validate_artifact.py` duplicated DOCS.md path resolution (Audit 9 Coupling info)~~ · fixed in 627e30c (validate_artifact now imports parse_artifact_mapping from common; 30 lines of duplicate parser dropped)
 - [x] ~~[fix] `.gitignore` missing credential patterns despite cycle 118 CHANGELOG claim (Audit 9 Security info)~~ · fixed in 627e30c (four credential patterns appended)
 - [x] ~~[refactor] `_format_todo_oneline` chained 6+ string transformations on same variable (Audit 9 Complexity warning)~~ · fixed in 8b92b91 (extracted 3 module-level regex constants + 3 helpers; orchestrator now 7 lines; 7 proportional tests added)
+- [x] ~~[release-publish-1.20.0] Repoint local v1.20.0 to the final verified commit, fast-forward origin/main, push the tag, and verify both remote refs.~~ · Resolved 2026-04-28 by explicit release authorization; this final artifact commit is the tag target, followed by main/tag push and remote-ref verification.
 - [x] ~~[copilot-hook-event-name-validator] Add a small lint rule rejecting Copilot hook event names outside the documented allowlist.~~ · Resolved 2026-04-27 by 73f19dd: validator accepts the six documented events and rejects `stop` or filename-mismatched hooks.
 - [x] ~~[opencode-session-events] Replace the SESSION.md bookmark wiring using OpenCode's real `event` mechanism.~~ · Resolved 2026-04-27 by folded 1.20.0 release metadata: OpenCode now handles `session.idle` through generic `event`, writes SESSION.md bookmarks for modified artifacts, rejects direct phantom hook keys, and documents session-start preload as deferred.
 - [x] ~~[claude-code-extract-duplicate-source-ids] Per-turn extractor schema mismatch produced 21 duplicate source_id errors and blocked corpus.json writes; analytics counted 0 invocations against live data.~~ · Resolved 2026-04-27 by folding the fix into v1.20.0; per-turn-unique source_ids in all three runtime wrappers, `data.session_id`-based grouping in `scripts/usage_stats.py`, dedupe across subagent JSONL shadows, plus a new Copilot SQLite `session-store.db` extractor. End-to-end: 1302 invocations across 11 skills.
@@ -61,4 +60,3 @@
 - [x] ~~Task 4: [feat] Add Copilot session corpus collection~~ · resolved without issue ID; no commits produced by explicit user request
 - [x] ~~Task 5: [feat] Add Codex session corpus collection~~ · resolved without issue ID; no commits produced by explicit user request
 - [x] ~~Task 6: [test] Integrate profilera status and validation coverage~~ · resolved without issue ID; no commits produced by explicit user request
-- [x] ~~Task 7: [chore] Version bump per DOCS.md convention~~ · resolved without issue ID; no commits produced by explicit user request

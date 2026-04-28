@@ -1,4 +1,4 @@
-# Runtime Feature Parity Reference
+# Runtime feature parity reference
 
 Tracks release-relevant runtime behavior for the portable agentera suite.
 
@@ -14,7 +14,7 @@ may expose an event while agentera still lacks a shipped adapter path for it.
 | Copilot CLI | Full for portable skills through plugin or skill-folder install paths | Active via `sessionStart` | Conditional hard gate via `preToolUse` when `toolArgs` include path plus candidate content or exact replacement evidence | Active via `sessionEnd` |
 | Codex CLI | Full for portable skills through plugin install, `.agents/skills`, and `$skill` invocation | Not wired by the shipped hook config | Advisory `apply_patch` path validation through shipped PreToolUse and PostToolUse hooks; final patch content is not reconstructed | Not wired by the shipped hook config |
 
-## Artifact Validation
+## Artifact validation
 
 | Runtime | Blocking surface | Implemented gate | Evidence-insufficient paths | Verification surface |
 |---------|------------------|------------------|-----------------------------|----------------------|
@@ -29,7 +29,7 @@ artifact candidates. Claude Code and Codex remain active validation surfaces,
 but neither shipped configuration blocks every invalid artifact candidate before
 mutation.
 
-## Lifecycle Notes
+## Lifecycle notes
 
 | Runtime | Runtime reason for degraded or blocked capability |
 |---------|---------------------------------------------------|
@@ -39,7 +39,28 @@ mutation.
 | Codex preload/bookmarks | `codex_hooks` supports lifecycle events, but `hooks/codex-hooks.json` ships only `apply_patch` PreToolUse/PostToolUse wiring. |
 | Codex artifact hard gate | The adapter parses patch headers for touched paths, but it does not reconstruct final candidate content for blocking validation. |
 
-## Source Of Truth
+## Copilot install notes
+
+Recommended marketplace install:
+
+```bash
+copilot plugin marketplace add jgabor/agentera
+copilot plugin install <skill>@agentera
+```
+
+Umbrella install:
+
+```bash
+copilot plugin install jgabor/agentera
+```
+
+The marketplace install path is verified working. Granular installs avoid
+umbrella discovery bug `github/copilot-cli#2390`.
+
+Deprecated fallback: `copilot plugin install OWNER/REPO`, Git URLs, and local
+paths still work, but Copilot warns they are deprecated.
+
+## Source of truth
 
 | Surface | Path |
 |---------|------|

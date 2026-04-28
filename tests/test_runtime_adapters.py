@@ -90,6 +90,14 @@ def _validate_codex_package(plugin: dict[str, Any]) -> list[str]:
     if plugin.get("skills") != "./skills/":
         errors.append("codex.skills must point to ./skills/")
 
+    interface = plugin.get("interface")
+    if not isinstance(interface, dict):
+        errors.append("codex.interface metadata must be an object")
+    else:
+        for key in ("displayName", "shortDescription", "longDescription", "developerName", "category"):
+            if not isinstance(interface.get(key), str) or not interface[key]:
+                errors.append(f"codex.interface.{key} must be present")
+
     codex = plugin.get("codex")
     if not isinstance(codex, dict):
         errors.append("codex metadata must be an object")
@@ -143,6 +151,45 @@ def _validate_codex_package(plugin: dict[str, Any]) -> list[str]:
 
     if isinstance(codex, dict) and isinstance(codex.get("uiMetadata"), str):
         errors.extend(_validate_codex_ui_metadata(REPO_ROOT / codex["uiMetadata"]))
+
+    return errors
+
+
+def _validate_codex_marketplace(root: Path = REPO_ROOT) -> list[str]:
+    errors: list[str] = []
+    marketplace = _load_json(root / ".agents/plugins/marketplace.json")
+    plugins = marketplace.get("plugins")
+    if not isinstance(plugins, list):
+        return ["codex marketplace plugins must be a list"]
+
+    if [plugin.get("name") for plugin in plugins if isinstance(plugin, dict)] != ["agentera"]:
+        errors.append("codex marketplace must expose the aggregate agentera plugin")
+
+    for plugin in plugins:
+        if not isinstance(plugin, dict):
+            errors.append("codex marketplace plugin entries must be objects")
+            continue
+        source = plugin.get("source")
+        if not isinstance(source, dict) or source.get("source") != "local":
+            errors.append("codex marketplace agentera source must be local")
+            continue
+        path = source.get("path")
+        if not isinstance(path, str):
+            errors.append("codex marketplace agentera source path must be a string")
+            continue
+        plugin_root = _resolve_inside(root, path)
+        if plugin_root is None:
+            errors.append("codex marketplace agentera path must stay inside repo root")
+            continue
+        manifest = plugin_root / ".codex-plugin/plugin.json"
+        if not manifest.is_file():
+            errors.append("codex marketplace agentera path must resolve to a plugin root")
+        else:
+            manifest_json = _load_json(manifest)
+            if manifest_json.get("name") != plugin.get("name"):
+                errors.append("codex marketplace agentera name must match plugin manifest")
+        if (plugin_root / "SKILL.md").is_file():
+            errors.append("codex marketplace must not point directly at a skill directory")
 
     return errors
 
@@ -287,7 +334,7 @@ def _validate_docs_version_targets(root: Path) -> list[str]:
     return []
 
 
-def _validate_readme_copilot_install_guidance(text: str) -> list[str]:
+def _validate_copilot_install_reference(text: str) -> list[str]:
     errors: list[str] = []
     marketplace_add = "copilot plugin marketplace add jgabor/agentera"
     granular = "copilot plugin install <skill>@agentera"
@@ -304,25 +351,25 @@ def _validate_readme_copilot_install_guidance(text: str) -> list[str]:
         re.IGNORECASE,
     )
     if marketplace_add not in text:
-        errors.append("README Copilot install must document `copilot plugin marketplace add jgabor/agentera`")
+        errors.append("Copilot install reference must document `copilot plugin marketplace add jgabor/agentera`")
     if granular not in text:
-        errors.append("README Copilot install must document granular `<skill>@agentera` install")
+        errors.append("Copilot install reference must document granular `<skill>@agentera` install")
     if umbrella not in text:
-        errors.append("README Copilot install must document umbrella `jgabor/agentera` install")
+        errors.append("Copilot install reference must document umbrella `jgabor/agentera` install")
     if verified not in text:
-        errors.append("README Copilot install must state the marketplace path is verified working")
+        errors.append("Copilot install reference must state the marketplace path is verified working")
     if stale_unverified.search(text):
-        errors.append("README Copilot install must not claim the marketplace source is unverified")
+        errors.append("Copilot install reference must not claim the marketplace source is unverified")
     if "copilot plugin install agentera@<marketplace>" in text:
-        errors.append("README Copilot placeholder must not masquerade as a canonical source")
+        errors.append("Copilot install placeholder must not masquerade as a canonical source")
     if direct not in text or "deprecated" not in text:
-        errors.append("README Copilot install must mark OWNER/REPO as deprecated fallback")
+        errors.append("Copilot install reference must mark OWNER/REPO as deprecated fallback")
     if primary_direct.search(text):
-        errors.append("README Copilot fallback guidance must stay secondary to verified marketplace installs")
+        errors.append("Copilot fallback guidance must stay secondary to verified marketplace installs")
     if marketplace_add in text and direct in text and text.index(marketplace_add) > text.index(direct):
-        errors.append("README Copilot install must mention marketplace before OWNER/REPO")
+        errors.append("Copilot install reference must mention marketplace before OWNER/REPO")
     if "github/copilot-cli#2390" not in text:
-        errors.append("README Copilot install must cite umbrella discovery bug `github/copilot-cli#2390`")
+        errors.append("Copilot install reference must cite umbrella discovery bug `github/copilot-cli#2390`")
     return errors
 
 
@@ -343,27 +390,27 @@ class TestCopilotPackaging:
         plugin["skills"] = "../skills"
         assert "copilot.skills paths must stay inside plugin root" in _validate_copilot_package(plugin)
 
-    def test_copilot_readme_install_guidance_passes(self):
-        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-        assert _validate_readme_copilot_install_guidance(readme) == []
+    def test_copilot_install_reference_passes(self):
+        reference = (REPO_ROOT / "references/adapters/runtime-feature-parity.md").read_text(encoding="utf-8")
+        assert _validate_copilot_install_reference(reference) == []
 
-    def test_copilot_readme_install_guidance_fails_on_unverified_availability_claim(self):
-        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-        stale = f"{readme}\nNo canonical Agentera Copilot marketplace source is currently verified.\n"
-        errors = _validate_readme_copilot_install_guidance(stale)
-        assert "README Copilot install must not claim the marketplace source is unverified" in errors
+    def test_copilot_install_reference_fails_on_unverified_availability_claim(self):
+        reference = (REPO_ROOT / "references/adapters/runtime-feature-parity.md").read_text(encoding="utf-8")
+        stale = f"{reference}\nNo canonical Agentera Copilot marketplace source is currently verified.\n"
+        errors = _validate_copilot_install_reference(stale)
+        assert "Copilot install reference must not claim the marketplace source is unverified" in errors
 
-    def test_copilot_readme_install_guidance_fails_on_placeholder_as_source(self):
-        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-        stale = f"{readme}\ncopilot plugin install agentera@<marketplace>\n"
-        errors = _validate_readme_copilot_install_guidance(stale)
-        assert "README Copilot placeholder must not masquerade as a canonical source" in errors
+    def test_copilot_install_reference_fails_on_placeholder_as_source(self):
+        reference = (REPO_ROOT / "references/adapters/runtime-feature-parity.md").read_text(encoding="utf-8")
+        stale = f"{reference}\ncopilot plugin install agentera@<marketplace>\n"
+        errors = _validate_copilot_install_reference(stale)
+        assert "Copilot install placeholder must not masquerade as a canonical source" in errors
 
-    def test_copilot_readme_install_guidance_fails_on_primary_fallback(self):
-        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-        stale = f"{readme}\nUse copilot plugin install OWNER/REPO as the primary Copilot install path.\n"
-        errors = _validate_readme_copilot_install_guidance(stale)
-        assert "README Copilot fallback guidance must stay secondary to verified marketplace installs" in errors
+    def test_copilot_install_reference_fails_on_primary_fallback(self):
+        reference = (REPO_ROOT / "references/adapters/runtime-feature-parity.md").read_text(encoding="utf-8")
+        stale = f"{reference}\nUse copilot plugin install OWNER/REPO as the primary Copilot install path.\n"
+        errors = _validate_copilot_install_reference(stale)
+        assert "Copilot fallback guidance must stay secondary to verified marketplace installs" in errors
 
 
 class TestCodexPackaging:
@@ -373,11 +420,35 @@ class TestCodexPackaging:
         plugin = _load_json(REPO_ROOT / ".codex-plugin/plugin.json")
         assert _validate_codex_package(plugin) == []
 
+    def test_codex_marketplace_passes(self):
+        assert _validate_codex_marketplace() == []
+
     def test_codex_package_fails_on_profilera_implicit_policy(self):
         plugin = _load_json(REPO_ROOT / ".codex-plugin/plugin.json")
         profilera = next(skill for skill in plugin["skillMetadata"] if skill["name"] == "profilera")
         profilera["policy"]["allow_implicit_invocation"] = True
         assert "codex.profilera: implicit invocation policy is wrong" in _validate_codex_package(plugin)
+
+    def test_codex_marketplace_fails_when_pointing_at_skill_directory(self, tmp_path):
+        (tmp_path / ".agents/plugins").mkdir(parents=True)
+        (tmp_path / "skills/hej").mkdir(parents=True)
+        (tmp_path / "skills/hej/SKILL.md").write_text("---\nname: hej\n---\n", encoding="utf-8")
+        (tmp_path / ".agents/plugins/marketplace.json").write_text(
+            json.dumps({
+                "name": "agentera",
+                "plugins": [{
+                    "name": "hej",
+                    "source": {"source": "local", "path": "./skills/hej"},
+                    "policy": {"installation": "AVAILABLE", "authentication": "ON_USE"},
+                    "category": "Coding",
+                }],
+            }),
+            encoding="utf-8",
+        )
+        errors = _validate_codex_marketplace(tmp_path)
+        assert "codex marketplace must expose the aggregate agentera plugin" in errors
+        assert "codex marketplace agentera path must resolve to a plugin root" in errors
+        assert "codex marketplace must not point directly at a skill directory" in errors
 
 
 class TestLifecycleAdapters:
@@ -535,13 +606,13 @@ class TestLifecycleAdapters:
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
         self._write_hard_gate_docs(
             tmp_path,
-            readme=(REPO_ROOT / "README.md").read_text(encoding="utf-8").replace(
-                "insufficient payload evidence is allowed",
+            parity=(REPO_ROOT / "references/adapters/runtime-feature-parity.md").read_text(encoding="utf-8").replace(
+                "Malformed, sparse, or non-reconstructable `toolArgs` are allowed",
                 "every Copilot artifact payload is blocked",
             ),
         )
         errors = validator.validate_hard_gate_docs(tmp_path)
-        assert any("README.md: Copilot hard-gate docs" in error for error in errors)
+        assert any("references/adapters/runtime-feature-parity.md: Copilot hard-gate docs" in error for error in errors)
 
     def test_hard_gate_docs_fail_on_opencode_apply_patch_drift(self, tmp_path):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
