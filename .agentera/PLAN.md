@@ -57,7 +57,7 @@ The release layer folds all version surfaces back to `1.20.0`, verifies the fina
 ### Task 2: OpenCode Artifact Validation Hard Gate
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN an OpenCode pre-write hook payload for an artifact edit WHEN candidate content can be validated THEN invalid artifact content is blocked before mutation.
 ▸ GIVEN a valid artifact edit or non-artifact edit WHEN the hook runs THEN the edit continues.

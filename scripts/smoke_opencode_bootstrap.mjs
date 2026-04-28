@@ -179,6 +179,10 @@ try {
     `Agentera() return must include tool.execute.after hook (got: ${hookKeys.join(", ")})`
   );
   assert(
+    hookKeys.includes("tool.execute.before"),
+    `Agentera() return must include tool.execute.before hook (got: ${hookKeys.join(", ")})`
+  );
+  assert(
     !hookKeys.includes("session.created"),
     "Agentera() return must NOT include phantom session.created hook"
   );
@@ -210,6 +214,49 @@ try {
   const sessionText = fs.readFileSync(sessionPath, "utf8");
   assert(sessionText.includes("Artifacts modified:"), "SESSION.md bookmark should include modified artifact summary");
   assert(sessionText.includes("TODO.md"), "SESSION.md bookmark should name modified TODO.md");
+
+  // --- Test 8b: tool.execute.before hard gate — invalid artifact is denied ---
+  let denied = false;
+  try {
+    await hooksForEvents["tool.execute.before"](
+      { tool: "write", sessionID: "s1", callID: "deny-artifact" },
+      {
+        args: {
+          filePath: ".agentera/HEALTH.md",
+          content: "# Health\n\nNo audit entries.\n",
+        },
+      }
+    );
+  } catch (err) {
+    denied = true;
+    assert(
+      String(err.message || err).includes("HEALTH.md"),
+      "invalid artifact denial should include the artifact name"
+    );
+  }
+  assert(denied, "tool.execute.before must deny invalid artifact candidates");
+
+  // --- Test 8c: tool.execute.before hard gate — valid artifact is allowed ---
+  await hooksForEvents["tool.execute.before"](
+    { tool: "write", sessionID: "s1", callID: "allow-artifact" },
+    {
+      args: {
+        filePath: ".agentera/HEALTH.md",
+        content: "# Health\n\n## Audit 1\n\nAll clear.\n",
+      },
+    }
+  );
+
+  // --- Test 8d: tool.execute.before hard gate — non-artifact is a no-op ---
+  await hooksForEvents["tool.execute.before"](
+    { tool: "write", sessionID: "s1", callID: "noop-nonartifact" },
+    {
+      args: {
+        filePath: "src/app.py",
+        content: "print('not an artifact')\n",
+      },
+    }
+  );
 
   // --- Test 9: event hook — created and malformed events do not bookmark ---
   const beforeCreated = fs.readFileSync(sessionPath, "utf8");

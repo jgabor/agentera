@@ -21,6 +21,10 @@ Routing:
 
 Supported stdin shapes:
     Claude Code (PostToolUse): {tool_input: {file_path: <path>}, ...}
+    OpenCode (tool.execute.before): {runtime: "opencode", tool_input:
+        {file_path: <path>, content: <candidate>}, ...}. Candidate content is
+        validated before mutation. Invalid artifacts emit
+        {"permissionDecision":"deny", ...}; insufficient evidence is allowed.
     Copilot CLI (preToolUse): {toolName: <name>, toolArgs: <json string>, cwd: <dir>, ...}
         If toolArgs carries a path plus reconstructable candidate content,
         artifact content is validated before mutation. Invalid artifacts emit
@@ -503,6 +507,34 @@ def _print_copilot_decision(decision: str, reason: str | None = None) -> None:
     print(json.dumps(payload, separators=(",", ":")))
 
 
+def handle_candidate_pre_tool_use(
+    file_path: object,
+    content: object,
+    project_root: str,
+) -> int:
+    """Validate a pre-write artifact candidate from a host adapter."""
+    if not isinstance(file_path, str) or not isinstance(content, str):
+        _print_copilot_decision("allow")
+        return 0
+
+    resolved_path = (
+        file_path if os.path.isabs(file_path) else str(Path(project_root) / file_path)
+    )
+    artifact_name = identify_artifact(resolved_path, project_root)
+    if artifact_name is None:
+        _print_copilot_decision("allow")
+        return 0
+
+    violations = validate_artifact_text(content, artifact_name)
+    if not violations:
+        _print_copilot_decision("allow")
+        return 0
+
+    reason = "Artifact validation failed: " + "; ".join(violations)
+    _print_copilot_decision("deny", reason)
+    return 0
+
+
 def handle_copilot_pre_tool_use(hook_input: dict[str, object], project_root: str) -> int:
     """Validate reconstructable Copilot edit candidates before mutation."""
     candidate = reconstruct_copilot_candidate(hook_input.get("toolArgs"), project_root)
@@ -624,6 +656,19 @@ def main() -> int:
     )
     if is_copilot_pre_tool:
         return handle_copilot_pre_tool_use(hook_input, str(project_root))
+
+    is_opencode_pre_tool = (
+        isinstance(hook_input, dict)
+        and hook_input.get("runtime") == "opencode"
+        and hook_input.get("hook_event_name") == "tool.execute.before"
+        and isinstance(tool_input, dict)
+    )
+    if is_opencode_pre_tool:
+        return handle_candidate_pre_tool_use(
+            tool_input.get("file_path"),
+            tool_input.get("content"),
+            str(project_root),
+        )
 
     # Codex apply_patch path: tool_input.command holds the raw patch body;
     # parse for every touched file and validate each one.

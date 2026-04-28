@@ -220,7 +220,7 @@ def _validate_opencode_package(root: Path = REPO_ROOT) -> list[str]:
     # Real `@opencode-ai/plugin` Hooks interface members. Session lifecycle
     # arrives through the generic `event` hook; `session.created` and
     # `session.idle` are event.type payload values, not hook object keys.
-    for hook in ('event:', '"shell.env"', '"tool.execute.after"'):
+    for hook in ('event:', '"shell.env"', '"tool.execute.before"', '"tool.execute.after"'):
         if hook not in plugin_text:
             errors.append(f"opencode plugin missing {hook} hook")
     for phantom in ('"session.created":', '"session.idle":'):
@@ -604,7 +604,7 @@ class TestLegacyRuntimeCompatibility:
         )
         (root / ".opencode/package.json").write_text(json.dumps({"type": "module"}), encoding="utf-8")
         (root / ".opencode/plugins/agentera.js").write_text(
-            'export const AGENTERA_VERSION = "1.18.0";\n  "hej": `\nevent:\n"shell.env"\n"tool.execute.after"\n',
+            'export const AGENTERA_VERSION = "1.18.0";\n  "hej": `\nevent:\n"shell.env"\n"tool.execute.before"\n"tool.execute.after"\n',
             encoding="utf-8",
         )
         assert "opencode.hej: missing command file" in _validate_opencode_package(root)
@@ -621,6 +621,7 @@ class TestLegacyRuntimeCompatibility:
         assert '"session.idle":' not in plugin_text
         assert "event:" in plugin_text
         assert '"shell.env"' in plugin_text
+        assert '"tool.execute.before"' in plugin_text
         assert '"tool.execute.after"' in plugin_text
 
         root = tmp_path / "repo"
@@ -640,7 +641,7 @@ class TestLegacyRuntimeCompatibility:
         # Regression fixture re-registers the phantom keys; validator must catch it.
         (root / ".opencode/plugins/agentera.js").write_text(
             'export const AGENTERA_VERSION = "1.18.0";\n  "hej": `\n'
-            '"session.created": async () => {}\n"session.idle": async () => {}\nevent:\n"shell.env"\n"tool.execute.after"\n',
+            '"session.created": async () => {}\n"session.idle": async () => {}\nevent:\n"shell.env"\n"tool.execute.before"\n"tool.execute.after"\n',
             encoding="utf-8",
         )
         errors = _validate_opencode_package(root)

@@ -307,9 +307,11 @@ def validate_opencode(root: Path) -> list[str]:
             errors.append(f"opencode: event hook must handle or explicitly skip {event_type}")
         if f'"{event_type}":' in text:
             errors.append(f"opencode: must not register phantom direct hook {event_type}")
-    for hook in ('"shell.env"', '"tool.execute.after"'):
+    for hook in ('"shell.env"', '"tool.execute.before"', '"tool.execute.after"'):
         if hook not in text:
             errors.append(f"opencode: missing {hook} hook")
+    if "validateArtifactCandidate" not in text:
+        errors.append("opencode: tool.execute.before must validate artifact candidates")
 
     return errors
 

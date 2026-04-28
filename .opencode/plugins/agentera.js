@@ -1,10 +1,10 @@
 // Agentera plugin for OpenCode
 // Bootstraps slash commands at plugin init, injects AGENTERA_HOME via shell.env,
 // writes SESSION.md bookmarks via the generic event hook, and validates
-// artifact writes via tool.execute.after.
+// artifact writes via tool.execute.before plus tool.execute.after.
 // Install: copy to ~/.config/opencode/plugins/agentera.js or .opencode/plugins/agentera.js
 
-import { execFileSync, execSync } from "child_process";
+import { execFileSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
@@ -136,7 +136,8 @@ export function bootstrapCommands() {
 }
 
 function isArtifactPath(filePath, root) {
-  const rel = path.relative(root, filePath);
+  const target = path.isAbsolute(filePath) ? filePath : path.join(root, filePath);
+  const rel = path.relative(root, target);
   if (!rel) return false;
   const artifacts = [
     "VISION.md", "TODO.md", "CHANGELOG.md",
@@ -180,13 +181,106 @@ export function resolveAgenteraHome() {
   return null;
 }
 
-export function validateArtifact() {
+export function validateArtifact(filePath, projectRoot) {
   try {
     const agenteraHome = resolveAgenteraHome();
-    if (!agenteraHome) return;
-    const scriptPath = path.join(agenteraHome, "scripts", "validate_spec.py");
-    execSync(`python3 "${scriptPath}"`, { timeout: 30000, stdio: "pipe" });
+    if (!agenteraHome || !filePath) return;
+    const scriptPath = path.join(agenteraHome, "hooks", "validate_artifact.py");
+    if (!fs.existsSync(scriptPath)) return;
+    const payload = JSON.stringify({
+      cwd: projectRoot,
+      hook_event_name: "tool.execute.after",
+      tool_name: "Edit",
+      tool_input: { file_path: filePath },
+    });
+    execFileSync("python3", [scriptPath], {
+      input: payload,
+      timeout: 30000,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
   } catch {}
+}
+
+function resolveToolFilePath(args, root) {
+  const rawPath = args?.filePath || args?.path || args?.file_path;
+  if (!rawPath || typeof rawPath !== "string") return null;
+  return path.isAbsolute(rawPath) ? rawPath : path.join(root, rawPath);
+}
+
+function reconstructCandidate(tool, args, root) {
+  if (!args || typeof args !== "object") return null;
+  const filePath = resolveToolFilePath(args, root);
+  if (!filePath) return null;
+
+  if (tool === "write") {
+    const content = args.content || args.text || args.newContent || args.new_content;
+    return typeof content === "string" ? { filePath, content } : null;
+  }
+
+  if (tool !== "edit") return null;
+  const oldText = args.oldString || args.old_string || args.oldText || args.old_text;
+  const newText = args.newString || args.new_string || args.newText || args.new_text;
+  if (typeof oldText !== "string" || typeof newText !== "string") return null;
+
+  let current;
+  try {
+    current = fs.readFileSync(filePath, "utf8");
+  } catch {
+    return null;
+  }
+
+  if (args.replaceAll === true || args.replace_all === true) {
+    return current.includes(oldText)
+      ? { filePath, content: current.replaceAll(oldText, newText) }
+      : null;
+  }
+
+  const first = current.indexOf(oldText);
+  if (first === -1 || current.indexOf(oldText, first + oldText.length) !== -1) {
+    return null;
+  }
+  return {
+    filePath,
+    content: current.slice(0, first) + newText + current.slice(first + oldText.length),
+  };
+}
+
+export function validateArtifactCandidate(filePath, content, projectRoot) {
+  try {
+    const agenteraHome = resolveAgenteraHome();
+    if (!agenteraHome) return { permissionDecision: "allow" };
+    const scriptPath = path.join(agenteraHome, "hooks", "validate_artifact.py");
+    if (!fs.existsSync(scriptPath)) return { permissionDecision: "allow" };
+    const payload = JSON.stringify({
+      runtime: "opencode",
+      cwd: projectRoot,
+      hook_event_name: "tool.execute.before",
+      tool_name: "Edit",
+      tool_input: { file_path: filePath, content },
+    });
+    const stdout = execFileSync("python3", [scriptPath], {
+      input: payload,
+      encoding: "utf8",
+      timeout: 30000,
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
+    if (!stdout) return { permissionDecision: "allow" };
+    const decision = JSON.parse(stdout);
+    if (!decision || typeof decision !== "object") {
+      return { permissionDecision: "allow" };
+    }
+    return decision;
+  } catch {
+    return { permissionDecision: "allow" };
+  }
+}
+
+function hardGateArtifactCandidate(input, output, projectRoot) {
+  const candidate = reconstructCandidate(input?.tool, output?.args, projectRoot);
+  if (!candidate) return;
+  const decision = validateArtifactCandidate(candidate.filePath, candidate.content, projectRoot);
+  if (decision.permissionDecision !== "deny") return;
+  throw new Error(decision.permissionDecisionReason || "Artifact validation failed");
 }
 
 export function writeSessionBookmark(projectRoot) {
@@ -265,12 +359,16 @@ export const Agentera = async (input = {}, _options) => {
       env.AGENTERA_HOME = initialAgenteraHome;
     },
 
+    "tool.execute.before": async (input, output) => {
+      hardGateArtifactCandidate(input, output, projectRoot);
+    },
+
     "tool.execute.after": async (input, output) => {
       if (input.tool === "write" || input.tool === "edit") {
-        const filePath = output?.args?.filePath || output?.args?.path;
-        const root = findAgenteraRoot(process.cwd());
+        const root = projectRoot;
+        const filePath = resolveToolFilePath(input?.args || output?.args, root);
         if (filePath && isArtifactPath(filePath, root)) {
-          validateArtifact();
+          validateArtifact(filePath, root);
         }
       }
     },
