@@ -661,9 +661,11 @@ def _copilot_rc_paths(home: Path) -> tuple[Path, ...]:
 
 def _extract_copilot_marker_root(text: str) -> str | None:
     lines = text.splitlines()
-    for index, line in enumerate(lines[:-1]):
+    for index, line in enumerate(lines):
         if line.rstrip() != COPILOT_MARKER:
             continue
+        if index + 1 >= len(lines):
+            return None
         export = lines[index + 1].strip()
         for prefix in ('export AGENTERA_HOME="', "set -x AGENTERA_HOME \""):
             if export.startswith(prefix) and export.endswith('"'):
