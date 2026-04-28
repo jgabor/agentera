@@ -6,6 +6,8 @@
 
 ## → Normal
 
+- [ ] [release-publish-1.20.0] Repoint local v1.20.0 to the final verified commit, fast-forward origin/main, push the tag, and verify both remote refs.
+
 ## ⇢ Annoying
 
 ## Resolved

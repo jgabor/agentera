@@ -88,9 +88,15 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 449 tests across 17 files; CI runs on push/PR via GitHub Actions
+- **Tests**: 452 tests across 17 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-28 (plan-level release readiness)
+
+- [stale] Coverage line still reported 449 tests after Task 5 full-suite verification passed with 452 tests across 17 files · info (fixed)
+- [cleanup] CHANGELOG moved the remaining Copilot/OpenCode hard-gate entries from Unreleased into the single `1.20.0` section · info (fixed)
+- [handoff] Local `v1.20.0` still points at `17c6141`; no remote `v1.20*` tags were found, so final retag and publish remain explicit release actions · warning (deferred)
 
 ### 2026-04-28 (runtime parity reference checkpoint)
 
@@ -120,7 +126,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - [stale] README.md and AGENTS.md (CLAUDE.md symlink) referenced "Section 21" for the Session Corpus Contract; SPEC.md was renumbered in 1.20.0 (Session Corpus is now Section 22). Four occurrences across README.md (lines 31, 183, 381) and AGENTS.md (line 69) · warning (fixed)
 - [gap] README Scripts section omitted `scripts/smoke_opencode_bootstrap.mjs`; closes open TODO `[live-host-smoke-mjs-doc-row]`. Index gained a row for the same script · warning (fixed)
 - [stale] Coverage line said "433 tests across 17 files"; actual is 438 (+3 from this session's Codex/Copilot/Claude Code per-turn extractor work; full breakdown lands under [Unreleased] in CHANGELOG when the next release is cut) · info (fixed)
-- v1.20.0 scope expanded: per user direction, the Codex/Copilot/Claude Code per-turn extractor fix is folded into 1.20.0 (was previously called out as out-of-scope in the CHANGELOG Note). CHANGELOG Note replaced by a `### Fixed` section covering `[claude-code-extract-duplicate-source-ids]` and `[live-host-smoke-mjs-doc-row]`; both TODOs flipped to Resolved; v1.20.0 tag re-pointed to the new HEAD.
+- v1.20.0 scope expanded: per user direction, the Codex/Copilot/Claude Code per-turn extractor fix is folded into 1.20.0 (was previously called out as out-of-scope in the CHANGELOG Note). CHANGELOG Note replaced by a `### Fixed` section covering `[claude-code-extract-duplicate-source-ids]` and `[live-host-smoke-mjs-doc-row]`; both TODOs flipped to Resolved. Later local work superseded that tag checkpoint; final tag handoff is tracked in the 2026-04-28 plan-level readiness note.
 
 ### 2026-04-26 (Live-Host Verification Task 5)
 
