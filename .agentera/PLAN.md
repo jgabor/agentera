@@ -86,7 +86,7 @@ Closed state lives inside each objective's own artifacts. `OBJECTIVE.md` carries
 ### Task 6: Refresh Optimera Documentation
 
 **Depends on**: Task 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN docs mention optimera state WHEN refreshed THEN they describe `.agentera/optimera/<name>/OBJECTIVE.md`.
 ▸ GIVEN docs mention experiment history WHEN refreshed THEN they describe `.agentera/optimera/<name>/EXPERIMENTS.md`.
