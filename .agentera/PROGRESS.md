@@ -2,12 +2,12 @@
 
 ■ ## Cycle 222 · 2026-04-29 · chore(release): bump suite to 1.24.0
 
-**Phase**: release
+**Phase**: build
 **What**: Completed Task 5 of the Steelman-Informed Decision Pressure plan. Version-bearing DOCS-listed metadata now represents the next minor release for the decision-workflow behavior added in Tasks 1-3.
 **Commit**: this commit, `chore(release): bump suite to 1.24.0`
 **Inspiration**: Active PLAN.md Task 5 and DOCS.md `versioning` convention: `feat = minor, fix = patch, docs/chore/test = no bump`.
 **Discovered**: `.agents/plugins/marketplace.json` is listed in DOCS.md `version_files` but carries no version field; it remains unchanged because there is no existing version-bearing surface to align.
-**Verified**: Version probe checked 19 DOCS-listed targets: plugin.json, .github/plugin/plugin.json, .codex-plugin/plugin.json, registry.json, 12 skill plugin manifests, .claude-plugin/marketplace.json, and .opencode/plugins/agentera.js all report `1.24.0`; .agents/plugins/marketplace.json has no version field. `python3 scripts/validate_spec.py` reported 0 errors and 8 existing hard-wrap warnings. `python3 scripts/generate_contracts.py --check`, `python3 scripts/validate_lifecycle_adapters.py`, and `python3 -m pytest -q tests/test_runtime_adapters.py` passed.
+**Verified**: Version probe checked 19 DOCS-listed targets: plugin.json, .github/plugin/plugin.json, .codex-plugin/plugin.json, registry.json, 12 skill plugin manifests, .claude-plugin/marketplace.json including nested `profilera`, and .opencode/plugins/agentera.js all report `1.24.0`; .agents/plugins/marketplace.json has no version field. `python3 scripts/validate_spec.py` reported 0 errors and 8 existing hard-wrap warnings. `python3 scripts/generate_contracts.py --check`, `python3 scripts/validate_lifecycle_adapters.py`, `python3 -m pytest -q tests/test_runtime_adapters.py`, and `python3 -m pytest -q` passed; full pytest reported 511 passed.
 **Next**: Execute Task 6: plan-level freshness checkpoint without expanding release scope.
 **Context**: intent (execute only Task 5 release metadata bump) · constraints (DOCS.md version targets, no runtime or skill behavior changes, leave unrelated untracked vrida untouched) · unknowns (none after version probe) · scope (version metadata, changelog promotion, plan status, progress evidence).
 
