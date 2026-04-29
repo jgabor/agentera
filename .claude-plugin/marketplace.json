@@ -47,6 +47,7 @@
     {
       "name": "profilera",
       "description": "PROFILERA: Persona Reconstruction: Observable Footprint Indexing Logic: Examine, Reconcile, Articulate. Mines session history to build an agent-consumable decision profile.",
+      "version": "1.24.0",
       "author": {
         "name": "jgabor"
       },
