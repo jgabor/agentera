@@ -723,7 +723,40 @@ class TestMainIntegration:
     def test_valid_artifact_no_output(
         self, validate_artifact, project_dir, monkeypatch
     ):
-        """Valid artifact produces no output."""
+        """Valid artifact with concrete content produces no output."""
+        progress = project_dir / ".agentera" / "PROGRESS.md"
+        progress.write_text(
+            textwrap.dedent("""\
+            # Progress
+
+            ## Cycle 1
+
+            Added login handler in src/auth.py:42. Fixed null pointer.
+        """),
+            encoding="utf-8",
+        )
+        hook_input = json.dumps(
+            {
+                "session_id": "test",
+                "cwd": str(project_dir),
+                "hook_event_name": "PostToolUse",
+                "tool_name": "Edit",
+                "tool_input": {"file_path": str(progress)},
+            }
+        )
+        import io
+
+        monkeypatch.setattr("sys.stdin", io.StringIO(hook_input))
+        captured_output = io.StringIO()
+        monkeypatch.setattr("sys.stdout", captured_output)
+        result = validate_artifact.main()
+        assert result == 0
+        assert captured_output.getvalue() == ""
+
+    def test_valid_artifact_with_self_audit_warning(
+        self, validate_artifact, project_dir, monkeypatch
+    ):
+        """Structurally valid artifact lacking concrete anchors gets advisory warning."""
         progress = project_dir / ".agentera" / "PROGRESS.md"
         progress.write_text(
             textwrap.dedent("""\
@@ -750,8 +783,8 @@ class TestMainIntegration:
         captured_output = io.StringIO()
         monkeypatch.setattr("sys.stdout", captured_output)
         result = validate_artifact.main()
-        assert result == 0
-        assert captured_output.getvalue() == ""
+        assert result == 0  # Advisory, non-blocking
+        assert "abstraction creep" in captured_output.getvalue()
 
 
 class TestCodexApplyPatchStdin:
