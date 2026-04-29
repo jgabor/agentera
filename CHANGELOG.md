@@ -11,6 +11,7 @@
 
 ### Changed
 
+- Resonera pressure testing now names context-specific blind spots before alternatives, argues alternatives from project context, keeps confidence explicit, and bans weak challenge phrasing.
 - Unified setup bundle work is now freshness-closed: final validators, offline smoke checks, default live-host smoke, OpenCode bootstrap smoke, and the 477-test suite passed after the 1.21.0 release metadata and setup docs landed.
 
 ### Fixed

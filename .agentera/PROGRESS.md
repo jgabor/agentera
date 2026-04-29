@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 218 · 2026-04-29 · feat(resonera): strengthen pressure testing discipline
+
+**Phase**: verification
+**What**: Completed Task 1 of the Steelman-Informed Decision Pressure plan. Resonera now pressure-tests consequential user commitments by naming project-grounded blind spots first, then arguing serious alternatives without reassurance closes or false neutrality, with explicit confidence discipline and concrete banned phrases.
+**Commit**: this commit, `feat(resonera): strengthen pressure testing discipline`
+**Inspiration**: Active PLAN.md Task 1. Profile signals favored preserving task intent, direct concise prose, and evidence-rich comparisons.
+**Discovered**: Behavioral eval dispatch reached the runner, but the external Claude API returned `Credit balance is too low`; no product defect found.
+**Verified**: `python3 scripts/validate_spec.py --skill skills/resonera/SKILL.md` passed with 0 errors and the existing resonera hard-wrap warning. `python3 scripts/validate_spec.py` passed with 0 errors across 12 skills. Diff inspection confirms the acceptance text: blind spots are required before alternatives, alternatives must use project context, confidence must stay explicit, and banned examples include "Either way is fine", "There is no wrong answer here", and "This is just a thought".
+**Next**: Execute Task 2: add concrete win conditions to decision capture without breaking current DECISIONS.md consumers.
+**Context**: intent (execute only Task 1 pressure-testing behavior) · constraints (no Task 2/3 scope, no new skill, preserve confidence semantics) · unknowns (actual eval blocked by low API credit) · scope (resonera skill text, plan status, progress, changelog).
+
 ■ ## Cycle 217 · 2026-04-29 · feat: close Post-1.22 Self-Audit Implementation plan
 
 **Phase**: verification
@@ -71,6 +82,3 @@
 - Cycle 171 (2026-04-26): docs(install): codex and copilot AGENTERA_HOME setup steps
 - Cycle 170 (2026-04-26): feat(opencode): bootstrap at init and inject AGENTERA_HOME via shell.env
 - Cycle 169 (2026-04-26): feat(spec): standardize AGENTERA_HOME contract for cross-runtime helper paths
-- Cycle 168 (2026-04-26): chore(plan): freshness checkpoint for Suite Usage Analytics
-- Cycle 167 (2026-04-26): chore(release): bump suite to 1.19.0
-- Cycle 166 (2026-04-26): docs(usage): document scripts/usage_stats.py across README, DOCS.md, AGENTS.md
