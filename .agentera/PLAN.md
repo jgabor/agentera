@@ -1,146 +1,123 @@
-# Plan: Unified Setup Bundle Doctor And Installer
+# Plan: Prose-Quality Self-Audit Protocol
 
-<!-- Level: full | Created: 2026-04-28 | Status: complete -->
-<!-- Reviewed: 2026-04-28 | Critic issues: 3 found, 3 addressed, 0 dismissed -->
-<!-- Revised: 2026-04-28 | Reason: Decision 33 bundle-first ownership refinement -->
+<!-- Level: full · Created: 2026-04-29 · Status: active -->
+<!-- Reviewed: 2026-04-29 | Critic issues: 9 found, 6 addressed, 3 dismissed -->
 
 ## What
 
-Build the post-1.20 setup surface from Decision 33 around an installable Agentera suite bundle. Define the shared package root, make shared tools available without a clone, add a non-mutating doctor, then add a confirmed-write installer.
+Add a Self-Audit Protocol to SPEC.md §24 that artifact-producing skills invoke as a mandatory pre-write gate. Three checks run before any entry reaches the artifact: verbosity drift (word count vs token budget), abstraction creep (entry must carry ≥1 concrete anchor), and filler accumulation (scan for banned verbosity patterns already defined in §24). The protocol extends to the post-layer: inspektera gains a prose health audit dimension, and dokumentera enforces prose quality across indexed docs.
 
 ## Why
 
-Agentera's portable-runtime story should feel like one suite, not four fragmented setup paths. Marketplace users should not need a git clone to run shared setup tools. Trust comes first: users and future agents should inspect setup state before any tool mutates runtime configuration.
+Over long-running projects (300+ cycles), artifact prose drifts toward verbosity and abstraction. Existing compaction thresholds cap entry count but not entry quality — the 10 full-detail slots per artifact fill with increasingly bloated prose. Decision 34 (firm) defines the architecture: §24 extension with pre-write mandatory gate and post-layer enforcement. This plan implements that decision.
 
 ## Constraints
 
-- Preserve runtime-native adapter surfaces for Claude Code, OpenCode, Copilot CLI, and Codex CLI.
-- Keep behavioral skill scripts inside their owning skills.
-- Keep suite infrastructure out of any one behavioral skill.
-- Make aggregate suite installs carry shared tools without requiring a clone.
-- Keep single-skill installs functional for core skill behavior.
-- Keep doctor mode non-mutating by default.
-- Require explicit confirmation before installer writes user config.
-- Avoid live model calls by default; live host checks may skip when unavailable.
-- Extend existing validator and smoke surfaces before adding new ad hoc checks.
+- SKILL.md and SPEC.md instruction changes only — no changes to production Python scripts
+- Must not break existing artifact format contracts (§4)
+- Must work for all producing skills consistently
+- The 3 checks must be agent-enforceable without external tooling (the LLM runs them in-context)
+- Pre-write gate must not create infinite revision loops (max 3 attempts, then bail with reason)
 
 ## Scope
 
-**In**: suite bundle/root definition, runtime package shape validation, shared tool availability, uv script metadata for packaged executable Python scripts, setup doctor, bounded no-model smoke checks, confirmed-write installer, README and DOCS updates, version bump, and tests.
-
-**Out**: external CLI distribution, external marketplace submissions, force-pushing, live model spend by default, non-runtime-native plugin directory unification, and converting pytest files into executable scripts.
-
-**Deferred**: richer live-host proof and standalone external CLI access can come after the bundle-first path is verified.
+**In**: SPEC.md §24 Self-Audit Protocol definition, pre-write self-audit step in 8 producing SKILL.md files, prose health audit dimension in inspektera, doc prose enforcement in dokumentera
+**Out**: Profilera (global artifact, not project-scoped — follow-up), orkestrera (status updates only, no prose production), hej (read-only), any Python script or hook changes, any new test fixtures
+**Deferred**: Profilera pre-write gate, regularity-tripwire automation (manual check only for now), word-count enforcement via PostToolUse hook
 
 ## Design
 
-The plan first defines where shared tools live after marketplace install. Runtime adapters should expose or discover one installed Agentera root containing skills, shared scripts, hooks, manifests, and docs. `AGENTERA_HOME` points to that root, whether it is a clone or a runtime-installed package.
+The Self-Audit Protocol is a new subsection of SPEC.md §24. It defines 3 checks that producing skills invoke in their artifact-write step, before writing. Checks are ordered: verbosity drift first (hard budget), then abstraction creep (quality), then filler accumulation (cleanup). If any check fails, the entry is revised and re-checked, up to 3 attempts per entry. After 3 failures, the skill writes the entry with a `[post-audit-flagged]` marker for inspektera to catch.
 
-Skill-local scripts remain owned by their skills. Suite-level tools such as doctor, installer, validation, compaction, and runtime setup helpers belong to the aggregate bundle. Doctor reads this bundle and runtime state without mutation. Installer reuses doctor findings, asks for confirmation, writes only selected runtime-native changes, and re-runs doctor to prove the result.
+Pre-layer: each producing SKILL.md gains a "Pre-write self-audit" step referencing §24. The step appears immediately before the artifact write instructions. Narration uses the warm-voice riff format (per §14).
+
+Post-layer: inspektera adds "prose health" as the 10th audit dimension. It reads all project artifacts, checks against the 3 rules, and grades A-F using the standard dimension format. Dokumentera adds a doc-prose enforcement pass in its audit step, checking all docs indexed in DOCS.md, bootstrapping DOCS.md if absent.
+
+Self-audit and compaction are orthogonal. Self-audit runs per-entry before writing (quality gate). Compaction runs per-artifact after writing (quantity management, the existing 10/40/50 rule). They do not compose — they operate at different lifecycle points.
+
+The 3 checks:
+
+1. **Verbosity drift**: word count against the §4 token budget for the artifact being written. Over budget → compact. Budgets per §4: PROGRESS.md ≤500/cycle, EXPERIMENTS.md ≤300/experiment, HEALTH.md ≤150/dimension, DECISIONS.md ≤200/decision, TODO.md ≤100/item, CHANGELOG.md ≤300/version, PLAN.md ≤100/task and ≤2500/file, VISION.md ≤1500/file, DESIGN.md ≤2000/file, DOCS.md ≤2000/file.
+2. **Abstraction creep**: entry must contain ≥1 concrete anchor from {file path, line number, commit hash, metric value, identifier, direct quote}. Missing → add one before writing.
+3. **Filler accumulation**: scan for banned verbosity patterns from §24 (meta-commentary, hedging qualifiers, redundant transitions, self-referential narration, filler introductions, summary preambles, excessive justification). Found → remove before writing.
 
 ## Tasks
 
-### Task 1: Suite Bundle Tool Surface
+### Task 1: Extend SPEC.md §24 with Self-Audit Protocol
 
 **Depends on**: none
 **Status**: ■ complete
 **Acceptance**:
-▸ GIVEN an aggregate Agentera install WHEN its package root is inspected THEN skills, shared scripts, hooks, manifests, and docs are reachable from one root.
-▸ GIVEN a single skill install WHEN the skill runs THEN core workflow behavior does not require suite-level tools.
-▸ GIVEN a runtime adapter exposes install-root state WHEN tools resolve paths THEN `AGENTERA_HOME` points at the installed bundle root or documented clone root.
-▸ GIVEN package metadata is validated WHEN a shared tool path is missing THEN validation fails with the owning runtime surface named.
-▸ Test cap: one pass and one fail per runtime package shape.
+▸ GIVEN a reader of SPEC.md WHEN they reach §24 THEN a "Self-Audit Protocol" subsection defines the 3 checks with operational rules, a producing skill instruction template, and a max-3-retry loop guard with bail-out path
+▸ GIVEN a producing SKILL.md author WHEN they read the protocol THEN they can copy the instruction template into their artifact write step
+▸ GIVEN the protocol WHEN read THEN the filler check references the existing §24 banned verbosity patterns table (enforcement, not new patterns)
+▸ GIVEN `python3 scripts/validate_spec.py` WHEN run THEN it passes with 0 errors
+▸ GIVEN `python3 scripts/generate_contracts.py --check` WHEN run THEN all contracts are current
 
-### Task 2: Packaged Script Runtime Hygiene
+### Task 2: Add pre-write self-audit to realisera SKILL.md
 
 **Depends on**: Task 1
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN packaged executable Python scripts WHEN their headers are inspected THEN each uses the uv script shebang and inline metadata.
-▸ GIVEN stdlib-only executable scripts WHEN metadata is inspected THEN dependencies are declared as an empty list.
-▸ GIVEN uv is unavailable WHEN a user-facing check runs THEN the failure gives install guidance instead of a traceback.
-▸ GIVEN representative packaged scripts run through uv WHEN invoked with harmless arguments THEN current behavior is preserved.
-▸ GIVEN the script convention is validated WHEN fixtures omit shebang or metadata THEN the check fails.
-▸ Test cap: one pass and one fail per metadata rule; edge cases only for library-module exclusions.
+▸ GIVEN realisera's SKILL.md WHEN read THEN a "Pre-write self-audit" step appears before the artifact write step, invoking the §24 Self-Audit Protocol
+▸ GIVEN the step WHEN read THEN it refuses to write entries that fail any check after 3 revision attempts and marks them `[post-audit-flagged]`
+▸ GIVEN the step WHEN read THEN it includes narration guidance in the warm-voice riff format (§14)
+▸ GIVEN `python3 scripts/validate_spec.py` WHEN run THEN it passes with 0 errors
 
-### Task 3: Non-Mutating Setup Doctor
+### Task 3: Add pre-write self-audit to resonera, planera, optimera, visualisera, visionera SKILL.md
 
-**Depends on**: Task 2
-**Status**: ■ complete
+**Depends on**: Task 1
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN an installed bundle or local clone WHEN doctor runs THEN it reports install-root validity without writing files.
-▸ GIVEN Claude Code, OpenCode, Copilot, or Codex setup is present WHEN doctor runs THEN runtime-native path shapes are classified as pass, warn, fail, or skip.
-▸ GIVEN a runtime is unavailable WHEN doctor runs THEN it reports skip without failing the whole diagnosis.
-▸ GIVEN helper-script access is missing WHEN doctor runs THEN it reports whether the gap is bundle packaging, runtime config, or user environment.
-▸ GIVEN doctor output is requested by another tool WHEN it runs THEN a stable machine-readable summary is available.
-▸ Test cap: one pass, one warn or fail, and one skip per runtime family.
+▸ GIVEN each of the 5 skill SKILL.md files (resonera, planera, optimera, visualisera, visionera) WHEN read THEN a "Pre-write self-audit" step appears before their artifact write steps
+▸ GIVEN each step WHEN read THEN it references the §24 Self-Audit Protocol and includes riff narration guidance
+▸ GIVEN each step WHEN read THEN it refuses to write entries that fail any check after 3 revision attempts and marks them `[post-audit-flagged]`
+▸ GIVEN `python3 scripts/validate_spec.py` WHEN run THEN it passes with 0 errors
 
-### Task 4: Doctor Smoke Evidence
+### Task 4: Add pre-write self-audit + prose health dimension to inspektera SKILL.md
 
-**Depends on**: Task 3
-**Status**: ■ complete
+**Depends on**: Task 1
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN no live model permission is supplied WHEN smoke checks run THEN no live model call is attempted.
-▸ GIVEN bounded smoke checks run WHEN helper and hook surfaces are available THEN they prove artifact validation and helper reachability.
-▸ GIVEN a host binary is absent WHEN doctor summarizes smoke results THEN the unavailable host is marked skip.
-▸ GIVEN a smoke check fails WHEN doctor exits THEN the failure is visible in human-readable and machine-readable output.
-▸ Test cap: one success and one failure branch per smoke-check category.
+▸ GIVEN inspektera's SKILL.md WHEN read THEN a "Pre-write self-audit" step appears before HEALTH.md and TODO.md write steps
+▸ GIVEN the audit dimensions list WHEN read THEN "prose health" exists as the 10th dimension, reading all project artifacts and checking against the 3 §24 rules
+▸ GIVEN the prose health dimension WHEN read THEN it follows standard format (findings with severity + confidence, A-F grade, trajectory vs prior audit)
+▸ GIVEN `python3 scripts/validate_spec.py` WHEN run THEN it passes with 0 errors
 
-### Task 5: Confirmed-Write Installer
+### Task 5: Add pre-write self-audit + doc prose enforcement to dokumentera SKILL.md
 
-**Depends on**: Task 4
-**Status**: ■ complete
+**Depends on**: Task 1
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN doctor findings include fixable setup gaps WHEN installer plans changes THEN it shows the target runtime, target file, and reason.
-▸ GIVEN confirmation is absent WHEN writes would be needed THEN installer exits without changing user config.
-▸ GIVEN confirmation is present WHEN installer applies changes THEN only selected runtime-native config surfaces are changed.
-▸ GIVEN installer completes WHEN doctor is re-run THEN fixed surfaces report pass or documented skip.
-▸ Test cap: one dry-run, one denied write, one confirmed write, and one idempotent re-run per writable runtime.
+▸ GIVEN dokumentera's SKILL.md WHEN read THEN a "Pre-write self-audit" step appears before the DOCS.md write step
+▸ GIVEN dokumentera's audit workflow WHEN read THEN a doc-prose enforcement step checks all docs listed in DOCS.md against the 3 §24 rules, bootstrapping DOCS.md if absent
+▸ GIVEN the enforcement step WHEN read THEN it reports findings at standard severity levels
+▸ GIVEN `python3 scripts/validate_spec.py` WHEN run THEN it passes with 0 errors
 
-### Task 6: Version Metadata
+### Task 6: Version bump
 
-**Depends on**: Task 5
-**Status**: ■ complete
+**Depends on**: Tasks 2, 3, 4, 5
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN DOCS.md version policy is applied WHEN feature metadata is updated THEN suite version targets receive the required minor bump.
-▸ GIVEN version files are inspected WHEN the bump is complete THEN every listed suite version surface agrees.
-▸ GIVEN CHANGELOG.md is read WHEN the bump is complete THEN unified setup work is recorded under the release section.
-▸ GIVEN version validation runs WHEN metadata is checked THEN no stale pre-bump version remains.
+▸ GIVEN registry.json WHEN read THEN skill versions for realisera, inspektera, resonera, planera, optimera, dokumentera, visualisera, visionera reflect a minor bump per DOCS.md semver_policy (feat = minor)
+▸ GIVEN each skill's `.claude-plugin/plugin.json` WHEN read THEN plugin versions match registry.json
+▸ GIVEN CHANGELOG.md WHEN read THEN [Unreleased] Added section references this work
 
-### Task 7: Documentation Refresh
+### Task 7: Plan-level freshness checkpoint
 
 **Depends on**: Task 6
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN README setup guidance is read WHEN the plan is complete THEN bundle-first doctor flow is the recommended path.
-▸ GIVEN single-skill install guidance is read WHEN suite tools are mentioned THEN core-only behavior and bundle-enhanced behavior are distinguished.
-▸ GIVEN runtime setup docs are read WHEN installer behavior is described THEN confirmed writes and no-live-default behavior are explicit.
-▸ GIVEN DOCS.md is read WHEN the plan is complete THEN bundle, doctor, installer, and test rows are current.
-▸ GIVEN adapter references are read WHEN setup behavior is compared THEN runtime-native boundaries remain accurate.
-
-### Task 8: Verification And Freshness Checkpoint
-
-**Depends on**: Task 7
-**Status**: ■ complete
-**Acceptance**:
-▸ GIVEN validators run WHEN final verification executes THEN spec, lifecycle, contracts, package-shape, and artifact checks pass.
-▸ GIVEN smoke checks run WHEN final verification executes THEN setup, live-host unavailable, and OpenCode bootstrap smoke pass or skip by documented rules.
-▸ GIVEN pytest runs WHEN final verification executes THEN the full suite passes.
-▸ GIVEN plan work is complete WHEN artifacts are read THEN PROGRESS, TODO, CHANGELOG, DOCS, and PLAN summarize the plan-level result.
-▸ GIVEN the worktree is inspected WHEN the handoff completes THEN only intended files are changed.
+▸ GIVEN this plan is complete WHEN CHANGELOG.md is checked THEN [Unreleased] Added section summarizes the plan-level result
+▸ GIVEN this plan is complete WHEN PROGRESS.md is checked THEN cycle entries cover all completed tasks
+▸ GIVEN this plan is complete WHEN TODO.md is checked THEN ISS-41, ISS-42, ISS-43, ISS-44 have Resolved entries
+▸ GIVEN this plan is complete WHEN PLAN.md is checked THEN all tasks are marked ■ complete
 
 ## Overall Acceptance
 
-▸ GIVEN Agentera is installed as a suite bundle WHEN doctor runs THEN it finds shared tools without requiring a clone.
-▸ GIVEN only one skill is installed WHEN that skill runs THEN core behavior does not depend on suite-level scripts.
-▸ GIVEN fixable setup gaps exist WHEN installer runs without confirmation THEN no user config changes.
-▸ GIVEN installer applies confirmed changes WHEN doctor runs again THEN configured runtimes report pass or documented skip.
-▸ GIVEN release-facing docs are read WHEN the plan completes THEN setup guidance matches shipped bundle behavior.
+▸ GIVEN a producing skill is invoked WHEN it writes an artifact entry THEN it runs the 3 §24 self-audit checks before writing and refuses bloated, abstract, or filler-laden entries
+▸ GIVEN inspektera is invoked WHEN it audits codebase health THEN prose health appears as a dimension grading artifact writing quality against the §24 protocol
+▸ GIVEN dokumentera is invoked WHEN it audits documentation THEN prose quality of indexed docs is checked against the §24 protocol
+▸ GIVEN `python3 scripts/validate_spec.py` WHEN run THEN it passes with 0 errors across all 12 skills
 
 ## Surprises
-
-- Task 4 retry: evaluation treated `runtime_host` as a smoke-check category needing a failure branch. Doctor now fails a host-named but non-executable PATH candidate without invoking the runtime.
-
-## Result
-
-Completed 2026-04-28. The suite bundle surface, uv-packaged shared scripts, read-only doctor, offline smoke evidence, confirmed installer, 1.21.0 metadata, setup docs, and final verification checkpoint are all closed. Final verification passed contracts, spec validation, lifecycle and package-shape validation, artifact validation coverage, setup doctor smoke, default live-host smoke, OpenCode bootstrap smoke, Node syntax check, and the full 477-test pytest suite.

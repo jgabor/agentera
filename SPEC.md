@@ -1453,3 +1453,63 @@ The suite's voice is consistent across all artifacts:
 - **Forward-looking**: every entry ends with what to do next, not a recap of what was done.
 
 This register complements Section 14 (Narration Voice): Section 14 governs how skills talk to the user between structural markers; Section 24 governs what goes inside the artifacts themselves.
+
+### Self-Audit Protocol
+
+Producing skills run these 3 checks on every artifact entry before writing. The checks are a mandatory pre-write gate. Run them in order: check 1 first, then 2, then 3.
+
+**Check 1 — Verbosity drift**
+
+What: Entry word count against the §4 token budget for the target artifact.
+How: Approximate the word count of the entry being written. Compare against the per-entry budget in the §4 Token budgets table.
+Pass: Word count ≤ budget.
+Fail: Compact the entry. Remove redundant words, merge sentences, cut filler. Re-check from check 1.
+
+**Check 2 — Abstraction creep**
+
+What: Entry must contain ≥1 concrete anchor from {file path, line number, commit hash, metric value, identifier, direct quote}.
+How: Scan the entry for at least one of: a file path (e.g. `src/auth.py`), a line number (e.g. `:42`), a commit hash (7+ hex chars), a metric value (number with unit), an identifier (function/class/variable name), or a direct quote (text in quotes attributed to a source).
+Pass: ≥1 concrete anchor present.
+Fail: Add a concrete anchor, then re-check from check 1.
+
+**Check 3 — Filler accumulation**
+
+What: Scan for banned verbosity patterns from the §24 Banned verbosity patterns table.
+How: Read the entry. Cross-reference each sentence against the patterns and replacements in the §24 Banned verbosity patterns table: meta-commentary about writing, hedging qualifiers, redundant transitions, self-referential process narration, filler introductions, summary preambles, excessive justification.
+Pass: No banned patterns found.
+Fail: Remove banned patterns using the recommended alternatives from the table, then re-check from check 1.
+
+#### Producing skill instruction template
+
+Copy this step into a SKILL.md artifact-write workflow, immediately before the write instruction:
+
+```
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+1. Verbosity drift: approximate word count. Exceeds §4 budget → compact. Re-check.
+2. Abstraction creep: missing concrete anchor → add one. Re-check.
+3. Filler accumulation: scan against §24 Banned verbosity patterns table. Found → remove. Re-check.
+Max 3 revision attempts per entry. After 3 failures, write the entry with [post-audit-flagged] marker.
+```
+
+This is distinct from the existing §24 SKILL.md structural requirement instruction. That instruction reminds skills which writing conventions to follow *during* the write. This template gates entry quality *before* the write.
+
+#### Max-3-retry loop guard
+
+Each entry gets ≤3 revision attempts. After each failed check, revise the entry and re-run all checks starting from check 1. If any check still fails after the 3rd revision:
+
+1. Write the entry anyway.
+2. Prepend `[post-audit-flagged]` to the entry text.
+3. Include a brief reason: which check failed and why revision was impossible without losing substance.
+
+The `[post-audit-flagged]` marker signals inspektera to evaluate the entry during its next prose health audit. Dokumentera also flags flagged entries during doc-prose enforcement.
+
+Bail-out example:
+
+```
+[post-audit-flagged: abstraction creep — architecture concept has no file path, line number, or commit yet]
+Architecture decision: adopt event-driven communication between auth/ and billing/ modules.
+```
+
+#### Linter check
+
+Advisory. All producing skills (per §4 artifact format contracts table) must reference "Self-Audit Protocol" or "pre-write self-audit" in their SKILL.md. Skills that only read artifacts (hej, inspirera) are exempt.

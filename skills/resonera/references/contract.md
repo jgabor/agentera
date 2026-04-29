@@ -1,7 +1,7 @@
 <!-- contract: resonera -->
-<!-- source: SPEC.md (sha256: c91d5abd6c573a2fbcde46e63d784e655fa484ec392365d2d41fe4e9ac1b3539) -->
+<!-- source: SPEC.md (sha256: 5da2ae456b2bd3a81de6f59372931e18cb1cc6bac24289b72d052a3dc3807030) -->
 <!-- sections: 3, 4, 5, 6 -->
-<!-- generated: 2026-04-28T17:29:03Z -->
+<!-- generated: 2026-04-29T06:43:49Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
