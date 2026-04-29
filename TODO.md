@@ -6,6 +6,8 @@
 
 ## → Normal
 
+- [ ] [fix] Define completed-objective archival for optimera. When an objective's harness already meets its target, optimera currently reports completion and stops, but does not archive or mark the per-objective directory complete; root `OBJECTIVE.md` can remain active-looking and hej can keep routing back to stale work. Add a spec/SKILL.md workflow for completed objectives: record closure in `EXPERIMENTS.md`, move or mark archived objective state, update artifact mapping/freshness expectations, and keep active-objective inference from selecting completed objectives. Applies to `skills/optimera/SKILL.md`, `SPEC.md`, templates/contracts, validators, and docs as needed.
+
 ## ⇢ Annoying
 
 ## Resolved
