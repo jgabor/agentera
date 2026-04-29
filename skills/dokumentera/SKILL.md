@@ -105,8 +105,8 @@ Determine what kind of documentation work is needed:
 
 When DOCS.md doesn't exist, run a survey first. Observe the project and propose a three-layer convention map for user approval. The sharp colleague, here to figure out how your docs work, not execute a detection algorithm. "Let me look around and see what you've got."
 
-Step markers: display `── step N/4: verb` before each step.
-Steps: explore, propose, handle, write.
+Step markers: display `── step N/5: verb` before each step.
+Steps: explore, propose, handle, audit, write.
 
 ### Step 1: Explore structure
 
@@ -137,7 +137,21 @@ If artifacts exist at root but mapping places them elsewhere:
 2. Offer to relocate via `git mv`
 3. If declined, update mapping to match actual locations
 
-### Step 4: Write DOCS.md
+### Step 4: Pre-write self-audit
+
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+
+1. **Verbosity drift**: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
+2. **Abstraction creep**: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
+3. **Filler accumulation**: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
+
+Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+
+Narration voice (riff, don't script):
+✗ "Self-audit failed. Revising entry."
+✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
+
+### Step 5: Write DOCS.md
 
 Write the approved convention map to `.agentera/DOCS.md`. After writing, proceed to the originally requested mode, or stop if the survey was the entire request.
 
@@ -149,8 +163,8 @@ Artifact writing follows contract Section 24 (Artifact Writing Conventions): ban
 
 DTC-first: document what a feature SHOULD do before building. Docs become the spec. The sharp colleague, here to write the spec with you, not take dictation. Push back on vague intent, ask the hard questions early.
 
-Step markers: display `── step N/4: verb` before each step.
-Steps: understand, write, update, suggest.
+Step markers: display `── step N/5: verb` before each step.
+Steps: understand, write, audit, update, suggest.
 
 ### Step 1: Understand the intent
 
@@ -168,7 +182,21 @@ When presenting drafts, introduce what you wrote and why: what choices you made,
 
 Present draft for approval before writing.
 
-### Step 3: Update DOCS.md
+### Step 3: Pre-write self-audit
+
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+
+1. **Verbosity drift**: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
+2. **Abstraction creep**: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
+3. **Filler accumulation**: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
+
+Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+
+Narration voice (riff, don't script):
+✗ "Self-audit failed. Revising entry."
+✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
+
+### Step 4: Update DOCS.md
 
 Add or update the entry in DOCS.md:
 
@@ -180,7 +208,7 @@ Output constraint: ≤15 words per index entry description.
 
 Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
-### Step 4: Suggest next steps
+### Step 5: Suggest next steps
 
 - Feature docs: suggest `/planera` to plan implementation
 - Standalone docs: suggest update mode later for verification
@@ -191,8 +219,8 @@ Artifact writing follows contract Section 24 (Artifact Writing Conventions): ban
 
 Code exists, docs don't. Read codebase and generate. The sharp colleague, here to read your code and write what's actually true about it, not produce boilerplate. "Here's what I found and what I think matters to document."
 
-Step markers: display `── step N/4: verb` before each step.
-Steps: explore, gaps, generate, update.
+Step markers: display `── step N/5: verb` before each step.
+Steps: explore, gaps, generate, audit, update.
 
 ### Step 1: Explore
 
@@ -216,7 +244,21 @@ When presenting drafts, introduce what you wrote and why: what you learned from 
 
 Present drafts for approval.
 
-### Step 4: Update DOCS.md
+### Step 4: Pre-write self-audit
+
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+
+1. **Verbosity drift**: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
+2. **Abstraction creep**: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
+3. **Filler accumulation**: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
+
+Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+
+Narration voice (riff, don't script):
+✗ "Self-audit failed. Revising entry."
+✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
+
+### Step 5: Update DOCS.md
 
 Create or update DOCS.md with all items. Use the Edit tool on specific entries when updating status/dates. If DOCS.md doesn't exist, run first-run survey first.
 
@@ -228,8 +270,8 @@ Artifact writing follows contract Section 24 (Artifact Writing Conventions): ban
 
 Docs exist but may have drifted from implementation. The sharp colleague, here to check whether the docs still tell the truth. "Let me see if any of this has drifted."
 
-Step markers: display `── step N/4: verb` before each step.
-Steps: discover, verify, report, update.
+Step markers: display `── step N/6: verb` before each step.
+Steps: discover, verify, prose-enforce, report, audit, update.
 
 ### Step 1: Discover
 
@@ -246,11 +288,40 @@ Check each doc file on four dimensions:
 
 For each finding: quote the doc section, reference code location (file:line), explain the discrepancy.
 
-### Step 3: Report and fix
+### Step 3: Doc-prose enforcement
+
+Check all docs indexed in DOCS.md against the 3 §24 Self-Audit Protocol rules.
+
+1. **Read DOCS.md Index**: if DOCS.md is absent, run first-run survey to bootstrap it, then continue. Extract the list of tracked docs from the Index table. Skip entries with `generated` or `missing` status.
+2. **For each doc**, read the file and check against the 3 §24 rules:
+   - **Verbosity drift**: entry word counts exceeding §4 token budgets for the artifact's scope. Flag entries that exceed budget without compaction.
+   - **Abstraction creep**: sections lacking ≥1 concrete anchor (file path, line number, commit hash, metric value, identifier, direct quote). Flag entries that narrate concepts without evidence.
+   - **Filler accumulation**: scan for banned verbosity patterns from the §24 Banned verbosity patterns table: meta-commentary about writing, hedging qualifiers, redundant transitions, self-referential process narration, filler introductions, summary preambles, excessive justification. Flag entries containing banned patterns.
+3. **Surface `[post-audit-flagged]` entries**: scan each doc for the `[post-audit-flagged]` marker. Report any flagged entries as warning-level findings (producing skill could not resolve within the 3-retry loop).
+4. **Report findings** at standard severity levels per contract §2:
+   - **critical**: doc section contradicts code, or instructions that would cause user errors
+   - **warning**: verbosity drift above budgets, abstraction creep, accumulated filler patterns, pre-existing `[post-audit-flagged]` markers
+   - **info**: minor style issues, single banned pattern in an otherwise clean entry
+
+### Step 4: Report and fix
 
 By severity: ⇶ critical (causes user errors), ⇉ warning (causes confusion), ⇢ info (cosmetic). For each finding, offer to: fix the doc, file to TODO.md (code is wrong per DTC), or skip.
 
-### Step 4: Update DOCS.md
+### Step 5: Pre-write self-audit
+
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+
+1. **Verbosity drift**: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
+2. **Abstraction creep**: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
+3. **Filler accumulation**: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
+
+Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+
+Narration voice (riff, don't script):
+✗ "Self-audit failed. Revising entry."
+✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
+
+### Step 6: Update DOCS.md
 
 Update the index with:
 
