@@ -2,20 +2,6 @@
 
 Reasoning trail maintained by resonera. Each deliberation session appends one entry. Decisions are referenced by realisera, optimera, and profilera for context on why choices were made.
 
-## Decision 24 · 2026-04-03
-
-**Question**: Should the PostToolUse validation hook coexist with the git pre-commit hook, or replace it?
-**Context**: The hooks plan introduced PostToolUse for real-time artifact validation alongside the existing .githooks/pre-commit (ecosystem linter + context freshness). The plan said they have different concerns: PostToolUse validates individual artifact structure, pre-commit validates cross-skill alignment. But two validation mechanisms for overlapping file sets is messy and will drift.
-**Alternatives**:
-
-- [PostToolUse replaces pre-commit entirely], chosen: one validation path, cleaner
-- [Coexistence with different concerns], rejected: two mechanisms is complexity that accretes; someone adds a check to one and forgets the other
-- [PostToolUse primary, pre-commit as thin gate], rejected: still two mechanisms, just thinner
-**Choice**: PostToolUse absorbs all validation: ecosystem linter, context freshness, and artifact structure. The git pre-commit hook is removed. The manual-edit gap (edits outside Claude Code) is accepted until CI gating (ISS-31) lands.
-**Reasoning**: Agentera is a Claude Code skill ecosystem developed through Claude Code. The pre-commit was always a stopgap. PostToolUse provides faster feedback (edit-time vs commit-time) and covers the same checks. Two mechanisms for validation will drift. One mechanism is cleaner, and CI gating closes the remaining gap.
-**Confidence**: firm
-**Feeds into**: PLAN.md (hooks infrastructure), .githooks/pre-commit (removal)
-
 ## Decision 25 · 2026-04-03
 
 **Question**: Should agentera's North Star evolve from "a solo founder installs an engineering team" to a spec-centric framing?
@@ -162,6 +148,20 @@ co-installed skills mesh through one verified package root.
 **Confidence**: firm
 **Feeds into**: PLAN.md, README.md, scripts/
 
+## Decision 34 · 2026-04-29
+
+**Question**: How should agentera prevent artifact prose from snowballing toward verbosity and abstraction over long-running projects?
+**Context**: The inspirera analysis of WRITING.md revealed a gap: existing compaction thresholds (§4) cap entry count but not entry quality. Over 300+ cycles, the 10 full-detail slots per artifact fill with increasingly verbose, abstract prose. This matches the profile entries "Be Direct And Concise" (88% effective) and "Reject Bloated Operational Artifacts" (77%). WRITING.md's self-audit workflow provides the operational pattern, but agentera needs its own check spec.
+**Alternatives**:
+
+- [New inspektera audit dimension], rejected: post-only; drift is already entrenched by the time it reaches periodic audit.
+- [Section 24 extension with pre + post layers], chosen: pre-write gate catches at the source; post-layer catches what slips through.
+- [PostToolUse validation hook], rejected: hooks validate artifact structure, not content quality; prose checks need semantic judgment.
+**Choice**: Extend SPEC.md §24 with a "Self-Audit Protocol" defining 3 agentera-native checks. Each artifact-producing skill runs them as a mandatory pre-write gate. Post-layer: dokumentera enforces for docs, inspektera adds a "prose health" audit dimension for all artifacts. The 3 checks are: (1) verbosity drift — word count vs. §4 token budget, fail if over; (2) abstraction creep — entry must contain ≥1 concrete anchor (file path, line number, commit hash, metric value, identifier, or direct quote); (3) filler accumulation — scan for banned verbosity patterns (§24), fail if any found.
+**Reasoning**: WRITING.md's regularity checks are the right philosophy but the wrong spec — agentera's structured, token-budgeted, multi-skill artifact format needs its own check design. A mandatory pre-write gate is the only way to prevent the snowball: advisory gates accumulate drift faster than post-audits can clean it up. This matches "Reject Quality Gate Bypasses" (86% effective). The post-layer exists because pre-write gates can't catch everything — some abstraction creep is only visible when comparing entries across time.
+**Confidence**: firm
+**Feeds into**: SPEC.md (§24 extension), skills/inspektera/SKILL.md (prose health dimension), skills/dokumentera/SKILL.md (doc prose enforcement), SKILL.md files of all producing skills (pre-write gate step)
+
 ## Archived Decisions
 
 - Decision 1 (2026-03-29): **Question**: How should planera (a planning skill) be designed to fit the agent-skills suite?
@@ -187,3 +187,4 @@ co-installed skills mesh through one verified package root.
 - Decision 21 (2026-04-02): **Question**: How should autonomous plans constrain test generation to prevent unbounded output?
 - Decision 22 (2026-04-03): **Question**: Should ISS-19 phase tracking be enforced across skills, and how should the ecosystem detect stale artifacts?
 - Decision 23 (2026-04-03): **Question**: Where should session-to-session state live: new SESSION.md artifact, extend PROGRESS.md, or infrastructure dotfile?
+- Decision 24 (2026-04-03): **Question**: Should the PostToolUse validation hook coexist with the git pre-commit hook, or replace it?

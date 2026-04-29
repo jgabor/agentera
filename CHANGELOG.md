@@ -4,6 +4,8 @@
 
 ### Added
 
+- Self-Audit Protocol (SPEC.md §24): pre-write 3-check gate (verbosity drift, abstraction creep, filler accumulation) with max-3-retry bail-out for all artifact-producing skills (realisera, inspektera, resonera, planera, optimera, dokumentera, visualisera, visionera). Inspektera gains prose health as a 10th audit dimension; dokumentera enforces prose quality across indexed docs.
+
 ### Changed
 
 - Unified setup bundle work is now freshness-closed: final validators, offline smoke checks, default live-host smoke, OpenCode bootstrap smoke, and the 477-test suite passed after the 1.21.0 release metadata and setup docs landed.
