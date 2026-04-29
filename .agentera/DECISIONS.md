@@ -2,49 +2,6 @@
 
 Reasoning trail maintained by resonera. Each deliberation session appends one entry. Decisions are referenced by realisera, optimera, and profilera for context on why choices were made.
 
-## Decision 25 · 2026-04-03
-
-**Question**: Should agentera's North Star evolve from "a solo founder installs an engineering team" to a spec-centric framing?
-**Context**: 80 cycles have proven the compounding model works. The current vision is user-centric (one person, one problem, one transformation). But the domain has moved: Agent Skills is an open standard adopted by multiple platforms, 150+ skills exist in the ecosystem, multi-agent orchestration is mainstream. The Direction section already says "the spec becomes the gravity well," suggesting the North Star was lagging behind the project's actual ambition.
-**Alternatives**:
-
-- [Keep user-centric North Star, update supporting paragraphs], rejected: the frame has been outgrown; both audience ("solo founder") and transformation ("installs a team") feel past tense
-- [Compounding intelligence as North Star ("the system that gets smarter")], rejected: describes a property of the system, not the ambition
-- [Spec as North Star with adoption arc in Direction], chosen
-**Choice**: North Star becomes "The open standard for turning AI agents into engineering teams." Cool, declarative one-liner. Supporting paragraphs carry the emotional weight: two-layer problem (individual amnesia + ecosystem fragmentation), the insight (artifact contracts = memory, shared primitives = common language), the ambition (the spec as industry gravity well). Solo founder persona stays as the human grounding (the why behind the spec). Direction becomes the adoption arc: reference implementation, third-party skills, platform adoption, industry standard.
-**Reasoning**: The key insight is that the spec is the product, not the twelve skills. The skills are the reference implementation that proves the spec works. This reframes agentera from a tool (install skills, get a team) to a protocol (agents that speak this language become teams). The solo founder persona stays because the spec exists to solve her problem, not as abstract standards work. The problem statement gains a second layer: amnesia is the individual problem, fragmentation is the ecosystem problem. The spec solves both.
-**Confidence**: firm
-**Feeds into**: VISION.md (North Star, Direction, supporting paragraphs)
-
-## Decision 26 · 2026-04-10
-
-**Question**: Should the terminology for the ecosystem spec and per-skill context files be renamed for clarity and cohesion?
-**Context**: Two filenames (`SPEC.md` and `contract.md`) use a double-word "ecosystem-" prefix that is redundant (agentera IS the ecosystem), mechanically named (the context file is spec excerpts, not "context" in the operational sense), and inconsistent (prose uses "the spec" while filenames use "the spec"). The external AI community (Google Workspace CLI, Justin Poehnelt's agent DX article) uses CONTEXT.md for runtime agent instructions, creating collision risk. The rename cascades into 12 SKILL.md files, 2 Python scripts, the linter, tests, HTML comment conventions, and prose throughout.
-**Alternatives**:
-
-- [Keep current names], rejected: "ecosystem-context" is opaque, two-word, and collides with emerging CONTEXT.md convention for runtime agent instructions. The file contains binding spec excerpts, not operational context.
-- [Rename to context.md only], rejected: collision with the emerging agent community's CONTEXT.md convention (Google Workspace CLI, Justin Poehnelt). CONTEXT.md means "runtime instructions for agents" externally.
-- [Rename spec-only], rejected: renaming the spec without renaming the per-skill excerpts misses the relationship clarity opportunity
-**Choice**: `SPEC.md` (root, uppercase per artifact convention) and `contract.md` (per skill in references/, lowercase per reference file convention). Drop the "ecosystem-" prefix from all filenames, headers, script names, and prose.
-**Reasoning**: The contract is a binding excerpt: the skill MUST follow these rules. "Contract" carries the obligation that "context" lacks. The pair is clean: the spec defines the rules, your contract is your binding slice. Dropping "ecosystem-" from everywhere eliminates redundancy (agentera IS the ecosystem). Upper/lower case split follows the existing convention: root artifacts are UPPERCASE (VISION.md, TODO.md), skill reference files are lowercase (harness-guide.md, audit-commands.md). The rename makes the spec a first-class root artifact rather than hiding it in references/.
-**Confidence**: firm
-**Feeds into**: PLAN.md (Platform Portability plan)
-
-## Decision 27 · 2026-04-11
-
-**Question**: How to implement Section 21's session corpus contract to close the gap between spec and extraction pipeline
-**Context**: Section 21 defines four normalized record types (instruction_document, history_prompt, conversation_turn, project_config_signal) with provenance metadata, but extract_all.py bypasses the contract entirely, going from Claude Code JSONL internals to four ad-hoc intermediate JSON files. The spec exists; the implementation does not. Users may also switch between runtimes (Claude Code, OpenCode) between sessions, so the corpus must be runtime-agnostic.
-**Alternatives**:
-
-- [Separate adapter layer] new script translates extract_all.py output into Section 21 format, rejected: unnecessary indirection, two scripts maintaining the same knowledge
-- [Runtime-specific adapters] each runtime ships its own adapter, profilera just expects corpus.json, rejected: user may switch runtimes between sessions, corpus must aggregate across all available runtimes
-- [Current runtime only] detect and extract from whichever runtime is active, rejected: decision patterns are runtime-agnostic, older data from a different runtime is still valid signal
-- [Four files, normalized schemas] keep the four-file split but apply Section 21 schemas, rejected: unnecessary complexity when a single file with source_kind filtering is cleaner
-**Choice**: Refactor extract_all.py into a multi-runtime corpus builder that probes for available runtime data, extracts from all detected runtimes, and produces a single self-describing corpus.json with a metadata envelope and normalized Section 21 records. Adapter self-validates. Section 21 updated to specify the envelope format.
-**Reasoning**: Runtime is provenance metadata, not a freshness signal. A user's decision patterns are the same regardless of which tool produced the record. Staleness is time-based, not runtime-based. The 1M context window is sufficient for multi-runtime data, and profilera runs rarely enough that the marginal token cost is justified by a more complete picture. Compression of extracted data before LLM consumption is a future optimization. Self-validation at the adapter catches malformed output at the source rather than letting it propagate to profilera.
-**Confidence**: firm
-**Feeds into**: TODO.md (ISS-37)
-
 ## Decision 28 · 2026-04-11
 
 **Question**: Where should PROFILE.md and profilera's generated artifacts live by default, and how should runtime adapters provide path overrides?
@@ -162,6 +119,63 @@ co-installed skills mesh through one verified package root.
 **Confidence**: firm
 **Feeds into**: SPEC.md (§24 extension), skills/inspektera/SKILL.md (prose health dimension), skills/dokumentera/SKILL.md (doc prose enforcement), SKILL.md files of all producing skills (pre-write gate step)
 
+## Decision 35 · 2026-04-29
+
+**Question**: Should the three §24 self-audit checks be extracted from duplicated SKILL.md prose into a shared Python module?
+
+**Context**: SPEC.md §24 defines three pre-write checks duplicated as identical 13-line blocks across 8 SKILL.md files, enforced only by Claude's behavioral compliance. Inspirera analysis of open-bias identified evaluation/enforcement separation as the highest-ROI transferable concept. Profile entries "Use Hooks As Enforcement" (conf:82) and "Reject Bloated Operational Artifacts" (conf:77) favor programmatic enforcement over prose-only instructions.
+
+**Alternatives**:
+
+- [Build shared self_audit.py module], chosen: one implementation consumed by PostToolUse hook (hard gate), all 8 producing skills (replacing prose), and inspektera prose health dimension.
+- [Keep prose-only], rejected: duplicated logic, no programmatic enforcement, inspektera re-implements independently.
+- [Hook-only], rejected: skills lose quality ownership; inspektera still needs separate implementation.
+
+**Choice**: Build `scripts/self_audit.py` implementing the three §24 checks as importable functions. Wire into `validate_artifact.py` for automatic enforcement. Replace 8 duplicated prose blocks with module calls. Inspektera uses the same module.
+
+**Reasoning**: Three consumers, one implementation — the code-level follow-through on Decision 34's self-audit protocol. Mirrors open-bias evaluation/enforcement separation: module evaluates, hook enforces, skills retain ownership.
+
+**Confidence**: firm
+**Feeds into**: TODO.md
+
+## Decision 36 · 2026-04-29
+
+**Question**: Should generate_contracts.py produce structured JSON validation schemas alongside prose contracts?
+
+**Context**: SPEC.md §2, §4, and §5 define validation constants (required headings, token budgets, severity mappings, artifact paths) that validate_artifact.py duplicates as hardcoded Python dicts. SPEC.md changes require manual sync. The inspirera analysis identified the open-bias RULES.md → compiler → runtime-config pattern as transferable. Decision 35 covers §24 self-audit checks; this addresses the §2/§4/§5 structural contract surface.
+
+**Alternatives**:
+
+- [Parse SPEC.md tables into JSON, narrow v1 scope], chosen: targeted regex extraction from existing Markdown tables — no spec format changes. v1 covers artifact headings, token budgets, severity mappings, artifact paths. validate_artifact.py replaces hardcoded dicts with the generated JSON. Broader protocol surface (compaction, confidence, visual tokens) in follow-on.
+- [Embedded metadata blocks in SPEC.md], rejected: dual-format maintenance without sufficient v1 benefit.
+- [Defer], rejected: internal consumers have low pain today, but the spec-as-protocol north star requires machine-readable output before external consumers arrive.
+
+**Choice**: Add a --schema flag to generate_contracts.py outputting structured JSON (default: scripts/schemas/contracts.json) by parsing SPEC.md tables. Ship v1 with the validate_artifact.py replacement. Extend to full protocol surface in follow-on cycles.
+
+**Reasoning**: The compiler already walks SPEC.md sections — extending it to extract structured data from known tables is additive, not architectural. The hook replacement proves the schema works and eliminates the manual sync burden.
+
+**Confidence**: firm
+**Feeds into**: TODO.md
+
+## Decision 37 · 2026-04-29
+
+**Question**: Should hooks/validate_artifact.py add an explicit fail-open contract to prevent crashes from blocking agent writes?
+
+**Context**: The hook currently exits 0 for Claude Code (advisory warnings) but uses deny/exit-2 for Copilot, OpenCode, and Codex pre-write paths. There is no top-level exception handler — an unhandled crash would propagate and could block all writes. The inspirera analysis identified open-bias's fail-open pattern (safe_hook catches all, logs, passes through) as a low-effort safety improvement.
+
+**Alternatives**:
+
+- [Top-level try/except only], chosen: wrap main() in try/except — catch all exceptions, log with traceback, exit 0. Existing blocking logic unchanged. No timeout. Minimal, immediately effective.
+- [Full contract with timeout], rejected: adds platform-dependent complexity (signal handling) without proportional safety gain at v1.
+- [Do nothing], rejected: implicit fail-open is not the same as explicit. The contract should be unambiguous.
+
+**Choice**: Wrap main() in hooks/validate_artifact.py with a top-level try/except. On unhandled exception, log the error with traceback to stderr and exit 0 (allow through). Add a comment documenting the fail-open contract. No changes to existing blocking paths.
+
+**Reasoning**: One try/except prevents crashes from blocking the agent. The existing blocking paths (structural violations on Copilot/OpenCode/Codex) are explicit and intentional — they don't need fail-open protection. This catches only the unexpected.
+
+**Confidence**: firm
+**Feeds into**: TODO.md
+
 ## Archived Decisions
 
 - Decision 1 (2026-03-29): **Question**: How should planera (a planning skill) be designed to fit the agent-skills suite?
@@ -188,3 +202,6 @@ co-installed skills mesh through one verified package root.
 - Decision 22 (2026-04-03): **Question**: Should ISS-19 phase tracking be enforced across skills, and how should the ecosystem detect stale artifacts?
 - Decision 23 (2026-04-03): **Question**: Where should session-to-session state live: new SESSION.md artifact, extend PROGRESS.md, or infrastructure dotfile?
 - Decision 24 (2026-04-03): **Question**: Should the PostToolUse validation hook coexist with the git pre-commit hook, or replace it?
+- Decision 25 (2026-04-03): **Question**: Should agentera's North Star evolve from "a solo founder installs an engineering team" to a spec-centric framing?
+- Decision 26 (2026-04-10): **Question**: Should the terminology for the ecosystem spec and per-skill context files be renamed for clarity and cohesion?
+- Decision 27 (2026-04-11): **Question**: How to implement Section 21's session corpus contract to close the gap between spec and extraction pipeline
