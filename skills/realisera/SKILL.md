@@ -153,8 +153,8 @@ Skill introduction: `─── ⧉ realisera · cycle N ───`
 
 Throughout the cycle, the sharp colleague is building: direct about what's happening, honest about what's not working, brief about what's routine. Structured outputs stay structured; the framing around them should read like a colleague's working notes.
 
-Step markers: display `── step N/8: verb` before each step.
-Steps: orient, select, research, plan, dispatch, verify, commit, log.
+Step markers: display `── step N/9: verb` before each step.
+Steps: orient, select, research, plan, dispatch, verify, commit, audit, log.
 
 ### Step 1: Orient
 
@@ -381,7 +381,21 @@ type(scope): summary
 
 If the current task is a version bump (e.g., a PLAN.md task labeled "Version bump per DOCS.md convention", or a version-staleness finding picked up from TODO.md): read DOCS.md for the `versioning` section. It lists `version_files` (files to update) and `semver_policy` (how to determine the bump level from conventional commit types). Update every file in `version_files` to the new version number, then include those files in the commit. If DOCS.md has no `versioning` section, skip version management entirely.
 
-### Step 8: Log
+### Step 8: Pre-write self-audit
+
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+
+1. **Verbosity drift**: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
+2. **Abstraction creep**: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
+3. **Filler accumulation**: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
+
+Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+
+Narration voice (riff, don't script):
+✗ "Self-audit failed. Revising entry."
+✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
+
+### Step 9: Log
 
 **Dual-write**: realisera maintains two change records, `.agentera/PROGRESS.md` (operational cycle detail for consuming skills) and `CHANGELOG.md` (public summary for project contributors).
 
