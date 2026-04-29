@@ -67,7 +67,7 @@ The 3 checks:
 ### Task 3: Add pre-write self-audit to resonera, planera, optimera, visualisera, visionera SKILL.md
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN each of the 5 skill SKILL.md files (resonera, planera, optimera, visualisera, visionera) WHEN read THEN a "Pre-write self-audit" step appears before their artifact write steps
 ▸ GIVEN each step WHEN read THEN it references the §24 Self-Audit Protocol and includes riff narration guidance

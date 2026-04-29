@@ -140,8 +140,16 @@ The sharp colleague figuring out what to optimize. One question at a time, push 
 2. **Motivation**: "Why does this matter? What breaks at current value? What's possible at target?" Context helps trade-off decisions during optimization.
 3. **Constraints**: "What must NOT break? Off-limits files? Resource limits?" If a decision profile exists, propose constraints from it.
 4. **Scope**: "Which parts to focus on? Where are the biggest gains?" Read codebase to propose informed boundaries.
-5. **Write OBJECTIVE.md**: synthesize into a precise charter. Write to `.agentera/optimera/<objective-name>/OBJECTIVE.md`. Present for approval.
-6. **Write the eval harness**: read `references/harness-guide.md` and relevant `references/examples/` pattern. Write `.agentera/optimera/<objective-name>/harness` using the project's own tooling, outputting JSON per `references/output-schema.md`. Present, explain, get approval, run once to establish baseline.
+5. **Pre-write self-audit** (SPEC §24 Self-Audit Protocol):
+   1. Verbosity drift: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
+   2. Abstraction creep: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
+   3. Filler accumulation: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
+   Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+   Narration voice (riff, don't script):
+   ✗ "Self-audit failed. Revising entry."
+   ✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
+6. **Write OBJECTIVE.md**: synthesize into a precise charter. Write to `.agentera/optimera/<objective-name>/OBJECTIVE.md`. Present for approval.
+7. **Write the eval harness**: read `references/harness-guide.md` and relevant `references/examples/` pattern. Write `.agentera/optimera/<objective-name>/harness` using the project's own tooling, outputting JSON per `references/output-schema.md`. Present, explain, get approval, run once to establish baseline.
 
 Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
@@ -153,8 +161,8 @@ When **refining**, read current OBJECTIVE.md, show proposed changes with rationa
 
 Skill introduction: `─── ⎘ optimera · experiment N ───`
 
-Step markers: display `── step N/7: verb` before each step.
-Steps: orient, analyze, hypothesize, implement, measure, decide, log.
+Step markers: display `── step N/8: verb` before each step.
+Steps: orient, analyze, hypothesize, implement, measure, decide, audit, log.
 
 ### Step 1: Orient
 
@@ -309,7 +317,21 @@ Metric: <before> → <after> ⮉ (<unit>)
 
 If either fails: **discard**. The worktree <!-- platform: sub-agent-dispatch --> is abandoned. No merge. No commit.
 
-### Step 7: Log
+### Step 7: Pre-write self-audit
+
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+
+1. **Verbosity drift**: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
+2. **Abstraction creep**: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
+3. **Filler accumulation**: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
+
+Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+
+Narration voice (riff, don't script):
+✗ "Self-audit failed. Revising entry."
+✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
+
+### Step 8: Log
 
 Summarize the experiment for the user before writing the log: what moved, what didn't, and what it suggests trying next. Then write the structured record.
 

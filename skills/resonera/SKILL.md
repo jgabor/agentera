@@ -194,7 +194,21 @@ Relevant options only:
 - **File to TODO.md**: if surfaced tech debt (severity per contract)
 - **Just wrap up**: no artifacts needed
 
-### Step 3: Write artifacts
+### Step 3: Pre-write self-audit
+
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+
+1. **Verbosity drift**: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
+2. **Abstraction creep**: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
+3. **Filler accumulation**: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
+
+Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+
+Narration voice (riff, don't script):
+✗ "Self-audit failed. Revising entry."
+✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
+
+### Step 4: Write artifacts
 
 For any option the user selects:
 

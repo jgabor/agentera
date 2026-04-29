@@ -74,7 +74,7 @@ If uncertain between light and full, default to light. The user can escalate.
 
 ---
 
-Step markers: display `── step N/5: verb` before each step (Step 0 excluded). Steps: orient, specify, review, write, handoff.
+Step markers: display `── step N/6: verb` before each step (Step 0 excluded). Steps: orient, specify, review, audit, write, handoff.
 
 ## Step 1: Orient
 
@@ -173,7 +173,21 @@ Address legitimate issues; dismiss false positives with rationale. Be direct abo
 
 ---
 
-## Step 4: Write PLAN.md
+## Step 4: Pre-write self-audit
+
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+
+1. **Verbosity drift**: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
+2. **Abstraction creep**: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
+3. **Filler accumulation**: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
+
+Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+
+Narration voice (riff, don't script):
+✗ "Self-audit failed. Revising entry."
+✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
+
+## Step 5: Write PLAN.md
 
 Reason through dependencies in response text. Write ONLY tasks with acceptance criteria to PLAN.md without rationale. The conversation preserves reasoning; the artifact preserves the plan.
 
@@ -266,7 +280,7 @@ NOT implementation details.]
 
 ---
 
-## Step 5: Handoff
+## Step 6: Handoff
 
 - **Single task**: suggest `/realisera` to execute the next pending task in the plan.
 - **Full plan**: suggest `/orkestrera` to execute the entire plan across multiple cycles.

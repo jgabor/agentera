@@ -114,8 +114,8 @@ If **Replace**, archive current VISION.md to `.agentera/archive/VISION-{date}.md
 
 ## Create mode
 
-Step markers: display `── step N/4: verb` before each step.
-Steps: explore, research, converse, write.
+Step markers: display `── step N/5: verb` before each step.
+Steps: explore, research, converse, audit, write.
 
 ### Step 1: Explore the codebase
 
@@ -183,7 +183,21 @@ Follow a narrative arc, not a checklist. Adapt, but cover:
 
    This question often produces the most useful material for the vision document.
 
-### Step 4: Write VISION.md
+### Step 4: Pre-write self-audit
+
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+
+1. **Verbosity drift**: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
+2. **Abstraction creep**: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
+3. **Filler accumulation**: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
+
+Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+
+Narration voice (riff, don't script):
+✗ "Self-audit failed. Revising entry."
+✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
+
+### Step 5: Write VISION.md
 
 Synthesize into an aspirational north star. **Tone**: evocative, not clinical. A rallying cry, not a requirements doc. **Structure**: follow template but adapt; add dimensions that emerged, omit sections that produced nothing interesting.
 
@@ -197,8 +211,8 @@ Artifact writing follows contract Section 24 (Artifact Writing Conventions): ban
 
 ## Refine mode
 
-Step markers: display `── step N/4: verb` before each step.
-Steps: read, research, propose, update.
+Step markers: display `── step N/5: verb` before each step.
+Steps: read, research, propose, audit, update.
 
 ### Step 1: Read the current state
 
@@ -232,7 +246,21 @@ Present your assessment:
 
 Brief conversation (2-4 exchanges) to refine proposed changes.
 
-### Step 4: Update VISION.md
+### Step 4: Pre-write self-audit
+
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+
+1. **Verbosity drift**: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
+2. **Abstraction creep**: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
+3. **Filler accumulation**: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
+
+Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+
+Narration voice (riff, don't script):
+✗ "Self-audit failed. Revising entry."
+✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
+
+### Step 5: Update VISION.md
 
 Show the updated vision as a diff (what changed and why). Get explicit approval before writing.
 
