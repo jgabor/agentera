@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-29 (post-steelman docs refresh) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-29 (optimera objective docs refresh) -->
 
 ## Conventions
 
@@ -47,7 +47,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 | Document | Path | Last Updated | Status |
 |----------|------|-------------|--------|
-| README | README.md | 2026-04-28 | ■ current |
+| README | README.md | 2026-04-29 | ■ current |
 | CLAUDE.md | CLAUDE.md | 2026-04-27 | ■ current |
 | Decisions | .agentera/DECISIONS.md | 2026-04-28 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
@@ -92,9 +92,20 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 511 tests across 18 files; CI runs on push/PR via GitHub Actions
+- **Tests**: 523 tests across 19 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-29 (optimera objective docs refresh)
+
+- [stale] README's state artifact reference listed root and operational artifacts
+  but omitted `.agentera/optimera/<name>/OBJECTIVE.md` objective state and
+  `.agentera/optimera/<name>/EXPERIMENTS.md` experiment history; it now names
+  the self-contained objective directory and excludes root artifacts, registries,
+  symlinks, and DOCS fixed mappings · warning (fixed)
+- [stale] Coverage still reported 511 tests across 18 files after Task 5 added
+  `tests/test_optimera_objective_lifecycle.py`; Coverage now reports 523 tests
+  across 19 files and keeps the Test suite row current · warning (fixed)
 
 ### 2026-04-29 (post-steelman docs refresh)
 

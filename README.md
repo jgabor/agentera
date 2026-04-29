@@ -187,6 +187,8 @@ plain markdown artifacts that live with the project:
 - `.agentera/PROGRESS.md`: what shipped, how it was verified, and what changed.
 - `.agentera/HEALTH.md`: where architecture and quality are drifting.
 - `.agentera/DOCS.md`: which docs exist, what they cover, and what is stale.
+- `.agentera/optimera/<name>/`: one self-contained optimization objective,
+  with `OBJECTIVE.md`, `EXPERIMENTS.md`, and its locked measurement harness.
 
 Each skill reads the artifacts it needs and writes the artifact it owns. That is
 the trick: the next agent does not have to infer history from chat. It can read
@@ -455,6 +457,18 @@ Operational files in `.agentera/`:
 | `DOCS.md` | dokumentera | Documentation index and coverage. |
 | `DESIGN.md` | visualisera | Visual identity system. |
 | `SESSION.md` | session stop hook | Session bookmarks. |
+
+Optimera objective directories under `.agentera/optimera/<name>/`:
+
+| Artifact | Owner | Purpose |
+|----------|-------|---------|
+| `OBJECTIVE.md` | optimera | Objective state, metric, target, constraints, scope, and canonical closure fields. |
+| `EXPERIMENTS.md` | optimera | Experiment history plus one closure entry with final value, target, and reason. |
+| `harness` | optimera | Locked metric command approved during objective bootstrap. |
+
+Optimera does not use root objective artifacts, registries, symlinks, or DOCS.md
+fixed mappings for objective state. Each objective stays self-contained in its
+own `.agentera/optimera/<name>/` directory.
 
 Global profile:
 

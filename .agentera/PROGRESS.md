@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 230 · 2026-04-29 · docs(optimera): refresh objective artifact docs
+
+**Phase**: build
+**What**: Completed Task 6 of the Completed Optimera Objective Archival plan. User-facing Optimera documentation now names per-objective objective state and experiment history paths without adding fixed mappings or root objective surfaces.
+**Commit**: this commit, `docs(optimera): refresh objective artifact docs`
+**Inspiration**: Active PLAN.md Task 6 and the completed Task 1-5 objective lifecycle work.
+**Discovered**: README's state artifact reference covered root and operational artifacts but did not mention Optimera's self-contained objective directories. DOCS.md coverage still reported the pre-Task-5 test count.
+**Verified**: README now describes `.agentera/optimera/<name>/OBJECTIVE.md` as objective state and `.agentera/optimera/<name>/EXPERIMENTS.md` as experiment history. README explicitly says Optimera does not use root objective artifacts, registries, symlinks, or DOCS.md fixed mappings. `.agentera/DOCS.md` keeps no OBJECTIVE.md or EXPERIMENTS.md Artifact Mapping rows, marks README and the test suite current, and reports 523 tests across 19 files. `python3 -m pytest --collect-only -q` reported 523 tests. `python3 scripts/self_audit.py README.md .agentera/DOCS.md .agentera/PLAN.md .agentera/PROGRESS.md` exited 0. `python3 scripts/validate_spec.py --skill skills/dokumentera/SKILL.md --skill skills/optimera/SKILL.md` passed with 0 errors and existing hard-wrap warnings. `python3 scripts/validate_spec.py` passed with 0 errors and existing hard-wrap warnings.
+**Next**: Execute Task 7: bump patch release metadata.
+**Context**: intent (execute only Task 6 documentation refresh) · constraints (no version bump metadata, plan-level freshness checkpoint, root objective artifacts, registries, symlinks, or DOCS fixed objective mappings) · unknowns (none) · scope (README, DOCS coverage, plan status, progress evidence).
+
 ■ ## Cycle 229 · 2026-04-29 22:44 · test(optimera): cover objective inference lifecycle
 
 **Phase**: build
