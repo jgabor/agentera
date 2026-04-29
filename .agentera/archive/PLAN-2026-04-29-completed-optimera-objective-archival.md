@@ -1,6 +1,6 @@
 # Plan: Completed Optimera Objective Archival
 
-<!-- Level: full | Created: 2026-04-29 | Status: active -->
+<!-- Level: full | Created: 2026-04-29 | Status: completed -->
 <!-- Reviewed: 2026-04-29 | Critic issues: 15 found, 15 addressed, 0 dismissed -->
 
 ## What
@@ -106,7 +106,7 @@ Closed state lives inside each objective's own artifacts. `OBJECTIVE.md` carries
 ### Task 8: Plan-Level Freshness Checkpoint
 
 **Depends on**: Task 7
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all implementation tasks are complete WHEN freshness is checked THEN CHANGELOG.md, PROGRESS.md, and TODO.md summarize the plan outcome.
 ▸ GIVEN TODO.md is refreshed WHEN the completed-objective item is resolved THEN it moves to Resolved with commit evidence.

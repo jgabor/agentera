@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 232 · 2026-04-29 · chore(freshness): close optimera objective archival plan
+
+**Phase**: audit
+**What**: Completed Task 8 of the Completed Optimera Objective Archival plan. The plan-level checkpoint records the completed objective lifecycle outcome, resolves the stale TODO, and archives the active plan.
+**Commit**: this commit, `chore(freshness): close optimera objective archival plan`
+**Inspiration**: Active PLAN.md Task 8 and realisera's plan-completion sweep convention.
+**Discovered**: No new HEALTH finding was resolved by this checkpoint; the relevant open TODO was the completed-objective lifecycle item itself.
+**Verified**: AC1: `CHANGELOG.md` Unreleased Changed records the freshness closure, Cycle 232 summarizes Tasks 1-8, and `TODO.md` resolves the completed-objective item. AC2: `TODO.md` moved `[fix] Define completed-objective archival for optimera` to Resolved with commit evidence `27bb667..a1e60bd` plus this checkpoint commit. AC3: `.agentera/archive/PLAN-2026-04-29-completed-optimera-objective-archival.md` contains the completed plan, and `.agentera/PLAN.md` is removed. AC4: `python3 scripts/validate_spec.py`, `python3 scripts/generate_contracts.py --check`, `python3 scripts/self_audit.py CHANGELOG.md TODO.md .agentera/PROGRESS.md .agentera/archive/PLAN-2026-04-29-completed-optimera-objective-archival.md`, and `python3 -m pytest -q` passed; full pytest reported 523 passed.
+**Next**: The plan is complete; next useful work is a fresh health pass if the DOCS coverage finding still matters after this plan.
+**Context**: intent (execute only Task 8 plan freshness and completion) · constraints (do not modify VISION.md; no registries, symlinks, root objective artifacts, or DOCS fixed objective mappings) · unknowns (none) · scope (CHANGELOG, TODO, PROGRESS, archived PLAN, validation, commit).
+
 ■ ## Cycle 231 · 2026-04-29 22:51 · chore(release): bump suite to 1.24.1
 
 **Phase**: build
@@ -99,19 +110,9 @@
 **Next**: The plan is complete; next useful work is the unrelated optimera completed-objective archival issue if it remains important.
 **Context**: intent (execute only Task 6 freshness checkpoint) · constraints (no feature scope, preserve unrelated TODO, leave untracked vrida untouched) · unknowns (none) · scope (CHANGELOG, PROGRESS, archived PLAN).
 
-■ ## Cycle 222 · 2026-04-29 · chore(release): bump suite to 1.24.0
-
-**Phase**: build
-**What**: Completed Task 5 of the Steelman-Informed Decision Pressure plan. Version-bearing DOCS-listed metadata now represents the next minor release for the decision-workflow behavior added in Tasks 1-3.
-**Commit**: this commit, `chore(release): bump suite to 1.24.0`
-**Inspiration**: Active PLAN.md Task 5 and DOCS.md `versioning` convention: `feat = minor, fix = patch, docs/chore/test = no bump`.
-**Discovered**: `.agents/plugins/marketplace.json` is listed in DOCS.md `version_files` but carries no version field; it remains unchanged because there is no existing version-bearing surface to align.
-**Verified**: Version probe checked 19 DOCS-listed targets: plugin.json, .github/plugin/plugin.json, .codex-plugin/plugin.json, registry.json, 12 skill plugin manifests, .claude-plugin/marketplace.json including nested `profilera`, and .opencode/plugins/agentera.js all report `1.24.0`; .agents/plugins/marketplace.json has no version field. `python3 scripts/validate_spec.py` reported 0 errors and 8 existing hard-wrap warnings. `python3 scripts/generate_contracts.py --check`, `python3 scripts/validate_lifecycle_adapters.py`, `python3 -m pytest -q tests/test_runtime_adapters.py`, and `python3 -m pytest -q` passed; full pytest reported 511 passed.
-**Next**: Execute Task 6: plan-level freshness checkpoint without expanding release scope.
-**Context**: intent (execute only Task 5 release metadata bump) · constraints (DOCS.md version targets, no runtime or skill behavior changes, leave unrelated untracked vrida untouched) · unknowns (none after version probe) · scope (version metadata, changelog promotion, plan status, progress evidence).
-
 ## Archived Cycles
 
+- Cycle 222 (2026-04-29): chore(release): bump suite to 1.24.0
 - Cycle 221 (2026-04-29): chore(validation): confirm decision contract compatibility
 - Cycle 220 (2026-04-29): feat(skills): guard adjacent effort-biased selections
 - Cycle 219 (2026-04-29): feat(resonera): add decision alternative win conditions
@@ -151,4 +152,3 @@
 - Cycle 185 (2026-04-26): docs(verify): document manual AGENTERA_HOME verification and surface smoke_live_hosts.py
 - Cycle 184 (2026-04-26): feat(smoke): wire copilot -p AGENTERA_HOME + compaction live verification
 - Cycle 183 (2026-04-26): feat(smoke): wire codex exec AGENTERA_HOME + compaction live verification
-- Cycle 182 (2026-04-26): feat(smoke): add scripts/smoke_live_hosts.py scaffold for codex+copilot verification
