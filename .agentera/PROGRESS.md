@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 229 · 2026-04-29 22:44 · test(optimera): cover objective inference lifecycle
+
+**Phase**: verification
+**What**: Completed Task 5 of the Completed Optimera Objective Archival plan. Regression coverage now exercises active, closed-newer, all-closed, no-objective, and ambiguous objective inference branches, checks routing consumer closure-before-recency prose, and guards duplicate closure idempotency when optimera starts on an already closed objective.
+**Commit**: this commit, `test(optimera): cover objective inference lifecycle`
+**Inspiration**: Active PLAN.md Task 5 and Decision 31's self-contained `.agentera/optimera/<name>/` objective layout.
+**Discovered**: DOCS.md coverage count remains stale by the prior health finding and is intentionally left for the plan's documentation refresh task.
+**Verified**: Focused `python3 -m pytest -q tests/test_optimera_objective_lifecycle.py` reported 4 passed: one test covers the five required inference branches, one anchors optimera's branch prose, one checks hej/resonera closure-before-recency routing text, and one proves an already closed objective does not append another closure. `python3 scripts/validate_spec.py --skill skills/optimera/SKILL.md --skill skills/hej/SKILL.md --skill skills/resonera/SKILL.md` passed with 0 errors and 2 existing hard-wrap warnings. `python3 scripts/generate_contracts.py --check`, `python3 scripts/validate_spec.py`, `python3 scripts/validate_lifecycle_adapters.py`, and `python3 scripts/eval_skills.py --skill optimera --dry-run` passed; full `python3 -m pytest -q` reported 523 passed, so existing lifecycle validation had no regression.
+**Next**: Execute Task 6: refresh optimera documentation without adding fixed objective mappings.
+**Context**: intent (execute only Task 5 regression coverage) · constraints (no registry, symlink, root mapping, harness changes, reopening support, docs refresh, or release metadata) · unknowns (live eval remains credit-gated if attempted) · scope (test coverage plus plan, changelog, progress).
+
 ■ ## Cycle 228 · 2026-04-29 22:40 · fix(validation): validate optimera objective artifacts
 
 **Phase**: build
@@ -99,19 +110,9 @@
 **Next**: Execute Task 4: validate contract compatibility across updated decision-workflow text.
 **Context**: intent (execute only Task 3 effort-bias guards) · constraints (planera and optimera only, no new surfaces, no resonera changes) · unknowns (none after SPEC review) · scope (planera SKILL.md, optimera SKILL.md, plan status, progress, changelog).
 
-■ ## Cycle 219 · 2026-04-29 · feat(resonera): add decision alternative win conditions
-
-**Phase**: verification
-**What**: Completed Task 2 of the Steelman-Informed Decision Pressure plan. Resonera now keeps DECISIONS.md top-level fields stable while requiring each serious alternative to carry a compact win condition unless the user rejects that alternative.
-**Commit**: this commit, `feat(resonera): add decision alternative win conditions`
-**Inspiration**: Active PLAN.md Task 2. Profile signals favored preserving task intent, natural boundaries, compact artifacts, and evidence-rich comparisons.
-**Discovered**: Existing readers and validators consume DECISIONS.md by stable headings, numbering, and confidence labels; no validation behavior change was needed, so existing coverage is sufficient.
-**Verified**: `leda query` and repo searches checked affected DECISIONS.md consumers before the template changed: realisera, planera, optimera, orkestrera, profilera, inspektera, visionera, dokumentera, plus `hooks/validate_artifact.py` and `scripts/validate_spec.py`. The change keeps `Question`, `Context`, `Alternatives`, `Choice`, `Reasoning`, `Confidence`, and `Feeds into` intact and puts win conditions only inside Alternatives bullets. `python3 scripts/validate_spec.py --skill skills/resonera/SKILL.md` passed with 0 errors and the existing hard-wrap warning. `python3 scripts/validate_spec.py` passed with 0 errors across 12 skills. A synthetic DECISIONS.md entry with inline win conditions returned `violations: []` from `validate_artifact_text`. `python3 -m pytest -q` reported 511 passed. Primary eval was attempted with `python3 scripts/eval_skills.py --skill resonera`; it reached the external Claude API and failed with `Credit balance is too low`.
-**Next**: Execute Task 3: apply narrow effort-bias guards to planera and optimera only.
-**Context**: intent (execute only Task 2 decision capture) · constraints (no Task 3 guards, no new top-level DECISIONS.md field, preserve confidence semantics) · unknowns (live eval still blocked by low API credit) · scope (resonera SKILL.md, DECISIONS template, plan status, progress, changelog).
-
 ## Archived Cycles
 
+- Cycle 219 (2026-04-29): feat(resonera): add decision alternative win conditions
 - Cycle 218 (2026-04-29): feat(resonera): strengthen pressure testing discipline
 - Cycle 217 (2026-04-29): feat: close Post-1.22 Self-Audit Implementation plan
 - Cycle 216 (2026-04-29): chore(plan): close Prose-Quality Self-Audit Protocol plan
@@ -151,4 +152,3 @@
 - Cycle 182 (2026-04-26): feat(smoke): add scripts/smoke_live_hosts.py scaffold for codex+copilot verification
 - Cycle 181 (2026-04-26): chore(audit): profilera Codex collection verification and metadata reconciliation
 - Cycle 180 (2026-04-26): chore(plan): freshness checkpoint for Codex+Copilot Completion
-- Cycle 179 (2026-04-26): chore(release): bump suite to 1.21.0
