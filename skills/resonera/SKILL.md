@@ -54,13 +54,18 @@ Before starting, read `references/contract.md` (relative to this skill's directo
 **Question**: what was being decided
 **Context**: relevant constraints, triggers, or prior decisions
 **Alternatives**:
-- [Option A] : tradeoffs
-- [Option B] : tradeoffs
+- [Option A]: tradeoffs; win condition: concrete signal that proves this option right
+- [Option B]: tradeoffs; win condition: concrete signal that proves this option right
 **Choice**: what was chosen
 **Reasoning**: the key insight or tradeoff that resolved it
 **Confidence**: firm | provisional | exploratory
 **Feeds into**: VISION.md | OBJECTIVE.md | TODO.md | standalone
 ```
+
+Compatibility rule: preserve the top-level fields exactly (`Question`, `Context`,
+`Alternatives`, `Choice`, `Reasoning`, `Confidence`, `Feeds into`). Current
+readers use those headings, decision numbering, and confidence labels. Put win
+conditions inside `Alternatives` bullets, not in a new top-level field.
 
 The "Confidence" field signals how settled the decision is:
 
@@ -186,7 +191,8 @@ Required order:
    user's project, constraints, artifact trail, codebase shape, prior decisions,
    metric, or stated stakes.
 2. Then present serious alternatives. Each alternative must use the same project
-   context, not generic advice.
+   context, not generic advice. Include a concrete win condition for each serious
+   alternative unless the user explicitly rejects that alternative.
 3. Make the call with explicit confidence: `firm`, `provisional`, or
    `exploratory`, plus the evidence that would change it. Do not soften the call
    with vibe language.
@@ -248,6 +254,8 @@ For any option the user selects:
 
 - **DECISIONS.md**: reason through alternatives in response text. Write ONLY chosen decision,
   confidence, and a rationale per contract token budgets. No deliberation transcript.
+  Each serious alternative gets one compact win condition inside its bullet unless
+  the user rejected it. Preserve the existing top-level fields.
 - **DECISIONS.md placement**: compute the next decision number before writing. Insert the
   full entry before `## Archived Decisions`, preserving unique ascending active entries.
 - **DECISIONS.md compaction**: after writing a new decision entry, compact older

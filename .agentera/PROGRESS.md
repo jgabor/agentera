@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 219 · 2026-04-29 · feat(resonera): add decision alternative win conditions
+
+**Phase**: verification
+**What**: Completed Task 2 of the Steelman-Informed Decision Pressure plan. Resonera now keeps DECISIONS.md top-level fields stable while requiring each serious alternative to carry a compact win condition unless the user rejects that alternative.
+**Commit**: this commit, `feat(resonera): add decision alternative win conditions`
+**Inspiration**: Active PLAN.md Task 2. Profile signals favored preserving task intent, natural boundaries, compact artifacts, and evidence-rich comparisons.
+**Discovered**: Existing readers and validators consume DECISIONS.md by stable headings, numbering, and confidence labels; no validation behavior change was needed, so existing coverage is sufficient.
+**Verified**: `leda query` and repo searches checked affected DECISIONS.md consumers before the template changed: realisera, planera, optimera, orkestrera, profilera, inspektera, visionera, dokumentera, plus `hooks/validate_artifact.py` and `scripts/validate_spec.py`. The change keeps `Question`, `Context`, `Alternatives`, `Choice`, `Reasoning`, `Confidence`, and `Feeds into` intact and puts win conditions only inside Alternatives bullets. `python3 scripts/validate_spec.py --skill skills/resonera/SKILL.md` passed with 0 errors and the existing hard-wrap warning. `python3 scripts/validate_spec.py` passed with 0 errors across 12 skills. A synthetic DECISIONS.md entry with inline win conditions returned `violations: []` from `validate_artifact_text`. `python3 -m pytest -q` reported 511 passed. Primary eval was attempted with `python3 scripts/eval_skills.py --skill resonera`; it reached the external Claude API and failed with `Credit balance is too low`.
+**Next**: Execute Task 3: apply narrow effort-bias guards to planera and optimera only.
+**Context**: intent (execute only Task 2 decision capture) · constraints (no Task 3 guards, no new top-level DECISIONS.md field, preserve confidence semantics) · unknowns (live eval still blocked by low API credit) · scope (resonera SKILL.md, DECISIONS template, plan status, progress, changelog).
+
 ■ ## Cycle 218 · 2026-04-29 · feat(resonera): strengthen pressure testing discipline
 
 **Phase**: verification

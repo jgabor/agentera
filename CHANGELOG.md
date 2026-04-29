@@ -5,6 +5,7 @@
 ### Added
 
 - Self-Audit Protocol (SPEC.md §24): pre-write 3-check gate (verbosity drift, abstraction creep, filler accumulation) with max-3-retry bail-out for all artifact-producing skills (realisera, inspektera, resonera, planera, optimera, dokumentera, visualisera, visionera). Inspektera gains prose health as a 10th audit dimension; dokumentera enforces prose quality across indexed docs.
+- Resonera decision capture now records compact win conditions inside serious alternative bullets while preserving existing DECISIONS.md reader fields.
 - Fail-open guard in validate_artifact.py hook (ISS-47)
 - --schema flag on generate_contracts.py producing contracts.json (ISS-46)
 - scripts/self_audit.py module with verbosity, abstraction, and filler checks (ISS-45)

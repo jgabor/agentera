@@ -45,7 +45,7 @@ Add steelman patterns at the decision layer, not the suite architecture layer. R
 ### Task 2: Add concrete win conditions to decision capture
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN existing decision readers consume `DECISIONS.md` WHEN template changes are considered THEN affected readers are checked before the template is changed.
 ▸ GIVEN resonera logs serious alternatives WHEN a decision entry is produced THEN each serious alternative includes a concrete win condition unless the user rejects it.
