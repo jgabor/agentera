@@ -124,8 +124,8 @@ to Create mode.
 
 ## Create mode
 
-Step markers: display `── step N/6: verb` before each step.
-Steps: explore, research, converse, write, validate, next.
+Step markers: display `── step N/7: verb` before each step.
+Steps: explore, research, converse, audit, write, validate, next.
 
 ### Step 1: Explore the codebase
 
@@ -187,9 +187,21 @@ Follow a narrative arc, not a checklist. Adapt, but cover:
 
    Maps to `<!-- design:components -->`. Focus on contracts: "What props, variants, refusals? This becomes the contract agents build against."
 
-### Step 4: Write DESIGN.md
+### Step 4: Pre-write self-audit
 
-Output constraint: ≤20 words per token description.
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+
+1. **Verbosity drift**: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
+2. **Abstraction creep**: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
+3. **Filler accumulation**: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
+
+Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+
+Narration voice (riff, don't script):
+✗ "Self-audit failed. Revising entry."
+✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
+
+### Step 5: Write DESIGN.md
 
 Synthesize the conversation into a structured design system document.
 
@@ -210,7 +222,7 @@ Use established scales: OKLCH for colors, 8pt grid for spacing, modular scale fo
 
 Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
-### Step 5: Validate
+### Step 6: Validate
 
 Validate the written file:
 
@@ -220,7 +232,7 @@ python3 scripts/validate_design.py --design DESIGN.md --pretty
 
 Fix errors and re-validate before presenting.
 
-### Step 6: Next steps
+### Step 7: Next steps
 
 ▸ **Set up enforcement**: point to `references/enforcement-patterns.md` for the three-layer enforcement model (validation, linting, audit)
 ▸ **Build to the spec**: run `/realisera` to implement UI that respects the design tokens
@@ -233,8 +245,8 @@ Fix errors and re-validate before presenting.
 
 Evolve an existing design system based on what's changed.
 
-Step markers: display `── step N/3: verb` before each step.
-Steps: read, propose, update.
+Step markers: display `── step N/4: verb` before each step.
+Steps: read, propose, audit, update.
 
 ### Step 1: Read current state
 
@@ -258,7 +270,21 @@ Steps: read, propose, update.
 
 Brief conversation (2-4 exchanges) to refine proposed changes.
 
-### Step 3: Update DESIGN.md
+### Step 3: Pre-write self-audit
+
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+
+1. **Verbosity drift**: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
+2. **Abstraction creep**: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
+3. **Filler accumulation**: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
+
+Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+
+Narration voice (riff, don't script):
+✗ "Self-audit failed. Revising entry."
+✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
+
+### Step 4: Update DESIGN.md
 
 Show diff with rationale. Get approval. Run validation after writing.
 
