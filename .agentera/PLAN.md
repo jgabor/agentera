@@ -86,8 +86,9 @@ The hook enforces post-write; the prose instructs Claude to check pre-write.
 ### Task 3: ISS-45 — Build self_audit.py and wire into hook and skills
 
 **Depends on**: Task 2
-**Status**: □ pending
-**Tests**: 6 base (1 pass + 1 fail per function: check_verbosity, check_abstraction, check_filler). check_filler qualifies for edge case expansion (+3: empty text, all-patterns text, mixed valid+banned)
+**Status**: ■ complete
+**Tests**: 16 tests (7 check_verbosity: 2 base + 1 fallback for unknown artifact + 5 check_filler anchor types; 9 check_filler: 2 base + 3 edge: empty, all-patterns, mixed valid+banned)
+**Commit**: 591029b
 **Acceptance**:
 ▸ GIVEN artifact entry text and an artifact name WHEN `check_verbosity()` is called THEN it returns `(True, ...)` if word count is within the §4 per-entry budget, `(False, reason)` if over
 ▸ GIVEN artifact entry text WHEN `check_abstraction()` is called THEN it returns `(True, anchor)` if at least one concrete anchor (file path, line number, commit hash, metric value, identifier, quote) is present, `(False, reason)` otherwise

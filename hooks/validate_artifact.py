@@ -58,6 +58,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # Import hooks utilities (co-located in hooks/).
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+# Also add scripts/ for self_audit import.
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
 try:
     from compaction import (  # type: ignore[import-not-found]
         MAX_FULL_ENTRIES as _COMPACT_MAX_FULL,
@@ -70,6 +72,14 @@ except ImportError:
     _detect_overflow = None  # type: ignore[assignment]
 
 from common import parse_artifact_mapping  # type: ignore[import-not-found]
+
+# Self-audit checks (advisory, non-blocking)
+try:
+    from self_audit import check_verbosity, check_abstraction, check_filler
+except ImportError:
+    check_verbosity = None  # type: ignore[assignment]
+    check_abstraction = None  # type: ignore[assignment]
+    check_filler = None  # type: ignore[assignment]
 
 # Default operational artifact directory relative to target project root.
 DEFAULT_OP_DIR = ".agentera"
@@ -738,6 +748,29 @@ def _validate_one_path(
         if artifact_name:
             violations = validate_artifact_structure(file_path, artifact_name)
             violations.extend(detect_compaction_overflow(file_path, artifact_name))
+
+            # Advisory self-audit checks (non-blocking, report only)
+            if check_verbosity is not None:
+                try:
+                    content = Path(file_path).read_text(encoding="utf-8")
+                    passed, detail = check_verbosity(content, artifact_name)
+                    if not passed:
+                        violations.append(
+                            f"{artifact_name}: self-audit: {detail}"
+                        )
+                    passed, detail = check_abstraction(content)
+                    if not passed:
+                        violations.append(
+                            f"{artifact_name}: self-audit: {detail}"
+                        )
+                    passed, detail = check_filler(content)
+                    if not passed:
+                        violations.append(
+                            f"{artifact_name}: self-audit: {detail}"
+                        )
+                except Exception:
+                    pass  # Self-audit is advisory; never block on errors
+
             return violations
         return []
 

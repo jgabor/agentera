@@ -140,11 +140,10 @@ The sharp colleague figuring out what to optimize. One question at a time, push 
 2. **Motivation**: "Why does this matter? What breaks at current value? What's possible at target?" Context helps trade-off decisions during optimization.
 3. **Constraints**: "What must NOT break? Off-limits files? Resource limits?" If a decision profile exists, propose constraints from it.
 4. **Scope**: "Which parts to focus on? Where are the biggest gains?" Read codebase to propose informed boundaries.
-5. **Pre-write self-audit** (SPEC §24 Self-Audit Protocol):
-   1. Verbosity drift: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
-   2. Abstraction creep: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
-   3. Filler accumulation: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
-   Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+5. **Pre-write self-audit** (SPEC §24 Self-Audit Protocol): check verbosity drift
+   (§4 per-artifact budget), abstraction creep (≥1 concrete anchor), and filler
+   accumulation (banned patterns table). See scripts/self_audit.py.
+   Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
    Narration voice (riff, don't script):
    ✗ "Self-audit failed. Revising entry."
    ✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
@@ -319,13 +318,10 @@ If either fails: **discard**. The worktree <!-- platform: sub-agent-dispatch -->
 
 ### Step 7: Pre-write self-audit
 
-Pre-write self-audit (SPEC §24 Self-Audit Protocol):
-
-1. **Verbosity drift**: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
-2. **Abstraction creep**: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
-3. **Filler accumulation**: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
-
-Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+Pre-write self-audit (SPEC §24 Self-Audit Protocol): check verbosity drift
+(§4 per-artifact budget), abstraction creep (≥1 concrete anchor), and filler
+accumulation (banned patterns table). See scripts/self_audit.py.
+Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
 ✗ "Self-audit failed. Revising entry."
