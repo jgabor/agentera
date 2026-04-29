@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Completed-objective archival is freshness-closed: the active plan is archived, the stale TODO is resolved, and the checkpoint validates spec, contracts, artifact prose, and tests.
+
 ## [1.24.1] · 2026-04-29
 
 ### Fixed

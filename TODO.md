@@ -6,20 +6,10 @@
 
 ## → Normal
 
-- [ ] [fix] Define completed-objective archival for optimera. When an objective's harness already meets its target, optimera currently reports completion and stops, but does not archive or mark the per-objective directory complete; root `OBJECTIVE.md` can remain active-looking and hej can keep routing back to stale work. Add a spec/SKILL.md workflow for completed objectives: record closure in `EXPERIMENTS.md`, move or mark archived objective state, update artifact mapping/freshness expectations, and keep active-objective inference from selecting completed objectives. Applies to `skills/optimera/SKILL.md`, `SPEC.md`, templates/contracts, validators, and docs as needed.
-
 ## ⇢ Annoying
 
 ## Resolved
 
-- [x] ~~ISS-45: [feat] Build scripts/self_audit.py implementing §24 checks, wire into validate_artifact.py and 8 producing skills, and integrate into inspektera prose health dimension~~ · fixed in fbcabcf (feat: add self_audit.py module and wire into hook + 8 SKILL.md files)
-- [x] ~~ISS-46: [feat] Add --schema flag to scripts/generate_contracts.py producing structured JSON from §2/§4/§5 tables; replace hardcoded dicts in validate_artifact.py~~ · fixed in f7c1bbc (feat: add --schema flag to generate_contracts.py, replace hardcoded hook constants)
-- [x] ~~ISS-47: [feat] Add top-level try/except fail-open guard to hooks/validate_artifact.py; catch unhandled exceptions, log traceback, exit 0~~ · fixed in c67eefc (feat: add fail-open guard to validate_artifact.py hook)
-- [x] ~~ISS-41: [feat] Extend SPEC.md §24 with Self-Audit Protocol~~ · fixed in task 1 commit 80c9d8b (feat(spec): add Self-Audit Protocol with 3-check pre-write gate, max-3-retry guard, producing-skill instruction template)
-- [x] ~~ISS-42: [feat] Add pre-write self-audit step to 8 producing SKILL.md files~~ · fixed in tasks 2-5 commits 0a89272 (realisera), bfd4842 (resonera/planera/optimera/visualisera/visionera), 295012f (inspektera), b0b4fd0 (dokumentera)
-- [x] ~~ISS-43: [feat] Add "prose health" as 10th inspektera audit dimension~~ · fixed in task 4 commit 295012f (feat(inspektera): add pre-write self-audit step and prose health audit dimension)
-- [x] ~~ISS-44: [feat] Add doc-prose enforcement step to dokumentera~~ · fixed in task 5 commit b0b4fd0 (feat(dokumentera): add pre-write self-audit step and doc-prose enforcement)
-- [x] ~~Task 8: [chore] Verification and Freshness Checkpoint for the Unified Setup Bundle Doctor And Installer plan~~ · resolved in final checkpoint commit; validators, smoke checks, full pytest, and plan artifacts are freshness-complete
 - [x] ~~[audit-11] Deferred: Copilot current-checkout plugin smoke is blocked by escaping skills path; installed Copilot skills and Codex `$hej` smoke passed~~ · fixed in Cycle 153; root `plugin.json` loads shared `skills/` through `copilot --plugin-dir`
 - [x] ~~[audit-11] Deferred: live Copilot and Codex host behavior remains untested until host smoke tests are available~~ · narrowed by Cycle 152; Codex `$hej` and Copilot installed skills passed, current-checkout Copilot plugin loading remains blocked
 - [x] ~~Task 2: [feat] Add native Copilot and Codex packaging metadata~~ · resolved without issue ID; Task 2 lacked a dedicated PROGRESS entry, now covered by Cycle 134 rollup
@@ -45,6 +35,15 @@
 - [x] ~~[refactor] `hooks/common.py` and `hooks/validate_artifact.py` duplicated DOCS.md path resolution (Audit 9 Coupling info)~~ · fixed in 627e30c (validate_artifact now imports parse_artifact_mapping from common; 30 lines of duplicate parser dropped)
 - [x] ~~[fix] `.gitignore` missing credential patterns despite cycle 118 CHANGELOG claim (Audit 9 Security info)~~ · fixed in 627e30c (four credential patterns appended)
 - [x] ~~[refactor] `_format_todo_oneline` chained 6+ string transformations on same variable (Audit 9 Complexity warning)~~ · fixed in 8b92b91 (extracted 3 module-level regex constants + 3 helpers; orchestrator now 7 lines; 7 proportional tests added)
+- [x] ~~[fix] Define completed-objective archival for optimera. When an objective's harness already meets its target, optimera currently reports completion and stops, but does not archive or mark the per-objective directory complete; root `OBJECTIVE.md` can remain active-looking and hej can keep routing back to stale work. Add a spec/SKILL.md workflow for completed objectives: record closure in `EXPERIMENTS.md`, move or mark archived objective state, update artifact mapping/freshness expectations, and keep active-objective inference from selecting completed objectives. Applies to `skills/optimera/SKILL.md`, `SPEC.md`, templates/contracts, validators, and docs as needed.~~ · resolved by Completed Optimera Objective Archival plan commits 27bb667..a1e60bd plus this checkpoint commit
+- [x] ~~ISS-45: [feat] Build scripts/self_audit.py implementing §24 checks, wire into validate_artifact.py and 8 producing skills, and integrate into inspektera prose health dimension~~ · fixed in fbcabcf (feat: add self_audit.py module and wire into hook + 8 SKILL.md files)
+- [x] ~~ISS-46: [feat] Add --schema flag to scripts/generate_contracts.py producing structured JSON from §2/§4/§5 tables; replace hardcoded dicts in validate_artifact.py~~ · fixed in f7c1bbc (feat: add --schema flag to generate_contracts.py, replace hardcoded hook constants)
+- [x] ~~ISS-47: [feat] Add top-level try/except fail-open guard to hooks/validate_artifact.py; catch unhandled exceptions, log traceback, exit 0~~ · fixed in c67eefc (feat: add fail-open guard to validate_artifact.py hook)
+- [x] ~~ISS-41: [feat] Extend SPEC.md §24 with Self-Audit Protocol~~ · fixed in task 1 commit 80c9d8b (feat(spec): add Self-Audit Protocol with 3-check pre-write gate, max-3-retry guard, producing-skill instruction template)
+- [x] ~~ISS-42: [feat] Add pre-write self-audit step to 8 producing SKILL.md files~~ · fixed in tasks 2-5 commits 0a89272 (realisera), bfd4842 (resonera/planera/optimera/visualisera/visionera), 295012f (inspektera), b0b4fd0 (dokumentera)
+- [x] ~~ISS-43: [feat] Add "prose health" as 10th inspektera audit dimension~~ · fixed in task 4 commit 295012f (feat(inspektera): add pre-write self-audit step and prose health audit dimension)
+- [x] ~~ISS-44: [feat] Add doc-prose enforcement step to dokumentera~~ · fixed in task 5 commit b0b4fd0 (feat(dokumentera): add pre-write self-audit step and doc-prose enforcement)
+- [x] ~~Task 8: [chore] Verification and Freshness Checkpoint for the Unified Setup Bundle Doctor And Installer plan~~ · resolved in final checkpoint commit; validators, smoke checks, full pytest, and plan artifacts are freshness-complete
 - [x] ~~[release-publish-1.20.0] Repoint local v1.20.0 to the final verified commit, fast-forward origin/main, push the tag, and verify both remote refs.~~ · Resolved 2026-04-28 by explicit release authorization; this final artifact commit is the tag target, followed by main/tag push and remote-ref verification.
 - [x] ~~[copilot-hook-event-name-validator] Add a small lint rule rejecting Copilot hook event names outside the documented allowlist.~~ · Resolved 2026-04-27 by 73f19dd: validator accepts the six documented events and rejects `stop` or filename-mismatched hooks.
 - [x] ~~[opencode-session-events] Replace the SESSION.md bookmark wiring using OpenCode's real `event` mechanism.~~ · Resolved 2026-04-27 by folded 1.20.0 release metadata: OpenCode now handles `session.idle` through generic `event`, writes SESSION.md bookmarks for modified artifacts, rejects direct phantom hook keys, and documents session-start preload as deferred.
@@ -61,12 +60,3 @@
 - [x] ~~[audit-11] Fix OpenCode hook validation path drift after documented manual install~~ · resolved without commit by explicit user request; OpenCode now resolves `~/.agents/agentera` before the legacy skills path
 - [x] ~~[audit-11] Validate list-form Copilot hook paths instead of skipping them~~ · resolved without commit by explicit user request; lifecycle validation normalizes one or many hook declarations
 - [x] ~~[audit-11] Add OpenCode plugin version marker to DOCS version targets or document it as derived~~ · resolved without commit by explicit user request; DOCS version_files now lists `.opencode/plugins/agentera.js`
-- [x] ~~[audit-11] Add supported Copilot profilera capability metadata or narrow the README claim~~ · resolved without commit by explicit user request; Copilot description now exposes bounded profilera metadata limits
-- [x] ~~[audit-11] Validate Codex profilera policy across duplicated metadata surfaces~~ · resolved without commit by explicit user request; lifecycle validation now checks aggregate and per-skill Codex metadata
-- [x] ~~[audit-11] Align Section 21 record shape with SPEC or update SPEC to bless the `data` envelope~~ · resolved without commit by explicit user request; SPEC, validator, examples, and tests now require top-level provenance plus `data`
-- [x] ~~Task 1: [docs] Audit runtime capabilities and refine install docs~~ · resolved without issue ID; no commits produced by explicit user request
-- [x] ~~Task 2: [fix] Repair Claude Code and Copilot metadata~~ · resolved without issue ID; no commits produced by explicit user request
-- [x] ~~Task 3: [fix] Repair Codex and OpenCode metadata~~ · resolved without issue ID; no commits produced by explicit user request
-- [x] ~~Task 4: [feat] Add Copilot session corpus collection~~ · resolved without issue ID; no commits produced by explicit user request
-- [x] ~~Task 5: [feat] Add Codex session corpus collection~~ · resolved without issue ID; no commits produced by explicit user request
-- [x] ~~Task 6: [test] Integrate profilera status and validation coverage~~ · resolved without issue ID; no commits produced by explicit user request
