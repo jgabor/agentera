@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 227 · 2026-04-29 22:36 · fix(optimera): exclude closed objectives from routing
+
+**Phase**: build
+**What**: Completed Task 3 of the Completed Optimera Objective Archival plan. Optimera, hej, and resonera now exclude closed objectives before active-objective selection, preserve read-only handling for explicitly named closed objectives, and avoid letting newest closed history outrank older active work.
+**Commit**: this commit, `fix(optimera): exclude closed objectives from routing`
+**Inspiration**: Active PLAN.md Task 3 and SPEC's per-objective closed state contract.
+**Discovered**: The only current objective directory is legacy-closed `realisera-token`; `hej-token` exists only in archived and helper files, not as a live objective directory.
+**Verified**: `python3 scripts/validate_spec.py --skill skills/optimera/SKILL.md --skill skills/hej/SKILL.md --skill skills/resonera/SKILL.md` passed with 0 errors and existing hard-wrap warnings. `python3 scripts/generate_contracts.py --check` reported all 12 contracts current. `python3 scripts/eval_skills.py --skill optimera --dry-run && python3 scripts/eval_skills.py --skill hej --dry-run` resolved both prompts. Focused local verifier confirmed `.agentera/optimera/realisera-token/OBJECTIVE.md` starts with `**Status**: closed`, closed objectives are filtered before candidates, explicitly named closed objectives have read-only ask-before-successor prose, and a newer closed objective loses to an older active objective.
+**Next**: Execute Task 4: validate per-objective artifacts without adding fixed objective mappings.
+**Context**: intent (execute only Task 3 routing consumers) · constraints (no registry, symlink, root artifacts, harness changes, validators, broad regression coverage, release metadata, or reopening support) · unknowns (live eval remains blocked by API credit if attempted) · scope (optimera, hej, resonera skill text plus plan, changelog, progress).
+
 ■ ## Cycle 226 · 2026-04-29 22:32 · chore(optimera): record closure verification evidence
 
 **Phase**: verification
@@ -99,19 +110,9 @@
 **Next**: Execute Task 2: add concrete win conditions to decision capture without breaking current DECISIONS.md consumers.
 **Context**: intent (execute only Task 1 pressure-testing behavior) · constraints (no Task 2/3 scope, no new skill, preserve confidence semantics) · unknowns (actual eval blocked by low API credit) · scope (resonera skill text, plan status, progress, changelog).
 
-■ ## Cycle 217 · 2026-04-29 · feat: close Post-1.22 Self-Audit Implementation plan
-
-**Phase**: verification
-**What**: Completed the Post-1.22 Self-Audit Implementation plan (PLAN.md). Three implementation tasks landed: fail-open guard in validate_artifact.py (c67eefc, ISS-47), --schema flag on generate_contracts.py producing contracts.json (f7c1bbc, ISS-46), and self_audit.py module with verbosity/abstraction/filler checks wired into hook + 8 SKILL.md replacements (fbcabcf, ISS-45). Version bumped to 1.23.0 (b042d40).
-**Commit**: this commit, `chore(plan): close Post-1.22 Self-Audit Implementation plan`
-**Inspiration**: Active PLAN.md Task 5. The plan needed a final freshness checkpoint after all 4 implementation tasks were complete.
-**Discovered**: ISS-45 through ISS-47 were in the Normal section of TODO.md; moved to Resolved with commit references.
-**Verified**: `python3 scripts/validate_spec.py` passed. All 511 tests pass.
-**Next**: The Self-Audit Implementation plan is complete; next useful work is a fresh post-1.23 direction.
-**Context**: intent (execute only Task 5 final freshness checkpoint) · constraints (no new feature scope, no remote push, commit intended artifact changes only) · unknowns (none after final verification) · scope (CHANGELOG, TODO, PROGRESS).
-
 ## Archived Cycles
 
+- Cycle 217 (2026-04-29): feat: close Post-1.22 Self-Audit Implementation plan
 - Cycle 216 (2026-04-29): chore(plan): close Prose-Quality Self-Audit Protocol plan
 - Cycle 215 (2026-04-28): chore(plan): close setup bundle checkpoint
 - Cycle 214 (2026-04-28): docs(setup): refresh bundle doctor guidance
@@ -151,4 +152,3 @@
 - Cycle 180 (2026-04-26): chore(plan): freshness checkpoint for Codex+Copilot Completion
 - Cycle 179 (2026-04-26): chore(release): bump suite to 1.21.0
 - Cycle 178 (2026-04-26): docs(install): surface setup helpers in README and refresh DOCS.md Index
-- Cycle 177 (2026-04-26): test(smoke): add scripts/smoke_setup_helpers.py for codex and copilot helpers

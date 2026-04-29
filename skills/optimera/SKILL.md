@@ -180,7 +180,8 @@ Steps: orient, analyze, hypothesize, implement, measure, decide, audit, log.
 **Active-objective inference**: before reading any per-objective artifact, determine which objective is active by inspecting `.agentera/optimera/`:
 
 - If no objective subdirectories exist, keep the existing new-objective path: run the brainstorm to create `.agentera/optimera/<objective-name>/OBJECTIVE.md`, `harness`, and `EXPERIMENTS.md`.
-- For each objective subdirectory with an OBJECTIVE.md, classify it as closed only when OBJECTIVE.md contains canonical `**Status**: closed` state. Do not reopen closed objectives in this plan.
+- For each objective subdirectory with an OBJECTIVE.md, classify it as closed before any active selection when the status line starts with `**Status**: closed`. This excludes canonical closure records and legacy closed prose such as `**Status**: closed (date)`. Do not reopen closed objectives in this plan.
+- If the user explicitly names a closed objective, load its OBJECTIVE.md and EXPERIMENTS.md read-only for context, summarize that it is closed, and ask before defining successor work. Do not write a new experiment, mutate the closed objective, or treat it as active.
 - If one or more objective subdirectories exist and all are closed, ask the user for a successor objective. Do not start another experiment and do not create a registry, symlink, root objective artifact, or DOCS.md fixed mapping.
 - If only one non-closed subdirectory exists, use it.
 - If multiple non-closed subdirectories exist, run `git log -1 --format=%aI -- .agentera/optimera/<name>/EXPERIMENTS.md` for each and pick the one with the most recent modification timestamp.
