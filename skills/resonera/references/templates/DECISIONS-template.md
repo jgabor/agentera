@@ -21,8 +21,8 @@ Entry format reference:
   **Question**: [what was being decided]
   **Context**: [constraints, triggers, prior decisions]
   **Alternatives**:
-  - [Option A]: [tradeoffs]
-  - [Option B]: [tradeoffs]
+  - [Option A]: [tradeoffs]; win condition: [concrete signal]
+  - [Option B]: [tradeoffs]; win condition: [concrete signal]
   **Choice**: [what was chosen]
   **Reasoning**: [key insight or tradeoff that resolved it]
   **Confidence**: ━ firm | ─ provisional | ┄ exploratory
@@ -32,6 +32,10 @@ Numbering and placement:
   N is one greater than the highest active or archived decision number.
   New full entries go before ## Archived Decisions, or at EOF if no archive exists.
   Active decision entries stay unique and ascending by decision number.
+
+Compatibility:
+  Keep Question, Context, Alternatives, Choice, Reasoning, Confidence, and Feeds into
+  as top-level fields. Win conditions stay inside Alternatives bullets.
 
 Confidence levels:
   firm         : committed; other skills treat this as a constraint
