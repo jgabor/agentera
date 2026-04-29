@@ -6,15 +6,14 @@
 
 ## → Normal
 
-- [ ] ISS-41: [feat] Extend SPEC.md §24 with Self-Audit Protocol: define 3 artifact prose-quality checks (verbosity drift, abstraction creep, filler accumulation) with pre-write mandatory-gate instruction template and producing skill obligations · feeds Decision 34
-- [ ] ISS-42: [feat] Add pre-write self-audit step to all artifact-producing SKILL.md files (realisera, inspektera, resonera, planera, optimera, dokumentera, visualisera) invoking the §24 Self-Audit Protocol · feeds Decision 34
-- [ ] ISS-43: [feat] Add "prose health" audit dimension to inspektera SKILL.md for post-layer artifact prose quality enforcement · feeds Decision 34
-- [ ] ISS-44: [feat] Add prose-quality enforcement step to dokumentera SKILL.md for pre-write and post-audit doc quality checks · feeds Decision 34
-
 ## ⇢ Annoying
 
 ## Resolved
 
+- [x] ~~ISS-41: [feat] Extend SPEC.md §24 with Self-Audit Protocol~~ · fixed in task 1 commit 80c9d8b (feat(spec): add Self-Audit Protocol with 3-check pre-write gate, max-3-retry guard, producing-skill instruction template)
+- [x] ~~ISS-42: [feat] Add pre-write self-audit step to 8 producing SKILL.md files~~ · fixed in tasks 2-5 commits 0a89272 (realisera), bfd4842 (resonera/planera/optimera/visualisera/visionera), 295012f (inspektera), b0b4fd0 (dokumentera)
+- [x] ~~ISS-43: [feat] Add "prose health" as 10th inspektera audit dimension~~ · fixed in task 4 commit 295012f (feat(inspektera): add pre-write self-audit step and prose health audit dimension)
+- [x] ~~ISS-44: [feat] Add doc-prose enforcement step to dokumentera~~ · fixed in task 5 commit b0b4fd0 (feat(dokumentera): add pre-write self-audit step and doc-prose enforcement)
 - [x] ~~Task 8: [chore] Verification and Freshness Checkpoint for the Unified Setup Bundle Doctor And Installer plan~~ · resolved in final checkpoint commit; validators, smoke checks, full pytest, and plan artifacts are freshness-complete
 - [x] ~~[audit-11] Deferred: Copilot current-checkout plugin smoke is blocked by escaping skills path; installed Copilot skills and Codex `$hej` smoke passed~~ · fixed in Cycle 153; root `plugin.json` loads shared `skills/` through `copilot --plugin-dir`
 - [x] ~~[audit-11] Deferred: live Copilot and Codex host behavior remains untested until host smoke tests are available~~ · narrowed by Cycle 152; Codex `$hej` and Copilot installed skills passed, current-checkout Copilot plugin loading remains blocked
