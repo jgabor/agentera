@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 224 · 2026-04-29 · docs(spec): define objective closure contract
+
+**Phase**: build
+**What**: Completed Task 1 of the Completed Optimera Objective Archival plan. SPEC.md now defines canonical objective closure state in per-objective OBJECTIVE.md files and closure history entries in per-objective EXPERIMENTS.md files.
+**Commit**: this commit, `docs(spec): define objective closure contract`
+**Inspiration**: Active PLAN.md Task 1 and Decision 31's self-contained `.agentera/optimera/<name>/` layout.
+**Discovered**: `.agentera/PLAN.md` was untracked in git, so this task adds the active plan artifact with Task 1 marked complete.
+**Verified**: N/A: docs-only. `python3 scripts/validate_spec.py` reported 0 errors and 8 existing hard-wrap warnings. `python3 scripts/generate_contracts.py --check` reported all 12 contract files current. Diff review confirmed no registry, symlink, root OBJECTIVE.md, root EXPERIMENTS.md, or DOCS.md fixed objective mapping was added.
+**Next**: Execute Task 2 only after this contract commit lands.
+**Context**: intent (execute only Task 1 objective closure contract) · constraints (no workflow behavior, routing, tests, docs refresh, release metadata, or Task 2) · unknowns (none) · scope (SPEC, generated contracts, schema, PLAN status, progress).
+
 ■ ## Cycle 223 · 2026-04-29 · chore(freshness): close steelman decision pressure
 
 **Phase**: audit

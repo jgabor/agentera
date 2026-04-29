@@ -1,7 +1,7 @@
 <!-- contract: visualisera -->
-<!-- source: SPEC.md (sha256: 5da2ae456b2bd3a81de6f59372931e18cb1cc6bac24289b72d052a3dc3807030) -->
+<!-- source: SPEC.md (sha256: 4e1b7d31ab585371fb404917d800dc68e9e98b7deb218a9852bfebbc724968d7) -->
 <!-- sections: 4, 5, 6, 13 -->
-<!-- generated: 2026-04-29T06:43:49Z -->
+<!-- generated: 2026-04-29T20:25:09Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -49,8 +49,8 @@ Three project-facing files at the project root; nine operational files in `.agen
 | PLAN.md | .agentera/PLAN.md | planera | realisera, inspektera, orkestrera | <!-- Level/Created/Status -->, ## Tasks with ### Task N, **Status/Depends on/Acceptance** |
 | PROGRESS.md | .agentera/PROGRESS.md | realisera | planera, inspektera, dokumentera, visionera, orkestrera | ## Cycle N · date, **Phase/What/Commit/Inspiration/Discovered/Next/Context** |
 | HEALTH.md | .agentera/HEALTH.md | inspektera | realisera, planera, orkestrera | ## Audit N · date, **Dimensions/Findings/Overall/Grades**, per-dimension sections |
-| OBJECTIVE.md | .agentera/optimera/<name>/OBJECTIVE.md | optimera | optimera | ## Metric, ## Target, ## Baseline, ## Constraints |
-| EXPERIMENTS.md | .agentera/optimera/<name>/EXPERIMENTS.md | optimera | optimera | ## Experiment N · date, **Hypothesis/Method/Result/Conclusion** |
+| OBJECTIVE.md | .agentera/optimera/<name>/OBJECTIVE.md | optimera | optimera | ## Metric, ## Target, ## Baseline, ## Constraints, **Status** |
+| EXPERIMENTS.md | .agentera/optimera/<name>/EXPERIMENTS.md | optimera | optimera | ## Experiment N · date, **Hypothesis/Method/Result/Conclusion**; ## Closure · date, **Final value/Target/Reason** |
 | DESIGN.md | .agentera/DESIGN.md | visualisera | realisera, visionera | Standard sections per DESIGN-spec.md |
 | DOCS.md | .agentera/DOCS.md | dokumentera | all skills (path resolution) | ## Conventions, ## Artifact Mapping, ## Index |
 | SESSION.md | .agentera/SESSION.md | session stop hook | session start hook, hej | ## YYYY-MM-DD HH:MM, Artifacts modified, Summary; compaction: 10 full + 40 one-line, oldest dropped |
@@ -59,6 +59,8 @@ Three project-facing files at the project root; nine operational files in `.agen
 **Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for project contributors) AND `.agentera/PROGRESS.md` (operational cycle-level detail for consuming skills). Consuming skills that need cycle detail read `.agentera/PROGRESS.md`; project contributors read CHANGELOG.md.
 
 **Per-objective layout (optimera)**: OBJECTIVE.md and EXPERIMENTS.md are not placed at fixed paths. Each named optimization objective gets its own subdirectory under `.agentera/optimera/<name>/`, where `<name>` is the slugified objective name. Optimera manages this layout; other skills do not read or write these artifacts directly.
+
+**Objective closure contract (optimera)**: When an objective reaches its target, optimera closes that objective inside its own directory. `OBJECTIVE.md` records canonical closed state with `**Status**: closed`, `**Closed at**: <ISO-8601 UTC timestamp>`, `**Final value**: <value>`, `**Target**: <target>`, and `**Reason**: <reason>`. `EXPERIMENTS.md` appends one closure entry headed `## Closure · <ISO-8601 UTC timestamp>` with `**Final value**`, `**Target**`, and `**Reason**`. Closure never creates a registry, symlink, root-level objective artifact, or DOCS.md fixed mapping.
 
 ### HEALTH.md audit dimensions
 
