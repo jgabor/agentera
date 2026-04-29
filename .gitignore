@@ -1,6 +1,6 @@
 .claude
 .codex
-.opencode
+.opencode/node_modules/
 docs/
 __pycache__/
 *.pyc
