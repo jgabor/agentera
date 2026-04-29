@@ -22,6 +22,8 @@
 
 ### Fixed
 
+- Optimera now records objective closure when a target is already met or a kept experiment reaches target, without adding registries, symlinks, or root objective artifacts.
+
 ## [1.21.0] · 2026-04-28
 
 ### Added

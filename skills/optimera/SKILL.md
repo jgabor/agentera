@@ -40,6 +40,8 @@ Evergreen. Created via brainstorm on first run, refined only when the user expli
 ```markdown
 # [Optimization Target]
 
+**Status**: active
+
 ## Objective
 [What we're improving. Not vague ("make it faster") but precise ("reduce p95 latency of the
 /api/search endpoint from 320ms to under 100ms"). Name the metric, the current value, and
@@ -119,6 +121,16 @@ When presenting experiment results, open with your interpretation of what happen
 **Next**: what the result suggests trying next
 ```
 
+Closure entries are appended once when the objective reaches its target:
+
+```markdown
+## Closure · YYYY-MM-DDTHH:MM:SSZ
+
+**Final value**: <value>
+**Target**: <target>
+**Reason**: <already met at startup | experiment met target>
+```
+
 The "Next" field from the previous experiment is a suggestion, not a mandate. Re-evaluate fresh each cycle based on the full experiment history.
 
 ---
@@ -167,8 +179,11 @@ Steps: orient, analyze, hypothesize, implement, measure, decide, audit, log.
 
 **Active-objective inference**: before reading any per-objective artifact, determine which objective is active by inspecting `.agentera/optimera/`:
 
-- If only one subdirectory exists, use it.
-- If multiple subdirectories exist, run `git log -1 --format=%aI -- .agentera/optimera/<name>/EXPERIMENTS.md` for each and pick the one with the most recent modification timestamp.
+- If no objective subdirectories exist, keep the existing new-objective path: run the brainstorm to create `.agentera/optimera/<objective-name>/OBJECTIVE.md`, `harness`, and `EXPERIMENTS.md`.
+- For each objective subdirectory with an OBJECTIVE.md, classify it as closed only when OBJECTIVE.md contains canonical `**Status**: closed` state. Do not reopen closed objectives in this plan.
+- If one or more objective subdirectories exist and all are closed, ask the user for a successor objective. Do not start another experiment and do not create a registry, symlink, root objective artifact, or DOCS.md fixed mapping.
+- If only one non-closed subdirectory exists, use it.
+- If multiple non-closed subdirectories exist, run `git log -1 --format=%aI -- .agentera/optimera/<name>/EXPERIMENTS.md` for each and pick the one with the most recent modification timestamp.
 - If the timestamps are the same, no EXPERIMENTS.md exists in any subdirectory, or the result is otherwise ambiguous, ask the user to specify the active objective by name.
 
 All subsequent references to OBJECTIVE.md, EXPERIMENTS.md, and harness in this step and throughout the cycle refer to the files under `.agentera/optimera/<active-objective-name>/`.
@@ -187,9 +202,11 @@ All subsequent references to OBJECTIVE.md, EXPERIMENTS.md, and harness in this s
    Identify build/test/lint commands and read key source files in scope.
 5. `git log --oneline -20` for recent changes
 
-Before experimenting: in your response, list the current baseline, target, and constraints from OBJECTIVE.md. These survive if earlier reads are cleared.
+Before experimenting: in your response, list the current baseline, target, status, and constraints from OBJECTIVE.md. These survive if earlier reads are cleared.
 
-**Exit-early guard**: If OBJECTIVE.md target has been met (current metric ≥ target), report exit signal `complete: objective achieved` and stop.
+**Objective closure procedure**: when closing an objective, update OBJECTIVE.md inside the active objective directory with canonical closed state: `**Status**: closed`, `**Closed at**: <ISO-8601 UTC timestamp>`, `**Final value**: <value>`, `**Target**: <target>`, and `**Reason**: <reason>`. Append one EXPERIMENTS.md entry headed `## Closure · <ISO-8601 UTC timestamp>` with `**Final value**`, `**Target**`, and `**Reason**`. If OBJECTIVE.md already has `**Status**: closed` or EXPERIMENTS.md already has a closure entry, do not append a duplicate. Closure is the only cycle-time OBJECTIVE.md write allowed outside brainstorm/refine.
+
+**Exit-early guard**: If existing OBJECTIVE.md or EXPERIMENTS.md evidence shows the target is already met and the objective is not already closed, run the objective closure procedure with reason `already met at startup`, report exit signal `complete: objective achieved`, and stop before Analyze. If closure is already recorded, report `complete: objective achieved` without writing another closure entry or running another experiment.
 
 ### Step 2: Analyze
 
@@ -318,6 +335,8 @@ Metric: <before> → <after> ⮉ (<unit>)
 
 If either fails: **discard**. The worktree <!-- platform: sub-agent-dispatch --> is abandoned. No merge. No commit.
 
+If the kept experiment's new metric also meets the target in the harness direction, mark the objective as ready for closure after the experiment entry is logged in Step 8.
+
 ### Step 7: Pre-write self-audit
 
 Pre-write self-audit (SPEC §24 Self-Audit Protocol): check verbosity drift
@@ -336,6 +355,8 @@ Summarize the experiment for the user before writing the log: what moved, what d
 Update **EXPERIMENTS.md**: append the experiment entry (number, timestamp, hypothesis, change summary, metric before/after, regression result, status, commit hash if kept, inspiration source if any, suggestion for next experiment).
 Output constraint per contract token budgets.
 
+If Step 6 marked the objective as ready for closure, immediately run the objective closure procedure with reason `experiment met target`. This closure is part of the same log step, after the experiment result is recorded.
+
 After writing a new experiment entry to EXPERIMENTS.md, compact older experiments via the script. Run: `python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py experiments <path-to-EXPERIMENTS.md>`.
 
 Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
@@ -350,7 +371,7 @@ Then stop. One experiment complete.
 
 - NEVER push to any remote. Local commits only.
 - NEVER modify the eval harness (`.agentera/optimera/<objective-name>/harness`) during an optimization cycle. Only touch it during a brainstorm (bootstrap or user-requested refinement).
-- NEVER modify OBJECTIVE.md during a cycle. Only touch it during a brainstorm.
+- NEVER modify OBJECTIVE.md during a cycle except to record canonical closure when the target is met. Other OBJECTIVE.md edits only happen during brainstorm or refine.
 - NEVER bypass the project's test/lint/build suite. Regression check before every metric
   measurement. Regression failure = automatic discard.
 - NEVER modify git config or skip git hooks.
