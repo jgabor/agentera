@@ -1,6 +1,6 @@
 # Plan: Steelman-Informed Decision Pressure
 
-<!-- Level: full | Created: 2026-04-29 | Status: active -->
+<!-- Level: full | Created: 2026-04-29 | Status: complete -->
 <!-- Reviewed: 2026-04-29 | Critic issues: 10 found, 10 addressed, 0 dismissed -->
 
 ## What
@@ -84,7 +84,7 @@ Add steelman patterns at the decision layer, not the suite architecture layer. R
 ### Task 6: Plan-level freshness checkpoint
 
 **Depends on**: Task 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all implementation tasks are complete WHEN the checkpoint runs THEN `CHANGELOG.md` summarizes the plan-level change.
 ▸ GIVEN all implementation tasks are complete WHEN the checkpoint runs THEN `PROGRESS.md` records the aggregate plan outcome.
