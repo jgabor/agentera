@@ -6,6 +6,10 @@
 
 ## → Normal
 
+- [ ] ISS-45: [feat] Build scripts/self_audit.py implementing §24 checks, wire into validate_artifact.py and 8 producing skills, and integrate into inspektera prose health dimension
+- [ ] ISS-46: [feat] Add --schema flag to scripts/generate_contracts.py producing structured JSON from §2/§4/§5 tables; replace hardcoded dicts in validate_artifact.py
+- [ ] ISS-47: [feat] Add top-level try/except fail-open guard to hooks/validate_artifact.py; catch unhandled exceptions, log traceback, exit 0
+
 ## ⇢ Annoying
 
 ## Resolved
