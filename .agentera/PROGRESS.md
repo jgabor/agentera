@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 220 · 2026-04-29 · feat(skills): guard adjacent effort-biased selections
+
+**Phase**: build
+**What**: Completed Task 3 of the Steelman-Informed Decision Pressure plan. Planera now rejects construction effort as evidence when comparing plan options, and optimera resets hypothesis selection when one hypothesis took more effort to construct.
+**Commit**: this commit, `feat(skills): guard adjacent effort-biased selections`
+**Inspiration**: Active PLAN.md Task 3. Profile signals favored preserving task intent, natural boundaries, compact artifacts, and evidence-rich comparisons.
+**Discovered**: `SPEC.md` stays unchanged. Section 3 defines shared DECISIONS.md confidence labels and Section 4 defines artifact fields; this task changes only local option and hypothesis selection prose, with no new confidence label, field, mode, step, artifact, or consumer contract.
+**Verified**: N/A: docs-only. `python3 scripts/validate_spec.py --skill skills/planera/SKILL.md --skill skills/optimera/SKILL.md` passed with 0 errors and existing hard-wrap warnings. `python3 scripts/validate_spec.py` passed with 0 errors across 12 skills. `python3 scripts/generate_contracts.py --check` reported all 12 contract files current. `python3 scripts/self_audit.py .agentera/PLAN.md CHANGELOG.md skills/planera/SKILL.md skills/optimera/SKILL.md` exited 0. Diff review showed only two existing workflow paragraphs plus PLAN status and changelog. Heading scans confirmed planera still has Step 0 plus Steps 1-6 and optimera still has Steps 1-8, with unchanged artifact tables.
+**Next**: Execute Task 4: validate contract compatibility across updated decision-workflow text.
+**Context**: intent (execute only Task 3 effort-bias guards) · constraints (planera and optimera only, no new surfaces, no resonera changes) · unknowns (none after SPEC review) · scope (planera SKILL.md, optimera SKILL.md, plan status, progress, changelog).
+
 ■ ## Cycle 219 · 2026-04-29 · feat(resonera): add decision alternative win conditions
 
 **Phase**: verification
@@ -91,5 +102,3 @@
 - Cycle 173 (2026-04-26): chore(release): bump suite to 1.20.0
 - Cycle 172 (2026-04-26): refactor(skills): adopt AGENTERA_HOME bash fallback and shift Section refs after SPEC renumber
 - Cycle 171 (2026-04-26): docs(install): codex and copilot AGENTERA_HOME setup steps
-- Cycle 170 (2026-04-26): feat(opencode): bootstrap at init and inject AGENTERA_HOME via shell.env
-- Cycle 169 (2026-04-26): feat(spec): standardize AGENTERA_HOME contract for cross-runtime helper paths

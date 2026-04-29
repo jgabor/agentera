@@ -218,6 +218,8 @@ explicitly. Consider a radically different approach, /inspirera, or escalate to 
 
 Formulate a single, focused hypothesis.
 
+Effort-bias guard: if one hypothesis took more effort to construct, reset before selection. Choose by experiment history, expected metric impact, risk, constraints, and smallest falsifiable test; construction effort is not evidence.
+
 1. **Review history**: what's been tried, what worked, what failed? Which change types produce gains? What did the last "Next" field suggest?
 2. **Seek inspiration**: for non-trivial domains, 2-3 targeted web queries for techniques, libraries, or patterns. Analyze promising finds for transferability.
 3. **Formulate**: "I expect [change] to improve the metric because [reasoning]." Must be falsifiable.
