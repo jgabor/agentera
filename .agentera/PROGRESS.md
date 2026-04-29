@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 217 · 2026-04-29 · feat: close Post-1.22 Self-Audit Implementation plan
+
+**Phase**: verification
+**What**: Completed the Post-1.22 Self-Audit Implementation plan (PLAN.md). Three implementation tasks landed: fail-open guard in validate_artifact.py (c67eefc, ISS-47), --schema flag on generate_contracts.py producing contracts.json (f7c1bbc, ISS-46), and self_audit.py module with verbosity/abstraction/filler checks wired into hook + 8 SKILL.md replacements (fbcabcf, ISS-45). Version bumped to 1.23.0 (b042d40).
+**Commit**: this commit, `chore(plan): close Post-1.22 Self-Audit Implementation plan`
+**Inspiration**: Active PLAN.md Task 5. The plan needed a final freshness checkpoint after all 4 implementation tasks were complete.
+**Discovered**: ISS-45 through ISS-47 were in the Normal section of TODO.md; moved to Resolved with commit references.
+**Verified**: `python3 scripts/validate_spec.py` passed. All 511 tests pass.
+**Next**: The Self-Audit Implementation plan is complete; next useful work is a fresh post-1.23 direction.
+**Context**: intent (execute only Task 5 final freshness checkpoint) · constraints (no new feature scope, no remote push, commit intended artifact changes only) · unknowns (none after final verification) · scope (CHANGELOG, TODO, PROGRESS).
+
 ■ ## Cycle 216 · 2026-04-29 · chore(plan): close Prose-Quality Self-Audit Protocol plan
 
 **Phase**: verification

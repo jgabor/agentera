@@ -6,14 +6,13 @@
 
 ## → Normal
 
-- [ ] ISS-45: [feat] Build scripts/self_audit.py implementing §24 checks, wire into validate_artifact.py and 8 producing skills, and integrate into inspektera prose health dimension
-- [ ] ISS-46: [feat] Add --schema flag to scripts/generate_contracts.py producing structured JSON from §2/§4/§5 tables; replace hardcoded dicts in validate_artifact.py
-- [ ] ISS-47: [feat] Add top-level try/except fail-open guard to hooks/validate_artifact.py; catch unhandled exceptions, log traceback, exit 0
-
 ## ⇢ Annoying
 
 ## Resolved
 
+- [x] ~~ISS-45: [feat] Build scripts/self_audit.py implementing §24 checks, wire into validate_artifact.py and 8 producing skills, and integrate into inspektera prose health dimension~~ · fixed in fbcabcf (feat: add self_audit.py module and wire into hook + 8 SKILL.md files)
+- [x] ~~ISS-46: [feat] Add --schema flag to scripts/generate_contracts.py producing structured JSON from §2/§4/§5 tables; replace hardcoded dicts in validate_artifact.py~~ · fixed in f7c1bbc (feat: add --schema flag to generate_contracts.py, replace hardcoded hook constants)
+- [x] ~~ISS-47: [feat] Add top-level try/except fail-open guard to hooks/validate_artifact.py; catch unhandled exceptions, log traceback, exit 0~~ · fixed in c67eefc (feat: add fail-open guard to validate_artifact.py hook)
 - [x] ~~ISS-41: [feat] Extend SPEC.md §24 with Self-Audit Protocol~~ · fixed in task 1 commit 80c9d8b (feat(spec): add Self-Audit Protocol with 3-check pre-write gate, max-3-retry guard, producing-skill instruction template)
 - [x] ~~ISS-42: [feat] Add pre-write self-audit step to 8 producing SKILL.md files~~ · fixed in tasks 2-5 commits 0a89272 (realisera), bfd4842 (resonera/planera/optimera/visualisera/visionera), 295012f (inspektera), b0b4fd0 (dokumentera)
 - [x] ~~ISS-43: [feat] Add "prose health" as 10th inspektera audit dimension~~ · fixed in task 4 commit 295012f (feat(inspektera): add pre-write self-audit step and prose health audit dimension)
