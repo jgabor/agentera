@@ -349,3 +349,173 @@ class TestCheckFreshness:
             "ts",
         )
         assert "oldhash" in stale
+
+
+# ---------------------------------------------------------------------------
+# parse_markdown_table (edge case expansion: empty row, whitespace-only cell)
+# ---------------------------------------------------------------------------
+
+_ISSUE_SEVERITY_TABLE = """\
+### Issue severity (TODO.md)
+
+| Level | Glyph | Meaning |
+|-------|-------|---------|
+| **critical** | ⇶ | Broken functionality, blocks progress |
+| **degraded** | ⇉ | Works but poorly: slow, fragile, ugly |
+| **normal** | → | Standard work: features, improvements, routine tasks |
+| **annoying** | ⇢ | Cosmetic, minor friction, style nit |
+"""
+
+_TOKEN_BUDGETS_TABLE = """\
+### Token budgets
+
+| Artifact | Scope | Budget |
+|----------|-------|--------|
+| PROGRESS.md | Per-cycle entry | ≤500 words |
+| PROGRESS.md | Full file | ≤3,000 words |
+| HEALTH.md | Full file | ≤2,000 words |
+| VISION.md | Full file | ≤1,500 words |
+| TODO.md | Per-item entry | ≤100 words |
+"""
+
+_FORMAT_CONTRACTS_TABLE = """\
+### Format contracts
+
+| Artifact | Path | Producer | Consumers | Key structural elements |
+|----------|------|----------|-----------|------------------------|
+| VISION.md | VISION.md | visionera, realisera | realisera, planera | ## North Star, ## Who It's For |
+| HEALTH.md | .agentera/HEALTH.md | inspektera | realisera, planera | ## Audit N · date, per-dimension sections |
+| PLAN.md | .agentera/PLAN.md | planera | realisera, inspektera | ## Tasks with ### Task N, **Status/Depends on/Acceptance** |
+| DECISIONS.md | .agentera/DECISIONS.md | resonera | planera, realisera | ## Decision N · date, **Choice/Reasoning** |
+| PROGRESS.md | .agentera/PROGRESS.md | realisera | planera, inspektera | ## Cycle N · date, **Phase/What/Commit** |
+| TODO.md | TODO.md | realisera, inspektera | realisera, planera | ## ⇶ Critical, ## Resolved |
+| CHANGELOG.md | CHANGELOG.md | realisera | project contributors | ## [Unreleased], ### Added/Changed/Fixed |
+"""
+
+
+class TestParseMarkdownTable:
+    """Edge case expansion: empty rows and whitespace-only cells."""
+
+    def test_skips_empty_row(self, generate_contracts):
+        text = """\
+| Col1 | Col2 |
+|------|------|
+| a    | b    |
+|      |      |
+| c    | d    |
+"""
+        rows = generate_contracts.parse_markdown_table(text)
+        assert rows == [{"Col1": "a", "Col2": "b"}, {"Col1": "c", "Col2": "d"}]
+
+    def test_handles_whitespace_cell(self, generate_contracts):
+        text = """\
+| Col1 | Col2 |
+|------|------|
+| a    |      |
+| b    | c    |
+"""
+        rows = generate_contracts.parse_markdown_table(text)
+        assert rows == [{"Col1": "a", "Col2": ""}, {"Col1": "b", "Col2": "c"}]
+
+
+# ---------------------------------------------------------------------------
+# _parse_severity_mappings (§2)
+# ---------------------------------------------------------------------------
+
+
+class TestParseSeverityMappings:
+    """1 pass + 1 fail."""
+
+    def test_parses_severity_glyphs(self, generate_contracts):
+        result = generate_contracts._parse_severity_mappings(_ISSUE_SEVERITY_TABLE)
+        assert result == {
+            "critical": "⇶",
+            "degraded": "⇉",
+            "normal": "→",
+            "annoying": "⇢",
+        }
+
+    def test_no_issue_severity_heading_returns_empty(self, generate_contracts):
+        result = generate_contracts._parse_severity_mappings("# No severity table here\n")
+        assert result == {}
+
+
+# ---------------------------------------------------------------------------
+# _parse_token_budgets (§4)
+# ---------------------------------------------------------------------------
+
+
+class TestParseTokenBudgets:
+    """1 pass + 1 fail."""
+
+    def test_parses_full_file_budgets_only(self, generate_contracts):
+        result = generate_contracts._parse_token_budgets(_TOKEN_BUDGETS_TABLE)
+        assert result == {
+            "PROGRESS.md": 3000,
+            "HEALTH.md": 2000,
+            "VISION.md": 1500,
+            "DECISIONS.md": 5000,
+            "TODO.md": 5000,
+            "CHANGELOG.md": 5000,
+        }
+
+    def test_no_token_budgets_heading_returns_empty(self, generate_contracts):
+        result = generate_contracts._parse_token_budgets("# No budgets\n")
+        assert result == {}
+
+
+# ---------------------------------------------------------------------------
+# _parse_format_contracts (§4 paths and headings)
+# ---------------------------------------------------------------------------
+
+
+class TestParseFormatContracts:
+    """1 pass + 1 fail."""
+
+    def test_parses_paths_and_headings(self, generate_contracts):
+        paths, headings = generate_contracts._parse_format_contracts(
+            _FORMAT_CONTRACTS_TABLE,
+        )
+        assert paths == {
+            "VISION.md": "VISION.md",
+            "HEALTH.md": ".agentera/HEALTH.md",
+            "PLAN.md": ".agentera/PLAN.md",
+            "DECISIONS.md": ".agentera/DECISIONS.md",
+            "PROGRESS.md": ".agentera/PROGRESS.md",
+            "TODO.md": "TODO.md",
+            "CHANGELOG.md": "CHANGELOG.md",
+        }
+        assert "HEALTH.md" in headings
+        assert "PLAN.md" in headings
+        assert "DECISIONS.md" in headings
+        assert "PROGRESS.md" in headings
+        assert "TODO.md" in headings
+        assert "VISION.md" in headings
+        # Verify HEALTH.md patterns
+        assert r"^# Health" in headings["HEALTH.md"]
+        assert any("Audit" in p for p in headings["HEALTH.md"])
+
+    def test_no_format_contracts_heading_returns_empty(self, generate_contracts):
+        paths, headings = generate_contracts._parse_format_contracts("# No contracts\n")
+        assert paths == {}
+        assert headings == {}
+
+
+# ---------------------------------------------------------------------------
+# generate_schema_data (integration test)
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateSchemaData:
+    """Integration test: full schema generation from combined tables."""
+
+    def test_generates_complete_schema(self, generate_contracts):
+        spec_text = ("\n".join([_ISSUE_SEVERITY_TABLE, _TOKEN_BUDGETS_TABLE, _FORMAT_CONTRACTS_TABLE]))
+        data = generate_contracts.generate_schema_data(spec_text)
+        assert "generated_at" in data
+        assert "spec_sha256" in data
+        assert len(data["token_budgets"]) >= 3
+        assert len(data["artifact_headings"]) >= 4
+        assert len(data["severity_mappings"]) == 4
+        assert len(data["default_paths"]) >= 5
+        assert len(data["todo_severity_headings"]) == 4
