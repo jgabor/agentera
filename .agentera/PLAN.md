@@ -87,7 +87,7 @@ The 3 checks:
 ### Task 5: Add pre-write self-audit + doc prose enforcement to dokumentera SKILL.md
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN dokumentera's SKILL.md WHEN read THEN a "Pre-write self-audit" step appears before the DOCS.md write step
 ▸ GIVEN dokumentera's audit workflow WHEN read THEN a doc-prose enforcement step checks all docs listed in DOCS.md against the 3 §24 rules, bootstrapping DOCS.md if absent
