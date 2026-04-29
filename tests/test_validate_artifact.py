@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
+import sys
 import textwrap
 from pathlib import Path
 
@@ -904,3 +906,74 @@ class TestCopilotPreToolUse:
         }
         decision = self._run_hook(validate_artifact, monkeypatch, hook_input)
         assert decision == {"permissionDecision": "allow"}
+
+
+# ---------------------------------------------------------------------------
+# ISS-47: fail-open guard at if __name__ == "__main__"
+# ---------------------------------------------------------------------------
+
+
+class TestFailOpenGuard:
+    """Top-level try/except wraps main() call; unhandled exceptions exit 0."""
+
+    HOOK_SCRIPT = str(REPO_ROOT / "hooks" / "validate_artifact.py")
+
+    def test_unhandled_exception_exits_zero_and_logs_traceback(
+        self, tmp_path, monkeypatch
+    ):
+        """Feeding a JSON list to the hook triggers AttributeError in main();
+        fail-open guard catches it, logs traceback to stderr, exits 0."""
+        result = subprocess.run(
+            [sys.executable, self.HOOK_SCRIPT],
+            input="[]",
+            capture_output=True,
+            text=True,
+            cwd=str(tmp_path),
+        )
+        assert result.returncode == 0
+        assert "Traceback" in result.stderr
+
+    def test_normal_execution_unchanged(self, tmp_path, monkeypatch):
+        """Valid input produces exit 0 with no stderr; guard is transparent."""
+        hook_input = json.dumps(
+            {
+                "session_id": "test",
+                "cwd": str(tmp_path),
+                "hook_event_name": "PostToolUse",
+                "tool_name": "Edit",
+                "tool_input": {"file_path": str(tmp_path / "README.md")},
+            }
+        )
+        result = subprocess.run(
+            [sys.executable, self.HOOK_SCRIPT],
+            input=hook_input,
+            capture_output=True,
+            text=True,
+            cwd=str(tmp_path),
+        )
+        assert result.returncode == 0
+        assert result.stderr == ""
+
+    def test_guard_preserves_violation_exit_code(self, project_dir):
+        """Invalid artifact produces exit 0 (advisory) and stderr is clean;
+        guard does not intercept the normal exit path."""
+        health = project_dir / ".agentera" / "HEALTH.md"
+        health.write_text("# Health\n\nNo audit entries.\n", encoding="utf-8")
+        hook_input = json.dumps(
+            {
+                "session_id": "test",
+                "cwd": str(project_dir),
+                "hook_event_name": "PostToolUse",
+                "tool_name": "Write",
+                "tool_input": {"file_path": str(health)},
+            }
+        )
+        result = subprocess.run(
+            [sys.executable, self.HOOK_SCRIPT],
+            input=hook_input,
+            capture_output=True,
+            text=True,
+            cwd=str(project_dir),
+        )
+        assert result.returncode == 0
+        assert "validation warnings" in result.stdout.lower()
