@@ -76,7 +76,7 @@ Closed state lives inside each objective's own artifacts. `OBJECTIVE.md` carries
 ### Task 5: Cover Objective Inference Branches
 
 **Depends on**: Task 2, Task 3
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN active, closed-newer, all-closed, no-objective, and ambiguous objective sets WHEN regression coverage runs THEN each branch matches the contract.
 ▸ GIVEN an objective is already closed WHEN optimera starts again THEN duplicate closure records are not appended.

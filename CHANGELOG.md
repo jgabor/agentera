@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Objective lifecycle regression coverage now guards optimera active-objective inference and duplicate closure idempotency.
 - Artifact validation now recognizes per-objective optimera OBJECTIVE.md and EXPERIMENTS.md files without adding DOCS.md fixed mappings.
 - Objective routing consumers now exclude closed optimera objectives before active-objective recency selection.
 
