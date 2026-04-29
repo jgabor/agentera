@@ -1,5 +1,74 @@
 # Health
 
+## Audit 17 · 2026-04-29
+
+**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, prose health, security hygiene, dependency health
+**Findings**: 0 critical, 1 warning, 0 info (0 filtered by confidence)
+**Overall trajectory**: ⮋ degrading vs Audit 16. The Steelman-Informed Decision Pressure plan preserved suite architecture, contracts, tests, and release metadata. DOCS.md freshness slipped after the 511-test validation baseline.
+**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Complexity [A] | Tests [A] | Version [A] | Freshness [B] | Prose [A] | Security [A] | Deps [A]
+
+### Architecture alignment: A
+
+Resonera remains the deliberation owner. Planera and optimera received only local effort-bias guards, matching `.agentera/archive/PLAN-2026-04-29-steelman-informed-decision-pressure.md:16-21`.
+
+### Pattern consistency: A
+
+Pressure testing, win conditions, and effort-bias resets use existing workflow prose. `skills/resonera/SKILL.md:182-217`, `skills/planera/SKILL.md:112`, and `skills/optimera/SKILL.md:221` avoid new modes, artifacts, or confidence labels.
+
+### Coupling health: A
+
+DECISIONS.md compatibility stayed intact. `skills/resonera/references/templates/DECISIONS-template.md:36-38` keeps win conditions inside Alternatives bullets while preserving current top-level fields.
+
+### Complexity hotspots: A
+
+No new code hotspot landed. The plan changed skill prose, templates, generated schema evidence, release metadata, and artifacts; no validator or runtime implementation path grew.
+
+### Test health: A
+
+Full verification passed with `python3 -m pytest -q` reporting 511 passed. Existing decision validation coverage remained sufficient because validation behavior did not change.
+
+### Version health: A
+
+1.24.0 metadata is aligned across registry, per-skill manifests, aggregate marketplace, Copilot, Codex, and OpenCode surfaces. Post-bump commits are release-evidence and freshness chores.
+
+### Artifact freshness: B
+
+#### ⇉ DOCS.md coverage baseline is stale, warning (confidence: 92)
+
+- **Location**: `.agentera/DOCS.md:94`, `.agentera/DOCS.md:85`
+- **Evidence**: DOCS reports "477 tests across 17 files" and a 2026-04-28 test-suite row. Current verification is 511 passed across 18 `tests/test*.py` files.
+- **Impact**: Orientation consumers see stale validation scale after 1.22-1.24 work.
+- **Suggested action**: Run dokumentera to refresh DOCS.md Index and Coverage for the 511-test baseline.
+
+### Prose health: A
+
+`python3 scripts/self_audit.py .agentera/archive/PLAN-2026-04-29-steelman-informed-decision-pressure.md CHANGELOG.md .agentera/PROGRESS.md TODO.md .agentera/DOCS.md` exited 0.
+
+### Security hygiene: A
+
+Secret-pattern hits are limited to inspektera examples and prior HEALTH prose. The Steelman plan added no new executable code or shell construction.
+
+> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), npm audit (Node), or similar.
+
+### Dependency health: A
+
+No production dependencies changed. `.opencode/package-lock.json` audit returned 0 vulnerabilities, and the Python surface remains stdlib-only.
+
+### Trends vs Audit 16
+
+- **Improved**: Decision workflow discipline is stronger without adding a skill or artifact contract.
+- **Degraded**: Freshness A→B because DOCS.md coverage stayed at 477 tests after 511-test validation.
+- **Stable**: Architecture, patterns, coupling, complexity, tests, version, security, and dependency posture remain green.
+- **New findings**: DOCS.md coverage baseline stale.
+- **Resolved**: Audit 16 setup-doctor hotspot remains acceptable and was not touched by this plan.
+
+### Patterns Observed
+
+- Module structure: skill behavior remains in `skills/*/SKILL.md`; artifact contracts stay in SPEC, generated contracts, and templates.
+- Decision pattern: resonera owns pressure testing and win-condition capture; adjacent skills receive only selection-bias guards.
+- Testing approach: deterministic validators and full pytest cover contracts; live eval remains blocked by external API credit.
+- Release pattern: feature-scoped decision workflow changes drive a minor suite bump plus plan-level freshness checkpoint.
+
 ## Audit 16 · 2026-04-28
 
 **Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
@@ -782,119 +851,9 @@ Zero hardcoded secrets. Zero eval/exec. All subprocess calls list-form. Lefthook
 - Version management: post-plan ad-hoc commits accumulated without a version bump. The plan-driven workflow naturally includes bump tasks; ad-hoc work does not.
 - Infrastructure maturation: lefthook hooks, CI fixes, and Section 23 conventions are all infrastructure hardening that doesn't show up as cycle entries.
 
-## Audit 7 · 2026-04-11
-
-**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene
-**Findings**: 0 critical, 3 warnings, 5 info (0 filtered by confidence)
-**Overall trajectory**: ⮉ improving vs Audit 6. Tests B→A (240 tests, 18/18 linter checks, all scripts covered). Architecture A, Patterns A, Coupling A, Security A. Version B (one unbumped fix commit since 1.8.0). Complexity C (newly assessed; 2 hotspots in data-processing scripts).
-**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Complexity [C] | Tests [A] | Version [B] | Security [A] | Artifact freshness [A]
-
-### Architecture alignment: A
-
-README, SPEC.md, registry.json, and the 12-skill structure are fully aligned. The spec linter passes 0/0 across all 216 checks. All contract files current. No findings. (The CLAUDE.md stale path noted in an earlier draft was already fixed by `a1a88a6` before this audit was written.)
-
-### Pattern consistency: A
-
-All 12 skills have consistent frontmatter, cross-skill integration ("twelve-skill suite"), artifact path resolution, and safety rails sections. Platform annotations applied across all 12 skills. No findings. (The missing annotations in inspektera and planera noted in an earlier draft were already fixed by `a1a88a6` before this audit was written.)
-
-### Coupling health: A
-
-Clean DAG import graph. No circular dependencies. All skill scripts self-contained (stdlib only). Hooks use subprocess boundary to scripts, not imports. Two minor observations:
-
-#### ⇢ validate_spec.py hardcodes 7+ skill-name constants, info (confidence: 80)
-
-- **Location**: `scripts/validate_spec.py:32-112,114-122,126-183,927-929`
-- **Evidence**: REQUIRED_REFS, ARTIFACT_CONTRACTS, SCRIPT_PATTERN_CONSUMERS, AUTONOMOUS_LOOP_SKILLS, REALITY_VERIFICATION_ENFORCERS, RECOGNIZED_CAPABILITIES all hardcode skill/capability names. Adding a 13th skill requires editing 4+ constants.
-- **Impact**: The linter will silently pass if a new skill is added but not registered. Not a current risk (no skills being added), but a maintenance burden.
-- **Suggested action**: Consider deriving REQUIRED_REFS keys from filesystem discovery in a future refactor.
-
-#### ⇢ Duplicated artifact path resolution in common.py and validate_artifact.py, info (confidence: 75)
-
-- **Location**: `hooks/common.py:40-92` vs `hooks/validate_artifact.py:115-174`
-- **Evidence**: Both implement artifact path resolution independently with slightly different logic. session_start and session_stop import common.py; validate_artifact.py does not.
-- **Impact**: Could diverge over time if resolution conventions change.
-- **Suggested action**: Extract shared resolution into common.py and import from validate_artifact.py if the hook runtime's import path permits.
-
-### Test health: A
-
-240 tests across 12 files, all passing. 18/18 linter check functions tested. All 8 skill scripts have dedicated test files (extract_all.py gap resolved since Audit 6). Test:production LOC ratio 1.02:1 (below code-crusher 2:1 gate but proportional per Decision 21). Two minor gaps:
-
-#### ⇢ hooks/common.py has no dedicated test file, info (confidence: 75)
-
-- **Location**: `hooks/common.py`
-- **Evidence**: 3 public functions (parse_artifact_mapping, resolve_artifact_path, load_artifact_overrides) tested indirectly through session_start (6 tests) and session_stop (5 tests) but no isolated assertions for all paths.
-- **Impact**: Failures in common.py would be harder to diagnose.
-- **Suggested action**: Add test_common.py for direct coverage.
-
-#### ⇢ validate_artifact.py::validate_skill_definition has no direct test, info (confidence: 70)
-
-- **Location**: `hooks/validate_artifact.py:265`
-- **Evidence**: The function runs validate_spec.py and generate_contracts.py as subprocesses. No test exercises this routing. The 7-line validate_spec_spec wrapper is also untested.
-- **Impact**: Low. The function orchestrates already-tested scripts.
-- **Suggested action**: Add an integration test that exercises the subprocess routing.
-
-### Complexity hotspots: C
-
-Not assessed in the prior draft; added in validation pass. The codebase has several data-processing scripts with functions exceeding 50 lines. Two warrant warning-level attention; one is informational.
-
-#### ⇉ analyze_progress.py::analyze() is 114 lines with a 5-branch suggestion engine, warning (confidence: 72)
-
-- **Location**: `skills/realisera/scripts/analyze_progress.py:96-209`
-- **Evidence**: 114-line function performs velocity, streak, inspiration-rate, and stall detection in a single body. Suggestion generation has 5 conditional branches building diagnostic messages inline. No sub-functions.
-- **Impact**: Adding a new progress signal requires editing a deeply-nested conditional block. Not a current risk (the script is rarely modified), but a growth trap.
-- **Suggested action**: Extract suggestion-building into a helper per signal type if a new signal is added.
-
-#### ⇉ validate_spec.py::check_severity_levels() is 98 lines with 4-level nesting, warning (confidence: 88)
-
-- **Location**: `scripts/validate_spec.py:342-439`
-- **Evidence**: Loop structure: `for skill → for table_match → for row → for term → if match`. Four overlapping regex patterns for table rows, headings, severity sections, and mapping entries.
-- **Impact**: The linter is actively maintained (most frequently edited Python file). 4-level nesting makes adding a new severity check error-prone.
-- **Suggested action**: Extract per-pattern matchers into named helpers to flatten nesting to 2 levels.
-
-#### ⇢ validate_spec.py is 1073 lines total with 40+ check functions, info (confidence: 85)
-
-- **Location**: `scripts/validate_spec.py`
-- **Evidence**: 18 check functions, many 50-80 lines. Largest single file in the project. All check functions pass currently (0 errors, 0 warnings), so this is a maintenance signal, not a defect.
-- **Impact**: If the linter continues to grow (new spec sections → new checks), it will become harder to navigate and modify safely.
-- **Suggested action**: No action required now. If it exceeds 1400 lines, consider splitting into modules by check category.
-
-### Version health: B
-
-All versions at 1.8.0 (profilera 2.7.0), consistent across 12 plugin.json, registry.json, and marketplace.json. The bump from 1.7.0 was performed in cycle 94 (8c83613). One unbumped `fix` commit since the bump:
-
-#### ⇉ One unbumped fix commit since 1.8.0, warning (confidence: 78)
-
-- **Location**: commit `a1a88a6 fix(docs): update CLAUDE.md spec path to root SPEC.md, add missing platform annotations`
-- **Evidence**: `semver_policy: "fix = patch"`. The commit type is `fix`, qualifying for a patch bump to 1.8.1. Two other commits since the bump are `docs` type, which correctly do not trigger a bump.
-- **Impact**: Version files report 1.8.0 but a patch-qualifying fix has shipped. Low severity: the fix was documentation-only with no runtime behavior change.
-- **Suggested action**: Bump to 1.8.1 per DOCS.md policy, or explicitly reclassify the commit as `docs` in CHANGELOG if the team treats doc-only fixes as non-bumping.
-
-### Artifact freshness: A
-
-No active PLAN.md (archived in cycle 95). Using PROGRESS.md fallback: PROGRESS.md, HEALTH.md, and CHANGELOG.md all modified 2026-04-10 (current). DECISIONS.md modified 2026-04-10 (Decision 26). DESIGN.md last modified 2026-04-02, which predates the Platform Portability plan, but visualisera was not dispatched during that plan. Not stale per the fallback heuristic.
-
-### Security hygiene: A
-
-Zero hardcoded secrets. Zero eval/exec/os.system/shell=True. All 5 subprocess calls use list-form arguments with hardcoded values. No injection vectors. Python stdlib only; no external dependencies to audit.
-
-> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), npm audit (Node), govulncheck (Go), or similar static analysis and vulnerability scanning tools appropriate to your stack.
-
-### Trends vs Audit 6
-
-- **Improved**: Tests B→A (171→240 tests, 7→12 files, extract_all.py gap closed, 18/18 check functions covered).
-- **Degraded**: Version A→B (one unbumped fix commit). Complexity C (newly assessed; was not tracked in prior audits).
-- **New findings**: Complexity hotspots dimension added for the first time (C grade, 2 warnings). Version health downgraded from A (prior drafts missed the unbumped fix commit).
-- **Resolved**: extract_all.py untested (now has test_extract_all.py with 320 LOC). DOCS.md stale references (fixed by dokumentera). CLAUDE.md spec path and annotation coverage issues both fixed by `a1a88a6` (these were reported as open in the initial Audit 7 draft but were already resolved at write time).
-
-### Patterns Observed
-
-- **Module structure**: 12 skills in skills/<name>/, each with SKILL.md as single source of truth. Scripts (stdlib only) in skills/<name>/scripts/. Contract files generated from SPEC.md.
-- **Hook architecture**: Clean subprocess boundary between hooks and scripts. Hooks share common.py for path resolution. validate_artifact.py stands alone.
-- **Testing approach**: Decision 21 proportionality (1 pass + 1 fail per unit). Synthetic markdown test data. Minimal mocking. conftest.py loads scripts via importlib.
-- **Dependency management**: Zero external dependencies. All Python scripts use stdlib only. No package manager needed.
-- **Version management**: Conventional commits drive semver bumps per DOCS.md policy. Linter constants are the main coupling point for skill-name registration.
-
 ## Archived Audits
+
+### Audit 7 · 2026-04-11 (⮉ improving vs Audit 6. Tests B→A (240 tests, 18/18...)
 
 ### Audit 6 · 2026-04-02 (⮉ improving. Tests D→B (171 tests, all 13 linter checks...)
 
