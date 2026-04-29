@@ -6,6 +6,11 @@
 
 ## → Normal
 
+- [ ] ISS-41: [feat] Extend SPEC.md §24 with Self-Audit Protocol: define 3 artifact prose-quality checks (verbosity drift, abstraction creep, filler accumulation) with pre-write mandatory-gate instruction template and producing skill obligations · feeds Decision 34
+- [ ] ISS-42: [feat] Add pre-write self-audit step to all artifact-producing SKILL.md files (realisera, inspektera, resonera, planera, optimera, dokumentera, visualisera) invoking the §24 Self-Audit Protocol · feeds Decision 34
+- [ ] ISS-43: [feat] Add "prose health" audit dimension to inspektera SKILL.md for post-layer artifact prose quality enforcement · feeds Decision 34
+- [ ] ISS-44: [feat] Add prose-quality enforcement step to dokumentera SKILL.md for pre-write and post-audit doc quality checks · feeds Decision 34
+
 ## ⇢ Annoying
 
 ## Resolved

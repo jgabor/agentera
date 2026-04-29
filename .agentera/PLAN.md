@@ -97,7 +97,7 @@ The 3 checks:
 ### Task 6: Version bump
 
 **Depends on**: Tasks 2, 3, 4, 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN registry.json WHEN read THEN skill versions for realisera, inspektera, resonera, planera, optimera, dokumentera, visualisera, visionera reflect a minor bump per DOCS.md semver_policy (feat = minor)
 ▸ GIVEN each skill's `.claude-plugin/plugin.json` WHEN read THEN plugin versions match registry.json
