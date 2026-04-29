@@ -14,6 +14,7 @@
 
 ### Changed
 
+- Steelman-Informed Decision Pressure is freshness-closed: resonera pressure testing, decision win conditions, adjacent effort-bias guards, compatibility validation, and 1.24.0 metadata landed together.
 - Contract compatibility for the decision-workflow updates was revalidated against suite spec checks, DECISIONS.md artifact validation, and existing proportional tests.
 - Planera and optimera now reset option or hypothesis selection when construction effort could bias the choice, without adding workflow surfaces.
 - Resonera pressure testing now names context-specific blind spots before alternatives, argues alternatives from project context, keeps confidence explicit, and bans weak challenge phrasing.
