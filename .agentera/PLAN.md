@@ -75,7 +75,7 @@ Add steelman patterns at the decision layer, not the suite architecture layer. R
 ### Task 5: Bump release metadata
 
 **Depends on**: Task 4
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the plan adds decision-workflow behavior WHEN version metadata is updated THEN the next minor release is represented consistently.
 ▸ GIVEN version targets are listed in `DOCS.md` WHEN the bump is complete THEN listed metadata surfaces agree.

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.24.0] · 2026-04-29
+
 ### Added
 
 - Self-Audit Protocol (SPEC.md §24): pre-write 3-check gate (verbosity drift, abstraction creep, filler accumulation) with max-3-retry bail-out for all artifact-producing skills (realisera, inspektera, resonera, planera, optimera, dokumentera, visualisera, visionera). Inspektera gains prose health as a 10th audit dimension; dokumentera enforces prose quality across indexed docs.
