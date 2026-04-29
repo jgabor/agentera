@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 226 · 2026-04-29 22:32 · chore(optimera): record closure verification evidence
+
+**Phase**: verification
+**What**: Corrected Task 2 evidence after orkestrera evaluation found Cycle 225's `Verified` field too static. The optimera workflow implementation stayed unchanged; this cycle adds behavior-facing evidence only.
+**Commit**: this commit, `chore(optimera): record closure verification evidence`
+**Inspiration**: Orkestrera retry findings for SPEC Section 20 and realisera's Reality Verification Gate.
+**Discovered**: Live eval remains blocked by external Claude API credit, so representative local scenario verification is the available fallback.
+**Verified**: Live eval attempt `python3 scripts/eval_skills.py --skill optimera --timeout 60 --runtime claude` returned `status: fail`, `Exit code 1`, and `Credit balance is too low`. Fallback scenario verifier anchored the optimera workflow at `skills/optimera/SKILL.md` lines 182, 184, 207, 209, and 358, then ran temp objective states: AC1 already-met startup produced `first_write=True, second_write=False, closures=1, exit=complete: objective achieved, analyze=skipped`; AC2 target-met experiment produced `experiment_logged_before_closure=True, closure_written=True, reason=experiment met target, closures=1`; AC3 all closed produced `outcome=ask successor objective, experiment_started=False`; AC4 no objective dirs produced `outcome=new-objective path`.
+**Next**: Continue the active plan with Task 3: align objective routing consumers so closed objectives are excluded from active-work inference.
+**Context**: intent (retry Task 2 evidence only) · constraints (no implementation expansion, keep PLAN Task 2 complete, no amend) · unknowns (live eval unavailable until API credit is restored) · scope (PROGRESS corrective evidence, validation, local commit).
+
 ■ ## Cycle 225 · 2026-04-29 · fix(optimera): close achieved objectives in workflow
 
 **Phase**: build
@@ -99,19 +110,9 @@
 **Next**: The Self-Audit Implementation plan is complete; next useful work is a fresh post-1.23 direction.
 **Context**: intent (execute only Task 5 final freshness checkpoint) · constraints (no new feature scope, no remote push, commit intended artifact changes only) · unknowns (none after final verification) · scope (CHANGELOG, TODO, PROGRESS).
 
-■ ## Cycle 216 · 2026-04-29 · chore(plan): close Prose-Quality Self-Audit Protocol plan
-
-**Phase**: verification
-**What**: Completed Task 7 and closed the Prose-Quality Self-Audit Protocol plan. All 6 implementation tasks landed: SPEC.md §24 Self-Audit Protocol (80c9d8b), pre-write self-audit step in realisera (0a89272), resonera/planera/optimera/visualisera/visionera (bfd4842), inspektera (295012f), and dokumentera (b0b4fd0), plus version bump to 1.22.0 (92df46e). This checkpoint verified all artifacts are freshness-complete and closed.
-**Commit**: this commit, `chore(plan): close Prose-Quality Self-Audit Protocol plan`
-**Inspiration**: Active PLAN.md Task 7. The plan needed one final evidence pass after all 6 implementation tasks and the version bump were complete.
-**Discovered**: CHANGELOG.md [Unreleased] Added already carries the plan-level summary (filled by Task 6 version bump). ISS-41 through ISS-44 were still in the Normal section of TODO.md; moved to Resolved with commit references.
-**Verified**: `python3 scripts/validate_spec.py` passed with 0 errors, 1 warning (pre-existing hard-wrap in optimera). `python3 scripts/generate_contracts.py --check` passed with 12 current contracts.
-**Next**: The Self-Audit Protocol plan is complete; next useful work is a fresh post-1.22 direction.
-**Context**: intent (execute only Task 7 final freshness checkpoint) · constraints (no new feature scope, no remote push, commit intended artifact changes only) · unknowns (none after final verification) · scope (PLAN, PROGRESS, TODO).
-
 ## Archived Cycles
 
+- Cycle 216 (2026-04-29): chore(plan): close Prose-Quality Self-Audit Protocol plan
 - Cycle 215 (2026-04-28): chore(plan): close setup bundle checkpoint
 - Cycle 214 (2026-04-28): docs(setup): refresh bundle doctor guidance
 - Cycle 213 (2026-04-28): chore(release): bump suite to 1.21.0
@@ -151,4 +152,3 @@
 - Cycle 179 (2026-04-26): chore(release): bump suite to 1.21.0
 - Cycle 178 (2026-04-26): docs(install): surface setup helpers in README and refresh DOCS.md Index
 - Cycle 177 (2026-04-26): test(smoke): add scripts/smoke_setup_helpers.py for codex and copilot helpers
-- Cycle 176 (2026-04-26): feat(setup): add scripts/setup_copilot.py for AGENTERA_HOME shell-rc injection
