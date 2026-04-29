@@ -72,8 +72,9 @@ The hook enforces post-write; the prose instructs Claude to check pre-write.
 ### Task 2: ISS-46 — Add --schema flag to generate_contracts.py
 
 **Depends on**: Task 1
-**Status**: □ pending
-**Tests**: 6 base (1 pass + 1 fail per schema section: §2 severity, §4 budgets, §4 headings, §5 paths, staleness, fallback). Table parsing qualifies for edge case expansion (+2: empty table row, whitespace-only cell)
+**Status**: ■ complete
+**Tests**: 14 tests (1 pass + 1 fail per schema section: §2 severity, §4 budgets, §4 headings, §5 paths, staleness, fallback; 2 edge case: empty table row, whitespace-only cell; 1 integration: full schema generation)
+**Commit**: f7c1bbc
 **Acceptance**:
 ▸ GIVEN `python3 scripts/generate_contracts.py --schema` WHEN SPEC.md has §2, §4, §5 tables THEN `scripts/schemas/contracts.json` is written with structured severity mappings, token budgets, artifact heading regexes, and default paths
 ▸ GIVEN the `scripts/schemas/` directory does not exist WHEN `--schema` runs THEN the directory is created before writing the JSON
