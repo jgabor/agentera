@@ -46,6 +46,7 @@ import os
 import re
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 
 
@@ -754,4 +755,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception:
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(0)
