@@ -46,7 +46,7 @@ Closed state lives inside each objective's own artifacts. `OBJECTIVE.md` carries
 ### Task 2: Apply Closure In Optimera Workflow
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN an already-met objective WHEN optimera starts THEN it records closure once and reports completion without another experiment.
 ▸ GIVEN an experiment meets the target WHEN optimera logs the result THEN it also records objective closure.

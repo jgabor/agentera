@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 225 · 2026-04-29 · fix(optimera): close achieved objectives in workflow
+
+**Phase**: build
+**What**: Completed Task 2 of the Completed Optimera Objective Archival plan. Optimera now detects closed objective sets, preserves the no-objective brainstorm path, records startup closure once, and records closure after a target-meeting experiment log.
+**Commit**: this commit, `fix(optimera): close achieved objectives in workflow`
+**Inspiration**: Active PLAN.md Task 2, SPEC.md objective closure contract, and Decision 31's self-contained objective directory constraint.
+**Discovered**: Existing `.agentera/optimera/realisera-token/OBJECTIVE.md` already has non-canonical legacy closure prose; this task changes optimera workflow only. Task 4 validator support and Task 5 regression coverage remain pending by plan.
+**Verified**: `python3 scripts/validate_spec.py --skill skills/optimera/SKILL.md` passed with 0 errors and 1 existing hard-wrap warning. `python3 scripts/validate_spec.py` passed with 0 errors and 8 existing hard-wrap warnings. `python3 scripts/generate_contracts.py --check` reported all 12 contracts current. `python3 scripts/eval_skills.py --skill optimera --dry-run` resolved the optimera prompt. Focused pytest reported 126 passed; full `python3 -m pytest -q` reported 511 passed. Diff review confirmed no registry, symlink, root objective artifact, DOCS fixed mapping, harness execution, result parsing, keep/discard semantic, routing-consumer, validator, regression-test, docs-refresh, release, or reopening scope was added.
+**Next**: Execute Task 3: align routing consumers so closed objectives are excluded from active-work inference.
+**Context**: intent (execute only Task 2 closure workflow) · constraints (no registry/symlink/root artifacts, no routing consumers, no validator or regression coverage, no release metadata) · unknowns (legacy closed objective uses old status prose) · scope (optimera skill workflow, plan status, changelog, progress).
+
 ■ ## Cycle 224 · 2026-04-29 · docs(spec): define objective closure contract
 
 **Phase**: build
@@ -141,6 +152,3 @@
 - Cycle 178 (2026-04-26): docs(install): surface setup helpers in README and refresh DOCS.md Index
 - Cycle 177 (2026-04-26): test(smoke): add scripts/smoke_setup_helpers.py for codex and copilot helpers
 - Cycle 176 (2026-04-26): feat(setup): add scripts/setup_copilot.py for AGENTERA_HOME shell-rc injection
-- Cycle 175 (2026-04-26): feat(setup): add scripts/setup_codex.py for AGENTERA_HOME injection
-- Cycle 174 (2026-04-26): chore(plan): freshness checkpoint for Cross-Runtime Portability
-- Cycle 173 (2026-04-26): chore(release): bump suite to 1.20.0
