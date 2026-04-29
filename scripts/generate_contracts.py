@@ -14,12 +14,14 @@ Run from repo root:
     python3 scripts/generate_contracts.py                  # all skills
     python3 scripts/generate_contracts.py --skill realisera  # one skill
     python3 scripts/generate_contracts.py --check            # freshness check
+    python3 scripts/generate_contracts.py --schema           # parse tables to JSON
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import re
 import sys
 from datetime import datetime, timezone
@@ -267,6 +269,230 @@ def check_freshness(
 
 
 # ---------------------------------------------------------------------------
+# Schema parsing
+# ---------------------------------------------------------------------------
+
+SCHEMAS_DIR = REPO_ROOT / "scripts" / "schemas"
+CONTRACTS_JSON = SCHEMAS_DIR / "contracts.json"
+
+# Headings used to locate target tables in SPEC.md.
+_ISSUE_SEVERITY_HEADING_RE = re.compile(r"^### Issue severity \(TODO\.md\)\s*$", re.MULTILINE)
+_TOKEN_BUDGETS_HEADING_RE = re.compile(r"^### Token budgets\s*$", re.MULTILINE)
+_FORMAT_CONTRACTS_HEADING_RE = re.compile(r"^### Format contracts\s*$", re.MULTILINE)
+
+# Regex for a markdown table row: pipe-delimited cells.
+_TABLE_ROW_RE = re.compile(r"^\|.+\|$")
+# Regex to extract bold-wrapped text: **value**
+_BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
+# Regex to strip number from budget string like "≤3,000 words".
+_BUDGET_NUMBER_RE = re.compile(r"[\d,]+")
+# Regex for heading pattern derivation: ## Name → N var format
+_HEADING_N_RE = re.compile(r"## (\S+?)\s+N(?:\b|·|\s|,)")
+
+
+def parse_markdown_table(text_block: str) -> list[dict[str, str]]:
+    """Parse a markdown table block into a list of dicts.
+
+    Returns empty list if the text block contains no valid table.
+    Handles empty rows and whitespace-only cells gracefully.
+    """
+    lines = text_block.strip().splitlines()
+    table_lines: list[str] = []
+    in_table = False
+    for line in lines:
+        if _TABLE_ROW_RE.match(line):
+            in_table = True
+            table_lines.append(line)
+        elif in_table:
+            break  # Table ended at first non-table line
+
+    if len(table_lines) < 3:
+        return []  # Need header + separator + at least one row
+
+    def _split_cells(row: str) -> list[str]:
+        cells = [c.strip() for c in row.split("|")]
+        # Remove leading/trailing empty cells from pipe prefix/suffix
+        if cells and cells[0] == "":
+            cells = cells[1:]
+        if cells and cells[-1] == "":
+            cells = cells[:-1]
+        return cells
+
+    headers = _split_cells(table_lines[0])
+    # Skip separator line (table_lines[1])
+
+    if not headers or all(h == "" for h in headers):
+        return []
+
+    rows: list[dict[str, str]] = []
+    for line in table_lines[2:]:
+        cells = _split_cells(line)
+        if not cells or all(c == "" for c in cells):
+            continue  # Skip empty rows
+        row: dict[str, str] = {}
+        for i, cell in enumerate(cells):
+            if i >= len(headers):
+                break
+            key = headers[i]
+            # Strip bold markers for value extraction
+            cell = _BOLD_RE.sub(r"\1", cell)
+            row[key] = cell
+        if row:  # Only add non-empty rows
+            rows.append(row)
+    return rows
+
+
+def _parse_severity_mappings(spec_text: str) -> dict[str, str]:
+    """Parse §2 Issue severity table for glyph mappings."""
+    m = _ISSUE_SEVERITY_HEADING_RE.search(spec_text)
+    if not m:
+        return {}
+    block = spec_text[m.end():]
+    rows = parse_markdown_table(block)
+    mappings: dict[str, str] = {}
+    for row in rows:
+        level = row.get("Level", "").strip()
+        glyph = row.get("Glyph", "").strip()
+        if level and glyph:
+            mappings[level] = glyph
+    return mappings
+
+
+_BUDGET_FALLBACKS: dict[str, int] = {
+    "DECISIONS.md": 5000,
+    "TODO.md": 5000,
+    "CHANGELOG.md": 5000,
+}
+
+
+def _parse_token_budgets(spec_text: str) -> dict[str, int]:
+    """Parse §4 Token budgets table for full-file budget entries."""
+    m = _TOKEN_BUDGETS_HEADING_RE.search(spec_text)
+    if not m:
+        return {}
+    block = spec_text[m.end():]
+    rows = parse_markdown_table(block)
+    budgets: dict[str, int] = {}
+    for row in rows:
+        scope = row.get("Scope", "").strip()
+        if scope.lower() != "full file":
+            continue
+        artifact = row.get("Artifact", "").strip()
+        budget_str = row.get("Budget", "").strip()
+        if not artifact:
+            continue
+        num_match = _BUDGET_NUMBER_RE.search(budget_str)
+        if num_match:
+            value = int(num_match.group().replace(",", ""))
+            budgets[artifact] = value
+    # Add fallback budgets for artifacts without explicit Full file entries.
+    for artifact, value in _BUDGET_FALLBACKS.items():
+        if artifact not in budgets:
+            budgets[artifact] = value
+    return budgets
+
+
+def _derive_heading_patterns(artifact: str, structural: str) -> list[str]:
+    """Derive required heading regex patterns from the artifact name
+    and its Key structural elements description.
+    """
+    patterns: list[str] = []
+    name = artifact.replace(".md", "").capitalize()
+
+    if artifact == "VISION.md":
+        patterns.append(r"^#\s+\S")
+    elif artifact == "TODO.md":
+        patterns.append(r"^# TODO")
+    else:
+        patterns.append(rf"^# {name}")
+
+    # Derive a secondary sub-heading pattern from structural elements.
+    sub_heading_match = _HEADING_N_RE.search(structural)
+    if sub_heading_match:
+        sub_name = sub_heading_match.group(1)
+        patterns.append(rf"^## {sub_name} \d+")
+
+    # Special case: PLAN.md has ### Task N pattern
+    if artifact == "PLAN.md":
+        patterns = [r"^# Plan", r"(?:^## Tasks|^### Task \d+)"]
+    # Special case: PROGRESS.md has optional glyph prefix
+    if artifact == "PROGRESS.md":
+        patterns = [r"^# Progress", r"^(?:\u25a0\s*)?## Cycle \d+"]
+
+    return patterns
+
+
+def _parse_format_contracts(spec_text: str) -> tuple[dict[str, str], dict[str, list[str]]]:
+    """Parse §4 Format contracts table for default paths and heading patterns."""
+    m = _FORMAT_CONTRACTS_HEADING_RE.search(spec_text)
+    if not m:
+        return {}, {}
+    block = spec_text[m.end():]
+    rows = parse_markdown_table(block)
+    paths: dict[str, str] = {}
+    headings: dict[str, list[str]] = {}
+    for row in rows:
+        artifact = row.get("Artifact", "").strip()
+        path = row.get("Path", "").strip()
+        structural = row.get("Key structural elements", "").strip()
+        if not artifact:
+            continue
+        if path:
+            paths[artifact] = path
+        if structural and artifact in {
+            "VISION.md", "TODO.md", "HEALTH.md", "PLAN.md",
+            "DECISIONS.md", "PROGRESS.md",
+        }:
+            patterns = _derive_heading_patterns(artifact, structural)
+            if patterns:
+                headings[artifact] = patterns
+    return paths, headings
+
+
+def _derive_todo_severity_headings(severity_mappings: dict[str, str]) -> list[str]:
+    """Derive TODO.md severity heading regexes from the severity mappings."""
+    headings: list[str] = []
+    for level in severity_mappings:
+        headings.append(rf"^## .*{level.capitalize()}")
+    return headings
+
+
+def generate_schema_data(spec_text: str) -> dict:
+    """Parse SPEC.md tables and return the structured contracts dict.
+
+    The returned dict matches the contracts.json schema:
+    generated_at, spec_sha256, token_budgets, artifact_headings,
+    severity_mappings, default_paths, todo_severity_headings.
+    """
+    spec_hash = compute_spec_hash(spec_text)
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    severity_mappings = _parse_severity_mappings(spec_text)
+    token_budgets = _parse_token_budgets(spec_text)
+    default_paths, artifact_headings = _parse_format_contracts(spec_text)
+    todo_severity_headings = _derive_todo_severity_headings(severity_mappings)
+
+    return {
+        "generated_at": timestamp,
+        "spec_sha256": spec_hash,
+        "token_budgets": token_budgets,
+        "artifact_headings": artifact_headings,
+        "severity_mappings": severity_mappings,
+        "default_paths": default_paths,
+        "todo_severity_headings": todo_severity_headings,
+    }
+
+
+def write_schema(spec_text: str) -> Path:
+    """Generate contracts.json from SPEC.md and write it to scripts/schemas/."""
+    data = generate_schema_data(spec_text)
+    SCHEMAS_DIR.mkdir(parents=True, exist_ok=True)
+    json_text = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+    CONTRACTS_JSON.write_text(json_text, encoding="utf-8")
+    return CONTRACTS_JSON
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -292,6 +518,11 @@ def main() -> int:
         type=str,
         default=None,
         help="Generate for a single skill only.",
+    )
+    parser.add_argument(
+        "--schema",
+        action="store_true",
+        help="Parse SPEC.md tables and write scripts/schemas/contracts.json.",
     )
     args = parser.parse_args()
 
@@ -328,6 +559,21 @@ def main() -> int:
         skill_names = [args.skill]
     else:
         skill_names = get_all_skill_names()
+
+    # Schema generation mode (parse SPEC.md tables to JSON).
+    if args.schema:
+        data = generate_schema_data(spec_text)
+        SCHEMAS_DIR.mkdir(parents=True, exist_ok=True)
+        json_text = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+        CONTRACTS_JSON.write_text(json_text, encoding="utf-8")
+        print(
+            _green(f"WROTE  {CONTRACTS_JSON.relative_to(REPO_ROOT)}"),
+        )
+        print(f"  Token budgets: {len(data['token_budgets'])} artifacts")
+        print(f"  Heading patterns: {len(data['artifact_headings'])} artifacts")
+        print(f"  Severity mappings: {len(data['severity_mappings'])} levels")
+        print(f"  Default paths: {len(data['default_paths'])} artifacts")
+        return 0
 
     # Check mode.
     if args.check:

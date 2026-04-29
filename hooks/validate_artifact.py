@@ -87,24 +87,24 @@ OP_ARTIFACTS = {
     "DOCS.md",
 }
 
-# Token budgets (full-file limits) from SPEC.md Section 4.
-# Per-entry budgets are not validated here (would require entry parsing).
-TOKEN_BUDGETS: dict[str, int] = {
+# ---------------------------------------------------------------------------
+# Fallback constants (hardcoded from SPEC.md §2, §4, §5)
+# Used when contracts.json is missing or malformed.
+# ---------------------------------------------------------------------------
+
+_FALLBACK_TOKEN_BUDGETS: dict[str, int] = {
     "PROGRESS.md": 3000,
     "HEALTH.md": 2000,
-    "DECISIONS.md": 5000,  # No explicit full-file budget in spec; generous limit
+    "DECISIONS.md": 5000,
     "PLAN.md": 2500,
     "VISION.md": 1500,
     "DESIGN.md": 2000,
     "DOCS.md": 2000,
-    "TODO.md": 5000,  # No explicit full-file budget in spec; generous limit
-    "CHANGELOG.md": 5000,  # No explicit full-file budget in spec; generous limit
+    "TODO.md": 5000,
+    "CHANGELOG.md": 5000,
 }
 
-# Required heading patterns per artifact type.
-# Each entry is (artifact_name, list_of_heading_patterns).
-# Patterns are regex matching full heading lines.
-ARTIFACT_HEADINGS: dict[str, list[str]] = {
+_FALLBACK_ARTIFACT_HEADINGS: dict[str, list[str]] = {
     "HEALTH.md": [
         r"^# Health",
         r"^## Audit \d+",
@@ -119,23 +119,98 @@ ARTIFACT_HEADINGS: dict[str, list[str]] = {
     ],
     "PROGRESS.md": [
         r"^# Progress",
-        r"^(?:■\s*)?## Cycle \d+",
+        r"^(?:\u25a0\s*)?## Cycle \d+",
     ],
     "TODO.md": [
         r"^# TODO",
     ],
     "VISION.md": [
-        r"^#\s+\S",  # Must have at least one heading
+        r"^#\s+\S",
     ],
 }
 
-# TODO.md severity sections (checked separately for presence).
-TODO_SEVERITY_HEADINGS = [
+_FALLBACK_TODO_SEVERITY_HEADINGS: list[str] = [
     r"^## .*Critical",
     r"^## .*Degraded",
     r"^## .*Normal",
     r"^## .*Annoying",
 ]
+
+
+def _load_contracts() -> dict:
+    """Load token budgets, artifact headings, and severity headings.
+
+    Tries to load from ``scripts/schemas/contracts.json``. On success,
+    checks staleness against SPEC.md mtime and warns to stderr if stale.
+    Falls back to hardcoded constants if the JSON file is missing or
+    malformed.
+
+    Returns a dict with keys: token_budgets, artifact_headings,
+    todo_severity_headings.
+    """
+    import json as _json
+    import os as _os
+
+    contracts_path = REPO_ROOT / "scripts" / "schemas" / "contracts.json"
+    spec_path = REPO_ROOT / "SPEC.md"
+
+    if not contracts_path.is_file():
+        print(
+            "validate_artifact: contracts.json not found, using hardcoded fallbacks",
+            file=sys.stderr,
+        )
+        return {
+            "token_budgets": _FALLBACK_TOKEN_BUDGETS,
+            "artifact_headings": _FALLBACK_ARTIFACT_HEADINGS,
+            "todo_severity_headings": _FALLBACK_TODO_SEVERITY_HEADINGS,
+        }
+
+    try:
+        data = _json.loads(contracts_path.read_text(encoding="utf-8"))
+    except (_json.JSONDecodeError, OSError) as exc:
+        print(
+            f"validate_artifact: failed to parse contracts.json ({exc}), "
+            "using hardcoded fallbacks",
+            file=sys.stderr,
+        )
+        return {
+            "token_budgets": _FALLBACK_TOKEN_BUDGETS,
+            "artifact_headings": _FALLBACK_ARTIFACT_HEADINGS,
+            "todo_severity_headings": _FALLBACK_TODO_SEVERITY_HEADINGS,
+        }
+
+    # Staleness check: compare generated_at against SPEC.md mtime.
+    if spec_path.is_file():
+        try:
+            spec_mtime = spec_path.stat().st_mtime
+            generated_at_str = data.get("generated_at", "")
+            if generated_at_str:
+                from datetime import datetime, timezone as _timezone
+                generated_dt = datetime.fromisoformat(generated_at_str)
+                generated_ts = generated_dt.timestamp()
+                if spec_mtime > generated_ts:
+                    print(
+                        "validate_artifact: contracts.json is stale "
+                        "(SPEC.md modified after generation), "
+                        "run python3 scripts/generate_contracts.py --schema",
+                        file=sys.stderr,
+                    )
+        except (ValueError, OSError):
+            pass  # Can't check staleness; proceed with loaded data.
+
+    return {
+        "token_budgets": data.get("token_budgets", _FALLBACK_TOKEN_BUDGETS),
+        "artifact_headings": data.get("artifact_headings", _FALLBACK_ARTIFACT_HEADINGS),
+        "todo_severity_headings": data.get(
+            "todo_severity_headings", _FALLBACK_TODO_SEVERITY_HEADINGS
+        ),
+    }
+
+
+_contracts = _load_contracts()
+TOKEN_BUDGETS: dict[str, int] = _contracts["token_budgets"]
+ARTIFACT_HEADINGS: dict[str, list[str]] = _contracts["artifact_headings"]
+TODO_SEVERITY_HEADINGS: list[str] = _contracts["todo_severity_headings"]
 
 
 def validate_decision_numbering(content: str) -> list[str]:

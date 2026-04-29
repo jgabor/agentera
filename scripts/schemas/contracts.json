@@ -1,0 +1,51 @@
+{
+  "generated_at": "2026-04-29T11:49:22Z",
+  "spec_sha256": "5da2ae456b2bd3a81de6f59372931e18cb1cc6bac24289b72d052a3dc3807030",
+  "token_budgets": {
+    "PROGRESS.md": 3000,
+    "EXPERIMENTS.md": 2500,
+    "HEALTH.md": 2000,
+    "PLAN.md": 2500,
+    "VISION.md": 1500,
+    "DESIGN.md": 2000,
+    "DOCS.md": 2000,
+    "DECISIONS.md": 5000,
+    "TODO.md": 5000,
+    "CHANGELOG.md": 5000
+  },
+  "artifact_headings": {
+    "VISION.md": ["^#\\s+\\S"],
+    "TODO.md": ["^# TODO"],
+    "DECISIONS.md": ["^# Decisions", "^## Decision \\d+"],
+    "PLAN.md": ["^# Plan", "(?:^## Tasks|^### Task \\d+)"],
+    "PROGRESS.md": ["^# Progress", "^(?:\\u25a0\\s*)?## Cycle \\d+"],
+    "HEALTH.md": ["^# Health", "^## Audit \\d+"]
+  },
+  "severity_mappings": {
+    "critical": "⇶",
+    "degraded": "⇉",
+    "normal": "→",
+    "annoying": "⇢"
+  },
+  "default_paths": {
+    "VISION.md": "VISION.md",
+    "TODO.md": "TODO.md",
+    "CHANGELOG.md": "CHANGELOG.md",
+    "DECISIONS.md": ".agentera/DECISIONS.md",
+    "PLAN.md": ".agentera/PLAN.md",
+    "PROGRESS.md": ".agentera/PROGRESS.md",
+    "HEALTH.md": ".agentera/HEALTH.md",
+    "OBJECTIVE.md": ".agentera/optimera/<name>/OBJECTIVE.md",
+    "EXPERIMENTS.md": ".agentera/optimera/<name>/EXPERIMENTS.md",
+    "DESIGN.md": ".agentera/DESIGN.md",
+    "DOCS.md": ".agentera/DOCS.md",
+    "SESSION.md": ".agentera/SESSION.md",
+    "PROFILE.md": "(profile-path capability) <!-- platform: profile-path -->"
+  },
+  "todo_severity_headings": [
+    "^## .*Critical",
+    "^## .*Degraded",
+    "^## .*Normal",
+    "^## .*Annoying"
+  ]
+}

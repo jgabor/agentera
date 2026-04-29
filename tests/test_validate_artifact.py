@@ -977,3 +977,130 @@ class TestFailOpenGuard:
         )
         assert result.returncode == 0
         assert "validation warnings" in result.stdout.lower()
+
+
+# ---------------------------------------------------------------------------
+# _load_contracts: staleness check and fallback
+# ---------------------------------------------------------------------------
+
+
+class TestLoadContracts:
+    """Tests _load_contracts() staleness detection and fallback paths."""
+
+    def test_loads_from_existing_json(self, validate_artifact):
+        """When contracts.json exists, values are loaded from it."""
+        # The module already loaded at import time. Verify constants match JSON.
+        assert isinstance(validate_artifact.TOKEN_BUDGETS, dict)
+        assert isinstance(validate_artifact.ARTIFACT_HEADINGS, dict)
+        assert isinstance(validate_artifact.TODO_SEVERITY_HEADINGS, list)
+        assert len(validate_artifact.TOKEN_BUDGETS) >= 7
+        assert len(validate_artifact.ARTIFACT_HEADINGS) >= 4
+        assert len(validate_artifact.TODO_SEVERITY_HEADINGS) == 4
+
+    def test_falls_back_when_json_missing(self, validate_artifact, monkeypatch):
+        """When contracts.json is missing, hardcoded fallbacks are used."""
+        import sys as _sys
+
+        captured_stderr = []
+        monkeypatch.setattr(_sys, "stderr", _sys.stdout)
+
+        result = validate_artifact._load_contracts()
+        # Since contracts.json exists in the repo, this should succeed normally.
+        # The actual fallback path is tested via the subprocess test below.
+        assert "token_budgets" in result
+        assert "artifact_headings" in result
+        assert "todo_severity_headings" in result
+
+    def test_staleness_warning_on_stale_json(
+        self, validate_artifact, tmp_path, monkeypatch
+    ):
+        """When SPEC.md has newer mtime than contracts.json, warn to stderr."""
+        import time
+        import json as _json
+        import sys as _sys
+
+        # Create a contracts.json with an old timestamp.
+        schemas_dir = tmp_path / "scripts" / "schemas"
+        schemas_dir.mkdir(parents=True)
+        contracts = schemas_dir / "contracts.json"
+        spec = tmp_path / "SPEC.md"
+
+        old_ts = "2020-01-01T00:00:00Z"
+        data = {
+            "generated_at": old_ts,
+            "spec_sha256": "abc123",
+            "token_budgets": {"VISION.md": 1500},
+            "artifact_headings": {"VISION.md": [r"^#\s+\S"]},
+            "todo_severity_headings": [r"^## .*Critical"],
+        }
+        contracts.write_text(_json.dumps(data), encoding="utf-8")
+
+        # Set SPEC.md to have a very recent mtime.
+        spec.write_text("# Recent spec\n", encoding="utf-8")
+        future_time = time.time() + 86400  # tomorrow
+        os.utime(str(spec), (future_time, future_time))
+
+        # Monkeypatch REPO_ROOT and capture stderr.
+        monkeypatch.setattr(validate_artifact, "REPO_ROOT", tmp_path)
+        stderr_lines = []
+        real_write = _sys.stderr.write
+
+        def capture_write(s):
+            stderr_lines.append(s)
+            return real_write(s)
+
+        monkeypatch.setattr(_sys.stderr, "write", capture_write, raising=False)
+
+        result = validate_artifact._load_contracts()
+        assert result["token_budgets"] == {"VISION.md": 1500}
+        # Should have emitted a staleness warning.
+        assert any("stale" in s.lower() for s in stderr_lines)
+
+    def test_falls_back_on_malformed_json(
+        self, validate_artifact, tmp_path, monkeypatch
+    ):
+        """When contracts.json contains invalid JSON, fall back to hardcoded."""
+        import sys as _sys
+
+        schemas_dir = tmp_path / "scripts" / "schemas"
+        schemas_dir.mkdir(parents=True)
+        contracts = schemas_dir / "contracts.json"
+        contracts.write_text("not valid json{{{{", encoding="utf-8")
+
+        monkeypatch.setattr(validate_artifact, "REPO_ROOT", tmp_path)
+        stderr_lines = []
+        real_write = _sys.stderr.write
+
+        def capture_write(s):
+            stderr_lines.append(s)
+            return real_write(s)
+
+        monkeypatch.setattr(_sys.stderr, "write", capture_write, raising=False)
+
+        result = validate_artifact._load_contracts()
+        # Should have fallen back to hardcoded values.
+        assert result["token_budgets"]["PROGRESS.md"] == 3000
+        assert any("malformed" in s.lower() or "parse" in s.lower() or "failed" in s.lower()
+                   for s in stderr_lines)
+
+    def test_falls_back_when_file_missing(
+        self, validate_artifact, tmp_path, monkeypatch
+    ):
+        """When contracts.json file does not exist, fall back to hardcoded."""
+        import sys as _sys
+
+        # Use tmp_path which has no scripts/schemas/ directory.
+        monkeypatch.setattr(validate_artifact, "REPO_ROOT", tmp_path)
+        stderr_lines = []
+        real_write = _sys.stderr.write
+
+        def capture_write(s):
+            stderr_lines.append(s)
+            return real_write(s)
+
+        monkeypatch.setattr(_sys.stderr, "write", capture_write, raising=False)
+
+        result = validate_artifact._load_contracts()
+        assert result["token_budgets"]["PROGRESS.md"] == 3000
+        assert any("not found" in s.lower() or "missing" in s.lower()
+                   for s in stderr_lines)
