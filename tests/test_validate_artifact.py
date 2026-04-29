@@ -122,6 +122,24 @@ class TestIdentifyArtifact:
         assert result is None
 
 
+class TestIdentifyPerObjectiveArtifact:
+    """1 pass + 1 fail for variable optimera objective paths."""
+
+    def test_known_per_objective_artifact(self, validate_artifact, project_dir):
+        objective_dir = project_dir / ".agentera" / "optimera" / "latency"
+        objective_dir.mkdir(parents=True)
+        objective = objective_dir / "OBJECTIVE.md"
+        objective.write_text("# Objective\n", encoding="utf-8")
+        assert validate_artifact.identify_artifact(str(objective), str(project_dir)) == "OBJECTIVE.md"
+
+    def test_nested_objective_helper_is_not_artifact(self, validate_artifact, project_dir):
+        helper_dir = project_dir / ".agentera" / "optimera" / "latency" / "harness"
+        helper_dir.mkdir(parents=True)
+        helper = helper_dir / "OBJECTIVE.md"
+        helper.write_text("# Objective\n", encoding="utf-8")
+        assert validate_artifact.identify_artifact(str(helper), str(project_dir)) is None
+
+
 # ---------------------------------------------------------------------------
 # resolve_artifact_paths: DOCS.md path resolution
 # ---------------------------------------------------------------------------
@@ -523,6 +541,103 @@ class TestValidateVision:
         assert len(violations) >= 1
 
 
+class TestValidatePerObjectiveArtifacts:
+    """1 pass + 1 fail per per-objective artifact validation unit."""
+
+    def test_valid_objective(self, validate_artifact, project_dir):
+        objective = project_dir / ".agentera" / "optimera" / "latency" / "OBJECTIVE.md"
+        objective.parent.mkdir(parents=True)
+        objective.write_text(
+            textwrap.dedent("""\
+            # Objective
+
+            **Status**: active
+
+            ## Metric
+
+            p95 latency in ms.
+
+            ## Target
+
+            <= 120 ms.
+
+            ## Baseline
+
+            180 ms in run 2026-04-29.
+
+            ## Constraints
+
+            Keep harness command unchanged.
+        """),
+            encoding="utf-8",
+        )
+        violations = validate_artifact.validate_artifact_structure(
+            str(objective),
+            "OBJECTIVE.md",
+        )
+        assert violations == []
+
+    def test_objective_missing_required_heading(self, validate_artifact, project_dir):
+        objective = project_dir / ".agentera" / "optimera" / "latency" / "OBJECTIVE.md"
+        objective.parent.mkdir(parents=True)
+        objective.write_text(
+            textwrap.dedent("""\
+            # Objective
+
+            **Status**: active
+
+            ## Metric
+
+            p95 latency in ms.
+        """),
+            encoding="utf-8",
+        )
+        violations = validate_artifact.validate_artifact_structure(
+            str(objective),
+            "OBJECTIVE.md",
+        )
+        assert any("Target" in v for v in violations)
+
+    def test_valid_experiments(self, validate_artifact, project_dir):
+        experiments = project_dir / ".agentera" / "optimera" / "latency" / "EXPERIMENTS.md"
+        experiments.parent.mkdir(parents=True)
+        experiments.write_text(
+            textwrap.dedent("""\
+            # Experiments
+
+            ## Experiment 1 · 2026-04-29
+
+            **Hypothesis**: Cache warmed requests reduce p95 latency.
+            **Method**: Run harness against sample workload.
+            **Result**: 180 ms -> 130 ms.
+            **Conclusion**: Keep cache warmup.
+        """),
+            encoding="utf-8",
+        )
+        violations = validate_artifact.validate_artifact_structure(
+            str(experiments),
+            "EXPERIMENTS.md",
+        )
+        assert violations == []
+
+    def test_experiments_missing_required_heading(self, validate_artifact, project_dir):
+        experiments = project_dir / ".agentera" / "optimera" / "latency" / "EXPERIMENTS.md"
+        experiments.parent.mkdir(parents=True)
+        experiments.write_text(
+            textwrap.dedent("""\
+            # Experiments
+
+            No experiment entries yet.
+        """),
+            encoding="utf-8",
+        )
+        violations = validate_artifact.validate_artifact_structure(
+            str(experiments),
+            "EXPERIMENTS.md",
+        )
+        assert any("Experiment" in v or "Closure" in v for v in violations)
+
+
 # ---------------------------------------------------------------------------
 # validate_artifact_structure: token budget
 # ---------------------------------------------------------------------------
@@ -657,6 +772,66 @@ class TestCompactionOverflowNudge:
         warnings = validate_artifact.detect_compaction_overflow(
             str(progress),
             "PROGRESS.md",
+        )
+        assert warnings == []
+
+    def test_per_objective_experiments_over_threshold_emits_nudge(
+        self, validate_artifact, project_dir, monkeypatch,
+    ):
+        experiments = project_dir / ".agentera" / "optimera" / "latency" / "EXPERIMENTS.md"
+        experiments.parent.mkdir(parents=True)
+        lines = ["# Experiments", ""]
+        for i in range(15, 0, -1):
+            lines.extend([
+                f"## Experiment {i} · 2026-04-{((i - 1) % 28) + 1:02d}",
+                "",
+                f"**Hypothesis**: Change {i} lowers latency.",
+                "**Method**: Run the checked harness command.",
+                f"**Result**: {200 - i} ms.",
+                "**Conclusion**: Keep measuring.",
+                "",
+            ])
+        experiments.write_text("\n".join(lines), encoding="utf-8")
+
+        import io
+
+        hook_input = json.dumps({
+            "session_id": "test",
+            "cwd": str(project_dir),
+            "hook_event_name": "PostToolUse",
+            "tool_name": "Edit",
+            "tool_input": {"file_path": str(experiments)},
+        })
+        monkeypatch.setattr("sys.stdin", io.StringIO(hook_input))
+        captured_output = io.StringIO()
+        monkeypatch.setattr("sys.stdout", captured_output)
+        result = validate_artifact.main()
+        assert result == 0
+        output = captured_output.getvalue()
+        assert "EXPERIMENTS.md" in output
+        assert "compact_artifact.py experiments" in output
+
+    def test_per_objective_experiments_under_threshold_no_nudge(
+        self, validate_artifact, project_dir,
+    ):
+        experiments = project_dir / ".agentera" / "optimera" / "latency" / "EXPERIMENTS.md"
+        experiments.parent.mkdir(parents=True)
+        experiments.write_text(
+            textwrap.dedent("""\
+            # Experiments
+
+            ## Experiment 1 · 2026-04-29
+
+            **Hypothesis**: Change lowers latency.
+            **Method**: Run harness.
+            **Result**: 180 ms.
+            **Conclusion**: Keep measuring.
+        """),
+            encoding="utf-8",
+        )
+        warnings = validate_artifact.detect_compaction_overflow(
+            str(experiments),
+            "EXPERIMENTS.md",
         )
         assert warnings == []
 
