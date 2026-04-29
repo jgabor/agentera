@@ -2,8 +2,11 @@
 
 ## [Unreleased]
 
+## [1.24.1] · 2026-04-29
+
 ### Fixed
 
+- Optimera completed-objective archival now closes achieved objectives, excludes closed objectives from routing, validates per-objective artifacts, and documents the self-contained objective directory lifecycle.
 - Objective lifecycle regression coverage now guards optimera active-objective inference and duplicate closure idempotency.
 - Artifact validation now recognizes per-objective optimera OBJECTIVE.md and EXPERIMENTS.md files without adding DOCS.md fixed mappings.
 - Objective routing consumers now exclude closed optimera objectives before active-objective recency selection.

@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 231 · 2026-04-29 22:51 · chore(release): bump suite to 1.24.1
+
+**Phase**: build
+**What**: Completed Task 7 of the Completed Optimera Objective Archival plan. Version-bearing DOCS targets now report patch release `1.24.1`, and release notes carry the completed-objective fix under Fixed.
+**Commit**: this commit, `chore(release): bump suite to 1.24.1`
+**Inspiration**: Active PLAN.md Task 7 and DOCS.md `semver_policy`: `fix = patch`.
+**Discovered**: `.agents/plugins/marketplace.json` remains a DOCS-listed version target with no version field, matching prior release metadata behavior.
+**Verified**: Corrected version probe checked every DOCS.md version target: plugin.json, .github/plugin/plugin.json, .codex-plugin/plugin.json, 12 skill plugin manifests, .claude-plugin/marketplace.json, .opencode/plugins/agentera.js, and registry skill versions all report `1.24.1`; `.agents/plugins/marketplace.json` reports no version field. `CHANGELOG.md` has `[1.24.1] > Fixed` with the Optimera completed-objective archival fix. `.agentera/PLAN.md` marks Task 7 `■ complete` and leaves Task 8 pending. `python3 scripts/validate_lifecycle_adapters.py`, `python3 scripts/generate_contracts.py --check`, `python3 scripts/validate_spec.py`, `python3 -m pytest -q tests/test_runtime_adapters.py`, and full `python3 -m pytest -q` passed; full pytest reported 523 passed.
+**Next**: Execute Task 8: plan-level freshness checkpoint and archive only after all tasks are complete.
+**Context**: intent (execute only Task 7 release metadata) · constraints (patch bump only, no Task 8 freshness sweep, no root objective artifacts, registries, symlinks, DOCS fixed objective mappings, or VISION.md edits) · unknowns (none) · scope (version metadata, changelog release notes, plan status, progress evidence).
+
 ■ ## Cycle 230 · 2026-04-29 · docs(optimera): refresh objective artifact docs
 
 **Phase**: build
@@ -99,30 +110,10 @@
 **Next**: Execute Task 6: plan-level freshness checkpoint without expanding release scope.
 **Context**: intent (execute only Task 5 release metadata bump) · constraints (DOCS.md version targets, no runtime or skill behavior changes, leave unrelated untracked vrida untouched) · unknowns (none after version probe) · scope (version metadata, changelog promotion, plan status, progress evidence).
 
-■ ## Cycle 221 · 2026-04-29 · chore(validation): confirm decision contract compatibility
-
-**Phase**: verification
-**What**: Completed Task 4 of the Steelman-Informed Decision Pressure plan. The updated resonera, planera, and optimera skill text remains compatible with suite contracts and current DECISIONS.md entries.
-**Commit**: this commit, `chore(validation): confirm decision contract compatibility`
-**Inspiration**: Active PLAN.md Task 4. Profile signals favored preserving task intent, avoiding scope expansion, and verifying with real evidence.
-**Discovered**: No validation behavior changed. Existing coverage is sufficient: `TestValidateDecisions` provides 1 pass and 4 fail paths for DECISIONS.md structure and numbering, while `TestCheckDecisionLabels` provides 1 pass and 1 fail for decision confidence labels.
-**Verified**: `python3 scripts/validate_spec.py` reported 0 errors across 12 skills, with 8 existing hard-wrap warnings. `python3 scripts/generate_contracts.py --check` reported all 12 contract files current. Current `.agentera/DECISIONS.md` returned `{'violations': []}` from `validate_artifact_structure`. `python3 -m pytest -q tests/test_validate_artifact.py::TestValidateDecisions tests/test_validate_spec.py::TestCheckDecisionLabels` reported 7 passed. `python3 -m pytest -q` reported 511 passed. Live `python3 scripts/eval_skills.py --skill resonera` reached the external API and failed only with `Credit balance is too low`.
-**Next**: Execute Task 5: bump release metadata per DOCS.md version targets.
-**Context**: intent (execute only Task 4 compatibility validation) · constraints (no validation behavior changes, no new tests unless behavior changed, preserve DECISIONS.md top-level fields) · unknowns (live eval remains blocked by API credit) · scope (deterministic validators, plan status, progress, changelog).
-
-■ ## Cycle 220 · 2026-04-29 · feat(skills): guard adjacent effort-biased selections
-
-**Phase**: build
-**What**: Completed Task 3 of the Steelman-Informed Decision Pressure plan. Planera now rejects construction effort as evidence when comparing plan options, and optimera resets hypothesis selection when one hypothesis took more effort to construct.
-**Commit**: this commit, `feat(skills): guard adjacent effort-biased selections`
-**Inspiration**: Active PLAN.md Task 3. Profile signals favored preserving task intent, natural boundaries, compact artifacts, and evidence-rich comparisons.
-**Discovered**: `SPEC.md` stays unchanged. Section 3 defines shared DECISIONS.md confidence labels and Section 4 defines artifact fields; this task changes only local option and hypothesis selection prose, with no new confidence label, field, mode, step, artifact, or consumer contract.
-**Verified**: N/A: docs-only. `python3 scripts/validate_spec.py --skill skills/planera/SKILL.md --skill skills/optimera/SKILL.md` passed with 0 errors and existing hard-wrap warnings. `python3 scripts/validate_spec.py` passed with 0 errors across 12 skills. `python3 scripts/generate_contracts.py --check` reported all 12 contract files current. `python3 scripts/self_audit.py .agentera/PLAN.md CHANGELOG.md skills/planera/SKILL.md skills/optimera/SKILL.md` exited 0. Diff review showed only two existing workflow paragraphs plus PLAN status and changelog. Heading scans confirmed planera still has Step 0 plus Steps 1-6 and optimera still has Steps 1-8, with unchanged artifact tables.
-**Next**: Execute Task 4: validate contract compatibility across updated decision-workflow text.
-**Context**: intent (execute only Task 3 effort-bias guards) · constraints (planera and optimera only, no new surfaces, no resonera changes) · unknowns (none after SPEC review) · scope (planera SKILL.md, optimera SKILL.md, plan status, progress, changelog).
-
 ## Archived Cycles
 
+- Cycle 221 (2026-04-29): chore(validation): confirm decision contract compatibility
+- Cycle 220 (2026-04-29): feat(skills): guard adjacent effort-biased selections
 - Cycle 219 (2026-04-29): feat(resonera): add decision alternative win conditions
 - Cycle 218 (2026-04-29): feat(resonera): strengthen pressure testing discipline
 - Cycle 217 (2026-04-29): feat: close Post-1.22 Self-Audit Implementation plan
@@ -161,5 +152,3 @@
 - Cycle 184 (2026-04-26): feat(smoke): wire copilot -p AGENTERA_HOME + compaction live verification
 - Cycle 183 (2026-04-26): feat(smoke): wire codex exec AGENTERA_HOME + compaction live verification
 - Cycle 182 (2026-04-26): feat(smoke): add scripts/smoke_live_hosts.py scaffold for codex+copilot verification
-- Cycle 181 (2026-04-26): chore(audit): profilera Codex collection verification and metadata reconciliation
-- Cycle 180 (2026-04-26): chore(plan): freshness checkpoint for Codex+Copilot Completion
