@@ -57,7 +57,7 @@ The 3 checks:
 ### Task 2: Add pre-write self-audit to realisera SKILL.md
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN realisera's SKILL.md WHEN read THEN a "Pre-write self-audit" step appears before the artifact write step, invoking the §24 Self-Audit Protocol
 ▸ GIVEN the step WHEN read THEN it refuses to write entries that fail any check after 3 revision attempts and marks them `[post-audit-flagged]`
