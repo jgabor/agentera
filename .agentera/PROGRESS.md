@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 221 · 2026-04-29 · chore(validation): confirm decision contract compatibility
+
+**Phase**: verification
+**What**: Completed Task 4 of the Steelman-Informed Decision Pressure plan. The updated resonera, planera, and optimera skill text remains compatible with suite contracts and current DECISIONS.md entries.
+**Commit**: this commit, `chore(validation): confirm decision contract compatibility`
+**Inspiration**: Active PLAN.md Task 4. Profile signals favored preserving task intent, avoiding scope expansion, and verifying with real evidence.
+**Discovered**: No validation behavior changed. Existing coverage is sufficient: `TestValidateDecisions` provides 1 pass and 4 fail paths for DECISIONS.md structure and numbering, while `TestCheckDecisionLabels` provides 1 pass and 1 fail for decision confidence labels.
+**Verified**: `python3 scripts/validate_spec.py` reported 0 errors across 12 skills, with 8 existing hard-wrap warnings. `python3 scripts/generate_contracts.py --check` reported all 12 contract files current. Current `.agentera/DECISIONS.md` returned `{'violations': []}` from `validate_artifact_structure`. `python3 -m pytest -q tests/test_validate_artifact.py::TestValidateDecisions tests/test_validate_spec.py::TestCheckDecisionLabels` reported 7 passed. `python3 -m pytest -q` reported 511 passed. Live `python3 scripts/eval_skills.py --skill resonera` reached the external API and failed only with `Credit balance is too low`.
+**Next**: Execute Task 5: bump release metadata per DOCS.md version targets.
+**Context**: intent (execute only Task 4 compatibility validation) · constraints (no validation behavior changes, no new tests unless behavior changed, preserve DECISIONS.md top-level fields) · unknowns (live eval remains blocked by API credit) · scope (deterministic validators, plan status, progress, changelog).
+
 ■ ## Cycle 220 · 2026-04-29 · feat(skills): guard adjacent effort-biased selections
 
 **Phase**: build
@@ -101,4 +112,3 @@
 - Cycle 174 (2026-04-26): chore(plan): freshness checkpoint for Cross-Runtime Portability
 - Cycle 173 (2026-04-26): chore(release): bump suite to 1.20.0
 - Cycle 172 (2026-04-26): refactor(skills): adopt AGENTERA_HOME bash fallback and shift Section refs after SPEC renumber
-- Cycle 171 (2026-04-26): docs(install): codex and copilot AGENTERA_HOME setup steps

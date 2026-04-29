@@ -65,7 +65,7 @@ Add steelman patterns at the decision layer, not the suite architecture layer. R
 ### Task 4: Validate contract compatibility
 
 **Depends on**: Tasks 1-3
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN updated skill definitions WHEN spec validation runs THEN the suite reports no new contract errors.
 ▸ GIVEN current decision entries exist WHEN compatibility is checked THEN current entries remain accepted by decision artifact validation.
