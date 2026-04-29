@@ -4,7 +4,7 @@
   "skills": [
     {
       "name": "hej",
-      "version": "1.21.0",
+      "version": "1.22.0",
       "description": "HEJ: Holistic Entry Junction: Orient, Route, Activate. Single point of entry to the suite. Detects fresh vs returning projects, delivers briefings, and routes to the right skill.",
       "path": "skills/hej",
       "tags": ["entry-point", "routing", "onboarding", "status"],
@@ -12,7 +12,7 @@
     },
     {
       "name": "inspirera",
-      "version": "1.21.0",
+      "version": "1.22.0",
       "description": "INSPIRERA: Insight Navigation: Source Pattern Identification and Resonance: Evaluate, Reframe, Assimilate. Analyzes external links and maps concepts, patterns, and primitives to your own projects.",
       "path": "skills/inspirera",
       "tags": ["research", "architecture", "code-review"],
@@ -98,7 +98,7 @@
     },
     {
       "name": "orkestrera",
-      "version": "1.21.0",
+      "version": "1.22.0",
       "description": "ORKESTRERA: Orchestration Runtime: Knowledge-coordinated Execution Strategy, Targeted Routing: Evaluate, Resolve, Adapt. Skill-agnostic meta-orchestrator that dispatches skills as subagents, evaluates with inspektera, and loops through plans.",
       "path": "skills/orkestrera",
       "tags": [
