@@ -109,6 +109,8 @@ Define WHAT and WHY. Intent layer, not implementation details.
 
 Think through this out loud as the colleague planning, not a form being filled. Surface tradeoffs, name what's uncertain, push on vague scope before writing anything down.
 
+Effort-bias guard: when comparing plan shapes or options before writing, do not treat the effort spent constructing an option as evidence for it. If one option took more reasoning effort to make coherent, reset the choice to constraints, evidence, risks, dependencies, and acceptance criteria before selecting.
+
 ### Light plans
 
 Brief conversation (2-3 questions):

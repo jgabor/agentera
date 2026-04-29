@@ -55,7 +55,7 @@ Add steelman patterns at the decision layer, not the suite architecture layer. R
 ### Task 3: Apply narrow effort-bias guards to adjacent workflows
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN planera evaluates options before writing a plan WHEN one option required more reasoning effort THEN effort is not treated as evidence.
 ▸ GIVEN optimera evaluates experiment approaches WHEN one hypothesis took more effort to construct THEN the choice is reset before selection.
