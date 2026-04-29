@@ -97,6 +97,10 @@ OP_ARTIFACTS = {
     "DOCS.md",
 }
 
+# Per-objective optimera artifacts live under variable directories and are
+# intentionally not resolved through DOCS.md fixed artifact mappings.
+PER_OBJECTIVE_ARTIFACTS = {"OBJECTIVE.md", "EXPERIMENTS.md"}
+
 # ---------------------------------------------------------------------------
 # Fallback constants (hardcoded from SPEC.md §2, §4, §5)
 # Used when contracts.json is missing or malformed.
@@ -115,6 +119,18 @@ _FALLBACK_TOKEN_BUDGETS: dict[str, int] = {
 }
 
 _FALLBACK_ARTIFACT_HEADINGS: dict[str, list[str]] = {
+    "OBJECTIVE.md": [
+        r"^# Objective",
+        r"^## Metric",
+        r"^## Target",
+        r"^## Baseline",
+        r"^## Constraints",
+        r"^\*\*Status\*\*:",
+    ],
+    "EXPERIMENTS.md": [
+        r"^# Experiments",
+        r"^(?:## Experiment \d+|## Closure\b)",
+    ],
     "HEALTH.md": [
         r"^# Health",
         r"^## Audit \d+",
@@ -269,6 +285,24 @@ def validate_decision_numbering(content: str) -> list[str]:
 _CANONICAL_ARTIFACTS = ROOT_ARTIFACTS | OP_ARTIFACTS
 
 
+def identify_per_objective_artifact(file_path: str, project_root: str) -> str | None:
+    """Return OBJECTIVE.md/EXPERIMENTS.md for exact optimera objective paths."""
+    try:
+        rel = Path(file_path).resolve().relative_to(Path(project_root).resolve())
+    except ValueError:
+        return None
+    parts = rel.parts
+    if (
+        len(parts) == 4
+        and parts[0] == DEFAULT_OP_DIR
+        and parts[1] == "optimera"
+        and parts[2]
+        and parts[3] in PER_OBJECTIVE_ARTIFACTS
+    ):
+        return parts[3]
+    return None
+
+
 def resolve_artifact_paths(project_root: str) -> dict[str, str]:
     """Build a map of canonical artifact name to absolute path.
 
@@ -305,6 +339,10 @@ def identify_artifact(file_path: str, project_root: str) -> str | None:
 
     Returns None if the file is not a recognized operational artifact.
     """
+    per_objective = identify_per_objective_artifact(file_path, project_root)
+    if per_objective is not None:
+        return per_objective
+
     abs_path = str(Path(file_path).resolve())
     artifact_paths = resolve_artifact_paths(project_root)
 

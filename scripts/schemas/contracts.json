@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-29T20:25:14Z",
+  "generated_at": "2026-04-29T20:40:12Z",
   "spec_sha256": "4e1b7d31ab585371fb404917d800dc68e9e98b7deb218a9852bfebbc724968d7",
   "token_budgets": {
     "PROGRESS.md": 3000,
@@ -19,7 +19,19 @@
     "DECISIONS.md": ["^# Decisions", "^## Decision \\d+"],
     "PLAN.md": ["^# Plan", "(?:^## Tasks|^### Task \\d+)"],
     "PROGRESS.md": ["^# Progress", "^(?:\\u25a0\\s*)?## Cycle \\d+"],
-    "HEALTH.md": ["^# Health", "^## Audit \\d+"]
+    "HEALTH.md": ["^# Health", "^## Audit \\d+"],
+    "OBJECTIVE.md": [
+      "^# Objective",
+      "^## Metric",
+      "^## Target",
+      "^## Baseline",
+      "^## Constraints",
+      "^\\*\\*Status\\*\\*:"
+    ],
+    "EXPERIMENTS.md": [
+      "^# Experiments",
+      "^(?:## Experiment \\d+|## Closure\\b)"
+    ]
   },
   "severity_mappings": {
     "critical": "⇶",

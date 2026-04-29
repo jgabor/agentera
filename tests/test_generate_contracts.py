@@ -388,6 +388,8 @@ _FORMAT_CONTRACTS_TABLE = """\
 | PLAN.md | .agentera/PLAN.md | planera | realisera, inspektera | ## Tasks with ### Task N, **Status/Depends on/Acceptance** |
 | DECISIONS.md | .agentera/DECISIONS.md | resonera | planera, realisera | ## Decision N · date, **Choice/Reasoning** |
 | PROGRESS.md | .agentera/PROGRESS.md | realisera | planera, inspektera | ## Cycle N · date, **Phase/What/Commit** |
+| OBJECTIVE.md | .agentera/optimera/&lt;name&gt;/OBJECTIVE.md | optimera | optimera | ## Metric, ## Target, ## Baseline, ## Constraints, **Status** |
+| EXPERIMENTS.md | .agentera/optimera/&lt;name&gt;/EXPERIMENTS.md | optimera | optimera | ## Experiment N · date, **Hypothesis/Method/Result/Conclusion**; ## Closure · date, **Final value/Target/Reason** |
 | TODO.md | TODO.md | realisera, inspektera | realisera, planera | ## ⇶ Critical, ## Resolved |
 | CHANGELOG.md | CHANGELOG.md | realisera | project contributors | ## [Unreleased], ### Added/Changed/Fixed |
 """
@@ -482,6 +484,8 @@ class TestParseFormatContracts:
             "PLAN.md": ".agentera/PLAN.md",
             "DECISIONS.md": ".agentera/DECISIONS.md",
             "PROGRESS.md": ".agentera/PROGRESS.md",
+            "OBJECTIVE.md": ".agentera/optimera/&lt;name&gt;/OBJECTIVE.md",
+            "EXPERIMENTS.md": ".agentera/optimera/&lt;name&gt;/EXPERIMENTS.md",
             "TODO.md": "TODO.md",
             "CHANGELOG.md": "CHANGELOG.md",
         }
@@ -489,11 +493,15 @@ class TestParseFormatContracts:
         assert "PLAN.md" in headings
         assert "DECISIONS.md" in headings
         assert "PROGRESS.md" in headings
+        assert "OBJECTIVE.md" in headings
+        assert "EXPERIMENTS.md" in headings
         assert "TODO.md" in headings
         assert "VISION.md" in headings
         # Verify HEALTH.md patterns
         assert r"^# Health" in headings["HEALTH.md"]
         assert any("Audit" in p for p in headings["HEALTH.md"])
+        assert any("Status" in p for p in headings["OBJECTIVE.md"])
+        assert any("Closure" in p for p in headings["EXPERIMENTS.md"])
 
     def test_no_format_contracts_heading_returns_empty(self, generate_contracts):
         paths, headings = generate_contracts._parse_format_contracts("# No contracts\n")

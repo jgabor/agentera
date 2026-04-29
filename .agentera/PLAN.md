@@ -66,7 +66,7 @@ Closed state lives inside each objective's own artifacts. `OBJECTIVE.md` carries
 ### Task 4: Validate Per-Objective Artifacts
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN a valid per-objective artifact changes WHEN artifact validation runs THEN structural checks pass without DOCS.md fixed mappings.
 ▸ GIVEN a malformed per-objective artifact changes WHEN artifact validation runs THEN required-heading failure is reported.

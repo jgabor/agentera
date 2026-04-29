@@ -403,6 +403,17 @@ def _derive_heading_patterns(artifact: str, structural: str) -> list[str]:
         patterns.append(r"^#\s+\S")
     elif artifact == "TODO.md":
         patterns.append(r"^# TODO")
+    elif artifact == "OBJECTIVE.md":
+        return [
+            r"^# Objective",
+            r"^## Metric",
+            r"^## Target",
+            r"^## Baseline",
+            r"^## Constraints",
+            r"^\*\*Status\*\*:",
+        ]
+    elif artifact == "EXPERIMENTS.md":
+        return [r"^# Experiments", r"^(?:## Experiment \d+|## Closure\b)"]
     else:
         patterns.append(rf"^# {name}")
 
@@ -441,7 +452,8 @@ def _parse_format_contracts(spec_text: str) -> tuple[dict[str, str], dict[str, l
             paths[artifact] = path
         if structural and artifact in {
             "VISION.md", "TODO.md", "HEALTH.md", "PLAN.md",
-            "DECISIONS.md", "PROGRESS.md",
+            "DECISIONS.md", "PROGRESS.md", "OBJECTIVE.md",
+            "EXPERIMENTS.md",
         }:
             patterns = _derive_heading_patterns(artifact, structural)
             if patterns:

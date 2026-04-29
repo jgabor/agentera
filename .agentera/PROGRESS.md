@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 228 · 2026-04-29 22:40 · fix(validation): validate optimera objective artifacts
+
+**Phase**: build
+**What**: Completed Task 4 of the Completed Optimera Objective Archival plan. Artifact validation now recognizes exact `.agentera/optimera/<name>/OBJECTIVE.md` and `EXPERIMENTS.md` paths, applies generated structural heading checks, and surfaces experiments compaction nudges from variable objective directories without adding DOCS.md fixed mappings.
+**Commit**: this commit, `fix(validation): validate optimera objective artifacts`
+**Inspiration**: Active PLAN.md Task 4, SPEC's per-objective artifact contract, and Decision 31's self-contained objective directory constraint.
+**Discovered**: Existing `realisera-token` objective remains legacy-shaped; this task validates the canonical contract for future writes and does not rewrite historical objective artifacts.
+**Verified**: Focused pytest `python3 -m pytest -q tests/test_validate_artifact.py tests/test_generate_contracts.py` reported 89 passed. New coverage has 1 pass + 1 fail for per-objective path identification, OBJECTIVE.md validation, EXPERIMENTS.md validation, and EXPERIMENTS.md variable-path compaction nudges. The valid cases route `.agentera/optimera/latency/{OBJECTIVE,EXPERIMENTS}.md` without any DOCS.md mapping; malformed cases report missing `Target` or `Experiment/Closure` headings. The compaction hook scenario over 15 experiments emits `compact_artifact.py experiments` for the variable path, while the under-threshold case emits no nudge. `python3 scripts/generate_contracts.py --check` passed, `python3 scripts/validate_spec.py` reported 0 errors and 8 existing hard-wrap warnings, and full `python3 -m pytest -q` reported 519 passed.
+**Next**: Execute Task 5: cover objective inference branches without expanding validator scope.
+**Context**: intent (execute only Task 4 per-objective validation) · constraints (no registry, symlink, DOCS fixed mapping, harness semantics, release metadata, or docs refresh) · unknowns (legacy objective artifact shape intentionally left unchanged) · scope (validation hook, schema generator, generated schema, proportional tests, plan, changelog, progress).
+
 ■ ## Cycle 227 · 2026-04-29 22:36 · fix(optimera): exclude closed objectives from routing
 
 **Phase**: build
@@ -99,19 +110,9 @@
 **Next**: Execute Task 3: apply narrow effort-bias guards to planera and optimera only.
 **Context**: intent (execute only Task 2 decision capture) · constraints (no Task 3 guards, no new top-level DECISIONS.md field, preserve confidence semantics) · unknowns (live eval still blocked by low API credit) · scope (resonera SKILL.md, DECISIONS template, plan status, progress, changelog).
 
-■ ## Cycle 218 · 2026-04-29 · feat(resonera): strengthen pressure testing discipline
-
-**Phase**: verification
-**What**: Completed Task 1 of the Steelman-Informed Decision Pressure plan. Resonera now pressure-tests consequential user commitments by naming project-grounded blind spots first, then arguing serious alternatives without reassurance closes or false neutrality, with explicit confidence discipline and concrete banned phrases.
-**Commit**: this commit, `feat(resonera): strengthen pressure testing discipline`
-**Inspiration**: Active PLAN.md Task 1. Profile signals favored preserving task intent, direct concise prose, and evidence-rich comparisons.
-**Discovered**: Behavioral eval dispatch reached the runner, but the external Claude API returned `Credit balance is too low`; no product defect found.
-**Verified**: `python3 scripts/validate_spec.py --skill skills/resonera/SKILL.md` passed with 0 errors and the existing resonera hard-wrap warning; `python3 scripts/validate_spec.py` passed with 0 errors across 12 skills. Deterministic inspection of `skills/resonera/SKILL.md` against Task 1 acceptance found the required order at lines 177-192: context-specific blind spots first, project-context alternatives second, explicit `firm|provisional|exploratory` confidence with change evidence third. The same inspection found alternative advocacy rules at lines 194-199 forbidding false neutrality and reassurance closes, plus concrete banned examples at lines 201-210: "Either way is fine", "There is no wrong answer here", and "This is just a thought". Primary live eval was attempted via `python3 scripts/eval_skills.py --skill resonera`; it reached the external Claude API but returned `Credit balance is too low`, so local file-grounded verification is the available evidence for this retry. Retry verification refreshed `scripts/schemas/contracts.json`; `python3 scripts/generate_contracts.py --check` passed and `python3 -m pytest -q` reported 511 passed.
-**Next**: Execute Task 2: add concrete win conditions to decision capture without breaking current DECISIONS.md consumers.
-**Context**: intent (execute only Task 1 pressure-testing behavior) · constraints (no Task 2/3 scope, no new skill, preserve confidence semantics) · unknowns (actual eval blocked by low API credit) · scope (resonera skill text, plan status, progress, changelog).
-
 ## Archived Cycles
 
+- Cycle 218 (2026-04-29): feat(resonera): strengthen pressure testing discipline
 - Cycle 217 (2026-04-29): feat: close Post-1.22 Self-Audit Implementation plan
 - Cycle 216 (2026-04-29): chore(plan): close Prose-Quality Self-Audit Protocol plan
 - Cycle 215 (2026-04-28): chore(plan): close setup bundle checkpoint
@@ -151,4 +152,3 @@
 - Cycle 181 (2026-04-26): chore(audit): profilera Codex collection verification and metadata reconciliation
 - Cycle 180 (2026-04-26): chore(plan): freshness checkpoint for Codex+Copilot Completion
 - Cycle 179 (2026-04-26): chore(release): bump suite to 1.21.0
-- Cycle 178 (2026-04-26): docs(install): surface setup helpers in README and refresh DOCS.md Index
