@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-28 (setup bundle docs refresh) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-29 (post-steelman docs refresh) -->
 
 ## Conventions
 
@@ -51,21 +51,22 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | CLAUDE.md | CLAUDE.md | 2026-04-27 | ■ current |
 | Decisions | .agentera/DECISIONS.md | 2026-04-28 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
-| Progress | .agentera/PROGRESS.md | 2026-04-28 | ■ current |
-| TODO | TODO.md | 2026-04-28 | ■ current |
-| Changelog | CHANGELOG.md | 2026-04-28 | ■ current |
-| Health | .agentera/HEALTH.md | 2026-04-28 | ■ current |
-| Plan | .agentera/PLAN.md | 2026-04-28 | ■ current |
-| DOCS | .agentera/DOCS.md | 2026-04-28 | ■ current |
+| Progress | .agentera/PROGRESS.md | 2026-04-29 | ■ current |
+| TODO | TODO.md | 2026-04-29 | ■ current |
+| Changelog | CHANGELOG.md | 2026-04-29 | ■ current |
+| Health | .agentera/HEALTH.md | 2026-04-29 | ■ current |
+| Plan archive | .agentera/archive/PLAN-2026-04-29-steelman-informed-decision-pressure.md | 2026-04-29 | ■ current |
+| DOCS | .agentera/DOCS.md | 2026-04-29 | ■ current |
 | Design | .agentera/DESIGN.md | 2026-04-19 | ■ current |
 | Ecosystem spec | SPEC.md | 2026-04-28 | ■ current |
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
-| Registry | registry.json | 2026-04-28 | ■ current |
-| Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-28 | ■ current |
+| Registry | registry.json | 2026-04-29 | ■ current |
+| Marketplace manifest | .claude-plugin/marketplace.json | 2026-04-29 | ■ current |
 | Codex marketplace manifest | .agents/plugins/marketplace.json | 2026-04-28 | ■ current |
-| Copilot plugin manifest | plugin.json | 2026-04-28 | ■ current |
-| Copilot repo plugin manifest | .github/plugin/plugin.json | 2026-04-28 | ■ current |
-| Codex plugin manifest | .codex-plugin/plugin.json | 2026-04-28 | ■ current |
+| Copilot plugin manifest | plugin.json | 2026-04-29 | ■ current |
+| Copilot repo plugin manifest | .github/plugin/plugin.json | 2026-04-29 | ■ current |
+| Codex plugin manifest | .codex-plugin/plugin.json | 2026-04-29 | ■ current |
+| OpenCode plugin adapter | .opencode/plugins/agentera.js | 2026-04-29 | ■ current |
 | OpenCode adapter reference | references/adapters/opencode.md | 2026-04-28 | ■ current |
 | Runtime parity reference | references/adapters/runtime-feature-parity.md | 2026-04-28 | ■ current |
 | Codex UI metadata | skills/&lt;name&gt;/agents/openai.yaml; agents/openai.yaml | 2026-04-24 | ■ current |
@@ -82,7 +83,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Session stop hook | hooks/session_stop.py | 2026-04-03 | ■ current |
 | Validation hook | hooks/validate_artifact.py | 2026-04-28 | ■ current |
 | Shared hook utils | hooks/common.py | 2026-04-03 | ■ current |
-| Test suite | tests/ | 2026-04-28 | ■ current |
+| Test suite | tests/ | 2026-04-29 | ■ current |
 | Lefthook config | .lefthook.yml | 2026-04-20 | ■ current |
 | CI workflow | .github/workflows/ci.yml | 2026-04-11 | ■ current |
 
@@ -91,9 +92,14 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 477 tests across 17 files; CI runs on push/PR via GitHub Actions
+- **Tests**: 511 tests across 18 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-29 (post-steelman docs refresh)
+
+- [stale] Coverage still reported 477 tests across 17 files after Audit 17 recorded 511 across 18; Coverage and Test suite rows now match validation · warning (fixed)
+- [freshness] Steelman plan artifacts now point at 2026-04-29 progress, changelog, health, TODO, release metadata, and archived plan state · info (fixed)
 
 ### 2026-04-28 (setup bundle final verification)
 
