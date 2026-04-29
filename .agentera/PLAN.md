@@ -96,7 +96,7 @@ Closed state lives inside each objective's own artifacts. `OBJECTIVE.md` carries
 ### Task 7: Bump Patch Release Metadata
 
 **Depends on**: Task 6
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the fix is complete WHEN version-bearing surfaces are inspected THEN DOCS.md version targets report the next patch version.
 ▸ GIVEN the changelog is updated WHEN readers inspect release notes THEN the completed-objective fix appears under Fixed.
