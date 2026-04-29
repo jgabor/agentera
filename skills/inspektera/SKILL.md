@@ -13,7 +13,7 @@ description: >
   "find technical debt", "assess code quality", "how healthy is this codebase", "what needs
   fixing", "structural review", "pattern audit", "dependency check",
   "test coverage audit", or when realisera has run 5+ cycles without a health check.
-spec_sections: [1, 2, 4, 5, 6, 17, 18, 19]
+spec_sections: [1, 2, 4, 5, 6, 17, 18, 19, 24]
 ---
 
 # INSPEKTERA
@@ -74,8 +74,8 @@ Open with your read on the codebase before the structured data: what's improving
 
 ---
 
-Step markers: display `── step N/6: verb` before each step.
-Steps: orient, select, assess, distill, report, connect.
+Step markers: display `── step N/7: verb` before each step.
+Steps: orient, select, assess, distill, audit, report, connect.
 
 ## Step 1: Orient
 
@@ -119,6 +119,7 @@ Choose dimensions based on the codebase and user request. Not every dimension ap
 | **Dependency health** | Outdated deps, security advisories, unused deps, dep sprawl, pinning discipline. | Project has external dependencies |
 | **Version health** | Unreleased significant changes: `feat`/`fix` commits since the last version bump. | DOCS.md has a `versioning` convention block |
 | **Artifact freshness** | Are state artifacts current relative to plan activity or recent development? Detects artifacts that should have been updated but weren't. | Plan context available (PLAN.md with `Created` date) or PROGRESS.md has entries |
+| **Prose health** | Do artifact entries respect the §24 writing rules? Checks verbosity drift, abstraction creep, and filler accumulation across all project artifacts. | Project has 3+ artifact files |
 | **Security hygiene** | Hardcoded secrets, dangerous function calls, basic injection patterns. Lightweight regex-based scan, not a replacement for dedicated security tooling. | Any codebase |
 
 ### Depth guidance
@@ -280,6 +281,40 @@ Evaluates whether state artifacts are current relative to plan activity or recen
 
 **Handling**: stale artifact findings are reported like any other dimension finding but noted as context for the next plan cycle, not as blocking errors. Include which skill was expected to update the artifact and when the artifact was last modified.
 
+### Prose health
+
+Evaluate artifact prose quality against the three §24 Self-Audit Protocol rules. Read all project artifacts (PROGRESS.md, DECISIONS.md, PLAN.md, HEALTH.md, TODO.md, CHANGELOG.md, VISION.md, DESIGN.md, DOCS.md) and check each entry.
+
+**Rule 1: Verbosity drift**: approximate word count per entry. Compare against the §4 Token budgets table (per-entry budgets). Entries exceeding their budget by 50%+ are findings. Entries under budget are healthy.
+
+**Rule 2: Abstraction creep**: scan each entry for ≥1 concrete anchor (file path with extension, line number, commit hash with 7+ hex chars, metric value with unit, identifier such as function/class/variable name, direct quote in quotes attributed to a source). Entries with zero concrete anchors are findings.
+
+**Rule 3: Filler accumulation**: scan each entry against the §24 Banned verbosity patterns table. Flag entries containing: meta-commentary about writing, hedging qualifiers, redundant transitions, self-referential process narration, filler introductions, summary preambles, excessive justification. Use the replacement guidance from the table.
+
+**Confidence determination**:
+
+- Verbosity drift: 85-95 confidence. Word count against a known budget is high-certainty.
+- Abstraction creep: 80-90 confidence. Missing anchors are unambiguously detectable.
+- Filler accumulation: 70-85 confidence. Pattern matching is strong but some edge cases may be intentional.
+
+**Severity assignment**:
+
+- Verbosity drift ≥2× budget: critical. Drift 50-100% over: warning.
+- Abstraction creep across 50%+ of entries: critical. Isolated entries: warning.
+- Filler accumulation across 30%+ of entries: warning. Isolated entries: info.
+
+**Grading**:
+
+- **A**: All entries pass all 3 rules. No findings.
+- **B**: 1-2 info findings only. Verbosity drift under 50%.
+- **C**: 1-2 warnings or pervasive info findings across 25%+ of entries.
+- **D**: Multiple warnings or 1 critical finding.
+- **F**: Pervasive failures across multiple rules and artifacts.
+
+Flag entries that fail audit with the `[post-audit-flagged]` marker in findings. Cross-reference prior HEALTH.md audit entries for trajectory: are artifacts improving or degrading in prose discipline?
+
+**Trajectory**: compare current findings against the prior audit's prose health findings (if any). Note whether verbosity drift, abstraction creep, or filler accumulation have improved, degraded, or stayed stable.
+
 ### Security hygiene
 
 Lightweight regex-based scan for common security anti-patterns. This is a surface-level check, not a replacement for dedicated security analysis. Always recommend specialized tools for comprehensive coverage.
@@ -332,7 +367,23 @@ After all agents complete:
 
 ---
 
-## Step 5: Report
+## Step 5: Pre-write self-audit
+
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+
+1. **Verbosity drift**: approximate word count. Exceeds §4 budget → compact. Re-check from check 1.
+2. **Abstraction creep**: missing concrete anchor (file path, line number, commit hash, metric, identifier, direct quote) → add one. Re-check from check 1.
+3. **Filler accumulation**: scan against §24 Banned verbosity patterns table. Found → remove. Re-check from check 1.
+
+Max 3 revision attempts per entry. After 3 failures, write the entry with `[post-audit-flagged]` marker.
+
+Narration voice (riff, don't script):
+✗ "Self-audit failed. Revising entry."
+✓ "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
+
+---
+
+## Step 6: Report
 
 Assess each dimension in your response. Write ONLY grade, trajectory marker, and finding summary per dimension to HEALTH.md. No reasoning in the artifact; the conversation preserves analysis, the artifact preserves conclusions.
 
@@ -385,7 +436,7 @@ This section helps realisera and resonera understand the current reality.]
 
 ---
 
-## Step 6: Connect
+## Step 7: Connect
 
 Feed actionable findings into the suite:
 

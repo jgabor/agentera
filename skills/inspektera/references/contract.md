@@ -1,7 +1,7 @@
 <!-- contract: inspektera -->
 <!-- source: SPEC.md (sha256: 5da2ae456b2bd3a81de6f59372931e18cb1cc6bac24289b72d052a3dc3807030) -->
-<!-- sections: 1, 2, 4, 5, 6, 17, 18, 19 -->
-<!-- generated: 2026-04-29T06:43:49Z -->
+<!-- sections: 1, 2, 4, 5, 6, 17, 18, 19, 24 -->
+<!-- generated: 2026-04-29T07:06:59Z -->
 <!-- do not edit manually -->
 <!-- regenerate: python3 scripts/generate_contracts.py -->
 
@@ -479,3 +479,147 @@ When no active or recently completed plan exists (standalone skill invocation, a
 The fallback is advisory, not authoritative. It surfaces artifacts that may need attention but does not carry the same signal strength as plan-relative detection (where the dispatched-skill relationship provides causal evidence of staleness).
 
 **Linter check**: None. Staleness detection is a runtime convention consumed by orkestrera and inspektera, not a SKILL.md structural requirement.
+
+## 24. Artifact Writing Conventions
+
+Artifacts are read by skills, not just humans. Every word costs tokens on every read. This section defines the shared vocabulary, tone, and structural rules that all skills follow when writing artifacts and SKILL.md content.
+
+### The principle
+
+Write like a sharp colleague who respects your time. Say what happened, why it matters, what's next. No padding, no hedging, no meta-commentary about the writing process itself.
+
+### Banned verbosity patterns
+
+These patterns waste tokens and must not appear in artifact content. SKILL.md instruction text is exempt (it teaches the agent how to write, it is not artifact content itself).
+
+| Pattern | Example | Replacement |
+|---------|---------|-------------|
+| Meta-commentary about writing | "Here is the updated plan" | Omit; just write the plan |
+| Hedging qualifiers | "It seems like", "It appears that", "Possibly" | State directly or omit |
+| Redundant transitions | "Moving on to the next step", "Now let's look at" | Omit; structural markers handle transitions |
+| Self-referential process narration | "I am now analyzing", "The agent is checking" | Omit; the action speaks for itself |
+| Filler introductions | "Based on my analysis", "After careful consideration" | Omit; lead with the finding |
+| Summary preambles | "In summary", "To recap", "Overall" | Omit; the content is the summary |
+| Excessive justification | "I chose this approach because..." (when obvious) | One-line rationale only when non-obvious |
+
+### Sentence length limits
+
+Artifact prose follows a 25-word cap per sentence. This covers finding descriptions, cycle summaries, decision rationales, and all prose outside code blocks, tables, and lists. SKILL.md instruction text and examples are exempt.
+
+**Linter check**: Advisory. Counts words per sentence in artifact format examples within SKILL.md files (inside code blocks showing artifact structure). Flags sentences exceeding 25 words.
+
+### Preferred vocabulary
+
+Canonical terms replace synonyms across all artifacts and SKILL.md files.
+
+| Use | Avoid |
+|-----|-------|
+| finding | issue, problem, concern, observation |
+| cycle | iteration, run, pass, loop |
+| artifact | file, document, output |
+| dispatch | spawn, launch, create, start |
+| verified | checked, confirmed, validated, tested |
+| grade | score, rating, assessment |
+| dimension | category, area, section |
+| confidence | certainty, belief, likelihood |
+| severity | priority, level, importance |
+| trajectory | trend, direction, movement |
+| stale | outdated, old, expired |
+| checkpoint | save, snapshot, backup |
+
+**Linter check**: Advisory. Scans SKILL.md prose (outside code blocks and frontmatter) for the "avoid" column terms when used in artifact-writing context (near words like "write", "append", "entry", "format", "structure").
+
+### Structural rules
+
+All artifacts follow these composition rules:
+
+1. **Lead with the conclusion**: the first sentence of any entry states the outcome. Evidence follows. "Architecture: C. Circular dependency between auth/ and db/ modules." Not "After examining the module structure, I noticed that..."
+2. **One fact per sentence**: do not compound findings. Two short sentences beat one long one with "and" or "but".
+3. **Evidence is concrete**: file paths, line numbers, quoted code. No "some files" or "certain modules".
+4. **No empty severity**: every finding includes a suggested action. "Investigate X" is better than no action.
+5. **Numbers are digits**: use "3" not "three" in artifact content. Spell out only when the number begins a sentence (which should be rare given the length limits).
+
+### SKILL.md structural requirement
+
+Every SKILL.md MUST include a reference to this section in its workflow instructions when the skill produces artifacts. The canonical instruction:
+
+```
+Artifact writing follows contract Section 24 (Artifact Writing Conventions):
+banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and
+lead-with-conclusion structure.
+```
+
+This instruction appears in the skill's artifact-writing step (the step where the skill writes to PROGRESS.md, HEALTH.md, DECISIONS.md, or any other artifact).
+
+**Linter check**: Deterministic. All skills that produce artifacts (per the artifact format contracts table in Section 4) must contain a reference to "Section 24" or "Artifact Writing Conventions" in their SKILL.md.
+
+### Tone register
+
+The suite's voice is consistent across all artifacts:
+
+- **Direct**: state facts, not feelings. "Tests fail on auth/" not "It looks like there might be an issue with auth".
+- **Brief**: ≤15 words for cycle summaries, ≤25 words for finding descriptions, ≤50 words for decision rationales.
+- **Concrete**: "circular import in auth/models.py:12" not "there seems to be a coupling issue".
+- **Forward-looking**: every entry ends with what to do next, not a recap of what was done.
+
+This register complements Section 14 (Narration Voice): Section 14 governs how skills talk to the user between structural markers; Section 24 governs what goes inside the artifacts themselves.
+
+### Self-Audit Protocol
+
+Producing skills run these 3 checks on every artifact entry before writing. The checks are a mandatory pre-write gate. Run them in order: check 1 first, then 2, then 3.
+
+**Check 1 — Verbosity drift**
+
+What: Entry word count against the §4 token budget for the target artifact.
+How: Approximate the word count of the entry being written. Compare against the per-entry budget in the §4 Token budgets table.
+Pass: Word count ≤ budget.
+Fail: Compact the entry. Remove redundant words, merge sentences, cut filler. Re-check from check 1.
+
+**Check 2 — Abstraction creep**
+
+What: Entry must contain ≥1 concrete anchor from {file path, line number, commit hash, metric value, identifier, direct quote}.
+How: Scan the entry for at least one of: a file path (e.g. `src/auth.py`), a line number (e.g. `:42`), a commit hash (7+ hex chars), a metric value (number with unit), an identifier (function/class/variable name), or a direct quote (text in quotes attributed to a source).
+Pass: ≥1 concrete anchor present.
+Fail: Add a concrete anchor, then re-check from check 1.
+
+**Check 3 — Filler accumulation**
+
+What: Scan for banned verbosity patterns from the §24 Banned verbosity patterns table.
+How: Read the entry. Cross-reference each sentence against the patterns and replacements in the §24 Banned verbosity patterns table: meta-commentary about writing, hedging qualifiers, redundant transitions, self-referential process narration, filler introductions, summary preambles, excessive justification.
+Pass: No banned patterns found.
+Fail: Remove banned patterns using the recommended alternatives from the table, then re-check from check 1.
+
+#### Producing skill instruction template
+
+Copy this step into a SKILL.md artifact-write workflow, immediately before the write instruction:
+
+```
+Pre-write self-audit (SPEC §24 Self-Audit Protocol):
+1. Verbosity drift: approximate word count. Exceeds §4 budget → compact. Re-check.
+2. Abstraction creep: missing concrete anchor → add one. Re-check.
+3. Filler accumulation: scan against §24 Banned verbosity patterns table. Found → remove. Re-check.
+Max 3 revision attempts per entry. After 3 failures, write the entry with [post-audit-flagged] marker.
+```
+
+This is distinct from the existing §24 SKILL.md structural requirement instruction. That instruction reminds skills which writing conventions to follow *during* the write. This template gates entry quality *before* the write.
+
+#### Max-3-retry loop guard
+
+Each entry gets ≤3 revision attempts. After each failed check, revise the entry and re-run all checks starting from check 1. If any check still fails after the 3rd revision:
+
+1. Write the entry anyway.
+2. Prepend `[post-audit-flagged]` to the entry text.
+3. Include a brief reason: which check failed and why revision was impossible without losing substance.
+
+The `[post-audit-flagged]` marker signals inspektera to evaluate the entry during its next prose health audit. Dokumentera also flags flagged entries during doc-prose enforcement.
+
+Bail-out example:
+
+```
+[post-audit-flagged: abstraction creep — architecture concept has no file path, line number, or commit yet]
+Architecture decision: adopt event-driven communication between auth/ and billing/ modules.
+```
+
+#### Linter check
+
+Advisory. All producing skills (per §4 artifact format contracts table) must reference "Self-Audit Protocol" or "pre-write self-audit" in their SKILL.md. Skills that only read artifacts (hej, inspirera) are exempt.

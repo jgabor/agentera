@@ -77,7 +77,7 @@ The 3 checks:
 ### Task 4: Add pre-write self-audit + prose health dimension to inspektera SKILL.md
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN inspektera's SKILL.md WHEN read THEN a "Pre-write self-audit" step appears before HEALTH.md and TODO.md write steps
 ▸ GIVEN the audit dimensions list WHEN read THEN "prose health" exists as the 10th dimension, reading all project artifacts and checking against the 3 §24 rules
