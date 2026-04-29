@@ -56,7 +56,7 @@ Closed state lives inside each objective's own artifacts. `OBJECTIVE.md` carries
 ### Task 3: Align Objective Routing Consumers
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN closed and active objectives coexist WHEN a skill infers active optimization work THEN closed objectives are excluded first.
 ▸ GIVEN the existing `realisera-token` objective is closed WHEN routing runs THEN it is not selected as active.

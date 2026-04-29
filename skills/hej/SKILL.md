@@ -106,6 +106,8 @@ Show where things stand.
    - Read in parallel. First 20 lines each. Skip absent ones.
    - Extract the most recent entry or summary.
    - If TODO.md, PLAN.md, OBJECTIVE.md, or DECISIONS.md hints at active work, keep reading.
+   - For optimera status, inspect `.agentera/optimera/<name>/` directories directly. Classify closed objectives first when the OBJECTIVE.md status line starts with `**Status**: closed`, including legacy prose such as `**Status**: closed (date)`. Exclude closed objectives before recency checks; if every objective is closed, report no active objective and do not route to `/optimera` for completed work.
+   - When multiple non-closed objectives exist, use EXPERIMENTS.md git recency only among those non-closed objectives. A closed objective with newer history must not outrank an older active objective.
    - Identify the first concrete open item or current plan task before routing.
    - Do not route from a heading or summary alone when an executable follow-up exists nearby.
 
@@ -171,7 +173,7 @@ Show where things stand.
    Priority order:
    - Active PLAN with pending tasks → suggest ⎈ `/orkestrera` for the first unblocked pending task.
    - Critical or degrading health → suggest ⛶ `/inspektera` or ⧉ `/realisera` for the named finding.
-   - Active OBJECTIVE with stalled or missing metric evidence → suggest ⎘ `/optimera` for that metric.
+   - Active non-closed OBJECTIVE with stalled or missing metric evidence → suggest ⎘ `/optimera` for that metric.
    - TODO.md open items → suggest ⧉ `/realisera` for the highest-severity open item; prefer items that unlock product evidence or future plans.
    - Pending DECISIONS.md follow-up → suggest ❈ `/resonera` for the named unresolved decision.
    - Vision exists but no plan, objective, decision follow-up, or TODO work is active → suggest ≡ `/planera`.
