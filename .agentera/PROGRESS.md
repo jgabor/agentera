@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 236 · 2026-04-30 07:59 · chore(optimera): verify experiment analysis integration
+
+**Phase**: verification
+**What**: Completed Task 5 of the Optimera Experiment Analysis Reliability plan. Real-artifact analyzer output is useful for Step 2 history review, and non-frontier smoke behavior stayed unchanged.
+**Commit**: this commit, `chore(optimera): verify experiment analysis integration`
+**Inspiration**: Active PLAN.md Task 5 and optimera's documented Step 2 analyzer command.
+**Discovered**: Real `realisera-token` history reports six experiments, two kept results, three discarded attempts, best metric 12055, lower-is-better target context, and no plateau.
+**Verified**: Documented analyzer command from `skills/optimera` exited 0 against real artifacts and printed JSON with `total_experiments: 6`, `kept: 2`, `discarded: 3`, `best.experiment: 5`, `target_direction: lower`, `distance_to_target: 3.0`, and `plateau_detected: false`. `python3 scripts/eval_skills.py --skill optimera --dry-run` and `python3 scripts/eval_skills.py --dry-run` both resolved prompts without invoking frontier mode. `python3 scripts/validate_spec.py --skill skills/optimera/SKILL.md`, `python3 scripts/validate_spec.py`, `python3 scripts/generate_contracts.py --check`, `python3 -m pytest -q tests/test_analyze_experiments.py`, and `python3 -m pytest -q` passed; full pytest reported 536 passed.
+**Next**: Execute Task 6: bump release metadata to 1.25.0 without reopening analyzer behavior.
+**Context**: intent (execute only Task 5 integration verification) · constraints (no version bump, no plan archival, leave HEALTH.md untouched) · unknowns (existing hard-wrap warnings remain advisory) · scope (PLAN status, PROGRESS evidence, validation, commit).
+
 ■ ## Cycle 235 · 2026-04-30 07:56 · feat(optimera): add frontier experiment report
 
 **Phase**: build
@@ -99,52 +110,12 @@
 **Next**: Execute Task 4: validate per-objective artifacts without adding fixed objective mappings.
 **Context**: intent (execute only Task 3 routing consumers) · constraints (no registry, symlink, root artifacts, harness changes, validators, broad regression coverage, release metadata, or reopening support) · unknowns (live eval remains blocked by API credit if attempted) · scope (optimera, hej, resonera skill text plus plan, changelog, progress).
 
-■ ## Cycle 226 · 2026-04-29 22:32 · chore(optimera): record closure verification evidence
-
-**Phase**: verification
-**What**: Corrected Task 2 evidence after orkestrera evaluation found Cycle 225's `Verified` field too static. The optimera workflow implementation stayed unchanged; this cycle adds behavior-facing evidence only.
-**Commit**: this commit, `chore(optimera): record closure verification evidence`
-**Inspiration**: Orkestrera retry findings for SPEC Section 20 and realisera's Reality Verification Gate.
-**Discovered**: Live eval remains blocked by external Claude API credit, so representative local scenario verification is the available fallback.
-**Verified**: Live eval attempt `python3 scripts/eval_skills.py --skill optimera --timeout 60 --runtime claude` returned `status: fail`, `Exit code 1`, and `Credit balance is too low`. Fallback scenario verifier anchored the optimera workflow at `skills/optimera/SKILL.md` lines 182, 184, 207, 209, and 358, then ran temp objective states: AC1 already-met startup produced `first_write=True, second_write=False, closures=1, exit=complete: objective achieved, analyze=skipped`; AC2 target-met experiment produced `experiment_logged_before_closure=True, closure_written=True, reason=experiment met target, closures=1`; AC3 all closed produced `outcome=ask successor objective, experiment_started=False`; AC4 no objective dirs produced `outcome=new-objective path`.
-**Next**: Continue the active plan with Task 3: align objective routing consumers so closed objectives are excluded from active-work inference.
-**Context**: intent (retry Task 2 evidence only) · constraints (no implementation expansion, keep PLAN Task 2 complete, no amend) · unknowns (live eval unavailable until API credit is restored) · scope (PROGRESS corrective evidence, validation, local commit).
-
-■ ## Cycle 225 · 2026-04-29 · fix(optimera): close achieved objectives in workflow
-
-**Phase**: build
-**What**: Completed Task 2 of the Completed Optimera Objective Archival plan. Optimera now detects closed objective sets, preserves the no-objective brainstorm path, records startup closure once, and records closure after a target-meeting experiment log.
-**Commit**: this commit, `fix(optimera): close achieved objectives in workflow`
-**Inspiration**: Active PLAN.md Task 2, SPEC.md objective closure contract, and Decision 31's self-contained objective directory constraint.
-**Discovered**: Existing `.agentera/optimera/realisera-token/OBJECTIVE.md` already has non-canonical legacy closure prose; this task changes optimera workflow only. Task 4 validator support and Task 5 regression coverage remain pending by plan.
-**Verified**: `python3 scripts/validate_spec.py --skill skills/optimera/SKILL.md` passed with 0 errors and 1 existing hard-wrap warning. `python3 scripts/validate_spec.py` passed with 0 errors and 8 existing hard-wrap warnings. `python3 scripts/generate_contracts.py --check` reported all 12 contracts current. `python3 scripts/eval_skills.py --skill optimera --dry-run` resolved the optimera prompt. Focused pytest reported 126 passed; full `python3 -m pytest -q` reported 511 passed. Diff review confirmed no registry, symlink, root objective artifact, DOCS fixed mapping, harness execution, result parsing, keep/discard semantic, routing-consumer, validator, regression-test, docs-refresh, release, or reopening scope was added.
-**Next**: Execute Task 3: align routing consumers so closed objectives are excluded from active-work inference.
-**Context**: intent (execute only Task 2 closure workflow) · constraints (no registry/symlink/root artifacts, no routing consumers, no validator or regression coverage, no release metadata) · unknowns (legacy closed objective uses old status prose) · scope (optimera skill workflow, plan status, changelog, progress).
-
-■ ## Cycle 224 · 2026-04-29 · docs(spec): define objective closure contract
-
-**Phase**: build
-**What**: Completed Task 1 of the Completed Optimera Objective Archival plan. SPEC.md now defines canonical objective closure state in per-objective OBJECTIVE.md files and closure history entries in per-objective EXPERIMENTS.md files.
-**Commit**: this commit, `docs(spec): define objective closure contract`
-**Inspiration**: Active PLAN.md Task 1 and Decision 31's self-contained `.agentera/optimera/<name>/` layout.
-**Discovered**: `.agentera/PLAN.md` was untracked in git, so this task adds the active plan artifact with Task 1 marked complete.
-**Verified**: N/A: docs-only. `python3 scripts/validate_spec.py` reported 0 errors and 8 existing hard-wrap warnings. `python3 scripts/generate_contracts.py --check` reported all 12 contract files current. Diff review confirmed no registry, symlink, root OBJECTIVE.md, root EXPERIMENTS.md, or DOCS.md fixed objective mapping was added.
-**Next**: Execute Task 2 only after this contract commit lands.
-**Context**: intent (execute only Task 1 objective closure contract) · constraints (no workflow behavior, routing, tests, docs refresh, release metadata, or Task 2) · unknowns (none) · scope (SPEC, generated contracts, schema, PLAN status, progress).
-
-■ ## Cycle 223 · 2026-04-29 · chore(freshness): close steelman decision pressure
-
-**Phase**: audit
-**What**: Completed the Steelman-Informed Decision Pressure plan. Tasks 1-5 landed resonera pressure testing, decision win conditions, planera and optimera effort-bias guards, compatibility validation, and the 1.24.0 release metadata bump.
-**Commit**: this commit, `chore(freshness): close steelman decision pressure`
-**Inspiration**: Active PLAN.md Task 6 and realisera's plan-completion sweep convention.
-**Discovered**: TODO.md has no stale open entries for this plan. The only open Normal item, `[fix] Define completed-objective archival for optimera`, is unrelated and remains open.
-**Verified**: `CHANGELOG.md` anchor `[1.24.0] > Changed > Steelman-Informed Decision Pressure is freshness-closed` summarizes the plan-level change. `.agentera/PROGRESS.md` Cycle 223 anchors `What`, `Discovered`, and `Next` record the aggregate plan outcome, no stale plan TODOs, and plan completion. `python3 scripts/self_audit.py .agentera/archive/PLAN-2026-04-29-steelman-informed-decision-pressure.md CHANGELOG.md .agentera/PROGRESS.md` exited 0. `python3 scripts/validate_spec.py` reported 0 errors and 8 existing hard-wrap warnings. `python3 scripts/generate_contracts.py --check` reported all 12 contracts current. `python3 scripts/validate_lifecycle_adapters.py` reported `lifecycle adapter metadata ok`. `python3 -m pytest -q` reported 511 passed. `.agentera/PLAN.md` glob returned no files, and TODO search found no open Steelman plan entries.
-**Next**: The plan is complete; next useful work is the unrelated optimera completed-objective archival issue if it remains important.
-**Context**: intent (execute only Task 6 freshness checkpoint) · constraints (no feature scope, preserve unrelated TODO, leave untracked vrida untouched) · unknowns (none) · scope (CHANGELOG, PROGRESS, archived PLAN).
-
 ## Archived Cycles
 
+- Cycle 226 (2026-04-29): chore(optimera): record closure verification evidence
+- Cycle 225 (2026-04-29): fix(optimera): close achieved objectives in workflow
+- Cycle 224 (2026-04-29): docs(spec): define objective closure contract
+- Cycle 223 (2026-04-29): chore(freshness): close steelman decision pressure
 - Cycle 222 (2026-04-29): chore(release): bump suite to 1.24.0
 - Cycle 221 (2026-04-29): chore(validation): confirm decision contract compatibility
 - Cycle 220 (2026-04-29): feat(skills): guard adjacent effort-biased selections
@@ -181,7 +152,3 @@
 - Cycle 189 (2026-04-27): docs(runtime): refresh structured runtime metadata with verified Codex hook capability evidence
 - Cycle 188 (2026-04-27): docs(runtime): refresh README and SPEC prose with verified Codex and Copilot capability evidence
 - Cycle 187 (2026-04-27): chore(release): renumber and consolidate three local pre-push releases into a single 1.20.0
-- Cycle 186 (2026-04-26): chore(release): bump suite to 1.22.0
-- Cycle 185 (2026-04-26): docs(verify): document manual AGENTERA_HOME verification and surface smoke_live_hosts.py
-- Cycle 184 (2026-04-26): feat(smoke): wire copilot -p AGENTERA_HOME + compaction live verification
-- Cycle 183 (2026-04-26): feat(smoke): wire codex exec AGENTERA_HOME + compaction live verification
