@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-29 (optimera objective docs refresh) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-30 (optimera analysis contract) -->
 
 ## Conventions
 
@@ -56,7 +56,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Changelog | CHANGELOG.md | 2026-04-29 | ■ current |
 | Health | .agentera/HEALTH.md | 2026-04-29 | ■ current |
 | Plan archive | .agentera/archive/PLAN-2026-04-29-steelman-informed-decision-pressure.md | 2026-04-29 | ■ current |
-| DOCS | .agentera/DOCS.md | 2026-04-29 | ■ current |
+| DOCS | .agentera/DOCS.md | 2026-04-30 | ■ current |
 | Design | .agentera/DESIGN.md | 2026-04-19 | ■ current |
 | Ecosystem spec | SPEC.md | 2026-04-28 | ■ current |
 | Ideas | docs/IDEAS.md | 2026-03-29 | ■ current |
@@ -95,6 +95,15 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Tests**: 523 tests across 19 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-30 (optimera analysis contract)
+
+- [gap] Optimera's skill documentation did not state how rich experiment records
+  should be analyzed before analyzer implementation work; it now defines expected
+  status, metric, target, plateau, malformed-record, and artifact-boundary behavior · warning (fixed)
+- [gap] Stochastic objective guidance did not require fixed per-experiment budgets;
+  OBJECTIVE.md measurement guidance now names run count, seed policy, time limit,
+  token cap, and sample size as stable budget fields · warning (fixed)
 
 ### 2026-04-29 (optimera objective docs refresh)
 
