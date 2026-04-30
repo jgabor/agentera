@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 237 · 2026-04-30 08:03 · chore(release): bump suite to 1.25.0
+
+**Phase**: build
+**What**: Completed Task 6 of the Optimera Experiment Analysis Reliability plan. Version-bearing metadata now reports `1.25.0`, and release notes cover guidance, analyzer repair, and frontier reporting.
+**Commit**: this commit, `chore(release): bump suite to 1.25.0`
+**Inspiration**: Active PLAN.md Task 6 and DOCS.md versioning policy.
+**Discovered**: `.agents/plugins/marketplace.json` is a DOCS-listed target with no version field by design.
+**Verified**: Version probe checked DOCS.md targets: plugin manifests, 12 skill plugin manifests, Claude marketplace metadata and plugin entries, OpenCode AGENTERA_VERSION, and registry skill versions all reported `1.25.0`; `.agents/plugins/marketplace.json` reported no version field. `CHANGELOG.md` has `[1.25.0]` entries for optimera guidance, analyzer repair, and frontier reporting. `.agentera/PLAN.md` marks Task 6 `■ complete`. `python3 scripts/validate_lifecycle_adapters.py`, `python3 scripts/validate_spec.py`, `python3 scripts/generate_contracts.py --check`, `python3 -m pytest -q tests/test_runtime_adapters.py`, and full `python3 -m pytest -q` passed; full pytest reported 536 passed.
+**Next**: Execute Task 7: plan-level freshness checkpoint and archive only after release metadata is committed.
+**Context**: intent (execute only Task 6 release metadata) · constraints (target 1.25.0, no plan-level freshness checkpoint or archive, leave HEALTH.md untouched) · unknowns (none) · scope (version metadata, changelog release notes, plan status, progress evidence).
+
 ■ ## Cycle 236 · 2026-04-30 07:59 · chore(optimera): verify experiment analysis integration
 
 **Phase**: audit
@@ -99,19 +110,9 @@
 **Next**: Execute Task 5: cover objective inference branches without expanding validator scope.
 **Context**: intent (execute only Task 4 per-objective validation) · constraints (no registry, symlink, DOCS fixed mapping, harness semantics, release metadata, or docs refresh) · unknowns (legacy objective artifact shape intentionally left unchanged) · scope (validation hook, schema generator, generated schema, proportional tests, plan, changelog, progress).
 
-■ ## Cycle 227 · 2026-04-29 22:36 · fix(optimera): exclude closed objectives from routing
-
-**Phase**: build
-**What**: Completed Task 3 of the Completed Optimera Objective Archival plan. Optimera, hej, and resonera now exclude closed objectives before active-objective selection, preserve read-only handling for explicitly named closed objectives, and avoid letting newest closed history outrank older active work.
-**Commit**: this commit, `fix(optimera): exclude closed objectives from routing`
-**Inspiration**: Active PLAN.md Task 3 and SPEC's per-objective closed state contract.
-**Discovered**: The only current objective directory is legacy-closed `realisera-token`; `hej-token` exists only in archived and helper files, not as a live objective directory.
-**Verified**: `python3 scripts/validate_spec.py --skill skills/optimera/SKILL.md --skill skills/hej/SKILL.md --skill skills/resonera/SKILL.md` passed with 0 errors and existing hard-wrap warnings. `python3 scripts/generate_contracts.py --check` reported all 12 contracts current. `python3 scripts/eval_skills.py --skill optimera --dry-run && python3 scripts/eval_skills.py --skill hej --dry-run` resolved both prompts. Focused local verifier confirmed `.agentera/optimera/realisera-token/OBJECTIVE.md` starts with `**Status**: closed`, closed objectives are filtered before candidates, explicitly named closed objectives have read-only ask-before-successor prose, and a newer closed objective loses to an older active objective.
-**Next**: Execute Task 4: validate per-objective artifacts without adding fixed objective mappings.
-**Context**: intent (execute only Task 3 routing consumers) · constraints (no registry, symlink, root artifacts, harness changes, validators, broad regression coverage, release metadata, or reopening support) · unknowns (live eval remains blocked by API credit if attempted) · scope (optimera, hej, resonera skill text plus plan, changelog, progress).
-
 ## Archived Cycles
 
+- Cycle 227 (2026-04-29): fix(optimera): exclude closed objectives from routing
 - Cycle 226 (2026-04-29): chore(optimera): record closure verification evidence
 - Cycle 225 (2026-04-29): fix(optimera): close achieved objectives in workflow
 - Cycle 224 (2026-04-29): docs(spec): define objective closure contract
@@ -151,4 +152,3 @@
 - Cycle 190 (2026-04-27): fix(copilot): revive dead session-end hook, audit SKILL.md frontmatter for #951 workaround, swap README install path to granular per #2390
 - Cycle 189 (2026-04-27): docs(runtime): refresh structured runtime metadata with verified Codex hook capability evidence
 - Cycle 188 (2026-04-27): docs(runtime): refresh README and SPEC prose with verified Codex and Copilot capability evidence
-- Cycle 187 (2026-04-27): chore(release): renumber and consolidate three local pre-push releases into a single 1.20.0

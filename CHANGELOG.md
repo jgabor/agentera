@@ -2,13 +2,19 @@
 
 ## [Unreleased]
 
-### Fixed
+## [1.25.0] · 2026-04-30
 
-- Optimera experiment analysis now parses rich objective target prose without crashing and reports additive diagnostics for malformed targets.
+### Added
+
+- Optimera experiment analysis now has a `--frontier` Markdown report with keep rate, best metric, target status, and deterministic top-result ordering.
 
 ### Changed
 
-- Completed-objective archival is freshness-closed: the active plan is archived, the stale TODO is resolved, and the checkpoint validates spec, contracts, artifact prose, and tests.
+- Optimera guidance now documents analyzer expectations for rich experiment records, fixed stochastic budgets, and per-objective artifact boundaries.
+
+### Fixed
+
+- Optimera experiment analysis now normalizes baseline, kept, discarded, and error records, extracts rich metric values, and parses objective target prose without crashing.
 
 ## [1.24.1] · 2026-04-29
 
