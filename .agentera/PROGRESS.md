@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 238 · 2026-04-30 08:07 · chore(freshness): close optimera analysis reliability
+
+**Phase**: audit
+**What**: Completed Task 7 of the Optimera Experiment Analysis Reliability plan. The shipped analyzer guidance, parser repair, frontier report, integration verification, and 1.25.0 metadata now have one closed state.
+**Commit**: this commit, `chore(freshness): close optimera analysis reliability`
+**Inspiration**: Active PLAN.md Task 7 and realisera's plan-completion sweep convention.
+**Discovered**: No HEALTH finding was resolved by this checkpoint; Cycle 233 used non-contract phase `verification`, corrected to `audit` as the smallest accurate allowed value.
+**Verified**: `CHANGELOG.md` records the user-facing Task 1-6 impact in `[1.25.0]` and an Unreleased freshness closure; `TODO.md` has no open analyzer reliability item; `.agentera/archive/PLAN-2026-04-30-optimera-experiment-analysis-reliability.md` records Tasks 1-7 complete; `.agentera/PLAN.md` is absent. Validation passed: artifact checks for CHANGELOG, TODO, PROGRESS, and archived plan; `python3 scripts/self_audit.py CHANGELOG.md TODO.md .agentera/PROGRESS.md .agentera/archive/PLAN-2026-04-30-optimera-experiment-analysis-reliability.md`; `python3 scripts/validate_spec.py`; `python3 scripts/generate_contracts.py --check`; `python3 scripts/validate_lifecycle_adapters.py`; and full `python3 -m pytest -q`.
+**Next**: The plan is complete; next useful work is a fresh health pass if analyzer reliability changes expose broader optimera maintenance debt.
+**Context**: intent (execute only Task 7 plan freshness and archival) · constraints (do not modify VISION.md or HEALTH.md, archive exact path, remove active plan) · unknowns (none) · scope (CHANGELOG, TODO, PROGRESS, archived PLAN, validation, commit).
+
 ■ ## Cycle 237 · 2026-04-30 08:03 · chore(release): bump suite to 1.25.0
 
 **Phase**: build
@@ -46,7 +57,7 @@
 
 ■ ## Cycle 233 · 2026-04-30 07:46 · fix(optimera): normalize experiment analysis records
 
-**Phase**: verification
+**Phase**: audit
 **What**: Completed Task 2 of the Optimera Experiment Analysis Reliability plan. The existing implementation commit normalizes experiment record statuses, extracts rich metric values, and keeps malformed-record diagnostics additive.
 **Commit**: 5aec2c0 `fix(optimera): normalize experiment analysis records`
 **Inspiration**: Active PLAN.md Task 2 and the optimera analysis contract from Task 1.
@@ -99,19 +110,9 @@
 **Next**: Execute Task 6: refresh optimera documentation without adding fixed objective mappings.
 **Context**: intent (execute only Task 5 regression coverage) · constraints (no registry, symlink, root mapping, harness changes, reopening support, docs refresh, or release metadata) · unknowns (live eval remains credit-gated if attempted) · scope (test coverage plus plan, changelog, progress).
 
-■ ## Cycle 228 · 2026-04-29 22:40 · fix(validation): validate optimera objective artifacts
-
-**Phase**: build
-**What**: Completed Task 4 of the Completed Optimera Objective Archival plan. Artifact validation now recognizes exact `.agentera/optimera/<name>/OBJECTIVE.md` and `EXPERIMENTS.md` paths, applies generated structural heading checks, and surfaces experiments compaction nudges from variable objective directories without adding DOCS.md fixed mappings.
-**Commit**: this commit, `fix(validation): validate optimera objective artifacts`
-**Inspiration**: Active PLAN.md Task 4, SPEC's per-objective artifact contract, and Decision 31's self-contained objective directory constraint.
-**Discovered**: Existing `realisera-token` objective remains legacy-shaped; this task validates the canonical contract for future writes and does not rewrite historical objective artifacts.
-**Verified**: Focused pytest `python3 -m pytest -q tests/test_validate_artifact.py tests/test_generate_contracts.py` reported 89 passed. New coverage has 1 pass + 1 fail for per-objective path identification, OBJECTIVE.md validation, EXPERIMENTS.md validation, and EXPERIMENTS.md variable-path compaction nudges. The valid cases route `.agentera/optimera/latency/{OBJECTIVE,EXPERIMENTS}.md` without any DOCS.md mapping; malformed cases report missing `Target` or `Experiment/Closure` headings. The compaction hook scenario over 15 experiments emits `compact_artifact.py experiments` for the variable path, while the under-threshold case emits no nudge. `python3 scripts/generate_contracts.py --check` passed, `python3 scripts/validate_spec.py` reported 0 errors and 8 existing hard-wrap warnings, and full `python3 -m pytest -q` reported 519 passed.
-**Next**: Execute Task 5: cover objective inference branches without expanding validator scope.
-**Context**: intent (execute only Task 4 per-objective validation) · constraints (no registry, symlink, DOCS fixed mapping, harness semantics, release metadata, or docs refresh) · unknowns (legacy objective artifact shape intentionally left unchanged) · scope (validation hook, schema generator, generated schema, proportional tests, plan, changelog, progress).
-
 ## Archived Cycles
 
+- Cycle 228 (2026-04-29): fix(validation): validate optimera objective artifacts
 - Cycle 227 (2026-04-29): fix(optimera): exclude closed objectives from routing
 - Cycle 226 (2026-04-29): chore(optimera): record closure verification evidence
 - Cycle 225 (2026-04-29): fix(optimera): close achieved objectives in workflow
@@ -151,4 +152,3 @@
 - Cycle 191 (2026-04-27): feat(codex): wire apply_patch hook for real-time artifact validation
 - Cycle 190 (2026-04-27): fix(copilot): revive dead session-end hook, audit SKILL.md frontmatter for #951 workaround, swap README install path to granular per #2390
 - Cycle 189 (2026-04-27): docs(runtime): refresh structured runtime metadata with verified Codex hook capability evidence
-- Cycle 188 (2026-04-27): docs(runtime): refresh README and SPEC prose with verified Codex and Copilot capability evidence

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Optimera experiment analysis reliability is freshness-closed with guidance, record normalization, target parsing, frontier reporting, integration verification, and 1.25.0 metadata aligned.
+
 ## [1.25.0] · 2026-04-30
 
 ### Added
