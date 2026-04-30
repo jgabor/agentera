@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 233 · 2026-04-30 07:46 · fix(optimera): normalize experiment analysis records
+
+**Phase**: verification
+**What**: Completed Task 2 of the Optimera Experiment Analysis Reliability plan. The existing implementation commit normalizes experiment record statuses, extracts rich metric values, and keeps malformed-record diagnostics additive.
+**Commit**: 5aec2c0 `fix(optimera): normalize experiment analysis records`
+**Inspiration**: Active PLAN.md Task 2 and the optimera analysis contract from Task 1.
+**Discovered**: Real-artifact analyzer smoke still reaches pending Task 3 objective target parsing, so this retry did not change implementation code or tests.
+**Verified**: Focused rerun `python3 -m pytest -q tests/test_analyze_experiments.py` reported `.......... [100%]` and `10 passed in 0.01s`. Those tests cover baseline, kept, discarded, and error status normalization; before, after, delta, current, and trajectory metric extraction; additive malformed-record diagnostics; and metric unit assertions.
+**Next**: Execute Task 3: harden objective target extraction against current realisera-token artifacts.
+**Context**: intent (retry Task 2 cycle evidence only) · constraints (no implementation or test changes unless validation requires them, keep Task 2 complete, leave HEALTH.md untouched) · unknowns (Task 3 target parsing remains pending) · scope (PROGRESS evidence and local commit).
+
 ■ ## Cycle 232 · 2026-04-29 · chore(freshness): close optimera objective archival plan
 
 **Phase**: audit
