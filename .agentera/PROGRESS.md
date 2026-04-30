@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 234 · 2026-04-30 07:52 · fix(optimera): harden objective target extraction
+
+**Phase**: build
+**What**: Completed Task 3 of the Optimera Experiment Analysis Reliability plan. Objective target parsing now handles closed-status prose, target context, percentage-derived targets, target pass/fail, and malformed-target diagnostics without crashing.
+**Commit**: this commit, `fix(optimera): harden objective target extraction`
+**Inspiration**: Active PLAN.md Task 3 and the live `realisera-token` objective that crashed on rich target prose.
+**Discovered**: Live closed objective prose rounds the achieved Tier 1 reduction to 20.0%, while the derived numeric target reports a 3-token remaining distance.
+**Verified**: `python3 -m pytest -q tests/test_analyze_experiments.py` reported `15 passed in 0.02s`. Live command `python3 skills/optimera/scripts/analyze_experiments.py --experiments .agentera/optimera/realisera-token/EXPERIMENTS.md --objective .agentera/optimera/realisera-token/OBJECTIVE.md --pretty` exited 0 and reported `total_experiments: 6`, `kept: 2`, `discarded: 3`, `target_direction: lower`, `target: 12052.0`, `distance_to_target: 3.0`, and closed-status `target_context`.
+**Next**: Execute Task 4: add frontier report mode without changing default JSON output.
+**Context**: intent (execute only Task 3 target extraction) · constraints (no frontier reporting, preserve default JSON shape except corrected target fields and additive diagnostics, leave HEALTH.md untouched) · unknowns (rounded closed objective claims target met while numeric derivation leaves 3 tokens) · scope (analyzer target parsing, focused tests, plan and progress evidence).
+
 ■ ## Cycle 233 · 2026-04-30 07:46 · fix(optimera): normalize experiment analysis records
 
 **Phase**: verification
