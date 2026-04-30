@@ -7,8 +7,10 @@
 import { execFileSync } from "child_process";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
-export const AGENTERA_VERSION = "1.26.0";
+export const AGENTERA_VERSION = "1.27.0";
+export const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode -y";
 
 export const COMMAND_TEMPLATES = {
   "hej": `---
@@ -91,6 +93,12 @@ export function resolveOpencodeCommandsDir() {
     : path.join(process.env.HOME, ".config", "opencode", "commands");
 }
 
+export function resolveOpencodeSkillsDir() {
+  return process.env.OPENCODE_CONFIG_DIR
+    ? path.join(process.env.OPENCODE_CONFIG_DIR, "skills")
+    : path.join(process.env.HOME, ".config", "opencode", "skills");
+}
+
 export function hasManagedMarker(filePath) {
   let content;
   try {
@@ -103,10 +111,116 @@ export function hasManagedMarker(filePath) {
   const closingIdx = lines.indexOf("---", 1);
   if (closingIdx === -1) return false;
   const frontmatter = lines.slice(1, closingIdx).join("\n");
-  return frontmatter.includes("agentera_managed: true");
+  return /^agentera_managed:\s*true\s*$/m.test(frontmatter);
+}
+
+export const commandBootstrap = { lastReport: null };
+
+function validSkillDir(skillDir, name) {
+  return fs.existsSync(path.join(skillDir, name, "SKILL.md"));
+}
+
+export function resolveInstalledAgenteraSkillsDir() {
+  const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+  const candidates = [
+    process.env.AGENTERA_HOME && path.join(process.env.AGENTERA_HOME, "skills"),
+    path.join(process.env.HOME, ".agents", "agentera", "skills"),
+    path.join(process.env.HOME, ".agents", "skills"),
+    path.join(pluginRoot, "skills"),
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (Object.keys(COMMAND_TEMPLATES).every((name) => validSkillDir(candidate, name))) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function isManagedSkillSymlink(targetPath, name) {
+  let linkTarget;
+  try {
+    linkTarget = fs.readlinkSync(targetPath);
+  } catch {
+    return false;
+  }
+
+  const normalized = linkTarget.toLowerCase();
+  return normalized.includes("agentera") || path.basename(linkTarget) === name;
+}
+
+export const skillBootstrap = { lastReport: null };
+
+export function bootstrapSkills() {
+  const report = {
+    repaired: [],
+    restored: [],
+    skippedUserOwned: [],
+    unchanged: [],
+    missingSource: [],
+    installCommand: null,
+  };
+
+  try {
+    const sourceDir = resolveInstalledAgenteraSkillsDir();
+    if (!sourceDir) {
+      report.installCommand = OPENCODE_SKILL_INSTALL_COMMAND;
+      console.error(`[agentera] OpenCode skills not found. Install with: ${OPENCODE_SKILL_INSTALL_COMMAND}`);
+      skillBootstrap.lastReport = report;
+      return report;
+    }
+
+    const targetDir = resolveOpencodeSkillsDir();
+    fs.mkdirSync(targetDir, { recursive: true });
+
+    for (const name of Object.keys(COMMAND_TEMPLATES)) {
+      const sourceSkill = path.join(sourceDir, name);
+      const targetSkill = path.join(targetDir, name);
+      if (!validSkillDir(sourceDir, name)) {
+        report.missingSource.push(name);
+        continue;
+      }
+
+      let stat = null;
+      try {
+        stat = fs.lstatSync(targetSkill);
+      } catch {
+        fs.symlinkSync(sourceSkill, targetSkill, "dir");
+        report.restored.push(name);
+        continue;
+      }
+
+      if (fs.existsSync(path.join(targetSkill, "SKILL.md"))) {
+        report.unchanged.push(name);
+        continue;
+      }
+
+      if (!stat.isSymbolicLink() || !isManagedSkillSymlink(targetSkill, name)) {
+        report.skippedUserOwned.push(name);
+        continue;
+      }
+
+      fs.unlinkSync(targetSkill);
+      fs.symlinkSync(sourceSkill, targetSkill, "dir");
+      report.repaired.push(name);
+    }
+  } catch (err) {
+    console.error("[agentera] bootstrapSkills error:", err);
+  }
+
+  skillBootstrap.lastReport = report;
+  return report;
 }
 
 export function bootstrapCommands() {
+  const report = {
+    restored: [],
+    refreshed: [],
+    skippedUserOwned: [],
+    unchanged: [],
+    markerVersion: null,
+  };
   try {
     const targetDir = resolveOpencodeCommandsDir();
     fs.mkdirSync(targetDir, { recursive: true });
@@ -118,21 +232,39 @@ export function bootstrapCommands() {
     } catch {
       // marker absent — proceed
     }
-    if (existingVersion === AGENTERA_VERSION) return;
+    report.markerVersion = existingVersion;
 
     for (const [name, content] of Object.entries(COMMAND_TEMPLATES)) {
       const targetFile = path.join(targetDir, `${name}.md`);
-      if (fs.existsSync(targetFile) && !hasManagedMarker(targetFile)) {
-        // user-owned file — skip
+      if (!fs.existsSync(targetFile)) {
+        fs.writeFileSync(targetFile, content);
+        report.restored.push(name);
         continue;
       }
+
+      const existingContent = fs.readFileSync(targetFile, "utf8");
+      if (existingContent === content) {
+        report.unchanged.push(name);
+        continue;
+      }
+
+      if (!hasManagedMarker(targetFile)) {
+        report.skippedUserOwned.push(name);
+        continue;
+      }
+
       fs.writeFileSync(targetFile, content);
+      report.refreshed.push(name);
     }
 
-    fs.writeFileSync(markerFile, AGENTERA_VERSION);
+    if (existingVersion !== AGENTERA_VERSION || report.restored.length || report.refreshed.length) {
+      fs.writeFileSync(markerFile, AGENTERA_VERSION);
+    }
   } catch (err) {
     console.error("[agentera] bootstrapCommands error:", err);
   }
+  commandBootstrap.lastReport = report;
+  return report;
 }
 
 function isArtifactPath(filePath, root) {
@@ -341,6 +473,7 @@ export const Agentera = async (input = {}, _options) => {
 
   setProfileDir();
   bootstrapCommands();
+  bootstrapSkills();
 
   // Resolve install root once at init. Each shell.env invocation re-reads the
   // user-set AGENTERA_HOME so a value injected after plugin load (e.g. by a

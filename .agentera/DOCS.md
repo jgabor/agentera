@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-30 (semantic eval docs) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-30 (installation reliability checkpoint) -->
 
 ## Conventions
 
@@ -47,7 +47,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 
 | Document | Path | Last Updated | Status |
 |----------|------|-------------|--------|
-| README | README.md | 2026-04-29 | ■ current |
+| README | README.md | 2026-04-30 | ■ current |
 | CLAUDE.md | CLAUDE.md | 2026-04-27 | ■ current |
 | Decisions | .agentera/DECISIONS.md | 2026-04-28 | ■ current |
 | Vision | VISION.md | 2026-03-31 | ■ current |
@@ -55,7 +55,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | TODO | TODO.md | 2026-04-30 | ■ current |
 | Changelog | CHANGELOG.md | 2026-04-30 | ■ current |
 | Health | .agentera/HEALTH.md | 2026-04-30 | ■ current |
-| Plan archive | .agentera/archive/PLAN-2026-04-30-optimera-experiment-analysis-reliability.md | 2026-04-30 | ■ current |
+| Plan archive | .agentera/archive/PLAN-2026-04-30-installation-reliability-self-healing.md | 2026-04-30 | ■ current |
 | DOCS | .agentera/DOCS.md | 2026-04-30 | ■ current |
 | Design | .agentera/DESIGN.md | 2026-04-19 | ■ current |
 | Ecosystem spec | SPEC.md | 2026-04-28 | ■ current |
@@ -67,7 +67,7 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Copilot repo plugin manifest | .github/plugin/plugin.json | 2026-04-30 | ■ current |
 | Codex plugin manifest | .codex-plugin/plugin.json | 2026-04-30 | ■ current |
 | OpenCode plugin adapter | .opencode/plugins/agentera.js | 2026-04-30 | ■ current |
-| OpenCode adapter reference | references/adapters/opencode.md | 2026-04-28 | ■ current |
+| OpenCode adapter reference | references/adapters/opencode.md | 2026-04-30 | ■ current |
 | Runtime parity reference | references/adapters/runtime-feature-parity.md | 2026-04-28 | ■ current |
 | Codex UI metadata | skills/&lt;name&gt;/agents/openai.yaml; agents/openai.yaml | 2026-04-24 | ■ current |
 | Hooks registry | hooks/hooks.json | 2026-04-03 | ■ current |
@@ -95,9 +95,26 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 565 tests across 20 files; CI runs on push/PR via GitHub Actions
+- **Tests**: 577 tests across 23 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-30 (installation reliability checkpoint)
+
+- [freshness] Installation Reliability Self-Healing closed with plan-level PROGRESS, TODO, CHANGELOG, DOCS, and archived PLAN state aligned; active PLAN.md was removed after Tasks 1-8 reached complete · info (fixed)
+- [stale] DOCS.md still pointed at an active installation reliability plan and reported 565 tests after release validation collected 577 tests across 23 files; the index and coverage now match the checkpoint state · warning (fixed)
+
+### 2026-04-30 (install health docs)
+
+- [stale] OpenCode quick start still used `--skill '*'`; docs now use
+  `npx skills add jgabor/agentera -g -a opencode -y` and state that the plugin
+  does not install skills · warning (fixed)
+- [gap] Install-health docs did not distinguish package-manager freshness from
+  Agentera bundle validation; README and the OpenCode adapter now define the
+  separate checks and current doctor boundary · warning (fixed)
+- [gap] Managed OpenCode ownership rules were only visible in plugin code and
+  smoke tests; docs now name `agentera_managed: true`, `.agentera-version`,
+  skipped collisions, and diagnostic-only doctor behavior · warning (fixed)
 
 ### 2026-04-30 (semantic eval docs)
 

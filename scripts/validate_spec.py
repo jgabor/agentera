@@ -24,7 +24,7 @@ import argparse
 import hashlib
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 
 # ---------------------------------------------------------------------------
@@ -986,6 +986,93 @@ RECOGNIZED_CAPABILITIES = {
     "hook-lifecycle",
 }
 
+LOCAL_SUPPORT_PREFIXES = ("references/", "scripts/", "agents/")
+SUITE_ROOT_HELPER_PREFIXES = ("scripts/", "hooks/")
+SUPPORT_PATH_RE = re.compile(
+    r"(?<![\w/.$-])"
+    r"(?P<path>(?:references|scripts|agents)/[A-Za-z0-9][A-Za-z0-9_./-]*)"
+)
+
+
+def _normalize_support_ref(raw: str) -> str | None:
+    """Return a safe relative support path, or None for non-path syntax."""
+    candidate = raw.strip("`'\"()[]{}.,:;")
+    if not candidate or candidate.startswith("/") or "\\" in candidate:
+        return None
+
+    path = PurePosixPath(candidate)
+    if path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
+        return None
+
+    normalized = path.as_posix()
+    if not normalized.startswith(LOCAL_SUPPORT_PREFIXES):
+        return None
+    return normalized
+
+
+def _extract_support_refs(text: str) -> list[str]:
+    """Extract skill-support relative paths named in skill prose."""
+    refs: list[str] = []
+    seen: set[str] = set()
+    for match in SUPPORT_PATH_RE.finditer(text):
+        ref = _normalize_support_ref(match.group("path"))
+        if ref and ref not in seen:
+            refs.append(ref)
+            seen.add(ref)
+    return refs
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parent.parent
+
+
+def check_bundled_support_references(
+    skill: str,
+    text: str,
+    r: Results,
+    *,
+    skill_path: Path,
+    standalone: bool = False,
+) -> None:
+    """Check 25: named skill-local bundled support files exist.
+
+    ``references/...`` paths are always skill-local bundled support. ``scripts``
+    and ``agents`` paths are validated when present locally; otherwise a
+    standalone validation warns if the path points at a suite-root helper.
+    """
+    refs = _extract_support_refs(text)
+    errors: list[str] = []
+    warnings: list[str] = []
+    root = _repo_root()
+
+    for ref in refs:
+        local_path = skill_path.parent / ref
+        if ref.startswith("references/"):
+            if not local_path.exists():
+                errors.append(f"{skill}/SKILL.md: missing bundled support file {ref}")
+            continue
+
+        if local_path.exists():
+            continue
+
+        if standalone and ref.startswith(SUITE_ROOT_HELPER_PREFIXES):
+            suite_path = root / ref
+            if suite_path.exists():
+                warnings.append(
+                    f"{skill}/SKILL.md: standalone boundary risk: "
+                    f"suite-root-only helper {ref} is not bundled with "
+                    "standalone skill installs"
+                )
+
+    if errors:
+        for detail in errors:
+            r.error(skill, "bundled-support-references", detail)
+    else:
+        r.ok(skill, "bundled-support-references")
+
+    for detail in warnings:
+        r.warn(skill, "standalone-boundary-risk", detail)
+
 
 def check_reality_verification_gate(skill: str, text: str, r: Results) -> None:
     """Check 17: Reality Verification Gate (spec section 20).
@@ -1342,7 +1429,13 @@ def check_no_bare_claude_plugin_root(skill: str, text: str, r: Results) -> None:
 # ---------------------------------------------------------------------------
 
 
-def validate_skill(path: Path, r: Results, *, spec_hash: str) -> None:
+def validate_skill(
+    path: Path,
+    r: Results,
+    *,
+    spec_hash: str,
+    standalone: bool = False,
+) -> None:
     """Run all checks on a single SKILL.md."""
     skill = path.parent.name
     text = path.read_text(encoding="utf-8")
@@ -1370,6 +1463,13 @@ def validate_skill(path: Path, r: Results, *, spec_hash: str) -> None:
     check_banned_vocabulary(skill, text, r)
     check_sentence_length(skill, text, r)
     check_no_bare_claude_plugin_root(skill, text, r)
+    check_bundled_support_references(
+        skill,
+        text,
+        r,
+        skill_path=path,
+        standalone=standalone,
+    )
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:
@@ -1429,7 +1529,7 @@ def main(argv: list[str] | None = None) -> int:
 
     r = Results()
     for path in skill_files:
-        validate_skill(path, r, spec_hash=spec_hash)
+        validate_skill(path, r, spec_hash=spec_hash, standalone=bool(args.skills))
 
     r.print()
 

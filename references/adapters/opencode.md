@@ -12,7 +12,7 @@ Status: production reference (formerly design document).
 |-----------|--------|----------|
 | Hook plugin | Shipped | `.opencode/plugins/agentera.js` |
 | Eval runner support | Shipped | `scripts/eval_skills.py --runtime opencode` |
-| Skill install | Documented below | `~/.config/opencode/skills/<name>/` via symlinks |
+| Skill install | Documented below | `npx skills add jgabor/agentera -g -a opencode -y` |
 | Profile path | Documented below | `~/.config/opencode/profile/PROFILE.md` |
 
 The plugin was promoted from `references/adapters/opencode-plugin.js` to `.opencode/plugins/agentera.js` and is now the production location. Install it with:
@@ -414,9 +414,17 @@ Summary of which corpus families the OpenCode adapter can produce:
 
 ## Installation
 
-OpenCode discovers skills at `skills/*/SKILL.md` one level under its search directories. Because agentera's skills are nested inside `skills/*/SKILL.md` within the repo, cloning the whole repo into a search directory would place them two levels deep and OpenCode would not find them. Each skill must be linked individually.
+Install the OpenCode-targeted Agentera suite with the skills installer:
 
-### Global install (recommended)
+```bash
+npx skills add jgabor/agentera -g -a opencode -y
+```
+
+Do not add `--skill '*'` for OpenCode. The `-a opencode` target selects the supported OpenCode skill surface without selecting every agent. The OpenCode plugin is a separate hook and command adapter; it does not install skills by itself.
+
+### Manual global fallback
+
+OpenCode discovers skills at `skills/*/SKILL.md` one level under its search directories. Because agentera's skills are nested inside `skills/*/SKILL.md` within the repo, cloning the whole repo into a search directory would place them two levels deep and OpenCode would not find them. If the installer is unavailable, link each skill individually.
 
 ```bash
 # Symlink each skill directory into OpenCode's global skills directory
@@ -461,6 +469,14 @@ For artifact validation and session continuity, install the agentera hook plugin
 ```bash
 cp .opencode/plugins/agentera.js ~/.config/opencode/plugins/
 ```
+
+### Install health and managed surfaces
+
+Installer freshness and Agentera bundle validation are separate checks. `npx skills update -g -y` can report a current install while the installed bundle is still unhealthy, for example when a bundled support file is missing or a skill path is broken. Agentera validation checks the installed bundle root for shared files and references; installer freshness only reflects package-manager state.
+
+OpenCode repair is ownership-gated. Managed slash commands include `agentera_managed: true` frontmatter, and the command directory stores `.agentera-version`. Repair may overwrite missing or stale managed command files. Same-name command files without that marker are user-owned collisions and must be skipped, not overwritten. Managed skill-path repair follows the same rule: repair Agentera-created OpenCode skill links or directories, preserve user-owned paths, and report skipped collisions.
+
+`scripts/setup_doctor.py` is diagnostic-only for OpenCode. It reports the plugin file, `AGENTERA_HOME` or documented default roots, and invalid suite-bundle roots, but it does not mutate OpenCode config or repair OpenCode skills.
 
 ---
 

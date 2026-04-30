@@ -4,6 +4,18 @@
 
 ### Changed
 
+- Installation Reliability Self-Healing is freshness-closed with install validation, offline bundle smoke, OpenCode command and skill-path repair, doctor drift reporting, 1.27.0 metadata, and archived plan state aligned.
+
+## [1.27.0] · 2026-04-30
+
+### Added
+
+- Install validation now checks bundled support references and offline installed skill bundles before release.
+- OpenCode self-healing now restores managed slash commands and repairs broken Agentera skill paths during plugin startup.
+
+### Changed
+
+- Setup doctor reporting now separates OpenCode command drift, skill-path drift, and bundled reference validation drift without mutating files.
 - Semantic Skill Evaluation Surface is freshness-closed with fixture contract, offline runner, hej routing oracle, proportional tests, docs, 1.26.0 metadata, and archived plan state aligned.
 - Optimera experiment analysis reliability is freshness-closed with guidance, record normalization, target parsing, frontier reporting, integration verification, and 1.25.0 metadata aligned.
 
