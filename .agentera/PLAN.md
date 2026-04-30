@@ -77,7 +77,7 @@ Document analyzer expectations first. Parser work uses fixtures derived from cur
 ### Task 5: Verify Analysis Integration
 
 **Depends on**: Task 4
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN optimera's documented analyze command is run WHEN real artifacts are used THEN output is useful for Step 2 history analysis.
 ▸ GIVEN existing eval smoke commands run WHEN analyzer changes are present THEN behavior outside frontier mode is unchanged.
