@@ -1,5 +1,93 @@
 # Health
 
+## Audit 19 · 2026-04-30
+
+**Dimensions assessed**: artifact freshness, optimera analyzer health, test and validation health, version health, unintended-change hygiene
+**Findings**: 0 critical, 1 warning, 0 info (0 filtered by confidence)
+**Overall trajectory**: stable vs Audit 18. Optimera analyzer reliability landed cleanly, but DOCS coverage evidence lags the 536-test suite.
+**Grades**: Freshness [A] | Analyzer [A] | Tests [B] | Version [A] | Change hygiene [A]
+
+### Artifact freshness: A
+
+`5ee6db0` updates CHANGELOG, TODO, PROGRESS, and the archived plan after `2026-04-30` plan creation. `.agentera/PLAN.md` is absent, and this audit updates HEALTH.
+
+### Optimera analyzer health: A
+
+`skills/optimera/scripts/analyze_experiments.py:39-444` keeps parsing, target extraction, analysis, and frontier rendering separated. Live realisera-token smoke produced 6 experiments, 2 kept, best metric 12055, and Markdown frontier output.
+
+### Test and validation health: B
+
+Focused analyzer tests passed: `19 passed`. Full suite passed: `536 passed`. Spec, contract, lifecycle-adapter, eval dry-run, live analyzer, frontier, and artifact self-audit checks passed.
+
+#### ⇉ DOCS coverage count is stale, warning (confidence: 95)
+
+- **Location**: `.agentera/DOCS.md:95`
+- **Evidence**: DOCS reports "523 tests across 19 files". Current `python3 -m pytest --collect-only -q` reports 536 tests collected.
+- **Impact**: Orientation consumers see stale validation scale after analyzer reliability tests landed.
+- **Suggested action**: Run dokumentera to refresh DOCS.md Coverage and Test suite rows to 536 tests.
+
+### Version health: A
+
+Version-bearing targets report `1.25.0`: `registry.json`, root/Copilot/Codex manifests, 12 skill plugin manifests, Claude marketplace, and OpenCode `AGENTERA_VERSION`. No `feat` or `fix` commits landed after the bump.
+
+### Unintended-change hygiene: A
+
+Only `.agentera/HEALTH.md` is modified after this audit. Plan commits changed the expected analyzer, tests, metadata, CHANGELOG, TODO, PROGRESS, and archived plan surfaces.
+
+### Trends vs Audit 18
+
+- **Improved**: Optimera analyzer reliability now has real-artifact JSON and frontier smoke evidence.
+- **Degraded**: Test evidence freshness B because DOCS coverage stayed at 523 after the 536-test suite.
+- **Stable**: Artifact lifecycle, version metadata, and change hygiene remain green.
+- **New findings**: DOCS coverage count stale.
+- **Resolved**: No prior Audit 18 findings were open.
+
+### Patterns Observed
+
+- Optimera analyzer: one stdlib script owns parse, target extraction, analysis, and optional frontier rendering.
+- Testing approach: parser edge cases, target diagnostics, CLI mode compatibility, and frontier ordering are covered in `tests/test_analyze_experiments.py`.
+- Release pattern: feature-bearing analyzer work drove minor release `1.25.0`, then a freshness checkpoint archived the plan.
+
+## Audit 18 · 2026-04-29
+
+**Dimensions assessed**: artifact freshness, version health, validation health, documentation coherence, forbidden objective layout
+**Findings**: 0 critical, 0 warnings, 0 info (0 filtered by confidence)
+**Overall trajectory**: ⮉ improving vs Audit 17. The Completed Optimera Objective Archival plan resolved the DOCS coverage warning and closed the plan without adding forbidden objective surfaces.
+**Grades**: Freshness [A] | Version [A] | Validation [A] | Docs [A] | Layout [A]
+
+### Artifact freshness: A
+
+`.agentera/archive/PLAN-2026-04-29-completed-optimera-objective-archival.md:36-114` marks Tasks 1-8 complete, `.agentera/PLAN.md` is absent, and `TODO.md:38` resolves the completed-objective item with `27bb667..a1e60bd` plus the checkpoint commit.
+
+### Version health: A
+
+`registry.json`, 12 skill plugin manifests, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `.opencode/plugins/agentera.js` report `1.24.1`. `.agents/plugins/marketplace.json` still has no version field, matching Cycle 231 evidence.
+
+### Validation health: A
+
+Current reruns passed: `python3 scripts/validate_spec.py`, `python3 scripts/generate_contracts.py --check`, `python3 scripts/validate_lifecycle_adapters.py`, artifact self-audit, and `python3 -m pytest -q` with 523 passed.
+
+### Documentation coherence: A
+
+`CHANGELOG.md:7-15`, `PROGRESS.md:3-21`, `.agentera/DOCS.md:90-108`, `README.md:461-471`, and `SPEC.md:151-162` describe the completed lifecycle consistently. Audit 17's DOCS coverage warning is resolved: DOCS now reports 523 tests across 19 files.
+
+### Forbidden objective layout: A
+
+Glob checks found no active root `OBJECTIVE.md`, root `EXPERIMENTS.md`, or `.agentera/PLAN.md`. DOCS Artifact Mapping has no fixed OBJECTIVE/EXPERIMENTS rows; README and SPEC explicitly preserve per-objective `.agentera/optimera/<name>/` layout without registries or symlinks.
+
+### Trends vs Audit 17
+
+- **Improved**: Freshness B→A; DOCS coverage now matches the 523-test suite.
+- **Degraded**: none.
+- **Stable**: Version, validation, documentation, and objective layout are coherent.
+- **Resolved**: Audit 17 DOCS coverage baseline stale warning.
+
+### Patterns Observed
+
+- Objective lifecycle: optimera keeps state self-contained under `.agentera/optimera/<name>/` and excludes closed objectives before active-work inference.
+- Release pattern: completed-objective fix landed as patch release `1.24.1`, followed by a plan-level freshness checkpoint.
+- Validation pattern: spec, contracts, lifecycle adapters, prose self-audit, and full pytest are the closure gate.
+
 ## Audit 17 · 2026-04-29
 
 **Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, prose health, security hygiene, dependency health
@@ -627,231 +715,11 @@ The plan added no Python dependencies. New validation uses stdlib JSON and pathl
 - Testing approach: schema and metadata validation first, live runtime smoke tests still absent for Copilot and Codex.
 - Version pattern: plan-level feature work now correctly drives runtime manifests and suite versions together.
 
-## Audit 9 · 2026-04-23
-
-**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene, dependency health
-**Findings**: 0 critical, 3 warnings, 6 info (0 filtered by confidence)
-**Overall trajectory**: ⮉ improving vs Audit 8. Complexity C→B (Audit 8's 78-line gate collapsed to 30; analyze() 114→26 lines per cycle 123). Version C→B (6 unbumped down to 1 after 1.15.0 bump). Freshness B→A (HEALTH.md was the only stale artifact, resolved here). Architecture, Patterns, Coupling, Tests, Security stable at A. Dependency assessed for first time at A (Node surface entered via `.opencode/`).
-**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Complexity [B] | Tests [A] | Version [B] | Freshness [A] | Security [A] | Deps [A]
-
-### Architecture alignment: A
-
-12/12 skills at 1.15.0 across registry.json, marketplace.json, and per-skill plugin.json. The `.opencode/` plugin directory is the first concrete exercise of VISION.md's "spec as gravity well" thesis and respects standalone+mesh: skills run with or without it. Linter: 0 errors, 16 advisory warnings.
-
-#### ⇢ opencode plugin version bump discipline undocumented, info (confidence: 60)
-
-- **Location**: `.opencode/plugins/agentera.js:9`, `references/adapters/opencode.md`
-- **Evidence**: `AGENTERA_VERSION = "1.15.0"` hardcoded in plugin; adapter doc does not state when this constant must bump relative to `registry.json`.
-- **Impact**: Hook behavior can change without a version bump, producing silent version skew between implementation and declared version.
-- **Suggested action**: Add a line to `references/adapters/opencode.md` Section 20 stating the plugin version tracks registry.json on any hook-behavior change.
-
-### Pattern consistency: A
-
-All 12 skills pass structural checks. Audit 8's literal `\n` in inspektera/visionera/visualisera frontmatters is fixed (confidence 100). Producer skills (realisera, resonera, inspektera, optimera) all reference `scripts/compact_artifact.py` with correct subcommands per cycle 119. Profile-path annotations consistent across all consumer skills per cycle 120. 16 advisory linter warnings remain (sentence-length, banned-vocabulary in artifact example blocks) and are accepted as readability tradeoffs.
-
-### Coupling health: A
-
-Clean DAG. `hooks/compaction.py` introduced in cycle 119 is stdlib-only, imported by `hooks/session_stop.py` in-process, invoked as subprocess by `scripts/compact_artifact.py`. No circular dependencies. Producer/consumer boundary intact across all 12 skills.
-
-#### ⇢ common.py and validate_artifact.py duplicate artifact path resolution, info (confidence: 95)
-
-- **Location**: `hooks/common.py:68-80` vs `hooks/validate_artifact.py:124-183`
-- **Evidence**: Both implement DOCS.md Artifact Mapping parsing independently. 91 lines in common.py, 60 in validate_artifact.py. Unchanged since Audit 7.
-- **Impact**: Semantic drift risk if one is updated without the other.
-- **Suggested action**: Refactor validate_artifact.py to import from common.py (both in same hooks/ boundary).
-
-### Complexity hotspots: B
-
-Resolved from Audit 8: `check_pre_dispatch_commit_gate()` collapsed from 78 lines to 30 (helpers extracted); `analyze_progress.py::analyze()` went from 114 lines to 26 via 6 per-signal helpers per cycle 123. `scripts/validate_spec.py` shrank from 1367 to 1346 lines. New: `hooks/compaction.py` at 722 lines is well-factored (8 formatter functions, 4 parse helpers, single-responsibility).
-
-#### ⇉ _format_todo_oneline() chains 6+ string transformations, warning (confidence: 75)
-
-- **Location**: `hooks/compaction.py:223-244`
-- **Evidence**: 68 non-blank lines for a single formatter applying sequential regex sub, replace, strip, truncate operations on the same variable with interdependent logic.
-- **Impact**: Hard to verify correctness of the transformation sequence; fragile to regex edge cases.
-- **Suggested action**: Extract per-step helpers (`_strip_checkbox`, `_strip_tildes`, `_extract_summary`) or consolidate into one regex.
-
-#### ⇢ _parse_todo_resolved() reaches nesting depth 5, info (confidence: 70)
-
-- **Location**: `hooks/compaction.py:420-464`
-- **Evidence**: Outer `while` → inner `while` → if/elif/else chain reaching depth 5. Detail-line detection spans 8 conditional paths.
-- **Impact**: Harder to test individual branches (blank-then-indented cases).
-- **Suggested action**: Extract detail-line collection into a helper.
-
-### Test health: A
-
-299 tests passing (+36 vs Audit 8's 263). Cycle 119 added 27 compaction tests; cycle 123 added 7 parser/suggestion/glyph-validator tests. Test:source LOC ≈ 1:9.3. Compaction tests proportional to source (state-machine boundary cases warrant the count).
-
-#### ⇢ hooks/common.py has no dedicated test file, info (confidence: 80)
-
-- **Location**: `hooks/common.py`
-- **Evidence**: 4 exported functions (parse_artifact_mapping, resolve_artifact_path, load_artifact_overrides) tested indirectly through session_start/session_stop. Same gap as Audit 6/7/8.
-- **Impact**: Failures in artifact path resolution would be harder to isolate.
-- **Suggested action**: Add `tests/test_common.py` with targeted cases for each function.
-
-#### ⇢ validate_skill_definition has no direct test, info (confidence: 75)
-
-- **Location**: `hooks/validate_artifact.py:315`
-- **Evidence**: Function dispatches to validate_spec.py and generate_contracts.py as subprocesses. Only the classify_file routing is tested, not the dispatch itself.
-- **Impact**: Low. Orchestrator of already-tested scripts.
-- **Suggested action**: Add an integration test exercising the subprocess routing.
-
-### Version health: B
-
-1.15.0 bumped today (cc91b00, 2026-04-23T19:17). Post-bump: 1 feat (307aa33 opencode bootstrap), 1 refactor (1bf8c18), 2 chore, 3 docs. Feat qualifies for minor bump per DOCS.md policy; refactor is not in the policy mapping and is treated as no-bump.
-
-#### ⇉ 1 unbumped feat commit since 1.15.0, warning (confidence: 80)
-
-- **Location**: commit `307aa33 feat(opencode): bootstrap slash commands from plugin into user config`
-- **Evidence**: semver_policy says feat = minor. CHANGELOG.md [Unreleased] already populated with Added/Changed/Fixed entries covering cycles 121-123.
-- **Impact**: Version files lag one feat behind actual changes. Age: hours.
-- **Suggested action**: Bump to 1.16.0 when the next batch of work lands, or immediately if a release is desired today.
-
-### Artifact freshness: A
-
-Fallback heuristic applies (no active PLAN.md). Pre-audit, HEALTH.md (2026-04-20) was the only artifact older than the latest PROGRESS.md cycle (2026-04-23). This audit resolves it. DECISIONS.md last-modified 2026-04-19 is not stale because resonera has not been dispatched since. TODO.md, CHANGELOG.md, PROGRESS.md, DOCS.md all current.
-
-### Security hygiene: A
-
-No hardcoded secrets, no eval/exec/os.system, no `shell=True`, no dynamic command construction in subprocess or execSync calls. `.opencode/plugins/agentera.js` uses `execSync(\`python3 "${scriptPath}"\`)` with a non-user-derived path — no injection surface. Cycle 118 PROGRESS.md claims credential patterns were added to `.gitignore` but the on-disk file does not contain them.
-
-#### ⇢ .gitignore missing credential patterns, info (confidence: 95)
-
-- **Location**: `.gitignore`
-- **Evidence**: Contents: `.claude`, `.opencode`, `docs/`, `__pycache__/`, `*.pyc`, `.leda`. Missing: `.env`, `*.key`, `*.pem`, `credentials*`. Audit 8 treated cycle 118 as resolving this; cycle 118's claim was not reflected on disk.
-- **Impact**: Defensive gap; an accidentally created `.env` would not be blocked from staging.
-- **Suggested action**: Add `.env`, `*.key`, `*.pem`, `credentials*` to `.gitignore`.
-
-> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), npm audit (Node), or similar.
-
-### Dependency health: A
-
-Python: stdlib only across all scripts and hooks. Node: `.opencode/package.json` (new in cycle 122) pins `@opencode-ai/plugin` at exact `1.4.6`. The `.opencode/` directory is gitignored with specific files tracked via `git add -f`.
-
-#### ⇢ No lockfile committed for the opencode plugin dependency, info (confidence: 55)
-
-- **Location**: `.opencode/`
-- **Evidence**: `.opencode/package.json` tracked; no `package-lock.json`, `bun.lockb`, or `yarn.lock` present or tracked. Exact version pin in package.json mitigates resolution drift.
-- **Impact**: Low. Transitive dep resolution can still vary across installs.
-- **Suggested action**: Note in `references/adapters/opencode.md` whether the absence of a lockfile is intentional (plugin dev surface vs. runtime contract), or add one.
-
-### Trends vs Audit 8
-
-- **Improved**: Complexity C→B (two hotspots resolved: check_pre_dispatch_commit_gate 78→30 lines via helper extraction, analyze_progress.py::analyze() 114→26 lines). Version C→B (6 unbumped→1 unbumped after 1.15.0 bump). Freshness B→A (HEALTH.md refreshed by this audit).
-- **Degraded**: none.
-- **Stable**: Architecture A, Patterns A (literal `\n` resolved — internal improvement within A), Coupling A, Tests A (299 vs 263, same two gaps persist as info), Security A.
-- **New dimension**: Dependency health assessed for the first time at A (Node surface entered via `.opencode/`).
-- **New findings**: `_format_todo_oneline` 68-line formatter (warning), `_parse_todo_resolved` nesting depth 5 (info), opencode plugin version discipline (info), no opencode lockfile (info).
-- **Resolved**: check_pre_dispatch_commit_gate 78-line warning (refactored), analyze_progress.py 114-line function (cycle 123), literal `\n` in 3 frontmatters (resolved in cycle 120 sweep).
-
-### Patterns Observed
-
-- **Adapter pattern emerging**: `.opencode/plugins/agentera.js` (cycle 121-122) is the first concrete implementation of the "spec as portable protocol" thesis. The plugin bootstraps slash commands into OpenCode but each skill still runs standalone — the standalone+mesh principle survived its first non-Claude-Code exercise.
-- **Shared primitive for compaction**: cycle 119 extracted what was previously inline prose in producer skills into `hooks/compaction.py` + `scripts/compact_artifact.py`. All four producers (realisera, resonera, inspektera, optimera) converged on the same invocation pattern. This is the pattern of "agent-driven convention silently fails; make it a script and the linter enforces it."
-- **Format-drift parser bugs are a recurring class**: cycle 123 caught two sibling regexes (analyze_progress.py header, validate_artifact.py ARTIFACT_HEADINGS) that had silently drifted from the SPEC PROGRESS.md format and returned zero matches. Test fixtures were aligned with the drifted regexes, so tests passed. Risk: other parsers may have the same latent drift. Worth a targeted sweep.
-- **Helper-extraction refactor is the established remedy for long functions**: Audit 8 resolved check_severity_levels 98→36 via helpers; Audit 9 resolved check_pre_dispatch_commit_gate 78→30 the same way, and cycle 123 applied the same pattern to analyze_progress.py. The pattern works and is now habitual.
-- **Coverage growth has flattened around two persistent gaps**: hooks/common.py and validate_skill_definition. Both are ecosystem-linter-adjacent and would fail loudly if truly broken, which is why they stay info rather than warning, but they've now been open across three audits (6, 7, 8, 9).
-
-## Audit 8 · 2026-04-20
-
-**Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene
-**Findings**: 1 critical, 3 warnings, 4 info (0 filtered by confidence)
-**Overall trajectory**: stable vs Audit 7. Version B→C (6 unbumped feat/fix commits). Complexity C→C (one hotspot resolved, one new). Tests A→A (263 tests). Architecture, Patterns, Coupling, Security all stable at A.
-**Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Complexity [C] | Tests [A] | Version [C] | Security [A] | Artifact freshness [B]
-
-### Architecture alignment: A
-
-Linter: 0 errors, 17 advisory warnings across 12 skills (sentence-length and banned-vocabulary from Section 23). Registry: 12/12 skills at 1.13.0. SPEC.md Sections 22-23 confirmed. Lefthook config correct. CI updated with pytest install and contract freshness check. No structural regressions.
-
-### Pattern consistency: A
-
-All 12 skills pass structural checks. Compaction threshold language present in all producing skills. "Twelve-skill suite" consistent. One minor anomaly:
-
-#### ⇢ Literal `\n` in YAML frontmatter description in 3 skills, info (confidence: 90)
-
-- **Location**: `skills/inspektera/SKILL.md:14`, `skills/visionera/SKILL.md:14`, `skills/visualisera/SKILL.md:14`
-- **Evidence**: Trigger list lines end with `,\n  "next phrase"` instead of a real newline. Introduced by the `.md` extension normalization pass (`9daf4b7`).
-- **Impact**: Low. The YAML `>` block scalar folds these anyway, but the literal `\n` is visible in the raw file and inconsistent with other skills.
-- **Suggested action**: Replace `\n` with actual newline + indentation in the 3 files.
-
-### Coupling health: A
-
-Clean DAG. No circular dependencies. Hooks still use subprocess boundary. validate_spec.py constants grew to 8 (added WORKTREE_DISPATCH_SKILLS) but remain manageable. common.py duplication with validate_artifact.py unchanged (known info from Audit 7).
-
-### Complexity hotspots: C
-
-validate_spec.py grew from 1073 to 1367 lines (+27%). One prior warning resolved; one new warning.
-
-#### ⇉ check_pre_dispatch_commit_gate() is 78 lines with 4 pattern checks, warning (confidence: 85)
-
-- **Location**: `scripts/validate_spec.py:1037-1114`
-- **Evidence**: Follows the same structure as check_reality_verification_gate: constant set, early return, 4 pattern checks, error accumulation. Not deeply nested but long.
-- **Impact**: Maintenance burden if the gate evolves. Not urgent.
-- **Suggested action**: Extract pattern-check helpers if the function grows further.
-
-#### ⇢ validate_spec.py at 1367 lines (approaching 1400 threshold), info (confidence: 85)
-
-- **Location**: `scripts/validate_spec.py`
-- **Evidence**: Grew 27% since Audit 7. 35 functions including 22 check functions. Section 23 added 3 new check functions (banned_vocabulary, sentence_length, artifact_writing_conventions).
-- **Impact**: Nearing the module-split threshold noted in Audit 7.
-- **Suggested action**: No action now. If it crosses 1400, consider splitting by check category.
-
-**Resolved**: check_severity_levels refactored from 98 lines to 36 lines with 4 named helpers (`_find_severity_in_tables`, `_find_severity_in_headings`, `_find_severity_in_section`, `_find_severity_in_mappings`). Prior warning closed.
-
-### Test health: A
-
-263 tests across 12 files, all passing (up from 240). 3 new tests for Check 19. Test:source ratio 1.21:1. Prior gaps unchanged: hooks/common.py has no dedicated test file, validate_skill_definition has no direct test. Neither has worsened.
-
-### Version health: C
-
-#### ⇶ 6 unbumped feat/fix commits since 1.13.0, critical (confidence: 100)
-
-- **Location**: commits `4d394b5`, `c9c2a1a`, `9daf4b7`, `1a7ac34`, `3779c34`, `1dea65e` (3 feat, 3 fix since `319935d`)
-- **Evidence**: semver_policy says feat = minor, fix = patch. 3 feat commits require a minor bump to 1.14.0. CHANGELOG.md [Unreleased] is empty.
-- **Impact**: Version files report 1.13.0 but 6 bump-qualifying changes have shipped. All version locations are internally consistent but lag behind actual changes.
-- **Suggested action**: Bump to 1.14.0, populate CHANGELOG.md [Unreleased] with the 6 changes.
-
-### Artifact freshness: B
-
-No active PLAN.md; using PROGRESS.md fallback. Advisory, not authoritative.
-
-#### ⇢ PROGRESS.md, CHANGELOG.md, TODO.md, HEALTH.md older than most recent work, info (confidence: 55)
-
-- **Location**: `.agentera/PROGRESS.md` (2026-04-13), `CHANGELOG.md` (2026-04-13), `TODO.md` (2026-04-12), `.agentera/HEALTH.md` (2026-04-11)
-- **Evidence**: 11 commits landed after these artifacts' last modification dates. PROGRESS.md has no cycle entries for the post-1.13.0 work. CHANGELOG.md [Unreleased] is empty.
-- **Impact**: Consuming skills reading these artifacts see a stale snapshot. HEALTH.md is being updated by this audit.
-- **Suggested action**: HEALTH.md resolved by this audit. CHANGELOG.md and version bump are the priority. PROGRESS.md cycle entries for the post-plan ad-hoc work are optional.
-
-### Security hygiene: A
-
-Zero hardcoded secrets. Zero eval/exec. All subprocess calls list-form. Lefthook hooks are clean shell wrappers with no injection surface.
-
-#### ⇢ .gitignore missing defensive credential patterns, info (confidence: 80)
-
-- **Location**: `.gitignore`
-- **Evidence**: No `.env`, `*.key`, `*.pem`, `credentials*` patterns. No such files exist in the repo.
-- **Impact**: Purely defensive. An accidentally created .env would not be blocked from staging.
-- **Suggested action**: Add `.env`, `*.key`, `*.pem` patterns to .gitignore.
-
-> This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), or similar.
-
-### Trends vs Audit 7
-
-- **Improved**: check_severity_levels C→resolved (refactored from 98 to 36 lines with helpers)
-- **Degraded**: Version B→C (1 unbumped fix → 6 unbumped feat/fix). Artifact freshness A→B (4 artifacts older than most recent work).
-- **Stable**: Architecture A, Patterns A, Coupling A, Tests A (240→263), Security A, Complexity C
-- **New findings**: literal `\n` in 3 SKILL.md frontmatters (info), check_pre_dispatch_commit_gate 78 lines (warning), .gitignore credential patterns (info)
-- **Resolved**: check_severity_levels 98-line function (refactored)
-
-### Patterns Observed
-
-- Module structure: 12 skills, consistent. validate_spec.py growing as the single linter but still manageable.
-- Hook architecture: unchanged. Subprocess boundary intact.
-- Testing approach: 263 tests, 1.21:1 ratio. Section 23 checks have 3 tests already. Proportional.
-- Version management: post-plan ad-hoc commits accumulated without a version bump. The plan-driven workflow naturally includes bump tasks; ad-hoc work does not.
-- Infrastructure maturation: lefthook hooks, CI fixes, and Section 23 conventions are all infrastructure hardening that doesn't show up as cycle entries.
-
 ## Archived Audits
+
+### Audit 9 · 2026-04-23 (⮉ improving vs Audit 8. Complexity C→B (Audit 8's 78-line...)
+
+### Audit 8 · 2026-04-20 (stable vs Audit 7. Version B→C (6 unbumped feat/fix commits)....)
 
 ### Audit 7 · 2026-04-11 (⮉ improving vs Audit 6. Tests B→A (240 tests, 18/18...)
 
