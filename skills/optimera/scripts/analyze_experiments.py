@@ -23,6 +23,114 @@ import sys
 from pathlib import Path
 
 
+def _number(value: str) -> float:
+    return float(value.replace(",", ""))
+
+
+def _unit(text: str) -> str | None:
+    match = re.search(r"[\d,]+(?:\.\d+)?\s*([A-Za-z][A-Za-z /_-]*)", text)
+    return match.group(1).strip().lower() if match else None
+
+
+def normalize_status(value: str | None) -> tuple[str | None, str | None]:
+    """Normalize rich status prose into analyzer status buckets."""
+    if not value:
+        return None, "missing status"
+
+    status = value.lower().strip()
+    if status.startswith("▨") or "baseline recorded" in status or "reference point" in status:
+        return "baseline", None
+    if "discard" in status:
+        return "discarded", None
+    if "kept" in status or "keep" in status:
+        return "kept", None
+    if "error" in status or "failed" in status or "failure" in status:
+        return "error", None
+
+    return "unknown", f"unknown status: {value}"
+
+
+def _metric_from_table(body: str) -> dict:
+    header = []
+    for line in body.splitlines():
+        if "|" not in line:
+            continue
+        if re.fullmatch(r"[|:\-\s]+", line.strip()):
+            continue
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        if not cells or not re.search(r"primary|metric|total", cells[0], re.IGNORECASE):
+            header = cells
+            continue
+
+        values = []
+        for index, cell in enumerate(cells[1:]):
+            match = re.search(r"[+-]?[\d,]+(?:\.\d+)?", cell)
+            if match:
+                label = header[index + 1] if index + 1 < len(header) else ""
+                values.append((label.lower(), _number(match.group(0))))
+
+        if len(values) >= 2:
+            non_delta = [value for label, value in values if "delta" not in label]
+            delta = [value for label, value in values if "delta" in label]
+            metric = {"metric_before": non_delta[0], "metric_after": non_delta[-1]}
+            metric["metric_delta"] = delta[-1] if delta else non_delta[-1] - non_delta[0]
+            return metric
+
+    return {}
+
+
+def parse_metric_values(entry: dict, body: str) -> None:
+    """Extract before/after/current/delta values from prose and simple tables."""
+    raw = entry.get("metric_raw") or ""
+    metric = _metric_from_table(body)
+
+    arrow_match = re.search(
+        r"([+-]?[\d,]+(?:\.\d+)?)\s*(?:[A-Za-z][A-Za-z /_-]*)?\s*(?:→|->)\s*([+-]?[\d,]+(?:\.\d+)?)",
+        raw,
+    )
+    if arrow_match:
+        metric["metric_before"] = _number(arrow_match.group(1))
+        metric["metric_after"] = _number(arrow_match.group(2))
+        metric.setdefault("metric_delta", metric["metric_after"] - metric["metric_before"])
+
+    single_match = None
+    if not arrow_match:
+        single_match = re.search(r"\*\*([+-]?[\d,]+(?:\.\d+)?)\s*([^*\n]*)\*\*", raw)
+        if not single_match:
+            single_match = re.search(r"([+-]?[\d,]+(?:\.\d+)?)\s*([A-Za-z][A-Za-z /_-]*)?", raw)
+    if single_match:
+        metric["metric_current"] = _number(single_match.group(1))
+        if single_match.lastindex and single_match.lastindex >= 2:
+            unit = _unit(single_match.group(0))
+            if unit:
+                metric["metric_unit"] = unit
+
+    baseline = entry.get("baseline")
+    if baseline and "metric_before" not in metric:
+        baseline_match = re.search(r"([+-]?[\d,]+(?:\.\d+)?)", baseline)
+        if baseline_match:
+            metric["metric_before"] = _number(baseline_match.group(1))
+
+    delta = entry.get("delta")
+    if delta and "metric_delta" not in metric:
+        delta_match = re.search(r"([+-][\d,]+(?:\.\d+)?)", delta)
+        if delta_match:
+            metric["metric_delta"] = _number(delta_match.group(1))
+
+    if "metric_after" not in metric and "metric_current" in metric:
+        metric["metric_after"] = metric["metric_current"]
+    if "metric_current" not in metric and "metric_after" in metric:
+        metric["metric_current"] = metric["metric_after"]
+    if "metric_delta" not in metric and {"metric_before", "metric_after"} <= metric.keys():
+        metric["metric_delta"] = metric["metric_after"] - metric["metric_before"]
+    if "metric_unit" not in metric and raw:
+        unit = _unit(raw)
+        if unit:
+            metric["metric_unit"] = unit
+
+    entry.update(metric)
+
+
 def parse_experiments(text: str) -> list[dict]:
     """Parse EXPERIMENTS.md into structured experiment entries."""
     experiments = []
@@ -41,6 +149,8 @@ def parse_experiments(text: str) -> list[dict]:
             ("Hypothesis", "hypothesis"),
             ("Change", "change"),
             ("Metric", "metric_raw"),
+            ("Baseline", "baseline"),
+            ("Delta", "delta"),
             ("Regression", "regression"),
             ("Status", "status"),
             ("Commit", "commit"),
@@ -48,23 +158,21 @@ def parse_experiments(text: str) -> list[dict]:
             ("Next", "next"),
         ]:
             match = re.search(
-                rf"\*\*{field}\*\*:\s*(.+?)(?:\n|$)", body
+                rf"\*\*{field}\*\*(?:\s*\([^\n]*?\))?:\s*(.+?)(?:\n|$)", body
             )
             entry[key] = match.group(1).strip() if match else None
 
-        # Parse metric values from "before → after (direction is better|worse|unchanged)"
-        if entry.get("metric_raw"):
-            metric_match = re.search(
-                r"([\d.]+)\s*→\s*([\d.]+)", entry["metric_raw"]
-            )
-            if metric_match:
-                entry["metric_before"] = float(metric_match.group(1))
-                entry["metric_after"] = float(metric_match.group(2))
-                entry["metric_delta"] = entry["metric_after"] - entry["metric_before"]
+        diagnostics = []
+        status, status_diagnostic = normalize_status(entry.get("status"))
+        entry["status"] = status
+        if status_diagnostic:
+            diagnostics.append(status_diagnostic)
 
-        # Normalize status
-        if entry.get("status"):
-            entry["status"] = entry["status"].lower().strip()
+        parse_metric_values(entry, body)
+        if entry.get("metric_raw") and "metric_current" not in entry:
+            diagnostics.append("metric value not found")
+        if diagnostics:
+            entry["diagnostics"] = diagnostics
 
         experiments.append(entry)
 
@@ -104,20 +212,25 @@ def analyze(experiments: list[dict], target: dict | None = None) -> dict:
     kept = [e for e in experiments if e.get("status") == "kept"]
     discarded = [e for e in experiments if e.get("status") == "discarded"]
     errors = [e for e in experiments if e.get("status") == "error"]
+    diagnostics = [
+        {"experiment": e.get("number"), "message": message}
+        for e in experiments
+        for message in e.get("diagnostics", [])
+    ]
 
     # Metric trajectory
     trajectory = []
     for e in experiments:
-        if "metric_after" in e:
+        if "metric_current" in e:
             trajectory.append(
-                {"experiment": e["number"], "value": e["metric_after"], "status": e.get("status")}
+                {"experiment": e["number"], "value": e["metric_current"], "status": e.get("status")}
             )
 
     # Current metric (last successful measurement)
     current_metric = None
     for e in reversed(experiments):
-        if "metric_after" in e:
-            current_metric = e["metric_after"]
+        if "metric_current" in e:
+            current_metric = e["metric_current"]
             break
 
     # Best metric achieved
@@ -176,6 +289,8 @@ def analyze(experiments: list[dict], target: dict | None = None) -> dict:
             f"No improvement in the last {plateau_length} experiments. "
             "Consider a radically different approach or seeking external inspiration."
         )
+    if diagnostics:
+        result["diagnostics"] = diagnostics
 
     # Recent experiments for quick context
     result["recent"] = [

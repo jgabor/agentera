@@ -46,7 +46,7 @@ Document analyzer expectations first. Parser work uses fixtures derived from cur
 ### Task 2: Normalize Experiment Records
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN fixture-derived records contain baseline, kept, discarded, and error outcomes WHEN analysis runs THEN statuses normalize consistently.
 ▸ GIVEN rich metric prose and tables exist WHEN analysis runs THEN before, after, delta, current, and trajectory values are extracted when present.
