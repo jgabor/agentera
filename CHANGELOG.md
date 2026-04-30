@@ -4,7 +4,14 @@
 
 ### Changed
 
+- Semantic Skill Evaluation Surface is freshness-closed with fixture contract, offline runner, hej routing oracle, proportional tests, docs, 1.26.0 metadata, and archived plan state aligned.
 - Optimera experiment analysis reliability is freshness-closed with guidance, record normalization, target parsing, frontier reporting, integration verification, and 1.25.0 metadata aligned.
+
+## [1.26.0] · 2026-04-30
+
+### Added
+
+- Offline semantic skill evaluation now checks captured skill output against seeded project-state fixtures, starting with hej routing correctness while keeping runtime smoke evals crash-focused.
 
 ## [1.25.0] · 2026-04-30
 

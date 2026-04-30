@@ -428,6 +428,28 @@ The core surfaces:
 
 ## Maintainer checks
 
+Agentera has two eval surfaces with different responsibilities:
+
+- `scripts/eval_skills.py` is the runtime smoke eval. It invokes skills through
+  Claude Code or OpenCode and checks for crashes, non-zero exits, and obvious
+  error output. It does not score output correctness.
+- `scripts/semantic_eval.py` is the offline semantic eval. It reads captured
+  Markdown fixtures from `fixtures/semantic/*.md`, checks expected output facts
+  and seeded artifact facts, and never invokes a model runtime.
+
+Run semantic fixtures from the repo root:
+
+```bash
+python3 scripts/semantic_eval.py fixtures/semantic/hej-routing-task3.md
+```
+
+Run smoke evals from the repo root:
+
+```bash
+python3 scripts/eval_skills.py --dry-run
+python3 scripts/eval_skills.py --skill realisera
+```
+
 ```bash
 python3 scripts/generate_contracts.py --check
 python3 scripts/validate_spec.py
