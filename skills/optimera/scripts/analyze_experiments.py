@@ -375,6 +375,75 @@ def analyze(experiments: list[dict], target: dict | None = None) -> dict:
     return result
 
 
+def _improvement(experiment: dict, direction: str | None) -> float | None:
+    if "metric_before" not in experiment or "metric_after" not in experiment:
+        return None
+    if direction == "higher":
+        return experiment["metric_after"] - experiment["metric_before"]
+    if direction == "lower":
+        return experiment["metric_before"] - experiment["metric_after"]
+    if "metric_delta" in experiment:
+        return -experiment["metric_delta"]
+    return None
+
+
+def frontier_report(experiments: list[dict], analysis: dict, target: dict | None = None) -> str:
+    """Render a Markdown frontier report without changing default JSON analysis."""
+    direction = target.get("direction") if target else analysis.get("target_direction")
+    unit = next((e.get("metric_unit") for e in experiments if e.get("metric_unit")), "units")
+    lines = ["# Frontier Report", ""]
+
+    lines.extend(
+        [
+            f"- Experiments: {analysis.get('total_experiments', 0)}",
+            f"- Kept: {analysis.get('kept', 0)}",
+            f"- Discarded: {analysis.get('discarded', 0)}",
+            f"- Keep rate: {analysis.get('win_rate', 0):.1%}",
+        ]
+    )
+
+    best = analysis.get("best")
+    if best:
+        lines.append(f"- Best metric: {best['value']:g} at Experiment {best['experiment']}")
+    if "target_met" in analysis:
+        status = "met" if analysis["target_met"] else "not met"
+        lines.append(f"- Target: {status}")
+    if direction:
+        lines.append(f"- Direction: {direction}")
+
+    ranked = []
+    for experiment in experiments:
+        if experiment.get("status") == "baseline":
+            continue
+        improvement = _improvement(experiment, direction)
+        if improvement is None:
+            continue
+        ranked.append((improvement, experiment["number"], experiment))
+    ranked.sort(key=lambda item: (-item[0], item[1]))
+
+    lines.extend(["", "## Top Improvements", ""])
+    if not ranked:
+        lines.append("No comparable metric deltas found.")
+    else:
+        for improvement, _, experiment in ranked[:5]:
+            hypothesis = experiment.get("hypothesis") or "Untitled experiment"
+            lines.append(
+                f"- Experiment {experiment['number']}: {improvement:g} {unit} improvement "
+                f"({experiment.get('status') or 'unknown'}) - {hypothesis}"
+            )
+
+    if analysis.get("plateau_detected"):
+        lines.extend(["", "## Plateau", "", analysis["plateau_warning"]])
+    if analysis.get("diagnostics"):
+        lines.extend(["", "## Diagnostics", ""])
+        for diagnostic in analysis["diagnostics"]:
+            experiment = diagnostic.get("experiment")
+            prefix = f"Experiment {experiment}" if experiment is not None else "Objective"
+            lines.append(f"- {prefix}: {diagnostic['message']}")
+
+    return "\n".join(lines) + "\n"
+
+
 def main():
     parser = argparse.ArgumentParser(description="Analyze EXPERIMENTS.md for optimera")
     parser.add_argument(
@@ -391,6 +460,11 @@ def main():
         "--pretty",
         action="store_true",
         help="Pretty-print JSON output",
+    )
+    parser.add_argument(
+        "--frontier",
+        action="store_true",
+        help="Print a Markdown frontier report instead of JSON",
     )
     args = parser.parse_args()
 
@@ -409,6 +483,10 @@ def main():
         target = parse_target(obj_path.read_text())
 
     result = analyze(experiments, target)
+
+    if args.frontier:
+        print(frontier_report(experiments, result, target), end="")
+        return
 
     indent = 2 if args.pretty else None
     print(json.dumps(result, indent=indent))

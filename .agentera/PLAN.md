@@ -66,7 +66,7 @@ Document analyzer expectations first. Parser work uses fixtures derived from cur
 ### Task 4: Add Frontier Report Mode
 
 **Depends on**: Task 3
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN `--frontier` is requested WHEN the analyzer reads experiment history THEN stdout is Markdown and not mixed with JSON.
 ▸ GIVEN default mode is used WHEN the analyzer runs THEN top-level JSON keys and value types remain compatible.
