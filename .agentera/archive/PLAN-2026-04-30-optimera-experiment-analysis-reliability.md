@@ -1,6 +1,6 @@
 # Plan: Optimera Experiment Analysis Reliability
 
-<!-- Level: full | Created: 2026-04-30 | Status: active -->
+<!-- Level: full | Created: 2026-04-30 | Status: complete -->
 <!-- Reviewed: 2026-04-30 | Critic issues: 12 found, 12 addressed, 0 dismissed -->
 
 ## What
@@ -95,7 +95,7 @@ Document analyzer expectations first. Parser work uses fixtures derived from cur
 ### Task 7: Plan-Level Freshness Checkpoint
 
 **Depends on**: Task 6
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN this plan's work has shipped WHEN CHANGELOG.md is checked THEN it records the user-facing impact of Tasks 1-6.
 ▸ GIVEN this plan is otherwise complete WHEN PROGRESS.md is checked THEN it has one aggregate cycle entry summarizing the plan and validation.
@@ -113,4 +113,4 @@ Document analyzer expectations first. Parser work uses fixtures derived from cur
 
 ## Surprises
 
-None yet.
+No plan-level surprises.
