@@ -104,3 +104,35 @@ def test_default_smoke_does_not_run_real_npx(tmp_path: Path, monkeypatch) -> Non
     assert result.ok is True
     assert result.real_npx_attempted is False
     assert called is False
+
+
+def test_real_npx_smoke_accepts_universal_agents_install_dir(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    smoke = _load_smoke()
+    source = tmp_path / "source" / "skills"
+    source.mkdir(parents=True)
+    _write_skill(source, "hej", "Use references/contract.md from the bundle.\n")
+
+    def fake_run_real_npx(home, config_home):
+        installed = home / ".agents" / "skills"
+        shutil.copytree(source, installed)
+        return smoke.subprocess.CompletedProcess(
+            smoke.REAL_NPX_COMMAND,
+            0,
+            stdout="installed to universal skills\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(smoke, "run_real_npx", fake_run_real_npx)
+    result = smoke.run_smoke(
+        real_npx=True,
+        source_skills_root=source,
+        skill_names=["hej"],
+    )
+
+    assert result.ok is True
+    assert result.real_npx_attempted is True
+    assert result.errors == []
+    assert result.installed_root.parts[-2:] == (".agents", "skills")

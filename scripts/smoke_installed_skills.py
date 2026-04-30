@@ -139,6 +139,27 @@ def run_real_npx(home: Path, config_home: Path) -> subprocess.CompletedProcess[s
     )
 
 
+def resolve_real_npx_installed_root(
+    home: Path,
+    config_home: Path,
+    skill_names: list[str] | None,
+) -> Path:
+    """Resolve where ``npx skills`` placed OpenCode-targeted global skills."""
+    names = skill_names or load_registry_skill_names()
+    candidates = (
+        config_home / "opencode" / "skills",
+        home / ".agents" / "skills",
+        config_home / "agents" / "skills",
+    )
+    for candidate in candidates:
+        if all((candidate / name / "SKILL.md").is_file() for name in names):
+            return candidate
+    for candidate in candidates:
+        if any((candidate / name / "SKILL.md").is_file() for name in names):
+            return candidate
+    return candidates[0]
+
+
 def run_smoke(
     *,
     installed_root: Path | None = None,
@@ -165,7 +186,7 @@ def run_smoke(
                     real_npx_attempted=True,
                 )
             if installed_root is None:
-                target = config_home / "opencode" / "skills"
+                target = resolve_real_npx_installed_root(home, config_home, skill_names)
         elif installed_root is None:
             prepare_offline_install(SOURCE_SKILLS, target)
 

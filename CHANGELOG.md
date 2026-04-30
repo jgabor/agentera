@@ -6,6 +6,12 @@
 
 - Installation Reliability Self-Healing is freshness-closed with install validation, offline bundle smoke, OpenCode command and skill-path repair, doctor drift reporting, 1.27.0 metadata, and archived plan state aligned.
 
+## [1.27.1] · 2026-04-30
+
+### Fixed
+
+- Real `npx skills` install smoke now accepts OpenCode-targeted installs that land in the universal `.agents/skills` directory.
+
 ## [1.27.0] · 2026-04-30
 
 ### Added

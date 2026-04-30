@@ -4,7 +4,7 @@
   "skills": [
     {
       "name": "hej",
-      "version": "1.27.0",
+      "version": "1.27.1",
       "description": "HEJ: Holistic Entry Junction: Orient, Route, Activate. Single point of entry to the suite. Detects fresh vs returning projects, delivers briefings, and routes to the right skill.",
       "path": "skills/hej",
       "tags": ["entry-point", "routing", "onboarding", "status"],
@@ -12,7 +12,7 @@
     },
     {
       "name": "inspirera",
-      "version": "1.27.0",
+      "version": "1.27.1",
       "description": "INSPIRERA: Insight Navigation: Source Pattern Identification and Resonance: Evaluate, Reframe, Assimilate. Analyzes external links and maps concepts, patterns, and primitives to your own projects.",
       "path": "skills/inspirera",
       "tags": ["research", "architecture", "code-review"],
@@ -20,7 +20,7 @@
     },
     {
       "name": "profilera",
-      "version": "1.27.0",
+      "version": "1.27.1",
       "description": "PROFILERA: Persona Reconstruction: Observable Footprint Indexing Logic: Examine, Reconcile, Articulate. Mines session history to build an agent-consumable decision profile.",
       "path": "skills/profilera",
       "tags": ["decision-mining", "session-analysis", "preferences"],
@@ -28,7 +28,7 @@
     },
     {
       "name": "realisera",
-      "version": "1.27.0",
+      "version": "1.27.1",
       "description": "REALISERA: Relentless Execution: Autonomous Loops Iterating Software: Evolve, Refine, Adapt. Independently decides what to build, evolves projects, and makes structured progress on a codebase.",
       "path": "skills/realisera",
       "tags": ["autonomous", "development", "continuous"],
@@ -36,7 +36,7 @@
     },
     {
       "name": "optimera",
-      "version": "1.27.0",
+      "version": "1.27.1",
       "description": "OPTIMERA: Objective Pursuit: Targeted Iterative Measurement: Experiment, Record, Advance. Metric-driven optimization that improves any measurable property of a codebase through systematic experimentation.",
       "path": "skills/optimera",
       "tags": ["optimization", "benchmarks", "metrics", "testing"],
@@ -44,7 +44,7 @@
     },
     {
       "name": "resonera",
-      "version": "1.27.0",
+      "version": "1.27.1",
       "description": "RESONERA: Reflective Engagement: Socratic Observation Nexus: Explore, Reframe, Articulate. Structured deliberation through Socratic questioning, producing decision artifacts the rest of the suite consumes.",
       "path": "skills/resonera",
       "tags": ["deliberation", "decisions", "socratic", "scoping"],
@@ -52,7 +52,7 @@
     },
     {
       "name": "inspektera",
-      "version": "1.27.0",
+      "version": "1.27.1",
       "description": "INSPEKTERA: Integrity Navigation: Systematic Pattern Evaluation, Knowledge Tracing: Examine, Report, Advise. Codebase health audit with multi-dimensional evaluation, confidence scoring, and trend tracking.",
       "path": "skills/inspektera",
       "tags": ["audit", "health", "architecture", "quality", "review"],
@@ -60,7 +60,7 @@
     },
     {
       "name": "planera",
-      "version": "1.27.0",
+      "version": "1.27.1",
       "description": "PLANERA: Planning Logic: Adaptive Notation, Executable Requirements Architecture: Explore, Refine, Articulate. Scale-adaptive planning with behavioral acceptance criteria that bridges deliberation and execution.",
       "path": "skills/planera",
       "tags": ["planning", "decomposition", "spec", "acceptance-criteria"],
@@ -68,7 +68,7 @@
     },
     {
       "name": "visionera",
-      "version": "1.27.0",
+      "version": "1.27.1",
       "description": "VISIONERA: Visionary Inception: Strategic Imagination, Observation Nexus: Explore, Refine, Articulate. Deep creation and stewardship of VISION.md through codebase exploration, domain research, and aspirational challenge.",
       "path": "skills/visionera",
       "tags": ["vision", "strategy", "direction", "brainstorm"],
@@ -76,7 +76,7 @@
     },
     {
       "name": "dokumentera",
-      "version": "1.27.0",
+      "version": "1.27.1",
       "description": "DOKUMENTERA: Documentation Origin: Knowledge Unified, Methodology Enforced, Notation Traced: Examine, Record, Articulate. DTC-first documentation creation, maintenance, and verification with DOCS.md coverage tracking.",
       "path": "skills/dokumentera",
       "tags": ["documentation", "dtc", "docs-first", "audit"],
@@ -84,7 +84,7 @@
     },
     {
       "name": "visualisera",
-      "version": "1.27.0",
+      "version": "1.27.1",
       "description": "VISUALISERA: Visual Identity: Systematic Unified Aesthetic Language, Intent-driven Style Engineering: Record, Articulate. Creates, refines, and audits DESIGN.md visual identity files with bundled spec and validation.",
       "path": "skills/visualisera",
       "tags": [
@@ -98,7 +98,7 @@
     },
     {
       "name": "orkestrera",
-      "version": "1.27.0",
+      "version": "1.27.1",
       "description": "ORKESTRERA: Orchestration Runtime: Knowledge-coordinated Execution Strategy, Targeted Routing: Evaluate, Resolve, Adapt. Skill-agnostic meta-orchestrator that dispatches skills as subagents, evaluates with inspektera, and loops through plans.",
       "path": "skills/orkestrera",
       "tags": [
