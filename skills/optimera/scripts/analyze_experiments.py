@@ -32,6 +32,10 @@ def _unit(text: str) -> str | None:
     return match.group(1).strip().lower() if match else None
 
 
+def _excerpt(line: str) -> str:
+    return re.sub(r"\s+", " ", line.replace("**", "").strip())
+
+
 def normalize_status(value: str | None) -> tuple[str | None, str | None]:
     """Normalize rich status prose into analyzer status buckets."""
     if not value:
@@ -181,21 +185,76 @@ def parse_experiments(text: str) -> list[dict]:
 
 def parse_target(text: str) -> dict | None:
     """Extract target value and direction from OBJECTIVE.md."""
-    # Look for target patterns in the Objective section
     target = {}
+    diagnostics = []
+    target_lines = [
+        line
+        for line in text.splitlines()
+        if re.search(
+            r"target|goal|reduce|decrease|increase|improve",
+            line,
+            re.IGNORECASE,
+        )
+        and not line.lstrip().startswith("#")
+    ]
+    metric_lines = [
+        line for line in text.splitlines() if re.search(r"baseline|metric", line, re.IGNORECASE)
+    ]
 
-    # Try to find direction hints
-    if re.search(r"direction.*lower|reduce|decrease|minimize|lower", text, re.IGNORECASE):
+    if target_lines:
+        target["context"] = _excerpt(target_lines[0])
+    else:
+        diagnostics.append("objective target context not found")
+
+    if re.search(
+        r"direction\s*:\s*lower|lower is better|reduce|decrease|minimi[sz]e|lower",
+        text,
+        re.IGNORECASE,
+    ):
         target["direction"] = "lower"
-    elif re.search(r"direction.*higher|increase|maximize|higher|improve", text, re.IGNORECASE):
+    elif re.search(
+        r"direction\s*:\s*higher|higher is better|increase|maximi[sz]e|higher|improve",
+        text,
+        re.IGNORECASE,
+    ):
         target["direction"] = "higher"
+    else:
+        diagnostics.append("objective target direction not found")
 
-    # Try to find a target number
+    target_text = "\n".join(target_lines)
     target_match = re.search(
-        r"target[:\s]+.*?([\d.]+)", text, re.IGNORECASE
+        r"(?:<=|>=|=|below|above|under|over)\s*([\d,]+(?:\.\d+)?)",
+        target_text,
+        re.IGNORECASE,
     )
+    if not target_match:
+        target_match = re.search(
+            r"target[^\n\d]*(?:of|is|at|:)\s*([\d,]+(?:\.\d+)?)",
+            target_text,
+            re.IGNORECASE,
+        )
     if target_match:
-        target["value"] = float(target_match.group(1))
+        target["value"] = _number(target_match.group(1))
+    else:
+        percent_match = re.search(
+            r"(?:by|target)\s+\**([\d,]+(?:\.\d+)?)\s*%",
+            target_text,
+            re.IGNORECASE,
+        )
+        baseline_match = re.search(
+            r"([\d,]+(?:\.\d+)?)\s*(?:to|→|->)\s*[\d,]+(?:\.\d+)?",
+            "\n".join(metric_lines),
+        )
+        if percent_match and baseline_match and target.get("direction") in {"lower", "higher"}:
+            baseline = _number(baseline_match.group(1))
+            percent = _number(percent_match.group(1)) / 100
+            multiplier = 1 - percent if target["direction"] == "lower" else 1 + percent
+            target["value"] = round(baseline * multiplier, 4)
+
+    if "value" not in target:
+        diagnostics.append("objective target value not found")
+    if diagnostics:
+        target["diagnostics"] = diagnostics
 
     return target if target else None
 
@@ -217,6 +276,11 @@ def analyze(experiments: list[dict], target: dict | None = None) -> dict:
         for e in experiments
         for message in e.get("diagnostics", [])
     ]
+    if target:
+        diagnostics.extend(
+            {"experiment": None, "message": message}
+            for message in target.get("diagnostics", [])
+        )
 
     # Metric trajectory
     trajectory = []
@@ -284,6 +348,11 @@ def analyze(experiments: list[dict], target: dict | None = None) -> dict:
     if distance is not None:
         result["distance_to_target"] = round(distance, 4)
         result["target"] = target["value"]
+        result["target_met"] = distance <= 0
+    if target and target.get("value") is not None and target.get("direction"):
+        result["target_direction"] = target["direction"]
+    if target and target.get("value") is not None and target.get("context"):
+        result["target_context"] = target["context"]
     if plateau_length >= 3:
         result["plateau_warning"] = (
             f"No improvement in the last {plateau_length} experiments. "

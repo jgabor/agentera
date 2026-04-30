@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Optimera experiment analysis now parses rich objective target prose without crashing and reports additive diagnostics for malformed targets.
+
 ### Changed
 
 - Completed-objective archival is freshness-closed: the active plan is archived, the stale TODO is resolved, and the checkpoint validates spec, contracts, artifact prose, and tests.

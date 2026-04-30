@@ -56,7 +56,7 @@ Document analyzer expectations first. Parser work uses fixtures derived from cur
 ### Task 3: Harden Objective Target Extraction
 
 **Depends on**: Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN fixture-derived objectives contain closed status and target prose WHEN analysis runs THEN direction and target context are extracted without crashing.
 ▸ GIVEN targetless or malformed objective prose WHEN analysis runs THEN target fields are absent and diagnostics explain the missing data.

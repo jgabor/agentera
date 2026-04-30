@@ -141,6 +141,34 @@ MALFORMED_EXPERIMENTS = """\
 **Status**: inconclusive pending review
 """
 
+OBJECTIVE_WITH_TARGET = """\
+# Reduce runtime tokens
+
+**Status**: closed. Target met. Tier 1 metric: 15,065 to 12,055 tokens.
+
+## Objective
+
+Reduce the fixed token footprint by **20%** from the established baseline.
+
+Direction: lower. Unit: tokens.
+"""
+
+OBJECTIVE_TARGETLESS = """\
+# Explore runtime tokens
+
+## Objective
+
+Observe the current token profile before setting a target.
+"""
+
+OBJECTIVE_MALFORMED_TARGET = """\
+# Runtime target
+
+## Objective
+
+Target: soon.
+"""
+
 
 class TestParseExperiments:
     """Complex: regex parsing of experiment blocks. Keep 3 (multi, metrics, empty)."""
@@ -188,6 +216,41 @@ class TestParseExperiments:
         assert "metric value not found" in exps[0]["diagnostics"]
         assert exps[1]["status"] == "unknown"
         assert exps[1]["diagnostics"] == ["unknown status: inconclusive pending review"]
+
+
+# ---------------------------------------------------------------------------
+# parse_target
+# ---------------------------------------------------------------------------
+
+class TestParseTarget:
+    """Objective parsing: target pass/fail plus malformed prose edges."""
+
+    def test_extracts_closed_status_target_context(self, analyze_experiments):
+        target = analyze_experiments.parse_target(OBJECTIVE_WITH_TARGET)
+        assert target["direction"] == "lower"
+        assert target["value"] == 12052.0
+        assert target["context"] == "Status: closed. Target met. Tier 1 metric: 15,065 to 12,055 tokens."
+        assert "diagnostics" not in target
+
+    def test_targetless_objective_adds_diagnostics_without_fields(self, analyze_experiments):
+        target = analyze_experiments.parse_target(OBJECTIVE_TARGETLESS)
+        assert "value" not in target
+        assert "direction" not in target
+        assert target["context"] == "Observe the current token profile before setting a target."
+        assert target["diagnostics"] == [
+            "objective target direction not found",
+            "objective target value not found",
+        ]
+
+    def test_malformed_target_adds_missing_data_diagnostics(self, analyze_experiments):
+        target = analyze_experiments.parse_target(OBJECTIVE_MALFORMED_TARGET)
+        assert "value" not in target
+        assert "direction" not in target
+        assert target["context"] == "Target: soon."
+        assert target["diagnostics"] == [
+            "objective target direction not found",
+            "objective target value not found",
+        ]
 
 
 # ---------------------------------------------------------------------------
@@ -244,3 +307,30 @@ class TestAnalyze:
         result = analyze_experiments.analyze(exps)
         assert result["plateau_length"] >= 3
         assert result["plateau_detected"] is True
+
+    def test_reports_target_pass_fail_and_context(self, analyze_experiments):
+        exps = analyze_experiments.parse_experiments(RICH_EXPERIMENTS)
+        target = analyze_experiments.parse_target(OBJECTIVE_WITH_TARGET)
+        result = analyze_experiments.analyze(exps, target)
+        assert result["target"] == 12052.0
+        assert result["target_direction"] == "lower"
+        assert result["target_met"] is False
+        assert result["distance_to_target"] == 448.0
+        assert result["target_context"].startswith("Status: closed. Target met.")
+
+        passing = analyze_experiments.analyze(
+            exps,
+            {"value": 13000.0, "direction": "lower", "context": "Target below 13,000 tokens."},
+        )
+        assert passing["target_met"] is True
+
+    def test_target_diagnostics_are_additive(self, analyze_experiments):
+        exps = analyze_experiments.parse_experiments(SAMPLE_EXPERIMENTS)
+        target = analyze_experiments.parse_target(OBJECTIVE_MALFORMED_TARGET)
+        result = analyze_experiments.analyze(exps, target)
+        assert "target" not in result
+        assert "target_met" not in result
+        assert result["diagnostics"] == [
+            {"experiment": None, "message": "objective target direction not found"},
+            {"experiment": None, "message": "objective target value not found"},
+        ]
