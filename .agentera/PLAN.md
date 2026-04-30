@@ -86,7 +86,7 @@ Document analyzer expectations first. Parser work uses fixtures derived from cur
 ### Task 6: Bump Release Metadata
 
 **Depends on**: Task 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN DOCS.md versioning policy WHEN version-bearing files are checked THEN every versioned target reports `1.25.0`.
 ▸ GIVEN release notes are checked WHEN CHANGELOG.md is read THEN analyzer repair, frontier report, and guidance updates are represented.
