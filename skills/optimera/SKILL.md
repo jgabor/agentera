@@ -55,7 +55,9 @@ have different costs.]
 ## Measurement
 [How the metric is captured. What command to run, what the output means, which direction
 is "better" (lower latency = good, higher coverage = good). The eval harness implements
-this, but OBJECTIVE.md explains the intent behind it.]
+this, but OBJECTIVE.md explains the intent behind it. For stochastic objectives, state the
+fixed per-experiment budget: run count, seed policy, time limit, token cap, or sample size.
+Every experiment uses that same budget unless the user explicitly refines the objective.]
 
 ## Constraints
 - [What the agent must NOT break while optimizing (e.g., "all existing tests must pass")]
@@ -68,6 +70,8 @@ the agent uses judgment, but explicit scope prevents surprise.]
 ```
 
 The objective must be precise enough to measure, constraints clear enough to enforce, and scope defined enough to prevent wandering.
+
+Fixed budgets are part of the measurement contract, not experiment strategy. Keep them in OBJECTIVE.md and the locked harness. Do not store budget state in root artifacts, registries, symlinks, or DOCS.md mappings. EXPERIMENTS.md records the budget actually used only when that evidence matters to interpret the result.
 
 ### `.agentera/optimera/<objective-name>/harness`
 
@@ -132,6 +136,22 @@ Closure entries are appended once when the objective reaches its target:
 ```
 
 The "Next" field from the previous experiment is a suggestion, not a mandate. Re-evaluate fresh each cycle based on the full experiment history.
+
+### Experiment history analyzer contract
+
+`scripts/analyze_experiments.py` is the read-only summary layer for rich EXPERIMENTS.md records. It must inspect the active objective directory only: `--experiments` points at `.agentera/optimera/<objective-name>/EXPERIMENTS.md`, and `--objective` points at the sibling OBJECTIVE.md. The analyzer never creates root objective artifacts, registries, symlinks, DOCS.md fixed mappings, or sidecar ledgers.
+
+Expected behavior for rich records:
+
+| Input evidence | Expected analyzer behavior |
+|----------------|----------------------------|
+| Kept, discarded, error, baseline, or closure entries | Count statuses separately and preserve additive diagnostics for unknown shapes. |
+| Metric prose, arrows, tables, or current-value summaries | Extract before, after, delta, current, direction, and unit when present. |
+| Objective target prose | Report distance-to-target only when target and direction are known. |
+| Three or more non-improving attempts | Flag plateau risk without deciding the next hypothesis. |
+| Malformed or sparse records | Return partial JSON, not a traceback. |
+
+Default output remains JSON for cycle consumption. Additive report modes may summarize a frontier, but they must not alter EXPERIMENTS.md or the harness.
 
 ---
 
