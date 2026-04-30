@@ -28,6 +28,8 @@ import tempfile
 import tomllib
 from collections.abc import Mapping
 from pathlib import Path
+from re import compile as compile_re
+from re import Pattern
 from typing import Any
 
 
@@ -41,6 +43,35 @@ RUNTIME_BINARIES = {
     "opencode": "opencode",
     "copilot": "copilot",
     "codex": "codex",
+}
+OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode -y"
+OPENCODE_SKILL_NAMES = (
+    "hej",
+    "visionera",
+    "resonera",
+    "inspirera",
+    "planera",
+    "realisera",
+    "optimera",
+    "inspektera",
+    "dokumentera",
+    "profilera",
+    "visualisera",
+    "orkestrera",
+)
+OPENCODE_COMMAND_DESCRIPTIONS = {
+    "hej": "Session entry point: briefing, status, and routing",
+    "visionera": "Create or refine the project vision",
+    "resonera": "Structured deliberation through Socratic questioning",
+    "inspirera": "Analyze external sources and map patterns to this project",
+    "planera": "Scale-adaptive planning with acceptance criteria",
+    "realisera": "Run one autonomous development cycle",
+    "optimera": "Metric-driven optimization through experimentation",
+    "inspektera": "Codebase health audit with grades and findings",
+    "dokumentera": "Documentation creation, maintenance, and audit",
+    "profilera": "Mine session history into a decision profile",
+    "visualisera": "Visual identity system creation and audit",
+    "orkestrera": "Multi-cycle plan execution with evaluation gating",
 }
 CANONICAL_ENTRIES = (
     "scripts/validate_spec.py",
@@ -57,6 +88,10 @@ SMOKE_TIMEOUT_SECONDS = 30
 ENV_FALLBACKS = ("AGENTERA_HOME", "CLAUDE_PLUGIN_ROOT")
 COPILOT_MARKER = "# agentera: AGENTERA_HOME (managed)"
 INSTALLER_SCHEMA_VERSION = "agentera.setupInstaller.v1"
+SUPPORT_PATH_RE: Pattern[str] = compile_re(
+    r"(?<![\w/.$-])"
+    r"(?P<path>references/[A-Za-z0-9][A-Za-z0-9_./-]*)"
+)
 
 
 def verify_install_root(root: Path) -> list[str]:
@@ -306,6 +341,186 @@ def _runtime_result(
         "binary": binary,
         "checks": all_checks,
     }
+
+
+def _opencode_config_dir(home: Path, env: Mapping[str, str]) -> Path:
+    value = env.get("OPENCODE_CONFIG_DIR")
+    return Path(value).expanduser().resolve() if value else home / ".config" / "opencode"
+
+
+def _opencode_command_template(name: str) -> str:
+    return (
+        "---\n"
+        f"description: \"{OPENCODE_COMMAND_DESCRIPTIONS[name]}\"\n"
+        "agentera_managed: true\n"
+        "---\n"
+        f"Load and execute the {name} skill for this project.\n"
+    )
+
+
+def _has_managed_marker(text: str) -> bool:
+    lines = text.split("\n")
+    if not lines or lines[0] != "---":
+        return False
+    try:
+        closing = lines.index("---", 1)
+    except ValueError:
+        return False
+    return any(line.strip() == "agentera_managed: true" for line in lines[1:closing])
+
+
+def _diagnose_opencode_commands(home: Path, env: Mapping[str, str]) -> dict[str, Any]:
+    commands_dir = _opencode_config_dir(home, env) / "commands"
+    missing: list[str] = []
+    stale: list[str] = []
+    user_owned: list[str] = []
+
+    for name in OPENCODE_SKILL_NAMES:
+        command = commands_dir / f"{name}.md"
+        expected = _opencode_command_template(name)
+        try:
+            actual = command.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            missing.append(name)
+            continue
+        if actual == expected:
+            continue
+        if _has_managed_marker(actual):
+            stale.append(name)
+        else:
+            user_owned.append(name)
+
+    if not missing and not stale:
+        details = [f"user-owned command preserved: {name}" for name in user_owned]
+        return _check(
+            "opencode_managed_commands",
+            "pass",
+            "OpenCode managed Agentera commands are current",
+            path=commands_dir,
+            details=details,
+        )
+
+    details = [*(f"missing: {name}" for name in missing), *(f"stale: {name}" for name in stale)]
+    if user_owned:
+        details.extend(f"user-owned command preserved: {name}" for name in user_owned)
+    details.append("action: start OpenCode with the Agentera plugin to restore managed commands")
+    return _check(
+        "opencode_managed_commands",
+        "warn",
+        "OpenCode managed Agentera commands are missing or stale",
+        path=commands_dir,
+        gap="command_drift",
+        details=details,
+    )
+
+
+def _is_agentera_managed_skill_path(target: Path, name: str) -> bool:
+    try:
+        link_target = os.readlink(target)
+    except OSError:
+        return False
+    normalized = link_target.lower()
+    return "agentera" in normalized or Path(link_target).name == name
+
+
+def _diagnose_opencode_skill_paths(install_root: Path, home: Path, env: Mapping[str, str]) -> dict[str, Any]:
+    skills_dir = _opencode_config_dir(home, env) / "skills"
+    missing: list[str] = []
+    broken: list[str] = []
+    user_owned: list[str] = []
+    missing_source: list[str] = []
+
+    for name in OPENCODE_SKILL_NAMES:
+        source = install_root / "skills" / name / "SKILL.md"
+        target = skills_dir / name
+        if not source.is_file():
+            missing_source.append(name)
+            continue
+        if not target.exists() and not target.is_symlink():
+            missing.append(name)
+            continue
+        if (target / "SKILL.md").is_file():
+            continue
+        if _is_agentera_managed_skill_path(target, name):
+            broken.append(name)
+        else:
+            user_owned.append(name)
+
+    if not missing and not broken and not missing_source:
+        details = [f"user-owned skill path preserved: {name}" for name in user_owned]
+        return _check(
+            "opencode_skill_paths",
+            "pass",
+            "OpenCode Agentera skill paths resolve to SKILL.md",
+            path=skills_dir,
+            details=details,
+        )
+
+    details = [*(f"missing: {name}" for name in missing), *(f"broken: {name}" for name in broken)]
+    if missing_source:
+        details.extend(f"missing install source: {name}" for name in missing_source)
+        details.append(f"action: {OPENCODE_SKILL_INSTALL_COMMAND}")
+    else:
+        details.append("action: start OpenCode with the Agentera plugin to restore managed skill paths")
+    if user_owned:
+        details.extend(f"user-owned skill path preserved: {name}" for name in user_owned)
+    return _check(
+        "opencode_skill_paths",
+        "warn",
+        "OpenCode Agentera skill paths are missing or broken",
+        path=skills_dir,
+        gap="skill_path_drift",
+        details=details,
+    )
+
+
+def _normalize_reference(raw: str) -> str | None:
+    candidate = raw.strip("`'\"()[]{}.,:;")
+    path = Path(candidate)
+    if not candidate or path.is_absolute() or "\\" in candidate:
+        return None
+    parts = candidate.split("/")
+    if any(part in {"", ".", ".."} for part in parts):
+        return None
+    return candidate
+
+
+def _extract_reference_paths(text: str) -> list[str]:
+    refs: list[str] = []
+    seen: set[str] = set()
+    for match in SUPPORT_PATH_RE.finditer(text):
+        ref = _normalize_reference(match.group("path"))
+        if ref is not None and ref not in seen:
+            refs.append(ref)
+            seen.add(ref)
+    return refs
+
+
+def _diagnose_bundled_reference_validation(install_root: Path) -> dict[str, Any]:
+    skills_dir = install_root / "skills"
+    missing: list[str] = []
+    for skill_file in sorted(skills_dir.glob("*/SKILL.md")):
+        text = skill_file.read_text(encoding="utf-8")
+        for ref in _extract_reference_paths(text):
+            if not (skill_file.parent / ref).exists():
+                missing.append(f"{skill_file.parent.name}: {ref}")
+
+    if not missing:
+        return _check(
+            "bundled_support_references",
+            "pass",
+            "bundled support references validate separately from installer freshness",
+            path=skills_dir,
+        )
+
+    return _check(
+        "bundled_support_references",
+        "warn",
+        "bundled reference validation drift found despite installer freshness",
+        path=skills_dir,
+        gap="validation_drift",
+        details=missing,
+    )
 
 
 def _smoke_check(
@@ -611,7 +826,8 @@ def diagnose_claude(install_root: Path, home: Path, env: Mapping[str, str]) -> d
 
 def diagnose_opencode(install_root: Path, home: Path, env: Mapping[str, str]) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
-    plugin = home / ".config" / "opencode" / "plugins" / "agentera.js"
+    config_dir = _opencode_config_dir(home, env)
+    plugin = config_dir / "plugins" / "agentera.js"
     if plugin.is_file():
         checks.append(_check("plugin_file", "pass", "OpenCode plugin file is present", path=plugin))
     else:
@@ -645,8 +861,12 @@ def diagnose_opencode(install_root: Path, home: Path, env: Mapping[str, str]) ->
                     "OpenCode cannot see AGENTERA_HOME or a documented default Agentera root",
                     source="environment/defaults",
                     gap="runtime_config",
-                )
             )
+        )
+
+    checks.append(_diagnose_opencode_commands(home, env))
+    checks.append(_diagnose_opencode_skill_paths(install_root, home, env))
+    checks.append(_diagnose_bundled_reference_validation(install_root))
 
     return _runtime_result("opencode", env, checks)
 

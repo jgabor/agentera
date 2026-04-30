@@ -322,6 +322,46 @@ def _validate_opencode_version(root: Path, plugin_text: str) -> list[str]:
     return errors
 
 
+def _validate_package_versions(root: Path = REPO_ROOT) -> list[str]:
+    errors: list[str] = []
+    registry = _load_json(root / "registry.json")
+    registry_versions = {
+        skill.get("version")
+        for skill in registry.get("skills", [])
+        if isinstance(skill, dict)
+    }
+    if len(registry_versions) != 1:
+        return ["registry skill versions must share one suite version"]
+    suite_version = registry_versions.pop()
+
+    surfaces = {
+        "plugin.json": _load_json(root / "plugin.json").get("version"),
+        ".github/plugin/plugin.json": _load_json(root / ".github/plugin/plugin.json").get("version"),
+        ".codex-plugin/plugin.json": _load_json(root / ".codex-plugin/plugin.json").get("version"),
+        ".claude-plugin/marketplace.json metadata": _load_json(root / ".claude-plugin/marketplace.json")
+        .get("metadata", {})
+        .get("version"),
+        ".opencode/plugins/agentera.js": _read_opencode_agentera_version(
+            (root / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
+        ),
+    }
+
+    marketplace = _load_json(root / ".claude-plugin/marketplace.json")
+    for plugin in marketplace.get("plugins", []):
+        if isinstance(plugin, dict):
+            surfaces[f".claude-plugin/marketplace.json plugin {plugin.get('name')}"] = plugin.get("version")
+
+    for name in _skill_names(root):
+        plugin = _load_json(root / "skills" / name / ".claude-plugin/plugin.json")
+        surfaces[f"skills/{name}/.claude-plugin/plugin.json"] = plugin.get("version")
+
+    for label, version in surfaces.items():
+        if version != suite_version:
+            errors.append(f"{label} version must match registry suite version {suite_version}")
+
+    return errors
+
+
 def _validate_opencode_install_root(plugin_text: str) -> list[str]:
     if 'path.join(process.env.HOME, ".agents", "agentera")' not in plugin_text:
         return ["opencode validation must resolve documented manual install root"]
@@ -855,6 +895,42 @@ class TestLegacyRuntimeCompatibility:
             if isinstance(skill, dict) and skill.get("name") != "profilera"
         }
         assert suite_versions == {current_version}
+
+    def test_version_bearing_package_surfaces_align(self):
+        assert _validate_package_versions() == []
+
+    def test_version_bearing_package_surfaces_fail_on_drift(self, tmp_path):
+        root = tmp_path / "repo"
+        (root / "skills/hej/.claude-plugin").mkdir(parents=True)
+        (root / ".github/plugin").mkdir(parents=True)
+        (root / ".codex-plugin").mkdir()
+        (root / ".claude-plugin").mkdir()
+        (root / ".opencode/plugins").mkdir(parents=True)
+        (root / "skills/hej/SKILL.md").write_text("# hej\n", encoding="utf-8")
+        (root / "registry.json").write_text(
+            json.dumps({"skills": [{"name": "hej", "version": "1.27.0"}]}), encoding="utf-8"
+        )
+        for path in ("plugin.json", ".github/plugin/plugin.json", ".codex-plugin/plugin.json"):
+            (root / path).write_text(json.dumps({"version": "1.27.0"}), encoding="utf-8")
+        (root / ".claude-plugin/marketplace.json").write_text(
+            json.dumps(
+                {
+                    "metadata": {"version": "1.27.0"},
+                    "plugins": [{"name": "hej", "version": "1.27.0"}],
+                }
+            ),
+            encoding="utf-8",
+        )
+        (root / "skills/hej/.claude-plugin/plugin.json").write_text(
+            json.dumps({"name": "hej", "version": "0.0.0"}), encoding="utf-8"
+        )
+        (root / ".opencode/plugins/agentera.js").write_text(
+            'export const AGENTERA_VERSION = "1.27.0";\n', encoding="utf-8"
+        )
+
+        errors = _validate_package_versions(root)
+
+        assert "skills/hej/.claude-plugin/plugin.json version must match registry suite version 1.27.0" in errors
 
     def test_opencode_package_fails_on_missing_command_file(self, tmp_path):
         root = tmp_path / "repo"

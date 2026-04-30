@@ -110,7 +110,7 @@ Agentera workflows; the plugin adds `/hej` commands, hooks, and install-root
 discovery.
 
 ```bash
-npx skills add jgabor/agentera -g -a opencode --skill '*' -y
+npx skills add jgabor/agentera -g -a opencode -y
 mkdir -p ~/.config/opencode/plugins
 curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \
   -o ~/.config/opencode/plugins/agentera.js
@@ -175,6 +175,33 @@ Doctor smoke checks are bounded and offline. They verify helper-script access,
 artifact-hook behavior, and host availability without invoking live model
 sessions. `--allow-live-model` records permission for future probes; this
 doctor still makes no live calls.
+
+### Install health
+
+`npx skills add` and `npx skills update` answer whether the installer thinks a
+runtime package is current. Agentera bundle validation answers a different
+question: whether the installed bundle still contains the shared files the
+skills reference, such as `scripts/`, `hooks/`, `SPEC.md`, and bundled skill
+references. A current installer result can still be unhealthy if files are
+missing or symlinks point nowhere.
+
+For OpenCode, install health has two layers:
+
+- `npx skills add jgabor/agentera -g -a opencode -y` installs the skills for
+  OpenCode. Do not add `--skill '*'`; the OpenCode target selects the supported
+  Agentera surface without selecting every agent.
+- `.opencode/plugins/agentera.js` adds commands, hooks, and install-root
+  discovery around those installed skills. The plugin does not install skills
+  by itself.
+
+Managed OpenCode command files contain `agentera_managed: true` frontmatter.
+The command directory also carries `.agentera-version`. Repair may refresh only
+managed files; a same-name command without the marker is user-owned and must be
+skipped. Managed skill-path repair follows the same ownership rule: fix only
+Agentera-created links or directories, preserve user-owned collisions, and make
+skips reportable. The setup doctor remains diagnostic-only for OpenCode drift;
+it reports missing plugin files, missing install roots, and invalid bundle roots
+without mutating OpenCode config.
 
 ## Why it works
 
@@ -300,7 +327,8 @@ curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plug
 
 The plugin does not install the skills. It adds Agentera commands,
 install-root discovery, artifact checks, and session bookmarks around skills
-installed through `npx skills add` or another OpenCode skill path.
+installed through `npx skills add jgabor/agentera -g -a opencode -y` or another
+OpenCode skill path.
 Session preload is not enabled yet, so start returning work with `/hej`.
 
 </details>

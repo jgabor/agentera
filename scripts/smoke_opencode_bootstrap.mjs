@@ -6,7 +6,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { execFileSync } from "child_process";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_PATH = path.join(__dirname, "..", ".opencode", "plugins", "agentera.js");
@@ -36,18 +36,25 @@ try {
   const {
     Agentera,
     bootstrapCommands,
+    bootstrapSkills,
     COMMAND_TEMPLATES,
     AGENTERA_VERSION,
+    OPENCODE_SKILL_INSTALL_COMMAND,
+    commandBootstrap,
+    skillBootstrap,
     hasManagedMarker,
     resolveAgenteraHome,
     resolveOpencodeCommandsDir,
+    resolveOpencodeSkillsDir,
     writeSessionBookmark,
     lifecycle,
   } = await import(PLUGIN_PATH);
 
   const commandNames = Object.keys(COMMAND_TEMPLATES);
   const commandsDir = resolveOpencodeCommandsDir();
+  const skillsDir = resolveOpencodeSkillsDir();
   assert(commandsDir === path.join(tmpdir, "commands"), "resolveOpencodeCommandsDir should honor OPENCODE_CONFIG_DIR");
+  assert(skillsDir === path.join(tmpdir, "skills"), "resolveOpencodeSkillsDir should honor OPENCODE_CONFIG_DIR");
 
   // --- Test 0: Documented manual install root ---
   const documentedRoot = path.join(tmpdir, ".agents", "agentera");
@@ -80,12 +87,139 @@ try {
     `.agentera-version should equal AGENTERA_VERSION (${AGENTERA_VERSION})`
   );
 
+  // --- Test 1b: Skill bootstrap repairs managed OpenCode skill symlinks ---
+  const sourceSkillsDir = path.resolve(__dirname, "..", "skills");
+  fs.mkdirSync(skillsDir, { recursive: true });
+  const brokenRealisera = path.join(skillsDir, "realisera");
+  fs.symlinkSync(path.join(tmpdir, "missing-agentera-cache", "skills", "realisera"), brokenRealisera, "dir");
+  const skillRepair = bootstrapSkills();
+  assert(
+    skillRepair.repaired.includes("realisera"),
+    "bootstrapSkills should report repaired managed broken symlink"
+  );
+  assert(
+    fs.realpathSync(brokenRealisera) === path.join(sourceSkillsDir, "realisera"),
+    "bootstrapSkills should repoint broken managed symlink to an installed Agentera skill"
+  );
+  assert(
+    fs.existsSync(path.join(brokenRealisera, "SKILL.md")),
+    "repaired managed skill path should resolve to SKILL.md"
+  );
+
+  // --- Test 1c: Skill bootstrap preserves user-owned skill directories ---
+  const userOwnedHej = path.join(skillsDir, "hej");
+  fs.rmSync(userOwnedHej, { recursive: true, force: true });
+  fs.mkdirSync(userOwnedHej, { recursive: true });
+  fs.writeFileSync(path.join(userOwnedHej, "README.md"), "user skill\n");
+  const userOwnedSkillReport = bootstrapSkills();
+  assert(
+    userOwnedSkillReport.skippedUserOwned.includes("hej"),
+    "bootstrapSkills should report skipped user-owned skill directory"
+  );
+  assert(
+    fs.readFileSync(path.join(userOwnedHej, "README.md"), "utf8") === "user skill\n",
+    "bootstrapSkills should preserve user-owned skill directory content"
+  );
+  assert(
+    !fs.existsSync(path.join(userOwnedHej, "SKILL.md")),
+    "bootstrapSkills should not turn a user-owned directory into an Agentera skill path"
+  );
+
+  // --- Test 1d: Missing universal Agentera skills report install command and create no unusable paths ---
+  const isolatedPluginRoot = path.join(tmpdir, "isolated-plugin-root");
+  const isolatedPluginPath = path.join(isolatedPluginRoot, ".opencode", "plugins", "agentera.js");
+  fs.mkdirSync(path.dirname(isolatedPluginPath), { recursive: true });
+  fs.copyFileSync(PLUGIN_PATH, isolatedPluginPath);
+  const isolated = await import(`${pathToFileURL(isolatedPluginPath)}?missing-source=${Date.now()}`);
+  fs.rmSync(skillsDir, { recursive: true, force: true });
+  const missingSourceReport = isolated.bootstrapSkills();
+  assert(
+    missingSourceReport.installCommand === OPENCODE_SKILL_INSTALL_COMMAND,
+    "bootstrapSkills should report the exact OpenCode install command when Agentera skills are missing"
+  );
+  assert(
+    !fs.existsSync(path.join(skillsDir, "realisera")),
+    "bootstrapSkills must not create unusable skill paths when source skills are missing"
+  );
+  assert(
+    isolated.skillBootstrap.lastReport.installCommand === OPENCODE_SKILL_INSTALL_COMMAND,
+    "skillBootstrap.lastReport should retain the missing-source install command"
+  );
+
   // --- Test 2: No-op on re-run with same version ---
   const hejPath = path.join(commandsDir, "hej.md");
   const hejContentBefore = fs.readFileSync(hejPath, "utf8");
   bootstrapCommands();
   const hejContentAfter = fs.readFileSync(hejPath, "utf8");
   assert(hejContentBefore === hejContentAfter, "re-run with same version should be no-op (hej.md unchanged)");
+  assert(
+    commandBootstrap.lastReport.unchanged.includes("hej"),
+    "same-version bootstrap report should include unchanged managed commands"
+  );
+
+  // --- Test 2b: Current marker with missing managed command repairs file ---
+  const planeraPath = path.join(commandsDir, "planera.md");
+  fs.unlinkSync(planeraPath);
+  const missingRepair = bootstrapCommands();
+  assert(
+    missingRepair.restored.includes("planera"),
+    "current-marker bootstrap should report restored missing managed command"
+  );
+  assert(
+    fs.readFileSync(planeraPath, "utf8") === COMMAND_TEMPLATES["planera"],
+    "current-marker bootstrap should restore missing managed command template"
+  );
+
+  // --- Test 2c: Current marker with stale managed command refreshes file ---
+  const optimeraPath = path.join(commandsDir, "optimera.md");
+  const staleCurrentMarkerContent = COMMAND_TEMPLATES["optimera"].replace(
+    "Metric-driven optimization through experimentation",
+    "Stale current-marker managed command"
+  );
+  fs.writeFileSync(optimeraPath, staleCurrentMarkerContent);
+  const staleRepair = bootstrapCommands();
+  assert(
+    staleRepair.refreshed.includes("optimera"),
+    "current-marker bootstrap should report refreshed stale managed command"
+  );
+  assert(
+    fs.readFileSync(optimeraPath, "utf8") === COMMAND_TEMPLATES["optimera"],
+    "current-marker bootstrap should refresh stale managed command template"
+  );
+
+  // --- Test 2d: Current marker with user-owned command preserves and reports skip ---
+  const inspekteraPath = path.join(commandsDir, "inspektera.md");
+  const userOwnedInspektera = "---\ndescription: user inspektera\n---\nUser-owned command.\n";
+  fs.writeFileSync(inspekteraPath, userOwnedInspektera);
+  const userOwnedReport = bootstrapCommands();
+  assert(
+    userOwnedReport.skippedUserOwned.includes("inspektera"),
+    "current-marker bootstrap should report skipped user-owned command collision"
+  );
+  assert(
+    fs.readFileSync(inspekteraPath, "utf8") === userOwnedInspektera,
+    "current-marker bootstrap should preserve user-owned command collision"
+  );
+  fs.writeFileSync(inspekteraPath, COMMAND_TEMPLATES["inspektera"]);
+
+  // --- Test 2e: Malformed managed marker is treated as user-owned ---
+  const dokumenteraPath = path.join(commandsDir, "dokumentera.md");
+  const malformedManagedMarker = "---\nagentera_managed: true\nMalformed frontmatter without a closing marker.\n";
+  fs.writeFileSync(dokumenteraPath, malformedManagedMarker);
+  const malformedReport = bootstrapCommands();
+  assert(
+    !hasManagedMarker(dokumenteraPath),
+    "malformed managed marker should not count as an Agentera-owned command"
+  );
+  assert(
+    malformedReport.skippedUserOwned.includes("dokumentera"),
+    "malformed managed marker should be reportable as a skipped user-owned collision"
+  );
+  assert(
+    fs.readFileSync(dokumenteraPath, "utf8") === malformedManagedMarker,
+    "malformed managed marker should not be overwritten"
+  );
+  fs.writeFileSync(dokumenteraPath, COMMAND_TEMPLATES["dokumentera"]);
 
   // --- Test 3: Collision test (user-owned file without managed marker) ---
   fs.unlinkSync(markerFile);

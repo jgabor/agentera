@@ -1853,6 +1853,95 @@ class TestCheckNoBareClaudePluginRoot:
 
 
 # ---------------------------------------------------------------------------
+# check_bundled_support_references
+# ---------------------------------------------------------------------------
+
+
+class TestCheckBundledSupportReferences:
+    """Task 2 scope: one valid bundle, one dangling ref, syntax branches only."""
+
+    def test_existing_skill_local_reference_passes(self, validate_spec, tmp_path):
+        skill_dir = tmp_path / "example"
+        references = skill_dir / "references"
+        references.mkdir(parents=True)
+        skill_path = skill_dir / "SKILL.md"
+        (references / "contract.md").write_text("# Contract\n", encoding="utf-8")
+        text = "Read `references/contract.md` before starting."
+
+        r = validate_spec.Results()
+        validate_spec.check_bundled_support_references(
+            "example",
+            text,
+            r,
+            skill_path=skill_path,
+        )
+
+        assert r.error_count == 0
+        assert any(
+            entry[0] == "PASS" and entry[2] == "bundled-support-references"
+            for entry in r.entries
+        )
+
+    def test_missing_skill_local_reference_errors_with_skill_and_path(
+        self,
+        validate_spec,
+        tmp_path,
+    ):
+        skill_dir = tmp_path / "profilera"
+        skill_dir.mkdir()
+        skill_path = skill_dir / "SKILL.md"
+        text = "Read `references/ecosystem-context.md` before starting."
+
+        r = validate_spec.Results()
+        validate_spec.check_bundled_support_references(
+            "profilera",
+            text,
+            r,
+            skill_path=skill_path,
+        )
+
+        assert r.error_count == 1
+        detail = r.entries[0][3]
+        assert "profilera/SKILL.md" in detail
+        assert "references/ecosystem-context.md" in detail
+
+    def test_standalone_suite_root_helper_warns_boundary_risk(
+        self,
+        validate_spec,
+        tmp_path,
+    ):
+        skill_dir = tmp_path / "example"
+        skill_dir.mkdir()
+        skill_path = skill_dir / "SKILL.md"
+        text = "Run `python3 scripts/self_audit.py SKILL.md` before release."
+
+        r = validate_spec.Results()
+        validate_spec.check_bundled_support_references(
+            "example",
+            text,
+            r,
+            skill_path=skill_path,
+            standalone=True,
+        )
+
+        warnings = [
+            entry for entry in r.entries if entry[2] == "standalone-boundary-risk"
+        ]
+        assert len(warnings) == 1
+        assert "standalone boundary risk" in warnings[0][3]
+        assert "scripts/self_audit.py" in warnings[0][3]
+
+    def test_support_path_syntax_rejects_boundary_escape(self, validate_spec):
+        assert (
+            validate_spec._normalize_support_ref("references/contract.md")
+            == "references/contract.md"
+        )
+        assert validate_spec._normalize_support_ref("references/../secret.md") is None
+        assert validate_spec._normalize_support_ref("/references/secret.md") is None
+        assert validate_spec._normalize_support_ref(r"references\\secret.md") is None
+
+
+# ---------------------------------------------------------------------------
 # main entrypoint: --skill flag for third-party skill authors
 # ---------------------------------------------------------------------------
 
