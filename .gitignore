@@ -1,11 +1,11 @@
 .claude
 .codex
-.opencode/node_modules/
 docs/
 __pycache__/
 *.pyc
 .leda
 .env
-*.key
-*.pem
-credentials*
+node_modules
+package.json
+package-lock.json
+bun.lock
