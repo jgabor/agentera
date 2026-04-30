@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 235 · 2026-04-30 07:56 · feat(optimera): add frontier experiment report
+
+**Phase**: build
+**What**: Completed Task 4 of the Optimera Experiment Analysis Reliability plan. The analyzer now supports `--frontier` Markdown output while default mode remains JSON-only.
+**Commit**: this commit, `feat(optimera): add frontier experiment report`
+**Inspiration**: Active PLAN.md Task 4 and autoresearch-style ledger review from the plan context.
+**Discovered**: Live realisera-token history has two kept improvements and three discarded regressions; frontier mode ranks kept gains above discarded negative deltas with lower-is-better direction.
+**Verified**: `python3 -m pytest -q tests/test_analyze_experiments.py` reported `19 passed in 0.09s`. Live `python3 skills/optimera/scripts/analyze_experiments.py --experiments .agentera/optimera/realisera-token/EXPERIMENTS.md --objective .agentera/optimera/realisera-token/OBJECTIVE.md --frontier` exited 0 and printed Markdown beginning `# Frontier Report`, with `Best metric: 12055 at Experiment 5`, `Target: not met`, and no JSON braces. Default live `--pretty` run still printed JSON with `total_experiments: 6`, `kept: 2`, `discarded: 3`, `target_direction: lower`, and `target_met: false`.
+**Next**: Execute Task 5: verify analysis integration without expanding Task 4 scope.
+**Context**: intent (execute only Task 4 frontier mode) · constraints (Markdown-only under `--frontier`, default JSON compatibility, no TSV/images/version bump, leave HEALTH.md untouched) · unknowns (none) · scope (analyzer CLI/reporting, focused tests, plan status, progress evidence).
+
 ■ ## Cycle 234 · 2026-04-30 07:52 · fix(optimera): harden objective target extraction
 
 **Phase**: build

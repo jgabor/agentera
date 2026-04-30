@@ -6,6 +6,14 @@ retained for parse_experiments (regex parsing) and plateau detection (branching)
 
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+
+SCRIPT = Path(__file__).resolve().parent.parent / "skills/optimera/scripts/analyze_experiments.py"
+
 
 # ---------------------------------------------------------------------------
 # parse_experiments
@@ -167,6 +175,31 @@ OBJECTIVE_MALFORMED_TARGET = """\
 ## Objective
 
 Target: soon.
+"""
+
+OBJECTIVE_PASSING_TARGET = """\
+# Reduce runtime tokens
+
+## Objective
+
+Target: below 13,000 tokens.
+Direction: lower. Unit: tokens.
+"""
+
+TIED_IMPROVEMENTS = """\
+# Experiments
+
+## Experiment 2
+
+**Hypothesis**: Second equal gain
+**Metric**: 100 -> 90 tokens
+**Status**: kept
+
+## Experiment 1
+
+**Hypothesis**: First equal gain
+**Metric**: 120 -> 110 tokens
+**Status**: kept
 """
 
 
@@ -334,3 +367,88 @@ class TestAnalyze:
             {"experiment": None, "message": "objective target direction not found"},
             {"experiment": None, "message": "objective target value not found"},
         ]
+
+
+# ---------------------------------------------------------------------------
+# frontier_report and CLI modes
+# ---------------------------------------------------------------------------
+
+class TestFrontierReport:
+    """Frontier mode: one target pass, one fail, deterministic tie order."""
+
+    def test_cli_frontier_outputs_markdown_without_json(self, tmp_path):
+        experiments = tmp_path / "EXPERIMENTS.md"
+        objective = tmp_path / "OBJECTIVE.md"
+        experiments.write_text(SAMPLE_EXPERIMENTS)
+        objective.write_text(OBJECTIVE_PASSING_TARGET)
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--experiments",
+                str(experiments),
+                "--objective",
+                str(objective),
+                "--frontier",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        assert completed.stdout.startswith("# Frontier Report\n")
+        assert not completed.stdout.lstrip().startswith("{")
+        assert '"total_experiments"' not in completed.stdout
+        assert "- Target: met" in completed.stdout
+
+    def test_cli_default_mode_preserves_json_shape(self, tmp_path):
+        experiments = tmp_path / "EXPERIMENTS.md"
+        objective = tmp_path / "OBJECTIVE.md"
+        experiments.write_text(SAMPLE_EXPERIMENTS)
+        objective.write_text(OBJECTIVE_PASSING_TARGET)
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--experiments",
+                str(experiments),
+                "--objective",
+                str(objective),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        payload = json.loads(completed.stdout)
+
+        assert isinstance(payload["total_experiments"], int)
+        assert isinstance(payload["kept"], int)
+        assert isinstance(payload["discarded"], int)
+        assert isinstance(payload["errors"], int)
+        assert isinstance(payload["win_rate"], float)
+        assert isinstance(payload["current_metric"], float)
+        assert isinstance(payload["trajectory"], list)
+        assert isinstance(payload["plateau_detected"], bool)
+        assert isinstance(payload["recent"], list)
+
+    def test_frontier_uses_lower_direction_for_best_and_improvements(self, analyze_experiments):
+        exps = analyze_experiments.parse_experiments(RICH_EXPERIMENTS)
+        target = analyze_experiments.parse_target(OBJECTIVE_WITH_TARGET)
+        result = analyze_experiments.analyze(exps, target)
+        report = analyze_experiments.frontier_report(exps, result, target)
+
+        assert "- Best metric: 12055 at Experiment 2" in report
+        assert "- Target: not met" in report
+        assert "- Direction: lower" in report
+        assert "Experiment 0:" not in report
+        assert report.index("Experiment 2: 3010") < report.index("Experiment 3: -445")
+
+    def test_frontier_orders_equal_improvements_by_experiment_number(self, analyze_experiments):
+        exps = analyze_experiments.parse_experiments(TIED_IMPROVEMENTS)
+        target = {"direction": "lower", "value": 80.0}
+        result = analyze_experiments.analyze(exps, target)
+        report = analyze_experiments.frontier_report(exps, result, target)
+
+        assert report.index("Experiment 1: 10") < report.index("Experiment 2: 10")
