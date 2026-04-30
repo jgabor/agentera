@@ -16,6 +16,9 @@ skills/<name>/.claude-plugin/plugin.json  # Per-skill marketplace plugin manifes
 SPEC.md                    # Shared primitives spec (all skills must align)
 scripts/validate_spec.py        # Ecosystem linter
 scripts/eval_skills.py               # Tier 2 eval runner (smoke-tests skills via claude -p)
+scripts/semantic_eval.py             # Offline semantic eval runner for captured skill fixtures
+scripts/semantic_fixtures.py         # Semantic fixture contract parser and validator
+fixtures/semantic/                   # Captured semantic eval fixtures and seeded project state
 hooks/hooks.json                     # Hook registry (SessionStart, Stop, PostToolUse)
 hooks/common.py                      # Shared artifact path resolution for hooks
 hooks/session_start.py               # SessionStart context preload
@@ -64,6 +67,16 @@ The repo-level `scripts/eval_skills.py` smoke-tests skills via `claude -p` (Tier
 python3 scripts/eval_skills.py --dry-run          # list skills and prompts
 python3 scripts/eval_skills.py --skill realisera   # test one skill
 python3 scripts/eval_skills.py --parallel 3        # test all skills, 3 at a time
+```
+
+Semantic evals use a separate offline surface. `scripts/semantic_eval.py` reads
+captured Markdown fixtures from `fixtures/semantic/`, validates seeded project
+state and expected facts, and never invokes Claude Code, OpenCode, or another
+model runtime. Keep semantic correctness checks out of `scripts/eval_skills.py`.
+Run from the repo root:
+
+```bash
+python3 scripts/semantic_eval.py fixtures/semantic/hej-routing-task3.md
 ```
 
 The repo-level `scripts/usage_stats.py` reads the Section 22 corpus produced by `skills/profilera/scripts/extract_all.py` and reports per-skill invocation counts, exit-status pairings, and slash-vs-natural-language trigger splits. Default mode writes `USAGE.md` to the global agentera data directory (`~/.local/share/agentera/USAGE.md` on Linux, `~/Library/Application Support/agentera/USAGE.md` on macOS, `%APPDATA%/agentera/USAGE.md` on Windows) and prints a brief summary to stdout. Run from the repo root:

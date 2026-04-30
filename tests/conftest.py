@@ -102,6 +102,24 @@ def eval_skills():
 
 
 @pytest.fixture(scope="session")
+def semantic_fixtures():
+    """Load scripts/semantic_fixtures.py."""
+    return _load_module(
+        "semantic_fixtures",
+        REPO_ROOT / "scripts" / "semantic_fixtures.py",
+    )
+
+
+@pytest.fixture(scope="session")
+def semantic_eval(semantic_fixtures):
+    """Load scripts/semantic_eval.py."""
+    return _load_module(
+        "semantic_eval",
+        REPO_ROOT / "scripts" / "semantic_eval.py",
+    )
+
+
+@pytest.fixture(scope="session")
 def generate_contracts():
     """Load scripts/generate_contracts.py."""
     return _load_module(

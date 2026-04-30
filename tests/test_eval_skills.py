@@ -6,6 +6,7 @@ retained only for functions with regex or branching logic.
 
 from __future__ import annotations
 
+import json
 import textwrap
 from pathlib import Path
 
@@ -164,6 +165,42 @@ class TestBuildDryRun:
         result = eval_skills.build_dry_run([])
         assert result["mode"] == "dry-run"
         assert result["skills"] == []
+
+
+class TestSmokeBoundary:
+    def test_eval_skills_remains_crash_focused(self, eval_skills):
+        assert "output correctness is not evaluated" in eval_skills.__doc__
+        assert "semantic" not in eval_skills.parse_args([]).__dict__
+
+    def test_eval_skills_does_not_import_semantic_eval_surface(self, eval_skills):
+        source = Path(eval_skills.__file__).read_text(encoding="utf-8")
+
+        assert "semantic_eval" not in source
+        assert "semantic_fixtures" not in source
+        assert "required_output" not in source
+
+    def test_dry_run_output_stays_smoke_compatible(
+        self,
+        eval_skills,
+        capsys,
+        monkeypatch,
+    ):
+        monkeypatch.setattr(eval_skills, "detect_runtime", lambda explicit: "claude")
+        monkeypatch.setattr(
+            eval_skills,
+            "discover_skills",
+            lambda: [{"name": "hej", "prompt": "Start a new session."}],
+        )
+
+        exit_code = eval_skills.main(["--dry-run"])
+        output = json.loads(capsys.readouterr().out)
+
+        assert exit_code == 0
+        assert output == {
+            "mode": "dry-run",
+            "runtime": "claude (auto-detected)",
+            "skills": [{"name": "hej", "prompt": "Start a new session."}],
+        }
 
 
 # ---------------------------------------------------------------------------

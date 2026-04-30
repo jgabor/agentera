@@ -1,6 +1,6 @@
 # Documentation Contract
 
-<!-- Maintained by dokumentera. Last audit: 2026-04-30 (post-plan coverage refresh) -->
+<!-- Maintained by dokumentera. Last audit: 2026-04-30 (semantic eval docs) -->
 
 ## Conventions
 
@@ -72,6 +72,9 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 | Codex UI metadata | skills/&lt;name&gt;/agents/openai.yaml; agents/openai.yaml | 2026-04-24 | ■ current |
 | Hooks registry | hooks/hooks.json | 2026-04-03 | ■ current |
 | Lifecycle adapter validator | scripts/validate_lifecycle_adapters.py | 2026-04-28 | ■ current |
+| Semantic eval command | scripts/semantic_eval.py | 2026-04-30 | ■ current |
+| Semantic fixture contract | scripts/semantic_fixtures.py | 2026-04-30 | ■ current |
+| Semantic eval fixtures | fixtures/semantic/ | 2026-04-30 | ■ current |
 | Usage analytics script | scripts/usage_stats.py | 2026-04-26 | ■ current |
 | Codex setup helper | scripts/setup_codex.py | 2026-04-26 | ■ current |
 | Copilot setup helper | scripts/setup_copilot.py | 2026-04-26 | ■ current |
@@ -92,9 +95,19 @@ CHANGELOG.md at root; all other artifacts in .agentera/.
 - **Documented**: 12/12 skills have SKILL.md (single source of truth)
 - **Undocumented**: 0 skills lack documentation
 - **Stale**: none
-- **Tests**: 536 tests across 19 files; CI runs on push/PR via GitHub Actions
+- **Tests**: 565 tests across 20 files; CI runs on push/PR via GitHub Actions
 
 ## Audit Log
+
+### 2026-04-30 (semantic eval docs)
+
+- [gap] README and AGENTS.md did not document the separate offline semantic eval
+  command, `fixtures/semantic/` location, or smoke-vs-semantic responsibility
+  split; both docs now name the command, fixture path, and no-runtime scope ·
+  warning (fixed)
+- [gap] DOCS.md Index did not track `scripts/semantic_eval.py`,
+  `scripts/semantic_fixtures.py`, or `fixtures/semantic/`; the index now covers
+  the semantic eval surface and fixture corpus · warning (fixed)
 
 ### 2026-04-30 (post-plan coverage refresh)
 
