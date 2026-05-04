@@ -4,6 +4,7 @@ TRIGGERS:
     description: >-
       Direct invocation by name or slash command. Matches when the user
       explicitly requests planera for structured planning.
+    priority: high
     patterns:
       - "planera"
       - "/planera"
@@ -12,6 +13,7 @@ TRIGGERS:
     description: >-
       Planning requests. Matches when the user wants to create a plan,
       break work down, or specify requirements before building.
+    priority: medium
     patterns:
       - "plan this"
       - "write a plan"
@@ -25,6 +27,7 @@ TRIGGERS:
       Architectural planning signals. Matches when the user is asking how
       to approach building something or when the work is too large for a
       single development cycle.
+    priority: medium
     patterns:
       - "how should we build this"
       - "multi-step feature"

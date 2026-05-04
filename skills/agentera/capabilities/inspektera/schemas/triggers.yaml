@@ -4,6 +4,7 @@ TRIGGERS:
     description: >-
       Direct invocation by name or slash command. Matches when the user
       explicitly requests inspektera.
+    priority: high
     patterns:
       - "inspektera"
       - "/inspektera"
@@ -12,6 +13,7 @@ TRIGGERS:
     description: >-
       Audit and codebase health requests. Matches when the user wants to
       assess codebase health, architecture quality, or structural integrity.
+    priority: medium
     patterns:
       - "audit the codebase"
       - "check code health"
@@ -30,6 +32,7 @@ TRIGGERS:
       Implicit trigger after extended realisera activity. Matches when
       realisera has run 5+ cycles without a health check and the system
       detects an overdue audit.
+    priority: medium
     patterns:
       - "health check overdue"
       - "audit after realisera"

@@ -142,6 +142,31 @@ def check_stable_ids(groups: dict[str, dict], source_label: str) -> list[str]:
     return errors
 
 
+VALID_PRIORITIES = {"high", "medium", "low"}
+
+
+def check_trigger_priorities(groups: dict[str, dict], source_label: str) -> list[str]:
+    """V5b: Check TRIGGERS entries have valid priority fields."""
+    errors = []
+    triggers = groups.get("TRIGGERS", {})
+    if not isinstance(triggers, dict):
+        return errors
+    for key, entry in triggers.items():
+        if not isinstance(entry, dict):
+            continue
+        priority = entry.get("priority")
+        if priority is None:
+            errors.append(
+                f"V5b [error]: TRIGGERS entry {key} in {source_label} missing 'priority'"
+            )
+        elif priority not in VALID_PRIORITIES:
+            errors.append(
+                f"V5b [error]: TRIGGERS entry {key} in {source_label} has invalid priority={priority!r} "
+                f"(must be one of: high, medium, low)"
+            )
+    return errors
+
+
 def check_deprecation(groups: dict[str, dict], source_label: str) -> list[str]:
     """V5: Check deprecated entries have replaced_by referencing valid IDs."""
     warnings = []
@@ -190,6 +215,7 @@ def validate_contract_self(contract_path: Path) -> list[str]:
     errors.extend(check_required_groups(groups, str(contract_path)))
     errors.extend(check_numbered_entries(groups, str(contract_path)))
     errors.extend(check_stable_ids(groups, str(contract_path)))
+    errors.extend(check_trigger_priorities(groups, str(contract_path)))
 
     warnings = check_deprecation(groups, str(contract_path))
     for w in warnings:
@@ -210,6 +236,7 @@ def validate_capability(cap_dir: Path, contract_path: Path) -> list[str]:
         all_errors.extend(check_required_groups(groups, str(cap_dir)))
         all_errors.extend(check_numbered_entries(groups, str(cap_dir)))
         all_errors.extend(check_stable_ids(groups, str(cap_dir)))
+        all_errors.extend(check_trigger_priorities(groups, str(cap_dir)))
 
         warnings = check_deprecation(groups, str(cap_dir))
         for w in warnings:

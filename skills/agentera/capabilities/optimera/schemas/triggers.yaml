@@ -4,6 +4,7 @@ TRIGGERS:
     description: >-
       Direct invocation by name or slash command. Matches when the user
       explicitly requests optimera.
+    priority: high
     patterns:
       - "optimera"
       - "/optimera"
@@ -12,6 +13,7 @@ TRIGGERS:
     description: >-
       Metric-driven optimization requests. Matches when the user wants to
       improve a concrete, quantifiable property of their codebase.
+    priority: medium
     patterns:
       - "optimize"
       - "improve performance"
@@ -29,6 +31,7 @@ TRIGGERS:
     description: >-
       Iterative experimentation requests. Matches when the user wants to
       run experiments, benchmark, or iterate on a measurable objective.
+    priority: medium
     patterns:
       - "benchmark and iterate"
       - "run experiments"

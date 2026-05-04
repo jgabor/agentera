@@ -4,6 +4,7 @@ TRIGGERS:
     description: >-
       Direct invocation by name or slash command. Matches when the user
       explicitly requests orkestrera.
+    priority: high
     patterns:
       - "orkestrera"
       - "/orkestrera"
@@ -12,6 +13,7 @@ TRIGGERS:
     description: >-
       Multi-cycle execution signals. Matches when the user wants to execute
       an entire plan autonomously or run tasks through evaluation gating.
+    priority: medium
     patterns:
       - "run the plan"
       - "execute the plan"
@@ -25,6 +27,7 @@ TRIGGERS:
       Orchestration and dispatch signals. Matches when the user wants to
       chain multiple capabilities, dispatch work, or coordinate multi-step
       execution.
+    priority: medium
     patterns:
       - "orchestrate"
       - "dispatch skills"
@@ -34,5 +37,6 @@ TRIGGERS:
     description: >-
       Autonomous plan execution signals. Matches when the user wants
       evaluated, plan-driven development without manual intervention.
+    priority: medium
     patterns:
       - "autonomous plan execution"

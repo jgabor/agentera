@@ -40,6 +40,13 @@ ENTRY_SCHEMA:
       type: string
       required: true
       description: Human-readable explanation of this entry.
+    priority:
+      type: string
+      required: false
+      description: >-
+        Priority of this trigger entry for routing confidence. Used in the
+        five-layer dispatch model (Decision 42). Valid values: high, medium, low.
+        Required for all TRIGGERS entries.
     deprecated:
       type: boolean
       required: false
@@ -80,6 +87,7 @@ TRIGGERS:
       Validate a capability directory. Invoked when checking if a capability
       conforms to this contract (directory structure, required groups, entry
       structure, deprecation consistency).
+    priority: high
     patterns:
       - "validate a capability"
       - "check capability schema"
@@ -89,6 +97,7 @@ TRIGGERS:
     description: >-
       Parse a capability schema YAML file. Invoked when reading a single schema
       file to verify it contains properly structured entries within its groups.
+    priority: medium
     patterns:
       - "parse capability schema"
       - "read schema file"
@@ -97,6 +106,7 @@ TRIGGERS:
     description: >-
       Schema evolution check. Invoked when verifying that deprecated entries
       have valid replaced_by references and no orphaned deprecation chains.
+    priority: medium
     patterns:
       - "check deprecation"
       - "schema evolution"
@@ -105,6 +115,7 @@ TRIGGERS:
     description: >-
       Self-validation. The contract file validates against its own rules.
       Ensures the meta-schema is a correct instance of itself.
+    priority: medium
     patterns:
       - "self-validate contract"
       - "validate schema contract against itself"

@@ -4,6 +4,7 @@ TRIGGERS:
     description: >-
       Direct invocation by name or slash command. Matches when the user
       explicitly requests visualisera.
+    priority: high
     patterns:
       - "visualisera"
       - "/visualisera"
@@ -12,6 +13,7 @@ TRIGGERS:
     description: >-
       Design system creation requests. Matches when the user wants to
       create or set up a visual identity system or design tokens.
+    priority: medium
     patterns:
       - "create design system"
       - "write DESIGN.md"
@@ -24,6 +26,7 @@ TRIGGERS:
     description: >-
       Design system refinement and audit requests. Matches when the user
       wants to evolve, check, or update an existing design system.
+    priority: medium
     patterns:
       - "audit design"
       - "refine design system"

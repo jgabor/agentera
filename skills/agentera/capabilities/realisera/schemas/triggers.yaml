@@ -4,6 +4,7 @@ TRIGGERS:
     description: >-
       Direct invocation by name or slash command. Matches when the user
       explicitly requests realisera for autonomous development.
+    priority: high
     patterns:
       - "realisera"
       - "/realisera"
@@ -12,6 +13,7 @@ TRIGGERS:
     description: >-
       Development cycle requests. Matches when the user wants to run an
       autonomous development cycle or evolve the project.
+    priority: medium
     patterns:
       - "run a dev cycle"
       - "evolve the project"
@@ -22,6 +24,7 @@ TRIGGERS:
     description: >-
       Continuous development signals. Matches when the user wants ongoing
       building or to start working on the project.
+    priority: medium
     patterns:
       - "keep building"
       - "start building"
@@ -31,5 +34,6 @@ TRIGGERS:
     description: >-
       Vision refinement within a development context. Matches when the user
       wants to refine the project vision as part of a development session.
+    priority: medium
     patterns:
       - "refine the vision"

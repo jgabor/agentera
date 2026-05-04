@@ -4,6 +4,7 @@ TRIGGERS:
     description: >-
       Direct invocation by name or slash command. Matches when the user
       explicitly requests hej.
+    priority: high
     patterns:
       - "hej"
       - "/hej"
@@ -12,6 +13,7 @@ TRIGGERS:
     description: >-
       Greetings and session-start signals. Matches casual greetings or
       explicit session start requests.
+    priority: medium
     patterns:
       - "hello"
       - "hi"
@@ -24,6 +26,7 @@ TRIGGERS:
     description: >-
       Status and orientation requests. Matches when the user wants to know
       the current state of the project or get a briefing.
+    priority: medium
     patterns:
       - "status"
       - "dashboard"
@@ -36,6 +39,7 @@ TRIGGERS:
     description: >-
       Returning-to-project signals. Matches when the user resumes work
       on a known project and wants to pick up where they left off.
+    priority: medium
     patterns:
       - "where were we"
       - "catch me up"
@@ -50,3 +54,4 @@ TRIGGERS:
     patterns:
       - "*"
     fallback: true
+    priority: low

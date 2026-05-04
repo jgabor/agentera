@@ -34,7 +34,12 @@ No artifacts of its own. Reads all suite artifacts for the briefing:
 
 ### Artifact path resolution
 
-Before reading any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`.
+Before reading any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout:
+
+- Human-facing artifacts at the project root (Markdown): `TODO.md`, `CHANGELOG.md`, `DESIGN.md`, `VISION.md`
+- Agent-facing artifacts in `.agentera/` (YAML): `progress.yaml`, `decisions.yaml`, `health.yaml`, `plan.yaml`, `docs.yaml`, `vision.yaml`, `session.yaml`, and per-objective `objective.yaml` / `experiments.yaml`
+
+The canonical names in the State Artifacts table below are identifiers, not literal paths. The resolved path for an agent-facing artifact is its `.yaml` file in `.agentera/` unless docs.yaml specifies otherwise.
 
 PROFILE.md is global, not project-scoped. Its path is determined by profilera: `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`). Check the profilera-determined path directly rather than falling back to the project root.
 
@@ -93,7 +98,7 @@ Check `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PRO
 
 - **PROFILE.md exists** → report `♾ profile   loaded` in the status line. No warning.
 - **PROFILE.md absent** → report `♾ profile   not found` in the status line **and** add a degraded (SI2, ⇉) attention item:
-  `⇉ PROFILE.md not found at global path · run \`/profilera\` to generate your decision profile`
+  `⇉ PROFILE.md not found at global path · use profilera to generate your decision profile`
 
 ---
 
@@ -107,22 +112,22 @@ First impression: the colleague meets a new project.
 2. **Share what's available**: lead with the 2-3 skills most relevant to what the
    scan revealed. Don't enumerate all eleven unless asked. Mention the rest exist and offer the full table on request. The table below is a reference, not a script:
 
-   | | If you want to... | Use |
+   | | If you want to... | Say |
    |---|---------------------|-----|
-   | ⛥ (SG6) | Define project direction | `/visionera` |
-   | ❈ (SG4) | Think through a decision | `/resonera` |
-   | ⬚ (SG10) | Research an external resource | `/inspirera` |
-   | ≡ (SG5) | Plan work with acceptance criteria | `/planera` |
-   | ⧉ (SG2) | Build autonomously | `/realisera` |
-   | ⎘ (SG7) | Optimize a metric | `/optimera` |
-   | ⛶ (SG3) | Audit codebase health | `/inspektera` |
-   | ▤ (SG8) | Create or maintain docs | `/dokumentera` |
-   | ♾ (SG9) | Build a decision profile | `/profilera` |
-   | ◰ (SG11) | Define visual identity | `/visualisera` |
-   | ⎈ (SG12) | Orchestrate multi-cycle plan execution | `/orkestrera` |
+   | ⛥ (SG6) | Define project direction | "define the direction" |
+   | ❈ (SG4) | Think through a decision | "help me decide" |
+   | ⬚ (SG10) | Research an external resource | "research this pattern" |
+   | ≡ (SG5) | Plan work with acceptance criteria | "plan this" |
+   | ⧉ (SG2) | Build autonomously | "build the next feature" |
+   | ⎘ (SG7) | Optimize a metric | "improve test coverage" |
+   | ⛶ (SG3) | Audit codebase health | "audit the codebase" |
+   | ▤ (SG8) | Create or maintain docs | "update docs" |
+   | ♾ (SG9) | Build a decision profile | "build decision profile" |
+   | ◰ (SG11) | Define visual identity | "design the visual identity" |
+   | ⎈ (SG12) | Orchestrate multi-cycle plan execution | "run the plan" |
 
 3. **Give your honest take**: based on the scan, tell the user where you'd start
-   and why. "If I were you, I'd start with X because Y." Use the routing logic (no vision → `/visionera`, unknown quality → `/inspektera`, decision needed → `/resonera`, ready to build + has plan → `/orkestrera`, ready to build → `/realisera`, docs gaps → `/dokumentera`) but frame it as judgment, not a lookup table.
+    and why. "If I were you, I'd start with X because Y." Use the routing logic (no vision → visionera, unknown quality → inspektera, decision needed → resonera, ready to build + has plan → orkestrera, ready to build → realisera, docs gaps → dokumentera) but frame it as judgment, not a lookup table.
 
 4. **Route**: ask what they'd like to do. Invoke the chosen capability.
 
@@ -136,7 +141,7 @@ Show where things stand.
    - Read in parallel. First 20 lines each. Skip absent ones.
    - Extract the most recent entry or summary.
    - If TODO.md, PLAN.md, OBJECTIVE.md, or DECISIONS.md hints at active work, keep reading.
-   - For optimera status, inspect `.agentera/optimera/<name>/` directories directly. Classify closed objectives first when the objective.yaml status line starts with `**Status**: closed`, including legacy prose such as `**Status**: closed (date)`. Exclude closed objectives before recency checks; if every objective is closed, report no active objective and do not route to `/optimera` for completed work.
+   - For optimera status, inspect `.agentera/optimera/<name>/` directories directly. Classify closed objectives first when the objective.yaml status line starts with `**Status**: closed`, including legacy prose such as `**Status**: closed (date)`. Exclude closed objectives before recency checks; if every objective is closed, report no active objective and do not route to optimera for completed work.
    - When multiple non-closed objectives exist, use EXPERIMENTS.md git recency only among those non-closed objectives. A closed objective with newer history must not outrank an older active objective.
    - Identify the first concrete open item or current plan task before routing.
    - Do not route from a heading or summary alone when an executable follow-up exists nearby.
@@ -200,14 +205,14 @@ Show where things stand.
    - Valid objects: `PLAN Task N: <title>`, `TODO: <item>`, `DECISION N follow-up`, `OBJECTIVE: <metric>`, or `VISION refresh`.
    - A skill name without a concrete object is not a valid suggestion.
 
-   Priority order:
-   - Active PLAN with pending tasks → suggest ⎈ (SG12) `/orkestrera` for the first unblocked pending task.
-   - Critical or degrading health → suggest ⛶ (SG3) `/inspektera` or ⧉ (SG2) `/realisera` for the named finding.
-   - Active non-closed OBJECTIVE with stalled or missing metric evidence → suggest ⎘ (SG7) `/optimera` for that metric.
-   - TODO.md open items → suggest ⧉ (SG2) `/realisera` for the highest-severity open item; prefer items that unlock product evidence or future plans.
-   - Pending DECISIONS.md follow-up → suggest ❈ (SG4) `/resonera` for the named unresolved decision.
-   - Vision exists but no plan, objective, decision follow-up, or TODO work is active → suggest ≡ (SG5) `/planera`.
-   - Healthy, no executable follow-ups, and the plan is complete → suggest ⛥ (SG6) `/visionera` to choose a new direction.
+    Priority order:
+   - Active PLAN with pending tasks → suggest ⎈ (SG12) orkestrera for the first unblocked pending task.
+   - Critical or degrading health → suggest ⛶ (SG3) inspektera or ⧉ (SG2) realisera for the named finding.
+   - Active non-closed OBJECTIVE with stalled or missing metric evidence → suggest ⎘ (SG7) optimera for that metric.
+   - TODO.md open items → suggest ⧉ (SG2) realisera for the highest-severity open item; prefer items that unlock product evidence or future plans.
+   - Pending DECISIONS.md follow-up → suggest ❈ (SG4) resonera for the named unresolved decision.
+   - Vision exists but no plan, objective, decision follow-up, or TODO work is active → suggest ≡ (SG5) planera.
+   - Healthy, no executable follow-ups, and the plan is complete → suggest ⛥ (SG6) visionera to choose a new direction.
 
    Do not let `healthy + plan complete → ⛥` override active TODO, OBJECTIVE, DECISIONS, or a newer active PLAN. A completed plan means "look for the next executable follow-up," not automatically "refresh vision."
 
@@ -280,8 +285,8 @@ Hej's unique role: it is the only capability that reads from every other capabil
 ## Getting started
 
 ```
-/hej                        # Start here, always
-"what should I work on"     # Natural language works too
-"catch me up"               # Returning to a project
-"what needs attention"      # Quick status check
+/agentera                   # Start here, always
+/agentera "what should I work on"   # Natural language works too
+/agentera "catch me up"             # Returning to a project
+/agentera "what needs attention"    # Quick status check
 ```
