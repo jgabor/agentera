@@ -11,10 +11,10 @@ Reasoning trail maintained by resonera. Each deliberation session appends one en
 - Flat files + registry: keep OBJECTIVE.md/EXPERIMENTS.md in `.agentera/`, add a registry file with an active pointer. More machinery, single-objective illusion.
 - Active symlink: named subdirs with a symlink marking the active one. Cross-platform fragility.
 - Named subdirs, self-contained: one directory per objective under `.agentera/optimera/`, each containing OBJECTIVE.md, EXPERIMENTS.md, harness, helpers, vehicle/, runs/. No registry, no symlinks. Directory existence is the registry.
-**Choice**: Named subdirs under `.agentera/optimera/`. Each objective is fully self-contained (helpers duplicated per-objective, no shared dir). Active objective inferred from context: single objective = use it, multiple = most recent activity, ambiguous = ask. DOCS.md drops OBJECTIVE.md/EXPERIMENTS.md from artifact mapping (optimera owns its own path resolution). One-shot migration of existing hej-token and realisera-token data.
-**Reasoning**: Convention over configuration. The directory structure IS the multi-objective representation. Self-contained objectives are independently archivable, independently measurable, and require zero coordination. Single root under `.agentera/` aligns with Decision 4. Dropping DOCS.md mapping is correct because OBJECTIVE.md/EXPERIMENTS.md are no longer at fixed paths.
-**Confidence**: firm
-**Feeds into**: TODO.md (implementation), optimera SKILL.md (path changes), DOCS.md (mapping update), .gitignore (path update)
+  **Choice**: Named subdirs under `.agentera/optimera/`. Each objective is fully self-contained (helpers duplicated per-objective, no shared dir). Active objective inferred from context: single objective = use it, multiple = most recent activity, ambiguous = ask. DOCS.md drops OBJECTIVE.md/EXPERIMENTS.md from artifact mapping (optimera owns its own path resolution). One-shot migration of existing hej-token and realisera-token data.
+  **Reasoning**: Convention over configuration. The directory structure IS the multi-objective representation. Self-contained objectives are independently archivable, independently measurable, and require zero coordination. Single root under `.agentera/` aligns with Decision 4. Dropping DOCS.md mapping is correct because OBJECTIVE.md/EXPERIMENTS.md are no longer at fixed paths.
+  **Confidence**: firm
+  **Feeds into**: TODO.md (implementation), optimera SKILL.md (path changes), DOCS.md (mapping update), .gitignore (path update)
 
 ## Decision 32 · 2026-04-26
 
@@ -25,10 +25,10 @@ Reasoning trail maintained by resonera. Each deliberation session appends one en
 - One-off diagnostic script: cheap, throw-away; no recurring value.
 - New skill (e.g. /telemetera): full lifecycle, heavy for descriptive analytics.
 - Reusable script under scripts/: re-runnable, no SKILL.md ceremony, can grow into a skill later.
-**Choice**: `scripts/usage_stats.py` reading the existing Section 21 corpus. Detects invocations via skill workflow markers (`─── <glyph> <skill> · <phase> ───`) in assistant turns. Pairs each marker with its matching exit signal to count completed workflows; orphans count as incomplete. Tags each invocation slash-vs-NL by inspecting the prior user turn. Cross-project default with `--project PATH` to scope. Writes markdown to `~/.local/share/agentera/USAGE.md` (sibling to PROFILE.md) plus a brief stdout summary. Flags: `--json` for machine output; generated-at timestamp combats staleness.
-**Reasoning**: Workflow markers unify slash and NL triggering, especially in OpenCode where slash UX differs. Completed workflows measure follow-through, not just intent. Global XDG path matches PROFILE.md and fits cross-project scope naturally. A script avoids skill-lifecycle overhead while leveraging the existing corpus pipeline. Friction and failure analysis are deferred until an adoption baseline exists.
-**Confidence**: provisional
-**Feeds into**: TODO.md (implementation), standalone
+  **Choice**: `scripts/usage_stats.py` reading the existing Section 21 corpus. Detects invocations via skill workflow markers (`─── <glyph> <skill> · <phase> ───`) in assistant turns. Pairs each marker with its matching exit signal to count completed workflows; orphans count as incomplete. Tags each invocation slash-vs-NL by inspecting the prior user turn. Cross-project default with `--project PATH` to scope. Writes markdown to `~/.local/share/agentera/USAGE.md` (sibling to PROFILE.md) plus a brief stdout summary. Flags: `--json` for machine output; generated-at timestamp combats staleness.
+  **Reasoning**: Workflow markers unify slash and NL triggering, especially in OpenCode where slash UX differs. Completed workflows measure follow-through, not just intent. Global XDG path matches PROFILE.md and fits cross-project scope naturally. A script avoids skill-lifecycle overhead while leveraging the existing corpus pipeline. Friction and failure analysis are deferred until an adoption baseline exists.
+  **Confidence**: provisional
+  **Feeds into**: TODO.md (implementation), standalone
 
 ## Decision 33 · 2026-04-28
 
@@ -47,18 +47,18 @@ should own them. Single-skill installs must still work for core behavior.
 - [One skill owns doctor/install], rejected: violates standalone-and-mesh ownership.
 - [External CLI first], rejected: useful later, but adds another distribution surface.
 - [Suite bundle first], chosen: aggregate installs carry shared infrastructure.
-**Choice**: Make the installable Agentera suite bundle the primary home for
-shared tools. Runtime marketplace installs should include skills, shared
-scripts, hooks, manifests, and docs in one package root. `AGENTERA_HOME` points
-to that installed root, not necessarily a clone. Doctor validates that bundle
-without mutation; installer applies confirmed runtime-native fixes. External
-CLI support is deferred.
-**Reasoning**: Standalone skills mean core workflow independence, not that each
-skill must carry every shared helper. Suite installs should provide suite
-infrastructure. This keeps behavioral skill ownership clean while letting
-co-installed skills mesh through one verified package root.
-**Confidence**: firm
-**Feeds into**: PLAN.md, README.md, scripts/
+  **Choice**: Make the installable Agentera suite bundle the primary home for
+  shared tools. Runtime marketplace installs should include skills, shared
+  scripts, hooks, manifests, and docs in one package root. `AGENTERA_HOME` points
+  to that installed root, not necessarily a clone. Doctor validates that bundle
+  without mutation; installer applies confirmed runtime-native fixes. External
+  CLI support is deferred.
+  **Reasoning**: Standalone skills mean core workflow independence, not that each
+  skill must carry every shared helper. Suite installs should provide suite
+  infrastructure. This keeps behavioral skill ownership clean while letting
+  co-installed skills mesh through one verified package root.
+  **Confidence**: firm
+  **Feeds into**: PLAN.md, README.md, scripts/
 
 ## Decision 34 · 2026-04-29
 
@@ -69,10 +69,10 @@ co-installed skills mesh through one verified package root.
 - [New inspektera audit dimension], rejected: post-only; drift is already entrenched by the time it reaches periodic audit.
 - [Section 24 extension with pre + post layers], chosen: pre-write gate catches at the source; post-layer catches what slips through.
 - [PostToolUse validation hook], rejected: hooks validate artifact structure, not content quality; prose checks need semantic judgment.
-**Choice**: Extend SPEC.md §24 with a "Self-Audit Protocol" defining 3 agentera-native checks. Each artifact-producing skill runs them as a mandatory pre-write gate. Post-layer: dokumentera enforces for docs, inspektera adds a "prose health" audit dimension for all artifacts. The 3 checks are: (1) verbosity drift — word count vs. §4 token budget, fail if over; (2) abstraction creep — entry must contain ≥1 concrete anchor (file path, line number, commit hash, metric value, identifier, or direct quote); (3) filler accumulation — scan for banned verbosity patterns (§24), fail if any found.
-**Reasoning**: WRITING.md's regularity checks are the right philosophy but the wrong spec — agentera's structured, token-budgeted, multi-skill artifact format needs its own check design. A mandatory pre-write gate is the only way to prevent the snowball: advisory gates accumulate drift faster than post-audits can clean it up. This matches "Reject Quality Gate Bypasses" (86% effective). The post-layer exists because pre-write gates can't catch everything — some abstraction creep is only visible when comparing entries across time.
-**Confidence**: firm
-**Feeds into**: SPEC.md (§24 extension), skills/inspektera/SKILL.md (prose health dimension), skills/dokumentera/SKILL.md (doc prose enforcement), SKILL.md files of all producing skills (pre-write gate step)
+  **Choice**: Extend SPEC.md §24 with a "Self-Audit Protocol" defining 3 agentera-native checks. Each artifact-producing skill runs them as a mandatory pre-write gate. Post-layer: dokumentera enforces for docs, inspektera adds a "prose health" audit dimension for all artifacts. The 3 checks are: (1) verbosity drift — word count vs. §4 token budget, fail if over; (2) abstraction creep — entry must contain ≥1 concrete anchor (file path, line number, commit hash, metric value, identifier, or direct quote); (3) filler accumulation — scan for banned verbosity patterns (§24), fail if any found.
+  **Reasoning**: WRITING.md's regularity checks are the right philosophy but the wrong spec — agentera's structured, token-budgeted, multi-skill artifact format needs its own check design. A mandatory pre-write gate is the only way to prevent the snowball: advisory gates accumulate drift faster than post-audits can clean it up. This matches "Reject Quality Gate Bypasses" (86% effective). The post-layer exists because pre-write gates can't catch everything — some abstraction creep is only visible when comparing entries across time.
+  **Confidence**: firm
+  **Feeds into**: SPEC.md (§24 extension), skills/inspektera/SKILL.md (prose health dimension), skills/dokumentera/SKILL.md (doc prose enforcement), SKILL.md files of all producing skills (pre-write gate step)
 
 ## Decision 35 · 2026-04-29
 
@@ -141,10 +141,10 @@ co-installed skills mesh through one verified package root.
 - [Anchor on artifact field recall], rejected: useful later, but risks repeating the schema-only trap.
 - [Anchor on weighted summaries], rejected: premature until semantic correctness signals exist.
 - [Extend eval_skills.py directly], rejected: smoke and semantic evals have different boundaries.
-**Choice**: Add a separate stdlib semantic eval surface, starting with `hej` routing fixtures that assert both output facts and artifact-derived next-action correctness.
-**Reasoning**: `hej` proves the core SOB lesson in Agentera terms: a clean response is not enough if it routes to the wrong concrete work. A separate script keeps runtime smoke checks simple while semantic fixtures grow.
-**Confidence**: firm
-**Feeds into**: TODO.md
+  **Choice**: Add a separate stdlib semantic eval surface, starting with `hej` routing fixtures that assert both output facts and artifact-derived next-action correctness.
+  **Reasoning**: `hej` proves the core SOB lesson in Agentera terms: a clean response is not enough if it routes to the wrong concrete work. A separate script keeps runtime smoke checks simple while semantic fixtures grow.
+  **Confidence**: firm
+  **Feeds into**: TODO.md
 
 ## Decision 39 · 2026-05-04
 
@@ -155,40 +155,10 @@ co-installed skills mesh through one verified package root.
 - [Targeted refactors]: fix 3-way sync, decompose validate_artifact.py, extract shared scripts. ~70% of maintenance benefit at ~10% of cost. Rejected: doesn't address token consumption or artifact ceremony, which are structural problems.
 - [12 autonomous skills with companion schemas]: keep the current distribution model but add per-skill schemas and selective reading. Rejected: cross-skill mesh complexity persists; the 12-file distribution model remains a token tax.
 - [Single bundled skill with capability schemas]: one install, one entry point, 12 capabilities as sub-modules with lean prose + companion schemas. Chosen.
-**Choice**: Agentera 2.0 is a single bundled skill (`/agentera`) with 12 capabilities. Each capability has lean behavioral prose + companion schemas (artifact shapes, validation rules, triggers). A thin shared protocol schema covers confidence, severity, and visual tokens. SPEC.md dissolves into capability schemas. Artifacts split: 3 human-facing at root (TODO.md, CHANGELOG.md, DESIGN.md), rest as structured agent-facing data in `.agentera/`. A universal query CLI replaces direct artifact reads. Master SKILL.md starts full (hej-style orientation + routing), optimizes toward thin schema-driven dispatcher over time. Transition: big bang cutover from a feat/v2 branch/worktree.
-**Reasoning**: The feedback loop is the core product, and it's fragmented across 12 skill files and 12 artifact formats. Bundling with schema-driven dispatch and a query CLI concentrates the loop into one deep module. Structured artifacts + query CLI eliminates the read/write ceremony that burns tokens. The worktree strategy preserves the working system during development. The strongest blind spot (master SKILL.md becoming a God Object) is mitigated by schema-driven routing and a stated optimization trajectory from full to thin.
-**Confidence**: firm
-**Feeds into**: ROADMAP.md, VISION.md
-
-## Decision 47 · 2026-05-04 · completed
-
-**Title**: Agentera 2.0 Token Benchmark
-
-**v1 baseline** (all 12 `skills/*/SKILL.md` + `SPEC.md`):
-
-| Component | Bytes |
-|---|---|
-| 12 SKILL.md files | 256,314 |
-| SPEC.md | 95,899 |
-| **Total** | **352,213** |
-| Estimated tokens (~4 chars/token) | ~88,053 |
-
-**v2 measurement** (`SKILL.md` + `protocol.yaml` + 12 `prose.md` + 48 schema files):
-
-| Component | Bytes |
-|---|---|
-| SKILL.md | 5,381 |
-| protocol.yaml | 13,704 |
-| 12 prose.md files | 210,827 |
-| 48 schema YAML files | 83,444 |
-| **Total** | **313,356** |
-| Estimated tokens (~4 chars/token) | ~78,339 |
-
-**Delta**: -38,857 bytes (**-11.0%**), estimated -9,714 tokens.
-
-**Methodology**: `wc -c` on all measured files. Token estimate uses 4 chars/token for English text (conservative; real tokenizer ratios vary). v1 measured from main worktree, v2 from feat/v2 worktree. Both include all content a runtime must read to dispatch a skill/capability.
-
-**Note**: The ROADMAP.md aspirational target of 40% reduction assumed that schema extraction would offload more structural prose. The actual -11.0% reflects that capability prose.md files retain substantial behavioral instructions while schema files add ~83 KB of machine-readable structure. The token win is modest, but the structural payoff (machine-readable schemas, query CLI potential, single dispatch point) was the primary motivation per D39.
+  **Choice**: Agentera 2.0 is a single bundled skill (`/agentera`) with 12 capabilities. Each capability has lean behavioral prose + companion schemas (artifact shapes, validation rules, triggers). A thin shared protocol schema covers confidence, severity, and visual tokens. SPEC.md dissolves into capability schemas. Artifacts split: 3 human-facing at root (TODO.md, CHANGELOG.md, DESIGN.md), rest as structured agent-facing data in `.agentera/`. A universal query CLI replaces direct artifact reads. Master SKILL.md starts full (hej-style orientation + routing), optimizes toward thin schema-driven dispatcher over time. Transition: big bang cutover from a feat/v2 branch/worktree.
+  **Reasoning**: The feedback loop is the core product, and it's fragmented across 12 skill files and 12 artifact formats. Bundling with schema-driven dispatch and a query CLI concentrates the loop into one deep module. Structured artifacts + query CLI eliminates the read/write ceremony that burns tokens. The worktree strategy preserves the working system during development. The strongest blind spot (master SKILL.md becoming a God Object) is mitigated by schema-driven routing and a stated optimization trajectory from full to thin.
+  **Confidence**: firm
+  **Feeds into**: ROADMAP.md, VISION.md
 
 ## Decision 40 · 2026-05-04
 
@@ -199,10 +169,40 @@ co-installed skills mesh through one verified package root.
 - [YAML]: human-glanceable, smallest bytes for single entries. Token experiment showed ~18% more tokens than JSONL for 10-entry files, but query CLI abstracts the format so raw tokens never enter agent context. Chosen for artifacts.
 - [JSONL]: most compact for multi-entry files, append-friendly. Rejected: marginal token savings irrelevant when CLI is the interface.
 - [JSON]: best schema validation tooling (JSON Schema universal). Rejected: larger than YAML for single entries, no meaningful advantage when CLI abstracts access.
-**Choice**: YAML for all agent-facing artifacts. No backward compatibility with v1 (migration tool handles conversion). Sub-modules called "capabilities." Master SKILL.md size deferred to Phase 1 (measure after hej port).
-**Reasoning**: The token experiment proved format choice doesn't affect agent-visible token consumption because the query CLI is the seam. YAML wins on human-glanceability and smallest bytes for typical single-entry reads. No backward compat is consistent with D39's big bang. "Capabilities" aligns with SKILL.md vocabulary and distinguishes from the v1 "skills" concept.
-**Confidence**: firm
-**Feeds into**: ROADMAP.md
+  **Choice**: YAML for all agent-facing artifacts. No backward compatibility with v1 (migration tool handles conversion). Sub-modules called "capabilities." Master SKILL.md size deferred to Phase 1 (measure after hej port).
+  **Reasoning**: The token experiment proved format choice doesn't affect agent-visible token consumption because the query CLI is the seam. YAML wins on human-glanceability and smallest bytes for typical single-entry reads. No backward compat is consistent with D39's big bang. "Capabilities" aligns with SKILL.md vocabulary and distinguishes from the v1 "skills" concept.
+  **Confidence**: firm
+  **Feeds into**: ROADMAP.md
+
+## Decision 41 · 2026-05-04 · completed
+
+**Title**: Agentera 2.0 Token Benchmark
+
+**v1 baseline** (all 12 `skills/*/SKILL.md` + `SPEC.md`):
+
+| Component                         | Bytes       |
+| --------------------------------- | ----------- |
+| 12 SKILL.md files                 | 256,314     |
+| SPEC.md                           | 95,899      |
+| **Total**                         | **352,213** |
+| Estimated tokens (~4 chars/token) | ~88,053     |
+
+**v2 measurement** (`SKILL.md` + `protocol.yaml` + 12 `prose.md` + 48 schema files):
+
+| Component                         | Bytes       |
+| --------------------------------- | ----------- |
+| SKILL.md                          | 5,381       |
+| protocol.yaml                     | 13,704      |
+| 12 prose.md files                 | 210,827     |
+| 48 schema YAML files              | 83,444      |
+| **Total**                         | **313,356** |
+| Estimated tokens (~4 chars/token) | ~78,339     |
+
+**Delta**: -38,857 bytes (**-11.0%**), estimated -9,714 tokens.
+
+**Methodology**: `wc -c` on all measured files. Token estimate uses 4 chars/token for English text (conservative; real tokenizer ratios vary). v1 measured from main worktree, v2 from feat/v2 worktree. Both include all content a runtime must read to dispatch a skill/capability.
+
+**Note**: The ROADMAP.md aspirational target of 40% reduction assumed that schema extraction would offload more structural prose. The actual -11.0% reflects that capability prose.md files retain substantial behavioral instructions while schema files add ~83 KB of machine-readable structure. The token win is modest, but the structural payoff (machine-readable schemas, query CLI potential, single dispatch point) was the primary motivation per D39.
 
 ## Archived Decisions
 

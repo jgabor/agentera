@@ -26,7 +26,7 @@ No dedicated state file. Writes to other capabilities' artifacts.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (TODO.md, VISION.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in .agentera/. This applies to all artifact references in this capability, including cross-capability writes (TODO.md, VISION.md).
+Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (TODO.md, VISION.md, etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in .agentera/. This applies to all artifact references in this capability, including cross-capability writes (TODO.md, VISION.md).
 
 PROFILE.md is global, not project-scoped. Its path is determined by profilera: `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`). Check the profilera-determined path directly rather than falling back to the project root.
 

@@ -39,7 +39,7 @@ meta:
     inspektera, dokumentera, visualisera, and orkestrera for strategic
     alignment. No compaction: vision is not a growing artifact.
   artifact_type: agent_facing
-  path: "vision.yaml"
+  path: ".agentera/vision.yaml"
   producer: [visionera, realisera]
   consumers: [realisera, planera, inspektera, dokumentera, visualisera, orkestrera]
   format: yaml

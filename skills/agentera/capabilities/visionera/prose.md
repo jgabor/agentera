@@ -26,7 +26,7 @@ The template in `skills/realisera/references/templates/VISION-template.md` (v1 p
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md, etc.). If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (.agentera/DECISIONS.md, .agentera/HEALTH.md, .agentera/PROGRESS.md, TODO.md).
+Before reading or writing any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md, etc.). If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (.agentera/DECISIONS.md, .agentera/HEALTH.md, .agentera/PROGRESS.md, TODO.md).
 
 ### Contract values
 

@@ -23,12 +23,12 @@ auto_gen:
 ## Artifact Mapping
 
 Skills check this table for path overrides. If an artifact has no entry or
-.agentera/DOCS.md is absent, use the default layout: VISION.md, TODO.md, and
-CHANGELOG.md at root; all other artifacts in .agentera/.
+.agentera/DOCS.md is absent, use the default layout: TODO.md and
+CHANGELOG.md at root; VISION.md and all other artifacts in .agentera/.
 
 | Artifact | Path | Producers |
 |----------|------|-----------|
-| VISION.md | VISION.md | visionera, realisera |
+| VISION.md | .agentera/vision.yaml | visionera, realisera |
 | TODO.md | TODO.md | realisera, inspektera |
 | CHANGELOG.md | CHANGELOG.md | realisera |
 | DECISIONS.md | .agentera/DECISIONS.md | resonera |

@@ -26,7 +26,7 @@ Template in `references/templates/` (at v1 skill location `skills/inspektera/ref
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, `.agentera/DECISIONS.md`, TODO.md, `.agentera/PROGRESS.md`).
+Before reading or writing any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, `.agentera/DECISIONS.md`, TODO.md, `.agentera/PROGRESS.md`).
 
 ### Contract
 

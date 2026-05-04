@@ -461,7 +461,7 @@ ARTIFACT_FIXTURES = {
         "expected": "timestamp=2026-05-01",
     },
     "vision": {
-        "path": "vision.yaml",
+        "path": ".agentera/vision.yaml",
         "data": {
             "entries": [
                 {"project_name": "test-project"},

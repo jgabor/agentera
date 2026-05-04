@@ -606,7 +606,7 @@ class TestVisionMigration:
     def test_full_migration_writes_yaml(self, migrate, project_dir):
         (project_dir / "VISION.md").write_text(VISION_V1, encoding="utf-8")
         migrate.migrate_project(project_dir)
-        out = project_dir / "vision.yaml"
+        out = project_dir / ".agentera" / "vision.yaml"
         assert out.exists()
         data = yaml.safe_load(out.read_text())
         assert data["project_name"] == "my-project"
@@ -662,7 +662,7 @@ class TestAcceptance:
             project_dir / ".agentera" / "health.yaml",
             project_dir / ".agentera" / "plan.yaml",
             project_dir / ".agentera" / "docs.yaml",
-            project_dir / "vision.yaml",
+            project_dir / ".agentera" / "vision.yaml",
         ]:
             assert expected.exists(), f"Missing {expected}"
             data = yaml.safe_load(expected.read_text())
