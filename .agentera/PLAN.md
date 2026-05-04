@@ -83,7 +83,7 @@ Capabilities grouped by functional cluster. Each cluster ports together because 
 ### Task 4: Orchestration (orkestrera)
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the orkestrera capability directory WHEN validate_capability.py runs THEN all contract checks pass
 ▸ GIVEN the orkestrera prose.md WHEN read THEN it contains the conductor workflow (plan dispatch, evaluation gating, retry handling), safety rails, and cross-capability references
