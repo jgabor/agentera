@@ -14,8 +14,6 @@ auto_gen:
     - plugin.json
     - .github/plugin/plugin.json
     - .codex-plugin/plugin.json
-    - skills/*/.claude-plugin/plugin.json
-    - .agents/plugins/marketplace.json
     - .claude-plugin/marketplace.json
     - .opencode/plugins/agentera.js
     - registry.json
