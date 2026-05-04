@@ -1,0 +1,16 @@
+schema: objective
+version: 1
+artifact: OBJECTIVE.md
+required_headings:
+  - pattern: "^# Objective"
+    label: "top-level heading"
+  - pattern: "^## Metric"
+    label: "metric section"
+  - pattern: "^## Target"
+    label: "target section"
+  - pattern: "^## Baseline"
+    label: "baseline section"
+  - pattern: "^## Constraints"
+    label: "constraints section"
+  - pattern: "^\\*\\*Status\\*\\*:"
+    label: "status field"

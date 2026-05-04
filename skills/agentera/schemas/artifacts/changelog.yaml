@@ -1,0 +1,5 @@
+schema: changelog
+version: 1
+artifact: CHANGELOG.md
+token_budget: 5000
+human_facing: true

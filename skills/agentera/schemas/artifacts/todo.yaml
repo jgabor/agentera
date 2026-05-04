@@ -1,0 +1,13 @@
+schema: todo
+version: 1
+artifact: TODO.md
+token_budget: 5000
+human_facing: true
+required_headings:
+  - pattern: "^# TODO"
+    label: "top-level heading"
+severity_headings:
+  - pattern: "^## .*Critical"
+  - pattern: "^## .*Degraded"
+  - pattern: "^## .*Normal"
+  - pattern: "^## .*Annoying"

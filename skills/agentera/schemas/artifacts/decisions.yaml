@@ -1,0 +1,14 @@
+schema: decisions
+version: 1
+artifact: DECISIONS.md
+token_budget: 5000
+required_headings:
+  - pattern: "^# Decisions"
+    label: "top-level heading"
+  - pattern: "^## Decision \\d+"
+    label: "decision entry"
+custom_checks:
+  - name: ascending_numbering
+    description: "active decision numbers must be ascending"
+  - name: no_duplicates
+    description: "no duplicate decision numbers"

@@ -1,0 +1,5 @@
+schema: design
+version: 1
+artifact: DESIGN.md
+token_budget: 2000
+human_facing: true
