@@ -17,9 +17,6 @@ from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-PROFILERA_LIMITATION = {
-    "profilera": "limited",
-}
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -37,15 +34,8 @@ def _load_module(name: str, path: Path) -> ModuleType:
     return module
 
 
-_V2_META_SKILLS = {"agentera"}
-
-
 def _skill_names(root: Path = REPO_ROOT) -> list[str]:
     return sorted(path.name for path in (root / "skills").iterdir() if (path / "SKILL.md").is_file())
-
-
-def _v1_skill_names(root: Path = REPO_ROOT) -> list[str]:
-    return [name for name in _skill_names(root) if name not in _V2_META_SKILLS]
 
 
 def _resolve_inside(root: Path, path: str) -> Path | None:
@@ -120,7 +110,7 @@ def _validate_codex_package(plugin: dict[str, Any]) -> list[str]:
     if not isinstance(metadata, list):
         return errors + ["codex.skillMetadata must be a list"]
 
-    expected = _v1_skill_names()
+    expected = _skill_names()
     actual = sorted(skill.get("name") for skill in metadata if isinstance(skill, dict))
     if actual != expected:
         errors.append("codex.skillMetadata must match skills/*/SKILL.md")
@@ -137,25 +127,12 @@ def _validate_codex_package(plugin: dict[str, Any]) -> list[str]:
             continue
         if not (REPO_ROOT / path / "SKILL.md").resolve().is_file():
             errors.append(f"codex.{name}: path must resolve to SKILL.md")
-        expected_support = PROFILERA_LIMITATION.get(name, "portable")
-        if skill.get("runtimeSupport") != expected_support:
-            errors.append(f"codex.{name}: runtimeSupport must be {expected_support}")
-        expected_implicit = name != "profilera"
-        if policy.get("allow_implicit_invocation") is not expected_implicit:
-            errors.append(f"codex.{name}: implicit invocation policy is wrong")
+        if skill.get("runtimeSupport") != "portable":
+            errors.append(f"codex.{name}: runtimeSupport must be portable")
+        if not policy.get("allow_implicit_invocation"):
+            errors.append(f"codex.{name}: implicit invocation policy must allow implicit")
         if skill.get("invocationHint") and f"${name}" not in skill["invocationHint"]:
             errors.append(f"codex.{name}: invocation hint must name ${name}")
-        if name == "profilera":
-            capabilities = skill.get("requiredCapabilities")
-            if not capabilities:
-                errors.append("codex.profilera: requiredCapabilities must name corpus capability")
-            elif capabilities[0].get("name") != "codex_session_corpus":
-                errors.append("codex.profilera: corpus capability must be named codex_session_corpus")
-            elif capabilities[0].get("status") not in ("ok", "degraded"):
-                errors.append("codex.profilera: corpus capability status must be ok or degraded")
-            for text in skill.get("limitations", []) + [skill.get("invocationHint", "")]:
-                if "collector exists" in text or "not implemented" in text:
-                    errors.append("codex.profilera: stale missing-collector limitation")
 
     if isinstance(codex, dict) and isinstance(codex.get("uiMetadata"), str):
         errors.extend(_validate_codex_ui_metadata(REPO_ROOT / codex["uiMetadata"]))
@@ -205,20 +182,6 @@ def _validate_codex_marketplace(root: Path = REPO_ROOT) -> list[str]:
 def _validate_codex_ui_metadata(path: Path) -> list[str]:
     errors: list[str] = []
     text = path.read_text(encoding="utf-8")
-    expected = _v1_skill_names()
-    for name in expected:
-        if f"  - name: {name}\n" not in text:
-            errors.append(f"codex.ui.{name}: missing skill entry")
-        skill_root = f"    path: ./skills/{name}\n"
-        skill_metadata = f"    metadata: ./skills/{name}/agents/openai.yaml\n"
-        if skill_root not in text:
-            errors.append(f"codex.ui.{name}: path must resolve from plugin install root")
-        if skill_metadata not in text:
-            errors.append(f"codex.ui.{name}: metadata must resolve from plugin install root")
-        if not (REPO_ROOT / f"skills/{name}/SKILL.md").is_file():
-            errors.append(f"codex.ui.{name}: skill path missing SKILL.md")
-        if not (REPO_ROOT / f"skills/{name}/agents/openai.yaml").is_file():
-            errors.append(f"codex.ui.{name}: per-skill UI metadata missing")
 
     if "allow_implicit_invocation: false" not in text:
         errors.append("codex.ui.profilera: implicit invocation must be disabled")
@@ -239,7 +202,7 @@ def _validate_claude_package(root: Path = REPO_ROOT) -> list[str]:
     if not isinstance(plugins, list):
         return ["claude marketplace plugins must be a list"]
 
-    expected = _v1_skill_names(root)
+    expected = _skill_names(root)
     actual = sorted(plugin.get("name") for plugin in plugins if isinstance(plugin, dict))
     if actual != expected:
         errors.append("claude marketplace plugins must match skills/*/SKILL.md")
@@ -247,7 +210,7 @@ def _validate_claude_package(root: Path = REPO_ROOT) -> list[str]:
     for name in expected:
         plugin_path = root / "skills" / name / ".claude-plugin/plugin.json"
         if not plugin_path.is_file():
-            errors.append(f"claude.{name}: missing per-skill plugin.json")
+            errors.append(f"claude.{name}: missing bundled plugin.json")
             continue
         plugin = _load_json(plugin_path)
         if plugin.get("name") != name:
@@ -267,14 +230,11 @@ def _validate_opencode_package(root: Path = REPO_ROOT) -> list[str]:
 
     plugin_text = (root / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
     errors.extend(_validate_opencode_version(root, plugin_text))
-    expected = _v1_skill_names(root)
+    expected = _skill_names(root)
     command_names = sorted(re.findall(r'^  "([a-z]+)": `', plugin_text, flags=re.MULTILINE))
     if command_names != expected:
         errors.append("opencode command templates must match skills/*/SKILL.md")
 
-    # Real `@opencode-ai/plugin` Hooks interface members. Session lifecycle
-    # arrives through the generic `event` hook; `session.created` and
-    # `session.idle` are event.type payload values, not hook object keys.
     for hook in ('event:', '"shell.env"', '"tool.execute.before"', '"tool.execute.after"'):
         if hook not in plugin_text:
             errors.append(f"opencode plugin missing {hook} hook")
@@ -283,15 +243,17 @@ def _validate_opencode_package(root: Path = REPO_ROOT) -> list[str]:
             errors.append(f"opencode plugin must not register phantom hook {phantom}")
 
     for name in expected:
-        command_path = root / ".opencode/commands" / f"{name}.md"
-        if not command_path.is_file():
-            errors.append(f"opencode.{name}: missing command file")
+        template_match = re.search(
+            rf'^  "{re.escape(name)}": `(.+?)`',
+            plugin_text,
+            flags=re.MULTILINE | re.DOTALL,
+        )
+        if not template_match:
+            errors.append(f"opencode.{name}: missing command template")
             continue
-        command = command_path.read_text(encoding="utf-8")
-        if "agentera_managed: true" not in command:
-            errors.append(f"opencode.{name}: command must keep managed marker")
-        if f"Load and execute the {name} skill" not in command:
-            errors.append(f"opencode.{name}: command must invoke matching skill")
+        template = template_match.group(1)
+        if "agentera_managed: true" not in template:
+            errors.append(f"opencode.{name}: command template must keep managed marker")
 
     return errors
 
@@ -317,7 +279,7 @@ def _validate_opencode_version(root: Path, plugin_text: str) -> list[str]:
     versions = {
         skill.get("version")
         for skill in registry.get("skills", [])
-        if isinstance(skill, dict) and skill.get("name") != "profilera"
+        if isinstance(skill, dict)
     }
     if len(versions) != 1:
         errors.append("opencode registry comparison needs one suite version")
@@ -358,14 +320,35 @@ def _validate_package_versions(root: Path = REPO_ROOT) -> list[str]:
         if isinstance(plugin, dict):
             surfaces[f".claude-plugin/marketplace.json plugin {plugin.get('name')}"] = plugin.get("version")
 
-    for name in _v1_skill_names(root):
-        plugin = _load_json(root / "skills" / name / ".claude-plugin/plugin.json")
-        surfaces[f"skills/{name}/.claude-plugin/plugin.json"] = plugin.get("version")
-
     for label, version in surfaces.items():
         if version != suite_version:
             errors.append(f"{label} version must match registry suite version {suite_version}")
 
+    return errors
+
+
+def _validate_registry(root: Path = REPO_ROOT) -> list[str]:
+    errors: list[str] = []
+    registry = _load_json(root / "registry.json")
+    skills = registry.get("skills")
+    if not isinstance(skills, list):
+        return ["registry skills must be a list"]
+    if len(skills) != 1:
+        errors.append("registry must have exactly one skill entry")
+    else:
+        skill = skills[0]
+        if not isinstance(skill, dict):
+            errors.append("registry skill entry must be an object")
+        else:
+            if skill.get("name") != "agentera":
+                errors.append("registry skill name must be agentera")
+            if not isinstance(skill.get("version"), str):
+                errors.append("registry skill must have a version string")
+            capabilities = skill.get("capabilities")
+            if not isinstance(capabilities, list) or len(capabilities) != 12:
+                errors.append("registry skill must list 12 capabilities")
+            elif sorted(capabilities) != sorted(capabilities):
+                errors.append("registry capabilities must be unique")
     return errors
 
 
@@ -471,11 +454,11 @@ class TestCodexPackaging:
     def test_codex_marketplace_passes(self):
         assert _validate_codex_marketplace() == []
 
-    def test_codex_package_fails_on_profilera_implicit_policy(self):
+    def test_codex_package_fails_on_wrong_implicit_policy(self):
         plugin = _load_json(REPO_ROOT / ".codex-plugin/plugin.json")
-        profilera = next(skill for skill in plugin["skillMetadata"] if skill["name"] == "profilera")
-        profilera["policy"]["allow_implicit_invocation"] = True
-        assert "codex.profilera: implicit invocation policy is wrong" in _validate_codex_package(plugin)
+        bundled = plugin["skillMetadata"][0]
+        bundled["policy"]["allow_implicit_invocation"] = False
+        assert "codex.agentera: implicit invocation policy must allow implicit" in _validate_codex_package(plugin)
 
     def test_codex_marketplace_fails_when_pointing_at_skill_directory(self, tmp_path):
         (tmp_path / ".agents/plugins").mkdir(parents=True)
@@ -618,7 +601,6 @@ class TestLifecycleAdapters:
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
         plugin = _load_json(REPO_ROOT / ".codex-plugin/plugin.json")
         assert validator.validate_codex(plugin) == []
-        assert validator.validate_codex_profilera_metadata(REPO_ROOT, plugin) == []
 
     def test_codex_lifecycle_fails_on_configured_event(self):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
@@ -629,22 +611,14 @@ class TestLifecycleAdapters:
     def test_codex_lifecycle_fails_on_profilera_policy_drift(self):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
         plugin = _load_json(REPO_ROOT / ".codex-plugin/plugin.json")
-        profilera = next(skill for skill in plugin["skillMetadata"] if skill["name"] == "profilera")
-        profilera["runtimeSupport"] = "portable"
-        assert (
-            "codex.profilera: runtimeSupport must stay limited across metadata surfaces"
-            in validator.validate_codex_profilera_metadata(REPO_ROOT, plugin)
-        )
+        plugin["lifecycleHooks"]["status"] = "experimental"
+        assert "codex: lifecycleHooks.status must be one of stable, beta" in validator.validate_codex(plugin)
 
     def test_codex_lifecycle_fails_on_profilera_invocation_hint_drift(self):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
         plugin = _load_json(REPO_ROOT / ".codex-plugin/plugin.json")
-        profilera = next(skill for skill in plugin["skillMetadata"] if skill["name"] == "profilera")
-        profilera["invocationHint"] = "$profilera"
-        assert (
-            "codex.profilera: invocation hint must expose limited Section 22 source-family rules"
-            in validator.validate_codex_profilera_metadata(REPO_ROOT, plugin)
-        )
+        plugin["lifecycleHooks"]["limitations"] = []
+        assert "codex: limitations must document codex_hooks status and apply_patch interception" in validator.validate_codex(plugin)
 
     def test_hard_gate_docs_pass(self):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
@@ -841,23 +815,34 @@ class TestPackagedScriptRuntimeHygiene:
 class TestLegacyRuntimeCompatibility:
     """Complex: legacy compatibility spans marketplace metadata and command shims."""
 
+    def test_registry_structure_passes(self):
+        assert _validate_registry() == []
+
+    def test_registry_structure_fails_on_wrong_skill_count(self, tmp_path):
+        root = tmp_path / "repo"
+        root.mkdir()
+        (root / "registry.json").write_text(
+            json.dumps({"skills": []}), encoding="utf-8"
+        )
+        assert "registry must have exactly one skill entry" in _validate_registry(root)
+
     def test_claude_code_package_passes(self):
         assert _validate_claude_package() == []
 
     def test_claude_code_package_fails_on_mismatched_plugin_name(self, tmp_path):
         root = tmp_path / "repo"
-        skill_dir = root / "skills" / "hej"
+        skill_dir = root / "skills" / "agentera"
         (skill_dir / ".claude-plugin").mkdir(parents=True)
-        (skill_dir / "SKILL.md").write_text("# hej\n", encoding="utf-8")
+        (skill_dir / "SKILL.md").write_text("# agentera\n", encoding="utf-8")
         (root / ".claude-plugin").mkdir()
         (root / ".claude-plugin/marketplace.json").write_text(
-            json.dumps({"plugins": [{"name": "hej"}]}), encoding="utf-8"
+            json.dumps({"plugins": [{"name": "agentera"}]}), encoding="utf-8"
         )
         (skill_dir / ".claude-plugin/plugin.json").write_text(
             json.dumps({"name": "wrong", "version": "1.0.0", "description": "x", "author": {}}),
             encoding="utf-8",
         )
-        assert "claude.hej: plugin name must match skill directory" in _validate_claude_package(root)
+        assert "claude.agentera: plugin name must match skill directory" in _validate_claude_package(root)
 
     def test_opencode_package_passes(self):
         assert _validate_opencode_package() == []
@@ -899,7 +884,7 @@ class TestLegacyRuntimeCompatibility:
         suite_versions = {
             skill.get("version")
             for skill in registry.get("skills", [])
-            if isinstance(skill, dict) and skill.get("name") != "profilera"
+            if isinstance(skill, dict)
         }
         assert suite_versions == {current_version}
 
@@ -908,28 +893,24 @@ class TestLegacyRuntimeCompatibility:
 
     def test_version_bearing_package_surfaces_fail_on_drift(self, tmp_path):
         root = tmp_path / "repo"
-        (root / "skills/hej/.claude-plugin").mkdir(parents=True)
         (root / ".github/plugin").mkdir(parents=True)
         (root / ".codex-plugin").mkdir()
         (root / ".claude-plugin").mkdir()
         (root / ".opencode/plugins").mkdir(parents=True)
-        (root / "skills/hej/SKILL.md").write_text("# hej\n", encoding="utf-8")
         (root / "registry.json").write_text(
-            json.dumps({"skills": [{"name": "hej", "version": "1.27.0"}]}), encoding="utf-8"
+            json.dumps({"skills": [{"name": "agentera", "version": "1.27.0"}]}), encoding="utf-8"
         )
-        for path in ("plugin.json", ".github/plugin/plugin.json", ".codex-plugin/plugin.json"):
-            (root / path).write_text(json.dumps({"version": "1.27.0"}), encoding="utf-8")
+        (root / "plugin.json").write_text(json.dumps({"version": "1.27.0"}), encoding="utf-8")
+        (root / ".github/plugin/plugin.json").write_text(json.dumps({"version": "1.27.0"}), encoding="utf-8")
+        (root / ".codex-plugin/plugin.json").write_text(json.dumps({"version": "0.0.0"}), encoding="utf-8")
         (root / ".claude-plugin/marketplace.json").write_text(
             json.dumps(
                 {
                     "metadata": {"version": "1.27.0"},
-                    "plugins": [{"name": "hej", "version": "1.27.0"}],
+                    "plugins": [{"name": "agentera", "version": "1.27.0"}],
                 }
             ),
             encoding="utf-8",
-        )
-        (root / "skills/hej/.claude-plugin/plugin.json").write_text(
-            json.dumps({"name": "hej", "version": "0.0.0"}), encoding="utf-8"
         )
         (root / ".opencode/plugins/agentera.js").write_text(
             'export const AGENTERA_VERSION = "1.27.0";\n', encoding="utf-8"
@@ -937,23 +918,23 @@ class TestLegacyRuntimeCompatibility:
 
         errors = _validate_package_versions(root)
 
-        assert "skills/hej/.claude-plugin/plugin.json version must match registry suite version 1.27.0" in errors
+        assert ".codex-plugin/plugin.json version must match registry suite version 1.27.0" in errors
 
     def test_opencode_package_fails_on_missing_command_file(self, tmp_path):
         root = tmp_path / "repo"
-        (root / "skills/hej").mkdir(parents=True)
-        (root / "skills/hej/SKILL.md").write_text("# hej\n", encoding="utf-8")
+        (root / "skills/agentera").mkdir(parents=True)
+        (root / "skills/agentera/SKILL.md").write_text("# agentera\n", encoding="utf-8")
         (root / ".opencode/plugins").mkdir(parents=True)
         (root / ".opencode/commands").mkdir()
         (root / "registry.json").write_text(
-            json.dumps({"skills": [{"name": "hej", "version": "1.18.0"}]}), encoding="utf-8"
+            json.dumps({"skills": [{"name": "agentera", "version": "1.18.0"}]}), encoding="utf-8"
         )
         (root / ".opencode/package.json").write_text(json.dumps({"type": "module"}), encoding="utf-8")
         (root / ".opencode/plugins/agentera.js").write_text(
-            'export const AGENTERA_VERSION = "1.18.0";\n  "hej": `\nevent:\n"shell.env"\n"tool.execute.before"\n"tool.execute.after"\n',
+            'export const AGENTERA_VERSION = "1.18.0";\n\nexport const COMMAND_TEMPLATES = {\n  "agentera": `---\ndescription: "test"\n---\nNo managed marker.\n`,\n};\n\nevent:\n"shell.env"\n"tool.execute.before"\n"tool.execute.after"\n',
             encoding="utf-8",
         )
-        assert "opencode.hej: missing command file" in _validate_opencode_package(root)
+        assert "opencode.agentera: command template must keep managed marker" in _validate_opencode_package(root)
 
     def test_opencode_package_fails_on_phantom_hook_regression(self, tmp_path):
         """Phantom direct hooks (`session.created`, `session.idle`) must not reappear.
@@ -974,20 +955,15 @@ class TestLegacyRuntimeCompatibility:
         commands_dir = root / ".opencode/commands"
         commands_dir.mkdir(parents=True)
         (root / ".opencode/plugins").mkdir(parents=True)
-        (root / "skills/hej").mkdir(parents=True)
-        (root / "skills/hej/SKILL.md").write_text("# hej\n", encoding="utf-8")
-        (commands_dir / "hej.md").write_text(
-            "---\nagentera_managed: true\n---\nLoad and execute the hej skill\n",
-            encoding="utf-8",
-        )
+        (root / "skills/agentera").mkdir(parents=True)
+        (root / "skills/agentera/SKILL.md").write_text("# agentera\n", encoding="utf-8")
         (root / "registry.json").write_text(
-            json.dumps({"skills": [{"name": "hej", "version": "1.18.0"}]}), encoding="utf-8"
+            json.dumps({"skills": [{"name": "agentera", "version": "1.18.0"}]}), encoding="utf-8"
         )
         (root / ".opencode/package.json").write_text(json.dumps({"type": "module"}), encoding="utf-8")
-        # Regression fixture re-registers the phantom keys; validator must catch it.
         (root / ".opencode/plugins/agentera.js").write_text(
-            'export const AGENTERA_VERSION = "1.18.0";\n  "hej": `\n'
-            '"session.created": async () => {}\n"session.idle": async () => {}\nevent:\n"shell.env"\n"tool.execute.before"\n"tool.execute.after"\n',
+            'export const AGENTERA_VERSION = "1.18.0";\n\nexport const COMMAND_TEMPLATES = {\n  "agentera": `---\nagentera_managed: true\n---\nLoad and execute the agentera bundled skill.\n`,\n};\n'
+            + '"session.created": async () => {}\n"session.idle": async () => {}\nevent:\n"shell.env"\n"tool.execute.before"\n"tool.execute.after"\n',
             encoding="utf-8",
         )
         errors = _validate_opencode_package(root)
