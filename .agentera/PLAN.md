@@ -48,25 +48,46 @@ Migration tool creates backups by default (copies v1 artifacts to .agentera/back
 
 ## Tasks
 
+### Task 1: Capability Schema Contract + Master SKILL.md Stub
+
+**Depends on**: none
+**Status**: ■ complete
+**Acceptance**:
+▸ GIVEN a capability directory with prose.md and schemas/ WHEN a validator checks the directory THEN it confirms all required groups are present (TRIGGERS, ARTIFACTS, VALIDATION, EXIT_CONDITIONS)
+▸ GIVEN a capability schema YAML file WHEN parsed THEN each group contains numbered entries with stable IDs, and entries can carry `deprecated` and `replaced_by` flags for schema evolution
+▸ GIVEN the capability schema contract file itself WHEN validated against its own rules THEN it passes (self-referential: the schema is a valid instance of itself)
+▸ GIVEN the ROADMAP target architecture diagram WHEN the schema contract is defined THEN the directory structure (skills/agentera/capabilities/<name>/schemas/) matches exactly
+▸ GIVEN each of the 12 v1 SKILL.md files WHEN compared against the schema contract via a mapping table THEN every behavioral section (triggers, workflow, cross-skill, safety rails, exit signals) maps to a schema group with no unmappable content
+▸ GIVEN the bundled skill directory WHEN created THEN skills/agentera/SKILL.md exists as a stub with routing logic placeholder, trigger pattern discovery instruction, and shared protocol reference
+
 ### Task 2: Shared Protocol Schema
 
 **Depends on**: Task 1
 **Status**: ■ complete
 **Acceptance**:
-▸ GIVEN protocol.yaml WHEN loaded THEN it contains 9 groups (CONFIDENCE_SCALE, SEVERITY_FINDING, SEVERITY_ISSUE, SEVERITY_MAPPING, DECISION_LABELS, EXIT_SIGNALS, VISUAL_TOKENS, SKILL_GLYPHS, PHASES) with 57 entries, each having a stable ID
-▸ GIVEN protocol.yaml WHEN compared against SPEC.md Sections 1-3, 11, 13, 18 THEN every spec primitive has a corresponding protocol entry with a stable ID
-▸ GIVEN the GROUP_PREFIXES mapping WHEN an entry ID is read THEN the prefix uniquely identifies the group of origin
+▸ GIVEN protocol.yaml WHEN parsed THEN it defines confidence scale (0-100, 5 tiers with boundaries), severity levels (finding and issue vocabularies), visual tokens (status, severity, confidence, trend glyphs), and phase model (5 phases with valid transitions)
+▸ GIVEN SPEC.md Sections 1, 2, 3, 11, 13, 18 WHEN compared against protocol.yaml via field-by-field mapping table THEN every primitive (confidence tiers, severity values, decision labels, exit statuses, visual glyphs, phases) has a corresponding protocol.yaml entry
+▸ GIVEN a capability schema referencing a shared primitive (e.g. severity: critical) WHEN validated THEN it confirms the reference resolves to a value defined in protocol.yaml
 
 ### Task 3a: Core Artifact Schemas (PROGRESS, DECISIONS, HEALTH, SESSION)
 
 **Depends on**: Task 1, Task 2
 **Status**: ■ complete
 **Acceptance**:
+▸ GIVEN each core artifact type WHEN an artifact schema is defined THEN it specifies YAML structure with UPPER_CASE groups, numbered entries with stable IDs, field types, and validation rules
+▸ GIVEN a v1 Markdown artifact for each core type WHEN compared against the v2 YAML schema via field mapping table THEN every v1 field has a corresponding v2 schema entry with a stable ID
+▸ GIVEN SPEC.md Section 4 token budgets and compaction thresholds for these artifacts WHEN artifact schemas are defined THEN budget and compaction rules appear as schema metadata fields with stable IDs
+
+### Task 3b: Secondary Artifact Schemas (PLAN, OBJECTIVE, EXPERIMENTS, DOCS, VISION)
+
+**Depends on**: Task 3a
+**Status**: ■ complete
+**Acceptance**:
 ▸ GIVEN each secondary artifact type WHEN an artifact schema is defined THEN it specifies YAML structure with UPPER_CASE groups, numbered entries with stable IDs, field types, and validation rules
 ▸ GIVEN a v1 Markdown artifact for each secondary type WHEN compared against the v2 YAML schema via field mapping table THEN every v1 field has a corresponding v2 schema entry with a stable ID
 ▸ GIVEN SPEC.md Section 4 token budgets for these artifacts WHEN artifact schemas are defined THEN budget rules appear as schema metadata fields with stable IDs
 
-### Task 3b: Secondary Artifact Schemas (PLAN, OBJECTIVE, EXPERIMENTS, DOCS, VISION)
+### Task 4: Query CLI Scaffold
 
 **Depends on**: Task 3a
 **Status**: ■ complete
