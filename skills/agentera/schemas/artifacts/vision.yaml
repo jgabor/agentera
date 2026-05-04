@@ -1,0 +1,262 @@
+# Vision Artifact Schema
+#
+# Project vision document. Captures the north star, target personas, design
+# principles, strategic direction, identity (personality, voice, emotional
+# register, naming), and the core tension the project navigates.
+#
+# Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
+# following capability_schema_contract.yaml and protocol.yaml conventions.
+#
+# ── Field-by-field mapping: v1 VISION.md → v2 vision.yaml ──
+#
+# v1 Field                              v2 Field               v2 ID
+# ─────────────────────────────────────────────────────────────────────
+# # <project name>                       HEADER.project_name    VN1
+# ## North Star                          NORTH_STAR.content     VN2
+# ## Who It's For / ### persona name     PERSONA.entry          VN3
+# (persona heading)                      PERSONA.name           VN4
+# (persona prose)                        PERSONA.description    VN5
+# ## Principles / - principle            PRINCIPLE.entry        VN6
+# (bold name + description)              PRINCIPLE.name         VN7
+# (principle prose)                      PRINCIPLE.description  VN8
+# ## Direction                           DIRECTION.content      VN9
+# ## Identity / ### Personality          IDENTITY.personality   VN10
+# ## Identity / ### Voice                IDENTITY.voice         VN11
+# ## Identity / ### Emotional register   IDENTITY.emotional_register VN12
+# ## Identity / ### Naming               IDENTITY.naming        VN13
+# ## The Tension                         TENSION.content        VN14
+#
+# Protocol references:
+#   No protocol primitives directly. Vision defines project-level identity
+#   that capabilities reference for voice and personality consistency.
+#   Skills never push to remote repos or modify VISION during execution cycles.
+
+meta:
+  name: vision
+  version: "1.0.0"
+  description: >-
+    Project vision. Produced by visionera. Consumed by realisera, planera,
+    inspektera, dokumentera, visualisera, and orkestrera for strategic
+    alignment. No compaction: vision is not a growing artifact.
+  artifact_type: agent_facing
+  path: "vision.yaml"
+  producer: [visionera, realisera]
+  consumers: [realisera, planera, inspektera, dokumentera, visualisera, orkestrera]
+  format: yaml
+
+GROUP_PREFIXES:
+  BUDGET: VB
+  HEADER: VH
+  NORTH_STAR: VN_NS
+  PERSONA: VN_PE
+  PRINCIPLE: VN_PR
+  DIRECTION: VN_DIR
+  IDENTITY: VN_ID
+  TENSION: VN_TN
+  VALIDATION: VVL
+
+BUDGET:
+  1:
+    id: VB1
+    scope: full_file
+    max_words: 1500
+    description: >-
+      Maximum words for the full file. Vision should be concise and
+      stable. Budgets are guidelines, not hard blockers.
+  2:
+    id: VB2
+    scope: compaction
+    rule: none
+    description: >-
+      No compaction. Vision is not a growing artifact. It is written
+      once (or refined infrequently) and never accumulates entries.
+
+HEADER:
+  1:
+    id: VH1
+    field: project_name
+    type: string
+    required: true
+    description: >-
+      Project name. Appears as the top-level heading. Must match the
+      project identity.
+    validation:
+      - "Non-empty string"
+
+NORTH_STAR:
+  1:
+    id: VN_NS1
+    field: content
+    type: string
+    required: true
+    description: >-
+      The project's north star. A concise statement of what the project
+      is, who it serves, and why it exists. Should be the single
+      paragraph that orients all decisions.
+    validation:
+      - "Non-empty string"
+
+PERSONA:
+  1:
+    id: VN_PE1
+    field: entry
+    type: map
+    required: true
+    description: >-
+      Each persona entry. At least one persona required. Personas
+      describe the target users in vivid narrative detail.
+    min_count: 1
+  2:
+    id: VN_PE2
+    field: name
+    parent: PERSONA.entry
+    type: string
+    required: true
+    description: >-
+      Persona name or archetype label (e.g., 'The solo founder who
+      knows better').
+    validation:
+      - "Non-empty string"
+  3:
+    id: VN_PE3
+    field: description
+    parent: PERSONA.entry
+    type: string
+    required: true
+    description: >-
+      Narrative description of the persona. Describes their context,
+      pain points, goals, and how the project serves them.
+    validation:
+      - "Non-empty string"
+
+PRINCIPLE:
+  1:
+    id: VN_PR1
+    field: entry
+    type: map
+    required: true
+    description: >-
+      Each design principle. At least one required. Principles guide
+      all design and implementation decisions.
+    min_count: 1
+  2:
+    id: VN_PR2
+    field: name
+    parent: PRINCIPLE.entry
+    type: string
+    required: true
+    description: >-
+      Short bold-name for the principle (e.g., 'One entry point,
+      deep capabilities').
+    validation:
+      - "Non-empty string"
+  3:
+    id: VN_PR3
+    field: description
+    parent: PRINCIPLE.entry
+    type: string
+    required: true
+    description: >-
+      Full principle text. Explains what the principle means, why it
+      matters, and how it guides decisions.
+    validation:
+      - "Non-empty string"
+
+DIRECTION:
+  1:
+    id: VN_DIR1
+    field: content
+    type: string
+    required: true
+    description: >-
+      Strategic direction. Where the project is heading, what the
+      adoption arc looks like, and what the next layer of evolution
+      entails.
+    validation:
+      - "Non-empty string"
+
+IDENTITY:
+  1:
+    id: VN_ID1
+    field: personality
+    type: string
+    required: true
+    description: >-
+      The project's personality. A vivid metaphor or description
+      that captures the feel of interacting with the product.
+    validation:
+      - "Non-empty string"
+  2:
+    id: VN_ID2
+    field: voice
+    type: string
+    required: true
+    description: >-
+      The project's voice and communication style. Describes tone,
+      register, and how capabilities communicate with users.
+    validation:
+      - "Non-empty string"
+  3:
+    id: VN_ID3
+    field: emotional_register
+    type: string
+    required: true
+    description: >-
+      How using the project should feel. The emotional experience
+      design that guides all user-facing output.
+    validation:
+      - "Non-empty string"
+  4:
+    id: VN_ID4
+    field: naming
+    type: string
+    required: true
+    description: >-
+      Naming conventions and rules. Describes the naming system,
+      its cultural roots, and the vocabulary of the work.
+    validation:
+      - "Non-empty string"
+
+TENSION:
+  1:
+    id: VN_TN1
+    field: content
+    type: string
+    required: true
+    description: >-
+      The core tension the project navigates. The fundamental
+      tradeoff or paradox that the design must resolve.
+    validation:
+      - "Non-empty string"
+
+VALIDATION:
+  1:
+    id: VVL1
+    rule: required_fields
+    severity: error
+    description: >-
+      The vision must have: project_name, north_star, at least one
+      persona, at least one principle, direction, and all identity
+      fields (personality, voice, emotional_register, naming), and
+      tension.
+    checks:
+      - "project_name is present and non-empty"
+      - "north_star.content is present and non-empty"
+      - "At least one persona entry exists"
+      - "Each persona has name and description"
+      - "At least one principle entry exists"
+      - "Each principle has name and description"
+      - "direction.content is present and non-empty"
+      - "identity.personality is present and non-empty"
+      - "identity.voice is present and non-empty"
+      - "identity.emotional_register is present and non-empty"
+      - "identity.naming is present and non-empty"
+      - "tension.content is present and non-empty"
+  2:
+    id: VVL2
+    rule: word_budget
+    severity: advisory
+    description: >-
+      Advisory check. Full file should be <=1500 words.
+    checks:
+      - "Total file word count <= 1500"

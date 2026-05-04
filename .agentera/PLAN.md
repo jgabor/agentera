@@ -59,17 +59,17 @@ Migration tool creates backups by default (copies v1 artifacts to .agentera/back
 
 ### Task 3a: Core Artifact Schemas (PROGRESS, DECISIONS, HEALTH, SESSION)
 
-**Depends on**: Task 2
+**Depends on**: Task 1, Task 2
 **Status**: ■ complete
 **Acceptance**:
-▸ GIVEN each core artifact type WHEN an artifact schema is defined THEN it specifies YAML structure with UPPER_CASE groups, numbered entries with stable IDs, field types, and validation rules
-▸ GIVEN a v1 Markdown artifact for each core type WHEN compared against the v2 YAML schema via field mapping table THEN every v1 field has a corresponding v2 schema entry with a stable ID
-▸ GIVEN SPEC.md Section 4 token budgets and compaction thresholds for these artifacts WHEN artifact schemas are defined THEN budget and compaction rules appear as schema metadata fields with stable IDs
+▸ GIVEN each secondary artifact type WHEN an artifact schema is defined THEN it specifies YAML structure with UPPER_CASE groups, numbered entries with stable IDs, field types, and validation rules
+▸ GIVEN a v1 Markdown artifact for each secondary type WHEN compared against the v2 YAML schema via field mapping table THEN every v1 field has a corresponding v2 schema entry with a stable ID
+▸ GIVEN SPEC.md Section 4 token budgets for these artifacts WHEN artifact schemas are defined THEN budget rules appear as schema metadata fields with stable IDs
 
 ### Task 3b: Secondary Artifact Schemas (PLAN, OBJECTIVE, EXPERIMENTS, DOCS, VISION)
 
-**Depends on**: Task 3a
-**Status**: □ pending
+**Depends on**: Task 1, Task 2
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN each secondary artifact type WHEN an artifact schema is defined THEN it specifies YAML structure with UPPER_CASE groups, numbered entries with stable IDs, field types, and validation rules
 ▸ GIVEN a v1 Markdown artifact for each secondary type WHEN compared against the v2 YAML schema via field mapping table THEN every v1 field has a corresponding v2 schema entry with a stable ID
@@ -77,7 +77,7 @@ Migration tool creates backups by default (copies v1 artifacts to .agentera/back
 
 ### Task 4: Query CLI Scaffold
 
-**Depends on**: Task 3a
+**Depends on**: Task 3a, Task 3b
 **Status**: □ pending
 **Acceptance**:
 ▸ GIVEN the CLI invoked with "agentera query <query>" WHEN the query matches a supported pattern (last-phase, decisions, health, open-todos) THEN it reads the relevant YAML artifact and returns a compact text answer to stdout
