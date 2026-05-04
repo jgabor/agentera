@@ -1,0 +1,32 @@
+EXIT_CONDITIONS:
+  1:
+    id: E1
+    condition: complete
+    description: >-
+      Briefing delivered (or welcome shown in fresh mode) and user
+      successfully routed to a capability. Normal successful exit.
+    exit_signal: complete
+  2:
+    id: E2
+    condition: flagged
+    description: >-
+      Briefing delivered but critical attention items were found: critical
+      issues, degrading health dimensions, or loop guard triggers. Each
+      concern is listed explicitly in the attention section.
+    exit_signal: flagged
+  3:
+    id: E3
+    condition: stuck
+    description: >-
+      Cannot orient. The working directory is not a code project, no
+      readable files exist, or permissions prevent scanning. The exit
+      marker explains what is blocking orientation.
+    exit_signal: stuck
+  4:
+    id: E4
+    condition: waiting
+    description: >-
+      Briefing or welcome delivered, concrete suggestion made, but awaiting
+      user input on which direction to take. The waiting bullet identifies
+      the specific decision or action the user needs to make.
+    exit_signal: waiting

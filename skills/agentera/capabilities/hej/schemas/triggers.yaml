@@ -1,0 +1,52 @@
+TRIGGERS:
+  1:
+    id: T1
+    description: >-
+      Direct invocation by name or slash command. Matches when the user
+      explicitly requests hej.
+    patterns:
+      - "hej"
+      - "/hej"
+  2:
+    id: T2
+    description: >-
+      Greetings and session-start signals. Matches casual greetings or
+      explicit session start requests.
+    patterns:
+      - "hello"
+      - "hi"
+      - "start"
+      - "begin"
+      - "getting started"
+      - "onboard me"
+  3:
+    id: T3
+    description: >-
+      Status and orientation requests. Matches when the user wants to know
+      the current state of the project or get a briefing.
+    patterns:
+      - "status"
+      - "dashboard"
+      - "pulse"
+      - "brief me"
+      - "update me"
+      - "what needs attention"
+  4:
+    id: T4
+    description: >-
+      Returning-to-project signals. Matches when the user resumes work
+      on a known project and wants to pick up where they left off.
+    patterns:
+      - "where were we"
+      - "catch me up"
+      - "what should I work on"
+      - "what's next"
+  5:
+    id: T5
+    description: >-
+      Fallback. Hej is the default capability when no other capability's
+      trigger patterns match. This entry documents the fallback behavior
+      defined in the master SKILL.md routing logic.
+    patterns:
+      - "*"
+    fallback: true
