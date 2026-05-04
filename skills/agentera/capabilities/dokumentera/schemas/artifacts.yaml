@@ -1,0 +1,84 @@
+ARTIFACTS:
+  1:
+    id: A1
+    name: DOCS.md
+    path: ".agentera/DOCS.md"
+    description: >-
+      Documentation contract with conventions, artifact mapping, and
+      documentation index. Produced by dokumentera. Contains the doc root,
+      style conventions, auto-generated doc tracking, artifact paths,
+      and a status index (current/stale/missing) for all tracked docs.
+      Dokumentera writes and reads this artifact.
+    produces: true
+    consumes: true
+  2:
+    id: A2
+    name: VISION.md
+    path: "VISION.md or mapped path per DOCS.md"
+    description: >-
+      Project direction and north star. Produced by visionera or realisera.
+      Dokumentera reads this to understand who the documentation is for
+      and what tone to use. Dokumentera never writes VISION.md.
+    produces: false
+    consumes: true
+  3:
+    id: A3
+    name: PROGRESS.md
+    path: ".agentera/PROGRESS.md"
+    description: >-
+      Recent cycle history and what shipped. Produced by realisera.
+      Dokumentera reads this during explore-and-generate mode to understand
+      recent project context.
+    produces: false
+    consumes: true
+  4:
+    id: A4
+    name: DECISIONS.md
+    path: ".agentera/DECISIONS.md"
+    description: >-
+      Pending and recent decisions. Produced by resonera.
+      Dokumentera reads this during explore-and-generate mode for project
+      context and decision awareness.
+    produces: false
+    consumes: true
+  5:
+    id: A5
+    name: HEALTH.md
+    path: ".agentera/HEALTH.md"
+    description: >-
+      Codebase health grades and trends. Produced by inspektera.
+      Dokumentera reads this to discover documentation gaps surfaced
+      during health audits.
+    produces: false
+    consumes: true
+  6:
+    id: A6
+    name: TODO.md
+    path: "TODO.md"
+    description: >-
+      Open problems by severity. Human-maintained or produced by realisera.
+      Dokumentera writes to this when code diverges from docs (per DTC,
+      the code is wrong). Also reads for context during documentation work.
+    produces: true
+    consumes: true
+  7:
+    id: A7
+    name: DESIGN.md
+    path: ".agentera/DESIGN.md"
+    description: >-
+      Visual identity system. Produced by visualisera.
+      Dokumentera reads this to respect the declared aesthetic and voice
+      when generating user-facing documentation.
+    produces: false
+    consumes: true
+  8:
+    id: A8
+    name: PROFILE.md
+    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    description: >-
+      Decision profile with per-entry confidence scoring. Produced by profilera.
+      Dokumentera reads this to calibrate documentation style preferences:
+      detail level, tone, format. Path resolved via PROFILERA_PROFILEDIR
+      or XDG_DATA_HOME.
+    produces: false
+    consumes: true

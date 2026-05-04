@@ -1,0 +1,80 @@
+VALIDATION:
+  1:
+    id: V1
+    rule: user_approval_required
+    description: >-
+      DESIGN.md MUST NOT be written or modified without explicit user
+      approval. Present drafts and get confirmation before writing.
+      This applies to Create, Refine, and Replace modes.
+    severity: critical
+    checks:
+      - "Draft presented to user before write"
+      - "Explicit approval received"
+  2:
+    id: V2
+    rule: vision_identity_coherence
+    description: >-
+      Design tokens MUST NOT conflict with VISION.md Identity. If the
+      verbal identity says "warm and approachable" and the user wants a
+      cold brutalist palette, the tension MUST be surfaced explicitly
+      for the user to resolve.
+    severity: critical
+    checks:
+      - "Design tokens cohere with VISION.md Identity"
+      - "Tensions surfaced when detected"
+  3:
+    id: V3
+    rule: validation_script_required
+    description: >-
+      After writing DESIGN.md, the validation script MUST be run.
+      Run `scripts/validate_design.py` and fix any errors before
+      presenting the result. This applies to Create, Refine, and
+      Replace modes.
+    severity: critical
+    checks:
+      - "validate_design.py ran after write"
+      - "All validation errors fixed"
+  4:
+    id: V4
+    rule: established_scales
+    description: >-
+      Token values MUST use established scales: OKLCH for colors,
+      8pt grid for spacing, modular type scale for font sizes.
+      Arbitrary values are prohibited. The design system must
+      practice what it preaches.
+    severity: warning
+    checks:
+      - "Colors use OKLCH or standard color spaces"
+      - "Spacing follows a consistent scale"
+  5:
+    id: V5
+    rule: no_code_modification
+    description: >-
+      Visualisera MUST NOT modify code files. It writes DESIGN.md only.
+      Realisera implements the design system in code. The separation
+      of declaration and implementation is fundamental.
+    severity: critical
+    checks:
+      - "No code files modified during visualisera invocation"
+  6:
+    id: V6
+    rule: codebase_exploration_required
+    description: >-
+      When code exists, the codebase exploration step (Step 1) MUST NOT
+      be skipped. Arriving informed is what makes the conversation
+      productive rather than generic.
+    severity: critical
+    checks:
+      - "Codebase explored when code exists"
+  7:
+    id: V7
+    rule: exit_marker_required
+    description: >-
+      Every visualisera invocation MUST emit an exit marker using the
+      canonical glyph ◰ (SG11) in the format ◰ visualisera · <status>
+      where status is one of EX1-EX4.
+    severity: critical
+    checks:
+      - "Exit marker present"
+      - "Exit marker uses glyph ◰ (SG11)"
+      - "Exit marker status is one of complete, flagged, stuck, waiting"
