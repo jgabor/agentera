@@ -380,7 +380,15 @@ def _query_generic(args: argparse.Namespace, schemas: dict, name: str) -> int:
 
 
 def cmd_query(args: argparse.Namespace) -> int:
+    if getattr(args, "list_artifacts", False):
+        schemas = _load_schemas(_discover_schemas_dir())
+        for name in sorted(schemas):
+            print(name)
+        return 0
     query: str = args.query
+    if not query:
+        print("Error: query pattern required (or use --list-artifacts)", file=sys.stderr)
+        return 1
     schemas = _load_schemas(_discover_schemas_dir())
     handlers = {
         "last-phase": _query_last_phase,
@@ -410,7 +418,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Print agent-priming guidance (routing, recovery)",
     )
     q = sub.add_parser("query", help="Query project artifacts")
-    q.add_argument("query", help="Query pattern or artifact name")
+    q.add_argument("query", nargs="?", help="Query pattern or artifact name")
+    q.add_argument("--list-artifacts", action="store_true", help="List all discovered artifact types")
     q.add_argument("--topic", help="Filter by topic (substring match on text fields)")
     q.add_argument("--severity", help="Filter by severity level")
     q.add_argument("--dimension", help="Filter by dimension name")

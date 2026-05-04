@@ -381,3 +381,116 @@ class TestHelp:
         assert "topic" in r.stdout
         assert "severity" in r.stdout
         assert "dimension" in r.stdout
+
+
+# ---------------------------------------------------------------------------
+# artifact type coverage (1 test per type + --list-artifacts)
+# ---------------------------------------------------------------------------
+
+ARTIFACT_FIXTURES = {
+    "decisions": {
+        "path": ".agentera/decisions.yaml",
+        "data": {
+            "decisions": [
+                {"number": 1, "question": "Language?", "choice": "Python", "confidence": "firm"},
+            ],
+        },
+        "expected": "number=1",
+    },
+    "docs": {
+        "path": ".agentera/docs.yaml",
+        "data": {
+            "entries": [
+                {"last_audit": "2026-05-01", "status": "current"},
+            ],
+        },
+        "expected": "status=current",
+    },
+    "experiments": {
+        "path": ".agentera/optimera/<name>/experiments.yaml",
+        "data": {
+            "experiments": [
+                {"number": 1, "label": "exp1", "status": "kept"},
+            ],
+        },
+        "expected": "number=1",
+    },
+    "health": {
+        "path": ".agentera/health.yaml",
+        "data": {
+            "audits": [
+                {"number": 1, "date": "2026-05-01", "trajectory": "stable"},
+            ],
+        },
+        "expected": "stable",
+    },
+    "objective": {
+        "path": ".agentera/optimera/<name>/objective.yaml",
+        "data": {
+            "entries": [
+                {"title": "Test objective", "status": "active"},
+            ],
+        },
+        "expected": "title=Test objective",
+    },
+    "plan": {
+        "path": ".agentera/plan.yaml",
+        "data": {
+            "entries": [
+                {"status": "active", "title": "Test plan"},
+            ],
+        },
+        "expected": "status=active",
+    },
+    "progress": {
+        "path": ".agentera/progress.yaml",
+        "data": {
+            "cycles": [
+                {"number": 1, "phase": "build", "what": "test"},
+            ],
+        },
+        "expected": "phase=build",
+    },
+    "session": {
+        "path": ".agentera/session.yaml",
+        "data": {
+            "bookmarks": [
+                {"timestamp": "2026-05-01", "summary": "Test session"},
+            ],
+        },
+        "expected": "timestamp=2026-05-01",
+    },
+    "vision": {
+        "path": "vision.yaml",
+        "data": {
+            "entries": [
+                {"project_name": "test-project"},
+            ],
+        },
+        "expected": "project_name=test-project",
+    },
+}
+
+
+class TestArtifactTypeCoverage:
+    @pytest.mark.parametrize(
+        "artifact_name,fixture",
+        [(k, v) for k, v in ARTIFACT_FIXTURES.items()],
+        ids=list(ARTIFACT_FIXTURES.keys()),
+    )
+    def test_query_by_name_returns_data(self, project, artifact_name, fixture):
+        _write_artifact(project, fixture["path"], fixture["data"])
+        r = _run("query", artifact_name, cwd=project)
+        assert r.returncode == 0
+        assert fixture["expected"] in r.stdout
+
+    def test_query_no_data_returns_clean(self, project):
+        r = _run("query", "plan", cwd=project)
+        assert r.returncode == 0
+        assert r.stdout.strip() == ""
+
+    def test_list_artifacts(self, project):
+        r = _run("query", "--list-artifacts", cwd=project)
+        assert r.returncode == 0
+        for name in ARTIFACT_FIXTURES:
+            assert name in r.stdout
