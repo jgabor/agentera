@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Agentera 2.0 Phase 1 infrastructure: capability schema contract with self-referential validation and stable IDs, shared protocol schema (protocol.yaml) defining confidence/severity/phase/visual-token primitives, 9 artifact schemas (PROGRESS, DECISIONS, HEALTH, SESSION, PLAN, OBJECTIVE, EXPERIMENTS, DOCS, VISION) in YAML with UPPER_CASE groups and v1 field mapping, query CLI scaffold (`scripts/agentera`) supporting query/prime commands with schema-driven artifact reads and filters, migration tool (`scripts/migrate_v1_to_v2`) converting v1 Markdown artifacts to v2 YAML with backup-by-default, and rewritten `hooks/validate_artifact.py` validating writes against artifact schemas instead of hardcoded contracts.
+
 ### Changed
 
 - Installation Reliability Self-Healing is freshness-closed with install validation, offline bundle smoke, OpenCode command and skill-path repair, doctor drift reporting, 1.27.0 metadata, and archived plan state aligned.

@@ -113,9 +113,9 @@ Migration tool creates backups by default (copies v1 artifacts to .agentera/back
 ▸ GIVEN the migration tool invoked on a project with v1 artifacts WHEN run THEN it creates .agentera/backup-v1/ containing copies of all original Markdown artifacts before conversion
 ▸ Test proportionality: 1 pass + 1 fail per artifact type migration, edge cases for empty artifacts and missing fields
 
-### Task 6: Hook Rewrite
+### Task 7: Freshness Checkpoint
 
-**Depends on**: Task 2, Task 3a
+**Depends on**: Task 6
 **Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all prior tasks complete WHEN CHANGELOG.md is checked THEN it has an Added/Changed/Fixed entry under [Unreleased] covering Phase 1 infrastructure work
