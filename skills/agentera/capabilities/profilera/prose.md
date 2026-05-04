@@ -21,17 +21,17 @@ One global artifact (written) and project-level artifacts (read).
 | Artifact | Purpose | Path |
 |----------|---------|------|
 | PROFILE.md | Decision profile consumed by all capabilities | `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) |
-| DECISIONS.md | High-signal source for pattern extraction | `.agentera/DECISIONS.md` (per DOCS.md mapping) |
+| DECISIONS.md | High-signal source for pattern extraction | `.agentera/decisions.yaml` (per docs.yaml mapping) |
 
 ### Artifact path resolution
 
-PROFILE.md is global. Its base directory defaults to the platform-appropriate data directory (`$XDG_DATA_HOME/agentera/` on Linux, `~/Library/Application Support/agentera/` on macOS, `%APPDATA%/agentera/` on Windows). Override via `PROFILERA_PROFILE_DIR` environment variable. Existing profiles at `~/.claude/profile/` are auto-migrated on first run. `.agentera/DOCS.md` mapping does not apply to PROFILE.md. For project-level artifacts, check if .agentera/DOCS.md exists and use its path mapping; if absent, use the default layout.
+PROFILE.md is global. Its base directory defaults to the platform-appropriate data directory (`$XDG_DATA_HOME/agentera/` on Linux, `~/Library/Application Support/agentera/` on macOS, `%APPDATA%/agentera/` on Windows). Override via `PROFILERA_PROFILE_DIR` environment variable. Existing profiles at `~/.claude/profile/` are auto-migrated on first run. `.agentera/docs.yaml` mapping does not apply to PROFILE.md. For project-level artifacts, check if .agentera/docs.yaml exists and use its path mapping; if absent, use the default layout.
 
 ### Contract values
 
 Contract values are inlined where referenced. Confidence scale tiers CS1-CS5 for numeric boundaries (90-100, 70-89, 50-69, 30-49, 0-29) with thresholds at 65 (strong constraint) and 45 (suggestion). Visual tokens: confidence tokens VT9-VT11 (━/─/┄), list item VT15 (▸), inline separator VT16 (·), section divider VT14, progress bar VT18. Skill glyph SG9 for exit markers. Exit signals EX1-EX4 for status reporting. Decision labels DL1-DL3 for entry firmness.
 
-`references/contract.md` (at the v1 skill location `skills/profilera/references/contract.md`) remains available as a full-spec reference for ambiguous cases or cross-checking.
+`references/contract.md` (at the v2 skill location `skills/agentera/references/contract.md`) remains available as a full-spec reference for ambiguous cases or cross-checking.
 
 ---
 
@@ -80,7 +80,7 @@ Run extraction to gather raw decision signals into a single corpus file. The scr
 python3 scripts/extract_all.py
 ```
 
-Run from the skill's root directory (`skills/profilera/`). Output defaults to `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` (default: `$XDG_DATA_HOME/agentera/intermediate/corpus.json`).
+Run from the capability directory (`skills/agentera/capabilities/profilera/`). Output defaults to `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` (default: `$XDG_DATA_HOME/agentera/intermediate/corpus.json`).
 
 Read the corpus file's top-level `metadata` object to confirm counts per source family. Report totals to the user.
 
@@ -274,7 +274,7 @@ Identify which entries are most worth checking:
 python3 scripts/effective_profile.py --validate
 ```
 
-Run from the skill's root directory (`skills/profilera/`). Outputs ~6 entries scored by decay gap, staleness, tension history, and extremity. If the script fails, fall back to Full mode.
+Run from the capability directory (`skills/agentera/capabilities/profilera/`). Outputs ~6 entries scored by decay gap, staleness, tension history, and extremity. If the script fails, fall back to Full mode.
 
 ### Step V2: Present entries for validation
 
@@ -368,7 +368,7 @@ All consuming capabilities use the same script for consistency:
 python3 scripts/effective_profile.py
 ```
 
-Run from the profilera skill directory (`skills/profilera/`). Outputs a markdown summary table with effective confidence after dormancy decay. The script reads decay parameters from the PROFILE.md header, so the formula stays in one place.
+Run from the profilera capability directory (`skills/agentera/capabilities/profilera/`). Outputs a markdown summary table with effective confidence after dormancy decay. The script reads decay parameters from the PROFILE.md header, so the formula stays in one place.
 
 ---
 

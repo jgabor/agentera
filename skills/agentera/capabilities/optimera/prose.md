@@ -20,17 +20,17 @@ Three artifacts per objective, under `.agentera/optimera/<objective-name>/`, boo
 
 | Artifact | Purpose | Bootstrap |
 |----------|---------|-----------|
-| `.agentera/optimera/<objective-name>/OBJECTIVE.md` | What we're optimizing, why, how we measure it, and what "done" looks like. | Via inline brainstorm session with the user (see below). |
+| `.agentera/optimera/<objective-name>/objective.yaml` | What we're optimizing, why, how we measure it, and what "done" looks like. | Via inline brainstorm session with the user (see below). |
 | `.agentera/optimera/<objective-name>/harness` | Eval script that measures the metric. Locked after user approval. | Written by the agent during brainstorm, approved by the user. |
-| `.agentera/optimera/<objective-name>/EXPERIMENTS.md` | Log of every experiment: what was tried, what the metric said, kept or discarded. | `# Experiments\n\n` then the first experiment entry. |
+| `.agentera/optimera/<objective-name>/experiments.yaml` | Log of every experiment: what was tried, what the metric said, kept or discarded. | `# Experiments\n\n` then the first experiment entry. |
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (`.agentera/DECISIONS.md`). OBJECTIVE.md and EXPERIMENTS.md are NOT resolved via the DOCS.md mapping; they always live under `.agentera/optimera/<objective-name>/` for whichever objective is active.
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (`.agentera/decisions.yaml`). OBJECTIVE.md and EXPERIMENTS.md are NOT resolved via the docs.yaml mapping; they always live under `.agentera/optimera/<objective-name>/` for whichever objective is active.
 
 ### Contract
 
-Before starting, read `references/contract.md` (at v1 skill location `skills/optimera/references/contract.md`) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
+Before starting, read `references/contract.md` (at v2 skill location `skills/agentera/references/contract.md`) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
 ### OBJECTIVE.md
 
@@ -132,7 +132,7 @@ The "Next" field from the previous experiment is a suggestion, not a mandate. Re
 
 ### Experiment history analyzer contract
 
-`scripts/analyze_experiments.py` (at v1 skill location `skills/optimera/scripts/analyze_experiments.py`) is the read-only summary layer for rich EXPERIMENTS.md records. It must inspect the active objective directory only. The analyzer never creates root objective artifacts, registries, symlinks, DOCS.md fixed mappings, or sidecar ledgers.
+`scripts/analyze_experiments.py` is the read-only summary layer for rich EXPERIMENTS.md records. It must inspect the active objective directory only. The analyzer never creates root objective artifacts, registries, symlinks, DOCS.md fixed mappings, or sidecar ledgers.
 
 ---
 
@@ -153,8 +153,8 @@ The sharp colleague figuring out what to optimize. One question at a time, push 
 2. **Motivation**: "Why does this matter? What breaks at current value? What's possible at target?"
 3. **Constraints**: "What must NOT break? Off-limits files? Resource limits?" If a decision profile exists, propose constraints from it.
 4. **Scope**: "Which parts to focus on? Where are the biggest gains?" Read codebase to propose informed boundaries.
-5. **Pre-write self-audit**: check verbosity drift, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (at v1 skill location `skills/optimera/scripts/self_audit.py`). Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
-6. **Write OBJECTIVE.md**: synthesize into a precise charter. Write to `.agentera/optimera/<objective-name>/OBJECTIVE.md`. Present for approval.
+5. **Pre-write self-audit**: check verbosity drift, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`). Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
+6. **Write OBJECTIVE.md**: synthesize into a precise charter. Write to `.agentera/optimera/<objective-name>/objective.yaml`. Present for approval.
 7. **Write the eval harness**: read `references/harness-guide.md` and relevant `references/examples/` pattern. Write `.agentera/optimera/<objective-name>/harness` using the project's own tooling, outputting JSON per `references/output-schema.md`. Present, explain, get approval, run once to establish baseline.
 
 Artifact writing follows contract Artifact Writing Conventions: banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
@@ -179,7 +179,7 @@ Steps: orient, analyze, hypothesize, implement, measure, decide, audit, log.
 - If the user explicitly names a closed objective, load its OBJECTIVE.md and EXPERIMENTS.md read-only for context, summarize that it is closed, and ask before defining successor work.
 - If one or more objective subdirectories exist and all are closed, ask the user for a successor objective.
 - If only one non-closed subdirectory exists, use it.
-- If multiple non-closed subdirectories exist, run `git log -1 --format=%aI -- .agentera/optimera/<name>/EXPERIMENTS.md` for each and pick the one with the most recent modification timestamp.
+- If multiple non-closed subdirectories exist, run `git log -1 --format=%aI -- .agentera/optimera/<name>/experiments.yaml` for each and pick the one with the most recent modification timestamp.
 - If the result is ambiguous, ask the user to specify the active objective by name.
 
 All subsequent references to OBJECTIVE.md, EXPERIMENTS.md, and harness refer to the files under `.agentera/optimera/<active-objective-name>/`.
@@ -307,7 +307,7 @@ If the kept experiment's new metric also meets the target in the harness directi
 
 ### Step 7: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns table). See `scripts/self_audit.py` (at v1 skill location `skills/optimera/scripts/self_audit.py`). Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
+Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns table). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`). Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
 "Tightening this up..." · "Cutting the filler first..." · "One more pass..."

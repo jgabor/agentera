@@ -22,17 +22,17 @@ One file in the project root.
 |----------|---------|-----------|
 | `VISION.md` | North star. Direction, principles, personas, aspirations. An evergreen constitution. | Created via deep brainstorm session. |
 
-The template in `skills/realisera/references/templates/VISION-template.md` (v1 path) provides the starting structure. Visionera adapts and expands it based on the conversation.
+The template in `skills/agentera/references/templates/VISION-template.md` (v2 path) provides the starting structure. Visionera adapts and expands it based on the conversation.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md, etc.). If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (.agentera/DECISIONS.md, .agentera/HEALTH.md, .agentera/PROGRESS.md, TODO.md).
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (.agentera/decisions.yaml, .agentera/health.yaml, .agentera/progress.yaml, TODO.md).
 
 ### Contract values
 
 Contract values are inlined where referenced. Visual tokens from protocol: severity arrows VT5-VT8, trend arrows VT12-VT13, progress bar VT18, inline separator VT16 (·), list item VT15 (▸), section divider VT14, flow/target VT17 (→). Skill glyph SG6 for the exit marker. Exit signals EX1-EX4 for the exit marker. Confidence scale CS1-CS5 for decision profile consumption.
 
-`references/contract.md` (at the v1 skill location `skills/visionera/references/contract.md`) remains available as a full-spec reference for ambiguous cases or cross-checking.
+`references/contract.md` (at the v2 skill location `skills/agentera/references/contract.md`) remains available as a full-spec reference for ambiguous cases or cross-checking.
 
 ---
 
@@ -94,7 +94,7 @@ Offer:
 > **Replace**: Start fresh with a deep brainstorm. Archives the current vision and creates a new one from scratch.
 
 If **Refine**, skip to Refine mode.
-If **Replace**, archive current VISION.md to `.agentera/archive/VISION-{date}.md`, then proceed to Create mode.
+If **Replace**, archive current VISION.md to `.agentera/archive/vision-{date}.yaml`, then proceed to Create mode.
 
 ---
 
@@ -164,7 +164,7 @@ Follow a narrative arc, not a checklist. Adapt, but cover:
 
 ### Step 4: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v1 path: `skills/visionera/scripts/self_audit.py`).
+Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -224,7 +224,7 @@ Brief conversation (2-4 exchanges) to refine proposed changes.
 
 ### Step 4: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v1 path: `skills/visionera/scripts/self_audit.py`).
+Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):

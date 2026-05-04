@@ -27,19 +27,19 @@ One file and one archive directory in `.agentera/`.
 | `PLAN.md` | Active plan. Spec, tasks, acceptance criteria. | Created during planning session. |
 | `.agentera/archive/` | Completed or discarded plans. | Created on first archival. |
 
-**Presence signal**: `.agentera/PLAN.md` means active planned work. Absence means no plan, so realisera reasons from VISION.md.
+**Presence signal**: `.agentera/plan.yaml` means active planned work. Absence means no plan, so realisera reasons from VISION.md.
 
-Templates in `references/templates/` (at the v1 skill location `skills/planera/references/templates/`). Use as starting structure, adapt to the project.
+Templates in `references/templates/` (at the v2 skill location `skills/agentera/references/templates/`). Use as starting structure, adapt to the project.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/DOCS.md` doesn't exist or has no mapping, use the default layout.
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping, use the default layout.
 
 ### Contract values
 
 Contract values are inlined where referenced. Visual tokens from protocol: status tokens VT1-VT4 (■/▣/□/▨), list item VT15 (▸), inline separator VT16 (·), section divider VT14, flow/target VT17 (→). Skill glyphs SG1-SG12 for cross-capability references. Exit signals EX1-EX4 for the exit marker. Decision labels DL1-DL3 for DECISIONS.md reading. Severity issue levels SI1-SI4 for TODO entries. Phases PH1-PH5 for phase context.
 
-`references/contract.md` (at the v1 skill location `skills/planera/references/contract.md`) remains available as a full-spec reference.
+`references/contract.md` (at the v2 skill location `skills/agentera/references/contract.md`) remains available as a full-spec reference.
 
 ---
 
@@ -155,14 +155,14 @@ Address legitimate issues; dismiss false positives with rationale. Present revie
 
 ## Step 4: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (at the v1 skill location `skills/planera/scripts/self_audit.py`).
+Pre-write self-audit: check verbosity drift, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 ## Step 5: Write PLAN.md
 
 Write tasks with acceptance criteria. The conversation preserves reasoning; the artifact preserves the plan.
 
-Write the plan to `.agentera/PLAN.md`.
+Write the plan to `.agentera/plan.yaml`.
 
 Artifact writing follows contract Section 24 conventions.
 
@@ -254,8 +254,8 @@ When PLAN.md has pending tasks, realisera's Step 2 changes:
 
 When all tasks complete:
 
-1. Archive PLAN.md to `.agentera/archive/PLAN-{date}.md`
-2. Delete `.agentera/PLAN.md`
+1. Archive PLAN.md to `.agentera/archive/plan-{date}.yaml`
+2. Delete `.agentera/plan.yaml`
 3. Realisera resumes vision-driven work selection
 
 ---

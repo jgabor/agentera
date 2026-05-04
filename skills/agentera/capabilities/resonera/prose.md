@@ -24,19 +24,19 @@ One file in `.agentera/`, bootstrapped if absent.
 |------|---------|-----------|
 | `DECISIONS.md` | Reasoning trail. What was decided, what alternatives were considered, and why. | `# Decisions\n\n` then the first decision entry. |
 
-Template in `references/templates/` (at the v1 skill location `skills/resonera/references/templates/`). Use as starting structure, adapt to the project.
+Template in `references/templates/` (at the v2 skill location `skills/agentera/references/templates/`). Use as starting structure, adapt to the project.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`.
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`.
 
-When feeding a decision into OBJECTIVE.md, write to the active objective's file at `.agentera/optimera/<objective-name>/OBJECTIVE.md` using optimera's active-objective inference.
+When feeding a decision into OBJECTIVE.md, write to the active objective's file at `.agentera/optimera/<objective-name>/objective.yaml` using optimera's active-objective inference.
 
 ### Contract values
 
 Contract values are inlined where referenced. Visual tokens from protocol: confidence markers VT9-VT11 (━/─/┄), list item VT15 (▸), inline separator VT16 (·), section divider VT14. Skill glyphs SG1-SG12 for cross-capability references. Exit signals EX1-EX4 for the exit marker. Decision labels DL1-DL3 for confidence field. Severity issue levels SI1-SI4 for TODO entries.
 
-`references/contract.md` (at the v1 skill location `skills/resonera/references/contract.md`) remains available as a full-spec reference.
+`references/contract.md` (at the v2 skill location `skills/agentera/references/contract.md`) remains available as a full-spec reference.
 
 ### DECISIONS.md
 
@@ -194,7 +194,7 @@ Relevant options only:
 
 ### Step 3: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (at the v1 skill location `skills/resonera/scripts/self_audit.py`).
+Pre-write self-audit: check verbosity drift, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 ### Step 4: Write artifacts
@@ -249,7 +249,7 @@ Decisions about project direction captured in VISION.md. DECISIONS.md entries wi
 
 ### Feeds into /optimera
 
-Decisions about what to optimize captured in OBJECTIVE.md at `.agentera/optimera/<objective-name>/OBJECTIVE.md`.
+Decisions about what to optimize captured in OBJECTIVE.md at `.agentera/optimera/<objective-name>/objective.yaml`.
 
 ### Triggers /inspirera
 

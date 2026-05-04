@@ -32,13 +32,13 @@ Orkestrera produces no new artifact files. It reads and updates existing artifac
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/PLAN.md, etc.). If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`.
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/plan.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`.
 
 ### Contract values
 
 Contract values are inlined where referenced. Visual tokens from protocol: status tokens VT1-VT4 (■/▣/□/▨) for task states, skill glyph SG12 (⎈) for the exit marker, inline separator VT16 (·), list item VT15 (▸), flow/target VT17 (→), section divider VT14. Exit signals EX1-EX4 for the exit marker. Severity issue levels SI1-SI4 for logging. Decision labels DL1-DL3 for interpreting DECISIONS.md entries.
 
-`references/contract.md` (at the v1 skill location `skills/orkestrera/references/contract.md`) remains available as a full-spec reference for ambiguous cases or cross-checking.
+`references/contract.md` (at the v2 skill location `skills/agentera/references/contract.md`) remains available as a full-spec reference for ambiguous cases or cross-checking.
 
 ---
 
@@ -149,7 +149,7 @@ When the dispatched capability was realisera (or any capability that produces PR
 3. **Present and non-empty**: proceed to Surface 2 (the inspektera dispatch).
 4. **Missing or empty**: treat the task as a failed evaluation. Go straight into Step 4's FAIL branch (retry path) with "missing or empty `**Verified**` field in PROGRESS.md Cycle N" as the failure reason in the retry dispatch prompt. Do not dispatch inspektera for this surface; the presence check is itself the evaluation signal.
 
-This is an artifact read, not a source code read. Reading `.agentera/PROGRESS.md` is consistent with the conductor's existing artifact-read patterns (PLAN.md, HEALTH.md, DECISIONS.md). The "NEVER read implementation source code" safety rail is unaffected: PROGRESS.md is a cycle log, not source.
+This is an artifact read, not a source code read. Reading `.agentera/progress.yaml` is consistent with the conductor's existing artifact-read patterns (plan.yaml, health.yaml, decisions.yaml). The "NEVER read implementation source code" safety rail is unaffected: progress.yaml is a cycle log, not source.
 
 **Surface 2: Inspektera dispatch with evidence audit**
 

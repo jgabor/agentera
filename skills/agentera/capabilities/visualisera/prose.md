@@ -22,17 +22,17 @@ One file in `.agentera/`.
 |----------|---------|-----------|
 | `DESIGN.md` | Visual identity. Colors, typography, spacing, constraints, components, themes. An agent-readable design system. | Created via deep design conversation. |
 
-Full spec at `references/DESIGN-spec.md` (v1 path: `skills/visualisera/references/DESIGN-spec.md`): `<!-- design:X -->` marker syntax, standard sections, YAML token block format, and naming conventions.
+Full spec at `references/DESIGN-spec.md` (v2 path: `skills/agentera/references/DESIGN-spec.md`): `<!-- design:X -->` marker syntax, standard sections, YAML token block format, and naming conventions.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/DESIGN.md, etc.). If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, .agentera/DECISIONS.md, PROFILE.md).
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/design.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, .agentera/decisions.yaml, PROFILE.md).
 
 ### Contract values
 
 Contract values are inlined where referenced. Visual tokens from protocol: severity arrows VT5-VT8, trend arrows VT12-VT13, progress bar VT18, inline separator VT16 (·), list item VT15 (▸), section divider VT14, flow/target VT17 (→). Skill glyph SG11 for the exit marker. Exit signals EX1-EX4 for the exit marker. Confidence scale CS1-CS5 for decision profile consumption.
 
-`references/contract.md` (at the v1 skill location `skills/visualisera/references/contract.md`) remains available as a full-spec reference for ambiguous cases or cross-checking.
+`references/contract.md` (at the v2 skill location `skills/agentera/references/contract.md`) remains available as a full-spec reference for ambiguous cases or cross-checking.
 
 ---
 
@@ -107,7 +107,7 @@ Offer:
 
 If **Refine**, skip to Refine mode.
 If **Audit**, skip to Audit mode.
-If **Replace**, archive current DESIGN.md to `.agentera/archive/DESIGN-{date}.md`, then proceed to Create mode.
+If **Replace**, archive current DESIGN.md to `.agentera/archive/design-{date}.yaml`, then proceed to Create mode.
 
 ---
 
@@ -178,7 +178,7 @@ Follow a narrative arc, not a checklist. Adapt, but cover:
 
 ### Step 4: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v1 path: `skills/visualisera/scripts/self_audit.py`).
+Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -218,7 +218,7 @@ Fix errors and re-validate before presenting.
 
 ### Step 7: Next steps
 
-▸ **Set up enforcement**: point to `references/enforcement-patterns.md` (v1 path: `skills/visualisera/references/enforcement-patterns.md`) for the three-layer enforcement model
+▸ **Set up enforcement**: point to `references/enforcement-patterns.md` (v2 path: `skills/agentera/references/enforcement-patterns.md`) for the three-layer enforcement model
 ▸ **Build to the spec**: run `/realisera` to implement UI that respects the design tokens
 ▸ **Document it**: run `/dokumentera` to add the design system to project documentation
 ▸ **Refine later**: run `/visualisera` again to evolve the design as the project matures
@@ -256,7 +256,7 @@ Brief conversation (2-4 exchanges) to refine proposed changes.
 
 ### Step 3: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v1 path: `skills/visualisera/scripts/self_audit.py`).
+Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):

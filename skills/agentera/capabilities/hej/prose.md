@@ -34,7 +34,7 @@ No artifacts of its own. Reads all suite artifacts for the briefing:
 
 ### Artifact path resolution
 
-Before reading any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`.
+Before reading any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`.
 
 PROFILE.md is global, not project-scoped. Its path is determined by profilera: `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`). Check the profilera-determined path directly rather than falling back to the project root.
 
@@ -42,7 +42,7 @@ PROFILE.md is global, not project-scoped. Its path is determined by profilera: `
 
 Contract values are inlined where referenced. Visual tokens from protocol: severity arrows VT5-VT8 (⇶/⇉/→/⇢), trend arrows VT12-VT13 (⮉/⮋), progress bar VT18 (█▓░), inline separator VT16 (·), list item VT15 (▸), section divider VT14, flow/target VT17 (→). Skill glyphs SG1-SG12 for the routing table and status lines. Exit signals EX1-EX4 for the exit marker. Severity issue levels SI1-SI4 for attention items.
 
-`references/contract.md` (at the v1 skill location `skills/hej/references/contract.md`) remains available as a full-spec reference for ambiguous cases or cross-checking.
+`references/contract.md` (at the v2 skill location `skills/agentera/references/contract.md`) remains available as a full-spec reference for ambiguous cases or cross-checking.
 
 ---
 
@@ -136,7 +136,7 @@ Show where things stand.
    - Read in parallel. First 20 lines each. Skip absent ones.
    - Extract the most recent entry or summary.
    - If TODO.md, PLAN.md, OBJECTIVE.md, or DECISIONS.md hints at active work, keep reading.
-   - For optimera status, inspect `.agentera/optimera/<name>/` directories directly. Classify closed objectives first when the OBJECTIVE.md status line starts with `**Status**: closed`, including legacy prose such as `**Status**: closed (date)`. Exclude closed objectives before recency checks; if every objective is closed, report no active objective and do not route to `/optimera` for completed work.
+   - For optimera status, inspect `.agentera/optimera/<name>/` directories directly. Classify closed objectives first when the objective.yaml status line starts with `**Status**: closed`, including legacy prose such as `**Status**: closed (date)`. Exclude closed objectives before recency checks; if every objective is closed, report no active objective and do not route to `/optimera` for completed work.
    - When multiple non-closed objectives exist, use EXPERIMENTS.md git recency only among those non-closed objectives. A closed objective with newer history must not outrank an older active objective.
    - Identify the first concrete open item or current plan task before routing.
    - Do not route from a heading or summary alone when an executable follow-up exists nearby.
