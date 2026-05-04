@@ -17,6 +17,14 @@
 ### Added
 
 - Complete v2.0.0 cutover: removed 12 v1 skill directories, collapsed all runtime adapter configs (marketplace, Codex, OpenCode, registry) to single bundled `skills/agentera/`, added `UPGRADE.md` with migration steps for all 4 runtimes, renamed migration script from `migrate_v1_to_v2` to `migrate_artifacts_v1_to_v2` (with backward-compatible wrapper), bumped all version surfaces to 2.0.0. 528 tests pass, 0 fail.
+- Migration safety hardening: `--dry-run` mode, backup overwrite protection (`--force` to override), PROFILE.md explicit exclusion check, backup failure safety (exits non-zero, no partial writes). 8 new tests.
+- Hej upgrade guard: detects v1 Markdown artifacts missing v2 YAML equivalents during orientation, routes to migration command. PROFILE.md presence/absence checked with degraded attention item when absent. 4 new tests.
+- Stale v1 runtime artifact detection script (`scripts/detect_stale_v1`): reports dead symlinks (Claude), stale command files (OpenCode), stale agent entries (Codex). Defaults to `--dry-run`. 25 new tests.
+- README rewritten for v2 single-bundle model. DOCS.md `version_files` updated to v2 surfaces.
+
+### Changed
+
+- README fully rewritten to describe v2 single-bundle model with 12 capabilities, no v1 references remain.
 
 ## [1.27.1] · 2026-04-30
 

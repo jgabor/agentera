@@ -40,7 +40,7 @@ DOCS.md version_files glob `skills/*/.claude-plugin/plugin.json` resolves to not
 ### Task 1: Migration Safety Hardening
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the migration script WHEN run with --dry-run THEN it reports all artifacts to be migrated without writing anything
 ▸ GIVEN the migration script WHEN a previous backup directory exists THEN it warns on stderr and exits non-zero unless --force is passed
@@ -51,7 +51,7 @@ DOCS.md version_files glob `skills/*/.claude-plugin/plugin.json` resolves to not
 ### Task 2: Upgrade Guard in Hej
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN hej orientation WHEN v1 Markdown artifacts exist in .agentera/ with no corresponding v2 YAML equivalents THEN the briefing includes an upgrade notice referencing the migration command
 ▸ GIVEN hej orientation WHEN v1 artifacts do not exist (fresh install or already migrated) THEN no upgrade notice appears
@@ -62,7 +62,7 @@ DOCS.md version_files glob `skills/*/.claude-plugin/plugin.json` resolves to not
 ### Task 3: Runtime Artifact Detection
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN a user's skill install directory WHEN dead symlinks to removed v1 skill paths exist THEN they are reported by the detection script
 ▸ GIVEN the OpenCode commands directory WHEN command files referencing removed v1 skill paths exist THEN they are reported
@@ -73,7 +73,7 @@ DOCS.md version_files glob `skills/*/.claude-plugin/plugin.json` resolves to not
 ### Task 4: README Rewrite + DOCS.md Fix
 
 **Depends on**: Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN README.md WHEN read THEN it describes the v2 single-bundle model with 12 capabilities under one skill, not 12 individual skills
 ▸ GIVEN README.md WHEN read THEN it links to UPGRADE.md for existing users
@@ -85,7 +85,7 @@ DOCS.md version_files glob `skills/*/.claude-plugin/plugin.json` resolves to not
 ### Task 5: Version Bump to 2.0.0
 
 **Depends on**: Task 1, Task 2, Task 3, Task 4
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all prior tasks complete WHEN the 6 version surfaces are checked (registry.json, plugin.json, .github/plugin/plugin.json, .codex-plugin/plugin.json, .claude-plugin/marketplace.json metadata, .opencode/plugins/agentera.js) THEN all read 2.0.0
 ▸ GIVEN the version bump WHEN the runtime adapter version alignment test runs THEN it passes
@@ -93,7 +93,7 @@ DOCS.md version_files glob `skills/*/.claude-plugin/plugin.json` resolves to not
 ### Task 6: Freshness Checkpoint
 
 **Depends on**: Task 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all prior tasks complete WHEN CHANGELOG.md is checked THEN it has a 2.0.0 entry covering the full release including upgrade safety
 ▸ GIVEN all prior tasks complete WHEN PROGRESS.md is checked THEN it has a cycle entry summarizing the patch
