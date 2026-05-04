@@ -127,7 +127,7 @@ Each task is sized for one realisera cycle. Tasks 2 and 3 are independent and ca
 ### Task 8: Update AGENTS.md for v2 Single-Bundle Model
 
 **Depends on**: Task 3, Task 5
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 
 - GIVEN AGENTS.md WHEN read THEN it describes the v2 bundled skill model (not v1 per-directory skills)
