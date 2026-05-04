@@ -1,0 +1,316 @@
+# Progress Artifact Schema
+#
+# Cycle-by-cycle operational log for realisera. Each entry records what happened
+# in one development cycle: phase, work done, commit, discoveries, verification,
+# next steps, and context envelope.
+#
+# Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
+# following capability_schema_contract.yaml and protocol.yaml conventions.
+#
+# ── Field-by-field mapping: v1 PROGRESS.md → v2 progress.yaml ──
+#
+# v1 Field                              v2 Field               v2 ID
+# ─────────────────────────────────────────────────────────────────────
+# ## Cycle N · date · type-prefix       CYCLE.number           PR1
+# (date from heading)                   CYCLE.timestamp        PR2
+# (type-prefix from heading)            CYCLE.type             PR3
+# **Phase**: <phase>                    CYCLE.phase            PR4
+# **What**: <text>                      CYCLE.what             PR5
+# **Commit**: <hash/N/A>                CYCLE.commit           PR6
+# **Inspiration**: <text>               CYCLE.inspiration      PR7
+# **Discovered**: <text>                CYCLE.discovered       PR8
+# **Verified**: <text>                  CYCLE.verified         PR9
+# **Next**: <text>                      CYCLE.next             PR10
+# **Context**: <text>                   CYCLE.context          PR11
+# (intent from Context)                 CONTEXT.intent         PT1
+# (constraints from Context)            CONTEXT.constraints    PT2
+# (unknowns from Context)               CONTEXT.unknowns       PT3
+# (scope from Context)                  CONTEXT.scope          PT4
+# ## Archived Cycles                    (implicit section)     —
+# - Cycle N (date): summary            ARCHIVE.summary        PA1
+#
+# Protocol references:
+#   phase: PH1-PH5 (protocol.yaml PHASES)
+#   type: conventional commit prefix (feat/fix/docs/refactor/chore/test)
+
+meta:
+  name: progress
+  version: "1.0.0"
+  description: >-
+    Cycle-by-cycle operational log. Produced by realisera. Consumed by
+    planera, inspektera, dokumentera, visionera, orkestrera.
+  artifact_type: agent_facing
+  path: ".agentera/progress.yaml"
+  producer: realisera
+  consumers: [planera, inspektera, dokumentera, visionera, orkestrera]
+  format: yaml
+
+GROUP_PREFIXES:
+  BUDGET: PB
+  COMPACTION: PX
+  CYCLE: PR
+  CONTEXT: PT
+  ARCHIVE: PA
+  VALIDATION: PV
+
+BUDGET:
+  1:
+    id: PB1
+    scope: per_cycle_entry
+    max_words: 500
+    description: >-
+      Maximum words per cycle entry. Budgets are guidelines, not hard
+      blockers; a 510-word entry is fine, a 1200-word entry signals
+      missing output constraints.
+  2:
+    id: PB2
+    scope: full_file
+    max_words: 3000
+    description: >-
+      Maximum words for the full file. If a write would exceed this
+      budget, compact first (see COMPACTION group).
+
+COMPACTION:
+  1:
+    id: PX1
+    rule: uniform_10_40_50
+    description: >-
+      Growing artifacts follow a uniform 10/40/50 rule: 10 full-detail
+      entries, 40 one-line archive entries, drop beyond 50 total.
+  2:
+    id: PX2
+    full_detail:
+      max_entries: 10
+      selection: "10 most recent cycles"
+      format: "Standard cycle entry format (all fields)"
+    description: >-
+      The 10 most recent cycles are kept in full detail with all fields.
+  3:
+    id: PX3
+    one_line_archive:
+      max_entries: 40
+      selection: "Cycles 11 through 50"
+      format: "Cycle N (YYYY-MM-DD): <=15-word summary"
+      fields: [number, timestamp, summary]
+    description: >-
+      Cycles 11 through 50 are collapsed to one-line format under the
+      archive section. One-line summaries preserve cycle number, date,
+      and work-type, enough for trend analysis by consuming skills.
+  4:
+    id: PX4
+    dropped:
+      threshold: 50
+      action: "Removed entirely"
+    description: >-
+      Cycles older than 50 are dropped entirely.
+  5:
+    id: PX5
+    trigger: "When realisera writes a new cycle entry"
+    description: >-
+      Compaction runs when the producing skill writes a new entry.
+      If >10 full-detail entries exist, collapse the oldest to one-line.
+      If >40 one-line entries exist, drop the oldest.
+  6:
+    id: PX6
+    archive_section:
+      heading: "Archived Cycles"
+      placement: "Below recent cycles"
+    description: >-
+      Archive entries sit below the recent cycles section.
+
+CYCLE:
+  1:
+    id: PR1
+    field: number
+    type: integer
+    required: true
+    description: >-
+      Monotonically increasing cycle number. One greater than the
+      highest cycle number in active and archived entries. Do not
+      reuse or renumber except when repairing artifact corruption.
+    validation:
+      - "Must be a positive integer"
+      - "Must be unique across active and archived entries"
+      - "Must be one greater than the previous highest"
+  2:
+    id: PR2
+    field: timestamp
+    type: string
+    format: "YYYY-MM-DD HH:MM"
+    required: true
+    description: "When the cycle was recorded."
+    validation:
+      - "Must match YYYY-MM-DD HH:MM format"
+  3:
+    id: PR3
+    field: type
+    type: string
+    required: true
+    description: >-
+      Conventional commit prefix extracted from the work done.
+      One of: feat, fix, docs, refactor, chore, test.
+    validation:
+      - "Must be one of: feat, fix, docs, refactor, chore, test"
+  4:
+    id: PR4
+    field: phase
+    type: string
+    required: true
+    description: >-
+      Which ISS-19 phase the cycle belongs to. References protocol.yaml
+      PHASES (PH1-PH5).
+    protocol_ref: PHASES
+    validation:
+      - "Must be one of: envision, deliberate, plan, build, audit"
+  5:
+    id: PR5
+    field: what
+    type: string
+    required: true
+    description: "What was done in this cycle. Prose summary of work performed."
+    validation:
+      - "Non-empty string"
+  6:
+    id: PR6
+    field: commit
+    type: string
+    required: true
+    description: >-
+      Git commit hash, or 'N/A' if no commit was made. May include
+      explanation (e.g., 'N/A: user requested no commit for this task').
+    validation:
+      - "Non-empty string"
+  7:
+    id: PR7
+    field: inspiration
+    type: string
+    required: false
+    description: >-
+      What prompted this cycle. References to active plan tasks,
+      decisions, or conventions that drove the work.
+  8:
+    id: PR8
+    field: discovered
+    type: string
+    required: false
+    description: >-
+      Unexpected findings during the cycle. Things learned that were
+      not known before starting.
+  9:
+    id: PR9
+    field: verified
+    type: string
+    required: false
+    description: >-
+      Evidence that the work was verified. Test commands run, validation
+      passed, manual checks performed.
+  10:
+    id: PR10
+    field: next
+    type: string
+    required: false
+    description: >-
+      What should happen next. Guidance for subsequent cycles.
+      Explicit about scope boundaries to prevent scope creep.
+  11:
+    id: PR11
+    field: context
+    type: map
+    required: true
+    description: >-
+      Context envelope capturing intent, constraints, unknowns, and
+      scope for this cycle. Contains sub-fields defined in CONTEXT group.
+
+CONTEXT:
+  1:
+    id: PT1
+    field: intent
+    parent: CYCLE.context
+    type: string
+    required: true
+    description: "What this cycle set out to accomplish."
+  2:
+    id: PT2
+    field: constraints
+    parent: CYCLE.context
+    type: string
+    required: false
+    description: "Boundaries: what was explicitly out of scope or constrained."
+  3:
+    id: PT3
+    field: unknowns
+    parent: CYCLE.context
+    type: string
+    required: false
+    description: "Things not known at cycle start. May be 'none'."
+  4:
+    id: PT4
+    field: scope
+    parent: CYCLE.context
+    type: string
+    required: false
+    description: "Files and surfaces modified or affected."
+
+ARCHIVE:
+  1:
+    id: PA1
+    field: summary
+    type: string
+    required: true
+    description: >-
+      One-line archive entry for a compacted cycle. Format:
+      'Cycle N (YYYY-MM-DD): <=15-word summary'.
+      Preserves cycle number, date, and work-type for trend analysis.
+    validation:
+      - "Must include cycle number"
+      - "Must include date in YYYY-MM-DD format"
+      - "Summary portion must be <=15 words"
+
+VALIDATION:
+  1:
+    id: PV1
+    rule: unique_cycle_numbers
+    severity: error
+    description: >-
+      Active cycle entries must have unique numbers and remain ascending
+      by cycle number. Do not reuse or renumber except when repairing
+      artifact corruption.
+    checks:
+      - "All cycle numbers are unique across active and archived entries"
+      - "Active entries are in ascending order by cycle number"
+  2:
+    id: PV2
+    rule: required_fields
+    severity: error
+    description: >-
+      Each full-detail cycle entry must have: number, timestamp, type,
+      phase, what, commit, and context (with intent).
+    checks:
+      - "number is present and is a positive integer"
+      - "timestamp is present and matches YYYY-MM-DD HH:MM"
+      - "type is present and is a valid commit prefix"
+      - "phase is present and is a valid phase name"
+      - "what is present and non-empty"
+      - "commit is present"
+      - "context is present with intent sub-field"
+  3:
+    id: PV3
+    rule: compaction_thresholds
+    severity: warning
+    description: >-
+      Warn if the file exceeds compaction thresholds: >10 full-detail
+      entries or >40 one-line archive entries.
+    checks:
+      - "Full-detail entries <= 10"
+      - "One-line archive entries <= 40"
+      - "Total entries <= 50"
+  4:
+    id: PV4
+    rule: word_budget
+    severity: advisory
+    description: >-
+      Advisory check. Per-cycle entry should be <=500 words; full file
+      should be <=3000 words. Budgets are guidelines, not hard blockers.
+    checks:
+      - "Per-cycle word count <= 500"
+      - "Total file word count <= 3000"
