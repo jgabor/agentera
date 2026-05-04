@@ -104,7 +104,7 @@ Migration tool creates backups by default (copies v1 artifacts to .agentera/back
 ### Task 5: Migration Tool
 
 **Depends on**: Task 3b
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN a v1 .agentera/ directory with Markdown artifacts WHEN the migration tool runs THEN it produces a v2 .agentera/ directory with YAML artifacts preserving all data fields from the mapping tables in Tasks 3a/3b
 ▸ GIVEN a v1 Markdown PROGRESS.md with N entries WHEN migrated THEN the resulting YAML file has N entries with all fields populated per the mapping table
