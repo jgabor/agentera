@@ -1,0 +1,33 @@
+EXIT_CONDITIONS:
+  1:
+    id: E1
+    condition: complete
+    description: >-
+      PLAN.md was written and approved (or skip level confirmed), the
+      adversarial review ran for full plans, and the handoff to realisera
+      or orkestrera was suggested.
+    exit_signal: complete
+  2:
+    id: E2
+    condition: flagged
+    description: >-
+      The plan was produced but with caveats: adversarial critic issues
+      dismissed rather than resolved, work scope larger than ideal, or
+      acceptance criteria could not be made fully behavioral.
+    exit_signal: flagged
+  3:
+    id: E3
+    condition: stuck
+    description: >-
+      Cannot plan because the work description is too ambiguous to
+      decompose, required context files contain contradictions, or the
+      user declined to approve the plan with no clear revision path.
+    exit_signal: stuck
+  4:
+    id: E4
+    condition: waiting
+    description: >-
+      The feature or change to plan has not been specified with enough
+      detail to produce acceptance criteria, or key architectural
+      constraints are unknown and cannot be inferred from the codebase.
+    exit_signal: waiting

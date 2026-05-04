@@ -1,0 +1,35 @@
+EXIT_CONDITIONS:
+  1:
+    id: E1
+    condition: complete
+    description: >-
+      Deliberation reached a conclusion the user chose to act on; any
+      requested artifacts (DECISIONS.md, VISION.md, OBJECTIVE.md, TODO.md)
+      were written with user approval, and the decision confidence level
+      was captured.
+    exit_signal: complete
+  2:
+    id: E2
+    condition: flagged
+    description: >-
+      Deliberation concluded but the decision remains unresolved or
+      provisional: the user wrapped up without a clear choice, significant
+      tensions could not be resolved, or the conclusion contradicts prior
+      decisions in DECISIONS.md without explicit acknowledgment.
+    exit_signal: flagged
+  3:
+    id: E3
+    condition: stuck
+    description: >-
+      Cannot proceed because the user's topic requires external research
+      the capability cannot access, or writing to an artifact was attempted
+      but failed due to a file access issue.
+    exit_signal: stuck
+  4:
+    id: E4
+    condition: waiting
+    description: >-
+      No topic was provided and the user has not responded to "what's on
+      your mind?", or the deliberation surfaced that a different capability
+      is needed first and the user has not confirmed how to proceed.
+    exit_signal: waiting

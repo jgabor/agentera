@@ -1,0 +1,61 @@
+VALIDATION:
+  1:
+    id: V1
+    rule: behavioral_acceptance_criteria
+    description: >-
+      All acceptance criteria MUST be behavioral (Given/When/Then format)
+      and MUST NOT reference implementation details (class names, API
+      endpoints, database tables, function names, line numbers).
+    severity: critical
+    checks:
+      - "Acceptance criteria use Given/When/Then format"
+      - "No implementation details in acceptance criteria"
+  2:
+    id: V2
+    rule: max_8_tasks
+    description: >-
+      Full plans MUST NOT exceed 8 tasks. If work requires more, it must
+      be split into sequential plans.
+    severity: critical
+    checks:
+      - "Task count ≤ 8 in full plans"
+  3:
+    id: V3
+    rule: adversarial_review_required
+    description: >-
+      Full plans MUST undergo adversarial review. The critic MUST find at
+      least one issue. "Looks good" is not acceptable. Skip level and
+      light plans are exempt.
+    severity: critical
+    checks:
+      - "Adversarial review ran for full plans"
+  4:
+    id: V4
+    rule: plan_freshness_checkpoint
+    description: >-
+      Every full plan MUST end with a "Plan-level freshness checkpoint"
+      task that depends on all prior tasks. This ensures aggregate
+      plan-level CHANGELOG.md, PROGRESS.md, and TODO.md updates.
+    severity: critical
+    checks:
+      - "Full plan has freshness checkpoint task as last task"
+  5:
+    id: V5
+    rule: test_proportionality_target
+    description: >-
+      Tasks that include writing tests MUST have a proportionality target
+      in their acceptance criteria. Default: one pass + one fail per
+      testable unit. Override only with explicit rationale.
+    severity: warning
+    checks:
+      - "Test tasks state proportionality target"
+  6:
+    id: V6
+    rule: skip_level_for_trivial_work
+    description: >-
+      Planera MUST detect skip level for trivial work (single-file change,
+      bug fix, config tweak, < 50 lines) and route directly to /realisera
+      without producing a PLAN.md.
+    severity: critical
+    checks:
+      - "Trivial work routed to /realisera without plan"
