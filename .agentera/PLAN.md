@@ -1,95 +1,108 @@
-# Plan: v2.0.0 Cutover — Complete Big Bang
+# Plan: v2.0.0 Release — Upgrade Safety and README
 
 <!-- Level: full | Created: 2026-05-04 | Status: active -->
-<!-- Reviewed: 2026-05-04 | Critic issues: 9 found, 4 addressed, 5 dismissed -->
+<!-- Reviewed: 2026-05-04 | Critic issues: 10 found, 4 addressed, 6 dismissed -->
 
 ## What
 
-Complete the v2.0.0 cutover: remove 12 v1 skill directories, collapse all runtime adapter configs to the single bundled `skills/agentera/`, update tests, write an upgrade guide, and bump version.
+Complete the v2.0.0 release: harden migration safety with PROFILE.md protection, add upgrade guard to hej orientation, detect dead runtime artifacts in user installations, fix DOCS.md stale version_files, rewrite README for v2, and ship version 2.0.0.
 
 ## Why
 
-D39 (firm) committed to big bang cutover with "one install, one entry point." The merge brought v2 in alongside v1, leaving 13 coexisting skill directories. `npx skills update` installs all 13, producing duplicate routing and confused agents. The cutover was planned but never executed.
+The cutover deleted v1 skill dirs and collapsed configs but provides no safety net for existing users. After `npx skills update`, users may have dead symlinks, stale v1 artifacts, and stale runtime configs. PROFILE.md (irreplaceable accumulated data) has no protection guarantee. README references deleted directories and v1 concepts. The version bump to 2.0.0 must not ship until all of these are addressed.
 
 ## Constraints
 
-- D39 (firm): single bundled skill, big bang cutover
-- D40 (firm): YAML artifacts, "capabilities" naming, no backward compat
-- ROADMAP: "One install, one entry point, one query interface"
-- 4 runtime targets: Claude Code, OpenCode, Codex, Copilot
-- Copilot is env-var based (no plugin.json); config collapse is a no-op for it
-- Scripts use Python stdlib + pyyaml via uv inline script metadata
-- Current state: 659 tests pass, 0 fail, 1 skip
+- D39 (firm): no backward compat, big bang cutover
+- D40 (firm): YAML artifacts, capabilities naming
+- Version stays at 1.27.1 until all tasks are complete — only then bump to 2.0.0
+- PROFILE.md must never be lost or corrupted
+- hej is read-only by design — guard informs/routes, does not write
+- Must work across 4 runtimes: Claude Code, OpenCode, Codex, Copilot
+- Migration script already exists at scripts/migrate_artifacts_v1_to_v2
 
 ## Scope
 
-**In**: Delete 12 v1 skill dirs, collapse marketplace/Codex/OpenCode configs to single bundle, update runtime adapter tests, write UPGRADE.md, rename migration script, version bump 2.0.0, update ROADMAP
-**Out**: Artifact format migration (done), new capabilities, token benchmarking, query CLI expansion, eval script updates (none reference v1 paths)
-**Deferred**: Semantic eval fixture updates (already ported in prior phase)
+**In**: migration safety hardening (backup overwrite protection, PROFILE.md explicit check), hej upgrade guard, dead runtime artifact detection script, DOCS.md version_files fix, README rewrite
+**Out**: automated migration from hej (guard routes, doesn't execute), Copilot new features, setup_doctor upgrade mode, ROADMAP checkbox cleanup
+**Deferred**: setup_doctor upgrade mode
 
 ## Design
 
-Atomic cutover: v1 deletion and config collapse happen in one commit so no intermediate state references missing directories. Tests come next because they validate the new structure. UPGRADE.md documents the user-facing migration path. Version bump is last before freshness.
+The upgrade guard sits in hej's Step 0 (detect mode), between artifact detection and the welcome/briefing. It checks for v1 Markdown artifacts that lack corresponding v2 YAML equivalents. If found, the briefing includes an upgrade notice with the migration command. PROFILE.md presence is verified during the guard check.
+
+A new script `scripts/detect_stale_v1` handles runtime-level cleanup: dead symlinks in skill directories, stale command files in OpenCode, stale agent entries in Codex config. It runs with `--dry-run` by default.
+
+DOCS.md version_files glob `skills/*/.claude-plugin/plugin.json` resolves to nothing after v1 dir deletion. Needs updating to the v2 surfaces.
 
 ## Tasks
 
-### Task 1: Cutover — Delete v1 Skill Dirs + Collapse Configs
+### Task 1: Migration Safety Hardening
 
 **Depends on**: none
-**Status**: ■ complete
-**Acceptance**:
-▸ GIVEN the skills/ directory WHEN ls runs THEN only skills/agentera/ exists (12 v1 dirs deleted)
-▸ GIVEN marketplace.json WHEN read THEN it lists 1 plugin pointing at ./skills/agentera with v2-appropriate description
-▸ GIVEN Codex plugin.json WHEN read THEN it has 1 skillMetadata entry for skills/agentera/SKILL.md
-▸ GIVEN OpenCode agentera.js WHEN read THEN its COMMAND_TEMPLATES reference the bundled agentera skill path
-▸ GIVEN registry.json WHEN read THEN it reflects single-bundle structure (1 skill entry or 12 capability entries under agentera)
-▸ GIVEN AGENTS.md WHEN read THEN it describes only the v2 bundled model with no v1 references
-▸ GIVEN the agentera/capabilities directory WHEN checked THEN all 12 capabilities still pass validate_capability.py contract + primitives
-
-### Task 2: Update Runtime Adapter Tests
-
-**Depends on**: Task 1
-**Status**: ■ complete
-**Acceptance**:
-▸ GIVEN the test suite WHEN pytest runs THEN 0 failures
-▸ GIVEN test_runtime_adapters.py WHEN read THEN it validates the single-bundle model: 1 marketplace plugin, no per-skill plugin.json checks for deleted dirs, version alignment for remaining surfaces
-▸ GIVEN the version alignment test WHEN run THEN it passes (all surfaces match)
-▸ Test proportionality: 1 pass + 1 fail for marketplace validation, 1 pass + 1 fail for registry validation, 1 pass + 1 fail for version alignment
-
-### Task 3: Write UPGRADE.md + Rename Migration Script
-
-**Depends on**: Task 1
-**Status**: ■ complete
-**Acceptance**:
-▸ GIVEN UPGRADE.md WHEN read THEN it documents upgrade steps for all 4 runtimes (Claude Code, OpenCode, Codex, Copilot)
-▸ GIVEN UPGRADE.md WHEN read THEN it documents project artifact migration using the renamed script
-▸ GIVEN the migration script WHEN invoked as scripts/migrate_artifacts_v1_to_v2 THEN it runs identically to the old name
-▸ GIVEN the migration script WHEN invoked as scripts/migrate_v1_to_v2 THEN it prints a deprecation warning and delegates to the new name
-
-### Task 4: Version Bump 2.0.0
-
-**Depends on**: Task 1, Task 2
 **Status**: □ pending
 **Acceptance**:
-▸ GIVEN all version surfaces WHEN checked THEN they show 2.0.0 (registry.json, marketplace.json metadata, Codex plugin.json, GitHub plugin.json, root plugin.json, OpenCode agentera.js)
-▸ GIVEN the version alignment test WHEN run THEN it passes with 0 errors
+▸ GIVEN the migration script WHEN run with --dry-run THEN it reports all artifacts to be migrated without writing anything
+▸ GIVEN the migration script WHEN a previous backup directory exists THEN it warns on stderr and exits non-zero unless --force is passed
+▸ GIVEN the migration script WHEN PROFILE.md exists at the global path THEN the migration output explicitly confirms PROFILE.md is excluded from migration
+▸ GIVEN the migration script WHEN backup creation fails THEN it exits non-zero and does not proceed with any file writes
+▸ Test proportionality: 1 pass + 1 fail per safety check (existing backup, PROFILE exclusion confirmation, backup failure)
 
-### Task 5: Freshness Checkpoint
+### Task 2: Upgrade Guard in Hej
+
+**Depends on**: Task 1
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN hej orientation WHEN v1 Markdown artifacts exist in .agentera/ with no corresponding v2 YAML equivalents THEN the briefing includes an upgrade notice referencing the migration command
+▸ GIVEN hej orientation WHEN v1 artifacts do not exist (fresh install or already migrated) THEN no upgrade notice appears
+▸ GIVEN hej orientation WHEN PROFILE.md exists at the global path THEN no PROFILE warning appears in the briefing
+▸ GIVEN hej orientation WHEN PROFILE.md is absent at the global path THEN the briefing flags this as a degraded attention item
+▸ Test proportionality: 1 pass per scenario (v1 detected, already migrated, PROFILE present, PROFILE absent)
+
+### Task 3: Runtime Artifact Detection
+
+**Depends on**: none
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN a user's skill install directory WHEN dead symlinks to removed v1 skill paths exist THEN they are reported by the detection script
+▸ GIVEN the OpenCode commands directory WHEN command files referencing removed v1 skill paths exist THEN they are reported
+▸ GIVEN the Codex config WHEN stale v1 agent entries exist THEN they are reported (not auto-removed)
+▸ GIVEN the detection script WHEN run with --dry-run THEN it reports findings without modifying any files
+▸ Test proportionality: 1 pass + 1 fail per runtime surface (Claude skills, OpenCode commands, Codex config)
+
+### Task 4: README Rewrite + DOCS.md Fix
+
+**Depends on**: Task 2
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN README.md WHEN read THEN it describes the v2 single-bundle model with 12 capabilities under one skill, not 12 individual skills
+▸ GIVEN README.md WHEN read THEN it links to UPGRADE.md for existing users
+▸ GIVEN README.md WHEN read THEN all slash commands route through /agentera or the bundled skill
+▸ GIVEN README.md WHEN read THEN no references to SPEC.md, validate_spec.py, or individual skill directories remain
+▸ GIVEN DOCS.md WHEN version_files is checked THEN all listed globs resolve to existing files
+▸ No tests required (docs-only task)
+
+### Task 5: Version Bump to 2.0.0
 
 **Depends on**: Task 1, Task 2, Task 3, Task 4
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN ROADMAP.md WHEN read THEN Phase 3 and Phase 4 are marked complete
-▸ GIVEN CHANGELOG.md WHEN read THEN it has a v2.0.0 release entry covering the cutover
-▸ GIVEN PROGRESS.md WHEN read THEN it has a cycle entry for the cutover completion
+▸ GIVEN all prior tasks complete WHEN the 6 version surfaces are checked (registry.json, plugin.json, .github/plugin/plugin.json, .codex-plugin/plugin.json, .claude-plugin/marketplace.json metadata, .opencode/plugins/agentera.js) THEN all read 2.0.0
+▸ GIVEN the version bump WHEN the runtime adapter version alignment test runs THEN it passes
+
+### Task 6: Freshness Checkpoint
+
+**Depends on**: Task 5
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN all prior tasks complete WHEN CHANGELOG.md is checked THEN it has a 2.0.0 entry covering the full release including upgrade safety
+▸ GIVEN all prior tasks complete WHEN PROGRESS.md is checked THEN it has a cycle entry summarizing the patch
 
 ## Overall Acceptance
 
-▸ GIVEN the skills/ directory WHEN ls runs THEN only skills/agentera/ exists
-▸ GIVEN npx skills WHEN it reads marketplace.json THEN it discovers 1 plugin, not 12
-▸ GIVEN the test suite WHEN pytest runs THEN 0 failures
-▸ GIVEN all version surfaces WHEN checked THEN they show 2.0.0
-▸ GIVEN UPGRADE.md WHEN read THEN it provides actionable upgrade steps for all 4 runtimes
+▸ GIVEN an existing v1 user WHEN they update to 2.0.0 and open a project with v1 artifacts THEN hej detects the mismatch and provides migration instructions
+▸ GIVEN an existing v1 user WHEN they run the migration script THEN their PROFILE.md is explicitly confirmed as excluded from migration
+▸ GIVEN a new user WHEN they install agentera 2.0.0 THEN the README accurately describes the single-bundle model
 
 ## Surprises
 
