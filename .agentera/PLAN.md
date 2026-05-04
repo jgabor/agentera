@@ -36,7 +36,7 @@ Atomic cutover: v1 deletion and config collapse happen in one commit so no inter
 ### Task 1: Cutover — Delete v1 Skill Dirs + Collapse Configs
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the skills/ directory WHEN ls runs THEN only skills/agentera/ exists (12 v1 dirs deleted)
 ▸ GIVEN marketplace.json WHEN read THEN it lists 1 plugin pointing at ./skills/agentera with v2-appropriate description

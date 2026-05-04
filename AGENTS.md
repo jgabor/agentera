@@ -25,7 +25,6 @@ skills/agentera/
   schemas/                          # Skill-level schemas
 scripts/
   validate_capability.py            # Validate a capability against the schema contract
-  validate_spec.py                  # Legacy v1 linter (still present)
   eval_skills.py                    # Tier 2 eval runner (smoke-tests via claude -p)
   semantic_eval.py                  # Offline semantic eval for captured fixtures
   generate_contracts.py             # Contract generation and freshness checks
