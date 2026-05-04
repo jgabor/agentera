@@ -1,5 +1,60 @@
-schema: changelog
-version: 1
-artifact: CHANGELOG.md
-token_budget: 5000
-human_facing: true
+# Changelog Artifact Schema
+#
+# Release history maintained by realisera. Tracks versioned releases with
+# categorized changes (Added, Changed, Fixed, Removed).
+#
+# Note: CHANGELOG.md is a human-facing Markdown artifact. It remains at the
+# project root and is not migrated to YAML. This schema exists for validation
+# and CLI discovery consistency.
+
+meta:
+  name: changelog
+  version: "1.0.0"
+  description: >-
+    Release history. Produced by realisera. Consumed by users and agents
+    for version context. Human-facing: remains Markdown at project root.
+  artifact_type: human_facing
+  path: "CHANGELOG.md"
+  producer: realisera
+  consumers: [hej, all_skills]
+  format: yaml
+
+GROUP_PREFIXES:
+  BUDGET: CB
+  RELEASE: CR
+  VALIDATION: CV
+
+BUDGET:
+  1:
+    id: CB1
+    token_budget: 5000
+    description: >-
+      Maximum tokens for CHANGELOG.md content. Exceeding triggers compaction.
+
+RELEASE:
+  1:
+    id: CR1
+    field: version
+    type: string
+    required: true
+    description: >-
+      Semantic version string (e.g., "2.0.0"). Must follow semver.
+    validation:
+      - "Must match semver format: MAJOR.MINOR.PATCH"
+  2:
+    id: CR2
+    field: date
+    type: string
+    required: true
+    description: >-
+      Release date in YYYY-MM-DD format.
+    validation:
+      - "Must match YYYY-MM-DD format"
+  3:
+    id: CR3
+    field: changes
+    type: list[string]
+    required: true
+    description: >-
+      List of changes in this release, categorized by type
+      (Added, Changed, Fixed, Removed).

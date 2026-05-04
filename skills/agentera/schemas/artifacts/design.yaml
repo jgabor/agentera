@@ -1,5 +1,55 @@
-schema: design
-version: 1
-artifact: DESIGN.md
-token_budget: 2000
-human_facing: true
+# Design Artifact Schema
+#
+# Visual identity system maintained by visualisera. Defines design tokens,
+# palette, typography, spacing, and component styling rules.
+#
+# Note: DESIGN.md is a human-facing Markdown artifact. It remains at the
+# project root and is not migrated to YAML. This schema exists for validation
+# and CLI discovery consistency.
+
+meta:
+  name: design
+  version: "1.0.0"
+  description: >-
+    Visual identity system. Produced by visualisera. Consumed by dokumentera
+    and realisera for UI consistency. Human-facing: remains Markdown at root.
+  artifact_type: human_facing
+  path: "DESIGN.md"
+  producer: visualisera
+  consumers: [dokumentera, realisera]
+  format: yaml
+
+GROUP_PREFIXES:
+  BUDGET: DB
+  TOKEN: DT
+  VALIDATION: DV
+
+BUDGET:
+  1:
+    id: DB1
+    token_budget: 2000
+    description: >-
+      Maximum tokens for DESIGN.md content. Exceeding triggers compaction.
+
+TOKEN:
+  1:
+    id: DT1
+    field: category
+    type: string
+    required: true
+    description: >-
+      Token category: palette, typography, spacing, component, or animation.
+  2:
+    id: DT2
+    field: name
+    type: string
+    required: true
+    description: >-
+      Token name (e.g., "primary", "body-text", "gap-md").
+  3:
+    id: DT3
+    field: value
+    type: string
+    required: true
+    description: >-
+      Token value (e.g., hex color, font stack, spacing unit).

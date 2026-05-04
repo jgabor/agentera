@@ -84,7 +84,9 @@ If schemas are missing:
 def _discover_schemas_dir() -> Path:
     env = os.environ.get("AGENTERA_HOME")
     if env:
-        return Path(env) / "skills" / "agentera" / "schemas" / "artifacts"
+        p = Path(env) / "skills" / "agentera" / "schemas" / "artifacts"
+        if p.is_dir():
+            return p
     return Path.cwd() / "skills" / "agentera" / "schemas" / "artifacts"
 
 
