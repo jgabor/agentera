@@ -116,7 +116,7 @@ Migration tool creates backups by default (copies v1 artifacts to .agentera/back
 ### Task 6: Hook Rewrite
 
 **Depends on**: Task 2, Task 3a
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN a file write to an agent-facing artifact path WHEN the hook runs THEN it validates the content against the matching artifact schema from the schemas directory
 ▸ GIVEN a file write that violates an artifact schema (missing required field, wrong type) WHEN the hook runs THEN it reports the violation to stderr and exits non-zero
