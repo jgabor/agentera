@@ -60,6 +60,43 @@ Narration voice (riff, don't script):
 
 ---
 
+## Step 0.5: Upgrade guard
+
+After mode detection (Step 0) and before the welcome (Step 1a) or briefing (Step 1b), run two checks. These are passive observations — hej never writes or migrates.
+
+### V1 artifact detection
+
+Check `.agentera/` for v1 Markdown artifacts that lack a corresponding v2 YAML counterpart. The v1→v2 mapping is:
+
+| v1 (Markdown) | v2 (YAML) |
+|----------------|-----------|
+| `.agentera/PROGRESS.md` | `.agentera/progress.yaml` |
+| `.agentera/PLAN.md` | `.agentera/plan.yaml` |
+| `.agentera/DECISIONS.md` | `.agentera/decisions.yaml` |
+| `.agentera/HEALTH.md` | `.agentera/health.yaml` |
+| `.agentera/SESSION.md` | `.agentera/session.yaml` |
+| `.agentera/DOCS.md` | `.agentera/docs.yaml` |
+| `VISION.md` (project root) | `vision.yaml` (project root) |
+
+For each v1 file that exists where the corresponding v2 file does **not**:
+
+- Add to the briefing's attention section as a degraded (SI2, ⇉) item:
+  `⇉ v1 artifacts detected · run \`uv run scripts/migrate_artifacts_v1_to_v2 <project-dir>\` to upgrade`
+- Include the notice once (not per-file); list the affected files after the command.
+- This applies to both Step 1a (welcome) and Step 1b (briefing) flows.
+
+If no v1 artifacts exist (fresh install or already migrated), emit no upgrade notice.
+
+### PROFILE.md detection
+
+Check `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) for the global decision profile.
+
+- **PROFILE.md exists** → report `♾ profile   loaded` in the status line. No warning.
+- **PROFILE.md absent** → report `♾ profile   not found` in the status line **and** add a degraded (SI2, ⇉) attention item:
+  `⇉ PROFILE.md not found at global path · run \`/profilera\` to generate your decision profile`
+
+---
+
 ## Step 1a: Welcome
 
 First impression: the colleague meets a new project.
