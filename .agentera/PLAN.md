@@ -122,7 +122,7 @@ Capabilities grouped by functional cluster. Each cluster ports together because 
 ### Task 7: Plan-level Freshness Checkpoint
 
 **Depends on**: Task 1, Task 2, Task 3, Task 4, Task 5, Task 6
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN all prior tasks complete WHEN CHANGELOG.md is checked THEN it has an Added entry under [Unreleased] covering Phase 2 capability ports
 ▸ GIVEN all prior tasks complete WHEN PROGRESS.md is checked THEN it has a cycle entry whose What field summarizes the Phase 2 plan completion
