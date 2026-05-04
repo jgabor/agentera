@@ -388,6 +388,15 @@ class TestHelp:
 # ---------------------------------------------------------------------------
 
 ARTIFACT_FIXTURES = {
+    "changelog": {
+        "path": "CHANGELOG.md",
+        "data": {
+            "entries": [
+                {"version": "2.0.0", "date": "2026-05-04", "changes": ["Release v2.0.0"]},
+            ],
+        },
+        "expected": "version=2.0.0",
+    },
     "decisions": {
         "path": ".agentera/decisions.yaml",
         "data": {
@@ -396,6 +405,15 @@ ARTIFACT_FIXTURES = {
             ],
         },
         "expected": "number=1",
+    },
+    "design": {
+        "path": "DESIGN.md",
+        "data": {
+            "entries": [
+                {"category": "palette", "name": "primary", "value": "#111827"},
+            ],
+        },
+        "expected": "category=palette",
     },
     "docs": {
         "path": ".agentera/docs.yaml",
@@ -459,6 +477,15 @@ ARTIFACT_FIXTURES = {
             ],
         },
         "expected": "timestamp=2026-05-01",
+    },
+    "todo": {
+        "path": "TODO.md",
+        "data": {
+            "entries": [
+                {"severity": "critical", "description": "Fix bug", "status": "open"},
+            ],
+        },
+        "expected": "severity=critical",
     },
     "vision": {
         "path": ".agentera/vision.yaml",

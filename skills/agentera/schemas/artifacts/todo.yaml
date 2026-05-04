@@ -1,13 +1,60 @@
-schema: todo
-version: 1
-artifact: TODO.md
-token_budget: 5000
-human_facing: true
-required_headings:
-  - pattern: "^# TODO"
-    label: "top-level heading"
-severity_headings:
-  - pattern: "^## .*Critical"
-  - pattern: "^## .*Degraded"
-  - pattern: "^## .*Normal"
-  - pattern: "^## .*Annoying"
+# Todo Artifact Schema
+#
+# Open issues and tasks maintained by realisera and inspektera. Severity-ranked
+# checklist of work to be done, resolved items, and deferred work.
+#
+# Note: TODO.md is a human-facing Markdown artifact. It remains at the
+# project root and is not migrated to YAML. This schema exists for validation
+# and CLI discovery consistency.
+
+meta:
+  name: todo
+  version: "1.0.0"
+  description: >-
+    Open issues and tasks. Produced by realisera, inspektera. Consumed by
+    hej for status briefings. Human-facing: remains Markdown at project root.
+  artifact_type: human_facing
+  path: "TODO.md"
+  producer: [realisera, inspektera]
+  consumers: [hej, all_skills]
+  format: yaml
+
+GROUP_PREFIXES:
+  BUDGET: TB
+  ITEM: TI
+  VALIDATION: TV
+
+BUDGET:
+  1:
+    id: TB1
+    token_budget: 5000
+    description: >-
+      Maximum tokens for TODO.md content. Exceeding triggers compaction.
+
+ITEM:
+  1:
+    id: TI1
+    field: severity
+    type: string
+    required: true
+    description: >-
+      Issue severity per protocol.yaml SEVERITY_ISSUE:
+      critical (⇶), degraded (⇉), normal (→), annoying (⇢).
+    validation:
+      - "Must be one of: critical, degraded, normal, annoying"
+  2:
+    id: TI2
+    field: description
+    type: string
+    required: true
+    description: >-
+      Brief description of the task or issue.
+  3:
+    id: TI3
+    field: status
+    type: string
+    required: true
+    description: >-
+      Current status: open or resolved.
+    validation:
+      - "Must be one of: open, resolved"
