@@ -120,13 +120,17 @@ skills/agentera/
     hej/
       prose.md
       schemas/
-        workflow.yaml
+        triggers.yaml
         artifacts.yaml
         validation.yaml
+        exit.yaml
     resonera/
       prose.md
       schemas/
-        ...
+        triggers.yaml
+        artifacts.yaml
+        validation.yaml
+        exit.yaml
     ... (12 capabilities total)
 ```
 
