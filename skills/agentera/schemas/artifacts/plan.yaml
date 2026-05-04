@@ -1,0 +1,9 @@
+schema: plan
+version: 1
+artifact: PLAN.md
+token_budget: 2500
+required_headings:
+  - pattern: "^# Plan"
+    label: "top-level heading"
+  - pattern: "(?:^## Tasks|^### Task \\d+)"
+    label: "task section or entry"

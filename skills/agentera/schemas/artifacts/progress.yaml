@@ -1,0 +1,9 @@
+schema: progress
+version: 1
+artifact: PROGRESS.md
+token_budget: 3000
+required_headings:
+  - pattern: "^# Progress"
+    label: "top-level heading"
+  - pattern: "^(?:■\\s*)?## Cycle \\d+"
+    label: "cycle entry"

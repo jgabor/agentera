@@ -1,0 +1,9 @@
+schema: experiments
+version: 1
+artifact: EXPERIMENTS.md
+token_budget: 2500
+required_headings:
+  - pattern: "^# Experiments"
+    label: "top-level heading"
+  - pattern: "^(?:## Experiment \\d+|## Closure\\b)"
+    label: "experiment entry or closure"

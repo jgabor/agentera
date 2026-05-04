@@ -1,0 +1,9 @@
+schema: health
+version: 1
+artifact: HEALTH.md
+token_budget: 2000
+required_headings:
+  - pattern: "^# Health"
+    label: "top-level heading"
+  - pattern: "^## Audit \\d+"
+    label: "audit entry"
