@@ -1,138 +1,109 @@
-# Plan: Agentera 2.0 Phase 2 -- Capability Ports
+# Plan: Phase 3 — Integration
 
 <!-- Level: full | Created: 2026-05-04 | Status: active -->
-<!-- Reviewed: 2026-05-04 | Critic issues: 4 found, 1 addressed, 3 dismissed | Revised: split quality loop into two tasks for size balance -->
+<!-- Reviewed: 2026-05-04 | Critic issues: 10 found, 4 addressed, 6 dismissed -->
 
 ## What
 
-Port all 12 v1 SKILL.md files (4,521 lines) into the v2 capability model. Each capability gets `prose.md` (behavioral instructions) and `schemas/` (YAML groups with stable IDs). All ports validate against `capability_schema_contract.yaml`. Master SKILL.md routing discovers new triggers automatically.
+Wire Phase 1 infrastructure and Phase 2 capabilities together. Clean up stale v1 tests, verify cross-capability references resolve, expand the query CLI, configure runtime adapters, and update developer-facing docs.
 
 ## Why
 
-Phase 1 built the skeleton (schema contract, protocol, artifact schemas, CLI, migration tool, hook). Phase 2 fills it with behavior. Without ported capabilities, the v2 bundle is infrastructure with no behavioral content. This is the largest single phase in the ROADMAP.
+Phases 1-2 built the parts but never connected them. The hook validates artifacts but has no tests for 5 of 9 schemas. 62 v1 tests fail. The query CLI doesn't cover all artifact types. Runtime adapters aren't configured. AGENTS.md still describes v1.
 
 ## Constraints
 
-- D39 (firm): single bundled skill, 12 capabilities, big bang cutover from feat/v2
-- D40 (firm): YAML artifacts, capabilities naming, no backward compat
-- VISION.md: token efficiency is a design constraint, feedback loop is the product
-- All work on feat/v2 branch; v1 system on main untouched
-- Each capability must pass `uv run scripts/validate_capability.py capabilities/<name>`
-- V1 scripts and references stay at their v1 locations; prose.md references them by current path
-- SPEC.md references replaced with protocol.yaml primitive references during port
+- No new capabilities or schemas
+- Scripts use Python stdlib + pyyaml via uv inline script metadata
+- v1 hook tests are removed, not rewritten (v2 has its own test file)
+- All 688 currently passing tests must stay green
+- 4 runtime targets: Claude Code, OpenCode, Codex, Copilot
 
 ## Scope
 
-**In**: Porting all 12 capabilities (prose.md + schemas/), contract validation, routing integration tests
-**Out**: Cross-capability dependency resolution (Phase 3), hook integration (Phase 3), query CLI expansion (Phase 3), runtime adapter updates (Phase 3), v1 test porting (Phase 3), token benchmarking (Phase 4), v1 script migration (Phase 3), SPEC.md deletion (Phase 4)
-**Deferred**: Master SKILL.md thin optimization (measure after all ports), third-party extensibility
+**In**: v1 test cleanup, cross-cap reference verification, CLI expansion, runtime adapters, hook test coverage, SKILL.md directory listing fix, AGENTS.md update
+**Out**: Token benchmarking (Phase 4), semantic eval port (Phase 4), merge to main (Phase 4), new capabilities, schema changes
+**Deferred**: Master SKILL.md thin optimization, v1 script migration, SPEC.md deletion
 
 ## Design
 
-Each port follows the same decomposition pattern:
-
-1. Read the v1 SKILL.md, separate behavioral instructions from structural contracts
-2. Write `prose.md` with workflow steps, personality, safety rails, examples. Replace SPEC.md references with protocol.yaml references. Preserve v1 script/reference paths.
-3. Write `schemas/` with 4 required groups using GROUP_PREFIX convention (T/A/V/E) and stable IDs. Reference protocol.yaml primitives by stable ID.
-4. Validate against capability_schema_contract.yaml
-5. Test contract validation, routing pickup, and protocol reference resolution
-
-Capabilities grouped by functional cluster. Each cluster ports together because capabilities share cross-references. hej ports first as pattern proof; subsequent tasks follow the established template.
+Integration work: no new architectural decisions. Each task connects existing pieces or removes dead v1 code. Tasks are mostly independent (T1, T2, T3, T4, T6 have no dependencies) to maximize parallelism during orchestration.
 
 ## Tasks
 
-### Task 1: hej Port + Pattern Proof
+### Task 1: Stale v1 Test Cleanup
 
 **Depends on**: none
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN the hej capability directory WHEN validate_capability.py runs THEN all contract checks pass (directory structure, required groups, numbered entries, stable IDs)
-▸ GIVEN the hej prose.md WHEN read THEN it contains the orientation workflow (detect state, brief, route), safety rails, and exit vocabulary
-▸ GIVEN the hej schemas TRIGGERS group WHEN read THEN it contains patterns matching hej's v1 trigger vocabulary
-▸ GIVEN the hej schemas ARTIFACTS group WHEN read THEN it lists all artifacts hej reads and produces
-▸ GIVEN the master SKILL.md routing WHEN a message matches a hej trigger THEN it routes to capabilities/hej/prose.md
-▸ GIVEN the master SKILL.md routing WHEN a message matches no capability THEN it falls back to hej
-▸ Test proportionality: 1 pass + 1 fail for contract validation, 1 pass for routing pickup, 1 pass for fallback
+▸ GIVEN the full test suite WHEN pytest runs THEN 0 tests fail (currently 62 fail in test_validate_artifact.py)
+▸ GIVEN test_validate_artifact.py is removed or replaced WHEN the test suite runs THEN no v1-format hook tests remain
+▸ GIVEN the test suite WHEN measured by test count THEN 688+ tests pass (no regression from cleanup)
 
-### Task 2: Core Development Loop (realisera, resonera, planera)
+### Task 2: Cross-Capability Reference Verification
+
+**Depends on**: none
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN each of the 12 capability schemas WHEN their protocol.yaml stable ID references are extracted THEN all resolve to valid entries in protocol.yaml
+▸ GIVEN the master SKILL.md routing WHEN each capability's trigger patterns are tested THEN each routes to the correct capability (not hej fallback)
+▸ GIVEN inter-capability references in prose.md files (e.g., orkestrera references realisera, inspektera) WHEN checked THEN each referenced capability exists in capabilities/
+▸ Test proportionality: 1 test per capability for routing, 1 test for protocol reference resolution
+
+### Task 3: Query CLI Expansion
+
+**Depends on**: none
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN the agentera query CLI WHEN invoked with each of the 9 artifact schema names THEN it returns valid data or a clear "no data" message
+▸ GIVEN the agentera query CLI WHEN invoked with --list-artifacts THEN it lists all 9 artifact types from schema discovery
+▸ GIVEN the existing 23 CLI tests WHEN re-run THEN all still pass
+▸ Test proportionality: 1 test per artifact type for named query, 1 test for --list-artifacts
+
+### Task 4: Runtime Adapter Configuration
+
+**Depends on**: none
+**Status**: □ pending
+**Acceptance**:
+▸ GIVEN skills/agentera/.claude-plugin/plugin.json WHEN read THEN it contains valid Claude Code plugin metadata for the bundled skill
+▸ GIVEN hooks/hooks.json WHEN read THEN it references the v2 hook at hooks/validate_artifact.py with correct event type
+▸ GIVEN hooks/codex-hooks.json WHEN read THEN it references the v2 hook with correct Codex event format
+▸ GIVEN the OpenCode plugin manifest WHEN read THEN it exists and references the bundled skill
+
+### Task 5: Hook Verification Against v2 Artifact Schemas
 
 **Depends on**: Task 1
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN each of the three capability directories WHEN validate_capability.py runs THEN all contract checks pass for each
-▸ GIVEN each capability's prose.md WHEN read THEN it contains the full v1 workflow steps, safety rails, and cross-capability references
-▸ GIVEN each capability's TRIGGERS group WHEN read THEN it contains patterns matching the v1 trigger vocabulary
-▸ GIVEN each capability's ARTIFACTS group WHEN read THEN it lists all artifacts the capability reads and writes
-▸ GIVEN the master SKILL.md routing WHEN a message matches any of the three capabilities' triggers THEN it routes to the correct one
-▸ GIVEN each ported capability's schemas WHEN protocol.yaml primitive references are checked THEN all references resolve to valid protocol entries
-▸ Test proportionality: 1 pass + 1 fail per capability for contract validation, 1 pass per capability for routing
+▸ GIVEN a valid YAML artifact matching each of the 9 artifact schemas WHEN the hook validates it THEN it exits 0
+▸ GIVEN an invalid YAML artifact (missing required field) for each of the 9 schemas WHEN the hook validates it THEN it exits 2 with details on stderr
+▸ GIVEN a non-artifact file path WHEN the hook validates it THEN it exits 0 immediately
+▸ Test proportionality: 1 pass + 1 fail per artifact schema (18 tests), 1 test for non-artifact passthrough
 
-### Task 3: Quality (inspektera, optimera)
+### Task 6: SKILL.md and AGENTS.md Update
 
-**Depends on**: Task 1
-**Status**: ■ complete
+**Depends on**: none
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN each of the two capability directories WHEN validate_capability.py runs THEN all contract checks pass for each
-▸ GIVEN each capability's prose.md WHEN read THEN it contains the full v1 workflow steps, safety rails, and cross-capability references
-▸ GIVEN each capability's TRIGGERS group WHEN read THEN it contains patterns matching the v1 trigger vocabulary
-▸ GIVEN each capability's ARTIFACTS group WHEN read THEN it lists all artifacts the capability reads and writes
-▸ GIVEN the master SKILL.md routing WHEN a message matches any of the two capabilities' triggers THEN it routes to the correct one
-▸ GIVEN each ported capability's schemas WHEN protocol.yaml primitive references are checked THEN all references resolve to valid protocol entries
-▸ Test proportionality: 1 pass + 1 fail per capability for contract validation, 1 pass per capability for routing
-
-### Task 4: Orchestration (orkestrera)
-
-**Depends on**: Task 1
-**Status**: ■ complete
-**Acceptance**:
-▸ GIVEN the orkestrera capability directory WHEN validate_capability.py runs THEN all contract checks pass
-▸ GIVEN the orkestrera prose.md WHEN read THEN it contains the conductor workflow (plan dispatch, evaluation gating, retry handling), safety rails, and cross-capability references
-▸ GIVEN the orkestrera TRIGGERS group WHEN read THEN it contains patterns matching the v1 trigger vocabulary
-▸ GIVEN the orkestrera ARTIFACTS group WHEN read THEN it lists all artifacts orkestrera reads and writes
-▸ GIVEN the master SKILL.md routing WHEN a message matches an orkestrera trigger THEN it routes to capabilities/orkestrera/prose.md
-▸ GIVEN orkestrera's schemas WHEN protocol.yaml primitive references are checked THEN all references resolve to valid protocol entries
-▸ Test proportionality: 1 pass + 1 fail for contract validation, 1 pass for routing
-
-### Task 5: Creative (visionera, visualisera, dokumentera)
-
-**Depends on**: Task 1
-**Status**: ■ complete
-**Acceptance**:
-▸ GIVEN each of the three capability directories WHEN validate_capability.py runs THEN all contract checks pass for each
-▸ GIVEN each capability's prose.md WHEN read THEN it contains the full v1 workflow steps, safety rails, and cross-capability references
-▸ GIVEN each capability's TRIGGERS group WHEN read THEN it contains patterns matching the v1 trigger vocabulary
-▸ GIVEN each capability's ARTIFACTS group WHEN read THEN it lists all artifacts the capability reads and writes
-▸ GIVEN the master SKILL.md routing WHEN a message matches any of the three capabilities' triggers THEN it routes to the correct one
-▸ GIVEN each ported capability's schemas WHEN protocol.yaml primitive references are checked THEN all references resolve to valid protocol entries
-▸ Test proportionality: 1 pass + 1 fail per capability for contract validation, 1 pass per capability for routing
-
-### Task 6: Analytics (profilera, inspirera)
-
-**Depends on**: Task 1
-**Status**: ■ complete
-**Acceptance**:
-▸ GIVEN each of the two capability directories WHEN validate_capability.py runs THEN all contract checks pass for each
-▸ GIVEN each capability's prose.md WHEN read THEN it contains the full v1 workflow steps, safety rails, and cross-capability references
-▸ GIVEN each capability's TRIGGERS group WHEN read THEN it contains patterns matching the v1 trigger vocabulary
-▸ GIVEN each capability's ARTIFACTS group WHEN read THEN it lists all artifacts the capability reads and writes
-▸ GIVEN the master SKILL.md routing WHEN a message matches any of the two capabilities' triggers THEN it routes to the correct one
-▸ GIVEN each ported capability's schemas WHEN protocol.yaml primitive references are checked THEN all references resolve to valid protocol entries
-▸ Test proportionality: 1 pass + 1 fail per capability for contract validation, 1 pass per capability for routing
+▸ GIVEN the master SKILL.md directory structure example WHEN compared to actual capability schemas THEN it lists the correct file names (triggers.yaml, artifacts.yaml, validation.yaml, exit.yaml)
+▸ GIVEN AGENTS.md WHEN read THEN it describes the v2 bundled skill model (not v1 per-directory skills)
+▸ GIVEN AGENTS.md WHEN read THEN it references validate_capability.py (not validate_spec.py) and the capability directory structure
 
 ### Task 7: Plan-level Freshness Checkpoint
 
 **Depends on**: Task 1, Task 2, Task 3, Task 4, Task 5, Task 6
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
-▸ GIVEN all prior tasks complete WHEN CHANGELOG.md is checked THEN it has an Added entry under [Unreleased] covering Phase 2 capability ports
-▸ GIVEN all prior tasks complete WHEN PROGRESS.md is checked THEN it has a cycle entry whose What field summarizes the Phase 2 plan completion
-▸ GIVEN all prior tasks complete WHEN TODO.md is checked THEN any Phase 2 items have corresponding Resolved entries
+▸ GIVEN all prior tasks complete WHEN CHANGELOG.md is checked THEN it has an Added entry under [Unreleased] covering Phase 3 integration work
+▸ GIVEN all prior tasks complete WHEN PROGRESS.md is checked THEN it has a cycle entry whose What field summarizes the Phase 3 plan completion
+▸ GIVEN all prior tasks complete WHEN TODO.md is checked THEN any Phase 3 items have corresponding Resolved entries
 
 ## Overall Acceptance
 
-▸ GIVEN all 12 capabilities ported WHEN validate_capability.py runs against each THEN all pass contract validation
-▸ GIVEN all 12 capabilities ported WHEN the master SKILL.md routing is tested with each capability's trigger patterns THEN all route correctly
-▸ GIVEN all 12 capabilities ported WHEN their schemas are checked for protocol.yaml references THEN all references resolve
+▸ GIVEN the full test suite WHEN pytest runs THEN 0 failures
+▸ GIVEN all 12 capabilities WHEN validate_capability.py runs against each THEN all pass
+▸ GIVEN the query CLI WHEN each artifact type is queried THEN results are correct
+▸ GIVEN the hook WHEN each artifact schema is tested THEN validation works for all 9 types
 
 ## Surprises
 
