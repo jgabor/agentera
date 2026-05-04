@@ -43,7 +43,7 @@ Merge feat/v2 into main via fast-forward or merge commit. Retire v1 infrastructu
 ### Task 2: Merge feat/v2 to Main
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the main worktree WHEN feat/v2 is merged THEN the merge completes without conflicts or with documented conflict resolution
 ▸ GIVEN the merged main WHEN SPEC.md is checked THEN it is absent (retired as part of v2 cutover)
