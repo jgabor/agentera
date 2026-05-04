@@ -34,7 +34,7 @@ Integration work: no new architectural decisions. Each task connects existing pi
 ### Task 1: Stale v1 Test Cleanup
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the full test suite WHEN pytest runs THEN 0 tests fail (currently 62 fail in test_validate_artifact.py)
 ▸ GIVEN test_validate_artifact.py is removed or replaced WHEN the test suite runs THEN no v1-format hook tests remain
