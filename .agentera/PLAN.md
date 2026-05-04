@@ -63,7 +63,7 @@ Integration work: no new architectural decisions. Each task connects existing pi
 ### Task 4: Runtime Adapter Configuration
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN skills/agentera/.claude-plugin/plugin.json WHEN read THEN it contains valid Claude Code plugin metadata for the bundled skill
 ▸ GIVEN hooks/hooks.json WHEN read THEN it references the v2 hook at hooks/validate_artifact.py with correct event type
