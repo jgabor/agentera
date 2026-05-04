@@ -160,7 +160,7 @@ Each task is sized for one realisera cycle. Tasks 2 and 3 are independent and ca
 ### Task 11: Correct Archived Plan Documentation
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 
 - GIVEN the archived PLAN-2026-05-04-v200-cutover.md WHEN checked THEN Task 2 (Merge feat/v2 to Main) status reflects the revert (not marked complete)
