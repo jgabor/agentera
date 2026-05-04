@@ -2,20 +2,6 @@
 
 Reasoning trail maintained by resonera. Each deliberation session appends one entry. Decisions are referenced by realisera, optimera, and profilera for context on why choices were made.
 
-## Decision 30 · 2026-04-12
-
-**Question**: How should the realisera-token harness be redesigned after three consecutive discarded experiments where run-to-run variance (13-20%) drowned the optimization signal (5-10%)?
-**Context**: Experiments 1-3 all measured the full-cycle composite (peak_context + output_total) via a single Docker A/B run. The composite conflates fixed cost (SKILL.md in the system prompt) and variable cost (which files the model reads, tool choice non-determinism). SKILL.md edits change the fixed cost deterministically, but the metric can't detect them because the variable cost swings 10-15K tokens between runs with identical code. The hej-token objective succeeded (29.5% signal vs 5% noise) because hej's session is short and deterministic; realisera's session is long and stochastic. A pre-flight token probe was built but couldn't isolate SKILL.md tokens via the CLI due to prompt caching. An API key is available for the Anthropic count_tokens endpoint.
-**Alternatives**:
-
-- Multi-run averaging (3x full Docker A/B, average composite): brute force, $9/experiment, reduces variance to ~5-7% but doesn't separate fixed from variable cost
-- Tighter vehicle constraints (restrict tool surface further, deterministic file order): attacks variance at the source but reduces measurement realism
-- Two-tier metric with Tier 2 composite as primary: keeps the noisy metric as the decision criterion, just adds Tier 1 as diagnostic
-**Choice**: Two-tier metric. Tier 1 (primary): exact token count of SKILL.md + contract.md via the Anthropic count_tokens API (free, zero variance, deterministic). Tier 2 (behavioral validation): single Docker A/B run, pass bar is gates-only (causal + structural must pass), composite value is diagnostic only. An experiment is kept when Tier 1 improves AND Tier 2 gates pass.
-**Reasoning**: The fixed cost (system prompt tokens) is exactly what SKILL.md edits control, and it's measurable with zero variance via the API. The variable cost (runtime reads, tool selection) is stochastic and outside the optimization scope of SKILL.md changes. Separating them means SKILL.md experiments get instant, exact feedback (Tier 1) while behavioral soundness is confirmed without requiring the noisy composite to improve (Tier 2). The full composite remains in the breakdown as a diagnostic for trend analysis across experiments. This unblocks contract.md lazy-reference, spec_sections trimming, and progressive disclosure experiments that were all stuck because the composite couldn't detect 5-10% improvements.
-**Confidence**: firm
-**Feeds into**: OBJECTIVE.md (metric redefinition), .optimera/harness (redesign)
-
 ## Decision 31 · 2026-04-12
 
 **Question**: How should optimera represent multiple objectives, and should `.optimera/` consolidate under `.agentera/`?
@@ -174,6 +160,50 @@ co-installed skills mesh through one verified package root.
 **Confidence**: firm
 **Feeds into**: ROADMAP.md, VISION.md
 
+## Decision 47 · 2026-05-04 · completed
+
+**Title**: Agentera 2.0 Token Benchmark
+
+**v1 baseline** (all 12 `skills/*/SKILL.md` + `SPEC.md`):
+
+| Component | Bytes |
+|---|---|
+| 12 SKILL.md files | 256,314 |
+| SPEC.md | 95,899 |
+| **Total** | **352,213** |
+| Estimated tokens (~4 chars/token) | ~88,053 |
+
+**v2 measurement** (`SKILL.md` + `protocol.yaml` + 12 `prose.md` + 48 schema files):
+
+| Component | Bytes |
+|---|---|
+| SKILL.md | 5,381 |
+| protocol.yaml | 13,704 |
+| 12 prose.md files | 210,827 |
+| 48 schema YAML files | 83,444 |
+| **Total** | **313,356** |
+| Estimated tokens (~4 chars/token) | ~78,339 |
+
+**Delta**: -38,857 bytes (**-11.0%**), estimated -9,714 tokens.
+
+**Methodology**: `wc -c` on all measured files. Token estimate uses 4 chars/token for English text (conservative; real tokenizer ratios vary). v1 measured from main worktree, v2 from feat/v2 worktree. Both include all content a runtime must read to dispatch a skill/capability.
+
+**Note**: The ROADMAP.md aspirational target of 40% reduction assumed that schema extraction would offload more structural prose. The actual -11.0% reflects that capability prose.md files retain substantial behavioral instructions while schema files add ~83 KB of machine-readable structure. The token win is modest, but the structural payoff (machine-readable schemas, query CLI potential, single dispatch point) was the primary motivation per D39.
+
+## Decision 40 · 2026-05-04
+
+**Question**: How should the four open questions from the ROADMAP be resolved: artifact format, master SKILL.md size, backward compatibility, and sub-module naming?
+**Context**: Decision 39 committed to Agentera 2.0. ROADMAP.md listed four open questions blocking Phase 1. A token-profile experiment measured YAML vs JSON vs JSONL for representative PROGRESS entries.
+**Alternatives**:
+
+- [YAML]: human-glanceable, smallest bytes for single entries. Token experiment showed ~18% more tokens than JSONL for 10-entry files, but query CLI abstracts the format so raw tokens never enter agent context. Chosen for artifacts.
+- [JSONL]: most compact for multi-entry files, append-friendly. Rejected: marginal token savings irrelevant when CLI is the interface.
+- [JSON]: best schema validation tooling (JSON Schema universal). Rejected: larger than YAML for single entries, no meaningful advantage when CLI abstracts access.
+**Choice**: YAML for all agent-facing artifacts. No backward compatibility with v1 (migration tool handles conversion). Sub-modules called "capabilities." Master SKILL.md size deferred to Phase 1 (measure after hej port).
+**Reasoning**: The token experiment proved format choice doesn't affect agent-visible token consumption because the query CLI is the seam. YAML wins on human-glanceability and smallest bytes for typical single-entry reads. No backward compat is consistent with D39's big bang. "Capabilities" aligns with SKILL.md vocabulary and distinguishes from the v1 "skills" concept.
+**Confidence**: firm
+**Feeds into**: ROADMAP.md
+
 ## Archived Decisions
 
 - Decision 1 (2026-03-29): **Question**: How should planera (a planning skill) be designed to fit the agent-skills suite?
@@ -205,3 +235,4 @@ co-installed skills mesh through one verified package root.
 - Decision 27 (2026-04-11): **Question**: How to implement Section 21's session corpus contract to close the gap between spec and extraction pipeline
 - Decision 28 (2026-04-11): **Question**: Where should PROFILE.md and profilera's generated artifacts live by default, and how should runtime adapters provide path overrides?
 - Decision 29 (2026-04-11): **Question**: How should optimera handle measurement archetypes that go beyond thin command-wrapper harnesses, and what should the first such reference...
+- Decision 30 (2026-04-12): **Question**: How should the realisera-token harness be redesigned after three consecutive discarded experiments where run-to-run variance (13-20%) drowned the optimization...

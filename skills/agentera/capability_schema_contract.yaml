@@ -1,0 +1,254 @@
+# Capability Schema Contract
+#
+# Self-referential: this file IS a valid capability schema.
+# Validating it against its own rules passes.
+#
+# The contract defines:
+#   1. Required groups every capability schema must contain
+#   2. Entry structure within each group (numbered, stable IDs)
+#   3. Deprecation protocol (deprecated + replaced_by)
+#   4. Directory structure requirements (prose.md, schemas/)
+
+meta:
+  name: capability_schema_contract
+  version: "1.0.0"
+  description: >-
+    Defines what a valid capability schema looks like.
+    A capability directory must contain prose.md and a schemas/ directory.
+    The union of all YAML files in schemas/ must contain all required groups.
+  capability_type: contract
+  self_referential: true
+
+REQUIRED_GROUPS:
+  - TRIGGERS
+  - ARTIFACTS
+  - VALIDATION
+  - EXIT_CONDITIONS
+
+ENTRY_SCHEMA:
+  description: >-
+    Every entry within a group follows this structure.
+    Entries are numbered map keys (1, 2, 3, ...).
+    Each entry MUST have a stable `id` field.
+    Entries MAY carry `deprecated: true` and `replaced_by: <id>`.
+  fields:
+    id:
+      type: string
+      required: true
+      description: "Stable identifier that survives renames. Format: <GROUP_PREFIX><N> (e.g. T1, A3, V2, E1)."
+    description:
+      type: string
+      required: true
+      description: Human-readable explanation of this entry.
+    deprecated:
+      type: boolean
+      required: false
+      default: false
+      description: Mark this entry as deprecated. Deprecated entries must not be removed.
+    replaced_by:
+      type: string
+      required: false
+      description: >-
+        ID of the entry that replaces this deprecated entry.
+        Required when deprecated is true. Must reference a valid entry ID
+        within the same group.
+
+GROUP_PREFIXES:
+  TRIGGERS: T
+  ARTIFACTS: A
+  VALIDATION: V
+  EXIT_CONDITIONS: E
+
+DIRECTORY_REQUIREMENTS:
+  required_files:
+    - path: prose.md
+      description: Behavioral instructions the agent reads.
+    - path: schemas/
+      description: Directory containing YAML schema files.
+      type: directory
+  optional_files: []
+
+# ---------------------------------------------------------------------------
+# The four required groups follow. The contract IS a valid capability schema,
+# so these groups demonstrate the structure they define.
+# ---------------------------------------------------------------------------
+
+TRIGGERS:
+  1:
+    id: T1
+    description: >-
+      Validate a capability directory. Invoked when checking if a capability
+      conforms to this contract (directory structure, required groups, entry
+      structure, deprecation consistency).
+    patterns:
+      - "validate a capability"
+      - "check capability schema"
+      - "validate schema contract"
+  2:
+    id: T2
+    description: >-
+      Parse a capability schema YAML file. Invoked when reading a single schema
+      file to verify it contains properly structured entries within its groups.
+    patterns:
+      - "parse capability schema"
+      - "read schema file"
+  3:
+    id: T3
+    description: >-
+      Schema evolution check. Invoked when verifying that deprecated entries
+      have valid replaced_by references and no orphaned deprecation chains.
+    patterns:
+      - "check deprecation"
+      - "schema evolution"
+  4:
+    id: T4
+    description: >-
+      Self-validation. The contract file validates against its own rules.
+      Ensures the meta-schema is a correct instance of itself.
+    patterns:
+      - "self-validate contract"
+      - "validate schema contract against itself"
+
+ARTIFACTS:
+  1:
+    id: A1
+    name: capability_directory
+    path: "capabilities/<name>/"
+    description: >-
+      A valid capability directory. Must contain prose.md and schemas/.
+      The schemas/ directory holds YAML files whose union covers all required
+      groups.
+    produces: false
+    consumes: true
+  2:
+    id: A2
+    name: schema_file
+    path: "capabilities/<name>/schemas/<filename>.yaml"
+    description: >-
+      A YAML file within a capability's schemas/ directory. Contains one or
+      more groups (TRIGGERS, ARTIFACTS, VALIDATION, EXIT_CONDITIONS). Multiple
+      files are allowed; the validator checks their union for completeness.
+    produces: false
+    consumes: true
+  3:
+    id: A3
+    name: prose_file
+    path: "capabilities/<name>/prose.md"
+    description: >-
+      Behavioral instructions the agent reads. Markdown format. Contains the
+      capability's workflow, personality, interaction rules, and examples.
+    produces: false
+    consumes: true
+  4:
+    id: A4
+    name: validation_report
+    path: "stdout"
+    description: >-
+      Output of the validation script. Reports pass/fail per check, with
+      details on any violations found.
+    produces: true
+    consumes: false
+
+VALIDATION:
+  1:
+    id: V1
+    rule: directory_structure
+    description: >-
+      Capability directory must contain prose.md and schemas/ directory.
+    severity: error
+    checks:
+      - "prose.md is a file"
+      - "schemas/ is a directory"
+      - "schemas/ contains at least one .yaml file"
+  2:
+    id: V2
+    rule: required_groups_present
+    description: >-
+      The union of all YAML files in schemas/ must contain all four required
+      groups: TRIGGERS, ARTIFACTS, VALIDATION, EXIT_CONDITIONS.
+    severity: error
+    checks:
+      - "TRIGGERS group exists in at least one schema file"
+      - "ARTIFACTS group exists in at least one schema file"
+      - "VALIDATION group exists in at least one schema file"
+      - "EXIT_CONDITIONS group exists in at least one schema file"
+  3:
+    id: V3
+    rule: numbered_entries
+    description: >-
+      Each group must contain numbered entries (1, 2, 3, ...) as map keys.
+      Non-numeric keys within groups are not allowed.
+    severity: error
+    checks:
+      - "Group keys are positive integers"
+  4:
+    id: V4
+    rule: stable_ids
+    description: >-
+      Every entry must have a stable `id` field. The id should follow the
+      GROUP_PREFIX pattern (T for TRIGGERS, A for ARTIFACTS, V for VALIDATION,
+      E for EXIT_CONDITIONS) followed by a number.
+    severity: error
+    checks:
+      - "Each entry has an 'id' field"
+      - "Each entry has a 'description' field"
+  5:
+    id: V5
+    rule: deprecation_consistency
+    description: >-
+      Entries marked deprecated: true must have a replaced_by field. The
+      replaced_by value must reference a valid entry ID within the same group.
+      Deprecated entries must not be removed; they stay for referential
+      integrity.
+    severity: warning
+    checks:
+      - "deprecated entries have replaced_by field"
+      - "replaced_by references a valid entry ID"
+  6:
+    id: V6
+    rule: self_referential
+    description: >-
+      The capability schema contract file must pass its own validation rules.
+      This ensures the meta-schema is internally consistent.
+    severity: error
+    checks:
+      - "Contract file contains all required groups"
+      - "Contract file entries follow entry schema structure"
+      - "Contract file passes deprecation consistency check"
+
+EXIT_CONDITIONS:
+  1:
+    id: E1
+    condition: valid
+    description: >-
+      All validation checks pass. The capability directory conforms to the
+      schema contract.
+    exit_code: 0
+  2:
+    id: E2
+    condition: invalid_structure
+    description: >-
+      Directory structure validation failed. Missing prose.md, schemas/
+      directory, or YAML files.
+    exit_code: 1
+  3:
+    id: E3
+    condition: missing_groups
+    description: >-
+      One or more required groups are absent from the union of schema files.
+    exit_code: 1
+  4:
+    id: E4
+    condition: invalid_entries
+    description: >-
+      Entries within groups violate the entry schema (missing id, unnumbered
+      keys, missing description).
+    exit_code: 1
+  5:
+    id: E5
+    condition: deprecation_warnings
+    description: >-
+      Deprecated entries have inconsistent replaced_by references. Treated as
+      warnings, not errors. Validation still passes (exit 0) but reports are
+      emitted to stderr.
+    exit_code: 0

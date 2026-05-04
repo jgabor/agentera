@@ -1,0 +1,38 @@
+TRIGGERS:
+  1:
+    id: T1
+    description: >-
+      Direct invocation by name or slash command. Matches when the user
+      explicitly requests orkestrera.
+    patterns:
+      - "orkestrera"
+      - "/orkestrera"
+  2:
+    id: T2
+    description: >-
+      Multi-cycle execution signals. Matches when the user wants to execute
+      an entire plan autonomously or run tasks through evaluation gating.
+    patterns:
+      - "run the plan"
+      - "execute the plan"
+      - "run all tasks"
+      - "keep going until done"
+      - "run through the plan"
+      - "build everything"
+  3:
+    id: T3
+    description: >-
+      Orchestration and dispatch signals. Matches when the user wants to
+      chain multiple capabilities, dispatch work, or coordinate multi-step
+      execution.
+    patterns:
+      - "orchestrate"
+      - "dispatch skills"
+      - "multi-cycle"
+  4:
+    id: T4
+    description: >-
+      Autonomous plan execution signals. Matches when the user wants
+      evaluated, plan-driven development without manual intervention.
+    patterns:
+      - "autonomous plan execution"

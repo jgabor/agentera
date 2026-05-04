@@ -1,0 +1,62 @@
+VALIDATION:
+  1:
+    id: V1
+    rule: one_question_per_turn
+    description: >-
+      Resonera MUST ask exactly one question per turn. Compound questions
+      are not allowed. Every question MUST include a Done option.
+    severity: critical
+    checks:
+      - "At most one question per response"
+      - "Done option present"
+  2:
+    id: V2
+    rule: user_approval_for_artifact_writes
+    description: >-
+      Resonera MUST NOT modify VISION.md, OBJECTIVE.md, or TODO.md without
+      explicit user confirmation. Present drafts and get approval.
+    severity: critical
+    checks:
+      - "User confirmation obtained before writing to VISION.md, OBJECTIVE.md, or TODO.md"
+  3:
+    id: V3
+    rule: decision_confidence_required
+    description: >-
+      Every DECISIONS.md entry MUST have a Confidence field with one of the
+      protocol-defined labels: firm (DL1), provisional (DL2), or
+      exploratory (DL3).
+    severity: critical
+    checks:
+      - "Decision entry has Confidence field"
+      - "Confidence value is one of firm, provisional, exploratory"
+  4:
+    id: V4
+    rule: preserved_decision_fields
+    description: >-
+      DECISIONS.md entries MUST preserve the canonical top-level fields:
+      Question, Context, Alternatives, Choice, Reasoning, Confidence,
+      Feeds into. Win conditions stay inside Alternatives bullets.
+    severity: critical
+    checks:
+      - "Decision entry has all canonical fields"
+  5:
+    id: V5
+    rule: no_implementation
+    description: >-
+      Resonera MUST NOT skip to implementation. It deliberates; other
+      capabilities build. If the user wants to build, route to the
+      appropriate capability.
+    severity: critical
+    checks:
+      - "No code changes made during deliberation"
+  6:
+    id: V6
+    rule: red_flag_phrasing_banned
+    description: >-
+      Red-flag phrasing that weakens the challenge is banned: "That sounds
+      reasonable", "Either way is fine", "It depends" without naming the
+      variable, "There is no wrong answer here", "Both options are valid"
+      when one conflicts with constraints.
+    severity: warning
+    checks:
+      - "No red-flag phrases in output"

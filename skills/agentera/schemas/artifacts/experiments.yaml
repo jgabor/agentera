@@ -1,9 +1,373 @@
-schema: experiments
-version: 1
-artifact: EXPERIMENTS.md
-token_budget: 2500
-required_headings:
-  - pattern: "^# Experiments"
-    label: "top-level heading"
-  - pattern: "^(?:## Experiment \\d+|## Closure\\b)"
-    label: "experiment entry or closure"
+# Experiments Artifact Schema
+#
+# Experiment log maintained by optimera. Each experiment records hypothesis,
+# method, metric results, kept/discarded status, and conclusions. Lives
+# alongside OBJECTIVE.md in .agentera/optimera/<name>/.
+#
+# Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
+# following capability_schema_contract.yaml and protocol.yaml conventions.
+#
+# ── Field-by-field mapping: v1 EXPERIMENTS.md → v2 experiments.yaml ──
+#
+# v1 Field                              v2 Field               v2 ID
+# ─────────────────────────────────────────────────────────────────────
+# ## Experiment N · date · label        EXPERIMENT.number      EX1
+# (date from heading)                   EXPERIMENT.date        EX2
+# (label from heading)                  EXPERIMENT.label       EX3
+# **Hypothesis**: <text>                EXPERIMENT.hypothesis  EX4
+# **Method**: <text>                    EXPERIMENT.method      EX5
+# **Change**: <text>                    EXPERIMENT.change      EX6
+# **Metric**: <text> + tables           EXPERIMENT.metric      EX7
+# **Regression**: <text>                EXPERIMENT.regression  EX8
+# **Status**: kept/discarded/baseline   EXPERIMENT.status      EX9
+# **Conclusion**: <text>                EXPERIMENT.conclusion  EX10
+# **Next**: <text>                      EXPERIMENT.next        EX11
+# **Escalation**: <text>                EXPERIMENT.escalation  EX12
+# **Target progress**: <text>           EXPERIMENT.target_progress EX13
+# **Brainstorm iteration log**          EXPERIMENT.iteration_log EX14
+# ## Closure · date                     CLOSURE.date           EC1
+# **Final value**: <value>              CLOSURE.final_value    EC2
+# **Target**: <target>                  CLOSURE.target         EC3
+# **Reason**: <text>                    CLOSURE.reason         EC4
+# ## Archived Experiments               (implicit section)     —
+# - EXP-N: result summary              ARCHIVE.summary        EA1
+#
+# Protocol references:
+#   status visual tokens: VT1-VT3 (protocol.yaml VISUAL_TOKENS)
+#   trend tokens: VT12-VT13 (protocol.yaml VISUAL_TOKENS)
+
+meta:
+  name: experiments
+  version: "1.0.0"
+  description: >-
+    Experiment log for optimera objectives. Produced and consumed by optimera.
+    Lives in .agentera/optimera/<name>/ alongside the objective.
+  artifact_type: agent_facing
+  path: ".agentera/optimera/<name>/experiments.yaml"
+  producer: optimera
+  consumers: [optimera]
+  format: yaml
+
+GROUP_PREFIXES:
+  BUDGET: EB
+  COMPACTION: EX_CMP
+  EXPERIMENT: EX
+  CLOSURE: EC
+  ARCHIVE: EA
+  VALIDATION: EV
+
+BUDGET:
+  1:
+    id: EB1
+    scope: per_experiment_entry
+    max_words: 300
+    description: >-
+      Maximum words per experiment entry. Budgets are guidelines, not
+      hard blockers.
+  2:
+    id: EB2
+    scope: full_file
+    max_words: 2500
+    description: >-
+      Maximum words for the full file. If a write would exceed this
+      budget, compact first (see COMPACTION group).
+
+COMPACTION:
+  1:
+    id: EX_CMP1
+    rule: uniform_10_40_50
+    description: >-
+      Growing artifacts follow a uniform 10/40/50 rule: 10 full-detail
+      entries, 40 one-line archive entries, drop beyond 50 total.
+  2:
+    id: EX_CMP2
+    full_detail:
+      max_entries: 10
+      selection: "10 most recent experiments"
+      format: "Standard experiment entry format (all fields)"
+    description: >-
+      The 10 most recent experiments are kept in full detail with
+      all fields.
+  3:
+    id: EX_CMP3
+    one_line_archive:
+      max_entries: 40
+      selection: "Experiments 11 through 50"
+      format: "EXP-N: <=15-word result summary"
+      fields: [number, summary]
+    description: >-
+      Experiments 11 through 50 are collapsed to one-line format under
+      the archive section. One-line summaries preserve experiment number
+      and result.
+  4:
+    id: EX_CMP4
+    dropped:
+      threshold: 50
+      action: "Removed entirely"
+    description: >-
+      Experiments older than 50 are dropped entirely.
+  5:
+    id: EX_CMP5
+    trigger: "When optimera writes a new experiment"
+    description: >-
+      Compaction runs when the producing skill writes a new entry.
+      If >10 full-detail entries exist, collapse the oldest to one-line.
+      If >40 one-line entries exist, drop the oldest.
+  6:
+    id: EX_CMP6
+    archive_section:
+      heading: "Archived Experiments"
+      placement: "Below recent experiments"
+    description: >-
+      Archive entries sit below the recent experiments section.
+
+EXPERIMENT:
+  1:
+    id: EX1
+    field: number
+    type: integer
+    required: true
+    description: >-
+      Sequential experiment number starting from 0. Experiment 0 is
+      the baseline measurement. Monotonically increasing.
+    validation:
+      - "Must be a non-negative integer"
+      - "Must be unique across active and archived entries"
+  2:
+    id: EX2
+    field: date
+    type: string
+    format: "YYYY-MM-DD HH:MM"
+    required: true
+    description: "When the experiment was run."
+    validation:
+      - "Must match YYYY-MM-DD HH:MM format"
+  3:
+    id: EX3
+    field: label
+    type: string
+    required: true
+    description: >-
+      Short descriptive label for the experiment's variable or
+      approach (e.g., 'contract.md lazy-reference', 'baseline').
+    validation:
+      - "Non-empty string"
+  4:
+    id: EX4
+    field: hypothesis
+    type: string
+    required: true
+    description: >-
+      What the experiment tests. The pre-registered hypothesis that
+      the metric result will confirm or refute.
+    validation:
+      - "Non-empty string"
+  5:
+    id: EX5
+    field: method
+    type: string
+    required: true
+    description: >-
+      How the experiment was conducted. Harness configuration, model,
+      flags, substrate setup, and implementation approach.
+    validation:
+      - "Non-empty string"
+  6:
+    id: EX6
+    field: change
+    type: string
+    required: true
+    description: >-
+      What was changed. File paths, line ranges, and description of
+      the modification tested.
+    validation:
+      - "Non-empty string"
+  7:
+    id: EX7
+    field: metric
+    type: map
+    required: true
+    description: >-
+      Metric results. Includes primary value, comparison table
+      (baseline vs experiment), delta, and breakdown fields
+      (peak_context, output_total, turns, tool_uses, etc.).
+    sub_fields:
+      - field: primary_value
+        type: string
+        required: true
+      - field: delta_vs_baseline
+        type: string
+        required: true
+      - field: breakdown
+        type: map
+        required: false
+    validation:
+      - "primary_value is present"
+      - "delta_vs_baseline is present"
+  8:
+    id: EX8
+    field: regression
+    type: string
+    required: false
+    description: >-
+      Regression check results. Whether linter, tests, and eval
+      passed after the change.
+  9:
+    id: EX9
+    field: status
+    type: string
+    required: true
+    description: >-
+      Experiment outcome. 'kept' if the experiment improved the metric
+      and passed gates; 'discarded' if it did not; 'baseline' for
+      Experiment 0 reference measurements.
+    validation:
+      - "Must be one of: kept, discarded, baseline"
+  10:
+    id: EX10
+    field: conclusion
+    type: string
+    required: true
+    description: >-
+      What was learned. Interprets the metric result relative to the
+      hypothesis, explains variance, and draws actionable insight.
+    validation:
+      - "Non-empty string"
+  11:
+    id: EX11
+    field: next
+    type: string
+    required: false
+    description: >-
+      What the next experiment should target. Suggests follow-up
+      based on findings.
+  12:
+    id: EX12
+    field: escalation
+    type: string
+    required: false
+    description: >-
+      Escalation text when N consecutive experiments are discarded.
+      Explains why the optimization is stuck and recommends
+      deliberation or harness redesign.
+  13:
+    id: EX13
+    field: target_progress
+    type: string
+    required: false
+    description: >-
+      Cumulative progress toward the objective target. Shows current
+      value, baseline, percentage change, and remaining gap.
+  14:
+    id: EX14
+    field: iteration_log
+    type: list[map]
+    required: false
+    description: >-
+      Harness refinement log for baseline experiments. Each entry
+      records a run number, issue encountered, and fix applied.
+
+CLOSURE:
+  1:
+    id: EC1
+    field: date
+    type: string
+    format: "ISO-8601 UTC"
+    required: false
+    description: >-
+      Timestamp when the objective was closed. Per the objective
+      closure contract. One closure entry per experiments file.
+  2:
+    id: EC2
+    field: final_value
+    type: string
+    required: false
+    description: >-
+      Final metric value at closure. Matches the objective's
+      closure final_value.
+  3:
+    id: EC3
+    field: target
+    type: string
+    required: false
+    description: >-
+      Target that was met or abandoned at closure.
+  4:
+    id: EC4
+    field: reason
+    type: string
+    required: false
+    description: >-
+      Why the objective was closed. Per the objective closure contract.
+
+ARCHIVE:
+  1:
+    id: EA1
+    field: summary
+    type: string
+    required: true
+    description: >-
+      One-line archive entry for a compacted experiment. Format:
+      'EXP-N: <=15-word result summary'.
+      Preserves experiment number and outcome.
+    validation:
+      - "Must include experiment number"
+      - "Summary portion must be <=15 words"
+
+VALIDATION:
+  1:
+    id: EV1
+    rule: unique_experiment_numbers
+    severity: error
+    description: >-
+      Experiment numbers must be unique and sequential.
+    checks:
+      - "All experiment numbers are unique across active and archived entries"
+      - "Experiment numbers are sequential starting from 0"
+  2:
+    id: EV2
+    rule: required_fields
+    severity: error
+    description: >-
+      Each full-detail experiment entry must have: number, date, label,
+      hypothesis, method, change, metric, status, and conclusion.
+    checks:
+      - "number is present and is a non-negative integer"
+      - "date is present and matches YYYY-MM-DD HH:MM"
+      - "label is present and non-empty"
+      - "hypothesis is present and non-empty"
+      - "method is present and non-empty"
+      - "change is present and non-empty"
+      - "metric is present with primary_value and delta_vs_baseline"
+      - "status is present and is 'kept', 'discarded', or 'baseline'"
+      - "conclusion is present and non-empty"
+  3:
+    id: EV3
+    rule: compaction_thresholds
+    severity: warning
+    description: >-
+      Warn if the file exceeds compaction thresholds: >10 full-detail
+      entries or >40 one-line archive entries.
+    checks:
+      - "Full-detail entries <= 10"
+      - "One-line archive entries <= 40"
+      - "Total entries <= 50"
+  4:
+    id: EV4
+    rule: word_budget
+    severity: advisory
+    description: >-
+      Advisory check. Per-experiment entry should be <=300 words;
+      full file should be <=2500 words.
+    checks:
+      - "Per-experiment word count <= 300"
+      - "Total file word count <= 2500"
+  5:
+    id: EV5
+    rule: baseline_first
+    severity: warning
+    description: >-
+      The first experiment (number 0) should have status 'baseline'
+      and serve as the reference measurement.
+    checks:
+      - "Experiment 0 has status 'baseline'"

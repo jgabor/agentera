@@ -1,0 +1,39 @@
+TRIGGERS:
+  1:
+    id: T1
+    description: >-
+      Direct invocation by name or slash command. Matches when the user
+      explicitly requests resonera for structured deliberation.
+    patterns:
+      - "resonera"
+      - "/resonera"
+  2:
+    id: T2
+    description: >-
+      Decision-oriented requests. Matches when the user wants help thinking
+      through a decision or evaluating tradeoffs.
+    patterns:
+      - "help me think through"
+      - "help me decide"
+      - "think this through with me"
+      - "let's deliberate"
+      - "what are the tradeoffs"
+  3:
+    id: T3
+    description: >-
+      Option-comparison signals. Matches when the user is torn between
+      choices or wants to evaluate competing approaches.
+    patterns:
+      - "should I"
+      - "I'm torn between"
+      - "what's the right approach"
+      - "let's reason about"
+  4:
+    id: T4
+    description: >-
+      Pre-build scoping signals. Matches when the user wants to scope or
+      reason about work before starting implementation.
+    patterns:
+      - "scope this out"
+      - "before I build this"
+      - "talk me through"

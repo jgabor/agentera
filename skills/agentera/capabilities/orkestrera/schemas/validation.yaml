@@ -1,0 +1,58 @@
+VALIDATION:
+  1:
+    id: V1
+    rule: never_read_source
+    description: >-
+      Orkestrera MUST NEVER read implementation source code. It dispatches
+      capabilities; it does not implement. Artifact files (PLAN.md, HEALTH.md,
+      DECISIONS.md, PROGRESS.md, etc.) are not source code and are expected
+      to be read. This rule verifies the prose explicitly states the
+      source-code read prohibition.
+    severity: critical
+    checks:
+      - "prose.md contains NEVER read implementation source code"
+  2:
+    id: V2
+    rule: evaluation_gate_required
+    description: >-
+      Every completed task MUST be verified by inspektera before being marked
+      complete. The conductor MUST NOT skip evaluation. This rule verifies
+      the prose contains the never-skip-evaluation safety rail.
+    severity: critical
+    checks:
+      - "prose.md contains NEVER skip evaluation"
+  3:
+    id: V3
+    rule: retry_budget_enforced
+    description: >-
+      No task may be retried more than 2 times. After the second failure,
+      the task must be marked blocked. This rule verifies the retry budget
+      is stated in the prose and safety rails.
+    severity: critical
+    checks:
+      - "prose.md contains retry budget of 2"
+  4:
+    id: V4
+    rule: exit_marker_required
+    description: >-
+      Every orkestrera invocation MUST emit an exit marker. The marker uses
+      the canonical glyph ⎈ (SG12) in the format ⎈ orkestrera · <status>
+      where status is one of EX1-EX4.
+    severity: critical
+    checks:
+      - "prose.md contains exit marker with glyph ⎈ (SG12)"
+      - "prose.md references exit signals EX1-EX4"
+  5:
+    id: V5
+    rule: conductor_read_only_artifacts
+    description: >-
+      The conductor reads artifacts and updates PLAN.md task statuses and
+      TODO.md blocked entries. It does NOT write to PROGRESS.md, CHANGELOG.md,
+      or any other capability-owned artifact. This rule verifies the
+      artifacts schema reflects this constraint.
+    severity: warning
+    checks:
+      - "PROGRESS.md is consumes only (not produces)"
+      - "HEALTH.md is consumes only (not produces)"
+      - "DECISIONS.md is consumes only (not produces)"
+      - "VISION.md is consumes only (not produces)"

@@ -1,9 +1,329 @@
-schema: plan
-version: 1
-artifact: PLAN.md
-token_budget: 2500
-required_headings:
-  - pattern: "^# Plan"
-    label: "top-level heading"
-  - pattern: "(?:^## Tasks|^### Task \\d+)"
-    label: "task section or entry"
+# Plan Artifact Schema
+#
+# Active work plan maintained by planera. Each plan captures what will be built,
+# why, constraints, scope boundaries, design approach, tasks with dependencies
+# and acceptance criteria, overall acceptance, and surprises.
+#
+# Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
+# following capability_schema_contract.yaml and protocol.yaml conventions.
+#
+# ── Field-by-field mapping: v1 PLAN.md → v2 plan.yaml ──
+#
+# v1 Field                              v2 Field               v2 ID
+# ─────────────────────────────────────────────────────────────────────
+# <!-- Level: light/full -->            HEADER.level           PL1
+# <!-- Created: date -->                HEADER.created         PL2
+# <!-- Status: active/completed -->     HEADER.status          PL3
+# <!-- Reviewed: date -->               HEADER.reviewed        PL4
+# <!-- Critic issues: N found... -->    HEADER.critic_issues   PL5
+# <!-- Revised: description -->         HEADER.revised         PL6
+# # Plan: <title>                       HEADER.title           PL7
+# ## What                               PLAN.what              PL8
+# ## Why                                PLAN.why               PL9
+# ## Constraints                        PLAN.constraints       PL10
+# ## Scope / **In**: <list>             SCOPE.included         PL11
+# ## Scope / **Out**: <list>            SCOPE.excluded         PL12
+# ## Scope / **Deferred**: <list>       SCOPE.deferred         PL13
+# ## Design                             PLAN.design            PL14
+# ### Task N: <name>                    TASK.number            PL15
+# (task name from heading)              TASK.name              PL16
+# **Depends on**: <text>                TASK.depends_on        PL17
+# **Status**: <status>                  TASK.status            PL18
+# **Acceptance**: <criteria list>       TASK.acceptance        PL19
+# ## Overall Acceptance                 PLAN.overall_acceptance PL20
+# ## Surprises                          PLAN.surprises         PL21
+#
+# Protocol references:
+#   status visual tokens: VT1-VT4 (protocol.yaml VISUAL_TOKENS)
+#   list item marker: VT15 (protocol.yaml VISUAL_TOKENS)
+
+meta:
+  name: plan
+  version: "1.0.0"
+  description: >-
+    Active work plan. Produced by planera. Consumed by realisera, inspektera,
+    and orkestrera for task tracking and plan-driven execution.
+  artifact_type: agent_facing
+  path: ".agentera/plan.yaml"
+  producer: planera
+  consumers: [realisera, inspektera, orkestrera]
+  format: yaml
+
+GROUP_PREFIXES:
+  BUDGET: PB
+  HEADER: PH
+  PLAN: PL
+  SCOPE: PS
+  TASK: PT
+  VALIDATION: PV
+
+BUDGET:
+  1:
+    id: PB1
+    scope: per_task_entry
+    max_words: 100
+    description: >-
+      Maximum words per task entry. Budgets are guidelines, not hard
+      blockers.
+  2:
+    id: PB2
+    scope: full_file
+    max_words: 2500
+    description: >-
+      Maximum words for the full file. If a write would exceed this
+      budget, compact the plan (merge completed tasks, defer scope).
+
+HEADER:
+  1:
+    id: PH1
+    field: level
+    type: string
+    required: true
+    description: >-
+      Plan detail level. 'light' for small scoped work; 'full' for
+      multi-task plans with explicit acceptance criteria and review.
+    validation:
+      - "Must be one of: light, full"
+  2:
+    id: PH2
+    field: created
+    type: string
+    format: "YYYY-MM-DD"
+    required: true
+    description: "Date the plan was created."
+    validation:
+      - "Must match YYYY-MM-DD format"
+  3:
+    id: PH3
+    field: status
+    type: string
+    required: true
+    description: >-
+      Plan lifecycle status. Active plans are being executed; completed
+      plans are candidates for archival.
+    validation:
+      - "Must be one of: active, completed"
+  4:
+    id: PH4
+    field: reviewed
+    type: string
+    format: "YYYY-MM-DD"
+    required: false
+    description: >-
+      Date the plan was last reviewed via adversarial critic pass.
+      Absent for light-level plans that skip review.
+  5:
+    id: PH5
+    field: critic_issues
+    type: string
+    required: false
+    description: >-
+      Summary of critic review findings. Format: 'N found, M addressed,
+      K dismissed'. Absent for light-level plans or pre-review state.
+  6:
+    id: PH6
+    field: revised
+    type: string
+    required: false
+    description: >-
+      Description of what was revised after critic review. Absent for
+      light-level plans or pre-review state.
+  7:
+    id: PH7
+    field: title
+    type: string
+    required: true
+    description: >-
+      Short plan title. Used in archive naming and plan listing.
+      Format: 'Plan: <descriptive name>'.
+    validation:
+      - "Non-empty string"
+
+PLAN:
+  1:
+    id: PL8
+    field: what
+    type: string
+    required: true
+    description: >-
+      What the plan will build or accomplish. Plain-language summary
+      of the plan's scope and deliverables.
+    validation:
+      - "Non-empty string"
+  2:
+    id: PL9
+    field: why
+    type: string
+    required: true
+    description: >-
+      Why this plan exists. References decisions, vision, or constraints
+      that motivate the work.
+    validation:
+      - "Non-empty string"
+  3:
+    id: PL10
+    field: constraints
+    type: string
+    required: false
+    description: >-
+      Hard constraints governing plan execution. References decision
+      labels (firm/provisional/exploratory) and project-level rules.
+  4:
+    id: PL14
+    field: design
+    type: string
+    required: false
+    description: >-
+      Design approach for the plan. Describes the strategy, patterns,
+      and structural decisions. Required for full-level plans.
+  5:
+    id: PL20
+    field: overall_acceptance
+    type: string
+    required: false
+    description: >-
+      Plan-level acceptance criteria. Criteria that span multiple tasks
+      and must hold when the entire plan is complete.
+  6:
+    id: PL21
+    field: surprises
+    type: string
+    required: false
+    description: >-
+      Runtime surprises discovered during plan execution. Populated
+      by realisera when reality diverges from plan. Default: empty.
+
+SCOPE:
+  1:
+    id: PS11
+    field: included
+    type: list[string]
+    required: true
+    description: >-
+      Work items and surfaces in scope. Each entry names a deliverable,
+      file, or system boundary that the plan covers.
+    validation:
+      - "At least one entry required"
+  2:
+    id: PS12
+    field: excluded
+    type: list[string]
+    required: true
+    description: >-
+      Work items explicitly out of scope. Prevents scope creep by
+      recording what was considered and deferred.
+  3:
+    id: PS13
+    field: deferred
+    type: list[string]
+    required: false
+    description: >-
+      Work items deferred to a future plan. Distinguished from
+      excluded items by having acknowledged future intent.
+
+TASK:
+  1:
+    id: PT15
+    field: number
+    type: integer
+    required: true
+    description: >-
+      Task number within the plan. Sequential, starting from 1.
+      May include a descriptive name (e.g., 'Task 2: Shared Protocol').
+    validation:
+      - "Must be a positive integer"
+      - "Must be unique within the plan"
+  2:
+    id: PT16
+    field: name
+    type: string
+    required: true
+    description: >-
+      Short descriptive name for the task. Appears in task headings
+      and progress tracking.
+    validation:
+      - "Non-empty string"
+  3:
+    id: PT17
+    field: depends_on
+    type: list[string]
+    required: false
+    description: >-
+      Task dependencies. References task numbers or names that must
+      complete before this task can start. Empty for root tasks.
+  4:
+    id: PT18
+    field: status
+    type: string
+    required: true
+    description: >-
+      Task execution status. Uses visual tokens from protocol.yaml
+      VISUAL_TOKENS (VT1-VT4) for display.
+    validation:
+      - "Must be one of: complete, in_progress, pending, blocked"
+  5:
+    id: PT19
+    field: acceptance
+    type: list[string]
+    required: false
+    description: >-
+      Acceptance criteria for this task. Each entry is a GIVEN/WHEN/THEN
+      statement that must hold for the task to be considered complete.
+      Required for full-level plans.
+
+VALIDATION:
+  1:
+    id: PV1
+    rule: unique_task_numbers
+    severity: error
+    description: >-
+      Task numbers must be unique within a plan and sequential.
+    checks:
+      - "All task numbers are unique"
+      - "Task numbers are sequential starting from 1"
+  2:
+    id: PV2
+    rule: required_fields
+    severity: error
+    description: >-
+      The plan must have: level, created, status, title, what, why,
+      scope.included, scope.excluded, and at least one task.
+    checks:
+      - "level is present and is 'light' or 'full'"
+      - "created is present and matches YYYY-MM-DD"
+      - "status is present and is 'active' or 'completed'"
+      - "title is present and non-empty"
+      - "what is present and non-empty"
+      - "why is present and non-empty"
+      - "scope.included has at least one entry"
+      - "tasks has at least one entry"
+  3:
+    id: PV3
+    rule: full_level_requirements
+    severity: warning
+    description: >-
+      Full-level plans should have: design, reviewed, critic_issues,
+      and acceptance criteria on each task.
+    checks:
+      - "design is present for full-level plans"
+      - "each task has acceptance criteria for full-level plans"
+  4:
+    id: PV4
+    rule: dependency_references
+    severity: error
+    description: >-
+      Task depends_on references must point to valid task numbers
+      within the same plan.
+    checks:
+      - "Each dependency references an existing task number"
+      - "No circular dependency chains"
+  5:
+    id: PV5
+    rule: word_budget
+    severity: advisory
+    description: >-
+      Advisory check. Per-task entry should be <=100 words; full file
+      should be <=2500 words.
+    checks:
+      - "Per-task word count <= 100"
+      - "Total file word count <= 2500"

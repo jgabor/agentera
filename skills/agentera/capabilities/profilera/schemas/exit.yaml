@@ -1,0 +1,34 @@
+EXIT_CONDITIONS:
+  1:
+    id: E1
+    condition: complete
+    description: >-
+      PROFILE.md was written (Full mode) or updated (Validate mode).
+      Metadata changes were applied, prediction accuracy was assessed
+      (Full mode), and changes were summarized.
+    exit_signal: complete
+  2:
+    id: E2
+    condition: flagged
+    description: >-
+      Profile generation or validation completed but with data quality
+      issues: extraction failed for one or more sources, prediction
+      accuracy was below 3/5, or significant unresolved tensions were
+      found.
+    exit_signal: flagged
+  3:
+    id: E3
+    condition: stuck
+    description: >-
+      Cannot generate or validate a profile because extraction scripts
+      failed entirely, Python is unavailable, or session data sources
+      are unreadable.
+    exit_signal: stuck
+  4:
+    id: E4
+    condition: waiting
+    description: >-
+      The user chose Validate mode but PROFILE.md lacks valid metadata,
+      a Full mode run needs user approval, or the requested mode is
+      ambiguous.
+    exit_signal: waiting

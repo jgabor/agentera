@@ -1,9 +1,477 @@
-schema: health
-version: 1
-artifact: HEALTH.md
-token_budget: 2000
-required_headings:
-  - pattern: "^# Health"
-    label: "top-level heading"
-  - pattern: "^## Audit \\d+"
-    label: "audit entry"
+# Health Artifact Schema
+#
+# Audit log maintained by inspektera. Each audit entry records assessed
+# dimensions, findings (critical/warning/info counts), overall trajectory,
+# per-dimension grades (A-F), per-dimension findings with confidence, and
+# trend analysis against the prior audit.
+#
+# Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
+# following capability_schema_contract.yaml and protocol.yaml conventions.
+#
+# ── Field-by-field mapping: v1 HEALTH.md → v2 health.yaml ──
+#
+# v1 Field                              v2 Field               v2 ID
+# ─────────────────────────────────────────────────────────────────────
+# ## Audit N · date                     AUDIT.number           HA1
+# (date from heading)                   AUDIT.date             HA2
+# **Dimensions assessed**: <list>       AUDIT.dimensions       HA3
+# **Findings**: N crit, N warn, N info  AUDIT.findings_summary HA4
+# **Overall trajectory**: <text>        AUDIT.trajectory       HA5
+# **Grades**: Dim [X] | Dim [Y]        AUDIT.grades           HA6
+# ### Dimension: grade                  DIMENSION.name         HD1
+# (grade from heading)                  DIMENSION.grade        HD2
+# #### finding text                     FINDING.heading        HF1
+# - **Location**: <text>               FINDING.location       HF2
+# - **Evidence**: <text>               FINDING.evidence       HF3
+# - **Impact**: <text>                 FINDING.impact         HF4
+# - **Suggested action**: <text>       FINDING.suggested_action HF5
+# (severity glyph from prefix)         FINDING.severity       HF6
+# (confidence from parenthetical)      FINDING.confidence     HF7
+# ### Trends vs Audit N                 TRENDS.entry           HT1
+# - **Improved**: <text>               TRENDS.improved        HT2
+# - **Degraded**: <text>               TRENDS.degraded        HT3
+# - **Stable**: <text>                 TRENDS.stable          HT4
+# - **New findings**: <text>           TRENDS.new_findings    HT5
+# - **Resolved**: <text>              TRENDS.resolved         HT6
+# - **Carried forward**: <text>       TRENDS.carried_forward  HT7
+# ### Patterns Observed                 PATTERNS.heading       HP1
+# - Pattern text                       PATTERNS.entry         HP2
+# ## Archived Audits                    (implicit section)     —
+# ### Audit N · date (summary)         ARCHIVE.summary        HR1
+#
+# Protocol references:
+#   severity: SF1-SF3 (protocol.yaml SEVERITY_FINDING)
+#   confidence: CS1-CS5 (protocol.yaml CONFIDENCE_SCALE)
+#   visual tokens: VT12-VT13 (protocol.yaml VISUAL_TOKENS, trend glyphs)
+#   dimension grades: A-F scale
+
+meta:
+  name: health
+  version: "1.0.0"
+  description: >-
+    Audit log maintained by inspektera. Consumed by realisera, planera,
+    and orkestrera for codebase health context.
+  artifact_type: agent_facing
+  path: ".agentera/health.yaml"
+  producer: inspektera
+  consumers: [realisera, planera, orkestrera]
+  format: yaml
+
+GROUP_PREFIXES:
+  BUDGET: HB
+  COMPACTION: HX
+  AUDIT: HA
+  DIMENSION: HD
+  FINDING: HF
+  TRENDS: HT
+  PATTERNS: HP
+  ARCHIVE: HR
+  VALIDATION: HV
+
+BUDGET:
+  1:
+    id: HB1
+    scope: per_dimension_assessment
+    max_words: 150
+    description: >-
+      Maximum words per dimension assessment. Budgets are guidelines,
+      not hard blockers.
+  2:
+    id: HB2
+    scope: full_file
+    max_words: 2000
+    description: >-
+      Maximum words for the full file. If a write would exceed this
+      budget, compact first (see COMPACTION group).
+
+COMPACTION:
+  1:
+    id: HX1
+    rule: uniform_10_40_50
+    description: >-
+      Growing artifacts follow a uniform 10/40/50 rule: 10 full-detail
+      entries, 40 one-line archive entries, drop beyond 50 total.
+  2:
+    id: HX2
+    full_detail:
+      max_entries: 10
+      selection: "10 most recent audits"
+      format: "Standard audit entry format (all fields)"
+    description: >-
+      The 10 most recent audits are kept in full detail with all fields.
+  3:
+    id: HX3
+    one_line_archive:
+      max_entries: 40
+      selection: "Audits 11 through 50"
+      format: "Audit N (YYYY-MM-DD): [grade] — <=15-word summary"
+      fields: [number, date, grade, summary]
+    description: >-
+      Audits 11 through 50 are collapsed to one-line format under the
+      archive section. One-line summaries preserve audit number, date,
+      overall grade, and trajectory.
+  4:
+    id: HX4
+    dropped:
+      threshold: 50
+      action: "Removed entirely"
+    description: >-
+      Audits older than 50 are dropped entirely.
+  5:
+    id: HX5
+    trigger: "When inspektera writes a new audit"
+    description: >-
+      Compaction runs when the producing skill writes a new entry.
+      If >10 full-detail entries exist, collapse the oldest to one-line.
+      If >40 one-line entries exist, drop the oldest.
+  6:
+    id: HX6
+    archive_section:
+      heading: "Archived Audits"
+      placement: "Below recent audits"
+    description: >-
+      Archive entries sit below the recent audits section.
+
+AUDIT:
+  1:
+    id: HA1
+    field: number
+    type: integer
+    required: true
+    description: >-
+      Monotonically increasing audit number. One greater than the
+      highest audit number in active and archived entries.
+    validation:
+      - "Must be a positive integer"
+      - "Must be unique across active and archived entries"
+  2:
+    id: HA2
+    field: date
+    type: string
+    format: "YYYY-MM-DD"
+    required: true
+    description: "When the audit was performed."
+    validation:
+      - "Must match YYYY-MM-DD format"
+  3:
+    id: HA3
+    field: dimensions
+    type: list[string]
+    required: true
+    description: >-
+      List of dimension names assessed in this audit. Must be drawn from
+      the canonical dimension set. Inspektera selects applicable dimensions
+      per audit.
+    canonical_dimensions:
+      - architecture_alignment
+      - pattern_consistency
+      - coupling_health
+      - complexity_hotspots
+      - test_health
+      - dependency_health
+      - version_health
+      - artifact_freshness
+      - security_hygiene
+      - prose_health
+    validation:
+      - "At least one dimension must be assessed"
+      - "Each dimension must be from the canonical set"
+  4:
+    id: HA4
+    field: findings_summary
+    type: map
+    required: true
+    description: >-
+      Aggregate finding counts by severity level. Reports critical,
+      warning, and info counts, plus filtered count.
+    sub_fields:
+      - field: critical
+        type: integer
+        required: true
+      - field: warning
+        type: integer
+        required: true
+      - field: info
+        type: integer
+        required: true
+      - field: filtered_by_confidence
+        type: integer
+        required: true
+  5:
+    id: HA5
+    field: trajectory
+    type: string
+    required: true
+    description: >-
+      Overall trajectory vs the prior audit. One of: improving,
+      stable, degrading. May include brief narrative.
+    protocol_ref: VISUAL_TOKENS
+    validation:
+      - "Must indicate direction vs prior audit"
+  6:
+    id: HA6
+    field: grades
+    type: map[string, string]
+    required: true
+    description: >-
+      Per-dimension grade map. Each assessed dimension gets an A-F grade.
+      Format: { dimension_name: grade }.
+    validation:
+      - "Every assessed dimension has a grade"
+      - "Grades are single characters A through F"
+
+DIMENSION:
+  1:
+    id: HD1
+    field: name
+    type: string
+    required: true
+    description: >-
+      Dimension name. Must be from the canonical set defined in
+      AUDIT.dimensions canonical_dimensions.
+    validation:
+      - "Must match a canonical dimension name"
+  2:
+    id: HD2
+    field: grade
+    type: string
+    required: true
+    description: >-
+      Letter grade for this dimension. A = excellent, B = good,
+      C = acceptable, D = concerning, F = failing.
+    validation:
+      - "Must be one of: A, B, C, D, F"
+  3:
+    id: HD3
+    field: summary
+    type: string
+    required: true
+    description: >-
+      Prose assessment of this dimension. Explains the grade with
+      concrete evidence (file paths, line numbers, commit hashes).
+    validation:
+      - "Non-empty string"
+      - "Should contain at least one concrete anchor"
+
+FINDING:
+  1:
+    id: HF1
+    field: heading
+    type: string
+    required: true
+    description: >-
+      Finding title. One-line summary of the finding.
+  2:
+    id: HF2
+    field: location
+    type: string
+    required: true
+    description: >-
+      File path(s) and line number(s) where the finding applies.
+    validation:
+      - "Must include at least one file path"
+  3:
+    id: HF3
+    field: evidence
+    type: string
+    required: true
+    description: >-
+      Factual evidence supporting the finding. What was observed.
+    validation:
+      - "Non-empty string"
+  4:
+    id: HF4
+    field: impact
+    type: string
+    required: true
+    description: >-
+      What happens if this finding is not addressed. Consequences
+      for the project.
+    validation:
+      - "Non-empty string"
+  5:
+    id: HF5
+    field: suggested_action
+    type: string
+    required: true
+    description: >-
+      Recommended remediation. What should be done about this finding.
+    validation:
+      - "Non-empty string"
+  6:
+    id: HF6
+    field: severity
+    type: string
+    required: true
+    description: >-
+      Finding severity level. References protocol.yaml SEVERITY_FINDING
+      (SF1-SF3).
+    protocol_ref: SEVERITY_FINDING
+    validation:
+      - "Must be one of: critical, warning, info"
+  7:
+    id: HF7
+    field: confidence
+    type: integer
+    required: true
+    description: >-
+      Confidence score for this finding (0-100). References protocol.yaml
+      CONFIDENCE_SCALE (CS1-CS5).
+    protocol_ref: CONFIDENCE_SCALE
+    validation:
+      - "Must be an integer between 0 and 100"
+
+TRENDS:
+  1:
+    id: HT1
+    field: comparison_target
+    type: string
+    required: true
+    description: >-
+      Which prior audit this audit is compared against.
+      Format: 'Audit N' or equivalent reference.
+  2:
+    id: HT2
+    field: improved
+    type: string
+    required: false
+    description: >-
+      Dimensions or aspects that improved since the prior audit.
+  3:
+    id: HT3
+    field: degraded
+    type: string
+    required: false
+    description: >-
+      Dimensions or aspects that degraded since the prior audit.
+  4:
+    id: HT4
+    field: stable
+    type: string
+    required: false
+    description: >-
+      Dimensions or aspects that remained stable.
+  5:
+    id: HT5
+    field: new_findings
+    type: string
+    required: false
+    description: >-
+      New findings introduced by this audit.
+  6:
+    id: HT6
+    field: resolved
+    type: string
+    required: false
+    description: >-
+      Prior findings that were resolved by this audit.
+  7:
+    id: HT7
+    field: carried_forward
+    type: string
+    required: false
+    description: >-
+      Prior findings or caveats that remain unresolved and are
+      carried into future audits.
+
+PATTERNS:
+  1:
+    id: HP1
+    field: heading
+    type: string
+    required: false
+    description: >-
+      Section heading for patterns observed during the audit.
+      Standard label: 'Patterns Observed'.
+  2:
+    id: HP2
+    field: entry
+    type: string
+    required: false
+    description: >-
+      Individual pattern observation. Each entry captures a recurring
+      structural, testing, release, or module pattern noticed during
+      the audit.
+
+ARCHIVE:
+  1:
+    id: HR1
+    field: summary
+    type: string
+    required: true
+    description: >-
+      One-line archive entry for a compacted audit. Format:
+      'Audit N (YYYY-MM-DD): [grade] — <=15-word summary'.
+      Preserves audit number, date, overall grade, and trajectory.
+    validation:
+      - "Must include audit number"
+      - "Must include date in YYYY-MM-DD format"
+      - "Must include overall grade"
+      - "Summary portion must be <=15 words"
+
+VALIDATION:
+  1:
+    id: HV1
+    rule: unique_audit_numbers
+    severity: error
+    description: >-
+      Active audit entries must have unique numbers and remain ascending
+      by audit number.
+    checks:
+      - "All audit numbers are unique across active and archived entries"
+      - "Active entries are in ascending order by audit number"
+  2:
+    id: HV2
+    rule: required_fields
+    severity: error
+    description: >-
+      Each full-detail audit entry must have: number, date, dimensions,
+      findings_summary, trajectory, and grades.
+    checks:
+      - "number is present and is a positive integer"
+      - "date is present and matches YYYY-MM-DD"
+      - "dimensions is present with at least one entry"
+      - "findings_summary is present with critical, warning, info counts"
+      - "trajectory is present and non-empty"
+      - "grades is present with one grade per assessed dimension"
+  3:
+    id: HV3
+    rule: dimension_grade_coverage
+    severity: error
+    description: >-
+      Every dimension listed in the dimensions field must have a
+      corresponding grade in the grades map and a dimension section.
+    checks:
+      - "Each dimension has a grade"
+      - "Each dimension has a corresponding detail section"
+  4:
+    id: HV4
+    rule: finding_severity_counts
+    severity: warning
+    description: >-
+      The finding counts in findings_summary should match the actual
+      findings present in the dimension sections.
+    checks:
+      - "critical count matches actual critical findings"
+      - "warning count matches actual warning findings"
+      - "info count matches actual info findings"
+  5:
+    id: HV5
+    rule: compaction_thresholds
+    severity: warning
+    description: >-
+      Warn if the file exceeds compaction thresholds.
+    checks:
+      - "Full-detail entries <= 10"
+      - "One-line archive entries <= 40"
+      - "Total entries <= 50"
+  6:
+    id: HV6
+    rule: word_budget
+    severity: advisory
+    description: >-
+      Advisory check. Per-dimension assessment should be <=150 words;
+      full file should be <=2000 words.
+    checks:
+      - "Per-dimension word count <= 150"
+      - "Total file word count <= 2000"

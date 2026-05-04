@@ -1,0 +1,496 @@
+"""Tests for scripts/agentera CLI (query and prime commands).
+
+Proportionality: 1 pass + 1 fail per query command (last-phase, decisions,
+health, open-todos) plus prime command. Edge cases for empty artifacts,
+missing artifacts, and filter-no-match.
+"""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+import yaml
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+CLI = str(REPO_ROOT / "scripts" / "agentera")
+SCHEMAS_SRC = REPO_ROOT / "skills" / "agentera" / "schemas" / "artifacts"
+
+
+def _run(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
+    env = None
+    if cwd is not None:
+        import os
+        env = {**os.environ, "AGENTERA_HOME": str(cwd)}
+    return subprocess.run(
+        [sys.executable, CLI, *args],
+        capture_output=True,
+        text=True,
+        cwd=cwd,
+        env=env,
+    )
+
+
+@pytest.fixture()
+def project(tmp_path: Path):
+    dst = tmp_path / "skills" / "agentera" / "schemas" / "artifacts"
+    dst.mkdir(parents=True, exist_ok=True)
+    for f in SCHEMAS_SRC.glob("*.yaml"):
+        (dst / f.name).write_text(f.read_text())
+    return tmp_path
+
+
+def _write_artifact(project: Path, rel: str, data: dict) -> Path:
+    p = project / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(yaml.dump(data, default_flow_style=False))
+    return p
+
+
+# ---------------------------------------------------------------------------
+# prime
+# ---------------------------------------------------------------------------
+
+
+class TestPrime:
+    def test_pass_outputs_guidance(self):
+        r = _run("prime")
+        assert r.returncode == 0
+        assert "agentera query" in r.stdout
+        assert "native" in r.stdout.lower()
+
+    def test_prime_idempotent(self):
+        assert _run("prime").stdout == _run("prime").stdout
+
+    def test_prime_has_routing_and_recovery(self):
+        r = _run("prime")
+        assert "recovery" in r.stdout.lower()
+        assert "stale" in r.stdout.lower()
+        assert "missing" in r.stdout.lower()
+
+    def test_prime_no_args(self):
+        r = _run("prime")
+        assert r.returncode == 0
+        assert len(r.stdout) > 100
+
+
+# ---------------------------------------------------------------------------
+# last-phase
+# ---------------------------------------------------------------------------
+
+
+class TestLastPhase:
+    def test_pass_returns_phase(self, project):
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [
+                {"number": 1, "phase": "build", "what": "first", "commit": "a"},
+                {"number": 2, "phase": "audit", "what": "second", "commit": "b"},
+            ],
+        })
+        r = _run("query", "last-phase", cwd=project)
+        assert r.returncode == 0
+        assert "audit" in r.stdout
+
+    def test_fail_missing_artifact(self, project):
+        r = _run("query", "last-phase", cwd=project)
+        assert r.returncode == 0
+        assert r.stdout.strip() == ""
+
+    def test_empty_artifact(self, project):
+        _write_artifact(project, ".agentera/progress.yaml", {})
+        r = _run("query", "last-phase", cwd=project)
+        assert r.returncode == 0
+        assert r.stdout.strip() == ""
+
+
+# ---------------------------------------------------------------------------
+# decisions
+# ---------------------------------------------------------------------------
+
+
+class TestDecisions:
+    def test_pass_returns_decisions(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": 1,
+                    "question": "Runtime support?",
+                    "choice": "Python",
+                    "confidence": "firm",
+                    "context": "Need runtime",
+                    "reasoning": "Stdlib",
+                },
+            ],
+        })
+        r = _run("query", "decisions", cwd=project)
+        assert r.returncode == 0
+        assert "number=1" in r.stdout
+        assert "firm" in r.stdout
+
+    def test_fail_missing_artifact(self, project):
+        r = _run("query", "decisions", cwd=project)
+        assert r.returncode == 0
+        assert r.stdout.strip() == ""
+
+    def test_filter_topic_match(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": 1,
+                    "question": "Runtime support?",
+                    "choice": "Python",
+                    "confidence": "firm",
+                    "context": "Need runtime support",
+                    "reasoning": "Stdlib",
+                },
+                {
+                    "number": 2,
+                    "question": "Color scheme?",
+                    "choice": "Blue",
+                    "confidence": "provisional",
+                    "context": "Design",
+                    "reasoning": "Looks nice",
+                },
+            ],
+        })
+        r = _run("query", "decisions", "--topic", "runtime", cwd=project)
+        assert r.returncode == 0
+        assert "number=1" in r.stdout
+        assert "number=2" not in r.stdout
+
+    def test_filter_topic_no_match(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": 1,
+                    "question": "Runtime?",
+                    "choice": "Python",
+                    "confidence": "firm",
+                    "context": "Engine",
+                    "reasoning": "Stdlib",
+                },
+            ],
+        })
+        r = _run("query", "decisions", "--topic", "nonexistent", cwd=project)
+        assert r.returncode == 0
+        assert r.stdout.strip() == ""
+
+
+# ---------------------------------------------------------------------------
+# health
+# ---------------------------------------------------------------------------
+
+
+class TestHealth:
+    def test_pass_returns_health(self, project):
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [
+                {
+                    "number": 1,
+                    "date": "2026-05-01",
+                    "trajectory": "stable",
+                    "grades": {
+                        "architecture_alignment": "B",
+                        "coupling_health": "C",
+                    },
+                    "dimensions": ["architecture_alignment", "coupling_health"],
+                },
+            ],
+        })
+        r = _run("query", "health", cwd=project)
+        assert r.returncode == 0
+        assert "stable" in r.stdout
+        assert "coupling" in r.stdout
+
+    def test_fail_missing_artifact(self, project):
+        r = _run("query", "health", cwd=project)
+        assert r.returncode == 0
+        assert r.stdout.strip() == ""
+
+    def test_filter_dimension_match(self, project):
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [
+                {
+                    "number": 1,
+                    "date": "2026-05-01",
+                    "trajectory": "stable",
+                    "grades": {
+                        "architecture_alignment": "B",
+                        "coupling_health": "C",
+                    },
+                    "dimensions": ["architecture_alignment", "coupling_health"],
+                    "dimensions_detail": [
+                        {
+                            "name": "coupling_health",
+                            "grade": "C",
+                            "summary": "Tight coupling in hooks",
+                            "findings": [
+                                {
+                                    "heading": "Hooks import common",
+                                    "severity": "warning",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        })
+        r = _run("query", "health", "--dimension", "coupling", cwd=project)
+        assert r.returncode == 0
+        assert "coupling" in r.stdout
+
+    def test_filter_dimension_no_match(self, project):
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [
+                {
+                    "number": 1,
+                    "grades": {"architecture_alignment": "B"},
+                },
+            ],
+        })
+        r = _run("query", "health", "--dimension", "nonexistent", cwd=project)
+        assert r.returncode == 0
+        assert r.stdout.strip() == ""
+
+
+# ---------------------------------------------------------------------------
+# open-todos
+# ---------------------------------------------------------------------------
+
+
+class TestOpenTodos:
+    def test_pass_returns_todos(self, project):
+        (project / "TODO.md").write_text(
+            "# TODO\n\n"
+            "## \u21f6 Critical\n\n"
+            "- [ ] Fix the broken build\n\n"
+            "## \u2192 Normal\n\n"
+            "- [ ] Add more tests\n\n"
+            "## Resolved\n\n"
+            "- [x] Done\n"
+        )
+        r = _run("query", "open-todos", cwd=project)
+        assert r.returncode == 0
+        assert "broken build" in r.stdout
+        assert "more tests" in r.stdout
+
+    def test_fail_missing_todo(self, project):
+        r = _run("query", "open-todos", cwd=project)
+        assert r.returncode == 0
+        assert r.stdout.strip() == ""
+
+    def test_filter_severity_critical(self, project):
+        (project / "TODO.md").write_text(
+            "# TODO\n\n"
+            "## \u21f6 Critical\n\n"
+            "- [ ] Fix the broken build\n\n"
+            "## \u2192 Normal\n\n"
+            "- [ ] Add more tests\n\n"
+            "## Resolved\n\n"
+            "- [x] Done\n"
+        )
+        r = _run("query", "open-todos", "--severity", "critical", cwd=project)
+        assert r.returncode == 0
+        assert "broken build" in r.stdout
+        assert "more tests" not in r.stdout
+
+    def test_filter_severity_no_match(self, project):
+        (project / "TODO.md").write_text(
+            "# TODO\n\n"
+            "## \u2192 Normal\n\n"
+            "- [ ] Add more tests\n\n"
+            "## Resolved\n\n"
+            "- [x] Done\n"
+        )
+        r = _run("query", "open-todos", "--severity", "critical", cwd=project)
+        assert r.returncode == 0
+        assert r.stdout.strip() == ""
+
+
+# ---------------------------------------------------------------------------
+# generic query (schema auto-discovery)
+# ---------------------------------------------------------------------------
+
+
+class TestGenericQuery:
+    def test_auto_discovered_artifact(self, project):
+        _write_artifact(project, ".agentera/session.yaml", {
+            "bookmarks": [
+                {
+                    "timestamp": "2026-05-01 10:00",
+                    "artifacts": ["PROGRESS"],
+                    "summary": "Updated progress",
+                },
+            ],
+        })
+        r = _run("query", "session", cwd=project)
+        assert r.returncode == 0
+        assert r.stdout.strip() != ""
+
+    def test_new_schema_auto_supported(self, project):
+        schemas_dir = project / "skills" / "agentera" / "schemas" / "artifacts"
+        (schemas_dir / "custom_thing.yaml").write_text(yaml.dump({
+            "meta": {
+                "name": "custom_thing",
+                "version": "1.0.0",
+                "description": "A custom artifact",
+                "path": ".agentera/custom_thing.yaml",
+            },
+            "ENTRY": {
+                "1": {
+                    "id": "CT1",
+                    "field": "title",
+                    "type": "string",
+                    "required": True,
+                },
+                "2": {
+                    "id": "CT2",
+                    "field": "status",
+                    "type": "string",
+                    "required": True,
+                },
+            },
+        }))
+        _write_artifact(project, ".agentera/custom_thing.yaml", {
+            "entries": [
+                {"title": "My thing", "status": "active"},
+            ],
+        })
+        r = _run("query", "custom_thing", cwd=project)
+        assert r.returncode == 0
+        assert "active" in r.stdout
+
+
+# ---------------------------------------------------------------------------
+# help
+# ---------------------------------------------------------------------------
+
+
+class TestHelp:
+    def test_help_lists_commands(self):
+        r = _run("--help")
+        assert r.returncode == 0
+        assert "prime" in r.stdout
+        assert "query" in r.stdout
+
+    def test_query_help_lists_filters(self):
+        r = _run("query", "--help")
+        assert r.returncode == 0
+        assert "topic" in r.stdout
+        assert "severity" in r.stdout
+        assert "dimension" in r.stdout
+
+
+# ---------------------------------------------------------------------------
+# artifact type coverage (1 test per type + --list-artifacts)
+# ---------------------------------------------------------------------------
+
+ARTIFACT_FIXTURES = {
+    "decisions": {
+        "path": ".agentera/decisions.yaml",
+        "data": {
+            "decisions": [
+                {"number": 1, "question": "Language?", "choice": "Python", "confidence": "firm"},
+            ],
+        },
+        "expected": "number=1",
+    },
+    "docs": {
+        "path": ".agentera/docs.yaml",
+        "data": {
+            "entries": [
+                {"last_audit": "2026-05-01", "status": "current"},
+            ],
+        },
+        "expected": "status=current",
+    },
+    "experiments": {
+        "path": ".agentera/optimera/<name>/experiments.yaml",
+        "data": {
+            "experiments": [
+                {"number": 1, "label": "exp1", "status": "kept"},
+            ],
+        },
+        "expected": "number=1",
+    },
+    "health": {
+        "path": ".agentera/health.yaml",
+        "data": {
+            "audits": [
+                {"number": 1, "date": "2026-05-01", "trajectory": "stable"},
+            ],
+        },
+        "expected": "stable",
+    },
+    "objective": {
+        "path": ".agentera/optimera/<name>/objective.yaml",
+        "data": {
+            "entries": [
+                {"title": "Test objective", "status": "active"},
+            ],
+        },
+        "expected": "title=Test objective",
+    },
+    "plan": {
+        "path": ".agentera/plan.yaml",
+        "data": {
+            "entries": [
+                {"status": "active", "title": "Test plan"},
+            ],
+        },
+        "expected": "status=active",
+    },
+    "progress": {
+        "path": ".agentera/progress.yaml",
+        "data": {
+            "cycles": [
+                {"number": 1, "phase": "build", "what": "test"},
+            ],
+        },
+        "expected": "phase=build",
+    },
+    "session": {
+        "path": ".agentera/session.yaml",
+        "data": {
+            "bookmarks": [
+                {"timestamp": "2026-05-01", "summary": "Test session"},
+            ],
+        },
+        "expected": "timestamp=2026-05-01",
+    },
+    "vision": {
+        "path": "vision.yaml",
+        "data": {
+            "entries": [
+                {"project_name": "test-project"},
+            ],
+        },
+        "expected": "project_name=test-project",
+    },
+}
+
+
+class TestArtifactTypeCoverage:
+    @pytest.mark.parametrize(
+        "artifact_name,fixture",
+        [(k, v) for k, v in ARTIFACT_FIXTURES.items()],
+        ids=list(ARTIFACT_FIXTURES.keys()),
+    )
+    def test_query_by_name_returns_data(self, project, artifact_name, fixture):
+        _write_artifact(project, fixture["path"], fixture["data"])
+        r = _run("query", artifact_name, cwd=project)
+        assert r.returncode == 0
+        assert fixture["expected"] in r.stdout
+
+    def test_query_no_data_returns_clean(self, project):
+        r = _run("query", "plan", cwd=project)
+        assert r.returncode == 0
+        assert r.stdout.strip() == ""
+
+    def test_list_artifacts(self, project):
+        r = _run("query", "--list-artifacts", cwd=project)
+        assert r.returncode == 0
+        for name in ARTIFACT_FIXTURES:
+            assert name in r.stdout

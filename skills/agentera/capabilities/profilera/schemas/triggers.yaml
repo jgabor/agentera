@@ -1,0 +1,41 @@
+TRIGGERS:
+  1:
+    id: T1
+    description: >-
+      Direct invocation by name or slash command. Matches when the user
+      explicitly requests profilera.
+    patterns:
+      - "profilera"
+      - "/profilera"
+  2:
+    id: T2
+    description: >-
+      Profile generation requests. Matches when the user wants to build
+      or regenerate their decision profile from scratch.
+    patterns:
+      - "build decision profile"
+      - "generate decision profile"
+      - "rebuild my profile"
+      - "regenerate profile"
+  3:
+    id: T3
+    description: >-
+      Profile maintenance requests. Matches when the user wants to update,
+      validate, or check their existing profile.
+    patterns:
+      - "update my profile"
+      - "refresh my decision profile"
+      - "validate my profile"
+      - "check my profile"
+      - "quick profile check"
+  4:
+    id: T4
+    description: >-
+      Decision analysis requests. Matches when the user wants to understand
+      their own decision-making patterns or review past decisions.
+    patterns:
+      - "what would I decide"
+      - "analyze my decisions"
+      - "mine my sessions"
+      - "decision patterns"
+      - "review my decision history"

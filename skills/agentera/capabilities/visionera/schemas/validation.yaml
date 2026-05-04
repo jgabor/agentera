@@ -1,0 +1,74 @@
+VALIDATION:
+  1:
+    id: V1
+    rule: user_approval_required
+    description: >-
+      VISION.md MUST NOT be written or modified without explicit user
+      approval. Present drafts and get confirmation before writing.
+      This applies to both Create and Refine modes.
+    severity: critical
+    checks:
+      - "Draft presented to user before write"
+      - "Explicit approval received"
+  2:
+    id: V2
+    rule: no_realisera_modification
+    description: >-
+      VISION.md MUST NOT be modified during a realisera execution cycle.
+      Vision changes happen only in dedicated visionera sessions. This
+      prevents vision drift during autonomous development.
+    severity: critical
+    checks:
+      - "VISION.md not written during realisera cycle"
+  3:
+    id: V3
+    rule: inspirational_tone
+    description: >-
+      The vision document MUST be evocative, not clinical. If it reads
+      like a PRD or requirements doc, it must be rewritten. The vision
+      should inspire and guide, not specify.
+    severity: warning
+    checks:
+      - "VISION.md is aspirational, not prescriptive"
+  4:
+    id: V4
+    rule: codebase_exploration_required
+    description: >-
+      When code exists, the codebase exploration step (Step 1) MUST NOT
+      be skipped. Arriving informed distinguishes visionera from a
+      blank-slate interview.
+    severity: critical
+    checks:
+      - "Codebase explored when code exists"
+  5:
+    id: V5
+    rule: actionable_vision
+    description: >-
+      The vision MUST be concrete enough to guide autonomous development.
+      "Make a great tool" is not a vision. It must include specific
+      direction, principles, and enough detail for planera to derive tasks.
+    severity: critical
+    checks:
+      - "Vision contains specific direction"
+      - "Vision contains actionable principles"
+  6:
+    id: V6
+    rule: principle_brevity
+    description: >-
+      Each principle in VISION.md MUST be ≤20 words. Principles are
+      decision guides, not essays. Brevity forces clarity.
+    severity: warning
+    checks:
+      - "Each principle ≤ 20 words"
+  7:
+    id: V7
+    rule: exit_marker_required
+    description: >-
+      Every visionera invocation MUST emit an exit marker using the
+      canonical glyph ⛥ (SG6) in the format ⛥ visionera · <status>
+      where status is one of EX1-EX4.
+    severity: critical
+    checks:
+      - "Exit marker present"
+      - "Exit marker uses glyph ⛥ (SG6)"
+      - "Exit marker status is one of complete, flagged, stuck, waiting"

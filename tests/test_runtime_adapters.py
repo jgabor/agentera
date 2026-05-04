@@ -37,8 +37,15 @@ def _load_module(name: str, path: Path) -> ModuleType:
     return module
 
 
+_V2_META_SKILLS = {"agentera"}
+
+
 def _skill_names(root: Path = REPO_ROOT) -> list[str]:
     return sorted(path.name for path in (root / "skills").iterdir() if (path / "SKILL.md").is_file())
+
+
+def _v1_skill_names(root: Path = REPO_ROOT) -> list[str]:
+    return [name for name in _skill_names(root) if name not in _V2_META_SKILLS]
 
 
 def _resolve_inside(root: Path, path: str) -> Path | None:
@@ -113,7 +120,7 @@ def _validate_codex_package(plugin: dict[str, Any]) -> list[str]:
     if not isinstance(metadata, list):
         return errors + ["codex.skillMetadata must be a list"]
 
-    expected = _skill_names()
+    expected = _v1_skill_names()
     actual = sorted(skill.get("name") for skill in metadata if isinstance(skill, dict))
     if actual != expected:
         errors.append("codex.skillMetadata must match skills/*/SKILL.md")
@@ -198,7 +205,7 @@ def _validate_codex_marketplace(root: Path = REPO_ROOT) -> list[str]:
 def _validate_codex_ui_metadata(path: Path) -> list[str]:
     errors: list[str] = []
     text = path.read_text(encoding="utf-8")
-    expected = _skill_names()
+    expected = _v1_skill_names()
     for name in expected:
         if f"  - name: {name}\n" not in text:
             errors.append(f"codex.ui.{name}: missing skill entry")
@@ -232,7 +239,7 @@ def _validate_claude_package(root: Path = REPO_ROOT) -> list[str]:
     if not isinstance(plugins, list):
         return ["claude marketplace plugins must be a list"]
 
-    expected = _skill_names(root)
+    expected = _v1_skill_names(root)
     actual = sorted(plugin.get("name") for plugin in plugins if isinstance(plugin, dict))
     if actual != expected:
         errors.append("claude marketplace plugins must match skills/*/SKILL.md")
@@ -260,7 +267,7 @@ def _validate_opencode_package(root: Path = REPO_ROOT) -> list[str]:
 
     plugin_text = (root / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
     errors.extend(_validate_opencode_version(root, plugin_text))
-    expected = _skill_names(root)
+    expected = _v1_skill_names(root)
     command_names = sorted(re.findall(r'^  "([a-z]+)": `', plugin_text, flags=re.MULTILINE))
     if command_names != expected:
         errors.append("opencode command templates must match skills/*/SKILL.md")
@@ -351,7 +358,7 @@ def _validate_package_versions(root: Path = REPO_ROOT) -> list[str]:
         if isinstance(plugin, dict):
             surfaces[f".claude-plugin/marketplace.json plugin {plugin.get('name')}"] = plugin.get("version")
 
-    for name in _skill_names(root):
+    for name in _v1_skill_names(root):
         plugin = _load_json(root / "skills" / name / ".claude-plugin/plugin.json")
         surfaces[f"skills/{name}/.claude-plugin/plugin.json"] = plugin.get("version")
 

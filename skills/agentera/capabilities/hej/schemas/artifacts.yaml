@@ -1,0 +1,101 @@
+ARTIFACTS:
+  1:
+    id: A1
+    name: VISION.md
+    path: "VISION.md or .agentera/VISION.md (per DOCS.md)"
+    description: >-
+      Project direction and north star. Produced by visionera.
+      Hej reads this for the briefing's project context.
+    produces: false
+    consumes: true
+  2:
+    id: A2
+    name: DECISIONS.md
+    path: ".agentera/DECISIONS.md"
+    description: >-
+      Pending and recent decisions. Produced by resonera.
+      Hej reads this to identify unresolved decisions requiring follow-up.
+    produces: false
+    consumes: true
+  3:
+    id: A3
+    name: PLAN.md
+    path: ".agentera/PLAN.md"
+    description: >-
+      Active tasks with dependencies and completion status. Produced by planera.
+      Hej reads this to identify the next executable task and plan progress.
+    produces: false
+    consumes: true
+  4:
+    id: A4
+    name: PROGRESS.md
+    path: ".agentera/PROGRESS.md"
+    description: >-
+      Recent cycle history and what shipped. Produced by realisera.
+      Hej reads this for the briefing's "what shipped" context.
+    produces: false
+    consumes: true
+  5:
+    id: A5
+    name: TODO.md
+    path: "TODO.md"
+    description: >-
+      Open problems by severity. Human-maintained or produced by realisera.
+      Hej reads this to identify high-severity open items for routing.
+    produces: false
+    consumes: true
+  6:
+    id: A6
+    name: HEALTH.md
+    path: ".agentera/HEALTH.md"
+    description: >-
+      Codebase health grades and trends. Produced by inspektera.
+      Hej reads this for the health status line and attention items.
+    produces: false
+    consumes: true
+  7:
+    id: A7
+    name: OBJECTIVE.md
+    path: ".agentera/OBJECTIVE.md"
+    description: >-
+      Optimization target and current metric value. Produced by optimera.
+      Hej reads this to check for active optimization objectives.
+    produces: false
+    consumes: true
+  8:
+    id: A8
+    name: EXPERIMENTS.md
+    path: ".agentera/EXPERIMENTS.md"
+    description: >-
+      Experiment status and history. Produced by optimera.
+      Hej reads this alongside OBJECTIVE.md to determine optimization status.
+    produces: false
+    consumes: true
+  9:
+    id: A9
+    name: DOCS.md
+    path: ".agentera/DOCS.md"
+    description: >-
+      Artifact path resolution and documentation coverage. Produced by dokumentera.
+      Hej reads this FIRST to resolve artifact paths before reading other artifacts.
+    produces: false
+    consumes: true
+  10:
+    id: A10
+    name: DESIGN.md
+    path: ".agentera/DESIGN.md"
+    description: >-
+      Visual identity system status. Produced by visualisera.
+      Hej reads this for the briefing's design status.
+    produces: false
+    consumes: true
+  11:
+    id: A11
+    name: PROFILE.md
+    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    description: >-
+      Decision profile with per-entry confidence scoring. Produced by profilera.
+      Hej reads this to report profile status (loaded/not found) in the briefing.
+      Path is global, resolved via PROFILERA_PROFILE_DIR or XDG_DATA_HOME.
+    produces: false
+    consumes: true

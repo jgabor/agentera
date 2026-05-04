@@ -1,0 +1,463 @@
+# Protocol Schema
+#
+# Shared primitives for agentera 2.0 capabilities. All capability schemas
+# reference these primitives for confidence, severity, visual tokens, exit
+# signals, and phase model. Self-contained: no external references.
+#
+# Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
+# matching the capability_schema_contract.yaml convention.
+#
+# ── Field-by-field mapping: SPEC.md → protocol.yaml ──
+#
+# SPEC Section 1 (Confidence Scale):
+#   Tier 1 (90-100, verified/near-certain)        → CONFIDENCE_SCALE.1  (CS1)
+#   Tier 2 (70-89, strong evidence/established)    → CONFIDENCE_SCALE.2  (CS2)
+#   Tier 3 (50-69, moderate evidence/emerging)     → CONFIDENCE_SCALE.3  (CS3)
+#   Tier 4 (30-49, weak evidence/uncertain)        → CONFIDENCE_SCALE.4  (CS4)
+#   Tier 5 (0-29, speculative/extrapolated)        → CONFIDENCE_SCALE.5  (CS5)
+#   Thresholds (65+ strong, <45 suggestion)        → CONFIDENCE_SCALE._thresholds
+#
+# SPEC Section 2 (Severity Levels):
+#   Finding: critical                              → SEVERITY_FINDING.1  (SF1)
+#   Finding: warning                               → SEVERITY_FINDING.2  (SF2)
+#   Finding: info                                  → SEVERITY_FINDING.3  (SF3)
+#   Issue: critical (⇶)                            → SEVERITY_ISSUE.1    (SI1)
+#   Issue: degraded (⇉)                            → SEVERITY_ISSUE.2    (SI2)
+#   Issue: normal (→)                              → SEVERITY_ISSUE.3    (SI3)
+#   Issue: annoying (⇢)                            → SEVERITY_ISSUE.4    (SI4)
+#   Mapping: critical→critical                     → SEVERITY_MAPPING.1  (SM1)
+#   Mapping: warning→degraded/normal               → SEVERITY_MAPPING.2  (SM2)
+#   Mapping: info→annoying                         → SEVERITY_MAPPING.3  (SM3)
+#
+# SPEC Section 3 (Decision Confidence Labels):
+#   firm                                           → DECISION_LABELS.1   (DL1)
+#   provisional                                    → DECISION_LABELS.2   (DL2)
+#   exploratory                                    → DECISION_LABELS.3   (DL3)
+#
+# SPEC Section 11 (Exit Signals):
+#   complete                                       → EXIT_SIGNALS.1      (EX1)
+#   flagged                                        → EXIT_SIGNALS.2      (EX2)
+#   stuck                                          → EXIT_SIGNALS.3      (EX3)
+#   waiting                                        → EXIT_SIGNALS.4      (EX4)
+#
+# SPEC Section 13 (Visual Identity):
+#   Status: complete (■)                           → VISUAL_TOKENS.1     (VT1)
+#   Status: in-progress (▣)                        → VISUAL_TOKENS.2     (VT2)
+#   Status: open (□)                               → VISUAL_TOKENS.3     (VT3)
+#   Status: blocked (▨)                            → VISUAL_TOKENS.4     (VT4)
+#   Severity: critical (⇶)                         → VISUAL_TOKENS.5     (VT5)
+#   Severity: degraded (⇉)                         → VISUAL_TOKENS.6     (VT6)
+#   Severity: normal (→)                           → VISUAL_TOKENS.7     (VT7)
+#   Severity: annoying (⇢)                         → VISUAL_TOKENS.8     (VT8)
+#   Confidence: firm (━)                           → VISUAL_TOKENS.9     (VT9)
+#   Confidence: provisional (─)                    → VISUAL_TOKENS.10    (VT10)
+#   Confidence: exploratory (┄)                    → VISUAL_TOKENS.11    (VT11)
+#   Trend: improving (⮉)                           → VISUAL_TOKENS.12    (VT12)
+#   Trend: degrading (⮋)                           → VISUAL_TOKENS.13    (VT13)
+#   Structural: section divider                    → VISUAL_TOKENS.14    (VT14)
+#   Structural: list item (▸)                      → VISUAL_TOKENS.15    (VT15)
+#   Structural: inline separator (·)               → VISUAL_TOKENS.16    (VT16)
+#   Structural: flow/target (→)                    → VISUAL_TOKENS.17    (VT17)
+#   Structural: progress bar (█▓░)                 → VISUAL_TOKENS.18    (VT18)
+#   Skill glyph: hej (⌂)                           → SKILL_GLYPHS.1      (SG1)
+#   Skill glyph: realisera (⧉)                     → SKILL_GLYPHS.2      (SG2)
+#   Skill glyph: inspektera (⛶)                    → SKILL_GLYPHS.3      (SG3)
+#   Skill glyph: resonera (❈)                      → SKILL_GLYPHS.4      (SG4)
+#   Skill glyph: planera (≡)                       → SKILL_GLYPHS.5      (SG5)
+#   Skill glyph: visionera (⛥)                     → SKILL_GLYPHS.6      (SG6)
+#   Skill glyph: optimera (⎘)                      → SKILL_GLYPHS.7      (SG7)
+#   Skill glyph: dokumentera (▤)                   → SKILL_GLYPHS.8      (SG8)
+#   Skill glyph: profilera (♾)                     → SKILL_GLYPHS.9      (SG9)
+#   Skill glyph: inspirera (⬚)                     → SKILL_GLYPHS.10     (SG10)
+#   Skill glyph: visualisera (◰)                   → SKILL_GLYPHS.11     (SG11)
+#   Skill glyph: orkestrera (⎈)                    → SKILL_GLYPHS.12     (SG12)
+#
+# SPEC Section 18 (Phase Tracking):
+#   Phase: envision                                → PHASES.1            (PH1)
+#   Phase: deliberate                              → PHASES.2            (PH2)
+#   Phase: plan                                    → PHASES.3            (PH3)
+#   Phase: build                                   → PHASES.4            (PH4)
+#   Phase: audit                                   → PHASES.5            (PH5)
+
+meta:
+  name: protocol
+  version: "1.0.0"
+  description: >-
+    Shared protocol primitives for agentera 2.0 capabilities.
+    Defines confidence scale, severity levels, decision labels, exit signals,
+    visual tokens, skill glyphs, and phase model. Self-contained.
+
+GROUP_PREFIXES:
+  CONFIDENCE_SCALE: CS
+  SEVERITY_FINDING: SF
+  SEVERITY_ISSUE: SI
+  SEVERITY_MAPPING: SM
+  DECISION_LABELS: DL
+  EXIT_SIGNALS: EX
+  VISUAL_TOKENS: VT
+  SKILL_GLYPHS: SG
+  PHASES: PH
+
+CONFIDENCE_SCALE:
+  1:
+    id: CS1
+    tier: 1
+    range: [90, 100]
+    semantic: "Verified / near-certain"
+  2:
+    id: CS2
+    tier: 2
+    range: [70, 89]
+    semantic: "Strong evidence / established"
+  3:
+    id: CS3
+    tier: 3
+    range: [50, 69]
+    semantic: "Moderate evidence / emerging"
+  4:
+    id: CS4
+    tier: 4
+    range: [30, 49]
+    semantic: "Weak evidence / uncertain"
+  5:
+    id: CS5
+    tier: 5
+    range: [0, 29]
+    semantic: "Speculative / extrapolated"
+  _thresholds:
+    strong_constraint: 65
+    suggestion: 45
+    description: >-
+      Profile consumption thresholds: 65+ for strong constraint,
+      below 45 for suggestion. Integer equivalents of 0.0-1.0 thresholds.
+  _rules:
+    - "Skills producing confidence scores MUST use integer 0-100"
+    - "Skills consuming confidence scores MUST interpret against these tier boundaries"
+    - "Temporal decay is opt-in per capability"
+
+SEVERITY_FINDING:
+  1:
+    id: SF1
+    value: critical
+    meaning: "Broken functionality, security issue, data loss risk"
+  2:
+    id: SF2
+    value: warning
+    meaning: "Works but poorly: fragile, confusing, or degraded"
+  3:
+    id: SF3
+    value: info
+    meaning: "Minor: cosmetic, style, low-impact improvement"
+
+SEVERITY_ISSUE:
+  1:
+    id: SI1
+    value: critical
+    glyph: "\u21F6"
+    glyph_code: U+21F6
+    meaning: "Broken functionality, blocks progress"
+  2:
+    id: SI2
+    value: degraded
+    glyph: "\u21C9"
+    glyph_code: U+21C9
+    meaning: "Works but poorly: slow, fragile, ugly"
+  3:
+    id: SI3
+    value: normal
+    glyph: "\u2192"
+    glyph_code: U+2192
+    meaning: "Standard work: features, improvements, routine tasks"
+  4:
+    id: SI4
+    value: annoying
+    glyph: "\u21E2"
+    glyph_code: U+21E2
+    meaning: "Cosmetic, minor friction, style nit"
+
+SEVERITY_MAPPING:
+  1:
+    id: SM1
+    from: critical
+    to: critical
+  2:
+    id: SM2
+    from: warning
+    to: [degraded, normal]
+  3:
+    id: SM3
+    from: info
+    to: annoying
+
+DECISION_LABELS:
+  1:
+    id: DL1
+    value: firm
+    meaning: "User is committed"
+    treatment: "Treat as a hard constraint"
+  2:
+    id: DL2
+    value: provisional
+    meaning: "Best current answer, open to revision"
+    treatment: "Treat as a strong default"
+  3:
+    id: DL3
+    value: exploratory
+    meaning: "Direction to try, expected to be revisited"
+    treatment: "Treat as a suggestion"
+
+EXIT_SIGNALS:
+  1:
+    id: EX1
+    value: complete
+    meaning: "All steps completed successfully"
+    when: "Workflow ran to completion and all acceptance criteria were met"
+  2:
+    id: EX2
+    value: flagged
+    meaning: "Completed, but with issues the user should know about"
+    when: "Workflow completed but discovered problems or made compromises"
+    rules:
+      - "MUST list each concern"
+      - "A bare status without details is not acceptable"
+  3:
+    id: EX3
+    value: stuck
+    meaning: "Cannot proceed"
+    when: "Hard blocker prevents completion"
+    rules:
+      - "MUST state what is blocking"
+      - "MUST state what was attempted"
+  4:
+    id: EX4
+    value: waiting
+    meaning: "Missing information required to continue"
+    when: "Needs input, clarification, or a decision from the user or another capability"
+    rules:
+      - "MUST state what is needed to proceed"
+
+VISUAL_TOKENS:
+  1:
+    id: VT1
+    family: status
+    state: complete
+    glyph: "\u25A0"
+    glyph_code: U+25A0
+  2:
+    id: VT2
+    family: status
+    state: in-progress
+    glyph: "\u25A3"
+    glyph_code: U+25A3
+  3:
+    id: VT3
+    family: status
+    state: open
+    glyph: "\u25A1"
+    glyph_code: U+25A1
+  4:
+    id: VT4
+    family: status
+    state: blocked
+    glyph: "\u25A8"
+    glyph_code: U+25A8
+  5:
+    id: VT5
+    family: severity
+    state: critical
+    glyph: "\u21F6"
+    glyph_code: U+21F6
+  6:
+    id: VT6
+    family: severity
+    state: degraded
+    glyph: "\u21C9"
+    glyph_code: U+21C9
+  7:
+    id: VT7
+    family: severity
+    state: normal
+    glyph: "\u2192"
+    glyph_code: U+2192
+  8:
+    id: VT8
+    family: severity
+    state: annoying
+    glyph: "\u21E2"
+    glyph_code: U+21E2
+  9:
+    id: VT9
+    family: confidence
+    state: firm
+    glyph: "\u2501"
+    glyph_code: U+2501
+  10:
+    id: VT10
+    family: confidence
+    state: provisional
+    glyph: "\u2500"
+    glyph_code: U+2500
+  11:
+    id: VT11
+    family: confidence
+    state: exploratory
+    glyph: "\u2504"
+    glyph_code: U+2504
+  12:
+    id: VT12
+    family: trend
+    state: improving
+    glyph: "\u2B89"
+    glyph_code: U+2B89
+  13:
+    id: VT13
+    family: trend
+    state: degrading
+    glyph: "\u2B8B"
+    glyph_code: U+2B8B
+  14:
+    id: VT14
+    family: structural
+    element: section_divider
+    pattern: "--- label -------"
+    glyph_code: U+2500
+  15:
+    id: VT15
+    family: structural
+    element: list_item
+    glyph: "\u25B8"
+    glyph_code: U+25B8
+  16:
+    id: VT16
+    family: structural
+    element: inline_separator
+    glyph: "\u00B7"
+    glyph_code: U+00B7
+  17:
+    id: VT17
+    family: structural
+    element: flow_target
+    glyph: "\u2192"
+    glyph_code: U+2192
+  18:
+    id: VT18
+    family: structural
+    element: progress_bar
+    pattern: "\u2588\u2593\u2591"
+    glyph_code: U+2588/2593/2591
+
+SKILL_GLYPHS:
+  1:
+    id: SG1
+    capability: hej
+    glyph: "\u2302"
+    glyph_code: U+2302
+    meaning: "home base"
+  2:
+    id: SG2
+    capability: realisera
+    glyph: "\u29C9"
+    glyph_code: U+29C9
+    meaning: "joined building blocks"
+  3:
+    id: SG3
+    capability: inspektera
+    glyph: "\u26F6"
+    glyph_code: U+26F6
+    meaning: "viewfinder frame"
+  4:
+    id: SG4
+    capability: resonera
+    glyph: "\u2748"
+    glyph_code: U+2748
+    meaning: "spark of insight"
+  5:
+    id: SG5
+    capability: planera
+    glyph: "\u2261"
+    glyph_code: U+2261
+    meaning: "structured layers"
+  6:
+    id: SG6
+    capability: visionera
+    glyph: "\u26E5"
+    glyph_code: U+26E5
+    meaning: "guiding star"
+  7:
+    id: SG7
+    capability: optimera
+    glyph: "\u2398"
+    glyph_code: U+2398
+    meaning: "measurement"
+  8:
+    id: SG8
+    capability: dokumentera
+    glyph: "\u25A4"
+    glyph_code: U+25A4
+    meaning: "text on page"
+  9:
+    id: SG9
+    capability: profilera
+    glyph: "\u267E"
+    glyph_code: U+267E
+    meaning: "permanent mark"
+  10:
+    id: SG10
+    capability: inspirera
+    glyph: "\u2B1A"
+    glyph_code: U+2B1A
+    meaning: "frame to fill"
+  11:
+    id: SG11
+    capability: visualisera
+    glyph: "\u25F0"
+    glyph_code: U+25F0
+    meaning: "design grid"
+  12:
+    id: SG12
+    capability: orkestrera
+    glyph: "\u2388"
+    glyph_code: U+2388
+    meaning: "helm, steering"
+
+PHASES:
+  1:
+    id: PH1
+    value: envision
+    capabilities: [visionera]
+    purpose: "Define or refine the project's north star"
+    valid_successors: [deliberate, plan, build]
+    terminal: false
+    self_transition: false
+  2:
+    id: PH2
+    value: deliberate
+    capabilities: [resonera]
+    purpose: "Reason through decisions before committing to a direction"
+    valid_successors: [plan, build, envision]
+    terminal: false
+    self_transition: false
+  3:
+    id: PH3
+    value: plan
+    capabilities: [planera]
+    purpose: "Structure work into tasks with dependencies and acceptance criteria"
+    valid_successors: [build, deliberate]
+    terminal: false
+    self_transition: false
+  4:
+    id: PH4
+    value: build
+    capabilities: [realisera, optimera, dokumentera, visualisera]
+    purpose: "Implement, optimize, document, or design"
+    valid_successors: [build, audit, plan]
+    terminal: true
+    self_transition: true
+  5:
+    id: PH5
+    value: audit
+    capabilities: [inspektera]
+    purpose: "Evaluate structural health and alignment"
+    valid_successors: [build, plan, deliberate, envision]
+    terminal: true
+    self_transition: false

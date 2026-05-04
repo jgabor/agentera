@@ -1,0 +1,35 @@
+EXIT_CONDITIONS:
+  1:
+    id: E1
+    condition: complete
+    description: >-
+      VISION.md was written (Create/Replace mode) or updated (Refine mode)
+      with explicit user approval. The vision is ambitious, concrete, and
+      structured to sustain autonomous development.
+    exit_signal: complete
+  2:
+    id: E2
+    condition: flagged
+    description: >-
+      The vision was produced but with weaknesses worth surfacing: the user
+      settled for a less ambitious or less specific vision than pushed for,
+      key sections (personas, principles, direction) are thin due to limited
+      conversation depth, or the vision has unresolved tensions with existing
+      DECISIONS.md entries.
+    exit_signal: flagged
+  3:
+    id: E3
+    condition: stuck
+    description: >-
+      Cannot write VISION.md because the user declined to approve the draft
+      and no actionable revision direction was given, or codebase exploration
+      failed in a way that would make the vision unreliable.
+    exit_signal: stuck
+  4:
+    id: E4
+    condition: waiting
+    description: >-
+      The user has not provided enough about the project's purpose or
+      direction to write a meaningful vision, and the codebase (if any)
+      does not provide sufficient signal to proceed without a conversation.
+    exit_signal: waiting

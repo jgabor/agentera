@@ -1,0 +1,35 @@
+EXIT_CONDITIONS:
+  1:
+    id: E1
+    condition: complete
+    description: >-
+      Documentation was written, updated, or audited successfully.
+      DOCS.md is current, and all drafted content received user
+      approval before writing.
+    exit_signal: complete
+  2:
+    id: E2
+    condition: flagged
+    description: >-
+      Documentation tasks completed but gaps remain. Possible causes:
+      some doc files could not be verified against code, coverage is
+      partial, or the audit found issues that were logged but not yet
+      fixed.
+    exit_signal: flagged
+  3:
+    id: E3
+    condition: stuck
+    description: >-
+      Cannot proceed because a user approval step was declined, a
+      required artifact (VISION.md, source code) is missing or
+      inaccessible, or a contradicting doc-vs-code situation requires
+      a decision the capability should not make autonomously.
+    exit_signal: stuck
+  4:
+    id: E4
+    condition: waiting
+    description: >-
+      The documentation intent is unclear: the target audience, format,
+      or scope of what to document was not specified and cannot be
+      inferred from the codebase or DOCS.md.
+    exit_signal: waiting

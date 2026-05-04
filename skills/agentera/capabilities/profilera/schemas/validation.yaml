@@ -1,0 +1,57 @@
+VALIDATION:
+  1:
+    id: V1
+    rule: evidence_grounded
+    description: >-
+      Every profile entry MUST be grounded in observed evidence from session
+      history, memory files, configs, or conversation data. Fabricated
+      decision patterns are never acceptable.
+    severity: critical
+    checks:
+      - "Each profile entry traces to a source record"
+      - "No profile entry is fabricated without evidence"
+  2:
+    id: V2
+    rule: confidence_calibration
+    description: >-
+      Confidence scores MUST match the evidence tier (protocol CS1-CS5).
+      A single data point is 30-49 (CS4), not 70+. Bias check: confidence
+      is earned through evidence, not assigned by how insightful the
+      decision sounds.
+    severity: critical
+    checks:
+      - "Confidence values fall within protocol tier boundaries"
+      - "Single-source entries are capped at CS4 (30-49)"
+  3:
+    id: V3
+    rule: tension_honesty
+    description: >-
+      Contradictions MUST be recorded as tensions, not smoothed into a
+      coherent narrative. When evidence conflicts, the tension section
+      captures the divergence explicitly.
+    severity: critical
+    checks:
+      - "Conflicting evidence produces tension entries"
+      - "No smoothing over contradictions"
+  4:
+    id: V4
+    rule: read_only_sources
+    description: >-
+      Profilera MUST NOT modify session history, memory files, or config
+      files. It reads these sources for extraction but never writes to them.
+      The only artifact profilera produces is PROFILE.md.
+    severity: critical
+    checks:
+      - "No writes to session history files"
+      - "No writes to memory or config files"
+  5:
+    id: V5
+    rule: prediction_accuracy
+    description: >-
+      Full mode MUST validate predictions against 5 decision-rich prompts
+      not used to create the profile. Accuracy below 3/5 triggers a flag
+      noting categories needing more signal.
+    severity: warning
+    checks:
+      - "5 predictions tested against held-out prompts"
+      - "Accuracy below 3/5 is flagged in profile header"

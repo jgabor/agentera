@@ -1,0 +1,35 @@
+EXIT_CONDITIONS:
+  1:
+    id: E1
+    condition: complete
+    description: >-
+      One experiment completed the full cycle: hypothesis formulated,
+      implementation dispatched, regression check passed, metric measured,
+      decision made (kept or discarded), and EXPERIMENTS.md updated.
+    exit_signal: complete
+  2:
+    id: E2
+    condition: flagged
+    description: >-
+      The experiment cycle completed but with issues worth noting: the metric
+      did not improve after multiple attempts, a plateau was detected, or the
+      experiment had to be discarded due to a regression. Each concern is
+      listed explicitly.
+    exit_signal: flagged
+  3:
+    id: E3
+    condition: stuck
+    description: >-
+      Cannot proceed because OBJECTIVE.md is missing and the brainstorm cannot
+      be completed without user input, the eval harness is broken and cannot
+      be repaired without user approval, or the regression check infrastructure
+      is unavailable.
+    exit_signal: stuck
+  4:
+    id: E4
+    condition: waiting
+    description: >-
+      The optimization objective is too vague to experiment against, the metric
+      cannot be measured by any available tooling, or the scope is undefined
+      and cannot be safely inferred.
+    exit_signal: waiting

@@ -1,0 +1,34 @@
+EXIT_CONDITIONS:
+  1:
+    id: E1
+    condition: complete
+    description: >-
+      DESIGN.md was written (Create/Replace mode), updated (Refine mode),
+      or audited with findings reported (Audit mode). Validation script
+      ran without errors, and all changes had explicit user approval.
+    exit_signal: complete
+  2:
+    id: E2
+    condition: flagged
+    description: >-
+      The design system was produced or audited but with issues worth
+      surfacing. Possible causes: validation passed with advisory warnings,
+      the design drifts from VISION.md Identity, or audit findings were
+      neither fixed nor filed.
+    exit_signal: flagged
+  3:
+    id: E3
+    condition: stuck
+    description: >-
+      Cannot write DESIGN.md because the user declined to approve the
+      draft, the validation script reports unresolvable errors, or the
+      project's UI stack is inaccessible.
+    exit_signal: stuck
+  4:
+    id: E4
+    condition: waiting
+    description: >-
+      The visual identity direction is undefined and the user has not
+      engaged with the design conversation, or the project has no UI
+      layer and DESIGN.md would serve no purpose without clarification.
+    exit_signal: waiting
