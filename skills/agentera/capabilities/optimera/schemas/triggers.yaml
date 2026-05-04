@@ -1,0 +1,36 @@
+TRIGGERS:
+  1:
+    id: T1
+    description: >-
+      Direct invocation by name or slash command. Matches when the user
+      explicitly requests optimera.
+    patterns:
+      - "optimera"
+      - "/optimera"
+  2:
+    id: T2
+    description: >-
+      Metric-driven optimization requests. Matches when the user wants to
+      improve a concrete, quantifiable property of their codebase.
+    patterns:
+      - "optimize"
+      - "improve performance"
+      - "reduce latency"
+      - "increase test coverage"
+      - "lower bundle size"
+      - "speed up"
+      - "make faster"
+      - "make smaller"
+      - "get the score up"
+      - "hit the target"
+      - "improve the metric"
+  3:
+    id: T3
+    description: >-
+      Iterative experimentation requests. Matches when the user wants to
+      run experiments, benchmark, or iterate on a measurable objective.
+    patterns:
+      - "benchmark and iterate"
+      - "run experiments"
+      - "tune"
+      - "experiment until"

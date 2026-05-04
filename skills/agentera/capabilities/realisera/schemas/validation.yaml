@@ -1,0 +1,61 @@
+VALIDATION:
+  1:
+    id: V1
+    rule: verified_field_mandatory
+    description: >-
+      Every PROGRESS.md cycle entry MUST have a **Verified** field. The field
+      carries either observed output from the primary entrypoint, an allowlisted
+      N/A tag, or a free-form rationale of at least 8 words.
+    severity: critical
+    checks:
+      - "Every cycle entry has a Verified field"
+      - "Verified field is not empty"
+  2:
+    id: V2
+    rule: one_cycle_per_invocation
+    description: >-
+      Realisera executes exactly one cycle per invocation. After logging (Step 9),
+      the capability MUST stop. Multiple cycles require separate invocations or
+      /loop.
+    severity: critical
+    checks:
+      - "Only one cycle entry appended to PROGRESS.md per invocation"
+  3:
+    id: V3
+    rule: no_remote_push
+    description: >-
+      Realisera MUST NEVER push to any remote repository. All commits are local
+      only. Remote operations require explicit user instruction outside this
+      capability.
+    severity: critical
+    checks:
+      - "No git push commands issued"
+  4:
+    id: V4
+    rule: vision_readonly_during_cycle
+    description: >-
+      VISION.md MUST NOT be modified during a cycle. It may only be written
+      during a brainstorm session (bootstrap or user-requested refinement).
+    severity: critical
+    checks:
+      - "VISION.md not modified outside brainstorm"
+  5:
+    id: V5
+    rule: consecutive_failure_guard
+    description: >-
+      If the last 3 PROGRESS.md entries all record failed cycles, realisera
+      MUST stop and surface the pattern to the user. Do not attempt a 4th
+      consecutive cycle on the same failing problem.
+    severity: critical
+    checks:
+      - "Failure pattern checked before cycle start"
+  6:
+    id: V6
+    rule: artifact_path_resolution
+    description: >-
+      Before reading or writing any artifact, check .agentera/DOCS.md for path
+      overrides. If absent, use the default layout (VISION.md, TODO.md,
+      CHANGELOG.md at root; all others in .agentera/).
+    severity: warning
+    checks:
+      - "DOCS.md checked before artifact access"

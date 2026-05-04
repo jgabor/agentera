@@ -49,14 +49,17 @@ skills/agentera/
 
 ### Query CLI
 
-One command, all state. The agent asks questions; the CLI reads structured artifacts and returns compact answers.
+Two surface commands. `agentera query` answers questions about project state. `agentera prime` prints a static guidance blob that teaches the agent when and how to use agentera commands before falling back to native read/grep.
 
 ```
+agentera prime                                # Print agent-priming guidance
 agentera query last-phase                     # What phase was the last cycle?
 agentera query decisions --topic runtime      # Decisions about runtime support
 agentera query health --dimension coupling    # Latest coupling grade
 agentera query open-todos --severity critical # Critical open issues
 ```
+
+`agentera prime` takes no arguments and produces identical output every invocation. The output is a concise routing guide: which questions go through agentera, which fall back to native tools, and how to recover from stale or missing artifacts. Inspired by the `leda prime` pattern from the leda dependency-graph CLI.
 
 The CLI is the deep module: one interface, all artifact knowledge behind it. Changing artifact format only affects CLI internals.
 
@@ -70,34 +73,34 @@ Starts full: hej-style orientation briefing + routing to capabilities. Optimizat
 
 ## Work Breakdown
 
-### Phase 1: Infrastructure (weeks 1-2)
+### Phase 1: Infrastructure (weeks 1-2) ✓
 
 Build the skeleton that everything else plugs into.
 
-- [ ] Define capability schema contract (what fields a capability schema must contain)
-- [ ] Define shared protocol schema (confidence, severity, visual tokens, phase model)
-- [ ] Build the universal query CLI scaffold
-- [ ] Define agent-facing artifact schemas (one per artifact type)
-- [ ] Build artifact migration tool (current Markdown -> structured data)
-- [ ] Rewrite hook to validate against capability-local schemas
-- [ ] Set up feat/v2 branch and worktree
+- [x] Define capability schema contract (what fields a capability schema must contain)
+- [x] Define shared protocol schema (confidence, severity, visual tokens, phase model)
+- [x] Build the universal query CLI scaffold (including `agentera prime` command)
+- [x] Define agent-facing artifact schemas (one per artifact type)
+- [x] Build artifact migration tool (current Markdown -> structured data)
+- [x] Rewrite hook to validate against capability-local schemas
+- [x] Set up feat/v2 branch and worktree
 
-### Phase 2: Core capabilities (weeks 3-5)
+### Phase 2: Core capabilities (weeks 3-5) ✓
 
 Port the 12 capabilities from prose SKILL.md to prose + schema model.
 
-- [ ] hej (routing + orientation) -- becomes the master SKILL.md's core logic
-- [ ] realisera (autonomous development)
-- [ ] resonera (deliberation)
-- [ ] planera (planning)
-- [ ] inspektera (auditing)
-- [ ] optimera (metric optimization)
-- [ ] orkestrera (multi-skill orchestration)
-- [ ] visionera (vision definition)
-- [ ] visualisera (design system)
-- [ ] dokumentera (documentation)
-- [ ] profilera (decision profiling)
-- [ ] inspirera (external pattern analysis)
+- [x] hej (routing + orientation) -- becomes the master SKILL.md's core logic
+- [x] realisera (autonomous development)
+- [x] resonera (deliberation)
+- [x] planera (planning)
+- [x] inspektera (auditing)
+- [x] optimera (metric optimization)
+- [x] orkestrera (multi-skill orchestration)
+- [x] visionera (vision definition)
+- [x] visualisera (design system)
+- [x] dokumentera (documentation)
+- [x] profilera (decision profiling)
+- [x] inspirera (external pattern analysis)
 
 ### Phase 3: Integration (weeks 5-6)
 
@@ -130,9 +133,9 @@ Prove it works, then switch.
 | Schema files per capability | 0 | 2-3 | ls skills/agentera/capabilities/*/schemas/ |
 | Install command complexity | 4 runtime-specific | 1 per runtime | Install from scratch on clean machine |
 
-## Open Questions
+## Resolved Questions
 
-- Artifact format: YAML vs JSON for agent-facing files. YAML is more human-glanceable; JSON has stricter schema validation. Resolve in Phase 1.
-- Master SKILL.md size: start at what line count? Measure after hej port.
-- Backward compatibility: should v1 artifacts be readable by the 2.0 query CLI during migration? Decision: no -- migration tool handles one-time conversion.
-- Naming: is "capabilities" the right term, or something else (workflows, behaviors, modules)? Resolve in Phase 1 schema contract design.
+- **Artifact format**: YAML for all agent-facing artifacts (Decision 40). Token experiment confirmed format choice doesn't affect agent-visible consumption because the query CLI is the seam. YAML wins on human-glanceability and smallest bytes for single entries.
+- **Master SKILL.md size**: Deferred to Phase 1. Measure after hej port reveals natural size. Optimization target remains: thin schema-driven dispatcher.
+- **Backward compatibility**: No. Migration tool handles one-time v1 Markdown to v2 YAML conversion. Consistent with D39 big bang cutover.
+- **Naming**: Sub-modules are "capabilities." Aligns with SKILL.md vocabulary and distinguishes from the v1 "skills" concept.

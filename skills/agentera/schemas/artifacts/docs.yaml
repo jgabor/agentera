@@ -1,0 +1,402 @@
+# Docs Artifact Schema
+#
+# Documentation contract maintained by dokumentera. Tracks project doc
+# conventions, artifact path overrides, document index with status, coverage
+# metrics, and timestamped audit findings.
+#
+# Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
+# following capability_schema_contract.yaml and protocol.yaml conventions.
+#
+# ── Field-by-field mapping: v1 DOCS.md → v2 docs.yaml ──
+#
+# v1 Field                              v2 Field               v2 ID
+# ─────────────────────────────────────────────────────────────────────
+# <!-- Last audit: date (label) -->      HEADER.last_audit      DH1
+# ## Conventions / doc_root             CONVENTIONS.doc_root   DC1
+# ## Conventions / style                CONVENTIONS.style      DC2
+# ## Conventions / auto_gen             CONVENTIONS.auto_gen   DC3
+# ## Conventions / version_files        CONVENTIONS.version_files DC4
+# ## Conventions / semver_policy        CONVENTIONS.semver_policy DC5
+# ## Artifact Mapping / table row       MAPPING.entry          DM1
+# (Artifact column)                     MAPPING.artifact       DM2
+# (Path column)                         MAPPING.path           DM3
+# (Producers column)                    MAPPING.producers      DM4
+# ## Index / table row                  INDEX.entry            DI1
+# (Document column)                     INDEX.document         DI2
+# (Path column)                         INDEX.path             DI3
+# (Last Updated column)                 INDEX.last_updated     DI4
+# (Status column)                       INDEX.status           DI5
+# ## Coverage / Documented              COVERAGE.documented    DV1
+# ## Coverage / Undocumented            COVERAGE.undocumented  DV2
+# ## Coverage / Stale                   COVERAGE.stale         DV3
+# ## Coverage / Tests                   COVERAGE.tests         DV4
+# ## Audit Log / ### date (label)       AUDIT_LOG.entry        DA1
+# (audit date from heading)             AUDIT_LOG.date         DA2
+# (audit label from heading)            AUDIT_LOG.label        DA3
+# - [finding_type] description          FINDING.type           DF1
+# (severity from context)               FINDING.severity       DF2
+# (description text)                    FINDING.description    DF3
+# (resolution: fixed/deferred)          FINDING.resolution     DF4
+#
+# Protocol references:
+#   visual tokens: VT1 (protocol.yaml VISUAL_TOKENS, status: current)
+#   severity: SF1-SF3 (protocol.yaml SEVERITY_FINDING)
+#   status values: ■ current, ▣ stale, □ missing, ▸ intent, ▸ generated
+
+meta:
+  name: docs
+  version: "1.0.0"
+  description: >-
+    Documentation contract. Produced by dokumentera. Consumed by all skills
+    for artifact path resolution and doc status tracking.
+  artifact_type: agent_facing
+  path: ".agentera/docs.yaml"
+  producer: dokumentera
+  consumers: [all_skills]
+  format: yaml
+
+GROUP_PREFIXES:
+  BUDGET: DB
+  HEADER: DH
+  CONVENTIONS: DC
+  MAPPING: DM
+  INDEX: DI
+  COVERAGE: DV
+  AUDIT_LOG: DA
+  FINDING: DF
+  VALIDATION: DVL
+
+BUDGET:
+  1:
+    id: DB1
+    scope: full_file
+    max_words: 2000
+    description: >-
+      Maximum words for the full file. If a write would exceed this
+      budget, compact older audit log entries.
+
+HEADER:
+  1:
+    id: DH1
+    field: last_audit
+    type: string
+    format: "YYYY-MM-DD (label)"
+    required: true
+    description: >-
+      Date and label of the most recent documentation audit. Used by
+      consuming skills to gauge doc freshness.
+    validation:
+      - "Must include date in YYYY-MM-DD format"
+
+CONVENTIONS:
+  1:
+    id: DC1
+    field: doc_root
+    type: string
+    required: true
+    description: >-
+      Root directory for documentation files. Typically '.' (project root).
+    validation:
+      - "Non-empty string"
+  2:
+    id: DC2
+    field: style
+    type: string
+    required: true
+    description: >-
+      Documentation style guide. Describes expected prose style
+      (e.g., 'technical, concise, sections with tables, no badges').
+    validation:
+      - "Non-empty string"
+  3:
+    id: DC3
+    field: auto_gen
+    type: list[string]
+    required: true
+    description: >-
+      List of auto-generated files (those produced by tooling rather
+      than manual editing). May be empty (['none']).
+  4:
+    id: DC4
+    field: version_files
+    type: list[string]
+    required: true
+    description: >-
+      Files whose content changes indicate a version bump is needed.
+      Tracked by planera, inspektera, and realisera for bump discipline.
+    validation:
+      - "At least one entry required"
+  5:
+    id: DC5
+    field: semver_policy
+    type: map
+    required: true
+    description: >-
+      Semantic versioning policy. Maps commit types to bump levels.
+    sub_fields:
+      - field: feat
+        type: string
+        required: true
+        description: "Bump level for feat commits (e.g., 'minor')"
+      - field: fix
+        type: string
+        required: true
+        description: "Bump level for fix commits (e.g., 'patch')"
+      - field: docs_chore_test
+        type: string
+        required: false
+        description: "Bump level for docs/chore/test commits (e.g., 'no bump')"
+
+MAPPING:
+  1:
+    id: DM1
+    field: entry
+    type: map
+    required: true
+    description: >-
+      Each artifact mapping entry. Skills check this table for path
+      overrides. If an artifact has no entry or docs is absent,
+      use the default layout.
+    min_count: 1
+  2:
+    id: DM2
+    field: artifact
+    parent: MAPPING.entry
+    type: string
+    required: true
+    description: >-
+      Canonical artifact name (e.g., 'VISION.md', 'PROGRESS.md',
+      'SESSION.md'). Must match the tracked artifact set.
+    validation:
+      - "Non-empty string"
+  3:
+    id: DM3
+    field: path
+    parent: MAPPING.entry
+    type: string
+    required: true
+    description: >-
+      File path for this artifact. May be absolute or relative.
+      Environment variable references (e.g., $PROFILERA_PROFILE_DIR)
+      are resolved at read time.
+    validation:
+      - "Non-empty string"
+  4:
+    id: DM4
+    field: producers
+    parent: MAPPING.entry
+    type: list[string]
+    required: true
+    description: >-
+      Skills that produce this artifact. At least one producer required.
+    validation:
+      - "At least one producer required"
+
+INDEX:
+  1:
+    id: DI1
+    field: entry
+    type: map
+    required: true
+    description: >-
+      Each index entry tracks a document in the project. All documents
+      that skills read or write should have an index entry.
+  2:
+    id: DI2
+    field: document
+    parent: INDEX.entry
+    type: string
+    required: true
+    description: "Short human-readable name for the document."
+    validation:
+      - "Non-empty string"
+  3:
+    id: DI3
+    field: path
+    parent: INDEX.entry
+    type: string
+    required: true
+    description: "File path for this document."
+    validation:
+      - "Non-empty string"
+  4:
+    id: DI4
+    field: last_updated
+    parent: INDEX.entry
+    type: string
+    format: "YYYY-MM-DD"
+    required: true
+    description: "Date the document was last modified."
+    validation:
+      - "Must match YYYY-MM-DD format"
+  5:
+    id: DI5
+    field: status
+    parent: INDEX.entry
+    type: string
+    required: true
+    description: >-
+      Document status. Uses visual tokens from protocol.yaml VISUAL_TOKENS.
+      Values: current, stale, missing, intent, generated.
+    validation:
+      - "Must be one of: current, stale, missing, intent, generated"
+
+COVERAGE:
+  1:
+    id: DV1
+    field: documented
+    type: string
+    required: true
+    description: >-
+      Count and total of documented items (e.g., '12/12 skills have SKILL.md').
+    validation:
+      - "Non-empty string"
+  2:
+    id: DV2
+    field: undocumented
+    type: string
+    required: true
+    description: >-
+      Count of items lacking documentation (e.g., '0 skills lack documentation').
+    validation:
+      - "Non-empty string"
+  3:
+    id: DV3
+    field: stale
+    type: string
+    required: true
+    description: >-
+      Count or list of stale documents (those where code changed since
+      the doc was last updated).
+    validation:
+      - "Non-empty string or 'none'"
+  4:
+    id: DV4
+    field: tests
+    type: string
+    required: true
+    description: >-
+      Test suite summary (e.g., '577 tests across 23 files; CI runs
+      on push/PR via GitHub Actions').
+    validation:
+      - "Non-empty string"
+
+AUDIT_LOG:
+  1:
+    id: DA1
+    field: entry
+    type: map
+    required: false
+    description: >-
+      Each audit log entry. Timestamped findings from dokumentera audits.
+      Appended when an audit is performed.
+  2:
+    id: DA2
+    field: date
+    parent: AUDIT_LOG.entry
+    type: string
+    format: "YYYY-MM-DD"
+    required: true
+    description: "Date the audit was performed."
+    validation:
+      - "Must match YYYY-MM-DD format"
+  3:
+    id: DA3
+    field: label
+    parent: AUDIT_LOG.entry
+    type: string
+    required: true
+    description: >-
+      Short label for the audit context (e.g., 'installation reliability
+      checkpoint', 'post-plan coverage refresh').
+    validation:
+      - "Non-empty string"
+
+FINDING:
+  1:
+    id: DF1
+    field: type
+    type: string
+    required: true
+    description: >-
+      Finding category. One of: gap (not implemented), stale (code changed
+      but docs not updated), redundant (same info in multiple places),
+      misaligned (docs contradict implementation), cleanup (style/clarity),
+      checked (verification passed), freshness (state alignment note),
+      handoff (transfer note).
+    validation:
+      - "Must be one of: gap, stale, redundant, misaligned, cleanup, checked, freshness, handoff"
+  2:
+    id: DF2
+    field: severity
+    type: string
+    required: true
+    description: >-
+      Finding severity. References protocol.yaml SEVERITY_FINDING (SF1-SF3).
+    protocol_ref: SEVERITY_FINDING
+    validation:
+      - "Must be one of: critical, warning, info"
+  3:
+    id: DF3
+    field: description
+    type: string
+    required: true
+    description: >-
+      What was found and what was done about it. Includes the problem
+      statement and the resolution action.
+    validation:
+      - "Non-empty string"
+  4:
+    id: DF4
+    field: resolution
+    type: string
+    required: true
+    description: >-
+      Whether the finding was fixed, deferred, or noted.
+    validation:
+      - "Must be one of: fixed, deferred, noted"
+
+VALIDATION:
+  1:
+    id: DVL1
+    rule: required_fields
+    severity: error
+    description: >-
+      The docs artifact must have: last_audit, conventions (doc_root,
+      style, auto_gen, version_files, semver_policy), at least one
+      mapping entry, at least one index entry, and coverage.
+    checks:
+      - "last_audit is present"
+      - "conventions.doc_root is present"
+      - "conventions.style is present"
+      - "conventions.auto_gen is present"
+      - "conventions.version_files is present"
+      - "conventions.semver_policy is present"
+      - "At least one mapping entry exists"
+      - "At least one index entry exists"
+      - "coverage.documented is present"
+      - "coverage.tests is present"
+  2:
+    id: DVL2
+    rule: mapping_artifact_names
+    severity: warning
+    description: >-
+      Artifact names in the mapping should be from the canonical set.
+    checks:
+      - "Each artifact name is a recognized tracked artifact"
+  3:
+    id: DVL3
+    rule: index_status_values
+    severity: warning
+    description: >-
+      Index status values should be from the allowed set.
+    checks:
+      - "Each status is one of: current, stale, missing, intent, generated"
+  4:
+    id: DVL4
+    rule: word_budget
+    severity: advisory
+    description: >-
+      Advisory check. Full file should be <=2000 words.
+    checks:
+      - "Total file word count <= 2000"

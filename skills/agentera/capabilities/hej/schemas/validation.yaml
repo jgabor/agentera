@@ -1,0 +1,55 @@
+VALIDATION:
+  1:
+    id: V1
+    rule: read_only
+    description: >-
+      Hej MUST NOT produce or modify any artifacts. It is strictly read-only.
+      All artifacts consumed by hej are produced by other capabilities.
+      This rule verifies that no artifact entry has produces: true.
+    severity: critical
+    checks:
+      - "No artifact entry has produces: true"
+  2:
+    id: V2
+    rule: briefing_completeness
+    description: >-
+      In returning mode, the briefing MUST include a status section (if any
+      artifacts exist), an attention section (if any issues exist), and a
+      concrete next-action suggestion with a named artifact item.
+      A skill name alone is not a valid suggestion.
+    severity: critical
+    checks:
+      - "Briefing contains at least one status line when artifacts exist"
+      - "Routing suggestion names a concrete artifact item"
+  3:
+    id: V3
+    rule: exit_marker_required
+    description: >-
+      Every hej invocation MUST emit an exit marker after the briefing or
+      welcome. The marker uses the canonical glyph ⌂ (SG1) in the format
+      ⌂ hej · <status> where status is one of EX1-EX4.
+    severity: critical
+    checks:
+      - "Exit marker present after closing code fence"
+      - "Exit marker uses glyph ⌂ (SG1)"
+      - "Exit marker status is one of complete, flagged, stuck, waiting"
+  4:
+    id: V4
+    rule: word_budget
+    description: >-
+      The briefing MUST be ≤120 words total. Each routing suggestion MUST be
+      ≤15 words. These constraints keep the briefing scannable and avoid
+      information overload.
+    severity: warning
+    checks:
+      - "Briefing word count ≤ 120"
+      - "Each routing suggestion ≤ 15 words"
+  5:
+    id: V5
+    rule: single_clarifying_question
+    description: >-
+      If the routing target is unclear, hej MUST ask exactly one clarifying
+      question. Compound questions are not allowed.
+    severity: critical
+    checks:
+      - "At most one clarifying question when routing is unclear"

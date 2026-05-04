@@ -1,0 +1,32 @@
+TRIGGERS:
+  1:
+    id: T1
+    description: >-
+      Direct invocation by name or slash command. Matches when the user
+      explicitly requests dokumentera.
+    patterns:
+      - "dokumentera"
+      - "/dokumentera"
+  2:
+    id: T2
+    description: >-
+      Documentation creation requests. Matches when the user wants to
+      write or create documentation, including DTC-first workflows.
+    patterns:
+      - "write docs"
+      - "document this"
+      - "create README"
+      - "write CLAUDE.md"
+      - "write AGENTS.md"
+      - "docs first"
+      - "document before building"
+  3:
+    id: T3
+    description: >-
+      Documentation maintenance and audit requests. Matches when the user
+      wants to update, check, or verify existing documentation.
+    patterns:
+      - "update the docs"
+      - "audit docs"
+      - "check documentation"
+      - "docs out of sync"

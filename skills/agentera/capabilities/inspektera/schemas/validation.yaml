@@ -1,0 +1,63 @@
+VALIDATION:
+  1:
+    id: V1
+    rule: read_only_codebase
+    description: >-
+      Inspektera MUST NOT modify any source code files. It is a read-only
+      assessment capability. Other capabilities fix what inspektera finds.
+    severity: critical
+    checks:
+      - "No source code files are modified during audit"
+  2:
+    id: V2
+    rule: confidence_threshold
+    description: >-
+      Findings below 50 confidence (protocol: below CS3 range) MUST be
+      discarded. Findings in the 50-69 range (CS3) MUST be marked as "info"
+      (SF3) regardless of apparent severity. This prevents speculative
+      findings from being presented as definitive problems.
+    severity: critical
+    checks:
+      - "No finding has confidence below 50"
+      - "Findings with confidence 50-69 are severity info (SF3)"
+  3:
+    id: V3
+    rule: decisions_respected
+    description: >-
+      Findings that contradict deliberate decisions documented in DECISIONS.md
+      MUST be discarded or downgraded to info (SF3). A deliberate decision is
+      not a finding; it is an implementation of that decision.
+    severity: critical
+    checks:
+      - "No finding contradicts a known deliberate decision"
+  4:
+    id: V4
+    rule: no_duplicate_findings
+    description: >-
+      Issues already tracked in TODO.md MUST NOT be reported as new findings.
+      Known issues may be referenced for trajectory comparison but not
+      re-filed at their original severity.
+    severity: warning
+    checks:
+      - "No finding duplicates an existing TODO.md entry"
+  5:
+    id: V5
+    rule: user_confirmation_for_filing
+    description: >-
+      Findings MUST NOT be filed to TODO.md without explicit user confirmation.
+      Present the findings and ask; the user decides what to track.
+    severity: critical
+    checks:
+      - "TODO.md is only modified after user confirmation"
+  6:
+    id: V6
+    rule: exit_marker_required
+    description: >-
+      Every inspektera invocation MUST emit an exit marker. The marker uses
+      the canonical glyph ⛶ (SG3) in the format ⛶ inspektera · <status>
+      where status is one of EX1-EX4.
+    severity: critical
+    checks:
+      - "Exit marker present after audit"
+      - "Exit marker uses glyph ⛶ (SG3)"
+      - "Exit marker status is one of complete, flagged, stuck, waiting"

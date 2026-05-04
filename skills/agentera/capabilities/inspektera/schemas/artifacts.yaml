@@ -1,0 +1,90 @@
+ARTIFACTS:
+  1:
+    id: A1
+    name: HEALTH.md
+    path: ".agentera/HEALTH.md"
+    description: >-
+      Codebase health assessment with findings, dimension grades, and trajectory.
+      Inspektera produces this artifact. Contains audit entries with per-dimension
+      grades, findings with severity and confidence scores, trend comparisons,
+      and de facto architecture patterns.
+    produces: true
+    consumes: true
+  2:
+    id: A2
+    name: VISION.md
+    path: "VISION.md or .agentera/VISION.md (per DOCS.md)"
+    description: >-
+      Project direction and north star. Produced by visionera.
+      Inspektera reads this to compare "what SHOULD BE" against "what IS"
+      during the architecture alignment dimension.
+    produces: false
+    consumes: true
+  3:
+    id: A3
+    name: DECISIONS.md
+    path: ".agentera/DECISIONS.md"
+    description: >-
+      Pending and recent decisions. Produced by resonera.
+      Inspektera reads this to prevent flagging deliberate decisions as findings.
+    produces: false
+    consumes: true
+  4:
+    id: A4
+    name: TODO.md
+    path: "TODO.md"
+    description: >-
+      Open problems by severity. Inspektera reads this to avoid re-reporting
+      known issues and writes to it (with user confirmation) when filing
+      critical and warning findings.
+    produces: true
+    consumes: true
+  5:
+    id: A5
+    name: PROGRESS.md
+    path: ".agentera/PROGRESS.md"
+    description: >-
+      Recent cycle history. Produced by realisera.
+      Inspektera reads the last 3 entries to identify recent changes as
+      higher-priority audit targets.
+    produces: false
+    consumes: true
+  6:
+    id: A6
+    name: PLAN.md
+    path: ".agentera/PLAN.md"
+    description: >-
+      Active plan with task status. Produced by planera.
+      Inspektera reads this for the artifact freshness dimension: the plan's
+      Created date provides the staleness baseline for dispatched capabilities.
+    produces: false
+    consumes: true
+  7:
+    id: A7
+    name: DESIGN.md
+    path: ".agentera/DESIGN.md"
+    description: >-
+      Visual identity system. Produced by visualisera.
+      Inspektera reads this to audit design token consistency.
+    produces: false
+    consumes: true
+  8:
+    id: A8
+    name: DOCS.md
+    path: ".agentera/DOCS.md"
+    description: >-
+      Artifact path resolution and documentation coverage. Produced by dokumentera.
+      Inspektera reads this FIRST to resolve artifact paths and checks the
+      versioning convention for the version health dimension.
+    produces: false
+    consumes: true
+  9:
+    id: A9
+    name: PROFILE.md
+    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    description: >-
+      Decision profile with per-entry confidence scoring. Produced by profilera.
+      Inspektera reads this to calibrate what "healthy" means for this user's
+      preferences and quality thresholds.
+    produces: false
+    consumes: true

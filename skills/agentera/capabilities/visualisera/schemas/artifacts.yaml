@@ -1,0 +1,64 @@
+ARTIFACTS:
+  1:
+    id: A1
+    name: DESIGN.md
+    path: ".agentera/DESIGN.md or mapped path per DOCS.md"
+    description: >-
+      Visual identity system with design tokens, typography, colors,
+      spacing, constraints, and component contracts. Produced by visualisera.
+      Contains agent-readable YAML token blocks with HTML comment markers.
+      Visualisera writes and reads this artifact.
+    produces: true
+    consumes: true
+  2:
+    id: A2
+    name: VISION.md
+    path: "VISION.md or mapped path per DOCS.md"
+    description: >-
+      Project direction and north star. Produced by visionera or realisera.
+      Visualisera reads the Identity section to propose visual tokens
+      coherent with the declared verbal personality. Visualisera never
+      writes VISION.md.
+    produces: false
+    consumes: true
+  3:
+    id: A3
+    name: PROGRESS.md
+    path: ".agentera/PROGRESS.md"
+    description: >-
+      Recent cycle history and what shipped. Produced by realisera.
+      Visualisera reads this during refine mode to identify UI work and
+      inline design decisions since the design system was written.
+    produces: false
+    consumes: true
+  4:
+    id: A4
+    name: TODO.md
+    path: "TODO.md"
+    description: >-
+      Open problems by severity. Human-maintained or produced by realisera.
+      Visualisera reads this to check for design-related issues and files
+      code drift findings here during audit mode.
+    produces: true
+    consumes: true
+  5:
+    id: A5
+    name: DOCS.md
+    path: ".agentera/DOCS.md"
+    description: >-
+      Artifact path resolution and documentation coverage. Produced by dokumentera.
+      Visualisera reads this FIRST to resolve artifact paths before accessing
+      other artifacts.
+    produces: false
+    consumes: true
+  6:
+    id: A6
+    name: PROFILE.md
+    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    description: >-
+      Decision profile with per-entry confidence scoring. Produced by profilera.
+      Visualisera reads aesthetic preferences from the profile as defaults
+      during the create conversation. Path resolved via PROFILERA_PROFILE_DIR
+      or XDG_DATA_HOME.
+    produces: false
+    consumes: true

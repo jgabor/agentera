@@ -1,0 +1,81 @@
+ARTIFACTS:
+  1:
+    id: A1
+    name: OBJECTIVE.md
+    path: ".agentera/optimera/<objective-name>/OBJECTIVE.md"
+    description: >-
+      Optimization target definition: metric, current value, target, constraints,
+      scope, and measurement approach. Optimera writes this during brainstorm
+      and reads it every cycle. Written to only during brainstorm, refine, or
+      canonical closure.
+    produces: true
+    consumes: true
+  2:
+    id: A2
+    name: harness
+    path: ".agentera/optimera/<objective-name>/harness"
+    description: >-
+      Eval script that measures the metric and outputs structured JSON.
+      Written during brainstorm, approved by user, then locked.
+      Never modified during optimization cycles.
+    produces: true
+    consumes: false
+  3:
+    id: A3
+    name: EXPERIMENTS.md
+    path: ".agentera/optimera/<objective-name>/EXPERIMENTS.md"
+    description: >-
+      Log of every experiment: hypothesis, method, change, metric before/after,
+      regression result, status (kept/discarded/error), conclusion, and next
+      suggestion. Optimera appends to this each cycle.
+    produces: true
+    consumes: true
+  4:
+    id: A4
+    name: PROGRESS.md
+    path: ".agentera/PROGRESS.md"
+    description: >-
+      Recent cycle history. Produced by realisera.
+      Optimera inspects the last 3 entries to detect 3 consecutive failures
+      before reporting exit status.
+    produces: false
+    consumes: true
+  5:
+    id: A5
+    name: TODO.md
+    path: "TODO.md"
+    description: >-
+      Open problems by severity. Optimera writes to this when logging a
+      failure pattern after 3 consecutive failures.
+    produces: true
+    consumes: false
+  6:
+    id: A6
+    name: DECISIONS.md
+    path: ".agentera/DECISIONS.md"
+    description: >-
+      Pending and recent decisions. Produced by resonera.
+      Optimera reads this during Orient for context on prior deliberations
+      about the optimization objective.
+    produces: false
+    consumes: true
+  7:
+    id: A7
+    name: PROFILE.md
+    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    description: >-
+      Decision profile with per-entry confidence scoring. Produced by profilera.
+      Optimera reads this to modulate experiment aggressiveness and constraint
+      tolerance based on user preferences.
+    produces: false
+    consumes: true
+  8:
+    id: A8
+    name: DOCS.md
+    path: ".agentera/DOCS.md"
+    description: >-
+      Artifact path resolution and documentation coverage. Produced by dokumentera.
+      Optimera reads this FIRST to resolve artifact paths before accessing
+      other artifacts.
+    produces: false
+    consumes: true

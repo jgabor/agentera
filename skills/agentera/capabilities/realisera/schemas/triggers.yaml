@@ -1,0 +1,35 @@
+TRIGGERS:
+  1:
+    id: T1
+    description: >-
+      Direct invocation by name or slash command. Matches when the user
+      explicitly requests realisera for autonomous development.
+    patterns:
+      - "realisera"
+      - "/realisera"
+  2:
+    id: T2
+    description: >-
+      Development cycle requests. Matches when the user wants to run an
+      autonomous development cycle or evolve the project.
+    patterns:
+      - "run a dev cycle"
+      - "evolve the project"
+      - "develop autonomously"
+      - "build the next feature"
+  3:
+    id: T3
+    description: >-
+      Continuous development signals. Matches when the user wants ongoing
+      building or to start working on the project.
+    patterns:
+      - "keep building"
+      - "start building"
+      - "work on the project"
+  4:
+    id: T4
+    description: >-
+      Vision refinement within a development context. Matches when the user
+      wants to refine the project vision as part of a development session.
+    patterns:
+      - "refine the vision"

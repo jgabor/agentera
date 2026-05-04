@@ -1,5 +1,5 @@
 {
-  "description": "agentera hooks: session context preloading, session persistence, and artifact validation",
+  "description": "agentera v2 hooks: session context preloading, session persistence, and schema-backed artifact validation against skills/agentera/schemas/artifacts/",
   "hooks": {
     "SessionStart": [
       {

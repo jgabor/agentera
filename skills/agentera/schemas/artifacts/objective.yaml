@@ -1,16 +1,399 @@
-schema: objective
-version: 1
-artifact: OBJECTIVE.md
-required_headings:
-  - pattern: "^# Objective"
-    label: "top-level heading"
-  - pattern: "^## Metric"
-    label: "metric section"
-  - pattern: "^## Target"
-    label: "target section"
-  - pattern: "^## Baseline"
-    label: "baseline section"
-  - pattern: "^## Constraints"
-    label: "constraints section"
-  - pattern: "^\\*\\*Status\\*\\*:"
-    label: "status field"
+# Objective Artifact Schema
+#
+# Optimization objective maintained by optimera. Each objective lives in its
+# own subdirectory under .agentera/optimera/<name>/ and captures the metric,
+# target, baseline, constraints, measurement method, gates, and scope.
+#
+# Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
+# following capability_schema_contract.yaml and protocol.yaml conventions.
+#
+# ── Field-by-field mapping: v1 OBJECTIVE.md → v2 objective.yaml ──
+#
+# v1 Field                              v2 Field               v2 ID
+# ─────────────────────────────────────────────────────────────────────
+# # <title>                              HEADER.title           OB1
+# **Status**: <status>                   HEADER.status          OB2
+# **Closed at**: <timestamp>             HEADER.closed_at       OB3
+# **Final value**: <value>               HEADER.final_value     OB4
+# **Target**: <target>                   HEADER.target_ref      OB5
+# **Reason**: <text>                     HEADER.reason          OB6
+# ## Objective / description             OBJECTIVE.description  OJ1
+# ### Two-tier metric (or single)        OBJECTIVE.metric_type  OJ2
+# **Tier 1 (primary metric)**: <text>    METRIC.description     OM1
+# Direction/Unit/Variance                METRIC.direction       OM2
+# METRIC.unit                            OM3
+# METRIC.variance                        OM4
+# **Tier 2 (behavioral)**: <text>        VALIDATION.description OV1
+# **Keep gate**: <text>                  VALIDATION.keep_gate   OV2
+# **Discard gate**: <text>               VALIDATION.discard_gate OV3
+# ### Why two tiers                      OBJECTIVE.rationale    OJ3
+# ## Why this matters                    OBJECTIVE.why          OJ4
+# ## Measurement                         OBJECTIVE.measurement  OJ5
+# ## Gates                               GATES.description      OG1
+# **Causal**: <text>                     GATES.causal           OG2
+# **Structural**: <text>                 GATES.structural       OG3
+# **Regression**: <text>                 GATES.regression       OG4
+# ## Constraints                         OBJECTIVE.constraints  OJ6
+# ## Scope / In scope                    SCOPE.included         OS1
+# ## Scope / Out of scope                SCOPE.excluded         OS2
+# ## Baseline                            BASELINE.description   OB7
+# ## Measurement model                   BASELINE.model_notes   OB8
+#
+# Protocol references:
+#   exit signals: EX1-EX4 (protocol.yaml EXIT_SIGNALS)
+#   visual tokens: VT1-VT4 (protocol.yaml VISUAL_TOKENS, status display)
+
+meta:
+  name: objective
+  version: "1.0.0"
+  description: >-
+    Optimization objective. Produced and consumed by optimera. Each objective
+    lives in its own subdirectory under .agentera/optimera/<name>/.
+  artifact_type: agent_facing
+  path: ".agentera/optimera/<name>/objective.yaml"
+  producer: optimera
+  consumers: [optimera]
+  format: yaml
+
+GROUP_PREFIXES:
+  BUDGET: OB_BUDGET
+  HEADER: OB_HDR
+  OBJECTIVE: OJ
+  METRIC: OM
+  BASELINE: OB_BL
+  SCOPE: OS
+  GATES: OG
+  VALIDATION: OV
+  CLOSURE: OC
+  VALIDATION_RULES: OVR
+
+BUDGET:
+  1:
+    id: OB_BUDGET1
+    scope: full_file
+    max_words: null
+    description: >-
+      No explicit word budget for objectives. The objective document is
+      written once and referenced during optimization cycles. Size is
+      bounded by the measurement description's inherent complexity.
+
+HEADER:
+  1:
+    id: OB_HDR1
+    field: title
+    type: string
+    required: true
+    description: >-
+      Short descriptive title for the optimization objective. Used as
+      the subdirectory name when slugified.
+    validation:
+      - "Non-empty string"
+  2:
+    id: OB_HDR2
+    field: status
+    type: string
+    required: true
+    description: >-
+      Objective lifecycle status. 'open' when optimization is active;
+      'closed' when the target has been met or the objective abandoned.
+    validation:
+      - "Must be one of: open, closed"
+  3:
+    id: OB_HDR3
+    field: closed_at
+    type: string
+    format: "ISO-8601 UTC"
+    required: false
+    description: >-
+      Timestamp when the objective was closed. Only present when
+      status is 'closed'. Per the objective closure contract.
+  4:
+    id: OB_HDR4
+    field: final_value
+    type: string
+    required: false
+    description: >-
+      Final metric value when the objective was closed. Only present
+      when status is 'closed'.
+  5:
+    id: OB_HDR5
+    field: target_ref
+    type: string
+    required: false
+    description: >-
+      Target value that was met or abandoned. Only present when
+      status is 'closed'.
+  6:
+    id: OB_HDR6
+    field: reason
+    type: string
+    required: false
+    description: >-
+      Why the objective was closed (target met, abandoned, etc.).
+      Only present when status is 'closed'.
+
+OBJECTIVE:
+  1:
+    id: OJ1
+    field: description
+    type: string
+    required: true
+    description: >-
+      What the optimization objective sets out to achieve. Quantitative
+      target statement with percentage or absolute improvement goal.
+    validation:
+      - "Non-empty string"
+  2:
+    id: OJ2
+    field: metric_type
+    type: string
+    required: false
+    description: >-
+      Whether the objective uses a single metric or multi-tier
+      (e.g., two-tier with primary and behavioral validation).
+      'single' or 'multi'.
+  3:
+    id: OJ3
+    field: rationale
+    type: string
+    required: false
+    description: >-
+      Why the metric design was chosen. Explains variance analysis,
+      signal-to-noise considerations, and tier separation logic.
+  4:
+    id: OJ4
+    field: why
+    type: string
+    required: true
+    description: >-
+      Why this optimization matters to the project. Business case
+      for investing compute in this objective.
+    validation:
+      - "Non-empty string"
+  5:
+    id: OJ5
+    field: measurement
+    type: string
+    required: true
+    description: >-
+      How the metric is measured. Describes the harness, vehicle,
+      substrate, model, flags, and output capture mechanism.
+    validation:
+      - "Non-empty string"
+  6:
+    id: OJ6
+    field: constraints
+    type: list[string]
+    required: false
+    description: >-
+      Hard constraints that experiments must not violate. Each entry
+      names a constraint (e.g., linter must pass, no remote pushes).
+
+METRIC:
+  1:
+    id: OM1
+    field: description
+    type: string
+    required: true
+    description: >-
+      Detailed description of the primary metric. What is measured,
+      how it is computed, and what API or tool produces it.
+    validation:
+      - "Non-empty string"
+  2:
+    id: OM2
+    field: direction
+    type: string
+    required: true
+    description: >-
+      Whether improvement means the metric goes up or down.
+    validation:
+      - "Must be one of: lower, higher"
+  3:
+    id: OM3
+    field: unit
+    type: string
+    required: true
+    description: >-
+      Measurement unit (e.g., tokens, milliseconds, bytes, percent).
+    validation:
+      - "Non-empty string"
+  4:
+    id: OM4
+    field: variance
+    type: string
+    required: false
+    description: >-
+      Expected variance characteristics (e.g., 'zero (deterministic)',
+      '~13% run-to-run'). Guides experiment interpretation.
+
+BASELINE:
+  1:
+    id: OB_BL1
+    field: description
+    type: string
+    required: true
+    description: >-
+      How the baseline is established. Describes the initial measurement
+      or Experiment 0 that locks the starting metric value.
+    validation:
+      - "Non-empty string"
+  2:
+    id: OB_BL2
+    field: model_notes
+    type: string
+    required: false
+    description: >-
+      Notes on the measurement model, hermeticity tradeoffs, budget
+      constraints, and substrate design decisions.
+
+SCOPE:
+  1:
+    id: OS1
+    field: included
+    type: list[string]
+    required: true
+    description: >-
+      Files and surfaces that experiments may modify. Each entry names
+      a file path, directory, or system boundary that is fair game.
+    validation:
+      - "At least one entry required"
+  2:
+    id: OS2
+    field: excluded
+    type: list[string]
+    required: true
+    description: >-
+      Files and surfaces that must never be modified, even if data
+      suggests wins there. Each entry names a hard boundary.
+
+GATES:
+  1:
+    id: OG1
+    field: description
+    type: string
+    required: false
+    description: >-
+      Overview of the gate structure. Explains which gates must all
+      pass for an experiment to be kept. Pre-registered; cannot be
+      loosened during optimization.
+  2:
+    id: OG2
+    field: causal
+    type: string
+    required: false
+    description: >-
+      Causal gate: evidence that the skill activated and influenced
+      the run. Zero signal = discard.
+  3:
+    id: OG3
+    field: structural
+    type: string
+    required: false
+    description: >-
+      Structural gate: evidence that the skill completed its core
+      workflow and produced meaningful output.
+  4:
+    id: OG4
+    field: regression
+    type: string
+    required: false
+    description: >-
+      Regression gate: existing tests and linters must continue to
+      pass after the experiment's changes.
+
+VALIDATION:
+  1:
+    id: OV1
+    field: description
+    type: string
+    required: false
+    description: >-
+      Description of secondary (behavioral) validation tier, if
+      applicable. Explains what behavioral checks supplement the
+      primary metric.
+  2:
+    id: OV2
+    field: keep_gate
+    type: string
+    required: false
+    description: >-
+      Conditions under which an experiment is kept. Both primary
+      metric improvement AND gate passage are typically required.
+  3:
+    id: OV3
+    field: discard_gate
+    type: string
+    required: false
+    description: >-
+      Conditions under which an experiment is discarded. Primary
+      metric does not improve, OR gates fail.
+
+CLOSURE:
+  1:
+    id: OC1
+    field: final_value
+    type: string
+    required: false
+    description: >-
+      Final metric value at objective closure. Matches HEADER.final_value.
+      Per the objective closure contract.
+  2:
+    id: OC2
+    field: target
+    type: string
+    required: false
+    description: >-
+      Target value that was met. Per the objective closure contract.
+  3:
+    id: OC3
+    field: reason
+    type: string
+    required: false
+    description: >-
+      Why the objective was closed (target met, abandoned, etc.).
+      Per the objective closure contract.
+
+VALIDATION_RULES:
+  1:
+    id: OVR1
+    rule: required_fields
+    severity: error
+    description: >-
+      The objective must have: title, status, description, why,
+      measurement, metric (description, direction, unit), baseline,
+      and scope (included, excluded).
+    checks:
+      - "title is present and non-empty"
+      - "status is present and is 'open' or 'closed'"
+      - "description is present and non-empty"
+      - "why is present and non-empty"
+      - "measurement is present and non-empty"
+      - "metric.description is present and non-empty"
+      - "metric.direction is present"
+      - "metric.unit is present"
+      - "baseline.description is present"
+      - "scope.included has at least one entry"
+      - "scope.excluded has at least one entry"
+  2:
+    id: OVR2
+    rule: closure_consistency
+    severity: error
+    description: >-
+      If status is 'closed', the closure fields must be present and
+      consistent with the header closure fields.
+    checks:
+      - "closed_at is present when status is 'closed'"
+      - "final_value is present when status is 'closed'"
+      - "target_ref is present when status is 'closed'"
+      - "reason is present when status is 'closed'"
+  3:
+    id: OVR3
+    rule: closure_isolation
+    severity: error
+    description: >-
+      Closure never creates a registry, symlink, root-level objective
+      artifact, or DOCS fixed mapping. Per the objective closure contract.
+    checks:
+      - "No registry references in closure fields"
+      - "No DOCS mapping references in closure fields"

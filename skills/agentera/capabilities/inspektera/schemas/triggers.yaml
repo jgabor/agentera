@@ -1,0 +1,35 @@
+TRIGGERS:
+  1:
+    id: T1
+    description: >-
+      Direct invocation by name or slash command. Matches when the user
+      explicitly requests inspektera.
+    patterns:
+      - "inspektera"
+      - "/inspektera"
+  2:
+    id: T2
+    description: >-
+      Audit and codebase health requests. Matches when the user wants to
+      assess codebase health, architecture quality, or structural integrity.
+    patterns:
+      - "audit the codebase"
+      - "check code health"
+      - "architecture review"
+      - "find technical debt"
+      - "assess code quality"
+      - "how healthy is this codebase"
+      - "what needs fixing"
+      - "structural review"
+      - "pattern audit"
+      - "dependency check"
+      - "test coverage audit"
+  3:
+    id: T3
+    description: >-
+      Implicit trigger after extended realisera activity. Matches when
+      realisera has run 5+ cycles without a health check and the system
+      detects an overdue audit.
+    patterns:
+      - "health check overdue"
+      - "audit after realisera"

@@ -1,0 +1,33 @@
+ARTIFACTS:
+  1:
+    id: A1
+    name: TODO.md
+    path: "TODO.md (per DOCS.md mapping)"
+    description: >-
+      Open problems by severity. Inspirera writes actionable findings here
+      (with user confirmation), classifying each by severity per protocol
+      SF1-SF3. Realisera picks up changes automatically in its next cycle.
+    produces: true
+    consumes: false
+  2:
+    id: A2
+    name: VISION.md
+    path: "VISION.md (per DOCS.md mapping)"
+    description: >-
+      Project direction and north star. Inspirera may refine this (with
+      user confirmation) when the analysis shifts thinking about the
+      project's direction. Produced by visionera, readable by all
+      capabilities.
+    produces: true
+    consumes: false
+  3:
+    id: A3
+    name: PROFILE.md
+    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    description: >-
+      Decision profile with per-entry confidence scoring. Produced by
+      profilera. Inspirera reads this via the effective profile script
+      to weight applicability judgments. If missing, inspirera proceeds
+      without persona grounding.
+    produces: false
+    consumes: true

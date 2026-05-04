@@ -1,0 +1,35 @@
+EXIT_CONDITIONS:
+  1:
+    id: E1
+    condition: complete
+    description: >-
+      One full cycle completed. Work was selected, implemented, verified
+      against the project's test/build suite, committed with a conventional
+      message, and PROGRESS.md and TODO.md were updated.
+    exit_signal: complete
+  2:
+    id: E2
+    condition: flagged
+    description: >-
+      The cycle completed but with notable issues. Possible causes:
+      verification passed but with warnings, the committed work is narrower
+      than intended due to scope reduction, or discoveries logged in
+      PROGRESS.md suggest the next cycle may face blockers.
+    exit_signal: flagged
+  3:
+    id: E3
+    condition: stuck
+    description: >-
+      Cannot complete a cycle because VISION.md does not exist and the
+      brainstorm cannot proceed without the user, every available work item
+      is blocked, or the verification suite is broken and cannot be fixed
+      within the cycle's scope.
+    exit_signal: stuck
+  4:
+    id: E4
+    condition: waiting
+    description: >-
+      The project has no VISION.md and no codebase to infer direction from,
+      or the user's explicit instruction is too ambiguous to act on without
+      clarification.
+    exit_signal: waiting

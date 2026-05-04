@@ -1,0 +1,37 @@
+TRIGGERS:
+  1:
+    id: T1
+    description: >-
+      Direct invocation by name or slash command. Matches when the user
+      explicitly requests visionera.
+    patterns:
+      - "visionera"
+      - "/visionera"
+  2:
+    id: T2
+    description: >-
+      Vision creation requests. Matches when the user wants to define or
+      create a project vision or north star direction.
+    patterns:
+      - "create a vision"
+      - "write VISION.md"
+      - "define the direction"
+      - "set the north star"
+      - "dream bigger"
+  3:
+    id: T3
+    description: >-
+      Vision refinement requests. Matches when the user wants to evolve
+      or rethink an existing vision.
+    patterns:
+      - "rethink the vision"
+      - "refine the vision"
+      - "update VISION.md"
+  4:
+    id: T4
+    description: >-
+      Project bootstrap. Matches when the user wants to bootstrap a new
+      project identity or define what a project should become.
+    patterns:
+      - "bootstrap the project"
+      - "what should this project become"
