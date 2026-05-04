@@ -9,7 +9,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-export const AGENTERA_VERSION = "1.27.1";
+export const AGENTERA_VERSION = "2.0.0";
 export const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode -y";
 
 export const COMMAND_TEMPLATES = {
