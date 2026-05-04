@@ -102,8 +102,17 @@ def session_start(hooks_common):
 
 
 @pytest.fixture(scope="session")
-def session_stop(hooks_common):
-    """Load hooks/session_stop.py (depends on hooks/common.py)."""
+def compaction():
+    """Load hooks/compaction.py."""
+    return _load_module(
+        "compaction",
+        REPO_ROOT / "hooks" / "compaction.py",
+    )
+
+
+@pytest.fixture(scope="session")
+def session_stop(hooks_common, compaction):
+    """Load hooks/session_stop.py (depends on hooks/common.py and hooks/compaction.py)."""
     return _load_module(
         "session_stop",
         REPO_ROOT / "hooks" / "session_stop.py",
