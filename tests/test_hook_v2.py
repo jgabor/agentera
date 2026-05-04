@@ -272,6 +272,151 @@ class TestValidateYamlVision:
         assert any("missing required field" in v for v in violations)
 
 
+class TestValidateYamlHealth:
+    def test_valid_health(self, hook):
+        schema = _load_schema("health")
+        content = yaml_dump({
+            "finding": {
+                "heading": "Complex coupling",
+                "location": "src/main.py:42",
+                "evidence": "Circular import detected",
+                "impact": "Build failures",
+                "suggested_action": "Decouple modules",
+                "severity": "warning",
+                "confidence": 85,
+            }
+        })
+        violations = hook._validate_yaml(content, schema, "health")
+        assert violations == []
+
+    def test_missing_required_field(self, hook):
+        schema = _load_schema("health")
+        content = yaml_dump({
+            "finding": {
+                "heading": "Complex coupling",
+                "location": "src/main.py:42",
+            }
+        })
+        violations = hook._validate_yaml(content, schema, "health")
+        assert any("missing required field" in v for v in violations)
+
+
+class TestValidateYamlSession:
+    def test_valid_session(self, hook):
+        schema = _load_schema("session")
+        content = yaml_dump({
+            "bookmarks": [
+                {"timestamp": "2026-05-04 10:00", "artifacts": ["PROGRESS"]}
+            ]
+        })
+        violations = hook._validate_yaml(content, schema, "session")
+        assert violations == []
+
+    def test_invalid_yaml_fails(self, hook):
+        schema = _load_schema("session")
+        violations = hook._validate_yaml("{{{\n  broken", schema, "session")
+        assert any("invalid YAML" in v for v in violations)
+
+
+class TestValidateYamlDocs:
+    def test_valid_docs(self, hook):
+        schema = _load_schema("docs")
+        content = yaml_dump({
+            "header": {"last_audit": "2026-05-04 (test)"},
+            "conventions": {
+                "doc_root": ".",
+                "style": "technical",
+                "auto_gen": ["none"],
+                "version_files": ["package.json"],
+                "semver_policy": {"feat": "minor", "fix": "patch"},
+            },
+            "coverage": {
+                "documented": "1/1",
+                "undocumented": "0",
+                "stale": "none",
+                "tests": "10 tests",
+            },
+        })
+        violations = hook._validate_yaml(content, schema, "docs")
+        assert violations == []
+
+    def test_missing_required_field(self, hook):
+        schema = _load_schema("docs")
+        content = yaml_dump({
+            "header": {"last_audit": "2026-05-04 (test)"},
+            "conventions": {
+                "doc_root": ".",
+                "style": "technical",
+            },
+        })
+        violations = hook._validate_yaml(content, schema, "docs")
+        assert any("missing required field" in v for v in violations)
+
+
+class TestValidateYamlExperiments:
+    def test_valid_experiments(self, hook):
+        schema = _load_schema("experiments")
+        content = yaml_dump({
+            "experiments": [
+                {
+                    "number": 0,
+                    "date": "2026-05-04 10:00",
+                    "label": "baseline",
+                    "hypothesis": "Establish baseline",
+                    "method": "Run default config",
+                    "change": "None",
+                    "metric": {"primary_value": "100", "delta_vs_baseline": "n/a"},
+                    "status": "baseline",
+                    "conclusion": "Baseline established",
+                }
+            ]
+        })
+        violations = hook._validate_yaml(content, schema, "experiments")
+        assert violations == []
+
+    def test_non_mapping_root(self, hook):
+        schema = _load_schema("experiments")
+        violations = hook._validate_yaml("[1, 2, 3]", schema, "experiments")
+        assert any("root must be a mapping" in v for v in violations)
+
+
+class TestValidateYamlObjective:
+    def test_valid_objective(self, hook):
+        schema = _load_schema("objective")
+        content = yaml_dump({
+            "header": {"title": "Reduce latency", "status": "open"},
+            "objective": {
+                "description": "Reduce p99 latency by 20%",
+                "why": "Users experience slowness",
+                "measurement": "Benchmark harness",
+            },
+            "metric": {
+                "description": "p99 latency in ms",
+                "direction": "lower",
+                "unit": "ms",
+            },
+            "baseline": {"description": "Current p99 is 500ms"},
+            "scope": {
+                "included": ["src/api/"],
+                "excluded": ["vendor/"],
+            },
+        })
+        violations = hook._validate_yaml(content, schema, "objective")
+        assert violations == []
+
+    def test_missing_required_field(self, hook):
+        schema = _load_schema("objective")
+        content = yaml_dump({
+            "header": {"title": "Reduce latency", "status": "open"},
+            "objective": {
+                "description": "Reduce p99 latency by 20%",
+                "measurement": "Benchmark harness",
+            },
+        })
+        violations = hook._validate_yaml(content, schema, "objective")
+        assert any("missing required field" in v for v in violations)
+
+
 class TestWordBudget:
     def test_within_budget(self, hook):
         schema = _load_schema("vision")
