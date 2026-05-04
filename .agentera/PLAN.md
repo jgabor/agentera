@@ -44,7 +44,7 @@ Capabilities grouped by functional cluster. Each cluster ports together because 
 ### Task 1: hej Port + Pattern Proof
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the hej capability directory WHEN validate_capability.py runs THEN all contract checks pass (directory structure, required groups, numbered entries, stable IDs)
 ▸ GIVEN the hej prose.md WHEN read THEN it contains the orientation workflow (detect state, brief, route), safety rails, and exit vocabulary
