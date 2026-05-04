@@ -130,9 +130,9 @@ Prove it works, then switch.
 | Schema files per capability | 0 | 2-3 | ls skills/agentera/capabilities/*/schemas/ |
 | Install command complexity | 4 runtime-specific | 1 per runtime | Install from scratch on clean machine |
 
-## Open Questions
+## Resolved Questions
 
-- Artifact format: YAML vs JSON for agent-facing files. YAML is more human-glanceable; JSON has stricter schema validation. Resolve in Phase 1.
-- Master SKILL.md size: start at what line count? Measure after hej port.
-- Backward compatibility: should v1 artifacts be readable by the 2.0 query CLI during migration? Decision: no -- migration tool handles one-time conversion.
-- Naming: is "capabilities" the right term, or something else (workflows, behaviors, modules)? Resolve in Phase 1 schema contract design.
+- **Artifact format**: YAML for all agent-facing artifacts (Decision 40). Token experiment confirmed format choice doesn't affect agent-visible consumption because the query CLI is the seam. YAML wins on human-glanceability and smallest bytes for single entries.
+- **Master SKILL.md size**: Deferred to Phase 1. Measure after hej port reveals natural size. Optimization target remains: thin schema-driven dispatcher.
+- **Backward compatibility**: No. Migration tool handles one-time v1 Markdown to v2 YAML conversion. Consistent with D39 big bang cutover.
+- **Naming**: Sub-modules are "capabilities." Aligns with SKILL.md vocabulary and distinguishes from the v1 "skills" concept.
