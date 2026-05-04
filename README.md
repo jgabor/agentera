@@ -16,7 +16,7 @@ roles, verification gates, and a common project protocol.
 <a href="#features">Features</a> ·
 <a href="#why-it-works">Why it works</a> ·
 <a href="#the-memory-layer">Memory layer</a> ·
-<a href="#skills">Skills</a> ·
+<a href="#capabilities">Capabilities</a> ·
 <a href="#hooks">Hooks</a>
 </p>
 
@@ -28,10 +28,17 @@ Coding agents are good at tasks and bad at continuity. They forget decisions,
 repeat investigations, lose project context, and hand the next session a pile of
 code with little explanation.
 
-Agentera fixes that with twelve specialized skills that coordinate through
-plain project files. One skill plans, another builds, another audits, another
-documents, another remembers your decision style. The work stops being a chat
-transcript and becomes an operating record for the project.
+Agentera fixes that with a single bundled skill containing twelve specialized
+capabilities that coordinate through plain project files. One capability plans,
+another builds, another audits, another documents, another remembers your
+decision style. The work stops being a chat transcript and becomes an operating
+record for the project.
+
+## Upgrading from v1
+
+If you used Agentera before v2, see [UPGRADE.md](./UPGRADE.md) for migration
+instructions. v2 replaces twelve standalone skills with one bundled skill at
+`skills/agentera/` and adds a YAML-based artifact format and query CLI.
 
 ## Features
 
@@ -62,7 +69,7 @@ through project files, keep receipts, and compound context over time.
 ## What you see
 
 Start with `/hej` (`$hej` in Codex). It gives you a project briefing and routes
-you to the most useful next skill.
+you to the most useful next capability.
 
 ```text
 ┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
@@ -91,9 +98,12 @@ you to the most useful next skill.
 
 ## Quick start
 
-Pick the agent you use, install Agentera, then open a project and run the
-entry skill. Full-suite installs provide the shared Agentera bundle: skills,
-hooks, manifests, and setup scripts in one install root.
+All capabilities live in one bundled skill at `skills/agentera/`. Install once,
+then invoke any capability by name. The bundled skill's dispatcher routes
+`/hej`, `/realisera`, `/planera`, and all other slash commands to the right
+capability automatically.
+
+Pick your runtime, install Agentera, then open a project and run `/hej`.
 
 ### Claude Code
 
@@ -106,7 +116,7 @@ Start with `/hej`.
 ### OpenCode
 
 Install the skills and the OpenCode plugin. The skills provide the actual
-Agentera workflows; the plugin adds `/hej` commands, hooks, and install-root
+Agentera workflows; the plugin adds slash commands, hooks, and install-root
 discovery.
 
 ```bash
@@ -135,17 +145,6 @@ codex plugin marketplace add jgabor/agentera
 
 Open `/plugins`, enable Agentera, and start with `$hej`.
 
-Normal skill use does not require helper scripts. Hooks are recommended when
-you want session bookmarks, artifact validation, and helper-script access.
-See [Hooks](#hooks).
-
-If Agentera does not appear in Codex after a marketplace update, refresh
-Codex's cache:
-
-```bash
-codex plugin marketplace upgrade agentera
-```
-
 ### Check the bundle
 
 Use the setup doctor before editing runtime config by hand. It reads the
@@ -171,38 +170,6 @@ python3 scripts/setup_doctor.py --install --yes --runtime codex
 python3 scripts/setup_doctor.py --install --yes --runtime copilot
 ```
 
-Doctor smoke checks are bounded and offline. They verify helper-script access,
-artifact-hook behavior, and host availability without invoking live model
-sessions. `--allow-live-model` records permission for future probes; this
-doctor still makes no live calls.
-
-### Install health
-
-`npx skills add` and `npx skills update` answer whether the installer thinks a
-runtime package is current. Agentera bundle validation answers a different
-question: whether the installed bundle still contains the shared files the
-skills reference, such as `scripts/`, `hooks/`, `SPEC.md`, and bundled skill
-references. A current installer result can still be unhealthy if files are
-missing or symlinks point nowhere.
-
-For OpenCode, install health has two layers:
-
-- `npx skills add jgabor/agentera -g -a opencode -y` installs the skills for
-  OpenCode. Do not add `--skill '*'`; the OpenCode target selects the supported
-  Agentera surface without selecting every agent.
-- `.opencode/plugins/agentera.js` adds commands, hooks, and install-root
-  discovery around those installed skills. The plugin does not install skills
-  by itself.
-
-Managed OpenCode command files contain `agentera_managed: true` frontmatter.
-The command directory also carries `.agentera-version`. Repair may refresh only
-managed files; a same-name command without the marker is user-owned and must be
-skipped. Managed skill-path repair follows the same ownership rule: fix only
-Agentera-created links or directories, preserve user-owned collisions, and make
-skips reportable. The setup doctor remains diagnostic-only for OpenCode drift;
-it reports missing plugin files, missing install roots, and invalid bundle roots
-without mutating OpenCode config.
-
 ## Why it works
 
 Most coding agents forget. Agentera writes the useful residue of the work into
@@ -217,13 +184,13 @@ plain markdown artifacts that live with the project:
 - `.agentera/optimera/<name>/`: one self-contained optimization objective,
   with `OBJECTIVE.md`, `EXPERIMENTS.md`, and its locked measurement harness.
 
-Each skill reads the artifacts it needs and writes the artifact it owns. That is
-the trick: the next agent does not have to infer history from chat. It can read
-the project’s operating record.
+Each capability reads the artifacts it needs and writes the artifact it owns.
+That is the trick: the next agent does not have to infer history from chat. It
+can read the project's operating record.
 
 ## The memory layer
 
-`profilera` is the skill that makes Agentera feel personal instead of merely
+`profilera` is the capability that makes Agentera feel personal instead of merely
 stateful. It studies your decisions, tradeoffs, corrections, and recurring
 preferences, then writes them into an editable `PROFILE.md`.
 
@@ -231,8 +198,8 @@ That profile teaches later agents how you think: what evidence you trust, when
 you prefer speed over polish, how much planning you want, what kinds of tests
 convince you, and when you expect pushback.
 
-The profile is confidence-weighted and optional. If it exists, every skill can
-use it to reason more like you. If it is missing, Agentera still works.
+The profile is confidence-weighted and optional. If it exists, every capability
+can use it to reason more like you. If it is missing, Agentera still works.
 
 ## Get the most out of it
 
@@ -250,27 +217,39 @@ A good default loop is:
 /hej → /resonera or /planera → /orkestrera → /inspektera
 ```
 
-## Skills
+## Capabilities
 
-| Skill | Use it when you need... |
-|-------|--------------------------|
-| ⌂ [`hej`](./skills/hej/) | A project briefing and the next best action. |
-| ⛥ [`visionera`](./skills/visionera/) | A strong product direction and `VISION.md`. |
-| ❈ [`resonera`](./skills/resonera/) | Structured deliberation before consequential choices. |
-| ⬚ [`inspirera`](./skills/inspirera/) | To map an external link, repo, or pattern to your project. |
-| ▤ [`dokumentera`](./skills/dokumentera/) | Docs that stay aligned with code and project intent. |
-| ◰ [`visualisera`](./skills/visualisera/) | A durable visual identity and design-token direction. |
-| ≡ [`planera`](./skills/planera/) | A scoped plan with behavioral acceptance criteria. |
-| ⎈ [`orkestrera`](./skills/orkestrera/) | Autonomous plan execution with evaluation and retry gates. |
-| ⧉ [`realisera`](./skills/realisera/) | One verified development cycle. |
-| ⎘ [`optimera`](./skills/optimera/) | Measured improvement of a concrete metric. |
-| ⛶ [`inspektera`](./skills/inspektera/) | Architecture, test, dependency, and artifact health audits. |
-| ♾ [`profilera`](./skills/profilera/) | A reusable decision profile that helps every skill reason more like you. |
+All twelve capabilities are bundled in `skills/agentera/`. Each has a
+`prose.md` defining its behavior and `schemas/` defining its triggers,
+artifacts, validation rules, and exit signals. The dispatcher in
+`skills/agentera/SKILL.md` routes slash commands to the matching capability
+automatically.
+
+| | Capability | Use it when you need... |
+|---|---|---|
+| ⌂ | hej | A project briefing and the next best action. |
+| ⛥ | visionera | A strong product direction and `VISION.md`. |
+| ❈ | resonera | Structured deliberation before consequential choices. |
+| ⬚ | inspirera | To map an external link, repo, or pattern to your project. |
+| ▤ | dokumentera | Docs that stay aligned with code and project intent. |
+| ◰ | visualisera | A durable visual identity and design-token direction. |
+| ≡ | planera | A scoped plan with behavioral acceptance criteria. |
+| ⎈ | orkestrera | Autonomous plan execution with evaluation and retry gates. |
+| ⧉ | realisera | One verified development cycle. |
+| ⎘ | optimera | Measured improvement of a concrete metric. |
+| ⛶ | inspektera | Architecture, test, dependency, and artifact health audits. |
+| ♾ | profilera | A reusable decision profile that helps every capability reason more like you. |
+
+Validate any capability against the schema contract:
+
+```bash
+uv run scripts/validate_capability.py skills/agentera/capabilities/<name>
+```
 
 ## Hooks
 
-Agentera works as portable skills first. Hooks are optional, but they add enough
-value that most users should know they exist.
+Agentera works as a portable bundled skill first. Hooks are optional, but they
+add enough value that most users should know they exist.
 
 Use hooks when you want:
 
@@ -282,26 +261,17 @@ Profile data already uses the platform data directory by default:
 `$XDG_DATA_HOME/agentera` on Linux, `~/Library/Application Support/agentera` on
 macOS, and `%APPDATA%/agentera` on Windows.
 
-`AGENTERA_HOME` is different. It points to the Agentera install root, so skills
-and hooks can resolve repo helper scripts such as `compact_artifact.py`.
-Claude Code and OpenCode can set that automatically. Codex and Copilot may need
-a host-level setup step when you want helper-script execution.
+`AGENTERA_HOME` is different. It points to the Agentera install root, so
+capabilities and hooks can resolve repo helper scripts such as
+`compact_artifact.py`. Claude Code and OpenCode can set that automatically.
+Codex and Copilot may need a host-level setup step when you want helper-script
+execution.
 
 Start with the bundle doctor:
 
 ```bash
 python3 scripts/setup_doctor.py --smoke
 ```
-
-Single-skill installs keep core `SKILL.md` workflow behavior. Bundle-enhanced
-tools such as doctor, installer, validation, compaction, and setup helpers
-require the full Agentera bundle or a local clone with the shared `scripts/`
-directory.
-
-The installer layer reuses doctor findings. Without `--yes`, it only reports
-pending changes and exits before writing user config. With `--yes`, it writes
-only selected runtime-native Codex and Copilot config surfaces, then re-runs
-doctor to show the result.
 
 <details>
 <summary><strong>Claude Code hooks</strong></summary>
@@ -329,7 +299,6 @@ The plugin does not install the skills. It adds Agentera commands,
 install-root discovery, artifact checks, and session bookmarks around skills
 installed through `npx skills add jgabor/agentera -g -a opencode -y` or another
 OpenCode skill path.
-Session preload is not enabled yet, so start returning work with `/hej`.
 
 </details>
 
@@ -383,15 +352,6 @@ export AGENTERA_HOME=/path/to/agentera
 python3 "$AGENTERA_HOME/scripts/setup_codex.py"
 ```
 
-For Codex agent dispatch, also create `[agents.<name>]` entries:
-
-```bash
-python3 "$AGENTERA_HOME/scripts/setup_codex.py" --enable-agents
-```
-
-That flag writes config entries pointing at bundled files under
-`skills/<name>/agents/<name>.toml`. It does not generate those files.
-
 For artifact-validation hooks:
 
 ```bash
@@ -412,10 +372,6 @@ bash -c '
 '
 ```
 
-You want to see the expected `AGENTERA_HOME` path and the `compact_artifact.py`
-usage line. For Codex, run the same check from a Codex shell command after
-`setup_codex.py`, because Codex passes `AGENTERA_HOME` through its config.
-
 For adapter-level runtime details, see
 [`references/adapters/runtime-feature-parity.md`](./references/adapters/runtime-feature-parity.md).
 
@@ -426,64 +382,46 @@ For adapter-level runtime details, see
 git clone git@github.com:jgabor/agentera.git ~/.agents/agentera
 ```
 
-Then link or reference `skills/<name>/SKILL.md` through your runtime’s skill
-folder mechanism. For OpenCode:
-
-```bash
-mkdir -p ~/.config/opencode/skills
-for skill in ~/.agents/agentera/skills/*/; do
-  ln -s "$skill" ~/.config/opencode/skills/$(basename "$skill")
-done
-```
+Then reference `skills/agentera/SKILL.md` through your runtime's skill
+configuration.
 
 </details>
 
-## For skill authors
+## For capability authors
 
 Agentera is also a reference implementation of a portable skill protocol.
 
-Build against the artifact contracts instead of a single runtime. A skill that
-reads `PLAN.md`, writes `HEALTH.md`, and uses the shared severity/confidence
+Build against the artifact contracts instead of a single runtime. A capability
+that reads `PLAN.md`, writes `HEALTH.md`, and uses the shared severity/confidence
 vocabulary can mesh with the rest of the suite even when the host runtime
 changes.
 
 The core surfaces:
 
-- [`SPEC.md`](./SPEC.md): shared primitives and artifact contracts.
-- [`registry.json`](./registry.json): skill index, versions, tags, paths.
+- [`skills/agentera/protocol.yaml`](./skills/agentera/protocol.yaml): shared primitives and vocabulary.
+- [`skills/agentera/capability_schema_contract.yaml`](./skills/agentera/capability_schema_contract.yaml): schema contract for capabilities.
+- [`registry.json`](./registry.json): capability index, versions, tags, paths.
 - [`references/adapters/runtime-feature-parity.md`](./references/adapters/runtime-feature-parity.md):
   runtime capability comparison.
 
 ## Maintainer checks
 
-Agentera has two eval surfaces with different responsibilities:
-
-- `scripts/eval_skills.py` is the runtime smoke eval. It invokes skills through
-  Claude Code or OpenCode and checks for crashes, non-zero exits, and obvious
-  error output. It does not score output correctness.
-- `scripts/semantic_eval.py` is the offline semantic eval. It reads captured
-  Markdown fixtures from `fixtures/semantic/*.md`, checks expected output facts
-  and seeded artifact facts, and never invokes a model runtime.
-
-Run semantic fixtures from the repo root:
-
 ```bash
-python3 scripts/semantic_eval.py fixtures/semantic/hej-routing-task3.md
-```
-
-Run smoke evals from the repo root:
-
-```bash
-python3 scripts/eval_skills.py --dry-run
-python3 scripts/eval_skills.py --skill realisera
-```
-
-```bash
-python3 scripts/generate_contracts.py --check
-python3 scripts/validate_spec.py
+uv run scripts/validate_capability.py --self-validate
+uv run scripts/validate_capability.py skills/agentera/capabilities/<name>
+uv run scripts/generate_contracts.py --check
 python3 scripts/validate_lifecycle_adapters.py
 python3 -m pytest -q
 ```
+
+Agentera has two eval surfaces:
+
+- `scripts/eval_skills.py`: runtime smoke eval. Invokes capabilities through
+  Claude Code or OpenCode and checks for crashes, non-zero exits, and obvious
+  error output.
+- `scripts/semantic_eval.py`: offline semantic eval. Reads captured
+  Markdown fixtures from `fixtures/semantic/*.md`, checks expected output facts
+  and seeded artifact facts, never invokes a model runtime.
 
 <details>
 <summary><strong>State artifact reference</strong></summary>
