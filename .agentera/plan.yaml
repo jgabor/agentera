@@ -138,7 +138,7 @@ tasks:
   - Task 9
   - Task 10
   - Task 11
-  status: pending
+  status: complete
   acceptance: []
 - number: 13
   name: Plan-Level Freshness Checkpoint
