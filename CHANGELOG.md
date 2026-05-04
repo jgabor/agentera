@@ -4,6 +4,16 @@
 
 ### Added
 
+- v2.0.0 remediation: closed D39 gaps including invocation model decision (/agentera single entry point), query CLI schema discovery fix, artifact migration v1→v2 (8 YAML artifacts with backup), test compaction retirement, SPEC.md dissolution (generate_contracts.py retired), stale v1 skill directory removal, all 12 capability prose files updated to reference YAML artifacts, AGENTS.md rewritten for single-bundle model, README rewritten with natural-language capability mapping, semantic eval fixture ported to v2 format, archived plan documentation corrected to reflect merge revert reality.
+
+### Changed
+
+- feat/v2 merged to main via fast-forward after validation (507 tests pass, 0 failures; all 12 capabilities pass contract validation; version surfaces at 2.0.0).
+
+## [2.0.0] · 2026-05-04
+
+### Added
+
 - Agentera 2.0 Phase 3 integration: stale v1 test cleanup (62 failing tests removed, 688+ passing), cross-capability reference verification (all 12 capabilities' protocol.yaml stable IDs resolve, routing confirmed), query CLI expansion (all 9 artifact schema queries plus --list-artifacts), runtime adapter configuration (Claude Code, OpenCode, Codex, Copilot plugin metadata wired), hook verification against v2 artifact schemas (18 pass/fail tests across 9 schemas), and SKILL.md/AGENTS.md update to v2 bundled-skill model.
 - Agentera 2.0 Phase 2 capability ports: all 12 v1 SKILL.md files (hej, realisera, resonera, planera, inspektera, optimera, orkestrera, visionera, visualisera, dokumentera, profilera, inspirera) ported to the v2 capability model with `prose.md` behavioral instructions and `schemas/` YAML groups (TRIGGERS, ARTIFACTS, VALIDATIONS, EXAMPLES) using stable IDs and protocol.yaml primitive references. All capabilities pass contract validation and master SKILL.md routing integration tests.
 - Agentera 2.0 Phase 1 infrastructure: capability schema contract with self-referential validation and stable IDs, shared protocol schema (protocol.yaml) defining confidence/severity/phase/visual-token primitives, 9 artifact schemas (PROGRESS, DECISIONS, HEALTH, SESSION, PLAN, OBJECTIVE, EXPERIMENTS, DOCS, VISION) in YAML with UPPER_CASE groups and v1 field mapping, query CLI scaffold (`scripts/agentera`) supporting query/prime commands with schema-driven artifact reads and filters, migration tool (`scripts/migrate_v1_to_v2`) converting v1 Markdown artifacts to v2 YAML with backup-by-default, and rewritten `hooks/validate_artifact.py` validating writes against artifact schemas instead of hardcoded contracts.

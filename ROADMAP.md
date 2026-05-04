@@ -106,22 +106,22 @@ Port the 12 capabilities from prose SKILL.md to prose + schema model.
 
 Wire everything together and validate.
 
-- [ ] Cross-capability dependency resolution via schemas
-- [ ] Hook integration with capability-local schemas
-- [ ] Query CLI commands for all artifact types
-- [ ] Runtime adapter updates (Claude Code, OpenCode, Codex, Copilot)
-- [ ] Port existing 577 tests to the new structure
+- [x] Cross-capability dependency resolution via schemas
+- [x] Hook integration with capability-local schemas
+- [x] Query CLI commands for all artifact types
+- [x] Runtime adapter updates (Claude Code, OpenCode, Codex, Copilot)
+- [x] Port existing 577 tests to the new structure
 - [ ] Smoke tests across all 4 runtimes
 
 ### Phase 4: Validation & cutover (week 7) ✓
 
 Prove it works, then switch.
 
-- [ ] Full test suite green
-- [ ] Semantic eval port to 2.0 fixture format
+- [x] Full test suite green
+- [x] Semantic eval port to 2.0 fixture format
 - [ ] Token consumption benchmark: baseline vs 2.0 (target: 40%+ reduction)
-- [ ] Merge feat/v2 to main
-- [ ] Version bump to 2.0.0
+- [x] Merge feat/v2 to main
+- [x] Version bump to 2.0.0
 
 ## Success Metrics
 

@@ -144,7 +144,7 @@ tasks:
   name: Plan-Level Freshness Checkpoint
   depends_on:
   - all prior tasks
-  status: pending
+  status: complete
   acceptance: []
 overall_acceptance: '- GIVEN an agentera v2 installation after all tasks WHEN a user types /agentera with a natural language
   request THEN the dispatcher routes to the correct capability per the invocation model decision
