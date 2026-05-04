@@ -204,6 +204,26 @@ should own them. Single-skill installs must still work for core behavior.
 
 **Note**: The ROADMAP.md aspirational target of 40% reduction assumed that schema extraction would offload more structural prose. The actual -11.0% reflects that capability prose.md files retain substantial behavioral instructions while schema files add ~83 KB of machine-readable structure. The token win is modest, but the structural payoff (machine-readable schemas, query CLI potential, single dispatch point) was the primary motivation per D39.
 
+## Decision 42 · 2026-05-04
+
+**Question**: How should a user invoke any of the 12 capabilities through the single `/agentera` entry point, and how does the dispatcher route requests reliably?
+**Context**: D39 committed to a single bundled skill with one entry point (`/agentera`). The v2 codebase has schema-driven trigger discovery from capability `triggers.yaml` files, but no explicit invocation model defines how bare `/agentera`, `/agentera <capability-name>`, and `/agentera <natural-language-request>` are handled. Concerns about LLM misrouting (e.g., sending a user who wants a quick audit into a lengthy resonera deliberation) require guardrails. All 4 runtimes (Claude Code, OpenCode, Copilot, Codex) can pass the full message text to the agent after the command trigger, so `<request>` is available everywhere.
+**Alternatives**:
+
+- [Pure LLM routing]: let the model match capability triggers without guardrails. Simple but unreliable; high misrouting risk to lengthy workflows.
+- [Explicit commands only]: require users to name capabilities directly. Reliable but loses the "always type `/agentera`" simplicity.
+- [Layered guardrails with deterministic heuristics]: combine deterministic state checks, explicit names, confidence thresholds, disambiguation, and fallback. Chosen.
+  **Choice**: Five-layer dispatch model, heuristics hardcoded in `SKILL.md`:
+  1. **Bare `/agentera`** → deterministic heuristic decision tree. Checks project state (active plan, critical TODOs, stale health, missing vision) and routes to the appropriate capability. Fast, never wrong.
+  2. **`/agentera <capability-name>`** → direct route to named capability. Bypasses all NL matching.
+  3. **NL request with high-confidence match** → route via trigger pattern matching from capability schemas.
+  4. **Borderline match** → disambiguation prompt: present matching options and let user choose.
+  5. **Low confidence / no match** → fallback to hej orientation.
+  Heuristics for bare `/agentera` are hardcoded in `SKILL.md`. If the tree grows beyond ~7 rules, extraction to a separate file will be considered.
+  **Reasoning**: Deterministic state checks eliminate LLM uncertainty for the most common case (user opens project, wants next action). Explicit capability names give power users direct access. Confidence thresholds prevent misrouting to lengthy workflows. Disambiguation preserves transparency. Hej fallback is always safe. This model works across all 4 runtimes because `<request>` is just message text passed to the agent.
+  **Confidence**: firm
+  **Feeds into**: SKILL.md (routing logic update), README.md (user-facing docs), capability prose.md (trigger pattern refinement)
+
 ## Archived Decisions
 
 - Decision 1 (2026-03-29): **Question**: How should planera (a planning skill) be designed to fit the agent-skills suite?
