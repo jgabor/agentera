@@ -73,7 +73,7 @@ Integration work: no new architectural decisions. Each task connects existing pi
 ### Task 5: Hook Verification Against v2 Artifact Schemas
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN a valid YAML artifact matching each of the 9 artifact schemas WHEN the hook validates it THEN it exits 0
 ▸ GIVEN an invalid YAML artifact (missing required field) for each of the 9 schemas WHEN the hook validates it THEN it exits 2 with details on stderr
