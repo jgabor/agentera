@@ -49,14 +49,17 @@ skills/agentera/
 
 ### Query CLI
 
-One command, all state. The agent asks questions; the CLI reads structured artifacts and returns compact answers.
+Two surface commands. `agentera query` answers questions about project state. `agentera prime` prints a static guidance blob that teaches the agent when and how to use agentera commands before falling back to native read/grep.
 
 ```
+agentera prime                                # Print agent-priming guidance
 agentera query last-phase                     # What phase was the last cycle?
 agentera query decisions --topic runtime      # Decisions about runtime support
 agentera query health --dimension coupling    # Latest coupling grade
 agentera query open-todos --severity critical # Critical open issues
 ```
+
+`agentera prime` takes no arguments and produces identical output every invocation. The output is a concise routing guide: which questions go through agentera, which fall back to native tools, and how to recover from stale or missing artifacts. Inspired by the `leda prime` pattern from the leda dependency-graph CLI.
 
 The CLI is the deep module: one interface, all artifact knowledge behind it. Changing artifact format only affects CLI internals.
 
@@ -76,7 +79,7 @@ Build the skeleton that everything else plugs into.
 
 - [ ] Define capability schema contract (what fields a capability schema must contain)
 - [ ] Define shared protocol schema (confidence, severity, visual tokens, phase model)
-- [ ] Build the universal query CLI scaffold
+- [ ] Build the universal query CLI scaffold (including `agentera prime` command)
 - [ ] Define agent-facing artifact schemas (one per artifact type)
 - [ ] Build artifact migration tool (current Markdown -> structured data)
 - [ ] Rewrite hook to validate against capability-local schemas
