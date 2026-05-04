@@ -1,0 +1,27 @@
+{
+  "name": "agentera",
+  "version": "2.0.0",
+  "description": "The open protocol for turning AI agents into engineering teams. One bundled skill with twelve capabilities: hej, visionera, resonera, inspirera, planera, realisera, optimera, inspektera, dokumentera, profilera, visualisera, orkestrera.",
+  "author": {
+    "name": "jgabor"
+  },
+  "agentera": {
+    "packageShape": "bundled-skill",
+    "capabilities": [
+      "hej",
+      "visionera",
+      "resonera",
+      "inspirera",
+      "planera",
+      "realisera",
+      "optimera",
+      "inspektera",
+      "dokumentera",
+      "profilera",
+      "visualisera",
+      "orkestrera"
+    ],
+    "schemas": "schemas",
+    "protocol": "protocol.yaml"
+  }
+}
