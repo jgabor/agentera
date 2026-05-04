@@ -10,17 +10,18 @@ artifacts based on the artifact schemas in skills/agentera/schemas/artifacts/.
 Creates backups in .agentera/backup-v1/ before conversion.
 
 Usage:
-    scripts/migrate_v1_to_v2 [--project DIR] [--dry-run] [--verbose]
+    scripts/migrate_v1_to_v2 [--project DIR] [--dry-run] [--force] [--verbose]
 
 Exit codes:
     0  Success (or nothing to migrate)
-    1  Fatal error
+    1  Fatal error (backup exists, backup failure, or invalid project)
 """
 
 from __future__ import annotations
 
 import argparse
 import logging
+import os
 import re
 import shutil
 import sys
@@ -946,7 +947,7 @@ OPTIMERA_PARSERS = {
 }
 
 
-def migrate_project(project_dir: Path, dry_run: bool = False, verbose: bool = False) -> int:
+def migrate_project(project_dir: Path, dry_run: bool = False, verbose: bool = False, force: bool = False) -> int:
     logging.basicConfig(
         level=logging.DEBUG if verbose else logging.INFO,
         format="%(levelname)s: %(message)s",
@@ -968,17 +969,34 @@ def migrate_project(project_dir: Path, dry_run: bool = False, verbose: bool = Fa
     optimera_files = _find_optimera_artifacts(project_dir)
     v1_files.extend(p for _, p in optimera_files)
 
+    xdg_data = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
+    profile_path = Path(xdg_data) / "agentera" / "PROFILE.md"
+    if profile_path.exists():
+        print(f"PROFILE.md excluded from migration (global artifact at {profile_path})")
+
     if not v1_files:
         print("nothing to migrate")
         return 0
 
     if not dry_run:
         backup_dir = agentera_dir / "backup-v1"
-        backup_dir.mkdir(parents=True, exist_ok=True)
-        for src in v1_files:
-            dst = backup_dir / src.name
-            shutil.copy2(src, dst)
-            log.info("backed up %s → %s", src.relative_to(project_dir), dst.relative_to(project_dir))
+
+        if backup_dir.exists() and not force:
+            print(f"error: backup directory already exists: {backup_dir}", file=sys.stderr)
+            print("Use --force to overwrite.", file=sys.stderr)
+            return 1
+
+        try:
+            backup_dir.mkdir(parents=True, exist_ok=True)
+            for src in v1_files:
+                dst = backup_dir / src.name
+                shutil.copy2(src, dst)
+                log.info("backed up %s → %s", src.relative_to(project_dir), dst.relative_to(project_dir))
+        except OSError as e:
+            print(f"error: backup creation failed: {e}", file=sys.stderr)
+            if backup_dir.exists():
+                shutil.rmtree(backup_dir, ignore_errors=True)
+            return 1
 
     all_warnings: list[str] = []
 
@@ -1022,7 +1040,10 @@ def migrate_project(project_dir: Path, dry_run: bool = False, verbose: bool = Fa
         log.warning("%d warning(s) during migration", len(all_warnings))
 
     migrated = len(v1_files)
-    print(f"migrated {migrated} artifact(s)")
+    if dry_run:
+        print(f"would migrate {migrated} artifact(s)")
+    else:
+        print(f"migrated {migrated} artifact(s)")
     return 0
 
 
@@ -1030,6 +1051,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Migrate v1 Markdown artifacts to v2 YAML")
     parser.add_argument("--project", default=".", help="Project directory (default: current directory)")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be migrated without writing")
+    parser.add_argument("--force", action="store_true", help="Force overwrite of existing backup directory")
     parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
 
@@ -1038,7 +1060,7 @@ def main() -> None:
         print(f"error: {project_dir} is not a directory", file=sys.stderr)
         sys.exit(1)
 
-    sys.exit(migrate_project(project_dir, dry_run=args.dry_run, verbose=args.verbose))
+    sys.exit(migrate_project(project_dir, dry_run=args.dry_run, verbose=args.verbose, force=args.force))
 
 
 if __name__ == "__main__":

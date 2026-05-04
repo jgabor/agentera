@@ -7,6 +7,8 @@ artifacts and missing fields, and the acceptance criteria from the plan.
 from __future__ import annotations
 
 import importlib.util
+import os
+import shutil
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -712,3 +714,97 @@ class TestAcceptance:
         result = migrate.migrate_project(project_dir)
         assert result == 0
         assert "migrated 1 artifact(s)" in capsys.readouterr().out
+
+
+# ── Safety hardening: dry-run reporting ────────────────────────────────
+
+class TestDryRunReporting:
+    def test_dry_run_reports_would_migrate(self, migrate, project_dir, capsys):
+        _write_agentera(project_dir, "PROGRESS.md", PROGRESS_V1)
+        _write_agentera(project_dir, "DECISIONS.md", DECISIONS_V1)
+        result = migrate.migrate_project(project_dir, dry_run=True)
+        assert result == 0
+        output = capsys.readouterr().out
+        assert "would migrate 2 artifact(s)" in output
+
+    def test_dry_run_no_writes(self, migrate, project_dir):
+        _write_agentera(project_dir, "PROGRESS.md", PROGRESS_V1)
+        migrate.migrate_project(project_dir, dry_run=True)
+        assert not (project_dir / ".agentera" / "progress.yaml").exists()
+        assert not (project_dir / ".agentera" / "backup-v1").exists()
+
+
+# ── Safety hardening: backup overwrite protection ──────────────────────
+
+class TestBackupOverwriteProtection:
+    def test_existing_backup_no_force_exits_nonzero(self, migrate, project_dir, capsys):
+        _write_agentera(project_dir, "PROGRESS.md", PROGRESS_V1)
+        backup_dir = project_dir / ".agentera" / "backup-v1"
+        backup_dir.mkdir(parents=True)
+        (backup_dir / "PROGRESS.md").write_text("old backup", encoding="utf-8")
+
+        result = migrate.migrate_project(project_dir)
+        assert result != 0
+        assert not (project_dir / ".agentera" / "progress.yaml").exists()
+        err = capsys.readouterr().err
+        assert "backup directory already exists" in err
+
+    def test_existing_backup_with_force_proceeds(self, migrate, project_dir):
+        _write_agentera(project_dir, "PROGRESS.md", PROGRESS_V1)
+        backup_dir = project_dir / ".agentera" / "backup-v1"
+        backup_dir.mkdir(parents=True)
+        (backup_dir / "PROGRESS.md").write_text("old backup", encoding="utf-8")
+
+        result = migrate.migrate_project(project_dir, force=True)
+        assert result == 0
+        assert (project_dir / ".agentera" / "progress.yaml").exists()
+
+
+# ── Safety hardening: PROFILE.md exclusion ─────────────────────────────
+
+class TestProfileExclusion:
+    def test_profile_excluded_when_exists(self, migrate, project_dir, capsys, monkeypatch):
+        xdg_dir = project_dir / "xdg" / "agentera"
+        xdg_dir.mkdir(parents=True)
+        (xdg_dir / "PROFILE.md").write_text("# Profile", encoding="utf-8")
+        monkeypatch.setenv("XDG_DATA_HOME", str(project_dir / "xdg"))
+
+        _write_agentera(project_dir, "PROGRESS.md", PROGRESS_V1)
+        result = migrate.migrate_project(project_dir)
+        assert result == 0
+        output = capsys.readouterr().out
+        assert "PROFILE.md excluded from migration" in output
+
+    def test_no_profile_mention_when_absent(self, migrate, project_dir, capsys, monkeypatch):
+        monkeypatch.setenv("XDG_DATA_HOME", str(project_dir / "xdg"))
+
+        _write_agentera(project_dir, "PROGRESS.md", PROGRESS_V1)
+        result = migrate.migrate_project(project_dir)
+        assert result == 0
+        output = capsys.readouterr().out
+        assert "PROFILE.md excluded from migration" not in output
+
+
+# ── Safety hardening: backup failure ───────────────────────────────────
+
+class TestBackupFailureSafety:
+    def test_backup_failure_exits_nonzero_no_writes(self, migrate, project_dir, monkeypatch, capsys):
+        _write_agentera(project_dir, "PROGRESS.md", PROGRESS_V1)
+
+        def failing_copy2(src, dst):
+            raise OSError("disk full")
+
+        monkeypatch.setattr(shutil, "copy2", failing_copy2)
+
+        result = migrate.migrate_project(project_dir)
+        assert result != 0
+        assert not (project_dir / ".agentera" / "progress.yaml").exists()
+        err = capsys.readouterr().err
+        assert "backup creation failed" in err
+
+    def test_backup_succeeds_migration_proceeds(self, migrate, project_dir):
+        _write_agentera(project_dir, "PROGRESS.md", PROGRESS_V1)
+        result = migrate.migrate_project(project_dir)
+        assert result == 0
+        assert (project_dir / ".agentera" / "progress.yaml").exists()
+        assert (project_dir / ".agentera" / "backup-v1" / "PROGRESS.md").exists()
