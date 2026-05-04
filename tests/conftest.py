@@ -39,51 +39,6 @@ def _load_module(name: str, file_path: Path) -> ModuleType:
 
 
 @pytest.fixture(scope="session")
-def analyze_progress():
-    """Load skills/realisera/scripts/analyze_progress.py."""
-    return _load_module(
-        "analyze_progress",
-        REPO_ROOT / "skills" / "realisera" / "scripts" / "analyze_progress.py",
-    )
-
-
-@pytest.fixture(scope="session")
-def analyze_experiments():
-    """Load skills/optimera/scripts/analyze_experiments.py."""
-    return _load_module(
-        "analyze_experiments",
-        REPO_ROOT / "skills" / "optimera" / "scripts" / "analyze_experiments.py",
-    )
-
-
-@pytest.fixture(scope="session")
-def effective_profile():
-    """Load skills/profilera/scripts/effective_profile.py."""
-    return _load_module(
-        "effective_profile",
-        REPO_ROOT / "skills" / "profilera" / "scripts" / "effective_profile.py",
-    )
-
-
-@pytest.fixture(scope="session")
-def validate_design():
-    """Load skills/visualisera/scripts/validate_design.py."""
-    return _load_module(
-        "validate_design",
-        REPO_ROOT / "skills" / "visualisera" / "scripts" / "validate_design.py",
-    )
-
-
-@pytest.fixture(scope="session")
-def extract_all():
-    """Load skills/profilera/scripts/extract_all.py."""
-    return _load_module(
-        "extract_all",
-        REPO_ROOT / "skills" / "profilera" / "scripts" / "extract_all.py",
-    )
-
-
-@pytest.fixture(scope="session")
 def eval_skills():
     """Load scripts/eval_skills.py."""
     return _load_module(
