@@ -43,7 +43,8 @@ Merge feat/v2 into main via fast-forward or merge commit. Retire v1 infrastructu
 ### Task 2: Merge feat/v2 to Main
 
 **Depends on**: Task 1
-**Status**: ■ complete
+**Status**: □ pending
+**Note**: Merge was attempted and subsequently reverted on main due to gaps discovered in post-merge validation. A remediation plan was created on feat/v2 to close the gaps before re-attempting.
 **Acceptance**:
 ▸ GIVEN the main worktree WHEN feat/v2 is merged THEN the merge completes without conflicts or with documented conflict resolution
 ▸ GIVEN the merged main WHEN SPEC.md is checked THEN it is absent (retired as part of v2 cutover)
@@ -53,7 +54,8 @@ Merge feat/v2 into main via fast-forward or merge commit. Retire v1 infrastructu
 ### Task 3: Post-merge Validation
 
 **Depends on**: Task 2
-**Status**: ■ complete
+**Status**: □ pending
+**Note**: Blocked on Task 2. Post-merge validation was not performed because the merge was reverted.
 **Acceptance**:
 ▸ GIVEN main after merge WHEN pytest runs THEN all tests pass with 0 failures
 ▸ GIVEN main after merge WHEN ls capabilities/ THEN 12 capability directories exist
