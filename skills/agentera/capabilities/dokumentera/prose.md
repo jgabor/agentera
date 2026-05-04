@@ -22,17 +22,17 @@ One index file; writes individual doc files across the project.
 |----------|---------|-----------|
 | `DOCS.md` | Documentation contract. Conventions, artifact mapping, and documentation index. | Created on first dokumentera run. |
 
-Template in `references/templates/` (v1 path: `skills/dokumentera/references/templates/`). Individual doc files written to standard locations.
+Template in `references/templates/` (v2 path: `skills/agentera/references/templates/`). Individual doc files written to standard locations.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/DOCS.md, etc.). If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, .agentera/PROGRESS.md, .agentera/DECISIONS.md, .agentera/HEALTH.md).
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/docs.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, .agentera/progress.yaml, .agentera/decisions.yaml, .agentera/health.yaml).
 
 ### Contract values
 
 Contract values are inlined where referenced. Visual tokens from protocol: severity arrows VT5-VT8, trend arrows VT12-VT13, progress bar VT18, inline separator VT16 (·), list item VT15 (▸), section divider VT14, flow/target VT17 (→). Skill glyph SG8 for the exit marker. Exit signals EX1-EX4 for the exit marker. Confidence scale CS1-CS5 for decision profile consumption.
 
-`references/contract.md` (at the v1 skill location `skills/dokumentera/references/contract.md`) remains available as a full-spec reference for ambiguous cases or cross-checking.
+`references/contract.md` (at the v2 skill location `skills/agentera/references/contract.md`) remains available as a full-spec reference for ambiguous cases or cross-checking.
 
 ---
 
@@ -130,7 +130,7 @@ If artifacts exist at root but mapping places them elsewhere:
 
 ### Step 4: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v1 path: `skills/dokumentera/scripts/self_audit.py`).
+Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -139,7 +139,7 @@ Narration voice (riff, don't script):
 
 ### Step 5: Write DOCS.md
 
-Write the approved convention map to `.agentera/DOCS.md`. After writing, proceed to the originally requested mode, or stop if the survey was the entire request.
+Write the approved convention map to `.agentera/docs.yaml`. After writing, proceed to the originally requested mode, or stop if the survey was the entire request.
 
 Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
@@ -170,7 +170,7 @@ Present draft for approval before writing.
 
 ### Step 3: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v1 path: `skills/dokumentera/scripts/self_audit.py`).
+Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -227,7 +227,7 @@ Present drafts for approval.
 
 ### Step 4: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v1 path: `skills/dokumentera/scripts/self_audit.py`).
+Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -285,7 +285,7 @@ By severity: ⇶ critical (VT5, causes user errors), ⇉ warning (VT6, causes co
 
 ### Step 5: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v1 path: `skills/dokumentera/scripts/self_audit.py`).
+Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):

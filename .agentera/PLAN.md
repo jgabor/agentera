@@ -116,7 +116,7 @@ Each task is sized for one realisera cycle. Tasks 2 and 3 are independent and ca
 ### Task 7: Update All 12 Capability prose.md Files to Reference YAML Artifacts
 
 **Depends on**: Task 3
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 
 - GIVEN all 12 capability prose files WHEN checked THEN they reference YAML artifact paths (e.g., .agentera/progress.yaml) not Markdown paths (e.g., .agentera/PROGRESS.md) for agent-facing artifacts

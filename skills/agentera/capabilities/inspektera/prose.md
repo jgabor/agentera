@@ -22,15 +22,15 @@ One file in `.agentera/`, bootstrapped if absent.
 |------|---------|-----------|
 | `HEALTH.md` | Codebase health assessment. Findings, dimension grades, trajectory. | `# Health\n\n` then the first audit entry. |
 
-Template in `references/templates/` (at v1 skill location `skills/inspektera/references/templates/`). Use as starting structure, adapt to the project.
+Template in `references/templates/` (at v2 skill location `skills/agentera/references/templates/`). Use as starting structure, adapt to the project.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, `.agentera/DECISIONS.md`, TODO.md, `.agentera/PROGRESS.md`).
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, `.agentera/decisions.yaml`, TODO.md, `.agentera/progress.yaml`).
 
 ### Contract
 
-Before starting, read `references/contract.md` (at v1 skill location `skills/inspektera/references/contract.md`) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
+Before starting, read `references/contract.md` (at v2 skill location `skills/agentera/references/contract.md`) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
 ### HEALTH.md
 
@@ -129,7 +129,7 @@ These thresholds are guidelines, not hard rules. Use judgment: a 6-file change t
 
 Lead the assessment with your overall interpretation: what stands out, what's changed, where attention should go. Then the per-dimension breakdown provides the evidence.
 
-Launch parallel agents, one per dimension. Each receives the dimension definition, language-specific commands from `references/audit-commands.md` (at v1 skill location `skills/inspektera/references/audit-commands.md`), relevant context files, the confidence scoring rubric, and instructions to return structured findings.
+Launch parallel agents, one per dimension. Each receives the dimension definition, language-specific commands from `references/audit-commands.md` (at v2 skill location `skills/agentera/references/audit-commands.md`), relevant context files, the confidence scoring rubric, and instructions to return structured findings.
 
 **Before deep analysis**: run the quick checklist for a rapid pass/fail sweep. Dimensions passing all items can be audited at lower priority.
 
@@ -320,7 +320,7 @@ After all agents complete:
 
 ## Step 5: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns table). See `scripts/self_audit.py` (at v1 skill location `skills/inspektera/scripts/self_audit.py`).
+Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns table). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
