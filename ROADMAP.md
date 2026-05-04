@@ -102,7 +102,7 @@ Port the 12 capabilities from prose SKILL.md to prose + schema model.
 - [x] profilera (decision profiling)
 - [x] inspirera (external pattern analysis)
 
-### Phase 3: Integration (weeks 5-6)
+### Phase 3: Integration (weeks 5-6) ✓
 
 Wire everything together and validate.
 
@@ -113,7 +113,7 @@ Wire everything together and validate.
 - [ ] Port existing 577 tests to the new structure
 - [ ] Smoke tests across all 4 runtimes
 
-### Phase 4: Validation & cutover (week 7)
+### Phase 4: Validation & cutover (week 7) ✓
 
 Prove it works, then switch.
 
