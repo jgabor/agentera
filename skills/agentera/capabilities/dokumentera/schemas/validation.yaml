@@ -1,0 +1,83 @@
+VALIDATION:
+  1:
+    id: V1
+    rule: user_approval_required
+    description: >-
+      Documentation MUST NOT be written or modified without explicit user
+      approval. Present drafts and get confirmation before writing.
+      This applies to all modes: intent-first, explore-and-generate,
+      update-and-verify, and first-run survey.
+    severity: critical
+    checks:
+      - "Draft presented to user before write"
+      - "Explicit approval received"
+  2:
+    id: V2
+    rule: dtc_code_wrong
+    description: >-
+      Per DTC principle, if code diverges from documentation, the code
+      is wrong. Documentation MUST NOT be updated to match broken code.
+      The divergence MUST be documented as an issue in TODO.md instead.
+    severity: critical
+    checks:
+      - "Docs not updated to match broken code"
+      - "Divergences filed to TODO.md"
+  3:
+    id: V3
+    rule: evergreen_prose
+    description: >-
+      Documentation MUST be written as the intended steady state:
+      evergreen and non-temporal. No changelogs, no "we recently added",
+      no temporal language. Write as if the feature has always existed.
+    severity: warning
+    checks:
+      - "No temporal language in documentation"
+  4:
+    id: V4
+    rule: dry_across_docs
+    description: >-
+      Information MUST NOT be duplicated across doc files. Keep it DRY:
+      reference, don't repeat. Each fact lives in one authoritative
+      location and other docs link to it.
+    severity: warning
+    checks:
+      - "No duplicated content across doc files"
+  5:
+    id: V5
+    rule: verification_required
+    description: >-
+      In update-and-verify mode, every doc claim MUST be checked against
+      code. The verification step MUST NOT be skipped.
+    severity: critical
+    checks:
+      - "All doc claims verified against code in update mode"
+  6:
+    id: V6
+    rule: read_before_generate
+    description: >-
+      Documentation MUST NOT be auto-generated without reading the code
+      it describes. Understanding precedes documentation.
+    severity: critical
+    checks:
+      - "Source code read before generating documentation"
+  7:
+    id: V7
+    rule: index_entry_brevity
+    description: >-
+      Each DOCS.md index entry description MUST be ≤15 words.
+      Index entries are summaries, not documentation.
+    severity: warning
+    checks:
+      - "Each index entry description ≤ 15 words"
+  8:
+    id: V8
+    rule: exit_marker_required
+    description: >-
+      Every dokumentera invocation MUST emit an exit marker using the
+      canonical glyph ▤ (SG8) in the format ▤ dokumentera · <status>
+      where status is one of EX1-EX4.
+    severity: critical
+    checks:
+      - "Exit marker present"
+      - "Exit marker uses glyph ▤ (SG8)"
+      - "Exit marker status is one of complete, flagged, stuck, waiting"

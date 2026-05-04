@@ -1,0 +1,83 @@
+ARTIFACTS:
+  1:
+    id: A1
+    name: VISION.md
+    path: "VISION.md or mapped path per DOCS.md"
+    description: >-
+      Project direction and north star. Produced by visionera (primary)
+      or realisera (fallback). Contains direction, principles, personas,
+      aspirations, and identity. Visionera writes this artifact.
+    produces: true
+    consumes: true
+  2:
+    id: A2
+    name: DECISIONS.md
+    path: ".agentera/DECISIONS.md"
+    description: >-
+      Pending and recent decisions. Produced by resonera.
+      Visionera reads this to detect shifted thinking during refine mode
+      and to surface unresolved tensions with the vision.
+    produces: false
+    consumes: true
+  3:
+    id: A3
+    name: PROGRESS.md
+    path: ".agentera/PROGRESS.md"
+    description: >-
+      Recent cycle history and what shipped. Produced by realisera.
+      Visionera reads this during refine mode to understand what has been
+      built since the vision was last updated.
+    produces: false
+    consumes: true
+  4:
+    id: A4
+    name: HEALTH.md
+    path: ".agentera/HEALTH.md"
+    description: >-
+      Codebase health grades and trends. Produced by inspektera.
+      Visionera reads this to understand structural realities that
+      constrain or inform the vision.
+    produces: false
+    consumes: true
+  5:
+    id: A5
+    name: TODO.md
+    path: "TODO.md"
+    description: >-
+      Open problems by severity. Human-maintained or produced by realisera.
+      Visionera reads this during refine mode to detect recurring problems
+      that suggest the vision needs adjustment.
+    produces: false
+    consumes: true
+  6:
+    id: A6
+    name: DESIGN.md
+    path: ".agentera/DESIGN.md"
+    description: >-
+      Visual identity system. Produced by visualisera.
+      Visionera reads this during codebase exploration to ensure the
+      Identity section in VISION.md coheres with the visual system.
+      Visionera never writes DESIGN.md.
+    produces: false
+    consumes: true
+  7:
+    id: A7
+    name: DOCS.md
+    path: ".agentera/DOCS.md"
+    description: >-
+      Artifact path resolution and documentation coverage. Produced by dokumentera.
+      Visionera reads this FIRST to resolve artifact paths before accessing
+      other artifacts.
+    produces: false
+    consumes: true
+  8:
+    id: A8
+    name: PROFILE.md
+    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    description: >-
+      Decision profile with per-entry confidence scoring. Produced by profilera.
+      Visionera reads this to calibrate the vision conversation: high-confidence
+      entries become proposed principles. Path resolved via PROFILERA_PROFILE_DIR
+      or XDG_DATA_HOME.
+    produces: false
+    consumes: true

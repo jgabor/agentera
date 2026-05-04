@@ -1,0 +1,30 @@
+TRIGGERS:
+  1:
+    id: T1
+    description: >-
+      Direct invocation by name or slash command. Matches when the user
+      explicitly requests visualisera.
+    patterns:
+      - "visualisera"
+      - "/visualisera"
+  2:
+    id: T2
+    description: >-
+      Design system creation requests. Matches when the user wants to
+      create or set up a visual identity system or design tokens.
+    patterns:
+      - "create design system"
+      - "write DESIGN.md"
+      - "design tokens"
+      - "visual identity"
+      - "define the aesthetic"
+      - "set up design system"
+  3:
+    id: T3
+    description: >-
+      Design system refinement and audit requests. Matches when the user
+      wants to evolve, check, or update an existing design system.
+    patterns:
+      - "audit design"
+      - "refine design system"
+      - "update DESIGN.md"
