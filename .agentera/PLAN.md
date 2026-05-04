@@ -43,7 +43,7 @@ Integration work: no new architectural decisions. Each task connects existing pi
 ### Task 2: Cross-Capability Reference Verification
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN each of the 12 capability schemas WHEN their protocol.yaml stable ID references are extracted THEN all resolve to valid entries in protocol.yaml
 ▸ GIVEN the master SKILL.md routing WHEN each capability's trigger patterns are tested THEN each routes to the correct capability (not hej fallback)
@@ -83,7 +83,7 @@ Integration work: no new architectural decisions. Each task connects existing pi
 ### Task 6: SKILL.md and AGENTS.md Update
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the master SKILL.md directory structure example WHEN compared to actual capability schemas THEN it lists the correct file names (triggers.yaml, artifacts.yaml, validation.yaml, exit.yaml)
 ▸ GIVEN AGENTS.md WHEN read THEN it describes the v2 bundled skill model (not v1 per-directory skills)
