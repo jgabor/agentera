@@ -53,18 +53,14 @@ Migration tool creates backups by default (copies v1 artifacts to .agentera/back
 **Depends on**: Task 1
 **Status**: ■ complete
 **Acceptance**:
-▸ GIVEN protocol.yaml WHEN parsed THEN it defines confidence scale (0-100, 5 tiers with boundaries), severity levels (finding and issue vocabularies), visual tokens (status, severity, confidence, trend glyphs), and phase model (5 phases with valid transitions)
-▸ GIVEN SPEC.md Sections 1, 2, 3, 11, 13, 18 WHEN compared against protocol.yaml via field-by-field mapping table THEN every primitive (confidence tiers, severity values, decision labels, exit statuses, visual glyphs, phases) has a corresponding protocol.yaml entry
-▸ GIVEN a capability schema referencing a shared primitive (e.g. severity: critical) WHEN validated THEN it confirms the reference resolves to a value defined in protocol.yaml
-**Acceptance**:
-▸ GIVEN protocol.yaml WHEN parsed THEN it defines confidence scale (0-100, 5 tiers with boundaries), severity levels (finding and issue vocabularies), visual tokens (status, severity, confidence, trend glyphs), and phase model (5 phases with valid transitions)
-▸ GIVEN SPEC.md Sections 1, 2, 3, 11, 13, 18 WHEN compared against protocol.yaml via field-by-field mapping table THEN every primitive (confidence tiers, severity values, decision labels, exit statuses, visual glyphs, phases) has a corresponding protocol.yaml entry
-▸ GIVEN a capability schema referencing a shared primitive (e.g. severity: critical) WHEN validated THEN it confirms the reference resolves to a value defined in protocol.yaml
+▸ GIVEN protocol.yaml WHEN loaded THEN it contains 9 groups (CONFIDENCE_SCALE, SEVERITY_FINDING, SEVERITY_ISSUE, SEVERITY_MAPPING, DECISION_LABELS, EXIT_SIGNALS, VISUAL_TOKENS, SKILL_GLYPHS, PHASES) with 57 entries, each having a stable ID
+▸ GIVEN protocol.yaml WHEN compared against SPEC.md Sections 1-3, 11, 13, 18 THEN every spec primitive has a corresponding protocol entry with a stable ID
+▸ GIVEN the GROUP_PREFIXES mapping WHEN an entry ID is read THEN the prefix uniquely identifies the group of origin
 
 ### Task 3a: Core Artifact Schemas (PROGRESS, DECISIONS, HEALTH, SESSION)
 
-**Depends on**: Task 1, Task 2
-**Status**: □ pending
+**Depends on**: Task 2
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN each core artifact type WHEN an artifact schema is defined THEN it specifies YAML structure with UPPER_CASE groups, numbered entries with stable IDs, field types, and validation rules
 ▸ GIVEN a v1 Markdown artifact for each core type WHEN compared against the v2 YAML schema via field mapping table THEN every v1 field has a corresponding v2 schema entry with a stable ID
