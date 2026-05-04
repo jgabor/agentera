@@ -1,4 +1,26 @@
 cycles:
+- number: 255
+  timestamp: 2026-05-04 23:45
+  type: chore
+  phase: audit
+  what: 'Completed v2.0.0 remediation plan (13 tasks): defined /agentera invocation model, fixed query CLI schema discovery,
+    migrated 8 v1 Markdown artifacts to YAML with backup, retired test compaction and generate_contracts.py, removed stale
+    v1 skill directories, updated all 12 capability prose files to reference YAML artifacts, rewrote AGENTS.md and README for
+    single-bundle model, ported semantic eval fixture to v2, corrected archived plan documentation, merged feat/v2 to main
+    via fast-forward. 507 tests pass, 0 failures; all 12 capabilities pass contract validation; version surfaces at 2.0.0.'
+  commit: 39f2946
+  inspiration: 'Active PLAN.md v2.0.0 remediation plan; Decision 42 (invocation model); D39 (big bang cutover).'
+  discovered: 'No revert commit existed on main; merge was a clean fast-forward. Stale v1 Markdown artifacts remained in .agentera/
+    alongside YAML counterparts and had to be manually removed post-migration.'
+  verified: 'Validation: python3 -m pytest -q (507 passed, 1 skipped), uv run scripts/validate_capability.py for all 12 capabilities
+    (all pass), version probe confirms 2.0.0 on all surfaces, query CLI functional for all artifact types.'
+  next: 'v2.0.0 is on main. Next: runtime smoke tests across all 4 targets, token consumption benchmark, and post-merge
+    performance tuning.'
+  context:
+    intent: (close D39 gaps and merge feat/v2 to main)
+    constraints: (no breaking changes to schema contract, 500+ tests must pass, registry format version stays 1)
+    unknowns: (none)
+    scope: (13-task remediation across invocation model, CLI, artifacts, tests, prose, docs, merge)
 - number: 254
   timestamp: 2026-04-30 19:59
   type: chore
