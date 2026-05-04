@@ -8,6 +8,8 @@ Validate a capability directory against the capability schema contract.
 Usage:
     uv run scripts/validate_capability.py <capability_dir> [--contract <contract.yaml>]
     uv run scripts/validate_capability.py --self-validate [--contract <contract.yaml>]
+    uv run scripts/validate_capability.py <capability_dir> --check-primitives [--protocol <protocol.yaml>]
+    uv run scripts/validate_capability.py --validate-protocol [--protocol <protocol.yaml>]
 
 Exit codes:
     0 - all checks pass
@@ -26,6 +28,27 @@ GROUP_PREFIXES = {
     "ARTIFACTS": "A",
     "VALIDATION": "V",
     "EXIT_CONDITIONS": "E",
+}
+
+PROTOCOL_GROUPS = (
+    "CONFIDENCE_SCALE",
+    "SEVERITY_FINDING",
+    "SEVERITY_ISSUE",
+    "SEVERITY_MAPPING",
+    "DECISION_LABELS",
+    "EXIT_SIGNALS",
+    "VISUAL_TOKENS",
+    "SKILL_GLYPHS",
+    "PHASES",
+)
+
+PROTOCOL_REFERENCEABLE_FIELDS = {
+    "severity": ["SEVERITY_FINDING", "SEVERITY_ISSUE"],
+    "finding_severity": ["SEVERITY_FINDING"],
+    "issue_severity": ["SEVERITY_ISSUE"],
+    "decision_label": ["DECISION_LABELS"],
+    "exit_signal": ["EXIT_SIGNALS"],
+    "phase": ["PHASES"],
 }
 
 
@@ -195,6 +218,165 @@ def validate_capability(cap_dir: Path, contract_path: Path) -> list[str]:
     return all_errors
 
 
+def load_protocol(protocol_path: Path) -> dict:
+    with open(protocol_path) as f:
+        return yaml.safe_load(f)
+
+
+def build_protocol_value_lookup(protocol_data: dict) -> dict[str, set[str]]:
+    """Build group_name -> set of valid 'value' fields from protocol entries."""
+    lookup: dict[str, set[str]] = {}
+    for group_name in PROTOCOL_GROUPS:
+        group = protocol_data.get(group_name)
+        if not isinstance(group, dict):
+            continue
+        values: set[str] = set()
+        for key, entry in group.items():
+            if not isinstance(key, int) or not isinstance(entry, dict):
+                continue
+            if "value" in entry:
+                values.add(entry["value"])
+        if values:
+            lookup[group_name] = values
+    return lookup
+
+
+def check_protocol_structure(protocol_data: dict, source_label: str) -> list[str]:
+    """Validate protocol.yaml internal structure: numbered entries, stable IDs, group prefixes."""
+    errors: list[str] = []
+    prefixes = protocol_data.get("GROUP_PREFIXES", {})
+    if not isinstance(prefixes, dict):
+        errors.append(f"[error]: GROUP_PREFIXES missing or not a mapping in {source_label}")
+        return errors
+
+    for group_name in PROTOCOL_GROUPS:
+        group = protocol_data.get(group_name)
+        if not isinstance(group, dict):
+            errors.append(f"[error]: group {group_name} missing in {source_label}")
+            continue
+
+        expected_prefix = prefixes.get(group_name, "")
+        valid_ids: set[str] = set()
+        for key, entry in group.items():
+            if not isinstance(key, int):
+                continue
+            if not isinstance(entry, dict):
+                errors.append(f"[error]: entry {key} in {group_name} is not a mapping")
+                continue
+            if "id" not in entry:
+                errors.append(f"[error]: entry {key} in {group_name} missing 'id'")
+            else:
+                eid = entry["id"]
+                if expected_prefix and not eid.startswith(expected_prefix):
+                    errors.append(
+                        f"[error]: entry {key} id={eid!r} in {group_name} "
+                        f"does not match prefix {expected_prefix!r}"
+                    )
+                valid_ids.add(eid)
+
+        for key, entry in group.items():
+            if not isinstance(key, int) or not isinstance(entry, dict):
+                continue
+            if entry.get("deprecated"):
+                replaced = entry.get("replaced_by")
+                if not replaced:
+                    errors.append(
+                        f"[warning]: entry {key} ({entry.get('id', '?')}) "
+                        f"in {group_name} is deprecated but has no replaced_by"
+                    )
+                elif replaced not in valid_ids:
+                    errors.append(
+                        f"[warning]: entry {key} ({entry.get('id', '?')}) "
+                        f"in {group_name} has replaced_by={replaced!r} "
+                        f"which does not match any entry ID"
+                    )
+
+    return errors
+
+
+def check_phase_transitions(protocol_data: dict, source_label: str) -> list[str]:
+    """Validate that PHASES valid_successors reference existing phase values."""
+    errors: list[str] = []
+    phases_group = protocol_data.get("PHASES")
+    if not isinstance(phases_group, dict):
+        return errors
+
+    phase_values: set[str] = set()
+    for key, entry in phases_group.items():
+        if isinstance(key, int) and isinstance(entry, dict) and "value" in entry:
+            phase_values.add(entry["value"])
+
+    for key, entry in phases_group.items():
+        if not isinstance(key, int) or not isinstance(entry, dict):
+            continue
+        successors = entry.get("valid_successors", [])
+        entry_id = entry.get("id", f"entry {key}")
+        for s in successors:
+            if s not in phase_values:
+                errors.append(
+                    f"[error]: {entry_id} in PHASES has valid_successors entry "
+                    f"{s!r} which is not a defined phase value"
+                )
+        if entry.get("self_transition") and entry.get("value") not in successors:
+            errors.append(
+                f"[error]: {entry_id} in PHASES has self_transition=true "
+                f"but {entry['value']!r} not in valid_successors"
+            )
+
+    return errors
+
+
+def validate_protocol_self(protocol_path: Path) -> list[str]:
+    """Validate protocol.yaml internal consistency."""
+    data = load_protocol(protocol_path)
+    errors: list[str] = []
+    errors.extend(check_protocol_structure(data, str(protocol_path)))
+    errors.extend(check_phase_transitions(data, str(protocol_path)))
+    return errors
+
+
+def check_primitive_references(
+    cap_dir: Path, protocol_path: Path
+) -> list[str]:
+    """Check that capability schema primitive references resolve against protocol.yaml."""
+    protocol_data = load_protocol(protocol_path)
+    lookup = build_protocol_value_lookup(protocol_data)
+    errors: list[str] = []
+
+    schemas_dir = cap_dir / "schemas"
+    if not schemas_dir.is_dir():
+        return errors
+
+    for yaml_file in sorted(schemas_dir.glob("*.yaml")):
+        data = load_schema_file(yaml_file)
+        for group_name, group_data in data.items():
+            if not isinstance(group_data, dict):
+                continue
+            for key, entry in group_data.items():
+                if not isinstance(key, int) or not isinstance(entry, dict):
+                    continue
+                entry_id = entry.get("id", f"{group_name}.{key}")
+                for field_name, protocol_groups in PROTOCOL_REFERENCEABLE_FIELDS.items():
+                    if field_name not in entry:
+                        continue
+                    value = entry[field_name]
+                    values_to_check = value if isinstance(value, list) else [value]
+                    for v in values_to_check:
+                        resolved = False
+                        for pg in protocol_groups:
+                            if pg in lookup and v in lookup[pg]:
+                                resolved = True
+                                break
+                        if not resolved:
+                            errors.append(
+                                f"[error]: {entry_id} field {field_name}={v!r} "
+                                f"does not resolve to any protocol primitive "
+                                f"in groups {protocol_groups}"
+                            )
+
+    return errors
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Validate a capability directory against the schema contract"
@@ -212,14 +394,38 @@ def main() -> None:
         help="Path to the capability schema contract YAML file",
     )
     parser.add_argument(
+        "--protocol",
+        type=Path,
+        default=Path("skills/agentera/protocol.yaml"),
+        help="Path to the shared protocol schema YAML file",
+    )
+    parser.add_argument(
         "--self-validate",
         action="store_true",
         help="Validate the contract file against itself (V6: self-referential check)",
     )
+    parser.add_argument(
+        "--validate-protocol",
+        action="store_true",
+        help="Validate protocol.yaml internal consistency",
+    )
+    parser.add_argument(
+        "--check-primitives",
+        action="store_true",
+        help="Check that capability schema primitive references resolve against protocol.yaml",
+    )
     args = parser.parse_args()
 
-    if not args.self_validate and args.capability_dir is None:
-        parser.error("capability_dir is required unless --self-validate is used")
+    if args.validate_protocol:
+        print(f"Validating protocol: {args.protocol}")
+        errors = validate_protocol_self(args.protocol)
+        if errors:
+            print("FAILED:", file=sys.stderr)
+            for e in errors:
+                print(f"  {e}", file=sys.stderr)
+            sys.exit(1)
+        print("PASS: protocol is internally consistent")
+        sys.exit(0)
 
     if args.self_validate:
         print(f"Self-validating contract: {args.contract}")
@@ -232,11 +438,19 @@ def main() -> None:
         print("PASS: contract is self-referentially valid")
         sys.exit(0)
 
+    if args.capability_dir is None:
+        parser.error("capability_dir is required unless --self-validate or --validate-protocol is used")
+
     cap_dir = args.capability_dir.resolve()
     print(f"Validating capability: {cap_dir}")
     print(f"Using contract: {args.contract}")
 
     errors = validate_capability(cap_dir, args.contract)
+
+    if args.check_primitives:
+        print(f"Checking primitive references against: {args.protocol}")
+        errors.extend(check_primitive_references(cap_dir, args.protocol))
+
     if errors:
         print("FAILED:", file=sys.stderr)
         for e in errors:

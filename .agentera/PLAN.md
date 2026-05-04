@@ -48,22 +48,14 @@ Migration tool creates backups by default (copies v1 artifacts to .agentera/back
 
 ## Tasks
 
-### Task 1: Capability Schema Contract + Master SKILL.md Stub
-
-**Depends on**: none
-**Status**: ■ complete
-**Acceptance**:
-▸ GIVEN a capability directory with prose.md and schemas/ WHEN a validator checks the directory THEN it confirms all required groups are present (TRIGGERS, ARTIFACTS, VALIDATION, EXIT_CONDITIONS) ✓ verified: /tmp/test-capability passes, /tmp/test-bad-groups fails with group-specific errors
-▸ GIVEN a capability schema YAML file WHEN parsed THEN each group contains numbered entries with stable IDs, and entries can carry `deprecated` and `replaced_by` flags for schema evolution ✓ verified: contract YAML has numbered entries with IDs (T1-T4, A1-A4, V1-V6, E1-E5), deprecation + replaced_by tested
-▸ GIVEN the capability schema contract file itself WHEN validated against its own rules THEN it passes (self-referential: the schema is a valid instance of itself) ✓ verified: `uv run scripts/validate_capability.py --self-validate` exits 0
-▸ GIVEN the ROADMAP target architecture diagram WHEN the schema contract is defined THEN the directory structure (skills/agentera/capabilities/<name>/schemas/) matches exactly ✓ verified: skills/agentera/{SKILL.md, capability_schema_contract.yaml, capabilities/} exist
-▸ GIVEN each of the 12 v1 SKILL.md files WHEN compared against the schema contract via a mapping table THEN every behavioral section (triggers, workflow, cross-skill, safety rails, exit signals) maps to a schema group with no unmappable content ✓ verified: references/v1-section-mapping.md covers all sections across all 12 skills
-▸ GIVEN the bundled skill directory WHEN created THEN skills/agentera/SKILL.md exists as a stub with routing logic placeholder, trigger pattern discovery instruction, and shared protocol reference ✓ verified: SKILL.md contains routing logic section, trigger pattern discovery section, shared protocol section
-
 ### Task 2: Shared Protocol Schema
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
+**Acceptance**:
+▸ GIVEN protocol.yaml WHEN parsed THEN it defines confidence scale (0-100, 5 tiers with boundaries), severity levels (finding and issue vocabularies), visual tokens (status, severity, confidence, trend glyphs), and phase model (5 phases with valid transitions)
+▸ GIVEN SPEC.md Sections 1, 2, 3, 11, 13, 18 WHEN compared against protocol.yaml via field-by-field mapping table THEN every primitive (confidence tiers, severity values, decision labels, exit statuses, visual glyphs, phases) has a corresponding protocol.yaml entry
+▸ GIVEN a capability schema referencing a shared primitive (e.g. severity: critical) WHEN validated THEN it confirms the reference resolves to a value defined in protocol.yaml
 **Acceptance**:
 ▸ GIVEN protocol.yaml WHEN parsed THEN it defines confidence scale (0-100, 5 tiers with boundaries), severity levels (finding and issue vocabularies), visual tokens (status, severity, confidence, trend glyphs), and phase model (5 phases with valid transitions)
 ▸ GIVEN SPEC.md Sections 1, 2, 3, 11, 13, 18 WHEN compared against protocol.yaml via field-by-field mapping table THEN every primitive (confidence tiers, severity values, decision labels, exit statuses, visual glyphs, phases) has a corresponding protocol.yaml entry
