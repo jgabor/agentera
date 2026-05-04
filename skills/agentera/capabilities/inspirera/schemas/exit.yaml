@@ -1,0 +1,33 @@
+EXIT_CONDITIONS:
+  1:
+    id: E1
+    condition: complete
+    description: >-
+      Source was read deeply, target project was explored (if provided),
+      concept mapping was completed, and a structured analysis with
+      applicability matrix and recommended next steps was delivered.
+    exit_signal: complete
+  2:
+    id: E2
+    condition: flagged
+    description: >-
+      Analysis completed but with limitations worth surfacing: the source
+      was paywalled or truncated, the target project was inaccessible, or
+      key concepts could not be fully assessed for fit.
+    exit_signal: flagged
+  3:
+    id: E3
+    condition: stuck
+    description: >-
+      Cannot proceed because the source URL is inaccessible and no fallback
+      content is available, or the target project specified does not exist
+      and cannot be located.
+    exit_signal: stuck
+  4:
+    id: E4
+    condition: waiting
+    description: >-
+      The source link was not provided or is malformed, or the target
+      project is genuinely ambiguous and neither the current directory
+      nor context resolves it.
+    exit_signal: waiting

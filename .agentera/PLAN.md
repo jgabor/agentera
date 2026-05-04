@@ -109,7 +109,7 @@ Capabilities grouped by functional cluster. Each cluster ports together because 
 ### Task 6: Analytics (profilera, inspirera)
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN each of the two capability directories WHEN validate_capability.py runs THEN all contract checks pass for each
 ▸ GIVEN each capability's prose.md WHEN read THEN it contains the full v1 workflow steps, safety rails, and cross-capability references
