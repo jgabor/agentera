@@ -13,77 +13,11 @@ export const AGENTERA_VERSION = "1.27.1";
 export const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode -y";
 
 export const COMMAND_TEMPLATES = {
-  "hej": `---
-description: "Session entry point: briefing, status, and routing"
+  "agentera": `---
+description: "Compound agent orchestration suite — 12 capabilities in one bundled skill"
 agentera_managed: true
 ---
-Load and execute the hej skill for this project.
-`,
-  "visionera": `---
-description: "Create or refine the project vision"
-agentera_managed: true
----
-Load and execute the visionera skill for this project.
-`,
-  "resonera": `---
-description: "Structured deliberation through Socratic questioning"
-agentera_managed: true
----
-Load and execute the resonera skill for this project.
-`,
-  "inspirera": `---
-description: "Analyze external sources and map patterns to this project"
-agentera_managed: true
----
-Load and execute the inspirera skill for this project.
-`,
-  "planera": `---
-description: "Scale-adaptive planning with acceptance criteria"
-agentera_managed: true
----
-Load and execute the planera skill for this project.
-`,
-  "realisera": `---
-description: "Run one autonomous development cycle"
-agentera_managed: true
----
-Load and execute the realisera skill for this project.
-`,
-  "optimera": `---
-description: "Metric-driven optimization through experimentation"
-agentera_managed: true
----
-Load and execute the optimera skill for this project.
-`,
-  "inspektera": `---
-description: "Codebase health audit with grades and findings"
-agentera_managed: true
----
-Load and execute the inspektera skill for this project.
-`,
-  "dokumentera": `---
-description: "Documentation creation, maintenance, and audit"
-agentera_managed: true
----
-Load and execute the dokumentera skill for this project.
-`,
-  "profilera": `---
-description: "Mine session history into a decision profile"
-agentera_managed: true
----
-Load and execute the profilera skill for this project.
-`,
-  "visualisera": `---
-description: "Visual identity system creation and audit"
-agentera_managed: true
----
-Load and execute the visualisera skill for this project.
-`,
-  "orkestrera": `---
-description: "Multi-cycle plan execution with evaluation gating"
-agentera_managed: true
----
-Load and execute the orkestrera skill for this project.
+Load and execute the agentera bundled skill for this project.
 `,
 };
 
