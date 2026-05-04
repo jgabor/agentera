@@ -1,0 +1,138 @@
+# Agentera 2.0 Roadmap
+
+Decision 39. Big bang cutover from feat/v2 branch/worktree.
+
+## Principles
+
+- Feedback loop is the product. Everything serves compound value across sessions.
+- Spec dissolves into schemas. No central SPEC.md. Per-capability schemas + thin shared protocol.
+- Agent-facing artifacts are structured data, not prose. A query CLI is the seam.
+- One install, one entry point, one query interface.
+
+## Target Architecture
+
+### Distribution
+
+Single bundled skill (`/agentera`) containing 12 capabilities.
+
+```
+skills/agentera/
+  SKILL.md                    # Master entry: routing + shared protocol
+  protocol.yaml               # Shared primitives (confidence, severity, visual tokens)
+  capabilities/
+    hej/
+      prose.md                # Behavioral instructions (agent reads this)
+      schemas/
+        artifacts.yaml        # Artifact shapes hej produces/consumes
+        workflow.yaml         # Steps, triggers, exit conditions
+        validation.yaml       # Validation rules
+    resonera/
+      prose.md
+      schemas/
+        ...
+    ... (12 capabilities total)
+```
+
+### Artifacts
+
+**Human-facing (project root):**
+
+- TODO.md -- open issues, severity-ranked
+- CHANGELOG.md -- release history
+- DESIGN.md -- visual identity system
+
+**Agent-facing (`.agentera/`, structured data):**
+
+- All other state: VISION, PROGRESS, DECISIONS, HEALTH, SESSION, PLAN, OBJECTIVE, EXPERIMENTS, DOCS
+- Format: YAML or JSON (schema-defined per artifact)
+- Queried through the universal CLI, not read directly by the agent
+
+### Query CLI
+
+One command, all state. The agent asks questions; the CLI reads structured artifacts and returns compact answers.
+
+```
+agentera query last-phase                     # What phase was the last cycle?
+agentera query decisions --topic runtime      # Decisions about runtime support
+agentera query health --dimension coupling    # Latest coupling grade
+agentera query open-todos --severity critical # Critical open issues
+```
+
+The CLI is the deep module: one interface, all artifact knowledge behind it. Changing artifact format only affects CLI internals.
+
+### Hooks
+
+Hooks validate against capability-local schemas. No central contracts.json. The hook discovers schemas from the capability directory structure and validates writes against the matching schema.
+
+### Master SKILL.md
+
+Starts full: hej-style orientation briefing + routing to capabilities. Optimization target: thin dispatcher that reads trigger patterns from capability schemas and loads only the matching capability's prose.
+
+## Work Breakdown
+
+### Phase 1: Infrastructure (weeks 1-2)
+
+Build the skeleton that everything else plugs into.
+
+- [ ] Define capability schema contract (what fields a capability schema must contain)
+- [ ] Define shared protocol schema (confidence, severity, visual tokens, phase model)
+- [ ] Build the universal query CLI scaffold
+- [ ] Define agent-facing artifact schemas (one per artifact type)
+- [ ] Build artifact migration tool (current Markdown -> structured data)
+- [ ] Rewrite hook to validate against capability-local schemas
+- [ ] Set up feat/v2 branch and worktree
+
+### Phase 2: Core capabilities (weeks 3-5)
+
+Port the 12 capabilities from prose SKILL.md to prose + schema model.
+
+- [ ] hej (routing + orientation) -- becomes the master SKILL.md's core logic
+- [ ] realisera (autonomous development)
+- [ ] resonera (deliberation)
+- [ ] planera (planning)
+- [ ] inspektera (auditing)
+- [ ] optimera (metric optimization)
+- [ ] orkestrera (multi-skill orchestration)
+- [ ] visionera (vision definition)
+- [ ] visualisera (design system)
+- [ ] dokumentera (documentation)
+- [ ] profilera (decision profiling)
+- [ ] inspirera (external pattern analysis)
+
+### Phase 3: Integration (weeks 5-6)
+
+Wire everything together and validate.
+
+- [ ] Cross-capability dependency resolution via schemas
+- [ ] Hook integration with capability-local schemas
+- [ ] Query CLI commands for all artifact types
+- [ ] Runtime adapter updates (Claude Code, OpenCode, Codex, Copilot)
+- [ ] Port existing 577 tests to the new structure
+- [ ] Smoke tests across all 4 runtimes
+
+### Phase 4: Validation & cutover (week 7)
+
+Prove it works, then switch.
+
+- [ ] Full test suite green
+- [ ] Semantic eval port to 2.0 fixture format
+- [ ] Token consumption benchmark: baseline vs 2.0 (target: 40%+ reduction)
+- [ ] Merge feat/v2 to main
+- [ ] Version bump to 2.0.0
+
+## Success Metrics
+
+| Metric | Current | Target | How to measure |
+|--------|---------|--------|----------------|
+| Tokens per session (typical cross-skill workflow) | baseline | -40% | Token probe before/after |
+| Places to update for new artifact | 3-5 | 1 | Add a test artifact and count touch points |
+| Hook lines of code | 908 | <200 | wc -l |
+| Schema files per capability | 0 | 2-3 | ls skills/agentera/capabilities/*/schemas/ |
+| Install command complexity | 4 runtime-specific | 1 per runtime | Install from scratch on clean machine |
+
+## Open Questions
+
+- Artifact format: YAML vs JSON for agent-facing files. YAML is more human-glanceable; JSON has stricter schema validation. Resolve in Phase 1.
+- Master SKILL.md size: start at what line count? Measure after hej port.
+- Backward compatibility: should v1 artifacts be readable by the 2.0 query CLI during migration? Decision: no -- migration tool handles one-time conversion.
+- Naming: is "capabilities" the right term, or something else (workflows, behaviors, modules)? Resolve in Phase 1 schema contract design.
