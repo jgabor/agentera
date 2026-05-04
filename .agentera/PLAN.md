@@ -106,7 +106,7 @@ Each task is sized for one realisera cycle. Tasks 2 and 3 are independent and ca
 ### Task 6: Migrate and Remove Stale v1 Skill Directories
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 
 - GIVEN skills/optimera/, skills/profilera/, skills/realisera/, skills/visualisera/ WHEN inspected THEN they contain no needed scripts (only empty scripts/**pycache** directories)
