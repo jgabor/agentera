@@ -16,7 +16,7 @@ Glyph: **⧉** (protocol ref: SG2). Used in the mandatory exit marker.
 
 ## State artifacts
 
-Four files, bootstrapped if absent. VISION.md, TODO.md, and CHANGELOG.md at project root; PROGRESS.md in `.agentera/`.
+Four files, bootstrapped if absent. TODO.md and CHANGELOG.md at project root; VISION.md and PROGRESS.md in `.agentera/`.
 
 | File | Purpose | Bootstrap |
 |------|---------|-----------|

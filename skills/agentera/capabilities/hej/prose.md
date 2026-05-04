@@ -34,7 +34,7 @@ No artifacts of its own. Reads all suite artifacts for the briefing:
 
 ### Artifact path resolution
 
-Before reading any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in `.agentera/`.
+Before reading any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`.
 
 PROFILE.md is global, not project-scoped. Its path is determined by profilera: `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`). Check the profilera-determined path directly rather than falling back to the project root.
 
@@ -76,7 +76,7 @@ Check `.agentera/` for v1 Markdown artifacts that lack a corresponding v2 YAML c
 | `.agentera/HEALTH.md` | `.agentera/health.yaml` |
 | `.agentera/SESSION.md` | `.agentera/session.yaml` |
 | `.agentera/DOCS.md` | `.agentera/docs.yaml` |
-| `VISION.md` (project root) | `vision.yaml` (project root) |
+| `VISION.md` (project root) | `.agentera/vision.yaml` |
 
 For each v1 file that exists where the corresponding v2 file does **not**:
 

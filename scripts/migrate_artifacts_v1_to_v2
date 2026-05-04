@@ -769,7 +769,7 @@ def _build_yaml(data: dict[str, Any], artifact_name: str) -> str:
 def _get_output_path(artifact_name: str, project_dir: Path) -> Path:
     yaml_name = _strip_md_extension(artifact_name) + ".yaml"
     if artifact_name == "VISION.md":
-        return project_dir / "vision.yaml"
+        return project_dir / ".agentera" / "vision.yaml"
     return project_dir / ".agentera" / yaml_name
 
 

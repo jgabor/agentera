@@ -15,6 +15,6 @@
     "singleSkillInstall": "Single-skill installs keep core SKILL.md workflow behavior; suite tools are bundle-only enhancements."
   },
   "dependencies": {
-    "@opencode-ai/plugin": "1.4.6"
+    "@opencode-ai/plugin": "1.14.33"
   }
 }

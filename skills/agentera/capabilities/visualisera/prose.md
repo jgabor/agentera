@@ -26,7 +26,7 @@ Full spec at `references/DESIGN-spec.md` (v1 path: `skills/visualisera/reference
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/DESIGN.md, etc.). If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, .agentera/DECISIONS.md, PROFILE.md).
+Before reading or writing any artifact, check if `.agentera/DOCS.md` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/DESIGN.md, etc.). If `.agentera/DOCS.md` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, .agentera/DECISIONS.md, PROFILE.md).
 
 ### Contract values
 
