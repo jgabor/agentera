@@ -149,8 +149,8 @@ Each task is sized for one realisera cycle. Tasks 2 and 3 are independent and ca
 
 ### Task 10: Port Semantic Eval Fixture to v2 Format
 
-**Depends on**: Task 3
-**Status**: □ pending
+**Depends on**: Task 1, Task 3
+**Status**: ■ complete
 **Acceptance**:
 
 - GIVEN the v1 fixture fixtures/semantic/hej-routing-task3.md WHEN ported to v2 format THEN it references /agentera and YAML artifact paths
