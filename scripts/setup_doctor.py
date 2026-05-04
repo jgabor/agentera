@@ -80,7 +80,6 @@ CANONICAL_ENTRIES = (
     "skills/agentera/SKILL.md",
 )
 HELPER_ENTRIES = (
-    "scripts/compact_artifact.py",
     "scripts/validate_capability.py",
     "hooks/validate_artifact.py",
 )

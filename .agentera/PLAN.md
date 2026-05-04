@@ -82,7 +82,7 @@ Each task is sized for one realisera cycle. Tasks 2 and 3 are independent and ca
 ### Task 4: Update Tests, Compaction Logic, and Hooks for YAML Artifacts
 
 **Depends on**: Task 3
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 
 - GIVEN test_compaction.py WHEN checked THEN it creates and parses YAML artifacts (not Markdown) or is retired if compaction is no longer needed for YAML
