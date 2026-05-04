@@ -1,0 +1,36 @@
+EXIT_CONDITIONS:
+  1:
+    id: E1
+    condition: complete
+    description: >-
+      All selected audit dimensions were assessed, findings were synthesized,
+      grades were assigned, HEALTH.md was updated, and the user was presented
+      with actionable results.
+    exit_signal: complete
+  2:
+    id: E2
+    condition: flagged
+    description: >-
+      The audit completed but with notable caveats: dimensions were skipped
+      due to missing tooling, confidence was too low to grade reliably, or
+      critical findings require urgent attention beyond audit scope.
+      Each concern is listed explicitly.
+    exit_signal: flagged
+  3:
+    id: E3
+    condition: stuck
+    description: >-
+      Cannot complete the audit because the project is inaccessible, required
+      language tooling is unavailable and manual analysis is not feasible, or
+      filing findings to TODO.md was declined by the user and results cannot
+      be safely surfaced any other way.
+    exit_signal: stuck
+  4:
+    id: E4
+    condition: waiting
+    description: >-
+      The audit target is ambiguous: no project was identified, the codebase
+      is too incomplete to assess meaningfully, or the user's request
+      specifies dimensions that cannot be evaluated without additional
+      information.
+    exit_signal: waiting
