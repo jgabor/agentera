@@ -53,7 +53,7 @@ Integration work: no new architectural decisions. Each task connects existing pi
 ### Task 3: Query CLI Expansion
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the agentera query CLI WHEN invoked with each of the 9 artifact schema names THEN it returns valid data or a clear "no data" message
 ▸ GIVEN the agentera query CLI WHEN invoked with --list-artifacts THEN it lists all 9 artifact types from schema discovery
