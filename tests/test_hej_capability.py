@@ -138,3 +138,55 @@ def test_hej_is_fallback_capability():
     triggers = _collect_all_triggers()
     hej_patterns = triggers.get("hej", [])
     assert "*" in hej_patterns, "hej must have the wildcard fallback pattern '*'"
+
+
+# ---------------------------------------------------------------------------
+# 5. Upgrade guard: v1 artifacts detected → upgrade notice in briefing
+# ---------------------------------------------------------------------------
+
+def test_upgrade_guard_includes_v1_detection_logic():
+    prose_path = HEJ_CAP_DIR / "prose.md"
+    content = prose_path.read_text()
+
+    assert "Step 0.5: Upgrade guard" in content, "prose.md must contain upgrade guard step"
+
+    for v1_artifact in ["PROGRESS.md", "PLAN.md", "DECISIONS.md", "HEALTH.md"]:
+        assert v1_artifact in content, f"upgrade guard must reference v1 artifact {v1_artifact}"
+
+    assert "migrate_artifacts_v1_to_v2" in content, "upgrade guard must reference the migration command"
+
+
+def test_upgrade_guard_specifies_no_notice_when_no_v1():
+    prose_path = HEJ_CAP_DIR / "prose.md"
+    content = prose_path.read_text()
+
+    assert "no upgrade notice" in content.lower() or "emit no upgrade notice" in content.lower(), \
+        "upgrade guard must specify that no notice is emitted when v1 artifacts are absent"
+
+
+# ---------------------------------------------------------------------------
+# 6. Upgrade guard: PROFILE.md present → no warning
+# ---------------------------------------------------------------------------
+
+def test_upgrade_guard_no_warning_when_profile_present():
+    prose_path = HEJ_CAP_DIR / "prose.md"
+    content = prose_path.read_text()
+
+    profile_section = content[content.index("PROFILE.md detection"):]
+    assert "profile   loaded" in profile_section, "guard must specify 'loaded' when PROFILE.md exists"
+    assert "No warning" in profile_section or "no warning" in profile_section.lower(), \
+        "guard must specify no warning when PROFILE.md exists"
+
+
+# ---------------------------------------------------------------------------
+# 7. Upgrade guard: PROFILE.md absent → degraded attention item
+# ---------------------------------------------------------------------------
+
+def test_upgrade_guard_flags_missing_profile_as_degraded():
+    prose_path = HEJ_CAP_DIR / "prose.md"
+    content = prose_path.read_text()
+
+    profile_section = content[content.index("PROFILE.md detection"):]
+    assert "profile   not found" in profile_section, "guard must specify 'not found' when PROFILE.md is absent"
+    assert "⇉" in profile_section, "guard must use degraded severity arrow for missing PROFILE.md"
+    assert "/profilera" in profile_section, "guard must reference /profilera as the remediation"
