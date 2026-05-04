@@ -1,0 +1,432 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["pyyaml"]
+# ///
+"""agentera CLI: query project state and print agent-priming guidance.
+
+Two commands:
+  agentera prime             Print static agent-priming guidance
+  agentera query <pattern>   Query project artifacts
+
+Query patterns:
+  last-phase                     Last cycle's phase (from progress)
+  decisions [--topic TOPIC]      Decision log
+  health [--dimension DIM]       Latest audit data
+  open-todos [--severity LEVEL]  Open issues from TODO.md
+  <artifact-name>                Generic query against any discovered schema
+
+Schema discovery is automatic. The CLI reads artifact schemas from
+skills/agentera/schemas/artifacts/ (relative to AGENTERA_HOME or cwd)
+and supports queries against any artifact whose schema exists.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+PRIME_BLOB = """\
+# agentera priming guide
+
+## Routing: agentera vs native tools
+
+Use `agentera query <pattern>` for questions about project state.
+Use native tools (read, grep, glob, edit, bash) for source code operations.
+
+agentera queries return compact answers from structured state. Do NOT read
+raw YAML artifacts directly. The CLI is the seam between agent and state.
+
+Supported queries:
+  agentera prime                                # Print this guide
+  agentera query last-phase                     # Last cycle's phase
+  agentera query decisions [--topic TOPIC]      # Decision log
+  agentera query health [--dimension DIM]       # Latest health audit
+  agentera query open-todos [--severity LEVEL]  # Open issues from TODO.md
+  agentera query <artifact-name>                # Any discovered artifact
+
+When to use agentera:
+  - "What phase was last cycle?"        → agentera query last-phase
+  - "What did we decide about X?"       → agentera query decisions --topic X
+  - "How's the codebase health?"        → agentera query health
+  - "What's the coupling grade?"        → agentera query health --dimension coupling_health
+  - "Any critical open issues?"         → agentera query open-todos --severity critical
+
+When to use native tools:
+  - Reading or editing source code      → native read/edit/grep
+  - Searching files                     → native glob/grep
+  - Running commands                    → native bash
+  - Browsing the web                    → native fetch
+
+## Recovery: stale or missing artifacts
+
+If `agentera query` returns empty:
+  1. The artifact may not exist yet (no data has been written to it).
+  2. Run without filters to see all available data.
+  3. If data is stale, the producing capability needs to run again.
+
+If artifacts are corrupted:
+  1. Check the YAML file in .agentera/ directly.
+  2. Validate against the schema in skills/agentera/schemas/artifacts/.
+  3. Re-run the producing capability to regenerate the artifact.
+
+If schemas are missing:
+  1. Set AGENTERA_HOME to the agentera install root.
+  2. Verify skills/agentera/schemas/artifacts/ contains YAML files.
+"""
+
+
+def _discover_schemas_dir() -> Path:
+    env = os.environ.get("AGENTERA_HOME")
+    if env:
+        return Path(env) / "skills" / "agentera" / "schemas" / "artifacts"
+    return Path.cwd() / "skills" / "agentera" / "schemas" / "artifacts"
+
+
+def _load_schemas(schemas_dir: Path) -> dict[str, dict[str, Any]]:
+    if not schemas_dir.is_dir():
+        return {}
+    schemas: dict[str, dict[str, Any]] = {}
+    for schema_file in sorted(schemas_dir.glob("*.yaml")):
+        try:
+            with open(schema_file) as f:
+                schema = yaml.safe_load(f)
+        except Exception:
+            continue
+        if not isinstance(schema, dict):
+            continue
+        meta = schema.get("meta", {})
+        name = meta.get("name", "")
+        artifact_path = meta.get("path", "")
+        if not name:
+            continue
+        fields = _discover_fields(schema)
+        schemas[name] = {
+            "path": artifact_path,
+            "schema": schema,
+            "fields": fields,
+        }
+    return schemas
+
+
+def _discover_fields(schema: dict) -> dict[str, dict]:
+    skip = {
+        "meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION",
+        "ARCHIVE",
+    }
+    fields: dict[str, dict] = {}
+    for group_key, group_val in schema.items():
+        if group_key in skip or not isinstance(group_val, dict):
+            continue
+        for _num, entry in group_val.items():
+            if isinstance(entry, dict) and "field" in entry:
+                fields[entry["field"]] = entry
+    return fields
+
+
+def _resolve_artifact_path(artifact_rel_path: str) -> Path:
+    p = Path(artifact_rel_path)
+    if p.is_absolute():
+        return p
+    return Path.cwd() / p
+
+
+def _load_artifact(path: Path) -> Any:
+    if not path.exists():
+        return None
+    try:
+        with open(path) as f:
+            return yaml.safe_load(f)
+    except Exception:
+        return None
+
+
+def _extract_entries(data: Any) -> list[dict]:
+    if data is None:
+        return []
+    if isinstance(data, list):
+        return [e for e in data if isinstance(e, dict)]
+    if isinstance(data, dict):
+        for key, val in data.items():
+            if key == "archive":
+                continue
+            if isinstance(val, list) and val and isinstance(val[0], dict):
+                return val
+        return [data]
+    return []
+
+
+def _string_field_names(fields: dict) -> list[str]:
+    return [n for n, d in fields.items() if d.get("type") == "string"]
+
+
+def _filter_by_topic(entries: list[dict], topic: str, fields: dict) -> list[dict]:
+    t = topic.lower()
+    fnames = _string_field_names(fields)
+    return [
+        e for e in entries
+        if any(t in str(e.get(fn, "")).lower() for fn in fnames)
+    ]
+
+
+def _filter_by_field_value(
+    entries: list[dict],
+    field_name: str,
+    value: str,
+    *,
+    substring: bool = False,
+) -> list[dict]:
+    vl = value.lower()
+    result = []
+    for e in entries:
+        v = e.get(field_name)
+        if v is None:
+            continue
+        if isinstance(v, str):
+            if (substring and vl in v.lower()) or (not substring and v.lower() == vl):
+                result.append(e)
+        elif isinstance(v, list):
+            strs = [str(x).lower() for x in v]
+            if vl in strs or (substring and any(vl in s for s in strs)):
+                result.append(e)
+        elif isinstance(v, dict):
+            if vl in v or (substring and any(vl in str(k).lower() for k in v)):
+                result.append(e)
+    return result
+
+
+_PRIORITY_FIELDS = [
+    "number", "name", "title", "date", "timestamp", "status",
+    "phase", "choice", "grade", "type", "label", "trajectory",
+    "confidence",
+]
+
+
+def _display_fields(fields: dict, limit: int = 6) -> list[str]:
+    ordered = [p for p in _PRIORITY_FIELDS if p in fields]
+    for fn in fields:
+        if fn not in ordered:
+            ordered.append(fn)
+    return ordered[:limit]
+
+
+def _format_scalar(val: Any) -> str:
+    if isinstance(val, (list, dict)):
+        s = str(val)
+        return s[:80] + "..." if len(s) > 80 else s
+    return str(val)
+
+
+def cmd_prime(_args: argparse.Namespace) -> int:
+    print(PRIME_BLOB, end="")
+    return 0
+
+
+def _query_last_phase(args: argparse.Namespace, schemas: dict) -> int:
+    info = schemas.get("progress")
+    if not info:
+        print("No progress schema found", file=sys.stderr)
+        return 1
+    data = _load_artifact(_resolve_artifact_path(info["path"]))
+    entries = _extract_entries(data)
+    if not entries:
+        return 0
+    last = entries[-1]
+    phase = last.get("phase", "")
+    if phase:
+        print(phase)
+    return 0
+
+
+def _query_decisions(args: argparse.Namespace, schemas: dict) -> int:
+    info = schemas.get("decisions")
+    if not info:
+        print("No decisions schema found", file=sys.stderr)
+        return 1
+    data = _load_artifact(_resolve_artifact_path(info["path"]))
+    entries = _extract_entries(data)
+    if not entries:
+        return 0
+    topic = getattr(args, "topic", None)
+    if topic:
+        entries = _filter_by_topic(entries, topic, info["fields"])
+    disp = _display_fields(info["fields"])
+    for e in entries:
+        parts = []
+        for fn in disp:
+            v = e.get(fn)
+            if v is not None and v != "" and not isinstance(v, (list, dict)):
+                parts.append(f"{fn}={v}")
+        if parts:
+            print(" | ".join(parts))
+    return 0
+
+
+def _query_health(args: argparse.Namespace, schemas: dict) -> int:
+    info = schemas.get("health")
+    if not info:
+        print("No health schema found", file=sys.stderr)
+        return 1
+    data = _load_artifact(_resolve_artifact_path(info["path"]))
+    entries = _extract_entries(data)
+    if not entries:
+        return 0
+    dimension = getattr(args, "dimension", None)
+    latest = entries[-1]
+    if dimension:
+        dim_lower = dimension.lower()
+        grades = latest.get("grades", {})
+        matched = False
+        for gk, gv in grades.items():
+            if dim_lower in gk.lower():
+                print(f"{gk}: {gv}")
+                matched = True
+        details = latest.get("dimensions_detail", [])
+        for d in details:
+            dn = d.get("name", "")
+            if dim_lower in dn.lower():
+                summary = d.get("summary", "")
+                if summary:
+                    print(f"  {summary}")
+                for f in d.get("findings", []):
+                    sev = f.get("severity", "")
+                    heading = f.get("heading", "")
+                    print(f"  [{sev}] {heading}")
+                matched = True
+        if not matched:
+            return 0
+    else:
+        num = latest.get("number", "?")
+        traj = latest.get("trajectory", "")
+        print(f"Audit {num}: {traj}")
+        grades = latest.get("grades", {})
+        for gk, gv in grades.items():
+            print(f"  {gk}: {gv}")
+    return 0
+
+
+def _query_open_todos(args: argparse.Namespace, _schemas: dict) -> int:
+    todo_path = Path.cwd() / "TODO.md"
+    if not todo_path.exists():
+        return 0
+    severity = getattr(args, "severity", None)
+    text = todo_path.read_text()
+    sev_map = {
+        "critical": "\u21f6",
+        "degraded": "\u21c9",
+        "warning": "\u21c9",
+        "normal": "\u2192",
+        "info": "\u21e2",
+        "annoying": "\u21e2",
+    }
+    marker = sev_map.get(severity.lower(), severity) if severity else None
+    current_section = None
+    found = False
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("## "):
+            section = s[3:].strip()
+            if section == "Resolved":
+                current_section = None
+                continue
+            current_section = section
+            continue
+        if current_section is None:
+            continue
+        if not s.startswith("- [ ]"):
+            continue
+        if marker and marker not in current_section:
+            continue
+        found = True
+        item = s[5:].strip()
+        print(f"[{current_section}] {item}")
+    return 0
+
+
+def _query_generic(args: argparse.Namespace, schemas: dict, name: str) -> int:
+    info = schemas[name]
+    data = _load_artifact(_resolve_artifact_path(info["path"]))
+    entries = _extract_entries(data)
+    if not entries:
+        return 0
+    topic = getattr(args, "topic", None)
+    sev = getattr(args, "severity", None)
+    dim = getattr(args, "dimension", None)
+    if topic:
+        entries = _filter_by_topic(entries, topic, info["fields"])
+    if sev:
+        entries = _filter_by_field_value(entries, "severity", sev)
+    if dim:
+        entries = _filter_by_field_value(entries, "dimension", dim, substring=True)
+        if not entries:
+            entries = _filter_by_field_value(
+                _extract_entries(data), "dimensions", dim, substring=True,
+            )
+    disp = _display_fields(info["fields"])
+    for e in entries:
+        parts = []
+        for fn in disp:
+            v = e.get(fn)
+            if v is not None and v != "" and not isinstance(v, (list, dict)):
+                parts.append(f"{fn}={_format_scalar(v)}")
+        if parts:
+            print(" | ".join(parts))
+    return 0
+
+
+def cmd_query(args: argparse.Namespace) -> int:
+    query: str = args.query
+    schemas = _load_schemas(_discover_schemas_dir())
+    handlers = {
+        "last-phase": _query_last_phase,
+        "decisions": _query_decisions,
+        "health": _query_health,
+        "open-todos": _query_open_todos,
+    }
+    if query in handlers:
+        return handlers[query](args, schemas)
+    if query in schemas:
+        return _query_generic(args, schemas, query)
+    for name in schemas:
+        if query in (name, name.rstrip("s"), name + "s"):
+            return _query_generic(args, schemas, name)
+    print(f"Unknown query: {query}", file=sys.stderr)
+    return 1
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="agentera",
+        description="agentera: query project state and print priming guidance",
+    )
+    sub = parser.add_subparsers(dest="command")
+    sub.add_parser(
+        "prime",
+        help="Print agent-priming guidance (routing, recovery)",
+    )
+    q = sub.add_parser("query", help="Query project artifacts")
+    q.add_argument("query", help="Query pattern or artifact name")
+    q.add_argument("--topic", help="Filter by topic (substring match on text fields)")
+    q.add_argument("--severity", help="Filter by severity level")
+    q.add_argument("--dimension", help="Filter by dimension name")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.command == "prime":
+        return cmd_prime(args)
+    if args.command == "query":
+        return cmd_query(args)
+    parser.print_help()
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
