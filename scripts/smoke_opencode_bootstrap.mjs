@@ -59,7 +59,7 @@ try {
   // --- Test 0: Documented manual install root ---
   const documentedRoot = path.join(tmpdir, ".agents", "agentera");
   fs.mkdirSync(path.join(documentedRoot, "scripts"), { recursive: true });
-  fs.writeFileSync(path.join(documentedRoot, "scripts", "validate_spec.py"), "#!/usr/bin/env python3\n");
+  fs.writeFileSync(path.join(documentedRoot, "scripts", "validate_capability.py"), "#!/usr/bin/env python3\n");
   assert(
     resolveAgenteraHome() === documentedRoot,
     "resolveAgenteraHome should honor ~/.agents/agentera before legacy skills path"
@@ -426,8 +426,8 @@ try {
 
   // --- Test 12: shell.env injection — not-discoverable branch ---
   // Move the marker script away so resolveAgenteraHome returns null.
-  const stagedScript = path.join(documentedRoot, "scripts", "validate_spec.py");
-  const parkedScript = path.join(tmpdir, "_parked_validate_spec.py");
+  const stagedScript = path.join(documentedRoot, "scripts", "validate_capability.py");
+  const parkedScript = path.join(tmpdir, "_parked_validate_capability.py");
   fs.renameSync(stagedScript, parkedScript);
   delete process.env.AGENTERA_HOME;
   const hooksMissing = await Agentera({}, {});

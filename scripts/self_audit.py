@@ -3,23 +3,22 @@
 # requires-python = ">=3.10"
 # dependencies = []
 # ///
-"""Self-audit checks for artifact writing conventions (SPEC §24).
+"""Self-audit checks for artifact writing conventions.
 
 Three functions implement the mandatory pre-write gate: verbosity drift,
 abstraction creep, and filler accumulation. Advisory only — report but
 do not block writes.
 """
 
-# Known drift risk: §24 banned verbosity patterns are hardcoded.
-# When patterns change in SPEC.md §24, update _BANNED_PATTERNS below.
-# Deferred: extract from SPEC.md via generate_contracts.py --schema (§24 extension).
+# Banned verbosity patterns are hardcoded. Update _BANNED_PATTERNS below
+# when the suite's style conventions evolve.
 
 from __future__ import annotations
 
 import re
 
 # ---------------------------------------------------------------------------
-# Per-entry token budgets (SPEC.md §4 Token budgets table)
+# Per-entry token budgets (protocol.yaml BUDGET groups)
 # If an artifact has no explicit per-entry budget, use full-file budget / 5.
 # ---------------------------------------------------------------------------
 
@@ -47,7 +46,7 @@ _PER_ENTRY_BUDGETS: dict[str, int] = {
 }
 
 # ---------------------------------------------------------------------------
-# Concrete anchor patterns (SPEC.md §24 Check 2 — Abstraction creep)
+# Concrete anchor patterns (Self-Audit Protocol Check 2 — Abstraction creep)
 # ---------------------------------------------------------------------------
 
 _FILE_PATH_RE = re.compile(
@@ -68,7 +67,7 @@ _QUOTED_TEXT_RE = re.compile(r"""[^"]*"[^"]+"[^"]*""")
 
 
 # ---------------------------------------------------------------------------
-# Banned verbosity patterns (SPEC.md §24 Banned verbosity patterns table)
+# Banned verbosity patterns (Self-Audit Protocol banned patterns)
 # ---------------------------------------------------------------------------
 
 _BANNED_PATTERNS: list[tuple[str, str]] = [

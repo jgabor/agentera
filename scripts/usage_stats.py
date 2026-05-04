@@ -27,7 +27,7 @@ overridden for tests via the ``AGENTERA_USAGE_DIR`` env var (mirrors
 ``PROFILERA_PROFILE_DIR``); the corpus path defaults to the standard
 ``$PROFILERA_PROFILE_DIR/intermediate/corpus.json`` location.
 
-Marker format (per SPEC.md sections 5 + 12)::
+Marker format (per protocol.yaml workflow markers)::
 
     ─── <glyph> <skillname> · <word> ───
 
