@@ -1,0 +1,305 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["pyyaml"]
+# ///
+"""Detect stale runtime artifacts left behind by v1 skill installations.
+
+After ``npx skills update`` from v1 to v2, users may have residual
+artifacts in three runtime surfaces:
+
+1. **Claude skills** (``~/.agents/skills/``): dead symlinks pointing
+   at removed v1 skill directories (the 12 v1 skill dirs like
+   ``skills/hej/``, ``skills/realisera/``, etc. were consolidated into
+   ``skills/agentera/`` in v2).
+2. **OpenCode commands** (``~/.config/opencode/commands/``): command
+   files whose content references removed v1 skill paths.
+3. **Codex config** (``~/.codex/config.toml``): ``[agents.<name>]``
+   entries pointing at removed v1 skill ``agents/<name>.toml`` paths.
+
+Default mode is ``--dry-run``: report findings without modifying files.
+Use ``--fix`` to remove reported artifacts.
+
+Exit codes:
+
+    0  no stale artifacts found
+    1  stale artifacts found (dry-run) or cleaned (--fix)
+    2  error (invalid arguments, unreadable paths)
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import sys
+import tomllib
+from pathlib import Path
+from typing import Any, NamedTuple
+
+import yaml
+
+V1_SKILL_NAMES = (
+    "hej",
+    "realisera",
+    "resonera",
+    "planera",
+    "inspektera",
+    "optimera",
+    "orkestrera",
+    "visionera",
+    "visualisera",
+    "dokumentera",
+    "profilera",
+    "inspirera",
+)
+
+V1_SKILL_PATH_PATTERN = re.compile(
+    r"(?:skills|\.agents/skills)/("
+    + "|".join(re.escape(n) for n in V1_SKILL_NAMES)
+    + r")/"
+)
+
+
+class Finding(NamedTuple):
+    surface: str
+    kind: str
+    path: str
+    detail: str
+
+
+def _home_dir(env: dict[str, str] | None = None) -> Path:
+    source = env or os.environ
+    return Path(source.get("HOME", Path.home())).expanduser().resolve()
+
+
+def _opencode_config_dir(home: Path, env: dict[str, str] | None = None) -> Path:
+    source = env or os.environ
+    value = source.get("OPENCODE_CONFIG_DIR")
+    return Path(value).expanduser().resolve() if value else home / ".config" / "opencode"
+
+
+def _claude_skills_dir(home: Path) -> Path:
+    return home / ".agents" / "skills"
+
+
+def _codex_config_path(home: Path) -> Path:
+    return home / ".codex" / "config.toml"
+
+
+def detect_claude_dead_symlinks(
+    home: Path,
+    env: dict[str, str] | None = None,
+) -> list[Finding]:
+    skills_dir = _claude_skills_dir(home)
+    findings: list[Finding] = []
+
+    for name in V1_SKILL_NAMES:
+        candidate = skills_dir / name
+        if not candidate.is_symlink():
+            continue
+        target = candidate.resolve()
+        if target.exists():
+            continue
+        findings.append(Finding(
+            surface="claude",
+            kind="dead_symlink",
+            path=str(candidate),
+            detail=f"symlink target does not exist: {os.readlink(candidate)}",
+        ))
+
+    return findings
+
+
+def detect_opencode_stale_commands(
+    home: Path,
+    env: dict[str, str] | None = None,
+) -> list[Finding]:
+    config_dir = _opencode_config_dir(home, env)
+    commands_dir = config_dir / "commands"
+    findings: list[Finding] = []
+
+    if not commands_dir.is_dir():
+        return findings
+
+    for entry in sorted(commands_dir.iterdir()):
+        if not entry.is_file():
+            continue
+        if entry.suffix not in (".md", ".txt"):
+            continue
+        try:
+            text = entry.read_text(encoding="utf-8")
+        except OSError:
+            continue
+
+        match = V1_SKILL_PATH_PATTERN.search(text)
+        if match:
+            findings.append(Finding(
+                surface="opencode",
+                kind="stale_command",
+                path=str(entry),
+                detail=f"references removed v1 skill path containing '{match.group(0)}'",
+            ))
+
+    return findings
+
+
+def detect_codex_stale_agents(
+    home: Path,
+    env: dict[str, str] | None = None,
+) -> list[Finding]:
+    config_path = _codex_config_path(home)
+    findings: list[Finding] = []
+
+    if not config_path.is_file():
+        return findings
+
+    try:
+        text = config_path.read_text(encoding="utf-8")
+    except OSError:
+        return findings
+
+    if not text.strip():
+        return findings
+
+    try:
+        data = tomllib.loads(text)
+    except tomllib.TOMLDecodeError:
+        return findings
+
+    agents = data.get("agents")
+    if not isinstance(agents, dict):
+        return findings
+
+    for name in V1_SKILL_NAMES:
+        block = agents.get(name)
+        if not isinstance(block, dict):
+            continue
+
+        config_file = block.get("config_file")
+        if not isinstance(config_file, str):
+            continue
+
+        if V1_SKILL_PATH_PATTERN.search(config_file):
+            resolved = Path(config_file).expanduser().resolve()
+            if not resolved.exists():
+                findings.append(Finding(
+                    surface="codex",
+                    kind="stale_agent",
+                    path=str(config_path),
+                    detail=(
+                        f"[agents.{name}].config_file points at removed "
+                        f"v1 skill path: {config_file}"
+                    ),
+                ))
+
+    return findings
+
+
+def run_detection(
+    home: Path | None = None,
+    env: dict[str, str] | None = None,
+) -> list[Finding]:
+    effective_env = env or dict(os.environ)
+    h = home or _home_dir(effective_env)
+
+    findings: list[Finding] = []
+    findings.extend(detect_claude_dead_symlinks(h, effective_env))
+    findings.extend(detect_opencode_stale_commands(h, effective_env))
+    findings.extend(detect_codex_stale_agents(h, effective_env))
+    return findings
+
+
+def fix_findings(findings: list[Finding]) -> list[tuple[Finding, str]]:
+    results: list[tuple[Finding, str]] = []
+
+    for finding in findings:
+        try:
+            if finding.kind == "dead_symlink":
+                Path(finding.path).unlink()
+                results.append((finding, "removed"))
+            elif finding.kind == "stale_command":
+                Path(finding.path).unlink()
+                results.append((finding, "removed"))
+            elif finding.kind == "stale_agent":
+                results.append((finding, "skipped (edit ~/.codex/config.toml manually)"))
+        except OSError as exc:
+            results.append((finding, f"error: {exc}"))
+
+    return results
+
+
+def render_findings(findings: list[Finding]) -> str:
+    if not findings:
+        return "no stale v1 artifacts found"
+
+    by_surface: dict[str, list[Finding]] = {}
+    for f in findings:
+        by_surface.setdefault(f.surface, []).append(f)
+
+    lines: list[str] = [f"found {len(findings)} stale v1 artifact(s):"]
+    for surface in ("claude", "opencode", "codex"):
+        group = by_surface.get(surface, [])
+        if not group:
+            continue
+        lines.append(f"")
+        lines.append(f"{surface}:")
+        for f in group:
+            lines.append(f"  [{f.kind}] {f.path}")
+            lines.append(f"    {f.detail}")
+
+    return "\n".join(lines)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="detect_stale_v1",
+        description=(
+            "Detect (and optionally remove) stale runtime artifacts "
+            "left behind by v1 skill installations. Default mode is "
+            "--dry-run: report findings without modifying files."
+        ),
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=True,
+        help="Report findings without modifying files (default).",
+    )
+    parser.add_argument(
+        "--fix",
+        action="store_true",
+        default=False,
+        help="Remove reported artifacts (dead symlinks, stale commands). "
+             "Codex agent entries are reported but not auto-removed.",
+    )
+    parser.add_argument(
+        "--home",
+        type=Path,
+        default=None,
+        help="Override HOME directory (for testing).",
+    )
+    args = parser.parse_args(argv)
+
+    effective_env = dict(os.environ)
+    home = args.home.expanduser().resolve() if args.home else _home_dir(effective_env)
+
+    findings = run_detection(home=home, env=effective_env)
+
+    if args.fix:
+        results = fix_findings(findings)
+        for finding, status in results:
+            print(f"  {status}: {finding.path} ({finding.kind})")
+        remaining = [f for f, s in results if "removed" not in s]
+        if remaining:
+            print(f"\n{len(remaining)} artifact(s) require manual cleanup:")
+            for f in remaining:
+                print(f"  {f.detail}")
+        return 0
+
+    print(render_findings(findings))
+    return 1 if findings else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
