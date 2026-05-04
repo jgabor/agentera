@@ -16,7 +16,7 @@ import pytest
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-MIGRATE_SCRIPT = REPO_ROOT / "scripts" / "migrate_v1_to_v2"
+MIGRATE_SCRIPT = REPO_ROOT / "scripts" / "migrate_artifacts_v1_to_v2"
 
 
 def _load_migrate() -> ModuleType:
