@@ -138,7 +138,7 @@ Each task is sized for one realisera cycle. Tasks 2 and 3 are independent and ca
 ### Task 9: Rewrite README for Single-Entry-Point /agentera Model
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 
 - GIVEN README.md WHEN read THEN /agentera is described as the only slash command
