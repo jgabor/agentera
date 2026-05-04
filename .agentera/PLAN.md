@@ -33,7 +33,7 @@ Merge feat/v2 into main via fast-forward or merge commit. Retire v1 infrastructu
 ### Task 1: Pre-merge Validation
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the feat/v2 branch WHEN pytest runs THEN 744+ tests pass with 0 failures
 ▸ GIVEN the feat/v2 branch WHEN all 12 capabilities are validated via validate_capability.py THEN all pass contract + primitives
