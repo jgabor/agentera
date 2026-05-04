@@ -27,7 +27,6 @@ scripts/
   validate_capability.py            # Validate a capability against the schema contract
   eval_skills.py                    # Tier 2 eval runner (smoke-tests via claude -p)
   semantic_eval.py                  # Offline semantic eval for captured fixtures
-  generate_contracts.py             # Contract generation and freshness checks
   usage_stats.py                    # Usage report from profilera corpus
 hooks/
   hooks.json                        # Hook registry
@@ -60,7 +59,17 @@ uv run scripts/validate_capability.py --self-validate
 
 ## Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/DOCS.md` exists with an Artifact Mapping section. If absent, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in `.agentera/`.
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists with an Artifact Mapping section. If absent, use the default layout:
+
+- Human-facing artifacts at project root: `TODO.md`, `CHANGELOG.md`, `DESIGN.md`
+- Agent-facing artifacts in `.agentera/`: `progress.yaml`, `decisions.yaml`, `health.yaml`, `plan.yaml`, `docs.yaml`, `vision.yaml`, `session.yaml`, `changelog.yaml`, `design.yaml`, `todo.yaml`, and per-objective `objective.yaml` / `experiments.yaml`
+
+Query and validate artifacts via the CLI:
+
+```bash
+python3 scripts/agentera --show-schema <artifact>
+python3 scripts/agentera --validate <artifact> <path>
+```
 
 ## Key conventions
 
