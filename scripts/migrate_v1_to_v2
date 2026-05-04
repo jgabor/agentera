@@ -6,5 +6,8 @@
 """Deprecated: use scripts/migrate_artifacts_v1_to_v2 instead."""
 import sys
 import os
+import subprocess
 print("WARNING: scripts/migrate_v1_to_v2 is deprecated. Use scripts/migrate_artifacts_v1_to_v2.", file=sys.stderr)
-os.execv(os.path.join(os.path.dirname(__file__), "migrate_artifacts_v1_to_v2"), [os.path.join(os.path.dirname(__file__), "migrate_artifacts_v1_to_v2")] + sys.argv[1:])
+script_dir = os.path.dirname(os.path.abspath(sys.argv[0])) if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__)) if "__file__" in dir() else os.getcwd()
+target = os.path.join(script_dir, "migrate_artifacts_v1_to_v2")
+raise SystemExit(subprocess.run([sys.executable, target] + sys.argv[1:]).returncode)
