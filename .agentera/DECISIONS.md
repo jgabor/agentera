@@ -2,22 +2,6 @@
 
 Reasoning trail maintained by resonera. Each deliberation session appends one entry. Decisions are referenced by realisera, optimera, and profilera for context on why choices were made.
 
-## Decision 29 · 2026-04-11
-
-**Question**: How should optimera handle measurement archetypes that go beyond thin command-wrapper harnesses, and what should the first such reference look like?
-**Context**: A /inspirera analysis of leda's benchmark suite proposed shipping `scripts/benchmark_skill.sh` at agentera's repo root plus a thin `.optimera/harness` wrapper (leda's own pattern). Two things didn't sit right: (1) that shape imposes leda-style infrastructure where optimera's philosophy says the harness is bespoke per project, and (2) a sketched `--repo-size` flag encodes fake precision because users can mislabel the target. A broader question surfaced — should optimera's brainstorm route to archetypes explicitly, or keep its conversation-driven model? Optimera's existing reference library (`test-pass-rate.md`, `bundle-size.md`, `coverage.md`, `lint-score.md`, `benchmark.md`) covers only thin-wrapper archetypes; nothing in it describes measuring agent behavior under controlled conditions.
-**Alternatives**:
-
-- Ship `scripts/benchmark_skill.sh` at repo root with a thin harness wrapper: rejected, doesn't match optimera's bespoke-per-project philosophy
-- Ship composable Python primitives under `skills/optimera/scripts/primitives/`: rejected, over-engineering and creates a runtime install-path dependency
-- Add an explicit archetype-routing substep to optimera's brainstorm: rejected, imposes taxonomy on a conversation that already adapts to user answers
-- Single broad `session-telemetry.md` covering any session-level metric: rejected in favor of a split that factors machinery from the specific metric
-- Single narrow `session-token-consumption.md` only: rejected, misses the chance to reuse vehicle machinery for future session-metric archetypes (wall-time, cost, tool-call counts)
-**Choice**: Expand optimera's reference library with two new files. A machinery reference at `skills/optimera/references/agent-session-harness.md` (alongside `harness-guide.md`, not in `examples/`) describes running an agent under hermetic, reproducible conditions: two-condition A/B runs, stream-JSON telemetry parsing, causal plus numeric gates, per-run artifact layout, runtime-measured repo size. Docker is presented as one realization of "hermetic vehicle," not as a mandate. A metric-specific example at `skills/optimera/references/examples/session-token-consumption.md` applies the machinery to sum input_tokens + cache_creation_input_tokens + cache_read_input_tokens + output_tokens across assistant messages, with optional per-artifact attribution via a container-scoped PostToolUse hook. No changes to optimera's SKILL.md workflow. No repo-root scripts. No primitives infrastructure. The actual `.optimera/harness` for agentera's skill-token case gets brainstormed by /optimera when invoked, not pre-baked in this deliberation.
-**Reasoning**: Optimera's brainstorm is already user-driven: users describe what they want to measure and the skill adapts, drawing on references silently as pattern material. The gap isn't process structure; it's that the reference library has no material for measurement styles needing real infrastructure. Expanding the library is the minimal change that closes the gap without introducing workflow ceremony. Splitting machinery from metric-specific example keeps the two concerns separate so future session-metric archetypes can reuse the vehicle without duplicating it. The `--repo-size` flag dissolves: a bespoke harness takes `TARGET_REPO=<path>`, measures size at runtime (bytes, file count, `.agentera/` artifact tokens), and records in the meta file — no user label to get wrong. Not pre-baking agentera's harness is deliberate: invoking /optimera to produce it validates that the new reference actually guides the brainstorm, which is how we'll know the reference is good.
-**Confidence**: provisional
-**Feeds into**: `skills/optimera/references/` (expansion), standalone
-
 ## Decision 30 · 2026-04-12
 
 **Question**: How should the realisera-token harness be redesigned after three consecutive discarded experiments where run-to-run variance (13-20%) drowned the optimization signal (5-10%)?
@@ -176,6 +160,20 @@ co-installed skills mesh through one verified package root.
 **Confidence**: firm
 **Feeds into**: TODO.md
 
+## Decision 39 · 2026-05-04
+
+**Question**: What should Agentera 2.0 look like, and should it be a rewrite or an incremental refactor?
+**Context**: After 254+ cycles, 38 decisions, 577 tests, and 4 runtime targets, three systemic pains dominate: token consumption per session is high (large SKILL.md payloads + artifact ceremony), maintenance surface is scattered (3-way artifact identity sync, 908-line validate_artifact.py monolith, ~180 lines duplicated install-root logic), and the 12-skill model fragments the feedback loop across many files. The system works but is costly to operate and heavy to evolve.
+**Alternatives**:
+
+- [Targeted refactors]: fix 3-way sync, decompose validate_artifact.py, extract shared scripts. ~70% of maintenance benefit at ~10% of cost. Rejected: doesn't address token consumption or artifact ceremony, which are structural problems.
+- [12 autonomous skills with companion schemas]: keep the current distribution model but add per-skill schemas and selective reading. Rejected: cross-skill mesh complexity persists; the 12-file distribution model remains a token tax.
+- [Single bundled skill with capability schemas]: one install, one entry point, 12 capabilities as sub-modules with lean prose + companion schemas. Chosen.
+**Choice**: Agentera 2.0 is a single bundled skill (`/agentera`) with 12 capabilities. Each capability has lean behavioral prose + companion schemas (artifact shapes, validation rules, triggers). A thin shared protocol schema covers confidence, severity, and visual tokens. SPEC.md dissolves into capability schemas. Artifacts split: 3 human-facing at root (TODO.md, CHANGELOG.md, DESIGN.md), rest as structured agent-facing data in `.agentera/`. A universal query CLI replaces direct artifact reads. Master SKILL.md starts full (hej-style orientation + routing), optimizes toward thin schema-driven dispatcher over time. Transition: big bang cutover from a feat/v2 branch/worktree.
+**Reasoning**: The feedback loop is the core product, and it's fragmented across 12 skill files and 12 artifact formats. Bundling with schema-driven dispatch and a query CLI concentrates the loop into one deep module. Structured artifacts + query CLI eliminates the read/write ceremony that burns tokens. The worktree strategy preserves the working system during development. The strongest blind spot (master SKILL.md becoming a God Object) is mitigated by schema-driven routing and a stated optimization trajectory from full to thin.
+**Confidence**: firm
+**Feeds into**: ROADMAP.md, VISION.md
+
 ## Archived Decisions
 
 - Decision 1 (2026-03-29): **Question**: How should planera (a planning skill) be designed to fit the agent-skills suite?
@@ -206,3 +204,4 @@ co-installed skills mesh through one verified package root.
 - Decision 26 (2026-04-10): **Question**: Should the terminology for the ecosystem spec and per-skill context files be renamed for clarity and cohesion?
 - Decision 27 (2026-04-11): **Question**: How to implement Section 21's session corpus contract to close the gap between spec and extraction pipeline
 - Decision 28 (2026-04-11): **Question**: Where should PROFILE.md and profilera's generated artifacts live by default, and how should runtime adapters provide path overrides?
+- Decision 29 (2026-04-11): **Question**: How should optimera handle measurement archetypes that go beyond thin command-wrapper harnesses, and what should the first such reference...
