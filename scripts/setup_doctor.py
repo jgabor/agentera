@@ -74,14 +74,14 @@ OPENCODE_COMMAND_DESCRIPTIONS = {
     "orkestrera": "Multi-cycle plan execution with evaluation gating",
 }
 CANONICAL_ENTRIES = (
-    "scripts/validate_spec.py",
+    "scripts/validate_capability.py",
     "hooks",
     "skills",
-    "SPEC.md",
+    "skills/agentera/SKILL.md",
 )
 HELPER_ENTRIES = (
     "scripts/compact_artifact.py",
-    "scripts/validate_spec.py",
+    "scripts/validate_capability.py",
     "hooks/validate_artifact.py",
 )
 SMOKE_TIMEOUT_SECONDS = 30
@@ -545,27 +545,27 @@ def _smoke_check(
 
 
 def _run_helper_smoke(install_root: Path) -> dict[str, Any]:
-    helper = install_root / "scripts" / "validate_spec.py"
-    skill = install_root / "skills" / "realisera" / "SKILL.md"
-    command = [sys.executable, str(helper), "--skill", str(skill)]
+    helper = install_root / "scripts" / "validate_capability.py"
+    capability = install_root / "skills" / "agentera" / "capabilities" / "hej"
+    command = [sys.executable, str(helper), str(capability)]
     if not helper.is_file():
         return _smoke_check(
-            "helper.validate_spec",
+            "helper.validate_capability",
             "helper",
             "fail",
-            "validate_spec.py helper is missing",
+            "validate_capability.py helper is missing",
             command=command,
             path=helper,
             details=["bundle_packaging"],
         )
-    if not skill.is_file():
+    if not capability.is_dir():
         return _smoke_check(
-            "helper.validate_spec",
+            "helper.validate_capability",
             "helper",
             "fail",
-            "realisera SKILL.md fixture for helper smoke is missing",
+            "hej capability directory for helper smoke is missing",
             command=command,
-            path=skill,
+            path=capability,
             details=["bundle_packaging"],
         )
 
@@ -580,30 +580,30 @@ def _run_helper_smoke(install_root: Path) -> dict[str, Any]:
         )
     except subprocess.TimeoutExpired:
         return _smoke_check(
-            "helper.validate_spec",
+            "helper.validate_capability",
             "helper",
             "fail",
-            f"validate_spec.py smoke timed out after {SMOKE_TIMEOUT_SECONDS}s",
+            f"validate_capability.py smoke timed out after {SMOKE_TIMEOUT_SECONDS}s",
             command=command,
             path=helper,
         )
 
     if result.returncode != 0:
         return _smoke_check(
-            "helper.validate_spec",
+            "helper.validate_capability",
             "helper",
             "fail",
-            f"validate_spec.py exited {result.returncode}",
+            f"validate_capability.py exited {result.returncode}",
             command=command,
             path=helper,
             details=_tail(result.stdout) + _tail(result.stderr),
         )
 
     return _smoke_check(
-        "helper.validate_spec",
+        "helper.validate_capability",
         "helper",
         "pass",
-        "validate_spec.py reached a packaged skill successfully",
+        "validate_capability.py reached a packaged capability successfully",
         command=command,
         path=helper,
         details=_tail(result.stdout, limit=3),

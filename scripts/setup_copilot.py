@@ -39,7 +39,7 @@ Three rc states are handled:
   preserved byte-identically.
 
 The install root is verified against four canonical sibling entries
-(``scripts/validate_spec.py``, ``hooks/``, ``skills/``, ``SPEC.md``)
+(``scripts/validate_capability.py``, ``hooks/``, ``skills/``, ``skills/agentera/SKILL.md``)
 before any write. Auto-detection walks up from this script's location.
 ``--install-root PATH`` overrides detection; ``--rc-file PATH``
 overrides the rc target (tests use this to avoid touching the real
@@ -56,7 +56,7 @@ Usage::
 Exit codes:
 
     0  no change needed (idempotent re-run) or change applied
-    1  --dry-run detected a pending change (mirrors validate_spec.py)
+    1  --dry-run detected a pending change (mirrors validate_capability.py)
     2  error: bad install root, unsupported shell without --rc-file,
        missing rc target directory the helper cannot create, etc.
 """
@@ -78,10 +78,10 @@ from typing import NamedTuple
 # Verified before any write so users cannot wire AGENTERA_HOME at a path
 # that does not actually contain the suite.
 CANONICAL_ENTRIES: tuple[str, ...] = (
-    "scripts/validate_spec.py",
+    "scripts/validate_capability.py",
     "hooks",
     "skills",
-    "SPEC.md",
+    "skills/agentera/SKILL.md",
 )
 
 # The single env var the helper manages. Any other env var in the rc is

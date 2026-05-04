@@ -278,8 +278,8 @@ def test_install_root_invalid_rejected(
     assert rc == 2
     # The error message must enumerate at least one missing canonical
     # entry so the user sees what's wrong.
-    assert "scripts/validate_spec.py" in err
-    assert "SPEC.md" in err
+    assert "scripts/validate_capability.py" in err
+    assert "skills/agentera/SKILL.md" in err
     # Nothing written.
     assert not target.exists()
 

@@ -347,6 +347,6 @@ def test_install_root_invalid_rejected(
     )
     err = capsys.readouterr().err
     assert rc == 2
-    assert "scripts/validate_spec.py" in err
-    assert "SPEC.md" in err
+    assert "scripts/validate_capability.py" in err
+    assert "skills/agentera/SKILL.md" in err
     assert not target.exists()
