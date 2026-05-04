@@ -189,4 +189,4 @@ def test_upgrade_guard_flags_missing_profile_as_degraded():
     profile_section = content[content.index("PROFILE.md detection"):]
     assert "profile   not found" in profile_section, "guard must specify 'not found' when PROFILE.md is absent"
     assert "⇉" in profile_section, "guard must use degraded severity arrow for missing PROFILE.md"
-    assert "/profilera" in profile_section, "guard must reference /profilera as the remediation"
+    assert "profilera" in profile_section, "guard must reference profilera as the remediation"

@@ -4,6 +4,7 @@ TRIGGERS:
     description: >-
       Direct invocation by name or slash command. Matches when the user
       explicitly requests inspirera.
+    priority: high
     patterns:
       - "inspirera"
       - "/inspirera"
@@ -13,6 +14,7 @@ TRIGGERS:
       Applicability assessment requests. Matches when the user provides
       an external URL and asks how it applies to their project or whether
       they should adopt it.
+    priority: medium
     patterns:
       - "could I use this in"
       - "how does this apply to my project"
@@ -24,6 +26,7 @@ TRIGGERS:
     description: >-
       External resource review requests. Matches when the user wants
       analysis of a library, repo, or approach for ideas and patterns.
+    priority: medium
     patterns:
       - "what do you think of this library"
       - "review this repo for ideas"

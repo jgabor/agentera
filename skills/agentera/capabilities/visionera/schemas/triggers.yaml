@@ -4,6 +4,7 @@ TRIGGERS:
     description: >-
       Direct invocation by name or slash command. Matches when the user
       explicitly requests visionera.
+    priority: high
     patterns:
       - "visionera"
       - "/visionera"
@@ -12,6 +13,7 @@ TRIGGERS:
     description: >-
       Vision creation requests. Matches when the user wants to define or
       create a project vision or north star direction.
+    priority: medium
     patterns:
       - "create a vision"
       - "write VISION.md"
@@ -23,6 +25,7 @@ TRIGGERS:
     description: >-
       Vision refinement requests. Matches when the user wants to evolve
       or rethink an existing vision.
+    priority: medium
     patterns:
       - "rethink the vision"
       - "refine the vision"
@@ -32,6 +35,7 @@ TRIGGERS:
     description: >-
       Project bootstrap. Matches when the user wants to bootstrap a new
       project identity or define what a project should become.
+    priority: medium
     patterns:
       - "bootstrap the project"
       - "what should this project become"

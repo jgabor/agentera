@@ -1,4 +1,25 @@
 cycles:
+- number: 256
+  timestamp: 2026-05-05 00:30
+  type: feat
+  phase: build
+  what: 'Implemented Decision 42 five-layer dispatch model: SKILL.md now explicitly delegates bare /agentera to hej (Layer 1),
+    adds capability-name direct route bypass (Layer 2), specifies priority-based confidence thresholds and disambiguation
+    prompts (Layers 3-4), and preserves hej fallback (Layer 5). Added priority field (high/medium/low) to all 12 trigger
+    schemas. Updated validate_capability.py to validate priorities. Fixed hej prose.md phantom slash commands and stale
+    artifact path references. Produced comprehensive gap analysis against ROADMAP.md and Decisions 39-42.'
+  commit: pending
+  inspiration: 'Decision 42 (five-layer dispatch model); planera plan for Decision 42 implementation.'
+  discovered: 'Routing is prose-driven, not code-driven. The agent reads SKILL.md and interprets the dispatch model. There is
+    no executable dispatcher. This is architecturally correct for v2 but means routing quality depends on agent adherence.'
+  verified: 'Validation: python3 -m pytest -q (507 passed, 1 skipped), uv run scripts/validate_capability.py for all 12
+    capabilities (all pass), gap analysis document written to .agentera/gap-analysis-2026-05-05.md.'
+  next: 'Address remaining gaps from analysis: hooks/common.py v2 awareness, runtime smoke tests, token target reassessment.'
+  context:
+    intent: (implement Decision 42 five-layer dispatch model and close routing gaps)
+    constraints: (no breaking changes, 500+ tests must pass, SKILL.md must not become God Object)
+    unknowns: (none)
+    scope: (SKILL.md routing logic, trigger schemas, hej prose cleanup, gap analysis)
 - number: 255
   timestamp: 2026-05-04 23:45
   type: chore

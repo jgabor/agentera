@@ -4,6 +4,7 @@ TRIGGERS:
     description: >-
       Direct invocation by name or slash command. Matches when the user
       explicitly requests dokumentera.
+    priority: high
     patterns:
       - "dokumentera"
       - "/dokumentera"
@@ -12,6 +13,7 @@ TRIGGERS:
     description: >-
       Documentation creation requests. Matches when the user wants to
       write or create documentation, including DTC-first workflows.
+    priority: medium
     patterns:
       - "write docs"
       - "document this"
@@ -25,6 +27,7 @@ TRIGGERS:
     description: >-
       Documentation maintenance and audit requests. Matches when the user
       wants to update, check, or verify existing documentation.
+    priority: medium
     patterns:
       - "update the docs"
       - "audit docs"
