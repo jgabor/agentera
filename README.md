@@ -68,8 +68,8 @@ through project files, keep receipts, and compound context over time.
 
 ## What you see
 
-Start with `/hej` (`$hej` in Codex). It gives you a project briefing and routes
-you to the most useful next capability.
+Start with `/agentera` (`$agentera` in Codex). It gives you a project briefing
+and routes you to the most useful next capability.
 
 ```text
 ┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
@@ -93,17 +93,16 @@ you to the most useful next capability.
 
 ─── next ───────────────────────────────
 
-  suggested → ❈ /resonera (resolve API schema to unblock task 7)
+  suggested → ❈ resonera (resolve API schema to unblock task 7)
 ```
 
 ## Quick start
 
 All capabilities live in one bundled skill at `skills/agentera/`. Install once,
-then invoke any capability by name. The bundled skill's dispatcher routes
-`/hej`, `/realisera`, `/planera`, and all other slash commands to the right
-capability automatically.
+then invoke the bundled skill. The dispatcher in `/agentera` reads your
+intent and routes to the right capability automatically.
 
-Pick your runtime, install Agentera, then open a project and run `/hej`.
+Pick your runtime, install Agentera, then open a project and run `/agentera`.
 
 ### Claude Code
 
@@ -111,7 +110,7 @@ Pick your runtime, install Agentera, then open a project and run `/hej`.
 npx skills add jgabor/agentera -g -a claude-code --skill '*' -y
 ```
 
-Start with `/hej`.
+Start with `/agentera`.
 
 ### OpenCode
 
@@ -126,7 +125,7 @@ curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plug
   -o ~/.config/opencode/plugins/agentera.js
 ```
 
-Start with `/hej`.
+Start with `/agentera`.
 
 ### Copilot CLI
 
@@ -135,7 +134,7 @@ copilot plugin marketplace add jgabor/agentera
 copilot plugin install jgabor/agentera
 ```
 
-Start with `/hej`.
+Start with `/agentera`.
 
 ### Codex CLI
 
@@ -143,7 +142,7 @@ Start with `/hej`.
 codex plugin marketplace add jgabor/agentera
 ```
 
-Open `/plugins`, enable Agentera, and start with `$hej`.
+Open `/plugins`, enable Agentera, and start with `$agentera`.
 
 ### Check the bundle
 
@@ -203,18 +202,18 @@ can use it to reason more like you. If it is missing, Agentera still works.
 
 ## Get the most out of it
 
-- **Returning to a repo**: run `/hej`. Let it read project state and route you.
-- **Starting something big**: run `/visionera` for direction, then `/planera`.
-- **Stuck on a tradeoff**: run `/resonera`; it records the decision for later agents.
-- **Ready to build one focused thing**: run `/realisera`.
-- **Ready to execute a whole plan**: run `/orkestrera`.
-- **Worried the codebase is drifting**: run `/inspektera`.
-- **Optimizing a metric**: run `/optimera` with the score you want to improve.
+- **Returning to a repo**: run `/agentera`. Let it read project state and route you.
+- **Starting something big**: say "define the product direction" to trigger visionera, then "plan the work" for planera.
+- **Stuck on a tradeoff**: say "help me decide" to trigger resonera; it records the decision for later agents.
+- **Ready to build one focused thing**: say "build the next feature" to trigger realisera.
+- **Ready to execute a whole plan**: say "run the plan" to trigger orkestrera.
+- **Worried the codebase is drifting**: say "audit the codebase" to trigger inspektera.
+- **Optimizing a metric**: say "improve test coverage" to trigger optimera.
 
 A good default loop is:
 
 ```text
-/hej → /resonera or /planera → /orkestrera → /inspektera
+/agentera (briefing) → deliberation or planning → build → audit
 ```
 
 ## Capabilities
@@ -222,8 +221,8 @@ A good default loop is:
 All twelve capabilities are bundled in `skills/agentera/`. Each has a
 `prose.md` defining its behavior and `schemas/` defining its triggers,
 artifacts, validation rules, and exit signals. The dispatcher in
-`skills/agentera/SKILL.md` routes slash commands to the matching capability
-automatically.
+`skills/agentera/SKILL.md` routes every `/agentera` request to the matching
+capability automatically.
 
 | | Capability | Use it when you need... |
 |---|---|---|
@@ -239,6 +238,27 @@ automatically.
 | ⎘ | optimera | Measured improvement of a concrete metric. |
 | ⛶ | inspektera | Architecture, test, dependency, and artifact health audits. |
 | ♾ | profilera | A reusable decision profile that helps every capability reason more like you. |
+
+### Natural language mapping
+
+You do not need to remember capability names. Type `/agentera` followed by what you want:
+
+| What you want | `/agentera` understands |
+|---|---|
+| "help me think through this" | → resonera (deliberation) |
+| "help me decide" | → resonera (decision) |
+| "plan this" | → planera (planning) |
+| "run the plan" | → orkestrera (execution) |
+| "build the next feature" | → realisera (development) |
+| "evolve the project" | → realisera (development) |
+| "audit the codebase" | → inspektera (health audit) |
+| "check code health" | → inspektera (health audit) |
+| "improve test coverage" | → optimera (optimization) |
+| "define the direction" | → visionera (vision) |
+| "design the visual identity" | → visualisera (design system) |
+| "update docs" | → dokumentera (documentation) |
+| "research this pattern" | → inspirera (external analysis) |
+| "what should I work on" | → hej (briefing) |
 
 Validate any capability against the schema contract:
 
