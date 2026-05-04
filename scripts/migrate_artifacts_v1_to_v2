@@ -1,0 +1,1045 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["pyyaml"]
+# ///
+"""Migrate v1 Markdown artifacts to v2 YAML format.
+
+Reads v1 .agentera/*.md artifacts and VISION.md, converts them to v2 YAML
+artifacts based on the artifact schemas in skills/agentera/schemas/artifacts/.
+Creates backups in .agentera/backup-v1/ before conversion.
+
+Usage:
+    scripts/migrate_v1_to_v2 [--project DIR] [--dry-run] [--verbose]
+
+Exit codes:
+    0  Success (or nothing to migrate)
+    1  Fatal error
+"""
+
+from __future__ import annotations
+
+import argparse
+import logging
+import re
+import shutil
+import sys
+from pathlib import Path
+from typing import Any, Optional
+
+import yaml
+
+log = logging.getLogger("migrate_v1_to_v2")
+
+HUMAN_FACING = {"TODO.md", "CHANGELOG.md", "DESIGN.md"}
+
+AGENTERA_ARTIFACTS = [
+    "PROGRESS.md",
+    "DECISIONS.md",
+    "HEALTH.md",
+    "SESSION.md",
+    "PLAN.md",
+    "DOCS.md",
+]
+
+ROOT_ARTIFACTS = ["VISION.md"]
+
+
+def _strip_md_extension(name: str) -> str:
+    return name.rsplit(".md", 1)[0].lower()
+
+
+def _extract_bold_field(text: str, label: str) -> str:
+    pattern = rf"\*\*{re.escape(label)}\*\*:\s*(.+?)(?=\n\*\*|\n\n|\n#|\Z)"
+    m = re.search(pattern, text, re.DOTALL)
+    if m:
+        return m.group(1).strip()
+    return ""
+
+
+def _extract_bold_field_multiline(text: str, label: str) -> str:
+    pattern = rf"\*\*{re.escape(label)}\*\*:\s*(.+?)(?=\n\*\*|\n###|\n##\s|$)"
+    m = re.search(pattern, text, re.DOTALL)
+    if m:
+        return m.group(1).strip()
+    return ""
+
+
+def _parse_context_envelope(context_text: str) -> dict[str, str]:
+    result: dict[str, str] = {"intent": "", "constraints": "", "unknowns": "", "scope": ""}
+    if not context_text:
+        return result
+    for key in result:
+        m = re.search(rf"{key}\s*\(([^)]*)\)\s*·\s*([^·]+?)(?:\s*·|$)", context_text, re.IGNORECASE)
+        if m:
+            result[key] = f"({m.group(1)}) {m.group(2).strip()}"
+            continue
+        m = re.search(rf"{key}:\s*([^·]+?)(?:\s*·|$)", context_text, re.IGNORECASE)
+        if m:
+            result[key] = m.group(1).strip()
+    return result
+
+
+def _parse_progress(text: str) -> dict[str, Any]:
+    warnings: list[str] = []
+    cycles: list[dict[str, Any]] = []
+    archive: list[str] = []
+
+    cycle_pattern = re.compile(
+        r"(?:^[■□]\s+)?##\s+Cycle\s+(\d+)\s*·\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})\s*·\s*(.+)",
+        re.MULTILINE,
+    )
+    sections = re.split(r"(?=^[■□]?\s*##\s+(?:Cycle\s+\d+|Archived\s+Cycles))", text, flags=re.MULTILINE)
+
+    for section in sections:
+        m = cycle_pattern.match(section.strip())
+        if m:
+            number = int(m.group(1))
+            timestamp = m.group(2)
+            type_prefix_raw = m.group(3).strip()
+            type_match = re.match(r"(feat|fix|docs|refactor|chore|test)", type_prefix_raw)
+            commit_type = type_match.group(1) if type_match else "chore"
+
+            phase = _extract_bold_field(section, "Phase")
+            what = _extract_bold_field_multiline(section, "What")
+            commit = _extract_bold_field(section, "Commit")
+            inspiration = _extract_bold_field(section, "Inspiration")
+            discovered = _extract_bold_field(section, "Discovered")
+            verified = _extract_bold_field(section, "Verified")
+            next_steps = _extract_bold_field(section, "Next")
+            context_raw = _extract_bold_field_multiline(section, "Context")
+
+            context = _parse_context_envelope(context_raw)
+
+            cycles.append({
+                "number": number,
+                "timestamp": timestamp,
+                "type": commit_type,
+                "phase": phase.lower() if phase else "build",
+                "what": what,
+                "commit": commit if commit else "N/A",
+                "inspiration": inspiration,
+                "discovered": discovered,
+                "verified": verified,
+                "next": next_steps,
+                "context": context,
+            })
+
+    archive_match = re.search(r"##\s+Archived\s+Cycles\s*\n((?:- .+\n?)*)", text)
+    if archive_match:
+        for line in archive_match.group(1).strip().splitlines():
+            line = line.strip()
+            if line.startswith("- "):
+                archive.append(line[2:].strip())
+
+    return {"cycles": cycles, "archive": archive, "warnings": warnings}
+
+
+def _parse_decisions(text: str) -> dict[str, Any]:
+    warnings: list[str] = []
+    decisions: list[dict[str, Any]] = []
+    archive: list[str] = []
+
+    decision_pattern = re.compile(r"##\s+Decision\s+(\d+)\s*·\s*(\d{4}-\d{2}-\d{2})")
+    sections = re.split(r"(?=^##\s+(?:Decision\s+\d+|Archived\s+Decisions))", text, flags=re.MULTILINE)
+
+    for section in sections:
+        m = decision_pattern.match(section.strip())
+        if m:
+            number = int(m.group(1))
+            date = m.group(2)
+            question = _extract_bold_field_multiline(section, "Question")
+            context = _extract_bold_field_multiline(section, "Context")
+            choice = _extract_bold_field_multiline(section, "Choice")
+            reasoning = _extract_bold_field_multiline(section, "Reasoning")
+            confidence = _extract_bold_field(section, "Confidence")
+            feeds_into = _extract_bold_field(section, "Feeds into")
+
+            alternatives: list[dict[str, str]] = []
+            alt_block_match = re.search(r"\*\*Alternatives\*\*:\s*\n(.*?)(?=\n\*\*Choice\*\*|\n\*\*Reasoning\*\*|\Z)", section, re.DOTALL)
+            if alt_block_match:
+                alt_text = alt_block_match.group(1)
+                for line in alt_text.splitlines():
+                    line = line.strip()
+                    if not line.startswith("- ") and not line.startswith("["):
+                        continue
+                    if line.startswith("- "):
+                        line = line[2:].strip()
+                    if not line:
+                        continue
+                    bracket_match = re.match(r"\[([^\]]+)\]\s*,?\s*(chosen|rejected)?\s*:?\s*(.*)", line)
+                    if bracket_match and bracket_match.group(2):
+                        name = bracket_match.group(1)
+                        status = bracket_match.group(2)
+                        desc = bracket_match.group(3).strip()
+                        alternatives.append({"name": name, "status": status, "description": desc})
+                    elif bracket_match:
+                        name = bracket_match.group(1)
+                        desc = bracket_match.group(3).strip()
+                        alternatives.append({"name": name, "status": "rejected", "description": desc})
+                    else:
+                        plain_match = re.match(r"([^-:\[\]]+?):\s*(.*)", line)
+                        if plain_match:
+                            alternatives.append({"name": plain_match.group(1).strip(), "status": "rejected", "description": plain_match.group(2).strip()})
+                        else:
+                            alternatives.append({"name": line[:60], "status": "rejected", "description": line})
+                choice_text = _extract_bold_field_multiline(section, "Choice").lower()
+                for alt in alternatives:
+                    if alt["status"] == "rejected":
+                        alt_key = alt["name"].lower().split(",")[0].split(":")[0].strip()
+                        if alt_key and alt_key in choice_text:
+                            alt["status"] = "chosen"
+                        else:
+                            words = alt_key.split()
+                            if len(words) >= 3:
+                                prefix = " ".join(words[:3])
+                                if prefix in choice_text:
+                                    alt["status"] = "chosen"
+
+            if not alternatives:
+                warnings.append(f"Decision {number}: no alternatives found")
+            elif not any(a["status"] == "chosen" for a in alternatives):
+                warnings.append(f"Decision {number}: could not determine chosen alternative from choice text")
+
+            decisions.append({
+                "number": number,
+                "date": date,
+                "question": question,
+                "context": context,
+                "alternatives": alternatives,
+                "choice": choice,
+                "reasoning": reasoning,
+                "confidence": confidence if confidence in ("firm", "provisional", "exploratory") else "provisional",
+                "feeds_into": feeds_into,
+            })
+
+    archive_match = re.search(r"##\s+Archived\s+Decisions\s*\n((?:- .+\n?)*)", text)
+    if archive_match:
+        for line in archive_match.group(1).strip().splitlines():
+            line = line.strip()
+            if line.startswith("- "):
+                archive.append(line[2:].strip())
+
+    return {"decisions": decisions, "archive": archive, "warnings": warnings}
+
+
+def _parse_health(text: str) -> dict[str, Any]:
+    warnings: list[str] = []
+    audits: list[dict[str, Any]] = []
+    archive: list[str] = []
+
+    audit_pattern = re.compile(r"##\s+Audit\s+(\d+)\s*·\s*(\d{4}-\d{2}-\d{2})")
+    sections = re.split(r"(?=^##\s+(?:Audit\s+\d+|Archived\s+Audits))", text, flags=re.MULTILINE)
+
+    for section in sections:
+        m = audit_pattern.match(section.strip())
+        if m:
+            number = int(m.group(1))
+            date = m.group(2)
+
+            dimensions_raw = _extract_bold_field(section, "Dimensions assessed")
+            dimensions = [d.strip() for d in dimensions_raw.split(",") if d.strip()] if dimensions_raw else []
+
+            findings_summary_raw = _extract_bold_field(section, "Findings")
+            findings_summary = _parse_findings_summary(findings_summary_raw)
+
+            trajectory = _extract_bold_field(section, "Overall trajectory")
+            grades_raw = _extract_bold_field(section, "Grades")
+            grades = _parse_grades(grades_raw)
+
+            dimension_details = _parse_dimension_details(section)
+
+            trends = _parse_trends(section)
+            patterns = _parse_patterns(section)
+
+            audits.append({
+                "number": number,
+                "date": date,
+                "dimensions": dimensions,
+                "findings_summary": findings_summary,
+                "trajectory": trajectory,
+                "grades": grades,
+                "dimension_details": dimension_details,
+                "trends": trends,
+                "patterns": patterns,
+            })
+
+    archive_match = re.search(r"##\s+Archived\s+Audits\s*\n((?:### .+\n?(?:.*\n?)*)*)", text)
+    if archive_match:
+        for line in archive_match.group(1).strip().splitlines():
+            line = line.strip()
+            if line.startswith("### "):
+                archive.append(line[4:].strip())
+
+    return {"audits": audits, "archive": archive, "warnings": warnings}
+
+
+def _parse_findings_summary(raw: str) -> dict[str, int]:
+    result = {"critical": 0, "warning": 0, "info": 0, "filtered_by_confidence": 0}
+    if not raw:
+        return result
+    for key in ("critical", "warning", "info"):
+        m = re.search(rf"(\d+)\s+{key}", raw, re.IGNORECASE)
+        if m:
+            result[key] = int(m.group(1))
+    m = re.search(r"(\d+)\s+filtered", raw, re.IGNORECASE)
+    if m:
+        result["filtered_by_confidence"] = int(m.group(1))
+    return result
+
+
+def _parse_grades(raw: str) -> dict[str, str]:
+    grades: dict[str, str] = {}
+    if not raw:
+        return grades
+    for m in re.finditer(r"([\w\s]+?)\s*\[([A-F])\]", raw):
+        name = m.group(1).strip()
+        if name:
+            grades[name] = m.group(2)
+    return grades
+
+
+def _parse_dimension_details(section: str) -> list[dict[str, Any]]:
+    details: list[dict[str, Any]] = []
+    dim_pattern = re.compile(r"###\s+(.+?):\s*([A-F])\s*$", re.MULTILINE)
+    for dm in dim_pattern.finditer(section):
+        dim_name = dm.group(1).strip()
+        dim_grade = dm.group(2)
+        start = dm.end()
+        next_dim = dim_pattern.search(section, start)
+        dim_text = section[start : next_dim.start() if next_dim else len(section)]
+
+        summary_lines = []
+        findings: list[dict[str, Any]] = []
+        finding_pattern = re.compile(r"####\s+(.+?)$", re.MULTILINE)
+        finding_matches = list(finding_pattern.finditer(dim_text))
+
+        summary_end = finding_matches[0].start() if finding_matches else len(dim_text)
+        summary_text = dim_text[:summary_end].strip()
+        for line in summary_text.splitlines():
+            line = line.strip()
+            if line and not line.startswith("####") and not line.startswith("> "):
+                summary_lines.append(line)
+        summary = " ".join(summary_lines)
+
+        for fm in finding_matches:
+            f_start = fm.end()
+            f_next_start = finding_matches[finding_matches.index(fm) + 1].start() if finding_matches.index(fm) + 1 < len(finding_matches) else len(dim_text)
+            f_text = dim_text[f_start:f_next_start]
+
+            heading = fm.group(1).strip()
+            severity = "info"
+            sev_match = re.search(r"(critical|warning|info)\s*\(", heading, re.IGNORECASE)
+            if sev_match:
+                severity = sev_match.group(1).lower()
+
+            confidence = 50
+            conf_match = re.search(r"confidence:\s*(\d+)", heading, re.IGNORECASE)
+            if conf_match:
+                confidence = int(conf_match.group(1))
+
+            location = _extract_bold_field(f_text, "Location")
+            evidence = _extract_bold_field(f_text, "Evidence")
+            impact = _extract_bold_field(f_text, "Impact")
+            suggested_action = _extract_bold_field(f_text, "Suggested action")
+
+            findings.append({
+                "heading": heading,
+                "severity": severity,
+                "confidence": confidence,
+                "location": location,
+                "evidence": evidence,
+                "impact": impact,
+                "suggested_action": suggested_action,
+            })
+
+        details.append({
+            "name": dim_name,
+            "grade": dim_grade,
+            "summary": summary,
+            "findings": findings,
+        })
+
+    return details
+
+
+def _parse_trends(section: str) -> dict[str, str]:
+    trends: dict[str, str] = {}
+    trends_match = re.search(r"###\s+Trends\s+vs\s+Audit\s+\d+(.*?)###\s+Patterns", section, re.DOTALL)
+    if not trends_match:
+        trends_match = re.search(r"###\s+Trends\s+vs\s+Audit\s+\d+(.*?)(?=\n###|\Z)", section, re.DOTALL)
+    if trends_match:
+        trends_text = trends_match.group(1)
+        for key in ("Improved", "Degraded", "Stable", "New findings", "Resolved", "Carried forward"):
+            val = _extract_bold_field(trends_text, key)
+            if val:
+                trends[key.lower().replace(" ", "_").replace("carried_forward", "carried_forward")] = val
+    return trends
+
+
+def _parse_patterns(section: str) -> list[str]:
+    patterns: list[str] = []
+    patterns_match = re.search(r"###\s+Patterns\s+Observed\s*\n((?:- .+\n?)+)", section)
+    if patterns_match:
+        for line in patterns_match.group(1).strip().splitlines():
+            line = line.strip()
+            if line.startswith("- "):
+                patterns.append(line[2:].strip())
+    return patterns
+
+
+def _parse_session(text: str) -> dict[str, Any]:
+    bookmarks: list[dict[str, Any]] = []
+    archive: list[str] = []
+    warnings: list[str] = []
+
+    bookmark_pattern = re.compile(r"##\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})")
+    sections = re.split(r"(?=^##\s+\d{4}-\d{2}-\d{2})", text, flags=re.MULTILINE)
+
+    for section in sections:
+        m = bookmark_pattern.match(section.strip())
+        if m:
+            timestamp = m.group(1)
+            artifacts_raw = _extract_bold_field(section, "Artifacts modified")
+            if not artifacts_raw:
+                am = re.search(r"Artifacts modified:\s*(.+)", section)
+                if am:
+                    artifacts_raw = am.group(1).strip()
+            artifacts = [a.strip() for a in artifacts_raw.split(",") if a.strip()] if artifacts_raw else []
+            summary = _extract_bold_field(section, "Summary")
+            if not summary:
+                sm = re.search(r"Summary:\s*(.+)", section)
+                if sm:
+                    summary = sm.group(1).strip()
+
+            bookmarks.append({
+                "timestamp": timestamp,
+                "artifacts": artifacts,
+                "summary": summary,
+            })
+
+    archive_match = re.search(r"##\s+Archived\s+Sessions\s*\n((?:- .+\n?)*)", text)
+    if archive_match:
+        for line in archive_match.group(1).strip().splitlines():
+            line = line.strip()
+            if line.startswith("- "):
+                archive.append(line[2:].strip())
+
+    return {"bookmarks": bookmarks, "archive": archive, "warnings": warnings}
+
+
+def _parse_plan(text: str) -> dict[str, Any]:
+    warnings: list[str] = []
+
+    header: dict[str, Any] = {}
+    level_match = re.search(r"Level:\s*(light|full)", text)
+    header["level"] = level_match.group(1) if level_match else "full"
+
+    created_match = re.search(r"Created:\s*(\d{4}-\d{2}-\d{2})", text)
+    header["created"] = created_match.group(1) if created_match else ""
+
+    status_match = re.search(r"Status:\s*(active|completed)", text)
+    header["status"] = status_match.group(1) if status_match else "active"
+
+    reviewed_match = re.search(r"Reviewed:\s*(\d{4}-\d{2}-\d{2})", text)
+    header["reviewed"] = reviewed_match.group(1) if reviewed_match else ""
+
+    critic_match = re.search(r"Critic issues:\s*(.+?)\s*\|", text)
+    header["critic_issues"] = critic_match.group(1).strip() if critic_match else ""
+
+    revised_match = re.search(r"Revised:\s*(.+?)\s*\*?\s*$", text, re.MULTILINE)
+    header["revised"] = revised_match.group(1).strip() if revised_match else ""
+
+    title_match = re.search(r"^#\s+Plan:\s*(.+)$", text, re.MULTILINE)
+    header["title"] = title_match.group(1).strip() if title_match else ""
+
+    what = _extract_section(text, "What")
+    why = _extract_section(text, "Why")
+    constraints = _extract_section(text, "Constraints")
+    design = _extract_section(text, "Design")
+
+    scope: dict[str, list[str]] = {"included": [], "excluded": [], "deferred": []}
+    scope_match = re.search(r"##\s+Scope(.*?)(?=\n##\s)", text, re.DOTALL)
+    if scope_match:
+        scope_text = scope_match.group(1)
+        included_match = re.search(r"\*\*In\*\*:\s*(.+?)(?=\n\*\*Out|\n\*\*Deferred|\Z)", scope_text, re.DOTALL)
+        if included_match:
+            scope["included"] = [l.strip().lstrip("*").strip() for l in included_match.group(1).strip().splitlines() if l.strip() and not l.strip().startswith("#")]
+        excluded_match = re.search(r"\*\*Out\*\*:\s*(.+?)(?=\n\*\*Deferred|\Z)", scope_text, re.DOTALL)
+        if excluded_match:
+            scope["excluded"] = [l.strip().lstrip("*").strip() for l in excluded_match.group(1).strip().splitlines() if l.strip() and not l.strip().startswith("#")]
+        deferred_match = re.search(r"\*\*Deferred\*\*:\s*(.+?)(?=\Z)", scope_text, re.DOTALL)
+        if deferred_match:
+            scope["deferred"] = [l.strip().lstrip("*").strip() for l in deferred_match.group(1).strip().splitlines() if l.strip() and not l.strip().startswith("#")]
+
+    tasks: list[dict[str, Any]] = []
+    task_pattern = re.compile(r"###\s+Task\s+([\w]+):\s*(.+)$", re.MULTILINE)
+    task_sections = list(task_pattern.finditer(text))
+
+    for i, tm in enumerate(task_sections):
+        task_num_str = tm.group(1)
+        task_num = int(re.match(r"(\d+)", task_num_str).group(1)) if re.match(r"(\d+)", task_num_str) else 0
+        task_name = tm.group(2).strip()
+        start = tm.end()
+        end = task_sections[i + 1].start() if i + 1 < len(task_sections) else len(text)
+        task_text = text[start:end]
+
+        depends_raw = _extract_bold_field(task_text, "Depends on")
+        depends_on = [d.strip() for d in depends_raw.split(",") if d.strip()] if depends_raw else []
+        if depends_raw and depends_raw.lower() == "none":
+            depends_on = []
+
+        status_raw = _extract_bold_field(task_text, "Status")
+        status_val = "pending"
+        if "complete" in status_raw:
+            status_val = "complete"
+        elif "in_progress" in status_raw:
+            status_val = "in_progress"
+
+        acceptance: list[str] = []
+        acc_match = re.search(r"\*\*Acceptance\*\*:\s*\n((?:▸ .+\n?)+)", task_text)
+        if acc_match:
+            for line in acc_match.group(1).strip().splitlines():
+                line = line.strip()
+                if line.startswith("▸ "):
+                    acceptance.append(line[2:].strip())
+
+        tasks.append({
+            "number": task_num,
+            "name": task_name,
+            "depends_on": depends_on,
+            "status": status_val,
+            "acceptance": acceptance,
+        })
+
+    overall_acceptance = _extract_section(text, "Overall Acceptance")
+    surprises_match = re.search(r"##\s+Surprises\s*\n(.*?)(?:\Z)", text, re.DOTALL)
+    surprises = surprises_match.group(1).strip() if surprises_match else ""
+
+    return {
+        "header": header,
+        "what": what,
+        "why": why,
+        "constraints": constraints,
+        "scope": scope,
+        "design": design,
+        "tasks": tasks,
+        "overall_acceptance": overall_acceptance,
+        "surprises": surprises,
+        "warnings": warnings,
+    }
+
+
+def _extract_section(text: str, heading: str) -> str:
+    pattern = rf"##\s+{re.escape(heading)}\s*\n(.*?)(?=\n##\s|\Z)"
+    m = re.search(pattern, text, re.DOTALL)
+    if m:
+        return m.group(1).strip()
+    return ""
+
+
+def _parse_docs(text: str) -> dict[str, Any]:
+    warnings: list[str] = []
+
+    last_audit = ""
+    la_match = re.search(r"Last audit:\s*(\d{4}-\d{2}-\d{2})\s*\(([^)]+)\)", text)
+    if la_match:
+        last_audit = f"{la_match.group(1)} ({la_match.group(2)})"
+
+    doc_root = "."
+    dr_match = re.search(r"doc_root:\s*(.+)", text)
+    if dr_match:
+        doc_root = dr_match.group(1).strip()
+
+    style = "technical, concise"
+    st_match = re.search(r"style:\s*(.+)", text)
+    if st_match:
+        style = st_match.group(1).strip()
+
+    auto_gen: list[str] = ["none"]
+    ag_match = re.search(r"auto_gen:\s*\n\s+-\s+(.*)", text)
+    if ag_match:
+        auto_gen = [ag_match.group(1).strip()]
+
+    version_files: list[str] = []
+    vf_section = re.search(r"version_files:\s*\n((?:\s+-\s+.+\n?)+)", text)
+    if vf_section:
+        for line in vf_section.group(1).strip().splitlines():
+            line = line.strip()
+            if line.startswith("- "):
+                version_files.append(line[2:].strip())
+
+    semver_policy: dict[str, str] = {}
+    sp_match = re.search(r"semver_policy:\s*\"([^\"]+)\"", text)
+    if sp_match:
+        policy_text = sp_match.group(1)
+        for part in policy_text.split(","):
+            part = part.strip()
+            if "=" in part:
+                k, v = part.split("=", 1)
+                semver_policy[k.strip()] = v.strip()
+
+    mapping: list[dict[str, Any]] = []
+    mapping_match = re.search(
+        r"##\s+Artifact\s+Mapping\s*\n.*?\n\|\s*Artifact\s*\|\s*Path\s*\|\s*Producers\s*\|\n\|[-\s|]+\|\n((?:\|[^\n]+\|\n)+)",
+        text,
+        re.DOTALL,
+    )
+    if mapping_match:
+        for line in mapping_match.group(1).strip().splitlines():
+            cols = [c.strip() for c in line.split("|")]
+            cols = [c for c in cols if c]
+            if len(cols) >= 3:
+                producers_raw = cols[2] if len(cols) > 2 else ""
+                producers = [p.strip() for p in re.split(r"[,;]", producers_raw) if p.strip()]
+                mapping.append({
+                    "artifact": cols[0],
+                    "path": cols[1],
+                    "producers": producers,
+                })
+
+    index: list[dict[str, Any]] = []
+    index_match = re.search(r"##\s+Index\s*\n\|.*\|\n\|[-\s|]+\|\n((?:\|.+\|\n?)+)", text)
+    if index_match:
+        for line in index_match.group(1).strip().splitlines():
+            cols = [c.strip() for c in line.split("|")]
+            cols = [c for c in cols if c]
+            if len(cols) >= 4:
+                status = cols[3]
+                status = status.replace("■", "current").replace("▣", "stale").replace("□", "missing").strip()
+                if "current" in status:
+                    status = "current"
+                elif "stale" in status:
+                    status = "stale"
+                elif "missing" in status:
+                    status = "missing"
+                index.append({
+                    "document": cols[0],
+                    "path": cols[1],
+                    "last_updated": cols[2],
+                    "status": status,
+                })
+
+    coverage: dict[str, str] = {}
+    cov_section = re.search(r"##\s+Coverage\s*\n(.+?)(?=\n##\s|\Z)", text, re.DOTALL)
+    if cov_section:
+        cov_text = cov_section.group(1)
+        for key, pattern in [
+            ("documented", r"\*\*Documented\*\*:\s*(.+)"),
+            ("undocumented", r"\*\*Undocumented\*\*:\s*(.+)"),
+            ("stale", r"\*\*Stale\*\*:\s*(.+)"),
+            ("tests", r"\*\*Tests\*\*:\s*(.+)"),
+        ]:
+            m = re.search(pattern, cov_text)
+            if m:
+                coverage[key] = m.group(1).strip()
+
+    audit_log: list[dict[str, Any]] = []
+    audit_log_pattern = re.compile(r"###\s+(\d{4}-\d{2}-\d{2})\s*\(([^)]+)\)")
+    for am in audit_log_pattern.finditer(text):
+        date = am.group(1)
+        label = am.group(2)
+        start = am.end()
+        next_am = audit_log_pattern.search(text, start)
+        log_text = text[start : next_am.start() if next_am else len(text)]
+
+        findings: list[dict[str, str]] = []
+        for line in log_text.splitlines():
+            line = line.strip()
+            if line.startswith("- ["):
+                fm = re.match(r"-\s*\[(\w+)\]\s*(.+?)(?:\s*·\s*(\w+)\s*\((\w+)\))?$", line)
+                if fm:
+                    finding = {
+                        "type": fm.group(1),
+                        "description": fm.group(2).strip(),
+                        "resolution": "fixed",
+                    }
+                    severity = "info"
+                    sev_match = re.search(r"\b(critical|warning|info)\b", line, re.IGNORECASE)
+                    if sev_match:
+                        severity = sev_match.group(1).lower()
+                    finding["severity"] = severity
+                    if fm.group(3):
+                        finding["resolution"] = fm.group(3).strip().lower()
+                    findings.append(finding)
+                else:
+                    clean = re.sub(r"^-\s*\[[\w]+\]\s*", "", line)
+                    severity = "info"
+                    sev_match = re.search(r"\b(critical|warning|info)\b", line, re.IGNORECASE)
+                    if sev_match:
+                        severity = sev_match.group(1).lower()
+                    resolution = "fixed"
+                    res_match = re.search(r"·\s*(fixed|deferred|noted)", line, re.IGNORECASE)
+                    if res_match:
+                        resolution = res_match.group(1).lower()
+                    findings.append({"type": "generic", "description": clean.strip(), "severity": severity, "resolution": resolution})
+
+        audit_log.append({"date": date, "label": label, "findings": findings})
+
+    return {
+        "last_audit": last_audit,
+        "conventions": {
+            "doc_root": doc_root,
+            "style": style,
+            "auto_gen": auto_gen,
+            "version_files": version_files,
+            "semver_policy": semver_policy,
+        },
+        "mapping": mapping,
+        "index": index,
+        "coverage": coverage,
+        "audit_log": audit_log,
+        "warnings": warnings,
+    }
+
+
+def _parse_vision(text: str) -> dict[str, Any]:
+    warnings: list[str] = []
+
+    project_name = ""
+    name_match = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
+    if name_match:
+        project_name = name_match.group(1).strip()
+
+    north_star = _extract_section(text, "North Star")
+
+    personas: list[dict[str, str]] = []
+    persona_pattern = re.compile(r"###\s+(.+)$", re.MULTILINE)
+    who_section = re.search(r"##\s+Who\s+It's\s+For(.*?)(?=\n##\s)", text, re.DOTALL)
+    if who_section:
+        for pm in persona_pattern.finditer(who_section.group(1)):
+            p_name = pm.group(1).strip()
+            start = pm.end()
+            next_pm = persona_pattern.search(who_section.group(1), start)
+            desc = who_section.group(1)[start : next_pm.start() if next_pm else len(who_section.group(1))]
+            personas.append({"name": p_name, "description": desc.strip()})
+
+    principles: list[dict[str, str]] = []
+    princ_section = re.search(r"##\s+Principles(.*?)(?=\n##\s)", text, re.DOTALL)
+    if princ_section:
+        for pm in re.finditer(r"-\s*\*\*(.+?)\*\*\s*(.+?)(?=\n-|\Z)", princ_section.group(1), re.DOTALL):
+            principles.append({"name": pm.group(1).strip(), "description": pm.group(2).strip()})
+
+    direction = _extract_section(text, "Direction")
+
+    identity: dict[str, str] = {}
+    identity_section = re.search(r"##\s+Identity(.*?)(?=\n##\s|\Z)", text, re.DOTALL)
+    if identity_section:
+        id_text = identity_section.group(1)
+        for key, heading in [
+            ("personality", "Personality"),
+            ("voice", "Voice"),
+            ("emotional_register", "Emotional register"),
+            ("naming", "Naming"),
+        ]:
+            sub_match = re.search(rf"###\s+{re.escape(heading)}\s*\n(.*?)(?=\n###|\Z)", id_text, re.DOTALL)
+            if sub_match:
+                identity[key] = sub_match.group(1).strip()
+
+    tension = _extract_section(text, "The Tension")
+
+    return {
+        "project_name": project_name,
+        "north_star": north_star,
+        "personas": personas,
+        "principles": principles,
+        "direction": direction,
+        "identity": identity,
+        "tension": tension,
+        "warnings": warnings,
+    }
+
+
+PARSERS = {
+    "PROGRESS.md": _parse_progress,
+    "DECISIONS.md": _parse_decisions,
+    "HEALTH.md": _parse_health,
+    "SESSION.md": _parse_session,
+    "PLAN.md": _parse_plan,
+    "DOCS.md": _parse_docs,
+    "VISION.md": _parse_vision,
+}
+
+
+def _build_yaml(data: dict[str, Any], artifact_name: str) -> str:
+    return yaml.dump(data, default_flow_style=False, allow_unicode=True, sort_keys=False, width=120)
+
+
+def _get_output_path(artifact_name: str, project_dir: Path) -> Path:
+    yaml_name = _strip_md_extension(artifact_name) + ".yaml"
+    if artifact_name == "VISION.md":
+        return project_dir / "vision.yaml"
+    return project_dir / ".agentera" / yaml_name
+
+
+def _find_optimera_artifacts(project_dir: Path) -> list[tuple[str, Path]]:
+    results: list[tuple[str, Path]] = []
+    optimera_dir = project_dir / ".agentera" / "optimera"
+    if not optimera_dir.is_dir():
+        return results
+    for sub in sorted(optimera_dir.iterdir()):
+        if sub.is_dir():
+            for name in ("OBJECTIVE.md", "EXPERIMENTS.md"):
+                p = sub / name
+                if p.exists():
+                    results.append((name, p))
+    return results
+
+
+def _parse_objective(text: str) -> dict[str, Any]:
+    warnings: list[str] = []
+
+    title = ""
+    title_match = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
+    if title_match:
+        title = title_match.group(1).strip()
+
+    status = "open"
+    status_match = re.search(r"\*\*Status\*\*:\s*(open|closed)", text, re.IGNORECASE)
+    if status_match:
+        status = status_match.group(1).lower()
+
+    header_extra: dict[str, str] = {}
+    for field, label in [
+        ("closed_at", "Closed at"),
+        ("final_value", "Final value"),
+        ("target_ref", "Target"),
+        ("reason", "Reason"),
+    ]:
+        val = _extract_bold_field(text, label)
+        if val:
+            header_extra[field] = val
+
+    description = _extract_section(text, "Objective")
+    if not description:
+        obj_match = re.search(r"##\s+Objective\s*\n(.*?)(?=\n##\s|\Z)", text, re.DOTALL)
+        if obj_match:
+            description = obj_match.group(1).strip()
+
+    why = _extract_section(text, "Why this matters")
+    measurement = _extract_section(text, "Measurement")
+    constraints_raw = _extract_section(text, "Constraints")
+    constraints = [c.strip().lstrip("-").strip() for c in constraints_raw.splitlines() if c.strip().startswith("-")] if constraints_raw else []
+
+    metric: dict[str, str] = {}
+    metric_section = re.search(r"###\s+.*[Mm]etric.*\n(.*?)(?=\n###|\n##\s|\Z)", text, re.DOTALL)
+    if metric_section:
+        mt = metric_section.group(1)
+        for key, label in [("description", "Tier 1"), ("direction", "Direction"), ("unit", "Unit"), ("variance", "Variance")]:
+            val = _extract_bold_field(mt, label)
+            if val:
+                metric[key] = val
+
+    baseline: dict[str, str] = {}
+    baseline_section = re.search(r"##\s+Baseline\s*\n(.*?)(?=\n##\s|\Z)", text, re.DOTALL)
+    if baseline_section:
+        baseline["description"] = baseline_section.group(1).strip()
+    model_match = re.search(r"##\s+Measurement\s+model\s*\n(.*?)(?=\n##\s|\Z)", text, re.DOTALL)
+    if model_match:
+        baseline["model_notes"] = model_match.group(1).strip()
+
+    scope: dict[str, list[str]] = {"included": [], "excluded": []}
+    scope_section = re.search(r"##\s+Scope\s*\n(.*?)(?=\n##\s|\Z)", text, re.DOTALL)
+    if scope_section:
+        scope_text = scope_section.group(1)
+        in_match = re.search(r"[Ii]n\s+scope:\s*(.*?)(?=Out\s+of\s+scope|\Z)", scope_text, re.DOTALL)
+        if in_match:
+            scope["included"] = [l.strip().lstrip("-").strip() for l in in_match.group(1).splitlines() if l.strip().startswith("-")]
+        out_match = re.search(r"[Oo]ut\s+of\s+scope:\s*(.*)", scope_text, re.DOTALL)
+        if out_match:
+            scope["excluded"] = [l.strip().lstrip("-").strip() for l in out_match.group(1).splitlines() if l.strip().startswith("-")]
+
+    gates: dict[str, str] = {}
+    gates_section = re.search(r"##\s+Gates\s*\n(.*?)(?=\n##\s|\Z)", text, re.DOTALL)
+    if gates_section:
+        gt = gates_section.group(1)
+        for key, label in [("description", ""), ("causal", "Causal"), ("structural", "Structural"), ("regression", "Regression")]:
+            val = _extract_bold_field(gt, label)
+            if val:
+                gates[key] = val
+
+    return {
+        "header": {"title": title, "status": status, **header_extra},
+        "objective": {"description": description, "why": why, "measurement": measurement, "constraints": constraints},
+        "metric": metric,
+        "baseline": baseline,
+        "scope": scope,
+        "gates": gates,
+        "warnings": warnings,
+    }
+
+
+def _parse_experiments(text: str) -> dict[str, Any]:
+    warnings: list[str] = []
+    experiments: list[dict[str, Any]] = []
+    archive: list[str] = []
+
+    exp_pattern = re.compile(r"##\s+Experiment\s+(\d+)\s*·\s*(\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2})?)\s*·\s*(.+)")
+    sections = re.split(r"(?=^##\s+(?:Experiment\s+\d+|Closure|Archived\s+Experiments))", text, flags=re.MULTILINE)
+
+    for section in sections:
+        m = exp_pattern.match(section.strip())
+        if m:
+            number = int(m.group(1))
+            date = m.group(2)
+            label = m.group(3).strip()
+
+            hypothesis = _extract_bold_field_multiline(section, "Hypothesis")
+            method = _extract_bold_field_multiline(section, "Method")
+            change = _extract_bold_field_multiline(section, "Change")
+            metric_raw = _extract_bold_field_multiline(section, "Metric")
+            regression = _extract_bold_field(section, "Regression")
+            status_raw = _extract_bold_field(section, "Status")
+            conclusion = _extract_bold_field_multiline(section, "Conclusion")
+            next_steps = _extract_bold_field(section, "Next")
+            escalation = _extract_bold_field(section, "Escalation")
+            target_progress = _extract_bold_field(section, "Target progress")
+
+            status = "discarded"
+            if status_raw:
+                sl = status_raw.lower()
+                if "kept" in sl:
+                    status = "kept"
+                elif "baseline" in sl:
+                    status = "baseline"
+                elif "discarded" in sl:
+                    status = "discarded"
+
+            metric: dict[str, Any] = {"primary_value": metric_raw, "delta_vs_baseline": ""}
+            experiments.append({
+                "number": number,
+                "date": date,
+                "label": label,
+                "hypothesis": hypothesis,
+                "method": method,
+                "change": change,
+                "metric": metric,
+                "regression": regression,
+                "status": status,
+                "conclusion": conclusion,
+                "next": next_steps,
+                "escalation": escalation,
+                "target_progress": target_progress,
+            })
+
+    closure: dict[str, str] = {}
+    closure_match = re.search(r"##\s+Closure\s*·\s*(\d{4}-\d{2}-\d{2})", text)
+    if closure_match:
+        closure["date"] = closure_match.group(1)
+        closure["final_value"] = _extract_bold_field(text[closure_match.start():], "Final value")
+        closure["target"] = _extract_bold_field(text[closure_match.start():], "Target")
+        closure["reason"] = _extract_bold_field(text[closure_match.start():], "Reason")
+
+    archive_match = re.search(r"##\s+Archived\s+Experiments\s*\n((?:- .+\n?)*)", text)
+    if archive_match:
+        for line in archive_match.group(1).strip().splitlines():
+            line = line.strip()
+            if line.startswith("- "):
+                archive.append(line[2:].strip())
+
+    return {"experiments": experiments, "closure": closure, "archive": archive, "warnings": warnings}
+
+
+OPTIMERA_PARSERS = {
+    "OBJECTIVE.md": _parse_objective,
+    "EXPERIMENTS.md": _parse_experiments,
+}
+
+
+def migrate_project(project_dir: Path, dry_run: bool = False, verbose: bool = False) -> int:
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.INFO,
+        format="%(levelname)s: %(message)s",
+    )
+
+    v1_files: list[Path] = []
+    agentera_dir = project_dir / ".agentera"
+
+    for name in AGENTERA_ARTIFACTS:
+        p = agentera_dir / name
+        if p.exists():
+            v1_files.append(p)
+
+    for name in ROOT_ARTIFACTS:
+        p = project_dir / name
+        if p.exists():
+            v1_files.append(p)
+
+    optimera_files = _find_optimera_artifacts(project_dir)
+    v1_files.extend(p for _, p in optimera_files)
+
+    if not v1_files:
+        print("nothing to migrate")
+        return 0
+
+    if not dry_run:
+        backup_dir = agentera_dir / "backup-v1"
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        for src in v1_files:
+            dst = backup_dir / src.name
+            shutil.copy2(src, dst)
+            log.info("backed up %s → %s", src.relative_to(project_dir), dst.relative_to(project_dir))
+
+    all_warnings: list[str] = []
+
+    for src in v1_files:
+        rel = src.relative_to(project_dir)
+        name = src.name
+
+        if name in OPTIMERA_PARSERS:
+            parser = OPTIMERA_PARSERS[name]
+            yaml_name = _strip_md_extension(name) + ".yaml"
+            out_path = src.parent / yaml_name
+        elif name in PARSERS:
+            parser = PARSERS[name]
+            out_path = _get_output_path(name, project_dir)
+        else:
+            log.warning("no parser for %s, skipping", name)
+            continue
+
+        try:
+            text = src.read_text(encoding="utf-8")
+            data = parser(text)
+            item_warnings = data.pop("warnings", [])
+            all_warnings.extend(item_warnings)
+            for w in item_warnings:
+                log.warning("%s: %s", rel, w)
+
+            yaml_content = _build_yaml(data, name)
+
+            if dry_run:
+                log.info("[dry-run] would write %s (%d bytes)", out_path.relative_to(project_dir), len(yaml_content))
+            else:
+                out_path.parent.mkdir(parents=True, exist_ok=True)
+                out_path.write_text(yaml_content, encoding="utf-8")
+                log.info("wrote %s", out_path.relative_to(project_dir))
+
+        except Exception as e:
+            log.error("failed to migrate %s: %s", rel, e)
+            all_warnings.append(f"{rel}: migration error: {e}")
+
+    if all_warnings:
+        log.warning("%d warning(s) during migration", len(all_warnings))
+
+    migrated = len(v1_files)
+    print(f"migrated {migrated} artifact(s)")
+    return 0
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Migrate v1 Markdown artifacts to v2 YAML")
+    parser.add_argument("--project", default=".", help="Project directory (default: current directory)")
+    parser.add_argument("--dry-run", action="store_true", help="Show what would be migrated without writing")
+    parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
+    args = parser.parse_args()
+
+    project_dir = Path(args.project).resolve()
+    if not project_dir.is_dir():
+        print(f"error: {project_dir} is not a directory", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(migrate_project(project_dir, dry_run=args.dry_run, verbose=args.verbose))
+
+
+if __name__ == "__main__":
+    main()

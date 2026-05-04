@@ -49,7 +49,7 @@ Atomic cutover: v1 deletion and config collapse happen in one commit so no inter
 ### Task 2: Update Runtime Adapter Tests
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN the test suite WHEN pytest runs THEN 0 failures
 ▸ GIVEN test_runtime_adapters.py WHEN read THEN it validates the single-bundle model: 1 marketplace plugin, no per-skill plugin.json checks for deleted dirs, version alignment for remaining surfaces
@@ -59,7 +59,7 @@ Atomic cutover: v1 deletion and config collapse happen in one commit so no inter
 ### Task 3: Write UPGRADE.md + Rename Migration Script
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN UPGRADE.md WHEN read THEN it documents upgrade steps for all 4 runtimes (Claude Code, OpenCode, Codex, Copilot)
 ▸ GIVEN UPGRADE.md WHEN read THEN it documents project artifact migration using the renamed script
