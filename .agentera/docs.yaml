@@ -1,0 +1,922 @@
+last_audit: 2026-04-30 (installation reliability checkpoint)
+conventions:
+  doc_root: .
+  style: technical, concise, sections with tables, no badges
+  auto_gen:
+  - none
+  version_files:
+  - plugin.json
+  - .github/plugin/plugin.json
+  - .codex-plugin/plugin.json
+  - .claude-plugin/marketplace.json
+  - .opencode/plugins/agentera.js
+  - registry.json
+  semver_policy:
+    feat: minor
+    fix: patch
+    docs/chore/test: no bump
+mapping:
+- artifact: VISION.md
+  path: .agentera/vision.yaml
+  producers:
+  - visionera
+  - realisera
+- artifact: TODO.md
+  path: TODO.md
+  producers:
+  - realisera
+  - inspektera
+- artifact: CHANGELOG.md
+  path: CHANGELOG.md
+  producers:
+  - realisera
+- artifact: DECISIONS.md
+  path: .agentera/DECISIONS.md
+  producers:
+  - resonera
+- artifact: PLAN.md
+  path: .agentera/PLAN.md
+  producers:
+  - planera
+- artifact: PROGRESS.md
+  path: .agentera/PROGRESS.md
+  producers:
+  - realisera
+- artifact: HEALTH.md
+  path: .agentera/HEALTH.md
+  producers:
+  - inspektera
+- artifact: DOCS.md
+  path: .agentera/DOCS.md
+  producers:
+  - dokumentera
+- artifact: DESIGN.md
+  path: .agentera/DESIGN.md
+  producers:
+  - visualisera
+- artifact: SESSION.md
+  path: .agentera/SESSION.md
+  producers:
+  - session stop hook
+- artifact: PROFILE.md
+  path: '$PROFILERA_PROFILE_DIR/PROFILE.md (default: $XDG_DATA_HOME/agentera/PROFILE.md)'
+  producers:
+  - profilera
+- artifact: USAGE.md
+  path: '$AGENTERA_USAGE_DIR/USAGE.md (default: $XDG_DATA_HOME/agentera/USAGE.md, sibling of PROFILE.md)'
+  producers:
+  - scripts/usage_stats.py
+index:
+- document: README
+  path: README.md
+  last_updated: '2026-04-30'
+  status: current
+- document: CLAUDE.md
+  path: CLAUDE.md
+  last_updated: '2026-04-27'
+  status: current
+- document: Decisions
+  path: .agentera/DECISIONS.md
+  last_updated: '2026-04-28'
+  status: current
+- document: Vision
+  path: VISION.md
+  last_updated: '2026-03-31'
+  status: current
+- document: Progress
+  path: .agentera/PROGRESS.md
+  last_updated: '2026-04-30'
+  status: current
+- document: TODO
+  path: TODO.md
+  last_updated: '2026-04-30'
+  status: current
+- document: Changelog
+  path: CHANGELOG.md
+  last_updated: '2026-04-30'
+  status: current
+- document: Health
+  path: .agentera/HEALTH.md
+  last_updated: '2026-04-30'
+  status: current
+- document: Plan archive
+  path: .agentera/archive/PLAN-2026-04-30-installation-reliability-self-healing.md
+  last_updated: '2026-04-30'
+  status: current
+- document: DOCS
+  path: .agentera/DOCS.md
+  last_updated: '2026-04-30'
+  status: current
+- document: Design
+  path: .agentera/DESIGN.md
+  last_updated: '2026-04-19'
+  status: current
+- document: Ecosystem spec
+  path: SPEC.md
+  last_updated: '2026-04-28'
+  status: current
+- document: Ideas
+  path: docs/IDEAS.md
+  last_updated: '2026-03-29'
+  status: current
+- document: Registry
+  path: registry.json
+  last_updated: '2026-04-30'
+  status: current
+- document: Marketplace manifest
+  path: .claude-plugin/marketplace.json
+  last_updated: '2026-04-30'
+  status: current
+- document: Codex marketplace manifest
+  path: .agents/plugins/marketplace.json
+  last_updated: '2026-04-28'
+  status: current
+- document: Copilot plugin manifest
+  path: plugin.json
+  last_updated: '2026-04-30'
+  status: current
+- document: Copilot repo plugin manifest
+  path: .github/plugin/plugin.json
+  last_updated: '2026-04-30'
+  status: current
+- document: Codex plugin manifest
+  path: .codex-plugin/plugin.json
+  last_updated: '2026-04-30'
+  status: current
+- document: OpenCode plugin adapter
+  path: .opencode/plugins/agentera.js
+  last_updated: '2026-04-30'
+  status: current
+- document: OpenCode adapter reference
+  path: references/adapters/opencode.md
+  last_updated: '2026-04-30'
+  status: current
+- document: Runtime parity reference
+  path: references/adapters/runtime-feature-parity.md
+  last_updated: '2026-04-28'
+  status: current
+- document: Codex UI metadata
+  path: skills/&lt;name&gt;/agents/openai.yaml; agents/openai.yaml
+  last_updated: '2026-04-24'
+  status: current
+- document: Hooks registry
+  path: hooks/hooks.json
+  last_updated: '2026-04-03'
+  status: current
+- document: Lifecycle adapter validator
+  path: scripts/validate_lifecycle_adapters.py
+  last_updated: '2026-04-28'
+  status: current
+- document: Semantic eval command
+  path: scripts/semantic_eval.py
+  last_updated: '2026-04-30'
+  status: current
+- document: Semantic fixture contract
+  path: scripts/semantic_fixtures.py
+  last_updated: '2026-04-30'
+  status: current
+- document: Semantic eval fixtures
+  path: fixtures/semantic/
+  last_updated: '2026-04-30'
+  status: current
+- document: Usage analytics script
+  path: scripts/usage_stats.py
+  last_updated: '2026-04-26'
+  status: current
+- document: Codex setup helper
+  path: scripts/setup_codex.py
+  last_updated: '2026-04-26'
+  status: current
+- document: Copilot setup helper
+  path: scripts/setup_copilot.py
+  last_updated: '2026-04-26'
+  status: current
+- document: Setup helper smoke runner
+  path: scripts/smoke_setup_helpers.py
+  last_updated: '2026-04-26'
+  status: current
+- document: Setup doctor and installer
+  path: scripts/setup_doctor.py
+  last_updated: '2026-04-28'
+  status: current
+- document: OpenCode bootstrap smoke runner
+  path: scripts/smoke_opencode_bootstrap.mjs
+  last_updated: '2026-04-28'
+  status: current
+- document: Live-host smoke runner
+  path: scripts/smoke_live_hosts.py
+  last_updated: '2026-04-26'
+  status: current
+- document: SessionStart hook
+  path: hooks/session_start.py
+  last_updated: '2026-04-03'
+  status: current
+- document: Session stop hook
+  path: hooks/session_stop.py
+  last_updated: '2026-04-03'
+  status: current
+- document: Validation hook
+  path: hooks/validate_artifact.py
+  last_updated: '2026-04-28'
+  status: current
+- document: Shared hook utils
+  path: hooks/common.py
+  last_updated: '2026-04-03'
+  status: current
+- document: Test suite
+  path: tests/
+  last_updated: '2026-04-30'
+  status: current
+- document: Lefthook config
+  path: .lefthook.yml
+  last_updated: '2026-04-20'
+  status: current
+- document: CI workflow
+  path: .github/workflows/ci.yml
+  last_updated: '2026-04-11'
+  status: current
+coverage:
+  documented: 12/12 skills have SKILL.md (single source of truth)
+  undocumented: 0 skills lack documentation
+  stale: none
+  tests: 577 tests across 23 files; CI runs on push/PR via GitHub Actions
+audit_log:
+- date: '2026-04-30'
+  label: installation reliability checkpoint
+  findings:
+  - type: freshness
+    description: Installation Reliability Self-Healing closed with plan-level PROGRESS, TODO, CHANGELOG, DOCS, and archived
+      PLAN state aligned; active PLAN.md was removed after Tasks 1-8 reached complete
+    resolution: info
+    severity: info
+  - type: stale
+    description: DOCS.md still pointed at an active installation reliability plan and reported 565 tests after release validation
+      collected 577 tests across 23 files; the index and coverage now match the checkpoint state
+    resolution: warning
+    severity: warning
+- date: '2026-04-30'
+  label: install health docs
+  findings:
+  - type: stale
+    description: OpenCode quick start still used `--skill '*'`; docs now use
+    resolution: fixed
+    severity: info
+  - type: gap
+    description: Install-health docs did not distinguish package-manager freshness from
+    resolution: fixed
+    severity: info
+  - type: gap
+    description: Managed OpenCode ownership rules were only visible in plugin code and
+    resolution: fixed
+    severity: info
+- date: '2026-04-30'
+  label: semantic eval docs
+  findings:
+  - type: gap
+    description: README and AGENTS.md did not document the separate offline semantic eval
+    resolution: fixed
+    severity: info
+  - type: gap
+    description: DOCS.md Index did not track `scripts/semantic_eval.py`,
+    resolution: fixed
+    severity: info
+- date: '2026-04-30'
+  label: post-plan coverage refresh
+  findings:
+  - type: stale
+    description: Coverage reported 523 tests after the Optimera analysis reliability
+    resolution: fixed
+    severity: info
+  - type: freshness
+    description: Index rows now point at the 2026-04-30 progress, TODO,
+    resolution: fixed
+    severity: info
+- date: '2026-04-30'
+  label: optimera analysis contract
+  findings:
+  - type: gap
+    description: Optimera's skill documentation did not state how rich experiment records
+    resolution: fixed
+    severity: info
+  - type: gap
+    description: Stochastic objective guidance did not require fixed per-experiment budgets;
+    resolution: fixed
+    severity: info
+- date: '2026-04-29'
+  label: optimera objective docs refresh
+  findings:
+  - type: stale
+    description: README's state artifact reference listed root and operational artifacts
+    resolution: fixed
+    severity: info
+  - type: stale
+    description: Coverage still reported 511 tests across 18 files after Task 5 added
+    resolution: fixed
+    severity: info
+- date: '2026-04-29'
+  label: post-steelman docs refresh
+  findings:
+  - type: stale
+    description: Coverage still reported 477 tests across 17 files after Audit 17 recorded 511 across 18; Coverage and Test
+      suite rows now match validation
+    resolution: warning
+    severity: warning
+  - type: freshness
+    description: Steelman plan artifacts now point at 2026-04-29 progress, changelog, health, TODO, release metadata, and
+      archived plan state
+    resolution: info
+    severity: info
+- date: '2026-04-28'
+  label: setup bundle final verification
+  findings:
+  - type: checked
+    description: Unified setup bundle final checkpoint passed contracts, spec
+    resolution: fixed
+    severity: info
+  - type: freshness
+    description: PROGRESS, TODO, CHANGELOG, DOCS, and PLAN now summarize the
+    resolution: fixed
+    severity: info
+- date: '2026-04-28'
+  label: setup bundle docs refresh
+  findings:
+  - type: stale
+    description: README still described the unified doctor and installer as future
+    resolution: fixed
+    severity: info
+  - type: gap
+    description: DOCS.md Index had no row for the setup doctor and still reported 457
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: 'Adapter setup notes still preserve runtime-native boundaries:'
+    resolution: fixed
+    severity: info
+- date: '2026-04-28'
+  label: release state reconciliation
+  findings:
+  - type: stale
+    description: PLAN.md still described the v1.20 release as active and pre-tag
+    resolution: fixed
+    severity: info
+  - type: stale
+    description: PROGRESS.md still pointed to the old publish-next handoff; a new
+    resolution: fixed
+    severity: info
+- date: '2026-04-28'
+  label: decision numbering hygiene
+  findings:
+  - type: gap
+    description: DECISIONS.md had duplicate Decision 23 entries and mixed ordering;
+    resolution: fixed
+    severity: info
+- date: '2026-04-28'
+  label: runtime onboarding polish
+  findings:
+  - type: cleanup
+    description: README still mixed runtime install, optional hooks, and clone-only
+    resolution: fixed
+    severity: info
+  - type: gap
+    description: OpenCode quick start implied the plugin alone installed Agentera; it
+    resolution: fixed
+    severity: info
+- date: '2026-04-28'
+  label: Codex marketplace visibility
+  findings:
+  - type: gap
+    description: Codex marketplace entries pointed at skill folders instead of the
+    resolution: fixed
+    severity: info
+- date: '2026-04-28'
+  label: README memory and hooks refinement
+  findings:
+  - type: cleanup
+    description: README underplayed profilera and exposed hook adapter internals in
+    resolution: fixed
+    severity: info
+- date: '2026-04-28'
+  label: README feature and hook refinement
+  findings:
+  - type: cleanup
+    description: README feature list still repeated skill names and exposed runtime
+    resolution: fixed
+    severity: info
+- date: '2026-04-28'
+  label: README product rewrite
+  findings:
+  - type: cleanup
+    description: README led with dense install/runtime reference material; rewrote it around product promise, visual briefing,
+      quick start, workflows, and compact runtime details
+    resolution: info
+    severity: info
+- date: '2026-04-28'
+  label: README runtime support readability
+  findings:
+  - type: cleanup
+    description: README runtime support and lifecycle matrices were hard to scan; replaced them with per-runtime details blocks
+      that preserve the same claims
+    resolution: info
+    severity: info
+- date: '2026-04-28'
+  label: plan-level release readiness
+  findings:
+  - type: stale
+    description: Coverage line still reported 449 tests after Task 5 full-suite verification passed with 452 tests across
+      17 files
+    resolution: info
+    severity: info
+  - type: cleanup
+    description: CHANGELOG moved the remaining Copilot/OpenCode hard-gate entries from Unreleased into the single `1.20.0`
+      section
+    resolution: info
+    severity: info
+  - type: handoff
+    description: Final retag and publish required explicit release authorization; authorization was granted after the readiness
+      handoff, with no remote `v1.20*` tags found at preflight
+    resolution: warning
+    severity: warning
+- date: '2026-04-28'
+  label: runtime parity reference checkpoint
+  findings:
+  - type: gap
+    description: Release-relevant runtime parity comparison lived only in plan context; added a tracked adapter reference
+      with explicit Claude Code, OpenCode, Copilot, and Codex behavior
+    resolution: warning
+    severity: warning
+  - type: misaligned
+    description: README overclaimed Codex lifecycle and hard-gate behavior; it now limits Codex to shipped `apply_patch` validation
+      hooks and names missing final-content reconstruction
+    resolution: warning
+    severity: warning
+  - type: guard
+    description: Hard-gate parity language is scoped to reconstructable OpenCode and Copilot artifact candidates; Claude Code
+      and Codex remain advisory validation surfaces
+    resolution: info
+    severity: info
+- date: '2026-04-28'
+  label: OpenCode pre-write gate checkpoint
+  findings:
+  - type: gap
+    description: OpenCode shipped only post-write artifact validation; `tool.execute.before` now blocks invalid reconstructable
+      artifact write/edit candidates before mutation
+    resolution: warning
+    severity: warning
+  - type: guard
+    description: OpenCode docs now name the `apply_patch` patchText limitation instead of claiming universal hard-gate parity
+    resolution: info
+    severity: info
+  - type: verified
+    description: OpenCode smoke still proves `session.idle` bookmark writes and `session.created` no-op behavior after adding
+      the pre-write gate
+    resolution: info
+    severity: info
+- date: '2026-04-28'
+  label: Copilot pre-write gate checkpoint
+  findings:
+  - type: gap
+    description: README claimed broad artifact-validation parity before Copilot payload evidence supported every edit shape;
+      docs now limit the claim to reconstructable preToolUse candidates
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: Copilot shipped only postToolUse artifact validation, whose output is logging-only; preToolUse now blocks
+      invalid reconstructable artifact edits
+    resolution: warning
+    severity: warning
+- date: '2026-04-27'
+  label: OpenCode session-events checkpoint
+  findings:
+  - type: gap
+    description: OpenCode SESSION.md bookmark wiring was absent after phantom direct `session.idle` hook keys were removed;
+      plugin now handles `session.idle` through the generic `event` hook and smoke-tests write/no-op/created-event behavior
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: README lifecycle table implied OpenCode session preload was active; it is now explicitly deferred until a
+      supported context-injection path is verified
+    resolution: info
+    severity: info
+  - type: stale
+    description: Coverage line said "438 tests across 17 files"; actual is 441 after OpenCode event-hook smoke and adapter
+      validation coverage
+    resolution: info
+    severity: info
+- date: '2026-04-27'
+  label: 1.20.0 release-readiness audit
+  findings:
+  - type: stale
+    description: README.md and AGENTS.md (CLAUDE.md symlink) referenced "Section 21" for the Session Corpus Contract; SPEC.md
+      was renumbered in 1.20.0 (Session Corpus is now Section 22). Four occurrences across README.md (lines 31, 183, 381)
+      and AGENTS.md (line 69)
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: README Scripts section omitted `scripts/smoke_opencode_bootstrap.mjs`; closes open TODO `[live-host-smoke-mjs-doc-row]`.
+      Index gained a row for the same script
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: Coverage line said "433 tests across 17 files"; actual is 438 (+3 from this session's Codex/Copilot/Claude
+      Code per-turn extractor work; full breakdown lands under [Unreleased] in CHANGELOG when the next release is cut)
+    resolution: info
+    severity: info
+- date: '2026-04-26'
+  label: Live-Host Verification Task 5
+  findings:
+  - type: gap
+    description: DOCS.md Index missing row for `scripts/smoke_live_hosts.py` (T2-T4 harness shipped without an Index entry)
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: README Codex setup section had no manual verification protocol; users without `--live` access (no auth, no
+      API budget, behind firewall) had no documented path to verify AGENTERA_HOME inheritance
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: README Copilot setup section had no manual verification protocol; same untested path for non-`--live` users
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: README Scripts section did not enumerate `scripts/smoke_live_hosts.py` alongside `validate_spec.py`, `eval_skills.py`,
+      `usage_stats.py`, `setup_codex.py`, `setup_copilot.py`, and `smoke_setup_helpers.py`; default-mode and `--live` cost
+      semantics were undocumented
+    resolution: warning
+    severity: warning
+- date: '2026-04-26'
+  label: Codex+Copilot Setup Helpers Task 4
+  findings:
+  - type: gap
+    description: DOCS.md Index missing rows for `scripts/setup_codex.py`, `scripts/setup_copilot.py`, and `scripts/smoke_setup_helpers.py`
+      (T1+T2+T3 helpers shipped without Index entries)
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: README Codex and Copilot setup sections did not surface the new helpers as the recommended path; manual snippets
+      were the only documented option
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: README Scripts section did not enumerate the new helpers alongside `validate_spec.py`, `eval_skills.py`,
+      and `usage_stats.py`
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: 'Audit 14 finding 1: Index dates for Progress, TODO, Changelog, Health, Plan, and DOCS reflected pre-2026-04-26
+      commits despite same-day commits to each artifact'
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: 'Audit 14 finding 1: Coverage line said "359 tests across 13 files"; actual is 433 across 17 (412 post-1.20.0
+      baseline + 10 Codex helper tests + 11 Copilot helper tests)'
+    resolution: warning
+    severity: warning
+- date: '2026-04-26'
+  label: Cross-Runtime Portability Task 3
+  findings:
+  - type: gap
+    description: README.md alternative install methods lacked AGENTERA_HOME setup steps for Codex (`~/.codex/config.toml`
+      `[shell_environment_policy]`) and Copilot (shell rc export); SPEC Section 7 mechanism table needed user-facing surface
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: .codex-plugin/plugin.json `codex.limitations` array did not flag the AGENTERA_HOME setup requirement
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: plugin.json (Copilot root) and .github/plugin/plugin.json descriptions did not flag the AGENTERA_HOME setup
+      requirement
+    resolution: warning
+    severity: warning
+- date: '2026-04-26'
+  label: Suite Usage Analytics Task 4
+  findings:
+  - type: gap
+    description: DOCS.md Artifact Mapping missing USAGE.md (new global artifact, sibling of PROFILE.md, produced by `scripts/usage_stats.py`)
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: DOCS.md Index missing `scripts/usage_stats.py` row
+    resolution: info
+    severity: info
+  - type: gap
+    description: README.md had no Scripts section listing repo-level utilities (`validate_spec.py`, `eval_skills.py`, `usage_stats.py`)
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: CLAUDE.md (symlink to AGENTS.md) Python scripts section did not list `scripts/usage_stats.py`
+    resolution: warning
+    severity: warning
+- date: '2026-04-25'
+  label: Copilot packaging fix
+  findings:
+  - type: gap
+    description: Current-checkout Copilot plugin loading rejected `../../skills`; root `plugin.json` now loads shared `skills/`
+      inside plugin root
+    resolution: info
+    severity: info
+- date: '2026-04-25'
+  label: Live Copilot/Codex smoke
+  findings:
+  - type: gap
+    description: 'Live host caveat narrowed: Codex `$hej` and installed Copilot skills work, but current-checkout Copilot
+      plugin loading rejects `../../skills`'
+    resolution: info
+    severity: info
+- date: '2026-04-25'
+  label: Audit 11 freshness checkpoint
+  findings:
+  - type: stale
+    description: Audit 11 PLAN, TODO, PROGRESS, and CHANGELOG needed one current completed state after Tasks 1-7 passed
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: Live Copilot/Codex host behavior remains untested and must stay explicit until smoke-tested
+    resolution: info
+    severity: info
+- date: '2026-04-24'
+  label: Task 6 profilera integration
+  findings:
+  - type: stale
+    description: README.md and Codex metadata still described profilera as missing Copilot/Codex collectors after collectors
+      landed
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: DOCS.md Coverage test count predated Task 6 envelope validation fixtures
+    resolution: warning
+    severity: warning
+- date: '2026-04-24'
+  label: Task 1 runtime install audit
+  findings:
+  - type: stale
+    description: README.md listed non-existent `claude plugin add` flow instead of marketplace add plus plugin install
+    resolution: critical
+    severity: critical
+  - type: misaligned
+    description: README.md mixed plugin distribution paths with direct skill-folder loading for Copilot, Codex, and OpenCode
+    resolution: warning
+    severity: warning
+  - type: misaligned
+    description: README.md hook table over-specified parity for runtimes with partial or experimental lifecycle support
+    resolution: warning
+    severity: warning
+- date: '2026-04-24'
+  label: Audit 10 follow-up
+  findings:
+  - type: stale
+    description: DOCS.md Coverage test count said 263 across 12 files, actual 320 across 13 after runtime adapter tests
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: DOCS.md Index dates for Progress, TODO, Changelog, Health, Plan, and Test suite predated Copilot/Codex plan
+      updates
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: DOCS.md Plan row said archived while a completed active PLAN.md exists
+    resolution: info
+    severity: info
+- date: '2026-04-20'
+  label: Audit 8, post-1.13.0
+  findings:
+  - type: stale
+    description: CHANGELOG.md [Unreleased] empty despite 6 bump-worthy commits since 1.13.0
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: DOCS.md Coverage test count said 240 across 12 files, actual 263; CI gating note outdated
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: DOCS.md Index dates for HEALTH.md, SPEC.md, Test suite showed pre-1.13.0 dates
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: CLAUDE.md repo layout missing .lefthook.yml
+    resolution: info
+    severity: info
+  - type: stale
+    description: DOCS.md last audit date said 2026-04-10 post-1.8.0
+    resolution: info
+    severity: info
+  - type: gap
+    description: DOCS.md Index missing .lefthook.yml row
+    resolution: info
+    severity: info
+- date: '2026-04-10'
+  label: Audit 7, post-1.8.0
+  findings:
+  - type: stale
+    description: DOCS.md Index "Ecosystem spec" path said `references/the spec.md`, renamed to SPEC.md at repo root in Decision
+      26
+    resolution: critical
+    severity: critical
+  - type: stale
+    description: DOCS.md Coverage test count said 233 across 10 files, actual is 240 across 12 files (+4 platform-annotation
+      tests, +generate_contracts and hook tests)
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: DOCS.md Index dates for 7 entries showed 2026-04-02/03, updated to 2026-04-10 for files changed by Platform
+      Portability plan
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: DOCS.md last audit date said 2026-04-03 post-1.6.0, now post-1.8.0
+    resolution: info
+    severity: info
+- date: '2026-04-03'
+  label: Audit 6, post-1.6.0
+  findings:
+  - type: gap
+    description: DOCS.md Artifact Mapping missing SESSION.md (12th artifact, Decision 23)
+    resolution: critical
+    severity: critical
+  - type: stale
+    description: DOCS.md Coverage said 171 tests across 7 files, actual is 233 across 10
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: DOCS.md Index missing 5 hooks files (hooks.json, session_start.py, session_stop.py, validate_artifact.py,
+      common.py)
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: README.md inspektera description says "six dimensions", now 9
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: README.md artifact reference says "eight operational files", now nine (SESSION.md)
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: README.md artifact table missing SESSION.md row
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: CLAUDE.md hooks/hooks.json described as "PostToolUse hook registry", registers all 3 hooks
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: CLAUDE.md repository layout missing hooks/session_start.py, hooks/session_stop.py, hooks/common.py
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: CLAUDE.md "eight operational files" should be nine
+    resolution: warning
+    severity: warning
+- date: '2026-04-03'
+  label: Audit 5
+  findings:
+  - type: gap
+    description: CLAUDE.md repo layout missing tests/ directory
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: DOCS.md HEALTH.md row showed stale status, Audit 6 updated it
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: CHANGELOG.md [Unreleased] empty despite 7 post-1.5.0 commits
+    resolution: warning
+    severity: warning
+  - type: misaligned
+    description: the spec Section 16 orkestrera row described proportionality forwarding instead of anti-bias constraint
+    resolution: warning
+    severity: warning
+  - type: misaligned
+    description: the spec line 5 comment had hyphen instead of underscore in script name
+    resolution: info
+    severity: info
+  - type: stale
+    description: DOCS.md DTC comment referenced ISSUES.md instead of TODO.md
+    resolution: info
+    severity: info
+  - type: gap
+    description: DOCS.md Index missing test suite row
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: DOCS.md Coverage note outdated, missing test count and gaps
+    resolution: warning
+    severity: warning
+- date: '2026-04-02'
+  label: Audit 4
+  findings:
+  - type: stale
+    description: README.md line 52 referenced /loop without mentioning /orkestrera as primary autonomous execution method
+    resolution: warning
+    severity: warning
+  - type: misaligned
+    description: README.md ecosystem diagram showed orkestrera → realisera but omitted orkestrera ↔ inspektera evaluation
+      link
+    resolution: warning
+    severity: warning
+  - type: misaligned
+    description: README.md and the spec.md VISION.md consumers missing orkestrera (reads during bootstrap)
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: DOCS.md coverage notes referenced CLAUDE.md and README.md staleness already resolved by cycles 72-77
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: DOCS.md Index dates from 2026-03-31 for files updated 2026-04-02
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: DOCS.md last audit date said 2026-03-31
+    resolution: info
+    severity: info
+  - type: stale
+    description: DOCS.md Plan entry showed active but plan was archived
+    resolution: info
+    severity: info
+- date: '2026-03-31'
+  label: Audit 3
+  findings:
+  - type: stale
+    description: the spec.md + all 11 SKILL.md say "ten-skill", actually eleven after hej
+    resolution: critical
+    severity: critical
+  - type: gap
+    description: DOCS.md Index listed 6 documents, missing 6 that exist (VISION, PROGRESS, ISSUES, HEALTH, DESIGN, the spec)
+    resolution: critical
+    severity: critical
+  - type: stale
+    description: marketplace.json description missing hej and visualisera activities
+    resolution: warning
+    severity: warning
+  - type: misaligned
+    description: DOCS.md version_files path had erroneous space
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: ISSUES.md resolved items appeared after empty "## Open" heading
+    resolution: warning
+    severity: warning
+  - type: misaligned
+    description: registry.json inspirera said "an external link" vs plural elsewhere
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: DOCS.md Index used plain text status instead of visual tokens
+    resolution: warning
+    severity: warning
+  - type: gap
+    description: CLAUDE.md Key conventions missing visual identity and versioning
+    resolution: info
+    severity: info
+  - type: stale
+    description: HEALTH.md Audit 2 findings all resolved but artifact not re-audited
+    resolution: info
+    severity: info
+  - type: stale
+    description: DOCS.md last audit date said 2026-03-30
+    resolution: info
+    severity: info
+  - type: stale
+    description: DOCS.md was flat index, upgraded to three-layer documentation contract
+    resolution: info
+    severity: info
+  - type: stale
+    description: README DOCS.md row said "dokumentera, inspektera", now consumed by all skills
+    resolution: warning
+    severity: warning
+  - type: stale
+    description: README.md said "Six skills", actually nine
+    resolution: critical
+    severity: critical
+  - type: stale
+    description: CLAUDE.md said "Four skills" then "eight skills", actually nine
+    resolution: critical
+    severity: critical
+  - type: stale
+    description: 'CLAUDE.md "What this is" named only 4 of 9 skills · critical (fixed: defers to README)'
+    resolution: fixed
+    severity: critical
+  - type: stale
+    description: marketplace.json description undersold the suite
+    resolution: critical
+    severity: critical
+  - type: stale
+    description: registry.json truncated descriptions for optimera, resonera, dokumentera
+    resolution: warning
+    severity: warning
+  - type: misaligned
+    description: plugin.json descriptions for inspirera/realisera/visionera diverged from canonical
+    resolution: warning
+    severity: warning
+  - type: misaligned
+    description: README.md OBJECTIVE.md listed resonera as maintainer; only optimera maintains it
+    resolution: warning
+    severity: warning
+  - type: redundant
+    description: 'Skill ecosystem described in both README.md and CLAUDE.md · warning (fixed: CLAUDE.md now defers to README)'
+    resolution: fixed
+    severity: warning
+  - type: redundant
+    description: 'Repository layout duplicated in both files · warning (kept: different audiences)'
+    resolution: fixed
+    severity: warning

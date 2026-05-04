@@ -70,7 +70,7 @@ Each task is sized for one realisera cycle. Tasks 2 and 3 are independent and ca
 ### Task 3: Execute Artifact Migration and Validate YAML Output
 
 **Depends on**: Task 2
-**Status**: ■ complete
+**Status**: □ pending
 **Acceptance**:
 
 - GIVEN this project directory WHEN migrate_artifacts_v1_to_v2 runs THEN it produces YAML artifacts for all agent-facing types that have source Markdown (PROGRESS, PLAN, HEALTH, DOCS, DECISIONS, VISION), creates empty/seeding YAML for types without source (session, objective root, experiments root), and preserves the existing optimera subdirectory structure
