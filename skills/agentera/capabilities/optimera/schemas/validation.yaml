@@ -1,0 +1,63 @@
+VALIDATION:
+  1:
+    id: V1
+    rule: harness_locked_during_cycle
+    description: >-
+      The eval harness MUST NOT be modified during an optimization cycle.
+      It may only be written during brainstorm (bootstrap) or user-requested
+      refinement. This ensures measurement consistency across experiments.
+    severity: critical
+    checks:
+      - "Harness file is not modified between Step 1 and Step 8"
+  2:
+    id: V2
+    rule: regression_first
+    description: >-
+      The regression check MUST pass before the eval harness runs. If the
+      project's test/build/lint suite fails, the experiment is automatically
+      discarded. Metric improvement does not override regression failure.
+    severity: critical
+    checks:
+      - "Regression check runs before metric measurement"
+      - "Regression failure results in experiment discard"
+  3:
+    id: V3
+    rule: objective_readonly_during_cycle
+    description: >-
+      OBJECTIVE.md MUST NOT be modified during a cycle except for canonical
+      closure when the target is met. Other edits only happen during
+      brainstorm or refine.
+    severity: critical
+    checks:
+      - "OBJECTIVE.md only modified for closure during cycle"
+  4:
+    id: V4
+    rule: one_experiment_per_invocation
+    description: >-
+      Each optimera invocation performs exactly one experiment. Multiple
+      experiments require multiple invocations or /loop setup.
+    severity: critical
+    checks:
+      - "At most one experiment logged per invocation"
+  5:
+    id: V5
+    rule: decision_gate_both_conditions
+    description: >-
+      An experiment is kept only when BOTH conditions are true:
+      (1) regression check passed, and (2) metric improved in the declared
+      direction. If either fails, the experiment is discarded.
+    severity: critical
+    checks:
+      - "Kept experiments have both regression pass and metric improvement"
+  6:
+    id: V6
+    rule: exit_marker_required
+    description: >-
+      Every optimera invocation MUST emit an exit marker. The marker uses
+      the canonical glyph ⎘ (SG7) in the format ⎘ optimera · <status>
+      where status is one of EX1-EX4.
+    severity: critical
+    checks:
+      - "Exit marker present after experiment"
+      - "Exit marker uses glyph ⎘ (SG7)"
+      - "Exit marker status is one of complete, flagged, stuck, waiting"
