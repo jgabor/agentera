@@ -47,7 +47,7 @@ Each task is sized for one realisera cycle. Tasks 2 and 3 are independent and ca
 ### Task 1: Invocation Model Decision
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 
 - GIVEN the invocation model WHEN a user wants to trigger any of the 12 capabilities THEN the interaction path is explicitly defined (natural language pattern, slash alias, or runtime-specific command)
@@ -200,4 +200,4 @@ Each task is sized for one realisera cycle. Tasks 2 and 3 are independent and ca
 
 ## Surprises
 
-[Populated by realisera during execution when reality diverges from plan.]
+- **Task 1 surprise**: The unified CLI (`scripts/agentera`) is an agent-internal tool, not user-facing. The user-facing interface is `/agentera` which loads the bundled SKILL.md. The agent decides when to run `agentera query` internally. This distinction was unclear during initial deliberation but was resolved: `<request>` is just message text passed to the agent, so it works natively on all 4 runtimes without special argument parsing.
