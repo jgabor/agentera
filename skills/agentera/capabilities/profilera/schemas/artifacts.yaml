@@ -1,0 +1,24 @@
+ARTIFACTS:
+  1:
+    id: A1
+    name: PROFILE.md
+    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    description: >-
+      Decision profile with per-entry confidence scoring, permanence
+      classification, and temporal metadata. Produced by profilera in both
+      Full and Validate modes. Consumed by realisera, optimera, inspirera,
+      resonera, inspektera, and planera for persona-grounded decisions.
+      Path is global, resolved via PROFILERA_PROFILE_DIR or XDG_DATA_HOME.
+    produces: true
+    consumes: true
+  2:
+    id: A2
+    name: DECISIONS.md
+    path: ".agentera/DECISIONS.md (per DOCS.md mapping)"
+    description: >-
+      Pending and recent decisions maintained by resonera. High-signal source
+      for profilera's extraction scripts. Each decision entry captures
+      reasoning, tradeoffs, and confidence, making deliberation sessions
+      one of the richest inputs for decision profile generation.
+    produces: false
+    consumes: true

@@ -1,0 +1,31 @@
+TRIGGERS:
+  1:
+    id: T1
+    description: >-
+      Direct invocation by name or slash command. Matches when the user
+      explicitly requests inspirera.
+    patterns:
+      - "inspirera"
+      - "/inspirera"
+  2:
+    id: T2
+    description: >-
+      Applicability assessment requests. Matches when the user provides
+      an external URL and asks how it applies to their project or whether
+      they should adopt it.
+    patterns:
+      - "could I use this in"
+      - "how does this apply to my project"
+      - "is this relevant to"
+      - "what can I take from this"
+      - "should I adopt"
+  3:
+    id: T3
+    description: >-
+      External resource review requests. Matches when the user wants
+      analysis of a library, repo, or approach for ideas and patterns.
+    patterns:
+      - "what do you think of this library"
+      - "review this repo for ideas"
+      - "anything worth stealing from"
+      - "how does this compare to what I'm doing"

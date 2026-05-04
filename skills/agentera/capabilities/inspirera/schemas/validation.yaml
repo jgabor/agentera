@@ -1,0 +1,58 @@
+VALIDATION:
+  1:
+    id: V1
+    rule: read_only_target
+    description: >-
+      Inspirera MUST NOT modify code in the target project. It analyzes
+      and maps concepts; other capabilities (realisera, optimera)
+      implement changes. The only writes are to TODO.md and VISION.md,
+      and only with explicit user confirmation.
+    severity: critical
+    checks:
+      - "No code modifications in target project"
+      - "TODO.md and VISION.md writes require user confirmation"
+  2:
+    id: V2
+    rule: source_depth
+    description: >-
+      The analysis MUST reflect deep reading of the source. Shallow
+      reads produce shallow analysis. If the source was not read
+      thoroughly (e.g., paywalled, truncated), the limitation must
+      be explicitly stated.
+    severity: critical
+    checks:
+      - "Analysis reflects actual source content"
+      - "Limitations are stated when source access is partial"
+  3:
+    id: V3
+    rule: fit_assessment
+    description: >-
+      Every recommendation MUST consider the target project's constraints,
+      stack, and principles. Recommendations without fit assessment are
+      not acceptable. Fundamentally incompatible patterns must be called
+      out explicitly.
+    severity: critical
+    checks:
+      - "Each recommendation considers target constraints"
+      - "Incompatible patterns are explicitly noted"
+  4:
+    id: V4
+    rule: no_fabrication
+    description: >-
+      Source content MUST be quoted from actual code and text. Fabricated
+      quotes or invented patterns are never acceptable.
+    severity: critical
+    checks:
+      - "All source quotes trace to actual content"
+      - "No invented patterns or concepts"
+  5:
+    id: V5
+    rule: matrix_constraint
+    description: >-
+      The Applicability Matrix cells MUST be ≤15 words each. The matrix
+      contains conclusions only, not reasoning chains. Reasoning belongs
+      in the response text before the matrix.
+    severity: warning
+    checks:
+      - "Matrix cells ≤ 15 words"
+      - "Reasoning in response text, not matrix cells"
