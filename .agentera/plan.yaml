@@ -77,53 +77,53 @@ tasks:
   name: Execute Artifact Migration and Validate YAML Output
   depends_on:
   - Task 2
-  status: pending
+  status: complete
   acceptance: []
 - number: 4
   name: Update Tests, Compaction Logic, and Hooks for YAML Artifacts
   depends_on:
   - Task 3
-  status: pending
+  status: complete
   acceptance: []
 - number: 5
   name: SPEC Dissolution and v1 Script Retirement
   depends_on: []
-  status: pending
+  status: complete
   acceptance: []
 - number: 6
   name: Migrate and Remove Stale v1 Skill Directories
   depends_on: []
-  status: pending
+  status: complete
   acceptance: []
 - number: 7
   name: Update All 12 Capability prose.md Files to Reference YAML Artifacts
   depends_on:
   - Task 3
-  status: pending
+  status: complete
   acceptance: []
 - number: 8
   name: Update AGENTS.md for v2 Single-Bundle Model
   depends_on:
   - Task 3
   - Task 5
-  status: pending
+  status: complete
   acceptance: []
 - number: 9
   name: Rewrite README for Single-Entry-Point /agentera Model
   depends_on:
   - Task 1
-  status: pending
+  status: complete
   acceptance: []
 - number: 10
   name: Port Semantic Eval Fixture to v2 Format
   depends_on:
   - Task 3
-  status: pending
+  status: complete
   acceptance: []
 - number: 11
   name: Correct Archived Plan Documentation
   depends_on: []
-  status: pending
+  status: complete
   acceptance: []
 - number: 12
   name: Full Validation Suite and Merge to main
