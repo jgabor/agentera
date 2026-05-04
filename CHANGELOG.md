@@ -12,6 +12,12 @@
 
 - Installation Reliability Self-Healing is freshness-closed with install validation, offline bundle smoke, OpenCode command and skill-path repair, doctor drift reporting, 1.27.0 metadata, and archived plan state aligned.
 
+## [2.0.0] · 2026-05-04
+
+### Added
+
+- Complete v2.0.0 cutover: removed 12 v1 skill directories, collapsed all runtime adapter configs (marketplace, Codex, OpenCode, registry) to single bundled `skills/agentera/`, added `UPGRADE.md` with migration steps for all 4 runtimes, renamed migration script from `migrate_v1_to_v2` to `migrate_artifacts_v1_to_v2` (with backward-compatible wrapper), bumped all version surfaces to 2.0.0. 528 tests pass, 0 fail.
+
 ## [1.27.1] · 2026-04-30
 
 ### Fixed

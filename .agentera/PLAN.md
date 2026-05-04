@@ -77,7 +77,7 @@ Atomic cutover: v1 deletion and config collapse happen in one commit so no inter
 ### Task 5: Freshness Checkpoint
 
 **Depends on**: Task 1, Task 2, Task 3, Task 4
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN ROADMAP.md WHEN read THEN Phase 3 and Phase 4 are marked complete
 ▸ GIVEN CHANGELOG.md WHEN read THEN it has a v2.0.0 release entry covering the cutover

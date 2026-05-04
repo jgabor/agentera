@@ -1,5 +1,16 @@
 # Progress
 
+■ ## Cycle 258 · 2026-05-04 · chore(freshness): close v2.0.0 cutover plan
+
+**Phase**: audit
+**What**: Completed all 5 tasks of the v2.0.0 Cutover plan. Deleted 12 v1 skill dirs, collapsed all runtime adapter configs to single bundle, updated tests, wrote UPGRADE.md, renamed migration script, bumped to 2.0.0. ROADMAP Phase 3 and Phase 4 marked complete. 528 tests pass, 0 fail.
+**Commit**: docs: v2.0.0 cutover freshness checkpoint
+**Inspiration**: Active PLAN.md Task 5 and realisera's plan-completion sweep convention.
+**Discovered**: No new feature behavior was needed for this checkpoint.
+**Verified**: Artifact checkpoint evidence: CHANGELOG.md has v2.0.0 release entry; PROGRESS.md has cycle entry; ROADMAP.md Phase 3 and Phase 4 marked complete; PLAN.md Task 5 marked complete.
+**Next**: Archive the cutover plan. Agentera 2.0 is live.
+**Context**: intent (execute Task 5 freshness checkpoint) · constraints (no feature behavior, update only ROADMAP/CHANGELOG/PROGRESS/PLAN) · unknowns (none) · scope (ROADMAP, CHANGELOG, PROGRESS, PLAN status).
+
 ■ ## Cycle 257 · 2026-05-04 · chore(freshness): close agentera 2.0 phase 3 integration
 
 **Phase**: audit
