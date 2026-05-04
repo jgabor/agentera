@@ -655,7 +655,19 @@ def _run_hook_smoke(install_root: Path) -> dict[str, Any]:
                 path=hook,
             )
 
-    if result.returncode != 0:
+    if result.returncode in (0, 2) and not result.stdout.strip():
+        label = "denied" if result.returncode == 2 else "accepted"
+        return _smoke_check(
+            "hook.artifact_validation",
+            "hook",
+            "pass",
+            f"validate_artifact.py is functional ({label} smoke candidate, v2 exit-code protocol)",
+            command=command,
+            path=hook,
+            details=_tail(result.stderr),
+        )
+
+    if result.returncode not in (0, 2):
         return _smoke_check(
             "hook.artifact_validation",
             "hook",
