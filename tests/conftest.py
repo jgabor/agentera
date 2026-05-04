@@ -39,15 +39,6 @@ def _load_module(name: str, file_path: Path) -> ModuleType:
 
 
 @pytest.fixture(scope="session")
-def validate_spec():
-    """Load scripts/validate_spec.py (handles both hyphenated and underscored)."""
-    return _load_module(
-        "validate_spec",
-        REPO_ROOT / "scripts" / "validate_spec.py",
-    )
-
-
-@pytest.fixture(scope="session")
 def analyze_progress():
     """Load skills/realisera/scripts/analyze_progress.py."""
     return _load_module(

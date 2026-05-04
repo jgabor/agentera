@@ -11,12 +11,6 @@ output: [
 
 pre-commit:
   commands:
-    spec-lint:
-      run: python3 scripts/validate_spec.py
-      glob: "*.md"
-    contracts:
-      run: python3 scripts/generate_contracts.py --check
-      glob: "*.md"
     docs:
       run: bunx markdownlint --dot --fix --disable MD013 MD024 MD029 MD033 MD036 MD040 MD041 MD060 -- {staged_files}
       stage_fixed: true
@@ -32,11 +26,5 @@ pre-commit:
 pre-push:
   parallel: true
   commands:
-    spec-lint:
-      run: python3 scripts/validate_spec.py
-      glob: "*.md"
-    contracts:
-      run: python3 scripts/generate_contracts.py --check
-      glob: "*.md"
     test:
       run: python3 -m pytest tests/ -q

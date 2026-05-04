@@ -53,7 +53,7 @@ Merge feat/v2 into main via fast-forward or merge commit. Retire v1 infrastructu
 ### Task 3: Post-merge Validation
 
 **Depends on**: Task 2
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN main after merge WHEN pytest runs THEN all tests pass with 0 failures
 ▸ GIVEN main after merge WHEN ls capabilities/ THEN 12 capability directories exist

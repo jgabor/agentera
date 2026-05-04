@@ -185,7 +185,7 @@ def test_setup_doctor_warns_or_fails_with_classified_helper_access_gaps(tmp_path
 
         if runtime == "copilot":
             partial = tmp_path / runtime / "partial"
-            _write_install_root(partial, doctor, omit="scripts/validate_spec.py")
+            _write_install_root(partial, doctor, omit="scripts/validate_capability.py")
             env["AGENTERA_HOME"] = str(partial)
         elif runtime == "codex":
             config = home / ".codex" / "config.toml"
@@ -371,7 +371,7 @@ def test_setup_doctor_smoke_proves_helpers_hooks_and_host_status_without_live_ca
 
     assert report["ok"] is True
     assert smoke["modelCallsAttempted"] is False
-    assert smoke_by_name["helper.validate_spec"]["status"] == "pass"
+    assert smoke_by_name["helper.validate_capability"]["status"] == "pass"
     assert smoke_by_name["hook.artifact_validation"]["status"] == "pass"
     assert smoke_by_name["host.codex"]["status"] == "pass"
     assert smoke_by_name["host.copilot"]["status"] == "skip"
@@ -384,10 +384,11 @@ def test_setup_doctor_smoke_helper_failure_is_visible_in_human_and_json(
     doctor = _load_doctor()
     root = tmp_path / "agentera"
     _write_install_root(root, doctor)
-    skill = root / "skills" / "realisera" / "SKILL.md"
+    skill = root / "skills" / "agentera" / "capabilities" / "hej"
     skill.parent.mkdir(parents=True, exist_ok=True)
-    skill.write_text("---\nname: realisera\n---\n", encoding="utf-8")
-    (root / "scripts" / "validate_spec.py").write_text(
+    skill.mkdir(exist_ok=True)
+    (skill / "prose.md").write_text("fixture\n", encoding="utf-8")
+    (root / "scripts" / "validate_capability.py").write_text(
         "import sys\nprint('fixture helper failed')\nsys.exit(7)\n",
         encoding="utf-8",
     )
@@ -413,8 +414,8 @@ def test_setup_doctor_smoke_helper_failure_is_visible_in_human_and_json(
 
     assert report["ok"] is False
     assert helper["status"] == "fail"
-    assert "validate_spec.py exited 7" in helper["message"]
-    assert "helper.validate_spec: fail" in human
+    assert "validate_capability.py exited 7" in helper["message"]
+    assert "helper.validate_capability: fail" in human
 
 
 def test_setup_doctor_smoke_hook_failure_is_visible_in_human_and_json(
@@ -423,10 +424,11 @@ def test_setup_doctor_smoke_hook_failure_is_visible_in_human_and_json(
     doctor = _load_doctor()
     root = tmp_path / "agentera"
     _write_install_root(root, doctor)
-    skill = root / "skills" / "realisera" / "SKILL.md"
+    skill = root / "skills" / "agentera" / "capabilities" / "hej"
     skill.parent.mkdir(parents=True, exist_ok=True)
-    skill.write_text("---\nname: realisera\n---\n", encoding="utf-8")
-    (root / "scripts" / "validate_spec.py").write_text(
+    skill.mkdir(exist_ok=True)
+    (skill / "prose.md").write_text("fixture\n", encoding="utf-8")
+    (root / "scripts" / "validate_capability.py").write_text(
         "import sys\nsys.exit(0)\n",
         encoding="utf-8",
     )

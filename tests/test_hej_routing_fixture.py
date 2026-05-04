@@ -36,10 +36,10 @@ def test_requires_expected_concrete_next_action_from_seeded_artifacts(semantic_e
         semantic_fixtures,
         """
         ─── status ─────────────────────────────
-        plan active · Tasks 1-2 complete · Task 3 pending
+        ≡ plan active · Tasks 1-2 complete · Task 3 pending
 
         ─── attention ──────────────────────────
-        highest-priority action: Task 3: Add Hej Routing Fixture
+        → highest-priority action: Task 3: Add Hej Routing Fixture
 
         ─── next ───────────────────────────────
         suggested -> /realisera (Execute the active plan)
@@ -58,7 +58,7 @@ def test_fails_when_output_routes_to_generic_skill_without_artifact_item(semanti
         semantic_fixtures,
         """
         ─── status ─────────────────────────────
-        plan active · Tasks 1-2 complete · Task 3 pending
+        ≡ plan active · Tasks 1-2 complete · Task 3 pending
 
         ─── attention ──────────────────────────
         active plan needs work
@@ -80,10 +80,10 @@ def test_fails_when_output_chooses_lower_priority_item(semantic_eval, semantic_f
         semantic_fixtures,
         """
         ─── status ─────────────────────────────
-        plan active · Tasks 1-2 complete · Task 3 pending
+        ≡ plan active · Tasks 1-2 complete · Task 3 pending
 
         ─── attention ──────────────────────────
-        highest-priority action: Task 4: Add Unit-Level Assertion Tests
+        → highest-priority action: Task 4: Add Unit-Level Assertion Tests
 
         ─── next ───────────────────────────────
         suggested -> /realisera (Execute Task 4: Add Unit-Level Assertion Tests)

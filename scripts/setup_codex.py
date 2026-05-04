@@ -28,7 +28,7 @@ TOML state and one line-based mutation:
       the existing keys, preserving sibling keys and inline order.
 
 The install root is verified against four canonical sibling entries
-(``scripts/validate_spec.py``, ``hooks/``, ``skills/``, ``SPEC.md``)
+(``scripts/validate_capability.py``, ``hooks/``, ``skills/``, ``skills/agentera/SKILL.md``)
 before any write. Auto-detection walks up from this script's location.
 ``--install-root PATH`` overrides detection; ``--config-file PATH``
 overrides the TOML target (tests use this to avoid touching the real
@@ -45,7 +45,7 @@ Usage::
 Exit codes:
 
     0  no change needed (idempotent re-run) or change applied
-    1  --dry-run detected a pending change (mirrors validate_spec.py)
+    1  --dry-run detected a pending change (mirrors validate_capability.py)
     2  error: bad install root, conflict without --force, missing
        config target directory the helper cannot create, etc.
 """
@@ -69,10 +69,10 @@ from typing import NamedTuple
 # Verified before any write so users cannot wire AGENTERA_HOME at a path
 # that does not actually contain the suite.
 CANONICAL_ENTRIES: tuple[str, ...] = (
-    "scripts/validate_spec.py",
+    "scripts/validate_capability.py",
     "hooks",
     "skills",
-    "SPEC.md",
+    "skills/agentera/SKILL.md",
 )
 
 # The single key the helper manages. Any other env var is the user's.

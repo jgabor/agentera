@@ -42,14 +42,29 @@ def load_registry_skill_names(registry_path: Path = REGISTRY) -> list[str]:
     return [skill["name"] for skill in payload["skills"]]
 
 
-def extract_support_refs(text: str) -> list[str]:
-    """Use the release validator's parser so smoke and spec checks agree."""
-    scripts_dir = str(REPO_ROOT / "scripts")
-    if scripts_dir not in sys.path:
-        sys.path.insert(0, scripts_dir)
-    import validate_spec  # type: ignore[import-not-found]
+SUPPORT_PATH_RE = __import__("re").compile(
+    r"(?<![\w/.$-])"
+    r"(?P<path>(?:references|scripts|agents)/[A-Za-z0-9][A-Za-z0-9_./-]*)"
+)
 
-    return validate_spec._extract_support_refs(text)
+
+def _normalize_support_ref(raw: str) -> str | None:
+    candidate = raw.strip("`'\"()[]{}.,:;")
+    if not candidate or candidate.startswith("/") or "\\" in candidate:
+        return None
+    return candidate
+
+
+def extract_support_refs(text: str) -> list[str]:
+    """Extract skill-support relative paths named in skill prose."""
+    refs: list[str] = []
+    seen: set[str] = set()
+    for match in SUPPORT_PATH_RE.finditer(text):
+        ref = _normalize_support_ref(match.group("path"))
+        if ref and ref not in seen:
+            refs.append(ref)
+            seen.add(ref)
+    return refs
 
 
 def prepare_offline_install(source_root: Path, installed_root: Path) -> None:
