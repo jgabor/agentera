@@ -1,5 +1,49 @@
 # Progress
 
+■ ## Cycle 262 · 2026-05-04 · chore(freshness): close v2.0.0 release plan
+
+**Phase**: audit
+**What**: Completed all 6 tasks of the v2.0.0 Release plan. Migration safety hardened (dry-run, backup protection, PROFILE.md check, backup failure). Hej upgrade guard added. Stale v1 runtime artifact detection script created. README rewritten for v2. DOCS.md version_files fixed. Version bumped to 2.0.0. CHANGELOG.md updated with full release summary.
+**Commit**: (pending conductor commit)
+**Inspiration**: PLAN.md Task 6 freshness checkpoint.
+**Discovered**: All 6 tasks completed cleanly. 565 tests pass.
+**Verified**: CHANGELOG.md [2.0.0] entry covers all 6 tasks. All version surfaces read 2.0.0. 565 passed, 1 skipped.
+**Next**: Archive the v2.0.0 release plan.
+**Context**: intent (execute Task 6 freshness checkpoint) · constraints (no feature behavior, update CHANGELOG/PROGRESS/PLAN) · unknowns (none) · scope (CHANGELOG, PROGRESS, PLAN status).
+
+■ ## Cycle 261 · 2026-05-04 · feat(detect): add stale v1 runtime artifact detection script
+
+**Phase**: build
+**What**: Created scripts/detect_stale_v1 detecting dead symlinks (Claude), stale command files (OpenCode), and stale agent entries (Codex). 25 tests covering pass+fail per surface. Defaults to --dry-run; --fix removes only symlinks and commands, not Codex entries.
+**Commit**: feat(detect): add stale v1 runtime artifact detection script
+**Inspiration**: PLAN.md Task 3.
+**Discovered**: Codex stale agents require manual config.toml editing — auto-removal would be destructive.
+**Verified**: 565 passed, 1 skipped. Script --help works. detect_claude_dead_symlinks, detect_opencode_stale_commands, detect_codex_stale_agents all tested pass+fail.
+**Next**: Task 4 (README Rewrite + DOCS.md Fix).
+**Context**: intent (detect stale v1 runtime artifacts) · constraints (no version bump, dry-run default) · unknowns (none) · scope (new script, new tests).
+
+■ ## Cycle 260 · 2026-05-04 · feat(hej): add v1 upgrade guard and PROFILE.md status
+
+**Phase**: build
+**What**: Added Step 0.5 upgrade guard to hej prose.md — detects v1 Markdown artifacts missing v2 YAML equivalents and routes to migration command. PROFILE.md presence/absence checked with degraded attention item when absent. 4 tests.
+**Commit**: feat(hej): add upgrade guard for v1 artifact detection and PROFILE.md status
+**Inspiration**: PLAN.md Task 2.
+**Discovered**: hej remains read-only — guard informs and routes, never writes.
+**Verified**: 540 passed, 1 skipped. prose.md contains Step 0.5 with v1 artifact table, migration command, PROFILE.md loaded/not-found status. 4 tests pass covering all scenarios.
+**Next**: Task 3 (Runtime Artifact Detection).
+**Context**: intent (add upgrade guard to hej orientation) · constraints (hej read-only, no version bump) · unknowns (none) · scope (hej prose.md, hej capability tests).
+
+■ ## Cycle 259 · 2026-05-04 · feat(migration): harden migration script with safety checks
+
+**Phase**: build
+**What**: Hardened the migration script with --dry-run mode, backup overwrite protection, PROFILE.md explicit exclusion check, and backup failure safety. 8 new tests covering pass+fail per safety check.
+**Commit**: feat(migration): harden migration script with safety checks
+**Inspiration**: PLAN.md Task 1 migration safety hardening.
+**Discovered**: Dry-run correctly reports artifact count and byte sizes without writing files; PROFILE.md exclusion message confirms global artifact awareness.
+**Verified**: 536 passed, 1 skipped (pytest -q). Dry-run output: `INFO: [dry-run] would write .agentera/progress.yaml (338 bytes)` and `would migrate 1 artifact(s)`. PROFILE.md exclusion message confirmed.
+**Next**: Task 2 (Upgrade Guard in Hej).
+**Context**: intent (harden migration safety) · constraints (no version bump, no PLAN.md changes) · unknowns (none) · scope (migration script, migration tests).
+
 ■ ## Cycle 258 · 2026-05-04 · chore(freshness): close v2.0.0 cutover plan
 
 **Phase**: audit
