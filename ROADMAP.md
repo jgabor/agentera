@@ -73,34 +73,34 @@ Starts full: hej-style orientation briefing + routing to capabilities. Optimizat
 
 ## Work Breakdown
 
-### Phase 1: Infrastructure (weeks 1-2)
+### Phase 1: Infrastructure (weeks 1-2) ✓
 
 Build the skeleton that everything else plugs into.
 
-- [ ] Define capability schema contract (what fields a capability schema must contain)
-- [ ] Define shared protocol schema (confidence, severity, visual tokens, phase model)
-- [ ] Build the universal query CLI scaffold (including `agentera prime` command)
-- [ ] Define agent-facing artifact schemas (one per artifact type)
-- [ ] Build artifact migration tool (current Markdown -> structured data)
-- [ ] Rewrite hook to validate against capability-local schemas
-- [ ] Set up feat/v2 branch and worktree
+- [x] Define capability schema contract (what fields a capability schema must contain)
+- [x] Define shared protocol schema (confidence, severity, visual tokens, phase model)
+- [x] Build the universal query CLI scaffold (including `agentera prime` command)
+- [x] Define agent-facing artifact schemas (one per artifact type)
+- [x] Build artifact migration tool (current Markdown -> structured data)
+- [x] Rewrite hook to validate against capability-local schemas
+- [x] Set up feat/v2 branch and worktree
 
-### Phase 2: Core capabilities (weeks 3-5)
+### Phase 2: Core capabilities (weeks 3-5) ✓
 
 Port the 12 capabilities from prose SKILL.md to prose + schema model.
 
-- [ ] hej (routing + orientation) -- becomes the master SKILL.md's core logic
-- [ ] realisera (autonomous development)
-- [ ] resonera (deliberation)
-- [ ] planera (planning)
-- [ ] inspektera (auditing)
-- [ ] optimera (metric optimization)
-- [ ] orkestrera (multi-skill orchestration)
-- [ ] visionera (vision definition)
-- [ ] visualisera (design system)
-- [ ] dokumentera (documentation)
-- [ ] profilera (decision profiling)
-- [ ] inspirera (external pattern analysis)
+- [x] hej (routing + orientation) -- becomes the master SKILL.md's core logic
+- [x] realisera (autonomous development)
+- [x] resonera (deliberation)
+- [x] planera (planning)
+- [x] inspektera (auditing)
+- [x] optimera (metric optimization)
+- [x] orkestrera (multi-skill orchestration)
+- [x] visionera (vision definition)
+- [x] visualisera (design system)
+- [x] dokumentera (documentation)
+- [x] profilera (decision profiling)
+- [x] inspirera (external pattern analysis)
 
 ### Phase 3: Integration (weeks 5-6)
 
