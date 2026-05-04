@@ -160,6 +160,36 @@ co-installed skills mesh through one verified package root.
 **Confidence**: firm
 **Feeds into**: ROADMAP.md, VISION.md
 
+## Decision 47 · 2026-05-04 · completed
+
+**Title**: Agentera 2.0 Token Benchmark
+
+**v1 baseline** (all 12 `skills/*/SKILL.md` + `SPEC.md`):
+
+| Component | Bytes |
+|---|---|
+| 12 SKILL.md files | 256,314 |
+| SPEC.md | 95,899 |
+| **Total** | **352,213** |
+| Estimated tokens (~4 chars/token) | ~88,053 |
+
+**v2 measurement** (`SKILL.md` + `protocol.yaml` + 12 `prose.md` + 48 schema files):
+
+| Component | Bytes |
+|---|---|
+| SKILL.md | 5,381 |
+| protocol.yaml | 13,704 |
+| 12 prose.md files | 210,827 |
+| 48 schema YAML files | 83,444 |
+| **Total** | **313,356** |
+| Estimated tokens (~4 chars/token) | ~78,339 |
+
+**Delta**: -38,857 bytes (**-11.0%**), estimated -9,714 tokens.
+
+**Methodology**: `wc -c` on all measured files. Token estimate uses 4 chars/token for English text (conservative; real tokenizer ratios vary). v1 measured from main worktree, v2 from feat/v2 worktree. Both include all content a runtime must read to dispatch a skill/capability.
+
+**Note**: The ROADMAP.md aspirational target of 40% reduction assumed that schema extraction would offload more structural prose. The actual -11.0% reflects that capability prose.md files retain substantial behavioral instructions while schema files add ~83 KB of machine-readable structure. The token win is modest, but the structural payoff (machine-readable schemas, query CLI potential, single dispatch point) was the primary motivation per D39.
+
 ## Decision 40 · 2026-05-04
 
 **Question**: How should the four open questions from the ROADMAP be resolved: artifact format, master SKILL.md size, backward compatibility, and sub-module naming?

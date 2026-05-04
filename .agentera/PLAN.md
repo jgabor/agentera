@@ -81,7 +81,7 @@ Merge feat/v2 into main via fast-forward or merge commit. Retire v1 infrastructu
 ### Task 6: Token Benchmark
 
 **Depends on**: Task 1
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 ▸ GIVEN v1 skill content (all 12 SKILL.md + SPEC.md) WHEN measured in bytes and estimated tokens THEN baseline is recorded
 ▸ GIVEN v2 skill content (SKILL.md + protocol.yaml + all prose.md + all schemas/) WHEN measured in bytes and estimated tokens THEN v2 measurement is recorded
