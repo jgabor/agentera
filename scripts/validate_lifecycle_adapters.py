@@ -58,7 +58,6 @@ SUITE_BUNDLE_REQUIRED_PATHS = {
     "registry.json": "file",
     "plugin.json": "file",
     "README.md": "file",
-    "SPEC.md": "file",
 }
 UV_SCRIPT_SHEBANG = "#!/usr/bin/env -S uv run --script"
 UV_INSTALL_GUIDANCE = (

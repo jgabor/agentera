@@ -94,7 +94,7 @@ Each task is sized for one realisera cycle. Tasks 2 and 3 are independent and ca
 ### Task 5: SPEC Dissolution and v1 Script Retirement
 
 **Depends on**: none
-**Status**: □ pending
+**Status**: ■ complete
 **Acceptance**:
 
 - GIVEN generate_contracts.py WHEN evaluated THEN it is either (a) rewritten to generate contracts from capability schemas and protocol.yaml instead of SPEC.md, or (b) retired with its tests removed and a replacement documented in AGENTS.md
