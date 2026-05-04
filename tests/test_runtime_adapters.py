@@ -359,8 +359,8 @@ def _validate_opencode_install_root(plugin_text: str) -> list[str]:
 
 
 def _validate_docs_version_targets(root: Path) -> list[str]:
-    docs = (root / ".agentera/DOCS.md").read_text(encoding="utf-8")
-    if "- .opencode/plugins/agentera.js" not in docs:
+    docs = (root / ".agentera/docs.yaml").read_text(encoding="utf-8")
+    if ".opencode/plugins/agentera.js" not in docs:
         return ["DOCS version_files must include OpenCode version marker"]
     return []
 
