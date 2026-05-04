@@ -118,19 +118,6 @@ Migration tool creates backups by default (copies v1 artifacts to .agentera/back
 **Depends on**: Task 2, Task 3a
 **Status**: ■ complete
 **Acceptance**:
-▸ GIVEN a file write to an agent-facing artifact path WHEN the hook runs THEN it validates the content against the matching artifact schema from the schemas directory
-▸ GIVEN a file write that violates an artifact schema (missing required field, wrong type) WHEN the hook runs THEN it reports the violation to stderr and exits non-zero
-▸ GIVEN a file write to a human-facing artifact (TODO.md, CHANGELOG.md, DESIGN.md) WHEN the hook runs THEN it applies markdown well-formedness checks without schema enforcement
-▸ GIVEN a file write to a non-artifact path WHEN the hook runs THEN it exits 0 immediately
-▸ GIVEN the existing adapter JSON parsing from v1 validate_artifact.py WHEN the hook is invoked from any of the 4 runtime formats (Claude Code, OpenCode, Codex, Copilot) THEN it correctly extracts the file path and content from stdin JSON
-▸ GIVEN the rewritten hook WHEN measured by line count THEN it is under 300 lines total (down from 908)
-▸ Test proportionality: 1 pass + 1 fail per artifact type validation, edge cases for each runtime adapter JSON format
-
-### Task 7: Plan-level freshness checkpoint
-
-**Depends on**: Task 1, Task 2, Task 3a, Task 3b, Task 4, Task 5, Task 6
-**Status**: □ pending
-**Acceptance**:
 ▸ GIVEN all prior tasks complete WHEN CHANGELOG.md is checked THEN it has an Added/Changed/Fixed entry under [Unreleased] covering Phase 1 infrastructure work
 ▸ GIVEN all prior tasks complete WHEN PROGRESS.md is checked THEN it has a cycle entry whose What field summarizes the Phase 1 plan completion
 ▸ GIVEN all prior tasks complete WHEN TODO.md is checked THEN every Phase 1 item has a corresponding Resolved entry
