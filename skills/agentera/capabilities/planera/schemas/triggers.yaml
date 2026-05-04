@@ -1,0 +1,31 @@
+TRIGGERS:
+  1:
+    id: T1
+    description: >-
+      Direct invocation by name or slash command. Matches when the user
+      explicitly requests planera for structured planning.
+    patterns:
+      - "planera"
+      - "/planera"
+  2:
+    id: T2
+    description: >-
+      Planning requests. Matches when the user wants to create a plan,
+      break work down, or specify requirements before building.
+    patterns:
+      - "plan this"
+      - "write a plan"
+      - "break this down"
+      - "decompose this"
+      - "spec this out"
+      - "plan before building"
+  3:
+    id: T3
+    description: >-
+      Architectural planning signals. Matches when the user is asking how
+      to approach building something or when the work is too large for a
+      single development cycle.
+    patterns:
+      - "how should we build this"
+      - "multi-step feature"
+      - "this is too big for one cycle"

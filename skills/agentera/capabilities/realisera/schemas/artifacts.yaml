@@ -1,0 +1,96 @@
+ARTIFACTS:
+  1:
+    id: A1
+    name: VISION.md
+    path: "VISION.md or .agentera/VISION.md (per DOCS.md)"
+    description: >-
+      Project direction and north star. Produced by visionera or realisera brainstorm.
+      Realisera reads this for work selection and never modifies it during cycles.
+      Created during brainstorm (bootstrap or user-requested refinement).
+    produces: true
+    consumes: true
+  2:
+    id: A2
+    name: TODO.md
+    path: "TODO.md"
+    description: >-
+      Open problems by severity. Realisera reads this for work candidates and
+      writes newly discovered issues and resolved entries. Severity classified
+      per protocol SI1-SI4.
+    produces: true
+    consumes: true
+  3:
+    id: A3
+    name: CHANGELOG.md
+    path: "CHANGELOG.md"
+    description: >-
+      Public change history in keep-a-changelog format. Realisera appends
+      entries under [Unreleased] based on commit type and promotes on
+      version bumps.
+    produces: true
+    consumes: true
+  4:
+    id: A4
+    name: PROGRESS.md
+    path: ".agentera/PROGRESS.md"
+    description: >-
+      Operational cycle log. Realisera appends one entry per cycle with
+      mandatory Verified field. Compacted via compact_artifact.py script.
+    produces: true
+    consumes: true
+  5:
+    id: A5
+    name: HEALTH.md
+    path: ".agentera/HEALTH.md"
+    description: >-
+      Codebase health grades and trends. Produced by inspektera.
+      Realisera reads critical and degraded findings for work selection.
+    produces: false
+    consumes: true
+  6:
+    id: A6
+    name: DECISIONS.md
+    path: ".agentera/DECISIONS.md"
+    description: >-
+      Reasoning trail with confidence labels. Produced by resonera.
+      Realisera reads firm (DL1) entries as constraints and exploratory (DL3)
+      entries as uncertain foundations during work selection.
+    produces: false
+    consumes: true
+  7:
+    id: A7
+    name: PLAN.md
+    path: ".agentera/PLAN.md"
+    description: >-
+      Active plan with tasks and acceptance criteria. Produced by planera.
+      Realisera reads pending tasks for work selection and updates task status
+      and surprises. Archives to .agentera/archive/ when complete.
+    produces: true
+    consumes: true
+  8:
+    id: A8
+    name: PROFILE.md
+    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    description: >-
+      Decision profile with per-entry confidence scoring. Produced by profilera.
+      Realisera reads this every cycle via effective_profile.py script.
+    produces: false
+    consumes: true
+  9:
+    id: A9
+    name: DOCS.md
+    path: ".agentera/DOCS.md"
+    description: >-
+      Artifact path resolution and documentation coverage. Produced by dokumentera.
+      Realisera reads this FIRST to resolve artifact paths.
+    produces: false
+    consumes: true
+  10:
+    id: A10
+    name: DESIGN.md
+    path: ".agentera/DESIGN.md"
+    description: >-
+      Visual identity system status. Produced by visualisera.
+      Realisera reads this when building user-facing features.
+    produces: false
+    consumes: true
