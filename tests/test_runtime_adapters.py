@@ -521,7 +521,7 @@ class TestLifecycleAdapters:
                 {
                     "name": "postToolUse",
                     "type": "command",
-                    "bash": "python3 hooks/validate_artifact.py",
+                    "bash": "uv run hooks/validate_artifact.py",
                 }
             ),
             encoding="utf-8",
@@ -540,7 +540,7 @@ class TestLifecycleAdapters:
                     {
                         "name": event,
                         "type": "command",
-                        "bash": "python3 hooks/validate_artifact.py",
+                        "bash": "uv run hooks/validate_artifact.py",
                     }
                 ),
                 encoding="utf-8",
@@ -557,7 +557,7 @@ class TestLifecycleAdapters:
                 {
                     "name": "stop",
                     "type": "command",
-                    "bash": "python3 hooks/session_stop.py",
+                    "bash": "uv run hooks/session_stop.py",
                 }
             ),
             encoding="utf-8",
@@ -576,7 +576,7 @@ class TestLifecycleAdapters:
                 {
                     "name": "sessionEnd",
                     "type": "command",
-                    "bash": "python3 hooks/session_stop.py",
+                    "bash": "uv run hooks/session_stop.py",
                 }
             ),
             encoding="utf-8",
@@ -743,7 +743,7 @@ class TestPackagedScriptRuntimeHygiene:
         script = self._write_script(tmp_path, validator, shebang="#!/usr/bin/env python3")
         os.chmod(script, 0o755)
         assert (
-            "scripts/tool.py: packaged executable Python script must use uv script shebang"
+            "scripts/tool.py: packaged Python script must use uv script shebang"
             in validator.validate_packaged_python_scripts(tmp_path)
         )
 
@@ -752,11 +752,11 @@ class TestPackagedScriptRuntimeHygiene:
         script = self._write_script(tmp_path, validator, metadata="")
         os.chmod(script, 0o755)
         assert (
-            "scripts/tool.py: packaged executable Python script must declare inline script metadata"
+            "scripts/tool.py: packaged Python script must declare inline script metadata"
             in validator.validate_packaged_python_scripts(tmp_path)
         )
 
-    def test_packaged_script_headers_fail_without_empty_dependencies(self, tmp_path):
+    def test_packaged_script_headers_accept_declared_external_dependencies(self, tmp_path):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
         script = self._write_script(
             tmp_path,
@@ -771,15 +771,44 @@ class TestPackagedScriptRuntimeHygiene:
             ),
         )
         os.chmod(script, 0o755)
+        assert validator.validate_packaged_python_scripts(tmp_path) == []
+
+    def test_packaged_script_headers_fail_without_dependencies_field(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        script = self._write_script(
+            tmp_path,
+            validator,
+            metadata=(
+                "# /// script\n"
+                "# requires-python = \">=3.10\"\n"
+                "# ///\n"
+            ),
+        )
         assert (
-            "scripts/tool.py: stdlib-only packaged script must declare dependencies = []"
+            "scripts/tool.py: packaged Python script must declare dependencies"
             in validator.validate_packaged_python_scripts(tmp_path)
         )
 
-    def test_non_executable_library_modules_are_excluded(self, tmp_path):
+    def test_packaged_script_headers_fail_without_requires_python(self, tmp_path):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
-        script_dir = tmp_path / "scripts"
-        script_dir.mkdir()
+        script = self._write_script(
+            tmp_path,
+            validator,
+            metadata=(
+                "# /// script\n"
+                "# dependencies = []\n"
+                "# ///\n"
+            ),
+        )
+        assert (
+            "scripts/tool.py: packaged Python script must declare requires-python"
+            in validator.validate_packaged_python_scripts(tmp_path)
+        )
+
+    def test_nested_library_modules_are_excluded(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        script_dir = tmp_path / "scripts" / "library"
+        script_dir.mkdir(parents=True)
         (script_dir / "library.py").write_text("def helper():\n    return 1\n", encoding="utf-8")
         assert validator.validate_packaged_python_scripts(tmp_path) == []
 

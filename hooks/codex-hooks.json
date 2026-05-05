@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${AGENTERA_HOME}/hooks/validate_artifact.py\"",
+            "command": "uv run \"${AGENTERA_HOME}/hooks/validate_artifact.py\"",
             "timeout": 10,
             "statusMessage": "validating artifact"
           }
@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${AGENTERA_HOME}/hooks/validate_artifact.py\"",
+            "command": "uv run \"${AGENTERA_HOME}/hooks/validate_artifact.py\"",
             "timeout": 10,
             "statusMessage": "validating artifact"
           }

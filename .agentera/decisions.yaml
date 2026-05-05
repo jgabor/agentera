@@ -346,12 +346,12 @@ decisions:
       gate, and carry additional token optimization into future versions.
   choice: >-
     Record the benchmark as complete and close enough for the revised v2.0 target. Initial v2 measurement was 313,356 bytes (-11.0%). After the
-    2026-05-05 profilera/query-depth gap work, v1 baseline remains 352,213 bytes (~88,053 tokens) and v2 measures 317,616
-    bytes (~79,404 tokens). Delta is -34,597 bytes, or -9.8%, about 8,650 estimated tokens saved. The release target is now
+    2026-05-05 profilera/query-depth gap work, v1 baseline remains 352,213 bytes (~88,053 tokens) and v2 measures 317,592
+    bytes (~79,398 tokens). Delta is -34,621 bytes, or -9.8%, about 8,656 estimated tokens saved. The release target is now
     -10%, and -9.8% is accepted as close enough for v2.0.
   reasoning: >-
     The 12 v2 prose.md files remain the dominant payload at 211,996 bytes, while 48 capability schema files add 84,889
-    bytes that did not exist in v1. The remeasurement uses `python3 scripts/measure_token_payload.py` to preserve the
+    bytes that did not exist in v1. The remeasurement uses `uv run scripts/measure_token_payload.py` to preserve the
     Decision 41 byte-count proxy: master SKILL.md, protocol.yaml, 12 capability prose.md files, and 48 capability schema
     YAML files compared with the fixed v1 baseline. The benchmark proves a real but modest token reduction. It does not
     prove the original 40% target, so that target is no longer used as the v2.0 release gate. The structural payoff is

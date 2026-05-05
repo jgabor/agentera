@@ -1,7 +1,7 @@
 {
   "name": "sessionEnd",
   "type": "command",
-  "bash": "python3 hooks/session_stop.py",
-  "powershell": "python hooks/session_stop.py",
+  "bash": "uv run hooks/session_stop.py",
+  "powershell": "uv run hooks/session_stop.py",
   "timeoutSec": 10
 }

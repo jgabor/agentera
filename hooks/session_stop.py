@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.10"
 # dependencies = ["pyyaml"]
@@ -16,7 +16,7 @@ Receives JSON on stdin with fields: session_id, transcript_path, cwd,
 hook_event_name. Exit code 0 = success, exit code 1 = error.
 
 Run standalone for testing:
-    echo '{"cwd": "/path/to/project"}' | python3 hooks/session_stop.py
+    echo '{"cwd": "/path/to/project"}' | uv run hooks/session_stop.py
 """
 
 from __future__ import annotations

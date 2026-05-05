@@ -40,7 +40,7 @@ Coverage (11 sequential cases, within the 10-12 AC6 budget):
 
 Run from the repo root::
 
-    python3 scripts/smoke_setup_helpers.py
+    uv run scripts/smoke_setup_helpers.py
 
 Exits 0 with ``PASS: all smoke checks passed`` on success, 1 with
 ``FAIL: <reason>`` on the first failure (fail-fast).
@@ -503,7 +503,7 @@ def main() -> int:
         )
 
         # --- Test 11: both helpers' --dry-run on idempotent target exits 0 ---
-        # (validate_spec.py-style convention: change pending → exit 1,
+        # (validator-style convention: change pending → exit 1,
         # no change → exit 0; verifies the dry-run gate respects no-op)
         # Codex: re-use config_1 from Test 1, which is already at the
         # desired value.

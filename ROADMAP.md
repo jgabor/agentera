@@ -120,7 +120,7 @@ Prove it works, then switch.
 
 - [x] Full test suite green
 - [x] Semantic eval port to 2.0 fixture format
-- [x] Token consumption benchmark remeasured: v1 baseline 352,213 bytes vs current v2 317,616 bytes (-9.8%); revised -10% target accepted as close enough, with additional optimization deferred to future versions
+- [x] Token consumption benchmark remeasured: v1 baseline 352,213 bytes vs current v2 317,592 bytes (-9.8%); revised -10% target accepted as close enough, with additional optimization deferred to future versions
 - [x] Merge feat/v2 to main
 - [x] Version bump to 2.0.0
 
@@ -128,7 +128,7 @@ Prove it works, then switch.
 
 | Metric | Current | Target | How to measure |
 |--------|---------|--------|----------------|
-| Static dispatch payload | -9.8% vs v1 baseline (317,616 vs 352,213 bytes) | -10% release target, close enough at -9.8% | `python3 scripts/measure_token_payload.py` |
+| Static dispatch payload | -9.8% vs v1 baseline (317,592 vs 352,213 bytes) | -10% release target, close enough at -9.8% | `uv run scripts/measure_token_payload.py` |
 | Places to update for new artifact | 3-5 | 1 | Add a test artifact and count touch points |
 | Hook lines of code | 908 | <200 | wc -l |
 | Schema files per capability | 0 | 2-3 | ls skills/agentera/capabilities/*/schemas/ |

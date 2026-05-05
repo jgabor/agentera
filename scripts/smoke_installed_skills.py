@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
 """Offline smoke-test for installed Agentera skill bundles.
 
 Default mode is offline and credential-free. It creates an isolated HOME and

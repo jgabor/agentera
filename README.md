@@ -151,22 +151,22 @@ installed bundle or local clone, classifies each runtime, and does not write
 files by default.
 
 ```bash
-python3 scripts/setup_doctor.py --smoke
+uv run scripts/setup_doctor.py --smoke
 ```
 
 If doctor reports fixable Codex or Copilot setup gaps, preview the
 runtime-native write first:
 
 ```bash
-python3 scripts/setup_doctor.py --install --dry-run --runtime codex
-python3 scripts/setup_doctor.py --install --dry-run --runtime copilot
+uv run scripts/setup_doctor.py --install --dry-run --runtime codex
+uv run scripts/setup_doctor.py --install --dry-run --runtime copilot
 ```
 
 Apply only after reviewing the target runtime, target file, and reason:
 
 ```bash
-python3 scripts/setup_doctor.py --install --yes --runtime codex
-python3 scripts/setup_doctor.py --install --yes --runtime copilot
+uv run scripts/setup_doctor.py --install --yes --runtime codex
+uv run scripts/setup_doctor.py --install --yes --runtime copilot
 ```
 
 ## Why it works
@@ -290,7 +290,7 @@ execution.
 Start with the bundle doctor:
 
 ```bash
-python3 scripts/setup_doctor.py --smoke
+uv run scripts/setup_doctor.py --smoke
 ```
 
 <details>
@@ -346,7 +346,7 @@ export for bash, zsh, or fish:
 
 ```bash
 export AGENTERA_HOME=/path/to/agentera
-python3 "$AGENTERA_HOME/scripts/setup_copilot.py"
+uv run "$AGENTERA_HOME/scripts/setup_copilot.py"
 ```
 
 Restart your shell after running it.
@@ -369,7 +369,7 @@ If you use a local clone or know the install root:
 
 ```bash
 export AGENTERA_HOME=/path/to/agentera
-python3 "$AGENTERA_HOME/scripts/setup_codex.py"
+uv run "$AGENTERA_HOME/scripts/setup_codex.py"
 ```
 
 For artifact-validation hooks:
@@ -388,7 +388,7 @@ Check that a shell can see Agentera:
 ```bash
 bash -c '
   echo "AGENTERA_HOME=$AGENTERA_HOME"
-  python3 "${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/agentera" query --list-artifacts
+  uv run "${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/agentera" query --list-artifacts
 '
 ```
 
@@ -429,9 +429,9 @@ The core surfaces:
 ```bash
 uv run scripts/validate_capability.py --self-validate
 uv run scripts/validate_capability.py skills/agentera/capabilities/<name>
-uv run scripts/generate_contracts.py --check
-python3 scripts/validate_lifecycle_adapters.py
-python3 -m pytest -q
+uv run scripts/validate_cross_capability.py
+uv run scripts/validate_lifecycle_adapters.py --check-uv-runtime
+uv run --with pytest --with pyyaml pytest -q
 ```
 
 Agentera has two eval surfaces:

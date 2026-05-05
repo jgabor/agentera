@@ -77,14 +77,14 @@ Steps: extract, read, categorize, generate, validate.
 Read `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` if it already exists. If the corpus is absent or stale, run the bundled extractor from the Agentera v2 repository:
 
 ```bash
-python3 scripts/extract_corpus.py
+uv run ${AGENTERA_HOME:-.}/scripts/extract_corpus.py
 ```
 
 The extractor writes the default `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` envelope and emits the four portable Section 22 families: `instruction_document`, `history_prompt`, `conversation_turn`, and `project_config_signal`. Use `--output <path>`, repeated `--project-root <path>`, `--codex-sessions-dir <path>`, or `--claude-projects-dir <path>` when the host stores data outside the defaults.
 
 Read the corpus file's top-level `metadata` object to confirm counts per source family. Report totals to the user.
 
-**If extraction fails**: common causes include Python not found (try `python3`), permission errors, and empty output (no session history). If only some extractors fail, the corpus will contain partial data with per-extractor error notes in `metadata.extractors`; proceed and note missing sources.
+**If extraction fails**: common causes include `uv` not found, permission errors, and empty output (no session history). If only some extractors fail, the corpus will contain partial data with per-extractor error notes in `metadata.extractors`; proceed and note missing sources.
 
 ---
 

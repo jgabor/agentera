@@ -54,8 +54,8 @@ Snapshot/restore contract:
 
 Run from the repo root::
 
-    python3 scripts/smoke_live_hosts.py            # default mode
-    python3 scripts/smoke_live_hosts.py --live     # live mode (gated)
+    uv run scripts/smoke_live_hosts.py            # default mode
+    uv run scripts/smoke_live_hosts.py --live     # live mode (gated)
 
 Exits 0 with ``PASS: all smoke checks passed`` on success (including
 clean SKIPs in live mode), 1 with ``FAIL: <reason>`` on the first hard
@@ -741,7 +741,7 @@ def run_codex_live_section(
                 "shell tool. After running them, print the markers below "
                 "with the captured outputs filled in.\n\n"
                 "Command 1: echo \"AGENTERA_HOME=$AGENTERA_HOME\"\n"
-                "Command 2: python3 \"$AGENTERA_HOME/scripts/agentera\" "
+                "Command 2: uv run \"$AGENTERA_HOME/scripts/agentera\" "
                 "query --list-artifacts\n\n"
                 "Then print this block as your final message, replacing "
                 "<value1> and <value2> with the literal stdout you observed:\n\n"
@@ -757,7 +757,7 @@ def run_codex_live_section(
             # points at our tmp dir so codex reads the tmp config (which
             # carries AGENTERA_HOME via shell_environment_policy.set).
             # --dangerously-bypass-approvals-and-sandbox + danger-full-access
-            # is required for the bash tool to actually run python3 against
+            # is required for the bash tool to actually run uv against
             # the query CLI without an approval round-trip; this is the
             # documented non-interactive path. The user pre-authorized live
             # spend.
@@ -1038,7 +1038,11 @@ def run_codex_hook_section(
         sentinel_path = tmp_codex_home / "hook-fired.log"
         wrapper_script = tmp_codex_home / "hook_wrapper.py"
         wrapper_script.write_text(
-            "#!/usr/bin/env python3\n"
+            "#!/usr/bin/env -S uv run --script\n"
+            "# /// script\n"
+            "# requires-python = \">=3.11\"\n"
+            "# dependencies = []\n"
+            "# ///\n"
             "# Sentinel-recording wrapper for the agentera Codex apply_patch hook.\n"
             "# Reads the Codex hook stdin once, appends a one-line trace to the\n"
             "# sentinel path, then re-feeds stdin to validate_artifact.py and\n"
@@ -1063,7 +1067,7 @@ def run_codex_hook_section(
             "\n"
             "# Run the real validate_artifact.py with the same stdin.\n"
             "result = subprocess.run(\n"
-            "    [sys.executable, VALIDATE],\n"
+            "    ['uv', 'run', VALIDATE],\n"
             "    input=raw,\n"
             "    capture_output=True,\n"
             "    text=True,\n"
@@ -1095,7 +1099,7 @@ def run_codex_hook_section(
         # command path defends against any future install root that
         # contains spaces.
         tmp_hooks_config = tmp_codex_home / CODEX_HOOKS_FILENAME
-        hook_command = f'python3 "{wrapper_script}"'
+        hook_command = f'uv run "{wrapper_script}"'
         tmp_hooks_config.write_text(
             json.dumps(
                 {
@@ -1553,7 +1557,7 @@ def run_copilot_live_section(
                 "shell tool. After running them, print the markers below "
                 "with the captured outputs filled in.\n\n"
                 'Command 1: echo "AGENTERA_HOME=$AGENTERA_HOME"\n'
-                "Command 2: python3 \"$AGENTERA_HOME/scripts/agentera\" "
+                "Command 2: uv run \"$AGENTERA_HOME/scripts/agentera\" "
                 "query --list-artifacts\n\n"
                 "Then print this block as your final message, replacing "
                 "<value1> and <value2> with the literal stdout you observed:\n\n"
@@ -1799,7 +1803,7 @@ def run_opencode_live_section(
                             "shell tool. After running them, print the markers below "
                             "with the captured outputs filled in.\n\n"
                             'Command 1: echo "AGENTERA_HOME=$AGENTERA_HOME"\n'
-                            "Command 2: python3 \"$AGENTERA_HOME/scripts/agentera\" "
+                            "Command 2: uv run \"$AGENTERA_HOME/scripts/agentera\" "
                             "query --list-artifacts\n\n"
                             "Then print this block as your final message, replacing "
                             "<value1> and <value2> with the literal stdout you observed:\n\n"

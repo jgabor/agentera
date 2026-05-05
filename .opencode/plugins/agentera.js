@@ -264,7 +264,7 @@ export function validateArtifact(filePath, projectRoot) {
       tool_name: "Edit",
       tool_input: { file_path: filePath },
     });
-    execFileSync("python3", [scriptPath], {
+    execFileSync("uv", ["run", scriptPath], {
       input: payload,
       timeout: 30000,
       stdio: ["pipe", "pipe", "pipe"],
@@ -336,7 +336,7 @@ export function validateArtifactCandidate(filePath, content, projectRoot) {
       tool_name: "Edit",
       tool_input: { file_path: filePath, content },
     });
-    const stdout = execFileSync("python3", [scriptPath], {
+    const stdout = execFileSync("uv", ["run", scriptPath], {
       input: payload,
       encoding: "utf8",
       timeout: 30000,
@@ -378,7 +378,7 @@ export function writeSessionBookmark(projectRoot) {
       cwd: projectRoot,
       hook_event_name: "session.idle",
     });
-    execFileSync("python3", [scriptPath], {
+    execFileSync("uv", ["run", scriptPath], {
       input: payload,
       timeout: 30000,
       stdio: ["pipe", "pipe", "pipe"],

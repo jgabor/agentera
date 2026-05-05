@@ -303,7 +303,7 @@ The conductor protocol in Step 2 (Dispatch) is runtime-agnostic: it always spawn
 |---------|-----------|-------|
 | Claude Code | Task tool | Native programmatic in-session subagent dispatch. |
 | OpenCode | Plugin background-agent path | Programmatic in-session dispatch via the OpenCode plugin runtime. |
-| Codex CLI | `[agents.<name>]` config tables in `~/.codex/config.toml` | Wired by `python3 scripts/setup_codex.py --enable-agents`, which writes one `[agents.<name>]` entry per agentera skill pointing at the bundled `agents/<name>.toml` stub. After setup, conversational dispatch works natively. |
+| Codex CLI | `[agents.<name>]` config tables in `~/.codex/config.toml` | Wired by `uv run scripts/setup_codex.py --enable-agents`, which writes one `[agents.<name>]` entry per agentera skill pointing at the bundled `agents/<name>.toml` stub. After setup, conversational dispatch works natively. |
 | Copilot CLI | None programmatically; user-driven `/fleet` fallback | Copilot exposes no in-session subagent tool call equivalent to the Claude Code Task tool. The conductor surfaces the dispatch as a `/fleet` recommendation; the user runs `/fleet` to execute the parallel subagent. |
 
 The conductor's prose is the same on every runtime. Step 2 (Dispatch) does not branch by runtime; the host adapter resolves the substrate. Conductor-side instructions, retry logic, and inspektera evaluation gating are unchanged.

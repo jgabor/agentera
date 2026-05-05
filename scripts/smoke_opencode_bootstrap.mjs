@@ -59,7 +59,10 @@ try {
   // --- Test 0: Documented manual install root ---
   const documentedRoot = path.join(tmpdir, ".agents", "agentera");
   fs.mkdirSync(path.join(documentedRoot, "scripts"), { recursive: true });
-  fs.writeFileSync(path.join(documentedRoot, "scripts", "validate_capability.py"), "#!/usr/bin/env python3\n");
+  fs.writeFileSync(
+    path.join(documentedRoot, "scripts", "validate_capability.py"),
+    "#!/usr/bin/env -S uv run --script\n"
+  );
   assert(
     resolveAgenteraHome() === documentedRoot,
     "resolveAgenteraHome should honor ~/.agents/agentera before legacy skills path"

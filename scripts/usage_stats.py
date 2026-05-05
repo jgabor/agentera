@@ -38,10 +38,10 @@ introduction or an exit status (``complete``, ``flagged``, ``stuck``,
 
 Usage::
 
-    python3 scripts/usage_stats.py
-    python3 scripts/usage_stats.py --corpus path/to/corpus.json
-    python3 scripts/usage_stats.py --project agentera
-    python3 scripts/usage_stats.py --json
+    uv run scripts/usage_stats.py
+    uv run scripts/usage_stats.py --corpus path/to/corpus.json
+    uv run scripts/usage_stats.py --project agentera
+    uv run scripts/usage_stats.py --json
 """
 
 from __future__ import annotations
@@ -559,7 +559,7 @@ def analyze_corpus(
 # path defaults to the same location's ``intermediate/corpus.json``.
 
 CORPUS_GUIDANCE = (
-    "Run python3 scripts/extract_corpus.py to build the default corpus. "
+    "Run uv run scripts/extract_corpus.py to build the default corpus. "
     "Provide --corpus <path> to an existing corpus.json."
 )
 
