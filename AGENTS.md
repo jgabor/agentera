@@ -24,13 +24,17 @@ skills/agentera/
   references/                       # Supplementary docs and templates
   schemas/                          # Skill-level schemas
 scripts/
+  agentera                          # CLI for project state, artifact queries, upgrade, and diagnostics
   validate_capability.py            # Validate a capability against the schema contract
   eval_skills.py                    # Tier 2 eval runner (smoke-tests via claude -p)
   semantic_eval.py                  # Offline semantic eval for captured fixtures
-  usage_stats.py                    # Usage report from profilera corpus
+  usage_stats.py                    # Suite usage analytics from the session corpus
+  smoke_* / setup_*                 # Runtime smoke checks and setup helpers
 hooks/
-  hooks.json                        # Hook registry
+  hooks.json / codex-hooks.json     # Hook registries
   validate_artifact.py              # PostToolUse artifact validation
+  session_start.py / session_stop.py # Session artifact handling
+  compaction.py                     # Artifact compaction helpers
   common.py                         # Shared artifact path resolution
 tests/                              # pytest suite
 .lefthook.yml                       # Pre-commit and pre-push hooks
@@ -59,10 +63,22 @@ uv run scripts/validate_capability.py --self-validate
 
 ## Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/docs.yaml` exists with an Artifact Mapping section. If absent, use the default layout:
+Prefer the CLI for state access before raw artifact reads:
+
+```bash
+uv run scripts/agentera hej
+uv run scripts/agentera todo
+uv run scripts/agentera docs
+uv run scripts/agentera query --list-artifacts
+```
+
+Before reading or writing any artifact directly, check if `.agentera/docs.yaml` exists with an Artifact Mapping section. If absent, use the default layout:
 
 - Human-facing artifacts at project root: `TODO.md`, `CHANGELOG.md`, `DESIGN.md`
-- Agent-facing artifacts in `.agentera/`: `progress.yaml`, `decisions.yaml`, `health.yaml`, `plan.yaml`, `docs.yaml`, `vision.yaml`, `session.yaml`, `changelog.yaml`, `design.yaml`, `todo.yaml`, and per-objective `objective.yaml` / `experiments.yaml`
+- Agent-facing artifacts in `.agentera/`: `progress.yaml`, `decisions.yaml`, `health.yaml`, `plan.yaml`, `docs.yaml`, `vision.yaml`, `session.yaml`
+- Optimera objective state under `.agentera/optimera/<objective-name>/`: `objective.yaml`, `experiments.yaml`
+
+Canonical artifact names such as `DOCS.md` may map to YAML paths such as `.agentera/docs.yaml`; use the mapping or CLI result as the source of truth.
 
 Query and validate artifacts via the CLI:
 
@@ -78,4 +94,4 @@ uv run scripts/agentera query decisions --topic <topic>
 - Skills never push to remote repos or modify `.agentera/vision.yaml` or objective state during execution cycles
 - Conventional commits: feat/fix/docs/refactor/chore/test
 - Visual identity: glyphs and semantic tokens defined in `protocol.yaml`
-- Versioning convention in DOCS.md: `version_files` lists what to bump, `semver_policy` maps commit types to bump levels
+- Versioning convention in canonical `DOCS.md` (mapped here to `.agentera/docs.yaml`): `version_files` lists what to bump, `semver_policy` maps commit types to bump levels
