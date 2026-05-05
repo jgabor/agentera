@@ -19,7 +19,7 @@ the three output surfaces on top of that pipeline:
    data structure is printed to stdout and no markdown is written.
 3. **Missing-corpus error path** — if the corpus does not exist or
    contains no ``conversation_turn`` records, the script exits with a
-   clear message naming the extractor command to run.
+   clear message explaining how to provide an existing corpus.
 
 Both surfaces include the script's run-at timestamp and the corpus's
 ``extracted_at`` timestamp so staleness is visible. Output path can be
@@ -547,16 +547,16 @@ def analyze_corpus(
 # ---------------------------------------------------------------------------
 #
 # USAGE.md sits next to PROFILE.md in the global agentera data directory so
-# cross-project usage aggregates naturally. The lookup mirrors the helper
-# in ``skills/profilera/scripts/extract_all.py`` so both files land in the
-# same directory: Linux honors ``$XDG_DATA_HOME``, macOS uses Application
-# Support, Windows uses ``%APPDATA%``. The ``AGENTERA_USAGE_DIR`` override
-# exists for tests (mirrors ``PROFILERA_PROFILE_DIR``); production callers
-# should not set it. The corpus path defaults to the same location's
-# ``intermediate/corpus.json`` because that is where ``extract_all.py``
-# writes its output.
+# cross-project usage aggregates naturally. Linux honors ``$XDG_DATA_HOME``,
+# macOS uses Application Support, Windows uses ``%APPDATA%``. The
+# ``AGENTERA_USAGE_DIR`` override exists for tests (mirrors
+# ``PROFILERA_PROFILE_DIR``); production callers should not set it. The corpus
+# path defaults to the same location's ``intermediate/corpus.json``.
 
-EXTRACTOR_COMMAND = "python3 skills/profilera/scripts/extract_all.py"
+CORPUS_GUIDANCE = (
+    "Provide --corpus <path> to an existing corpus.json. "
+    "Agentera v2 does not currently ship a bundled profilera extraction helper."
+)
 
 
 def _default_usage_dir() -> Path:
@@ -583,7 +583,7 @@ def _default_usage_dir() -> Path:
 
 
 def _default_corpus_path() -> Path:
-    """Default corpus.json location written by ``extract_all.py``."""
+    """Default corpus.json location under the profilera data directory."""
     # Honor PROFILERA_PROFILE_DIR for the corpus location even when
     # AGENTERA_USAGE_DIR is set, because the corpus is produced by
     # profilera; the AGENTERA_USAGE_DIR override only relocates USAGE.md.
@@ -609,9 +609,8 @@ def _default_corpus_path() -> Path:
 class CorpusUnavailable(RuntimeError):
     """Raised when the corpus file is missing or has no conversation turns.
 
-    Carries a user-facing message that names the extractor command so the
-    operator can fix it in one step. The CLI catches this and exits 2 with
-    that message; tests catch it directly.
+    Carries a user-facing message with an actionable next step. The CLI catches
+    this and exits 2 with that message; tests catch it directly.
     """
 
 
@@ -619,15 +618,13 @@ def load_corpus_or_raise(path: Path) -> dict:
     """Load ``corpus.json`` or raise ``CorpusUnavailable`` with guidance.
 
     The corpus is unavailable in two distinct ways: the file may not exist
-    (extractor never ran) or it may exist but contain zero
+    (no corpus was provided) or it may exist but contain zero
     ``conversation_turn`` records (no usable signal). Both conditions
-    raise the same exception type with a tailored message naming
-    ``EXTRACTOR_COMMAND`` so the operator sees the fix.
+    raise the same exception type with tailored guidance.
     """
     if not path.exists():
         raise CorpusUnavailable(
-            f"corpus.json not found at {path}. Run the extractor first:\n"
-            f"  {EXTRACTOR_COMMAND}"
+            f"corpus.json not found at {path}. {CORPUS_GUIDANCE}"
         )
     with path.open("r", encoding="utf-8") as fh:
         corpus = json.load(fh)
@@ -638,7 +635,7 @@ def load_corpus_or_raise(path: Path) -> dict:
     ):
         raise CorpusUnavailable(
             f"corpus at {path} contains no conversation_turn records. "
-            f"Re-run the extractor:\n  {EXTRACTOR_COMMAND}"
+            f"{CORPUS_GUIDANCE}"
         )
     return corpus
 

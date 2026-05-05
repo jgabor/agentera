@@ -22,13 +22,13 @@ One file in `.agentera/`, bootstrapped if absent.
 
 | File | Purpose | Bootstrap |
 |------|---------|-----------|
-| `DECISIONS.md` | Reasoning trail. What was decided, what alternatives were considered, and why. | `# Decisions\n\n` then the first decision entry. |
+| `DECISIONS.md` | Canonical decision artifact, stored as `.agentera/decisions.yaml` unless mapped otherwise. What was decided, alternatives considered, and why. | First decision entry in YAML form. |
 
-Template in `references/templates/` (at the v2 skill location `skills/agentera/references/templates/`). Use as starting structure, adapt to the project.
+Use `skills/agentera/schemas/artifacts/decisions.yaml` and existing decisions artifacts as the structure.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`.
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`.
 
 When feeding a decision into OBJECTIVE.md, write to the active objective's file at `.agentera/optimera/<objective-name>/objective.yaml` using optimera's active-objective inference.
 
@@ -38,23 +38,30 @@ Contract values are inlined where referenced. Visual tokens from protocol: confi
 
 `references/contract.md` (at the v2 skill location `skills/agentera/references/contract.md`) remains available as a full-spec reference.
 
-### DECISIONS.md
+### decisions.yaml
 
-```markdown
-## Decision N · YYYY-MM-DD
-
-**Question**: what was being decided
-**Context**: relevant constraints, triggers, or prior decisions
-**Alternatives**:
-- [Option A]: tradeoffs; win condition: concrete signal that proves this option right
-- [Option B]: tradeoffs; win condition: concrete signal that proves this option right
-**Choice**: what was chosen
-**Reasoning**: the key insight or tradeoff that resolved it
-**Confidence**: firm | provisional | exploratory
-**Feeds into**: VISION.md | OBJECTIVE.md | TODO.md | standalone
+```yaml
+decisions:
+  - number: N
+    date: YYYY-MM-DD
+    question: what was being decided
+    context: relevant constraints, triggers, or prior decisions
+    alternatives:
+      - name: Option A
+        tradeoffs: Tradeoffs.
+        win_condition: Concrete signal that proves this option right.
+        chosen: true
+      - name: Option B
+        tradeoffs: Tradeoffs.
+        win_condition: Concrete signal that proves this option right.
+        chosen: false
+    choice: what was chosen
+    reasoning: the key insight or tradeoff that resolved it
+    confidence: firm
+    feeds_into: [VISION.md]
 ```
 
-Compatibility rule: preserve the top-level fields exactly (`Question`, `Context`, `Alternatives`, `Choice`, `Reasoning`, `Confidence`, `Feeds into`). Win conditions go inside `Alternatives` bullets.
+Compatibility rule: preserve the semantic top-level fields exactly (`question`, `context`, `alternatives`, `choice`, `reasoning`, `confidence`, `feeds_into`). Win conditions live inside each alternative entry.
 
 The "Confidence" field signals how settled the decision is:
 
@@ -201,8 +208,7 @@ Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 For any option the user selects:
 
-- **DECISIONS.md**: write chosen decision, confidence, and rationale per contract token budgets. Compute next decision number before writing. Insert before `## Archived Decisions`. Compact older entries:
-  `python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py decisions <path-to-DECISIONS.md>`
+- **DECISIONS.md**: write chosen decision, confidence, and rationale per contract token budgets. Compute next decision number before writing. Apply the schema COMPACTION rules before writing if thresholds are exceeded: keep 10 full decisions, keep up to 40 one-line archive entries, and drop beyond 50 total.
 - **VISION.md / OBJECTIVE.md**: brief follow-up. Present draft for approval.
 - **TODO.md**: standard format (severity, context, impact).
 

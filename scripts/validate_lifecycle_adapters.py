@@ -47,8 +47,12 @@ CODEX_PROFILERA_TERMS = (
     "codex_session_corpus",
     "bounded Codex history, session, or config corpus data",
 )
+CODEX_AGENTERA_METADATA_TERMS = (
+    "$agentera",
+    "bounded Codex session corpus data",
+    "AGENTERA_HOME",
+)
 CODEX_PROFILERA_STATUS_VALUES = ("ok", "degraded")
-CODEX_PROFILERA_INVOCATION_TERMS = ("$profilera", "limited", "Section 22", "source families")
 OPENCODE_EVENT_TYPES = {"session.created", "session.idle"}
 COPILOT_REQUIRED_PREWRITE_HOOK = "preToolUse"
 SUITE_BUNDLE_REQUIRED_PATHS = {
@@ -253,6 +257,19 @@ def validate_suite_bundle_surface(
             continue
 
         metadata = package.get("agentera")
+        if not isinstance(metadata, dict) and runtime == "claude":
+            plugins = package.get("plugins")
+            if isinstance(plugins, list):
+                metadata = next(
+                    (
+                        plugin.get("agentera")
+                        for plugin in plugins
+                        if isinstance(plugin, dict)
+                        and plugin.get("name") == "agentera"
+                        and isinstance(plugin.get("agentera"), dict)
+                    ),
+                    None,
+                )
         if not isinstance(metadata, dict):
             errors.append(f"{runtime}: missing agentera suite bundle metadata")
             continue
@@ -444,47 +461,47 @@ def validate_codex(plugin: dict[str, Any]) -> list[str]:
 
 def validate_codex_profilera_metadata(root: Path, plugin: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    profilera = next(
-        (skill for skill in plugin.get("skillMetadata", []) if isinstance(skill, dict) and skill.get("name") == "profilera"),
+    agentera = next(
+        (
+            skill
+            for skill in plugin.get("skillMetadata", [])
+            if isinstance(skill, dict) and skill.get("name") == "agentera"
+        ),
         None,
     )
-    if not isinstance(profilera, dict):
-        return ["codex.profilera: missing aggregate skill metadata"]
+    if not isinstance(agentera, dict):
+        return ["codex.agentera: missing aggregate bundled skill metadata"]
 
-    if profilera.get("runtimeSupport") != "limited":
-        errors.append("codex.profilera: runtimeSupport must stay limited across metadata surfaces")
-    if profilera.get("policy", {}).get("allow_implicit_invocation") is not False:
-        errors.append("codex.profilera: implicit invocation must stay disabled across metadata surfaces")
-    invocation_hint = profilera.get("invocationHint")
-    if not isinstance(invocation_hint, str) or any(term not in invocation_hint for term in CODEX_PROFILERA_INVOCATION_TERMS):
-        errors.append("codex.profilera: invocation hint must expose limited Section 22 source-family rules")
-    capabilities = profilera.get("requiredCapabilities")
-    if not isinstance(capabilities, list) or not capabilities:
-        errors.append("codex.profilera: requiredCapabilities must declare the corpus capability")
-    elif capabilities[0].get("name") != "codex_session_corpus":
-        errors.append("codex.profilera: corpus capability must be named codex_session_corpus")
-    elif capabilities[0].get("status") not in CODEX_PROFILERA_STATUS_VALUES:
-        errors.append(
-            "codex.profilera: corpus capability status must be one of "
-            + ", ".join(CODEX_PROFILERA_STATUS_VALUES)
-        )
+    if agentera.get("runtimeSupport") != "portable":
+        errors.append("codex.agentera: runtimeSupport must stay portable")
+    if agentera.get("policy", {}).get("allow_implicit_invocation") is not True:
+        errors.append("codex.agentera: bundled skill must allow implicit invocation")
+    invocation_hint = agentera.get("invocationHint")
+    if not isinstance(invocation_hint, str) or "$agentera" not in invocation_hint:
+        errors.append("codex.agentera: invocation hint must name $agentera")
 
-    metadata_paths = [root / "agents/openai.yaml", root / "skills/profilera/agents/openai.yaml"]
+    codex = plugin.get("codex")
+    codex_text = " ".join(codex.get("limitations", [])) if isinstance(codex, dict) else ""
+    for term in CODEX_AGENTERA_METADATA_TERMS:
+        if term not in f"{invocation_hint or ''} {codex_text}":
+            errors.append(f"codex.agentera: metadata must surface {term!r}")
+
+    metadata_paths = [root / "agents/openai.yaml"]
     for path in metadata_paths:
         if not path.is_file():
-            errors.append(f"codex.profilera: missing metadata surface {path.relative_to(root)}")
+            errors.append(f"codex.agentera: missing metadata surface {path.relative_to(root)}")
             continue
         text = path.read_text(encoding="utf-8")
         for term in CODEX_PROFILERA_TERMS:
             if term not in text:
-                errors.append(f"codex.profilera: {path.relative_to(root)} missing {term!r}")
+                errors.append(f"codex.agentera: {path.relative_to(root)} missing {term!r}")
         if not any(f"status: {value}" in text for value in CODEX_PROFILERA_STATUS_VALUES):
             errors.append(
-                f"codex.profilera: {path.relative_to(root)} missing status declaration "
+                f"codex.agentera: {path.relative_to(root)} missing status declaration "
                 "(expected one of " + ", ".join(CODEX_PROFILERA_STATUS_VALUES) + ")"
             )
         if "collector exists" in text or "not implemented" in text:
-            errors.append(f"codex.profilera: {path.relative_to(root)} contains stale missing-collector wording")
+            errors.append(f"codex.agentera: {path.relative_to(root)} contains stale missing-collector wording")
 
     return errors
 

@@ -1,196 +1,135 @@
 # Gap Analysis: ROADMAP.md and Decisions 39-42
 
-<!-- Date: 2026-05-05 | Author: realisera | Status: complete -->
+<!-- Date: 2026-05-05 | Status: repaired/current | Scope: Agentera 2.0 v2 worktree -->
 
-## Methodology
+## Reliability Status
 
-This document audits every claim in ROADMAP.md and every requirement in Decisions 39-42 against the actual implementation on `feat/v2` (merged to main at `eac6ee1`). Each claim is verified by reading the relevant source files and running the test suite.
+This gap analysis is now reliable for the current worktree as of the verification listed below. The earlier version was not reliable: it still claimed `hooks/common.py` used v1 paths, counted 507 passing tests, treated a blank Decision 41 as complete evidence, and pointed to missing v1 helper scripts.
+
+Current verification:
+
+| Check | Result |
+|---|---|
+| `uv run pytest -q` | PASS: 508 passed, 1 skipped |
+| `uv run scripts/validate_capability.py --self-validate` | PASS |
+| `uv run scripts/validate_capability.py skills/agentera/capabilities/<all 12>` | PASS |
+| `python3 scripts/smoke_setup_helpers.py` | PASS |
+| `python3 scripts/smoke_live_hosts.py` | PASS, with profilera corpus audit explicitly skipped because no v2 extractor ships |
+| `node scripts/smoke_opencode_bootstrap.mjs` | PASS |
+| `python3 scripts/validate_lifecycle_adapters.py` | PASS |
+| `python3 scripts/detect_stale_v1` | PASS: no stale runtime artifacts found |
+| `python3 scripts/agentera query --list-artifacts` | Lists all 12 artifact types |
+| `python3 scripts/agentera query decisions --topic benchmark` | Returns Decision 41 benchmark result |
+| v1 residue scans | PASS: no active missing-reference/template pointers, no stale physical v1 paths outside intentional migration detection/tests |
 
 ## ROADMAP.md Phase 1: Infrastructure
 
-| Claim | Status | Evidence |
-|---|---|---|
-| Define capability schema contract | ✅ Implemented | `skills/agentera/capability_schema_contract.yaml` exists and self-validates |
-| Define shared protocol schema | ✅ Implemented | `skills/agentera/protocol.yaml` defines confidence, severity, tokens, phases |
-| Build universal query CLI scaffold | ✅ Implemented | `scripts/agentera` supports `query` and `prime` commands |
-| Define agent-facing artifact schemas | ✅ Implemented | 12 schemas in `skills/agentera/schemas/artifacts/` |
-| Build artifact migration tool | ✅ Implemented | `scripts/migrate_artifacts_v1_to_v2` converts Markdown → YAML |
-| Rewrite hook to validate against capability-local schemas | ✅ Implemented | `hooks/validate_artifact.py` uses schema discovery from `skills/agentera/schemas/artifacts/` |
-| Set up feat/v2 branch and worktree | ✅ Implemented | `feat/v2` branch created, merged to main via fast-forward |
+| Claim | Status | Evidence | Gap |
+|---|---|---|---|
+| Define capability schema contract | Complete | `skills/agentera/capability_schema_contract.yaml`; self-validation passes | None |
+| Define shared protocol schema | Complete | `skills/agentera/protocol.yaml` | None |
+| Build universal query CLI scaffold | Complete | `scripts/agentera` supports `prime`, `query`, and `query --list-artifacts` | Rich queries remain shallow for several artifact types |
+| Define agent-facing artifact schemas | Complete | `skills/agentera/schemas/artifacts/*.yaml` | None |
+| Build artifact migration tool | Complete | `scripts/migrate_artifacts_v1_to_v2`; migration tests pass | None |
+| Rewrite hook to validate against schemas | Complete | `hooks/validate_artifact.py`; `tests/test_hook_v2.py` covers adapter routing, YAML validation, duplicate numbers, blank Decision 41 regression | None |
+| Set up v2 branch/worktree | Complete | Current worktree is `$HOME/git/agentera-v2` | None |
 
-**Phase 1 verdict**: All claims verified. No gaps.
+Phase 1 verdict: complete, with query depth as a post-2.0 improvement rather than a cutover blocker.
 
 ## ROADMAP.md Phase 2: Core Capabilities
 
-| Claim | Status | Evidence |
-|---|---|---|
-| Port all 12 capabilities | ✅ Implemented | All 12 have `prose.md` + `schemas/` in `skills/agentera/capabilities/<name>/` |
-| hej becomes master SKILL.md core logic | ⚠️ Partial | `SKILL.md` has routing logic but delegates state-aware heuristics to hej prose. This is the correct design per thin-dispatcher trajectory. |
+| Claim | Status | Evidence | Gap |
+|---|---|---|---|
+| Port all 12 capabilities | Complete | Every capability has `prose.md` and four schema files; all capability validators pass | None |
+| hej becomes master entry behavior | Complete with split ownership | `skills/agentera/SKILL.md` is the dispatcher; `capabilities/hej/prose.md` owns state-aware briefing and v1 detection | None |
+| Keep one bundled skill | Complete | Only `skills/agentera/SKILL.md` is exposed as the bundled skill | Runtime metadata still carries some historical capability wording, but the package shape is v2 |
 
-**Phase 2 verdict**: All capabilities ported. The master SKILL.md / hej relationship is intentionally split: SKILL.md dispatches, hej executes state-aware routing.
+Phase 2 verdict: complete.
 
 ## ROADMAP.md Phase 3: Integration
 
 | Claim | Status | Evidence | Gap |
 |---|---|---|---|
-| Cross-capability dependency resolution via schemas | ⚠️ Partial | Schemas reference protocol.yaml primitives. No automated cross-capability dependency graph exists. | No tooling validates that a capability's `ARTIFACTS_PRODUCED` matches another's `ARTIFACTS_CONSUMED`. |
-| Hook integration with capability-local schemas | ⚠️ Partial | Hook validates against schemas. `hooks/common.py` still uses v1 canonical paths (`.agentera/DOCS.md`, `.agentera/DECISIONS.md`). | common.py needs v2 YAML awareness. |
-| Query CLI commands for all artifact types | ✅ Implemented | `python3 scripts/agentera query --list-artifacts` shows all 12 types. | Some artifact types (design, objective, experiments, changelog, todo) return empty because no YAML files exist for them in this project. This is expected behavior, not a gap. |
-| Runtime adapter updates | ✅ Implemented | All 4 runtime plugin manifests report version 2.0.0. | |
-| Port existing 577 tests | ⚠️ Partial | 507 tests pass. 70 tests were retired (test_compaction.py, test_generate_contracts.py, test_validate_spec.py, test_validate_design.py, test_analyze_experiments.py, test_analyze_progress.py, test_effective_profile.py, test_extract_all.py). | Retired tests removed v1 infrastructure. No functional coverage lost for v2 features. |
-| Smoke tests across all 4 runtimes | ❌ Not done | No automated smoke tests exist for live runtime behavior. | This is explicitly deferred in ROADMAP.md. |
+| Cross-capability dependency resolution via schemas | Partial | Schemas declare artifact producers/consumers | No automated producer/consumer graph validates cross-capability consistency |
+| Hook integration with schema validation | Complete | `hooks/common.py` defaults now resolve to `.agentera/*.yaml`; session start/stop tests pass against v2 YAML; OpenCode hard gate denies invalid artifacts | None |
+| Query CLI commands for all artifact types | Partial | CLI discovers all 12 artifact schemas | Some commands are generic summaries, not artifact-specific views |
+| Runtime adapter updates | Complete for offline/package surfaces | Setup smoke, OpenCode bootstrap smoke, lifecycle metadata validator all pass | Live model-bearing host smoke remains gated and was not run in this repair pass |
+| Port tests | Complete for current v2 suite | `508 passed, 1 skipped` | The retired v1 helper tests are intentionally gone; no claim should cite 577 as current |
+| Smoke tests across runtimes | Partial | Offline setup + OpenCode plugin smoke pass; live harness exists | No current evidence for live Claude/Codex/Copilot/OpenCode model-host behavior in this pass |
 
-**Phase 3 verdict**: 3 of 6 items fully implemented. 2 partial (dependency resolution, hooks/common.py). 1 deferred (smoke tests).
+Phase 3 verdict: mostly complete. Remaining work is integration depth, not basic cutover correctness.
 
-## ROADMAP.md Phase 4: Validation & Cutover
+## ROADMAP.md Phase 4: Validation and Cutover
 
 | Claim | Status | Evidence | Gap |
 |---|---|---|---|
-| Full test suite green | ✅ Implemented | 507 passed, 1 skipped, 0 failures | |
-| Semantic eval port to 2.0 fixture format | ✅ Implemented | `fixtures/semantic/hej-routing-task3.md` ported to v2 | |
-| Token consumption benchmark (target: 40%+ reduction) | ❌ Missed target | Decision 41 reports -11.0% reduction (38,857 bytes saved). | Target was 40%+. The actual reduction is 11%. SKILL.md is thin (5,381 bytes) but 12 prose.md + 48 schema files still total ~294K bytes. The thin-dispatcher optimization is not yet achieved. |
-| Merge feat/v2 to main | ✅ Implemented | Fast-forward merge from `7fcf988` to `eac6ee1` | |
-| Version bump to 2.0.0 | ✅ Implemented | All version surfaces report 2.0.0 | |
+| Full test suite green | Complete | `508 passed, 1 skipped` | None |
+| Semantic eval port | Complete | Semantic eval fixtures/tests use v2 YAML paths and pass | None |
+| Token consumption benchmark | Complete but target missed | Decision 41 records v1 352,213 bytes vs v2 313,356 bytes, -11.0% | ROADMAP target was -40% |
+| Version bump to 2.0.0 | Complete | Runtime package validators pass | None |
 
-**Phase 4 verdict**: 4 of 5 items complete. Token benchmark missed target by 29 percentage points.
+Phase 4 verdict: validation is green; token goal remains missed.
 
-## ROADMAP.md Success Metrics
+## Decisions 39-42
 
-| Metric | Current | Target | Status |
-|---|---|---|---|
-| Tokens per session | -11% | -40% | ❌ Missed |
-| Places to update for new artifact | ~3 (schema file, query CLI, hook) | 1 | ⚠️ Partial |
-| Hook lines of code | ~281 | <200 | ⚠️ Partial |
-| Schema files per capability | 4 | 2-3 | ⚠️ Slightly over |
-| Install command complexity | 1 per runtime | 1 per runtime | ✅ Met |
-
-## Decision 39: Single Bundled Skill
-
-| Requirement | Status | Location |
-|---|---|---|
-| One bundled skill (`/agentera`) | ✅ Implemented | `skills/agentera/SKILL.md` |
-| 12 capabilities as sub-modules | ✅ Implemented | `skills/agentera/capabilities/<name>/` |
-| Lean behavioral prose + companion schemas | ✅ Implemented | Each capability has `prose.md` + `schemas/` |
-| Thin shared protocol schema | ✅ Implemented | `skills/agentera/protocol.yaml` |
-| SPEC.md dissolves into capability schemas | ✅ Implemented | SPEC.md removed; `skills/agentera/references/contract.md` retained as reference |
-| 3 human-facing artifacts at root | ✅ Implemented | `TODO.md`, `CHANGELOG.md`, `DESIGN.md` at root |
-| Rest as structured agent-facing data in `.agentera/` | ✅ Implemented | 8 YAML artifacts in `.agentera/` |
-| Universal query CLI | ✅ Implemented | `scripts/agentera` |
-| Master SKILL.md starts full, optimizes toward thin dispatcher | ⚠️ Partial | SKILL.md is 147 lines. Hej prose is 292 lines. The dispatcher is thin but hej carries the routing intelligence. This is the intended architecture per ROADMAP. |
-| Big bang cutover from feat/v2 branch/worktree | ✅ Implemented | Merged to main 2026-05-05 |
-
-**D39 verdict**: 9 of 10 requirements fully implemented. 1 partial (thin dispatcher trajectory is in progress, not complete).
-
-## Decision 40: Artifact Format, Naming, Compatibility
-
-| Requirement | Status | Evidence |
-|---|---|---|
-| YAML for all agent-facing artifacts | ✅ Implemented | `.agentera/*.yaml` files |
-| No backward compatibility | ✅ Implemented | v1 artifacts backed up to `.agentera/backup-v1/` |
-| Sub-modules called "capabilities" | ✅ Implemented | Directory name is `capabilities/` |
-| Master SKILL.md size deferred to Phase 1 | ✅ Implemented | Measured at 5,381 bytes |
-
-**D40 verdict**: All requirements implemented. No gaps.
-
-## Decision 41: Token Benchmark
-
-| Claim | Status | Evidence |
-|---|---|---|
-| v1 baseline measured | ✅ Implemented | 352,213 bytes, ~88,053 tokens |
-| v2 measurement recorded | ✅ Implemented | 313,356 bytes, ~78,339 tokens |
-| Delta calculated and documented | ✅ Implemented | -11.0% bytes, -9,714 tokens |
-
-**D41 verdict**: Benchmark completed but missed the ROADMAP target of 40% reduction. The 11% reduction is real but insufficient.
-
-**Root cause**: The 12 prose.md files (210,827 bytes) are the dominant payload. They replaced 12 v1 SKILL.md files (256,314 bytes) — a ~18% reduction in prose. But the 48 schema files add 83,444 bytes that didn't exist in v1. The net is -11%. To hit -40%, the prose files would need to be ~60% smaller or the schemas would need to be dramatically compressed. Neither is achievable without significant content cuts.
-
-**Implication**: The 40% target may have been unrealistic given that v2 adds schema infrastructure that v1 didn't have. The actual win is structural (query CLI replaces direct reads, schemas enable validation) not just byte reduction.
-
-## Decision 42: Five-Layer Dispatch Model
-
-| Layer | Requirement | Status | Location | Gap |
+| Decision | Requirement | Status | Evidence | Gap |
 |---|---|---|---|---|
-| 1 | Bare `/agentera` → deterministic heuristics | ✅ Implemented | `SKILL.md` lines 52-54 delegates to hej | |
-| 2 | `/agentera <name>` → direct route | ✅ Implemented | `SKILL.md` lines 56-58 | |
-| 3 | NL high-confidence match with thresholds | ✅ Implemented | `SKILL.md` lines 60-63; all 12 `triggers.yaml` have `priority` field | Routing threshold is specified in prose, not enforced by code. The agent (LLM) interprets SKILL.md and makes the routing decision. |
-| 4 | Borderline match → disambiguation prompt | ✅ Implemented | `SKILL.md` lines 65-67 | Same as Layer 3: specified in prose, not code-enforced. |
-| 5 | Low confidence / no match → hej fallback | ✅ Implemented | `SKILL.md` lines 69-70 | |
+| D39 | One bundled `/agentera` skill with 12 capabilities | Complete | `skills/agentera/SKILL.md`, `skills/agentera/capabilities/` | None |
+| D39 | Agent-facing data as structured YAML | Complete | `.agentera/vision.yaml`, `progress.yaml`, `decisions.yaml`, `plan.yaml`, `health.yaml`, `docs.yaml`, `session.yaml`; no active `.agentera/*.md` except this analysis | None |
+| D39 | Human-facing root artifacts | Complete | `TODO.md`, `CHANGELOG.md`, `DESIGN.md` at root | None |
+| D39 | Universal query seam | Partial | `scripts/agentera query` exists and lists all schemas | Query output is not yet the full replacement for all direct artifact reads |
+| D40 | No backward compatibility in active state | Complete | v1 files moved under `.agentera/backup-v1/`; active mapping points to YAML | Migration backup is intentionally retained |
+| D40 | Capability terminology | Complete | Directory and docs use `capabilities/` | None |
+| D41 | Record token benchmark | Complete | Decision 41 is now populated and queryable | Target missed |
+| D42 | Five-layer routing model | Complete at specification level | `SKILL.md` routing model and trigger priorities validate | No executable dispatcher scores triggers; routing remains instruction-driven |
 
-**D42 verdict**: All 5 layers specified in SKILL.md. All trigger schemas have priority fields. The validator checks priorities. The model is complete at the specification level.
+## Active Gaps
 
-**Caveat**: The routing is prose-driven, not code-driven. The agent reads SKILL.md and decides where to route. There is no executable dispatcher that parses triggers and computes scores. This is consistent with the v2 architecture (prose + schemas guide the agent, not a runtime engine), but it means routing quality depends on the agent's adherence to the instructions.
+1. Token target missed.
+   The measured v2 payload is 313,356 bytes vs 352,213 bytes for v1, a reduction of 11.0%, not the ROADMAP target of 40%. This is now accurately recorded in Decision 41.
 
-## Cross-Decision Contradictions
+2. Query CLI is a scaffold, not yet the authoritative read path for every workflow.
+   `scripts/agentera query --list-artifacts` works and artifact discovery is broad, but several artifact types still return generic or empty summaries. This matters because v2's token story depends on agents using the query seam instead of reading raw YAML/prose wholesale.
 
-### Contradiction 1: D42 vs ROADMAP thin dispatcher
+3. Cross-capability producer/consumer validation is missing.
+   Capability schemas declare artifact relationships, but no validator checks that a producer's output contract and a consumer's input expectation agree across all 12 capabilities.
 
-- **D42** says: "Heuristics for bare `/agentera` are hardcoded in SKILL.md."
-- **ROADMAP** says: "Master SKILL.md starts full... optimizes toward thin schema-driven dispatcher."
+4. Profilera corpus extraction is deferred.
+   v2 no longer points to `extract_all.py`, and the smoke harness now reports the missing extractor as an explicit skip. That is honest, but it means profilera generation from raw runtime history is not currently shipped.
 
-**Resolution**: The current implementation splits the difference. SKILL.md contains the dispatch model (thin), and hej prose contains the state-aware heuristics (full). This is the correct trajectory: SKILL.md stays thin, hej carries the intelligence. No contradiction in practice.
+5. Live runtime verification remains unspent.
+   Offline package and OpenCode plugin smokes pass. The cost-bearing live host path (`scripts/smoke_live_hosts.py --live`) was not run, so current evidence does not prove model-host behavior across Codex/Copilot/Claude/OpenCode.
 
-### Contradiction 2: D39 big bang vs staged migration
+## Resolved Since Earlier Draft
 
-- **D39** says: "Big bang cutover from feat/v2 branch/worktree."
-- **Reality**: The merge to main was attempted, reverted, then a 13-task remediation plan was executed before re-merging.
+- `hooks/common.py` now resolves v2 YAML paths and reads `.agentera/docs.yaml` mappings.
+- `hooks/session_start.py` and `hooks/session_stop.py` now support v2 YAML artifacts; tests pass.
+- `hooks/validate_artifact.py` now catches blank list entries and nested required fields, including the blank Decision 41 failure mode.
+- Decision 41 now contains the benchmark values and is queryable.
+- OpenCode artifact hard gate now denies validation-hook failures instead of swallowing non-zero exits.
+- Stale active v1 artifacts were moved out of the live `.agentera/` root.
+- README/AGENTS/runtime smoke references to missing v1 scripts were removed or made explicit as deferred.
+- Capability prose, schemas, and the shared contract no longer point at missing bundled templates/references or teach v1 Markdown formats for the main agent-facing YAML artifacts.
 
-**Resolution**: The big bang was the intent. The revert and remediation were execution reality. The final state is correct (feat/v2 merged to main). The contradiction is in process, not outcome.
+## Recommended Next Actions
 
-## Prioritized Backlog
+1. Build the producer/consumer graph validator.
+   Add a validator that reads every capability `artifacts.yaml` plus skill-level artifact schemas and checks producer/consumer path/name consistency.
 
-### Critical (would block a v2.1.0 release)
+2. Deepen `scripts/agentera query`.
+   Add artifact-specific summaries for plan, progress, decisions, health, docs, session, todo, design, objective, and experiments so agents can use the query seam instead of raw reads.
 
-1. **Token consumption: reassess target or accept 11%**
-   - The 40% target is unachievable without cutting prose content. Either revise the target to 15% or invest in prose compression.
-   - Severity: SI1 (critical) if target is treated as a hard constraint; SI3 (normal) if treated as aspirational.
+3. Decide the token target.
+   Either revise the ROADMAP target from 40% to a measured target, or plan a prose/schema compression pass with a new benchmark gate.
 
-2. **Hooks/common.py v2 awareness**
-   - `hooks/common.py` still references `.agentera/DOCS.md`, `.agentera/DECISIONS.md` as canonical paths. The session_stop hook operates on v1 canonical names.
-   - Severity: SI2 (degraded) — hooks work but use outdated path resolution.
+4. Restore or intentionally replace profilera corpus extraction.
+   Decide whether v2 should ship a bundled extractor, rely on externally supplied corpus files, or mark profilera generation as out of scope for 2.0.
 
-### Degraded (should fix in next cycle)
-
-3. **Smoke tests across 4 runtimes**
-   - ROADMAP.md Phase 3 explicitly deferred this. No automated verification that the v2 skill loads correctly on Claude Code, OpenCode, Codex, or Copilot.
-   - Severity: SI2 (degraded) — untested but likely works given adapter metadata is correct.
-
-4. **Cross-capability dependency graph**
-   - No automated validation that orkestrera's `ARTIFACTS_PRODUCED` matches realisera's `ARTIFACTS_CONSUMED`.
-   - Severity: SI3 (normal) — manual review suffices for 12 capabilities.
-
-### Normal (nice to have)
-
-5. **Query CLI for missing artifact types**
-   - `design`, `objective`, `experiments`, `changelog`, `todo` schemas exist but no YAML files for them in this project. The CLI returns empty, which is correct but could be clearer.
-   - Severity: SI4 (annoying) — cosmetic improvement.
-
-6. **Test count regression documentation**
-   - 507 tests vs 577 in v1. The 70 retired tests are documented (compaction, contracts, spec validation, v1 scripts), but this should be noted in AGENTS.md or README.
-   - Severity: SI4 (annoying).
+5. Run one gated live-host smoke when budget is approved.
+   Use `python3 scripts/smoke_live_hosts.py --live --yes` only after explicit approval for live model calls.
 
 ## Overall Verdict
 
-Agentera 2.0 is **structurally complete** but has **three active gaps**:
+Agentera 2.0 is reliable enough to continue from this gap analysis. The basic v2 cutover is structurally sound: bundled skill shape, YAML artifact paths, schema validation, session hooks, runtime metadata, offline smoke checks, and the current test suite are green.
 
-1. Token benchmark missed target (11% vs 40%)
-2. Hooks/common.py uses v1 paths
-3. No runtime smoke tests
-
-Decision 42 is **fully specified** in SKILL.md and schemas. The five-layer model exists, priorities are validated, and the routing logic is documented. The fact that routing is prose-driven (not code-driven) is an architectural choice, not a gap.
-
-The v2.0.0 release is **safe to use**. The gaps are operational (hooks, smoke tests) and aspirational (token target), not structural.
-
-## Files Audited
-
-- `skills/agentera/SKILL.md`
-- `skills/agentera/protocol.yaml`
-- `skills/agentera/capability_schema_contract.yaml`
-- `skills/agentera/capabilities/*/prose.md` (12 files)
-- `skills/agentera/capabilities/*/schemas/triggers.yaml` (12 files)
-- `ROADMAP.md`
-- `.agentera/backup-v1/DECISIONS.md` (Decisions 39-42)
-- `.agentera/plan.yaml`
-- `hooks/common.py`
-- `scripts/validate_capability.py`
-- `scripts/agentera`
-- `tests/` (full suite: 507 tests)
+The remaining work should be treated as the next implementation queue, not as proof that the current gap analysis is untrustworthy.

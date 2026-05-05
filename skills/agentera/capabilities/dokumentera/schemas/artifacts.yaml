@@ -2,7 +2,7 @@ ARTIFACTS:
   1:
     id: A1
     name: DOCS.md
-    path: ".agentera/DOCS.md"
+    path: ".agentera/docs.yaml"
     description: >-
       Documentation contract with conventions, artifact mapping, and
       documentation index. Produced by dokumentera. Contains the doc root,
@@ -14,7 +14,7 @@ ARTIFACTS:
   2:
     id: A2
     name: VISION.md
-    path: "VISION.md or mapped path per DOCS.md"
+    path: ".agentera/vision.yaml or mapped path per docs.yaml"
     description: >-
       Project direction and north star. Produced by visionera or realisera.
       Dokumentera reads this to understand who the documentation is for
@@ -24,7 +24,7 @@ ARTIFACTS:
   3:
     id: A3
     name: PROGRESS.md
-    path: ".agentera/PROGRESS.md"
+    path: ".agentera/progress.yaml"
     description: >-
       Recent cycle history and what shipped. Produced by realisera.
       Dokumentera reads this during explore-and-generate mode to understand
@@ -34,7 +34,7 @@ ARTIFACTS:
   4:
     id: A4
     name: DECISIONS.md
-    path: ".agentera/DECISIONS.md"
+    path: ".agentera/decisions.yaml"
     description: >-
       Pending and recent decisions. Produced by resonera.
       Dokumentera reads this during explore-and-generate mode for project
@@ -44,7 +44,7 @@ ARTIFACTS:
   5:
     id: A5
     name: HEALTH.md
-    path: ".agentera/HEALTH.md"
+    path: ".agentera/health.yaml"
     description: >-
       Codebase health grades and trends. Produced by inspektera.
       Dokumentera reads this to discover documentation gaps surfaced
@@ -64,7 +64,7 @@ ARTIFACTS:
   7:
     id: A7
     name: DESIGN.md
-    path: ".agentera/DESIGN.md"
+    path: "DESIGN.md"
     description: >-
       Visual identity system. Produced by visualisera.
       Dokumentera reads this to respect the declared aesthetic and voice

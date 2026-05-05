@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = []
+# dependencies = ["pyyaml"]
 # ///
 """SessionStart hook: preloads a compact digest of operational artifacts.
 
@@ -23,6 +23,8 @@ import json
 import re
 import sys
 from pathlib import Path
+
+import yaml
 
 from common import (
     DEFAULT_PATHS,
@@ -138,6 +140,79 @@ def extract_session_summary(text: str) -> str | None:
     return "\n".join(lines[:3])
 
 
+def _load_yaml(path: Path) -> object | None:
+    try:
+        return yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, yaml.YAMLError):
+        return None
+
+
+def extract_latest_progress_yaml(data: object) -> str | None:
+    if not isinstance(data, dict):
+        return None
+    cycles = data.get("cycles")
+    if not isinstance(cycles, list) or not cycles:
+        return None
+    latest = cycles[0] if isinstance(cycles[0], dict) else None
+    if not latest:
+        return None
+    parts = []
+    for key in ("number", "phase", "what", "verified", "next"):
+        value = latest.get(key)
+        if value not in (None, ""):
+            parts.append(f"{key}: {value}")
+    return "\n".join(parts[:5]) if parts else None
+
+
+def extract_health_grades_yaml(data: object) -> str | None:
+    if not isinstance(data, dict):
+        return None
+    audits = data.get("audits")
+    if not isinstance(audits, list) or not audits or not isinstance(audits[0], dict):
+        return None
+    grades = audits[0].get("grades")
+    if not isinstance(grades, dict) or not grades:
+        return None
+    return "Grades: " + " | ".join(f"{k} {v}" for k, v in grades.items())
+
+
+def extract_next_plan_task_yaml(data: object) -> str | None:
+    if not isinstance(data, dict):
+        return None
+    tasks = data.get("tasks")
+    if not isinstance(tasks, list):
+        return None
+    for task in tasks:
+        if not isinstance(task, dict):
+            continue
+        if str(task.get("status", "")).lower() == "complete":
+            continue
+        number = task.get("number")
+        name = task.get("name", "unnamed task")
+        return f"Task {number}: {name}" if number is not None else str(name)
+    return None
+
+
+def extract_session_summary_yaml(data: object) -> str | None:
+    if not isinstance(data, dict):
+        return None
+    bookmarks = data.get("bookmarks")
+    if not isinstance(bookmarks, list) or not bookmarks or not isinstance(bookmarks[0], dict):
+        return None
+    latest = bookmarks[0]
+    timestamp = latest.get("timestamp", "")
+    summary = latest.get("summary", "")
+    artifacts = latest.get("artifacts", [])
+    lines = []
+    if timestamp:
+        lines.append(str(timestamp))
+    if summary:
+        lines.append(str(summary))
+    if artifacts:
+        lines.append("Artifacts modified: " + ", ".join(str(a) for a in artifacts))
+    return "\n".join(lines[:3]) if lines else None
+
+
 # ---------------------------------------------------------------------------
 # Digest assembly
 # ---------------------------------------------------------------------------
@@ -154,24 +229,33 @@ def build_digest(project_root: Path) -> str | None:
     # PROGRESS.md: latest cycle.
     progress_path = resolve_artifact_path(project_root, "PROGRESS.md", overrides)
     if progress_path.exists():
-        text = progress_path.read_text(encoding="utf-8")
-        entry = extract_latest_progress(text)
+        if progress_path.suffix == ".yaml":
+            entry = extract_latest_progress_yaml(_load_yaml(progress_path))
+        else:
+            text = progress_path.read_text(encoding="utf-8")
+            entry = extract_latest_progress(text)
         if entry:
             sections.append(f"## Latest progress\n{entry}")
 
     # HEALTH.md: grades.
     health_path = resolve_artifact_path(project_root, "HEALTH.md", overrides)
     if health_path.exists():
-        text = health_path.read_text(encoding="utf-8")
-        grades = extract_health_grades(text)
+        if health_path.suffix == ".yaml":
+            grades = extract_health_grades_yaml(_load_yaml(health_path))
+        else:
+            text = health_path.read_text(encoding="utf-8")
+            grades = extract_health_grades(text)
         if grades:
             sections.append(f"## Health\n{grades}")
 
     # PLAN.md: next pending task.
     plan_path = resolve_artifact_path(project_root, "PLAN.md", overrides)
     if plan_path.exists():
-        text = plan_path.read_text(encoding="utf-8")
-        task = extract_next_plan_task(text)
+        if plan_path.suffix == ".yaml":
+            task = extract_next_plan_task_yaml(_load_yaml(plan_path))
+        else:
+            text = plan_path.read_text(encoding="utf-8")
+            task = extract_next_plan_task(text)
         if task:
             sections.append(f"## Next task\n{task}")
 
@@ -186,8 +270,11 @@ def build_digest(project_root: Path) -> str | None:
     # SESSION.md: last session summary (future: Task 2).
     session_path = resolve_artifact_path(project_root, "SESSION.md", overrides)
     if session_path.exists():
-        text = session_path.read_text(encoding="utf-8")
-        summary = extract_session_summary(text)
+        if session_path.suffix == ".yaml":
+            summary = extract_session_summary_yaml(_load_yaml(session_path))
+        else:
+            text = session_path.read_text(encoding="utf-8")
+            summary = extract_session_summary(text)
         if summary:
             sections.append(f"## Last session\n{summary}")
 

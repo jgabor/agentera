@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = []
+# dependencies = ["pyyaml"]
 # ///
-"""Stop hook: writes session bookmarks to .agentera/SESSION.md.
+"""Stop hook: writes session bookmarks to .agentera/session.yaml.
 
 Detects which operational artifacts were modified during the session
 (via git diff and git ls-files), and writes a timestamped bookmark to
-SESSION.md. Compacts older bookmarks to one-line summaries (keep 10
+session.yaml. Compacts older bookmarks to one-line summaries (keep 10
 full entries, 40 one-line summaries, drop oldest beyond 50 total).
 
-Respects DOCS.md artifact path overrides per Decision 4.
+Respects docs.yaml artifact path overrides.
 
 Receives JSON on stdin with fields: session_id, transcript_path, cwd,
 hook_event_name. Exit code 0 = success, exit code 1 = error.
@@ -28,6 +28,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import yaml
+
 from common import (
     DEFAULT_PATHS,
     load_artifact_overrides,
@@ -37,7 +39,6 @@ from compaction import (
     MAX_FULL_ENTRIES,
     MAX_ONELINE_ENTRIES,
     MAX_TOTAL_ENTRIES,
-    compact_entries as _compact_entries_core,
 )
 
 
@@ -161,17 +162,43 @@ def detect_modified_artifacts(
 # SESSION.md parsing and writing
 # ---------------------------------------------------------------------------
 
-def parse_session_entries(text: str) -> list[dict[str, str]]:
-    """Parse SESSION.md into a list of entry dicts.
+def parse_session_entries(text: str) -> list[dict[str, object]]:
+    """Parse session.yaml or legacy SESSION.md into entry dicts.
 
     Each entry has:
-      - "header": the ## heading text (date/time)
-      - "body": the full body text (empty string for one-line entries)
+      - "timestamp": session timestamp
+      - "artifacts": modified artifacts for full entries
+      - "summary": compact summary
       - "kind": "full" or "oneline"
 
     Entries are returned in document order (newest first).
     """
-    entries: list[dict[str, str]] = []
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError:
+        data = None
+    if isinstance(data, dict):
+        entries: list[dict[str, object]] = []
+        for bookmark in data.get("bookmarks", []) or []:
+            if isinstance(bookmark, dict):
+                entries.append({
+                    "timestamp": str(bookmark.get("timestamp", "")),
+                    "artifacts": list(bookmark.get("artifacts", []) or []),
+                    "summary": str(bookmark.get("summary", "")),
+                    "kind": "full",
+                })
+        for archived in data.get("archive", []) or []:
+            if isinstance(archived, dict):
+                entries.append({
+                    "timestamp": str(archived.get("timestamp", "")),
+                    "artifacts": [],
+                    "summary": str(archived.get("summary", "")),
+                    "kind": "oneline",
+                })
+        if entries:
+            return entries
+
+    entries = []
     # Split on ## headings. Each heading starts a new entry.
     pattern = re.compile(r"^##\s+(.+)$", re.MULTILINE)
     matches = list(pattern.finditer(text))
@@ -184,101 +211,105 @@ def parse_session_entries(text: str) -> list[dict[str, str]]:
         body = text[start:end].strip()
 
         if body:
-            entries.append({"header": header, "body": body, "kind": "full"})
+            summary = ""
+            artifacts: list[str] = []
+            for line in body.splitlines():
+                stripped = line.strip()
+                if stripped.lower().startswith("summary:"):
+                    summary = stripped.split(":", 1)[1].strip()
+                if stripped.lower().startswith("artifacts modified:"):
+                    raw = stripped.split(":", 1)[1]
+                    artifacts = [a.strip() for a in raw.split(",") if a.strip()]
+            entries.append({
+                "timestamp": header,
+                "artifacts": artifacts,
+                "summary": summary,
+                "kind": "full",
+            })
         else:
-            entries.append({"header": header, "body": "", "kind": "oneline"})
+            entries.append({
+                "timestamp": header,
+                "artifacts": [],
+                "summary": header,
+                "kind": "oneline",
+            })
 
     return entries
 
 
-def compact_entry_to_oneline(entry: dict[str, str]) -> dict[str, str]:
+def compact_entry_to_oneline(entry: dict[str, object]) -> dict[str, object]:
     """Compact a full entry to a one-line summary.
 
-    Extracts the "Summary:" line from the body if present, otherwise
-    uses the first non-empty line. Appends it to the header in
-    parentheses.
+    Preserves timestamp and summary for the archive section.
     """
-    body = entry["body"]
-    summary = ""
-    for line in body.splitlines():
-        stripped = line.strip()
-        if stripped.lower().startswith("summary:"):
-            summary = stripped[len("Summary:"):].strip()
-            # Handle case-insensitive "summary:" prefix.
-            if not summary:
-                colon_idx = stripped.index(":")
-                summary = stripped[colon_idx + 1:].strip()
-            break
-    if not summary:
-        # Fall back to first non-empty line of body.
-        for line in body.splitlines():
-            if line.strip():
-                summary = line.strip()
-                break
-
-    header = entry["header"]
-    # If header already has parenthetical, replace it.
-    if "(" in header:
-        header = header[:header.index("(")].strip()
-
     return {
-        "header": f"{header} ({summary})" if summary else header,
-        "body": "",
+        "timestamp": str(entry.get("timestamp", "")),
+        "artifacts": [],
+        "summary": str(entry.get("summary", "")),
         "kind": "oneline",
     }
 
 
-def compact_entries(entries: list[dict[str, str]]) -> list[dict[str, str]]:
+def compact_entries(entries: list[dict[str, object]]) -> list[dict[str, object]]:
     """Apply compaction rules to an entry list.
 
-    Delegates to hooks.compaction.compact_entries with a SESSION.md
-    -specific one-line formatter (summary line extraction from body).
-    Kept as a thin wrapper so existing tests and callers keep working.
+    Keeps the 10 newest full bookmarks, preserves up to 40 older one-line
+    archive entries, and drops anything beyond the 50-entry total cap.
     """
-    def _format(entry: dict[str, str]) -> str:
-        return compact_entry_to_oneline(entry)["header"]
-
-    return _compact_entries_core(
+    ordered = sorted(
         entries,
-        max_full=MAX_FULL_ENTRIES,
-        max_oneline=MAX_ONELINE_ENTRIES,
-        format_oneline=_format,
+        key=lambda entry: str(entry.get("timestamp", "")),
+        reverse=True,
     )
+    full: list[dict[str, object]] = []
+    archive: list[dict[str, object]] = []
+    for entry in ordered:
+        if entry.get("kind") == "full" and len(full) < MAX_FULL_ENTRIES:
+            full.append(entry)
+        else:
+            archive.append(compact_entry_to_oneline(entry))
+    return (full + archive[:MAX_ONELINE_ENTRIES])[:MAX_TOTAL_ENTRIES]
 
 
-def format_session_md(entries: list[dict[str, str]]) -> str:
-    """Format a list of entries back into SESSION.md content."""
-    lines = ["# Sessions", ""]
-
+def format_session_yaml(entries: list[dict[str, object]]) -> str:
+    """Format entries as v2 session.yaml content."""
+    bookmarks = []
+    archive = []
     for entry in entries:
-        lines.append(f"## {entry['header']}")
-        if entry["body"]:
-            lines.append("")
-            lines.append(entry["body"])
-        lines.append("")
-
-    return "\n".join(lines)
+        if entry.get("kind") == "full":
+            bookmarks.append({
+                "timestamp": entry.get("timestamp", ""),
+                "artifacts": list(entry.get("artifacts", []) or []),
+                "summary": entry.get("summary", ""),
+            })
+        else:
+            archive.append({
+                "timestamp": entry.get("timestamp", ""),
+                "summary": entry.get("summary", ""),
+            })
+    data: dict[str, object] = {"bookmarks": bookmarks}
+    if archive:
+        data["archive"] = archive
+    return yaml.safe_dump(data, sort_keys=False)
 
 
 def build_bookmark(
     modified_artifacts: list[str],
     timestamp: datetime | None = None,
-) -> dict[str, str]:
+) -> dict[str, object]:
     """Build a new full bookmark entry.
 
-    Returns an entry dict with header (timestamp) and body (artifacts
-    modified + summary placeholder).
+    Returns an entry dict with timestamp, modified artifacts, and summary.
     """
     if timestamp is None:
         timestamp = datetime.now(timezone.utc)
 
-    header = timestamp.strftime("%Y-%m-%d %H:%M")
-    artifacts_line = f"Artifacts modified: {', '.join(modified_artifacts)}"
-    # Summary is intentionally generic; Claude cannot introspect the session
-    # transcript from a command hook. The artifact list itself is the signal.
-    body = f"{artifacts_line}\nSummary: Modified {len(modified_artifacts)} artifact(s)"
-
-    return {"header": header, "body": body, "kind": "full"}
+    return {
+        "timestamp": timestamp.strftime("%Y-%m-%d %H:%M"),
+        "artifacts": modified_artifacts,
+        "summary": f"Modified {len(modified_artifacts)} artifact(s)",
+        "kind": "full",
+    }
 
 
 def write_session_bookmark(
@@ -287,9 +318,9 @@ def write_session_bookmark(
     modified_artifacts: list[str],
     timestamp: datetime | None = None,
 ) -> bool:
-    """Write a session bookmark to SESSION.md.
+    """Write a session bookmark to session.yaml.
 
-    Reads existing SESSION.md (if any), prepends the new bookmark,
+    Reads existing session.yaml (if any), prepends the new bookmark,
     applies compaction, and writes the result. Returns True if the
     bookmark was written, False otherwise.
     """
@@ -314,7 +345,7 @@ def write_session_bookmark(
 
     # Write result.
     session_path.parent.mkdir(parents=True, exist_ok=True)
-    session_path.write_text(format_session_md(compacted), encoding="utf-8")
+    session_path.write_text(format_session_yaml(compacted), encoding="utf-8")
 
     return True
 

@@ -2,7 +2,7 @@ ARTIFACTS:
   1:
     id: A1
     name: DESIGN.md
-    path: ".agentera/DESIGN.md or mapped path per DOCS.md"
+    path: "DESIGN.md or mapped path per DOCS.md"
     description: >-
       Visual identity system with design tokens, typography, colors,
       spacing, constraints, and component contracts. Produced by visualisera.
@@ -13,7 +13,7 @@ ARTIFACTS:
   2:
     id: A2
     name: VISION.md
-    path: "VISION.md or mapped path per DOCS.md"
+    path: ".agentera/vision.yaml or mapped path per docs.yaml"
     description: >-
       Project direction and north star. Produced by visionera or realisera.
       Visualisera reads the Identity section to propose visual tokens
@@ -24,7 +24,7 @@ ARTIFACTS:
   3:
     id: A3
     name: PROGRESS.md
-    path: ".agentera/PROGRESS.md"
+    path: ".agentera/progress.yaml"
     description: >-
       Recent cycle history and what shipped. Produced by realisera.
       Visualisera reads this during refine mode to identify UI work and
@@ -44,7 +44,7 @@ ARTIFACTS:
   5:
     id: A5
     name: DOCS.md
-    path: ".agentera/DOCS.md"
+    path: ".agentera/docs.yaml"
     description: >-
       Artifact path resolution and documentation coverage. Produced by dokumentera.
       Visualisera reads this FIRST to resolve artifact paths before accessing

@@ -2,7 +2,7 @@ ARTIFACTS:
   1:
     id: A1
     name: PLAN.md
-    path: ".agentera/PLAN.md"
+    path: ".agentera/plan.yaml"
     description: >-
       Task queue with dependencies and completion status. Produced by planera.
       Orkestrera reads task statuses, picks work, and updates status
@@ -12,7 +12,7 @@ ARTIFACTS:
   2:
     id: A2
     name: PROGRESS.md
-    path: ".agentera/PROGRESS.md"
+    path: ".agentera/progress.yaml"
     description: >-
       Cross-cycle context and what shipped. Produced by realisera (and other
       dispatched capabilities). Orkestrera reads recent entries for the
@@ -22,7 +22,7 @@ ARTIFACTS:
   3:
     id: A3
     name: HEALTH.md
-    path: ".agentera/HEALTH.md"
+    path: ".agentera/health.yaml"
     description: >-
       Codebase health grades and trends. Produced by inspektera.
       Orkestrera reads this after plan completion to decide whether to
@@ -41,7 +41,7 @@ ARTIFACTS:
   5:
     id: A5
     name: DECISIONS.md
-    path: ".agentera/DECISIONS.md"
+    path: ".agentera/decisions.yaml"
     description: >-
       Pending and recent decisions. Produced by resonera.
       Orkestrera reads this during task selection to identify firm constraints
@@ -51,7 +51,7 @@ ARTIFACTS:
   6:
     id: A6
     name: VISION.md
-    path: "VISION.md or .agentera/VISION.md (per DOCS.md)"
+    path: ".agentera/vision.yaml or mapped path per docs.yaml"
     description: >-
       Project direction and north star. Produced by visionera.
       Orkestrera reads this during bootstrap when chaining inspirera
@@ -72,7 +72,7 @@ ARTIFACTS:
   8:
     id: A8
     name: DOCS.md
-    path: ".agentera/DOCS.md"
+    path: ".agentera/docs.yaml"
     description: >-
       Artifact path resolution and documentation coverage. Produced by dokumentera.
       Orkestrera reads this FIRST to resolve artifact paths before reading

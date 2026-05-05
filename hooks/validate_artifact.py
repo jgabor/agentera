@@ -125,6 +125,18 @@ def _route(data: dict) -> tuple[str, str | None] | None:
 
 _SKIP_META = {"meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION"}
 _LIST_INDICATORS = {"number", "entry", "summary"}
+_SEQUENCE_KEYS_BY_ARTIFACT = {
+    "decisions": {"DECISION": "decisions"},
+    "docs": {"MAPPING": "mapping", "INDEX": "index", "AUDIT_LOG": "audit_log"},
+    "experiments": {"EXPERIMENT": "experiments"},
+    "plan": {"TASK": "tasks"},
+    "progress": {"CYCLE": "cycles"},
+    "session": {"BOOKMARK": "bookmarks"},
+    "vision": {"PERSONA": "personas", "PRINCIPLE": "principles"},
+}
+_NESTED_SEQUENCE_KEYS = {
+    ("DECISION", "ALTERNATIVE"): "alternatives",
+}
 
 
 def _collect_required(schema: dict) -> list[tuple[str, list[str]]]:
@@ -150,6 +162,189 @@ def _collect_required(schema: dict) -> list[tuple[str, list[str]]]:
     return result
 
 
+def _is_empty_required(value: object) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return not value.strip()
+    if isinstance(value, (list, dict)):
+        return not value
+    return False
+
+
+def _iter_group_entries(schema: dict, group: str):
+    gv = schema.get(group, {})
+    if not isinstance(gv, dict):
+        return
+    for entry in gv.values():
+        if isinstance(entry, dict) and "field" in entry:
+            yield entry
+
+
+def _validate_field(
+    violations: list[str],
+    name: str,
+    scope: dict,
+    field: str,
+    path: str,
+) -> None:
+    if field not in scope:
+        violations.append(f"{name}: missing required field '{path}.{field}'")
+    elif _is_empty_required(scope[field]):
+        violations.append(f"{name}: empty required field '{path}.{field}'")
+
+
+def _validate_required_fields(
+    violations: list[str],
+    name: str,
+    schema: dict,
+    group: str,
+    scope: dict,
+    path: str,
+) -> None:
+    for entry in _iter_group_entries(schema, group):
+        field = entry.get("field")
+        if entry.get("parent") or field == "entry" or not entry.get("required"):
+            continue
+        _validate_field(violations, name, scope, field, path)
+        value = scope.get(field)
+        if isinstance(value, dict):
+            for child in entry.get("children", []):
+                if (
+                    isinstance(child, dict)
+                    and child.get("required")
+                    and child.get("field")
+                ):
+                    _validate_field(
+                        violations,
+                        name,
+                        value,
+                        child["field"],
+                        f"{path}.{field}",
+                    )
+
+
+def _entry_min_count(schema: dict, group: str) -> int | None:
+    for entry in _iter_group_entries(schema, group):
+        if entry.get("field") == "entry" and entry.get("required"):
+            return entry.get("min_count") or 1
+    return None
+
+
+def _parent_requirements(schema: dict, parent_group: str) -> dict[str, list[str]]:
+    requirements: dict[str, list[str]] = {}
+    prefix = f"{parent_group}."
+    for group in schema:
+        if group in _SKIP_META:
+            continue
+        for entry in _iter_group_entries(schema, group):
+            parent = entry.get("parent")
+            if (
+                isinstance(parent, str)
+                and parent.startswith(prefix)
+                and parent != f"{group}.entry"
+                and entry.get("required")
+                and entry.get("field")
+            ):
+                parent_field = parent.removeprefix(prefix)
+                requirements.setdefault(parent_field, []).append(entry["field"])
+    return requirements
+
+
+def _entry_requirements(schema: dict, group: str) -> list[str]:
+    parent = f"{group}.entry"
+    return [
+        entry["field"]
+        for entry in _iter_group_entries(schema, group)
+        if entry.get("parent") == parent
+        and entry.get("required")
+        and entry.get("field")
+    ]
+
+
+def _validate_sequences(
+    data: dict,
+    schema: dict,
+    name: str,
+    violations: list[str],
+) -> None:
+    for group, key in _SEQUENCE_KEYS_BY_ARTIFACT.get(name, {}).items():
+        seq = data.get(key)
+        if seq is None:
+            continue
+        if not isinstance(seq, list):
+            violations.append(f"{name}: '{key}' must be a list")
+            continue
+        if not seq:
+            violations.append(f"{name}: '{key}' requires at least 1 entry")
+            continue
+        child_requirements = _parent_requirements(schema, group)
+        for index, item in enumerate(seq):
+            path = f"{key}[{index}]"
+            if not isinstance(item, dict):
+                violations.append(f"{name}: '{path}' must be a mapping")
+                continue
+            _validate_required_fields(violations, name, schema, group, item, path)
+            for parent_field, child_fields in child_requirements.items():
+                child_scope = item.get(parent_field)
+                if not isinstance(child_scope, dict):
+                    continue
+                for child_field in child_fields:
+                    _validate_field(
+                        violations,
+                        name,
+                        child_scope,
+                        child_field,
+                        f"{path}.{parent_field}",
+                    )
+            for (parent_group, child_group), child_key in _NESTED_SEQUENCE_KEYS.items():
+                if parent_group != group:
+                    continue
+                child_seq = item.get(child_key)
+                min_count = _entry_min_count(schema, child_group)
+                if min_count and (
+                    not isinstance(child_seq, list) or len(child_seq) < min_count
+                ):
+                    violations.append(
+                        f"{name}: '{path}.{child_key}' requires at least "
+                        f"{min_count} entry"
+                    )
+                    continue
+                if not isinstance(child_seq, list):
+                    continue
+                required = _entry_requirements(schema, child_group)
+                for child_index, child in enumerate(child_seq):
+                    child_path = f"{path}.{child_key}[{child_index}]"
+                    if not isinstance(child, dict):
+                        violations.append(f"{name}: '{child_path}' must be a mapping")
+                        continue
+                    for field in required:
+                        _validate_field(
+                            violations, name, child, field, child_path
+                        )
+
+
+def _validate_decision_alternatives(data: dict, name: str) -> list[str]:
+    violations: list[str] = []
+    for index, decision in enumerate(data.get("decisions", [])):
+        if not isinstance(decision, dict):
+            continue
+        alternatives = decision.get("alternatives", [])
+        if not isinstance(alternatives, list):
+            continue
+        chosen = [
+            alt
+            for alt in alternatives
+            if isinstance(alt, dict) and alt.get("status") == "chosen"
+        ]
+        if len(chosen) != 1:
+            violations.append(
+                f"{name}: 'decisions[{index}].alternatives' must have exactly "
+                "one chosen entry"
+            )
+    return violations
+
+
 def _validate_yaml(content: str, schema: dict, name: str) -> list[str]:
     violations: list[str] = []
     try:
@@ -166,8 +361,10 @@ def _validate_yaml(content: str, schema: dict, name: str) -> list[str]:
         else:
             continue
         for field in fields:
-            if field not in scope:
-                violations.append(f"{name}: missing required field '{field}'")
+            _validate_field(violations, name, scope, field, group_lower)
+    _validate_sequences(data, schema, name, violations)
+    if name == "decisions":
+        violations.extend(_validate_decision_alternatives(data, name))
     for _, be in schema.get("BUDGET", {}).items():
         if not isinstance(be, dict):
             continue

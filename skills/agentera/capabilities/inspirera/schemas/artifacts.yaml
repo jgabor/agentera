@@ -12,7 +12,7 @@ ARTIFACTS:
   2:
     id: A2
     name: VISION.md
-    path: "VISION.md (per DOCS.md mapping)"
+    path: ".agentera/vision.yaml (per docs.yaml mapping)"
     description: >-
       Project direction and north star. Inspirera may refine this (with
       user confirmation) when the analysis shifts thinking about the

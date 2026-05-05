@@ -648,7 +648,7 @@ class TestMissingCorpusErrorPath:
         loaded = usage_stats.load_corpus_or_raise(path)
         assert loaded["metadata"]["extracted_at"] == "2026-04-26T07:00:00Z"
 
-    def test_fail_missing_file_raises_with_extractor_command(
+    def test_fail_missing_file_raises_with_corpus_guidance(
         self, usage_stats, tmp_path
     ):
         path = tmp_path / "absent" / "corpus.json"
@@ -657,9 +657,8 @@ class TestMissingCorpusErrorPath:
         except usage_stats.CorpusUnavailable as err:
             msg = str(err)
             assert str(path) in msg
-            # The error message must name the extractor command so the
-            # operator can run it without having to look it up.
-            assert "extract_all.py" in msg
+            assert "Provide --corpus <path>" in msg
+            assert "does not currently ship" in msg
         else:
             raise AssertionError(
                 "load_corpus_or_raise must raise CorpusUnavailable for "
@@ -686,7 +685,7 @@ class TestMissingCorpusErrorPath:
             usage_stats.load_corpus_or_raise(path)
         except usage_stats.CorpusUnavailable as err:
             assert "no conversation_turn records" in str(err)
-            assert "extract_all.py" in str(err)
+            assert "Provide --corpus <path>" in str(err)
         else:
             raise AssertionError(
                 "load_corpus_or_raise must raise on empty conversation set"
@@ -779,5 +778,4 @@ class TestCli:
         # detect the failure rather than seeing an empty USAGE.md.
         assert rc != 0
         captured = capsys.readouterr()
-        # The extractor command appears in stderr so the operator sees it.
-        assert "extract_all.py" in captured.err
+        assert "Provide --corpus <path>" in captured.err

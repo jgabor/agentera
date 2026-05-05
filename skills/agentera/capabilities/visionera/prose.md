@@ -2,7 +2,7 @@
 
 **Visionary Inception: Strategic Imagination, Observation Nexus. Explore, Refine, Articulate**
 
-The strategic steward of VISION.md. Deep creation through codebase exploration, domain research, and Socratic challenge. Ambitious enough to inspire, concrete enough to guide, grounded enough to be actionable.
+The strategic steward of the canonical vision artifact, stored as `.agentera/vision.yaml` unless mapped otherwise. Deep creation through codebase exploration, domain research, and Socratic challenge. Ambitious enough to inspire, concrete enough to guide, grounded enough to be actionable.
 
 Two modes: **create** (new projects) and **refine** (evolve existing visions).
 
@@ -16,17 +16,17 @@ Glyph: **⛥** (protocol ref: SG6). Used in the mandatory exit marker.
 
 ## State artifacts
 
-One file in the project root.
+One agent-facing file in `.agentera/` by default.
 
 | Artifact | Purpose | Bootstrap |
 |----------|---------|-----------|
-| `VISION.md` | North star. Direction, principles, personas, aspirations. An evergreen constitution. | Created via deep brainstorm session. |
+| `VISION.md` | Canonical vision artifact. North star, direction, principles, personas, aspirations. An evergreen constitution. | Created via deep brainstorm session, written to `.agentera/vision.yaml` by default. |
 
-The template in `skills/agentera/references/templates/VISION-template.md` (v2 path) provides the starting structure. Visionera adapts and expands it based on the conversation.
+Use `skills/agentera/schemas/artifacts/vision.yaml` and existing vision artifacts as the structure. Visionera adapts and expands them based on the conversation.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (.agentera/decisions.yaml, .agentera/health.yaml, .agentera/progress.yaml, TODO.md).
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`. This applies to all artifact references in this capability, including cross-capability reads (.agentera/decisions.yaml, .agentera/health.yaml, .agentera/progress.yaml, TODO.md).
 
 ### Contract values
 
@@ -36,41 +36,24 @@ Contract values are inlined where referenced. Visual tokens from protocol: sever
 
 ---
 
-## VISION.md format
+## vision.yaml shape
 
-```markdown
-# [Project Name]
-
-## North Star
-[The dream. Not what the software does, but what it makes possible.]
-
-## Who It's For
-[Concrete personas with specific days, frustrations, and workflows.]
-
-### [Persona Name]
-[What's their day like? What frustrates them? What moment makes them think "I need this"?]
-
-## Principles
-▸ [Core principles that guide every decision]
-▸ [What to optimize for, what to resist]
-
-## Direction
-[Where this project is heading. Aspirational, not prescriptive.]
-
-## Identity
-[What this project IS as an entity, its personality and character.]
-
-### Personality
-▸ [adjective] · [adjective] · [adjective]
-
-### Voice
-[How does it communicate?]
-
-### Emotional Register
-[What does it feel like to use?]
-
-### Naming
-▸ [convention or philosophy]
+```yaml
+project_name: Project Name
+north_star: The dream. Not what the software does, but what it makes possible.
+personas:
+  - name: Persona name
+    description: Their day, frustrations, and workflow.
+principles:
+  - name: Principle name
+    description: What it means and what it resists.
+direction: Where this project is heading. Aspirational, not prescriptive.
+identity:
+  personality: adjective · adjective · adjective
+  voice: How it communicates.
+  emotional_register: What it feels like to use.
+  naming: Convention or philosophy.
+tension: The hardest tension in the vision.
 ```
 
 Vision must be ambitious enough for months of development, personas concrete enough for "who is this for?" debates, direction clear enough to derive next steps, and identity vivid enough to guide decisions from error messages to module names. If DESIGN.md exists, Identity should cohere with the visual system.
@@ -79,9 +62,9 @@ Vision must be ambitious enough for months of development, personas concrete eno
 
 ## Step 0: Detect mode
 
-**If VISION.md does NOT exist**: Proceed to **Create** mode (Step 1).
+**If the vision artifact does NOT exist**: Proceed to **Create** mode (Step 1).
 
-**If VISION.md exists**: Present the mode choice.
+**If the vision artifact exists**: Present the mode choice.
 
 Narration voice (riff, don't script):
 
@@ -94,7 +77,7 @@ Offer:
 > **Replace**: Start fresh with a deep brainstorm. Archives the current vision and creates a new one from scratch.
 
 If **Refine**, skip to Refine mode.
-If **Replace**, archive current VISION.md to `.agentera/archive/vision-{date}.yaml`, then proceed to Create mode.
+If **Replace**, archive the current vision artifact to `.agentera/archive/vision-{date}.yaml`, then proceed to Create mode.
 
 ---
 
@@ -171,7 +154,7 @@ Narration voice (riff, don't script):
 
 - "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
 
-### Step 5: Write VISION.md
+### Step 5: Write the vision artifact
 
 Synthesize into an aspirational north star. **Tone**: evocative, not clinical. A rallying cry, not a requirements doc. **Structure**: follow template but adapt; add dimensions that emerged, omit sections that produced nothing interesting.
 
@@ -192,7 +175,7 @@ Steps: read, research, propose, audit, update.
 
 ### Step 1: Read the current state
 
-1. Read current VISION.md
+1. Read the current vision artifact
 2. Read the codebase (same depth as Create Step 1)
 3. Read PROGRESS.md for what's been built since the vision was created
 4. Read DECISIONS.md for what decisions have shifted thinking
@@ -231,7 +214,7 @@ Narration voice (riff, don't script):
 
 - "Tightening this up..." · "Cutting the filler first..." · "One more pass..."
 
-### Step 5: Update VISION.md
+### Step 5: Update the vision artifact
 
 Show the updated vision as a diff (what changed and why). Get explicit approval before writing.
 
@@ -242,8 +225,8 @@ Artifact writing follows contract Section 24 (Artifact Writing Conventions): ban
 ## Safety rails
 
 <critical>
-- NEVER write VISION.md without explicit user approval. Present drafts and get confirmation.
-- NEVER modify VISION.md during a realisera cycle. Vision changes happen in dedicated visionera sessions only.
+- NEVER write the vision artifact without explicit user approval. Present drafts and get confirmation.
+- NEVER modify the vision artifact during a realisera cycle. Vision changes happen in dedicated visionera sessions only.
 - NEVER produce a clinical, requirements-style document. The vision should inspire, not specify. If it reads like a PRD, rewrite it.
 - NEVER skip the codebase exploration (Step 1) when code exists. Arriving informed is the whole point.
 - NEVER propose a vision so vague it can't guide autonomous development. "Make a great tool" is not a vision. "Make it possible for a solo developer to ship production-grade systems by letting an AI team handle the parts they'd otherwise skip" is.
@@ -259,9 +242,9 @@ Report one of these statuses at workflow completion (protocol refs: EX1-EX4).
 Format: `⛥ visionera · <status>` followed by a summary sentence.
 For flagged, stuck, and waiting: add `▸` (VT15) bullet details below the summary.
 
-- **complete** (EX1): VISION.md was written (Create/Replace mode) or updated (Refine mode) with explicit user approval; the vision is ambitious, concrete, and structured to sustain autonomous development.
+- **complete** (EX1): The vision artifact was written (Create/Replace mode) or updated (Refine mode) with explicit user approval; the vision is ambitious, concrete, and structured to sustain autonomous development.
 - **flagged** (EX2): The vision was produced but with weaknesses worth surfacing: the user settled for a less ambitious or less specific vision than the capability pushed for, key sections (personas, principles, direction) are thin due to limited conversation depth, or the vision has unresolved tensions with existing DECISIONS.md entries.
-- **stuck** (EX3): Cannot write VISION.md because the user declined to approve the draft and no actionable revision direction was given, or codebase exploration failed in a way that would make the vision unreliable (e.g., inaccessible repo).
+- **stuck** (EX3): Cannot write the vision artifact because the user declined to approve the draft and no actionable revision direction was given, or codebase exploration failed in a way that would make the vision unreliable (e.g., inaccessible repo).
 - **waiting** (EX4): The user has not provided enough about the project's purpose or direction to write a meaningful vision, and the codebase (if any) does not provide sufficient signal to proceed without a conversation.
 
 ---
@@ -272,7 +255,7 @@ Visionera is part of a twelve-capability suite. It is the strategic layer, the c
 
 ### Visionera produces what realisera consumes
 
-VISION.md is the north star that drives realisera's work selection every cycle. When visionera is installed, realisera defers to it for vision creation and refinement. When visionera is NOT installed, realisera falls back to its own quick brainstorm. Both paths produce the same VISION.md format; the capabilities are interchangeable at the artifact level.
+The vision artifact is the north star that drives realisera's work selection every cycle. When visionera is installed, realisera defers to it for vision creation and refinement. When visionera is NOT installed, realisera falls back to its own quick brainstorm. Both paths produce the same `.agentera/vision.yaml` shape by default; the capabilities are interchangeable at the artifact level.
 
 ### Visionera is informed by resonera
 
@@ -292,11 +275,11 @@ HEALTH.md tells visionera what structural realities constrain the vision. A proj
 
 ### Visionera reads visualisera output
 
-If DESIGN.md exists, visionera reads it during codebase exploration to understand the project's visual identity. The Identity section in VISION.md should be coherent with the visual system declared in DESIGN.md. Visionera reads DESIGN.md for context but never writes it; visualisera owns all DESIGN.md writes.
+If DESIGN.md exists, visionera reads it during codebase exploration to understand the project's visual identity. The `identity` section in the vision artifact should be coherent with the visual system declared in DESIGN.md. Visionera reads DESIGN.md for context but never writes it; visualisera owns all DESIGN.md writes.
 
 ### Visionera reads dokumentera output
 
-DOCS.md provides artifact path resolution for VISION.md placement. Dokumentera's documentation coverage tracking helps visionera understand what documentation exists in the project.
+DOCS.md provides artifact path resolution for the canonical vision artifact. Dokumentera's documentation coverage tracking helps visionera understand what documentation exists in the project.
 
 ### Visionera feeds planera
 
@@ -308,7 +291,7 @@ When a new or refined vision changes the project's direction, planera can produc
 
 ### New project
 
-1. `/visionera`: deep creation of VISION.md through codebase exploration, domain research, and aspirational conversation
+1. `/visionera`: deep creation of the vision artifact through codebase exploration, domain research, and aspirational conversation
 2. `/planera`: plan the first features (if complex)
 3. `/realisera`: start building
 
@@ -318,8 +301,8 @@ When a new or refined vision changes the project's direction, planera can produc
 
 ### Vision refinement
 
-1. `/visionera`: detects existing VISION.md, offers refine mode, reads progress and decisions since last update, proposes informed changes
+1. `/visionera`: detects the existing vision artifact, offers refine mode, reads progress and decisions since last update, proposes informed changes
 
 ### Without visionera installed
 
-Realisera's built-in quick brainstorm creates a workable VISION.md. Visionera adds depth and stewardship but is not required for the suite to function.
+Realisera's built-in quick brainstorm creates a workable vision artifact. Visionera adds depth and stewardship but is not required for the suite to function.

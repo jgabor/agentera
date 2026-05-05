@@ -93,7 +93,7 @@ class TestResolveArtifactPath:
     def test_uses_default_when_no_override(self, session_start):
         root = Path("/project")
         result = session_start.resolve_artifact_path(root, "PROGRESS.md", None)
-        assert result == root / ".agentera/PROGRESS.md"
+        assert result == root / ".agentera/progress.yaml"
 
 
 # ---------------------------------------------------------------------------
@@ -120,6 +120,15 @@ PROGRESS_EMPTY = """\
 # Progress
 
 No cycles yet.
+"""
+
+PROGRESS_YAML = """\
+cycles:
+  - number: 80
+    phase: build
+    what: Built the session start hook infrastructure.
+    verified: uv run pytest
+    next: Task 2.
 """
 
 
@@ -152,6 +161,15 @@ HEALTH_NO_GRADES = """\
 # Health
 
 No audits yet.
+"""
+
+HEALTH_YAML = """\
+audits:
+  - number: 6
+    grades:
+      architecture: A
+      patterns: A
+      tests: B
 """
 
 
@@ -303,14 +321,14 @@ class TestBuildDigest:
         agentera_dir = tmp_path / ".agentera"
         agentera_dir.mkdir()
 
-        # Create PROGRESS.md.
-        (agentera_dir / "PROGRESS.md").write_text(
-            PROGRESS_MULTI, encoding="utf-8",
+        # Create progress.yaml.
+        (agentera_dir / "progress.yaml").write_text(
+            PROGRESS_YAML, encoding="utf-8",
         )
 
-        # Create HEALTH.md.
-        (agentera_dir / "HEALTH.md").write_text(
-            HEALTH_WITH_GRADES, encoding="utf-8",
+        # Create health.yaml.
+        (agentera_dir / "health.yaml").write_text(
+            HEALTH_YAML, encoding="utf-8",
         )
 
         # Create TODO.md at root (default path).
@@ -373,8 +391,8 @@ class TestEntryPoint:
         """Script with realistic hook input and artifacts exits 0 with output."""
         agentera_dir = tmp_path / ".agentera"
         agentera_dir.mkdir()
-        (agentera_dir / "PROGRESS.md").write_text(
-            PROGRESS_MULTI, encoding="utf-8",
+        (agentera_dir / "progress.yaml").write_text(
+            PROGRESS_YAML, encoding="utf-8",
         )
 
         hook_input = json.dumps({

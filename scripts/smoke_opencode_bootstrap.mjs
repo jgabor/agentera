@@ -69,7 +69,7 @@ try {
   bootstrapCommands();
 
   assert(fs.existsSync(commandsDir), "commands dir should exist after bootstrap");
-  assert(commandNames.length === 12, `expected 12 commands, got ${commandNames.length}`);
+  assert(commandNames.length === 1, `expected 1 bundled command, got ${commandNames.length}`);
 
   for (const name of commandNames) {
     const filePath = path.join(commandsDir, `${name}.md`);
@@ -90,38 +90,38 @@ try {
   // --- Test 1b: Skill bootstrap repairs managed OpenCode skill symlinks ---
   const sourceSkillsDir = path.resolve(__dirname, "..", "skills");
   fs.mkdirSync(skillsDir, { recursive: true });
-  const brokenRealisera = path.join(skillsDir, "realisera");
-  fs.symlinkSync(path.join(tmpdir, "missing-agentera-cache", "skills", "realisera"), brokenRealisera, "dir");
+  const brokenAgentera = path.join(skillsDir, "agentera");
+  fs.symlinkSync(path.join(tmpdir, "missing-agentera-cache", "skills", "agentera"), brokenAgentera, "dir");
   const skillRepair = bootstrapSkills();
   assert(
-    skillRepair.repaired.includes("realisera"),
+    skillRepair.repaired.includes("agentera"),
     "bootstrapSkills should report repaired managed broken symlink"
   );
   assert(
-    fs.realpathSync(brokenRealisera) === path.join(sourceSkillsDir, "realisera"),
+    fs.realpathSync(brokenAgentera) === path.join(sourceSkillsDir, "agentera"),
     "bootstrapSkills should repoint broken managed symlink to an installed Agentera skill"
   );
   assert(
-    fs.existsSync(path.join(brokenRealisera, "SKILL.md")),
+    fs.existsSync(path.join(brokenAgentera, "SKILL.md")),
     "repaired managed skill path should resolve to SKILL.md"
   );
 
   // --- Test 1c: Skill bootstrap preserves user-owned skill directories ---
-  const userOwnedHej = path.join(skillsDir, "hej");
-  fs.rmSync(userOwnedHej, { recursive: true, force: true });
-  fs.mkdirSync(userOwnedHej, { recursive: true });
-  fs.writeFileSync(path.join(userOwnedHej, "README.md"), "user skill\n");
+  const userOwnedAgentera = path.join(skillsDir, "agentera");
+  fs.rmSync(userOwnedAgentera, { recursive: true, force: true });
+  fs.mkdirSync(userOwnedAgentera, { recursive: true });
+  fs.writeFileSync(path.join(userOwnedAgentera, "README.md"), "user skill\n");
   const userOwnedSkillReport = bootstrapSkills();
   assert(
-    userOwnedSkillReport.skippedUserOwned.includes("hej"),
+    userOwnedSkillReport.skippedUserOwned.includes("agentera"),
     "bootstrapSkills should report skipped user-owned skill directory"
   );
   assert(
-    fs.readFileSync(path.join(userOwnedHej, "README.md"), "utf8") === "user skill\n",
+    fs.readFileSync(path.join(userOwnedAgentera, "README.md"), "utf8") === "user skill\n",
     "bootstrapSkills should preserve user-owned skill directory content"
   );
   assert(
-    !fs.existsSync(path.join(userOwnedHej, "SKILL.md")),
+    !fs.existsSync(path.join(userOwnedAgentera, "SKILL.md")),
     "bootstrapSkills should not turn a user-owned directory into an Agentera skill path"
   );
 
@@ -138,7 +138,7 @@ try {
     "bootstrapSkills should report the exact OpenCode install command when Agentera skills are missing"
   );
   assert(
-    !fs.existsSync(path.join(skillsDir, "realisera")),
+    !fs.existsSync(path.join(skillsDir, "agentera")),
     "bootstrapSkills must not create unusable skill paths when source skills are missing"
   );
   assert(
@@ -147,95 +147,91 @@ try {
   );
 
   // --- Test 2: No-op on re-run with same version ---
-  const hejPath = path.join(commandsDir, "hej.md");
-  const hejContentBefore = fs.readFileSync(hejPath, "utf8");
+  const agenteraPath = path.join(commandsDir, "agentera.md");
+  const agenteraContentBefore = fs.readFileSync(agenteraPath, "utf8");
   bootstrapCommands();
-  const hejContentAfter = fs.readFileSync(hejPath, "utf8");
-  assert(hejContentBefore === hejContentAfter, "re-run with same version should be no-op (hej.md unchanged)");
+  const agenteraContentAfter = fs.readFileSync(agenteraPath, "utf8");
+  assert(agenteraContentBefore === agenteraContentAfter, "re-run with same version should be no-op (agentera.md unchanged)");
   assert(
-    commandBootstrap.lastReport.unchanged.includes("hej"),
+    commandBootstrap.lastReport.unchanged.includes("agentera"),
     "same-version bootstrap report should include unchanged managed commands"
   );
 
   // --- Test 2b: Current marker with missing managed command repairs file ---
-  const planeraPath = path.join(commandsDir, "planera.md");
-  fs.unlinkSync(planeraPath);
+  fs.unlinkSync(agenteraPath);
   const missingRepair = bootstrapCommands();
   assert(
-    missingRepair.restored.includes("planera"),
+    missingRepair.restored.includes("agentera"),
     "current-marker bootstrap should report restored missing managed command"
   );
   assert(
-    fs.readFileSync(planeraPath, "utf8") === COMMAND_TEMPLATES["planera"],
+    fs.readFileSync(agenteraPath, "utf8") === COMMAND_TEMPLATES["agentera"],
     "current-marker bootstrap should restore missing managed command template"
   );
 
   // --- Test 2c: Current marker with stale managed command refreshes file ---
-  const optimeraPath = path.join(commandsDir, "optimera.md");
-  const staleCurrentMarkerContent = COMMAND_TEMPLATES["optimera"].replace(
-    "Metric-driven optimization through experimentation",
+  const staleCurrentMarkerContent = COMMAND_TEMPLATES["agentera"].replace(
+    "bundled skill",
     "Stale current-marker managed command"
   );
-  fs.writeFileSync(optimeraPath, staleCurrentMarkerContent);
+  fs.writeFileSync(agenteraPath, staleCurrentMarkerContent);
   const staleRepair = bootstrapCommands();
   assert(
-    staleRepair.refreshed.includes("optimera"),
+    staleRepair.refreshed.includes("agentera"),
     "current-marker bootstrap should report refreshed stale managed command"
   );
   assert(
-    fs.readFileSync(optimeraPath, "utf8") === COMMAND_TEMPLATES["optimera"],
+    fs.readFileSync(agenteraPath, "utf8") === COMMAND_TEMPLATES["agentera"],
     "current-marker bootstrap should refresh stale managed command template"
   );
 
   // --- Test 2d: Current marker with user-owned command preserves and reports skip ---
-  const inspekteraPath = path.join(commandsDir, "inspektera.md");
-  const userOwnedInspektera = "---\ndescription: user inspektera\n---\nUser-owned command.\n";
-  fs.writeFileSync(inspekteraPath, userOwnedInspektera);
+  const userOwnedAgenteraCommand = "---\ndescription: user agentera\n---\nUser-owned command.\n";
+  fs.writeFileSync(agenteraPath, userOwnedAgenteraCommand);
   const userOwnedReport = bootstrapCommands();
   assert(
-    userOwnedReport.skippedUserOwned.includes("inspektera"),
+    userOwnedReport.skippedUserOwned.includes("agentera"),
     "current-marker bootstrap should report skipped user-owned command collision"
   );
   assert(
-    fs.readFileSync(inspekteraPath, "utf8") === userOwnedInspektera,
+    fs.readFileSync(agenteraPath, "utf8") === userOwnedAgenteraCommand,
     "current-marker bootstrap should preserve user-owned command collision"
   );
-  fs.writeFileSync(inspekteraPath, COMMAND_TEMPLATES["inspektera"]);
+  fs.writeFileSync(agenteraPath, COMMAND_TEMPLATES["agentera"]);
 
   // --- Test 2e: Malformed managed marker is treated as user-owned ---
-  const dokumenteraPath = path.join(commandsDir, "dokumentera.md");
   const malformedManagedMarker = "---\nagentera_managed: true\nMalformed frontmatter without a closing marker.\n";
-  fs.writeFileSync(dokumenteraPath, malformedManagedMarker);
+  fs.writeFileSync(agenteraPath, malformedManagedMarker);
   const malformedReport = bootstrapCommands();
   assert(
-    !hasManagedMarker(dokumenteraPath),
+    !hasManagedMarker(agenteraPath),
     "malformed managed marker should not count as an Agentera-owned command"
   );
   assert(
-    malformedReport.skippedUserOwned.includes("dokumentera"),
+    malformedReport.skippedUserOwned.includes("agentera"),
     "malformed managed marker should be reportable as a skipped user-owned collision"
   );
   assert(
-    fs.readFileSync(dokumenteraPath, "utf8") === malformedManagedMarker,
+    fs.readFileSync(agenteraPath, "utf8") === malformedManagedMarker,
     "malformed managed marker should not be overwritten"
   );
-  fs.writeFileSync(dokumenteraPath, COMMAND_TEMPLATES["dokumentera"]);
+  fs.writeFileSync(agenteraPath, COMMAND_TEMPLATES["agentera"]);
 
   // --- Test 3: Collision test (user-owned file without managed marker) ---
   fs.unlinkSync(markerFile);
-  const userContent = "---\ndescription: my custom hej\n---\nMy custom hej command.\n";
-  fs.writeFileSync(hejPath, userContent);
+  const userContent = "---\ndescription: my custom agentera\n---\nMy custom agentera command.\n";
+  fs.writeFileSync(agenteraPath, userContent);
 
   bootstrapCommands();
 
-  const hejAfterCollision = fs.readFileSync(hejPath, "utf8");
+  const agenteraAfterCollision = fs.readFileSync(agenteraPath, "utf8");
   assert(
-    hejAfterCollision === userContent,
-    "user-owned hej.md (no managed marker) should NOT be overwritten"
+    agenteraAfterCollision === userContent,
+    "user-owned agentera.md (no managed marker) should NOT be overwritten"
   );
 
   for (const name of commandNames) {
-    if (name === "hej") continue;
+    if (name === "agentera") continue;
     const filePath = path.join(commandsDir, `${name}.md`);
     assert(
       hasManagedMarker(filePath),
@@ -249,17 +245,17 @@ try {
   );
 
   // --- Test 4: Upgrade test (older version triggers refresh) ---
+  fs.writeFileSync(agenteraPath, COMMAND_TEMPLATES["agentera"]);
   fs.writeFileSync(markerFile, "0.0.0");
-  const visioneraPath = path.join(commandsDir, "visionera.md");
-  const staleContent = COMMAND_TEMPLATES["visionera"].replace(
-    "Create or refine the project vision",
+  const staleContent = COMMAND_TEMPLATES["agentera"].replace(
+    "bundled skill",
     "Stale managed command body"
   );
   assert(
-    staleContent !== COMMAND_TEMPLATES["visionera"],
+    staleContent !== COMMAND_TEMPLATES["agentera"],
     "upgrade test setup should create stale managed content"
   );
-  fs.writeFileSync(visioneraPath, staleContent);
+  fs.writeFileSync(agenteraPath, staleContent);
 
   bootstrapCommands();
 
@@ -268,13 +264,8 @@ try {
     ".agentera-version should be updated to AGENTERA_VERSION after upgrade"
   );
   assert(
-    fs.readFileSync(visioneraPath, "utf8") === COMMAND_TEMPLATES["visionera"],
-    "visionera.md should be refreshed to current managed content after upgrade"
-  );
-
-  assert(
-    fs.readFileSync(hejPath, "utf8") === userContent,
-    "user-owned hej.md should remain untouched after upgrade run"
+    fs.readFileSync(agenteraPath, "utf8") === COMMAND_TEMPLATES["agentera"],
+    "agentera.md should be refreshed to current managed content after upgrade"
   );
 
   // --- Test 5: Bootstrap-at-init via the Agentera plugin function ---
@@ -330,11 +321,11 @@ try {
   fs.mkdirSync(noHookProject, { recursive: true });
   writeSessionBookmark(noHookProject);
   assert(
-    !fs.existsSync(path.join(noHookProject, ".agentera", "SESSION.md")),
+    !fs.existsSync(path.join(noHookProject, ".agentera", "session.yaml")),
     "writeSessionBookmark must no-op when hooks/session_stop.py is unavailable"
   );
 
-  // --- Test 8: event hook — idle writes SESSION.md for modified artifacts ---
+  // --- Test 8: event hook — idle writes session.yaml for modified artifacts ---
   const repoRoot = path.resolve(__dirname, "..");
   process.env.AGENTERA_HOME = repoRoot;
   const projectWithArtifact = path.join(tmpdir, "event-project");
@@ -343,11 +334,11 @@ try {
   fs.writeFileSync(path.join(projectWithArtifact, "TODO.md"), "# TODO\n\n## \u21f6 Critical\n\n## \u21c9 Degraded\n\n## \u2192 Normal\n\n- [ ] event smoke\n\n## \u21e2 Annoying\n\n## Resolved\n");
   const hooksForEvents = await Agentera({ worktree: projectWithArtifact }, {});
   await hooksForEvents.event({ event: { type: "session.idle", properties: { sessionID: "s1" } } });
-  const sessionPath = path.join(projectWithArtifact, ".agentera", "SESSION.md");
-  assert(fs.existsSync(sessionPath), "session.idle event should write SESSION.md when artifacts changed");
+  const sessionPath = path.join(projectWithArtifact, ".agentera", "session.yaml");
+  assert(fs.existsSync(sessionPath), "session.idle event should write session.yaml when artifacts changed");
   const sessionText = fs.readFileSync(sessionPath, "utf8");
-  assert(sessionText.includes("Artifacts modified:"), "SESSION.md bookmark should include modified artifact summary");
-  assert(sessionText.includes("TODO.md"), "SESSION.md bookmark should name modified TODO.md");
+  assert(sessionText.includes("bookmarks:"), "session.yaml bookmark should include bookmarks list");
+  assert(sessionText.includes("TODO.md"), "session.yaml bookmark should name modified TODO.md");
 
   // --- Test 8b: tool.execute.before hard gate — invalid empty artifact is denied ---
   let denied = false;
@@ -356,7 +347,7 @@ try {
       { tool: "write", sessionID: "s1", callID: "deny-artifact" },
       {
         args: {
-          filePath: ".agentera/HEALTH.md",
+          filePath: ".agentera/session.yaml",
           content: "",
         },
       }
@@ -364,7 +355,7 @@ try {
   } catch (err) {
     denied = true;
     assert(
-      String(err.message || err).includes("HEALTH.md"),
+      String(err.message || err).includes("session"),
       "invalid artifact denial should include the artifact name"
     );
   }
@@ -375,8 +366,8 @@ try {
     { tool: "write", sessionID: "s1", callID: "allow-artifact" },
     {
       args: {
-        filePath: ".agentera/HEALTH.md",
-        content: "# Health\n\n## Audit 1\n\nAll clear.\n",
+        filePath: ".agentera/session.yaml",
+        content: "bookmarks:\n  - timestamp: \"2026-05-05 12:00\"\n    artifacts:\n      - TODO.md\n",
       },
     }
   );
@@ -398,7 +389,7 @@ try {
   await hooksForEvents.event({});
   assert(
     fs.readFileSync(sessionPath, "utf8") === beforeCreated,
-    "session.created and malformed events must not write SESSION.md bookmarks"
+    "session.created and malformed events must not write session.yaml bookmarks"
   );
 
   // --- Test 10: event hook — idle no-op without modified artifacts ---
@@ -408,8 +399,8 @@ try {
   const cleanHooks = await Agentera({ worktree: cleanProject }, {});
   await cleanHooks.event({ event: { type: "session.idle", properties: { sessionID: "s2" } } });
   assert(
-    !fs.existsSync(path.join(cleanProject, ".agentera", "SESSION.md")),
-    "session.idle event must not create SESSION.md when no artifacts changed"
+    !fs.existsSync(path.join(cleanProject, ".agentera", "session.yaml")),
+    "session.idle event must not create session.yaml when no artifacts changed"
   );
   delete process.env.AGENTERA_HOME;
 

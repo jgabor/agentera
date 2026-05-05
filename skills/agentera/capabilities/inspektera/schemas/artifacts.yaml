@@ -2,7 +2,7 @@ ARTIFACTS:
   1:
     id: A1
     name: HEALTH.md
-    path: ".agentera/HEALTH.md"
+    path: ".agentera/health.yaml"
     description: >-
       Codebase health assessment with findings, dimension grades, and trajectory.
       Inspektera produces this artifact. Contains audit entries with per-dimension
@@ -13,7 +13,7 @@ ARTIFACTS:
   2:
     id: A2
     name: VISION.md
-    path: "VISION.md or .agentera/VISION.md (per DOCS.md)"
+    path: ".agentera/vision.yaml or mapped path per docs.yaml"
     description: >-
       Project direction and north star. Produced by visionera.
       Inspektera reads this to compare "what SHOULD BE" against "what IS"
@@ -23,7 +23,7 @@ ARTIFACTS:
   3:
     id: A3
     name: DECISIONS.md
-    path: ".agentera/DECISIONS.md"
+    path: ".agentera/decisions.yaml"
     description: >-
       Pending and recent decisions. Produced by resonera.
       Inspektera reads this to prevent flagging deliberate decisions as findings.
@@ -42,7 +42,7 @@ ARTIFACTS:
   5:
     id: A5
     name: PROGRESS.md
-    path: ".agentera/PROGRESS.md"
+    path: ".agentera/progress.yaml"
     description: >-
       Recent cycle history. Produced by realisera.
       Inspektera reads the last 3 entries to identify recent changes as
@@ -52,7 +52,7 @@ ARTIFACTS:
   6:
     id: A6
     name: PLAN.md
-    path: ".agentera/PLAN.md"
+    path: ".agentera/plan.yaml"
     description: >-
       Active plan with task status. Produced by planera.
       Inspektera reads this for the artifact freshness dimension: the plan's
@@ -62,7 +62,7 @@ ARTIFACTS:
   7:
     id: A7
     name: DESIGN.md
-    path: ".agentera/DESIGN.md"
+    path: "DESIGN.md"
     description: >-
       Visual identity system. Produced by visualisera.
       Inspektera reads this to audit design token consistency.
@@ -71,7 +71,7 @@ ARTIFACTS:
   8:
     id: A8
     name: DOCS.md
-    path: ".agentera/DOCS.md"
+    path: ".agentera/docs.yaml"
     description: >-
       Artifact path resolution and documentation coverage. Produced by dokumentera.
       Inspektera reads this FIRST to resolve artifact paths and checks the

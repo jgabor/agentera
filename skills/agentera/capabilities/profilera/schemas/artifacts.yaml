@@ -14,7 +14,7 @@ ARTIFACTS:
   2:
     id: A2
     name: DECISIONS.md
-    path: ".agentera/DECISIONS.md (per DOCS.md mapping)"
+    path: ".agentera/decisions.yaml (per DOCS.md mapping)"
     description: >-
       Pending and recent decisions maintained by resonera. High-signal source
       for profilera's extraction scripts. Each decision entry captures

@@ -172,14 +172,14 @@ python3 scripts/setup_doctor.py --install --yes --runtime copilot
 ## Why it works
 
 Most coding agents forget. Agentera writes the useful residue of the work into
-plain markdown artifacts that live with the project:
+plain project artifacts that live with the project:
 
-- `VISION.md`: where the project is going.
-- `.agentera/DECISIONS.md`: why important choices were made.
-- `.agentera/PLAN.md`: what should happen next.
-- `.agentera/PROGRESS.md`: what shipped, how it was verified, and what changed.
-- `.agentera/HEALTH.md`: where architecture and quality are drifting.
-- `.agentera/DOCS.md`: which docs exist, what they cover, and what is stale.
+- `.agentera/vision.yaml`: where the project is going.
+- `.agentera/decisions.yaml`: why important choices were made.
+- `.agentera/plan.yaml`: what should happen next.
+- `.agentera/progress.yaml`: what shipped, how it was verified, and what changed.
+- `.agentera/health.yaml`: where architecture and quality are drifting.
+- `.agentera/docs.yaml`: which docs exist, what they cover, and what is stale.
 - `.agentera/optimera/<name>/`: one self-contained optimization objective,
   with `OBJECTIVE.md`, `EXPERIMENTS.md`, and its locked measurement harness.
 
@@ -227,7 +227,7 @@ capability automatically.
 | | Capability | Use it when you need... |
 |---|---|---|
 | ⌂ | hej | A project briefing and the next best action. |
-| ⛥ | visionera | A strong product direction and `VISION.md`. |
+| ⛥ | visionera | A strong product direction in `.agentera/vision.yaml`. |
 | ❈ | resonera | Structured deliberation before consequential choices. |
 | ⬚ | inspirera | To map an external link, repo, or pattern to your project. |
 | ▤ | dokumentera | Docs that stay aligned with code and project intent. |
@@ -283,7 +283,7 @@ macOS, and `%APPDATA%/agentera` on Windows.
 
 `AGENTERA_HOME` is different. It points to the Agentera install root, so
 capabilities and hooks can resolve repo helper scripts such as
-`compact_artifact.py`. Claude Code and OpenCode can set that automatically.
+`scripts/agentera`. Claude Code and OpenCode can set that automatically.
 Codex and Copilot may need a host-level setup step when you want helper-script
 execution.
 
@@ -388,7 +388,7 @@ Check that a shell can see Agentera:
 ```bash
 bash -c '
   echo "AGENTERA_HOME=$AGENTERA_HOME"
-  python3 "${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py"
+  python3 "${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/agentera" query --list-artifacts
 '
 ```
 
@@ -450,28 +450,28 @@ Project-facing files:
 
 | Artifact | Owner | Purpose |
 |----------|-------|---------|
-| `VISION.md` | visionera, realisera | Product direction. |
 | `TODO.md` | realisera, inspektera | Prioritized work and findings. |
 | `CHANGELOG.md` | realisera | Contributor-facing release history. |
+| `DESIGN.md` | visualisera | Visual identity system. |
 
 Operational files in `.agentera/`:
 
 | Artifact | Owner | Purpose |
 |----------|-------|---------|
-| `PROGRESS.md` | realisera | Cycle history and verification notes. |
-| `DECISIONS.md` | resonera | Durable reasoning trail. |
-| `PLAN.md` | planera | Active task plan. |
-| `HEALTH.md` | inspektera | Audit grades, findings, trends. |
-| `DOCS.md` | dokumentera | Documentation index and coverage. |
-| `DESIGN.md` | visualisera | Visual identity system. |
-| `SESSION.md` | session stop hook | Session bookmarks. |
+| `vision.yaml` | visionera, realisera | Product direction. |
+| `progress.yaml` | realisera | Cycle history and verification notes. |
+| `decisions.yaml` | resonera | Durable reasoning trail. |
+| `plan.yaml` | planera | Active task plan. |
+| `health.yaml` | inspektera | Audit grades, findings, trends. |
+| `docs.yaml` | dokumentera | Documentation index and coverage. |
+| `session.yaml` | session stop hook | Session bookmarks. |
 
 Optimera objective directories under `.agentera/optimera/<name>/`:
 
 | Artifact | Owner | Purpose |
 |----------|-------|---------|
-| `OBJECTIVE.md` | optimera | Objective state, metric, target, constraints, scope, and canonical closure fields. |
-| `EXPERIMENTS.md` | optimera | Experiment history plus one closure entry with final value, target, and reason. |
+| `objective.yaml` | optimera | Objective state, metric, target, constraints, scope, and canonical closure fields. |
+| `experiments.yaml` | optimera | Experiment history plus one closure entry with final value, target, and reason. |
 | `harness` | optimera | Locked metric command approved during objective bootstrap. |
 
 Optimera does not use root objective artifacts, registries, symlinks, or DOCS.md

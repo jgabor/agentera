@@ -2,7 +2,7 @@ ARTIFACTS:
   1:
     id: A1
     name: VISION.md
-    path: "VISION.md or .agentera/VISION.md (per DOCS.md)"
+    path: ".agentera/vision.yaml or mapped path per docs.yaml"
     description: >-
       Project direction and north star. Produced by visionera or realisera brainstorm.
       Realisera reads this for work selection and never modifies it during cycles.
@@ -32,16 +32,16 @@ ARTIFACTS:
   4:
     id: A4
     name: PROGRESS.md
-    path: ".agentera/PROGRESS.md"
+    path: ".agentera/progress.yaml"
     description: >-
       Operational cycle log. Realisera appends one entry per cycle with
-      mandatory Verified field. Compacted via compact_artifact.py script.
+      mandatory Verified field. Compacted by applying schema COMPACTION rules.
     produces: true
     consumes: true
   5:
     id: A5
     name: HEALTH.md
-    path: ".agentera/HEALTH.md"
+    path: ".agentera/health.yaml"
     description: >-
       Codebase health grades and trends. Produced by inspektera.
       Realisera reads critical and degraded findings for work selection.
@@ -50,7 +50,7 @@ ARTIFACTS:
   6:
     id: A6
     name: DECISIONS.md
-    path: ".agentera/DECISIONS.md"
+    path: ".agentera/decisions.yaml"
     description: >-
       Reasoning trail with confidence labels. Produced by resonera.
       Realisera reads firm (DL1) entries as constraints and exploratory (DL3)
@@ -60,7 +60,7 @@ ARTIFACTS:
   7:
     id: A7
     name: PLAN.md
-    path: ".agentera/PLAN.md"
+    path: ".agentera/plan.yaml"
     description: >-
       Active plan with tasks and acceptance criteria. Produced by planera.
       Realisera reads pending tasks for work selection and updates task status
@@ -73,13 +73,13 @@ ARTIFACTS:
     path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
     description: >-
       Decision profile with per-entry confidence scoring. Produced by profilera.
-      Realisera reads this every cycle via effective_profile.py script.
+      Realisera reads this directly when it exists.
     produces: false
     consumes: true
   9:
     id: A9
     name: DOCS.md
-    path: ".agentera/DOCS.md"
+    path: ".agentera/docs.yaml"
     description: >-
       Artifact path resolution and documentation coverage. Produced by dokumentera.
       Realisera reads this FIRST to resolve artifact paths.
@@ -88,7 +88,7 @@ ARTIFACTS:
   10:
     id: A10
     name: DESIGN.md
-    path: ".agentera/DESIGN.md"
+    path: "DESIGN.md"
     description: >-
       Visual identity system status. Produced by visualisera.
       Realisera reads this when building user-facing features.

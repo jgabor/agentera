@@ -24,16 +24,16 @@ One file and one archive directory in `.agentera/`.
 
 | Artifact | Purpose | Bootstrap |
 |----------|---------|-----------|
-| `PLAN.md` | Active plan. Spec, tasks, acceptance criteria. | Created during planning session. |
+| `PLAN.md` | Canonical plan artifact, stored as `.agentera/plan.yaml` unless mapped otherwise. Spec, tasks, acceptance criteria. | Created during planning session. |
 | `.agentera/archive/` | Completed or discarded plans. | Created on first archival. |
 
 **Presence signal**: `.agentera/plan.yaml` means active planned work. Absence means no plan, so realisera reasons from VISION.md.
 
-Templates in `references/templates/` (at the v2 skill location `skills/agentera/references/templates/`). Use as starting structure, adapt to the project.
+Use `skills/agentera/schemas/artifacts/plan.yaml` and existing plan artifacts as the structure.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping, use the default layout.
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`.
 
 ### Contract values
 
@@ -72,13 +72,7 @@ Read VISION.md, DECISIONS.md, and TODO.md in parallel. These reads are independe
 3. **HEALTH.md**: latest codebase health grades (if exists)
 4. **TODO.md**: related known issues (if exists)
 5. **PROGRESS.md**: what was built recently (if exists)
-6. **Decision profile**: run from the profilera v1 skill directory:
-
-   ```bash
-   python3 scripts/effective_profile.py
-   ```
-
-   If missing, proceed without persona grounding.
+6. **Decision profile**: read `$PROFILERA_PROFILE_DIR/PROFILE.md` directly when it exists. If missing, proceed without persona grounding.
 
 7. **Project discovery** (if unfamiliar):
    - Map directory structure
@@ -168,67 +162,48 @@ Artifact writing follows contract Section 24 conventions.
 
 ### Light plan format
 
-```markdown
-# Plan: [Short Title]
-
-<!-- Level: light | Created: YYYY-MM-DD | Status: active -->
-
-## What
-[One paragraph]
-
-## Why
-[Motivation and value]
-
-## Constraints
-- [What must not break]
-- [What's out of scope]
-
-## Acceptance Criteria
-▸ GIVEN [context] WHEN [action] THEN [expected outcome]
-▸ ...
+```yaml
+header:
+  level: light
+  created: YYYY-MM-DD
+  status: active
+  title: Short Title
+what: One paragraph.
+why: Motivation and value.
+constraints: What must not break; what is out of scope.
+overall_acceptance:
+  - GIVEN context WHEN action THEN expected outcome
+tasks: []
 ```
 
 ### Full plan format
 
-```markdown
-# Plan: [Short Title]
-
-<!-- Level: full | Created: YYYY-MM-DD | Status: active -->
-<!-- Reviewed: YYYY-MM-DD | Critic issues: N found, N addressed, N dismissed -->
-
-## What
-[Detailed description]
-
-## Why
-[Motivation, user impact, relationship to vision]
-
-## Constraints
-- [Architectural boundaries]
-- [Off-limits modules]
-
-## Scope
-**In**: [what's included]
-**Out**: [what's explicitly excluded]
-**Deferred**: [what's saved for later]
-
-## Design
-[High-level approach. NOT implementation details.]
-
-## Tasks
-
-### Task 1: [Title]
-**Depends on**: none
-**Status**: □ pending
-**Acceptance**:
-▸ GIVEN [context] WHEN [action] THEN [expected outcome]
-
-[Repeat for 3-8 tasks]
-
-## Overall Acceptance
-▸ GIVEN [context] WHEN [action] THEN [expected outcome]
-
-## Surprises
-[Empty; populated by realisera during execution]
+```yaml
+header:
+  level: full
+  created: YYYY-MM-DD
+  status: active
+  reviewed: YYYY-MM-DD
+  critic_issues: "N found, N addressed, N dismissed"
+  title: Short Title
+what: Detailed description.
+why: Motivation, user impact, relationship to vision.
+constraints: Architectural boundaries and off-limits modules.
+scope:
+  included: []
+  excluded: []
+  deferred: []
+design: High-level approach, not implementation details.
+tasks:
+  - number: 1
+    name: Title
+    depends_on: []
+    status: pending
+    acceptance:
+      - GIVEN context WHEN action THEN expected outcome
+overall_acceptance:
+  - GIVEN context WHEN action THEN expected outcome
+surprises: []
 ```
 
 ---

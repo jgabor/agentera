@@ -141,25 +141,25 @@ Three project-facing files at the project root; nine operational files in `.agen
 
 | Artifact | Path | Producer | Consumers | Key structural elements |
 |----------|------|----------|-----------|------------------------|
-| VISION.md | VISION.md | visionera, realisera | realisera, planera, inspektera, dokumentera, visualisera, orkestrera | ## North Star, ## Who It's For, ## Principles, ## Direction, ## Identity |
+| VISION.md | .agentera/vision.yaml | visionera, realisera | realisera, planera, inspektera, dokumentera, visualisera, orkestrera | north_star, personas, principles, direction, identity |
 | TODO.md | TODO.md | realisera, inspektera | realisera, planera, orkestrera | ## ⇶ Critical, ## ⇉ Degraded, ## → Normal, ## ⇢ Annoying, ## Resolved |
 | CHANGELOG.md | CHANGELOG.md | realisera | project contributors | ## [Unreleased], ### Added/Changed/Fixed |
-| DECISIONS.md | .agentera/DECISIONS.md | resonera | planera, realisera, inspektera, profilera, optimera, orkestrera | ## Decision N · date, **Question/Context/Alternatives/Choice/Reasoning/Confidence/Feeds into** |
-| PLAN.md | .agentera/PLAN.md | planera | realisera, inspektera, orkestrera | <!-- Level/Created/Status -->, ## Tasks with ### Task N, **Status/Depends on/Acceptance** |
-| PROGRESS.md | .agentera/PROGRESS.md | realisera | planera, inspektera, dokumentera, visionera, orkestrera | ## Cycle N · date, **Phase/What/Commit/Inspiration/Discovered/Next/Context** |
-| HEALTH.md | .agentera/HEALTH.md | inspektera | realisera, planera, orkestrera | ## Audit N · date, **Dimensions/Findings/Overall/Grades**, per-dimension sections |
-| OBJECTIVE.md | .agentera/optimera/<name>/OBJECTIVE.md | optimera | optimera | ## Metric, ## Target, ## Baseline, ## Constraints, **Status** |
-| EXPERIMENTS.md | .agentera/optimera/<name>/EXPERIMENTS.md | optimera | optimera | ## Experiment N · date, **Hypothesis/Method/Result/Conclusion**; ## Closure · date, **Final value/Target/Reason** |
-| DESIGN.md | .agentera/DESIGN.md | visualisera | realisera, visionera | Standard sections per DESIGN-spec.md |
-| DOCS.md | .agentera/DOCS.md | dokumentera | all skills (path resolution) | ## Conventions, ## Artifact Mapping, ## Index |
-| SESSION.md | .agentera/SESSION.md | session stop hook | session start hook, hej | ## YYYY-MM-DD HH:MM, Artifacts modified, Summary; compaction: 10 full + 40 one-line, oldest dropped |
-| PROFILE.md | (profile-path capability) <!-- platform: profile-path --> | profilera | all skills (via effective_profile) | ## Category, ### Decision, inline conf metadata |
+| DECISIONS.md | .agentera/decisions.yaml | resonera | planera, realisera, inspektera, profilera, optimera, orkestrera | ## Decision N · date, **Question/Context/Alternatives/Choice/Reasoning/Confidence/Feeds into** |
+| PLAN.md | .agentera/plan.yaml | planera | realisera, inspektera, orkestrera | <!-- Level/Created/Status -->, ## Tasks with ### Task N, **Status/Depends on/Acceptance** |
+| PROGRESS.md | .agentera/progress.yaml | realisera | planera, inspektera, dokumentera, visionera, orkestrera | ## Cycle N · date, **Phase/What/Commit/Inspiration/Discovered/Next/Context** |
+| HEALTH.md | .agentera/health.yaml | inspektera | realisera, planera, orkestrera | ## Audit N · date, **Dimensions/Findings/Overall/Grades**, per-dimension sections |
+| OBJECTIVE.md | .agentera/optimera/<name>/objective.yaml | optimera | optimera | ## Metric, ## Target, ## Baseline, ## Constraints, **Status** |
+| EXPERIMENTS.md | .agentera/optimera/<name>/experiments.yaml | optimera | optimera | ## Experiment N · date, **Hypothesis/Method/Result/Conclusion**; ## Closure · date, **Final value/Target/Reason** |
+| DESIGN.md | DESIGN.md | visualisera | realisera, visionera | Standard design sections with embedded `design:` YAML blocks |
+| DOCS.md | .agentera/docs.yaml | dokumentera | all skills (path resolution) | conventions, mapping, index |
+| SESSION.md | .agentera/session.yaml | session stop hook | session start hook, hej | sessions entries; compaction: 10 full + 40 one-line, oldest dropped |
+| PROFILE.md | (profile-path capability) <!-- platform: profile-path --> | profilera | all skills (directly when present) | ## Category, ### Decision, inline conf metadata |
 
-**Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for project contributors) AND `.agentera/PROGRESS.md` (operational cycle-level detail for consuming skills). Consuming skills that need cycle detail read `.agentera/PROGRESS.md`; project contributors read CHANGELOG.md.
+**Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for project contributors) AND `.agentera/progress.yaml` (operational cycle-level detail for consuming skills). Consuming skills that need cycle detail read `.agentera/progress.yaml`; project contributors read CHANGELOG.md.
 
-**Per-objective layout (optimera)**: OBJECTIVE.md and EXPERIMENTS.md are not placed at fixed paths. Each named optimization objective gets its own subdirectory under `.agentera/optimera/<name>/`, where `<name>` is the slugified objective name. Optimera manages this layout; other skills do not read or write these artifacts directly.
+**Per-objective layout (optimera)**: OBJECTIVE.md and EXPERIMENTS.md are canonical artifact names, not fixed filenames. Each named optimization objective gets its own subdirectory under `.agentera/optimera/<name>/`, where `<name>` is the slugified objective name, with `objective.yaml` and `experiments.yaml` inside it. Optimera manages this layout; other skills do not read or write these artifacts directly.
 
-**Objective closure contract (optimera)**: When an objective reaches its target, optimera closes that objective inside its own directory. `OBJECTIVE.md` records canonical closed state with `**Status**: closed`, `**Closed at**: <ISO-8601 UTC timestamp>`, `**Final value**: <value>`, `**Target**: <target>`, and `**Reason**: <reason>`. `EXPERIMENTS.md` appends one closure entry headed `## Closure · <ISO-8601 UTC timestamp>` with `**Final value**`, `**Target**`, and `**Reason**`. Closure never creates a registry, symlink, root-level objective artifact, or DOCS.md fixed mapping.
+**Objective closure contract (optimera)**: When an objective reaches its target, optimera closes that objective inside its own directory. `objective.yaml` records canonical closed state with `status: closed`, `closed_at`, `final_value`, `target`, and `reason`. `experiments.yaml` appends one `closure` entry with the same final evidence. Closure never creates a registry, symlink, root-level objective artifact, or DOCS.md fixed mapping.
 
 ### HEALTH.md audit dimensions
 
@@ -317,18 +317,19 @@ Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest 
 
 The default artifact layout is deterministic (see Section 4, Default layout). Skills know where artifacts live by convention, so no discovery step is required for the default case.
 
-`.agentera/DOCS.md` is checked ONLY for path overrides. If a project needs artifacts in non-default locations, dokumentera writes an Artifact Mapping section to `.agentera/DOCS.md` with custom paths. Skills use those paths instead of the defaults.
+`.agentera/docs.yaml` is checked ONLY for path overrides. If a project needs artifacts in non-default locations, dokumentera writes an Artifact Mapping section to `.agentera/docs.yaml` with custom paths. Skills use those paths instead of the defaults.
 
 Every skill that reads or writes artifacts MUST include the artifact path resolution instruction. The canonical template:
 
 ```
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if .agentera/DOCS.md exists. If it has an
+Before reading or writing any artifact, check if .agentera/docs.yaml exists. If it has an
 Artifact Mapping section, use the path specified for each canonical filename ({OWN_ARTIFACTS},
-etc.). If .agentera/DOCS.md doesn't exist or has no mapping for a given artifact, use the
-default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts
-in .agentera/. This applies to all artifact references in this skill, including cross-skill
+etc.). If .agentera/docs.yaml doesn't exist or has no mapping for a given artifact, use the
+default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md
+resolves to .agentera/vision.yaml; other agent-facing artifacts resolve to YAML files in .agentera/.
+This applies to all artifact references in this skill, including cross-skill
 {reads_or_writes} ({CROSS_ARTIFACTS}).
 ```
 
@@ -349,7 +350,7 @@ Skills that read the decision profile use one of two patterns:
 ### Script pattern (for skills that need confidence-weighted summaries)
 
 ```
-python3 -m scripts.effective_profile
+Read `$PROFILERA_PROFILE_DIR/PROFILE.md` directly
 ```
 
 Run from the profilera skill directory. Mentioned skills: realisera, optimera, inspektera, planera, inspirera.
@@ -609,13 +610,14 @@ Phases have valid successors. A cycle's phase is determined by the primary skill
 
 ### PROGRESS.md phase field
 
-Each cycle entry in PROGRESS.md includes a **Phase** field immediately after the cycle heading. The value is one of the five phase names: `envision`, `deliberate`, `plan`, `build`, `audit`.
+Each cycle entry in PROGRESS.md includes a `phase` field. The value is one of the five phase names: `envision`, `deliberate`, `plan`, `build`, `audit`.
 
-```markdown
-■ ## Cycle N · YYYY-MM-DD HH:MM
-
-**Phase**: build
-**What**: one-line summary of what shipped
+```yaml
+cycles:
+  - number: N
+    timestamp: YYYY-MM-DD HH:MM
+    phase: build
+    what: one-line summary of what shipped
 ```
 
 Consuming skills use the phase field for trend analysis (e.g., ratio of build to audit cycles, whether deliberation precedes major architectural changes).
@@ -632,24 +634,24 @@ Each skill produces specific artifacts as part of its workflow. When a skill is 
 
 | Skill | Expected artifact outputs |
 |-------|--------------------------|
-| visionera | VISION.md |
-| resonera | .agentera/DECISIONS.md |
-| planera | .agentera/PLAN.md |
-| realisera | .agentera/PROGRESS.md, TODO.md, CHANGELOG.md |
-| optimera | .agentera/optimera/<name>/EXPERIMENTS.md, .agentera/optimera/<name>/OBJECTIVE.md (paths are per-objective; staleness check uses glob `.agentera/optimera/*/EXPERIMENTS.md` and `.agentera/optimera/*/OBJECTIVE.md`) |
-| inspektera | .agentera/HEALTH.md, TODO.md |
-| dokumentera | .agentera/DOCS.md |
-| visualisera | .agentera/DESIGN.md |
+| visionera | .agentera/vision.yaml |
+| resonera | .agentera/decisions.yaml |
+| planera | .agentera/plan.yaml |
+| realisera | .agentera/progress.yaml, TODO.md, CHANGELOG.md |
+| optimera | .agentera/optimera/<name>/experiments.yaml, .agentera/optimera/<name>/objective.yaml (paths are per-objective; staleness check uses glob `.agentera/optimera/*/experiments.yaml` and `.agentera/optimera/*/objective.yaml`) |
+| inspektera | .agentera/health.yaml, TODO.md |
+| dokumentera | .agentera/docs.yaml |
+| visualisera | DESIGN.md |
 | profilera | (profile-path capability) <!-- platform: profile-path --> |
 | inspirera | (no owned artifact; findings are filed to TODO.md or fed into other skills) |
-| orkestrera | (conductor; updates .agentera/PLAN.md task statuses and dispatches other skills) |
+| orkestrera | (conductor; updates .agentera/plan.yaml task statuses and dispatches other skills) |
 | hej | (router; reads artifacts but produces none) |
 
 Skills that share an artifact (e.g., realisera and inspektera both write to TODO.md) are each expected to update it independently when dispatched. Staleness is checked per-skill, not per-artifact.
 
 ### Plan-relative staleness convention
 
-When a plan exists (.agentera/PLAN.md with an active status), staleness is measured relative to the plan's creation date (the `Created` field in the plan's HTML comment metadata).
+When a plan exists (.agentera/plan.yaml with an active status), staleness is measured relative to the plan's creation date (the `Created` field in the plan's HTML comment metadata).
 
 **Detection rule**: after a plan completes (all tasks `■ complete` or `skipped`), compare each dispatched skill against its expected artifacts. An artifact is **stale** if its last modification date (via `git log -1 --format=%aI -- <path>`) predates the plan's creation date AND the skill was dispatched at least once during the plan.
 
@@ -677,7 +679,7 @@ This gate is orthogonal to Section 19 Staleness Detection. Section 19 asks: did 
 
 ### Evidence format
 
-Every cycle entry in PROGRESS.md carries a `**Verified**` field alongside the existing Phase/What/Commit/Inspiration/Discovered/Next/Context fields. The field is mandatory: no cycle is considered closed without it. The field accepts exactly one of three shapes:
+Every cycle entry in PROGRESS.md carries a `verified` field alongside phase, what, commit, inspiration, discovered, next, and context fields. The field is mandatory: no cycle is considered closed without it. The field accepts exactly one of three shapes:
 
 | Shape | Content |
 |-------|---------|
@@ -714,13 +716,13 @@ A cycle that bundles runnable work with an N/A-tagged change still requires obse
 | Design system | Render a representative component against the real design tokens and visually inspect (screenshot or DOM snapshot) against the expected output |
 | Data pipeline | Run the pipeline against a real input sample (not synthetic fixtures) and record the observed output or side effects |
 
-Projects with an archetype not listed here document their canonical entrypoint form in `.agentera/DOCS.md` under a `verification_entrypoint` key. The taxonomy is extensible; the table above is the minimum coverage.
+Projects with an archetype not listed here document their canonical entrypoint form in `.agentera/docs.yaml` under a `verification_entrypoint` key. The taxonomy is extensible; the table above is the minimum coverage.
 
 ### Optional verification budget
 
-Some cycles touch slow subsystems (full data pipeline runs, long-running integration scenarios) where a complete reality check exceeds a reasonable per-cycle time budget. Projects that need a cap set a `verification_budget` key in `.agentera/DOCS.md` specifying the maximum wall-clock time per cycle. When a cycle's verification step exceeds the configured budget, the cycle MAY downgrade to a partial verification rather than blocking indefinitely.
+Some cycles touch slow subsystems (full data pipeline runs, long-running integration scenarios) where a complete reality check exceeds a reasonable per-cycle time budget. Projects that need a cap set a `verification_budget` key in `.agentera/docs.yaml` specifying the maximum wall-clock time per cycle. When a cycle's verification step exceeds the configured budget, the cycle MAY downgrade to a partial verification rather than blocking indefinitely.
 
-Partial verifications record as `**Verified**: partial (budget hit)` followed by a short note capturing what was attempted, what was observed before the budget was hit, and which portions of the behavior remain unverified. Partial verifications are valid cycle closures but are visible to consuming skills as weaker signal: inspektera audits treat a string of partial verifications as a health finding requiring attention.
+Partial verifications record `verified: "partial (budget hit): ..."` with a short note capturing what was attempted, what was observed before the budget was hit, and which portions of the behavior remain unverified. Partial verifications are valid cycle closures but are visible to consuming skills as weaker signal: inspektera audits treat a string of partial verifications as a health finding requiring attention.
 
 Projects without a `verification_budget` key have no time cap. The default is: take as long as verification honestly requires.
 
@@ -730,12 +732,12 @@ The gate is enforced independently by two skills; each holds a different phase a
 
 | Skill | Role | Phase | What it enforces |
 |-------|------|-------|------------------|
-| realisera | Primary enforcer | Cycle close | Runs the primary entrypoint against real project state and writes the observed output into the cycle's `**Verified**` field. Blocks cycle completion if the field cannot be populated with observed output, an allowlisted tag, or a qualifying free-form rationale |
-| orkestrera | Secondary enforcer | Task evaluation | Reads the latest PROGRESS.md cycle entry for the dispatched task, confirms the `**Verified**` field is present and non-empty (artifact read only; no source code read), and extends its inspektera dispatch prompt to include the Section 20 evidence-format snippet so inspektera audits whether the recorded content corresponds to the task's acceptance criteria |
+| realisera | Primary enforcer | Cycle close | Runs the primary entrypoint against real project state and writes the observed output into the cycle's `verified` field. Blocks cycle completion if the field cannot be populated with observed output, an allowlisted tag, or a qualifying free-form rationale |
+| orkestrera | Secondary enforcer | Task evaluation | Reads the latest PROGRESS.md cycle entry for the dispatched task, confirms the `verified` field is present and non-empty (artifact read only; no source code read), and extends its inspektera dispatch prompt to include the Section 20 evidence-format snippet so inspektera audits whether the recorded content corresponds to the task's acceptance criteria |
 
 Realisera holds the primary enforcement contract because it is the skill that actually produces cycle entries. Orkestrera holds a lighter presence-and-quality check because it reads artifacts but never touches code; the full content audit is delegated to inspektera via the dispatch prompt.
 
-**Linter check**: Deterministic. Realisera and orkestrera SKILL.md files must reference Section 20 by name and include the `**Verified**` field in any PROGRESS.md cycle format examples they carry.
+**Linter check**: Deterministic. Realisera and orkestrera SKILL.md files must reference Section 20 by name and include the `verified` field in any PROGRESS.md cycle format examples they carry.
 
 ## 22. Session Corpus Contract
 
@@ -1002,7 +1004,7 @@ Before executing the `isolation: "worktree"` dispatch, the dispatching skill run
 
 1. **Check working tree status.** If `git status --porcelain` returns empty output, the working tree is clean. The gate is a no-op: skip to dispatch.
 
-2. **Stage artifact paths only.** Add only the files the skill wrote or modified during the current session. Use explicit paths (e.g., `git add .agentera/PLAN.md .agentera/PROGRESS.md`), not `git add -A` or `git add .`. This scoping prevents committing editor temp files, secrets, or unrelated changes.
+2. **Stage artifact paths only.** Add only the files the skill wrote or modified during the current session. Use explicit paths (e.g., `git add .agentera/plan.yaml .agentera/progress.yaml`), not `git add -A` or `git add .`. This scoping prevents committing editor temp files, secrets, or unrelated changes.
 
 3. **Commit with checkpoint message.** Use the conventional commit format:
 

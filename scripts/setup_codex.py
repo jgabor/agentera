@@ -102,7 +102,7 @@ AGENTERA_SKILLS: tuple[tuple[str, str], ...] = (
     ("resonera",     "structured Socratic deliberation; produces decision artifacts"),
     ("inspektera",   "codebase health audit with multi-dimensional evaluation"),
     ("planera",      "scale-adaptive planning with behavioral acceptance criteria"),
-    ("visionera",    "create or refine VISION.md with codebase exploration"),
+    ("visionera",    "create or refine the vision artifact with codebase exploration"),
     ("dokumentera",  "DTC-first documentation creation, maintenance, and verification"),
     ("visualisera",  "create, refine, and audit DESIGN.md visual identity files"),
     ("orkestrera",   "skill-agnostic orchestrator; dispatches skills as subagents"),

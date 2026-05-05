@@ -17,7 +17,7 @@ Fixture format::
 
     ## Seeded Project State
     ```json
-    {"files": [{"path": ".agentera/PLAN.md", "content": "..."}]}
+    {"files": [{"path": ".agentera/plan.yaml", "content": "..."}]}
     ```
 
     ## Captured Output
