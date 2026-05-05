@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Agentera dispatcher, hej, realisera, and optimera guidance now prefer top-level state commands and reserve `agentera query` for advanced/custom inspection.
 - `agentera hej` now provides a one-command composite orientation briefing with profile status, health, issue counts, plan progress, objective state, attention items, and the next concrete action for bare `/agentera`.
 - Advanced `agentera query` calls now support `--format json` and `--format yaml` for pipeable custom artifact access while routine state forms remain top-level only.
 - Routine Agentera state access now uses top-level CLI commands such as `agentera plan`, `agentera progress`, `agentera health`, `agentera todo`, `agentera decisions`, `agentera docs`, `agentera objective`, and `agentera experiments`; `agentera query` is reserved for advanced custom artifact access.

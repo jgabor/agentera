@@ -124,7 +124,7 @@ Read VISION.md, PROGRESS.md, TODO.md, and HEALTH.md in parallel. These reads are
 If `.agentera/progress.yaml` has 3+ cycles, query recent state first:
 
 ```bash
-uv run ${AGENTERA_HOME:-.}/scripts/agentera query progress
+uv run ${AGENTERA_HOME:-.}/scripts/agentera progress
 ```
 
 1. **PROGRESS.md**: what happened last cycle, what was suggested next

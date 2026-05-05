@@ -80,7 +80,7 @@ tasks:
       - Task 1
       - Task 2
       - Task 3
-    status: pending
+    status: complete
     acceptance:
       - GIVEN bare /agentera is invoked THEN skills/agentera/SKILL.md instructs the agent to run agentera hej first
       - GIVEN hej prose describes returning-project orientation THEN it forbids individual artifact queries and raw .agentera/*.yaml reads unless agentera hej fails or asks for fallback

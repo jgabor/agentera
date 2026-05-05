@@ -259,7 +259,7 @@ Growing artifacts are compacted to cap read cost for consuming skills. Compactio
 
 When writing a new cycle: if >10 full-detail entries exist, collapse the oldest to one-line format under an `## Archived Cycles` heading (below the recent cycles). If >40 one-line entries exist, drop the oldest. One-line summaries preserve cycle number, date, and work-type, enough for trend analysis by consuming skills.
 
-Active cycle entries are stored newest-first: descending by cycle number. Insert the newest full-detail cycle before older active cycles so `agentera query progress --limit 1` reads the current cycle without scanning the full file.
+Active cycle entries are stored newest-first: descending by cycle number. Insert the newest full-detail cycle before older active cycles so `agentera progress --limit 1` reads the current cycle without scanning the full file.
 
 **EXPERIMENTS.md**, compacted by optimera when writing a new experiment:
 

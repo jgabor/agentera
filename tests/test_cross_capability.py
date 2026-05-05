@@ -162,10 +162,26 @@ def test_prose_capability_refs_exist(cap_name: str):
 def test_master_skill_requires_cli_first_state_access():
     text = SKILL_MD_PATH.read_text(encoding="utf-8")
 
-    assert "Step -1: CLI-first state access" in text
+    assert "Step -1: Top-level CLI-first state access" in text
+    assert "agentera hej" in text
     assert "query --list-artifacts" in text
+    assert "query <artifact-name> --format json|yaml" in text
     assert "Do not silently bypass the CLI" in text
     assert "reads only as a fallback" in text
+    assert "Do not run individual `plan`, `progress`, `health`" in text
+
+
+def test_routine_capability_guidance_uses_top_level_state_commands():
+    realisera = (CAPABILITIES_DIR / "realisera" / "prose.md").read_text(encoding="utf-8")
+    optimera = (CAPABILITIES_DIR / "optimera" / "prose.md").read_text(encoding="utf-8")
+    hej = (CAPABILITIES_DIR / "hej" / "prose.md").read_text(encoding="utf-8")
+
+    assert "scripts/agentera progress" in realisera
+    assert "query progress" not in realisera
+    assert "scripts/agentera experiments" in optimera
+    assert "query experiments" not in optimera
+    assert "uv run ${AGENTERA_HOME:-.}/scripts/agentera hej" in hej
+    assert "advanced/custom inspection only" in hej
 
 
 def test_master_upgrade_guard_requires_dry_run_preview():
