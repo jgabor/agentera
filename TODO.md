@@ -4,6 +4,9 @@
 
 ## ⇉ Degraded
 
+- [ ] [agentera-v2-live-smoke] Run `python3 scripts/smoke_live_hosts.py --live --yes` after explicit approval for live model calls. Required before claiming cutover-ready model-host behavior across Claude/Codex/Copilot/OpenCode.
+- [ ] [agentera-v2-token-optimization] Open and execute a follow-up token optimization lane for the missed ROADMAP target. Current static dispatch payload is 317,616 bytes vs v1 baseline 352,213 bytes (-9.8%); target remains -40%. Measure with `python3 scripts/measure_token_payload.py`.
+
 ## → Normal
 
 ## ⇢ Annoying
