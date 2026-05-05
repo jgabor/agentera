@@ -101,6 +101,7 @@ Phase 4 verdict: validation is green; token goal remains missed.
 - Query seam depth: `scripts/agentera query` now has artifact-specific summaries for plan, progress, decisions, health, docs, session, todo, design, objective, and experiments.
 - Producer/consumer validation: `scripts/validate_cross_capability.py` now validates capability artifact declarations against skill-level artifact schemas.
 - Live smoke: live host verification is required before 2.0 cutover claims; the 2026-05-05 decision is to defer the live run and commit the offline gap-closure work.
+- Follow-up tracking: `TODO.md` now tracks the deferred live smoke (`agentera-v2-live-smoke`) and missed token target (`agentera-v2-token-optimization`) as open degraded items.
 
 ## Resolved Since Earlier Draft
 
@@ -122,11 +123,11 @@ Phase 4 verdict: validation is green; token goal remains missed.
 1. Run one gated live-host smoke before cutover claims.
    Use `python3 scripts/smoke_live_hosts.py --live --yes` only after explicit approval for live model calls, but treat that evidence as required before claiming 2.0 cutover readiness. The user deferred this run on 2026-05-05.
 
-2. Open a follow-up token optimization lane.
-   The 40% token target remains missed after final remeasurement. Treat this as a separate optimization objective, not a hidden release pass.
+2. Execute the follow-up token optimization lane.
+   `TODO.md` now tracks `agentera-v2-token-optimization`. The 40% token target remains missed after final remeasurement; treat this as a separate optimization objective, not a hidden release pass.
 
-3. Commit the gap-closure work.
-   The offline validator/test/smoke evidence is green, and the remaining live-host item is blocked on explicit approval rather than local implementation.
+3. Commit the follow-up tracking update.
+   The offline validator/test/smoke evidence is green, the follow-up lanes are tracked, and the remaining live-host item is blocked on explicit approval rather than local implementation.
 
 ## Overall Verdict
 

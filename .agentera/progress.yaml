@@ -14,8 +14,8 @@ cycles:
   verified: 'Validation passed: uv run pytest -q (520 passed, 1 skipped), python3 scripts/validate_cross_capability.py, python3
     scripts/smoke_live_hosts.py, python3 scripts/measure_token_payload.py, uv run scripts/validate_capability.py --self-validate,
     python3 scripts/agentera query plan, and python3 scripts/agentera query decisions --topic benchmark.'
-  next: Commit the offline gap-closure work. Live host smoke was explicitly deferred on 2026-05-05 and remains required before
-    cutover-ready model-host claims. Treat the missed token target as a follow-up optimization lane.
+  next: Live host smoke was explicitly deferred on 2026-05-05 and remains required before cutover-ready model-host claims.
+    TODO.md now tracks that deferred smoke plus the missed token target as follow-up lanes.
   context:
     intent: close the reliable gap analysis recommended actions
     constraints: no Agentera skill loading during review; no live model calls without explicit approval
