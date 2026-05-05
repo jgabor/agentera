@@ -124,7 +124,7 @@ Read VISION.md, PROGRESS.md, TODO.md, and HEALTH.md in parallel. These reads are
 If `.agentera/progress.yaml` has 3+ cycles, query recent state first:
 
 ```bash
-python3 ${AGENTERA_HOME:-.}/scripts/agentera query progress
+uv run ${AGENTERA_HOME:-.}/scripts/agentera query progress
 ```
 
 1. **PROGRESS.md**: what happened last cycle, what was suggested next
@@ -237,7 +237,7 @@ Verification has two phases: structural and behavioral. Both must pass before co
 - CLI tool: invoke with realistic arguments
 - Library/SDK: run a smoke driver
 - Web service: send a request to a production-shaped endpoint
-- Skill repo: `python3 scripts/eval_skills.py --skill <name>`
+- Skill repo: `uv run scripts/eval_skills.py --skill <name>`
 
 If verification fails: diagnose, spawn a fix agent, re-verify.
 

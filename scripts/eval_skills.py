@@ -10,12 +10,12 @@ with a minimal trigger prompt and checks for crashes / non-zero exit codes.
 Scope is crash/error detection only — output correctness is not evaluated.
 
 Run from repo root:
-    python3 scripts/eval_skills.py                    # run all skills
-    python3 scripts/eval_skills.py --skill realisera  # run one skill
-    python3 scripts/eval_skills.py --dry-run           # list skills + prompts
-    python3 scripts/eval_skills.py --parallel N        # N concurrent workers
-    python3 scripts/eval_skills.py --timeout 60        # per-skill timeout (s)
-    python3 scripts/eval_skills.py --runtime opencode  # use OpenCode runtime
+    uv run scripts/eval_skills.py                    # run all skills
+    uv run scripts/eval_skills.py --skill realisera  # run one skill
+    uv run scripts/eval_skills.py --dry-run          # list skills + prompts
+    uv run scripts/eval_skills.py --parallel N       # N concurrent workers
+    uv run scripts/eval_skills.py --timeout 60       # per-skill timeout (s)
+    uv run scripts/eval_skills.py --runtime opencode # use OpenCode runtime
 """
 
 from __future__ import annotations

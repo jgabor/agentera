@@ -36,11 +36,11 @@ overrides the TOML target (tests use this to avoid touching the real
 
 Usage::
 
-    python3 scripts/setup_codex.py
-    python3 scripts/setup_codex.py --install-root /opt/agentera
-    python3 scripts/setup_codex.py --dry-run
-    python3 scripts/setup_codex.py --force
-    python3 scripts/setup_codex.py --config-file /tmp/config.toml
+    uv run scripts/setup_codex.py
+    uv run scripts/setup_codex.py --install-root /opt/agentera
+    uv run scripts/setup_codex.py --dry-run
+    uv run scripts/setup_codex.py --force
+    uv run scripts/setup_codex.py --config-file /tmp/config.toml
 
 Exit codes:
 

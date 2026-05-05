@@ -15,7 +15,6 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
-import stat
 import sys
 from pathlib import Path
 from typing import Any
@@ -157,19 +156,30 @@ def _resolve_from_manifest(root: Path, manifest: Path, path: str) -> Path | None
     return resolved
 
 
-def _is_executable(path: Path) -> bool:
-    executable_bits = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
-    return bool(path.stat().st_mode & executable_bits)
-
-
-def _packaged_executable_python_scripts(root: Path) -> list[Path]:
-    script_root = root / "scripts"
-    if not script_root.is_dir():
-        return []
-    return sorted(
-        path for path in script_root.glob("*.py")
-        if path.is_file() and _is_executable(path)
+def _is_packaged_python_script(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    if path.suffix == ".py":
+        return True
+    if path.suffix:
+        return False
+    first_line = path.read_text(encoding="utf-8", errors="ignore").splitlines()[0:1]
+    return bool(first_line) and (
+        "python" in first_line[0] or "uv run --script" in first_line[0]
     )
+
+
+def _packaged_python_scripts(root: Path) -> list[Path]:
+    paths: list[Path] = []
+    for directory in ("scripts", "hooks"):
+        script_root = root / directory
+        if not script_root.is_dir():
+            continue
+        paths.extend(
+            path for path in script_root.iterdir()
+            if _is_packaged_python_script(path)
+        )
+    return sorted(paths)
 
 
 def _extract_inline_script_metadata(text: str) -> list[str] | None:
@@ -184,40 +194,31 @@ def _extract_inline_script_metadata(text: str) -> list[str] | None:
     return None
 
 
-def _metadata_declares_empty_dependencies(metadata: list[str]) -> bool:
-    dependencies_index = None
-    for index, line in enumerate(metadata):
-        if line.strip() == "# dependencies = []":
-            return True
-        if line.strip() == "# dependencies = [":
-            dependencies_index = index
-            break
-    if dependencies_index is None:
-        return False
-    for line in metadata[dependencies_index + 1:]:
-        stripped = line.strip()
-        if stripped == "# ]":
-            return True
-        if stripped and stripped != "#":
-            return False
-    return False
+def _metadata_declares_requires_python(metadata: list[str]) -> bool:
+    return any(line.strip().startswith("# requires-python = ") for line in metadata)
+
+
+def _metadata_declares_dependencies(metadata: list[str]) -> bool:
+    return any(line.strip().startswith("# dependencies = [") for line in metadata)
 
 
 def validate_packaged_python_scripts(root: Path) -> list[str]:
     errors: list[str] = []
-    for path in _packaged_executable_python_scripts(root):
+    for path in _packaged_python_scripts(root):
         relative = path.relative_to(root)
         text = path.read_text(encoding="utf-8")
         lines = text.splitlines()
         first_line = lines[0] if lines else ""
         if first_line != UV_SCRIPT_SHEBANG:
-            errors.append(f"{relative}: packaged executable Python script must use uv script shebang")
+            errors.append(f"{relative}: packaged Python script must use uv script shebang")
         metadata = _extract_inline_script_metadata(text)
         if metadata is None:
-            errors.append(f"{relative}: packaged executable Python script must declare inline script metadata")
+            errors.append(f"{relative}: packaged Python script must declare inline script metadata")
             continue
-        if not _metadata_declares_empty_dependencies(metadata):
-            errors.append(f"{relative}: stdlib-only packaged script must declare dependencies = []")
+        if not _metadata_declares_requires_python(metadata):
+            errors.append(f"{relative}: packaged Python script must declare requires-python")
+        if not _metadata_declares_dependencies(metadata):
+            errors.append(f"{relative}: packaged Python script must declare dependencies")
     return errors
 
 

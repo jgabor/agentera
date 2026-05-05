@@ -66,15 +66,6 @@ def semantic_eval(semantic_fixtures):
 
 
 @pytest.fixture(scope="session")
-def generate_contracts():
-    """Load scripts/generate_contracts.py."""
-    return _load_module(
-        "generate_contracts",
-        REPO_ROOT / "scripts" / "generate_contracts.py",
-    )
-
-
-@pytest.fixture(scope="session")
 def usage_stats():
     """Load scripts/usage_stats.py."""
     return _load_module(

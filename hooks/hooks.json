@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/session_start.py"
+            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/hooks/session_start.py\""
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/session_stop.py"
+            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/hooks/session_stop.py\""
           }
         ]
       }
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/validate_artifact.py"
+            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/hooks/validate_artifact.py\""
           }
         ]
       }

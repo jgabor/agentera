@@ -232,13 +232,13 @@ export const AgenteraPlugin = async ({ project, client, $, directory, worktree }
 
 4. **Stop** (`event.type === "session.idle"`): Append a bookmark entry to `.agentera/SESSION.md` capturing artifact changes for next-session continuity.
 
-**Gap**: OpenCode plugins run in-process (JavaScript/TypeScript), not as separate Python scripts. The Python validation scripts (`validate_spec.py`, `generate_contracts.py`) would need to be invoked via the `$` shell API:
+**Adapter note**: OpenCode plugins run in-process (JavaScript/TypeScript), not as separate Python scripts. Shared Agentera validators are invoked through `uv run` so their inline script metadata can resolve dependencies consistently:
 
 ```javascript
-const result = await $`python3 /path/to/scripts/validate_spec.py`.quiet()
+const result = await $`uv run /path/to/hooks/validate_artifact.py`.quiet()
 ```
 
-This is functional but adds a Python dependency. For the initial port, the hook plugin can be a thin shim that calls the existing Python scripts.
+This keeps the plugin thin while matching the packaged Python script contract.
 
 ---
 

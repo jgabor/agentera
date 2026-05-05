@@ -14,11 +14,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install dependencies
-        run: pip install pytest
-      - name: Spec lint
-        run: python3 scripts/validate_spec.py
-      - name: Contract freshness
-        run: python3 scripts/generate_contracts.py --check
+      - uses: astral-sh/setup-uv@v5
+      - name: Capability contract self-validation
+        run: uv run scripts/validate_capability.py --self-validate
+      - name: Capability schemas
+        run: |
+          for capability in skills/agentera/capabilities/*; do
+            uv run scripts/validate_capability.py "$capability"
+          done
+      - name: Cross-capability graph
+        run: uv run scripts/validate_cross_capability.py
+      - name: Lifecycle adapter metadata
+        run: uv run scripts/validate_lifecycle_adapters.py --check-uv-runtime
       - name: Test suite
-        run: python3 -m pytest tests/ -q
+        run: uv run --with pytest --with pyyaml pytest tests/ -q

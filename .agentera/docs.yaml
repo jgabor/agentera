@@ -69,11 +69,15 @@ mapping:
 index:
 - document: README
   path: README.md
-  last_updated: '2026-04-30'
+  last_updated: '2026-05-05'
+  status: current
+- document: Upgrade guide
+  path: UPGRADE.md
+  last_updated: '2026-05-05'
   status: current
 - document: CLAUDE.md
   path: CLAUDE.md
-  last_updated: '2026-04-27'
+  last_updated: '2026-05-05'
   status: current
 - document: Decisions
   path: .agentera/decisions.yaml
@@ -153,11 +157,11 @@ index:
   status: current
 - document: OpenCode plugin adapter
   path: .opencode/plugins/agentera.js
-  last_updated: '2026-04-30'
+  last_updated: '2026-05-05'
   status: current
 - document: OpenCode adapter reference
   path: references/adapters/opencode.md
-  last_updated: '2026-04-30'
+  last_updated: '2026-05-05'
   status: current
 - document: Runtime parity reference
   path: references/adapters/runtime-feature-parity.md
@@ -169,19 +173,19 @@ index:
   status: current
 - document: Hooks registry
   path: hooks/hooks.json
-  last_updated: '2026-04-03'
+  last_updated: '2026-05-05'
   status: current
 - document: Lifecycle adapter validator
   path: scripts/validate_lifecycle_adapters.py
-  last_updated: '2026-04-28'
+  last_updated: '2026-05-05'
   status: current
 - document: Semantic eval command
   path: scripts/semantic_eval.py
-  last_updated: '2026-04-30'
+  last_updated: '2026-05-05'
   status: current
 - document: Semantic fixture contract
   path: scripts/semantic_fixtures.py
-  last_updated: '2026-04-30'
+  last_updated: '2026-05-05'
   status: current
 - document: Semantic eval fixtures
   path: fixtures/semantic/
@@ -189,19 +193,19 @@ index:
   status: current
 - document: Usage analytics script
   path: scripts/usage_stats.py
-  last_updated: '2026-04-26'
+  last_updated: '2026-05-05'
   status: current
 - document: Codex setup helper
   path: scripts/setup_codex.py
-  last_updated: '2026-04-26'
+  last_updated: '2026-05-05'
   status: current
 - document: Copilot setup helper
   path: scripts/setup_copilot.py
-  last_updated: '2026-04-26'
+  last_updated: '2026-05-05'
   status: current
 - document: Setup helper smoke runner
   path: scripts/smoke_setup_helpers.py
-  last_updated: '2026-04-26'
+  last_updated: '2026-05-05'
   status: current
 - document: Setup doctor and installer
   path: scripts/setup_doctor.py
@@ -217,37 +221,37 @@ index:
   status: current
 - document: SessionStart hook
   path: hooks/session_start.py
-  last_updated: '2026-04-03'
+  last_updated: '2026-05-05'
   status: current
 - document: Session stop hook
   path: hooks/session_stop.py
-  last_updated: '2026-04-03'
+  last_updated: '2026-05-05'
   status: current
 - document: Validation hook
   path: hooks/validate_artifact.py
-  last_updated: '2026-04-28'
+  last_updated: '2026-05-05'
   status: current
 - document: Shared hook utils
   path: hooks/common.py
-  last_updated: '2026-04-03'
+  last_updated: '2026-05-05'
   status: current
 - document: Test suite
   path: tests/
-  last_updated: '2026-04-30'
+  last_updated: '2026-05-05'
   status: current
 - document: Lefthook config
   path: .lefthook.yml
-  last_updated: '2026-04-20'
+  last_updated: '2026-05-05'
   status: current
 - document: CI workflow
   path: .github/workflows/ci.yml
-  last_updated: '2026-04-11'
+  last_updated: '2026-05-05'
   status: current
 coverage:
   documented: 12/12 skills have SKILL.md (single source of truth)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: 520 tests across the current v2 suite; CI runs on push/PR via GitHub Actions
+  tests: 522 tests across the current v2 suite; CI runs on push/PR via GitHub Actions
 audit_log:
 - date: '2026-04-30'
   label: installation reliability checkpoint

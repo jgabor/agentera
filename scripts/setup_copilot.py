@@ -48,10 +48,10 @@ otherwise export).
 
 Usage::
 
-    python3 scripts/setup_copilot.py
-    python3 scripts/setup_copilot.py --install-root /opt/agentera
-    python3 scripts/setup_copilot.py --dry-run
-    python3 scripts/setup_copilot.py --rc-file /tmp/myrc
+    uv run scripts/setup_copilot.py
+    uv run scripts/setup_copilot.py --install-root /opt/agentera
+    uv run scripts/setup_copilot.py --dry-run
+    uv run scripts/setup_copilot.py --rc-file /tmp/myrc
 
 Exit codes:
 

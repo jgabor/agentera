@@ -125,7 +125,7 @@ The "Next" field from the previous experiment is a suggestion, not a mandate. Re
 
 ### Experiment history analyzer contract
 
-`scripts/analyze_experiments.py` is the read-only summary layer for rich experiments.yaml records. It must inspect the active objective directory only. The analyzer never creates root objective artifacts, registries, symlinks, DOCS.md fixed mappings, or sidecar ledgers.
+`uv run ${AGENTERA_HOME:-.}/scripts/agentera query experiments` is the read-only summary layer for rich experiments.yaml records. It must inspect the active objective directory only. The query never creates root objective artifacts, registries, symlinks, DOCS.md fixed mappings, or sidecar ledgers.
 
 ---
 
@@ -196,10 +196,10 @@ Run two things:
 **2a. Experiment history analysis**: if experiments.yaml has prior entries, run:
 
 ```bash
-python3 scripts/analyze_experiments.py --experiments experiments.yaml --objective objective.yaml --pretty
+uv run ${AGENTERA_HOME:-.}/scripts/agentera query experiments
 ```
 
-Outputs JSON with metric trajectory, plateau detection, win/loss rates, and distance to target.
+Outputs recent experiment status counts, metric deltas, conclusions, and next-step notes.
 
 **2b. Current metric**: run the eval harness to get the baseline for this experiment:
 

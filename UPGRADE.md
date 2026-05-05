@@ -28,7 +28,7 @@ The plugin must be re-installed manually (`npx skills` does not manage it).
 ### Codex
 
 ```bash
-python3 scripts/setup_codex.py --enable-agents
+uv run scripts/setup_codex.py --enable-agents
 cp hooks/codex-hooks.json ~/.codex/hooks.json
 ```
 
@@ -37,7 +37,7 @@ Re-runs setup to update `config.toml` and copies updated hooks.
 ### Copilot
 
 ```bash
-python3 scripts/setup_copilot.py
+uv run scripts/setup_copilot.py
 ```
 
 Re-runs setup to update the environment variable.
@@ -50,6 +50,15 @@ uv run scripts/migrate_artifacts_v1_to_v2 --project /path/to/project --dry-run
 
 # Execute conversion (backs up to .agentera/backup-v1/)
 uv run scripts/migrate_artifacts_v1_to_v2 --project /path/to/project
+```
+
+## Stale v1 runtime cleanup
+
+After updating the runtime package, check for leftover v1 host artifacts:
+
+```bash
+uv run scripts/detect_stale_v1
+uv run scripts/detect_stale_v1 --fix
 ```
 
 ## What's different in v2

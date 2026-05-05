@@ -12,6 +12,7 @@
 
 ### Changed
 
+- Root Python scripts and hooks now use `uv run --script` shebangs with PEP 723 metadata, lifecycle validation covers `scripts/` and `hooks/` entrypoints, and CI/Lefthook/docs invoke current v2 validators through `uv run`.
 - feat/v2 merged to main via fast-forward after validation (507 tests pass, 0 failures; all 12 capabilities pass contract validation; version surfaces at 2.0.0).
 - All 12 capability `triggers.yaml` schemas updated with `priority` field for confidence-based routing.
 - Claude Code live model-host smoke is excluded from the required v2.0 release harness until Claude Pro/Max or API access is available; future Claude live smoke should be explicit opt-in.

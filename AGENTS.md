@@ -67,8 +67,8 @@ Before reading or writing any artifact, check if `.agentera/docs.yaml` exists wi
 Query and validate artifacts via the CLI:
 
 ```bash
-python3 scripts/agentera query --list-artifacts
-python3 scripts/agentera query decisions --topic <topic>
+uv run scripts/agentera query --list-artifacts
+uv run scripts/agentera query decisions --topic <topic>
 ```
 
 ## Key conventions

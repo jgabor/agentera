@@ -27,4 +27,4 @@ pre-push:
   parallel: true
   commands:
     test:
-      run: python3 -m pytest tests/ -q
+      run: uv run --with pytest --with pyyaml pytest tests/ -q

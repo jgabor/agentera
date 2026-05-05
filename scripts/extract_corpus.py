@@ -8,10 +8,10 @@
 The extractor writes the normalized corpus envelope consumed by
 ``scripts/usage_stats.py`` and the profilera capability:
 
-    python3 scripts/extract_corpus.py
-    python3 scripts/extract_corpus.py --output /tmp/corpus.json
-    python3 scripts/extract_corpus.py --project-root ~/git/agentera
-    python3 scripts/extract_corpus.py --codex-sessions-dir ~/.codex/sessions
+    uv run scripts/extract_corpus.py
+    uv run scripts/extract_corpus.py --output /tmp/corpus.json
+    uv run scripts/extract_corpus.py --project-root ~/git/agentera
+    uv run scripts/extract_corpus.py --codex-sessions-dir ~/.codex/sessions
 
 It intentionally treats host storage as adapter input and emits the four
 portable record families from ``references/contract.md``:
