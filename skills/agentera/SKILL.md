@@ -51,29 +51,40 @@ Capabilities import these by name. The schema contract ensures consistent usage.
 
 When a request arrives, route to the matching capability using the five-layer dispatch model from Decision 42.
 
-### Step -1: CLI-first state access
+### Step -1: Top-level CLI-first state access
 
-The `agentera` CLI is the authoritative interface to project state. Before any
-artifact-backed briefing, route decision, or capability state read, run a CLI
-probe from the target project:
+The `agentera` CLI is the authoritative interface to project state. Use
+top-level state commands for routine access. `agentera query` is reserved for
+advanced/custom artifact inspection when no normal command serves the needed
+state.
+
+Before any artifact-backed briefing, route decision, or capability state read,
+run the top-level command that owns the needed state:
 
 1. Installed bundle:
-   `uv run "$AGENTERA_HOME/scripts/agentera" query --list-artifacts`
+   `uv run "$AGENTERA_HOME/scripts/agentera" <command>`
 2. Default durable bundle:
-   `uv run "$HOME/.agents/agentera/scripts/agentera" query --list-artifacts`
+   `uv run "$HOME/.agents/agentera/scripts/agentera" <command>`
 3. Local Agentera checkout:
-   `uv run scripts/agentera query --list-artifacts`
+   `uv run scripts/agentera <command>`
+
+Routine commands are: `hej`, `plan`, `progress`, `health`, `todo`,
+`decisions`, `docs`, `objective`, and `experiments`. Discovery and custom
+inspection remain available through `query --list-artifacts` and
+`query <artifact-name> --format json|yaml`.
 
 Do not silently bypass the CLI and read raw `.agentera/*.yaml` files first. If
 all CLI paths fail, report that the CLI was unavailable, then use raw artifact
 reads only as a fallback.
 
-For `/agentera`, run targeted queries such as `query plan`, `query progress`,
-`query health`, `query todo`, and `query decisions` before building the hej
-briefing. For `/agentera <capability-name>`, run the targeted query or queries
-needed by that capability before opening raw artifacts. Reading a capability's
-`prose.md` file is not itself a capability invocation; invocation means routing
-to the capability, following its prose, and using the CLI state layer first.
+For bare `/agentera`, run `agentera hej` first and build the briefing from that
+single composite result. Do not run individual `plan`, `progress`, `health`,
+`todo`, or `decisions` commands unless `agentera hej` fails or explicitly asks
+for fallback. For `/agentera <capability-name>`, run the top-level command or
+commands named by that capability before opening raw artifacts. Reading a
+capability's `prose.md` file is not itself a capability invocation; invocation
+means routing to the capability, following its prose, and using the CLI state
+layer first.
 
 ### Step 0: Upgrade guard
 

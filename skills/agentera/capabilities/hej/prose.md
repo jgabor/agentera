@@ -4,15 +4,36 @@
 
 Single entry point to the agentera suite. Detects fresh vs returning, delivers a situational briefing, routes to the right capability. Same on first install and 100th session.
 
-Each invocation = one orientation. Reads everything, writes nothing.
+Each invocation = one orientation. Uses the CLI composite briefing first,
+writes nothing.
 
 ---
 
 ## State artifacts
 
-Glyph: **⌂** (SG1). Hej reads suite state and writes nothing. It may read
-VISION, DECISIONS, PLAN, PROGRESS, TODO, HEALTH, OBJECTIVE, EXPERIMENTS, DOCS,
-DESIGN, and the global PROFILE for a briefing.
+Glyph: **⌂** (SG1). Hej reads suite state through `agentera hej` and writes
+nothing. It may fall back to direct reads only when the composite command fails
+or explicitly asks for fallback.
+
+### CLI-first access
+
+For returning projects, run one composite command before any individual state
+access:
+
+```bash
+uv run ${AGENTERA_HOME:-.}/scripts/agentera hej
+```
+
+Use that output to render the dashboard and select the concrete next action. Do
+not run `agentera plan`, `agentera progress`, `agentera health`, `agentera
+todo`, `agentera decisions`, or `agentera objective` as part of normal hej
+briefing assembly. Do not read raw `.agentera/*.yaml` files for normal hej
+orientation. If `agentera hej` fails, reports that fallback is required, or a
+field needed for the dashboard is missing, use the top-level state command that
+owns that field before opening raw artifacts.
+
+Use `agentera query <artifact-name> --format json|yaml` only for advanced or
+custom artifact inspection when no top-level command serves the needed state.
 
 ### Artifact path resolution
 
@@ -35,7 +56,7 @@ VT14, flow arrow VT17, skill glyphs SG1-SG12, exits EX1-EX4, issues SI1-SI4.
 
 ## Step 0: Detect mode
 
-Check for suite state artifacts (respecting path resolution).
+Run `agentera hej` and use its `mode` field.
 
 - **No artifacts found** → Step 1a (first time on this project)
 - **Artifacts found** → Step 1b (returning to known project)
@@ -115,14 +136,17 @@ First impression: the colleague meets a new project.
 
 Show where things stand.
 
-1. **Read artifacts**: VISION.md, PROGRESS.md, TODO.md, HEALTH.md, PLAN.md, DECISIONS.md
-   - Read in parallel. First 20 lines each. Skip absent ones.
-   - Extract the most recent entry or summary.
-   - If TODO.md, PLAN.md, OBJECTIVE.md, or DECISIONS.md hints at active work, keep reading.
-   - For optimera status, inspect `.agentera/optimera/<name>/` directories directly. Classify closed objectives first when objective.yaml has `status: closed`; tolerate legacy prose such as `**Status**: closed (date)` only when reading migrated history. Exclude closed objectives before recency checks; if every objective is closed, report no active objective and do not route to optimera for completed work.
-   - When multiple non-closed objectives exist, use EXPERIMENTS.md git recency only among those non-closed objectives. A closed objective with newer history must not outrank an older active objective.
-   - Identify the first concrete open item or current plan task before routing.
-   - Do not route from a heading or summary alone when an executable follow-up exists nearby.
+1. **Use composite state**: Build the briefing from `agentera hej` output.
+   - Use its mode, profile, health, issue counts, plan progress, objective,
+     attention, and next_action fields.
+   - Do not issue individual artifact queries during normal returning-project
+     orientation.
+   - Do not open raw `.agentera/*.yaml` files unless the composite command fails
+     or names a fallback need.
+   - If fallback is required, prefer top-level commands such as `agentera plan`,
+     `agentera progress`, `agentera health`, `agentera todo`, `agentera
+     decisions`, `agentera objective`, and `agentera experiments`.
+   - Keep `agentera query` for advanced/custom inspection only.
 
 2. **Brief them**: concise status, only what exists. No empty sections.
    Show the agentera logo.

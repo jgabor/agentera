@@ -1,4 +1,19 @@
 cycles:
+- number: 270
+  timestamp: 2026-05-05 18:23
+  type: docs
+  phase: verify
+  what: Updated Agentera dispatcher and capability guidance to prefer top-level state commands.
+  commit: this commit
+  inspiration: The flat-CLI plan requires agents to use `agentera hej` and routine top-level state commands instead of rebuilding state through multiple query calls.
+  discovered: Shared contract guidance still mentioned `agentera query progress --limit 1`; it was updated along with dispatcher, hej, realisera, and optimera prose.
+  verified: 'Validation passed: uv run pytest tests/test_cross_capability.py tests/test_hej_capability.py -q (48 passed, 1 skipped); uv run scripts/validate_capability.py for hej, realisera, and optimera; uv run scripts/validate_capability.py --self-validate; uv run pytest -q (556 passed, 1 skipped); rg found no routine query plan/progress/health/todo/decisions/docs/objective/experiments guidance outside regression assertions; uv run scripts/agentera hej selected PLAN Task 4; git diff --check.'
+  next: 'Implement Task 5: add tool-budget and regression tests for /agentera/hej usage.'
+  context:
+    intent: make top-level CLI access the agent-facing norm in prose, not just executable behavior
+    constraints: leave broader docs and freshness sweep for the final task
+    unknowns: exact semantic fixture shape for tool-budget assertions belongs to Task 5
+    scope: dispatcher guidance, hej/realisera/optimera prose, shared contract reference, and prose regression tests
 - number: 269
   timestamp: 2026-05-05 18:18
   type: feat

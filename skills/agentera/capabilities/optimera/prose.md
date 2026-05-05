@@ -125,7 +125,7 @@ The "Next" field from the previous experiment is a suggestion, not a mandate. Re
 
 ### Experiment history analyzer contract
 
-`uv run ${AGENTERA_HOME:-.}/scripts/agentera query experiments` is the read-only summary layer for rich experiments.yaml records. It must inspect the active objective directory only. The query never creates root objective artifacts, registries, symlinks, DOCS.md fixed mappings, or sidecar ledgers.
+`uv run ${AGENTERA_HOME:-.}/scripts/agentera experiments` is the read-only summary layer for rich experiments.yaml records. It must inspect the active objective directory only. The command never creates root objective artifacts, registries, symlinks, DOCS.md fixed mappings, or sidecar ledgers.
 
 ---
 
@@ -196,7 +196,7 @@ Run two things:
 **2a. Experiment history analysis**: if experiments.yaml has prior entries, run:
 
 ```bash
-uv run ${AGENTERA_HOME:-.}/scripts/agentera query experiments
+uv run ${AGENTERA_HOME:-.}/scripts/agentera experiments
 ```
 
 Outputs recent experiment status counts, metric deltas, conclusions, and next-step notes.
