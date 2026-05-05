@@ -149,7 +149,7 @@ Before proceeding, list the 3-5 facts that determine this cycle.
 
 Sweep checklist:
 
-1. **PROGRESS.md aggregate cycle entry**: append a cycle entry summarizing the whole plan.
+1. **PROGRESS.md aggregate cycle entry**: insert a newest-first cycle entry summarizing the whole plan.
 2. **CHANGELOG.md plan-level entries**: verify `## [Unreleased]` covers each completed task's user-facing impact.
 3. **TODO.md milestone advance**: mark each plan task as Resolved.
 4. **HEALTH.md cross-reference**: mention any resolved findings.
@@ -261,10 +261,10 @@ Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 **Dual-write**: realisera maintains the resolved PROGRESS.md YAML artifact and root CHANGELOG.md.
 
 - **TODO.md**: add newly discovered issues, mark resolved ones. Classify by severity (SI1-SI4).
-- **PROGRESS.md**: append the cycle entry. The `verified` field is mandatory.
+- **PROGRESS.md**: insert the newest cycle entry before older active cycles. The `verified` field is mandatory.
 - **CHANGELOG.md**: append a one-line entry under `## [Unreleased]`.
 
-After appending to PROGRESS.md, apply the schema COMPACTION rules before writing if thresholds are exceeded: keep 10 full entries, keep up to 40 one-line archive entries, and drop beyond 50 total.
+After writing PROGRESS.md, apply the schema COMPACTION rules if thresholds are exceeded: keep 10 full entries, keep up to 40 one-line archive entries, and drop beyond 50 total.
 
 Artifact writing follows contract Section 24 conventions.
 

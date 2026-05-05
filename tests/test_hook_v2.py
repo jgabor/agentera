@@ -163,6 +163,35 @@ class TestValidateYamlProgress:
         violations = hook._validate_yaml(content, schema, "progress")
         assert any("duplicate numbers" in v for v in violations)
 
+    def test_progress_cycles_are_newest_first(self, hook):
+        schema = _load_schema("progress")
+        content = yaml_dump({
+            "cycles": [
+                {"number": 2, "timestamp": "2026-05-04 11:00", "type": "fix",
+                 "phase": "verify", "what": "newer", "commit": "b",
+                 "context": {"intent": "w"}},
+                {"number": 1, "timestamp": "2026-05-04 10:00", "type": "feat",
+                 "phase": "build", "what": "older", "commit": "a",
+                 "context": {"intent": "y"}},
+            ]
+        })
+        assert hook._validate_yaml(content, schema, "progress") == []
+
+    def test_progress_cycles_reject_oldest_first(self, hook):
+        schema = _load_schema("progress")
+        content = yaml_dump({
+            "cycles": [
+                {"number": 1, "timestamp": "2026-05-04 10:00", "type": "feat",
+                 "phase": "build", "what": "older", "commit": "a",
+                 "context": {"intent": "y"}},
+                {"number": 2, "timestamp": "2026-05-04 11:00", "type": "fix",
+                 "phase": "verify", "what": "newer", "commit": "b",
+                 "context": {"intent": "w"}},
+            ]
+        })
+        violations = hook._validate_yaml(content, schema, "progress")
+        assert any("not in descending order" in v for v in violations)
+
     def test_invalid_yaml_syntax(self, hook):
         schema = _load_schema("progress")
         violations = hook._validate_yaml("{{{\n  invalid", schema, "progress")
@@ -454,12 +483,24 @@ class TestWordBudget:
         violations = hook._validate_yaml(content, schema, "vision")
         assert not any("budget" in v for v in violations)
 
-    def test_exceeds_budget(self, hook):
+    def test_advisory_budget_does_not_block(self, hook):
         schema = _load_schema("health")
         padding = " ".join(["word"] * 3000)
         content = yaml_dump({"header": {"last_audit": "2026-05-04 (test)"},
                              "data": padding})
         violations = hook._validate_yaml(content, schema, "health")
+        assert not any("budget" in v for v in violations)
+
+    def test_error_budget_blocks(self, hook):
+        schema = {
+            "BUDGET": {
+                1: {"scope": "full_file", "max_words": 1},
+            },
+            "VALIDATION": {
+                1: {"rule": "word_budget", "severity": "error"},
+            },
+        }
+        violations = hook._validate_yaml("field: too many words\n", schema, "test")
         assert any("budget" in v for v in violations)
 
 

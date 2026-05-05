@@ -272,12 +272,12 @@ VALIDATION:
     rule: unique_cycle_numbers
     severity: error
     description: >-
-      Active cycle entries must have unique numbers and remain ascending
-      by cycle number. Do not reuse or renumber except when repairing
-      artifact corruption.
+      Active cycle entries must have unique numbers and remain descending
+      by cycle number, newest first. Do not reuse or renumber except when
+      repairing artifact corruption.
     checks:
       - "All cycle numbers are unique across active and archived entries"
-      - "Active entries are in ascending order by cycle number"
+      - "Active entries are in descending order by cycle number"
   2:
     id: PV2
     rule: required_fields
