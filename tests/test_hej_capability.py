@@ -153,7 +153,11 @@ def test_upgrade_guard_includes_v1_detection_logic():
     for v1_artifact in ["PROGRESS.md", "PLAN.md", "DECISIONS.md", "HEALTH.md"]:
         assert v1_artifact in content, f"upgrade guard must reference v1 artifact {v1_artifact}"
 
-    assert "migrate_artifacts_v1_to_v2" in content, "upgrade guard must reference the migration command"
+    assert "agentera upgrade" in content, "upgrade guard must reference the upgrade command"
+    assert "uvx --from git+https://github.com/jgabor/agentera" in content, \
+        "upgrade guard must include the clone-free uvx path"
+    assert "--yes" in content and "confirmation" in content, \
+        "upgrade guard must require explicit confirmation before applying"
 
 
 def test_upgrade_guard_specifies_no_notice_when_no_v1():

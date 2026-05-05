@@ -100,6 +100,11 @@ def _discover_schemas_dir() -> Path:
         p = Path(env) / "skills" / "agentera" / "schemas" / "artifacts"
         if p.is_dir():
             return p
+    bootstrap = os.environ.get("AGENTERA_BOOTSTRAP_SOURCE_ROOT")
+    if bootstrap:
+        p = Path(bootstrap) / "skills" / "agentera" / "schemas" / "artifacts"
+        if p.is_dir():
+            return p
     return Path.cwd() / "skills" / "agentera" / "schemas" / "artifacts"
 
 
@@ -856,7 +861,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--install-root",
         type=Path,
         default=None,
-        help="Agentera install root to wire into runtime configs (default: this bundle)",
+        help="Agentera install root to wire into runtime configs (default: this bundle, or ~/.agents/agentera for packaged uvx runs)",
     )
     u.add_argument(
         "--home",
@@ -873,7 +878,7 @@ def build_parser() -> argparse.ArgumentParser:
     u.add_argument(
         "--only",
         action="append",
-        choices=["artifacts", "runtime", "cleanup", "packages"],
+        choices=["bundle", "artifacts", "runtime", "cleanup", "packages"],
         help="Upgrade phase to include; may be repeated (default: all phases)",
     )
     u.add_argument(

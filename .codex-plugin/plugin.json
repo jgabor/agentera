@@ -55,7 +55,9 @@
       "hooks",
       "registry.json",
       "plugin.json",
-      "README.md"
+      "README.md",
+      "UPGRADE.md",
+      "pyproject.toml"
     ],
     "singleSkillInstall": "Single-skill installs keep core SKILL.md workflow behavior; suite tools are bundle-only enhancements."
   },

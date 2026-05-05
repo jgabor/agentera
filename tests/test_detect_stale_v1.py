@@ -189,6 +189,25 @@ class TestOpenCodeCommands:
         assert findings[0].kind == "stale_command"
         assert "hej.md" in findings[0].path
 
+    def test_fail_managed_v1_command_detected_without_path_reference(self, detect, fake_home):
+        env = _make_env(fake_home)
+        commands_dir = Path(env["OPENCODE_CONFIG_DIR"]) / "commands"
+        commands_dir.mkdir(parents=True)
+        (commands_dir / "planera.md").write_text(
+            "---\n"
+            "description: \"Scale-adaptive planning with acceptance criteria\"\n"
+            "agentera_managed: true\n"
+            "---\n"
+            "Load and execute the planera skill for this project.\n",
+            encoding="utf-8",
+        )
+
+        findings = detect.detect_opencode_stale_commands(fake_home, env)
+
+        assert len(findings) == 1
+        assert findings[0].kind == "stale_command"
+        assert "managed command targets removed v1 skill 'planera'" in findings[0].detail
+
     def test_multiple_stale_commands(self, detect, fake_home):
         _create_stale_command(fake_home, "hej")
         _create_stale_command(

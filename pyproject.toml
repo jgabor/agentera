@@ -1,0 +1,61 @@
+[build-system]
+requires = ["hatchling>=1.29"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agentera"
+version = "2.0.0"
+description = "Agentera bundled skill protocol and clone-free upgrade CLI"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [
+  { name = "jgabor" },
+]
+dependencies = [
+  "pyyaml",
+]
+
+[project.urls]
+Homepage = "https://github.com/jgabor/agentera"
+Repository = "https://github.com/jgabor/agentera"
+
+[project.scripts]
+agentera = "agentera_cli:main"
+
+[tool.hatch.build]
+exclude = [
+  "**/__pycache__",
+  "**/*.pyc",
+  "**/*.pyo",
+  ".agentera",
+  ".git",
+  ".pytest_cache",
+  ".opencode/node_modules",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agentera_cli"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"skills" = "agentera_cli/bundle/skills"
+"scripts" = "agentera_cli/bundle/scripts"
+"hooks" = "agentera_cli/bundle/hooks"
+"references" = "agentera_cli/bundle/references"
+"agents" = "agentera_cli/bundle/agents"
+".agents/plugins" = "agentera_cli/bundle/.agents/plugins"
+".codex-plugin" = "agentera_cli/bundle/.codex-plugin"
+".claude-plugin" = "agentera_cli/bundle/.claude-plugin"
+".github/hooks" = "agentera_cli/bundle/.github/hooks"
+".github/plugin" = "agentera_cli/bundle/.github/plugin"
+".opencode/commands" = "agentera_cli/bundle/.opencode/commands"
+".opencode/plugins" = "agentera_cli/bundle/.opencode/plugins"
+".opencode/package.json" = "agentera_cli/bundle/.opencode/package.json"
+"README.md" = "agentera_cli/bundle/README.md"
+"UPGRADE.md" = "agentera_cli/bundle/UPGRADE.md"
+"CHANGELOG.md" = "agentera_cli/bundle/CHANGELOG.md"
+"DESIGN.md" = "agentera_cli/bundle/DESIGN.md"
+"LICENSE" = "agentera_cli/bundle/LICENSE"
+"pyproject.toml" = "agentera_cli/bundle/pyproject.toml"
+"registry.json" = "agentera_cli/bundle/registry.json"
+"plugin.json" = "agentera_cli/bundle/plugin.json"

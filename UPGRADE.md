@@ -4,10 +4,45 @@
 
 - **12 standalone skills -> 1 bundled skill** with 12 capabilities under `skills/agentera/`
 - **Artifact format**: Markdown -> YAML for agent-facing `.agentera/` files
-- **Upgrade CLI**: `uv run scripts/agentera upgrade`
+- **Upgrade CLI**: `uvx --from git+https://github.com/jgabor/agentera agentera upgrade` or `uv run scripts/agentera upgrade` from a clone
 - **Query CLI**: `uv run scripts/agentera query <artifact-name>`
 
 ## Recommended upgrade
+
+### Clone-free installs
+
+Use this path if you installed Agentera through `npx skills`, the Copilot
+marketplace, the Codex marketplace, or the OpenCode plugin and do not have a
+local clone.
+
+Preview first. This writes nothing and exits non-zero when pending work exists:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /path/to/project --dry-run
+```
+
+Apply local, idempotent upgrade actions:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /path/to/project --yes
+```
+
+When the Python package is published, the shorter command is equivalent:
+
+```bash
+uvx agentera upgrade --project /path/to/project --dry-run
+uvx agentera upgrade --project /path/to/project --yes
+```
+
+The clone-free command installs or refreshes a durable Agentera bundle at
+`~/.agents/agentera` before it wires runtime config. Runtime config should not
+point at uv's disposable tool cache.
+
+`npx skills update` alone refreshes skill files but does not migrate project
+artifacts or runtime config. The bundled `/agentera` skill should detect v1
+artifacts, preview the command above, and ask before running the `--yes` apply.
+
+### Local clone
 
 Preview first. This writes nothing and exits non-zero when pending work exists:
 
@@ -21,7 +56,10 @@ Apply local, idempotent upgrade actions:
 uv run scripts/agentera upgrade --project /path/to/project --yes
 ```
 
-The command migrates v1 project artifacts, configures selected runtime surfaces, removes fixable stale v1 runtime artifacts, and runs a postflight setup doctor. Re-running it after a successful apply should report `noop`.
+The command migrates v1 project artifacts, installs or refreshes the durable
+bundle when needed, configures selected runtime surfaces, removes fixable stale
+v1 runtime artifacts, and runs a postflight setup doctor. Re-running it after a
+successful apply should report `noop`.
 
 External package updates are deliberately opt-in because they run `npx` and may touch global runtime installs:
 
@@ -78,7 +116,7 @@ uv run scripts/agentera upgrade --only packages --runtime opencode --yes --updat
 |---|---|---|
 | Entry point | 12 separate `SKILL.md` files | `skills/agentera/SKILL.md` |
 | Artifact format | Markdown | YAML |
-| Upgrade path | Manual helper scripts | `uv run scripts/agentera upgrade` |
+| Upgrade path | Manual helper scripts | `uvx --from git+https://github.com/jgabor/agentera agentera upgrade` or `uv run scripts/agentera upgrade` |
 | Query CLI | none | `uv run scripts/agentera query <artifact-name>` |
 | Validation | per-skill | `uv run scripts/validate_capability.py skills/agentera/capabilities/<name>` |
 | Shared primitives | `SPEC.md` | `skills/agentera/protocol.yaml` |

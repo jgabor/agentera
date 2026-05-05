@@ -14,7 +14,7 @@ export const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g
 
 export const COMMAND_TEMPLATES = {
   "agentera": `---
-description: "Compound agent orchestration suite — 12 capabilities in one bundled skill"
+description: "Compound agent orchestration suite: 12 capabilities in one bundled skill"
 agentera_managed: true
 ---
 Load and execute the agentera bundled skill for this project.

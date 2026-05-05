@@ -59,6 +59,111 @@ def test_upgrade_help_lists_subcommand() -> None:
     assert "upgrade" in result.stdout
 
 
+def test_bundle_upgrade_installs_durable_bundle_from_packaged_source(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    install_root = home / ".agents" / "agentera"
+
+    first = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+        env={
+            "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
+            "AGENTERA_DEFAULT_INSTALL_ROOT": str(install_root),
+        },
+    )
+
+    assert first.returncode == 0, first.stderr
+    payload = json.loads(first.stdout)
+    assert payload["status"] == "applied"
+    assert payload["sourceRoot"] == str(REPO_ROOT)
+    assert payload["installRoot"] == str(install_root)
+    assert (install_root / ".agentera-bundle.json").is_file()
+    assert (install_root / "scripts" / "agentera").is_file()
+    assert (install_root / "skills" / "agentera" / "SKILL.md").is_file()
+    assert (install_root / ".opencode" / "commands" / "agentera.md").is_file()
+
+    second = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+        env={
+            "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
+            "AGENTERA_DEFAULT_INSTALL_ROOT": str(install_root),
+        },
+    )
+
+    assert second.returncode == 0, second.stderr
+    payload = json.loads(second.stdout)
+    assert payload["status"] == "noop"
+    assert payload["phases"][0]["status"] == "noop"
+
+
+def test_packaged_runtime_upgrade_wires_durable_bundle_not_uvx_cache(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    install_root = home / ".agents" / "agentera"
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--only",
+        "runtime",
+        "--runtime",
+        "codex",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+        env={
+            "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
+            "AGENTERA_DEFAULT_INSTALL_ROOT": str(install_root),
+        },
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["summary"]["applied"] == 3
+    config = (home / ".codex" / "config.toml").read_text(encoding="utf-8")
+    assert f'AGENTERA_HOME = "{install_root}"' in config
+    assert f'AGENTERA_HOME = "{REPO_ROOT}"' not in config
+    assert (home / ".codex" / "hooks.json").is_file()
+
+
+def test_packaged_runtime_upgrade_blocks_without_bundle_phase(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    install_root = home / ".agents" / "agentera"
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "runtime",
+        "--runtime",
+        "codex",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+        env={
+            "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
+            "AGENTERA_DEFAULT_INSTALL_ROOT": str(install_root),
+        },
+    )
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert payload["phases"][0]["status"] == "blocked"
+    assert not (home / ".codex" / "config.toml").exists()
+
+
 def test_artifact_upgrade_dry_run_json_writes_nothing(tmp_path: Path) -> None:
     project = tmp_path / "project"
     source = _write_v1_progress(project)

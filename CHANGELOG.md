@@ -8,6 +8,7 @@
 - Decision 42 five-layer dispatch model implemented in SKILL.md: bare `/agentera` delegates to hej, capability names bypass NL matching, trigger schemas gain priority fields (high/medium/low), disambiguation prompt specified for borderline matches.
 - Comprehensive gap analysis document (`.agentera/gap-analysis-2026-05-05.md`) auditing ROADMAP.md and Decisions 39-42 against actual implementation.
 - `agentera upgrade` CLI for idempotent v1-to-v2 upgrades: artifact migration, runtime config wiring, stale v1 cleanup, package-update opt-in, JSON output, and setup-doctor postflight.
+- `pyproject.toml` package entry point for clone-free upgrade runs via `uvx`; packaged upgrades install or refresh a durable bundle at `~/.agents/agentera` before wiring runtime config.
 - `scripts/smoke_live_hosts.py --live --yes` now includes OpenCode live AGENTERA_HOME/query coverage via isolated `opencode run --pure`, while keeping Claude Code live smoke explicitly deferred.
 - Decision 41 release scope updated: the Agentera 2.0 static dispatch payload target is revised to -10%, with the measured -9.8% accepted as close enough for v2.0 and further optimization deferred to future versions.
 
@@ -15,6 +16,7 @@
 
 - Root Python scripts and hooks now use `uv run --script` shebangs with PEP 723 metadata, lifecycle validation covers `scripts/` and `hooks/` entrypoints, and CI/Lefthook/docs invoke current v2 validators through `uv run`.
 - Codex setup no longer writes v1 per-skill `[agents.<name>]` blocks; `--enable-agents` is a compatibility no-op, and Codex UI metadata now points at the single `skills/agentera` bundle.
+- OpenCode setup doctor and checked-in managed command fixtures now use the single `agentera` bundled skill path instead of the removed 12 v1 command/skill paths.
 - feat/v2 merged to main via fast-forward after validation (507 tests pass, 0 failures; all 12 capabilities pass contract validation; version surfaces at 2.0.0).
 - All 12 capability `triggers.yaml` schemas updated with `priority` field for confidence-based routing.
 - Claude Code live model-host smoke is excluded from the required v2.0 release harness until Claude Pro/Max or API access is available; future Claude live smoke should be explicit opt-in.
