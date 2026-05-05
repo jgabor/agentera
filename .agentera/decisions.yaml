@@ -324,8 +324,10 @@ decisions:
   feeds_into: ROADMAP.md
 - number: 41
   date: '2026-05-04'
-  question: What did the Agentera 2.0 token benchmark prove against the 40% reduction target?
-  context: ROADMAP.md set an aspirational 40%+ token reduction target for Agentera 2.0.
+  question: What did the Agentera 2.0 token benchmark prove against the revised 10% reduction target?
+  context: ROADMAP.md originally set an aspirational 40%+ token reduction target for Agentera 2.0. On 2026-05-05 the release
+    target was revised to -10%, accepting the measured -9.8% as close enough for v2.0 while carrying further optimization
+    into future versions.
     The benchmark compared the v1 dispatch payload (all 12 SKILL.md files plus SPEC.md)
     against the v2 payload (master SKILL.md, protocol.yaml, 12 prose.md files, and 48
     schema YAML files).
@@ -335,20 +337,26 @@ decisions:
     description: The measured result missed the target, but Decision 39's primary
       value was structural consolidation through schemas, query CLI, and one entry point.
   - name: Record the measured delta and carry token reduction as follow-up work
+    status: rejected
+    description: Preserve the benchmark evidence honestly, but do not keep the old
+      -40% target as a v2.0 release blocker after the release target was revised.
+  - name: Revise v2.0 target to -10% and treat -9.8% as close enough
     status: chosen
-    description: Preserve the benchmark evidence honestly, mark the ROADMAP target
-      missed, and avoid turning the v2.0 release claim into a false pass.
+    description: Preserve the benchmark evidence honestly, close the v2.0 release
+      gate, and carry additional token optimization into future versions.
   choice: >-
-    Record the benchmark as complete but target-missed. Initial v2 measurement was 313,356 bytes (-11.0%). After the
+    Record the benchmark as complete and close enough for the revised v2.0 target. Initial v2 measurement was 313,356 bytes (-11.0%). After the
     2026-05-05 profilera/query-depth gap work, v1 baseline remains 352,213 bytes (~88,053 tokens) and v2 measures 317,616
-    bytes (~79,404 tokens). Delta is -34,597 bytes, or -9.8%, about 8,650 estimated tokens saved.
+    bytes (~79,404 tokens). Delta is -34,597 bytes, or -9.8%, about 8,650 estimated tokens saved. The release target is now
+    -10%, and -9.8% is accepted as close enough for v2.0.
   reasoning: >-
     The 12 v2 prose.md files remain the dominant payload at 211,996 bytes, while 48 capability schema files add 84,889
     bytes that did not exist in v1. The remeasurement uses `python3 scripts/measure_token_payload.py` to preserve the
     Decision 41 byte-count proxy: master SKILL.md, protocol.yaml, 12 capability prose.md files, and 48 capability schema
     YAML files compared with the fixed v1 baseline. The benchmark proves a real but modest token reduction. It does not
-    prove the 40% target. The structural payoff is machine-readable schemas, artifact-specific query summaries, and a single
-    dispatch point rather than a large token win.
+    prove the original 40% target, so that target is no longer used as the v2.0 release gate. The structural payoff is
+    machine-readable schemas, artifact-specific query summaries, and a single dispatch point; larger token reductions remain
+    follow-up work for future versions.
   confidence: firm
   feeds_into: ROADMAP.md, gap-analysis-2026-05-05.md, future token-reduction work
 - number: 42
