@@ -169,13 +169,32 @@ uv run scripts/setup_doctor.py --install --yes --runtime codex
 uv run scripts/setup_doctor.py --install --yes --runtime copilot
 ```
 
-For existing v1 installs, use the idempotent upgrade command. It previews by
-default and applies only with `--yes`:
+For existing v1 installs, use the idempotent upgrade command. If you installed
+with `npx skills`, Copilot marketplace, Codex plugin marketplace, or the
+OpenCode plugin and never cloned this repo, use the clone-free `uvx` form:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /path/to/project --dry-run
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /path/to/project --yes
+```
+
+When the Python package is published, the shorter `uvx agentera ...` form will
+run the same CLI.
+
+If you are already in a local Agentera checkout, the equivalent local command is:
 
 ```bash
 uv run scripts/agentera upgrade --project /path/to/project --dry-run
 uv run scripts/agentera upgrade --project /path/to/project --yes
 ```
+
+The `uvx` path first installs or refreshes a durable Agentera bundle at
+`~/.agents/agentera`, then wires runtime config to that stable location. It
+does not apply changes unless `--yes` is present.
+
+Running `npx skills update` by itself only refreshes skill files. When the
+bundled `/agentera` skill detects v1 artifacts, it should preview this upgrade
+command and ask before applying it.
 
 ## Why it works
 

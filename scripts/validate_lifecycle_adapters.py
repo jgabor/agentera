@@ -60,6 +60,7 @@ SUITE_BUNDLE_REQUIRED_PATHS = {
     "hooks": "dir",
     "registry.json": "file",
     "plugin.json": "file",
+    "pyproject.toml": "file",
     "README.md": "file",
 }
 UV_SCRIPT_SHEBANG = "#!/usr/bin/env -S uv run --script"

@@ -257,15 +257,14 @@ def test_setup_doctor_reports_opencode_command_drift_without_writing(tmp_path: P
     _write_opencode_skill_sources(root, doctor)
     _write_current_opencode_state(home, root, doctor)
     commands = home / ".config" / "opencode" / "commands"
-    stale = commands / "optimera.md"
+    stale = commands / "agentera.md"
     stale.write_text(
-        doctor._opencode_command_template("optimera").replace(
-            "Metric-driven optimization through experimentation",
+        doctor._opencode_command_template("agentera").replace(
+            "Compound agent orchestration suite",
             "stale command description",
         ),
         encoding="utf-8",
     )
-    (commands / "hej.md").unlink()
     before = sorted(path.relative_to(home) for path in home.rglob("*"))
 
     report = doctor.build_report(
@@ -281,8 +280,7 @@ def test_setup_doctor_reports_opencode_command_drift_without_writing(tmp_path: P
     assert checks["opencode_managed_commands"]["status"] == "warn"
     assert checks["opencode_skill_paths"]["status"] == "pass"
     assert checks["bundled_support_references"]["status"] == "pass"
-    assert "missing: hej" in checks["opencode_managed_commands"]["details"]
-    assert "stale: optimera" in checks["opencode_managed_commands"]["details"]
+    assert "stale: agentera" in checks["opencode_managed_commands"]["details"]
 
 
 def test_setup_doctor_reports_opencode_skill_path_drift_without_writing(tmp_path: Path) -> None:
@@ -293,9 +291,9 @@ def test_setup_doctor_reports_opencode_skill_path_drift_without_writing(tmp_path
     _write_opencode_skill_sources(root, doctor)
     _write_current_opencode_state(home, root, doctor)
     skills = home / ".config" / "opencode" / "skills"
-    broken = skills / "realisera"
+    broken = skills / "agentera"
     broken.unlink()
-    os.symlink(tmp_path / "missing-agentera-cache" / "skills" / "realisera", broken, target_is_directory=True)
+    os.symlink(tmp_path / "missing-agentera-cache" / "skills" / "agentera", broken, target_is_directory=True)
     link_before = os.readlink(broken)
 
     report = doctor.build_report(
@@ -311,7 +309,7 @@ def test_setup_doctor_reports_opencode_skill_path_drift_without_writing(tmp_path
     assert checks["opencode_managed_commands"]["status"] == "pass"
     assert checks["opencode_skill_paths"]["status"] == "warn"
     assert checks["bundled_support_references"]["status"] == "pass"
-    assert "broken: realisera" in checks["opencode_skill_paths"]["details"]
+    assert "broken: agentera" in checks["opencode_skill_paths"]["details"]
 
 
 def test_setup_doctor_reports_bundled_reference_validation_drift_separately(tmp_path: Path) -> None:
@@ -320,9 +318,9 @@ def test_setup_doctor_reports_bundled_reference_validation_drift_separately(tmp_
     home = tmp_path / "home"
     _write_install_root(root, doctor)
     _write_opencode_skill_sources(root, doctor)
-    skill = root / "skills" / "realisera" / "SKILL.md"
+    skill = root / "skills" / "agentera" / "SKILL.md"
     skill.write_text(
-        "---\nname: realisera\n---\nUses references/missing.md during setup.\n",
+        "---\nname: agentera\n---\nUses references/missing.md during setup.\n",
         encoding="utf-8",
     )
     _write_current_opencode_state(home, root, doctor)
@@ -340,7 +338,7 @@ def test_setup_doctor_reports_bundled_reference_validation_drift_separately(tmp_
     assert checks["opencode_skill_paths"]["status"] == "pass"
     assert checks["bundled_support_references"]["status"] == "warn"
     assert checks["bundled_support_references"]["gap"] == "validation_drift"
-    assert "realisera: references/missing.md" in checks["bundled_support_references"]["details"]
+    assert "agentera: references/missing.md" in checks["bundled_support_references"]["details"]
 
 
 def test_setup_doctor_smoke_proves_helpers_hooks_and_host_status_without_live_calls(

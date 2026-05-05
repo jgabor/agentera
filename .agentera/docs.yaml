@@ -5,6 +5,7 @@ conventions:
   auto_gen:
   - none
   version_files:
+  - pyproject.toml
   - plugin.json
   - .github/plugin/plugin.json
   - .codex-plugin/plugin.json
@@ -69,6 +70,10 @@ mapping:
 index:
 - document: README
   path: README.md
+  last_updated: '2026-05-05'
+  status: current
+- document: Python package manifest
+  path: pyproject.toml
   last_updated: '2026-05-05'
   status: current
 - document: Upgrade guide

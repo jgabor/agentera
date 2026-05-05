@@ -11,6 +11,7 @@ import importlib.util
 import json
 import os
 import re
+import tomllib
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -309,6 +310,9 @@ def _validate_package_versions(root: Path = REPO_ROOT) -> list[str]:
     suite_version = registry_versions.pop()
 
     surfaces = {
+        "pyproject.toml": tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+        .get("project", {})
+        .get("version"),
         "plugin.json": _load_json(root / "plugin.json").get("version"),
         ".github/plugin/plugin.json": _load_json(root / ".github/plugin/plugin.json").get("version"),
         ".codex-plugin/plugin.json": _load_json(root / ".codex-plugin/plugin.json").get("version"),
@@ -934,6 +938,7 @@ class TestLegacyRuntimeCompatibility:
         (root / "registry.json").write_text(
             json.dumps({"skills": [{"name": "agentera", "version": "1.27.0"}]}), encoding="utf-8"
         )
+        (root / "pyproject.toml").write_text('[project]\nversion = "1.27.0"\n', encoding="utf-8")
         (root / "plugin.json").write_text(json.dumps({"version": "1.27.0"}), encoding="utf-8")
         (root / ".github/plugin/plugin.json").write_text(json.dumps({"version": "1.27.0"}), encoding="utf-8")
         (root / ".codex-plugin/plugin.json").write_text(json.dumps({"version": "0.0.0"}), encoding="utf-8")

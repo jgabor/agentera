@@ -68,6 +68,17 @@ class Finding(NamedTuple):
     detail: str
 
 
+def _has_agentera_managed_marker(text: str) -> bool:
+    lines = text.split("\n")
+    if not lines or lines[0] != "---":
+        return False
+    try:
+        closing = lines.index("---", 1)
+    except ValueError:
+        return False
+    return any(line.strip() == "agentera_managed: true" for line in lines[1:closing])
+
+
 def _home_dir(env: dict[str, str] | None = None) -> Path:
     source = env or os.environ
     return Path(source.get("HOME", Path.home())).expanduser().resolve()
@@ -139,6 +150,14 @@ def detect_opencode_stale_commands(
                 kind="stale_command",
                 path=str(entry),
                 detail=f"references removed v1 skill path containing '{match.group(0)}'",
+            ))
+            continue
+        if entry.stem in V1_SKILL_NAMES and _has_agentera_managed_marker(text):
+            findings.append(Finding(
+                surface="opencode",
+                kind="stale_command",
+                path=str(entry),
+                detail=f"managed command targets removed v1 skill '{entry.stem}'",
             ))
 
     return findings

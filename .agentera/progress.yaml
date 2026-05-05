@@ -1,4 +1,32 @@
 cycles:
+- number: 262
+  timestamp: 2026-05-05 11:59
+  type: feat
+  phase: verify
+  what: Added a clone-free `uvx` upgrade path by packaging the `agentera` CLI, adding a durable bundle install phase to
+    `agentera upgrade`, and teaching SKILL/hej upgrade guidance to preview before applying. Packaged runs now install or
+    refresh `~/.agents/agentera` before runtime config writes, avoiding uv tool-cache paths in AGENTERA_HOME. OpenCode
+    doctor and managed command fixtures now validate the single bundled `agentera` skill instead of removed v1 commands.
+  commit: this commit
+  inspiration: User request to make SKILL.md able to detect and upgrade on the user's behalf, preferably through a uvx-runnable CLI.
+  discovered: A raw `uvx` entry point would otherwise wire runtime config to uv's disposable tool cache, so packaged upgrades
+    needed a durable bundle bootstrap step before Codex/Copilot/OpenCode config writes. The setup doctor also still checked
+    OpenCode's old 12 v1 skill paths.
+  verified: 'Validation passed: uv run --with pytest --with pyyaml pytest -q (535 passed, 1 skipped); uvx --from . agentera upgrade --only bundle --home <tmp> --yes --json; PYTHONPATH=src
+    python -m agentera_cli --help; uvx --from . agentera --help; uv run scripts/validate_lifecycle_adapters.py --check-uv-runtime;
+    node --check .opencode/plugins/agentera.js; node scripts/smoke_opencode_bootstrap.mjs; uv run --with pytest --with pyyaml
+    pytest -q tests/test_upgrade_cli.py tests/test_packaged_cli.py tests/test_setup_doctor.py tests/test_detect_stale_v1.py
+    tests/test_hej_capability.py tests/test_runtime_adapters.py (112 passed); uv run scripts/validate_cross_capability.py;
+    uv run scripts/agentera query last-phase; uv run scripts/agentera query progress --limit 1; HOME=<tmp> OPENCODE_CONFIG_DIR=<tmp>/opencode
+    uv run scripts/detect_stale_v1; uv run scripts/agentera upgrade --only cleanup --dry-run --json (current host reports
+    12 pending managed OpenCode v1 command removals, not applied); git diff --check.'
+  next: Commit if accepted; do not tag or push v2.0.0 until explicitly approved.
+  context:
+    intent: close the non-clone upgrade gap for users who installed with npx skills or runtime marketplaces
+    constraints: no Agentera skill loading during review; package updates and applying upgrade changes remain explicit opt-in
+    unknowns: PyPI publication remains a release/distribution decision, and applying cleanup to the current user's OpenCode
+      command directory remains an explicit `--yes` action
+    scope: Agentera package entry point, upgrade CLI, SKILL/hej guidance, OpenCode doctor/commands, docs, tests, and release-state artifacts
 - number: 261
   timestamp: 2026-05-05 10:51
   type: feat

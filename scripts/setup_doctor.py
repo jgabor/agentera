@@ -46,32 +46,10 @@ RUNTIME_BINARIES = {
 }
 OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode -y"
 OPENCODE_SKILL_NAMES = (
-    "hej",
-    "visionera",
-    "resonera",
-    "inspirera",
-    "planera",
-    "realisera",
-    "optimera",
-    "inspektera",
-    "dokumentera",
-    "profilera",
-    "visualisera",
-    "orkestrera",
+    "agentera",
 )
 OPENCODE_COMMAND_DESCRIPTIONS = {
-    "hej": "Session entry point: briefing, status, and routing",
-    "visionera": "Create or refine the project vision",
-    "resonera": "Structured deliberation through Socratic questioning",
-    "inspirera": "Analyze external sources and map patterns to this project",
-    "planera": "Scale-adaptive planning with acceptance criteria",
-    "realisera": "Run one autonomous development cycle",
-    "optimera": "Metric-driven optimization through experimentation",
-    "inspektera": "Codebase health audit with grades and findings",
-    "dokumentera": "Documentation creation, maintenance, and audit",
-    "profilera": "Mine session history into a decision profile",
-    "visualisera": "Visual identity system creation and audit",
-    "orkestrera": "Multi-cycle plan execution with evaluation gating",
+    "agentera": "Compound agent orchestration suite: 12 capabilities in one bundled skill",
 }
 CANONICAL_ENTRIES = (
     "scripts/validate_capability.py",

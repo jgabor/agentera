@@ -27,13 +27,43 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
+BOOTSTRAP_SOURCE_ROOT_ENV = "AGENTERA_BOOTSTRAP_SOURCE_ROOT"
+DEFAULT_INSTALL_ROOT_ENV = "AGENTERA_DEFAULT_INSTALL_ROOT"
+BUNDLE_MARKER = ".agentera-bundle.json"
 RUNTIMES = ("claude", "opencode", "copilot", "codex")
-PHASES = ("artifacts", "runtime", "cleanup", "packages")
+PHASES = ("bundle", "artifacts", "runtime", "cleanup", "packages")
 STATUSES = ("pending", "applied", "noop", "blocked", "failed", "skipped")
 PACKAGE_COMMANDS = {
     "claude": ["npx", "skills", "update", "-g", "-a", "claude-code", "--skill", "*", "-y"],
     "opencode": ["npx", "skills", "update", "-g", "-a", "opencode", "-y"],
 }
+BUNDLE_DIRECTORIES = (
+    "skills",
+    "scripts",
+    "hooks",
+    "references",
+    "agents",
+    ".agents/plugins",
+    ".codex-plugin",
+    ".claude-plugin",
+    ".github/hooks",
+    ".github/plugin",
+    ".opencode/commands",
+    ".opencode/plugins",
+)
+BUNDLE_FILES = (
+    "README.md",
+    "UPGRADE.md",
+    "CHANGELOG.md",
+    "DESIGN.md",
+    "LICENSE",
+    "pyproject.toml",
+    "registry.json",
+    "plugin.json",
+    ".opencode/package.json",
+)
+BUNDLE_SKIP_PARTS = {"__pycache__", ".pytest_cache", "node_modules"}
+BUNDLE_SKIP_SUFFIXES = {".pyc", ".pyo"}
 
 
 def _load_script_module(name: str, path: Path) -> ModuleType:
@@ -88,6 +118,174 @@ def _sha256(path: Path) -> str | None:
         for chunk in iter(lambda: handle.read(65536), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _install_root_missing(root: Path) -> list[str]:
+    return [
+        entry
+        for entry in ("scripts/agentera", "hooks", "skills", "skills/agentera/SKILL.md")
+        if not (root / entry).exists()
+    ]
+
+
+def _valid_install_root(root: Path) -> bool:
+    return not _install_root_missing(root)
+
+
+def _load_suite_version(source_root: Path) -> str | None:
+    registry = source_root / "registry.json"
+    if not registry.is_file():
+        return None
+    try:
+        data = json.loads(registry.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    skills = data.get("skills")
+    if not isinstance(skills, list) or not skills:
+        return None
+    first = skills[0]
+    version = first.get("version") if isinstance(first, dict) else None
+    return version if isinstance(version, str) and version else None
+
+
+def _bundle_marker_path(install_root: Path) -> Path:
+    return install_root / BUNDLE_MARKER
+
+
+def _install_root_looks_managed(install_root: Path) -> bool:
+    if _bundle_marker_path(install_root).is_file():
+        return True
+    return (
+        (install_root / "skills" / "agentera" / "SKILL.md").is_file()
+        and (install_root / "registry.json").is_file()
+    )
+
+
+def _skip_bundle_path(path: Path) -> bool:
+    return any(part in BUNDLE_SKIP_PARTS for part in path.parts) or path.suffix in BUNDLE_SKIP_SUFFIXES
+
+
+def _bundle_rel_paths(source_root: Path) -> list[Path]:
+    paths: set[Path] = set()
+    for directory in BUNDLE_DIRECTORIES:
+        root = source_root / directory
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*"):
+            if path.is_file() and not _skip_bundle_path(path):
+                paths.add(path.relative_to(source_root))
+    for filename in BUNDLE_FILES:
+        path = source_root / filename
+        if path.is_file() and not _skip_bundle_path(path):
+            paths.add(path.relative_to(source_root))
+    return sorted(paths)
+
+
+def _copy_bundle_file(source_root: Path, install_root: Path, rel_path: Path) -> None:
+    source = source_root / rel_path
+    target = install_root / rel_path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, target)
+
+
+def plan_bundle_phase(source_root: Path, install_root: Path, *, force: bool) -> dict[str, Any]:
+    if source_root == install_root:
+        return _phase(
+            "bundle",
+            [{
+                "status": "noop",
+                "action": "install-bundle",
+                "source": str(source_root),
+                "target": str(install_root),
+                "message": "running from the selected Agentera install root",
+            }],
+        )
+
+    source_missing = _install_root_missing(source_root)
+    if source_missing:
+        return _phase(
+            "bundle",
+            [{
+                "status": "blocked",
+                "action": "install-bundle",
+                "source": str(source_root),
+                "target": str(install_root),
+                "message": f"bootstrap source is missing: {', '.join(source_missing)}",
+            }],
+        )
+
+    if install_root.exists() and not _install_root_looks_managed(install_root) and not force:
+        return _phase(
+            "bundle",
+            [{
+                "status": "blocked",
+                "action": "install-bundle",
+                "source": str(source_root),
+                "target": str(install_root),
+                "message": "target exists but is not an Agentera-managed bundle; use --force or --install-root",
+            }],
+        )
+
+    changed: list[str] = []
+    for rel_path in _bundle_rel_paths(source_root):
+        source = source_root / rel_path
+        target = install_root / rel_path
+        if _sha256(source) != _sha256(target):
+            changed.append(str(rel_path))
+
+    marker_missing = not _bundle_marker_path(install_root).is_file()
+    if not changed and not marker_missing:
+        status = "noop"
+        message = "durable Agentera bundle already matches source"
+    else:
+        status = "pending"
+        message = "will install or refresh the durable Agentera bundle"
+
+    return _phase(
+        "bundle",
+        [{
+            "status": status,
+            "action": "install-bundle",
+            "source": str(source_root),
+            "target": str(install_root),
+            "fileCount": len(_bundle_rel_paths(source_root)),
+            "changedCount": len(changed),
+            "changedPreview": changed[:20],
+            "marker": str(_bundle_marker_path(install_root)),
+            "message": message,
+        }],
+    )
+
+
+def apply_bundle_phase(phase: dict[str, Any], source_root: Path, install_root: Path, *, force: bool) -> None:
+    for item in phase["items"]:
+        if item["status"] != "pending":
+            continue
+        try:
+            if install_root.exists() and not _install_root_looks_managed(install_root) and not force:
+                item["status"] = "blocked"
+                item["message"] = "target exists but is not an Agentera-managed bundle"
+                continue
+            rel_paths = _bundle_rel_paths(source_root)
+            for rel_path in rel_paths:
+                _copy_bundle_file(source_root, install_root, rel_path)
+            marker = {
+                "schemaVersion": "agentera.bundle.v1",
+                "version": _load_suite_version(source_root),
+                "source": str(source_root),
+                "fileCount": len(rel_paths),
+            }
+            _bundle_marker_path(install_root).write_text(
+                json.dumps(marker, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+        except Exception as exc:  # noqa: BLE001
+            item["status"] = "failed"
+            item["message"] = f"bundle install failed: {exc}"
+            continue
+        item["status"] = "applied"
+        item["message"] = "durable Agentera bundle installed"
+    phase.update(_phase("bundle", phase["items"], message=phase.get("message", "")))
 
 
 def _phase(name: str, items: list[dict[str, Any]], *, message: str = "") -> dict[str, Any]:
@@ -342,6 +540,7 @@ def _plan_copilot_config(install_root: Path, home: Path, env: dict[str, str], rc
 
 def plan_runtime_phase(
     install_root: Path,
+    runtime_source_root: Path,
     home: Path,
     env: dict[str, str],
     runtimes: set[str],
@@ -354,7 +553,7 @@ def plan_runtime_phase(
         items.append(_plan_codex_config(install_root, home, force=force))
         items.append(_copy_item(
             "codex",
-            install_root / "hooks" / "codex-hooks.json",
+            runtime_source_root / "hooks" / "codex-hooks.json",
             home / ".codex" / "hooks.json",
             force=force,
             action="copy-hooks",
@@ -364,7 +563,7 @@ def plan_runtime_phase(
     if "opencode" in runtimes:
         items.append(_copy_item(
             "opencode",
-            install_root / ".opencode" / "plugins" / "agentera.js",
+            runtime_source_root / ".opencode" / "plugins" / "agentera.js",
             _opencode_config_dir(home, env) / "plugins" / "agentera.js",
             force=force,
             action="copy-plugin",
@@ -397,6 +596,14 @@ def apply_runtime_phase(phase: dict[str, Any]) -> None:
             continue
         item["status"] = "applied"
         item["message"] = "runtime update applied"
+    phase.update(_phase("runtime", phase["items"]))
+
+
+def block_runtime_phase(phase: dict[str, Any], message: str) -> None:
+    for item in phase["items"]:
+        if item["status"] == "pending":
+            item["status"] = "blocked"
+            item["message"] = message
     phase.update(_phase("runtime", phase["items"]))
 
 
@@ -501,18 +708,28 @@ def apply_package_phase(phase: dict[str, Any]) -> None:
     phase.update(_phase("packages", phase["items"], message=phase.get("message", "")))
 
 
-def resolve_install_root(value: Path | None) -> Path:
-    root = (value or ROOT).expanduser().resolve()
-    missing = [entry for entry in ("scripts/agentera", "hooks", "skills", "skills/agentera/SKILL.md") if not (root / entry).exists()]
+def resolve_source_root() -> Path:
+    root = Path(os.environ.get(BOOTSTRAP_SOURCE_ROOT_ENV, str(ROOT))).expanduser().resolve()
+    missing = _install_root_missing(root)
     if missing:
-        raise ValueError(f"install root {root} is missing: {', '.join(missing)}")
+        raise ValueError(f"bootstrap source root {root} is missing: {', '.join(missing)}")
     return root
+
+
+def resolve_install_root(value: Path | None, source_root: Path, home: Path) -> Path:
+    if value is not None:
+        return value.expanduser().resolve()
+    default = os.environ.get(DEFAULT_INSTALL_ROOT_ENV)
+    if default:
+        return Path(default).expanduser().resolve()
+    return source_root if source_root == ROOT.resolve() else (home / ".agents" / "agentera").resolve()
 
 
 def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
     project = args.project.expanduser().resolve()
     home = args.home.expanduser().resolve()
-    install_root = resolve_install_root(args.install_root)
+    source_root = resolve_source_root()
+    install_root = resolve_install_root(args.install_root, source_root, home)
     runtimes = set(args.runtime or RUNTIMES)
     only = set(args.only or PHASES)
     env = dict(os.environ)
@@ -520,17 +737,37 @@ def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
         env["OPENCODE_CONFIG_DIR"] = str(args.opencode_config_dir.expanduser().resolve())
 
     phases: list[dict[str, Any]] = []
+    bundle_selected = "bundle" in only
+    if bundle_selected:
+        phases.append(plan_bundle_phase(source_root, install_root, force=args.force))
     if "artifacts" in only:
         phases.append(plan_artifact_phase(project, force=args.force))
     if "runtime" in only:
-        phases.append(plan_runtime_phase(
-            install_root,
-            home,
-            env,
-            runtimes,
-            force=args.force,
-            copilot_rc_file=args.copilot_rc_file,
-        ))
+        if not _valid_install_root(install_root) and not bundle_selected:
+            phases.append(_phase(
+                "runtime",
+                [{
+                    "status": "blocked",
+                    "runtime": "all",
+                    "action": "configure",
+                    "target": str(install_root),
+                    "message": (
+                        "install root is missing or incomplete; include --only bundle, "
+                        "choose a valid --install-root, or run the default upgrade flow"
+                    ),
+                }],
+            ))
+        else:
+            runtime_source_root = source_root if bundle_selected else install_root
+            phases.append(plan_runtime_phase(
+                install_root,
+                runtime_source_root,
+                home,
+                env,
+                runtimes,
+                force=args.force,
+                copilot_rc_file=args.copilot_rc_file,
+            ))
     if "cleanup" in only:
         phases.append(plan_cleanup_phase(home, env))
     if "packages" in only:
@@ -547,6 +784,7 @@ def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
         "mode": mode,
         "status": status,
         "project": str(project),
+        "sourceRoot": str(source_root),
         "installRoot": str(install_root),
         "home": str(home),
         "runtimes": sorted(runtimes),
@@ -561,16 +799,22 @@ def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
 def apply_upgrade_plan(plan: dict[str, Any], args: argparse.Namespace) -> None:
     project = Path(plan["project"])
     home = Path(plan["home"])
+    source_root = Path(plan["sourceRoot"])
     install_root = Path(plan["installRoot"])
     env = dict(os.environ)
     if args.opencode_config_dir is not None:
         env["OPENCODE_CONFIG_DIR"] = str(args.opencode_config_dir.expanduser().resolve())
 
     for phase in plan["phases"]:
-        if phase["name"] == "artifacts":
+        if phase["name"] == "bundle":
+            apply_bundle_phase(phase, source_root, install_root, force=args.force)
+        elif phase["name"] == "artifacts":
             apply_artifact_phase(phase, project, force=args.force)
         elif phase["name"] == "runtime":
-            apply_runtime_phase(phase)
+            if not _valid_install_root(install_root):
+                block_runtime_phase(phase, "durable Agentera bundle is not available after bundle phase")
+            else:
+                apply_runtime_phase(phase)
         elif phase["name"] == "cleanup":
             apply_cleanup_phase(phase, home, env)
         elif phase["name"] == "packages":

@@ -51,6 +51,37 @@ Capabilities import these by name. The schema contract ensures consistent usage.
 
 When a request arrives, route to the matching capability using the five-layer dispatch model from Decision 42:
 
+### Step 0: Upgrade guard
+
+Before routing, check for an Agentera v1 install state. This is detection and
+orchestration only; do not mutate anything without explicit user confirmation.
+
+V1 state is present when any v1 Markdown artifact exists without its v2 YAML
+counterpart, for example `.agentera/PROGRESS.md` without
+`.agentera/progress.yaml`, `.agentera/PLAN.md` without `.agentera/plan.yaml`,
+`.agentera/DECISIONS.md` without `.agentera/decisions.yaml`,
+`.agentera/HEALTH.md` without `.agentera/health.yaml`,
+`.agentera/SESSION.md` without `.agentera/session.yaml`, `.agentera/DOCS.md`
+without `.agentera/docs.yaml`, or root `VISION.md` without
+`.agentera/vision.yaml`.
+
+If v1 state is found:
+
+1. Report the affected files once in the briefing or response.
+2. Prefer the clone-free CLI:
+   `uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run`
+3. If running inside a local Agentera checkout that has `scripts/agentera`, the
+   equivalent local preview is:
+   `uv run scripts/agentera upgrade --project "$PWD" --dry-run`
+4. Ask the user before applying. Only after confirmation, run the same command
+   with `--yes`. Never infer consent from the presence of v1 artifacts.
+
+The upgrade command is idempotent. It installs or refreshes a durable bundle at
+`~/.agents/agentera` when invoked through `uvx`, migrates v1 artifacts, wires
+runtime config to that durable install root, and removes fixable stale v1
+runtime artifacts. Package refreshes that run `npx skills update` remain
+explicit opt-in via `--update-packages`.
+
 ### Layer 1: Bare `/agentera` — delegate to hej
 
 If the request is `/agentera` with no additional text, delegate immediately to hej. Hej performs state-aware routing by reading project artifacts (PLAN.md, TODO.md, HEALTH.md, etc.) and suggesting the most useful next capability. This is deterministic and never wrong.

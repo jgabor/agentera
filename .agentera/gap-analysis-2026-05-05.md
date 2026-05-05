@@ -10,7 +10,7 @@ Current verification:
 
 | Check | Result |
 |---|---|
-| `uv run --with pytest --with pyyaml pytest -q` | PASS: 530 passed, 1 skipped |
+| `uv run --with pytest --with pyyaml pytest -q` | PASS: 535 passed, 1 skipped |
 | `uv run scripts/validate_capability.py --self-validate` | PASS |
 | `uv run scripts/validate_capability.py skills/agentera/capabilities/<all 12>` | PASS |
 | `uv run scripts/smoke_setup_helpers.py` | PASS |
@@ -20,7 +20,8 @@ Current verification:
 | `uv run scripts/measure_token_payload.py` | PASS: v2 317,592 bytes vs v1 352,213 bytes, -9.8%; revised -10% release target accepted as close enough |
 | `node scripts/smoke_opencode_bootstrap.mjs` | PASS |
 | `uv run scripts/validate_lifecycle_adapters.py --check-uv-runtime` | PASS |
-| `uv run scripts/detect_stale_v1` | PASS: no stale runtime artifacts found |
+| `HOME=<tmp> OPENCODE_CONFIG_DIR=<tmp>/opencode uv run scripts/detect_stale_v1` | PASS: no stale runtime artifacts found in a clean temp home |
+| `uv run scripts/agentera upgrade --only cleanup --dry-run --json` | PASS: current host reports 12 pending managed OpenCode v1 command removals; not applied without `--yes` |
 | `uv run scripts/agentera query --list-artifacts` | Lists all 12 artifact types |
 | `uv run scripts/agentera query decisions --topic benchmark` | Returns Decision 41 benchmark result |
 | `uv run scripts/agentera query plan` | Returns artifact-specific plan summary and task status counts |
@@ -28,6 +29,8 @@ Current verification:
 | `uv run scripts/agentera upgrade --help` | Lists the v1-to-v2 upgrade subcommand and phase/runtime controls |
 | `uv run scripts/agentera upgrade --only artifacts --project /tmp/agentera-upgrade-empty-project --dry-run --json` | PASS: no-op plan for a project with no v1 artifacts |
 | `uv run scripts/agentera upgrade --only packages --runtime opencode --json` | PASS: external package update is skipped unless explicitly opted in |
+| `uvx --from . agentera upgrade --only bundle --home <tmp> --yes --json` | PASS: built wheel installs a durable bundle at `<tmp>/.agents/agentera` from the packaged source |
+| `uv run --with pytest --with pyyaml pytest -q tests/test_upgrade_cli.py tests/test_packaged_cli.py tests/test_setup_doctor.py tests/test_detect_stale_v1.py tests/test_hej_capability.py tests/test_runtime_adapters.py` | PASS: 112 passed |
 | v1 residue scans | PASS: no active missing-reference/template pointers, no stale physical v1 paths outside intentional migration detection/tests |
 
 ## ROADMAP.md Phase 1: Infrastructure
@@ -62,7 +65,8 @@ Phase 2 verdict: complete.
 | Hook integration with schema validation | Complete | `hooks/common.py` defaults now resolve to `.agentera/*.yaml`; session start/stop tests pass against v2 YAML; OpenCode hard gate denies invalid artifacts | None |
 | Query CLI commands for all artifact types | Complete | `scripts/agentera`; `tests/test_query_cli.py`; artifact-specific summaries for plan, progress, decisions, health, docs, session, todo, design, objective, and experiments | None |
 | Runtime adapter updates | Complete for offline/package surfaces plus gated Codex/Copilot/OpenCode live smoke | Setup smoke, OpenCode bootstrap smoke, lifecycle metadata validator, and `scripts/smoke_live_hosts.py --live --yes` all pass | Claude Code live smoke is excluded from the required harness until Claude Pro/Max or API access is available |
-| Port tests | Complete for current v2 suite | `530 passed, 1 skipped` | The retired v1 helper tests are intentionally gone; no claim should cite 577 as current |
+| Clone-free upgrade path | Complete for v2.0 release-candidate validation | `pyproject.toml` exposes `agentera`; `uvx --from . agentera upgrade --only bundle --home <tmp> --yes --json` installs a durable bundle under `.agents/agentera`; SKILL/hej guidance previews before applying | PyPI publication, if desired, is a release/distribution step rather than a code gap |
+| Port tests | Complete for current v2 suite | `535 passed, 1 skipped` | The retired v1 helper tests are intentionally gone; no claim should cite 577 as current |
 | Smoke tests across runtimes | Complete for required live harness | Offline setup + OpenCode plugin smoke pass; gated live harness passes for Codex, Copilot, and OpenCode | Claude Code live smoke is future opt-in only because credentials are unavailable |
 
 Phase 3 verdict: complete for offline/package/query surfaces; required live host behavior is proven for Codex, Copilot, and OpenCode. Claude Code live smoke is not a v2.0 release gate without Claude Pro/Max or API access.
@@ -71,7 +75,7 @@ Phase 3 verdict: complete for offline/package/query surfaces; required live host
 
 | Claim | Status | Evidence | Gap |
 |---|---|---|---|
-| Full test suite green | Complete | `530 passed, 1 skipped` | None |
+| Full test suite green | Complete | `535 passed, 1 skipped` | None |
 | Semantic eval port | Complete | Semantic eval fixtures/tests use v2 YAML paths and pass | None |
 | Token consumption benchmark | Complete | Decision 41 and `scripts/measure_token_payload.py` record v1 352,213 bytes vs current v2 317,592 bytes, -9.8%; revised -10% release target accepted as close enough | Further optimization deferred to future versions |
 | Version bump to 2.0.0 | Complete | Runtime package validators pass | None |
@@ -103,6 +107,9 @@ Non-blocking follow-ups remain:
 2. Claude Code live smoke is future opt-in only.
    The approved `uv run scripts/smoke_live_hosts.py --live --yes` run passed on 2026-05-05 for Codex AGENTERA_HOME/query, Codex apply_patch hooks, Copilot AGENTERA_HOME/query, and OpenCode AGENTERA_HOME/query via `opencode run --pure`, with snapshots restored. Claude Code live smoke is excluded from the required release harness until Claude Pro/Max or API access is available.
 
+3. The current host still has 12 managed OpenCode v1 command files.
+   `uv run scripts/agentera upgrade --only cleanup --dry-run --json` reports only managed v1 command removals under `$HOME/.config/opencode/commands/`. This is not a release blocker because the cleanup phase detects and can remove them, but applying it to the user home still requires `--yes`.
+
 ## Closed Questions
 
 - Token target: remeasured at -9.8% after profilera/query-depth work; revised -10% release target accepted as close enough, with follow-up optimization deferred to future versions.
@@ -111,6 +118,7 @@ Non-blocking follow-ups remain:
 - Producer/consumer validation: `scripts/validate_cross_capability.py` now validates capability artifact declarations against skill-level artifact schemas.
 - Live smoke: approved and run on 2026-05-05. `scripts/smoke_live_hosts.py --live --yes` passed for Codex, Copilot, and OpenCode live harness checks; Claude Code live smoke is not part of the required release harness without Claude Pro/Max or API access.
 - Follow-up tracking: `TODO.md` closes the v2 token and Claude live-smoke blockers; future token optimization and optional Claude live smoke are non-release-blocking.
+- Clone-free upgrade: `pyproject.toml` now makes `agentera` runnable through `uvx`, and packaged upgrades install a durable bundle at `~/.agents/agentera` before wiring runtime config so runtime config does not point at uv's disposable tool cache.
 
 ## Resolved Since Earlier Draft
 
@@ -128,13 +136,16 @@ Non-blocking follow-ups remain:
 - README/AGENTS/runtime smoke references to missing v1 scripts were removed or made explicit as deferred.
 - Capability prose, schemas, and the shared contract no longer point at missing bundled templates/references or teach v1 Markdown formats for the main agent-facing YAML artifacts.
 - `scripts/agentera upgrade` now provides an idempotent v1-to-v2 upgrade path covering artifact migration, runtime config wiring, stale v1 cleanup, explicit package-update opt-in, JSON output, and runtime postflight.
+- `scripts/agentera upgrade` now includes a bundle phase for packaged runs, and `uvx --from . agentera upgrade --only bundle --home <tmp> --yes --json` proves the clone-free path installs a durable bundle.
+- `SKILL.md` and hej's upgrade guard now instruct agents to detect v1 artifacts, preview the clone-free `uvx --from git+https://github.com/jgabor/agentera agentera upgrade` command, and ask before applying `--yes`.
+- OpenCode setup doctor and checked-in managed command fixtures now validate the single `agentera` bundled skill instead of the removed 12 v1 skill commands.
 - Codex setup and UI metadata no longer write or advertise removed v1 per-skill agent paths; `--enable-agents` is a compatibility no-op in v2.
 - `scripts/agentera query last-phase` and `scripts/agentera query progress --limit 1` now return the newest cycle from newest-first progress YAML.
 
 ## Recommended Next Actions
 
 1. Commit the current upgrade automation changes once accepted.
-   The worktree now contains the automated upgrade path, Codex metadata cleanup, query recency fix, tests, and release-state artifact updates.
+   The worktree now contains the clone-free `uvx` package entry point, durable bundle upgrade phase, SKILL/hej upgrade guidance, OpenCode v2 doctor cleanup, tests, and release-state artifact updates.
 
 2. Fast-forward/integrate with main locally.
    Final release-candidate validation passed on 2026-05-05 under the current release scope: token target revised to -10%, Claude Code live smoke excluded from the required harness until credentials exist, and no tag/push until explicitly approved.
@@ -144,6 +155,6 @@ Non-blocking follow-ups remain:
 
 ## Overall Verdict
 
-Agentera 2.0 is reliable enough to continue from this gap analysis. The basic v2 cutover is structurally sound: bundled skill shape, YAML artifact paths, schema validation, session hooks, runtime metadata, offline smoke checks, cross-capability graph validation, bundled corpus extraction, artifact-specific query summaries, and the current test suite are green.
+Agentera 2.0 is reliable enough to continue from this gap analysis. The basic v2 cutover is structurally sound: bundled skill shape, YAML artifact paths, schema validation, session hooks, runtime metadata, clone-free upgrade bootstrap, offline smoke checks, cross-capability graph validation, bundled corpus extraction, artifact-specific query summaries, and the current test suite are green.
 
 The final release-candidate validation passed on 2026-05-05. The remaining release work is procedural: commit the upgrade automation if accepted, fast-forward/integrate with main locally, then wait for explicit approval before creating or pushing the `v2.0.0` tag.

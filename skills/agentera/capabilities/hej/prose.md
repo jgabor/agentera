@@ -67,7 +67,7 @@ Narration voice (riff, don't script):
 
 ## Step 0.5: Upgrade guard
 
-After mode detection (Step 0) and before the welcome (Step 1a) or briefing (Step 1b), run two checks. These are passive observations — hej never writes or migrates.
+After mode detection (Step 0) and before the welcome (Step 1a) or briefing (Step 1b), run two checks. Detection is passive by default; hej only runs an upgrade apply command after explicit user confirmation.
 
 ### V1 artifact detection
 
@@ -86,8 +86,11 @@ Check `.agentera/` for v1 Markdown artifacts that lack a corresponding v2 YAML c
 For each v1 file that exists where the corresponding v2 file does **not**:
 
 - Add to the briefing's attention section as a degraded (SI2, ⇉) item:
-  `⇉ v1 artifacts detected · run \`uv run scripts/migrate_artifacts_v1_to_v2 <project-dir>\` to upgrade`
+  `⇉ v1 artifacts detected · preview \`uvx --from git+<https://github.com/jgabor/agentera> agentera upgrade --project "$PWD" --dry-run\``
+- If the current project is a local Agentera checkout with `scripts/agentera`, the local equivalent is
+  `uv run scripts/agentera upgrade --project "$PWD" --dry-run`.
 - Include the notice once (not per-file); list the affected files after the command.
+- Ask before applying. After confirmation, run the same command with `--yes`.
 - This applies to both Step 1a (welcome) and Step 1b (briefing) flows.
 
 If no v1 artifacts exist (fresh install or already migrated), emit no upgrade notice.
