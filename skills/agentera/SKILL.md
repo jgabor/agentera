@@ -49,7 +49,31 @@ Capabilities import these by name. The schema contract ensures consistent usage.
 
 ## Routing Logic
 
-When a request arrives, route to the matching capability using the five-layer dispatch model from Decision 42:
+When a request arrives, route to the matching capability using the five-layer dispatch model from Decision 42.
+
+### Step -1: CLI-first state access
+
+The `agentera` CLI is the authoritative interface to project state. Before any
+artifact-backed briefing, route decision, or capability state read, run a CLI
+probe from the target project:
+
+1. Installed bundle:
+   `uv run "$AGENTERA_HOME/scripts/agentera" query --list-artifacts`
+2. Default durable bundle:
+   `uv run "$HOME/.agents/agentera/scripts/agentera" query --list-artifacts`
+3. Local Agentera checkout:
+   `uv run scripts/agentera query --list-artifacts`
+
+Do not silently bypass the CLI and read raw `.agentera/*.yaml` files first. If
+all CLI paths fail, report that the CLI was unavailable, then use raw artifact
+reads only as a fallback.
+
+For `/agentera`, run targeted queries such as `query plan`, `query progress`,
+`query health`, `query todo`, and `query decisions` before building the hej
+briefing. For `/agentera <capability-name>`, run the targeted query or queries
+needed by that capability before opening raw artifacts. Reading a capability's
+`prose.md` file is not itself a capability invocation; invocation means routing
+to the capability, following its prose, and using the CLI state layer first.
 
 ### Step 0: Upgrade guard
 
@@ -68,13 +92,18 @@ without `.agentera/docs.yaml`, or root `VISION.md` without
 If v1 state is found:
 
 1. Report the affected files once in the briefing or response.
-2. Prefer the no-clone CLI:
+2. Run the dry-run preview through the no-clone CLI whenever shell access is
+   available:
    `uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run`
 3. If running inside a local Agentera checkout that has `scripts/agentera`, the
    equivalent local preview is:
    `uv run scripts/agentera upgrade --project "$PWD" --dry-run`
 4. Ask the user before applying. Only after confirmation, run the same command
    with `--yes`. Never infer consent from the presence of v1 artifacts.
+
+The dry-run preview is mandatory for v1 state detection. Do not replace it with
+manual artifact inspection, hand-written migration steps, or raw YAML reads.
+Only the apply step requires confirmation.
 
 The upgrade command is idempotent. It installs or refreshes a durable bundle at
 `~/.agents/agentera` when invoked through `uvx`, migrates v1 artifacts, wires

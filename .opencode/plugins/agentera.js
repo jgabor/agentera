@@ -482,3 +482,5 @@ export const Agentera = async (input = {}, _options) => {
     },
   };
 };
+
+export default Agentera;
