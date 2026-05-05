@@ -4,6 +4,9 @@
 
 ## ⇉ Degraded
 
+- [ ] [audit-20-progress-phase-enum] [fix] Align recent `phase: verify` progress entries with the protocol phase model, or deliberately add `verify` to `protocol.yaml`, progress schema validation, and consumers.
+- [ ] [audit-20-health-command-stale] [fix] Make `scripts/agentera health` select the newest health entry consistently with `hej`, and add a newest-first regression test.
+
 ## → Normal
 
 - [ ] [agentera-optional-claude-live-smoke] Optional future-version work: add an explicit opt-in Claude Code live model-host smoke when Claude Pro/Max or API access is available. Current required live evidence covers Codex, Copilot, and OpenCode.
