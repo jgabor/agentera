@@ -1,4 +1,34 @@
 cycles:
+- number: 279
+  timestamp: 2026-05-05 21:45
+  type: fix
+  phase: verify
+  what: Added self-healing durable bundle freshness guidance and executable regressions for stale /agentera installs.
+  commit: pending
+  inspiration: >
+    The accepted self-healing bundle refresh plan addressed the split state where marketplace or skills updates refresh visible
+    invocation metadata while AGENTERA_HOME still contains an older scripts/agentera CLI without hej.
+  discovered: >
+    The suite version authority is registry.json skills[0].version, with SKILL.md frontmatter mirroring it. The actual local
+    $HOME/.agents/agentera bundle is stale: bundle-status reports marker version 2.0.2 and missing hej. This cycle did
+    not apply that refresh because realisera does not mutate outside the repo and the refresh path requires explicit same-root
+    approval.
+  verified: >
+    Validation passed: python3 -m py_compile scripts/agentera scripts/agentera_upgrade.py; uv run pytest
+    tests/test_bundle_freshness.py tests/test_upgrade_cli.py tests/test_packaged_cli.py tests/test_cross_capability.py
+    tests/test_hej_capability.py -q (64 passed, 1 skipped); uv run pytest -q (573 passed, 1 skipped); uv run
+    scripts/validate_capability.py for all 12 capabilities; uv run scripts/validate_capability.py --self-validate; uv run
+    scripts/validate_cross_capability.py; uv run scripts/validate_lifecycle_adapters.py --check-uv-runtime; uv run
+    scripts/semantic_eval.py fixtures/semantic/hej-routing-task3.md fixtures/semantic/hej-cli-budget.md (2 passed); uv run
+    scripts/agentera bundle-status --install-root $HOME/.agents/agentera reported the stale installed bundle without
+    writing; temp-root tests proved dry-run before apply, same-root refresh, installed hej retry, unsafe-root blocking, and
+    pre-argparse failure detection.
+  next: 'Commit this cycle; when ready, explicitly approve the actual bundle refresh or release this patch in the next version lane.'
+  context:
+    intent: make /agentera recover from stale durable AGENTERA_HOME bundles after package or marketplace updates
+    constraints: no outside-repo writes, no silent durable bundle mutation, no version bump or release mutation
+    unknowns: whether to apply the actual $HOME/.agents/agentera refresh now or wait for a release lane
+    scope: scripts/agentera, scripts/agentera_upgrade.py, skill guidance, docs, tests, and Agentera artifacts
 - number: 278
   timestamp: 2026-05-05 21:12
   type: chore

@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- `agentera bundle-status` now diagnoses durable bundle freshness, including stale markers, missing `hej`, pre-argparse CLI failures, unset defaults, and unsafe `AGENTERA_HOME` roots before any write.
+- Bare `/agentera` guidance now has a self-healing bundle-refresh path: preview `uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root <root> --dry-run`, require approval, apply the same root with `--yes`, then retry installed `agentera hej`.
+
+### Fixed
+
+- Skill frontmatter now matches the 2.1.0 suite version authority from `registry.json`, avoiding stale-version ambiguity during bundle freshness checks.
+
 ## [2.1.0] · 2026-05-05
 
 ### Changed

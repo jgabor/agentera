@@ -39,7 +39,7 @@ from typing import Any
 
 import yaml
 
-from agentera_upgrade import cmd_upgrade
+from agentera_upgrade import cmd_bundle_status, cmd_upgrade
 
 PRIME_BLOB = """\
 # agentera priming guide
@@ -1416,6 +1416,44 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Override OPENCODE_CONFIG_DIR for plugin copy and stale-command cleanup",
     )
+
+    b = sub.add_parser(
+        "bundle-status",
+        help="Check durable bundle freshness before using an installed Agentera CLI",
+    )
+    b.add_argument(
+        "--install-root",
+        type=Path,
+        default=None,
+        help="Agentera install root to inspect (default: AGENTERA_HOME, then ~/.agents/agentera)",
+    )
+    b.add_argument(
+        "--home",
+        type=Path,
+        default=Path.home(),
+        help="Home directory used for the default durable install root",
+    )
+    b.add_argument(
+        "--project",
+        type=Path,
+        default=Path.cwd(),
+        help="Project directory used when probing the installed CLI",
+    )
+    b.add_argument(
+        "--expected-version",
+        default=None,
+        help="Expected suite version (default: registry.json in the fresh source)",
+    )
+    b.add_argument(
+        "--expect-command",
+        action="append",
+        help="Installed CLI command that must be discoverable; may be repeated (default: hej)",
+    )
+    b.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit structured JSON instead of human-readable text",
+    )
     return parser
 
 
@@ -1432,6 +1470,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_query(args)
     if args.command == "upgrade":
         return cmd_upgrade(args)
+    if args.command == "bundle-status":
+        return cmd_bundle_status(args)
     parser.print_help()
     return 1
 

@@ -1,7 +1,7 @@
 header:
   level: full
   created: '2026-05-05'
-  status: active
+  status: complete
   reviewed: '2026-05-05'
   critic_issues: "8 found, 8 addressed, 0 dismissed"
   title: Self-Healing Bundle Refresh For /agentera
@@ -70,7 +70,7 @@ tasks:
     name: Define Bundle Freshness Contract
     depends_on:
       - Task 1
-    status: pending
+    status: complete
     acceptance:
       - GIVEN registry.json, pyproject.toml, plugin manifests, .agentera-bundle.json, scripts/agentera, SKILL.md, and upgrade code are inspected WHEN findings are recorded THEN one authoritative expected bundle version is named
       - GIVEN AGENTERA_HOME is set, unset, invalid, non-managed, or points at the default durable root WHEN freshness is evaluated THEN the resolved install-root behavior is specified for each case
@@ -80,7 +80,7 @@ tasks:
     name: Add Self-Healing /agentera Refresh Guidance
     depends_on:
       - Task 2
-    status: pending
+    status: complete
     acceptance:
       - GIVEN bare /agentera sees a stale installed bundle WHEN the expected state command fails or freshness check fails THEN guidance reports the bundle freshness gap and shows the uvx dry-run preview for the resolved install root
       - GIVEN AGENTERA_HOME is unset WHEN the bundle is otherwise discoverable at the default durable root THEN the preview targets that default durable root and reports the resolution source
@@ -91,7 +91,7 @@ tasks:
     name: Add Executable Stale-Bundle Regressions
     depends_on:
       - Task 3
-    status: pending
+    status: complete
     acceptance:
       - GIVEN a temp AGENTERA_HOME contains a managed stale scripts/agentera without hej WHEN the refresh path is exercised THEN the test observes dry-run preview before any apply
       - GIVEN approval is absent WHEN stale bundle detection runs THEN the apply command is forbidden and the stale bundle is unchanged
@@ -102,7 +102,7 @@ tasks:
     name: Refresh Docs And Artifact State
     depends_on:
       - Task 4
-    status: pending
+    status: complete
     acceptance:
       - GIVEN behavior and tests pass WHEN docs are refreshed THEN README, UPGRADE, CHANGELOG, DOCS, PROGRESS, and PLAN explain that package updates and durable bundle refresh are separate
       - GIVEN docs show commands WHEN a user follows them THEN they use the clone-free uvx source, bundle-only phase, resolved install root, dry-run first, and confirmed --yes apply
@@ -111,7 +111,7 @@ tasks:
     name: Validate And Close
     depends_on:
       - Task 5
-    status: pending
+    status: complete
     acceptance:
       - GIVEN validators run THEN focused stale-bundle tests, relevant upgrade CLI tests, semantic or prose regressions, full pytest, capability validators, cross-capability validator, and lifecycle adapter validator pass
       - GIVEN uv run scripts/agentera hej runs from the refreshed install-root fixture WHEN validation closes THEN it proves the installed bundle path, not the local checkout fallback
@@ -121,4 +121,6 @@ overall_acceptance:
   - GIVEN no explicit approval is provided WHEN stale state is detected THEN no durable bundle writes occur
   - GIVEN approval is provided WHEN refresh runs THEN /agentera retries against the same refreshed installed bundle and renders the hej dashboard from installed CLI data
   - GIVEN AGENTERA_HOME is unset, invalid, non-managed, or stale WHEN freshness is evaluated THEN root resolution and safety behavior are explicit and tested
-surprises: []
+surprises:
+  - Actual local AGENTERA_HOME at $HOME/.agents/agentera is stale: bundle-status reports marker version 2.0.2 and missing hej. This cycle did not apply the refresh because realisera must not mutate outside the repo and the self-healing path requires explicit same-root approval.
+  - Release impact is patch-worthy for the next release because it fixes a split-brain install state after package/marketplace updates, but no version bump or remote release mutation was performed in this cycle.

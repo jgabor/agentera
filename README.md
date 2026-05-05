@@ -281,6 +281,33 @@ macOS, and `%APPDATA%/agentera` on Windows.
 `AGENTERA_HOME` points to the Agentera install root. Runtime installers and the
 upgrade flow use it for helper scripts, hooks, and artifact checks.
 
+### Keep the durable bundle current
+
+Package and marketplace updates refresh the visible skill/plugin metadata, but
+they can leave the durable bundle at `AGENTERA_HOME` behind. If `/agentera`
+reports that the installed CLI is stale or `agentera hej` is unavailable,
+preview the bundle-only refresh first:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --dry-run
+```
+
+After confirming the preview, apply the same root:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --yes
+```
+
+Then retry the installed dashboard data source:
+
+```bash
+uv run "$AGENTERA_HOME/scripts/agentera" hej
+```
+
+If `AGENTERA_HOME` is unset, Agentera uses the default durable root
+`~/.agents/agentera`. If it points at a missing, invalid, or user-owned
+directory, fix the setting or choose a managed install root before applying.
+
 <details>
 <summary><strong>Claude Code hooks</strong></summary>
 

@@ -18,6 +18,7 @@ import importlib.machinery
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -33,6 +34,7 @@ BUNDLE_MARKER = ".agentera-bundle.json"
 RUNTIMES = ("claude", "opencode", "copilot", "codex")
 PHASES = ("bundle", "artifacts", "runtime", "cleanup", "packages")
 STATUSES = ("pending", "applied", "noop", "blocked", "failed", "skipped")
+EXPECTED_STATE_COMMANDS = ("hej",)
 LEGACY_BRIDGE_SKILLS = (
     "hej",
     "visionera",
@@ -197,6 +199,17 @@ def _load_suite_version(source_root: Path) -> str | None:
     return version if isinstance(version, str) and version else None
 
 
+def _read_bundle_marker(install_root: Path) -> dict[str, Any] | None:
+    marker = _bundle_marker_path(install_root)
+    if not marker.is_file():
+        return None
+    try:
+        data = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
 def _bundle_marker_path(install_root: Path) -> Path:
     return install_root / BUNDLE_MARKER
 
@@ -208,6 +221,230 @@ def _install_root_looks_managed(install_root: Path) -> bool:
         (install_root / "skills" / "agentera" / "SKILL.md").is_file()
         and (install_root / "registry.json").is_file()
     )
+
+
+def _shell_quote(value: str) -> str:
+    if re.fullmatch(r"[A-Za-z0-9_@%+=:,./-]+", value):
+        return value
+    return "'" + value.replace("'", "'\"'\"'") + "'"
+
+
+def _command_text(parts: list[str]) -> str:
+    return " ".join(_shell_quote(part) for part in parts)
+
+
+def resolve_bundle_status_install_root(
+    value: Path | None,
+    *,
+    home: Path,
+    env: dict[str, str] | None = None,
+) -> tuple[Path, str]:
+    env = env or os.environ
+    if value is not None:
+        return value.expanduser().resolve(), "explicit --install-root"
+    configured = env.get("AGENTERA_HOME")
+    if configured:
+        return Path(configured).expanduser().resolve(), "AGENTERA_HOME"
+    default = env.get(DEFAULT_INSTALL_ROOT_ENV)
+    if default:
+        return Path(default).expanduser().resolve(), DEFAULT_INSTALL_ROOT_ENV
+    return (home.expanduser().resolve() / ".agents" / "agentera").resolve(), "default durable root"
+
+
+def _probe_bundle_cli(
+    install_root: Path,
+    *,
+    project: Path,
+    expected_commands: tuple[str, ...],
+) -> dict[str, Any]:
+    cli = install_root / "scripts" / "agentera"
+    if not cli.is_file():
+        return {
+            "ok": False,
+            "command": None,
+            "returnCode": None,
+            "stdoutTail": [],
+            "stderrTail": [],
+            "missingCommands": list(expected_commands),
+            "message": "scripts/agentera is missing",
+        }
+    command = ["uv", "run", str(cli), "--help"]
+    try:
+        result = subprocess.run(
+            command,
+            cwd=project,
+            env={**os.environ, "AGENTERA_HOME": str(install_root)},
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {
+            "ok": False,
+            "command": command,
+            "returnCode": None,
+            "stdoutTail": [],
+            "stderrTail": [str(exc)],
+            "missingCommands": list(expected_commands),
+            "message": f"CLI probe failed before command discovery: {exc}",
+        }
+    output = result.stdout + "\n" + result.stderr
+    missing = [
+        name
+        for name in expected_commands
+        if re.search(rf"\b{re.escape(name)}\b", output) is None
+    ]
+    return {
+        "ok": result.returncode == 0 and not missing,
+        "command": command,
+        "returnCode": result.returncode,
+        "stdoutTail": result.stdout.splitlines()[-5:],
+        "stderrTail": result.stderr.splitlines()[-5:],
+        "missingCommands": missing,
+        "message": (
+            "CLI help lists expected state commands"
+            if result.returncode == 0 and not missing
+            else "CLI help failed or is missing expected state commands"
+        ),
+    }
+
+
+def build_bundle_status(
+    install_root: Path,
+    *,
+    root_source: str,
+    source_root: Path,
+    home: Path,
+    project: Path,
+    expected_version: str | None = None,
+    expected_commands: tuple[str, ...] = EXPECTED_STATE_COMMANDS,
+) -> dict[str, Any]:
+    expected = expected_version or _load_suite_version(source_root) or "unknown"
+    marker = _read_bundle_marker(install_root)
+    marker_version = marker.get("version") if marker else None
+    signals: list[dict[str, Any]] = []
+    blocked = False
+
+    root_exists = install_root.exists()
+    root_is_dir = install_root.is_dir()
+    if not root_exists:
+        root_status = "missing"
+        if root_source in {"AGENTERA_HOME", "explicit --install-root"}:
+            blocked = True
+            signals.append({
+                "status": "blocked",
+                "kind": "invalid_install_root",
+                "message": (
+                    f"{root_source} points at a missing path; fix the setting, "
+                    "choose a managed --install-root, or rerun with explicit force guidance"
+                ),
+            })
+        else:
+            signals.append({
+                "status": "stale",
+                "kind": "missing_bundle",
+                "message": "default durable Agentera bundle is not installed",
+            })
+    elif not root_is_dir:
+        root_status = "invalid"
+        blocked = True
+        signals.append({
+            "status": "blocked",
+            "kind": "invalid_install_root",
+            "message": f"{root_source} points at a file, not an install root directory",
+        })
+    elif not _install_root_looks_managed(install_root):
+        root_status = "unmanaged"
+        blocked = True
+        signals.append({
+            "status": "blocked",
+            "kind": "unmanaged_install_root",
+            "message": "target exists but is not an Agentera-managed bundle",
+        })
+    else:
+        root_status = "managed"
+        if marker is None:
+            signals.append({
+                "status": "stale",
+                "kind": "missing_marker",
+                "message": f"{BUNDLE_MARKER} is missing or unreadable",
+            })
+        elif marker_version != expected:
+            signals.append({
+                "status": "stale",
+                "kind": "version_mismatch",
+                "expected": expected,
+                "actual": marker_version,
+                "message": "bundle marker version does not match the expected suite version",
+            })
+        probe = _probe_bundle_cli(
+            install_root,
+            project=project,
+            expected_commands=expected_commands,
+        )
+        if not probe["ok"]:
+            kind = "cli_probe_unavailable"
+            if probe["returnCode"] is not None and probe["returnCode"] != 0:
+                kind = "cli_probe_failed"
+            elif probe["missingCommands"]:
+                kind = "missing_command"
+            signals.append({
+                "status": "stale",
+                "kind": kind,
+                "message": probe["message"],
+                "returnCode": probe["returnCode"],
+                "missingCommands": probe["missingCommands"],
+                "stdoutTail": probe["stdoutTail"],
+                "stderrTail": probe["stderrTail"],
+            })
+
+    preview_parts = [
+        "uvx",
+        "--from",
+        "git+https://github.com/jgabor/agentera",
+        "agentera",
+        "upgrade",
+        "--only",
+        "bundle",
+        "--install-root",
+        str(install_root),
+        "--dry-run",
+    ]
+    apply_parts = [
+        "uvx",
+        "--from",
+        "git+https://github.com/jgabor/agentera",
+        "agentera",
+        "upgrade",
+        "--only",
+        "bundle",
+        "--install-root",
+        str(install_root),
+        "--yes",
+    ]
+    status = "blocked" if blocked else "stale" if signals else "fresh"
+    return {
+        "schemaVersion": "agentera.bundleStatus.v1",
+        "status": status,
+        "expectedVersion": expected,
+        "installRoot": str(install_root),
+        "installRootSource": root_source,
+        "home": str(home),
+        "project": str(project),
+        "rootStatus": root_status,
+        "markerVersion": marker_version,
+        "signals": signals,
+        "dryRunCommand": None if blocked else _command_text(preview_parts),
+        "applyCommand": None if blocked else _command_text(apply_parts),
+        "retryCommand": _command_text([
+            "uv",
+            "run",
+            str(install_root / "scripts" / "agentera"),
+            "hej",
+        ]),
+        "approval": f"approve bundle refresh for {install_root}",
+    }
 
 
 def _skip_bundle_path(path: Path) -> bool:
@@ -957,3 +1194,57 @@ def cmd_upgrade(args: argparse.Namespace) -> int:
     if plan["mode"] == "plan" and plan["summary"]["pending"]:
         return 1
     return 0
+
+
+def render_bundle_status(status: dict[str, Any]) -> str:
+    lines = [
+        "Agentera bundle status",
+        f"status: {status['status']}",
+        f"expected version: {status['expectedVersion']}",
+        f"install root: {status['installRoot']}",
+        f"install root source: {status['installRootSource']}",
+        f"root status: {status['rootStatus']}",
+        f"marker version: {status.get('markerVersion') or '-'}",
+    ]
+    for signal in status["signals"]:
+        lines.append(f"- {signal['status']}: {signal['kind']} - {signal['message']}")
+        if signal.get("missingCommands"):
+            lines.append(f"  missing commands: {', '.join(signal['missingCommands'])}")
+    if status["dryRunCommand"]:
+        lines.append(f"dry run: {status['dryRunCommand']}")
+        lines.append(f"apply after approval: {status['applyCommand']}")
+        lines.append(f"approval phrase: {status['approval']}")
+        lines.append(f"retry: {status['retryCommand']}")
+    else:
+        lines.append(
+            "recovery: fix AGENTERA_HOME, choose a managed --install-root, "
+            "or rerun upgrade with explicit force guidance"
+        )
+    return "\n".join(lines)
+
+
+def cmd_bundle_status(args: argparse.Namespace) -> int:
+    try:
+        source_root = resolve_source_root()
+    except ValueError as exc:
+        print(f"bundle-status error: {exc}", file=sys.stderr)
+        return 2
+    home = args.home.expanduser().resolve()
+    install_root, root_source = resolve_bundle_status_install_root(
+        args.install_root,
+        home=home,
+    )
+    status = build_bundle_status(
+        install_root,
+        root_source=root_source,
+        source_root=source_root,
+        home=home,
+        project=args.project.expanduser().resolve(),
+        expected_version=args.expected_version,
+        expected_commands=tuple(args.expect_command or EXPECTED_STATE_COMMANDS),
+    )
+    if args.json:
+        print(json.dumps(status, indent=2, sort_keys=True))
+    else:
+        print(render_bundle_status(status))
+    return 0 if status["status"] == "fresh" else 1
