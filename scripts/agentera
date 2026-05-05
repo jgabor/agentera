@@ -7,23 +7,20 @@
 
 Commands:
   agentera prime             Print static agent-priming guidance
-  agentera query <pattern>   Query project artifacts
+  agentera plan              Active plan summary
+  agentera progress          Recent cycle summary
+  agentera health            Latest audit data
+  agentera todo              TODO summary
+  agentera decisions         Decision log
+  agentera docs              Documentation contract summary
+  agentera objective         Active optimera objective summary
+  agentera experiments       Active optimera experiments summary
+  agentera query <artifact>  Advanced custom artifact query
   agentera upgrade           Plan or apply a v1-to-v2 upgrade
 
-Query patterns:
-  last-phase                     Last cycle's phase (from progress)
-  decisions [--topic TOPIC]      Decision log
-  health [--dimension DIM]       Latest audit data
-  open-todos [--severity LEVEL]  Open issues from TODO.md
-  plan                           Active plan summary
-  progress                       Recent cycle summary
-  docs                           Documentation contract summary
-  session                        Recent session bookmark summary
-  todo                           TODO summary
-  design                         Visual identity summary
-  objective                      Active optimera objective summary
-  experiments                    Active optimera experiments summary
-  <artifact-name>                Generic query against any discovered schema
+Advanced query patterns:
+  query --list-artifacts          List all discovered artifact schemas
+  query <artifact-name>           Generic query against custom discovered schemas
 
 Schema discovery is automatic. The CLI reads artifact schemas from
 skills/agentera/schemas/artifacts/ (relative to AGENTERA_HOME or cwd)
@@ -47,28 +44,30 @@ PRIME_BLOB = """\
 
 ## Routing: agentera vs native tools
 
-Use `agentera query <pattern>` for questions about project state.
+Use top-level `agentera <state>` commands for routine questions about project state.
 Use native tools (read, grep, glob, edit, bash) for source code operations.
 
 agentera queries return compact answers from structured state. Do NOT read
 raw YAML artifacts directly. The CLI is the seam between agent and state.
 
-Supported queries:
+Supported state commands:
   agentera prime                                # Print this guide
-  agentera query last-phase                     # Last cycle's phase
-  agentera query decisions [--topic TOPIC]      # Decision log
-  agentera query health [--dimension DIM]       # Latest health audit
-  agentera query open-todos [--severity LEVEL]  # Open issues from TODO.md
-  agentera query plan                           # Active plan + task status
-  agentera query docs                           # Docs mappings + stale docs
-  agentera query <artifact-name>                # Any discovered artifact
+  agentera decisions [--topic TOPIC]            # Decision log
+  agentera health [--dimension DIM]             # Latest health audit
+  agentera todo [--severity LEVEL]              # TODO summary
+  agentera plan                                 # Active plan + task status
+  agentera progress [--limit N]                 # Recent cycle summary
+  agentera docs                                 # Docs mappings + stale docs
+  agentera objective                            # Active optimera objective
+  agentera experiments                          # Active optimera experiments
+  agentera query --list-artifacts               # Discover advanced schemas
+  agentera query <artifact-name>                # Advanced custom artifact query
 
 When to use agentera:
-  - "What phase was last cycle?"        → agentera query last-phase
-  - "What did we decide about X?"       → agentera query decisions --topic X
-  - "How's the codebase health?"        → agentera query health
-  - "What's the coupling grade?"        → agentera query health --dimension coupling_health
-  - "Any critical open issues?"         → agentera query open-todos --severity critical
+  - "What did we decide about X?"       → agentera decisions --topic X
+  - "How's the codebase health?"        → agentera health
+  - "What's the coupling grade?"        → agentera health --dimension coupling_health
+  - "Any critical open issues?"         → agentera todo --severity critical
 
 When to use native tools:
   - Reading or editing source code      → native read/edit/grep
@@ -78,7 +77,7 @@ When to use native tools:
 
 ## Recovery: stale or missing artifacts
 
-If `agentera query` returns empty:
+If `agentera <state>` returns empty:
   1. The artifact may not exist yet (no data has been written to it).
   2. Run without filters to see all available data.
   3. If data is stale, the producing capability needs to run again.
@@ -793,6 +792,24 @@ def _query_generic(args: argparse.Namespace, schemas: dict, name: str) -> int:
     return 0
 
 
+STATE_COMMAND_HANDLERS = {
+    "decisions": _query_decisions,
+    "docs": _query_docs,
+    "experiments": _query_experiments,
+    "health": _query_health,
+    "objective": _query_objective,
+    "plan": _query_plan,
+    "progress": _query_progress,
+    "todo": _query_todo,
+}
+
+
+def cmd_state(args: argparse.Namespace) -> int:
+    schemas = _load_schemas(_discover_schemas_dir())
+    handler = STATE_COMMAND_HANDLERS[args.command]
+    return handler(args, schemas)
+
+
 def cmd_query(args: argparse.Namespace) -> int:
     if getattr(args, "list_artifacts", False):
         schemas = _load_schemas(_discover_schemas_dir())
@@ -803,20 +820,18 @@ def cmd_query(args: argparse.Namespace) -> int:
     if not query:
         print("Error: query pattern required (or use --list-artifacts)", file=sys.stderr)
         return 1
+    if query in STATE_COMMAND_HANDLERS:
+        print(
+            f"Unsupported routine query: {query}. Use `agentera {query}` instead.",
+            file=sys.stderr,
+        )
+        return 1
     schemas = _load_schemas(_discover_schemas_dir())
     handlers = {
         "last-phase": _query_last_phase,
-        "decisions": _query_decisions,
         "design": _query_design,
-        "docs": _query_docs,
-        "experiments": _query_experiments,
-        "health": _query_health,
-        "objective": _query_objective,
         "open-todos": _query_open_todos,
-        "plan": _query_plan,
-        "progress": _query_progress,
         "session": _query_session,
-        "todo": _query_todo,
     }
     if query in handlers:
         return handlers[query](args, schemas)
@@ -832,14 +847,45 @@ def cmd_query(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="agentera",
-        description="agentera: query project state, upgrade installs, and print priming guidance",
+        description="agentera: read project state, upgrade installs, and print priming guidance",
     )
     sub = parser.add_subparsers(dest="command")
     sub.add_parser(
         "prime",
         help="Print agent-priming guidance (routing, recovery)",
     )
-    q = sub.add_parser("query", help="Query project artifacts")
+
+    decisions = sub.add_parser("decisions", help="Decision log")
+    decisions.add_argument("--topic", help="Filter by topic (substring match on text fields)")
+
+    health = sub.add_parser("health", help="Latest health audit")
+    health.add_argument("--dimension", help="Filter by dimension name")
+
+    todo = sub.add_parser("todo", help="TODO summary")
+    todo.add_argument("--severity", help="Filter by severity level")
+    todo.add_argument("--status", help="Filter by status")
+
+    plan = sub.add_parser("plan", help="Active plan summary")
+    plan.add_argument("--status", help="Filter plan tasks by status")
+
+    progress = sub.add_parser("progress", help="Recent cycle summary")
+    progress.add_argument("--topic", help="Filter by topic (substring match on text fields)")
+    progress.add_argument("--status", help="Filter progress entries by type")
+    progress.add_argument("--limit", type=int, default=5, help="Limit recent entries")
+
+    docs = sub.add_parser("docs", help="Documentation contract summary")
+    docs.add_argument("--topic", help="Filter docs by topic")
+    docs.add_argument("--status", help="Filter docs by status")
+
+    objective = sub.add_parser("objective", help="Active optimera objective summary")
+    objective.add_argument("--status", help="Filter legacy objective entries by status")
+
+    experiments = sub.add_parser("experiments", help="Active optimera experiments summary")
+    experiments.add_argument("--topic", help="Filter by topic (substring match on text fields)")
+    experiments.add_argument("--status", help="Filter by status")
+    experiments.add_argument("--limit", type=int, default=5, help="Limit recent entries")
+
+    q = sub.add_parser("query", help="Advanced custom artifact query")
     q.add_argument("query", nargs="?", help="Query pattern or artifact name")
     q.add_argument("--list-artifacts", action="store_true", help="List all discovered artifact types")
     q.add_argument("--topic", help="Filter by topic (substring match on text fields)")
@@ -926,6 +972,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "prime":
         return cmd_prime(args)
+    if args.command in STATE_COMMAND_HANDLERS:
+        return cmd_state(args)
     if args.command == "query":
         return cmd_query(args)
     if args.command == "upgrade":
