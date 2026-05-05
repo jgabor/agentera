@@ -157,3 +157,20 @@ def test_prose_capability_refs_exist(cap_name: str):
             f"{cap_name}/prose.md references '{ref_name}' "
             f"but capabilities/{ref_name}/ does not exist"
         )
+
+
+def test_master_skill_requires_cli_first_state_access():
+    text = SKILL_MD_PATH.read_text(encoding="utf-8")
+
+    assert "Step -1: CLI-first state access" in text
+    assert "query --list-artifacts" in text
+    assert "Do not silently bypass the CLI" in text
+    assert "reads only as a fallback" in text
+
+
+def test_master_upgrade_guard_requires_dry_run_preview():
+    text = SKILL_MD_PATH.read_text(encoding="utf-8")
+
+    assert "The dry-run preview is mandatory" in text
+    assert 'agentera upgrade --project "$PWD" --dry-run' in text
+    assert "Only the apply step requires confirmation" in text

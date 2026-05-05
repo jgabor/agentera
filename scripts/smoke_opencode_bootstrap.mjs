@@ -34,6 +34,7 @@ try {
   delete process.env.PROFILERA_PROFILE_DIR;
 
   const {
+    default: DefaultAgentera,
     Agentera,
     bootstrapCommands,
     bootstrapSkills,
@@ -49,6 +50,9 @@ try {
     writeSessionBookmark,
     lifecycle,
   } = await import(PLUGIN_PATH);
+
+  assert(typeof DefaultAgentera === "function", "plugin must expose default function export for OpenCode");
+  assert(DefaultAgentera === Agentera, "default plugin export should be the Agentera function");
 
   const commandNames = Object.keys(COMMAND_TEMPLATES);
   const commandsDir = resolveOpencodeCommandsDir();
