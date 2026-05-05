@@ -4,6 +4,7 @@
 
 ### Changed
 
+- `agentera hej` now provides a one-command composite orientation briefing with profile status, health, issue counts, plan progress, objective state, attention items, and the next concrete action for bare `/agentera`.
 - Routine Agentera state access now uses top-level CLI commands such as `agentera plan`, `agentera progress`, `agentera health`, `agentera todo`, `agentera decisions`, `agentera docs`, `agentera objective`, and `agentera experiments`; `agentera query` is reserved for advanced custom artifact access.
 
 ### Fixed

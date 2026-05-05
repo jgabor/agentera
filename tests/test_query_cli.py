@@ -23,7 +23,7 @@ def _run(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
     env = None
     if cwd is not None:
         import os
-        env = {**os.environ, "AGENTERA_HOME": str(cwd)}
+        env = {**os.environ, "AGENTERA_HOME": str(cwd), "XDG_DATA_HOME": str(cwd / ".xdg")}
     return subprocess.run(
         [sys.executable, CLI, *args],
         capture_output=True,
@@ -512,6 +512,106 @@ class TestArtifactSpecificSummaries:
 
 
 # ---------------------------------------------------------------------------
+# hej
+# ---------------------------------------------------------------------------
+
+
+class TestHej:
+    def test_returning_v2_composite_briefing(self, project):
+        profile = project / ".xdg" / "agentera" / "PROFILE.md"
+        profile.parent.mkdir(parents=True)
+        profile.write_text("# Profile\n")
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "CLI shape", "status": "active"},
+            "tasks": [
+                {"number": 1, "name": "Parser", "status": "complete"},
+                {"number": 2, "name": "Composite hej", "status": "pending"},
+            ],
+        })
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [
+                {
+                    "number": 3,
+                    "trajectory": "stable",
+                    "grades": {"architecture_alignment": "B", "coupling_health": "C"},
+                },
+            ],
+        })
+        _write_artifact(project, ".agentera/optimera/tokens/objective.yaml", {
+            "header": {"title": "Token budget", "status": "active"},
+            "objective": {"measurement": "prompt_tokens", "target": "20% reduction"},
+        })
+        _write_artifact(project, "TODO.md", {
+            "entries": [
+                {"severity": "normal", "status": "open", "description": "Update docs"},
+            ],
+        })
+
+        r = _run("hej", cwd=project)
+
+        assert r.returncode == 0
+        assert "mode: returning" in r.stdout
+        assert "profile: loaded" in r.stdout
+        assert "health: audit=3" in r.stdout
+        assert "issues: critical=0 | degraded=0 | normal=1 | annoying=0" in r.stdout
+        assert "plan: status=active | progress=1/2" in r.stdout
+        assert "objective: active" in r.stdout
+        assert "attention:" in r.stdout
+        assert "object=PLAN Task 2: Composite hej" in r.stdout
+        assert "capability=orkestrera" in r.stdout
+
+    def test_completed_plan_routes_to_open_todo_before_vision(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Done plan", "status": "complete"},
+            "tasks": [
+                {"number": 1, "name": "Finished", "status": "complete"},
+            ],
+        })
+        _write_artifact(project, "TODO.md", {
+            "entries": [
+                {"severity": "normal", "status": "open", "description": "Add smoke coverage"},
+            ],
+        })
+
+        r = _run("hej", cwd=project)
+
+        assert r.returncode == 0
+        assert "object=TODO: Add smoke coverage" in r.stdout
+        assert "capability=realisera" in r.stdout
+        assert "capability=visionera" not in r.stdout
+
+    def test_closed_objective_is_not_selected_for_routing(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Done plan", "status": "complete"},
+            "tasks": [
+                {"number": 1, "name": "Finished", "status": "complete"},
+            ],
+        })
+        _write_artifact(project, ".agentera/optimera/done/objective.yaml", {
+            "header": {"title": "Done objective", "status": "closed"},
+            "objective": {"measurement": "tokens", "target": "20% reduction"},
+        })
+
+        r = _run("hej", cwd=project)
+
+        assert r.returncode == 0
+        assert "objective: none active" in r.stdout
+        assert "capability=optimera" not in r.stdout
+
+    def test_v1_markdown_without_yaml_reports_upgrade_preview(self, project):
+        legacy = project / ".agentera" / "PLAN.md"
+        legacy.parent.mkdir(parents=True)
+        legacy.write_text("# Plan\n")
+
+        r = _run("hej", cwd=project)
+
+        assert r.returncode == 0
+        assert "v1 artifacts detected" in r.stdout
+        assert 'uv run scripts/agentera upgrade --project "$PWD" --dry-run' in r.stdout
+        assert ".agentera/PLAN.md" in r.stdout
+
+
+# ---------------------------------------------------------------------------
 # help
 # ---------------------------------------------------------------------------
 
@@ -521,6 +621,7 @@ class TestHelp:
         r = _run("--help")
         assert r.returncode == 0
         assert "prime" in r.stdout
+        assert "hej" in r.stdout
         assert "query" in r.stdout
         assert "plan" in r.stdout
         assert "progress" in r.stdout

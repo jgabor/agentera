@@ -1,4 +1,19 @@
 cycles:
+- number: 268
+  timestamp: 2026-05-05 18:07
+  type: feat
+  phase: verify
+  what: Added `agentera hej` as the one-command composite briefing for bare Agentera orientation.
+  commit: this commit
+  inspiration: The accepted flat-CLI plan says `agentera hej` should carry the state-summary and routing work instead of making agents run multiple routine state commands.
+  discovered: The composite can reuse existing artifact loaders and routing helpers directly; closed optimera objectives need explicit exclusion before next-action selection.
+  verified: 'Validation passed: python3 -m py_compile scripts/agentera; uv run pytest tests/test_query_cli.py -q (48 passed); uv run pytest -q (551 passed, 1 skipped); uv run scripts/agentera hej selected PLAN Task 2; uv run scripts/agentera query --list-artifacts still listed schemas; git diff --check.'
+  next: 'Implement Task 3: keep query as advanced structured access with pipeable JSON/YAML.'
+  context:
+    intent: move bare /agentera orientation into one CLI command
+    constraints: do not implement structured query formatting or prose guidance tasks yet
+    unknowns: exact dashboard rendering remains an agent/prose concern for later guidance updates
+    scope: scripts/agentera composite hej command and focused CLI tests
 - number: 267
   timestamp: 2026-05-05 18:05
   type: feat
