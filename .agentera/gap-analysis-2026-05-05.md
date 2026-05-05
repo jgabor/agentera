@@ -80,13 +80,13 @@ Phase 4 verdict: validation is green; token goal remains missed.
 | D39 | Universal query seam | Partial | `scripts/agentera query` exists and lists all schemas | Query output is not yet the full replacement for all direct artifact reads |
 | D40 | No backward compatibility in active state | Complete | v1 files moved under `.agentera/backup-v1/`; active mapping points to YAML | Migration backup is intentionally retained |
 | D40 | Capability terminology | Complete | Directory and docs use `capabilities/` | None |
-| D41 | Record token benchmark | Complete | Decision 41 is now populated and queryable | Target missed |
+| D41 | Record token benchmark | Complete | Decision 41 is now populated and queryable | 11% reduction accepted as interim; remeasure after 2.0 completion, including profilera implementation/refactor |
 | D42 | Five-layer routing model | Complete at specification level | `SKILL.md` routing model and trigger priorities validate | No executable dispatcher scores triggers; routing remains instruction-driven |
 
 ## Active Gaps
 
-1. Token target missed.
-   The measured v2 payload is 313,356 bytes vs 352,213 bytes for v1, a reduction of 11.0%, not the ROADMAP target of 40%. This is now accurately recorded in Decision 41.
+1. Token target needs final remeasurement after 2.0 completion.
+   The measured v2 payload is 313,356 bytes vs 352,213 bytes for v1, a reduction of 11.0%. That result is acceptable as the current benchmark, but it should be remeasured after 2.0 is complete, including the profilera implementation/refactor.
 
 2. Query CLI is a scaffold, not yet the authoritative read path for every workflow.
    `scripts/agentera query --list-artifacts` works and artifact discovery is broad, but several artifact types still return generic or empty summaries. This matters because v2's token story depends on agents using the query seam instead of reading raw YAML/prose wholesale.
@@ -94,11 +94,17 @@ Phase 4 verdict: validation is green; token goal remains missed.
 3. Cross-capability producer/consumer validation is missing.
    Capability schemas declare artifact relationships, but no validator checks that a producer's output contract and a consumer's input expectation agree across all 12 capabilities.
 
-4. Profilera corpus extraction is deferred.
-   v2 no longer points to `extract_all.py`, and the smoke harness now reports the missing extractor as an explicit skip. That is honest, but it means profilera generation from raw runtime history is not currently shipped.
+4. Profilera corpus extraction is in scope and still missing.
+   v2 no longer points to `extract_all.py`, and the smoke harness now reports the missing extractor as an explicit skip. That is honest, but profilera generation from raw runtime history must be restored or rebuilt as a bundled v2 implementation/refactor.
 
-5. Live runtime verification remains unspent.
-   Offline package and OpenCode plugin smokes pass. The cost-bearing live host path (`scripts/smoke_live_hosts.py --live`) was not run, so current evidence does not prove model-host behavior across Codex/Copilot/Claude/OpenCode.
+5. Live runtime verification blocks cutover claims.
+   Offline package and OpenCode plugin smokes pass. The cost-bearing live host path (`scripts/smoke_live_hosts.py --live`) was not run, so current evidence does not prove model-host behavior across Codex/Copilot/Claude/OpenCode. Do not claim cutover-ready live host behavior until that evidence exists.
+
+## Closed Questions
+
+- Token target: 11% reduction is acceptable as the current benchmark result; remeasure after 2.0 completion, including profilera implementation/refactor.
+- Profilera extraction: v2 should ship a bundled extractor or refactor, not rely only on externally supplied corpus files.
+- Live smoke: live host verification is required before 2.0 cutover claims; no live run is approved by this gap analysis alone.
 
 ## Resolved Since Earlier Draft
 
@@ -116,17 +122,17 @@ Phase 4 verdict: validation is green; token goal remains missed.
 1. Build the producer/consumer graph validator.
    Add a validator that reads every capability `artifacts.yaml` plus skill-level artifact schemas and checks producer/consumer path/name consistency.
 
-2. Deepen `scripts/agentera query`.
+2. Restore/refactor bundled profilera corpus extraction.
+   Implement the v2 extractor path for raw runtime history, wire it into profilera/usage surfaces, and remove the current smoke skip.
+
+3. Deepen `scripts/agentera query`.
    Add artifact-specific summaries for plan, progress, decisions, health, docs, session, todo, design, objective, and experiments so agents can use the query seam instead of raw reads.
 
-3. Decide the token target.
-   Either revise the ROADMAP target from 40% to a measured target, or plan a prose/schema compression pass with a new benchmark gate.
+4. Remeasure token consumption after 2.0 completion.
+   Keep the current 11% reduction as accepted interim evidence. Re-run the benchmark after profilera and query-depth work land.
 
-4. Restore or intentionally replace profilera corpus extraction.
-   Decide whether v2 should ship a bundled extractor, rely on externally supplied corpus files, or mark profilera generation as out of scope for 2.0.
-
-5. Run one gated live-host smoke when budget is approved.
-   Use `python3 scripts/smoke_live_hosts.py --live --yes` only after explicit approval for live model calls.
+5. Run one gated live-host smoke before cutover claims.
+   Use `python3 scripts/smoke_live_hosts.py --live --yes` only after explicit approval for live model calls, but treat that evidence as required before claiming 2.0 cutover readiness.
 
 ## Overall Verdict
 
