@@ -1,4 +1,19 @@
 cycles:
+- number: 271
+  timestamp: 2026-05-05 18:34
+  type: test
+  phase: verify
+  what: Added semantic tool-trace assertions and a `/agentera` CLI-budget fixture for the composite hej path.
+  commit: this commit
+  inspiration: The active plan required tests proving `/agentera` can be served through `agentera hej` without multiple individual state commands or raw artifact reads.
+  discovered: The existing semantic fixture runner only checked output and seeded artifacts, so tool usage needed a small optional `Tool Trace` section plus required and forbidden tool-call facts.
+  verified: 'Validation passed: python3 -m py_compile scripts/semantic_fixtures.py scripts/semantic_eval.py; uv run pytest tests/test_semantic_fixtures.py tests/test_semantic_eval.py tests/test_hej_routing_fixture.py -q (34 passed); uv run scripts/semantic_eval.py fixtures/semantic/hej-routing-task3.md fixtures/semantic/hej-cli-budget.md (2 passed); uv run pytest -q (564 passed, 1 skipped); uv run scripts/agentera hej selected PLAN Task 5; git diff --check.'
+  next: 'Implement Task 6: final freshness and closeout.'
+  context:
+    intent: make the no-plethora-of-tool-calls invariant executable in offline semantic tests
+    constraints: keep the fixture deterministic and avoid live model/tool execution
+    unknowns: final docs index and full artifact freshness remain Task 6 work
+    scope: semantic fixture contract, offline semantic eval, hej CLI-budget fixture, and proportional tests
 - number: 270
   timestamp: 2026-05-05 18:23
   type: docs

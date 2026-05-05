@@ -20,11 +20,15 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 def _fixture_text(
     *,
     output: str = "route /realisera to Task 2",
+    tool_trace: list[str] | None = None,
     required: str = "Task 2",
     forbidden: str = "/optimera",
     artifact_path: str = ".agentera/plan.yaml",
     artifact_contains: str = "Task 2",
 ) -> str:
+    tool_trace_section = ""
+    if tool_trace is not None:
+        tool_trace_section = f'\n        ## Tool Trace\n        ```json\n        {{"calls": {json.dumps(tool_trace)}}}\n        ```\n'
     return textwrap.dedent(f"""\
         # Semantic Fixture: task-two
 
@@ -38,6 +42,7 @@ def _fixture_text(
 
         ## Captured Output
         {output}
+        {tool_trace_section}
 
         ## Expected Facts
         ```json
@@ -138,6 +143,45 @@ class TestReadOnlyWritesAssertion:
             "fact": "artifact_expectations.writes",
             "status": "pass",
             "detail": "fixture expects no artifact writes; offline eval performed none",
+        }
+
+
+class TestToolTraceAssertion:
+    def test_pass_required_tool_call_matches_trace(self, semantic_eval, semantic_fixtures):
+        facts = _fact_map(
+            semantic_eval,
+            semantic_fixtures,
+            _fixture_text(
+                tool_trace=["uv run scripts/agentera hej"],
+                required="Task 2",
+            ).replace(
+                '"artifact_expectations": {"writes": "none"}',
+                '"required_tool_calls": ["agentera hej"], "artifact_expectations": {"writes": "none"}',
+            ),
+        )
+
+        assert facts["required_tool_calls[0]"] == {
+            "fact": "required_tool_calls[0]",
+            "status": "pass",
+            "detail": "tool trace contains 'agentera hej'",
+        }
+
+    def test_fail_forbidden_tool_call_reports_present_trace(self, semantic_eval, semantic_fixtures):
+        facts = _fact_map(
+            semantic_eval,
+            semantic_fixtures,
+            _fixture_text(
+                tool_trace=["uv run scripts/agentera hej", "uv run scripts/agentera plan"],
+            ).replace(
+                '"artifact_expectations": {"writes": "none"}',
+                '"forbidden_tool_calls": ["agentera plan"], "artifact_expectations": {"writes": "none"}',
+            ),
+        )
+
+        assert facts["forbidden_tool_calls[0]"] == {
+            "fact": "forbidden_tool_calls[0]",
+            "status": "fail",
+            "detail": "tool trace contains forbidden 'agentera plan'",
         }
 
 

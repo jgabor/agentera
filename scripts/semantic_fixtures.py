@@ -23,11 +23,18 @@ Fixture format::
     ## Captured Output
     Assistant output captured offline.
 
+    ## Tool Trace
+    ```json
+    {"calls": ["uv run scripts/agentera hej"]}
+    ```
+
     ## Expected Facts
     ```json
     {
       "required_output": ["suggested -> /realisera"],
       "forbidden_output": ["/optimera"],
+      "required_tool_calls": ["agentera hej"],
+      "forbidden_tool_calls": ["agentera plan"],
       "artifact_expectations": {"writes": "none"}
     }
     ```
@@ -60,6 +67,7 @@ class SemanticFixture:
     prompt: str
     seeded_state: dict[str, Any]
     captured_output: str
+    tool_trace: dict[str, Any]
     expected_facts: dict[str, Any]
 
 
@@ -94,6 +102,11 @@ def validate_fixture_text(text: str) -> tuple[SemanticFixture | None, list[str]]
     if "Captured Output" in sections and not captured_output:
         errors.append("malformed section: Captured Output: must be non-empty")
 
+    tool_trace: dict[str, Any] = {"calls": []}
+    if "Tool Trace" in sections:
+        tool_trace, trace_errors = _validate_tool_trace(sections["Tool Trace"])
+        errors.extend(trace_errors)
+
     expected_facts: dict[str, Any] = {}
     if "Expected Facts" in sections:
         expected_facts, fact_errors = _validate_expected_facts(sections["Expected Facts"])
@@ -101,7 +114,7 @@ def validate_fixture_text(text: str) -> tuple[SemanticFixture | None, list[str]]
 
     if errors:
         return None, errors
-    return SemanticFixture(prompt, seeded_state, captured_output, expected_facts), []
+    return SemanticFixture(prompt, seeded_state, captured_output, tool_trace, expected_facts), []
 
 
 def _parse_sections(text: str) -> dict[str, str]:
@@ -147,16 +160,31 @@ def _validate_expected_facts(section_text: str) -> tuple[dict[str, Any], list[st
 
     errors.extend(_validate_string_list(data, "required_output", required=False))
     errors.extend(_validate_string_list(data, "forbidden_output", required=False))
+    errors.extend(_validate_string_list(data, "required_tool_calls", required=False))
+    errors.extend(_validate_string_list(data, "forbidden_tool_calls", required=False))
 
     has_output_fact = bool(data.get("required_output") or data.get("forbidden_output"))
+    has_tool_fact = bool(data.get("required_tool_calls") or data.get("forbidden_tool_calls"))
     has_artifact_fact = "artifact_expectations" in data
-    if not has_output_fact and not has_artifact_fact:
+    if not has_output_fact and not has_tool_fact and not has_artifact_fact:
         errors.append("malformed section: Expected Facts: must declare at least one expected fact")
 
     if has_artifact_fact:
         errors.extend(_validate_artifact_expectations(data["artifact_expectations"]))
 
     return data, errors
+
+
+def _validate_tool_trace(section_text: str) -> tuple[dict[str, Any], list[str]]:
+    data, errors = _load_json_section("Tool Trace", section_text)
+    if errors:
+        return {}, errors
+    if not isinstance(data, dict):
+        return {}, ["malformed section: Tool Trace: JSON must be an object"]
+    calls = data.get("calls")
+    if not isinstance(calls, list) or not all(_non_empty_string(item) for item in calls):
+        return {}, ["malformed section: Tool Trace: calls must be non-empty strings"]
+    return data, []
 
 
 def _validate_artifact_expectations(value: Any) -> list[str]:

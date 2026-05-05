@@ -93,7 +93,7 @@ tasks:
       - Task 2
       - Task 3
       - Task 4
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the /agentera or hej fixture is evaluated THEN expected tool usage includes agentera hej
       - GIVEN that fixture is evaluated THEN it forbids agentera plan, agentera progress, agentera health, agentera todo, agentera decisions, and raw .agentera/*.yaml reads
