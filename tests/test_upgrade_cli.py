@@ -164,7 +164,7 @@ def test_packaged_runtime_upgrade_blocks_without_bundle_phase(tmp_path: Path) ->
     assert not (home / ".codex" / "config.toml").exists()
 
 
-def test_package_upgrade_plans_agentera_and_legacy_hej_bridge(tmp_path: Path) -> None:
+def test_package_upgrade_removes_legacy_skills_and_installs_agentera(tmp_path: Path) -> None:
     result = _run(
         "upgrade",
         "--only",
@@ -183,7 +183,22 @@ def test_package_upgrade_plans_agentera_and_legacy_hej_bridge(tmp_path: Path) ->
 
     assert payload["phases"][0]["status"] == "skipped"
     assert any("--skill agentera" in command and "skills add jgabor/agentera" in command for command in commands)
-    assert any("--skill hej" in command and "skills add jgabor/agentera" in command for command in commands)
+    assert any("skills remove" in command and "hej" in command and "planera" in command for command in commands)
+    for skill in (
+        "hej",
+        "visionera",
+        "resonera",
+        "inspirera",
+        "planera",
+        "realisera",
+        "inspektera",
+        "optimera",
+        "orkestrera",
+        "visualisera",
+        "dokumentera",
+        "profilera",
+    ):
+        assert not any(f"--skill {skill}" in command for command in commands)
 
 
 def test_artifact_upgrade_dry_run_json_writes_nothing(tmp_path: Path) -> None:

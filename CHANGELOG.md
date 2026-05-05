@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [2.0.2] · 2026-05-05
+
+### Fixed
+
+- Kept `/hej` as the only legacy bridge and changed package refresh to remove package-managed v1 skill entries before installing `/agentera`.
+- Corrected stale OpenCode install guidance to include `--skill agentera`.
+
 ## [2.0.1] · 2026-05-05
 
 ### Fixed

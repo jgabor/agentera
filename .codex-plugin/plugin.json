@@ -1,7 +1,7 @@
 {
   "name": "agentera",
-  "version": "2.0.1",
-  "description": "Compound agent orchestration suite — 12 capabilities in one bundled skill",
+  "version": "2.0.2",
+  "description": "Compound agent orchestration suite \u2014 12 capabilities in one bundled skill",
   "author": {
     "name": "Jonathan Gabor",
     "url": "https://github.com/jgabor"
@@ -95,7 +95,7 @@
   "skillMetadata": [
     {
       "name": "agentera",
-      "description": "Compound agent orchestration suite — 12 capabilities in one bundled skill",
+      "description": "Compound agent orchestration suite \u2014 12 capabilities in one bundled skill",
       "path": "./skills/agentera",
       "runtimeSupport": "portable",
       "invocationHint": "$agentera",
