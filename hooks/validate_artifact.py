@@ -137,6 +137,9 @@ _SEQUENCE_KEYS_BY_ARTIFACT = {
 _NESTED_SEQUENCE_KEYS = {
     ("DECISION", "ALTERNATIVE"): "alternatives",
 }
+_SEQUENCE_ORDER_BY_ARTIFACT = {
+    ("progress", "cycles"): "descending",
+}
 
 
 def _collect_required(schema: dict) -> list[tuple[str, list[str]]]:
@@ -345,6 +348,23 @@ def _validate_decision_alternatives(data: dict, name: str) -> list[str]:
     return violations
 
 
+def _validation_rule_severity(schema: dict, rule: str) -> str | None:
+    for entry in schema.get("VALIDATION", {}).values():
+        if isinstance(entry, dict) and entry.get("rule") == rule:
+            severity = entry.get("severity")
+            return str(severity) if severity else None
+    return None
+
+
+def _expected_sequence_order(name: str, key: str) -> str:
+    return _SEQUENCE_ORDER_BY_ARTIFACT.get((name, key), "ascending")
+
+
+def _sequence_in_order(nums: list[int], direction: str) -> bool:
+    reverse = direction == "descending"
+    return nums == sorted(nums, reverse=reverse)
+
+
 def _validate_yaml(content: str, schema: dict, name: str) -> list[str]:
     violations: list[str] = []
     try:
@@ -365,12 +385,13 @@ def _validate_yaml(content: str, schema: dict, name: str) -> list[str]:
     _validate_sequences(data, schema, name, violations)
     if name == "decisions":
         violations.extend(_validate_decision_alternatives(data, name))
+    word_budget_severity = _validation_rule_severity(schema, "word_budget")
     for _, be in schema.get("BUDGET", {}).items():
         if not isinstance(be, dict):
             continue
         mw = be.get("max_words")
         scope = be.get("scope") or ""
-        if mw and "full_file" in scope:
+        if mw and "full_file" in scope and word_budget_severity == "error":
             wc = len(content.split())
             if wc > mw:
                 violations.append(f"{name}: word count ({wc}) exceeds budget ({mw})")
@@ -389,8 +410,9 @@ def _validate_yaml(content: str, schema: dict, name: str) -> list[str]:
                     if nums:
                         if len(nums) != len(set(nums)):
                             violations.append(f"{name}: duplicate numbers in '{key}'")
-                        if nums != sorted(nums):
-                            violations.append(f"{name}: '{key}' not in ascending order")
+                        direction = _expected_sequence_order(name, key)
+                        if not _sequence_in_order(nums, direction):
+                            violations.append(f"{name}: '{key}' not in {direction} order")
     return violations
 
 

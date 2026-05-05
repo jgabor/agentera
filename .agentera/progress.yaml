@@ -1,4 +1,22 @@
 cycles:
+- number: 266
+  timestamp: 2026-05-05 17:12
+  type: fix
+  phase: verify
+  what: Fixed artifact validation so advisory word budgets no longer hard-block writes and progress cycles validate newest-first.
+  commit: this commit
+  inspiration: User flagged that skipping a progress update after the budget rejection meant the artifact-budget path was not cleanly handled.
+  discovered: The hook treated advisory word budgets as blocking violations and hard-coded ascending numeric order even though progress queries and
+    the live artifact use newest-first cycle order.
+  verified: 'Validation passed: uv run pytest tests/test_hook_v2.py -q (60 passed); uv run scripts/validate_capability.py --self-validate;
+    uv run scripts/validate_capability.py skills/agentera/capabilities/realisera; uv run scripts/validate_cross_capability.py; direct
+    validate_artifact.py check against .agentera/progress.yaml exited 0.'
+  next: Commit the artifact-validator fix.
+  context:
+    intent: make artifact validation guide agents without blocking legitimate evidence updates
+    constraints: keep budget limits advisory unless a schema marks them error
+    unknowns: YAML compaction remains a separate improvement if automatic shrinking is desired
+    scope: hook validation, regression tests, progress schema guidance, realisera prose, contract reference, and progress evidence
 - number: 265
   timestamp: 2026-05-05 14:51
   type: fix

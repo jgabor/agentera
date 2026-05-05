@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Artifact validation now treats advisory word budgets as non-blocking and validates progress cycles as newest-first.
+
 ## [2.0.3] · 2026-05-05
 
 ### Fixed
