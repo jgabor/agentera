@@ -6,7 +6,6 @@
 
 ## → Normal
 
-- [ ] [agentera-post-v2-token-optimization] Optional future-version work: continue reducing the static dispatch payload beyond the v2.0.2 result of 315,983 bytes vs v1 352,213 bytes (-10.3%, exceeding the revised -10% target). Measure with `uv run scripts/measure_token_payload.py`.
 - [ ] [agentera-optional-claude-live-smoke] Optional future-version work: add an explicit opt-in Claude Code live model-host smoke when Claude Pro/Max or API access is available. Current required live evidence covers Codex, Copilot, and OpenCode.
 
 ## ⇢ Annoying
