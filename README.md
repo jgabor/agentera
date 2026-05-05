@@ -11,7 +11,7 @@ Agentera gives coding agents shared memory, decision profiles, specialized
 roles, verification gates, and a common project protocol.
 
 <p>
-<a href="#agentera-20">Agentera 2.0</a> ·
+<a href="#agentera-v2">Agentera v2</a> ·
 <a href="#upgrading-from-v1">Upgrade</a> ·
 <a href="#why-agentera">Why Agentera</a> ·
 <a href="#features">Features</a> ·
@@ -26,9 +26,9 @@ roles, verification gates, and a common project protocol.
 
 </div>
 
-## Agentera 2.0
+## Agentera v2
 
-Agentera 2.0 is here: one `/agentera` entry point for the full suite, with
+Agentera v2 is here: one `/agentera` entry point for the full suite, with
 cleaner installs and better shared project memory across Claude Code, OpenCode,
 Copilot CLI, and Codex CLI.
 
