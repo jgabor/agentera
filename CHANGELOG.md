@@ -2,51 +2,37 @@
 
 ## [Unreleased]
 
-### Added
-
-- v2.0.0 remediation: closed D39 gaps including invocation model decision (/agentera single entry point), query CLI schema discovery fix, artifact migration v1→v2 (8 YAML artifacts with backup), test compaction retirement, SPEC.md dissolution (generate_contracts.py retired), stale v1 skill directory removal, all 12 capability prose files updated to reference YAML artifacts, AGENTS.md rewritten for single-bundle model, README rewritten with natural-language capability mapping, semantic eval fixture ported to v2 format, archived plan documentation corrected to reflect merge revert reality.
-- Decision 42 five-layer dispatch model implemented in SKILL.md: bare `/agentera` delegates to hej, capability names bypass NL matching, trigger schemas gain priority fields (high/medium/low), disambiguation prompt specified for borderline matches.
-- Comprehensive gap analysis document (`.agentera/gap-analysis-2026-05-05.md`) auditing ROADMAP.md and Decisions 39-42 against actual implementation.
-- `agentera upgrade` CLI for idempotent v1-to-v2 upgrades: artifact migration, runtime config wiring, stale v1 cleanup, package-update opt-in, JSON output, and setup-doctor postflight.
-- `pyproject.toml` package entry point for clone-free upgrade runs via `uvx`; packaged upgrades install or refresh a durable bundle at `~/.agents/agentera` before wiring runtime config.
-- `scripts/smoke_live_hosts.py --live --yes` now includes OpenCode live AGENTERA_HOME/query coverage via isolated `opencode run --pure`, while keeping Claude Code live smoke explicitly deferred.
-- Decision 41 release scope updated: the Agentera 2.0 static dispatch payload target is revised to -10%, with the measured -9.8% accepted as close enough for v2.0 and further optimization deferred to future versions.
-
-### Changed
-
-- Root Python scripts and hooks now use `uv run --script` shebangs with PEP 723 metadata, lifecycle validation covers `scripts/` and `hooks/` entrypoints, and CI/Lefthook/docs invoke current v2 validators through `uv run`.
-- Codex setup no longer writes v1 per-skill `[agents.<name>]` blocks; `--enable-agents` is a compatibility no-op, and Codex UI metadata now points at the single `skills/agentera` bundle.
-- OpenCode setup doctor and checked-in managed command fixtures now use the single `agentera` bundled skill path instead of the removed 12 v1 command/skill paths.
-- feat/v2 merged to main via fast-forward after validation (507 tests pass, 0 failures; all 12 capabilities pass contract validation; version surfaces at 2.0.0).
-- All 12 capability `triggers.yaml` schemas updated with `priority` field for confidence-based routing.
-- Claude Code live model-host smoke is excluded from the required v2.0 release harness until Claude Pro/Max or API access is available; future Claude live smoke should be explicit opt-in.
-- Final v2.0 release-candidate validation passed on 2026-05-05: full pytest, capability validators, cross-capability graph, offline and live smoke, token payload measurement, stale-v1 detection, OpenCode bootstrap, lifecycle metadata, and query CLI checks.
-
-## [2.0.0] · 2026-05-04
+## [2.0.0] · 2026-05-05
 
 ### Added
 
-- Agentera 2.0 Phase 3 integration: stale v1 test cleanup (62 failing tests removed, 688+ passing), cross-capability reference verification (all 12 capabilities' protocol.yaml stable IDs resolve, routing confirmed), query CLI expansion (all 9 artifact schema queries plus --list-artifacts), runtime adapter configuration (Claude Code, OpenCode, Codex, Copilot plugin metadata wired), hook verification against v2 artifact schemas (18 pass/fail tests across 9 schemas), and SKILL.md/AGENTS.md update to v2 bundled-skill model.
-- Agentera 2.0 Phase 2 capability ports: all 12 v1 SKILL.md files (hej, realisera, resonera, planera, inspektera, optimera, orkestrera, visionera, visualisera, dokumentera, profilera, inspirera) ported to the v2 capability model with `prose.md` behavioral instructions and `schemas/` YAML groups (TRIGGERS, ARTIFACTS, VALIDATIONS, EXAMPLES) using stable IDs and protocol.yaml primitive references. All capabilities pass contract validation and master SKILL.md routing integration tests.
-- Agentera 2.0 Phase 1 infrastructure: capability schema contract with self-referential validation and stable IDs, shared protocol schema (protocol.yaml) defining confidence/severity/phase/visual-token primitives, 9 artifact schemas (PROGRESS, DECISIONS, HEALTH, SESSION, PLAN, OBJECTIVE, EXPERIMENTS, DOCS, VISION) in YAML with UPPER_CASE groups and v1 field mapping, query CLI scaffold (`scripts/agentera`) supporting query/prime commands with schema-driven artifact reads and filters, migration tool (`scripts/migrate_v1_to_v2`) converting v1 Markdown artifacts to v2 YAML with backup-by-default, and rewritten `hooks/validate_artifact.py` validating writes against artifact schemas instead of hardcoded contracts.
+- One bundled `/agentera` skill now exposes all 12 Agentera capabilities through a single entry point.
+- Capability schema contract, shared protocol schema, and YAML schemas for project state artifacts.
+- Query CLI for artifact discovery and state summaries across plan, progress, decisions, health, docs, session, todo, design, objective, and experiments.
+- Idempotent `agentera upgrade` CLI for v1-to-v2 migration, runtime config wiring, stale v1 cleanup, package-update opt-in, JSON output, and setup-doctor postflight.
+- Python package entry point so the Agentera CLI can be run through packaged tool installs.
+- Decision 42 routing model with bare `/agentera` delegation, capability-name direct routing, trigger priorities, disambiguation, and hej fallback.
+- Cross-capability graph validation, v2 semantic eval fixture support, and OpenCode live smoke coverage in the gated live-host harness.
 
 ### Changed
 
-- Installation Reliability Self-Healing is freshness-closed with install validation, offline bundle smoke, OpenCode command and skill-path repair, doctor drift reporting, 1.27.0 metadata, and archived plan state aligned.
+- Removed the 12 standalone v1 skill directories from the active distribution and collapsed runtime adapter metadata to the single `skills/agentera` bundle.
+- Agent-facing project state moved from Markdown artifacts to structured `.agentera/*.yaml` files while human-facing `TODO.md`, `CHANGELOG.md`, and `DESIGN.md` remain Markdown.
+- Root Python scripts and hooks now use `uv run --script` shebangs with PEP 723 metadata, and CI/Lefthook/docs invoke current v2 validators through `uv run`.
+- Codex setup no longer writes v1 per-skill `[agents.<name>]` blocks; Codex UI metadata points at the single Agentera bundle.
+- OpenCode setup doctor and managed command fixtures now use the single bundled `agentera` skill path instead of v1 per-skill command paths.
+- README, UPGRADE, AGENTS, ROADMAP, and runtime docs now describe the v2 single-bundle model and upgrade path.
+- Release validation exceeds the revised -10% static dispatch payload target: v2 now measures 315,697 bytes vs the v1 352,213-byte baseline, a 10.4% reduction.
+- Claude Code live model-host smoke is excluded from the required v2.0 release harness until Claude Pro/Max or API access is available.
+- Checked-in v1 migration backups were removed before release so the repository ships only active v2 state.
 
-## [2.0.0] · 2026-05-04
+### Fixed
 
-### Added
+- Live smoke temporary Copilot and OpenCode install roots now include the `agentera_upgrade.py` support module required by the packaged query CLI.
 
-- Complete v2.0.0 cutover: removed 12 v1 skill directories, collapsed all runtime adapter configs (marketplace, Codex, OpenCode, registry) to single bundled `skills/agentera/`, added `UPGRADE.md` with migration steps for all 4 runtimes, renamed migration script from `migrate_v1_to_v2` to `migrate_artifacts_v1_to_v2` (with backward-compatible wrapper), bumped all version surfaces to 2.0.0. 528 tests pass, 0 fail.
-- Migration safety hardening: `--dry-run` mode, backup overwrite protection (`--force` to override), PROFILE.md explicit exclusion check, backup failure safety (exits non-zero, no partial writes). 8 new tests.
-- Hej upgrade guard: detects v1 Markdown artifacts missing v2 YAML equivalents during orientation, routes to migration command. PROFILE.md presence/absence checked with degraded attention item when absent. 4 new tests.
-- Stale v1 runtime artifact detection script (`scripts/detect_stale_v1`): reports dead symlinks (Claude), stale command files (OpenCode), stale agent entries (Codex). Defaults to `--dry-run`. 25 new tests.
-- README rewritten for v2 single-bundle model. DOCS.md `version_files` updated to v2 surfaces.
+### Verified
 
-### Changed
-
-- README fully rewritten to describe v2 single-bundle model with 12 capabilities, no v1 references remain.
+- Final v2 validation passed on 2026-05-05: full pytest, capability validators, cross-capability graph validation, offline and live smoke, token payload measurement, stale-v1 detection, OpenCode bootstrap, lifecycle metadata validation, packaged CLI smoke, and query CLI checks.
 
 ## [1.27.1] · 2026-04-30
 

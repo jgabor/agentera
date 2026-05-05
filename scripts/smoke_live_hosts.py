@@ -79,6 +79,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SETUP_HELPERS_SMOKE = REPO_ROOT / "scripts" / "smoke_setup_helpers.py"
 AGENTERA_CLI = REPO_ROOT / "scripts" / "agentera"
+AGENTERA_UPGRADE = REPO_ROOT / "scripts" / "agentera_upgrade.py"
 EXTRACT_CORPUS = REPO_ROOT / "scripts" / "extract_corpus.py"
 
 # Auth probe deadline shared across both runtimes (AC3). 30s is the
@@ -121,6 +122,17 @@ def skip(section: str, reason: str, skips: list[tuple[str, str]]) -> None:
     """
     info(f"SKIP: {section} ({reason})")
     skips.append((section, reason))
+
+
+def _install_query_cli_bundle(install_root: Path) -> None:
+    """Install the minimal files needed for `agentera query` smoke probes."""
+    (install_root / "scripts").mkdir(parents=True)
+    shutil.copy2(AGENTERA_CLI, install_root / "scripts" / "agentera")
+    shutil.copy2(AGENTERA_UPGRADE, install_root / "scripts" / "agentera_upgrade.py")
+    shutil.copytree(
+        REPO_ROOT / "skills" / "agentera" / "schemas",
+        install_root / "skills" / "agentera" / "schemas",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1535,12 +1547,7 @@ def run_copilot_live_section(
     ) as tmp_install_root_str:
         tmp_install_root = Path(tmp_install_root_str)
         info(f"copilot: tmp AGENTERA_HOME={tmp_install_root}")
-        (tmp_install_root / "scripts").mkdir(parents=True)
-        shutil.copy2(AGENTERA_CLI, tmp_install_root / "scripts" / "agentera")
-        shutil.copytree(
-            REPO_ROOT / "skills" / "agentera" / "schemas",
-            tmp_install_root / "skills" / "agentera" / "schemas",
-        )
+        _install_query_cli_bundle(tmp_install_root)
 
         with tempfile.TemporaryDirectory(
             prefix="agentera-smoke-copilot-query-"
@@ -1785,12 +1792,7 @@ def run_opencode_live_section(
                 ) as tmp_install_root_str:
                     tmp_install_root = Path(tmp_install_root_str)
                     info(f"opencode: tmp AGENTERA_HOME={tmp_install_root}")
-                    (tmp_install_root / "scripts").mkdir(parents=True)
-                    shutil.copy2(AGENTERA_CLI, tmp_install_root / "scripts" / "agentera")
-                    shutil.copytree(
-                        REPO_ROOT / "skills" / "agentera" / "schemas",
-                        tmp_install_root / "skills" / "agentera" / "schemas",
-                    )
+                    _install_query_cli_bundle(tmp_install_root)
 
                     with tempfile.TemporaryDirectory(
                         prefix="agentera-smoke-opencode-query-"
