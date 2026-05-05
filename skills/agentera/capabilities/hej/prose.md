@@ -21,7 +21,7 @@ For returning projects, run one composite command before any individual state
 access:
 
 ```bash
-uv run ${AGENTERA_HOME:-.}/scripts/agentera hej
+uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
 ```
 
 Use that output to render the dashboard and select the concrete next action. Do
@@ -32,6 +32,23 @@ or `agentera objective` as part of normal hej briefing assembly. Do not read raw
 is missing from `agentera hej`, fix or extend the composite CLI contract instead
 of adding routine fallback reads. Use top-level fallback commands only when
 `agentera hej` fails or explicitly reports fallback-only recovery.
+
+Resolve `RESOLVED_AGENTERA_HOME` from `AGENTERA_HOME` when set, otherwise from
+`$HOME/.agents/agentera`. If that installed command is stale, missing `hej`,
+fails before argparse, or has a stale `.agentera-bundle.json` marker, treat it
+as a bundle freshness gap. Preview the repair with:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
+```
+
+Do not run the matching `--yes` command until the user explicitly approves the
+same bundle root, preferably with `approve bundle refresh for
+<resolved-root>`. After apply, retry `uv run
+"$RESOLVED_AGENTERA_HOME/scripts/agentera" hej`; do not treat local checkout
+fallback as installed-bundle success. If `AGENTERA_HOME` points at a missing,
+invalid, or non-managed root, ask the user to fix/unset it, choose a managed
+root, or explicitly request forced install guidance.
 
 Use `agentera query <artifact-name> --format json|yaml` only for advanced or
 custom artifact inspection when no top-level command serves the needed state.
@@ -57,7 +74,9 @@ VT14, flow arrow VT17, skill glyphs SG1-SG12, exits EX1-EX4, issues SI1-SI4.
 
 ## Step 0: Detect mode
 
-Run `agentera hej` and use its `mode` field.
+Run the resolved installed `agentera hej` and use its `mode` field. If the
+installed bundle freshness guard fires, show the refresh preview before normal
+mode handling.
 
 - **No artifacts found** → Step 1a (first time on this project)
 - **Artifacts found** → Step 1b (returning to known project)

@@ -180,7 +180,8 @@ def test_routine_capability_guidance_uses_top_level_state_commands():
     assert "query progress" not in realisera
     assert "scripts/agentera experiments" in optimera
     assert "query experiments" not in optimera
-    assert "uv run ${AGENTERA_HOME:-.}/scripts/agentera hej" in hej
+    assert 'uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej' in hej
+    assert "bundle freshness gap" in hej
     assert "advanced/custom inspection only" in hej
 
 

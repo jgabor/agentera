@@ -44,6 +44,41 @@ entry points can hand users to the command above, but the command above is the
 complete upgrade path. With `--update-packages`, it removes package-managed v1
 skill entries and installs `/agentera`.
 
+### Durable bundle refresh
+
+`codex plugin marketplace upgrade`, `copilot plugin marketplace upgrade`, and
+`npx skills update -g -y` refresh package-managed surfaces. They do not
+guarantee that the durable suite bundle under `AGENTERA_HOME` has the latest
+`scripts/agentera` CLI.
+
+Bare `/agentera` owns this recovery path. When the installed CLI is missing
+`hej`, fails before command discovery, has a stale `.agentera-bundle.json`
+version, or otherwise fails the freshness contract, it should show the
+bundle-only dry run for the resolved install root:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --dry-run
+```
+
+Only after explicit approval for that same root should it apply:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --yes
+```
+
+The apply command refreshes the durable bundle only. It does not run package
+updates, artifact migration, runtime config rewrites, or cleanup phases.
+Afterward, retry:
+
+```bash
+uv run "$AGENTERA_HOME/scripts/agentera" hej
+```
+
+If `AGENTERA_HOME` is unset, use `~/.agents/agentera`. If it points at a
+missing path, a file, or a non-managed directory, do not overwrite it silently;
+fix/unset `AGENTERA_HOME`, choose a managed `--install-root`, or intentionally
+use the broader upgrade flow with force guidance.
+
 ### Local clone
 
 Preview first. This writes nothing and exits non-zero when pending work exists:

@@ -5,7 +5,7 @@ description: >
   One bundled skill with twelve capabilities, each defined by human-readable
   prose and machine-readable schemas. The agent reads this file to route
   incoming requests to the right capability.
-version: "2.0.3"
+version: "2.1.0"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 ---
 
@@ -73,6 +73,11 @@ Routine commands are: `hej`, `plan`, `progress`, `health`, `todo`,
 inspection remain available through `query --list-artifacts` and
 `query <artifact-name> --format json|yaml`.
 
+The expected durable bundle version is the suite version in `registry.json`
+(`skills[0].version`); SKILL.md frontmatter mirrors that value. The installed
+bundle marker `.agentera-bundle.json` should carry the same version, and the
+installed CLI must discover the expected routine commands, including `hej`.
+
 Do not silently bypass the CLI and read raw `.agentera/*.yaml` files first. If
 all CLI paths fail, report that the CLI was unavailable, then use raw artifact
 reads only as a fallback.
@@ -87,6 +92,58 @@ commands named by that capability before opening raw artifacts. Reading a
 capability's `prose.md` file is not itself a capability invocation; invocation
 means routing to the capability, following its prose, and using the CLI state
 layer first.
+
+### Step -1a: Bundle freshness guard
+
+Package and marketplace updates can refresh the visible skill while leaving the
+durable bundle under `AGENTERA_HOME` stale. Treat that split state as an
+Agentera-owned freshness gap, not as a reason to call the local checkout a
+successful installed run.
+
+For bare `/agentera`, resolve the bundle root in this order:
+
+1. `AGENTERA_HOME`, when set
+2. `$HOME/.agents/agentera`
+
+Then try the installed command:
+
+```bash
+uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
+```
+
+If the command fails before argparse, reports `invalid choice` for `hej`, lacks
+`hej` in `--help`, has a stale or missing `.agentera-bundle.json` marker, or the
+fresh diagnostic reports stale/blocked status, do not silently fall through to
+the local checkout as a success. Report the bundle freshness gap with the root,
+resolution source, and expected version, then run or show the clone-free preview:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
+```
+
+Ask for explicit approval before writes. The canonical approval phrase is
+`approve bundle refresh for <resolved-root>`; a normal affirmative response is
+acceptable only when it clearly authorizes the same bundle refresh and root. If
+approved, apply the same-root command:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --yes
+```
+
+After apply, retry the installed command from the same refreshed root:
+
+```bash
+uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
+```
+
+If `AGENTERA_HOME` points at a missing path, a file, or a non-managed directory,
+do not overwrite it silently. Ask the user to fix/unset `AGENTERA_HOME`, choose
+a managed `--install-root`, or explicitly request a forced bundle install.
+
+When a fresh local checkout is available, `uv run scripts/agentera bundle-status
+--install-root "$RESOLVED_AGENTERA_HOME" --json` can diagnose the same contract
+without writing. In no-clone situations, the uvx dry-run above is the portable
+diagnostic and preview.
 
 ### Step 0: Upgrade guard
 
