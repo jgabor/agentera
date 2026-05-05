@@ -121,7 +121,7 @@ tasks:
     name: Retag And Reverify Release After Approval
     depends_on:
       - Task 6
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the user explicitly approves release mutation WHEN retag and force-push commands run THEN only the approved commands are executed
       - GIVEN mutation completes WHEN release state is checked THEN the corrected v2.1.0 tag, remote tag, branch commit, and release evidence are reverified
