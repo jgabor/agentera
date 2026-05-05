@@ -107,6 +107,14 @@ index:
   path: .agentera/docs.yaml
   last_updated: '2026-05-05'
   status: current
+- document: Gap analysis
+  path: .agentera/gap-analysis-2026-05-05.md
+  last_updated: '2026-05-05'
+  status: current
+- document: Roadmap
+  path: ROADMAP.md
+  last_updated: '2026-05-05'
+  status: current
 - document: Design
   path: DESIGN.md
   last_updated: '2026-05-05'
@@ -239,7 +247,7 @@ coverage:
   documented: 12/12 skills have SKILL.md (single source of truth)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: 577 tests across 23 files; CI runs on push/PR via GitHub Actions
+  tests: 520 tests across the current v2 suite; CI runs on push/PR via GitHub Actions
 audit_log:
 - date: '2026-04-30'
   label: installation reliability checkpoint

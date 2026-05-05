@@ -11,11 +11,11 @@ meta:
   name: todo
   version: "1.0.0"
   description: >-
-    Open issues and tasks. Produced by realisera, inspektera. Consumed by
-    hej for status briefings. Human-facing: remains Markdown at project root.
+    Open issues and tasks. Produced by capabilities that file work or findings.
+    Human-facing: remains Markdown at project root.
   artifact_type: human_facing
   path: "TODO.md"
-  producer: [realisera, inspektera]
+  producer: [dokumentera, inspektera, inspirera, optimera, orkestrera, realisera, resonera, visualisera]
   consumers: [hej, all_skills]
   format: yaml
 

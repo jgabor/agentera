@@ -11,12 +11,12 @@ meta:
   name: design
   version: "1.0.0"
   description: >-
-    Visual identity system. Produced by visualisera. Consumed by dokumentera
-    and realisera for UI consistency. Human-facing: remains Markdown at root.
+    Visual identity system. Produced by visualisera. Consumed by capabilities
+    that need visual identity context. Human-facing: remains Markdown at root.
   artifact_type: human_facing
   path: "DESIGN.md"
   producer: visualisera
-  consumers: [dokumentera, realisera]
+  consumers: [dokumentera, hej, inspektera, realisera, visionera, visualisera]
   format: yaml
 
 GROUP_PREFIXES:

@@ -41,12 +41,12 @@ meta:
   name: plan
   version: "1.0.0"
   description: >-
-    Active work plan. Produced by planera. Consumed by realisera, inspektera,
-    and orkestrera for task tracking and plan-driven execution.
+    Active work plan. Produced by planera and updated by plan executors.
+    Consumed by capabilities that inspect or execute plan state.
   artifact_type: agent_facing
   path: ".agentera/plan.yaml"
-  producer: planera
-  consumers: [realisera, inspektera, orkestrera]
+  producer: [orkestrera, planera, realisera]
+  consumers: [hej, inspektera, orkestrera, planera, realisera]
   format: yaml
 
 GROUP_PREFIXES:

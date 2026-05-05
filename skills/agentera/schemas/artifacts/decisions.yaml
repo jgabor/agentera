@@ -34,12 +34,12 @@ meta:
   description: >-
     Reasoning trail maintained by resonera. Each deliberation session
     appends one entry. Decisions are referenced by realisera, optimera,
-    profilera, planera, inspektera, and orkestrera for context on why
-    choices were made.
+    profilera, planera, inspektera, hej, dokumentera, visionera, resonera,
+    and orkestrera for context on why choices were made.
   artifact_type: agent_facing
   path: ".agentera/decisions.yaml"
   producer: resonera
-  consumers: [planera, realisera, inspektera, profilera, optimera, orkestrera]
+  consumers: [dokumentera, hej, inspektera, optimera, orkestrera, planera, profilera, realisera, resonera, visionera]
   format: yaml
 
 GROUP_PREFIXES:

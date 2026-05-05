@@ -11,10 +11,10 @@ errors, exit 0 / exit 1, snapshot-restore for any user file the harness
 might mutate. The two top-level modes:
 
     Default mode (no flags)
-        Reports the current v2 profilera corpus-collection status, then
-        delegates to ``scripts/smoke_setup_helpers.py`` as a subprocess
-        so the existing helper smoke continues to gate this harness.
-        No live CLI is invoked. Exits 0 with
+        Runs an offline profilera corpus-collection fixture through the
+        bundled extractor, then delegates to ``scripts/smoke_setup_helpers.py``
+        as a subprocess so the existing helper smoke continues to gate this
+        harness. No live CLI is invoked. Exits 0 with
         ``PASS: all smoke checks passed``.
 
     Live mode (--live)
@@ -83,6 +83,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SETUP_HELPERS_SMOKE = REPO_ROOT / "scripts" / "smoke_setup_helpers.py"
 AGENTERA_CLI = REPO_ROOT / "scripts" / "agentera"
+EXTRACT_CORPUS = REPO_ROOT / "scripts" / "extract_corpus.py"
 
 # Auth probe deadline shared across both runtimes (AC3). 30s is the
 # distinguishing line between "binary present but unresponsive" (likely
@@ -297,18 +298,99 @@ def _sha256(path: Path) -> str:
 
 
 def run_codex_collection_audit() -> None:
-    """Report the current v2 profilera corpus-collection status.
-
-    Agentera v2 currently ships profilera as a capability in the bundled
-    skill, not as a standalone Python extractor. Default smoke mode should
-    therefore make the deferred extractor explicit instead of importing a
-    v1-only helper path.
-    """
+    """Prove the bundled corpus extractor can collect Codex-shaped turns."""
     info("--- profilera Codex collection audit ---")
-    info(
-        "SKIP: profilera Codex collection audit "
-        "(v2 corpus extraction helper is not shipped)"
-    )
+    if not EXTRACT_CORPUS.exists():
+        fail(f"profilera corpus extractor missing: {EXTRACT_CORPUS}")
+    with tempfile.TemporaryDirectory(prefix="agentera-corpus-smoke-") as tmp_str:
+        tmp = Path(tmp_str)
+        project_root = tmp / "project"
+        sessions_dir = tmp / "codex" / "sessions"
+        session_path = sessions_dir / "2026" / "05" / "05" / "session.jsonl"
+        output = tmp / "corpus.json"
+
+        project_root.mkdir(parents=True)
+        session_path.parent.mkdir(parents=True)
+        (project_root / "AGENTS.md").write_text(
+            "Prefer evidence-first execution.\n",
+            encoding="utf-8",
+        )
+        (project_root / "package.json").write_text(
+            json.dumps({"name": "agentera-smoke", "scripts": {"test": "pytest"}}),
+            encoding="utf-8",
+        )
+        session_events = [
+            {
+                "type": "session_meta",
+                "payload": {"id": "smoke-session", "cwd": str(project_root)},
+            },
+            {
+                "type": "response_item",
+                "payload": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": "Should we keep flags explicit?"}],
+                    "timestamp": "2026-05-05T10:00:00Z",
+                },
+            },
+            {
+                "type": "response_item",
+                "payload": {
+                    "type": "message",
+                    "role": "assistant",
+                    "content": [{"type": "output_text", "text": "Yes. Explicit flags stay authoritative."}],
+                    "timestamp": "2026-05-05T10:01:00Z",
+                },
+            },
+        ]
+        session_path.write_text(
+            "\n".join(json.dumps(event) for event in session_events) + "\n",
+            encoding="utf-8",
+        )
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(EXTRACT_CORPUS),
+                "--output",
+                str(output),
+                "--project-root",
+                str(project_root),
+                "--codex-sessions-dir",
+                str(sessions_dir),
+                "--no-claude",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.stdout:
+            for line in result.stdout.rstrip("\n").splitlines():
+                info(f"  {line}")
+        if result.stderr:
+            for line in result.stderr.rstrip("\n").splitlines():
+                info(f"  stderr: {line}")
+        assert_true(result.returncode == 0, "profilera corpus extractor failed")
+        assert_true(output.exists(), "profilera corpus extractor did not write corpus.json")
+        corpus = json.loads(output.read_text(encoding="utf-8"))
+        families = corpus.get("metadata", {}).get("families", {})
+        assert_true(
+            families.get("conversation_turn", {}).get("count") == 2,
+            "profilera corpus extractor did not collect Codex conversation turns",
+        )
+        assert_true(
+            families.get("history_prompt", {}).get("count") == 1,
+            "profilera corpus extractor did not classify decision-rich user prompts",
+        )
+        assert_true(
+            families.get("instruction_document", {}).get("count") == 1,
+            "profilera corpus extractor did not collect instruction documents",
+        )
+        assert_true(
+            families.get("project_config_signal", {}).get("count") == 1,
+            "profilera corpus extractor did not collect project config signals",
+        )
+    info("PASS: profilera Codex collection audit")
 
 
 def run_setup_helpers_smoke() -> None:

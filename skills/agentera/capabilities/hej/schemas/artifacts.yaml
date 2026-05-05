@@ -99,3 +99,12 @@ ARTIFACTS:
       Path is global, resolved via PROFILERA_PROFILE_DIR or XDG_DATA_HOME.
     produces: false
     consumes: true
+  12:
+    id: A12
+    name: SESSION.md
+    path: ".agentera/session.yaml"
+    description: >-
+      Recent session bookmark context. Produced by the session stop hook.
+      Hej reads this for returning-project continuity when present.
+    produces: false
+    consumes: true
