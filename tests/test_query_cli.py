@@ -7,6 +7,7 @@ missing artifacts, and filter-no-match.
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -320,21 +321,7 @@ class TestTodo:
 
 
 class TestGenericQuery:
-    def test_auto_discovered_artifact(self, project):
-        _write_artifact(project, ".agentera/session.yaml", {
-            "bookmarks": [
-                {
-                    "timestamp": "2026-05-01 10:00",
-                    "artifacts": ["PROGRESS"],
-                    "summary": "Updated progress",
-                },
-            ],
-        })
-        r = _run("query", "session", cwd=project)
-        assert r.returncode == 0
-        assert r.stdout.strip() != ""
-
-    def test_new_schema_auto_supported(self, project):
+    def _write_custom_schema_and_artifact(self, project):
         schemas_dir = project / "skills" / "agentera" / "schemas" / "artifacts"
         (schemas_dir / "custom_thing.yaml").write_text(yaml.dump({
             "meta": {
@@ -363,9 +350,38 @@ class TestGenericQuery:
                 {"title": "My thing", "status": "active"},
             ],
         })
+
+    def test_auto_discovered_artifact(self, project):
+        _write_artifact(project, ".agentera/session.yaml", {
+            "bookmarks": [
+                {
+                    "timestamp": "2026-05-01 10:00",
+                    "artifacts": ["PROGRESS"],
+                    "summary": "Updated progress",
+                },
+            ],
+        })
+        r = _run("query", "session", cwd=project)
+        assert r.returncode == 0
+        assert r.stdout.strip() != ""
+
+    def test_new_schema_auto_supported(self, project):
+        self._write_custom_schema_and_artifact(project)
         r = _run("query", "custom_thing", cwd=project)
         assert r.returncode == 0
         assert "active" in r.stdout
+
+    def test_new_schema_json_format_is_pipeable(self, project):
+        self._write_custom_schema_and_artifact(project)
+        r = _run("query", "custom_thing", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        assert json.loads(r.stdout) == [{"title": "My thing", "status": "active"}]
+
+    def test_new_schema_yaml_format_is_pipeable(self, project):
+        self._write_custom_schema_and_artifact(project)
+        r = _run("query", "custom_thing", "--format", "yaml", cwd=project)
+        assert r.returncode == 0
+        assert yaml.safe_load(r.stdout) == [{"title": "My thing", "status": "active"}]
 
 
 # ---------------------------------------------------------------------------
@@ -638,8 +654,15 @@ class TestHelp:
         assert "severity" in r.stdout
         assert "dimension" in r.stdout
 
-    @pytest.mark.parametrize("routine", ["plan", "progress"])
-    def test_query_routine_commands_are_not_compatibility_forms(self, project, routine):
+    @pytest.mark.parametrize(
+        "args,routine",
+        [
+            (["plan"], "plan"),
+            (["progress"], "progress"),
+            (["plan", "--format", "json"], "plan"),
+        ],
+    )
+    def test_query_routine_commands_are_not_compatibility_forms(self, project, args, routine):
         _write_artifact(project, ".agentera/plan.yaml", {
             "header": {"title": "Mapped plan", "status": "active"},
             "tasks": [],
@@ -647,7 +670,7 @@ class TestHelp:
         _write_artifact(project, ".agentera/progress.yaml", {
             "cycles": [{"number": 1, "phase": "build", "what": "test"}],
         })
-        r = _run("query", routine, cwd=project)
+        r = _run("query", *args, cwd=project)
         assert r.returncode == 1
         assert f"Use `agentera {routine}`" in r.stderr
 
@@ -813,3 +836,10 @@ class TestArtifactTypeCoverage:
         assert r.returncode == 0
         for name in ARTIFACT_FIXTURES:
             assert name in r.stdout
+
+    def test_list_artifacts_json_format(self, project):
+        r = _run("query", "--list-artifacts", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        names = json.loads(r.stdout)
+        assert "session" in names
+        assert "plan" in names

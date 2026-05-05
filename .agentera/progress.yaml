@@ -1,4 +1,19 @@
 cycles:
+- number: 269
+  timestamp: 2026-05-05 18:18
+  type: feat
+  phase: verify
+  what: Kept `agentera query` as the advanced structured escape hatch with pipeable JSON and YAML output.
+  commit: this commit
+  inspiration: The accepted CLI-shape plan keeps routine state flat while preserving query for custom artifact access and scripting.
+  discovered: '`UPGRADE.md` still described the old query-first state surface; it now documents top-level state commands for routine access and query formats for advanced access.'
+  verified: 'Validation passed: python3 -m py_compile scripts/agentera; uv run pytest tests/test_query_cli.py -q (52 passed); uv run pytest -q (555 passed, 1 skipped); uv run scripts/agentera query --list-artifacts --format json parsed with json.tool; uv run scripts/agentera query session --format yaml parsed with PyYAML; uv run scripts/agentera query plan --format json exited 1 with top-level guidance; git diff --check.'
+  next: 'Implement Task 4: update Agentera dispatcher and capability guidance to prefer top-level commands.'
+  context:
+    intent: preserve advanced custom queries without letting them remain the routine state path
+    constraints: do not re-enable routine query compatibility; leave capability prose rewrites for Task 4
+    unknowns: other runtime smoke wording may still say query CLI for discovery checks, which is acceptable until Task 6 freshness
+    scope: scripts/agentera query formatting, focused tests, and UPGRADE state-surface wording
 - number: 268
   timestamp: 2026-05-05 18:07
   type: feat
