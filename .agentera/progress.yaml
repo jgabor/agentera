@@ -6,7 +6,7 @@ cycles:
   what: Applied the final v2.0 release-scope decisions and ran the release-candidate validation suite. The static token target
     is revised to -10%, with the measured -9.8% accepted as close enough for v2.0. Claude Code live smoke is excluded from
     the required harness until Claude Pro/Max or API access is available; future Claude live smoke should be explicit opt-in.
-  commit: 510bd75
+  commit: a7558da
   inspiration: User release-candidate instructions on 2026-05-05.
   discovered: No release-blocking gaps remain under the revised scope. Optional future work remains for deeper token optimization
     and opt-in Claude Code live smoke when credentials exist.
