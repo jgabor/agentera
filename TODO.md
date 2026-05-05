@@ -4,7 +4,6 @@
 
 ## ⇉ Degraded
 
-- [ ] [agentera-v2-live-smoke] Run `python3 scripts/smoke_live_hosts.py --live --yes` after explicit approval for live model calls. Required before claiming cutover-ready model-host behavior across Claude/Codex/Copilot/OpenCode.
 - [ ] [agentera-v2-token-optimization] Open and execute a follow-up token optimization lane for the missed ROADMAP target. Current static dispatch payload is 317,616 bytes vs v1 baseline 352,213 bytes (-9.8%); target remains -40%. Measure with `python3 scripts/measure_token_payload.py`.
 
 ## → Normal
@@ -13,6 +12,7 @@
 
 ## Resolved
 
+- [x] ~~[agentera-v2-live-smoke] Run `python3 scripts/smoke_live_hosts.py --live --yes` after explicit approval for live model calls. Required before claiming cutover-ready model-host behavior across Claude/Codex/Copilot/OpenCode.~~ · passed on 2026-05-05 for Codex AGENTERA_HOME/query, Codex apply_patch hooks, and Copilot AGENTERA_HOME/query; scope does not independently prove live Claude/OpenCode model calls
 - [x] ~~[audit-11] Deferred: Copilot current-checkout plugin smoke is blocked by escaping skills path; installed Copilot skills and Codex `$hej` smoke passed~~ · fixed in Cycle 153; root `plugin.json` loads shared `skills/` through `copilot --plugin-dir`
 - [x] ~~[audit-11] Deferred: live Copilot and Codex host behavior remains untested until host smoke tests are available~~ · narrowed by Cycle 152; Codex `$hej` and Copilot installed skills passed, current-checkout Copilot plugin loading remains blocked
 - [x] ~~Task 2: [feat] Add native Copilot and Codex packaging metadata~~ · resolved without issue ID; Task 2 lacked a dedicated PROGRESS entry, now covered by Cycle 134 rollup

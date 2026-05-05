@@ -3,7 +3,7 @@ cycles:
   timestamp: 2026-05-05 09:20
   type: fix
   phase: verify
-  what: Closed the 2026-05-05 gap-analysis implementation queue except the explicitly gated live-host smoke. Added cross-capability
+  what: Closed the 2026-05-05 gap-analysis implementation queue and later ran the approved gated live-host smoke. Added cross-capability
     producer/consumer graph validation, restored bundled profilera corpus extraction, deepened the query CLI with artifact-specific
     summaries and docs.yaml path resolution, remeasured the static token payload, and refreshed the gap-analysis/decision/roadmap
     evidence.
@@ -12,14 +12,16 @@ cycles:
   discovered: The final static payload remeasurement is 317,616 bytes versus the fixed v1 baseline of 352,213 bytes, a 9.8%
     reduction. This is lower than the earlier 11.0% interim result and still misses the 40% target.
   verified: 'Validation passed: uv run pytest -q (520 passed, 1 skipped), python3 scripts/validate_cross_capability.py, python3
-    scripts/smoke_live_hosts.py, python3 scripts/measure_token_payload.py, uv run scripts/validate_capability.py --self-validate,
-    python3 scripts/agentera query plan, and python3 scripts/agentera query decisions --topic benchmark.'
-  next: Live host smoke was explicitly deferred on 2026-05-05 and remains required before cutover-ready model-host claims.
-    TODO.md now tracks that deferred smoke plus the missed token target as follow-up lanes.
+    scripts/smoke_live_hosts.py, python3 scripts/smoke_live_hosts.py --live --yes, python3 scripts/measure_token_payload.py,
+    uv run scripts/validate_capability.py --self-validate, python3 scripts/agentera query plan, and python3 scripts/agentera
+    query decisions --topic benchmark. Live smoke scope: Codex AGENTERA_HOME/query, Codex apply_patch hooks, Copilot AGENTERA_HOME/query,
+    snapshots restored.'
+  next: TODO.md now tracks the missed token target as a follow-up lane. Avoid broad four-runtime live model-host claims unless
+    separate Claude/OpenCode live evidence is added.
   context:
     intent: close the reliable gap analysis recommended actions
     constraints: no Agentera skill loading during review; no live model calls without explicit approval
-    unknowns: live model-host behavior remains unverified until approved
+    unknowns: live harness passed for Codex/Copilot; separate Claude/OpenCode live model-call evidence is not present
     scope: cross-capability validator, profilera extractor, query CLI, token measurement, and gap artifacts
 - number: 256
   timestamp: 2026-05-05 00:30
