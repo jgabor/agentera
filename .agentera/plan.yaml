@@ -48,7 +48,7 @@ tasks:
   - number: 1
     name: Reshape CLI Parser Around Top-Level State Commands
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the CLI is invoked as agentera plan WHEN plan state exists THEN it returns the routine plan summary without the query prefix
       - GIVEN agentera health, todo, decisions, docs, objective, or experiments is invoked THEN each command works without the query prefix

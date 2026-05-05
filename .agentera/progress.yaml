@@ -1,4 +1,19 @@
 cycles:
+- number: 267
+  timestamp: 2026-05-05 18:05
+  type: feat
+  phase: verify
+  what: Added top-level Agentera state commands for routine plan, progress, health, todo, decisions, docs, objective, and experiments access.
+  commit: this commit
+  inspiration: User pointed out that bare Agentera orientation should not require a spread of individual query calls and asked to make common state access flat.
+  discovered: The first implementation missed `agentera progress`; review caught it before closeout and moved progress out of the old routine query surface too.
+  verified: 'Validation passed: uv run pytest tests/test_query_cli.py (44 passed); uv run python scripts/agentera plan --status pending; uv run python scripts/agentera progress --limit 1; uv run python scripts/agentera query plan exited 1 with top-level guidance; uv run python scripts/agentera query progress exited 1 with top-level guidance; uv run python scripts/agentera --help listed top-level state commands; git diff --check.'
+  next: 'Implement Task 2: agentera hej composite briefing command.'
+  context:
+    intent: make routine state reads cheap and command-shaped before building the composite hej briefing
+    constraints: preserve query --list-artifacts for discovery while removing routine query compatibility
+    unknowns: structured query output and the hej composite are still pending later plan tasks
+    scope: scripts/agentera parser/help/prime text and focused CLI tests
 - number: 266
   timestamp: 2026-05-05 17:12
   type: fix

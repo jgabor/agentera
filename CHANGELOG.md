@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Routine Agentera state access now uses top-level CLI commands such as `agentera plan`, `agentera progress`, `agentera health`, `agentera todo`, `agentera decisions`, `agentera docs`, `agentera objective`, and `agentera experiments`; `agentera query` is reserved for advanced custom artifact access.
+
 ### Fixed
 
 - Artifact validation now treats advisory word budgets as non-blocking and validates progress cycles as newest-first.

@@ -1,7 +1,7 @@
 """Tests for scripts/agentera CLI (query and prime commands).
 
-Proportionality: 1 pass + 1 fail per query command (last-phase, decisions,
-health, open-todos) plus prime command. Edge cases for empty artifacts,
+Proportionality: 1 pass + 1 fail per state command (last-phase, decisions,
+health, todo) plus prime command. Edge cases for empty artifacts,
 missing artifacts, and filter-no-match.
 """
 
@@ -49,6 +49,11 @@ def _write_artifact(project: Path, rel: str, data: dict) -> Path:
     return p
 
 
+def _write_fixture_artifact(project: Path, fixture: dict) -> Path:
+    rel = fixture["path"].replace("<name>", "test-objective")
+    return _write_artifact(project, rel, fixture["data"])
+
+
 # ---------------------------------------------------------------------------
 # prime
 # ---------------------------------------------------------------------------
@@ -58,7 +63,7 @@ class TestPrime:
     def test_pass_outputs_guidance(self):
         r = _run("prime")
         assert r.returncode == 0
-        assert "agentera query" in r.stdout
+        assert "agentera plan" in r.stdout
         assert "native" in r.stdout.lower()
 
     def test_prime_idempotent(self):
@@ -124,13 +129,13 @@ class TestDecisions:
                 },
             ],
         })
-        r = _run("query", "decisions", cwd=project)
+        r = _run("decisions", cwd=project)
         assert r.returncode == 0
         assert "number=1" in r.stdout
         assert "firm" in r.stdout
 
     def test_fail_missing_artifact(self, project):
-        r = _run("query", "decisions", cwd=project)
+        r = _run("decisions", cwd=project)
         assert r.returncode == 0
         assert r.stdout.strip() == ""
 
@@ -155,7 +160,7 @@ class TestDecisions:
                 },
             ],
         })
-        r = _run("query", "decisions", "--topic", "runtime", cwd=project)
+        r = _run("decisions", "--topic", "runtime", cwd=project)
         assert r.returncode == 0
         assert "number=1" in r.stdout
         assert "number=2" not in r.stdout
@@ -173,7 +178,7 @@ class TestDecisions:
                 },
             ],
         })
-        r = _run("query", "decisions", "--topic", "nonexistent", cwd=project)
+        r = _run("decisions", "--topic", "nonexistent", cwd=project)
         assert r.returncode == 0
         assert r.stdout.strip() == ""
 
@@ -199,13 +204,13 @@ class TestHealth:
                 },
             ],
         })
-        r = _run("query", "health", cwd=project)
+        r = _run("health", cwd=project)
         assert r.returncode == 0
         assert "stable" in r.stdout
         assert "coupling" in r.stdout
 
     def test_fail_missing_artifact(self, project):
-        r = _run("query", "health", cwd=project)
+        r = _run("health", cwd=project)
         assert r.returncode == 0
         assert r.stdout.strip() == ""
 
@@ -237,7 +242,7 @@ class TestHealth:
                 },
             ],
         })
-        r = _run("query", "health", "--dimension", "coupling", cwd=project)
+        r = _run("health", "--dimension", "coupling", cwd=project)
         assert r.returncode == 0
         assert "coupling" in r.stdout
 
@@ -250,17 +255,17 @@ class TestHealth:
                 },
             ],
         })
-        r = _run("query", "health", "--dimension", "nonexistent", cwd=project)
+        r = _run("health", "--dimension", "nonexistent", cwd=project)
         assert r.returncode == 0
         assert r.stdout.strip() == ""
 
 
 # ---------------------------------------------------------------------------
-# open-todos
+# todo
 # ---------------------------------------------------------------------------
 
 
-class TestOpenTodos:
+class TestTodo:
     def test_pass_returns_todos(self, project):
         (project / "TODO.md").write_text(
             "# TODO\n\n"
@@ -271,13 +276,13 @@ class TestOpenTodos:
             "## Resolved\n\n"
             "- [x] Done\n"
         )
-        r = _run("query", "open-todos", cwd=project)
+        r = _run("todo", cwd=project)
         assert r.returncode == 0
         assert "broken build" in r.stdout
         assert "more tests" in r.stdout
 
     def test_fail_missing_todo(self, project):
-        r = _run("query", "open-todos", cwd=project)
+        r = _run("todo", cwd=project)
         assert r.returncode == 0
         assert r.stdout.strip() == ""
 
@@ -291,7 +296,7 @@ class TestOpenTodos:
             "## Resolved\n\n"
             "- [x] Done\n"
         )
-        r = _run("query", "open-todos", "--severity", "critical", cwd=project)
+        r = _run("todo", "--severity", "critical", cwd=project)
         assert r.returncode == 0
         assert "broken build" in r.stdout
         assert "more tests" not in r.stdout
@@ -304,7 +309,7 @@ class TestOpenTodos:
             "## Resolved\n\n"
             "- [x] Done\n"
         )
-        r = _run("query", "open-todos", "--severity", "critical", cwd=project)
+        r = _run("todo", "--severity", "critical", cwd=project)
         assert r.returncode == 0
         assert r.stdout.strip() == ""
 
@@ -390,7 +395,7 @@ class TestArtifactSpecificSummaries:
                 {"number": 2, "name": "Next", "status": "pending"},
             ],
         })
-        r = _run("query", "plan", cwd=project)
+        r = _run("plan", cwd=project)
         assert r.returncode == 0
         assert "title=Mapped plan" in r.stdout
         assert "complete=1" in r.stdout
@@ -410,7 +415,7 @@ class TestArtifactSpecificSummaries:
                 },
             ],
         })
-        r = _run("query", "progress", cwd=project)
+        r = _run("progress", cwd=project)
         assert r.returncode == 0
         assert "phase=verify" in r.stdout
         assert "verified: pytest query passed" in r.stdout
@@ -435,7 +440,7 @@ class TestArtifactSpecificSummaries:
                 },
             ],
         })
-        r = _run("query", "progress", "--limit", "1", cwd=project)
+        r = _run("progress", "--limit", "1", cwd=project)
         assert r.returncode == 0
         assert "number=9" in r.stdout
         assert "Newest work" in r.stdout
@@ -460,7 +465,7 @@ class TestArtifactSpecificSummaries:
                 },
             ],
         })
-        r = _run("query", "docs", "--status", "stale", cwd=project)
+        r = _run("docs", "--status", "stale", cwd=project)
         assert r.returncode == 0
         assert "Docs: last_audit=2026-05-05 (test)" in r.stdout
         assert "document=Old notes" in r.stdout
@@ -495,8 +500,8 @@ class TestArtifactSpecificSummaries:
             ],
         }))
 
-        objective = _run("query", "objective", cwd=project)
-        experiments = _run("query", "experiments", cwd=project)
+        objective = _run("objective", cwd=project)
+        experiments = _run("experiments", cwd=project)
 
         assert objective.returncode == 0
         assert "title=Token budget" in objective.stdout
@@ -517,6 +522,13 @@ class TestHelp:
         assert r.returncode == 0
         assert "prime" in r.stdout
         assert "query" in r.stdout
+        assert "plan" in r.stdout
+        assert "progress" in r.stdout
+        assert "health" in r.stdout
+        assert "decisions" in r.stdout
+        assert "docs" in r.stdout
+        assert "objective" in r.stdout
+        assert "experiments" in r.stdout
 
     def test_query_help_lists_filters(self):
         r = _run("query", "--help")
@@ -525,10 +537,35 @@ class TestHelp:
         assert "severity" in r.stdout
         assert "dimension" in r.stdout
 
+    @pytest.mark.parametrize("routine", ["plan", "progress"])
+    def test_query_routine_commands_are_not_compatibility_forms(self, project, routine):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Mapped plan", "status": "active"},
+            "tasks": [],
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 1, "phase": "build", "what": "test"}],
+        })
+        r = _run("query", routine, cwd=project)
+        assert r.returncode == 1
+        assert f"Use `agentera {routine}`" in r.stderr
+
 
 # ---------------------------------------------------------------------------
 # artifact type coverage (1 test per type + --list-artifacts)
 # ---------------------------------------------------------------------------
+
+STATE_COMMAND_NAMES = {
+    "decisions",
+    "docs",
+    "experiments",
+    "health",
+    "objective",
+    "plan",
+    "progress",
+    "todo",
+}
+
 
 ARTIFACT_FIXTURES = {
     "changelog": {
@@ -645,17 +682,28 @@ ARTIFACT_FIXTURES = {
 class TestArtifactTypeCoverage:
     @pytest.mark.parametrize(
         "artifact_name,fixture",
-        [(k, v) for k, v in ARTIFACT_FIXTURES.items()],
-        ids=list(ARTIFACT_FIXTURES.keys()),
+        [(k, v) for k, v in ARTIFACT_FIXTURES.items() if k not in STATE_COMMAND_NAMES],
+        ids=[k for k in ARTIFACT_FIXTURES if k not in STATE_COMMAND_NAMES],
     )
     def test_query_by_name_returns_data(self, project, artifact_name, fixture):
-        _write_artifact(project, fixture["path"], fixture["data"])
+        _write_fixture_artifact(project, fixture)
         r = _run("query", artifact_name, cwd=project)
         assert r.returncode == 0
         assert fixture["expected"] in r.stdout
 
+    @pytest.mark.parametrize(
+        "artifact_name,fixture",
+        [(k, v) for k, v in ARTIFACT_FIXTURES.items() if k in STATE_COMMAND_NAMES],
+        ids=[k for k in ARTIFACT_FIXTURES if k in STATE_COMMAND_NAMES],
+    )
+    def test_state_command_by_name_returns_data(self, project, artifact_name, fixture):
+        _write_fixture_artifact(project, fixture)
+        r = _run(artifact_name, cwd=project)
+        assert r.returncode == 0
+        assert fixture["expected"] in r.stdout
+
     def test_query_no_data_returns_clean(self, project):
-        r = _run("query", "plan", cwd=project)
+        r = _run("plan", cwd=project)
         assert r.returncode == 0
         assert r.stdout.strip() == ""
 
