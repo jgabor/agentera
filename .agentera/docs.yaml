@@ -1,4 +1,4 @@
-last_audit: 2026-05-05 (flat state CLI closeout)
+last_audit: 2026-05-05 (v2.1.0 dashboard repair)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -6,6 +6,7 @@ conventions:
   - none
   version_files:
   - pyproject.toml
+  - uv.lock
   - plugin.json
   - .github/plugin/plugin.json
   - .codex-plugin/plugin.json
@@ -266,6 +267,17 @@ coverage:
   stale: none
   tests: 564 passed, 1 skipped across the current v2 suite; CI runs on push/PR via GitHub Actions
 audit_log:
+- date: '2026-05-05'
+  label: v2.1.0 dashboard repair
+  findings:
+  - type: freshness
+    description: README, UPGRADE, CHANGELOG, DOCS, PLAN, and PROGRESS now describe agentera hej as the data layer behind the rendered hej dashboard, not a replacement for it.
+    resolution: fixed
+    severity: info
+  - type: verified
+    description: Focused CLI, dispatcher guidance, semantic fixture, exact tool-call count, and dashboard-regression tests passed for the repair lane.
+    resolution: fixed
+    severity: info
 - date: '2026-05-05'
   label: flat state CLI closeout
   findings:

@@ -77,10 +77,12 @@ Do not silently bypass the CLI and read raw `.agentera/*.yaml` files first. If
 all CLI paths fail, report that the CLI was unavailable, then use raw artifact
 reads only as a fallback.
 
-For bare `/agentera`, run `agentera hej` first and build the briefing from that
-single composite result. Do not run individual `plan`, `progress`, `health`,
-`todo`, or `decisions` commands unless `agentera hej` fails or explicitly asks
-for fallback. For `/agentera <capability-name>`, run the top-level command or
+For bare `/agentera`, run `agentera hej` first and render the hej dashboard from
+that single composite result. The CLI output is the data source, not the
+user-facing dashboard; do not relay raw `agentera hej` lines as the final
+briefing. Do not run individual `plan`, `progress`, `health`, `todo`, or
+`decisions` commands unless `agentera hej` fails or explicitly asks for
+fallback. For `/agentera <capability-name>`, run the top-level command or
 commands named by that capability before opening raw artifacts. Reading a
 capability's `prose.md` file is not itself a capability invocation; invocation
 means routing to the capability, following its prose, and using the CLI state

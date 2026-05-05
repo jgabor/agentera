@@ -110,7 +110,8 @@ def _check_output_facts(fixture: SemanticFixture) -> list[CheckedFact]:
 def _check_tool_trace_facts(fixture: SemanticFixture) -> list[CheckedFact]:
     facts: list[CheckedFact] = []
     expected = fixture.expected_facts
-    calls = "\n".join(fixture.tool_trace.get("calls", []))
+    call_list = fixture.tool_trace.get("calls", [])
+    calls = "\n".join(call_list)
     for index, text in enumerate(expected.get("required_tool_calls", [])):
         found = text in calls
         facts.append(CheckedFact(
@@ -124,6 +125,13 @@ def _check_tool_trace_facts(fixture: SemanticFixture) -> list[CheckedFact]:
             f"forbidden_tool_calls[{index}]",
             "fail" if found else "pass",
             f"tool trace {'contains forbidden' if found else 'omits forbidden'} {text!r}",
+        ))
+    for text, expected_count in expected.get("tool_call_counts", {}).items():
+        actual = sum(1 for call in call_list if text in call)
+        facts.append(CheckedFact(
+            f"tool_call_counts[{text}]",
+            "pass" if actual == expected_count else "fail",
+            f"tool trace contains {actual} call(s) matching {text!r}; expected {expected_count}",
         ))
     return facts
 

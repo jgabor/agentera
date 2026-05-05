@@ -23,16 +23,28 @@ Run /agentera for this project and route to the most useful next action.
 
 ## Captured Output
 
-agentera hej
-mode: returning
-plan: status=active | progress=4/6
-attention:
+```text
+┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
+├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
+┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
 
-- normal: PLAN Task 5: Add Tool-Budget And Regression Tests
-next_action:
-- object=PLAN Task 5: Add Tool-Budget And Regression Tests | capability=orkestrera | reason=first pending plan task
+The active plan is moving; Task 5 is the next concrete checkpoint.
+
+─── status ─────────────────────────────
+
+  ≡ plan      [██████▓▓░░] 4/6 tasks
+
+─── attention ──────────────────────────
+
+  → PLAN Task 5: Add Tool-Budget And Regression Tests
+
+─── next ───────────────────────────────
+
+  suggested → ⎈ /orkestrera (PLAN Task 5)
+```
 
 ⌂ hej · waiting
+Task 5 is ready to run from the active plan.
 
 ## Tool Trace
 
@@ -49,14 +61,24 @@ next_action:
 ```json
 {
   "required_output": [
-    "agentera hej",
-    "object=PLAN Task 5: Add Tool-Budget And Regression Tests",
-    "capability=orkestrera",
+    "┌─┐┌─┐┌─┐",
+    "─── status ─────────────────────────────",
+    "≡ plan      [██████▓▓░░] 4/6 tasks",
+    "→ PLAN Task 5: Add Tool-Budget And Regression Tests",
+    "suggested → ⎈ /orkestrera (PLAN Task 5)",
     "⌂ hej · waiting"
+  ],
+  "forbidden_output": [
+    "agentera hej\nmode:",
+    "next_action:",
+    "object=PLAN Task 5"
   ],
   "required_tool_calls": [
     "agentera hej"
   ],
+  "tool_call_counts": {
+    "agentera hej": 1
+  },
   "forbidden_tool_calls": [
     "agentera plan",
     "agentera progress",

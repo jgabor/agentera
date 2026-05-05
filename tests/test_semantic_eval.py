@@ -184,6 +184,24 @@ class TestToolTraceAssertion:
             "detail": "tool trace contains forbidden 'agentera plan'",
         }
 
+    def test_fail_tool_call_count_reports_duplicate_trace(self, semantic_eval, semantic_fixtures):
+        facts = _fact_map(
+            semantic_eval,
+            semantic_fixtures,
+            _fixture_text(
+                tool_trace=["uv run scripts/agentera hej", "uv run scripts/agentera hej"],
+            ).replace(
+                '"artifact_expectations": {"writes": "none"}',
+                '"tool_call_counts": {"agentera hej": 1}, "artifact_expectations": {"writes": "none"}',
+            ),
+        )
+
+        assert facts["tool_call_counts[agentera hej]"] == {
+            "fact": "tool_call_counts[agentera hej]",
+            "status": "fail",
+            "detail": "tool trace contains 2 call(s) matching 'agentera hej'; expected 1",
+        }
+
 
 def test_pass_summary_reports_checked_facts(semantic_eval, semantic_fixtures):
     fixture, errors = semantic_fixtures.validate_fixture_text(_fixture_text())

@@ -5,7 +5,7 @@
 - **12 standalone skills -> 1 bundled skill** with 12 capabilities under `skills/agentera/`
 - **Artifact format**: Markdown -> YAML for agent-facing `.agentera/` files
 - **Upgrade CLI**: `uvx --from git+https://github.com/jgabor/agentera agentera upgrade` or `uv run scripts/agentera upgrade` from a clone
-- **State CLI**: `uv run scripts/agentera hej`, `uv run scripts/agentera plan`, and other top-level state commands for routine access; `uv run scripts/agentera query <artifact-name> --format json|yaml` for advanced custom access
+- **State CLI**: `uv run scripts/agentera hej`, `uv run scripts/agentera plan`, and other top-level state commands for routine access; `/agentera` still renders the hej dashboard from the `agentera hej` data source, while `uv run scripts/agentera query <artifact-name> --format json|yaml` remains advanced custom access
 
 ## Recommended upgrade
 
@@ -119,6 +119,6 @@ uv run scripts/agentera upgrade --only packages --runtime opencode --yes --updat
 | Entry point | 12 separate `SKILL.md` files | `skills/agentera/SKILL.md` |
 | Artifact format | Markdown | YAML |
 | Upgrade path | Manual helper scripts | `uvx --from git+https://github.com/jgabor/agentera agentera upgrade` or `uv run scripts/agentera upgrade` |
-| State CLI | none | `uv run scripts/agentera hej`, top-level state commands, plus advanced `uv run scripts/agentera query <artifact-name> --format json` or `--format yaml` |
+| State CLI | none | `uv run scripts/agentera hej` as the dashboard data source, top-level state commands, plus advanced `uv run scripts/agentera query <artifact-name> --format json` or `--format yaml` |
 | Validation | per-skill | `uv run scripts/validate_capability.py skills/agentera/capabilities/<name>` |
 | Shared primitives | `SPEC.md` | `skills/agentera/protocol.yaml` |

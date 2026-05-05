@@ -35,6 +35,7 @@ Fixture format::
       "forbidden_output": ["/optimera"],
       "required_tool_calls": ["agentera hej"],
       "forbidden_tool_calls": ["agentera plan"],
+      "tool_call_counts": {"agentera hej": 1},
       "artifact_expectations": {"writes": "none"}
     }
     ```
@@ -162,9 +163,14 @@ def _validate_expected_facts(section_text: str) -> tuple[dict[str, Any], list[st
     errors.extend(_validate_string_list(data, "forbidden_output", required=False))
     errors.extend(_validate_string_list(data, "required_tool_calls", required=False))
     errors.extend(_validate_string_list(data, "forbidden_tool_calls", required=False))
+    errors.extend(_validate_tool_call_counts(data.get("tool_call_counts")))
 
     has_output_fact = bool(data.get("required_output") or data.get("forbidden_output"))
-    has_tool_fact = bool(data.get("required_tool_calls") or data.get("forbidden_tool_calls"))
+    has_tool_fact = bool(
+        data.get("required_tool_calls")
+        or data.get("forbidden_tool_calls")
+        or data.get("tool_call_counts")
+    )
     has_artifact_fact = "artifact_expectations" in data
     if not has_output_fact and not has_tool_fact and not has_artifact_fact:
         errors.append("malformed section: Expected Facts: must declare at least one expected fact")
@@ -204,6 +210,19 @@ def _validate_artifact_expectations(value: Any) -> list[str]:
             contains = item["contains"]
             if not isinstance(contains, list) or not all(_non_empty_string(s) for s in contains):
                 return [f"malformed section: Expected Facts: artifact_expectations.writes[{index}].contains must be non-empty strings"]
+    return []
+
+
+def _validate_tool_call_counts(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, dict):
+        return ["malformed section: Expected Facts: tool_call_counts must be an object"]
+    for key, count in value.items():
+        if not _non_empty_string(key):
+            return ["malformed section: Expected Facts: tool_call_counts keys must be non-empty strings"]
+        if not isinstance(count, int) or count < 0:
+            return [f"malformed section: Expected Facts: tool_call_counts[{key!r}] must be a non-negative integer"]
     return []
 
 
