@@ -1,4 +1,4 @@
-last_audit: 2026-05-05 (self-healing bundle refresh)
+last_audit: 2026-05-05 (Audit 20 documentation reconciliation)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -128,14 +128,6 @@ index:
 - document: Design
   path: DESIGN.md
   last_updated: '2026-05-05'
-  status: current
-- document: Ecosystem spec
-  path: SPEC.md
-  last_updated: '2026-04-28'
-  status: current
-- document: Ideas
-  path: docs/IDEAS.md
-  last_updated: '2026-03-29'
   status: current
 - document: Registry
   path: registry.json
@@ -267,6 +259,17 @@ coverage:
   stale: none
   tests: 573 passed, 1 skipped across the current v2 suite; CI runs on push/PR via GitHub Actions
 audit_log:
+- date: '2026-05-05'
+  label: Audit 20 documentation reconciliation
+  findings:
+  - type: stale
+    description: DOCS index still marked retired `SPEC.md` and missing `docs/IDEAS.md` as current; both dead rows were removed from the index.
+    resolution: fixed
+    severity: info
+  - type: freshness
+    description: Audit 20 HEALTH and TODO changes are reflected by same-day index dates and filed degraded TODO items.
+    resolution: fixed
+    severity: info
 - date: '2026-05-05'
   label: self-healing bundle refresh
   findings:

@@ -1,4 +1,109 @@
 audits:
+- number: 20
+  date: '2026-05-05'
+  dimensions:
+  - architecture alignment
+  - pattern consistency
+  - coupling health
+  - complexity hotspots
+  - test health
+  - dependency health
+  - version health
+  - artifact freshness
+  - prose health
+  - security hygiene
+  findings_summary:
+    critical: 0
+    warning: 2
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable vs Audit 19. The v2 and v2.1 release train improved CLI, bundle freshness, docs, and validation evidence, but progress phase values drifted outside the protocol enum and direct health output still reads stale history.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: A
+    Tests: B
+    Deps: B
+    Version: A
+    Freshness: B
+    Prose: A
+    Security: A
+  dimension_details:
+  - name: Architecture alignment
+    grade: A
+    summary: >-
+      The repository now matches Decision 39's single bundled skill model: `skills/agentera/SKILL.md` dispatches 12 capabilities, schemas live beside capability prose, and the CLI owns routine state access.
+    findings: []
+  - name: Pattern consistency
+    grade: A
+    summary: >-
+      Capability directories share `prose.md` plus four schema files. Runtime adapters consistently expose one active `agentera` skill plus the temporary legacy `hej` bridge.
+    findings: []
+  - name: Coupling health
+    grade: A
+    summary: >-
+      Cross-capability validation passed, and bundle-refresh logic stays centralized in `scripts/agentera_upgrade.py` while `scripts/agentera` remains the state and dispatch CLI surface.
+    findings: []
+  - name: Complexity hotspots
+    grade: A
+    summary: >-
+      `scripts/agentera` and `scripts/agentera_upgrade.py` are large, but their command parsing, bundle-status, upgrade, and artifact-query responsibilities remain sectioned and covered by focused tests.
+    findings: []
+  - name: Test health
+    grade: B
+    summary: >-
+      Full pytest passed with `573 passed, 1 skipped`, plus cross-capability, lifecycle-adapter, self-audit, and representative capability validators. The suite does not currently reject invalid progress phase enum values or stale direct health command selection.
+    findings: []
+  - name: Dependency health
+    grade: B
+    summary: >-
+      Python dependency surface is small: `agentera -> pyyaml 6.0.3`. `.opencode/package.json` pins `@opencode-ai/plugin` 1.14.33, but `npm audit --audit-level=moderate` failed at the registry audit endpoint during this audit.
+    findings: []
+  - name: Version health
+    grade: A
+    summary: >-
+      Version-bearing release surfaces report `2.1.0`: `pyproject.toml`, `registry.json`, root/Copilot/Codex manifests, Claude marketplace, OpenCode marker, `CHANGELOG.md`, and `uv.lock` evidence.
+    findings: []
+  - name: Artifact freshness
+    grade: B
+    summary: ''
+    findings:
+    - heading: '⇉ Progress cycles use non-protocol phase `verify`, warning (confidence: 96)'
+      severity: warning
+      confidence: 96
+      location: '`.agentera/progress.yaml:5`, `skills/agentera/schemas/artifacts/progress.yaml:164`'
+      evidence: 'Recent progress entries include `phase: verify`, while the progress schema says phase must be one of `envision`, `deliberate`, `plan`, `build`, or `audit`.'
+      impact: 'Consumers relying on the phase model cannot classify recent v2 and v2.1 cycles correctly, and current validation evidence can pass while artifact semantics drift.'
+      suggested_action: 'Either map verification cycles back to the existing phase model or deliberately add `verify` to `protocol.yaml`, the progress schema, validators, and consumers.'
+    - heading: '⇉ Direct health state command reports stale audit history, warning (confidence: 94)'
+      severity: warning
+      confidence: 94
+      location: '`scripts/agentera:479`, `.agentera/health.yaml:2`'
+      evidence: '`uv run scripts/agentera health` reports Audit 10 even though `.agentera/health.yaml` is newest-first and now starts with Audit 20.'
+      impact: 'Agents using the routine top-level health command can receive stale grades and miss current findings, despite the CLI-first state access contract.'
+      suggested_action: 'Update `_query_health` to select the newest health entry consistently with `_health_summary` and add a regression test against newest-first health data.'
+  - name: Prose health
+    grade: A
+    summary: >-
+      `uv run scripts/self_audit.py .agentera/health.yaml TODO.md .agentera/docs.yaml .agentera/progress.yaml .agentera/plan.yaml` exited 0. Recent docs and artifacts stay concrete and compact enough for operational use.
+    findings: []
+  - name: Security hygiene
+    grade: A
+    summary: >-
+      Secret and dangerous-call scan found documented examples, test-loader `exec(compile(...))` usage, and environment-sourced API key handling in an optimera token counter. No committed literal secret or shell-injection path was identified.
+    findings: []
+  trends:
+    improved: 'DOCS coverage evidence now matches the full-suite result of `573 passed, 1 skipped`, and Agentera state access is flatter and better tested than Audit 19.'
+    degraded: 'Progress phase semantics slipped because recent cycles use `verify` outside the protocol enum, and direct health output still reads stale history.'
+    stable: Architecture, patterns, coupling, complexity, version, prose, and security remain healthy.
+    new_findings: 'Progress cycles use non-protocol phase `verify`; direct health state command reports stale audit history.'
+    resolved: Audit 19 DOCS coverage-count warning is resolved.
+  patterns:
+  - 'Module structure: one bundled `skills/agentera` skill owns capability prose and schemas; root `skills/hej` remains a temporary v1 bridge.'
+  - 'State access: `scripts/agentera` provides flat routine state commands plus advanced `query` for custom artifact access.'
+  - 'Validation approach: pytest, capability schema validation, cross-capability graph validation, lifecycle metadata validation, and self-audit combine as the release gate.'
+  - 'Runtime pattern: packaging metadata targets Claude Code, OpenCode, Copilot, and Codex while shared bundle infrastructure lives under root `scripts/`, `hooks/`, and manifests.'
 - number: 19
   date: '2026-04-30'
   dimensions:
