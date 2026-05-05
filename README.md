@@ -11,9 +11,12 @@ Agentera gives coding agents shared memory, decision profiles, specialized
 roles, verification gates, and a common project protocol.
 
 <p>
-<a href="#quick-start">Quick start</a> ·
-<a href="#what-you-see">What you see</a> ·
+<a href="#agentera-20">Agentera 2.0</a> ·
+<a href="#upgrading-from-v1">Upgrade</a> ·
+<a href="#why-agentera">Why Agentera</a> ·
 <a href="#features">Features</a> ·
+<a href="#what-you-see">What you see</a> ·
+<a href="#quick-start">Quick start</a> ·
 <a href="#why-it-works">Why it works</a> ·
 <a href="#the-memory-layer">Memory layer</a> ·
 <a href="#capabilities">Capabilities</a> ·
@@ -21,6 +24,35 @@ roles, verification gates, and a common project protocol.
 </p>
 
 </div>
+
+## Agentera 2.0
+
+Agentera 2.0 is here: one `/agentera` entry point for the full suite, with
+cleaner installs and better shared project memory across Claude Code, OpenCode,
+Copilot CLI, and Codex CLI.
+
+What's new:
+
+- **One install, one entry point**: the twelve v1 skills are now capabilities
+  inside the bundled Agentera skill.
+- **Guided v1 upgrades**: Agentera detects older project state and walks through
+  the migration instead of leaving users to move files by hand.
+- **More dependable memory**: project state is structured, validated, and easier
+  for the next agent session to read.
+- **Better runtime support**: Codex, Copilot CLI, OpenCode, and Claude Code now
+  share the same bundled suite model.
+
+### Upgrading from v1
+
+Update Agentera:
+
+```bash
+npx skills upgrade -g -y
+```
+
+Then open a project and start `/agentera`. It detects v1 project state, previews
+any migration, and asks before applying changes. See [UPGRADE.md](./UPGRADE.md)
+for the full migration guide.
 
 ## Why Agentera?
 
@@ -33,12 +65,6 @@ capabilities that coordinate through plain project files. One capability plans,
 another builds, another audits, another documents, another remembers your
 decision style. The work stops being a chat transcript and becomes an operating
 record for the project.
-
-## Upgrading from v1
-
-If you used Agentera before v2, see [UPGRADE.md](./UPGRADE.md) for migration
-instructions. v2 replaces twelve standalone skills with one bundled skill at
-`skills/agentera/` and adds a YAML-based artifact format and query CLI.
 
 ## Features
 
@@ -98,103 +124,27 @@ and routes you to the most useful next capability.
 
 ## Quick start
 
-All capabilities live in one bundled skill at `skills/agentera/`. Install once,
-then invoke the bundled skill. The dispatcher in `/agentera` reads your
-intent and routes to the right capability automatically.
-
-Pick your runtime, install Agentera, then open a project and run `/agentera`.
-
-### Claude Code
+Pick one runtime, install Agentera, then run `/agentera` (`$agentera` in Codex).
 
 ```bash
+# Claude Code
 npx skills add jgabor/agentera -g -a claude-code --skill '*' -y
-```
 
-Start with `/agentera`.
-
-### OpenCode
-
-Install the skills and the OpenCode plugin. The skills provide the actual
-Agentera workflows; the plugin adds slash commands, hooks, and install-root
-discovery.
-
-```bash
+# OpenCode (skills + plugin)
 npx skills add jgabor/agentera -g -a opencode -y
 mkdir -p ~/.config/opencode/plugins
 curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \
   -o ~/.config/opencode/plugins/agentera.js
-```
 
-Start with `/agentera`.
-
-### Copilot CLI
-
-```bash
+# Copilot CLI
 copilot plugin marketplace add jgabor/agentera
 copilot plugin install jgabor/agentera
-```
 
-Start with `/agentera`.
-
-### Codex CLI
-
-```bash
+# Codex CLI
 codex plugin marketplace add jgabor/agentera
 ```
 
-Open `/plugins`, enable Agentera, and start with `$agentera`.
-
-### Check the bundle
-
-Use the setup doctor before editing runtime config by hand. It reads the
-installed bundle or local clone, classifies each runtime, and does not write
-files by default.
-
-```bash
-uv run scripts/setup_doctor.py --smoke
-```
-
-If doctor reports fixable Codex or Copilot setup gaps, preview the
-runtime-native write first:
-
-```bash
-uv run scripts/setup_doctor.py --install --dry-run --runtime codex
-uv run scripts/setup_doctor.py --install --dry-run --runtime copilot
-```
-
-Apply only after reviewing the target runtime, target file, and reason:
-
-```bash
-uv run scripts/setup_doctor.py --install --yes --runtime codex
-uv run scripts/setup_doctor.py --install --yes --runtime copilot
-```
-
-For existing v1 installs, use the idempotent upgrade command. If you installed
-with `npx skills`, Copilot marketplace, Codex plugin marketplace, or the
-OpenCode plugin and never cloned this repo, use the clone-free `uvx` form:
-
-```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /path/to/project --dry-run
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /path/to/project --yes
-```
-
-When the Python package is published, the shorter `uvx agentera ...` form will
-run the same CLI.
-
-If you are already in a local Agentera checkout, the equivalent local command is:
-
-```bash
-uv run scripts/agentera upgrade --project /path/to/project --dry-run
-uv run scripts/agentera upgrade --project /path/to/project --yes
-```
-
-The `uvx` path first installs or refreshes a durable Agentera bundle at
-`~/.agents/agentera`, then wires runtime config to that stable location. It
-does not apply changes unless `--yes` is present.
-
-Running `npx skills update` by itself only refreshes skill files. When the
-bundled `/agentera` skill detects v1 artifacts, it should preview this upgrade
-command and ask before applying it.
+For Codex, open `/plugins`, enable Agentera, then start `$agentera`.
 
 ## Why it works
 
@@ -208,7 +158,7 @@ plain project artifacts that live with the project:
 - `.agentera/health.yaml`: where architecture and quality are drifting.
 - `.agentera/docs.yaml`: which docs exist, what they cover, and what is stale.
 - `.agentera/optimera/<name>/`: one self-contained optimization objective,
-  with `OBJECTIVE.md`, `EXPERIMENTS.md`, and its locked measurement harness.
+  with `objective.yaml`, `experiments.yaml`, and its locked measurement harness.
 
 Each capability reads the artifacts it needs and writes the artifact it owns.
 That is the trick: the next agent does not have to infer history from chat. It
@@ -224,8 +174,8 @@ That profile teaches later agents how you think: what evidence you trust, when
 you prefer speed over polish, how much planning you want, what kinds of tests
 convince you, and when you expect pushback.
 
-The profile is confidence-weighted and optional. If it exists, every capability
-can use it to reason more like you. If it is missing, Agentera still works.
+The profile is confidence-weighted and optional. When present, every capability
+can use it to reason more like you. Without it, Agentera still works.
 
 ## Get the most out of it
 
@@ -308,17 +258,8 @@ Profile data already uses the platform data directory by default:
 `$XDG_DATA_HOME/agentera` on Linux, `~/Library/Application Support/agentera` on
 macOS, and `%APPDATA%/agentera` on Windows.
 
-`AGENTERA_HOME` is different. It points to the Agentera install root, so
-capabilities and hooks can resolve repo helper scripts such as
-`scripts/agentera`. Claude Code and OpenCode can set that automatically.
-Codex and Copilot may need a host-level setup step when you want helper-script
-execution.
-
-Start with the bundle doctor:
-
-```bash
-uv run scripts/setup_doctor.py --smoke
-```
+`AGENTERA_HOME` points to the Agentera install root. Runtime installers and the
+upgrade flow use it for helper scripts, hooks, and artifact checks.
 
 <details>
 <summary><strong>Claude Code hooks</strong></summary>
@@ -334,7 +275,7 @@ bookmarks.
 <details>
 <summary><strong>OpenCode hooks</strong></summary>
 
-Install the plugin if you did not already install it in the quick start:
+Plugin install command:
 
 ```bash
 mkdir -p ~/.config/opencode/plugins
@@ -356,27 +297,13 @@ Install from the Agentera marketplace:
 
 ```bash
 copilot plugin marketplace add jgabor/agentera
-copilot plugin install <skill>@agentera
-```
-
-Or install the full suite:
-
-```bash
 copilot plugin install jgabor/agentera
 ```
 
-The plugin includes Copilot hook definitions. For helper-script access, set
-`AGENTERA_HOME` in the shell that launches Copilot.
+The plugin includes Copilot hook definitions. The Agentera upgrade flow can also
+persist helper-script access for Copilot shells.
 
-If you use a local clone or know the install root, the helper can persist that
-export for bash, zsh, or fish:
-
-```bash
-export AGENTERA_HOME=/path/to/agentera
-uv run "$AGENTERA_HOME/scripts/setup_copilot.py"
-```
-
-Restart your shell after running it.
+Restart your shell after applying config changes.
 
 </details>
 
@@ -391,26 +318,12 @@ codex plugin marketplace add jgabor/agentera
 
 Then use interactive `/plugins` to install and enable the plugin.
 
-For helper-script access and artifact-validation hooks, let the upgrade command
-wire Codex's local config:
-
-```bash
-export AGENTERA_HOME=/path/to/agentera
-uv run "$AGENTERA_HOME/scripts/agentera" upgrade --runtime codex --yes
-```
+The Agentera upgrade flow can wire helper-script access and artifact-validation
+hooks for Codex.
 
 </details>
 
-Both setup helpers are idempotent and support `--dry-run`.
-
-Check that a shell can see Agentera:
-
-```bash
-bash -c '
-  echo "AGENTERA_HOME=$AGENTERA_HOME"
-  uv run "${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/agentera" query --list-artifacts
-'
-```
+Upgrade/setup writes are idempotent and preview changes before applying them.
 
 For adapter-level runtime details, see
 [`references/adapters/runtime-feature-parity.md`](./references/adapters/runtime-feature-parity.md).
@@ -418,12 +331,9 @@ For adapter-level runtime details, see
 <details>
 <summary><strong>Manual clone fallback</strong></summary>
 
-```bash
-git clone git@github.com:jgabor/agentera.git ~/.agents/agentera
-```
-
-Then reference `skills/agentera/SKILL.md` through your runtime's skill
-configuration.
+Manual clones are mostly useful for development, pinned local installs, or
+inspection. The normal user-facing upgrade path is documented in
+[UPGRADE.md](./UPGRADE.md).
 
 </details>
 
@@ -432,9 +342,9 @@ configuration.
 Agentera is also a reference implementation of a portable skill protocol.
 
 Build against the artifact contracts instead of a single runtime. A capability
-that reads `PLAN.md`, writes `HEALTH.md`, and uses the shared severity/confidence
-vocabulary can mesh with the rest of the suite even when the host runtime
-changes.
+that reads `.agentera/plan.yaml`, writes `.agentera/health.yaml`, and uses the
+shared severity/confidence vocabulary can mesh with the rest of the suite even
+when the host runtime changes.
 
 The core surfaces:
 
@@ -494,8 +404,8 @@ Optimera objective directories under `.agentera/optimera/<name>/`:
 | `experiments.yaml` | optimera | Experiment history plus one closure entry with final value, target, and reason. |
 | `harness` | optimera | Locked metric command approved during objective bootstrap. |
 
-Optimera does not use root objective artifacts, registries, symlinks, or DOCS.md
-fixed mappings for objective state. Each objective stays self-contained in its
+Optimera does not use root objective artifacts, registries, symlinks, or global
+docs mappings for objective state. Each objective stays self-contained in its
 own `.agentera/optimera/<name>/` directory.
 
 Global profile:
@@ -504,3 +414,17 @@ Global profile:
 platform-appropriate agentera data directory.
 
 </details>
+
+## Uninstall
+
+```bash
+# Claude Code / OpenCode
+npx skills remove jgabor/agentera -g -y
+
+# Copilot CLI
+copilot plugin uninstall jgabor/agentera
+
+# Codex CLI
+# First disable Agentera in /plugins, then:
+codex plugin marketplace remove jgabor/agentera
+```
