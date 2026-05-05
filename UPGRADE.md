@@ -39,9 +39,10 @@ This command installs or refreshes a durable Agentera bundle at
 point at uv's disposable tool cache.
 
 `npx skills update` alone refreshes skill files but does not migrate project
-artifacts or runtime config. Agentera v2.0.1 keeps a legacy `/hej` bridge so old
+artifacts or runtime config. Agentera v2.0.2 keeps a legacy `/hej` bridge so old
 entry points can hand users to the command above, but the command above is the
-complete upgrade path and also installs `/agentera`.
+complete upgrade path. With `--update-packages`, it removes package-managed v1
+skill entries and installs `/agentera`.
 
 ### Local clone
 
@@ -62,7 +63,7 @@ bundle when needed, configures selected runtime surfaces, removes fixable stale
 v1 runtime artifacts, and runs a postflight setup doctor. Re-running it after a
 successful apply should report `noop`.
 
-External package updates are deliberately opt-in because they run `npx` and may touch global runtime installs. The package phase installs the active `/agentera` skill and refreshes the legacy `/hej` bridge for v1 users:
+External package updates are deliberately opt-in because they run `npx` and may touch global runtime installs. The package phase removes legacy v1 skill entries and installs the active `/agentera` skill:
 
 ```bash
 uv run scripts/agentera upgrade --project /path/to/project --yes --update-packages

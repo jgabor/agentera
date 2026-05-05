@@ -5,7 +5,7 @@ description: >
   One bundled skill with twelve capabilities, each defined by human-readable
   prose and machine-readable schemas. The agent reads this file to route
   incoming requests to the right capability.
-version: "2.0.1"
+version: "2.0.2"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 ---
 
@@ -79,8 +79,8 @@ If v1 state is found:
 The upgrade command is idempotent. It installs or refreshes a durable bundle at
 `~/.agents/agentera` when invoked through `uvx`, migrates v1 artifacts, wires
 runtime config to that durable install root, and removes fixable stale v1
-runtime artifacts. Package refreshes that run `npx skills add` to install
-`/agentera` and the legacy `/hej` bridge remain explicit opt-in via
+runtime artifacts. Package refreshes that run `npx skills remove` for v1 skill
+entries and `npx skills add` for `/agentera` remain explicit opt-in via
 `--update-packages`.
 
 ### Layer 1: Bare `/agentera` — delegate to hej

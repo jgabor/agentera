@@ -33,39 +33,58 @@ BUNDLE_MARKER = ".agentera-bundle.json"
 RUNTIMES = ("claude", "opencode", "copilot", "codex")
 PHASES = ("bundle", "artifacts", "runtime", "cleanup", "packages")
 STATUSES = ("pending", "applied", "noop", "blocked", "failed", "skipped")
+LEGACY_BRIDGE_SKILLS = (
+    "hej",
+    "visionera",
+    "resonera",
+    "inspirera",
+    "planera",
+    "realisera",
+    "inspektera",
+    "optimera",
+    "orkestrera",
+    "visualisera",
+    "dokumentera",
+    "profilera",
+)
+
+
+def _package_commands(agent: str) -> list[dict[str, Any]]:
+    return [
+        {
+            "action": "install-agentera-skill",
+            "command": [
+                "npx",
+                "skills",
+                "add",
+                "jgabor/agentera",
+                "-g",
+                "-a",
+                agent,
+                "--skill",
+                "agentera",
+                "-y",
+            ],
+        },
+    ]
+
+
 PACKAGE_COMMANDS = {
-    "claude": [
+    "cleanup": [
         {
-            "action": "install-agentera-skill",
+            "action": "remove-legacy-skills",
             "command": [
-                "npx", "skills", "add", "jgabor/agentera", "-g", "-a",
-                "claude-code", "--skill", "agentera", "-y",
-            ],
-        },
-        {
-            "action": "install-hej-bridge",
-            "command": [
-                "npx", "skills", "add", "jgabor/agentera", "-g", "-a",
-                "claude-code", "--skill", "hej", "-y",
+                "npx",
+                "skills",
+                "remove",
+                *LEGACY_BRIDGE_SKILLS,
+                "-g",
+                "-y",
             ],
         },
     ],
-    "opencode": [
-        {
-            "action": "install-agentera-skill",
-            "command": [
-                "npx", "skills", "add", "jgabor/agentera", "-g", "-a",
-                "opencode", "--skill", "agentera", "-y",
-            ],
-        },
-        {
-            "action": "install-hej-bridge",
-            "command": [
-                "npx", "skills", "add", "jgabor/agentera", "-g", "-a",
-                "opencode", "--skill", "hej", "-y",
-            ],
-        },
-    ],
+    "claude": _package_commands("claude-code"),
+    "opencode": _package_commands("opencode"),
 }
 BUNDLE_DIRECTORIES = (
     "skills",
@@ -698,6 +717,19 @@ def apply_cleanup_phase(phase: dict[str, Any], home: Path, env: dict[str, str]) 
 
 def plan_package_phase(runtimes: set[str], *, enabled: bool) -> dict[str, Any]:
     items: list[dict[str, Any]] = []
+    if runtimes.intersection({"claude", "opencode"}):
+        for entry in PACKAGE_COMMANDS["cleanup"]:
+            items.append({
+                "status": "pending" if enabled else "skipped",
+                "runtime": "all",
+                "action": entry["action"],
+                "command": entry["command"],
+                "message": (
+                    "will remove legacy v1 package-managed skill entries"
+                    if enabled
+                    else "legacy skill removal skipped; pass --update-packages to run"
+                ),
+            })
     for runtime in ("claude", "opencode"):
         if runtime not in runtimes:
             continue

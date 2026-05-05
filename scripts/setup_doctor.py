@@ -44,7 +44,7 @@ RUNTIME_BINARIES = {
     "copilot": "copilot",
     "codex": "codex",
 }
-OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode -y"
+OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode --skill agentera -y"
 OPENCODE_SKILL_NAMES = (
     "agentera",
 )

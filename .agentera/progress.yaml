@@ -1,4 +1,41 @@
 cycles:
+- number: 265
+  timestamp: 2026-05-05 14:51
+  type: fix
+  phase: verify
+  what: Refined the v1-to-v2 npx update bridge to keep only `/hej` as the temporary compatibility trigger. The package
+    upgrade now removes package-managed v1 skill entries before installing the single active `/agentera` skill.
+  commit: this commit
+  inspiration: User report that `npx skills update -g -y` still said all skills were up to date after v2.0.1 and that the
+    plain npx update path must work for users who never cloned the repo.
+  discovered: >
+    `npx skills update` compares GitHub tree hashes for each locked `skillPath`,
+    but the observed OpenCode path fell through to old `/hej`; that makes one
+    bridge sufficient to get users into the approved upgrade. Carrying all 12
+    bridge skills would pollute skill lists and undermine the v2 single-skill
+    goal. The local host also had an invalid active `gh auth token`, which made
+    GitHub API tree fetches return 401 and masked remote updates as "up to date"
+    until `gh` authentication was fixed.
+  verified: 'Validation passed: python -m json.tool for package manifests; python -m py_compile scripts/agentera_upgrade.py
+    scripts/setup_doctor.py scripts/smoke_installed_skills.py; node --check .opencode/plugins/agentera.js; node --check
+    scripts/smoke_opencode_bootstrap.mjs; uv run --with pytest --with pyyaml pytest -q (540 passed, 1 skipped); uv run
+    scripts/validate_capability.py --self-validate; uv run scripts/validate_capability.py for all 12 capabilities; uv run
+    scripts/validate_cross_capability.py; uv run scripts/validate_lifecycle_adapters.py --check-uv-runtime; uv run
+    scripts/smoke_setup_helpers.py; uv run scripts/smoke_live_hosts.py; env -u AGENTERA_HOME uv run scripts/smoke_live_hosts.py
+    --live --yes; node scripts/smoke_opencode_bootstrap.mjs; OpenCode reference regression tests reject v1 multi-skill manual-install wording; npx skills add . --list --full-depth (2 skills: active
+    agentera plus temporary hej bridge); isolated npx installs of --skill agentera and --skill hej succeeded; uv run
+    scripts/agentera upgrade --only packages --runtime opencode --json listed skipped legacy removal plus /agentera install commands; env -u AGENTERA_HOME
+    uvx --from . agentera upgrade --only bundle --home <tmp>/home --install-root <tmp>/home/.agents/agentera --yes --json
+    installed active /agentera plus temporary /hej bridge; uv run scripts/measure_token_payload.py (v2 315,983 bytes vs v1 352,213 bytes, -10.3%);
+    git diff --check.'
+  next: Commit the v2.0.2 compatibility fix. Create or push a v2.0.2 tag only after explicit approval.
+  context:
+    intent: make existing v1 npx-updated installs reach the v2 upgrade without leaving v1 skill clutter behind
+    constraints: no Agentera skill loading during self-review; do not rely on `agentera upgrade` as the first user action
+    unknowns: remote `npx skills update` for the refined bridge requires publishing v2.0.2 before the live remote smoke can
+      prove the final GitHub tree hash
+    scope: legacy hej bridge, runtime package metadata, OpenCode command templates, upgrade package cleanup, docs,
+      gap analysis, and tests
 - number: 264
   timestamp: 2026-05-05 14:07
   type: fix

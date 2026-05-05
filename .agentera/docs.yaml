@@ -1,4 +1,4 @@
-last_audit: 2026-05-05 (v2.0.1 legacy bridge checkpoint)
+last_audit: 2026-05-05 (v2.0.2 legacy cleanup checkpoint)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -261,10 +261,10 @@ index:
   last_updated: '2026-05-05'
   status: current
 coverage:
-  documented: 12/12 skills have SKILL.md (single source of truth)
+  documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: 522 tests across the current v2 suite; CI runs on push/PR via GitHub Actions
+  tests: 540 passed, 1 skipped across the current v2 suite; CI runs on push/PR via GitHub Actions
 audit_log:
 - date: '2026-04-30'
   label: installation reliability checkpoint

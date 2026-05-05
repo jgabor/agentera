@@ -12,7 +12,7 @@ Status: production reference (formerly design document).
 |-----------|--------|----------|
 | Hook plugin | Shipped | `.opencode/plugins/agentera.js` |
 | Eval runner support | Shipped | `scripts/eval_skills.py --runtime opencode` |
-| Skill install | Documented below | `npx skills add jgabor/agentera -g -a opencode -y` |
+| Skill install | Documented below | `npx skills add jgabor/agentera -g -a opencode --skill agentera -y` |
 | Profile path | Documented below | `~/.config/opencode/profile/PROFILE.md` |
 
 The plugin was promoted from `references/adapters/opencode-plugin.js` to `.opencode/plugins/agentera.js` and is now the production location. Install it with:
@@ -42,16 +42,16 @@ OpenCode skill search paths:
 | `~/.claude/skills/<name>/SKILL.md` | Global (Claude Code compatibility) |
 | `~/.agents/skills/<name>/SKILL.md` | Global (agent-compatible) |
 
-**Adapter approach**: Install agentera's `skills/*/` directories into one of the recognized skill directories. The recommended approach:
+**Adapter approach**: Install agentera's active `skills/agentera/` directory into one of the recognized skill directories. The recommended approach:
 
-- Global install: symlink or copy `skills/*/` into `~/.config/opencode/skills/` or `~/.agents/skills/`
-- Project install: symlink or copy into `.opencode/skills/` or `.agents/skills/`
+- Global install: `npx skills add jgabor/agentera -g -a opencode --skill agentera -y`
+- Project install: symlink or copy `skills/agentera/` into `.opencode/skills/agentera/` or `.agents/skills/agentera/`
 
-Each agentera SKILL.md already contains YAML frontmatter with `name` and `description`, which matches OpenCode's frontmatter requirements exactly. No transformation needed.
+The temporary `skills/hej/` entry point is a v1 upgrade bridge, not a new-install target. Each Agentera SKILL.md already contains YAML frontmatter with `name` and `description`, which matches OpenCode's frontmatter requirements exactly. No transformation needed.
 
-**OpenCode frontmatter validation** requires: `name` (1-64 chars, lowercase alphanumeric with single hyphens), `description` (1-1024 chars). Agentera skill names use Swedish verb stems with `-era` suffix (e.g., `realisera`, `inspektera`), all lowercase, matching the validation regex `^[a-z0-9]+(-[a-z0-9]+)*$`.
+**OpenCode frontmatter validation** requires: `name` (1-64 chars, lowercase alphanumeric with single hyphens), `description` (1-1024 chars). Agentera entry point names are lowercase, matching the validation regex `^[a-z0-9]+(-[a-z0-9]+)*$`.
 
-**Skill loading**: OpenCode loads skills on-demand via a native `skill` tool. Agents see available skills listed in the tool description and load full content by calling `skill({ name: "realisera" })`. Agentera skills work unmodified: they are loaded into the agent's context when invoked.
+**Skill loading**: OpenCode loads skills on-demand via a native `skill` tool. Agents see available skills listed in the tool description and load full content by calling `skill({ name: "agentera" })`. Agentera works unmodified: it is loaded into the agent's context when invoked.
 
 **Gap**: None. OpenCode's skill discovery is more flexible than Claude Code's (supports `.opencode/`, `.claude/`, and `.agents/` paths). Agentera skills install cleanly.
 
@@ -417,31 +417,27 @@ Summary of which corpus families the OpenCode adapter can produce:
 Install the OpenCode-targeted Agentera suite with the skills installer:
 
 ```bash
-npx skills add jgabor/agentera -g -a opencode -y
+npx skills add jgabor/agentera -g -a opencode --skill agentera -y
 ```
 
 Do not add `--skill '*'` for OpenCode. The `-a opencode` target selects the supported OpenCode skill surface without selecting every agent. The OpenCode plugin is a separate hook and command adapter; it does not install skills by itself.
 
 ### Manual global fallback
 
-OpenCode discovers skills at `skills/*/SKILL.md` one level under its search directories. Because agentera's skills are nested inside `skills/*/SKILL.md` within the repo, cloning the whole repo into a search directory would place them two levels deep and OpenCode would not find them. If the installer is unavailable, link each skill individually.
+OpenCode discovers skills at `skills/*/SKILL.md` one level under its search directories. Because Agentera's active skill is nested at `skills/agentera/SKILL.md` within the repo, cloning the whole repo into a search directory would place it two levels deep and OpenCode would not find it. If the installer is unavailable, link the active skill directory directly.
 
 ```bash
-# Symlink each skill directory into OpenCode's global skills directory
-for skill in ~/git/agentera/skills/*/; do
-  ln -s "$skill" ~/.config/opencode/skills/$(basename "$skill")
-done
+mkdir -p ~/.config/opencode/skills
+ln -s ~/git/agentera/skills/agentera ~/.config/opencode/skills/agentera
 ```
 
-OpenCode discovers all 12 skills from `~/.config/opencode/skills/realisera/SKILL.md`, `~/.config/opencode/skills/inspektera/SKILL.md`, etc.
+OpenCode discovers the active skill from `~/.config/opencode/skills/agentera/SKILL.md`.
 
 ### Project install
 
 ```bash
-# Symlink each skill into the project's .opencode/skills/ directory
-for skill in /path/to/agentera/skills/*/; do
-  ln -s "$skill" .opencode/skills/$(basename "$skill")
-done
+mkdir -p .opencode/skills
+ln -s /path/to/agentera/skills/agentera .opencode/skills/agentera
 ```
 
 Or use `.agents/skills/` for the same effect (agent-compatible search path).

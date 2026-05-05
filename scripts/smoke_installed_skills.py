@@ -233,7 +233,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--real-npx",
         action="store_true",
-        help="Opt in to running `npx skills add jgabor/agentera -g -a opencode -y` before validation.",
+        help="Opt in to running `npx skills add jgabor/agentera -g -a opencode --skill agentera -y` before validation.",
     )
     return parser.parse_args(argv)
 

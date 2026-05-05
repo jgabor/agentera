@@ -367,6 +367,25 @@ def _validate_opencode_install_root(plugin_text: str) -> list[str]:
     return []
 
 
+def _validate_opencode_reference(text: str) -> list[str]:
+    errors: list[str] = []
+    install_command = "npx skills add jgabor/agentera -g -a opencode --skill agentera -y"
+    if install_command not in text:
+        errors.append("OpenCode reference must document single /agentera install command")
+    if "temporary `skills/hej/` entry point is a v1 upgrade bridge" not in text:
+        errors.append("OpenCode reference must mark /hej as upgrade bridge only")
+    for stale in (
+        "OpenCode discovers all 12 skills",
+        "skills/realisera",
+        "skills/inspektera",
+        "for skill in ~/git/agentera/skills/*/",
+        "for skill in /path/to/agentera/skills/*/",
+    ):
+        if stale in text:
+            errors.append("OpenCode reference must not document v1 multi-skill manual install")
+    return errors
+
+
 def _validate_docs_version_targets(root: Path) -> list[str]:
     docs = (root / ".agentera/docs.yaml").read_text(encoding="utf-8")
     if ".opencode/plugins/agentera.js" not in docs:
@@ -859,6 +878,7 @@ class TestLegacyRuntimeCompatibility:
     def test_legacy_hej_bridge_routes_to_upgrade(self):
         text = (REPO_ROOT / "skills/hej/SKILL.md").read_text(encoding="utf-8")
         assert "Legacy Agentera v1 entry-point bridge" in text
+        assert "legacy_bridge: true" in text
         assert "Do not run the old HEJ orientation workflow" in text
         assert "agentera upgrade --project \"$PWD\" --dry-run" in text
         assert "agentera upgrade --project \"$PWD\" --yes --update-packages" in text
@@ -892,6 +912,15 @@ class TestLegacyRuntimeCompatibility:
 
     def test_opencode_package_passes(self):
         assert _validate_opencode_package() == []
+
+    def test_opencode_reference_uses_single_agentera_install(self):
+        text = (REPO_ROOT / "references/adapters/opencode.md").read_text(encoding="utf-8")
+        assert _validate_opencode_reference(text) == []
+
+    def test_opencode_reference_fails_on_v1_manual_install(self):
+        text = (REPO_ROOT / "references/adapters/opencode.md").read_text(encoding="utf-8")
+        stale = f"{text}\nOpenCode discovers all 12 skills from skills/realisera/SKILL.md.\n"
+        assert "OpenCode reference must not document v1 multi-skill manual install" in _validate_opencode_reference(stale)
 
     def test_opencode_package_uses_documented_manual_install_root(self):
         plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
