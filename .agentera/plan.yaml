@@ -68,7 +68,7 @@ tasks:
     name: Keep Query As Advanced Structured Access
     depends_on:
       - Task 1
-    status: pending
+    status: complete
     acceptance:
       - GIVEN agentera query is used for an artifact or ad hoc expression THEN it remains available for custom state access
       - GIVEN --format json or --format yaml is supplied THEN query output is pipeable structured data

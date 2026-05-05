@@ -31,6 +31,7 @@ and supports queries against any artifact whose schema exists.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -407,12 +408,20 @@ def _format_entry(entry: dict, fields: list[str]) -> str:
     return " | ".join(parts)
 
 
+def _emit_structured(value: Any, output_format: str) -> None:
+    if output_format == "json":
+        print(json.dumps(value, ensure_ascii=False, indent=2))
+    elif output_format == "yaml":
+        print(yaml.safe_dump(value, sort_keys=False), end="")
+
+
 def cmd_prime(_args: argparse.Namespace) -> int:
     print(PRIME_BLOB, end="")
     return 0
 
 
 def _query_last_phase(args: argparse.Namespace, schemas: dict) -> int:
+    output_format = getattr(args, "format", "text")
     info = schemas.get("progress")
     if not info:
         print("No progress schema found", file=sys.stderr)
@@ -420,9 +429,14 @@ def _query_last_phase(args: argparse.Namespace, schemas: dict) -> int:
     data = _load_artifact(_resolve_artifact_path(info["path"], "progress"))
     entries = _extract_entries(data)
     if not entries:
+        if output_format != "text":
+            _emit_structured(None, output_format)
         return 0
     last = _recent_cycles(entries, 1)[0]
     phase = last.get("phase", "")
+    if output_format != "text":
+        _emit_structured({"phase": phase}, output_format)
+        return 0
     if phase:
         print(phase)
     return 0
@@ -1172,12 +1186,12 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     return 0
 
 
-def _query_generic(args: argparse.Namespace, schemas: dict, name: str) -> int:
+def _query_generic_entries(args: argparse.Namespace, schemas: dict, name: str) -> list[dict]:
     info = schemas[name]
     data = _load_artifact(_resolve_artifact_path(info["path"], name))
     entries = _extract_entries(data)
     if not entries:
-        return 0
+        return []
     topic = getattr(args, "topic", None)
     sev = getattr(args, "severity", None)
     dim = getattr(args, "dimension", None)
@@ -1194,6 +1208,18 @@ def _query_generic(args: argparse.Namespace, schemas: dict, name: str) -> int:
             entries = _filter_by_field_value(
                 _extract_entries(data), "dimensions", dim, substring=True,
             )
+    return entries
+
+
+def _query_generic(args: argparse.Namespace, schemas: dict, name: str) -> int:
+    output_format = getattr(args, "format", "text")
+    entries = _query_generic_entries(args, schemas, name)
+    if output_format != "text":
+        _emit_structured(entries, output_format)
+        return 0
+    if not entries:
+        return 0
+    info = schemas[name]
     disp = _display_fields(info["fields"])
     for e in entries:
         line = _format_entry(e, disp)
@@ -1221,8 +1247,13 @@ def cmd_state(args: argparse.Namespace) -> int:
 
 
 def cmd_query(args: argparse.Namespace) -> int:
+    output_format = getattr(args, "format", "text")
     if getattr(args, "list_artifacts", False):
         schemas = _load_schemas(_discover_schemas_dir())
+        names = sorted(schemas)
+        if output_format != "text":
+            _emit_structured(names, output_format)
+            return 0
         for name in sorted(schemas):
             print(name)
         return 0
@@ -1244,6 +1275,8 @@ def cmd_query(args: argparse.Namespace) -> int:
         "session": _query_session,
     }
     if query in handlers:
+        if output_format != "text" and query in schemas:
+            return _query_generic(args, schemas, query)
         return handlers[query](args, schemas)
     if query in schemas:
         return _query_generic(args, schemas, query)
@@ -1302,6 +1335,7 @@ def build_parser() -> argparse.ArgumentParser:
     q = sub.add_parser("query", help="Advanced custom artifact query")
     q.add_argument("query", nargs="?", help="Query pattern or artifact name")
     q.add_argument("--list-artifacts", action="store_true", help="List all discovered artifact types")
+    q.add_argument("--format", choices=["text", "json", "yaml"], default="text", help="Output format")
     q.add_argument("--topic", help="Filter by topic (substring match on text fields)")
     q.add_argument("--severity", help="Filter by severity level")
     q.add_argument("--dimension", help="Filter by dimension name")
