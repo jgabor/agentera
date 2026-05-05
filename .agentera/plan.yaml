@@ -1,161 +1,120 @@
 header:
   level: full
-  created: '2026-05-04'
-  status: completed
-  reviewed: '2026-05-04'
-  critic_issues: ''
-  revised: ''
-  title: Agentera v2.0.0 Remediation — Close D39 Gaps
-what: 'Fix the structural gaps between the claimed v2.0.0 release and the actual codebase state on feat/v2. The merge to main
-  was attempted and reverted due to severe gaps: no YAML artifacts exist, all capability prose still references Markdown,
-  the README describes phantom slash commands, SPEC.md dissolution is incomplete, and tests/hooks/compaction logic are hardcoded
-  to Markdown. This plan closes those gaps so the cutover can be retried safely.'
-why: The v2.0.0 cutover shipped the packaging (single bundled skill, 12 capabilities with schemas, query CLI scaffold, migration
-  tool) but failed to ship the behavioral transition. Archived Phase 1-4 plans claim completion, but the active PLAN.md admits
-  gaps. The codebase is in a contradictory state that blocks any merge to main.
-constraints: '- No breaking changes to the v2 capability schema contract or protocol.yaml
-
-  - All 565+ existing tests must continue to pass (no regressions); test updates to support YAML are in scope
-
-  - Registry.json top-level `"version": "1"` is the registry format version and must not change
-
-  - The merge to main is the final task and must only run after all other acceptance criteria are verified
-
-  - 4 runtime targets must be supported: Claude Code, OpenCode, Codex, Copilot
-
-  - Human-facing artifacts (TODO.md, CHANGELOG.md, DESIGN.md) remain Markdown at the project root; all other artifacts become
-  YAML
-
-  - The git revert on main means a naive merge of feat/v2 will produce an empty diff; a revert-of-revert or explicit strategy
-  is required'
+  created: '2026-05-05'
+  status: active
+  reviewed: '2026-05-05'
+  critic_issues: "0 found, 0 addressed, 0 dismissed"
+  title: Flat Agentera State CLI
+what: >
+  Make routine Agentera state access top-level and command-shaped:
+  agentera hej, agentera plan, agentera progress, agentera health,
+  agentera todo, agentera decisions, agentera docs, agentera objective,
+  and agentera experiments. Keep agentera query as an advanced structured
+  escape hatch for ad hoc/custom access, not as the routine state surface.
+why: >
+  Bare /agentera should not require several tool calls just to assemble a
+  briefing. agentera hej should become the state engine: one command, one
+  compact composite answer, and one routing suggestion that agents can relay
+  without reading raw artifacts or querying each artifact separately.
+constraints: >
+  Do not preserve backward compatibility for routine forms such as
+  agentera query plan or agentera query health. Keep query --list-artifacts
+  or an equivalent discovery surface available for smoke tests. Preserve
+  installed-bundle behavior through AGENTERA_HOME. Do not push to remotes.
 scope:
   included:
-  - Invocation model decision, query CLI fixes, artifact migration, test/hook/compaction updates for YAML, prose updates,
-    AGENTS.md update, README rewrite, SPEC dissolution cleanup, stale v1 directory removal, semantic eval fixture port, archived
-    plan correction, validation, and merge.
+    - scripts/agentera parser and command dispatch
+    - shared state-summary helpers reused by top-level commands and advanced query
+    - agentera hej composite briefing output
+    - skills/agentera/SKILL.md dispatcher guidance
+    - skills/agentera/capabilities/hej/prose.md
+    - capability prose that still teaches routine agentera query calls
+    - focused CLI and guidance regression tests
+    - help, prime, and documentation text affected by the CLI shape
   excluded:
-  - New capabilities, runtime adapter feature work, cross-runtime live testing, performance optimization of master SKILL.md
-    size, token re-benchmarking.
+    - supporting old agentera query plan, query progress, query health, query todo, query decisions, query docs, query objective, or query experiments compatibility forms
+    - changing artifact schemas unless required for the composite summary
+    - remote pushes or release tagging
   deferred:
-  - Master SKILL.md thin optimization (measure after all fixes), third-party extensibility.
-design: 'The remediation follows a dependency chain:
-
-
-  1. **Decision layer** (Task 1): Define how `/agentera` routes to capabilities across all 4 runtimes. This gates the README
-  rewrite but not infrastructure work.
-
-  2. **Infrastructure layer** (Tasks 2-3): Fix the query CLI so it discovers schemas from repo root, add missing schema metadata,
-  and run the migration tool to create YAML artifacts.
-
-  3. **Consumer layer** (Tasks 4-5): Update tests, compaction logic, and hooks to operate on YAML instead of Markdown. Retire
-  or rewrite SPEC.md-dependent scripts.
-
-  4. **Content layer** (Tasks 6-9): Update all 12 capability prose.md files, AGENTS.md, and README to reference YAML artifacts
-  and the single entry point.
-
-  5. **Verification layer** (Tasks 10-12): Port semantic eval fixture, correct archived plan statuses, run full validation,
-  and merge to main using a revert-of-revert strategy.
-
-  6. **Freshness layer** (Task 13): Update CHANGELOG, PROGRESS, TODO, and ROADMAP.
-
-
-  Each task is sized for one realisera cycle. Tasks 2 and 3 are independent and can run in parallel. Task 4 depends on Task
-  3 (YAML artifacts must exist before tests reference them). Task 7 depends on Task 3 (prose references YAML paths). Task
-  9 depends on Task 1 (README needs invocation model). All other tasks have no inter-dependencies.'
+    - broader CLI packaging or marketplace changes unrelated to this state-access surface
+design: >
+  Reuse the existing scripts/agentera artifact loaders and summary handlers,
+  but expose the normal state views as top-level subcommands. Add a composite
+  hej command that performs the routing decision tree inside the CLI and emits
+  the information needed for the hej dashboard. Keep query as the advanced
+  schema-driven path with structured JSON/YAML output for custom artifact
+  inspection.
 tasks:
-- number: 1
-  name: Invocation Model Decision
-  depends_on: []
-  status: complete
-  acceptance: []
-- number: 2
-  name: Fix Query CLI Schema Discovery and Complete Artifact Schemas
-  depends_on: []
-  status: complete
-  acceptance: []
-- number: 3
-  name: Execute Artifact Migration and Validate YAML Output
-  depends_on:
-  - Task 2
-  status: complete
-  acceptance: []
-- number: 4
-  name: Update Tests, Compaction Logic, and Hooks for YAML Artifacts
-  depends_on:
-  - Task 3
-  status: complete
-  acceptance: []
-- number: 5
-  name: SPEC Dissolution and v1 Script Retirement
-  depends_on: []
-  status: complete
-  acceptance: []
-- number: 6
-  name: Migrate and Remove Stale v1 Skill Directories
-  depends_on: []
-  status: complete
-  acceptance: []
-- number: 7
-  name: Update All 12 Capability prose.md Files to Reference YAML Artifacts
-  depends_on:
-  - Task 3
-  status: complete
-  acceptance: []
-- number: 8
-  name: Update AGENTS.md for v2 Single-Bundle Model
-  depends_on:
-  - Task 3
-  - Task 5
-  status: complete
-  acceptance: []
-- number: 9
-  name: Rewrite README for Single-Entry-Point /agentera Model
-  depends_on:
-  - Task 1
-  status: complete
-  acceptance: []
-- number: 10
-  name: Port Semantic Eval Fixture to v2 Format
-  depends_on:
-  - Task 3
-  status: complete
-  acceptance: []
-- number: 11
-  name: Correct Archived Plan Documentation
-  depends_on: []
-  status: complete
-  acceptance: []
-- number: 12
-  name: Full Validation Suite and Merge to main
-  depends_on:
-  - Task 2
-  - Task 3
-  - Task 4
-  - Task 5
-  - Task 6
-  - Task 7
-  - Task 8
-  - Task 9
-  - Task 10
-  - Task 11
-  status: complete
-  acceptance: []
-- number: 13
-  name: Plan-Level Freshness Checkpoint
-  depends_on:
-  - all prior tasks
-  status: complete
-  acceptance: []
-overall_acceptance: '- GIVEN an agentera v2 installation after all tasks WHEN a user types /agentera with a natural language
-  request THEN the dispatcher routes to the correct capability per the invocation model decision
-
-  - GIVEN a user project with YAML artifacts WHEN the agent queries state THEN it uses the query CLI, not direct reads
-
-  - GIVEN a new user WHEN they read README.md THEN it accurately describes the single-bundle invocation model with no phantom
-  slash commands
-
-  - GIVEN all SPEC.md references WHEN searched THEN none remain in prose, contracts, hooks, or tests'
-surprises: '- **Task 1 surprise**: The unified CLI (`scripts/agentera`) is an agent-internal tool, not user-facing. The user-facing
-  interface is `/agentera` which loads the bundled SKILL.md. The agent decides when to run `agentera query` internally. This
-  distinction was unclear during initial deliberation but was resolved: `<request>` is just message text passed to the agent,
-  so it works natively on all 4 runtimes without special argument parsing.'
+  - number: 1
+    name: Reshape CLI Parser Around Top-Level State Commands
+    depends_on: []
+    status: pending
+    acceptance:
+      - GIVEN the CLI is invoked as agentera plan WHEN plan state exists THEN it returns the routine plan summary without the query prefix
+      - GIVEN agentera health, todo, decisions, docs, objective, or experiments is invoked THEN each command works without the query prefix
+      - GIVEN agentera query plan is invoked THEN it is not treated as a supported routine compatibility path
+      - GIVEN agentera --help is shown THEN preferred state commands are top-level
+  - number: 2
+    name: Add agentera hej Composite Briefing Command
+    depends_on:
+      - Task 1
+    status: pending
+    acceptance:
+      - GIVEN a returning v2 project WHEN agentera hej runs THEN it emits mode, profile status, health, issue counts, plan progress, active objective state, attention items, and next action
+      - GIVEN the plan is complete but TODO has open normal items THEN the composite chooses the first executable TODO before vision refresh
+      - GIVEN all optimera objectives are closed THEN agentera hej does not route to optimera for completed work
+      - GIVEN v1 Markdown artifacts without YAML counterparts exist THEN agentera hej reports the upgrade-preview notice without applying changes
+  - number: 3
+    name: Keep Query As Advanced Structured Access
+    depends_on:
+      - Task 1
+    status: pending
+    acceptance:
+      - GIVEN agentera query is used for an artifact or ad hoc expression THEN it remains available for custom state access
+      - GIVEN --format json or --format yaml is supplied THEN query output is pipeable structured data
+      - GIVEN routine state access is documented THEN docs point to top-level commands, not query
+      - GIVEN discovery smoke checks need artifact names THEN query --list-artifacts or an equivalent advanced discovery command still works
+  - number: 4
+    name: Update Agent Guidance To Prefer Top-Level Commands
+    depends_on:
+      - Task 1
+      - Task 2
+      - Task 3
+    status: pending
+    acceptance:
+      - GIVEN bare /agentera is invoked THEN skills/agentera/SKILL.md instructs the agent to run agentera hej first
+      - GIVEN hej prose describes returning-project orientation THEN it forbids individual artifact queries and raw .agentera/*.yaml reads unless agentera hej fails or asks for fallback
+      - GIVEN another capability needs routine state THEN its prose uses agentera progress, agentera experiments, or another top-level command rather than agentera query progress
+      - GIVEN no top-level command fits a custom need THEN guidance permits agentera query
+  - number: 5
+    name: Add Tool-Budget And Regression Tests
+    depends_on:
+      - Task 1
+      - Task 2
+      - Task 3
+      - Task 4
+    status: pending
+    acceptance:
+      - GIVEN the /agentera or hej fixture is evaluated THEN expected tool usage includes agentera hej
+      - GIVEN that fixture is evaluated THEN it forbids agentera plan, agentera progress, agentera health, agentera todo, agentera decisions, and raw .agentera/*.yaml reads
+      - GIVEN CLI tests run THEN each preferred top-level command has focused coverage
+      - GIVEN help and prime tests run THEN they prove routine guidance no longer centers agentera query
+  - number: 6
+    name: Freshness And Closeout
+    depends_on:
+      - Task 1
+      - Task 2
+      - Task 3
+      - Task 4
+      - Task 5
+    status: pending
+    acceptance:
+      - GIVEN the CLI shape changes THEN README.md, UPGRADE.md, CHANGELOG.md, .agentera/docs.yaml, and .agentera/progress.yaml reflect the new preferred surface
+      - GIVEN validation runs THEN targeted CLI tests, hej capability tests, semantic fixture tests, and full pytest pass
+      - GIVEN lifecycle or package checks exist THEN packaged scripts/agentera still works from an installed bundle via AGENTERA_HOME
+overall_acceptance:
+  - GIVEN a user invokes bare /agentera WHEN the project has v2 state THEN the agent can serve hej from agentera hej without individual state commands or raw artifact reads
+  - GIVEN an agent needs routine state WHEN a top-level command exists THEN it uses that command before agentera query
+  - GIVEN an agent needs custom artifact inspection WHEN no top-level command fits THEN agentera query can return structured JSON or YAML
+  - GIVEN validation is complete THEN tests and docs prove the new CLI contract
+surprises: []
