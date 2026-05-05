@@ -18,22 +18,18 @@ might mutate. The two top-level modes:
         ``PASS: all smoke checks passed``.
 
     Live mode (--live)
-        Probes the ``codex`` and ``copilot`` binaries, distinguishing
-        "not on PATH" (``shutil.which`` returns ``None``) from
-        "binary present but auth probe times out at 30s" with distinct
-        skip messages. Snapshots ``~/.codex/config.toml`` and any shell
-        rc file the harness might mutate to a tmp path BEFORE any
-        mutation; restores from the tmp snapshot in the top-level
-        ``finally`` block on every exit path (success, hard fail, or
-        crash). The Task 2 cut wires the snapshot/restore plumbing and
-        the probe + cost-gate UX so Tasks 3 and 4 can plug in the
-        actual ``codex exec`` and ``copilot -p`` invocations without
-        re-shaping the harness skeleton. The Task 2 cut does NOT issue
-        any model calls; the per-runtime sections currently terminate
-        at the auth probe and report SKIP outcomes.
+        Probes the ``codex``, ``copilot``, and ``opencode`` binaries.
+        Missing binaries, broken version probes, and auth-style failures
+        become distinct SKIP outcomes; substantive live assertion failures
+        fail the run. Snapshots ``~/.codex/config.toml``, Codex hooks,
+        shell rc files, and OpenCode auth storage before any section that
+        could touch them; restores from tmp snapshots in the top-level
+        ``finally`` block on every exit path. OpenCode's live section also
+        redirects config/data/cache paths to temporary XDG directories so
+        session state stays off the user's real OpenCode store.
 
 Cost gate (live mode only):
-    Prints ``Estimated cost: $0.20-1.00 across two model calls`` and a
+    Prints ``Estimated cost: $0.40-2.00 across four model calls`` and a
     one-line consent prompt before any subprocess CLI invocation. The
     user must type ``y`` or ``yes`` (case-insensitive) to proceed;
     anything else aborts with a non-zero exit and no CLI invocation.
@@ -434,14 +430,15 @@ def run_setup_helpers_smoke() -> None:
 
 
 COST_LINE = (
-    "Estimated cost: $0.30-1.50 across three model calls "
+    "Estimated cost: $0.40-2.00 across four model calls "
     "(codex exec AGENTERA_HOME + query probe, codex exec "
     "apply_patch hook firing probe, copilot -p AGENTERA_HOME + "
-    "query probe; --live mode only)"
+    "query probe, opencode run AGENTERA_HOME + query probe; "
+    "--live mode only)"
 )
 CONSENT_LINE = (
     "Proceed with live CLI invocations (codex exec x2 + copilot -p "
-    "--allow-all-tools)? [y/N]: "
+    "--allow-all-tools + opencode run --pure)? [y/N]: "
 )
 
 
@@ -1708,6 +1705,247 @@ def _assert_rc_unchanged(rc_sha_before: dict[Path, str]) -> None:
         )
 
 
+OPENCODE_EXEC_TIMEOUT_SECONDS = 300
+
+
+def run_opencode_live_section(
+    snapshots: SnapshotRegistry,
+    skips: list[tuple[str, str]],
+) -> None:
+    """OpenCode live section — one isolated ``opencode run`` invocation.
+
+    This verifies OpenCode model-host behavior without loading Agentera skills:
+    the command runs with ``--pure`` in a temporary workdir, exports a temporary
+    ``AGENTERA_HOME``, and asks OpenCode to use its shell tool to echo that env
+    value and run ``agentera query --list-artifacts`` through the exported
+    install root. OpenCode data/config/cache paths are redirected to temporary
+    XDG directories; if the user's ``auth.json`` exists it is copied into the
+    temporary data dir so the live run can authenticate without writing to the
+    real OpenCode store.
+    """
+    info("--- opencode live section ---")
+
+    if shutil.which("opencode") is None:
+        skip("opencode", "not on PATH", skips)
+        return
+    info(f"probe: opencode resolved to {shutil.which('opencode')}")
+
+    try:
+        version_result = subprocess.run(
+            ["opencode", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        skip("opencode", "binary present but `opencode --version` timed out", skips)
+        return
+    if version_result.returncode != 0:
+        skip(
+            "opencode",
+            f"binary present but `opencode --version` exited "
+            f"{version_result.returncode}",
+            skips,
+        )
+        return
+    info(f"probe: opencode {version_result.stdout.strip()}")
+
+    real_xdg_data = Path(
+        os.path.expanduser(os.environ.get("XDG_DATA_HOME", "~/.local/share"))
+    )
+    real_auth = real_xdg_data / "opencode" / "auth.json"
+    snapshots.snapshot(real_auth)
+    auth_sha_before = _sha256(real_auth)
+    info(f"opencode-auth sha256 (before): {auth_sha_before}")
+
+    with tempfile.TemporaryDirectory(prefix="agentera-smoke-opencode-data-") as tmp_data_str:
+        with tempfile.TemporaryDirectory(prefix="agentera-smoke-opencode-config-") as tmp_config_str:
+            with tempfile.TemporaryDirectory(prefix="agentera-smoke-opencode-cache-") as tmp_cache_str:
+                tmp_data = Path(tmp_data_str)
+                tmp_config = Path(tmp_config_str)
+                tmp_cache = Path(tmp_cache_str)
+                if real_auth.exists():
+                    tmp_auth = tmp_data / "opencode" / "auth.json"
+                    tmp_auth.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(real_auth, tmp_auth)
+                    info("opencode: copied auth.json into tmp XDG_DATA_HOME (authed)")
+                else:
+                    info(
+                        "opencode: no auth.json found in real XDG_DATA_HOME; "
+                        "live run will rely on provider environment variables"
+                    )
+
+                with tempfile.TemporaryDirectory(
+                    prefix="agentera-smoke-opencode-home-"
+                ) as tmp_install_root_str:
+                    tmp_install_root = Path(tmp_install_root_str)
+                    info(f"opencode: tmp AGENTERA_HOME={tmp_install_root}")
+                    (tmp_install_root / "scripts").mkdir(parents=True)
+                    shutil.copy2(AGENTERA_CLI, tmp_install_root / "scripts" / "agentera")
+                    shutil.copytree(
+                        REPO_ROOT / "skills" / "agentera" / "schemas",
+                        tmp_install_root / "skills" / "agentera" / "schemas",
+                    )
+
+                    with tempfile.TemporaryDirectory(
+                        prefix="agentera-smoke-opencode-query-"
+                    ) as tmp_workdir_str:
+                        tmp_workdir = Path(tmp_workdir_str)
+                        info(f"opencode: tmp workdir={tmp_workdir}")
+
+                        prompt = (
+                            "Run exactly these two shell commands (in order) using your "
+                            "shell tool. After running them, print the markers below "
+                            "with the captured outputs filled in.\n\n"
+                            'Command 1: echo "AGENTERA_HOME=$AGENTERA_HOME"\n'
+                            "Command 2: python3 \"$AGENTERA_HOME/scripts/agentera\" "
+                            "query --list-artifacts\n\n"
+                            "Then print this block as your final message, replacing "
+                            "<value1> and <value2> with the literal stdout you observed:\n\n"
+                            "===AGENTERA_HOME_ECHO_BEGIN===\n"
+                            "<value1>\n"
+                            "===AGENTERA_HOME_ECHO_END===\n"
+                            "===QUERY_OUTPUT_BEGIN===\n"
+                            "<value2>\n"
+                            "===QUERY_OUTPUT_END==="
+                        )
+
+                        env = dict(os.environ)
+                        env["AGENTERA_HOME"] = str(tmp_install_root)
+                        env["XDG_DATA_HOME"] = str(tmp_data)
+                        env["OPENCODE_CONFIG_DIR"] = str(tmp_config)
+                        env["XDG_CACHE_HOME"] = str(tmp_cache)
+
+                        cmd = [
+                            "opencode",
+                            "run",
+                            "--pure",
+                            "--dir",
+                            str(tmp_workdir),
+                            "--dangerously-skip-permissions",
+                            prompt,
+                        ]
+                        info(
+                            "opencode: invoking `opencode run --pure "
+                            f"--dir {tmp_workdir} --dangerously-skip-permissions ...`"
+                        )
+                        t0 = time.time()
+                        try:
+                            exec_result = subprocess.run(
+                                cmd,
+                                env=env,
+                                capture_output=True,
+                                text=True,
+                                timeout=OPENCODE_EXEC_TIMEOUT_SECONDS,
+                                check=False,
+                            )
+                        except subprocess.TimeoutExpired as exc:
+                            fail(
+                                f"`opencode run` timed out at "
+                                f"{OPENCODE_EXEC_TIMEOUT_SECONDS}s "
+                                f"(partial stdout={exc.stdout!r})"
+                            )
+                            return
+                        elapsed = time.time() - t0
+                        info(
+                            f"opencode: `opencode run` returned "
+                            f"exit={exec_result.returncode} in {elapsed:.1f}s"
+                        )
+
+                        if exec_result.returncode != 0:
+                            combined = f"{exec_result.stdout}\n{exec_result.stderr}".lower()
+                            auth_markers = (
+                                "auth",
+                                "login",
+                                "credential",
+                                "credentials",
+                                "unauthorized",
+                                "api key",
+                                "provider",
+                            )
+                            if any(marker in combined for marker in auth_markers):
+                                skip(
+                                    "opencode",
+                                    f"`opencode run` returned auth-style failure "
+                                    f"(exit {exec_result.returncode}); see output",
+                                    skips,
+                                )
+                                info(f"opencode: stdout={exec_result.stdout!r}")
+                                info(f"opencode: stderr={exec_result.stderr!r}")
+                                _assert_opencode_auth_unchanged(real_auth, auth_sha_before)
+                                return
+                            fail(
+                                f"`opencode run` exit {exec_result.returncode}: "
+                                f"stdout={exec_result.stdout!r} "
+                                f"stderr={exec_result.stderr!r}"
+                            )
+
+                        agent_output = exec_result.stdout
+                        info("opencode: --- captured agent output begin ---")
+                        for line in agent_output.rstrip("\n").splitlines():
+                            info(f"  {line}")
+                        info("opencode: --- captured agent output end ---")
+
+                        ah_value = _extract_between(
+                            agent_output,
+                            "===AGENTERA_HOME_ECHO_BEGIN===",
+                            "===AGENTERA_HOME_ECHO_END===",
+                        )
+                        assert_true(
+                            ah_value is not None,
+                            "opencode: could not find AGENTERA_HOME echo markers in output",
+                        )
+                        assert ah_value is not None
+                        ah_value = ah_value.strip()
+                        expected_marker = f"AGENTERA_HOME={tmp_install_root}"
+                        assert_true(
+                            expected_marker in ah_value,
+                            f"opencode: AGENTERA_HOME echo {ah_value!r} does not "
+                            f"contain expected {expected_marker!r}",
+                        )
+                        info(f"opencode: AGENTERA_HOME echo verified: {ah_value}")
+
+                        query_output = _extract_between(
+                            agent_output,
+                            "===QUERY_OUTPUT_BEGIN===",
+                            "===QUERY_OUTPUT_END===",
+                        )
+                        assert_true(
+                            query_output is not None,
+                            "opencode: could not find query output markers in output",
+                        )
+                        assert query_output is not None
+                        missing = [
+                            artifact
+                            for artifact in ("decisions", "progress", "session")
+                            if artifact not in query_output.split()
+                        ]
+                        assert_true(
+                            not missing,
+                            f"opencode: query output missing expected artifact names: "
+                            f"{missing}; output={query_output!r}",
+                        )
+                        info(f"opencode: query output verified: {query_output.strip()}")
+
+    _assert_opencode_auth_unchanged(real_auth, auth_sha_before)
+    info(
+        "opencode: verified under `opencode run --pure --dir <tmp> "
+        "--dangerously-skip-permissions`; Agentera skills were not loaded "
+        "and real OpenCode auth storage is byte-identical (SHA256 round-trip)"
+    )
+
+
+def _assert_opencode_auth_unchanged(real_auth: Path, sha_before: str) -> None:
+    sha_after = _sha256(real_auth)
+    info(f"opencode-auth sha256 (after): {sha_after}")
+    assert_true(
+        sha_before == sha_after,
+        f"opencode: auth.json SHA256 changed during harness run: "
+        f"before={sha_before} after={sha_after}",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -1717,7 +1955,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="smoke_live_hosts.py",
         description=(
-            "Live-host smoke harness for Codex and Copilot AGENTERA_HOME "
+            "Live-host smoke harness for Codex, Copilot, and OpenCode AGENTERA_HOME "
             "inheritance. Default mode runs offline checks only; --live "
             "gates per-runtime CLI sections behind a cost prompt."
         ),
@@ -1768,6 +2006,7 @@ def main(argv: list[str] | None = None) -> int:
             run_codex_live_section(snapshots, skips)
             run_codex_hook_section(snapshots, skips)
             run_copilot_live_section(snapshots, skips)
+            run_opencode_live_section(snapshots, skips)
 
         if skips:
             info(

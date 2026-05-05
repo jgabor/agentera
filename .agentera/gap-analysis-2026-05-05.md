@@ -15,7 +15,7 @@ Current verification:
 | `uv run scripts/validate_capability.py skills/agentera/capabilities/<all 12>` | PASS |
 | `python3 scripts/smoke_setup_helpers.py` | PASS |
 | `python3 scripts/smoke_live_hosts.py` | PASS, including offline profilera Codex corpus audit |
-| `python3 scripts/smoke_live_hosts.py --live --yes` | PASS: Codex AGENTERA_HOME/query, Codex apply_patch hooks, Copilot AGENTERA_HOME/query; config and shell rc snapshots restored |
+| `python3 scripts/smoke_live_hosts.py --live --yes` | PASS: Codex AGENTERA_HOME/query, Codex apply_patch hooks, Copilot AGENTERA_HOME/query, OpenCode AGENTERA_HOME/query via `opencode run --pure`; config, shell rc, and OpenCode auth snapshots restored |
 | `python3 scripts/validate_cross_capability.py` | PASS: cross-capability artifact graph ok |
 | `python3 scripts/measure_token_payload.py` | PASS: v2 317,616 bytes vs v1 352,213 bytes, -9.8% |
 | `node scripts/smoke_opencode_bootstrap.mjs` | PASS |
@@ -57,11 +57,11 @@ Phase 2 verdict: complete.
 | Cross-capability dependency resolution via schemas | Complete | `scripts/validate_cross_capability.py`; `tests/test_validate_cross_capability.py` | None |
 | Hook integration with schema validation | Complete | `hooks/common.py` defaults now resolve to `.agentera/*.yaml`; session start/stop tests pass against v2 YAML; OpenCode hard gate denies invalid artifacts | None |
 | Query CLI commands for all artifact types | Complete | `scripts/agentera`; `tests/test_query_cli.py`; artifact-specific summaries for plan, progress, decisions, health, docs, session, todo, design, objective, and experiments | None |
-| Runtime adapter updates | Complete for offline/package surfaces plus gated Codex/Copilot live smoke | Setup smoke, OpenCode bootstrap smoke, lifecycle metadata validator, and `scripts/smoke_live_hosts.py --live --yes` all pass | Live smoke evidence covers the harness scope (Codex/Copilot model-host checks), not an independent live Claude/OpenCode model-call claim |
+| Runtime adapter updates | Complete for offline/package surfaces plus gated Codex/Copilot/OpenCode live smoke | Setup smoke, OpenCode bootstrap smoke, lifecycle metadata validator, and `scripts/smoke_live_hosts.py --live --yes` all pass | Claude Code live smoke is explicitly deferred |
 | Port tests | Complete for current v2 suite | `520 passed, 1 skipped` | The retired v1 helper tests are intentionally gone; no claim should cite 577 as current |
-| Smoke tests across runtimes | Partial but strengthened | Offline setup + OpenCode plugin smoke pass; gated live harness passes for Codex and Copilot | No independent live Claude/OpenCode model-call evidence from this harness |
+| Smoke tests across runtimes | Partial but strengthened | Offline setup + OpenCode plugin smoke pass; gated live harness passes for Codex, Copilot, and OpenCode | No independent live Claude Code model-call evidence from this harness; deferred by user request |
 
-Phase 3 verdict: complete for offline/package/query surfaces; live host behavior remains gated.
+Phase 3 verdict: complete for offline/package/query surfaces; live host behavior is proven for Codex, Copilot, and OpenCode, while Claude Code live smoke remains deferred.
 
 ## ROADMAP.md Phase 4: Validation and Cutover
 
@@ -92,8 +92,8 @@ Phase 4 verdict: validation is green; token goal remains missed.
 1. Token target remains missed.
    The final remeasurement after profilera/query-depth work is v2 317,616 bytes vs v1 352,213 bytes, a 9.8% reduction. This is honest evidence of a modest reduction, not the ROADMAP target of 40%+.
 
-2. Four-runtime live model-host evidence remains bounded.
-   The approved `python3 scripts/smoke_live_hosts.py --live --yes` run passed on 2026-05-05 for its live harness scope: Codex AGENTERA_HOME/query, Codex apply_patch hooks, and Copilot AGENTERA_HOME/query, with snapshots restored. This closes the recommended gated live-smoke action. It does not prove independent live Claude/OpenCode model-call behavior because the harness does not execute those calls.
+2. Four-runtime live model-host evidence remains bounded by the deferred Claude Code lane.
+   The approved `python3 scripts/smoke_live_hosts.py --live --yes` run passed on 2026-05-05 for Codex AGENTERA_HOME/query, Codex apply_patch hooks, Copilot AGENTERA_HOME/query, and OpenCode AGENTERA_HOME/query via `opencode run --pure`, with snapshots restored. This closes the recommended Codex/Copilot/OpenCode gated live-smoke action. It does not prove independent live Claude Code model-call behavior because that check is explicitly deferred.
 
 ## Closed Questions
 
@@ -101,8 +101,8 @@ Phase 4 verdict: validation is green; token goal remains missed.
 - Profilera extraction: v2 now ships `scripts/extract_corpus.py`, and default smoke proves a Codex-shaped offline collection fixture.
 - Query seam depth: `scripts/agentera query` now has artifact-specific summaries for plan, progress, decisions, health, docs, session, todo, design, objective, and experiments.
 - Producer/consumer validation: `scripts/validate_cross_capability.py` now validates capability artifact declarations against skill-level artifact schemas.
-- Live smoke: approved and run on 2026-05-05. `scripts/smoke_live_hosts.py --live --yes` passed for Codex and Copilot live harness checks; do not broaden that evidence into an independent live Claude/OpenCode model-call claim.
-- Follow-up tracking: `TODO.md` now tracks the missed token target (`agentera-v2-token-optimization`) as an open degraded item; the live-smoke item is resolved with bounded evidence.
+- Live smoke: approved and run on 2026-05-05. `scripts/smoke_live_hosts.py --live --yes` passed for Codex, Copilot, and OpenCode live harness checks; do not broaden that evidence into an independent live Claude Code model-call claim.
+- Follow-up tracking: `TODO.md` now tracks the missed token target (`agentera-v2-token-optimization`) and deferred Claude Code live smoke (`agentera-v2-claude-live-smoke`) as open items; the Codex/Copilot/OpenCode live-smoke item is resolved with bounded evidence.
 
 ## Resolved Since Earlier Draft
 
@@ -114,7 +114,7 @@ Phase 4 verdict: validation is green; token goal remains missed.
 - `scripts/validate_cross_capability.py` now gates producer/consumer graph consistency.
 - `scripts/extract_corpus.py` restores bundled profilera corpus extraction and `scripts/smoke_live_hosts.py` no longer skips the default profilera corpus audit.
 - `scripts/agentera query` now resolves `.agentera/docs.yaml` path overrides, finds the active optimera objective, and renders artifact-specific summaries for workflow-critical artifacts.
-- `python3 scripts/smoke_live_hosts.py --live --yes` passed on 2026-05-05 for Codex and Copilot live harness checks.
+- `python3 scripts/smoke_live_hosts.py --live --yes` passed on 2026-05-05 for Codex, Copilot, and OpenCode live harness checks.
 - OpenCode artifact hard gate now denies validation-hook failures instead of swallowing non-zero exits.
 - Stale active v1 artifacts were moved out of the live `.agentera/` root.
 - README/AGENTS/runtime smoke references to missing v1 scripts were removed or made explicit as deferred.
@@ -125,11 +125,11 @@ Phase 4 verdict: validation is green; token goal remains missed.
 1. Execute the follow-up token optimization lane.
    `TODO.md` now tracks `agentera-v2-token-optimization`. The 40% token target remains missed after final remeasurement; treat this as a separate optimization objective, not a hidden release pass.
 
-2. Decide whether to broaden live model-host coverage beyond the current harness.
-   The approved live smoke passed for Codex and Copilot. If release language needs a literal four-runtime live model-host claim, add or run separate Claude/OpenCode live checks instead of inferring them from this harness.
+2. Keep Claude Code live smoke deferred unless release language needs a literal four-runtime live model-host claim.
+   The approved live smoke passed for Codex, Copilot, and OpenCode. Claude Code remains unproven by live model-host evidence by explicit user request; do not infer it from the other runtimes.
 
 ## Overall Verdict
 
 Agentera 2.0 is reliable enough to continue from this gap analysis. The basic v2 cutover is structurally sound: bundled skill shape, YAML artifact paths, schema validation, session hooks, runtime metadata, offline smoke checks, cross-capability graph validation, bundled corpus extraction, artifact-specific query summaries, and the current test suite are green.
 
-The remaining work is explicit: treat the missed token target as a follow-up optimization lane, and avoid broad four-runtime live model-host claims unless separate Claude/OpenCode live evidence is added.
+The remaining work is explicit: treat the missed token target as a follow-up optimization lane, and avoid broad four-runtime live model-host claims until the deferred Claude Code live smoke is run.

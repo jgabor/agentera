@@ -93,7 +93,7 @@ index:
   status: current
 - document: Changelog
   path: CHANGELOG.md
-  last_updated: '2026-04-30'
+  last_updated: '2026-05-05'
   status: current
 - document: Health
   path: .agentera/health.yaml
@@ -213,7 +213,7 @@ index:
   status: current
 - document: Live-host smoke runner
   path: scripts/smoke_live_hosts.py
-  last_updated: '2026-04-26'
+  last_updated: '2026-05-05'
   status: current
 - document: SessionStart hook
   path: hooks/session_start.py
