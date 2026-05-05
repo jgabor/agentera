@@ -6,7 +6,7 @@
 
 ## → Normal
 
-- [ ] [agentera-post-v2-token-optimization] Optional future-version work: continue reducing the static dispatch payload beyond the v2.0 accepted result of 317,592 bytes vs v1 352,213 bytes (-9.8%, accepted as close enough to the revised -10% target). Measure with `uv run scripts/measure_token_payload.py`.
+- [ ] [agentera-post-v2-token-optimization] Optional future-version work: continue reducing the static dispatch payload beyond the v2.0 result of 315,697 bytes vs v1 352,213 bytes (-10.4%, exceeding the revised -10% target). Measure with `uv run scripts/measure_token_payload.py`.
 - [ ] [agentera-optional-claude-live-smoke] Optional future-version work: add an explicit opt-in Claude Code live model-host smoke when Claude Pro/Max or API access is available. Current required live evidence covers Codex, Copilot, and OpenCode.
 
 ## ⇢ Annoying
@@ -14,7 +14,7 @@
 ## Resolved
 
 - [x] ~~[agentera-v2-live-smoke] Run `uv run scripts/smoke_live_hosts.py --live --yes` after explicit approval for live model calls. Required before claiming cutover-ready model-host behavior across Claude/Codex/Copilot/OpenCode.~~ · passed on 2026-05-05 for Codex AGENTERA_HOME/query, Codex apply_patch hooks, Copilot AGENTERA_HOME/query, and OpenCode AGENTERA_HOME/query via `opencode run --pure`; Claude Code live smoke remains deferred separately
-- [x] ~~[agentera-v2-token-optimization] Open and execute a follow-up token optimization lane for the missed ROADMAP target.~~ · release target revised to -10% on 2026-05-05; current static dispatch payload is 317,592 bytes vs v1 baseline 352,213 bytes (-9.8%), accepted as close enough for v2.0
+- [x] ~~[agentera-v2-token-optimization] Open and execute a follow-up token optimization lane for the missed ROADMAP target.~~ · release target revised to -10% on 2026-05-05; current static dispatch payload is 315,697 bytes vs v1 baseline 352,213 bytes (-10.4%), exceeding the revised target for v2.0
 - [x] ~~[agentera-v2-claude-live-smoke] Deferred per 2026-05-05 user direction: run Claude Code live model-host smoke only if release language needs a literal four-runtime live claim.~~ · not a v2.0 release gate because Claude Pro/Max/API access is unavailable; future Claude Code live smoke is optional opt-in only
 - [x] ~~[audit-11] Deferred: Copilot current-checkout plugin smoke is blocked by escaping skills path; installed Copilot skills and Codex `$hej` smoke passed~~ · fixed in Cycle 153; root `plugin.json` loads shared `skills/` through `copilot --plugin-dir`
 - [x] ~~[audit-11] Deferred: live Copilot and Codex host behavior remains untested until host smoke tests are available~~ · narrowed by Cycle 152; Codex `$hej` and Copilot installed skills passed, current-checkout Copilot plugin loading remains blocked

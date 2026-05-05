@@ -108,9 +108,9 @@ index:
   path: .agentera/health.yaml
   last_updated: '2026-05-05'
   status: current
-- document: Plan archive
-  path: .agentera/archive/PLAN-2026-04-30-installation-reliability-self-healing.md
-  last_updated: '2026-04-30'
+- document: Plan
+  path: .agentera/plan.yaml
+  last_updated: '2026-05-05'
   status: current
 - document: DOCS
   path: .agentera/docs.yaml

@@ -1,4 +1,33 @@
 cycles:
+- number: 263
+  timestamp: 2026-05-05 13:21
+  type: chore
+  phase: verify
+  what: Cleaned release residue before v2.0.0 cut. Removed tracked v1 migration backups from `.agentera/backup-v1`, marked
+    the completed v2 remediation plan as completed, refreshed the docs index to point at the current plan artifact, consolidated
+    duplicated 2.0.0 changelog entries into one release block, and fixed the live smoke temporary install root to include
+    the query CLI support module.
+  commit: this commit
+  inspiration: User request to check for checked-in v1 backups, temporary files, stale artifacts, and then proceed with release
+    actions.
+  discovered: The tracked backup-v1 directory would have shipped old Markdown artifacts, and ignored local cache/runtime debris
+    was still present in the working tree even though it was not release content.
+  verified: 'Validation passed: uv run --with pytest --with pyyaml pytest -q (536 passed, 1 skipped); uv run --with pytest
+    --with pyyaml pytest -q tests/test_smoke_live_hosts.py tests/test_hej_capability.py (11 passed); uv run scripts/validate_capability.py
+    --self-validate; uv run scripts/validate_capability.py for all 12 capabilities; uv run scripts/validate_cross_capability.py;
+    uv run scripts/validate_lifecycle_adapters.py --check-uv-runtime; uv run scripts/measure_token_payload.py (315,697 bytes
+    vs 352,213 bytes, -10.4%); node scripts/smoke_opencode_bootstrap.mjs; uv run scripts/smoke_setup_helpers.py; uv run
+    scripts/smoke_live_hosts.py; uv run scripts/smoke_live_hosts.py --live --yes; HOME=<tmp> OPENCODE_CONFIG_DIR=<tmp>
+    uv run scripts/detect_stale_v1; uvx --from . agentera upgrade --only bundle --home <tmp>/home --install-root <tmp>/install
+    --yes --json; uv run scripts/agentera query plan; uv run scripts/agentera query decisions --topic benchmark. A first
+    live rerun caught the missing agentera_upgrade.py support module in temporary Copilot/OpenCode install roots; the harness
+    fix and regression test passed, then the live rerun passed.'
+  next: Commit release hygiene, then push main and create/push v2.0.0.
+  context:
+    intent: make the repository release-clean before the v2.0.0 tag
+    constraints: no Agentera skill loading during self-review; Claude Code live smoke remains optional and deferred
+    unknowns: no known release-blocking unknowns before final validation
+    scope: checked-in v1 backups, local temp debris, changelog consolidation, plan/docs freshness, and release validation
 - number: 262
   timestamp: 2026-05-05 11:59
   type: feat

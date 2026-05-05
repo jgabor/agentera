@@ -8,46 +8,28 @@ Each invocation = one orientation. Reads everything, writes nothing.
 
 ---
 
-## Visual identity
-
-Glyph: **⌂** (protocol ref: SG1). Used in the mandatory exit marker.
-
----
-
 ## State artifacts
 
-No artifacts of its own. Reads all suite artifacts for the briefing:
-
-| Artifact | Read for |
-|----------|----------|
-| `VISION.md` | Project direction, north star |
-| `DECISIONS.md` | Pending and recent decisions |
-| `PLAN.md` | Active tasks, completion status |
-| `PROGRESS.md` | Recent cycles, what shipped |
-| `TODO.md` | Open problems by severity |
-| `HEALTH.md` | Codebase health grades and trends |
-| `OBJECTIVE.md` | Optimization target and current value |
-| `EXPERIMENTS.md` | Experiment status |
-| `DOCS.md` | Documentation coverage and artifact paths |
-| `DESIGN.md` | Visual identity status |
-| `PROFILE.md` | Decision profile (global: `$PROFILERA_PROFILE_DIR/PROFILE.md`, default: `$XDG_DATA_HOME/agentera/PROFILE.md`) |
+Glyph: **⌂** (SG1). Hej reads suite state and writes nothing. It may read
+VISION, DECISIONS, PLAN, PROGRESS, TODO, HEALTH, OBJECTIVE, EXPERIMENTS, DOCS,
+DESIGN, and the global PROFILE for a briefing.
 
 ### Artifact path resolution
 
-Before reading any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout:
+Before reading artifacts, check `.agentera/docs.yaml` for path mappings. Without
+a mapping, use the default layout:
 
 - Human-facing artifacts at the project root (Markdown): `TODO.md`, `CHANGELOG.md`, `DESIGN.md`
 - Agent-facing artifacts in `.agentera/` (YAML): `progress.yaml`, `decisions.yaml`, `health.yaml`, `plan.yaml`, `docs.yaml`, `vision.yaml`, `session.yaml`, and per-objective `objective.yaml` / `experiments.yaml`
 
-The canonical names in the State Artifacts table below are identifiers, not literal paths. The resolved path for an agent-facing artifact is its `.yaml` file in `.agentera/` unless docs.yaml specifies otherwise.
-
-PROFILE.md is global, not project-scoped. Its path is determined by profilera: `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`). Check the profilera-determined path directly rather than falling back to the project root.
+Canonical names are identifiers, not literal paths. PROFILE.md is global:
+`$PROFILERA_PROFILE_DIR/PROFILE.md`, default `$XDG_DATA_HOME/agentera/PROFILE.md`.
 
 ### Contract values
 
-Contract values are inlined where referenced. Visual tokens from protocol: severity arrows VT5-VT8 (⇶/⇉/→/⇢), trend arrows VT12-VT13 (⮉/⮋), progress bar VT18 (█▓░), inline separator VT16 (·), list item VT15 (▸), section divider VT14, flow/target VT17 (→). Skill glyphs SG1-SG12 for the routing table and status lines. Exit signals EX1-EX4 for the exit marker. Severity issue levels SI1-SI4 for attention items.
-
-`references/contract.md` (at the v2 skill location `skills/agentera/references/contract.md`) remains available as a full-spec reference for ambiguous cases or cross-checking.
+Use protocol tokens by ID where needed: severity arrows VT5-VT8, trend arrows
+VT12-VT13, progress bar VT18, separator VT16, list item VT15, section divider
+VT14, flow arrow VT17, skill glyphs SG1-SG12, exits EX1-EX4, issues SI1-SI4.
 
 ---
 
@@ -58,10 +40,7 @@ Check for suite state artifacts (respecting path resolution).
 - **No artifacts found** → Step 1a (first time on this project)
 - **Artifacts found** → Step 1b (returning to known project)
 
-Narration voice (riff, don't script):
-
-- "New project. Taking a look around..." · "First time here. Let me see what we've got..."
-- "Pulling up the latest..." · "Checking in on the project..." · "Let me see where things stand..."
+Narration voice: warm, brief, unscripted.
 
 ---
 
@@ -85,8 +64,13 @@ Check `.agentera/` for v1 Markdown artifacts that lack a corresponding v2 YAML c
 
 For each v1 file that exists where the corresponding v2 file does **not**:
 
+<!-- markdownlint-disable MD034 -->
+
 - Add to the briefing's attention section as a degraded (SI2, ⇉) item:
-  `⇉ v1 artifacts detected · preview \`uvx --from git+<https://github.com/jgabor/agentera> agentera upgrade --project "$PWD" --dry-run\``
+  `⇉ v1 artifacts detected · preview \`uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run\``
+
+<!-- markdownlint-enable MD034 -->
+
 - If the current project is a local Agentera checkout with `scripts/agentera`, the local equivalent is
   `uv run scripts/agentera upgrade --project "$PWD" --dry-run`.
 - Include the notice once (not per-file); list the affected files after the command.
@@ -112,22 +96,11 @@ First impression: the colleague meets a new project.
 1. **Quick scan**: language(s), framework(s), README.md, last 5 commits, approximate size.
    Fast, no deep analysis.
 
-2. **Share what's available**: lead with the 2-3 skills most relevant to what the
-   scan revealed. Don't enumerate all eleven unless asked. Mention the rest exist and offer the full table on request. The table below is a reference, not a script:
-
-   | | If you want to... | Say |
-   |---|---------------------|-----|
-   | ⛥ (SG6) | Define project direction | "define the direction" |
-   | ❈ (SG4) | Think through a decision | "help me decide" |
-   | ⬚ (SG10) | Research an external resource | "research this pattern" |
-   | ≡ (SG5) | Plan work with acceptance criteria | "plan this" |
-   | ⧉ (SG2) | Build autonomously | "build the next feature" |
-   | ⎘ (SG7) | Optimize a metric | "improve test coverage" |
-   | ⛶ (SG3) | Audit codebase health | "audit the codebase" |
-   | ▤ (SG8) | Create or maintain docs | "update docs" |
-   | ♾ (SG9) | Build a decision profile | "build decision profile" |
-   | ◰ (SG11) | Define visual identity | "design the visual identity" |
-   | ⎈ (SG12) | Orchestrate multi-cycle plan execution | "run the plan" |
+2. **Share what's available**: lead with the 2-3 capabilities most relevant to
+   the scan. Do not enumerate the full suite unless asked. Common phrases:
+   define direction, help me decide, research this pattern, plan this, build the
+   next feature, improve test coverage, audit the codebase, update docs, build
+   decision profile, design visual identity, run the plan.
 
 3. **Give your honest take**: based on the scan, tell the user where you'd start
     and why. "If I were you, I'd start with X because Y." Use the routing logic (no vision → visionera, unknown quality → inspektera, decision needed → resonera, ready to build + has plan → orkestrera, ready to build → realisera, docs gaps → dokumentera) but frame it as judgment, not a lookup table.
@@ -227,9 +200,7 @@ Show where things stand.
 
 ## Step 2: Route
 
-Narration voice (riff, don't script):
-
-- "Kicking off [skill]..." · "Handing off to [skill]..." · "Over to [skill]."
+Narration voice: "Kicking off [skill]..." or similarly brief.
 
 Invoke the capability. Hej's work is done.
 
@@ -265,31 +236,5 @@ Format: emit `⌂ hej · <status>` on its own line below the dashboard's closing
 
 ## Cross-capability integration
 
-Hej is the entry point to a twelve-capability suite. It reads artifacts from the other eleven workflow capabilities but produces no artifacts of its own and no downstream capability depends on it.
-
-**Reads from all eleven capabilities**:
-
-- **visionera** → VISION.md for project direction and north star
-- **resonera** → DECISIONS.md for pending and recent decisions
-- **planera** → PLAN.md for active task status and completion
-- **realisera** → PROGRESS.md for recent cycle history and what shipped
-- **inspektera** → HEALTH.md for codebase health grades and trends
-- **optimera** → OBJECTIVE.md and EXPERIMENTS.md for optimization status
-- **dokumentera** → DOCS.md for artifact path resolution and documentation coverage
-- **visualisera** → DESIGN.md for visual identity status
-- **profilera** → PROFILE.md for decision profile context
-- **inspirera** → no direct artifact, but routes to it when research is needed
-- **orkestrera** → no direct artifact, but hej routes to it for orchestrated multi-cycle plan execution
-
-Hej's unique role: it is the only capability that reads from every other capability's output. It does not feed into any downstream capability. Its output is the ephemeral briefing and the routing decision.
-
----
-
-## Getting started
-
-```
-/agentera                   # Start here, always
-/agentera "what should I work on"   # Natural language works too
-/agentera "catch me up"             # Returning to a project
-/agentera "what needs attention"    # Quick status check
-```
+Hej is the suite entry point. It reads other capabilities' artifacts, produces
+no artifact, and outputs only a briefing plus routing suggestion.
