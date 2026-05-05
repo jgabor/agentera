@@ -4,7 +4,7 @@ description: >
   Legacy Agentera v1 entry-point bridge. Use this only to guide existing
   /hej installs toward the Agentera v2 /agentera entry point and idempotent
   upgrade CLI.
-version: "2.0.2"
+version: "2.0.3"
 legacy_bridge: true
 ---
 

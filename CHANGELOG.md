@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [2.0.3] · 2026-05-05
+
+### Fixed
+
+- Restored OpenCode plugin loading by exporting the Agentera plugin factory as the default export.
+- Strengthened `/agentera` dispatcher guidance so capability work must query project state through the Agentera CLI and preview upgrade dry-runs before applying changes.
+
 ## [2.0.2] · 2026-05-05
 
 ### Fixed
