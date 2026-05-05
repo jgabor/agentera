@@ -416,6 +416,31 @@ class TestArtifactSpecificSummaries:
         assert "verified: pytest query passed" in r.stdout
         assert "next: Remeasure tokens" in r.stdout
 
+    def test_progress_summary_uses_newest_cycle_first(self, project):
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [
+                {
+                    "number": 9,
+                    "timestamp": "2026-05-05 12:00",
+                    "type": "feat",
+                    "phase": "verify",
+                    "what": "Newest work",
+                },
+                {
+                    "number": 8,
+                    "timestamp": "2026-05-05 11:00",
+                    "type": "fix",
+                    "phase": "build",
+                    "what": "Older work",
+                },
+            ],
+        })
+        r = _run("query", "progress", "--limit", "1", cwd=project)
+        assert r.returncode == 0
+        assert "number=9" in r.stdout
+        assert "Newest work" in r.stdout
+        assert "number=8" not in r.stdout
+
     def test_docs_summary_filters_status(self, project):
         _write_artifact(project, ".agentera/docs.yaml", {
             "last_audit": "2026-05-05 (test)",

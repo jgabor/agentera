@@ -1,13 +1,33 @@
 #!/usr/bin/env -S uv run --script
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.11"
 # dependencies = ["pyyaml"]
 # ///
-"""Deprecated: use scripts/migrate_artifacts_v1_to_v2 instead."""
-import sys
+"""Deprecated wrapper for the artifact phase of ``agentera upgrade``."""
+
 import os
 import subprocess
-print("WARNING: scripts/migrate_v1_to_v2 is deprecated. Use scripts/migrate_artifacts_v1_to_v2.", file=sys.stderr)
-script_dir = os.path.dirname(os.path.abspath(sys.argv[0])) if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__)) if "__file__" in dir() else os.getcwd()
-target = os.path.join(script_dir, "migrate_artifacts_v1_to_v2")
-raise SystemExit(subprocess.run([sys.executable, target] + sys.argv[1:]).returncode)
+import sys
+
+print(
+    "WARNING: scripts/migrate_v1_to_v2 is deprecated. "
+    "Use scripts/agentera upgrade --only artifacts.",
+    file=sys.stderr,
+)
+
+script_dir = (
+    os.path.dirname(os.path.abspath(__file__))
+    if "__file__" in globals()
+    else os.getcwd()
+)
+target = os.path.join(script_dir, "agentera")
+args = [arg for arg in sys.argv[1:] if arg != "--verbose"]
+if "--dry-run" not in args and "--yes" not in args:
+    args.append("--yes")
+
+raise SystemExit(
+    subprocess.run(
+        [sys.executable, target, "upgrade", "--only", "artifacts", *args],
+        check=False,
+    ).returncode
+)

@@ -169,6 +169,14 @@ uv run scripts/setup_doctor.py --install --yes --runtime codex
 uv run scripts/setup_doctor.py --install --yes --runtime copilot
 ```
 
+For existing v1 installs, use the idempotent upgrade command. It previews by
+default and applies only with `--yes`:
+
+```bash
+uv run scripts/agentera upgrade --project /path/to/project --dry-run
+uv run scripts/agentera upgrade --project /path/to/project --yes
+```
+
 ## Why it works
 
 Most coding agents forget. Agentera writes the useful residue of the work into
@@ -364,19 +372,12 @@ codex plugin marketplace add jgabor/agentera
 
 Then use interactive `/plugins` to install and enable the plugin.
 
-For helper-script access, write `AGENTERA_HOME` to `~/.codex/config.toml`.
-If you use a local clone or know the install root:
+For helper-script access and artifact-validation hooks, let the upgrade command
+wire Codex's local config:
 
 ```bash
 export AGENTERA_HOME=/path/to/agentera
-uv run "$AGENTERA_HOME/scripts/setup_codex.py"
-```
-
-For artifact-validation hooks:
-
-```bash
-mkdir -p ~/.codex
-cp "$AGENTERA_HOME/hooks/codex-hooks.json" ~/.codex/hooks.json
+uv run "$AGENTERA_HOME/scripts/agentera" upgrade --runtime codex --yes
 ```
 
 </details>

@@ -493,6 +493,15 @@ def validate_codex_profilera_metadata(root: Path, plugin: dict[str, Any]) -> lis
             errors.append(f"codex.agentera: missing metadata surface {path.relative_to(root)}")
             continue
         text = path.read_text(encoding="utf-8")
+        if "path: ./skills/agentera" not in text:
+            errors.append(
+                f"codex.agentera: {path.relative_to(root)} must point at bundled skills/agentera"
+            )
+        for stale_path in ("path: ./skills/hej", "metadata: ./skills/hej", "skills/<name>/agents"):
+            if stale_path in text:
+                errors.append(
+                    f"codex.agentera: {path.relative_to(root)} carries stale v1 skill path {stale_path!r}"
+                )
         for term in CODEX_PROFILERA_TERMS:
             if term not in text:
                 errors.append(f"codex.agentera: {path.relative_to(root)} missing {term!r}")

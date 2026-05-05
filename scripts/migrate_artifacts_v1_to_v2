@@ -9,8 +9,12 @@ Reads v1 .agentera/*.md artifacts and VISION.md, converts them to v2 YAML
 artifacts based on the artifact schemas in skills/agentera/schemas/artifacts/.
 Creates backups in .agentera/backup-v1/ before conversion.
 
-Usage:
-    scripts/migrate_v1_to_v2 [--project DIR] [--dry-run] [--force] [--verbose]
+Preferred usage:
+    uv run scripts/agentera upgrade --only artifacts --project DIR --dry-run
+    uv run scripts/agentera upgrade --only artifacts --project DIR --yes
+
+Direct artifact-only usage:
+    scripts/migrate_artifacts_v1_to_v2 [--project DIR] [--dry-run] [--force] [--verbose]
 
 Exit codes:
     0  Success (or nothing to migrate)

@@ -168,8 +168,8 @@ index:
   last_updated: '2026-04-28'
   status: current
 - document: Codex UI metadata
-  path: skills/&lt;name&gt;/agents/openai.yaml; agents/openai.yaml
-  last_updated: '2026-04-24'
+  path: agents/openai.yaml
+  last_updated: '2026-05-05'
   status: current
 - document: Hooks registry
   path: hooks/hooks.json
@@ -197,6 +197,14 @@ index:
   status: current
 - document: Codex setup helper
   path: scripts/setup_codex.py
+  last_updated: '2026-05-05'
+  status: current
+- document: Agentera CLI
+  path: scripts/agentera
+  last_updated: '2026-05-05'
+  status: current
+- document: Upgrade orchestrator
+  path: scripts/agentera_upgrade.py
   last_updated: '2026-05-05'
   status: current
 - document: Copilot setup helper
