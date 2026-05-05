@@ -3,132 +3,122 @@ header:
   created: '2026-05-05'
   status: active
   reviewed: '2026-05-05'
-  critic_issues: "7 found, 7 addressed, 0 dismissed"
-  revised: >
-    Split release verification from approved retag mutation, defined the
-    dashboard contract, tightened the one-command invariant, made freshness
-    artifacts explicit, and replaced vague evidence/version criteria.
-  title: Repair v2.1.0 Hej Dashboard Release
+  critic_issues: "8 found, 8 addressed, 0 dismissed"
+  title: Self-Healing Bundle Refresh For /agentera
 what: >
-  Repair the v2.1.0 release so bare /agentera still renders the README-style
-  hej dashboard while gathering its state through the flat agentera hej CLI.
-  Keep the top-level State CLI contract, but make CLI output the data source
-  for the agent-rendered dashboard rather than the user-facing replacement.
+  Add a self-healing bundle freshness path for bare /agentera. When the
+  installed AGENTERA_HOME CLI is stale, missing expected commands such as hej,
+  or fails the bundle freshness contract, /agentera should report the drift,
+  preview a clone-free uvx bundle refresh, ask for explicit confirmation before
+  writing, apply only the bundle refresh after approval, and retry the installed
+  agentera hej command from the same refreshed root.
 why: >
-  The accepted v2.1.0 plan intended to reduce tool calls, not remove the visual
-  briefing. README still promises the dashboard, hej prose says to render it,
-  and the shipped tests allowed raw CLI-style output to satisfy /agentera. The
-  corrected release must preserve visible behavior and prove the one-command
-  state-gathering invariant.
+  Marketplace and skill updates can refresh invocation metadata while leaving
+  the durable suite bundle under AGENTERA_HOME stale. The stale bundle contains
+  scripts/agentera, so users can have new /agentera skill text but an old CLI.
+  Decision 33 makes AGENTERA_HOME the installed suite bundle root; bundle
+  freshness must therefore be Agentera-owned, clone-free, confirmed, and proven
+  in observable CLI behavior.
 constraints: >
-  Preserve top-level state commands and keep agentera query as advanced custom
-  access. Do not reintroduce multiple routine state reads for normal /agentera.
-  Do not mutate .agentera/vision.yaml or objective state. Do not push, retag, or
-  force-push until the user explicitly approves release mutation after
-  verification. Keep this repair scoped to v2.1.0 behavior, not optional token
-  optimization or unrelated live-host work.
+  Keep confirmed writes. Do not silently mutate the durable bundle. Preserve
+  package-manager updates as metadata/skill updates, not the only bundle-refresh
+  mechanism. Do not introduce a separate external CLI distribution in this lane.
+  Use uvx as the fresh updater source. Keep scope to bundle freshness unless
+  diagnosis proves another phase is required. Do not mutate vision or objective
+  state. Do not push or retag without a later explicit request.
 scope:
   included:
-    - archiving the completed Flat Agentera State CLI plan before this repair plan executes
-    - root dispatcher guidance for bare /agentera
-    - skills/agentera/capabilities/hej/prose.md
-    - scripts/agentera hej output contract where fields are missing or ambiguous
-    - semantic fixtures and tests for dashboard rendering and tool budget
-    - README.md, UPGRADE.md, CHANGELOG.md, .agentera/docs.yaml, .agentera/progress.yaml, .agentera/plan.yaml, and v2.1.0 version surfaces
-    - local and remote v2.1.0 tag readiness checks
+    - archive the completed v2.1.0 dashboard repair plan
+    - define bundle freshness contract and expected version authority
+    - resolve exact install root for AGENTERA_HOME, default durable root, unset env, invalid path, and non-managed root
+    - skills/agentera/SKILL.md top-level CLI-first fallback
+    - skills/agentera/capabilities/hej/prose.md freshness guard
+    - upgrade docs and bundle-only refresh guidance
+    - focused subprocess/filesystem tests for stale AGENTERA_HOME
+    - semantic or prose regression tests where useful
+    - README.md, UPGRADE.md, CHANGELOG.md, .agentera/docs.yaml, .agentera/progress.yaml, and .agentera/plan.yaml closeout
   excluded:
-    - changing artifact schemas unless required for composite state fields
-    - changing the dashboard visual identity beyond restoring the README and hej prose contract
-    - supporting routine agentera query plan/progress/health compatibility forms
-    - remote mutation before explicit user approval
+    - external CLI package distribution
+    - package-manager postinstall hooks
+    - broad artifact migration, runtime config, cleanup, or package phases unless diagnosis proves they are required for bundle freshness
+    - live model calls
+    - marketplace command semantic changes beyond documentation and guidance
   deferred:
-    - optional post-v2 token optimization
-    - optional Claude Code live smoke
-    - broader CLI packaging unrelated to the v2.1.0 dashboard repair
+    - external CLI distribution if self-healing proves too awkward
+    - automatic package-manager hooks if runtimes later expose a reliable post-update hook
 design: >
-  Keep scripts/agentera hej compact and suitable as a data source, but require
-  Agentera skill execution to transform that data into the hej dashboard. Add
-  regressions that fail when /agentera output is merely raw CLI lines, fail
-  when required dashboard sections are omitted while source fields exist, and
-  still fail when tool traces include individual routine state commands or raw
-  .agentera/*.yaml reads. Split the release repair into diagnosis,
-  implementation, executable regressions, artifact freshness, release-candidate
-  verification, and gated release mutation. The restored dashboard contract
-  requires the logo, conversational opener, status, attention when non-empty,
-  next action, and hej exit marker; status must include available health, issue,
-  plan, objective, and profile signals without inventing missing data.
+  Treat the loaded skill as the freshness coordinator and uvx as the fresh
+  updater. Normal /agentera first tries the resolved installed bundle CLI. If
+  that CLI is missing expected commands, lacks a compatible managed marker, has
+  a stale package version, or fails before argparse, the skill reports a bundle
+  freshness gap and previews a command equivalent to `uvx --from
+  git+https://github.com/jgabor/agentera agentera upgrade --only bundle
+  --install-root <resolved-root> --dry-run`. Apply uses the same root and the
+  matching --yes command only after explicit approval scoped to that root and
+  command. Existing local checkout fallback remains a development fallback, not
+  a substitute for refreshing the durable bundle.
 tasks:
   - number: 1
     name: Reconcile Completed Plan State
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN the prior Flat Agentera State CLI plan was completed WHEN this repair lane starts THEN that plan exists under .agentera/archive and .agentera/plan.yaml is this active repair plan
-      - GIVEN uv run scripts/agentera plan runs WHEN the artifact is loaded THEN it reports active v2.1.0 dashboard repair work
-      - GIVEN the archive is inspected WHEN prior v2.1.0 evidence is needed THEN the completed plan's acceptance criteria and closeout remain available
+      - GIVEN the v2.1.0 dashboard repair plan is complete WHEN this lane starts THEN that plan is archived and .agentera/plan.yaml is this active plan
+      - GIVEN uv run scripts/agentera plan runs WHEN the artifact is loaded THEN it reports active self-healing bundle refresh work
+      - GIVEN the archive is inspected WHEN prior release evidence is needed THEN the completed v2.1.0 repair plan remains available
   - number: 2
-    name: Diagnose Dashboard Contract Break
+    name: Define Bundle Freshness Contract
     depends_on:
       - Task 1
-    status: complete
+    status: pending
     acceptance:
-      - GIVEN README, SKILL.md, hej prose, scripts/agentera, fixtures, and tests are inspected WHEN findings are recorded THEN the diagnosis names the exact surfaces that permitted raw CLI output to count as /agentera success
-      - GIVEN the CLI output is compared to the dashboard template WHEN missing or ambiguous fields are found THEN the implementation task knows which fields need CLI or rendering contract changes
-      - GIVEN diagnosis completes WHEN findings are recorded THEN it lists each broken surface, the current behavior, the intended behavior, and the specific task that will repair or test it
+      - GIVEN registry.json, pyproject.toml, plugin manifests, .agentera-bundle.json, scripts/agentera, SKILL.md, and upgrade code are inspected WHEN findings are recorded THEN one authoritative expected bundle version is named
+      - GIVEN AGENTERA_HOME is set, unset, invalid, non-managed, or points at the default durable root WHEN freshness is evaluated THEN the resolved install-root behavior is specified for each case
+      - GIVEN stale state is detected WHEN confirmation is requested THEN the exact approval phrase or equivalent explicit affirmative response is defined and ambiguous responses do not authorize writes
+      - GIVEN diagnosis closes WHEN implementation starts THEN it lists each freshness signal, current behavior, intended behavior, and task that will repair or test it
   - number: 3
-    name: Restore /agentera Dashboard Rendering Contract
+    name: Add Self-Healing /agentera Refresh Guidance
     depends_on:
       - Task 2
-    status: complete
+    status: pending
     acceptance:
-      - GIVEN a returning v2 project WHEN bare /agentera is invoked THEN the agent runs agentera hej once and renders the README/prose-style dashboard instead of relaying raw CLI output
-      - GIVEN normal hej data is available WHEN bare /agentera renders THEN it uses exactly one agentera hej state-gathering command and no individual routine state commands or raw artifact reads
-      - GIVEN a required dashboard field is absent from agentera hej WHEN implementation changes are needed THEN agentera hej output contract is extended rather than adding routine fallback commands to normal /agentera
-      - GIVEN exceptional recovery must use an owning top-level command WHEN it runs THEN the behavior is documented as fallback-only and does not weaken the normal one-command invariant
-      - GIVEN agentera hej is invoked directly as a CLI WHEN a human or test reads it THEN it remains a compact composite state source suitable for dashboard rendering
-      - GIVEN README/prose-required source fields exist WHEN the dashboard renders THEN output includes the logo, conversational opener, status lines, attention when non-empty, concrete next action, and hej exit marker
-      - GIVEN no attention items exist WHEN the dashboard renders THEN the attention section is omitted according to hej prose
+      - GIVEN bare /agentera sees a stale installed bundle WHEN the expected state command fails or freshness check fails THEN guidance reports the bundle freshness gap and shows the uvx dry-run preview for the resolved install root
+      - GIVEN AGENTERA_HOME is unset WHEN the bundle is otherwise discoverable at the default durable root THEN the preview targets that default durable root and reports the resolution source
+      - GIVEN AGENTERA_HOME points at an invalid or non-managed root WHEN refresh is considered THEN guidance does not overwrite it silently and requires either a managed root or explicit force guidance
+      - GIVEN no explicit approval exists WHEN stale state is detected THEN no --yes command runs
+      - GIVEN explicit approval is provided WHEN the refresh applies THEN the uvx --yes command uses the same resolved root and /agentera retries uv run <resolved-root>/scripts/agentera hej
   - number: 4
-    name: Add Dashboard Regression Coverage
+    name: Add Executable Stale-Bundle Regressions
     depends_on:
       - Task 3
-    status: complete
+    status: pending
     acceptance:
-      - GIVEN semantic fixtures evaluate /agentera WHEN captured output is raw CLI lines without dashboard sections THEN the fixture fails
-      - GIVEN captured output contains the dashboard sections, exit marker, concrete next action, and one agentera hej tool trace THEN the fixture passes
-      - GIVEN normal hej orientation is evaluated WHEN tool traces are inspected THEN the trace contains exactly one state-gathering command, agentera hej, and no other routine state command or raw .agentera artifact read
-      - GIVEN focused tests and full pytest run THEN dashboard behavior and tool-budget behavior are both covered
+      - GIVEN a temp AGENTERA_HOME contains a managed stale scripts/agentera without hej WHEN the refresh path is exercised THEN the test observes dry-run preview before any apply
+      - GIVEN approval is absent WHEN stale bundle detection runs THEN the apply command is forbidden and the stale bundle is unchanged
+      - GIVEN approval is present WHEN refresh runs from a fresh source fixture THEN the durable bundle contains a CLI with hej before retry
+      - GIVEN stale scripts fail before argparse or import the wrong support module WHEN freshness is checked THEN tests still produce a bundle-refresh gap rather than falling through to local checkout as success
+      - GIVEN focused tests run THEN they prove real subprocess/filesystem behavior, not only captured semantic tool traces
   - number: 5
-    name: Refresh Docs, Artifacts, And Version Surfaces
+    name: Refresh Docs And Artifact State
     depends_on:
       - Task 4
-    status: complete
+    status: pending
     acceptance:
-      - GIVEN implementation and tests pass WHEN freshness is updated THEN README.md, UPGRADE.md, CHANGELOG.md, .agentera/docs.yaml, .agentera/progress.yaml, and .agentera/plan.yaml describe v2.1.0 as preserving the dashboard while sourcing state from the CLI
-      - GIVEN version surfaces are checked WHEN release metadata is inspected THEN pyproject.toml, uv.lock, plugin.json, registry.json, .claude-plugin/marketplace.json, .codex-plugin/plugin.json, .github/plugin/plugin.json, .opencode/plugins/agentera.js, CHANGELOG.md, README.md, and the local v2.1.0 tag metadata all agree or are corrected together
-      - GIVEN docs describe the State CLI WHEN a user reads them THEN they call it the data layer behind the briefing, not the briefing replacement
+      - GIVEN behavior and tests pass WHEN docs are refreshed THEN README, UPGRADE, CHANGELOG, DOCS, PROGRESS, and PLAN explain that package updates and durable bundle refresh are separate
+      - GIVEN docs show commands WHEN a user follows them THEN they use the clone-free uvx source, bundle-only phase, resolved install root, dry-run first, and confirmed --yes apply
+      - GIVEN the exact repro is documented WHEN codex plugin marketplace upgrade and npx skills update leave AGENTERA_HOME stale THEN /agentera owns the bundle-refresh recovery path
   - number: 6
-    name: Verify Release Candidate And Prepare Retag Approval
+    name: Validate And Close
     depends_on:
       - Task 5
-    status: complete
+    status: pending
     acceptance:
-      - GIVEN validators run WHEN release readiness is evaluated THEN targeted CLI, hej, semantic, full pytest, capability, cross-capability, lifecycle adapter, and relevant smoke checks pass
-      - GIVEN local and remote release state are checked WHEN v2.1.0 readiness is reported THEN branch, commit, local tag, remote tag, and divergence facts are shown before any mutation
-      - GIVEN the user has not explicitly approved release mutation WHEN this task completes THEN no retag, force-push, or remote update occurs
-      - GIVEN release mutation is required WHEN this task completes THEN the exact proposed commands and risks are presented for explicit approval
-  - number: 7
-    name: Retag And Reverify Release After Approval
-    depends_on:
-      - Task 6
-    status: complete
-    acceptance:
-      - GIVEN the user explicitly approves release mutation WHEN retag and force-push commands run THEN only the approved commands are executed
-      - GIVEN mutation completes WHEN release state is checked THEN the corrected v2.1.0 tag, remote tag, branch commit, and release evidence are reverified
-      - GIVEN approval is not granted WHEN Task 7 is reached THEN the task remains pending and no remote mutation occurs
+      - GIVEN validators run THEN focused stale-bundle tests, relevant upgrade CLI tests, semantic or prose regressions, full pytest, capability validators, cross-capability validator, and lifecycle adapter validator pass
+      - GIVEN uv run scripts/agentera hej runs from the refreshed install-root fixture WHEN validation closes THEN it proves the installed bundle path, not the local checkout fallback
+      - GIVEN the plan completes THEN release/version impact is assessed and artifacts record whether this is patch-worthy
 overall_acceptance:
-  - GIVEN a user invokes bare /agentera on a returning v2 project WHEN v2.1.0 is corrected THEN the visible output matches the dashboard contract from README and hej prose
-  - GIVEN /agentera gathers state WHEN normal data is available THEN the tool trace uses agentera hej without individual routine state commands or raw artifact reads
-  - GIVEN the corrected release is ready WHEN verification completes THEN artifacts, docs, tests, versions, and tag-readiness evidence agree on the repaired v2.1.0
-  - GIVEN remote release mutation is needed WHEN verification is complete THEN it only happens after explicit user approval
+  - GIVEN marketplace or skill updates leave AGENTERA_HOME stale WHEN /agentera runs THEN the user gets a dry-run bundle-refresh path from uvx instead of an unexplained invalid-choice error
+  - GIVEN no explicit approval is provided WHEN stale state is detected THEN no durable bundle writes occur
+  - GIVEN approval is provided WHEN refresh runs THEN /agentera retries against the same refreshed installed bundle and renders the hej dashboard from installed CLI data
+  - GIVEN AGENTERA_HOME is unset, invalid, non-managed, or stale WHEN freshness is evaluated THEN root resolution and safety behavior are explicit and tested
 surprises: []
