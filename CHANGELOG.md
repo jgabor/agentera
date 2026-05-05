@@ -7,6 +7,7 @@
 - v2.0.0 remediation: closed D39 gaps including invocation model decision (/agentera single entry point), query CLI schema discovery fix, artifact migration v1→v2 (8 YAML artifacts with backup), test compaction retirement, SPEC.md dissolution (generate_contracts.py retired), stale v1 skill directory removal, all 12 capability prose files updated to reference YAML artifacts, AGENTS.md rewritten for single-bundle model, README rewritten with natural-language capability mapping, semantic eval fixture ported to v2 format, archived plan documentation corrected to reflect merge revert reality.
 - Decision 42 five-layer dispatch model implemented in SKILL.md: bare `/agentera` delegates to hej, capability names bypass NL matching, trigger schemas gain priority fields (high/medium/low), disambiguation prompt specified for borderline matches.
 - Comprehensive gap analysis document (`.agentera/gap-analysis-2026-05-05.md`) auditing ROADMAP.md and Decisions 39-42 against actual implementation.
+- `scripts/smoke_live_hosts.py --live --yes` now includes OpenCode live AGENTERA_HOME/query coverage via isolated `opencode run --pure`, while keeping Claude Code live smoke explicitly deferred.
 
 ### Changed
 

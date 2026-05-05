@@ -1,4 +1,26 @@
 cycles:
+- number: 258
+  timestamp: 2026-05-05 09:25
+  type: fix
+  phase: verify
+  what: Added OpenCode to the gated live-host smoke harness and refreshed the gap-analysis artifacts to record Codex/Copilot/OpenCode
+    live evidence while keeping Claude Code explicitly deferred.
+  commit: pending
+  inspiration: User request to include live smoke OpenCode and defer Claude Code.
+  discovered: OpenCode 1.14.33 is installed and authenticated on this host. `opencode run --pure` can execute the AGENTERA_HOME/query
+    probe from a temporary workdir without loading Agentera skills when AGENTERA_HOME, XDG_DATA_HOME, OPENCODE_CONFIG_DIR, and
+    XDG_CACHE_HOME are isolated to temporary paths.
+  verified: 'Validation passed: python3 -m py_compile scripts/smoke_live_hosts.py, python3 scripts/smoke_live_hosts.py,
+    and python3 scripts/smoke_live_hosts.py --live --yes. Live smoke scope now includes Codex AGENTERA_HOME/query, Codex
+    apply_patch hooks, Copilot AGENTERA_HOME/query, and OpenCode AGENTERA_HOME/query via `opencode run --pure`; config,
+    shell rc, and OpenCode auth snapshots were restored.'
+  next: TODO.md keeps the missed token target open and tracks Claude Code live smoke as deferred; avoid literal four-runtime
+    live model-host claims until that deferred check runs.
+  context:
+    intent: add OpenCode live smoke evidence without loading Agentera skills
+    constraints: no Agentera skill loading during review; Claude Code live smoke deferred by user request
+    unknowns: Claude Code live model-host behavior remains unproven in this gap-analysis evidence set
+    scope: scripts/smoke_live_hosts.py, gap analysis, progress/docs/todo/changelog/roadmap artifacts
 - number: 257
   timestamp: 2026-05-05 09:20
   type: fix
@@ -7,7 +29,7 @@ cycles:
     producer/consumer graph validation, restored bundled profilera corpus extraction, deepened the query CLI with artifact-specific
     summaries and docs.yaml path resolution, remeasured the static token payload, and refreshed the gap-analysis/decision/roadmap
     evidence.
-  commit: pending
+  commit: 289d10b
   inspiration: .agentera/gap-analysis-2026-05-05.md recommended next actions and Decisions 39-42.
   discovered: The final static payload remeasurement is 317,616 bytes versus the fixed v1 baseline of 352,213 bytes, a 9.8%
     reduction. This is lower than the earlier 11.0% interim result and still misses the 40% target.

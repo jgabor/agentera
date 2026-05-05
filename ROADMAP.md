@@ -111,7 +111,7 @@ Wire everything together and validate.
 - [x] Query CLI commands for all artifact types
 - [x] Runtime adapter updates (Claude Code, OpenCode, Codex, Copilot)
 - [x] Port existing 577 tests to the new structure
-- [ ] Smoke tests across all 4 runtimes
+- [ ] Smoke tests across all 4 runtimes (Codex, Copilot, and OpenCode live-smoked on 2026-05-05; Claude Code deferred)
 
 ### Phase 4: Validation & cutover (week 7) ✓
 

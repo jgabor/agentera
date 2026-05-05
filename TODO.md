@@ -8,11 +8,13 @@
 
 ## → Normal
 
+- [ ] [agentera-v2-claude-live-smoke] Deferred per 2026-05-05 user direction: run Claude Code live model-host smoke only if release language needs a literal four-runtime live claim. Current live evidence covers Codex, Copilot, and OpenCode.
+
 ## ⇢ Annoying
 
 ## Resolved
 
-- [x] ~~[agentera-v2-live-smoke] Run `python3 scripts/smoke_live_hosts.py --live --yes` after explicit approval for live model calls. Required before claiming cutover-ready model-host behavior across Claude/Codex/Copilot/OpenCode.~~ · passed on 2026-05-05 for Codex AGENTERA_HOME/query, Codex apply_patch hooks, and Copilot AGENTERA_HOME/query; scope does not independently prove live Claude/OpenCode model calls
+- [x] ~~[agentera-v2-live-smoke] Run `python3 scripts/smoke_live_hosts.py --live --yes` after explicit approval for live model calls. Required before claiming cutover-ready model-host behavior across Claude/Codex/Copilot/OpenCode.~~ · passed on 2026-05-05 for Codex AGENTERA_HOME/query, Codex apply_patch hooks, Copilot AGENTERA_HOME/query, and OpenCode AGENTERA_HOME/query via `opencode run --pure`; Claude Code live smoke remains deferred separately
 - [x] ~~[audit-11] Deferred: Copilot current-checkout plugin smoke is blocked by escaping skills path; installed Copilot skills and Codex `$hej` smoke passed~~ · fixed in Cycle 153; root `plugin.json` loads shared `skills/` through `copilot --plugin-dir`
 - [x] ~~[audit-11] Deferred: live Copilot and Codex host behavior remains untested until host smoke tests are available~~ · narrowed by Cycle 152; Codex `$hej` and Copilot installed skills passed, current-checkout Copilot plugin loading remains blocked
 - [x] ~~Task 2: [feat] Add native Copilot and Codex packaging metadata~~ · resolved without issue ID; Task 2 lacked a dedicated PROGRESS entry, now covered by Cycle 134 rollup
