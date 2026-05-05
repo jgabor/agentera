@@ -58,7 +58,7 @@ tasks:
     name: Add agentera hej Composite Briefing Command
     depends_on:
       - Task 1
-    status: pending
+    status: complete
     acceptance:
       - GIVEN a returning v2 project WHEN agentera hej runs THEN it emits mode, profile status, health, issue counts, plan progress, active objective state, attention items, and next action
       - GIVEN the plan is complete but TODO has open normal items THEN the composite chooses the first executable TODO before vision refresh

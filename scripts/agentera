@@ -7,6 +7,7 @@
 
 Commands:
   agentera prime             Print static agent-priming guidance
+  agentera hej               Composite orientation briefing
   agentera plan              Active plan summary
   agentera progress          Recent cycle summary
   agentera health            Latest audit data
@@ -52,6 +53,7 @@ raw YAML artifacts directly. The CLI is the seam between agent and state.
 
 Supported state commands:
   agentera prime                                # Print this guide
+  agentera hej                                  # Composite orientation briefing
   agentera decisions [--topic TOPIC]            # Decision log
   agentera health [--dimension DIM]             # Latest health audit
   agentera todo [--severity LEVEL]              # TODO summary
@@ -242,6 +244,35 @@ def _load_artifact(path: Path) -> Any:
             return yaml.safe_load(f)
     except Exception:
         return None
+
+
+def _profile_path() -> Path:
+    explicit = os.environ.get("PROFILERA_PROFILE_DIR")
+    if explicit:
+        return Path(explicit) / "PROFILE.md"
+    xdg = os.environ.get("XDG_DATA_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".local" / "share"
+    return base / "agentera" / "PROFILE.md"
+
+
+V1_ARTIFACT_PAIRS = [
+    (".agentera/PROGRESS.md", ".agentera/progress.yaml"),
+    (".agentera/PLAN.md", ".agentera/plan.yaml"),
+    (".agentera/DECISIONS.md", ".agentera/decisions.yaml"),
+    (".agentera/HEALTH.md", ".agentera/health.yaml"),
+    (".agentera/SESSION.md", ".agentera/session.yaml"),
+    (".agentera/DOCS.md", ".agentera/docs.yaml"),
+    ("VISION.md", ".agentera/vision.yaml"),
+]
+
+
+def _detect_v1_artifacts() -> list[str]:
+    root = Path.cwd()
+    found = []
+    for markdown_rel, yaml_rel in V1_ARTIFACT_PAIRS:
+        if (root / markdown_rel).exists() and not (root / yaml_rel).exists():
+            found.append(markdown_rel)
+    return found
 
 
 def _extract_entries(data: Any) -> list[dict]:
@@ -762,6 +793,385 @@ def _query_experiments(args: argparse.Namespace, schemas: dict) -> int:
     return 0
 
 
+DONE_STATUSES = {"complete", "completed", "closed", "done", "resolved", "retired"}
+BLOCKED_STATUSES = {"blocked", "stuck"}
+TODO_SEVERITY_ORDER = {
+    "critical": 0,
+    "degraded": 1,
+    "warning": 1,
+    "normal": 2,
+    "info": 3,
+    "annoying": 3,
+}
+TODO_SECTION_SEVERITIES = {
+    "critical": "critical",
+    "degraded": "degraded",
+    "warning": "warning",
+    "normal": "normal",
+    "info": "info",
+    "annoying": "annoying",
+}
+
+
+def _load_named_artifact(schemas: dict, name: str) -> Any:
+    info = schemas.get(name)
+    if not info:
+        return None
+    return _load_artifact(_resolve_artifact_path(info["path"], name))
+
+
+def _entry_status(entry: dict, default: str = "open") -> str:
+    return str(entry.get("status", default) or default).lower()
+
+
+def _is_open_entry(entry: dict) -> bool:
+    return _entry_status(entry) not in DONE_STATUSES
+
+
+def _normalize_severity(value: Any, default: str = "normal") -> str:
+    text = str(value or default).lower()
+    for key in TODO_SEVERITY_ORDER:
+        if key in text:
+            return key
+    return default
+
+
+def _load_todo_items(schemas: dict) -> list[dict[str, str]]:
+    info = schemas.get("todo", {"path": "TODO.md", "fields": {}})
+    todo_path = _resolve_artifact_path(info["path"], "todo")
+    if not todo_path.exists():
+        return []
+    data = _load_artifact(todo_path)
+    entries = _extract_entries(data)
+    if entries:
+        items = []
+        for entry in entries:
+            if not _is_open_entry(entry):
+                continue
+            text = _first_present(entry, ["description", "title", "name"], "")
+            if not text:
+                continue
+            items.append({
+                "severity": _normalize_severity(entry.get("severity")),
+                "status": _entry_status(entry),
+                "text": str(text),
+            })
+        return items
+
+    items = []
+    current_severity = ""
+    text = todo_path.read_text(encoding="utf-8")
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            heading = stripped[3:].strip().lower()
+            if "resolved" in heading:
+                current_severity = ""
+            else:
+                current_severity = next(
+                    (sev for marker, sev in TODO_SECTION_SEVERITIES.items() if marker in heading),
+                    "normal",
+                )
+            continue
+        if current_severity and stripped.startswith("- [ ]"):
+            items.append({
+                "severity": current_severity,
+                "status": "open",
+                "text": stripped[5:].strip(),
+            })
+    return items
+
+
+def _issue_counts(todo_items: list[dict[str, str]]) -> dict[str, int]:
+    counts = {"critical": 0, "degraded": 0, "normal": 0, "annoying": 0}
+    for item in todo_items:
+        severity = item["severity"]
+        if severity == "critical":
+            counts["critical"] += 1
+        elif severity in {"degraded", "warning"}:
+            counts["degraded"] += 1
+        elif severity in {"info", "annoying"}:
+            counts["annoying"] += 1
+        else:
+            counts["normal"] += 1
+    return counts
+
+
+def _plan_summary(schemas: dict) -> dict[str, Any]:
+    data = _load_named_artifact(schemas, "plan")
+    if not isinstance(data, dict):
+        return {"exists": False, "tasks": [], "status": "", "title": ""}
+    legacy_entries = _as_list(data.get("entries"))
+    if legacy_entries:
+        tasks = legacy_entries
+        status = _entry_status(tasks[0], "")
+        title = _first_present(tasks[0], ["title", "name"], "")
+    else:
+        header = data.get("header") if isinstance(data.get("header"), dict) else {}
+        tasks = _as_list(data.get("tasks"))
+        status = str(_first_present(header, ["status"], data.get("status", "")) or "")
+        title = str(_first_present(header, ["title"], data.get("title", "")) or "")
+    complete = sum(1 for task in tasks if _entry_status(task, "") in DONE_STATUSES)
+    total = len(tasks)
+    first_pending = None
+    if status.lower() not in DONE_STATUSES:
+        for task in tasks:
+            task_status = _entry_status(task, "pending")
+            if task_status in DONE_STATUSES or task_status in BLOCKED_STATUSES:
+                continue
+            first_pending = task
+            break
+    return {
+        "exists": True,
+        "status": status,
+        "title": title,
+        "tasks": tasks,
+        "complete": complete,
+        "total": total,
+        "first_pending": first_pending,
+    }
+
+
+def _health_summary(schemas: dict) -> dict[str, Any]:
+    data = _load_named_artifact(schemas, "health")
+    entries = _extract_entries(data)
+    if not entries:
+        return {"exists": False}
+    latest = entries[-1]
+    grades = latest.get("grades") if isinstance(latest.get("grades"), dict) else {}
+    grade_rank = {"A": 0, "B": 1, "C": 2, "D": 3, "F": 4}
+    worst = None
+    for name, grade in grades.items():
+        grade_text = str(grade).upper()
+        rank = grade_rank.get(grade_text[:1], -1)
+        if worst is None or rank > worst[2]:
+            worst = (name, grade, rank)
+    trajectory = str(latest.get("trajectory", "") or "")
+    return {
+        "exists": True,
+        "number": latest.get("number", "?"),
+        "trajectory": trajectory,
+        "worst": worst,
+        "degrading": trajectory.lower() in {"degrading", "declining", "worse"}
+        or (worst is not None and worst[2] >= grade_rank["D"]),
+    }
+
+
+def _objective_status(data: dict) -> str:
+    header = data.get("header") if isinstance(data.get("header"), dict) else {}
+    objective = data.get("objective") if isinstance(data.get("objective"), dict) else {}
+    return str(
+        _first_present(header, ["status"], data.get("status") or objective.get("status") or "")
+        or ""
+    ).lower()
+
+
+def _active_objective_summary() -> dict[str, Any]:
+    root = Path.cwd() / ".agentera" / "optimera"
+    if not root.is_dir():
+        return {"exists": False}
+    candidates = []
+    closed_count = 0
+    for candidate in root.iterdir():
+        if not candidate.is_dir():
+            continue
+        objective_path = candidate / "objective.yaml"
+        if not objective_path.exists():
+            continue
+        data = _load_artifact(objective_path)
+        if not isinstance(data, dict):
+            continue
+        status = _objective_status(data)
+        if status in DONE_STATUSES:
+            closed_count += 1
+            continue
+        candidates.append((candidate, data, status))
+    if not candidates:
+        return {"exists": closed_count > 0, "active": False, "closed_count": closed_count}
+    candidates.sort(key=lambda item: item[0].stat().st_mtime, reverse=True)
+    path, data, status = candidates[0]
+    header = data.get("header") if isinstance(data.get("header"), dict) else {}
+    objective = data.get("objective") if isinstance(data.get("objective"), dict) else data
+    title = _first_present(header, ["title"], objective.get("title", path.name))
+    metric = _first_present(objective, ["measurement", "metric", "direction", "target"], title)
+    target = _first_present(objective, ["target"], "")
+    return {
+        "exists": True,
+        "active": True,
+        "name": path.name,
+        "title": str(title),
+        "status": status or "active",
+        "metric": str(metric),
+        "target": str(target),
+    }
+
+
+def _decision_follow_up(schemas: dict) -> dict[str, Any] | None:
+    data = _load_named_artifact(schemas, "decisions")
+    for entry in _extract_entries(data):
+        status = _entry_status(entry, "")
+        text = " ".join(
+            str(entry.get(key, ""))
+            for key in ("status", "choice", "reasoning", "follow_up")
+        )
+        if status in {"pending", "open", "unresolved"} or "follow" in text.lower():
+            number = entry.get("number", "?")
+            title = _first_present(entry, ["question", "choice"], "decision follow-up")
+            return {"object": f"DECISION {number} follow-up", "title": title}
+    return None
+
+
+def _format_next_action(action: dict[str, str] | None) -> str:
+    if not action:
+        return "object=VISION refresh | capability=visionera | reason=no executable follow-up"
+    return (
+        f"object={_truncate(action['object'])} | "
+        f"capability={action['capability']} | reason={action['reason']}"
+    )
+
+
+def _select_hej_next_action(
+    plan: dict[str, Any],
+    health: dict[str, Any],
+    objective: dict[str, Any],
+    todo_items: list[dict[str, str]],
+    decision: dict[str, Any] | None,
+) -> dict[str, str]:
+    pending = plan.get("first_pending")
+    if isinstance(pending, dict):
+        number = pending.get("number", "?")
+        title = _first_present(pending, ["name", "title"], "pending task")
+        return {
+            "object": f"PLAN Task {number}: {title}",
+            "capability": "orkestrera",
+            "reason": "first pending plan task",
+        }
+    if health.get("degrading"):
+        worst = health.get("worst")
+        target = f"{worst[0]}:{worst[1]}" if worst else "degrading health"
+        return {
+            "object": f"HEALTH: {target}",
+            "capability": "inspektera",
+            "reason": "critical or degrading health",
+        }
+    if objective.get("active"):
+        return {
+            "object": f"OBJECTIVE: {objective.get('metric') or objective.get('title')}",
+            "capability": "optimera",
+            "reason": "active non-closed objective",
+        }
+    if todo_items:
+        item = sorted(
+            todo_items,
+            key=lambda entry: TODO_SEVERITY_ORDER.get(entry["severity"], 2),
+        )[0]
+        return {
+            "object": f"TODO: {item['text']}",
+            "capability": "realisera",
+            "reason": "highest-priority open TODO",
+        }
+    if decision:
+        return {
+            "object": str(decision["object"]),
+            "capability": "resonera",
+            "reason": "unresolved decision follow-up",
+        }
+    if plan.get("exists") or (Path.cwd() / ".agentera" / "vision.yaml").exists():
+        return {
+            "object": "VISION refresh",
+            "capability": (
+                "visionera"
+                if str(plan.get("status", "")).lower() in DONE_STATUSES
+                else "planera"
+            ),
+            "reason": "no executable follow-up",
+        }
+    return {
+        "object": "VISION refresh",
+        "capability": "visionera",
+        "reason": "fresh project direction",
+    }
+
+
+def cmd_hej(_args: argparse.Namespace) -> int:
+    schemas = _load_schemas(_discover_schemas_dir())
+    mode = "returning" if any((Path.cwd() / ".agentera").glob("*.yaml")) else "fresh"
+    profile = _profile_path()
+    profile_status = "loaded" if profile.exists() else "not found"
+    v1_artifacts = _detect_v1_artifacts()
+    plan = _plan_summary(schemas)
+    health = _health_summary(schemas)
+    objective = _active_objective_summary()
+    todo_items = _load_todo_items(schemas)
+    counts = _issue_counts(todo_items)
+    decision = _decision_follow_up(schemas)
+    next_action = _select_hej_next_action(plan, health, objective, todo_items, decision)
+
+    print("agentera hej")
+    print(f"mode: {mode}")
+    print(f"profile: {profile_status} | path={profile}")
+    if health.get("exists"):
+        worst = health.get("worst")
+        worst_text = f"{worst[0]}:{worst[1]}" if worst else "none"
+        print(
+            f"health: audit={health.get('number')} | "
+            f"trajectory={health.get('trajectory') or 'unknown'} | worst={worst_text}"
+        )
+    print(
+        "issues: "
+        f"critical={counts['critical']} | degraded={counts['degraded']} | "
+        f"normal={counts['normal']} | annoying={counts['annoying']}"
+    )
+    if plan.get("exists"):
+        print(
+            f"plan: status={plan.get('status') or 'unknown'} | "
+            f"progress={plan.get('complete', 0)}/{plan.get('total', 0)}"
+        )
+    if objective.get("active"):
+        target = f" | target={objective['target']}" if objective.get("target") else ""
+        print(
+            f"objective: active | name={objective['name']} | "
+            f"metric={objective['metric']}{target}"
+        )
+    elif objective.get("exists"):
+        print(f"objective: none active | closed={objective.get('closed_count', 0)}")
+    else:
+        print("objective: none active")
+
+    attention = []
+    if v1_artifacts:
+        command = 'uv run scripts/agentera upgrade --project "$PWD" --dry-run'
+        attention.append(
+            f"degraded: v1 artifacts detected; preview `{command}`; files={', '.join(v1_artifacts)}"
+        )
+    if profile_status == "not found":
+        attention.append(f"degraded: PROFILE.md not found at {profile}")
+    if health.get("degrading"):
+        worst = health.get("worst")
+        attention.append(
+            f"critical: health needs attention ({worst[0]}:{worst[1]})"
+            if worst
+            else "critical: health is degrading"
+        )
+    pending = plan.get("first_pending")
+    if isinstance(pending, dict):
+        title = _first_present(pending, ["name", "title"], "pending task")
+        attention.append(f"normal: PLAN Task {pending.get('number', '?')}: {title}")
+    elif todo_items:
+        first_todo = sorted(
+            todo_items,
+            key=lambda entry: TODO_SEVERITY_ORDER.get(entry["severity"], 2),
+        )[0]
+        attention.append(f"{first_todo['severity']}: TODO: {first_todo['text']}")
+    if attention:
+        print("attention:")
+        for item in attention[:6]:
+            print(f"- {item}")
+    print("next_action:")
+    print(f"- {_format_next_action(next_action)}")
+    return 0
+
+
 def _query_generic(args: argparse.Namespace, schemas: dict, name: str) -> int:
     info = schemas[name]
     data = _load_artifact(_resolve_artifact_path(info["path"], name))
@@ -853,6 +1263,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser(
         "prime",
         help="Print agent-priming guidance (routing, recovery)",
+    )
+    sub.add_parser(
+        "hej",
+        help="Composite orientation briefing",
     )
 
     decisions = sub.add_parser("decisions", help="Decision log")
@@ -972,6 +1386,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "prime":
         return cmd_prime(args)
+    if args.command == "hej":
+        return cmd_hej(args)
     if args.command in STATE_COMMAND_HANDLERS:
         return cmd_state(args)
     if args.command == "query":
