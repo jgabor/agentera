@@ -1,6 +1,6 @@
 {
   "name": "agentera",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Compound agent orchestration suite — 12 capabilities in one bundled skill",
   "author": {
     "name": "Jonathan Gabor",
@@ -99,6 +99,16 @@
       "path": "./skills/agentera",
       "runtimeSupport": "portable",
       "invocationHint": "$agentera",
+      "policy": {
+        "allow_implicit_invocation": true
+      }
+    },
+    {
+      "name": "hej",
+      "description": "Legacy Agentera v1 entry-point bridge to the v2 /agentera upgrade flow.",
+      "path": "./skills/hej",
+      "runtimeSupport": "portable",
+      "invocationHint": "$hej legacy bridge, then $agentera",
       "policy": {
         "allow_implicit_invocation": true
       }

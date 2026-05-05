@@ -9,8 +9,10 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-export const AGENTERA_VERSION = "2.0.0";
+export const AGENTERA_VERSION = "2.0.1";
 export const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode -y";
+const REQUIRED_SKILL_NAMES = ["agentera"];
+const LEGACY_BRIDGE_SKILL_NAMES = new Set(["hej"]);
 
 export const COMMAND_TEMPLATES = {
   "agentera": `---
@@ -18,6 +20,12 @@ description: "Compound agent orchestration suite: 12 capabilities in one bundled
 agentera_managed: true
 ---
 Load and execute the agentera bundled skill for this project.
+`,
+  "hej": `---
+description: "Legacy Agentera v1 entry point: upgrade bridge to /agentera"
+agentera_managed: true
+---
+Load and execute the hej legacy upgrade bridge for this project.
 `,
 };
 
@@ -54,6 +62,16 @@ function validSkillDir(skillDir, name) {
   return fs.existsSync(path.join(skillDir, name, "SKILL.md"));
 }
 
+function validManagedSkillDir(skillDir, name) {
+  if (!validSkillDir(skillDir, name)) return false;
+  if (!LEGACY_BRIDGE_SKILL_NAMES.has(name)) return true;
+  try {
+    return fs.readFileSync(path.join(skillDir, name, "SKILL.md"), "utf8").includes("legacy_bridge: true");
+  } catch {
+    return false;
+  }
+}
+
 export function resolveInstalledAgenteraSkillsDir() {
   const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
   const candidates = [
@@ -64,7 +82,7 @@ export function resolveInstalledAgenteraSkillsDir() {
   ].filter(Boolean);
 
   for (const candidate of candidates) {
-    if (Object.keys(COMMAND_TEMPLATES).every((name) => validSkillDir(candidate, name))) {
+    if (REQUIRED_SKILL_NAMES.every((name) => validManagedSkillDir(candidate, name))) {
       return candidate;
     }
   }
@@ -111,7 +129,7 @@ export function bootstrapSkills() {
     for (const name of Object.keys(COMMAND_TEMPLATES)) {
       const sourceSkill = path.join(sourceDir, name);
       const targetSkill = path.join(targetDir, name);
-      if (!validSkillDir(sourceDir, name)) {
+      if (!validManagedSkillDir(sourceDir, name)) {
         report.missingSource.push(name);
         continue;
       }
@@ -156,6 +174,7 @@ export function bootstrapCommands() {
     markerVersion: null,
   };
   try {
+    const sourceDir = resolveInstalledAgenteraSkillsDir();
     const targetDir = resolveOpencodeCommandsDir();
     fs.mkdirSync(targetDir, { recursive: true });
 
@@ -169,6 +188,9 @@ export function bootstrapCommands() {
     report.markerVersion = existingVersion;
 
     for (const [name, content] of Object.entries(COMMAND_TEMPLATES)) {
+      if (LEGACY_BRIDGE_SKILL_NAMES.has(name) && (!sourceDir || !validManagedSkillDir(sourceDir, name))) {
+        continue;
+      }
       const targetFile = path.join(targetDir, `${name}.md`);
       if (!fs.existsSync(targetFile)) {
         fs.writeFileSync(targetFile, content);

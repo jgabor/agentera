@@ -75,6 +75,8 @@ For each v1 file that exists where the corresponding v2 file does **not**:
   `uv run scripts/agentera upgrade --project "$PWD" --dry-run`.
 - Include the notice once (not per-file); list the affected files after the command.
 - Ask before applying. After confirmation, run the same command with `--yes`.
+  If the user reached this flow from a legacy `/hej` install or stale runtime
+  package state, include `--update-packages` so `/agentera` is installed too.
 - This applies to both Step 1a (welcome) and Step 1b (briefing) flows.
 
 If no v1 artifacts exist (fresh install or already migrated), emit no upgrade notice.

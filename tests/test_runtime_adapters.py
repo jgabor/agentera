@@ -856,6 +856,14 @@ class TestLegacyRuntimeCompatibility:
     def test_registry_structure_passes(self):
         assert _validate_registry() == []
 
+    def test_legacy_hej_bridge_routes_to_upgrade(self):
+        text = (REPO_ROOT / "skills/hej/SKILL.md").read_text(encoding="utf-8")
+        assert "Legacy Agentera v1 entry-point bridge" in text
+        assert "Do not run the old HEJ orientation workflow" in text
+        assert "agentera upgrade --project \"$PWD\" --dry-run" in text
+        assert "agentera upgrade --project \"$PWD\" --yes --update-packages" in text
+        assert "/agentera" in text
+
     def test_registry_structure_fails_on_wrong_skill_count(self, tmp_path):
         root = tmp_path / "repo"
         root.mkdir()

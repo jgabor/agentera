@@ -72,7 +72,8 @@ try {
   bootstrapCommands();
 
   assert(fs.existsSync(commandsDir), "commands dir should exist after bootstrap");
-  assert(commandNames.length === 1, `expected 1 bundled command, got ${commandNames.length}`);
+  assert(commandNames.includes("agentera"), "agentera command should be present");
+  assert(commandNames.includes("hej"), "legacy hej bridge command should be present");
 
   for (const name of commandNames) {
     const filePath = path.join(commandsDir, `${name}.md`);

@@ -44,15 +44,14 @@ What's new:
 
 ### Upgrading from v1
 
-Update Agentera:
+Run the v2 upgrade:
 
 ```bash
-npx skills upgrade -g -y
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --yes --update-packages
 ```
 
-Then open a project and start `/agentera`. It detects v1 project state, previews
-any migration, and asks before applying changes. See [UPGRADE.md](./UPGRADE.md)
-for the full migration guide.
+Then start `/agentera`. See [UPGRADE.md](./UPGRADE.md) for the full migration
+guide and dry-run form.
 
 ## Why Agentera?
 
@@ -128,10 +127,10 @@ Pick one runtime, install Agentera, then run `/agentera` (`$agentera` in Codex).
 
 ```bash
 # Claude Code
-npx skills add jgabor/agentera -g -a claude-code --skill '*' -y
+npx skills add jgabor/agentera -g -a claude-code --skill agentera -y
 
 # OpenCode (skills + plugin)
-npx skills add jgabor/agentera -g -a opencode -y
+npx skills add jgabor/agentera -g -a opencode --skill agentera -y
 mkdir -p ~/.config/opencode/plugins
 curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \
   -o ~/.config/opencode/plugins/agentera.js
@@ -285,7 +284,7 @@ curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plug
 
 The plugin does not install the skills. It adds Agentera commands,
 install-root discovery, artifact checks, and session bookmarks around skills
-installed through `npx skills add jgabor/agentera -g -a opencode -y` or another
+installed through `npx skills add jgabor/agentera -g -a opencode --skill agentera -y` or another
 OpenCode skill path.
 
 </details>

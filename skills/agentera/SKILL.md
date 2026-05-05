@@ -5,7 +5,7 @@ description: >
   One bundled skill with twelve capabilities, each defined by human-readable
   prose and machine-readable schemas. The agent reads this file to route
   incoming requests to the right capability.
-version: "2.0.0"
+version: "2.0.1"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 ---
 
@@ -68,7 +68,7 @@ without `.agentera/docs.yaml`, or root `VISION.md` without
 If v1 state is found:
 
 1. Report the affected files once in the briefing or response.
-2. Prefer the clone-free CLI:
+2. Prefer the no-clone CLI:
    `uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run`
 3. If running inside a local Agentera checkout that has `scripts/agentera`, the
    equivalent local preview is:
@@ -79,8 +79,9 @@ If v1 state is found:
 The upgrade command is idempotent. It installs or refreshes a durable bundle at
 `~/.agents/agentera` when invoked through `uvx`, migrates v1 artifacts, wires
 runtime config to that durable install root, and removes fixable stale v1
-runtime artifacts. Package refreshes that run `npx skills update` remain
-explicit opt-in via `--update-packages`.
+runtime artifacts. Package refreshes that run `npx skills add` to install
+`/agentera` and the legacy `/hej` bridge remain explicit opt-in via
+`--update-packages`.
 
 ### Layer 1: Bare `/agentera` — delegate to hej
 

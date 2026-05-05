@@ -1,11 +1,11 @@
 {
   "metadata": {
-    "version": "2.0.0"
+    "version": "2.0.1"
   },
   "plugins": [
     {
       "name": "agentera",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "description": "Compound agent orchestration suite — 12 capabilities in one bundled skill",
       "author": { "name": "jgabor" },
       "source": "./skills/agentera",
@@ -24,6 +24,29 @@
           "pyproject.toml"
         ],
         "singleSkillInstall": "Single-skill installs keep core SKILL.md workflow behavior; suite tools are bundle-only enhancements."
+      }
+    },
+    {
+      "name": "hej",
+      "version": "2.0.1",
+      "description": "Legacy Agentera v1 entry-point bridge to the v2 /agentera upgrade flow.",
+      "author": { "name": "jgabor" },
+      "source": "./skills/hej",
+      "skills": "./",
+      "agentera": {
+        "packageShape": "legacy-bridge",
+        "installRoot": "..",
+        "sharedPaths": [
+          "skills",
+          "scripts",
+          "hooks",
+          "registry.json",
+          "plugin.json",
+          "README.md",
+          "UPGRADE.md",
+          "pyproject.toml"
+        ],
+        "singleSkillInstall": "Legacy bridge installs only redirect users to the suite upgrade flow."
       }
     }
   ]
