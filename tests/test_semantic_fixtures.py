@@ -15,6 +15,7 @@ def _fixture(
     prompt: str = "Start a session and route the project.",
     seeded_state: dict | None = None,
     captured_output: str = "suggested -> /realisera for Task 1",
+    tool_trace: dict | None = None,
     expected_facts: dict | None = None,
 ) -> str:
     if seeded_state is None:
@@ -25,6 +26,9 @@ def _fixture(
             "forbidden_output": ["/optimera"],
             "artifact_expectations": {"writes": "none"},
         }
+    tool_trace_section = ""
+    if tool_trace is not None:
+        tool_trace_section = f"\n        ## Tool Trace\n        ```json\n        {json.dumps(tool_trace)}\n        ```\n"
     return textwrap.dedent(f"""\
         # Semantic Fixture: hej-routing
 
@@ -38,6 +42,7 @@ def _fixture(
 
         ## Captured Output
         {captured_output}
+        {tool_trace_section}
 
         ## Expected Facts
         ```json
@@ -111,3 +116,32 @@ class TestArtifactExpectations:
         fixture, errors = semantic_fixtures.validate_fixture_text(text)
         assert fixture is None
         assert "malformed section: Expected Facts: artifact_expectations.writes must be 'none' or a list" in errors
+
+
+class TestToolTraceSection:
+    def test_pass_tool_trace_calls_are_unambiguous(self, semantic_fixtures):
+        fixture, errors = semantic_fixtures.validate_fixture_text(
+            _fixture(tool_trace={"calls": ["uv run scripts/agentera hej"]})
+        )
+        assert errors == []
+        assert fixture.tool_trace["calls"] == ["uv run scripts/agentera hej"]
+
+    def test_fail_malformed_tool_trace_names_section(self, semantic_fixtures):
+        text = _fixture(tool_trace={"calls": [""]})
+        fixture, errors = semantic_fixtures.validate_fixture_text(text)
+        assert fixture is None
+        assert "malformed section: Tool Trace: calls must be non-empty strings" in errors
+
+
+class TestToolExpectations:
+    def test_pass_expected_tool_facts_are_unambiguous(self, semantic_fixtures):
+        facts = {"required_tool_calls": ["agentera hej"], "forbidden_tool_calls": ["agentera plan"]}
+        fixture, errors = semantic_fixtures.validate_fixture_text(_fixture(expected_facts=facts))
+        assert errors == []
+        assert fixture.expected_facts["required_tool_calls"] == ["agentera hej"]
+
+    def test_fail_malformed_tool_facts_names_section(self, semantic_fixtures):
+        text = _fixture(expected_facts={"required_tool_calls": [""]})
+        fixture, errors = semantic_fixtures.validate_fixture_text(text)
+        assert fixture is None
+        assert "malformed section: Expected Facts: required_tool_calls must be non-empty strings" in errors

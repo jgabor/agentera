@@ -7,6 +7,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 FIXTURE_PATH = REPO_ROOT / "fixtures" / "semantic" / "hej-routing-task3.md"
+CLI_BUDGET_FIXTURE_PATH = REPO_ROOT / "fixtures" / "semantic" / "hej-cli-budget.md"
 
 
 def _load_fixture_with_output(semantic_fixtures, output: str):
@@ -95,3 +96,31 @@ def test_fails_when_output_chooses_lower_priority_item(semantic_eval, semantic_f
 
     assert result["status"] == "fail"
     assert result["failing_fact"]["fact"] == "required_output[1]"
+
+
+def test_cli_budget_fixture_requires_composite_hej_tool_call(semantic_eval, semantic_fixtures):
+    fixture, errors = semantic_fixtures.load_fixture(CLI_BUDGET_FIXTURE_PATH)
+    assert errors == []
+
+    result = semantic_eval.evaluate_fixture(fixture, str(CLI_BUDGET_FIXTURE_PATH))
+
+    assert result["status"] == "pass"
+    facts = {fact["fact"]: fact for fact in result["checked_facts"]}
+    assert facts["required_tool_calls[0]"]["status"] == "pass"
+    for index in range(10):
+        assert facts[f"forbidden_tool_calls[{index}]"]["status"] == "pass"
+
+
+def test_cli_budget_fixture_rejects_individual_state_command(semantic_eval, semantic_fixtures):
+    text = CLI_BUDGET_FIXTURE_PATH.read_text(encoding="utf-8")
+    text = text.replace(
+        '"uv run scripts/agentera hej"',
+        '"uv run scripts/agentera hej",\n    "uv run scripts/agentera plan"',
+    )
+    fixture, errors = semantic_fixtures.validate_fixture_text(text)
+    assert errors == []
+
+    result = semantic_eval.evaluate_fixture(fixture, str(CLI_BUDGET_FIXTURE_PATH))
+
+    assert result["status"] == "fail"
+    assert result["failing_fact"]["fact"] == "forbidden_tool_calls[0]"

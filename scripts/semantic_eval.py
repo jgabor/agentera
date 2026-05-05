@@ -36,7 +36,11 @@ class CheckedFact:
 
 def evaluate_fixture(fixture: SemanticFixture, source: str = "<fixture>") -> dict[str, Any]:
     """Evaluate one validated fixture and return a machine-readable result."""
-    facts = _check_output_facts(fixture) + _check_seeded_artifact_facts(fixture)
+    facts = (
+        _check_output_facts(fixture)
+        + _check_tool_trace_facts(fixture)
+        + _check_seeded_artifact_facts(fixture)
+    )
     failing = next((fact for fact in facts if fact.status == "fail"), None)
     return {
         "fixture": source,
@@ -99,6 +103,27 @@ def _check_output_facts(fixture: SemanticFixture) -> list[CheckedFact]:
             "artifact_expectations.writes",
             "pass",
             "fixture expects no artifact writes; offline eval performed none",
+        ))
+    return facts
+
+
+def _check_tool_trace_facts(fixture: SemanticFixture) -> list[CheckedFact]:
+    facts: list[CheckedFact] = []
+    expected = fixture.expected_facts
+    calls = "\n".join(fixture.tool_trace.get("calls", []))
+    for index, text in enumerate(expected.get("required_tool_calls", [])):
+        found = text in calls
+        facts.append(CheckedFact(
+            f"required_tool_calls[{index}]",
+            "pass" if found else "fail",
+            f"tool trace {'contains' if found else 'does not contain'} {text!r}",
+        ))
+    for index, text in enumerate(expected.get("forbidden_tool_calls", [])):
+        found = text in calls
+        facts.append(CheckedFact(
+            f"forbidden_tool_calls[{index}]",
+            "fail" if found else "pass",
+            f"tool trace {'contains forbidden' if found else 'omits forbidden'} {text!r}",
         ))
     return facts
 

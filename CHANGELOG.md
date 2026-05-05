@@ -9,6 +9,10 @@
 - Advanced `agentera query` calls now support `--format json` and `--format yaml` for pipeable custom artifact access while routine state forms remain top-level only.
 - Routine Agentera state access now uses top-level CLI commands such as `agentera plan`, `agentera progress`, `agentera health`, `agentera todo`, `agentera decisions`, `agentera docs`, `agentera objective`, and `agentera experiments`; `agentera query` is reserved for advanced custom artifact access.
 
+### Added
+
+- Semantic fixtures can now assert required and forbidden tool calls, including a `/agentera` fixture proving `agentera hej` serves orientation without individual state commands or raw artifact reads.
+
 ### Fixed
 
 - Artifact validation now treats advisory word budgets as non-blocking and validates progress cycles as newest-first.
