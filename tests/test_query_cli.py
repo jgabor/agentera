@@ -424,7 +424,7 @@ class TestArtifactSpecificSummaries:
                     "number": 7,
                     "timestamp": "2026-05-05 12:00",
                     "type": "fix",
-                    "phase": "verify",
+                    "phase": "build",
                     "what": "Closed the query gap.",
                     "verified": "pytest query passed",
                     "next": "Remeasure tokens",
@@ -433,7 +433,7 @@ class TestArtifactSpecificSummaries:
         })
         r = _run("progress", cwd=project)
         assert r.returncode == 0
-        assert "phase=verify" in r.stdout
+        assert "phase=build" in r.stdout
         assert "verified: pytest query passed" in r.stdout
         assert "next: Remeasure tokens" in r.stdout
 
@@ -444,7 +444,7 @@ class TestArtifactSpecificSummaries:
                     "number": 9,
                     "timestamp": "2026-05-05 12:00",
                     "type": "feat",
-                    "phase": "verify",
+                    "phase": "build",
                     "what": "Newest work",
                 },
                 {
