@@ -1,4 +1,4 @@
-last_audit: 2026-05-05 (v2.0.2 legacy cleanup checkpoint)
+last_audit: 2026-05-05 (v2.0.3 OpenCode CLI-first checkpoint)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
