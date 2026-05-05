@@ -4,7 +4,6 @@
 
 ## ⇉ Degraded
 
-- [ ] [audit-20-progress-phase-enum] [fix] Align recent `phase: verify` progress entries with the protocol phase model, or deliberately add `verify` to `protocol.yaml`, progress schema validation, and consumers.
 - [ ] [audit-20-health-command-stale] [fix] Make `scripts/agentera health` select the newest health entry consistently with `hej`, and add a newest-first regression test.
 
 ## → Normal
@@ -15,6 +14,7 @@
 
 ## Resolved
 
+- [x] ~~[audit-20-progress-phase-enum] [fix] Align recent `phase: verify` progress entries with the protocol phase model, or deliberately add `verify` to `protocol.yaml`, progress schema validation, and consumers.~~ · fixed by mapping recent realisera cycles and semantic fixtures to `phase: build`, adding hook enum enforcement, and adding a regression that rejects `phase: verify`
 - [x] ~~[agentera-v2-live-smoke] Run `uv run scripts/smoke_live_hosts.py --live --yes` after explicit approval for live model calls. Required before claiming cutover-ready model-host behavior across Claude/Codex/Copilot/OpenCode.~~ · passed on 2026-05-05 for Codex AGENTERA_HOME/query, Codex apply_patch hooks, Copilot AGENTERA_HOME/query, and OpenCode AGENTERA_HOME/query via `opencode run --pure`; Claude Code live smoke remains deferred separately
 - [x] ~~[agentera-v1-upgrade-cleanup] Keep `/hej` as the only v1 bridge and make the approved package upgrade remove package-managed v1 skills before installing `/agentera`.~~ · fixed in v2.0.2 patch work so compatibility gets users into the upgrade without leaving 12 visible bridge skills
 - [x] ~~[agentera-v2-token-optimization] Open and execute a follow-up token optimization lane for the missed ROADMAP target.~~ · release target revised to -10% on 2026-05-05; current static dispatch payload is 315,983 bytes vs v1 baseline 352,213 bytes (-10.3%), exceeding the revised target for v2.0

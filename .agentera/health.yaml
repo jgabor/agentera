@@ -14,10 +14,10 @@ audits:
   - security hygiene
   findings_summary:
     critical: 0
-    warning: 2
+    warning: 1
     info: 0
     filtered_by_confidence: 0
-  trajectory: stable vs Audit 19. The v2 and v2.1 release train improved CLI, bundle freshness, docs, and validation evidence, but progress phase values drifted outside the protocol enum and direct health output still reads stale history.
+  trajectory: stable vs Audit 19. The v2 and v2.1 release train improved CLI, bundle freshness, docs, and validation evidence; direct health output still reads stale history.
   grades:
     Architecture: A
     Patterns: A
@@ -53,7 +53,7 @@ audits:
   - name: Test health
     grade: B
     summary: >-
-      Full pytest passed with `573 passed, 1 skipped`, plus cross-capability, lifecycle-adapter, self-audit, and representative capability validators. The suite does not currently reject invalid progress phase enum values or stale direct health command selection.
+      Full pytest passed with `573 passed, 1 skipped`, plus cross-capability, lifecycle-adapter, self-audit, and representative capability validators. Targeted regression coverage now rejects invalid progress phase enum values; stale direct health command selection remains open.
     findings: []
   - name: Dependency health
     grade: B
@@ -67,15 +67,8 @@ audits:
     findings: []
   - name: Artifact freshness
     grade: B
-    summary: ''
+    summary: Progress cycle phases now align with the protocol enum; direct health state output remains stale.
     findings:
-    - heading: '⇉ Progress cycles use non-protocol phase `verify`, warning (confidence: 96)'
-      severity: warning
-      confidence: 96
-      location: '`.agentera/progress.yaml:5`, `skills/agentera/schemas/artifacts/progress.yaml:164`'
-      evidence: 'Recent progress entries include `phase: verify`, while the progress schema says phase must be one of `envision`, `deliberate`, `plan`, `build`, or `audit`.'
-      impact: 'Consumers relying on the phase model cannot classify recent v2 and v2.1 cycles correctly, and current validation evidence can pass while artifact semantics drift.'
-      suggested_action: 'Either map verification cycles back to the existing phase model or deliberately add `verify` to `protocol.yaml`, the progress schema, validators, and consumers.'
     - heading: '⇉ Direct health state command reports stale audit history, warning (confidence: 94)'
       severity: warning
       confidence: 94
@@ -95,10 +88,10 @@ audits:
     findings: []
   trends:
     improved: 'DOCS coverage evidence now matches the full-suite result of `573 passed, 1 skipped`, and Agentera state access is flatter and better tested than Audit 19.'
-    degraded: 'Progress phase semantics slipped because recent cycles use `verify` outside the protocol enum, and direct health output still reads stale history.'
+    degraded: Direct health output still reads stale history.
     stable: Architecture, patterns, coupling, complexity, version, prose, and security remain healthy.
-    new_findings: 'Progress cycles use non-protocol phase `verify`; direct health state command reports stale audit history.'
-    resolved: Audit 19 DOCS coverage-count warning is resolved.
+    new_findings: Direct health state command reports stale audit history.
+    resolved: Audit 19 DOCS coverage-count warning is resolved; progress cycle phases now use protocol values and validation rejects `phase: verify`.
   patterns:
   - 'Module structure: one bundled `skills/agentera` skill owns capability prose and schemas; root `skills/hej` remains a temporary v1 bridge.'
   - 'State access: `scripts/agentera` provides flat routine state commands plus advanced `query` for custom artifact access.'

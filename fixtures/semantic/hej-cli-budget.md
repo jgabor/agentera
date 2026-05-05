@@ -15,7 +15,7 @@ Run /agentera for this project and route to the most useful next action.
     },
     {
       "path": ".agentera/progress.yaml",
-      "content": "cycles:\n  - number: 270\n    phase: verify\n    next: Implement Task 5\n"
+      "content": "cycles:\n  - number: 270\n    phase: build\n    next: Implement Task 5\n"
     }
   ]
 }

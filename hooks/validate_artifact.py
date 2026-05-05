@@ -197,6 +197,32 @@ def _validate_field(
         violations.append(f"{name}: empty required field '{path}.{field}'")
 
 
+def _allowed_values(entry: dict) -> list[str]:
+    for rule in entry.get("validation", []):
+        if isinstance(rule, str) and rule.startswith("Must be one of: "):
+            return [value.strip() for value in rule.removeprefix("Must be one of: ").split(",")]
+    return []
+
+
+def _validate_allowed_value(
+    violations: list[str],
+    name: str,
+    scope: dict,
+    entry: dict,
+    path: str,
+) -> None:
+    field = entry.get("field")
+    allowed = _allowed_values(entry)
+    if not field or not allowed or field not in scope or _is_empty_required(scope[field]):
+        return
+    value = scope[field]
+    if isinstance(value, str) and value not in allowed:
+        violations.append(
+            f"{name}: invalid value '{value}' for '{path}.{field}' "
+            f"(expected one of: {', '.join(allowed)})"
+        )
+
+
 def _validate_required_fields(
     violations: list[str],
     name: str,
@@ -210,6 +236,7 @@ def _validate_required_fields(
         if entry.get("parent") or field == "entry" or not entry.get("required"):
             continue
         _validate_field(violations, name, scope, field, path)
+        _validate_allowed_value(violations, name, scope, entry, path)
         value = scope.get(field)
         if isinstance(value, dict):
             for child in entry.get("children", []):

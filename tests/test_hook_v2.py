@@ -168,7 +168,7 @@ class TestValidateYamlProgress:
         content = yaml_dump({
             "cycles": [
                 {"number": 2, "timestamp": "2026-05-04 11:00", "type": "fix",
-                 "phase": "verify", "what": "newer", "commit": "b",
+                 "phase": "build", "what": "newer", "commit": "b",
                  "context": {"intent": "w"}},
                 {"number": 1, "timestamp": "2026-05-04 10:00", "type": "feat",
                  "phase": "build", "what": "older", "commit": "a",
@@ -176,6 +176,18 @@ class TestValidateYamlProgress:
             ]
         })
         assert hook._validate_yaml(content, schema, "progress") == []
+
+    def test_progress_cycles_reject_invalid_phase(self, hook):
+        schema = _load_schema("progress")
+        content = yaml_dump({
+            "cycles": [
+                {"number": 2, "timestamp": "2026-05-04 11:00", "type": "fix",
+                 "phase": "verify", "what": "newer", "commit": "b",
+                 "context": {"intent": "w"}},
+            ]
+        })
+        violations = hook._validate_yaml(content, schema, "progress")
+        assert any("invalid value 'verify'" in v for v in violations)
 
     def test_progress_cycles_reject_oldest_first(self, hook):
         schema = _load_schema("progress")
@@ -185,7 +197,7 @@ class TestValidateYamlProgress:
                  "phase": "build", "what": "older", "commit": "a",
                  "context": {"intent": "y"}},
                 {"number": 2, "timestamp": "2026-05-04 11:00", "type": "fix",
-                 "phase": "verify", "what": "newer", "commit": "b",
+                 "phase": "build", "what": "newer", "commit": "b",
                  "context": {"intent": "w"}},
             ]
         })

@@ -9,6 +9,7 @@
 
 ### Fixed
 
+- Progress cycle phases now stay within the protocol enum: recent verification-lane cycles and fixtures use `phase: build`, and artifact validation rejects invalid enum values such as `verify`.
 - Skill frontmatter now matches the 2.1.0 suite version authority from `registry.json`, avoiding stale-version ambiguity during bundle freshness checks.
 
 ## [2.1.0] · 2026-05-05

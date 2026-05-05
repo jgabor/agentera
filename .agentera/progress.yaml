@@ -1,8 +1,30 @@
 cycles:
+- number: 280
+  timestamp: 2026-05-05 23:05
+  type: fix
+  phase: build
+  what: Aligned progress phase values with the protocol enum and added validation coverage.
+  commit: pending
+  inspiration: TODO [audit-20-progress-phase-enum] identified recent `phase: verify` entries outside the protocol phase model.
+  discovered: >
+    `verify` is a realisera workflow step and verification evidence field, not a protocol phase. The hook validation layer also
+    accepted documented enum strings without enforcing them, so future invalid phase values could recur.
+  verified: >
+    Validation passed: python3 -m py_compile hooks/validate_artifact.py; uv run pytest tests/test_hook_v2.py
+    tests/test_query_cli.py::TestArtifactSpecificSummaries::test_progress_summary_surfaces_verification_and_next
+    tests/test_query_cli.py::TestArtifactSpecificSummaries::test_progress_summary_uses_newest_cycle_first
+    tests/test_semantic_fixtures.py tests/test_semantic_eval.py -q (93 passed); uv run scripts/agentera progress shows recent
+    cycles with phase=build.
+  next: 'Implement TODO [audit-20-health-command-stale]: make scripts/agentera health select the newest health entry consistently with hej.'
+  context:
+    intent: resolve the Audit 20 degraded finding for non-protocol progress phases
+    constraints: preserve the existing phase model instead of adding an accidental verify phase
+    unknowns: none for phase alignment; direct health command staleness remains separate
+    scope: .agentera/progress.yaml, TODO.md, CHANGELOG.md, health state, validation hook, semantic fixture, and tests
 - number: 279
   timestamp: 2026-05-05 21:45
   type: fix
-  phase: verify
+  phase: build
   what: Added self-healing durable bundle freshness guidance and executable regressions for stale /agentera installs.
   commit: pending
   inspiration: >
@@ -32,7 +54,7 @@ cycles:
 - number: 278
   timestamp: 2026-05-05 21:12
   type: chore
-  phase: verify
+  phase: build
   what: Retagged and reverified the corrected v2.1.0 release after approval.
   commit: pending
   inspiration: Task 7 required the approved release mutation to move v2.1.0 to the corrected dashboard repair and then reverify branch and tag state.
@@ -54,7 +76,7 @@ cycles:
 - number: 277
   timestamp: 2026-05-05 21:02
   type: chore
-  phase: verify
+  phase: build
   what: Verified the v2.1.0 dashboard repair release candidate and prepared retag approval evidence.
   commit: pending
   inspiration: Task 6 required validators, branch/tag truth, and exact release-mutation commands before any retag or force-push.
@@ -82,7 +104,7 @@ cycles:
 - number: 276
   timestamp: 2026-05-05 20:50
   type: docs
-  phase: verify
+  phase: build
   what: Refreshed v2.1.0 dashboard repair docs and version-surface evidence.
   commit: pending
   inspiration: Task 5 required README, UPGRADE, CHANGELOG, DOCS, PROGRESS, PLAN, and version surfaces to agree that /agentera still renders the dashboard from the agentera hej data source.
@@ -97,7 +119,7 @@ cycles:
 - number: 275
   timestamp: 2026-05-05 20:40
   type: test
-  phase: verify
+  phase: build
   what: Added dashboard regression coverage for the v2.1.0 hej repair.
   commit: pending
   inspiration: Task 4 required semantic fixtures to reject raw CLI-only /agentera output while preserving the one-command agentera hej tool budget.
@@ -112,7 +134,7 @@ cycles:
 - number: 274
   timestamp: 2026-05-05 20:31
   type: fix
-  phase: verify
+  phase: build
   what: Restored the /agentera dashboard rendering contract around agentera hej.
   commit: pending
   inspiration: Task 3 required bare /agentera to render the README/prose dashboard from one agentera hej state-source call instead of relaying raw CLI lines.
@@ -127,7 +149,7 @@ cycles:
 - number: 273
   timestamp: 2026-05-05 19:57
   type: chore
-  phase: verify
+  phase: build
   what: Diagnosed the v2.1.0 hej dashboard contract break.
   commit: this commit
   inspiration: >
@@ -180,7 +202,7 @@ cycles:
 - number: 272
   timestamp: 2026-05-05 18:44
   type: chore
-  phase: verify
+  phase: build
   what: Freshness-closed the flat Agentera state CLI plan.
   commit: this commit
   inspiration: The final plan task required README, UPGRADE, CHANGELOG, DOCS, PLAN, and PROGRESS to reflect `agentera hej` as the composite briefing and top-level commands as the routine state surface.
@@ -195,7 +217,7 @@ cycles:
 - number: 271
   timestamp: 2026-05-05 18:34
   type: test
-  phase: verify
+  phase: build
   what: Added semantic tool-trace assertions and a `/agentera` CLI-budget fixture for the composite hej path.
   commit: this commit
   inspiration: The active plan required tests proving `/agentera` can be served through `agentera hej` without multiple individual state commands or raw artifact reads.
@@ -210,7 +232,7 @@ cycles:
 - number: 270
   timestamp: 2026-05-05 18:23
   type: docs
-  phase: verify
+  phase: build
   what: Updated Agentera dispatcher and capability guidance to prefer top-level state commands.
   commit: this commit
   inspiration: The flat-CLI plan requires agents to use `agentera hej` and routine top-level state commands instead of rebuilding state through multiple query calls.
@@ -225,7 +247,7 @@ cycles:
 - number: 269
   timestamp: 2026-05-05 18:18
   type: feat
-  phase: verify
+  phase: build
   what: Kept `agentera query` as the advanced structured escape hatch with pipeable JSON and YAML output.
   commit: this commit
   inspiration: The accepted CLI-shape plan keeps routine state flat while preserving query for custom artifact access and scripting.
@@ -240,7 +262,7 @@ cycles:
 - number: 268
   timestamp: 2026-05-05 18:07
   type: feat
-  phase: verify
+  phase: build
   what: Added `agentera hej` as the one-command composite briefing for bare Agentera orientation.
   commit: this commit
   inspiration: The accepted flat-CLI plan says `agentera hej` should carry the state-summary and routing work instead of making agents run multiple routine state commands.
@@ -255,7 +277,7 @@ cycles:
 - number: 267
   timestamp: 2026-05-05 18:05
   type: feat
-  phase: verify
+  phase: build
   what: Added top-level Agentera state commands for routine plan, progress, health, todo, decisions, docs, objective, and experiments access.
   commit: this commit
   inspiration: User pointed out that bare Agentera orientation should not require a spread of individual query calls and asked to make common state access flat.
@@ -270,7 +292,7 @@ cycles:
 - number: 266
   timestamp: 2026-05-05 17:12
   type: fix
-  phase: verify
+  phase: build
   what: Fixed artifact validation so advisory word budgets no longer hard-block writes and progress cycles validate newest-first.
   commit: this commit
   inspiration: User flagged that skipping a progress update after the budget rejection meant the artifact-budget path was not cleanly handled.
@@ -288,7 +310,7 @@ cycles:
 - number: 265
   timestamp: 2026-05-05 14:51
   type: fix
-  phase: verify
+  phase: build
   what: Refined the v1-to-v2 npx update bridge to keep only `/hej` as the temporary compatibility trigger. The package
     upgrade now removes package-managed v1 skill entries before installing the single active `/agentera` skill.
   commit: this commit
@@ -325,7 +347,7 @@ cycles:
 - number: 264
   timestamp: 2026-05-05 14:07
   type: fix
-  phase: verify
+  phase: build
   what: Closed the transcript-derived v1 entry-point gap. Added a legacy `skills/hej` bridge that refuses the old v1 HEJ
     workflow and points users to `agentera upgrade`, refreshed package-update commands to install both `/agentera` and the
     `/hej` bridge, added an OpenCode managed `/hej` bridge command, and bumped patch surfaces to 2.0.1.
@@ -352,7 +374,7 @@ cycles:
 - number: 263
   timestamp: 2026-05-05 13:21
   type: chore
-  phase: verify
+  phase: build
   what: Cleaned release residue before v2.0.0 cut. Removed tracked v1 migration backups from `.agentera/backup-v1`, marked
     the completed v2 remediation plan as completed, refreshed the docs index to point at the current plan artifact, consolidated
     duplicated 2.0.0 changelog entries into one release block, and fixed the live smoke temporary install root to include
@@ -381,7 +403,7 @@ cycles:
 - number: 262
   timestamp: 2026-05-05 11:59
   type: feat
-  phase: verify
+  phase: build
   what: Added a clone-free `uvx` upgrade path by packaging the `agentera` CLI, adding a durable bundle install phase to
     `agentera upgrade`, and teaching SKILL/hej upgrade guidance to preview before applying. Packaged runs now install or
     refresh `~/.agents/agentera` before runtime config writes, avoiding uv tool-cache paths in AGENTERA_HOME. OpenCode
@@ -409,7 +431,7 @@ cycles:
 - number: 261
   timestamp: 2026-05-05 10:51
   type: feat
-  phase: verify
+  phase: build
   what: Added an idempotent `agentera upgrade` CLI that plans by default and applies with `--yes`, covering v1 artifact migration,
     runtime config wiring, stale v1 cleanup, package-update opt-in, JSON output, and setup-doctor postflight. Codex setup no
     longer writes removed v1 per-skill agent blocks, Codex UI metadata now points at the single `skills/agentera` bundle, and
@@ -439,7 +461,7 @@ cycles:
 - number: 260
   timestamp: 2026-05-05 10:25
   type: chore
-  phase: verify
+  phase: build
   what: Uplifted root Python scripts and hooks to `uv run --script` shebangs with PEP 723 metadata, rewired runtime hook
     commands and the OpenCode plugin to invoke Python helpers through `uv run`, replaced stale CI/Lefthook checks with current
     v2 validators, and refreshed active docs from retired `python3`/`validate_spec.py`/`generate_contracts.py` references.
@@ -466,7 +488,7 @@ cycles:
 - number: 259
   timestamp: 2026-05-05 09:55
   type: chore
-  phase: verify
+  phase: build
   what: Applied the final v2.0 release-scope decisions and ran the release-candidate validation suite. The static token target
     is revised to -10%, with the measured -9.8% accepted as close enough for v2.0. Claude Code live smoke is excluded from
     the required harness until Claude Pro/Max or API access is available; future Claude live smoke should be explicit opt-in.
@@ -492,7 +514,7 @@ cycles:
 - number: 258
   timestamp: 2026-05-05 09:25
   type: fix
-  phase: verify
+  phase: build
   what: Added OpenCode to the gated live-host smoke harness and refreshed the gap-analysis artifacts to record Codex/Copilot/OpenCode
     live evidence while keeping Claude Code explicitly deferred.
   commit: 03171ca
@@ -513,7 +535,7 @@ cycles:
 - number: 257
   timestamp: 2026-05-05 09:20
   type: fix
-  phase: verify
+  phase: build
   what: Closed the 2026-05-05 gap-analysis implementation queue and later ran the approved gated live-host smoke. Added cross-capability
     producer/consumer graph validation, restored bundled profilera corpus extraction, deepened the query CLI with artifact-specific
     summaries and docs.yaml path resolution, remeasured the static token payload, and refreshed the gap-analysis/decision/roadmap
