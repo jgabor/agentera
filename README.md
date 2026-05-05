@@ -16,6 +16,7 @@ roles, verification gates, and a common project protocol.
 <a href="#why-agentera">Why Agentera</a> ·
 <a href="#features">Features</a> ·
 <a href="#what-you-see">What you see</a> ·
+<a href="#state-cli">State CLI</a> ·
 <a href="#quick-start">Quick start</a> ·
 <a href="#why-it-works">Why it works</a> ·
 <a href="#the-memory-layer">Memory layer</a> ·
@@ -119,6 +120,25 @@ and routes you to the most useful next capability.
 ─── next ───────────────────────────────
 
   suggested → ❈ resonera (resolve API schema to unblock task 7)
+```
+
+## State CLI
+
+The Agentera CLI is the state access layer behind that briefing. For a returning
+project, `/agentera` should be served by one composite command:
+
+```bash
+uv run scripts/agentera hej
+```
+
+Routine state has flat top-level commands: `plan`, `progress`, `health`, `todo`,
+`decisions`, `docs`, `objective`, and `experiments`. Use `query` only for
+advanced custom artifact access or scripting:
+
+```bash
+uv run scripts/agentera plan
+uv run scripts/agentera progress --limit 1
+uv run scripts/agentera query session --format json
 ```
 
 ## Quick start

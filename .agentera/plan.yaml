@@ -1,7 +1,7 @@
 header:
   level: full
   created: '2026-05-05'
-  status: active
+  status: completed
   reviewed: '2026-05-05'
   critic_issues: "0 found, 0 addressed, 0 dismissed"
   title: Flat Agentera State CLI
@@ -107,7 +107,7 @@ tasks:
       - Task 3
       - Task 4
       - Task 5
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the CLI shape changes THEN README.md, UPGRADE.md, CHANGELOG.md, .agentera/docs.yaml, and .agentera/progress.yaml reflect the new preferred surface
       - GIVEN validation runs THEN targeted CLI tests, hej capability tests, semantic fixture tests, and full pytest pass
