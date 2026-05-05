@@ -20,13 +20,13 @@ One index file; writes individual doc files across the project.
 
 | Artifact | Purpose | Bootstrap |
 |----------|---------|-----------|
-| `DOCS.md` | Documentation contract. Conventions, artifact mapping, and documentation index. | Created on first dokumentera run. |
+| `DOCS.md` | Canonical documentation contract, stored as `.agentera/docs.yaml` unless mapped otherwise. Conventions, artifact mapping, and documentation index. | Created on first dokumentera run. |
 
-Template in `references/templates/` (v2 path: `skills/agentera/references/templates/`). Individual doc files written to standard locations.
+Use `skills/agentera/schemas/artifacts/docs.yaml` and the repository's existing `.agentera/docs.yaml` shape as the structure. Individual documentation files are written to their mapped locations.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/docs.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, .agentera/progress.yaml, .agentera/decisions.yaml, .agentera/health.yaml).
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/docs.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, .agentera/progress.yaml, .agentera/decisions.yaml, .agentera/health.yaml).
 
 ### Contract values
 
@@ -36,40 +36,28 @@ Contract values are inlined where referenced. Visual tokens from protocol: sever
 
 ---
 
-## DOCS.md format
+## docs.yaml shape
 
-```markdown
-# Documentation Contract
-
-<!-- Maintained by dokumentera. Last audit: YYYY-MM-DD -->
-
-## Conventions
-
-```
-
-doc_root: docs/
-style:    technical, sections with examples, no badges
-auto_gen:
-
-- TypeDoc → docs/api/
-
-```
-
-## Artifact Mapping
-
-| Artifact | Path | Producers |
-|----------|------|-----------|
-| VISION.md | docs/VISION.md | visionera, realisera |
-...
-
-## Index
-
-| Document | Path | Last Updated | Status |
-|----------|------|-------------|--------|
-| README | README.md | YYYY-MM-DD | ■ current |
-...
-
-Status tokens: `■ current`, `▣ stale`, `□ missing`
+```yaml
+last_audit: YYYY-MM-DD
+conventions:
+  doc_root: .
+  style: technical, concise
+  auto_gen: []
+  version_files: []
+  semver_policy:
+    feat: minor
+    fix: patch
+    docs/chore/test: no bump
+mapping:
+  - artifact: VISION.md
+    path: .agentera/vision.yaml
+    producers: [visionera, realisera]
+index:
+  - document: README
+    path: README.md
+    last_updated: YYYY-MM-DD
+    status: current
 ```
 
 ---
@@ -107,12 +95,12 @@ Detect documentation conventions:
 2. **Existing docs**: README, CLAUDE.md, AGENTS.md, CONTRIBUTING.md, API docs, guides
 3. **Auto-generated docs**: TypeDoc, Storybook, OpenAPI/Swagger, GoDoc, Rustdoc, Javadoc. Record each with output path.
 4. **Style**: infer tone, structure patterns, formatting conventions from existing docs
-5. **Skill artifacts**: check for VISION.md, DECISIONS.md, PLAN.md, etc. at root
+5. **Skill artifacts**: check `.agentera/docs.yaml` mappings, root human artifacts, and `.agentera/*.yaml` agent artifacts
 6. **Version files**: package.json, Cargo.toml, pyproject.toml, plugin.json, etc. Note files and current values. None found = omit versioning from DOCS.md.
 
 ### Step 2: Propose conventions
 
-Draft three-layer DOCS.md from `references/templates/` (v1 path):
+Draft three-layer `.agentera/docs.yaml` from the artifact schema and observed repository conventions:
 
 1. **Conventions**: doc_root, style, auto_gen from observations. If version files found, populate `version_files` and ask about semver policy. No version files = omit block.
 2. **Artifact mapping**: paths consistent with project's doc organization
@@ -179,7 +167,7 @@ Narration voice (riff, don't script):
 
 ### Step 4: Update DOCS.md
 
-Add or update the entry in DOCS.md:
+Add or update the relevant entry in DOCS.md:
 
 - Document name and path
 - Date written
@@ -236,7 +224,7 @@ Narration voice (riff, don't script):
 
 ### Step 5: Update DOCS.md
 
-Create or update DOCS.md with all items. Use the Edit tool on specific entries when updating status/dates. If DOCS.md doesn't exist, run first-run survey first.
+Create or update DOCS.md with all items. Edit specific YAML entries when updating status/dates. If DOCS.md doesn't exist, run first-run survey first.
 
 Artifact writing follows contract Section 24 (Artifact Writing Conventions): banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
@@ -268,7 +256,7 @@ For each finding: quote the doc section, reference code location (file:line), ex
 
 Check all docs indexed in DOCS.md against the 3 self-audit rules:
 
-1. **Read DOCS.md Index**: if DOCS.md is absent, run first-run survey to bootstrap it, then continue. Extract the list of tracked docs from the Index table. Skip entries with `generated` or `missing` status.
+1. **Read DOCS.md index**: if DOCS.md is absent, run first-run survey to bootstrap it, then continue. Extract tracked docs from the `index` list. Skip entries with `generated` or `missing` status.
 2. **For each doc**, read the file and check against the 3 rules:
    - **Verbosity drift**: entry word counts exceeding token budgets for the artifact's scope. Flag entries that exceed budget without compaction.
    - **Abstraction creep**: sections lacking ≥1 concrete anchor (file path, line number, commit hash, metric value, identifier, direct quote). Flag entries that narrate concepts without evidence.

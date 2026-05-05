@@ -22,55 +22,48 @@ Three artifacts per objective, under `.agentera/optimera/<objective-name>/`, boo
 |----------|---------|-----------|
 | `.agentera/optimera/<objective-name>/objective.yaml` | What we're optimizing, why, how we measure it, and what "done" looks like. | Via inline brainstorm session with the user (see below). |
 | `.agentera/optimera/<objective-name>/harness` | Eval script that measures the metric. Locked after user approval. | Written by the agent during brainstorm, approved by the user. |
-| `.agentera/optimera/<objective-name>/experiments.yaml` | Log of every experiment: what was tried, what the metric said, kept or discarded. | `# Experiments\n\n` then the first experiment entry. |
+| `.agentera/optimera/<objective-name>/experiments.yaml` | Log of every experiment: what was tried, what the metric said, kept or discarded. | First experiment entry in YAML form. |
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (`.agentera/decisions.yaml`). OBJECTIVE.md and EXPERIMENTS.md are NOT resolved via the docs.yaml mapping; they always live under `.agentera/optimera/<objective-name>/` for whichever objective is active.
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`. This applies to all artifact references in this capability, including cross-capability reads (`.agentera/decisions.yaml`). objective.yaml and experiments.yaml are NOT resolved via the docs.yaml mapping; they always live under `.agentera/optimera/<objective-name>/` for whichever objective is active.
 
 ### Contract
 
 Before starting, read `references/contract.md` (at v2 skill location `skills/agentera/references/contract.md`) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
-### OBJECTIVE.md
+### objective.yaml
 
 Evergreen. Created via brainstorm on first run, refined only when the user explicitly asks. Outside those two cases, the agent reads it but never writes it. Typical structure:
 
-```markdown
-# [Optimization Target]
-
-**Status**: active
-
-## Objective
-[What we're improving. Not vague ("make it faster") but precise ("reduce p95 latency of the
-/api/search endpoint from 320ms to under 100ms"). Name the metric, the current value, and
-the target value.]
-
-## Why This Matters
-[What changes when we hit the target? Who benefits? What becomes possible? Context that
-helps the agent make trade-off decisions when two approaches both improve the metric but
-have different costs.]
-
-## Measurement
-[How the metric is captured. What command to run, what the output means, which direction
-is "better" (lower latency = good, higher coverage = good). The eval harness implements
-this, but OBJECTIVE.md explains the intent behind it. For stochastic objectives, state the
-fixed per-experiment budget: run count, seed policy, time limit, token cap, or sample size.
-Every experiment uses that same budget unless the user explicitly refines the objective.]
-
-## Constraints
-- [What the agent must NOT break while optimizing (e.g., "all existing tests must pass")]
-- [What the agent should NOT touch (e.g., "don't modify the public API")]
-- [Resource limits (e.g., "memory usage must stay under 512MB")]
-
-## Scope
-[Which files, modules, or areas of the codebase are fair game for changes. If unspecified,
-the agent uses judgment, but explicit scope prevents surprise.]
+```yaml
+target: Optimization target name
+status: active
+objective: >-
+  Precise metric, current value, and target value, for example reduce p95
+  latency of /api/search from 320ms to under 100ms.
+why: >-
+  What changes when the target is hit, who benefits, and what tradeoffs matter.
+measurement:
+  command: .agentera/optimera/<objective-name>/harness
+  metric: p95_latency_ms
+  direction: lower
+  baseline: 320
+  target: 100
+  budget:
+    runs: 5
+    time_limit: 10m
+constraints:
+  - Existing tests must pass.
+  - Public API must not change.
+scope:
+  included: [api/search]
+  excluded: [public_api]
 ```
 
 The objective must be precise enough to measure, constraints clear enough to enforce, and scope defined enough to prevent wandering.
 
-Fixed budgets are part of the measurement contract, not experiment strategy. Keep them in OBJECTIVE.md and the locked harness. Do not store budget state in root artifacts, registries, symlinks, or DOCS.md mappings. EXPERIMENTS.md records the budget actually used only when that evidence matters to interpret the result.
+Fixed budgets are part of the measurement contract, not experiment strategy. Keep them in objective.yaml and the locked harness. Do not store budget state in root artifacts, registries, symlinks, or DOCS.md mappings. experiments.yaml records the budget actually used only when that evidence matters to interpret the result.
 
 ### `.agentera/optimera/<objective-name>/harness`
 
@@ -78,12 +71,7 @@ Script that measures the metric and outputs structured JSON. Written during brai
 
 Wraps the project's own tooling (test runners, benchmarks, linters) and translates output into a consistent format. The project's tooling is the source of truth.
 
-**Before writing a harness**, read these references (bundled with this skill at v1 locations):
-
-- `references/harness-guide.md`: principles, patterns, and pitfalls
-- `references/output-schema.md`: formal JSON output specification
-- `references/agent-session-harness.md`: machinery for measuring agent behavior in reproducible sessions
-- `references/examples/`: harness patterns for common metric types
+**Before writing a harness**, inspect the project's existing test, benchmark, lint, or measurement commands. The v2 bundle currently ships only the shared contract reference, so harness specifics come from project tooling and the objective's measurement fields.
 
 **Output contract** (minimal):
 
@@ -99,40 +87,45 @@ Wraps the project's own tooling (test runners, benchmarks, linters) and translat
 
 The harness is the **immutable ground truth**, separating measurement from optimization. If wrong, the user must explicitly ask to rebuild it.
 
-### EXPERIMENTS.md
+### experiments.yaml
 
 When presenting experiment results, open with your interpretation of what happened before the structured data. "Here's what I tried and what it told us"; then the metrics table backs it up. Call out surprises, dead ends, and what the result changes about the approach.
 
-```markdown
-## Experiment N · YYYY-MM-DD HH:MM
-
-**Hypothesis**: what we expected to improve and why
-**Method**: the approach taken to test the hypothesis
-**Change**: one-line summary of the code change
-**Metric**: <before> → <after> (⮉ better | ⮋ worse | unchanged)
-**Regression**: pass | fail (existing test/build suite)
-**Status**: ■ kept | □ discarded | ▨ error
-**Commit**: <hash> (if kept)
-**Inspiration**: external source that informed the approach (if any)
-**Conclusion**: what we learned: confirms, refutes, or refines the hypothesis
-**Next**: what the result suggests trying next
+```yaml
+experiments:
+  - number: N
+    timestamp: YYYY-MM-DD HH:MM
+    hypothesis: What we expected to improve and why.
+    method: The approach taken to test the hypothesis.
+    change: One-line summary of the code change.
+    metric:
+      before: 320
+      after: 250
+      direction: lower
+      verdict: better
+    regression: pass
+    status: kept
+    commit: <hash>
+    inspiration: External source, if any.
+    conclusion: What the experiment taught.
+    next: What the result suggests trying next.
 ```
 
 Closure entries are appended once when the objective reaches its target:
 
-```markdown
-## Closure · YYYY-MM-DDTHH:MM:SSZ
-
-**Final value**: <value>
-**Target**: <target>
-**Reason**: <already met at startup | experiment met target>
+```yaml
+closure:
+  timestamp: YYYY-MM-DDTHH:MM:SSZ
+  final_value: <value>
+  target: <target>
+  reason: already met at startup
 ```
 
 The "Next" field from the previous experiment is a suggestion, not a mandate. Re-evaluate fresh each cycle based on the full experiment history.
 
 ### Experiment history analyzer contract
 
-`scripts/analyze_experiments.py` is the read-only summary layer for rich EXPERIMENTS.md records. It must inspect the active objective directory only. The analyzer never creates root objective artifacts, registries, symlinks, DOCS.md fixed mappings, or sidecar ledgers.
+`scripts/analyze_experiments.py` is the read-only summary layer for rich experiments.yaml records. It must inspect the active objective directory only. The analyzer never creates root objective artifacts, registries, symlinks, DOCS.md fixed mappings, or sidecar ledgers.
 
 ---
 
@@ -140,8 +133,8 @@ The "Next" field from the previous experiment is a suggestion, not a mandate. Re
 
 This runs in two situations:
 
-1. **OBJECTIVE.md doesn't exist**: the first time optimera runs on a project
-2. **User explicitly asks** to refine the objective (e.g., "change the target", "update OBJECTIVE.md")
+1. **objective.yaml doesn't exist**: the first time optimera runs on a project
+2. **User explicitly asks** to refine the objective (e.g., "change the target", "update objective.yaml")
 
 In all other cases, skip straight to the cycle.
 
@@ -154,12 +147,12 @@ The sharp colleague figuring out what to optimize. One question at a time, push 
 3. **Constraints**: "What must NOT break? Off-limits files? Resource limits?" If a decision profile exists, propose constraints from it.
 4. **Scope**: "Which parts to focus on? Where are the biggest gains?" Read codebase to propose informed boundaries.
 5. **Pre-write self-audit**: check verbosity drift, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`). Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
-6. **Write OBJECTIVE.md**: synthesize into a precise charter. Write to `.agentera/optimera/<objective-name>/objective.yaml`. Present for approval.
-7. **Write the eval harness**: read `references/harness-guide.md` and relevant `references/examples/` pattern. Write `.agentera/optimera/<objective-name>/harness` using the project's own tooling, outputting JSON per `references/output-schema.md`. Present, explain, get approval, run once to establish baseline.
+6. **Write objective.yaml**: synthesize into a precise charter. Write to `.agentera/optimera/<objective-name>/objective.yaml`. Present for approval.
+7. **Write the eval harness**: use the project's own tooling and the objective's measurement fields. Write `.agentera/optimera/<objective-name>/harness` so it outputs JSON with at least `metric` and `direction`. Present, explain, get approval, run once to establish baseline.
 
 Artifact writing follows contract Artifact Writing Conventions: banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
-When **refining**, read current OBJECTIVE.md, show proposed changes with rationale, get confirmation. If the harness changes, the user must approve the new version. After brainstorm, proceed to experiment 1.
+When **refining**, read current objective.yaml, show proposed changes with rationale, get confirmation. If the harness changes, the user must approve the new version. After brainstorm, proceed to experiment 1.
 
 ---
 
@@ -175,41 +168,35 @@ Steps: orient, analyze, hypothesize, implement, measure, decide, audit, log.
 **Active-objective inference**: before reading any per-objective artifact, determine which objective is active by inspecting `.agentera/optimera/`:
 
 - If no objective subdirectories exist, keep the existing new-objective path: run the brainstorm.
-- For each objective subdirectory with an OBJECTIVE.md, classify it as closed before any active selection when the status line starts with `**Status**: closed`. Do not reopen closed objectives.
-- If the user explicitly names a closed objective, load its OBJECTIVE.md and EXPERIMENTS.md read-only for context, summarize that it is closed, and ask before defining successor work.
+- For each objective subdirectory with an objective.yaml, classify it as closed before any active selection when `status: closed`. Do not reopen closed objectives.
+- If the user explicitly names a closed objective, load its objective.yaml and experiments.yaml read-only for context, summarize that it is closed, and ask before defining successor work.
 - If one or more objective subdirectories exist and all are closed, ask the user for a successor objective.
 - If only one non-closed subdirectory exists, use it.
 - If multiple non-closed subdirectories exist, run `git log -1 --format=%aI -- .agentera/optimera/<name>/experiments.yaml` for each and pick the one with the most recent modification timestamp.
 - If the result is ambiguous, ask the user to specify the active objective by name.
 
-All subsequent references to OBJECTIVE.md, EXPERIMENTS.md, and harness refer to the files under `.agentera/optimera/<active-objective-name>/`.
+All subsequent references to objective.yaml, experiments.yaml, and harness refer to the files under `.agentera/optimera/<active-objective-name>/`.
 
-1. **EXPERIMENTS.md**: last 5 experiments only (check for plateau patterns)
-2. **OBJECTIVE.md**: the metric, target, constraints, and scope
-3. **Decision profile**: run from the profilera skill directory:
-
-   ```bash
-   python3 scripts/effective_profile.py
-   ```
-
-   Apply confidence thresholds per contract profile consumption conventions. Read full profile from `$PROFILERA_PROFILE_DIR/PROFILE.md` for details when needed. If missing, proceed without persona grounding but flag it.
+1. **experiments.yaml**: last 5 experiments only (check for plateau patterns)
+2. **objective.yaml**: the metric, target, constraints, and scope
+3. **Decision profile**: read `$PROFILERA_PROFILE_DIR/PROFILE.md` directly when it exists. Apply confidence thresholds per contract profile consumption conventions. If missing, proceed without persona grounding but flag it.
 4. **Project discovery** (experiment 1 or when unfamiliar): map directory structure within scope, read dependency manifests, and read README.md, CLAUDE.md, AGENTS.md.
 5. `git log --oneline -20` for recent changes
 
-Before experimenting: in your response, list the current baseline, target, status, and constraints from OBJECTIVE.md.
+Before experimenting: in your response, list the current baseline, target, status, and constraints from objective.yaml.
 
-**Objective closure procedure**: when closing an objective, update OBJECTIVE.md with canonical closed state: `**Status**: closed`, `**Closed at**: <ISO-8601 UTC timestamp>`, `**Final value**: <value>`, `**Target**: <target>`, and `**Reason**: <reason>`. Append one EXPERIMENTS.md closure entry. Do not append duplicates.
+**Objective closure procedure**: when closing an objective, update objective.yaml with canonical closed state: `status: closed`, `closed_at: <ISO-8601 UTC timestamp>`, `final_value: <value>`, `target: <target>`, and `reason: <reason>`. Append one experiments.yaml closure entry. Do not append duplicates.
 
-**Exit-early guard**: If OBJECTIVE.md or EXPERIMENTS.md evidence shows the target is already met and the objective is not already closed, run the objective closure procedure with reason `already met at startup`, report exit signal `complete: objective achieved`, and stop before Analyze.
+**Exit-early guard**: If objective.yaml or experiments.yaml evidence shows the target is already met and the objective is not already closed, run the objective closure procedure with reason `already met at startup`, report exit signal `complete: objective achieved`, and stop before Analyze.
 
 ### Step 2: Analyze
 
 Run two things:
 
-**2a. Experiment history analysis**: if EXPERIMENTS.md has prior entries, run:
+**2a. Experiment history analysis**: if experiments.yaml has prior entries, run:
 
 ```bash
-python3 scripts/analyze_experiments.py --experiments EXPERIMENTS.md --objective OBJECTIVE.md --pretty
+python3 scripts/analyze_experiments.py --experiments experiments.yaml --objective objective.yaml --pretty
 ```
 
 Outputs JSON with metric trajectory, plateau detection, win/loss rates, and distance to target.
@@ -250,7 +237,7 @@ Be conservative early; escalate if conservative approaches plateau.
 Spawn an implementation sub-agent in a worktree (`isolation: "worktree"`) with:
 
 - The hypothesis from step 3
-- Relevant context files (OBJECTIVE.md, recent experiments, source files being modified)
+- Relevant context files (objective.yaml, recent experiments, source files being modified)
 - Clear constraint: implement the hypothesis and nothing else
 
 ```
@@ -262,12 +249,12 @@ You are implementing one optimization experiment for [project].
 ## Context
 - Current metric: [value] ([unit])
 - Target: [target value]
-- Scope: [files/modules in scope from OBJECTIVE.md]
+- Scope: [files/modules in scope from objective.yaml]
 
 ## Constraints
 - Implement ONLY what the hypothesis describes. No scope creep.
 - Do NOT modify the eval harness at .agentera/optimera/<objective-name>/harness.
-- Do NOT modify OBJECTIVE.md or EXPERIMENTS.md.
+- Do NOT modify objective.yaml or experiments.yaml.
 - Follow existing code patterns and conventions.
 - Read the files you are modifying before changing them.
 - Keep the change as small as possible while testing the hypothesis.
@@ -316,11 +303,11 @@ Narration voice (riff, don't script):
 
 Summarize the experiment for the user before writing the log: what moved, what didn't, and what it suggests trying next. Then write the structured record.
 
-Update **EXPERIMENTS.md**: append the experiment entry. Output constraint per contract token budgets.
+Update **experiments.yaml**: append the experiment entry. Output constraint per contract token budgets.
 
 If Step 6 marked the objective as ready for closure, immediately run the objective closure procedure with reason `experiment met target`. This closure is part of the same log step, after the experiment result is recorded.
 
-After writing a new experiment entry to EXPERIMENTS.md, compact older experiments via the script. Run: `python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py experiments <path-to-EXPERIMENTS.md>`.
+After writing a new experiment entry to experiments.yaml, apply the schema COMPACTION rules before writing if thresholds are exceeded: keep 10 full experiments, keep up to 40 one-line archive entries, and drop beyond 50 total.
 
 Artifact writing follows contract Artifact Writing Conventions: banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
@@ -334,13 +321,13 @@ Then stop. One experiment complete.
 
 - NEVER push to any remote. Local commits only.
 - NEVER modify the eval harness (`.agentera/optimera/<objective-name>/harness`) during an optimization cycle. Only touch it during a brainstorm (bootstrap or user-requested refinement).
-- NEVER modify OBJECTIVE.md during a cycle except to record canonical closure when the target is met. Other OBJECTIVE.md edits only happen during brainstorm or refine.
+- NEVER modify objective.yaml during a cycle except to record canonical closure when the target is met. Other objective.yaml edits only happen during brainstorm or refine.
 - NEVER bypass the project's test/lint/build suite. Regression check before every metric measurement. Regression failure = automatic discard.
 - NEVER modify git config or skip git hooks.
 - NEVER force push, amend published commits, or run destructive git operations.
 - NEVER keep an experiment that causes a regression, even if the metric improved.
 - NEVER add placeholder data or functionality. All code must be real and functional.
-- NEVER modify files outside the scope declared in OBJECTIVE.md (when scope is declared).
+- NEVER modify files outside the scope declared in objective.yaml (when scope is declared).
 - One experiment per invocation. Do not attempt multiple experiments.
 
 </critical>
@@ -351,7 +338,7 @@ Then stop. One experiment complete.
 
 If blocked (missing dependency, ambiguous constraint, too risky):
 
-1. Log blocked hypothesis in EXPERIMENTS.md with context and decision needed
+1. Log blocked hypothesis in experiments.yaml with context and decision needed
 2. Formulate a different hypothesis and complete a full experiment on that instead
 
 ---
@@ -363,9 +350,9 @@ Report one of these statuses at workflow completion (protocol refs: EX1-EX4).
 Format: `─── ⎘ optimera · status ───` followed by a summary sentence.
 For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
-- **complete** (EX1): One experiment completed the full cycle: hypothesis formulated, implementation dispatched, regression check passed, metric measured, decision made (kept or discarded), and EXPERIMENTS.md updated.
+- **complete** (EX1): One experiment completed the full cycle: hypothesis formulated, implementation dispatched, regression check passed, metric measured, decision made (kept or discarded), and experiments.yaml updated.
 - **flagged** (EX2): The experiment cycle completed but with issues worth noting: the metric did not improve after multiple attempts, a plateau was detected, or the experiment had to be discarded due to a regression.
-- **stuck** (EX3): Cannot proceed because OBJECTIVE.md is missing and the brainstorm cannot be completed without user input, the eval harness is broken and cannot be repaired without user approval, or the regression check infrastructure is unavailable.
+- **stuck** (EX3): Cannot proceed because objective.yaml is missing and the brainstorm cannot be completed without user input, the eval harness is broken and cannot be repaired without user approval, or the regression check infrastructure is unavailable.
 - **waiting** (EX4): The optimization objective is too vague to experiment against, the metric cannot be measured by any available tooling, or the scope is undefined and cannot be safely inferred.
 
 Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3 entries record failed or discarded experiments, this constitutes 3 consecutive failures: **stop the cycle**, log the failure pattern to TODO.md, and surface the situation to the user with a recommended course of action. Do not attempt a 4th consecutive experiment on the same problem.
@@ -386,11 +373,11 @@ When realisera picks work that is optimization-shaped (e.g., "improve test perfo
 
 ### Optimera reads /profilera output
 
-Every experiment runs the effective profile script (`python3 scripts/effective_profile.py` from the profilera skill directory) to get a confidence-weighted summary table. Confidence thresholds per contract profile consumption conventions. Effective confidence weighting ensures stale preferences don't over-constrain experiments.
+Every experiment reads `$PROFILERA_PROFILE_DIR/PROFILE.md` when it exists and applies confidence thresholds per contract profile consumption conventions. Effective confidence weighting ensures stale preferences don't over-constrain experiments.
 
 ### Optimera uses /resonera for objective decisions
 
-When the brainstorm session surfaces ambiguity about what to optimize (competing metrics, unclear constraints, or tradeoffs between measurement approaches), suggest `/resonera` to deliberate first. Resonera can produce or refine OBJECTIVE.md directly, and its DECISIONS.md entries give optimera context for why the objective was chosen. If `DECISIONS.md` exists, read it during the Orient step for context on prior deliberations.
+When the brainstorm session surfaces ambiguity about what to optimize (competing metrics, unclear constraints, or tradeoffs between measurement approaches), suggest `/resonera` to deliberate first. Resonera can produce or refine objective.yaml directly, and its DECISIONS.md entries give optimera context for why the objective was chosen. If `DECISIONS.md` exists, read it during the Orient step for context on prior deliberations.
 
 ### Inspektera feeds /optimera
 
@@ -403,16 +390,16 @@ When an inspektera audit reveals a poor dimension grade with a clearly measurabl
 ### First optimization
 
 1. `/profilera`: generate or refresh the decision profile (skip if recent)
-2. `/optimera`: the first run detects no OBJECTIVE.md, runs a brainstorm with you to define the objective and write the eval harness, then proceeds to experiment 1
+2. `/optimera`: the first run detects no objective.yaml, runs a brainstorm with you to define the objective and write the eval harness, then proceeds to experiment 1
 3. `/loop 5m /optimera`: set up continuous optimization
 
 ### Resuming optimization
 
-1. `/optimera`: if OBJECTIVE.md and the eval harness exist, starts experimenting immediately. Reads EXPERIMENTS.md to understand what's been tried.
+1. `/optimera`: if objective.yaml and the eval harness exist, starts experimenting immediately. Reads experiments.yaml to understand what's been tried.
 
 ### Changing the target
 
-Edit OBJECTIVE.md directly to adjust the target value or constraints, or tell optimera to "refine the objective" for a guided session. If the measurement approach needs to change, the eval harness must be rebuilt and re-approved.
+Edit objective.yaml directly to adjust the target value or constraints, or tell optimera to "refine the objective" for a guided session. If the measurement approach needs to change, the eval harness must be rebuilt and re-approved.
 
 ### Optimera is fed by /planera
 

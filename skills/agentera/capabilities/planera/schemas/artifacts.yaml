@@ -2,7 +2,7 @@ ARTIFACTS:
   1:
     id: A1
     name: PLAN.md
-    path: ".agentera/PLAN.md"
+    path: ".agentera/plan.yaml"
     description: >-
       Active plan with tasks, dependencies, and behavioral acceptance criteria.
       Planera writes this during the planning session. Realisera reads pending
@@ -23,7 +23,7 @@ ARTIFACTS:
   3:
     id: A3
     name: VISION.md
-    path: "VISION.md or .agentera/VISION.md (per DOCS.md)"
+    path: ".agentera/vision.yaml or mapped path per docs.yaml"
     description: >-
       Project direction and north star. Produced by visionera.
       Planera reads this during Orient to understand project direction and
@@ -33,7 +33,7 @@ ARTIFACTS:
   4:
     id: A4
     name: DECISIONS.md
-    path: ".agentera/DECISIONS.md"
+    path: ".agentera/decisions.yaml"
     description: >-
       Reasoning trail with confidence labels. Produced by resonera.
       Planera reads firm (DL1) entries only as hard constraints for planning.
@@ -51,7 +51,7 @@ ARTIFACTS:
   6:
     id: A6
     name: HEALTH.md
-    path: ".agentera/HEALTH.md"
+    path: ".agentera/health.yaml"
     description: >-
       Codebase health grades and trends. Produced by inspektera.
       Planera reads this to factor structural issues into the plan.
@@ -60,7 +60,7 @@ ARTIFACTS:
   7:
     id: A7
     name: PROGRESS.md
-    path: ".agentera/PROGRESS.md"
+    path: ".agentera/progress.yaml"
     description: >-
       Recent cycle history. Produced by realisera.
       Planera reads this to understand what was built recently.
@@ -78,7 +78,7 @@ ARTIFACTS:
   9:
     id: A9
     name: DOCS.md
-    path: ".agentera/DOCS.md"
+    path: ".agentera/docs.yaml"
     description: >-
       Artifact path resolution and documentation coverage. Produced by dokumentera.
       Planera reads this FIRST to resolve artifact paths and reads the

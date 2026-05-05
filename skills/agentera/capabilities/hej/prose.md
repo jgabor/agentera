@@ -36,7 +36,7 @@ No artifacts of its own. Reads all suite artifacts for the briefing:
 
 Before reading any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout:
 
-- Human-facing artifacts at the project root (Markdown): `TODO.md`, `CHANGELOG.md`, `DESIGN.md`, `VISION.md`
+- Human-facing artifacts at the project root (Markdown): `TODO.md`, `CHANGELOG.md`, `DESIGN.md`
 - Agent-facing artifacts in `.agentera/` (YAML): `progress.yaml`, `decisions.yaml`, `health.yaml`, `plan.yaml`, `docs.yaml`, `vision.yaml`, `session.yaml`, and per-objective `objective.yaml` / `experiments.yaml`
 
 The canonical names in the State Artifacts table below are identifiers, not literal paths. The resolved path for an agent-facing artifact is its `.yaml` file in `.agentera/` unless docs.yaml specifies otherwise.
@@ -141,7 +141,7 @@ Show where things stand.
    - Read in parallel. First 20 lines each. Skip absent ones.
    - Extract the most recent entry or summary.
    - If TODO.md, PLAN.md, OBJECTIVE.md, or DECISIONS.md hints at active work, keep reading.
-   - For optimera status, inspect `.agentera/optimera/<name>/` directories directly. Classify closed objectives first when the objective.yaml status line starts with `**Status**: closed`, including legacy prose such as `**Status**: closed (date)`. Exclude closed objectives before recency checks; if every objective is closed, report no active objective and do not route to optimera for completed work.
+   - For optimera status, inspect `.agentera/optimera/<name>/` directories directly. Classify closed objectives first when objective.yaml has `status: closed`; tolerate legacy prose such as `**Status**: closed (date)` only when reading migrated history. Exclude closed objectives before recency checks; if every objective is closed, report no active objective and do not route to optimera for completed work.
    - When multiple non-closed objectives exist, use EXPERIMENTS.md git recency only among those non-closed objectives. A closed objective with newer history must not outrank an older active objective.
    - Identify the first concrete open item or current plan task before routing.
    - Do not route from a heading or summary alone when an executable follow-up exists nearby.

@@ -29,8 +29,8 @@ class TestGetArtifactPaths:
     def test_builds_default_paths(self, session_stop):
         root = Path("/project")
         result = session_stop.get_artifact_paths(root, None)
-        assert ".agentera/HEALTH.md" in result
-        assert result[".agentera/HEALTH.md"] == "HEALTH.md"
+        assert ".agentera/health.yaml" in result
+        assert result[".agentera/health.yaml"] == "HEALTH.md"
 
     def test_uses_overrides_when_present(self, session_stop):
         root = Path("/project")
@@ -39,7 +39,7 @@ class TestGetArtifactPaths:
         assert "custom/HEALTH.md" in result
         assert result["custom/HEALTH.md"] == "HEALTH.md"
         # Default path should not be present for overridden artifact.
-        assert ".agentera/HEALTH.md" not in result
+        assert ".agentera/health.yaml" not in result
 
 
 # ---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ class TestDetectModifiedArtifacts:
         with patch.object(
             session_stop,
             "get_modified_files",
-            return_value=[".agentera/HEALTH.md", ".agentera/PLAN.md"],
+            return_value=[".agentera/health.yaml", ".agentera/plan.yaml"],
         ):
             result = session_stop.detect_modified_artifacts(tmp_path, None)
         assert "HEALTH.md" in result
@@ -108,7 +108,8 @@ class TestParseSessionEntries:
         entries = session_stop.parse_session_entries(SESSION_WITH_ENTRIES)
         assert len(entries) == 3
         assert entries[0]["kind"] == "full"
-        assert "HEALTH.md" in entries[0]["body"]
+        assert "HEALTH.md" in entries[0]["artifacts"]
+        assert entries[0]["summary"] == "Ran audit and planned next steps"
         assert entries[2]["kind"] == "oneline"
 
     def test_empty_session_returns_no_entries(self, session_stop):
@@ -126,23 +127,26 @@ class TestCompactEntryToOneline:
 
     def test_extracts_summary_line(self, session_stop):
         entry = {
-            "header": "2026-04-03 15:00",
-            "body": "Artifacts modified: HEALTH.md\nSummary: Ran audit",
+            "timestamp": "2026-04-03 15:00",
+            "artifacts": ["HEALTH.md"],
+            "summary": "Ran audit",
             "kind": "full",
         }
         result = session_stop.compact_entry_to_oneline(entry)
         assert result["kind"] == "oneline"
-        assert "Ran audit" in result["header"]
-        assert result["body"] == ""
+        assert result["timestamp"] == "2026-04-03 15:00"
+        assert result["summary"] == "Ran audit"
+        assert result["artifacts"] == []
 
-    def test_falls_back_to_first_line_without_summary(self, session_stop):
+    def test_handles_missing_summary(self, session_stop):
         entry = {
-            "header": "2026-04-03 15:00",
-            "body": "Some other content\nMore lines",
+            "timestamp": "2026-04-03 15:00",
+            "artifacts": ["HEALTH.md"],
+            "summary": "",
             "kind": "full",
         }
         result = session_stop.compact_entry_to_oneline(entry)
-        assert "Some other content" in result["header"]
+        assert result["summary"] == ""
 
 
 # ---------------------------------------------------------------------------
@@ -155,7 +159,7 @@ class TestCompactEntries:
 
     def test_keeps_ten_full_entries(self, session_stop):
         entries = [
-            {"header": f"2026-04-{i:02d} 10:00", "body": f"Summary: Entry {i}", "kind": "full"}
+            {"timestamp": f"2026-04-{i:02d} 10:00", "artifacts": ["PLAN.md"], "summary": f"Entry {i}", "kind": "full"}
             for i in range(1, 13)
         ]
         result = session_stop.compact_entries(entries)
@@ -166,7 +170,7 @@ class TestCompactEntries:
 
     def test_drops_entries_beyond_total_limit(self, session_stop):
         entries = [
-            {"header": f"2026-04-{i:02d} 10:00", "body": f"Summary: Entry {i}", "kind": "full"}
+            {"timestamp": f"2026-04-{i:02d} 10:00", "artifacts": ["PLAN.md"], "summary": f"Entry {i}", "kind": "full"}
             for i in range(1, 60)
         ]
         result = session_stop.compact_entries(entries)
@@ -174,33 +178,29 @@ class TestCompactEntries:
 
 
 # ---------------------------------------------------------------------------
-# format_session_md
+# format_session_yaml
 # ---------------------------------------------------------------------------
 
 
-class TestFormatSessionMd:
+class TestFormatSessionYaml:
     """Simple: string formatting. 1 pass + 1 fail."""
 
     def test_formats_full_entry(self, session_stop):
         entries = [
-            {"header": "2026-04-03 15:00", "body": "Artifacts modified: HEALTH.md\nSummary: Ran audit", "kind": "full"},
+            {"timestamp": "2026-04-03 15:00", "artifacts": ["HEALTH.md"], "summary": "Ran audit", "kind": "full"},
         ]
-        result = session_stop.format_session_md(entries)
-        assert result.startswith("# Sessions\n")
-        assert "## 2026-04-03 15:00" in result
-        assert "Artifacts modified: HEALTH.md" in result
+        result = session_stop.format_session_yaml(entries)
+        assert result.startswith("bookmarks:\n")
+        assert "timestamp: 2026-04-03 15:00" in result
+        assert "- HEALTH.md" in result
 
     def test_formats_oneline_entry(self, session_stop):
         entries = [
-            {"header": "2026-04-03 15:00 (Ran audit)", "body": "", "kind": "oneline"},
+            {"timestamp": "2026-04-03 15:00", "summary": "Ran audit", "kind": "oneline"},
         ]
-        result = session_stop.format_session_md(entries)
-        assert "## 2026-04-03 15:00 (Ran audit)" in result
-        # No body content between this entry and end.
-        lines = result.strip().splitlines()
-        heading_idx = next(i for i, l in enumerate(lines) if "2026-04-03" in l)
-        # Next line after heading should be empty (entry separator).
-        assert heading_idx == len(lines) - 1 or lines[heading_idx + 1].strip() == ""
+        result = session_stop.format_session_yaml(entries)
+        assert "archive:" in result
+        assert "summary: Ran audit" in result
 
 
 # ---------------------------------------------------------------------------
@@ -214,14 +214,14 @@ class TestBuildBookmark:
     def test_builds_bookmark_with_artifacts(self, session_stop):
         ts = datetime(2026, 4, 3, 15, 0, tzinfo=timezone.utc)
         result = session_stop.build_bookmark(["HEALTH.md", "PLAN.md"], timestamp=ts)
-        assert result["header"] == "2026-04-03 15:00"
-        assert "HEALTH.md" in result["body"]
-        assert "PLAN.md" in result["body"]
+        assert result["timestamp"] == "2026-04-03 15:00"
+        assert "HEALTH.md" in result["artifacts"]
+        assert "PLAN.md" in result["artifacts"]
         assert result["kind"] == "full"
 
     def test_bookmark_includes_artifact_count(self, session_stop):
         result = session_stop.build_bookmark(["HEALTH.md"])
-        assert "1 artifact(s)" in result["body"]
+        assert "1 artifact(s)" in result["summary"]
 
 
 # ---------------------------------------------------------------------------
@@ -242,11 +242,11 @@ class TestWriteSessionBookmark:
         )
         assert written is True
 
-        session_path = agentera_dir / "SESSION.md"
+        session_path = agentera_dir / "session.yaml"
         assert session_path.exists()
         content = session_path.read_text(encoding="utf-8")
-        assert "# Sessions" in content
-        assert "## 2026-04-03 15:00" in content
+        assert "bookmarks:" in content
+        assert "timestamp: 2026-04-03 15:00" in content
         assert "HEALTH.md" in content
 
     def test_skips_write_when_no_artifacts(self, session_stop, tmp_path):
@@ -254,43 +254,49 @@ class TestWriteSessionBookmark:
             tmp_path, None, [], timestamp=None,
         )
         assert written is False
-        session_path = tmp_path / ".agentera" / "SESSION.md"
+        session_path = tmp_path / ".agentera" / "session.yaml"
         assert not session_path.exists()
 
 
 class TestWriteSessionBookmarkWithCustomPaths:
-    """Verifies DOCS.md artifact mapping is respected for SESSION.md."""
+    """Verifies docs.yaml artifact mapping is respected for session.yaml."""
 
     def test_respects_custom_session_path(self, session_stop, tmp_path):
         custom_dir = tmp_path / "custom"
         custom_dir.mkdir()
 
-        overrides = {"SESSION.md": "custom/SESSION.md"}
+        overrides = {"SESSION.md": "custom/session.yaml"}
         ts = datetime(2026, 4, 3, 15, 0, tzinfo=timezone.utc)
         written = session_stop.write_session_bookmark(
             tmp_path, overrides, ["HEALTH.md"], timestamp=ts,
         )
         assert written is True
-        assert (custom_dir / "SESSION.md").exists()
+        assert (custom_dir / "session.yaml").exists()
         # Default path should NOT exist.
-        assert not (tmp_path / ".agentera" / "SESSION.md").exists()
+        assert not (tmp_path / ".agentera" / "session.yaml").exists()
 
 
 class TestWriteSessionBookmarkCompaction:
-    """Verifies compaction when appending to existing SESSION.md."""
+    """Verifies compaction when appending to existing session.yaml."""
 
     def test_compacts_old_entries(self, session_stop, tmp_path):
         agentera_dir = tmp_path / ".agentera"
         agentera_dir.mkdir()
 
         # Pre-populate with 11 full entries (one more than MAX_FULL_ENTRIES).
-        lines = ["# Sessions", ""]
-        for i in range(11):
-            lines.append(f"## 2026-04-{i + 1:02d} 10:00")
-            lines.append("")
-            lines.append(f"Artifacts modified: PLAN.md\nSummary: Entry {i + 1}")
-            lines.append("")
-        (agentera_dir / "SESSION.md").write_text("\n".join(lines), encoding="utf-8")
+        entries = [
+            {
+                "timestamp": f"2026-04-{i + 1:02d} 10:00",
+                "artifacts": ["PLAN.md"],
+                "summary": f"Entry {i + 1}",
+                "kind": "full",
+            }
+            for i in range(11)
+        ]
+        (agentera_dir / "session.yaml").write_text(
+            session_stop.format_session_yaml(entries),
+            encoding="utf-8",
+        )
 
         # Write a new bookmark (total becomes 12).
         ts = datetime(2026, 4, 15, 15, 0, tzinfo=timezone.utc)
@@ -298,7 +304,7 @@ class TestWriteSessionBookmarkCompaction:
             tmp_path, None, ["HEALTH.md"], timestamp=ts,
         )
 
-        content = (agentera_dir / "SESSION.md").read_text(encoding="utf-8")
+        content = (agentera_dir / "session.yaml").read_text(encoding="utf-8")
         entries = session_stop.parse_session_entries(content)
 
         full_count = sum(1 for e in entries if e["kind"] == "full")
@@ -317,7 +323,7 @@ class TestEntryPoint:
     """Smoke test: invoke the script as a subprocess with realistic stdin."""
 
     def test_with_modified_artifacts_writes_session(self, tmp_path):
-        """Script with modified artifacts exits 0 and creates SESSION.md."""
+        """Script with modified artifacts exits 0 and creates session.yaml."""
         agentera_dir = tmp_path / ".agentera"
         agentera_dir.mkdir()
 
@@ -348,7 +354,7 @@ class TestEntryPoint:
         )
 
         # Create and commit a baseline.
-        (agentera_dir / "HEALTH.md").write_text("# Health\n", encoding="utf-8")
+        (agentera_dir / "health.yaml").write_text("audits: []\n", encoding="utf-8")
         subprocess.run(
             ["git", "add", "."],
             cwd=str(tmp_path),
@@ -363,8 +369,8 @@ class TestEntryPoint:
         )
 
         # Modify the artifact (uncommitted change).
-        (agentera_dir / "HEALTH.md").write_text(
-            "# Health\n\n**Grades**: [A]\n",
+        (agentera_dir / "health.yaml").write_text(
+            "audits:\n  - number: 1\n    grades:\n      architecture: A\n",
             encoding="utf-8",
         )
 
@@ -383,13 +389,13 @@ class TestEntryPoint:
             timeout=10,
         )
         assert result.returncode == 0
-        session_path = agentera_dir / "SESSION.md"
+        session_path = agentera_dir / "session.yaml"
         assert session_path.exists()
         content = session_path.read_text(encoding="utf-8")
         assert "HEALTH.md" in content
 
     def test_without_modified_artifacts_exits_cleanly(self, tmp_path):
-        """Script with no modified artifacts exits 0, no SESSION.md created."""
+        """Script with no modified artifacts exits 0, no session.yaml created."""
         # Initialize a git repo with no changes.
         subprocess.run(
             ["git", "init"],
@@ -445,5 +451,5 @@ class TestEntryPoint:
             timeout=10,
         )
         assert result.returncode == 0
-        # SESSION.md should NOT be created.
-        assert not (tmp_path / ".agentera" / "SESSION.md").exists()
+        # session.yaml should NOT be created.
+        assert not (tmp_path / ".agentera" / "session.yaml").exists()

@@ -1,4 +1,4 @@
-last_audit: 2026-04-30 (installation reliability checkpoint)
+last_audit: 2026-05-05 (v2 reliability repair checkpoint)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -31,31 +31,31 @@ mapping:
   producers:
   - realisera
 - artifact: DECISIONS.md
-  path: .agentera/DECISIONS.md
+  path: .agentera/decisions.yaml
   producers:
   - resonera
 - artifact: PLAN.md
-  path: .agentera/PLAN.md
+  path: .agentera/plan.yaml
   producers:
   - planera
 - artifact: PROGRESS.md
-  path: .agentera/PROGRESS.md
+  path: .agentera/progress.yaml
   producers:
   - realisera
 - artifact: HEALTH.md
-  path: .agentera/HEALTH.md
+  path: .agentera/health.yaml
   producers:
   - inspektera
 - artifact: DOCS.md
-  path: .agentera/DOCS.md
+  path: .agentera/docs.yaml
   producers:
   - dokumentera
 - artifact: DESIGN.md
-  path: .agentera/DESIGN.md
+  path: DESIGN.md
   producers:
   - visualisera
 - artifact: SESSION.md
-  path: .agentera/SESSION.md
+  path: .agentera/session.yaml
   producers:
   - session stop hook
 - artifact: PROFILE.md
@@ -76,16 +76,16 @@ index:
   last_updated: '2026-04-27'
   status: current
 - document: Decisions
-  path: .agentera/DECISIONS.md
-  last_updated: '2026-04-28'
+  path: .agentera/decisions.yaml
+  last_updated: '2026-05-05'
   status: current
 - document: Vision
-  path: VISION.md
-  last_updated: '2026-03-31'
+  path: .agentera/vision.yaml
+  last_updated: '2026-05-04'
   status: current
 - document: Progress
-  path: .agentera/PROGRESS.md
-  last_updated: '2026-04-30'
+  path: .agentera/progress.yaml
+  last_updated: '2026-05-05'
   status: current
 - document: TODO
   path: TODO.md
@@ -96,20 +96,20 @@ index:
   last_updated: '2026-04-30'
   status: current
 - document: Health
-  path: .agentera/HEALTH.md
-  last_updated: '2026-04-30'
+  path: .agentera/health.yaml
+  last_updated: '2026-05-05'
   status: current
 - document: Plan archive
   path: .agentera/archive/PLAN-2026-04-30-installation-reliability-self-healing.md
   last_updated: '2026-04-30'
   status: current
 - document: DOCS
-  path: .agentera/DOCS.md
-  last_updated: '2026-04-30'
+  path: .agentera/docs.yaml
+  last_updated: '2026-05-05'
   status: current
 - document: Design
-  path: .agentera/DESIGN.md
-  last_updated: '2026-04-19'
+  path: DESIGN.md
+  last_updated: '2026-05-05'
   status: current
 - document: Ecosystem spec
   path: SPEC.md

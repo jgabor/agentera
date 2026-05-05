@@ -67,15 +67,15 @@ Before reading or writing any artifact, check if `.agentera/docs.yaml` exists wi
 Query and validate artifacts via the CLI:
 
 ```bash
-python3 scripts/agentera --show-schema <artifact>
-python3 scripts/agentera --validate <artifact> <path>
+python3 scripts/agentera query --list-artifacts
+python3 scripts/agentera query decisions --topic <topic>
 ```
 
 ## Key conventions
 
 - `skills/agentera/SKILL.md` is the single entry point; capabilities live under `capabilities/`
 - Shared primitives are defined in `protocol.yaml`, not per-skill specs
-- Skills never push to remote repos or modify VISION.md/OBJECTIVE.md during execution cycles
+- Skills never push to remote repos or modify `.agentera/vision.yaml` or objective state during execution cycles
 - Conventional commits: feat/fix/docs/refactor/chore/test
 - Visual identity: glyphs and semantic tokens defined in `protocol.yaml`
 - Versioning convention in DOCS.md: `version_files` lists what to bump, `semver_policy` maps commit types to bump levels

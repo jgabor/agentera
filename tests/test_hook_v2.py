@@ -212,7 +212,7 @@ class TestValidateYamlDecisions:
                     "question": "Which format?", "context": "Need portability",
                     "choice": "YAML", "reasoning": "Widely supported",
                     "confidence": "firm",
-                    "alternatives": [{"name": "JSON", "status": "rejected"}],
+                    "alternatives": [{"name": "YAML", "status": "chosen"}],
                 }
             ]
         })
@@ -235,6 +235,27 @@ class TestValidateYamlDecisions:
         })
         violations = hook._validate_yaml(content, schema, "decisions")
         assert any("not in ascending order" in v for v in violations)
+
+    def test_blank_decision_entry_fails_required_fields(self, hook):
+        schema = _load_schema("decisions")
+        content = yaml_dump({
+            "decisions": [
+                {
+                    "number": 41,
+                    "date": "2026-05-05",
+                    "question": "",
+                    "context": "",
+                    "choice": "",
+                    "reasoning": "",
+                    "confidence": "",
+                    "alternatives": [],
+                }
+            ]
+        })
+        violations = hook._validate_yaml(content, schema, "decisions")
+        assert any("empty required field 'decisions[0].question'" in v for v in violations)
+        assert any("empty required field 'decisions[0].context'" in v for v in violations)
+        assert any("decisions[0].alternatives" in v for v in violations)
 
 
 class TestValidateYamlVision:

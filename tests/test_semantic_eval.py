@@ -22,7 +22,7 @@ def _fixture_text(
     output: str = "route /realisera to Task 2",
     required: str = "Task 2",
     forbidden: str = "/optimera",
-    artifact_path: str = ".agentera/PLAN.md",
+    artifact_path: str = ".agentera/plan.yaml",
     artifact_contains: str = "Task 2",
 ) -> str:
     return textwrap.dedent(f"""\
@@ -33,7 +33,7 @@ def _fixture_text(
 
         ## Seeded Project State
         ```json
-        {{"files": [{{"path": ".agentera/PLAN.md", "content": "### Task 2: Build Offline Semantic Eval Command"}}]}}
+        {{"files": [{{"path": ".agentera/plan.yaml", "content": "### Task 2: Build Offline Semantic Eval Command"}}]}}
         ```
 
         ## Captured Output
@@ -113,20 +113,20 @@ class TestSeededArtifactAssertion:
         assert facts["required_artifacts[0]"] == {
             "fact": "required_artifacts[0]",
             "status": "pass",
-            "detail": "seeded artifact '.agentera/PLAN.md' matched",
+            "detail": "seeded artifact '.agentera/plan.yaml' matched",
         }
 
     def test_fail_artifact_oracle_reports_wrong_seeded_path(self, semantic_eval, semantic_fixtures):
         facts = _fact_map(
             semantic_eval,
             semantic_fixtures,
-            _fixture_text(artifact_path=".agentera/PROGRESS.md"),
+            _fixture_text(artifact_path=".agentera/progress.yaml"),
         )
 
         assert facts["required_artifacts[0]"] == {
             "fact": "required_artifacts[0]",
             "status": "fail",
-            "detail": "seeded artifact '.agentera/PROGRESS.md' is missing",
+            "detail": "seeded artifact '.agentera/progress.yaml' is missing",
         }
 
 

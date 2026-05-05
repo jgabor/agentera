@@ -18,7 +18,7 @@ def _fixture(
     expected_facts: dict | None = None,
 ) -> str:
     if seeded_state is None:
-        seeded_state = {"files": [{"path": ".agentera/PLAN.md", "content": "Task 1 pending"}]}
+        seeded_state = {"files": [{"path": ".agentera/plan.yaml", "content": "Task 1 pending"}]}
     if expected_facts is None:
         expected_facts = {
             "required_output": ["/realisera", "Task 1"],
@@ -63,7 +63,7 @@ class TestSeededProjectStateSection:
     def test_pass_seeded_state_files_are_unambiguous(self, semantic_fixtures):
         fixture, errors = semantic_fixtures.validate_fixture_text(_fixture())
         assert errors == []
-        assert fixture.seeded_state["files"][0]["path"] == ".agentera/PLAN.md"
+        assert fixture.seeded_state["files"][0]["path"] == ".agentera/plan.yaml"
 
     def test_fail_malformed_seeded_state_names_section(self, semantic_fixtures):
         text = _fixture(seeded_state={"files": [{"path": "TODO.md"}]})

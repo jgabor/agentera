@@ -20,44 +20,42 @@ One file in `.agentera/`, bootstrapped if absent.
 
 | File | Purpose | Bootstrap |
 |------|---------|-----------|
-| `HEALTH.md` | Codebase health assessment. Findings, dimension grades, trajectory. | `# Health\n\n` then the first audit entry. |
+| `HEALTH.md` | Canonical health artifact, stored as `.agentera/health.yaml` unless mapped otherwise. Findings, dimension grades, trajectory. | First audit entry in YAML form. |
 
-Template in `references/templates/` (at v2 skill location `skills/agentera/references/templates/`). Use as starting structure, adapt to the project.
+Use `skills/agentera/schemas/artifacts/health.yaml` and existing health artifacts as the structure.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, `.agentera/decisions.yaml`, TODO.md, `.agentera/progress.yaml`).
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, `.agentera/decisions.yaml`, TODO.md, `.agentera/progress.yaml`).
 
 ### Contract
 
 Before starting, read `references/contract.md` (at v2 skill location `skills/agentera/references/contract.md`) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
-### HEALTH.md
+### health.yaml
 
 Open with your read on the codebase before the structured data: what's improving, what's sliding, what surprised you. 1-2 sentences of interpretation, then the grades and findings back it up. The colleague says what they think, then shows the evidence.
 
-```markdown
-## Audit N · YYYY-MM-DD
-
-**Dimensions**: [which dimensions were assessed]
-**Findings**: X critical, Y warnings, Z info
-**Overall**: ⮉ improving | stable | ⮋ degrading vs prior audit
-
-### [Dimension Name]: [A-F grade]
-
-#### ⇶ [Finding title], critical (confidence: N/100)
-#### ⇉ [Finding title], warning (confidence: N/100)
-#### ⇢ [Finding title], info (confidence: N/100)
-- **Location**: `file:line` (or module/package)
-- **Evidence**: [what was observed: quote code, show pattern]
-- **Impact**: [why this matters]
-- **Suggested action**: [specific fix or investigation]
-
-### Trends
-[Comparison with prior audit: what improved, what degraded, what's new]
-
-### Patterns Observed
-[De facto architecture patterns extracted from the codebase, the "what IS"]
+```yaml
+audits:
+  - number: 1
+    date: YYYY-MM-DD
+    dimensions: [architecture_alignment, test_health]
+    findings_summary: "X critical, Y warnings, Z info"
+    overall: stable
+    dimension_grades:
+      - dimension: architecture_alignment
+        grade: B
+    findings:
+      - severity: degraded
+        title: Finding title
+        confidence: 80
+        location: file:line
+        evidence: What was observed.
+        impact: Why this matters.
+        suggested_action: Specific fix or investigation.
+    trends: What improved, degraded, or changed.
+    patterns_observed: De facto architecture patterns.
 ```
 
 ---
@@ -75,14 +73,8 @@ Read HEALTH.md, TODO.md, and PROGRESS.md in parallel. These reads are independen
 4. **TODO.md**: known problems (if exists). Don't re-report unless worsened.
 5. **PROGRESS.md**: last 3 cycle entries only (recent changes = higher-priority audit targets)
 5b. **Change magnitude**: if PROGRESS.md has commit hashes from cycles since the last HEALTH.md audit date, run `git log --stat` on those commits to estimate total change volume. If no PROGRESS.md or no commit hashes, skip; default depth applies.
-5c. **Plan context** (for artifact freshness): if PLAN.md exists, read its metadata comment for the `Created` date and scan task statuses for dispatched capabilities. This provides the plan-relative staleness baseline for the Artifact freshness dimension. If PLAN.md is absent or has no `Created` date, note that plan context is unavailable; the fallback heuristic will apply.
-6. **Decision profile**: run from the profilera skill directory:
-
-   ```bash
-   python3 scripts/effective_profile.py <!-- platform: profile-path -->
-   ```
-
-   Calibrates what "healthy" means for this user per contract profile consumption conventions. If missing, proceed without persona grounding.
+5c. **Plan context** (for artifact freshness): if PLAN.md exists, read its `header.created` value and scan task statuses for dispatched capabilities. This provides the plan-relative staleness baseline for the Artifact freshness dimension. If PLAN.md is absent or has no created date, note that plan context is unavailable; the fallback heuristic will apply.
+6. **Decision profile**: read `$PROFILERA_PROFILE_DIR/PROFILE.md` directly when it exists. It calibrates what "healthy" means for this user per contract profile consumption conventions. If missing, proceed without persona grounding.
 7. **Project discovery**: map directory structure, read dependency manifests, README, CLAUDE.md, AGENTS.md, identify language/stack/build commands, `git log --oneline -20`
 
 Before proceeding: in your response, list the key structural facts (module boundaries, dependency patterns, test coverage gaps) you observed. These survive context compaction.
@@ -250,7 +242,7 @@ Only run this dimension if DOCS.md exists and contains a `versioning` convention
 
 Evaluates whether state artifacts are current relative to plan activity or recent development. Uses the staleness convention from contract.
 
-**With plan context** (PLAN.md has a `Created` date and task execution history):
+**With plan context** (PLAN.md has a created date and task execution history):
 
 - Read the plan's `Created` date from its HTML comment metadata
 - Identify which capabilities were dispatched during the plan by scanning task entries and PROGRESS.md cycle logs
@@ -260,7 +252,7 @@ Evaluates whether state artifacts are current relative to plan activity or recen
 - Severity: warning (SF2, confidence 70+). Plan-relative staleness carries causal evidence.
 - Artifacts that a capability reads but does not produce are not staleness candidates
 
-**Without plan context** (no PLAN.md, or PLAN.md has no `Created` date):
+**Without plan context** (no PLAN.md, or PLAN.md has no created date):
 
 - Fall back to PROGRESS.md recency: an artifact is potentially stale if it was not modified since the most recent PROGRESS.md cycle entry date
 - If PROGRESS.md has no entries (fresh project), no staleness check applies
@@ -334,11 +326,11 @@ Assess each dimension in your response. Write ONLY grade, trajectory marker, and
 
 Output constraint per contract token budgets. Letter grade + ≤3 sentences justification per dimension.
 
-When updating existing HEALTH.md entries (e.g., updating Patterns Observed), use the Edit tool on the specific section rather than rewriting the file. Append new audit entries.
+When updating existing HEALTH.md entries (e.g., updating patterns observed), edit the specific YAML entry rather than rewriting unrelated history. Append new audit entries.
 
-Write the audit results to `HEALTH.md` (append new audit, keep prior audits for trajectory history) and present to the user.
+Write the audit results to `HEALTH.md` using its resolved YAML path (append new audit, keep prior audits for trajectory history) and present to the user.
 
-After writing a new audit entry to HEALTH.md, compact older audits via the script. Run: `python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py health <path-to-HEALTH.md>`.
+After writing a new audit entry to HEALTH.md, apply the schema COMPACTION rules before writing if thresholds are exceeded: keep 10 full audits, keep up to 40 one-line archive entries, and drop beyond 50 total.
 
 Artifact writing follows contract Artifact Writing Conventions: banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 

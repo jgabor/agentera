@@ -9,7 +9,20 @@
       "description": "Compound agent orchestration suite — 12 capabilities in one bundled skill",
       "author": { "name": "jgabor" },
       "source": "./skills/agentera",
-      "skills": "./"
+      "skills": "./",
+      "agentera": {
+        "packageShape": "suite-bundle",
+        "installRoot": "..",
+        "sharedPaths": [
+          "skills",
+          "scripts",
+          "hooks",
+          "registry.json",
+          "plugin.json",
+          "README.md"
+        ],
+        "singleSkillInstall": "Single-skill installs keep core SKILL.md workflow behavior; suite tools are bundle-only enhancements."
+      }
     }
   ]
 }

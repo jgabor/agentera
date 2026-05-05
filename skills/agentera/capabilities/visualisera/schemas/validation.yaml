@@ -24,15 +24,15 @@ VALIDATION:
       - "Tensions surfaced when detected"
   3:
     id: V3
-    rule: validation_script_required
+    rule: structural_validation_required
     description: >-
-      After writing DESIGN.md, the validation script MUST be run.
-      Run `scripts/validate_design.py` and fix any errors before
-      presenting the result. This applies to Create, Refine, and
-      Replace modes.
+      After writing DESIGN.md, structural validation MUST be performed.
+      Inspect required sections, token fields, and references; fix any
+      errors before presenting the result. This applies to Create,
+      Refine, and Replace modes.
     severity: critical
     checks:
-      - "validate_design.py ran after write"
+      - "DESIGN.md structure checked after write"
       - "All validation errors fixed"
   4:
     id: V4

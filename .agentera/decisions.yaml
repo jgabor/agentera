@@ -324,13 +324,30 @@ decisions:
   feeds_into: ROADMAP.md
 - number: 41
   date: '2026-05-04'
-  question: ''
-  context: ''
-  alternatives: []
-  choice: ''
-  reasoning: ''
-  confidence: provisional
-  feeds_into: ''
+  question: What did the Agentera 2.0 token benchmark prove against the 40% reduction target?
+  context: ROADMAP.md set an aspirational 40%+ token reduction target for Agentera 2.0.
+    The benchmark compared the v1 dispatch payload (all 12 SKILL.md files plus SPEC.md)
+    against the v2 payload (master SKILL.md, protocol.yaml, 12 prose.md files, and 48
+    schema YAML files).
+  alternatives:
+  - name: Treat 40% reduction as a hard v2.0 release gate
+    status: rejected
+    description: The measured result missed the target, but Decision 39's primary
+      value was structural consolidation through schemas, query CLI, and one entry point.
+  - name: Record the measured delta and carry token reduction as follow-up work
+    status: chosen
+    description: Preserve the benchmark evidence honestly, mark the ROADMAP target
+      missed, and avoid turning the v2.0 release claim into a false pass.
+  choice: Record the benchmark as complete but target-missed. v1 measured 352,213
+    bytes (~88,053 tokens). v2 measured 313,356 bytes (~78,339 tokens). Delta was
+    -38,857 bytes, or -11.0%, about 9,714 estimated tokens saved.
+  reasoning: The 12 v2 prose.md files remain the dominant payload at 210,827 bytes,
+    while 48 schema files add 83,444 bytes that did not exist in v1. The benchmark
+    proves a real but modest token reduction. It does not prove the 40% target.
+    The structural payoff is machine-readable schemas, a query CLI surface, and a
+    single dispatch point rather than a large token win.
+  confidence: firm
+  feeds_into: ROADMAP.md, gap-analysis-2026-05-05.md, future token-reduction work
 - number: 42
   date: '2026-05-04'
   question: How should a user invoke any of the 12 capabilities through the single `/agentera` entry point, and how does the

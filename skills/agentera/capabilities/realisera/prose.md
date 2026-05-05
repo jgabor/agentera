@@ -16,20 +16,20 @@ Glyph: **⧉** (protocol ref: SG2). Used in the mandatory exit marker.
 
 ## State artifacts
 
-Four files, bootstrapped if absent. TODO.md and CHANGELOG.md at project root; VISION.md and PROGRESS.md in `.agentera/`.
+Four artifacts, bootstrapped if absent. TODO.md and CHANGELOG.md stay at project root; canonical VISION.md and PROGRESS.md are stored as `.agentera/vision.yaml` and `.agentera/progress.yaml` unless mapped otherwise.
 
 | File | Purpose | Bootstrap |
 |------|---------|-----------|
-| `VISION.md` | North star. Direction, principles, aspirations. | Via inline brainstorm session (see below). |
+| `VISION.md` | Canonical vision artifact. North star, direction, principles, aspirations. | Via inline brainstorm session (see below), written to `.agentera/vision.yaml` by default. |
 | `TODO.md` | Tech debt, bugs, discrepancies. | `# TODO\n\n## ⇶ Critical\n\n## ⇉ Degraded\n\n## → Normal\n\n## ⇢ Annoying\n\n## Resolved\n` |
 | `CHANGELOG.md` | Public change history. | `# Changelog\n\n## [Unreleased]\n` |
-| `PROGRESS.md` | Operational cycle log. | `# Progress\n\n` then the first cycle entry. |
+| `PROGRESS.md` | Canonical progress artifact. Operational cycle log. | First cycle entry in `.agentera/progress.yaml` by default. |
 
-Templates in `references/templates/` (at the v2 skill location `skills/agentera/references/templates/`). Use as starting structure, adapt to the project.
+Use `skills/agentera/schemas/artifacts/vision.yaml` and `skills/agentera/schemas/artifacts/progress.yaml` for the agent-facing artifact structure.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md, TODO.md, .agentera/progress.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: VISION.md, TODO.md, and CHANGELOG.md at the project root; all other artifacts in `.agentera/`.
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (VISION.md, TODO.md, .agentera/progress.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`.
 
 ### Contract values
 
@@ -37,46 +37,51 @@ Contract values are inlined where referenced. Visual tokens from protocol: sever
 
 `references/contract.md` (at the v2 skill location `skills/agentera/references/contract.md`) remains available as a full-spec reference for ambiguous cases or cross-checking.
 
-### VISION.md
+### vision.yaml
 
 Evergreen. Created via brainstorm on first run, refined only when the user explicitly asks. Outside those two cases, the agent reads it but never writes it. A constitution, not a backlog.
 
-```markdown
-# [Project Name]
-
-## North Star
-[The dream. What this software makes possible, not just what it does.]
-
-## Who It's For
-[Concrete personas. Not "developers" but specific people with specific days,
-specific frustrations, specific workflows.]
-
-## Principles
-- [Core principles that guide every decision]
-- [What to optimize for, what to resist]
-
-## Direction
-[Where this project is heading. Aspirational, not prescriptive.]
-
-## Identity
-[What this project IS as an entity: personality, voice, emotional register, naming.]
+```yaml
+project_name: Project Name
+north_star: The dream. What this software makes possible.
+personas:
+  - name: Specific persona
+    description: Their day, frustrations, and workflow.
+principles:
+  - name: Principle name
+    description: What it means and what it resists.
+direction: Where this project is heading.
+identity:
+  personality: Product personality.
+  voice: Communication style.
+  emotional_register: How it should feel to use.
+  naming: Naming conventions.
+tension: The hardest strategic tension.
 ```
 
-### PROGRESS.md
+### progress.yaml
 
-```markdown
-■ ## Cycle N · YYYY-MM-DD HH:MM
-
-**What**: one-line summary of what shipped
-**Commit**: <hash> <message>
-**Inspiration**: what external source informed the approach (if any)
-**Discovered**: issues or ideas found (also logged in TODO.md)
-**Verified**: observed output from running the primary entrypoint against real project state, OR `N/A: <tag>` from the allowlist, OR a free-form rationale of at least 8 words
-**Next**: what seems most valuable to work on next
-**Context**: intent · constraints · unknowns · scope
+```yaml
+cycles:
+  - number: N
+    timestamp: YYYY-MM-DD HH:MM
+    type: feat
+    phase: build
+    what: One-line summary of what shipped.
+    commit: <hash> <message>
+    inspiration: External source, if any.
+    discovered: Issues or ideas found.
+    verified: Observed output, N/A tag, or rationale.
+    next: Most valuable next work.
+    context:
+      intent: Why this cycle happened.
+      constraints: What had to stay true.
+      unknowns: What remains uncertain.
+      scope: What changed.
+archive: []
 ```
 
-The `**Verified**` field is mandatory for every cycle entry.
+The `verified` field is mandatory for every cycle entry.
 
 ### CHANGELOG.md
 
@@ -84,11 +89,11 @@ Public-facing change history. Keep-a-changelog format. Realisera appends entries
 
 ---
 
-## Brainstorm: bootstrapping or refining VISION.md
+## Brainstorm: bootstrapping or refining the vision artifact
 
 This runs in two situations:
 
-1. **VISION.md doesn't exist**: the first time realisera runs on a project
+1. **The vision artifact doesn't exist**: the first time realisera runs on a project
 2. **User explicitly asks** to refine the vision
 
 In all other cases, skip straight to the cycle.
@@ -99,7 +104,7 @@ The sharp colleague, here to build. Brief, focused conversation. One question at
 2. **Find the people**: "Who reaches for this? Describe a person: their day, their frustrations."
 3. **Find the principles**: "What principles guide every decision?" If a decision profile exists, propose principles from it.
 4. **Set the direction**: "Where is this heading? Not features, but capabilities."
-5. **Write VISION.md**: synthesize into an aspirational north star. Present for approval.
+5. **Write the vision artifact**: synthesize into an aspirational north star. Present for approval.
 
 Artifact writing follows contract Section 24 conventions: banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
@@ -116,26 +121,18 @@ Steps: orient, select, research, plan, dispatch, verify, commit, audit, log.
 
 Read VISION.md, PROGRESS.md, TODO.md, and HEALTH.md in parallel. These reads are independent; issue all in a single response.
 
-If PROGRESS.md has 3+ cycles, run the analytics script first:
+If `.agentera/progress.yaml` has 3+ cycles, query recent state first:
 
 ```bash
-python3 scripts/analyze_progress.py --progress PROGRESS.md --pretty
+python3 ${AGENTERA_HOME:-.}/scripts/agentera query progress
 ```
 
-(Run from the skill location `scripts/`.)
-
 1. **PROGRESS.md**: what happened last cycle, what was suggested next
-2. **VISION.md**: read `## Principles` and `## Direction` sections
+2. **VISION.md**: read `principles` and `direction` fields
 3. **TODO.md**: what's broken or degraded
 4. **HEALTH.md**: read `critical` and `degraded` findings only (if exists)
 5. **DECISIONS.md**: read all entries (if exists). `firm` (DL1) entries are hard constraints. `provisional` (DL2) entries are strong defaults. Note `exploratory` (DL3) entries.
-6. **Decision profile**: run from the profilera v1 skill directory:
-
-   ```bash
-   python3 scripts/effective_profile.py
-   ```
-
-   Read full profile from `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`). If missing, proceed without persona grounding but flag it.
+6. **Decision profile**: read `$PROFILERA_PROFILE_DIR/PROFILE.md` directly when it exists (default: `$XDG_DATA_HOME/agentera/PROFILE.md`). If missing, proceed without persona grounding but flag it.
 
 7. **Project discovery** (cycle 1 or when unfamiliar):
    - Map the directory structure
@@ -261,17 +258,13 @@ Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 ### Step 9: Log
 
-**Dual-write**: realisera maintains PROGRESS.md and CHANGELOG.md.
+**Dual-write**: realisera maintains the resolved PROGRESS.md YAML artifact and root CHANGELOG.md.
 
 - **TODO.md**: add newly discovered issues, mark resolved ones. Classify by severity (SI1-SI4).
-- **PROGRESS.md**: append the cycle entry. The `**Verified**` field is mandatory.
+- **PROGRESS.md**: append the cycle entry. The `verified` field is mandatory.
 - **CHANGELOG.md**: append a one-line entry under `## [Unreleased]`.
 
-After appending to PROGRESS.md, compact older entries:
-
-```bash
-python3 ${AGENTERA_HOME:-$CLAUDE_PLUGIN_ROOT}/scripts/compact_artifact.py progress <path-to-PROGRESS.md>
-```
+After appending to PROGRESS.md, apply the schema COMPACTION rules before writing if thresholds are exceeded: keep 10 full entries, keep up to 40 one-line archive entries, and drop beyond 50 total.
 
 Artifact writing follows contract Section 24 conventions.
 
@@ -289,7 +282,7 @@ Then stop. One cycle complete.
 - NEVER force push, amend published commits, or run destructive git operations.
 - NEVER add placeholder data or functionality.
 - NEVER modify files outside the project directory.
-- NEVER modify VISION.md during a cycle. Only touch it during a brainstorm.
+- NEVER modify the vision artifact during a cycle. Only touch it during a brainstorm.
 - One cycle per invocation. Do not attempt multiple cycles.
 
 </critical>
@@ -315,8 +308,8 @@ For flagged, stuck, and waiting: add `▸` (VT15) bullet details below the summa
 
 - **complete** (EX1): One full cycle completed. Work selected, implemented, verified, committed, artifacts updated.
 - **flagged** (EX2): Cycle completed but with notable issues: verification warnings, scope reduction, or discoveries suggesting next cycle may face blockers.
-- **stuck** (EX3): Cannot complete: VISION.md missing and brainstorm can't proceed, all work blocked, or verification suite broken.
-- **waiting** (EX4): No VISION.md and no codebase to infer direction, or user instruction too ambiguous.
+- **stuck** (EX3): Cannot complete: the vision artifact is missing and brainstorm can't proceed, all work blocked, or verification suite broken.
+- **waiting** (EX4): No vision artifact and no codebase to infer direction, or user instruction too ambiguous.
 
 Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3 record failed cycles, stop, log the failure pattern to TODO.md, and surface to the user. Do not attempt a 4th consecutive cycle on the same failing problem.
 
@@ -328,7 +321,7 @@ Realisera is part of a twelve-capability suite.
 
 ### Delegates to /visionera
 
-When visionera is installed and VISION.md doesn't exist, suggest `/visionera` for deep vision creation. If visionera is NOT installed, the built-in brainstorm works as a standalone fallback.
+When visionera is installed and the vision artifact doesn't exist, suggest `/visionera` for deep vision creation. If visionera is NOT installed, the built-in brainstorm works as a standalone fallback.
 
 ### Delegates to /optimera
 

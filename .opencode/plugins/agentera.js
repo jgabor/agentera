@@ -1,6 +1,6 @@
 // Agentera plugin for OpenCode
 // Bootstraps slash commands at plugin init, injects AGENTERA_HOME via shell.env,
-// writes SESSION.md bookmarks via the generic event hook, and validates
+// writes session.yaml bookmarks via the generic event hook, and validates
 // artifact writes via tool.execute.before plus tool.execute.after.
 // Install: copy to ~/.config/opencode/plugins/agentera.js or .opencode/plugins/agentera.js
 
@@ -206,18 +206,20 @@ function isArtifactPath(filePath, root) {
   const rel = path.relative(root, target);
   if (!rel) return false;
   const artifacts = [
-    "VISION.md", "TODO.md", "CHANGELOG.md",
-    path.join(".agentera", "PROGRESS.md"),
-    path.join(".agentera", "DECISIONS.md"),
-    path.join(".agentera", "PLAN.md"),
-    path.join(".agentera", "HEALTH.md"),
-    path.join(".agentera", "OBJECTIVE.md"),
-    path.join(".agentera", "EXPERIMENTS.md"),
-    path.join(".agentera", "DESIGN.md"),
-    path.join(".agentera", "DOCS.md"),
-    path.join(".agentera", "SESSION.md"),
+    "TODO.md", "CHANGELOG.md", "DESIGN.md",
+    path.join(".agentera", "vision.yaml"),
+    path.join(".agentera", "progress.yaml"),
+    path.join(".agentera", "decisions.yaml"),
+    path.join(".agentera", "plan.yaml"),
+    path.join(".agentera", "health.yaml"),
+    path.join(".agentera", "docs.yaml"),
+    path.join(".agentera", "session.yaml"),
   ];
-  return artifacts.includes(rel);
+  return artifacts.includes(rel)
+    || (
+      rel.startsWith(path.join(".agentera", "optimera") + path.sep)
+      && ["objective.yaml", "experiments.yaml"].includes(path.basename(rel))
+    );
 }
 
 function findAgenteraRoot(startDir) {
@@ -239,7 +241,10 @@ export function resolveAgenteraHome() {
   ].filter(Boolean);
 
   for (const candidate of candidates) {
-    if (fs.existsSync(path.join(candidate, "scripts", "validate_spec.py"))) {
+    if (
+      fs.existsSync(path.join(candidate, "scripts", "agentera"))
+      || fs.existsSync(path.join(candidate, "scripts", "validate_capability.py"))
+    ) {
       return candidate;
     }
   }
@@ -343,7 +348,14 @@ export function validateArtifactCandidate(filePath, content, projectRoot) {
       return { permissionDecision: "allow" };
     }
     return decision;
-  } catch {
+  } catch (err) {
+    if (err && (err.status === 2 || err.status === 1)) {
+      const reason = String(err.stderr || err.stdout || "Artifact validation failed").trim();
+      return {
+        permissionDecision: "deny",
+        permissionDecisionReason: reason || "Artifact validation failed",
+      };
+    }
     return { permissionDecision: "allow" };
   }
 }

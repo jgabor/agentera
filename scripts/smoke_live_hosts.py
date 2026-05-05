@@ -11,12 +11,9 @@ errors, exit 0 / exit 1, snapshot-restore for any user file the harness
 might mutate. The two top-level modes:
 
     Default mode (no flags)
-        Runs the profilera Codex collection audit (Task 1 path) by
-        invoking ``profilera.scripts.extract_all.build_corpus()`` in
-        process, grouping records by runtime, and reporting whether
-        codex-cli records land in the corpus envelope. Then delegates to
-        ``scripts/smoke_setup_helpers.py`` as a subprocess so the
-        existing 11-case helper smoke continues to gate this harness.
+        Reports the current v2 profilera corpus-collection status, then
+        delegates to ``scripts/smoke_setup_helpers.py`` as a subprocess
+        so the existing helper smoke continues to gate this harness.
         No live CLI is invoked. Exits 0 with
         ``PASS: all smoke checks passed``.
 
@@ -81,12 +78,11 @@ import subprocess
 import sys
 import tempfile
 import time
-from collections import Counter
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SETUP_HELPERS_SMOKE = REPO_ROOT / "scripts" / "smoke_setup_helpers.py"
-EXTRACT_ALL = REPO_ROOT / "skills" / "profilera" / "scripts" / "extract_all.py"
+AGENTERA_CLI = REPO_ROOT / "scripts" / "agentera"
 
 # Auth probe deadline shared across both runtimes (AC3). 30s is the
 # distinguishing line between "binary present but unresponsive" (likely
@@ -301,90 +297,18 @@ def _sha256(path: Path) -> str:
 
 
 def run_codex_collection_audit() -> None:
-    """Task 1 path: in-process build_corpus() inspection.
+    """Report the current v2 profilera corpus-collection status.
 
-    Imports ``extract_all`` from the profilera scripts directory and
-    calls ``build_corpus()`` directly. Groups all returned records by
-    runtime and asserts that ``codex-cli`` either has at least one
-    record or is reported as ``available=False`` in
-    ``metadata.runtime_status`` (no Codex install on the host is a
-    valid clean outcome and must not fail the smoke). Reports the
-    counts on stdout.
-
-    The actual ``extract_all.py`` CLI fails to write corpus.json when
-    the unrelated claude-code duplicate-source_id bug is present
-    (tracked as `[claude-code-extract-duplicate-source-ids]` TODO);
-    using ``build_corpus()`` directly avoids that failure mode because
-    the in-memory envelope is returned regardless of the post-build
-    validation errors.
+    Agentera v2 currently ships profilera as a capability in the bundled
+    skill, not as a standalone Python extractor. Default smoke mode should
+    therefore make the deferred extractor explicit instead of importing a
+    v1-only helper path.
     """
     info("--- profilera Codex collection audit ---")
-
-    # Import from the profilera scripts directory; mirrors the Task 1
-    # audit cycle's invocation pattern.
-    profilera_scripts = REPO_ROOT / "skills" / "profilera" / "scripts"
-    if str(profilera_scripts) not in sys.path:
-        sys.path.insert(0, str(profilera_scripts))
-
-    try:
-        import extract_all  # type: ignore[import-not-found]
-    except ImportError as exc:
-        fail(
-            f"could not import profilera extract_all "
-            f"(checked {EXTRACT_ALL}): {exc}"
-        )
-        return  # unreachable; satisfies type checker
-
-    corpus, errors, _warnings = extract_all.build_corpus()
-
-    if not corpus:
-        # No runtime data on this host at all. Not a smoke failure;
-        # report and move on.
-        info("audit: no runtime data on this host (corpus empty); audit clean")
-        return
-
-    records = corpus.get("records", [])
-    by_runtime: Counter[str] = Counter()
-    for record in records:
-        # extract_all.py records carry ``runtime`` at the top level
-        # (see RUNTIME_CODEX_CLI / RUNTIME_CLAUDE_CODE / RUNTIME_COPILOT_CLI
-        # builders). No provenance nesting.
-        runtime = record.get("runtime", "<unknown>")
-        by_runtime[runtime] += 1
-
     info(
-        "audit: total records=%d across runtimes=%s"
-        % (
-            len(records),
-            ", ".join(
-                f"{name}={count}" for name, count in sorted(by_runtime.items())
-            )
-            or "<none>",
-        )
+        "SKIP: profilera Codex collection audit "
+        "(v2 corpus extraction helper is not shipped)"
     )
-
-    runtime_status = corpus.get("metadata", {}).get("runtime_status", {})
-    codex_status = runtime_status.get("codex-cli")
-    if codex_status is None:
-        info("audit: codex-cli not detected on this host (no probe success)")
-    else:
-        codex_count = by_runtime.get("codex-cli", 0)
-        info(
-            f"audit: codex-cli available; corpus carries {codex_count} "
-            f"codex-cli record(s)"
-        )
-
-    if errors:
-        # The unrelated claude-code dup-source_id failure surfaces here.
-        # Report the Codex-specific slice (Task 2 must not block on it).
-        codex_errors = [e for e in errors if "codex" in e.lower()]
-        info(
-            f"audit: {len(errors)} validation error(s) from build_corpus(); "
-            f"{len(codex_errors)} mention codex"
-        )
-        if codex_errors:
-            for err in codex_errors[:5]:
-                info(f"audit: codex-error: {err}")
 
 
 def run_setup_helpers_smoke() -> None:
@@ -429,9 +353,9 @@ def run_setup_helpers_smoke() -> None:
 
 COST_LINE = (
     "Estimated cost: $0.30-1.50 across three model calls "
-    "(codex exec AGENTERA_HOME + compaction probe, codex exec "
+    "(codex exec AGENTERA_HOME + query probe, codex exec "
     "apply_patch hook firing probe, copilot -p AGENTERA_HOME + "
-    "compaction probe; --live mode only)"
+    "query probe; --live mode only)"
 )
 CONSENT_LINE = (
     "Proceed with live CLI invocations (codex exec x2 + copilot -p "
@@ -574,34 +498,6 @@ def probe_runtime(
 CODEX_EXEC_TIMEOUT_SECONDS = 300
 
 
-def _build_progress_fixture(target: Path, num_cycles: int = 14) -> None:
-    """Seed ``target`` with ``num_cycles`` mock PROGRESS.md cycle entries.
-
-    The compaction spec keeps 10 most-recent cycles full and collapses
-    the next 40 to one-line archive entries (SPEC Section 4); 14 cycles
-    means compaction MUST move the oldest 4 into ``## Archived Cycles``,
-    which gives the harness a deterministic post-condition to assert.
-    Each cycle carries the SPEC-required Phase/What/Commit/Verified/Next
-    fields so the artifact passes the ecosystem linter shape if anything
-    ever inspects the fixture downstream.
-    """
-    lines: list[str] = ["# Progress", ""]
-    for n in range(num_cycles, 0, -1):
-        lines.append(
-            f"■ ## Cycle {n} · 2026-04-26 12:00 · "
-            f"chore(fixture): seeded entry {n}"
-        )
-        lines.append("")
-        lines.append("**Phase**: build")
-        lines.append(f"**What**: Mock cycle {n} for the live-host smoke harness fixture.")
-        lines.append(f"**Commit**: deadbee{n:02d} chore(fixture): seeded entry {n}")
-        lines.append("**Verified**: N/A: test-only")
-        lines.append("**Next**: rotate")
-        lines.append("**Context**: fixture seeded by smoke_live_hosts.py")
-        lines.append("")
-    target.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-
-
 def run_codex_live_section(
     snapshots: SnapshotRegistry,
     skips: list[tuple[str, str]],
@@ -625,18 +521,17 @@ def run_codex_live_section(
        --config-file <tmp>/config.toml --install-root <repo>`` so the
        tmp config carries ``[shell_environment_policy].set.AGENTERA_HOME``
        pointing at the real install root.
-    5. Seed a tmp PROGRESS.md fixture with 14 cycles (above the 10-keep
-       compaction threshold) so the compaction step has something to do.
+    5. Use a tmp workdir for the non-interactive ``codex exec`` run.
     6. Issue exactly ONE ``codex exec`` invocation with a combined prompt
        asking the agent to (a) print AGENTERA_HOME from a bash tool call
-       and (b) run ``compact_artifact.py progress <fixture>``. The tmp
+       and (b) run ``agentera query --list-artifacts`` via
+       ``$AGENTERA_HOME/scripts/agentera``. The tmp
        ``CODEX_HOME`` is exported via the env so codex picks up the tmp
        config; ``--cd <tmp_workdir> --skip-git-repo-check
        --dangerously-bypass-approvals-and-sandbox -s danger-full-access``
        lets the bash tool calls actually run without an approval round-trip.
     7. Parse stdout for the AGENTERA_HOME echo (must equal the install
-       root) and assert the fixture's mtime advanced + the file shrank or
-       gained a ``## Archived Cycles`` heading (compaction effect).
+       root) and assert the query output includes core artifact names.
     8. SHA256 the real ``~/.codex/config.toml`` AFTER and assert
        byte-identity vs the BEFORE hash (AC4).
 
@@ -751,41 +646,32 @@ def run_codex_live_section(
             f"tmp config missing AGENTERA_HOME entry. content:\n{tmp_config_text}",
         )
 
-        # Step 5: build a tmp PROGRESS.md fixture (14 cycles, above the
-        # compaction threshold).
         with tempfile.TemporaryDirectory(
-            prefix="agentera-smoke-codex-fixture-"
+            prefix="agentera-smoke-codex-query-"
         ) as tmp_workdir_str:
             tmp_workdir = Path(tmp_workdir_str)
-            fixture = tmp_workdir / "PROGRESS.md"
-            _build_progress_fixture(fixture, num_cycles=14)
-            mtime_before = fixture.stat().st_mtime
-            lines_before = len(fixture.read_text(encoding="utf-8").splitlines())
-            info(
-                f"codex: seeded fixture {fixture} "
-                f"(lines={lines_before}, mtime={mtime_before:.0f})"
-            )
+            info(f"codex: tmp workdir={tmp_workdir}")
 
             # Step 6: build the combined prompt. The agent is asked to do
             # exactly two bash tool calls in sequence and report both
             # observations between markers we can grep for. Markers are
             # used (not raw values) so the parser can extract the
             # AGENTERA_HOME value verbatim regardless of surrounding prose.
-            compact_script = install_root / "scripts" / "compact_artifact.py"
             prompt = (
                 "Run exactly these two bash commands (in order) using your "
                 "shell tool. After running them, print the markers below "
                 "with the captured outputs filled in.\n\n"
                 "Command 1: echo \"AGENTERA_HOME=$AGENTERA_HOME\"\n"
-                f"Command 2: python3 {compact_script} progress {fixture}\n\n"
+                "Command 2: python3 \"$AGENTERA_HOME/scripts/agentera\" "
+                "query --list-artifacts\n\n"
                 "Then print this block as your final message, replacing "
                 "<value1> and <value2> with the literal stdout you observed:\n\n"
                 "===AGENTERA_HOME_ECHO_BEGIN===\n"
                 "<value1>\n"
                 "===AGENTERA_HOME_ECHO_END===\n"
-                "===COMPACTION_OUTPUT_BEGIN===\n"
+                "===QUERY_OUTPUT_BEGIN===\n"
                 "<value2>\n"
-                "===COMPACTION_OUTPUT_END==="
+                "===QUERY_OUTPUT_END==="
             )
 
             # Step 6 (cont.): exactly one codex exec invocation. CODEX_HOME
@@ -793,7 +679,7 @@ def run_codex_live_section(
             # carries AGENTERA_HOME via shell_environment_policy.set).
             # --dangerously-bypass-approvals-and-sandbox + danger-full-access
             # is required for the bash tool to actually run python3 against
-            # the fixture without an approval round-trip; this is the
+            # the query CLI without an approval round-trip; this is the
             # documented non-interactive path. The user pre-authorized live
             # spend.
             env = dict(os.environ)
@@ -893,41 +779,28 @@ def run_codex_live_section(
             )
             info(f"codex: AGENTERA_HOME echo verified: {ah_value}")
 
-            # Step 7b: assert the fixture was compacted.
-            mtime_after = fixture.stat().st_mtime
-            text_after = fixture.read_text(encoding="utf-8")
-            lines_after = len(text_after.splitlines())
-            assert_true(
-                mtime_after > mtime_before,
-                f"codex: fixture mtime did not advance "
-                f"(before={mtime_before} after={mtime_after})",
-            )
-            compaction_effect = (
-                lines_after < lines_before
-                or "## Archived Cycles" in text_after
-            )
-            assert_true(
-                compaction_effect,
-                f"codex: fixture shows no compaction effect "
-                f"(lines {lines_before} -> {lines_after}, "
-                f"archived heading present: "
-                f"{'## Archived Cycles' in text_after})",
-            )
-            info(
-                f"codex: fixture compaction verified "
-                f"(lines {lines_before} -> {lines_after}, "
-                f"archived heading: "
-                f"{'present' if '## Archived Cycles' in text_after else 'absent'})"
-            )
-
-            # Surface the parsed compaction stdout for operator audit.
-            compaction_output = _extract_between(
+            # Step 7b: assert the query CLI resolved through AGENTERA_HOME.
+            query_output = _extract_between(
                 agent_output,
-                "===COMPACTION_OUTPUT_BEGIN===",
-                "===COMPACTION_OUTPUT_END===",
+                "===QUERY_OUTPUT_BEGIN===",
+                "===QUERY_OUTPUT_END===",
             )
-            if compaction_output:
-                info(f"codex: compaction stdout: {compaction_output.strip()}")
+            assert_true(
+                query_output is not None,
+                "codex: could not find query output markers in output",
+            )
+            assert query_output is not None
+            missing = [
+                artifact
+                for artifact in ("decisions", "progress", "session")
+                if artifact not in query_output.split()
+            ]
+            assert_true(
+                not missing,
+                f"codex: query output missing expected artifact names: {missing}; "
+                f"output={query_output!r}",
+            )
+            info(f"codex: query output verified: {query_output.strip()}")
 
     # Step 8: post-run SHA256 check on the real config (defense-in-depth).
     sha_after = _sha256(real_codex_config)
@@ -1405,7 +1278,7 @@ def _extract_between(text: str, begin: str, end: str) -> str | None:
     """Return the substring strictly between ``begin`` and ``end`` markers.
 
     Returns ``None`` if either marker is absent or end precedes begin.
-    Used to pull the AGENTERA_HOME echo and compaction stdout out of the
+    Used to pull the AGENTERA_HOME echo and query stdout out of the
     agent's final-message text without depending on regex backslashes
     interacting with the marker strings.
     """
@@ -1453,12 +1326,13 @@ def run_copilot_live_section(
        ``bash -c 'export …'`` rather than sourcing any rc, so none should
        change; the SHA256 round-trip is defense-in-depth that mirrors the
        Codex section's contract on ``~/.codex/config.toml``.
-    5. Build a tmp install root directory (``AGENTERA_HOME`` value for the
-       export) and seed a tmp ``PROGRESS.md`` fixture with 14 cycles.
+    5. Build a tmp install root directory containing the v2 query CLI and
+       artifact schemas (``AGENTERA_HOME`` value for the export).
     6. Compose a combined prompt with the same marker brackets as Task 3
-       (``===AGENTERA_HOME_ECHO_BEGIN===`` / ``===COMPACTION_OUTPUT_BEGIN===``)
+       (``===AGENTERA_HOME_ECHO_BEGIN===`` / ``===QUERY_OUTPUT_BEGIN===``)
        instructing the agent to (a) echo ``AGENTERA_HOME`` from a shell
-       tool call and (b) run ``compact_artifact.py progress <fixture>``.
+       tool call and (b) run ``agentera query --list-artifacts`` via the
+       exported install root.
     7. Issue exactly ONE invocation of the AC1 shape:
        ``bash -c 'export AGENTERA_HOME=<tmp>; copilot -p "<prompt>"
        --allow-all-tools'`` via ``subprocess.run(["bash", "-c", "..."])``.
@@ -1466,9 +1340,8 @@ def run_copilot_live_section(
        Copilot inherits ``AGENTERA_HOME`` from a parent bash shell that
        exported it (matching the real-user shell-rc setup pattern).
     8. Parse the agent output between the markers and assert
-       ``AGENTERA_HOME=<tmp install root>`` echoed back, fixture mtime
-       advanced, and either line count shrank or
-       ``## Archived Cycles`` heading is present (compaction effect).
+       ``AGENTERA_HOME=<tmp install root>`` echoed back and the query output
+       includes core artifact names.
     9. SHA256 each rc file AFTER and assert byte-identity vs the BEFORE
        hash for every snapshotted candidate (AC4).
 
@@ -1569,7 +1442,7 @@ def run_copilot_live_section(
         rc_sha_before[rc] = _sha256(rc)
         info(f"copilot-rc sha256 (before) {rc}: {rc_sha_before[rc]}")
 
-    # Step 5: build a tmp install root directory + tmp PROGRESS.md fixture.
+    # Step 5: build a tmp install root directory with the v2 query CLI.
     # Using a tmp install root (not REPO_ROOT) cleanly proves that the
     # bash-exported AGENTERA_HOME value is what propagates to copilot —
     # there is no way for the harness's parent process to have set it to
@@ -1579,39 +1452,38 @@ def run_copilot_live_section(
     ) as tmp_install_root_str:
         tmp_install_root = Path(tmp_install_root_str)
         info(f"copilot: tmp AGENTERA_HOME={tmp_install_root}")
+        (tmp_install_root / "scripts").mkdir(parents=True)
+        shutil.copy2(AGENTERA_CLI, tmp_install_root / "scripts" / "agentera")
+        shutil.copytree(
+            REPO_ROOT / "skills" / "agentera" / "schemas",
+            tmp_install_root / "skills" / "agentera" / "schemas",
+        )
 
         with tempfile.TemporaryDirectory(
-            prefix="agentera-smoke-copilot-fixture-"
+            prefix="agentera-smoke-copilot-query-"
         ) as tmp_workdir_str:
             tmp_workdir = Path(tmp_workdir_str)
-            fixture = tmp_workdir / "PROGRESS.md"
-            _build_progress_fixture(fixture, num_cycles=14)
-            mtime_before = fixture.stat().st_mtime
-            lines_before = len(fixture.read_text(encoding="utf-8").splitlines())
-            info(
-                f"copilot: seeded fixture {fixture} "
-                f"(lines={lines_before}, mtime={mtime_before:.0f})"
-            )
+            info(f"copilot: tmp workdir={tmp_workdir}")
 
             # Step 6: compose the combined prompt. Same marker shape as
             # Task 3 so the parser code path is shared. The prompt
             # contains no single quotes so it can be embedded inside the
             # bash -c '...' form without escape gymnastics.
-            compact_script = REPO_ROOT / "scripts" / "compact_artifact.py"
             prompt = (
                 "Run exactly these two shell commands (in order) using your "
                 "shell tool. After running them, print the markers below "
                 "with the captured outputs filled in.\n\n"
                 'Command 1: echo "AGENTERA_HOME=$AGENTERA_HOME"\n'
-                f"Command 2: python3 {compact_script} progress {fixture}\n\n"
+                "Command 2: python3 \"$AGENTERA_HOME/scripts/agentera\" "
+                "query --list-artifacts\n\n"
                 "Then print this block as your final message, replacing "
                 "<value1> and <value2> with the literal stdout you observed:\n\n"
                 "===AGENTERA_HOME_ECHO_BEGIN===\n"
                 "<value1>\n"
                 "===AGENTERA_HOME_ECHO_END===\n"
-                "===COMPACTION_OUTPUT_BEGIN===\n"
+                "===QUERY_OUTPUT_BEGIN===\n"
                 "<value2>\n"
-                "===COMPACTION_OUTPUT_END==="
+                "===QUERY_OUTPUT_END==="
             )
 
             # Step 7: exactly ONE bash -c invocation of the AC1 shape.
@@ -1704,40 +1576,28 @@ def run_copilot_live_section(
             )
             info(f"copilot: AGENTERA_HOME echo verified: {ah_value}")
 
-            # Step 8b: assert the fixture was compacted in place.
-            mtime_after = fixture.stat().st_mtime
-            text_after = fixture.read_text(encoding="utf-8")
-            lines_after = len(text_after.splitlines())
-            assert_true(
-                mtime_after > mtime_before,
-                f"copilot: fixture mtime did not advance "
-                f"(before={mtime_before} after={mtime_after})",
-            )
-            compaction_effect = (
-                lines_after < lines_before
-                or "## Archived Cycles" in text_after
-            )
-            assert_true(
-                compaction_effect,
-                f"copilot: fixture shows no compaction effect "
-                f"(lines {lines_before} -> {lines_after}, "
-                f"archived heading present: "
-                f"{'## Archived Cycles' in text_after})",
-            )
-            info(
-                f"copilot: fixture compaction verified "
-                f"(lines {lines_before} -> {lines_after}, "
-                f"archived heading: "
-                f"{'present' if '## Archived Cycles' in text_after else 'absent'})"
-            )
-
-            compaction_output = _extract_between(
+            # Step 8b: assert the query CLI resolved through AGENTERA_HOME.
+            query_output = _extract_between(
                 agent_output,
-                "===COMPACTION_OUTPUT_BEGIN===",
-                "===COMPACTION_OUTPUT_END===",
+                "===QUERY_OUTPUT_BEGIN===",
+                "===QUERY_OUTPUT_END===",
             )
-            if compaction_output:
-                info(f"copilot: compaction stdout: {compaction_output.strip()}")
+            assert_true(
+                query_output is not None,
+                "copilot: could not find query output markers in output",
+            )
+            assert query_output is not None
+            missing = [
+                artifact
+                for artifact in ("decisions", "progress", "session")
+                if artifact not in query_output.split()
+            ]
+            assert_true(
+                not missing,
+                f"copilot: query output missing expected artifact names: {missing}; "
+                f"output={query_output!r}",
+            )
+            info(f"copilot: query output verified: {query_output.strip()}")
 
     # Step 9: post-run SHA256 round-trip on every snapshotted rc file.
     _assert_rc_unchanged(rc_sha_before)

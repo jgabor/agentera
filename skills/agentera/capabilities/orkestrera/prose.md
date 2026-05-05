@@ -32,7 +32,7 @@ Orkestrera produces no new artifact files. It reads and updates existing artifac
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/plan.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`.
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/plan.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`.
 
 ### Contract values
 
@@ -145,15 +145,15 @@ Evaluation has two surfaces in sequence: a conductor-side presence check that re
 When the dispatched capability was realisera (or any capability that produces PROGRESS.md cycle entries), perform a cheap artifact read before dispatching inspektera:
 
 1. Read the latest entry in PROGRESS.md (respecting DOCS.md path resolution).
-2. Look for the `**Verified**` field in that entry.
+2. Look for the `verified` field in that entry.
 3. **Present and non-empty**: proceed to Surface 2 (the inspektera dispatch).
-4. **Missing or empty**: treat the task as a failed evaluation. Go straight into Step 4's FAIL branch (retry path) with "missing or empty `**Verified**` field in PROGRESS.md Cycle N" as the failure reason in the retry dispatch prompt. Do not dispatch inspektera for this surface; the presence check is itself the evaluation signal.
+4. **Missing or empty**: treat the task as a failed evaluation. Go straight into Step 4's FAIL branch (retry path) with "missing or empty `verified` field in PROGRESS.md Cycle N" as the failure reason in the retry dispatch prompt. Do not dispatch inspektera for this surface; the presence check is itself the evaluation signal.
 
 This is an artifact read, not a source code read. Reading `.agentera/progress.yaml` is consistent with the conductor's existing artifact-read patterns (plan.yaml, health.yaml, decisions.yaml). The "NEVER read implementation source code" safety rail is unaffected: progress.yaml is a cycle log, not source.
 
 **Surface 2: Inspektera dispatch with evidence audit**
 
-Once the presence check passes, spawn inspektera as a subagent to verify the work. The dispatch prompt below extends the base evaluator prompt with a "Verification evidence audit" block that instructs inspektera to check whether the recorded `**Verified**` content actually substantiates the acceptance criteria (content quality, not just presence).
+Once the presence check passes, spawn inspektera as a subagent to verify the work. The dispatch prompt below extends the base evaluator prompt with a "Verification evidence audit" block that instructs inspektera to check whether the recorded `verified` content actually substantiates the acceptance criteria (content quality, not just presence).
 
 ```
 You are evaluating a completed task for [project].
@@ -170,12 +170,12 @@ You are evaluating a completed task for [project].
 - Verify the project's test/build suite still passes.
 
 ## Verification evidence audit
-- Read the `**Verified**` field value from the latest PROGRESS.md cycle entry for this task.
+- Read the `verified` field value from the latest PROGRESS.md cycle entry for this task.
 - Compare the recorded evidence to the task's acceptance criteria above.
 - Report whether the evidence substantiates the criteria or is merely trivially populated (e.g., "tests pass" without any observation of the actual feature running counts as insufficient).
 - If the field is `N/A: <tag>`, confirm the tag is drawn from the allowlist (`docs-only`, `refactor-no-behavior-change`, `chore-dep-bump`, `chore-build-config`, `test-only`) AND that the tag actually fits the nature of the work.
 - If the field is a free-form N/A rationale, confirm it is at least 8 words long AND actually explains why the change has no observable behavior.
-- Flag the task as FAIL on the evidence audit if the recorded `**Verified**` content does not substantiate the acceptance criteria.
+- Flag the task as FAIL on the evidence audit if the recorded `verified` content does not substantiate the acceptance criteria.
 
 ## Output format
 For each acceptance criterion, report:

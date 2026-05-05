@@ -13,25 +13,25 @@
     "TODO.md": 5000,
     "CHANGELOG.md": 5000
   },
-  "artifact_headings": {
-    "VISION.md": ["^#\\s+\\S"],
-    "TODO.md": ["^# TODO"],
-    "DECISIONS.md": ["^# Decisions", "^## Decision \\d+"],
-    "PLAN.md": ["^# Plan", "(?:^## Tasks|^### Task \\d+)"],
-    "PROGRESS.md": ["^# Progress", "^(?:\\u25a0\\s*)?## Cycle \\d+"],
-    "HEALTH.md": ["^# Health", "^## Audit \\d+"],
-    "OBJECTIVE.md": [
-      "^# Objective",
-      "^## Metric",
-      "^## Target",
-      "^## Baseline",
-      "^## Constraints",
-      "^\\*\\*Status\\*\\*:"
+  "artifact_required_keys": {
+    "VISION.md": [
+      "project_name",
+      "north_star",
+      "personas",
+      "principles",
+      "direction",
+      "identity"
     ],
-    "EXPERIMENTS.md": [
-      "^# Experiments",
-      "^(?:## Experiment \\d+|## Closure\\b)"
-    ]
+    "TODO.md": ["^# TODO"],
+    "DECISIONS.md": ["decisions"],
+    "PLAN.md": ["header", "what", "why", "tasks"],
+    "PROGRESS.md": ["cycles"],
+    "HEALTH.md": ["audits"],
+    "OBJECTIVE.md": ["target", "status", "objective", "measurement"],
+    "EXPERIMENTS.md": ["experiments"],
+    "DESIGN.md": ["^# .*Design"],
+    "DOCS.md": ["last_audit", "conventions", "mapping", "index"],
+    "SESSION.md": ["sessions"]
   },
   "severity_mappings": {
     "critical": "⇶",
@@ -40,18 +40,18 @@
     "annoying": "⇢"
   },
   "default_paths": {
-    "VISION.md": "VISION.md",
+    "VISION.md": ".agentera/vision.yaml",
     "TODO.md": "TODO.md",
     "CHANGELOG.md": "CHANGELOG.md",
-    "DECISIONS.md": ".agentera/DECISIONS.md",
-    "PLAN.md": ".agentera/PLAN.md",
-    "PROGRESS.md": ".agentera/PROGRESS.md",
-    "HEALTH.md": ".agentera/HEALTH.md",
-    "OBJECTIVE.md": ".agentera/optimera/<name>/OBJECTIVE.md",
-    "EXPERIMENTS.md": ".agentera/optimera/<name>/EXPERIMENTS.md",
-    "DESIGN.md": ".agentera/DESIGN.md",
-    "DOCS.md": ".agentera/DOCS.md",
-    "SESSION.md": ".agentera/SESSION.md",
+    "DECISIONS.md": ".agentera/decisions.yaml",
+    "PLAN.md": ".agentera/plan.yaml",
+    "PROGRESS.md": ".agentera/progress.yaml",
+    "HEALTH.md": ".agentera/health.yaml",
+    "OBJECTIVE.md": ".agentera/optimera/<name>/objective.yaml",
+    "EXPERIMENTS.md": ".agentera/optimera/<name>/experiments.yaml",
+    "DESIGN.md": "DESIGN.md",
+    "DOCS.md": ".agentera/docs.yaml",
+    "SESSION.md": ".agentera/session.yaml",
     "PROFILE.md": "(profile-path capability) <!-- platform: profile-path -->"
   },
   "todo_severity_headings": [

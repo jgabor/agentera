@@ -2,7 +2,7 @@ ARTIFACTS:
   1:
     id: A1
     name: VISION.md
-    path: "VISION.md or mapped path per DOCS.md"
+    path: ".agentera/vision.yaml or mapped path per docs.yaml"
     description: >-
       Project direction and north star. Produced by visionera (primary)
       or realisera (fallback). Contains direction, principles, personas,
@@ -12,7 +12,7 @@ ARTIFACTS:
   2:
     id: A2
     name: DECISIONS.md
-    path: ".agentera/DECISIONS.md"
+    path: ".agentera/decisions.yaml"
     description: >-
       Pending and recent decisions. Produced by resonera.
       Visionera reads this to detect shifted thinking during refine mode
@@ -22,7 +22,7 @@ ARTIFACTS:
   3:
     id: A3
     name: PROGRESS.md
-    path: ".agentera/PROGRESS.md"
+    path: ".agentera/progress.yaml"
     description: >-
       Recent cycle history and what shipped. Produced by realisera.
       Visionera reads this during refine mode to understand what has been
@@ -32,7 +32,7 @@ ARTIFACTS:
   4:
     id: A4
     name: HEALTH.md
-    path: ".agentera/HEALTH.md"
+    path: ".agentera/health.yaml"
     description: >-
       Codebase health grades and trends. Produced by inspektera.
       Visionera reads this to understand structural realities that
@@ -52,7 +52,7 @@ ARTIFACTS:
   6:
     id: A6
     name: DESIGN.md
-    path: ".agentera/DESIGN.md"
+    path: "DESIGN.md"
     description: >-
       Visual identity system. Produced by visualisera.
       Visionera reads this during codebase exploration to ensure the
@@ -63,7 +63,7 @@ ARTIFACTS:
   7:
     id: A7
     name: DOCS.md
-    path: ".agentera/DOCS.md"
+    path: ".agentera/docs.yaml"
     description: >-
       Artifact path resolution and documentation coverage. Produced by dokumentera.
       Visionera reads this FIRST to resolve artifact paths before accessing

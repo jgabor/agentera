@@ -22,11 +22,11 @@ One file in `.agentera/`.
 |----------|---------|-----------|
 | `DESIGN.md` | Visual identity. Colors, typography, spacing, constraints, components, themes. An agent-readable design system. | Created via deep design conversation. |
 
-Full spec at `references/DESIGN-spec.md` (v2 path: `skills/agentera/references/DESIGN-spec.md`): `<!-- design:X -->` marker syntax, standard sections, YAML token block format, and naming conventions.
+Use this prose plus `skills/agentera/schemas/artifacts/design.yaml` as the active design artifact specification: `<!-- design:X -->` marker syntax, standard sections, YAML token block format, and naming conventions.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/design.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md and CHANGELOG.md at the project root; VISION.md and all other artifacts in `.agentera/`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, .agentera/decisions.yaml, PROFILE.md).
+Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/design.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, .agentera/decisions.yaml, PROFILE.md).
 
 ### Contract values
 
@@ -83,7 +83,7 @@ structural:
 
 Standard sections: `colors`, `font-sizes`, `fonts`, `typography`, `spacing`, `radius`, `shadows`, `theme`, `constraints`, `components`, `tw-merge-preserve`. All optional. Custom sections use the same `design:` prefix with any name.
 
-See `references/DESIGN-spec.md` (v1 path) for the full specification including token block formats, theme mappings, component contracts, naming conventions, and monorepo nesting rules.
+Use this section and `skills/agentera/references/contract.md` as the active specification for token block formats, theme mappings, component contracts, naming conventions, and monorepo nesting rules.
 
 ---
 
@@ -208,17 +208,11 @@ Artifact writing follows contract Section 24 (Artifact Writing Conventions): ban
 
 ### Step 6: Validate
 
-Validate the written file:
-
-```bash
-python3 scripts/validate_design.py --design DESIGN.md --pretty
-```
-
-Fix errors and re-validate before presenting.
+Validate the written file against the `DESIGN.md` structure described in this capability. Agentera v2 does not ship a standalone design validator; fix malformed sections, missing token fields, or unresolved references before presenting.
 
 ### Step 7: Next steps
 
-▸ **Set up enforcement**: point to `references/enforcement-patterns.md` (v2 path: `skills/agentera/references/enforcement-patterns.md`) for the three-layer enforcement model
+▸ **Set up enforcement**: propose project-local checks for tokens, component usage, and visual drift; no separate bundled enforcement reference ships in v2
 ▸ **Build to the spec**: run `/realisera` to implement UI that respects the design tokens
 ▸ **Document it**: run `/dokumentera` to add the design system to project documentation
 ▸ **Refine later**: run `/visualisera` again to evolve the design as the project matures
@@ -280,11 +274,7 @@ Steps: validate, check, report.
 
 ### Step 1: Validate structure
 
-```bash
-python3 scripts/validate_design.py --design DESIGN.md --pretty
-```
-
-Report structural issues: malformed YAML, missing sections, unresolved references.
+Inspect `DESIGN.md` and report structural issues: malformed YAML blocks, missing sections, unresolved references, or token entries without category/name/value.
 
 ### Step 2: Check adherence
 
@@ -308,7 +298,7 @@ Present with file:line references. For each finding, offer to:
 ▸ **File to TODO.md**: if the code is wrong (design is right, code drifted)
 ▸ **Skip**: intentional or not worth fixing
 
-See `references/enforcement-patterns.md` (v1 path) for framework-specific enforcement beyond audits.
+For framework-specific enforcement beyond audits, derive checks from the project's stack and record them directly in DESIGN.md or TODO.md.
 
 ---
 
@@ -318,7 +308,7 @@ See `references/enforcement-patterns.md` (v1 path) for framework-specific enforc
 - NEVER modify DESIGN.md without explicit user approval. Present drafts and get confirmation.
 - NEVER write design tokens that conflict with VISION.md Identity. If the verbal identity says "warm and approachable" and the user wants a cold, brutalist palette, surface the tension explicitly and let the user resolve it.
 - NEVER impose aesthetic preferences. The user's taste drives the design. Have opinions, push for specificity, but defer to the user's choices.
-- NEVER skip the validation step after writing DESIGN.md. Run `scripts/validate_design.py` and fix any errors before presenting the result.
+- NEVER skip the validation step after writing DESIGN.md. Inspect the structure and fix any errors before presenting the result.
 - NEVER create arbitrary token values. Use established scales (8pt grid for spacing, modular type scale for font sizes, OKLCH for perceptual color uniformity). The design system must practice what it preaches.
 - NEVER modify code files. Visualisera writes DESIGN.md; realisera implements it. The separation of declaration and implementation is fundamental.
 - NEVER skip the codebase exploration (Step 1) when code exists. Arriving informed is what makes the conversation productive rather than generic.
@@ -386,12 +376,14 @@ When design decisions require deliberation, suggest `/resonera` before committin
 
 1. `/visualisera`: reads existing styles, proposes tokens from what's already there
 2. Review and refine the generated DESIGN.md
-3. Set up enforcement (see `references/enforcement-patterns.md`)
+3. Set up enforcement from project-local checks
 
 ### Audit existing design
 
 ```
+
 /visualisera
+
 ```
 
 Select "Audit" mode. Validates structure and scans code for drift.
@@ -399,7 +391,9 @@ Select "Audit" mode. Validates structure and scans code for drift.
 ### Refine after evolution
 
 ```
+
 /visualisera
+
 ```
 
 Select "Refine" mode. Reviews what's changed and proposes design system updates.

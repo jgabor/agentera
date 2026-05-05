@@ -2,7 +2,7 @@ ARTIFACTS:
   1:
     id: A1
     name: VISION.md
-    path: "VISION.md or .agentera/VISION.md (per DOCS.md)"
+    path: ".agentera/vision.yaml or mapped path per docs.yaml"
     description: >-
       Project direction and north star. Produced by visionera.
       Hej reads this for the briefing's project context.
@@ -11,7 +11,7 @@ ARTIFACTS:
   2:
     id: A2
     name: DECISIONS.md
-    path: ".agentera/DECISIONS.md"
+    path: ".agentera/decisions.yaml"
     description: >-
       Pending and recent decisions. Produced by resonera.
       Hej reads this to identify unresolved decisions requiring follow-up.
@@ -20,7 +20,7 @@ ARTIFACTS:
   3:
     id: A3
     name: PLAN.md
-    path: ".agentera/PLAN.md"
+    path: ".agentera/plan.yaml"
     description: >-
       Active tasks with dependencies and completion status. Produced by planera.
       Hej reads this to identify the next executable task and plan progress.
@@ -29,7 +29,7 @@ ARTIFACTS:
   4:
     id: A4
     name: PROGRESS.md
-    path: ".agentera/PROGRESS.md"
+    path: ".agentera/progress.yaml"
     description: >-
       Recent cycle history and what shipped. Produced by realisera.
       Hej reads this for the briefing's "what shipped" context.
@@ -47,7 +47,7 @@ ARTIFACTS:
   6:
     id: A6
     name: HEALTH.md
-    path: ".agentera/HEALTH.md"
+    path: ".agentera/health.yaml"
     description: >-
       Codebase health grades and trends. Produced by inspektera.
       Hej reads this for the health status line and attention items.
@@ -56,7 +56,7 @@ ARTIFACTS:
   7:
     id: A7
     name: OBJECTIVE.md
-    path: ".agentera/OBJECTIVE.md"
+    path: ".agentera/optimera/<objective-name>/objective.yaml"
     description: >-
       Optimization target and current metric value. Produced by optimera.
       Hej reads this to check for active optimization objectives.
@@ -65,7 +65,7 @@ ARTIFACTS:
   8:
     id: A8
     name: EXPERIMENTS.md
-    path: ".agentera/EXPERIMENTS.md"
+    path: ".agentera/optimera/<objective-name>/experiments.yaml"
     description: >-
       Experiment status and history. Produced by optimera.
       Hej reads this alongside OBJECTIVE.md to determine optimization status.
@@ -74,7 +74,7 @@ ARTIFACTS:
   9:
     id: A9
     name: DOCS.md
-    path: ".agentera/DOCS.md"
+    path: ".agentera/docs.yaml"
     description: >-
       Artifact path resolution and documentation coverage. Produced by dokumentera.
       Hej reads this FIRST to resolve artifact paths before reading other artifacts.
@@ -83,7 +83,7 @@ ARTIFACTS:
   10:
     id: A10
     name: DESIGN.md
-    path: ".agentera/DESIGN.md"
+    path: "DESIGN.md"
     description: >-
       Visual identity system status. Produced by visualisera.
       Hej reads this for the briefing's design status.

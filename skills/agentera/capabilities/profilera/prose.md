@@ -74,13 +74,7 @@ Steps: extract, read, categorize, generate, validate.
 
 ### Step 1: Run extraction
 
-Run extraction to gather raw decision signals into a single corpus file. The script scans memory files, session history, conversations, and project configs, normalizing all records into a unified schema with `source_kind` tags.
-
-```bash
-python3 scripts/extract_all.py
-```
-
-Run from the capability directory (`skills/agentera/capabilities/profilera/`). Output defaults to `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` (default: `$XDG_DATA_HOME/agentera/intermediate/corpus.json`).
+Read `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` if it already exists. Agentera v2 does not currently ship a standalone corpus extraction helper inside the bundled profilera capability; if the corpus is absent, report a partial result and note that corpus generation is deferred until the extraction helper is restored.
 
 Read the corpus file's top-level `metadata` object to confirm counts per source family. Report totals to the user.
 
@@ -268,13 +262,7 @@ Steps: select, present, apply, write.
 
 ### Step V1: Run smart selection
 
-Identify which entries are most worth checking:
-
-```bash
-python3 scripts/effective_profile.py --validate
-```
-
-Run from the capability directory (`skills/agentera/capabilities/profilera/`). Outputs ~6 entries scored by decay gap, staleness, tension history, and extremity. If the script fails, fall back to Full mode.
+Identify which entries are most worth checking by reading `$PROFILERA_PROFILE_DIR/PROFILE.md` directly and prioritizing high-confidence, stale, or tension-heavy entries. If PROFILE.md is missing, fall back to Full mode.
 
 ### Step V2: Present entries for validation
 
@@ -360,15 +348,9 @@ Inspektera reads the decision profile to calibrate what "healthy" means for this
 
 Planera reads the decision profile during its Orient step to calibrate planning depth, pattern preferences, and constraint priorities.
 
-### Effective profile script
+### Profile consumption
 
-All consuming capabilities use the same script for consistency:
-
-```bash
-python3 scripts/effective_profile.py
-```
-
-Run from the profilera capability directory (`skills/agentera/capabilities/profilera/`). Outputs a markdown summary table with effective confidence after dormancy decay. The script reads decay parameters from the PROFILE.md header, so the formula stays in one place.
+All consuming capabilities read `$PROFILERA_PROFILE_DIR/PROFILE.md` directly when it exists. Confidence thresholds and dormancy notes are kept in the profile itself so the guidance remains editable and portable.
 
 ---
 
@@ -392,7 +374,7 @@ Quick confidence refresh without full regeneration. Run weekly or per-session.
 
 ### Using the profile in other capabilities
 
-All capabilities read the profile automatically via `python3 scripts/effective_profile.py`. No manual steps needed; just ensure PROFILE.md exists.
+All capabilities may read the profile directly when `PROFILE.md` exists. No manual steps needed; just ensure PROFILE.md exists.
 
 ---
 
