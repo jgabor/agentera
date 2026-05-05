@@ -364,6 +364,124 @@ class TestGenericQuery:
 
 
 # ---------------------------------------------------------------------------
+# artifact-specific summaries
+# ---------------------------------------------------------------------------
+
+
+class TestArtifactSpecificSummaries:
+    def test_plan_summary_uses_docs_mapping_override(self, project):
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [
+                {
+                    "artifact": "PLAN.md",
+                    "path": "custom/state/plan.yaml",
+                },
+            ],
+        })
+        _write_artifact(project, "custom/state/plan.yaml", {
+            "header": {
+                "title": "Mapped plan",
+                "status": "active",
+                "created": "2026-05-05",
+            },
+            "what": "Use the mapped path.",
+            "tasks": [
+                {"number": 1, "name": "Done", "status": "complete"},
+                {"number": 2, "name": "Next", "status": "pending"},
+            ],
+        })
+        r = _run("query", "plan", cwd=project)
+        assert r.returncode == 0
+        assert "title=Mapped plan" in r.stdout
+        assert "complete=1" in r.stdout
+        assert "pending=1" in r.stdout
+
+    def test_progress_summary_surfaces_verification_and_next(self, project):
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [
+                {
+                    "number": 7,
+                    "timestamp": "2026-05-05 12:00",
+                    "type": "fix",
+                    "phase": "verify",
+                    "what": "Closed the query gap.",
+                    "verified": "pytest query passed",
+                    "next": "Remeasure tokens",
+                },
+            ],
+        })
+        r = _run("query", "progress", cwd=project)
+        assert r.returncode == 0
+        assert "phase=verify" in r.stdout
+        assert "verified: pytest query passed" in r.stdout
+        assert "next: Remeasure tokens" in r.stdout
+
+    def test_docs_summary_filters_status(self, project):
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "last_audit": "2026-05-05 (test)",
+            "mapping": [],
+            "index": [
+                {
+                    "document": "README",
+                    "path": "README.md",
+                    "last_updated": "2026-05-05",
+                    "status": "current",
+                },
+                {
+                    "document": "Old notes",
+                    "path": "docs/old.md",
+                    "last_updated": "2026-01-01",
+                    "status": "stale",
+                },
+            ],
+        })
+        r = _run("query", "docs", "--status", "stale", cwd=project)
+        assert r.returncode == 0
+        assert "Docs: last_audit=2026-05-05 (test)" in r.stdout
+        assert "document=Old notes" in r.stdout
+        assert "README" not in r.stdout
+
+    def test_objective_and_experiments_use_active_objective(self, project):
+        objective_dir = project / ".agentera" / "optimera" / "token-budget"
+        objective_dir.mkdir(parents=True)
+        (objective_dir / "objective.yaml").write_text(yaml.dump({
+            "header": {
+                "title": "Token budget",
+                "status": "active",
+            },
+            "objective": {
+                "description": "Reduce fixed prompt tokens.",
+                "target": "20% reduction",
+                "measurement": "count_tokens",
+            },
+        }))
+        (objective_dir / "experiments.yaml").write_text(yaml.dump({
+            "experiments": [
+                {
+                    "number": 1,
+                    "date": "2026-05-05",
+                    "label": "query seam",
+                    "status": "kept",
+                    "metric": {
+                        "primary_value": "12000",
+                        "delta_vs_baseline": "-11%",
+                    },
+                },
+            ],
+        }))
+
+        objective = _run("query", "objective", cwd=project)
+        experiments = _run("query", "experiments", cwd=project)
+
+        assert objective.returncode == 0
+        assert "title=Token budget" in objective.stdout
+        assert "target: 20% reduction" in objective.stdout
+        assert experiments.returncode == 0
+        assert "number=1" in experiments.stdout
+        assert "metric: primary_value=12000" in experiments.stdout
+
+
+# ---------------------------------------------------------------------------
 # help
 # ---------------------------------------------------------------------------
 

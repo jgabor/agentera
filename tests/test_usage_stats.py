@@ -163,6 +163,21 @@ class TestGroupByConversation:
         assert s1_contents == ["first", "second"]
         assert len(grouped["s2"]) == 1
 
+    def test_pass_groups_by_top_level_session_id(self, usage_stats):
+        records = [
+            {
+                **_turn("turn-1", "2026-04-26T00:00:00Z", "assistant", "first"),
+                "session_id": "session-a",
+            },
+            {
+                **_turn("turn-2", "2026-04-26T00:01:00Z", "assistant", "second"),
+                "session_id": "session-a",
+            },
+        ]
+        grouped = usage_stats.group_by_conversation(records)
+        assert set(grouped) == {"session-a"}
+        assert [turn["source_id"] for turn in grouped["session-a"]] == ["turn-1", "turn-2"]
+
     def test_fail_excludes_user_and_non_conversation_records(self, usage_stats):
         records = [
             _turn("s1", "2026-04-26T00:00:00Z", "user", "ignored"),
@@ -658,7 +673,7 @@ class TestMissingCorpusErrorPath:
             msg = str(err)
             assert str(path) in msg
             assert "Provide --corpus <path>" in msg
-            assert "does not currently ship" in msg
+            assert "scripts/extract_corpus.py" in msg
         else:
             raise AssertionError(
                 "load_corpus_or_raise must raise CorpusUnavailable for "

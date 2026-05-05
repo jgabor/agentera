@@ -47,12 +47,12 @@ meta:
   name: objective
   version: "1.0.0"
   description: >-
-    Optimization objective. Produced and consumed by optimera. Each objective
+    Optimization objective. Produced by optimera and resonera. Each objective
     lives in its own subdirectory under .agentera/optimera/<name>/.
   artifact_type: agent_facing
   path: ".agentera/optimera/<name>/objective.yaml"
-  producer: optimera
-  consumers: [optimera]
+  producer: [optimera, resonera]
+  consumers: [hej, optimera, resonera]
   format: yaml
 
 GROUP_PREFIXES:

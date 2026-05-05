@@ -14,6 +14,14 @@ Query patterns:
   decisions [--topic TOPIC]      Decision log
   health [--dimension DIM]       Latest audit data
   open-todos [--severity LEVEL]  Open issues from TODO.md
+  plan                           Active plan summary
+  progress                       Recent cycle summary
+  docs                           Documentation contract summary
+  session                        Recent session bookmark summary
+  todo                           TODO summary
+  design                         Visual identity summary
+  objective                      Active optimera objective summary
+  experiments                    Active optimera experiments summary
   <artifact-name>                Generic query against any discovered schema
 
 Schema discovery is automatic. The CLI reads artifact schemas from
@@ -48,6 +56,8 @@ Supported queries:
   agentera query decisions [--topic TOPIC]      # Decision log
   agentera query health [--dimension DIM]       # Latest health audit
   agentera query open-todos [--severity LEVEL]  # Open issues from TODO.md
+  agentera query plan                           # Active plan + task status
+  agentera query docs                           # Docs mappings + stale docs
   agentera query <artifact-name>                # Any discovered artifact
 
 When to use agentera:
@@ -131,7 +141,86 @@ def _discover_fields(schema: dict) -> dict[str, dict]:
     return fields
 
 
-def _resolve_artifact_path(artifact_rel_path: str) -> Path:
+CANONICAL_BY_SCHEMA = {
+    "changelog": "CHANGELOG.md",
+    "decisions": "DECISIONS.md",
+    "design": "DESIGN.md",
+    "docs": "DOCS.md",
+    "experiments": "EXPERIMENTS.md",
+    "health": "HEALTH.md",
+    "objective": "OBJECTIVE.md",
+    "plan": "PLAN.md",
+    "progress": "PROGRESS.md",
+    "session": "SESSION.md",
+    "todo": "TODO.md",
+    "vision": "VISION.md",
+}
+
+
+def _load_artifact_overrides() -> dict[str, str]:
+    docs_path = Path.cwd() / ".agentera" / "docs.yaml"
+    if not docs_path.exists():
+        return {}
+    try:
+        data = yaml.safe_load(docs_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    mapping = data.get("mapping") if isinstance(data, dict) else None
+    if not isinstance(mapping, list):
+        return {}
+    overrides: dict[str, str] = {}
+    for entry in mapping:
+        if not isinstance(entry, dict):
+            continue
+        artifact = entry.get("artifact")
+        path = entry.get("path")
+        if isinstance(artifact, str) and isinstance(path, str):
+            overrides[artifact] = path
+    return overrides
+
+
+def _active_objective_name() -> str | None:
+    root = Path.cwd() / ".agentera" / "optimera"
+    if not root.is_dir():
+        return None
+    candidates = [p for p in root.iterdir() if p.is_dir()]
+    if not candidates:
+        return None
+    active: list[Path] = []
+    for candidate in candidates:
+        objective = candidate / "objective.yaml"
+        if not objective.exists():
+            continue
+        try:
+            data = yaml.safe_load(objective.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        status = ""
+        if isinstance(data, dict):
+            header = data.get("header")
+            if isinstance(header, dict):
+                status = str(header.get("status", ""))
+            if not status:
+                status = str(data.get("status", ""))
+        if status.lower() == "active":
+            active.append(candidate)
+    pool = active or candidates
+    pool.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    return pool[0].name
+
+
+def _resolve_artifact_path(
+    artifact_rel_path: str,
+    schema_name: str | None = None,
+) -> Path:
+    canonical = CANONICAL_BY_SCHEMA.get(schema_name or "")
+    overrides = _load_artifact_overrides()
+    if canonical and canonical in overrides:
+        artifact_rel_path = overrides[canonical]
+    if "<name>" in artifact_rel_path:
+        objective_name = _active_objective_name()
+        if objective_name:
+            artifact_rel_path = artifact_rel_path.replace("<name>", objective_name)
     p = Path(artifact_rel_path)
     if p.is_absolute():
         return p
@@ -161,6 +250,37 @@ def _extract_entries(data: Any) -> list[dict]:
                 return val
         return [data]
     return []
+
+
+def _as_list(value: Any) -> list:
+    return value if isinstance(value, list) else []
+
+
+def _truncate(value: Any, limit: int = 110) -> str:
+    text = _format_scalar(value).replace("\n", " ")
+    return text[: limit - 3] + "..." if len(text) > limit else text
+
+
+def _first_present(entry: dict, names: list[str], default: Any = "") -> Any:
+    for name in names:
+        value = entry.get(name)
+        if value is not None and value != "":
+            return value
+    return default
+
+
+def _status_counts(entries: list[dict]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for entry in entries:
+        status = str(entry.get("status", "unknown") or "unknown")
+        counts[status] = counts.get(status, 0) + 1
+    return counts
+
+
+def _print_status_counts(prefix: str, counts: dict[str, int]) -> None:
+    if counts:
+        body = ", ".join(f"{name}={count}" for name, count in sorted(counts.items()))
+        print(f"{prefix}: {body}")
 
 
 def _string_field_names(fields: dict) -> list[str]:
@@ -224,6 +344,15 @@ def _format_scalar(val: Any) -> str:
     return str(val)
 
 
+def _format_entry(entry: dict, fields: list[str]) -> str:
+    parts = []
+    for field in fields:
+        value = entry.get(field)
+        if value is not None and value != "" and not isinstance(value, (list, dict)):
+            parts.append(f"{field}={_truncate(value)}")
+    return " | ".join(parts)
+
+
 def cmd_prime(_args: argparse.Namespace) -> int:
     print(PRIME_BLOB, end="")
     return 0
@@ -234,7 +363,7 @@ def _query_last_phase(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No progress schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_resolve_artifact_path(info["path"]))
+    data = _load_artifact(_resolve_artifact_path(info["path"], "progress"))
     entries = _extract_entries(data)
     if not entries:
         return 0
@@ -250,7 +379,7 @@ def _query_decisions(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No decisions schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_resolve_artifact_path(info["path"]))
+    data = _load_artifact(_resolve_artifact_path(info["path"], "decisions"))
     entries = _extract_entries(data)
     if not entries:
         return 0
@@ -274,7 +403,7 @@ def _query_health(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No health schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_resolve_artifact_path(info["path"]))
+    data = _load_artifact(_resolve_artifact_path(info["path"], "health"))
     entries = _extract_entries(data)
     if not entries:
         return 0
@@ -312,12 +441,42 @@ def _query_health(args: argparse.Namespace, schemas: dict) -> int:
     return 0
 
 
-def _query_open_todos(args: argparse.Namespace, _schemas: dict) -> int:
-    todo_path = Path.cwd() / "TODO.md"
+def _query_open_todos(args: argparse.Namespace, schemas: dict) -> int:
+    return _query_todo(args, schemas, open_only=True)
+
+
+def _query_todo(
+    args: argparse.Namespace,
+    schemas: dict,
+    *,
+    open_only: bool = False,
+) -> int:
+    info = schemas.get("todo", {"path": "TODO.md", "fields": {}})
+    todo_path = _resolve_artifact_path(info["path"], "todo")
     if not todo_path.exists():
         return 0
     severity = getattr(args, "severity", None)
-    text = todo_path.read_text()
+    status = getattr(args, "status", None)
+    data = _load_artifact(todo_path)
+    entries = _extract_entries(data)
+    if entries:
+        if severity:
+            entries = _filter_by_field_value(entries, "severity", severity)
+        if status:
+            entries = _filter_by_field_value(entries, "status", status)
+        if open_only:
+            entries = [
+                entry for entry in entries
+                if str(entry.get("status", "open")).lower() not in {"done", "closed", "resolved"}
+            ]
+        _print_status_counts("TODO status", _status_counts(entries))
+        for entry in entries:
+            line = _format_entry(entry, ["severity", "status", "description", "title"])
+            if line:
+                print(line)
+        return 0
+
+    text = todo_path.read_text(encoding="utf-8")
     sev_map = {
         "critical": "\u21f6",
         "degraded": "\u21c9",
@@ -346,23 +505,256 @@ def _query_open_todos(args: argparse.Namespace, _schemas: dict) -> int:
             continue
         found = True
         item = s[5:].strip()
+        if status and status.lower() not in {"open", "todo"}:
+            continue
         print(f"[{current_section}] {item}")
+    return 0
+
+
+def _query_plan(args: argparse.Namespace, schemas: dict) -> int:
+    info = schemas.get("plan")
+    if not info:
+        print("No plan schema found", file=sys.stderr)
+        return 1
+    data = _load_artifact(_resolve_artifact_path(info["path"], "plan"))
+    if not isinstance(data, dict):
+        return 0
+    legacy_entries = _as_list(data.get("entries"))
+    if legacy_entries:
+        status_filter = getattr(args, "status", None)
+        if status_filter:
+            legacy_entries = _filter_by_field_value(legacy_entries, "status", status_filter)
+        for entry in legacy_entries:
+            line = _format_entry(entry, ["status", "title", "name"])
+            if line:
+                print(line)
+        return 0
+    header = data.get("header") if isinstance(data.get("header"), dict) else {}
+    title = _first_present(header, ["title"], data.get("title", ""))
+    status = _first_present(header, ["status"], data.get("status", ""))
+    created = _first_present(header, ["created"], data.get("created", ""))
+    print(f"Plan: status={status or 'unknown'} | title={_truncate(title)} | created={created or '-'}")
+    for key in ("what", "why"):
+        value = data.get(key)
+        if value:
+            print(f"{key}: {_truncate(value)}")
+    tasks = _as_list(data.get("tasks"))
+    status_filter = getattr(args, "status", None)
+    if status_filter:
+        tasks = _filter_by_field_value(tasks, "status", status_filter)
+    _print_status_counts("Task status", _status_counts(tasks))
+    for task in tasks[:10]:
+        line = _format_entry(task, ["number", "status", "name", "title"])
+        if line:
+            print(f"Task: {line}")
+    return 0
+
+
+def _query_progress(args: argparse.Namespace, schemas: dict) -> int:
+    info = schemas.get("progress")
+    if not info:
+        print("No progress schema found", file=sys.stderr)
+        return 1
+    data = _load_artifact(_resolve_artifact_path(info["path"], "progress"))
+    entries = _extract_entries(data)
+    if not entries:
+        return 0
+    topic = getattr(args, "topic", None)
+    if topic:
+        entries = _filter_by_topic(entries, topic, info["fields"])
+    status_filter = getattr(args, "status", None)
+    if status_filter:
+        entries = _filter_by_field_value(entries, "type", status_filter)
+    limit = getattr(args, "limit", 5) or 5
+    for entry in entries[-limit:]:
+        print(_format_entry(entry, ["number", "timestamp", "type", "phase", "commit"]))
+        for key in ("what", "verified", "next"):
+            value = entry.get(key)
+            if value:
+                print(f"  {key}: {_truncate(value)}")
+    return 0
+
+
+def _query_docs(args: argparse.Namespace, schemas: dict) -> int:
+    info = schemas.get("docs")
+    if not info:
+        print("No docs schema found", file=sys.stderr)
+        return 1
+    data = _load_artifact(_resolve_artifact_path(info["path"], "docs"))
+    if not isinstance(data, dict):
+        return 0
+    legacy_entries = _as_list(data.get("entries"))
+    if legacy_entries:
+        status_filter = getattr(args, "status", None)
+        if status_filter:
+            legacy_entries = _filter_by_field_value(legacy_entries, "status", status_filter)
+        for entry in legacy_entries:
+            line = _format_entry(entry, ["last_audit", "document", "path", "status"])
+            if line:
+                print(line)
+        return 0
+    print(f"Docs: last_audit={data.get('last_audit', '-')}")
+    mapping = _as_list(data.get("mapping"))
+    index = _as_list(data.get("index"))
+    coverage = data.get("coverage") if isinstance(data.get("coverage"), dict) else {}
+    print(f"Mapping: entries={len(mapping)}")
+    if coverage:
+        print(
+            "Coverage: "
+            + " | ".join(f"{key}={_truncate(value)}" for key, value in coverage.items())
+        )
+    topic = getattr(args, "topic", None)
+    if topic:
+        t = topic.lower()
+        index = [
+            entry for entry in index
+            if t in str(entry.get("document", "")).lower()
+            or t in str(entry.get("path", "")).lower()
+            or t in str(entry.get("status", "")).lower()
+        ]
+    status_filter = getattr(args, "status", None)
+    if status_filter:
+        index = _filter_by_field_value(index, "status", status_filter)
+    _print_status_counts("Docs status", _status_counts(index))
+    for entry in index[:10]:
+        line = _format_entry(entry, ["document", "path", "last_updated", "status"])
+        if line:
+            print(line)
+    return 0
+
+
+def _query_session(args: argparse.Namespace, schemas: dict) -> int:
+    info = schemas.get("session")
+    if not info:
+        print("No session schema found", file=sys.stderr)
+        return 1
+    data = _load_artifact(_resolve_artifact_path(info["path"], "session"))
+    entries = _extract_entries(data)
+    if not entries:
+        return 0
+    limit = getattr(args, "limit", 5) or 5
+    for entry in entries[-limit:]:
+        print(_format_entry(entry, ["timestamp", "summary"]))
+        artifacts = entry.get("artifacts")
+        if artifacts:
+            print(f"  artifacts={_truncate(artifacts)}")
+    return 0
+
+
+def _query_design(args: argparse.Namespace, schemas: dict) -> int:
+    info = schemas.get("design")
+    if not info:
+        print("No design schema found", file=sys.stderr)
+        return 1
+    path = _resolve_artifact_path(info["path"], "design")
+    data = _load_artifact(path)
+    entries = _extract_entries(data)
+    if entries:
+        topic = getattr(args, "topic", None)
+        if topic:
+            entries = _filter_by_topic(entries, topic, info["fields"])
+        for entry in entries:
+            line = _format_entry(entry, ["category", "name", "value"])
+            if line:
+                print(line)
+        return 0
+    if not path.exists():
+        return 0
+    text = path.read_text(encoding="utf-8")
+    markers = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("<!-- design:") and stripped.endswith("-->"):
+            markers.append(stripped.removeprefix("<!-- design:").removesuffix("-->").strip())
+    print(f"Design: sections={len(markers)}")
+    for marker in markers[:20]:
+        print(f"category={marker}")
+    return 0
+
+
+def _query_objective(args: argparse.Namespace, schemas: dict) -> int:
+    info = schemas.get("objective")
+    if not info:
+        print("No objective schema found", file=sys.stderr)
+        return 1
+    data = _load_artifact(_resolve_artifact_path(info["path"], "objective"))
+    if not isinstance(data, dict):
+        return 0
+    legacy_entries = _as_list(data.get("entries"))
+    if legacy_entries:
+        status_filter = getattr(args, "status", None)
+        if status_filter:
+            legacy_entries = _filter_by_field_value(legacy_entries, "status", status_filter)
+        for entry in legacy_entries:
+            line = _format_entry(entry, ["title", "status", "target", "reason"])
+            if line:
+                print(line)
+        return 0
+    header = data.get("header") if isinstance(data.get("header"), dict) else {}
+    objective = data.get("objective") if isinstance(data.get("objective"), dict) else data
+    title = _first_present(header, ["title"], objective.get("title", ""))
+    status = _first_present(header, ["status"], objective.get("status", ""))
+    print(f"Objective: title={_truncate(title)} | status={status or 'unknown'}")
+    for key in ("description", "target", "measurement", "direction", "unit"):
+        value = objective.get(key) or data.get(key)
+        if value:
+            print(f"{key}: {_truncate(value)}")
+    closure = data.get("closure") if isinstance(data.get("closure"), dict) else {}
+    if closure:
+        print(_format_entry(closure, ["final_value", "target", "reason"]))
+    return 0
+
+
+def _query_experiments(args: argparse.Namespace, schemas: dict) -> int:
+    info = schemas.get("experiments")
+    if not info:
+        print("No experiments schema found", file=sys.stderr)
+        return 1
+    data = _load_artifact(_resolve_artifact_path(info["path"], "experiments"))
+    if not isinstance(data, dict):
+        return 0
+    entries = _as_list(data.get("experiments"))
+    status_filter = getattr(args, "status", None)
+    if status_filter:
+        entries = _filter_by_field_value(entries, "status", status_filter)
+    topic = getattr(args, "topic", None)
+    if topic:
+        entries = _filter_by_topic(entries, topic, info["fields"])
+    _print_status_counts("Experiment status", _status_counts(entries))
+    limit = getattr(args, "limit", 5) or 5
+    for entry in entries[-limit:]:
+        print(_format_entry(entry, ["number", "date", "label", "status"]))
+        metric = entry.get("metric")
+        if isinstance(metric, dict):
+            metric_line = _format_entry(metric, ["primary_value", "delta_vs_baseline"])
+            if metric_line:
+                print(f"  metric: {metric_line}")
+        for key in ("conclusion", "next"):
+            value = entry.get(key)
+            if value:
+                print(f"  {key}: {_truncate(value)}")
+    closure = data.get("closure") if isinstance(data.get("closure"), dict) else {}
+    if closure:
+        print("Closure: " + _format_entry(closure, ["final_value", "target", "reason"]))
     return 0
 
 
 def _query_generic(args: argparse.Namespace, schemas: dict, name: str) -> int:
     info = schemas[name]
-    data = _load_artifact(_resolve_artifact_path(info["path"]))
+    data = _load_artifact(_resolve_artifact_path(info["path"], name))
     entries = _extract_entries(data)
     if not entries:
         return 0
     topic = getattr(args, "topic", None)
     sev = getattr(args, "severity", None)
     dim = getattr(args, "dimension", None)
+    status = getattr(args, "status", None)
     if topic:
         entries = _filter_by_topic(entries, topic, info["fields"])
     if sev:
         entries = _filter_by_field_value(entries, "severity", sev)
+    if status:
+        entries = _filter_by_field_value(entries, "status", status)
     if dim:
         entries = _filter_by_field_value(entries, "dimension", dim, substring=True)
         if not entries:
@@ -371,13 +763,9 @@ def _query_generic(args: argparse.Namespace, schemas: dict, name: str) -> int:
             )
     disp = _display_fields(info["fields"])
     for e in entries:
-        parts = []
-        for fn in disp:
-            v = e.get(fn)
-            if v is not None and v != "" and not isinstance(v, (list, dict)):
-                parts.append(f"{fn}={_format_scalar(v)}")
-        if parts:
-            print(" | ".join(parts))
+        line = _format_entry(e, disp)
+        if line:
+            print(line)
     return 0
 
 
@@ -395,8 +783,16 @@ def cmd_query(args: argparse.Namespace) -> int:
     handlers = {
         "last-phase": _query_last_phase,
         "decisions": _query_decisions,
+        "design": _query_design,
+        "docs": _query_docs,
+        "experiments": _query_experiments,
         "health": _query_health,
+        "objective": _query_objective,
         "open-todos": _query_open_todos,
+        "plan": _query_plan,
+        "progress": _query_progress,
+        "session": _query_session,
+        "todo": _query_todo,
     }
     if query in handlers:
         return handlers[query](args, schemas)
@@ -425,6 +821,8 @@ def build_parser() -> argparse.ArgumentParser:
     q.add_argument("--topic", help="Filter by topic (substring match on text fields)")
     q.add_argument("--severity", help="Filter by severity level")
     q.add_argument("--dimension", help="Filter by dimension name")
+    q.add_argument("--status", help="Filter by status/type where supported")
+    q.add_argument("--limit", type=int, default=5, help="Limit recent entries for summary queries")
     return parser
 
 

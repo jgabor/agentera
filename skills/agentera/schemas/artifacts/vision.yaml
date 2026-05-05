@@ -35,13 +35,13 @@ meta:
   name: vision
   version: "1.0.0"
   description: >-
-    Project vision. Produced by visionera. Consumed by realisera, planera,
-    inspektera, dokumentera, visualisera, and orkestrera for strategic
-    alignment. No compaction: vision is not a growing artifact.
+    Project vision. Produced by visionera and direction-shaping capabilities.
+    Consumed by capabilities that need strategic alignment. No compaction:
+    vision is not a growing artifact.
   artifact_type: agent_facing
   path: ".agentera/vision.yaml"
-  producer: [visionera, realisera]
-  consumers: [realisera, planera, inspektera, dokumentera, visualisera, orkestrera]
+  producer: [inspirera, realisera, resonera, visionera]
+  consumers: [dokumentera, hej, inspektera, orkestrera, planera, realisera, resonera, visionera, visualisera]
   format: yaml
 
 GROUP_PREFIXES:

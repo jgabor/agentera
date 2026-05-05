@@ -84,6 +84,24 @@ def usage_stats():
 
 
 @pytest.fixture(scope="session")
+def extract_corpus():
+    """Load scripts/extract_corpus.py."""
+    return _load_module(
+        "extract_corpus",
+        REPO_ROOT / "scripts" / "extract_corpus.py",
+    )
+
+
+@pytest.fixture(scope="session")
+def measure_token_payload():
+    """Load scripts/measure_token_payload.py."""
+    return _load_module(
+        "measure_token_payload",
+        REPO_ROOT / "scripts" / "measure_token_payload.py",
+    )
+
+
+@pytest.fixture(scope="session")
 def hooks_common():
     """Load hooks/common.py."""
     return _load_module(

@@ -45,7 +45,7 @@ meta:
   artifact_type: agent_facing
   path: ".agentera/optimera/<name>/experiments.yaml"
   producer: optimera
-  consumers: [optimera]
+  consumers: [hej, optimera]
   format: yaml
 
 GROUP_PREFIXES:

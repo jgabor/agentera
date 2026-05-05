@@ -19,7 +19,7 @@ the three output surfaces on top of that pipeline:
    data structure is printed to stdout and no markdown is written.
 3. **Missing-corpus error path** — if the corpus does not exist or
    contains no ``conversation_turn`` records, the script exits with a
-   clear message explaining how to provide an existing corpus.
+   clear message explaining how to build or provide a corpus.
 
 Both surfaces include the script's run-at timestamp and the corpus's
 ``extracted_at`` timestamp so staleness is visible. Output path can be
@@ -169,10 +169,15 @@ def _conversation_key(record: dict) -> str | None:
 
     Per-record uniqueness of ``source_id`` is an envelope invariant, so
     multiple turns of one session must declare their conversation key
-    out-of-band. Extractors put it in ``data.session_id``; we fall back
-    to ``source_id`` so legacy corpora and synthetic test fixtures (which
-    used ``source_id`` directly as the conversation key) keep working.
+    out-of-band. Current Section 22 extractors put it in top-level
+    ``session_id`` provenance; older fixtures used ``data.session_id``.
+    We fall back to ``source_id`` so legacy corpora and synthetic test
+    fixtures (which used ``source_id`` directly as the conversation key)
+    keep working.
     """
+    sid = record.get("session_id")
+    if isinstance(sid, str) and sid:
+        return sid
     data = record.get("data")
     if isinstance(data, dict):
         sid = data.get("session_id")
@@ -554,8 +559,8 @@ def analyze_corpus(
 # path defaults to the same location's ``intermediate/corpus.json``.
 
 CORPUS_GUIDANCE = (
-    "Provide --corpus <path> to an existing corpus.json. "
-    "Agentera v2 does not currently ship a bundled profilera extraction helper."
+    "Run python3 scripts/extract_corpus.py to build the default corpus. "
+    "Provide --corpus <path> to an existing corpus.json."
 )
 
 

@@ -38,11 +38,11 @@ meta:
   version: "1.0.0"
   description: >-
     Cycle-by-cycle operational log. Produced by realisera. Consumed by
-    planera, inspektera, dokumentera, visionera, orkestrera.
+    capabilities that need recent work history and verification evidence.
   artifact_type: agent_facing
   path: ".agentera/progress.yaml"
   producer: realisera
-  consumers: [planera, inspektera, dokumentera, visionera, orkestrera]
+  consumers: [dokumentera, hej, inspektera, optimera, orkestrera, planera, realisera, visionera, visualisera]
   format: yaml
 
 GROUP_PREFIXES:

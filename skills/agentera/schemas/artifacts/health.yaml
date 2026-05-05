@@ -49,12 +49,12 @@ meta:
   name: health
   version: "1.0.0"
   description: >-
-    Audit log maintained by inspektera. Consumed by realisera, planera,
-    and orkestrera for codebase health context.
+    Audit log maintained by inspektera. Consumed by capabilities that need
+    codebase health context.
   artifact_type: agent_facing
   path: ".agentera/health.yaml"
   producer: inspektera
-  consumers: [realisera, planera, orkestrera]
+  consumers: [dokumentera, hej, inspektera, orkestrera, planera, realisera, visionera]
   format: yaml
 
 GROUP_PREFIXES:
