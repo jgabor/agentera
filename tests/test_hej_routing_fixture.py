@@ -22,6 +22,18 @@ def _load_fixture_with_output(semantic_fixtures, output: str):
     return fixture
 
 
+def _load_cli_budget_fixture_with_output(semantic_fixtures, output: str):
+    text = CLI_BUDGET_FIXTURE_PATH.read_text(encoding="utf-8")
+    before, rest = text.split("## Captured Output\n", 1)
+    _, after = rest.split("\n## Tool Trace\n", 1)
+    fixture, errors = semantic_fixtures.validate_fixture_text(
+        f"{before}## Captured Output\n{output.strip()}\n\n## Tool Trace\n{after}"
+    )
+    assert errors == []
+    assert fixture is not None
+    return fixture
+
+
 def test_passes_when_output_names_status_attention_and_exit_condition(semantic_eval, semantic_fixtures):
     fixture, errors = semantic_fixtures.load_fixture(FIXTURE_PATH)
     assert errors == []
@@ -109,6 +121,27 @@ def test_cli_budget_fixture_requires_composite_hej_tool_call(semantic_eval, sema
     assert facts["required_tool_calls[0]"]["status"] == "pass"
     for index in range(10):
         assert facts[f"forbidden_tool_calls[{index}]"]["status"] == "pass"
+    assert facts["tool_call_counts[agentera hej]"]["status"] == "pass"
+
+
+def test_cli_budget_fixture_rejects_raw_cli_output(semantic_eval, semantic_fixtures):
+    fixture = _load_cli_budget_fixture_with_output(
+        semantic_fixtures,
+        """
+        agentera hej
+        mode: returning
+        plan: status=active | progress=4/6
+        next_action:
+        - object=PLAN Task 5: Add Tool-Budget And Regression Tests | capability=orkestrera | reason=first pending plan task
+
+        ⌂ hej · waiting
+        """,
+    )
+
+    result = semantic_eval.evaluate_fixture(fixture, str(CLI_BUDGET_FIXTURE_PATH))
+
+    assert result["status"] == "fail"
+    assert result["failing_fact"]["fact"] == "required_output[0]"
 
 
 def test_cli_budget_fixture_rejects_individual_state_command(semantic_eval, semantic_fixtures):
@@ -124,3 +157,18 @@ def test_cli_budget_fixture_rejects_individual_state_command(semantic_eval, sema
 
     assert result["status"] == "fail"
     assert result["failing_fact"]["fact"] == "forbidden_tool_calls[0]"
+
+
+def test_cli_budget_fixture_rejects_duplicate_hej_state_call(semantic_eval, semantic_fixtures):
+    text = CLI_BUDGET_FIXTURE_PATH.read_text(encoding="utf-8")
+    text = text.replace(
+        '"uv run scripts/agentera hej"',
+        '"uv run scripts/agentera hej",\n    "uv run scripts/agentera hej"',
+    )
+    fixture, errors = semantic_fixtures.validate_fixture_text(text)
+    assert errors == []
+
+    result = semantic_eval.evaluate_fixture(fixture, str(CLI_BUDGET_FIXTURE_PATH))
+
+    assert result["status"] == "fail"
+    assert result["failing_fact"]["fact"] == "tool_call_counts[agentera hej]"

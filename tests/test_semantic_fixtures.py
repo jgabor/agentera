@@ -135,13 +135,24 @@ class TestToolTraceSection:
 
 class TestToolExpectations:
     def test_pass_expected_tool_facts_are_unambiguous(self, semantic_fixtures):
-        facts = {"required_tool_calls": ["agentera hej"], "forbidden_tool_calls": ["agentera plan"]}
+        facts = {
+            "required_tool_calls": ["agentera hej"],
+            "forbidden_tool_calls": ["agentera plan"],
+            "tool_call_counts": {"agentera hej": 1},
+        }
         fixture, errors = semantic_fixtures.validate_fixture_text(_fixture(expected_facts=facts))
         assert errors == []
         assert fixture.expected_facts["required_tool_calls"] == ["agentera hej"]
+        assert fixture.expected_facts["tool_call_counts"] == {"agentera hej": 1}
 
     def test_fail_malformed_tool_facts_names_section(self, semantic_fixtures):
         text = _fixture(expected_facts={"required_tool_calls": [""]})
         fixture, errors = semantic_fixtures.validate_fixture_text(text)
         assert fixture is None
         assert "malformed section: Expected Facts: required_tool_calls must be non-empty strings" in errors
+
+    def test_fail_malformed_tool_call_count_names_section(self, semantic_fixtures):
+        text = _fixture(expected_facts={"tool_call_counts": {"agentera hej": -1}})
+        fixture, errors = semantic_fixtures.validate_fixture_text(text)
+        assert fixture is None
+        assert "malformed section: Expected Facts: tool_call_counts['agentera hej'] must be a non-negative integer" in errors

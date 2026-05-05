@@ -1,0 +1,120 @@
+header:
+  level: full
+  created: '2026-05-05'
+  status: completed
+  reviewed: '2026-05-05'
+  critic_issues: "0 found, 0 addressed, 0 dismissed"
+  title: Flat Agentera State CLI
+what: >
+  Make routine Agentera state access top-level and command-shaped:
+  agentera hej, agentera plan, agentera progress, agentera health,
+  agentera todo, agentera decisions, agentera docs, agentera objective,
+  and agentera experiments. Keep agentera query as an advanced structured
+  escape hatch for ad hoc/custom access, not as the routine state surface.
+why: >
+  Bare /agentera should not require several tool calls just to assemble a
+  briefing. agentera hej should become the state engine: one command, one
+  compact composite answer, and one routing suggestion that agents can relay
+  without reading raw artifacts or querying each artifact separately.
+constraints: >
+  Do not preserve backward compatibility for routine forms such as
+  agentera query plan or agentera query health. Keep query --list-artifacts
+  or an equivalent discovery surface available for smoke tests. Preserve
+  installed-bundle behavior through AGENTERA_HOME. Do not push to remotes.
+scope:
+  included:
+    - scripts/agentera parser and command dispatch
+    - shared state-summary helpers reused by top-level commands and advanced query
+    - agentera hej composite briefing output
+    - skills/agentera/SKILL.md dispatcher guidance
+    - skills/agentera/capabilities/hej/prose.md
+    - capability prose that still teaches routine agentera query calls
+    - focused CLI and guidance regression tests
+    - help, prime, and documentation text affected by the CLI shape
+  excluded:
+    - supporting old agentera query plan, query progress, query health, query todo, query decisions, query docs, query objective, or query experiments compatibility forms
+    - changing artifact schemas unless required for the composite summary
+    - remote pushes or release tagging
+  deferred:
+    - broader CLI packaging or marketplace changes unrelated to this state-access surface
+design: >
+  Reuse the existing scripts/agentera artifact loaders and summary handlers,
+  but expose the normal state views as top-level subcommands. Add a composite
+  hej command that performs the routing decision tree inside the CLI and emits
+  the information needed for the hej dashboard. Keep query as the advanced
+  schema-driven path with structured JSON/YAML output for custom artifact
+  inspection.
+tasks:
+  - number: 1
+    name: Reshape CLI Parser Around Top-Level State Commands
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN the CLI is invoked as agentera plan WHEN plan state exists THEN it returns the routine plan summary without the query prefix
+      - GIVEN agentera health, todo, decisions, docs, objective, or experiments is invoked THEN each command works without the query prefix
+      - GIVEN agentera query plan is invoked THEN it is not treated as a supported routine compatibility path
+      - GIVEN agentera --help is shown THEN preferred state commands are top-level
+  - number: 2
+    name: Add agentera hej Composite Briefing Command
+    depends_on:
+      - Task 1
+    status: complete
+    acceptance:
+      - GIVEN a returning v2 project WHEN agentera hej runs THEN it emits mode, profile status, health, issue counts, plan progress, active objective state, attention items, and next action
+      - GIVEN the plan is complete but TODO has open normal items THEN the composite chooses the first executable TODO before vision refresh
+      - GIVEN all optimera objectives are closed THEN agentera hej does not route to optimera for completed work
+      - GIVEN v1 Markdown artifacts without YAML counterparts exist THEN agentera hej reports the upgrade-preview notice without applying changes
+  - number: 3
+    name: Keep Query As Advanced Structured Access
+    depends_on:
+      - Task 1
+    status: complete
+    acceptance:
+      - GIVEN agentera query is used for an artifact or ad hoc expression THEN it remains available for custom state access
+      - GIVEN --format json or --format yaml is supplied THEN query output is pipeable structured data
+      - GIVEN routine state access is documented THEN docs point to top-level commands, not query
+      - GIVEN discovery smoke checks need artifact names THEN query --list-artifacts or an equivalent advanced discovery command still works
+  - number: 4
+    name: Update Agent Guidance To Prefer Top-Level Commands
+    depends_on:
+      - Task 1
+      - Task 2
+      - Task 3
+    status: complete
+    acceptance:
+      - GIVEN bare /agentera is invoked THEN skills/agentera/SKILL.md instructs the agent to run agentera hej first
+      - GIVEN hej prose describes returning-project orientation THEN it forbids individual artifact queries and raw .agentera/*.yaml reads unless agentera hej fails or asks for fallback
+      - GIVEN another capability needs routine state THEN its prose uses agentera progress, agentera experiments, or another top-level command rather than agentera query progress
+      - GIVEN no top-level command fits a custom need THEN guidance permits agentera query
+  - number: 5
+    name: Add Tool-Budget And Regression Tests
+    depends_on:
+      - Task 1
+      - Task 2
+      - Task 3
+      - Task 4
+    status: complete
+    acceptance:
+      - GIVEN the /agentera or hej fixture is evaluated THEN expected tool usage includes agentera hej
+      - GIVEN that fixture is evaluated THEN it forbids agentera plan, agentera progress, agentera health, agentera todo, agentera decisions, and raw .agentera/*.yaml reads
+      - GIVEN CLI tests run THEN each preferred top-level command has focused coverage
+      - GIVEN help and prime tests run THEN they prove routine guidance no longer centers agentera query
+  - number: 6
+    name: Freshness And Closeout
+    depends_on:
+      - Task 1
+      - Task 2
+      - Task 3
+      - Task 4
+      - Task 5
+    status: complete
+    acceptance:
+      - GIVEN the CLI shape changes THEN README.md, UPGRADE.md, CHANGELOG.md, .agentera/docs.yaml, and .agentera/progress.yaml reflect the new preferred surface
+      - GIVEN validation runs THEN targeted CLI tests, hej capability tests, semantic fixture tests, and full pytest pass
+      - GIVEN lifecycle or package checks exist THEN packaged scripts/agentera still works from an installed bundle via AGENTERA_HOME
+overall_acceptance:
+  - GIVEN a user invokes bare /agentera WHEN the project has v2 state THEN the agent can serve hej from agentera hej without individual state commands or raw artifact reads
+  - GIVEN an agent needs routine state WHEN a top-level command exists THEN it uses that command before agentera query
+  - GIVEN an agent needs custom artifact inspection WHEN no top-level command fits THEN agentera query can return structured JSON or YAML
+  - GIVEN validation is complete THEN tests and docs prove the new CLI contract
+surprises: []

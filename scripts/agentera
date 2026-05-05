@@ -951,7 +951,7 @@ def _health_summary(schemas: dict) -> dict[str, Any]:
     entries = _extract_entries(data)
     if not entries:
         return {"exists": False}
-    latest = entries[-1]
+    latest = entries[0]
     grades = latest.get("grades") if isinstance(latest.get("grades"), dict) else {}
     grade_rank = {"A": 0, "B": 1, "C": 2, "D": 3, "F": 4}
     worst = None
@@ -965,6 +965,7 @@ def _health_summary(schemas: dict) -> dict[str, Any]:
         "exists": True,
         "number": latest.get("number", "?"),
         "trajectory": trajectory,
+        "grade": worst[1] if worst else "",
         "worst": worst,
         "degrading": trajectory.lower() in {"degrading", "declining", "worse"}
         or (worst is not None and worst[2] >= grade_rank["D"]),
@@ -1129,6 +1130,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
         worst_text = f"{worst[0]}:{worst[1]}" if worst else "none"
         print(
             f"health: audit={health.get('number')} | "
+            f"grade={health.get('grade') or 'unknown'} | "
             f"trajectory={health.get('trajectory') or 'unknown'} | worst={worst_text}"
         )
     print(
@@ -1183,6 +1185,8 @@ def cmd_hej(_args: argparse.Namespace) -> int:
             print(f"- {item}")
     print("next_action:")
     print(f"- {_format_next_action(next_action)}")
+    print("dashboard:")
+    print("- source=agentera hej | render=hej dashboard | status=complete")
     return 0
 
 

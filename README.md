@@ -124,8 +124,9 @@ and routes you to the most useful next capability.
 
 ## State CLI
 
-The Agentera CLI is the state access layer behind that briefing. For a returning
-project, `/agentera` should be served by one composite command:
+The Agentera CLI is the state access layer behind that briefing, not a
+replacement for the dashboard. For a returning project, `/agentera` renders the
+dashboard from one composite command:
 
 ```bash
 uv run scripts/agentera hej

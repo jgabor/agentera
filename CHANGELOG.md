@@ -9,16 +9,18 @@
 - Agentera dispatcher, hej, realisera, and optimera guidance now prefer top-level state commands and reserve `agentera query` for advanced/custom inspection.
 - README, DOCS, PLAN, and PROGRESS now freshness-close the flat State CLI surface with validation evidence.
 - `agentera hej` now provides a one-command composite orientation briefing with profile status, health, issue counts, plan progress, objective state, attention items, and the next concrete action for bare `/agentera`.
+- Bare `/agentera` continues to render the README-style hej dashboard; `agentera hej` is the compact data layer behind that dashboard, not a user-facing replacement.
 - Advanced `agentera query` calls now support `--format json` and `--format yaml` for pipeable custom artifact access while routine state forms remain top-level only.
 - Routine Agentera state access now uses top-level CLI commands such as `agentera plan`, `agentera progress`, `agentera health`, `agentera todo`, `agentera decisions`, `agentera docs`, `agentera objective`, and `agentera experiments`; `agentera query` is reserved for advanced custom artifact access.
 
 ### Added
 
-- Semantic fixtures can now assert required and forbidden tool calls, including a `/agentera` fixture proving `agentera hej` serves orientation without individual state commands or raw artifact reads.
+- Semantic fixtures can now assert required, forbidden, and exact-count tool calls, including a `/agentera` fixture proving the dashboard renders from exactly one `agentera hej` state-source call without individual state commands or raw artifact reads.
 
 ### Fixed
 
 - Artifact validation now treats advisory word budgets as non-blocking and validates progress cycles as newest-first.
+- `agentera hej` now selects the newest health audit for dashboard source data and reports a derived health grade alongside worst-dimension detail.
 
 ## [2.0.3] · 2026-05-05
 

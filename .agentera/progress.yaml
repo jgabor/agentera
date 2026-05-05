@@ -1,4 +1,130 @@
 cycles:
+- number: 277
+  timestamp: 2026-05-05 21:02
+  type: chore
+  phase: verify
+  what: Verified the v2.1.0 dashboard repair release candidate and prepared retag approval evidence.
+  commit: pending
+  inspiration: Task 6 required validators, branch/tag truth, and exact release-mutation commands before any retag or force-push.
+  discovered: >
+    Local HEAD and origin/main both point at 1786f0480e638a7c7d0ab3ee55f1e08c9dc1499f, while local and remote v2.1.0 still
+    point at pre-repair tag object 70e50e91d42dbab353889134f95e449de8f350be. The repair is in the working tree, so release
+    mutation requires committing first, then moving v2.1.0 to the corrected commit and updating the remote tag. Proposed
+    commands after explicit approval: git add -A; git commit -m "fix(hej): preserve dashboard in v2.1.0"; git tag -f v2.1.0
+    HEAD; git push origin main; git push --force origin refs/tags/v2.1.0. Risk: the tag force-push rewrites the published
+    v2.1.0 tag for anyone who already fetched it.
+  verified: >
+    Validation passed: python3 -m py_compile scripts/agentera scripts/semantic_fixtures.py scripts/semantic_eval.py; focused
+    pytest for hej, dispatcher, semantic, fixture, and runtime-version surfaces (46 passed); uv run scripts/semantic_eval.py
+    fixtures/semantic/hej-routing-task3.md fixtures/semantic/hej-cli-budget.md (2 passed); uv run scripts/validate_capability.py
+    --self-validate; uv run scripts/validate_capability.py for all 12 capabilities; uv run scripts/validate_cross_capability.py;
+    uv run scripts/validate_lifecycle_adapters.py --check-uv-runtime; uv run scripts/agentera hej selected PLAN Task 6; git diff
+    --check; GIT_SSH_COMMAND="ssh -F /dev/null" git ls-remote --heads --tags origin main refs/tags/v2.1.0; uv run pytest -q
+    (568 passed, 1 skipped).
+  next: 'Task 7 is approval-gated: retag and reverify only after explicit release-mutation approval.'
+  context:
+    intent: prove the release candidate and present exact retag commands without mutating remote state
+    constraints: no commit, retag, push, or force-push without explicit approval
+    unknowns: whether the user wants to rewrite the published v2.1.0 tag now
+    scope: tests, validators, local/remote branch and tag facts, and retag approval evidence
+- number: 276
+  timestamp: 2026-05-05 20:50
+  type: docs
+  phase: verify
+  what: Refreshed v2.1.0 dashboard repair docs and version-surface evidence.
+  commit: pending
+  inspiration: Task 5 required README, UPGRADE, CHANGELOG, DOCS, PROGRESS, PLAN, and version surfaces to agree that /agentera still renders the dashboard from the agentera hej data source.
+  discovered: Version-bearing package files already reported 2.1.0, but DOCS version_files omitted uv.lock. README and UPGRADE needed clearer wording that the State CLI is the dashboard data layer rather than a replacement.
+  verified: 'Validation passed: version-surface script confirmed pyproject.toml, uv.lock, plugin.json, registry.json, .claude-plugin/marketplace.json, .codex-plugin/plugin.json, .github/plugin/plugin.json, .opencode/plugins/agentera.js, and CHANGELOG.md all carry 2.1.0 evidence; uv run pytest tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_version_marker_is_documented tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_version_bearing_package_surfaces_align -q (2 passed); rg confirmed dashboard/data-layer wording in README.md, UPGRADE.md, CHANGELOG.md, and .agentera/docs.yaml.'
+  next: 'Implement Task 6: verify the release candidate and prepare explicit retag approval evidence.'
+  context:
+    intent: align docs and release metadata around the repaired v2.1.0 behavior
+    constraints: no version bump, no retag, no remote mutation
+    unknowns: remote tag and branch truth belong to Task 6
+    scope: README.md, UPGRADE.md, CHANGELOG.md, .agentera/docs.yaml, .agentera/progress.yaml, .agentera/plan.yaml, and version surfaces
+- number: 275
+  timestamp: 2026-05-05 20:40
+  type: test
+  phase: verify
+  what: Added dashboard regression coverage for the v2.1.0 hej repair.
+  commit: pending
+  inspiration: Task 4 required semantic fixtures to reject raw CLI-only /agentera output while preserving the one-command agentera hej tool budget.
+  discovered: The fixture contract could assert tool-call presence and absence, but not exact counts. Adding tool_call_counts let the CLI-budget fixture prove exactly one agentera hej state-gathering call while still forbidding routine state commands and raw artifact reads.
+  verified: 'Validation passed: python3 -m py_compile scripts/semantic_fixtures.py scripts/semantic_eval.py; uv run pytest tests/test_semantic_fixtures.py tests/test_semantic_eval.py tests/test_hej_routing_fixture.py -q (38 passed); uv run scripts/semantic_eval.py fixtures/semantic/hej-routing-task3.md fixtures/semantic/hej-cli-budget.md (2 passed).'
+  next: 'Implement Task 5: refresh docs, artifacts, and v2.1.0 version surfaces.'
+  context:
+    intent: make dashboard rendering and exact one-command state gathering executable
+    constraints: offline semantic eval only, no live model calls, no remote mutation
+    unknowns: release metadata freshness belongs to Task 5
+    scope: semantic fixture contract, semantic evaluator, hej CLI-budget fixture, and regression tests
+- number: 274
+  timestamp: 2026-05-05 20:31
+  type: fix
+  phase: verify
+  what: Restored the /agentera dashboard rendering contract around agentera hej.
+  commit: pending
+  inspiration: Task 3 required bare /agentera to render the README/prose dashboard from one agentera hej state-source call instead of relaying raw CLI lines.
+  discovered: The root dispatcher needed explicit "data source, not dashboard" wording, hej prose needed normal missing fields routed back into the composite CLI contract, and agentera hej was selecting an older health audit because health entries are newest-first in this repo.
+  verified: 'Validation passed: python3 -m py_compile scripts/agentera; uv run pytest tests/test_query_cli.py::TestHej -q (4 passed); uv run pytest tests/test_cross_capability.py::test_master_skill_requires_cli_first_state_access -q (1 passed); uv run scripts/agentera hej now reports audit=19, grade=B, worst=Tests:B, and dashboard source metadata while selecting PLAN Task 3 from the active plan.'
+  next: 'Implement Task 4: add dashboard regression coverage that rejects raw CLI-only /agentera output.'
+  context:
+    intent: preserve the visible hej dashboard while keeping agentera hej as the single normal state data source
+    constraints: no routine fallback reads, no remote mutation, direct CLI remains compact
+    unknowns: exact fixture runner changes belong to Task 4
+    scope: skills/agentera/SKILL.md, skills/agentera/capabilities/hej/prose.md, and scripts/agentera
+- number: 273
+  timestamp: 2026-05-05 19:57
+  type: chore
+  phase: verify
+  what: Diagnosed the v2.1.0 hej dashboard contract break.
+  commit: this commit
+  inspiration: >
+    Task 2 of the repair plan required the README, dispatcher, hej prose, CLI,
+    fixtures, and tests to identify where raw `agentera hej` output was allowed
+    to count as bare `/agentera` success.
+  discovered: >
+    Contract sources still require a rendered dashboard: README.md shows the logo,
+    status, attention, and next sections; SKILL.md says bare `/agentera` must run
+    `agentera hej` and build the briefing from that composite result; hej prose
+    says to render the dashboard and mandatory `⌂ hej · <status>` exit marker.
+    Broken surface 1: `fixtures/semantic/hej-cli-budget.md` captures raw CLI
+    lines (`agentera hej`, `mode:`, `plan:`, `next_action:`) and its expected
+    facts require those raw strings, so raw CLI plus an exit marker passes. Task 4
+    must replace that with a dashboard-positive/raw-negative fixture. Broken
+    surface 2: `tests/test_hej_routing_fixture.py` only proves the raw-output
+    budget fixture passes and rejects extra individual state commands; it does
+    not reject raw `/agentera` output. Task 4 must add focused fail/pass
+    assertions for raw CLI vs rendered dashboard. Broken surface 3:
+    `scripts/semantic_eval.py` checks tool calls by substring presence/absence,
+    so duplicate `agentera hej` calls can still satisfy the one-command invariant.
+    Task 4 must make the normal orientation trace require exactly one
+    state-gathering command, `agentera hej`. Broken surface 4: `scripts/agentera
+    hej` emits a compact data source, not the dashboard; that is acceptable for
+    direct CLI use, but its fields are ambiguous for full rendering. Health uses
+    the last extracted audit entry even though current health data is newest-first,
+    and the output lacks an overall health grade, objective current value, and
+    explicit dashboard-data completeness signal. Task 3 must either extend the CLI
+    data contract or define renderer mappings without adding normal fallback
+    artifact reads. Broken surface 5: the CLI unit test names the compact output a
+    composite briefing and asserts raw lines, which is fine for direct CLI
+    coverage but should not stand in for `/agentera` rendering coverage. Task 4
+    must separate direct-CLI contract tests from agent-rendered dashboard tests.
+  verified: >
+    Inspected README.md, skills/agentera/SKILL.md,
+    skills/agentera/capabilities/hej/prose.md, scripts/agentera,
+    fixtures/semantic/hej-routing-task3.md, fixtures/semantic/hej-cli-budget.md,
+    scripts/semantic_fixtures.py, scripts/semantic_eval.py,
+    tests/test_query_cli.py, tests/test_cross_capability.py,
+    tests/test_hej_capability.py, and tests/test_hej_routing_fixture.py. Ran `uv
+    run scripts/agentera hej` and observed compact raw output selecting PLAN Task
+    2, confirming the CLI is currently a data source rather than the visible
+    dashboard.
+  next: 'Implement Task 3: restore /agentera dashboard rendering from one `agentera hej` data-source call.'
+  context:
+    intent: identify the exact places that let raw CLI output masquerade as `/agentera`
+    constraints: diagnosis only; no implementation behavior, version, tag, or remote mutation
+    unknowns: exact dashboard renderer location remains Task 3 work
+    scope: README, dispatcher, hej prose, CLI output, semantic fixtures, fixture runner, and tests
 - number: 272
   timestamp: 2026-05-05 18:44
   type: chore

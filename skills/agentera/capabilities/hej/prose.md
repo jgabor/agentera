@@ -25,12 +25,13 @@ uv run ${AGENTERA_HOME:-.}/scripts/agentera hej
 ```
 
 Use that output to render the dashboard and select the concrete next action. Do
-not run `agentera plan`, `agentera progress`, `agentera health`, `agentera
-todo`, `agentera decisions`, or `agentera objective` as part of normal hej
-briefing assembly. Do not read raw `.agentera/*.yaml` files for normal hej
-orientation. If `agentera hej` fails, reports that fallback is required, or a
-field needed for the dashboard is missing, use the top-level state command that
-owns that field before opening raw artifacts.
+not relay raw CLI lines as the user-facing briefing. Do not run `agentera plan`,
+`agentera progress`, `agentera health`, `agentera todo`, `agentera decisions`,
+or `agentera objective` as part of normal hej briefing assembly. Do not read raw
+`.agentera/*.yaml` files for normal hej orientation. If a normal dashboard field
+is missing from `agentera hej`, fix or extend the composite CLI contract instead
+of adding routine fallback reads. Use top-level fallback commands only when
+`agentera hej` fails or explicitly reports fallback-only recovery.
 
 Use `agentera query <artifact-name> --format json|yaml` only for advanced or
 custom artifact inspection when no top-level command serves the needed state.
@@ -143,9 +144,11 @@ Show where things stand.
      orientation.
    - Do not open raw `.agentera/*.yaml` files unless the composite command fails
      or names a fallback need.
-   - If fallback is required, prefer top-level commands such as `agentera plan`,
-     `agentera progress`, `agentera health`, `agentera todo`, `agentera
-     decisions`, `agentera objective`, and `agentera experiments`.
+   - If exceptional fallback is required, prefer top-level commands such as
+     `agentera plan`, `agentera progress`, `agentera health`, `agentera todo`,
+     `agentera decisions`, `agentera objective`, and `agentera experiments`.
+     Missing normal dashboard fields should be repaired in `agentera hej`
+     instead of weakening the one-command path.
    - Keep `agentera query` for advanced/custom inspection only.
 
 2. **Brief them**: concise status, only what exists. No empty sections.
