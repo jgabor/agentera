@@ -8,11 +8,14 @@
 - Decision 42 five-layer dispatch model implemented in SKILL.md: bare `/agentera` delegates to hej, capability names bypass NL matching, trigger schemas gain priority fields (high/medium/low), disambiguation prompt specified for borderline matches.
 - Comprehensive gap analysis document (`.agentera/gap-analysis-2026-05-05.md`) auditing ROADMAP.md and Decisions 39-42 against actual implementation.
 - `scripts/smoke_live_hosts.py --live --yes` now includes OpenCode live AGENTERA_HOME/query coverage via isolated `opencode run --pure`, while keeping Claude Code live smoke explicitly deferred.
+- Decision 41 release scope updated: the Agentera 2.0 static dispatch payload target is revised to -10%, with the measured -9.8% accepted as close enough for v2.0 and further optimization deferred to future versions.
 
 ### Changed
 
 - feat/v2 merged to main via fast-forward after validation (507 tests pass, 0 failures; all 12 capabilities pass contract validation; version surfaces at 2.0.0).
 - All 12 capability `triggers.yaml` schemas updated with `priority` field for confidence-based routing.
+- Claude Code live model-host smoke is excluded from the required v2.0 release harness until Claude Pro/Max or API access is available; future Claude live smoke should be explicit opt-in.
+- Final v2.0 release-candidate validation passed on 2026-05-05: full pytest, capability validators, cross-capability graph, offline and live smoke, token payload measurement, stale-v1 detection, OpenCode bootstrap, lifecycle metadata, and query CLI checks.
 
 ## [2.0.0] · 2026-05-04
 

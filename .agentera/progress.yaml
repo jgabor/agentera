@@ -1,11 +1,37 @@
 cycles:
+- number: 259
+  timestamp: 2026-05-05 09:55
+  type: chore
+  phase: verify
+  what: Applied the final v2.0 release-scope decisions and ran the release-candidate validation suite. The static token target
+    is revised to -10%, with the measured -9.8% accepted as close enough for v2.0. Claude Code live smoke is excluded from
+    the required harness until Claude Pro/Max or API access is available; future Claude live smoke should be explicit opt-in.
+  commit: 510bd75
+  inspiration: User release-candidate instructions on 2026-05-05.
+  discovered: No release-blocking gaps remain under the revised scope. Optional future work remains for deeper token optimization
+    and opt-in Claude Code live smoke when credentials exist.
+  verified: 'Release-candidate validation passed: uv run pytest -q (520 passed, 1 skipped); uv run scripts/validate_capability.py
+    --self-validate; uv run scripts/validate_capability.py for all 12 capabilities; python3 scripts/validate_cross_capability.py;
+    python3 scripts/smoke_live_hosts.py; python3 scripts/measure_token_payload.py (317,616 bytes vs 352,213 bytes, -9.8%);
+    python3 scripts/detect_stale_v1; node scripts/smoke_opencode_bootstrap.mjs; python3 scripts/validate_lifecycle_adapters.py;
+    python3 scripts/agentera query --list-artifacts; python3 scripts/agentera query decisions --topic benchmark; python3
+    scripts/agentera query plan; python3 scripts/smoke_live_hosts.py --live --yes. Live harness covered Codex AGENTERA_HOME/query,
+    Codex apply_patch hooks, Copilot AGENTERA_HOME/query, and OpenCode AGENTERA_HOME/query; Codex config, shell rc files,
+    and OpenCode auth snapshots were restored.'
+  next: Fast-forward/integrate with main locally after this validation is accepted. Do not create or push `v2.0.0` until explicitly
+    approved or requested.
+  context:
+    intent: confirm v2.0 release-candidate readiness
+    constraints: no Agentera skill loading during review; no Claude Code live smoke without credentials; no tag or push without explicit approval
+    unknowns: no release-blocking unknowns under the revised scope
+    scope: release-scope artifacts and final RC validation only
 - number: 258
   timestamp: 2026-05-05 09:25
   type: fix
   phase: verify
   what: Added OpenCode to the gated live-host smoke harness and refreshed the gap-analysis artifacts to record Codex/Copilot/OpenCode
     live evidence while keeping Claude Code explicitly deferred.
-  commit: pending
+  commit: 03171ca
   inspiration: User request to include live smoke OpenCode and defer Claude Code.
   discovered: OpenCode 1.14.33 is installed and authenticated on this host. `opencode run --pure` can execute the AGENTERA_HOME/query
     probe from a temporary workdir without loading Agentera skills when AGENTERA_HOME, XDG_DATA_HOME, OPENCODE_CONFIG_DIR, and
@@ -14,8 +40,7 @@ cycles:
     and python3 scripts/smoke_live_hosts.py --live --yes. Live smoke scope now includes Codex AGENTERA_HOME/query, Codex
     apply_patch hooks, Copilot AGENTERA_HOME/query, and OpenCode AGENTERA_HOME/query via `opencode run --pure`; config,
     shell rc, and OpenCode auth snapshots were restored.'
-  next: TODO.md keeps the missed token target open and tracks Claude Code live smoke as deferred; avoid literal four-runtime
-    live model-host claims until that deferred check runs.
+  next: Await release-scope decisions on the token target and Claude Code live smoke before final release-candidate validation.
   context:
     intent: add OpenCode live smoke evidence without loading Agentera skills
     constraints: no Agentera skill loading during review; Claude Code live smoke deferred by user request
