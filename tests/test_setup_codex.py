@@ -21,6 +21,7 @@ Plus four behavioral gates (12 cases total):
 - auto-detect failure (AC6)               test_auto_detect_failure_message
 - dry-run on pending change (AC7)         test_dry_run_pending_exits_1
 - dry-run on no-op (AC7)                  test_dry_run_noop_exits_0
+- v2 --enable-agents compatibility no-op  test_enable_agents_is_v2_noop
 
 (test_branch4 also asserts byte-identical re-run — AC2.)
 """
@@ -351,3 +352,27 @@ def test_dry_run_noop_exits_0(
     assert rc == 0, out
     # File untouched.
     assert target.read_bytes() == before_bytes
+
+
+def test_enable_agents_is_v2_noop(
+    setup_codex: ModuleType, tmp_path: Path, install_root: Path, capsys
+):
+    """Agentera v2 exposes one bundled skill; --enable-agents must not write v1 paths."""
+    target = tmp_path / "config.toml"
+
+    rc = _run(
+        setup_codex,
+        "--install-root",
+        str(install_root),
+        "--config-file",
+        str(target),
+        "--enable-agents",
+    )
+    out = capsys.readouterr()
+    assert rc == 0, out
+    assert "--enable-agents is deprecated in Agentera v2" in out.err
+
+    text = target.read_text(encoding="utf-8")
+    assert f'AGENTERA_HOME = "{install_root}"' in text
+    assert "[agents." not in text
+    assert "skills/hej" not in text

@@ -1,4 +1,34 @@
 cycles:
+- number: 261
+  timestamp: 2026-05-05 10:51
+  type: feat
+  phase: verify
+  what: Added an idempotent `agentera upgrade` CLI that plans by default and applies with `--yes`, covering v1 artifact migration,
+    runtime config wiring, stale v1 cleanup, package-update opt-in, JSON output, and setup-doctor postflight. Codex setup no
+    longer writes removed v1 per-skill agent blocks, Codex UI metadata now points at the single `skills/agentera` bundle, and
+    legacy migration docs/wrappers route users toward the upgrade command.
+  commit: this commit
+  inspiration: User request to proceed with automating the existing Agentera 1.x to 2.0 upgrade path.
+  discovered: The previous Codex `--enable-agents` path still targeted removed `skills/<name>/agents/<name>.toml` files, so
+    fully reliable upgrade automation needed to skip v1 agent-block writes and validate Codex metadata against the bundled
+    `skills/agentera` shape.
+  verified: 'Validation passed: uv run --with pytest --with pyyaml pytest -q (530 passed, 1 skipped); uv run --with pytest
+    --with pyyaml pytest -q tests/test_upgrade_cli.py tests/test_setup_codex.py tests/test_runtime_adapters.py tests/test_detect_stale_v1.py (93 passed);
+    uv run --with pytest --with pyyaml pytest -q tests/test_query_cli.py tests/test_upgrade_cli.py (48 passed); uv run
+    scripts/validate_lifecycle_adapters.py --check-uv-runtime; uv run scripts/agentera query --list-artifacts; uv run scripts/agentera
+    query last-phase; uv run scripts/agentera query progress --limit 1; uv run scripts/agentera upgrade --help; uv run
+    scripts/agentera upgrade --only artifacts --project /tmp/agentera-upgrade-empty-project
+    --dry-run --json; uv run scripts/agentera upgrade --only packages --runtime opencode --json; uv run scripts/agentera upgrade
+    --only runtime --runtime codex --home /tmp/agentera-upgrade-home3 --yes --json; uv run scripts/setup_codex.py --install-root
+    $HOME/git/agentera-v2 --config-file /tmp/agentera-setup-codex2.toml --enable-agents; uv run scripts/migrate_v1_to_v2
+    --project <tmp> --dry-run; node --check .opencode/plugins/agentera.js.'
+  next: Fast-forward/integrate with main locally after validation is accepted; do not run external package updates or publish
+    release tags without explicit approval.
+  context:
+    intent: make the v1-to-v2 upgrade path automated, repeatable, and clear for existing installations
+    constraints: no Agentera skill loading during review; Claude Code live smoke remains deferred; package updates are explicit opt-in
+    unknowns: no known release-blocking upgrade automation gaps after validation
+    scope: Agentera CLI, migration wrappers, runtime setup metadata, upgrade docs, lifecycle validation, tests, and release-state artifacts
 - number: 260
   timestamp: 2026-05-05 10:25
   type: chore
@@ -6,7 +36,7 @@ cycles:
   what: Uplifted root Python scripts and hooks to `uv run --script` shebangs with PEP 723 metadata, rewired runtime hook
     commands and the OpenCode plugin to invoke Python helpers through `uv run`, replaced stale CI/Lefthook checks with current
     v2 validators, and refreshed active docs from retired `python3`/`validate_spec.py`/`generate_contracts.py` references.
-  commit: N/A: worktree change pending
+  commit: b4627a0
   inspiration: User request to uplift all scripts to uv shebang and PEP 723 metadata and fix stale docs/CI workflows.
   discovered: Lifecycle validation only covered executable `scripts/*.py` and assumed stdlib-only dependencies, so hooks,
     extensionless scripts, non-executable script files, and legitimate inline `pyyaml` dependencies could drift. CI still

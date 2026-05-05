@@ -10,7 +10,7 @@ Current verification:
 
 | Check | Result |
 |---|---|
-| `uv run --with pytest --with pyyaml pytest -q` | PASS: 522 passed, 1 skipped |
+| `uv run --with pytest --with pyyaml pytest -q` | PASS: 530 passed, 1 skipped |
 | `uv run scripts/validate_capability.py --self-validate` | PASS |
 | `uv run scripts/validate_capability.py skills/agentera/capabilities/<all 12>` | PASS |
 | `uv run scripts/smoke_setup_helpers.py` | PASS |
@@ -24,6 +24,10 @@ Current verification:
 | `uv run scripts/agentera query --list-artifacts` | Lists all 12 artifact types |
 | `uv run scripts/agentera query decisions --topic benchmark` | Returns Decision 41 benchmark result |
 | `uv run scripts/agentera query plan` | Returns artifact-specific plan summary and task status counts |
+| `uv run scripts/agentera query last-phase` / `uv run scripts/agentera query progress --limit 1` | Returns the newest cycle from newest-first progress YAML |
+| `uv run scripts/agentera upgrade --help` | Lists the v1-to-v2 upgrade subcommand and phase/runtime controls |
+| `uv run scripts/agentera upgrade --only artifacts --project /tmp/agentera-upgrade-empty-project --dry-run --json` | PASS: no-op plan for a project with no v1 artifacts |
+| `uv run scripts/agentera upgrade --only packages --runtime opencode --json` | PASS: external package update is skipped unless explicitly opted in |
 | v1 residue scans | PASS: no active missing-reference/template pointers, no stale physical v1 paths outside intentional migration detection/tests |
 
 ## ROADMAP.md Phase 1: Infrastructure
@@ -34,7 +38,7 @@ Current verification:
 | Define shared protocol schema | Complete | `skills/agentera/protocol.yaml` | None |
 | Build universal query CLI scaffold | Complete | `scripts/agentera` supports `prime`, `query`, `query --list-artifacts`, docs.yaml path overrides, active objective lookup, and artifact-specific summaries | None |
 | Define agent-facing artifact schemas | Complete | `skills/agentera/schemas/artifacts/*.yaml` | None |
-| Build artifact migration tool | Complete | `scripts/migrate_artifacts_v1_to_v2`; migration tests pass | None |
+| Build artifact migration tool | Complete | `scripts/migrate_artifacts_v1_to_v2`; `scripts/agentera upgrade --only artifacts`; migration and upgrade tests pass | None |
 | Rewrite hook to validate against schemas | Complete | `hooks/validate_artifact.py`; `tests/test_hook_v2.py` covers adapter routing, YAML validation, duplicate numbers, blank Decision 41 regression | None |
 | Set up v2 branch/worktree | Complete | Current worktree is `$HOME/git/agentera-v2` | None |
 
@@ -46,7 +50,7 @@ Phase 1 verdict: complete.
 |---|---|---|---|
 | Port all 12 capabilities | Complete | Every capability has `prose.md` and four schema files; all capability validators pass | None |
 | hej becomes master entry behavior | Complete with split ownership | `skills/agentera/SKILL.md` is the dispatcher; `capabilities/hej/prose.md` owns state-aware briefing and v1 detection | None |
-| Keep one bundled skill | Complete | Only `skills/agentera/SKILL.md` is exposed as the bundled skill | Runtime metadata still carries some historical capability wording, but the package shape is v2 |
+| Keep one bundled skill | Complete | Only `skills/agentera/SKILL.md` is exposed as the bundled skill; Codex UI metadata points at `skills/agentera` | None |
 
 Phase 2 verdict: complete.
 
@@ -58,7 +62,7 @@ Phase 2 verdict: complete.
 | Hook integration with schema validation | Complete | `hooks/common.py` defaults now resolve to `.agentera/*.yaml`; session start/stop tests pass against v2 YAML; OpenCode hard gate denies invalid artifacts | None |
 | Query CLI commands for all artifact types | Complete | `scripts/agentera`; `tests/test_query_cli.py`; artifact-specific summaries for plan, progress, decisions, health, docs, session, todo, design, objective, and experiments | None |
 | Runtime adapter updates | Complete for offline/package surfaces plus gated Codex/Copilot/OpenCode live smoke | Setup smoke, OpenCode bootstrap smoke, lifecycle metadata validator, and `scripts/smoke_live_hosts.py --live --yes` all pass | Claude Code live smoke is excluded from the required harness until Claude Pro/Max or API access is available |
-| Port tests | Complete for current v2 suite | `522 passed, 1 skipped` | The retired v1 helper tests are intentionally gone; no claim should cite 577 as current |
+| Port tests | Complete for current v2 suite | `530 passed, 1 skipped` | The retired v1 helper tests are intentionally gone; no claim should cite 577 as current |
 | Smoke tests across runtimes | Complete for required live harness | Offline setup + OpenCode plugin smoke pass; gated live harness passes for Codex, Copilot, and OpenCode | Claude Code live smoke is future opt-in only because credentials are unavailable |
 
 Phase 3 verdict: complete for offline/package/query surfaces; required live host behavior is proven for Codex, Copilot, and OpenCode. Claude Code live smoke is not a v2.0 release gate without Claude Pro/Max or API access.
@@ -67,7 +71,7 @@ Phase 3 verdict: complete for offline/package/query surfaces; required live host
 
 | Claim | Status | Evidence | Gap |
 |---|---|---|---|
-| Full test suite green | Complete | `522 passed, 1 skipped` | None |
+| Full test suite green | Complete | `530 passed, 1 skipped` | None |
 | Semantic eval port | Complete | Semantic eval fixtures/tests use v2 YAML paths and pass | None |
 | Token consumption benchmark | Complete | Decision 41 and `scripts/measure_token_payload.py` record v1 352,213 bytes vs current v2 317,592 bytes, -9.8%; revised -10% release target accepted as close enough | Further optimization deferred to future versions |
 | Version bump to 2.0.0 | Complete | Runtime package validators pass | None |
@@ -123,17 +127,23 @@ Non-blocking follow-ups remain:
 - Stale active v1 artifacts were moved out of the live `.agentera/` root.
 - README/AGENTS/runtime smoke references to missing v1 scripts were removed or made explicit as deferred.
 - Capability prose, schemas, and the shared contract no longer point at missing bundled templates/references or teach v1 Markdown formats for the main agent-facing YAML artifacts.
+- `scripts/agentera upgrade` now provides an idempotent v1-to-v2 upgrade path covering artifact migration, runtime config wiring, stale v1 cleanup, explicit package-update opt-in, JSON output, and runtime postflight.
+- Codex setup and UI metadata no longer write or advertise removed v1 per-skill agent paths; `--enable-agents` is a compatibility no-op in v2.
+- `scripts/agentera query last-phase` and `scripts/agentera query progress --limit 1` now return the newest cycle from newest-first progress YAML.
 
 ## Recommended Next Actions
 
-1. Fast-forward/integrate with main locally.
+1. Commit the current upgrade automation changes once accepted.
+   The worktree now contains the automated upgrade path, Codex metadata cleanup, query recency fix, tests, and release-state artifact updates.
+
+2. Fast-forward/integrate with main locally.
    Final release-candidate validation passed on 2026-05-05 under the current release scope: token target revised to -10%, Claude Code live smoke excluded from the required harness until credentials exist, and no tag/push until explicitly approved.
 
-2. Hold release publication.
+3. Hold release publication.
    Do not create or push `v2.0.0` until explicitly requested.
 
 ## Overall Verdict
 
 Agentera 2.0 is reliable enough to continue from this gap analysis. The basic v2 cutover is structurally sound: bundled skill shape, YAML artifact paths, schema validation, session hooks, runtime metadata, offline smoke checks, cross-capability graph validation, bundled corpus extraction, artifact-specific query summaries, and the current test suite are green.
 
-The final release-candidate validation passed on 2026-05-05. The remaining release work is procedural: fast-forward/integrate with main locally, then wait for explicit approval before creating or pushing the `v2.0.0` tag.
+The final release-candidate validation passed on 2026-05-05. The remaining release work is procedural: commit the upgrade automation if accepted, fast-forward/integrate with main locally, then wait for explicit approval before creating or pushing the `v2.0.0` tag.

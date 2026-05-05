@@ -1,13 +1,14 @@
 #!/usr/bin/env -S uv run --script
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.11"
 # dependencies = ["pyyaml"]
 # ///
-"""agentera CLI: query project state and print agent-priming guidance.
+"""agentera CLI: query project state, upgrade installs, and print priming guidance.
 
-Two commands:
+Commands:
   agentera prime             Print static agent-priming guidance
   agentera query <pattern>   Query project artifacts
+  agentera upgrade           Plan or apply a v1-to-v2 upgrade
 
 Query patterns:
   last-phase                     Last cycle's phase (from progress)
@@ -38,6 +39,8 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
+from agentera_upgrade import cmd_upgrade
 
 PRIME_BLOB = """\
 # agentera priming guide
@@ -337,6 +340,22 @@ def _display_fields(fields: dict, limit: int = 6) -> list[str]:
     return ordered[:limit]
 
 
+def _cycle_sort_key(entry: dict) -> tuple[int, int | str]:
+    number = entry.get("number")
+    if isinstance(number, int):
+        return (1, number)
+    if isinstance(number, str) and number.isdigit():
+        return (1, int(number))
+    timestamp = entry.get("timestamp")
+    if isinstance(timestamp, str):
+        return (0, timestamp)
+    return (0, "")
+
+
+def _recent_cycles(entries: list[dict], limit: int) -> list[dict]:
+    return sorted(entries, key=_cycle_sort_key, reverse=True)[:limit]
+
+
 def _format_scalar(val: Any) -> str:
     if isinstance(val, (list, dict)):
         s = str(val)
@@ -367,7 +386,7 @@ def _query_last_phase(args: argparse.Namespace, schemas: dict) -> int:
     entries = _extract_entries(data)
     if not entries:
         return 0
-    last = entries[-1]
+    last = _recent_cycles(entries, 1)[0]
     phase = last.get("phase", "")
     if phase:
         print(phase)
@@ -566,7 +585,7 @@ def _query_progress(args: argparse.Namespace, schemas: dict) -> int:
     if status_filter:
         entries = _filter_by_field_value(entries, "type", status_filter)
     limit = getattr(args, "limit", 5) or 5
-    for entry in entries[-limit:]:
+    for entry in _recent_cycles(entries, limit):
         print(_format_entry(entry, ["number", "timestamp", "type", "phase", "commit"]))
         for key in ("what", "verified", "next"):
             value = entry.get(key)
@@ -808,7 +827,7 @@ def cmd_query(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="agentera",
-        description="agentera: query project state and print priming guidance",
+        description="agentera: query project state, upgrade installs, and print priming guidance",
     )
     sub = parser.add_subparsers(dest="command")
     sub.add_parser(
@@ -823,6 +842,77 @@ def build_parser() -> argparse.ArgumentParser:
     q.add_argument("--dimension", help="Filter by dimension name")
     q.add_argument("--status", help="Filter by status/type where supported")
     q.add_argument("--limit", type=int, default=5, help="Limit recent entries for summary queries")
+    u = sub.add_parser(
+        "upgrade",
+        help="Plan or apply an idempotent v1-to-v2 upgrade",
+    )
+    u.add_argument(
+        "--project",
+        type=Path,
+        default=Path.cwd(),
+        help="Project directory whose .agentera artifacts should be migrated (default: cwd)",
+    )
+    u.add_argument(
+        "--install-root",
+        type=Path,
+        default=None,
+        help="Agentera install root to wire into runtime configs (default: this bundle)",
+    )
+    u.add_argument(
+        "--home",
+        type=Path,
+        default=Path.home(),
+        help="Home directory for runtime config writes/detection (default: current user home)",
+    )
+    u.add_argument(
+        "--runtime",
+        action="append",
+        choices=["claude", "opencode", "copilot", "codex"],
+        help="Runtime to include; may be repeated (default: all runtimes)",
+    )
+    u.add_argument(
+        "--only",
+        action="append",
+        choices=["artifacts", "runtime", "cleanup", "packages"],
+        help="Upgrade phase to include; may be repeated (default: all phases)",
+    )
+    u.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Plan only and write nothing (default unless --yes is provided)",
+    )
+    u.add_argument(
+        "--yes",
+        action="store_true",
+        help="Apply pending local upgrade actions",
+    )
+    u.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite managed runtime files or conflicting backups where explicitly supported",
+    )
+    u.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit structured JSON instead of human-readable text",
+    )
+    u.add_argument(
+        "--update-packages",
+        action="store_true",
+        help="Also run external npx skills update commands for package-managed runtimes",
+    )
+    u.add_argument(
+        "--copilot-rc-file",
+        type=Path,
+        default=None,
+        help="Override Copilot shell rc target (useful for previewing or tests)",
+    )
+    u.add_argument(
+        "--opencode-config-dir",
+        type=Path,
+        default=None,
+        help="Override OPENCODE_CONFIG_DIR for plugin copy and stale-command cleanup",
+    )
     return parser
 
 
@@ -833,6 +923,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_prime(args)
     if args.command == "query":
         return cmd_query(args)
+    if args.command == "upgrade":
+        return cmd_upgrade(args)
     parser.print_help()
     return 1
 

@@ -1,64 +1,75 @@
-# Upgrading to agentera v2
+# Upgrading to Agentera v2
 
 ## What changed
 
-- **12 standalone skills → 1 bundled skill** with 12 capabilities under `skills/agentera/`
-- **Artifact format**: Markdown → YAML for agent-facing files
-- **New query CLI**: `uv run scripts/agentera query <artifact-name>`
+- **12 standalone skills -> 1 bundled skill** with 12 capabilities under `skills/agentera/`
+- **Artifact format**: Markdown -> YAML for agent-facing `.agentera/` files
+- **Upgrade CLI**: `uv run scripts/agentera upgrade`
+- **Query CLI**: `uv run scripts/agentera query <artifact-name>`
 
-## Upgrade steps
+## Recommended upgrade
+
+Preview first. This writes nothing and exits non-zero when pending work exists:
+
+```bash
+uv run scripts/agentera upgrade --project /path/to/project --dry-run
+```
+
+Apply local, idempotent upgrade actions:
+
+```bash
+uv run scripts/agentera upgrade --project /path/to/project --yes
+```
+
+The command migrates v1 project artifacts, configures selected runtime surfaces, removes fixable stale v1 runtime artifacts, and runs a postflight setup doctor. Re-running it after a successful apply should report `noop`.
+
+External package updates are deliberately opt-in because they run `npx` and may touch global runtime installs:
+
+```bash
+uv run scripts/agentera upgrade --project /path/to/project --yes --update-packages
+```
+
+## Runtime notes
 
 ### Claude Code
 
-```bash
-npx skills update -g -a claude-code --skill '*' -y
-```
-
-Replaces 12 skill directories with the single bundled skill.
+`agentera upgrade` does not require Claude access and does not run Claude smoke tests. Package refresh is skipped unless `--update-packages` is set.
 
 ### OpenCode
 
+The upgrade command can copy the current bundled plugin to the OpenCode config directory and remove stale v1 command files. OpenCode package refresh remains opt-in:
+
 ```bash
-npx skills update -g -a opencode -y
-curl -o ~/.config/opencode/plugins/agentera.js https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js
+uv run scripts/agentera upgrade --runtime opencode --yes --update-packages
 ```
 
-The plugin must be re-installed manually (`npx skills` does not manage it).
+Use `--opencode-config-dir PATH` to target a non-default OpenCode config directory.
 
 ### Codex
 
+The upgrade command writes `AGENTERA_HOME` into `~/.codex/config.toml` and copies `hooks/codex-hooks.json` to `~/.codex/hooks.json`. Agentera v2 is one bundled `$agentera` skill; the old per-skill `[agents.<name>]` Codex config blocks are v1 artifacts and are not written.
+
 ```bash
-uv run scripts/setup_codex.py --enable-agents
-cp hooks/codex-hooks.json ~/.codex/hooks.json
+uv run scripts/agentera upgrade --runtime codex --yes
 ```
 
-Re-runs setup to update `config.toml` and copies updated hooks.
+### Copilot CLI
 
-### Copilot
+The upgrade command updates the managed `AGENTERA_HOME` shell rc block used by Copilot. Use `--copilot-rc-file PATH` to preview or target a specific rc file.
 
 ```bash
-uv run scripts/setup_copilot.py
+uv run scripts/agentera upgrade --runtime copilot --yes
 ```
 
-Re-runs setup to update the environment variable.
+## Focused phases
 
-## Project artifact migration
-
-```bash
-# Preview conversion (dry run)
-uv run scripts/migrate_artifacts_v1_to_v2 --project /path/to/project --dry-run
-
-# Execute conversion (backs up to .agentera/backup-v1/)
-uv run scripts/migrate_artifacts_v1_to_v2 --project /path/to/project
-```
-
-## Stale v1 runtime cleanup
-
-After updating the runtime package, check for leftover v1 host artifacts:
+Run one phase at a time when you want more control:
 
 ```bash
-uv run scripts/detect_stale_v1
-uv run scripts/detect_stale_v1 --fix
+uv run scripts/agentera upgrade --only artifacts --project /path/to/project --yes
+uv run scripts/agentera upgrade --only runtime --runtime codex --yes
+uv run scripts/agentera upgrade --only cleanup --yes
+uv run scripts/agentera upgrade --only packages --runtime opencode --yes --update-packages
 ```
 
 ## What's different in v2
@@ -67,6 +78,7 @@ uv run scripts/detect_stale_v1 --fix
 |---|---|---|
 | Entry point | 12 separate `SKILL.md` files | `skills/agentera/SKILL.md` |
 | Artifact format | Markdown | YAML |
+| Upgrade path | Manual helper scripts | `uv run scripts/agentera upgrade` |
 | Query CLI | none | `uv run scripts/agentera query <artifact-name>` |
 | Validation | per-skill | `uv run scripts/validate_capability.py skills/agentera/capabilities/<name>` |
 | Shared primitives | `SPEC.md` | `skills/agentera/protocol.yaml` |

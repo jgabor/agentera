@@ -183,6 +183,11 @@ def _validate_codex_ui_metadata(path: Path) -> list[str]:
     errors: list[str] = []
     text = path.read_text(encoding="utf-8")
 
+    if "path: ./skills/agentera" not in text:
+        errors.append("codex.ui: metadata must point at bundled skills/agentera")
+    for stale_path in ("path: ./skills/hej", "metadata: ./skills/hej", "skills/<name>/agents"):
+        if stale_path in text:
+            errors.append(f"codex.ui: stale v1 skill path {stale_path!r}")
     if "allow_implicit_invocation: false" not in text:
         errors.append("codex.ui.profilera: implicit invocation must be disabled")
     if "codex_session_corpus" not in text:

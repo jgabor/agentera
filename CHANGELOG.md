@@ -7,12 +7,14 @@
 - v2.0.0 remediation: closed D39 gaps including invocation model decision (/agentera single entry point), query CLI schema discovery fix, artifact migration v1→v2 (8 YAML artifacts with backup), test compaction retirement, SPEC.md dissolution (generate_contracts.py retired), stale v1 skill directory removal, all 12 capability prose files updated to reference YAML artifacts, AGENTS.md rewritten for single-bundle model, README rewritten with natural-language capability mapping, semantic eval fixture ported to v2 format, archived plan documentation corrected to reflect merge revert reality.
 - Decision 42 five-layer dispatch model implemented in SKILL.md: bare `/agentera` delegates to hej, capability names bypass NL matching, trigger schemas gain priority fields (high/medium/low), disambiguation prompt specified for borderline matches.
 - Comprehensive gap analysis document (`.agentera/gap-analysis-2026-05-05.md`) auditing ROADMAP.md and Decisions 39-42 against actual implementation.
+- `agentera upgrade` CLI for idempotent v1-to-v2 upgrades: artifact migration, runtime config wiring, stale v1 cleanup, package-update opt-in, JSON output, and setup-doctor postflight.
 - `scripts/smoke_live_hosts.py --live --yes` now includes OpenCode live AGENTERA_HOME/query coverage via isolated `opencode run --pure`, while keeping Claude Code live smoke explicitly deferred.
 - Decision 41 release scope updated: the Agentera 2.0 static dispatch payload target is revised to -10%, with the measured -9.8% accepted as close enough for v2.0 and further optimization deferred to future versions.
 
 ### Changed
 
 - Root Python scripts and hooks now use `uv run --script` shebangs with PEP 723 metadata, lifecycle validation covers `scripts/` and `hooks/` entrypoints, and CI/Lefthook/docs invoke current v2 validators through `uv run`.
+- Codex setup no longer writes v1 per-skill `[agents.<name>]` blocks; `--enable-agents` is a compatibility no-op, and Codex UI metadata now points at the single `skills/agentera` bundle.
 - feat/v2 merged to main via fast-forward after validation (507 tests pass, 0 failures; all 12 capabilities pass contract validation; version surfaces at 2.0.0).
 - All 12 capability `triggers.yaml` schemas updated with `priority` field for confidence-based routing.
 - Claude Code live model-host smoke is excluded from the required v2.0 release harness until Claude Pro/Max or API access is available; future Claude live smoke should be explicit opt-in.
@@ -140,7 +142,7 @@
 
 Scope refined post-research to address verified cross-runtime parity gaps; consolidates Move 1 renumber and Move 2 parity completion per explicit user direction.
 
-Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code, OpenCode, Codex, and Copilot; ships idempotent setup helpers for the runtimes without plugin-level env injection; verifies end-to-end inheritance plus SKILL.md compaction execution with a live-host smoke harness; closes the Codex apply_patch real-time-validation gap with a wired hook; ships Codex marketplace install plus per-skill agent stubs; refreshes README/SPEC/structured runtime metadata against current Codex/Copilot capability evidence; revives the dead Copilot session-end hook; documents orkestrera/realisera/optimera dispatch substrates per runtime.
+Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code, OpenCode, Codex, and Copilot; ships idempotent setup helpers for the runtimes without plugin-level env injection; verifies end-to-end inheritance plus SKILL.md compaction execution with a live-host smoke harness; closes the Codex apply_patch real-time-validation gap with a wired hook; historically shipped Codex marketplace install plus per-skill agent stubs that were later retired by the v2 single-bundle cutover; refreshes README/SPEC/structured runtime metadata against current Codex/Copilot capability evidence; revives the dead Copilot session-end hook; documents orkestrera/realisera/optimera dispatch substrates per runtime.
 
 ### Added
 
@@ -152,8 +154,8 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 - **`scripts/smoke_live_hosts.py`**: live-host AGENTERA_HOME inheritance and SKILL.md compaction smoke harness for Codex and Copilot. Default mode runs the profilera Codex collection audit and delegates to `scripts/smoke_setup_helpers.py` (no live CLI invocations, no cost). `--live` mode prints a one-line cost estimate and consent prompt, then issues exactly one `codex exec` and one `bash -c '...copilot -p ... --allow-all-tools'` invocation per runtime, each carrying a combined prompt that exercises both AGENTERA_HOME echo and `compact_artifact.py` execution, with snapshot + SHA256 round-trip on `~/.codex/config.toml` and shell rc files plus orphan-snapshot auto-recovery on the next run.
 - **Codex `apply_patch` hook config** (`hooks/codex-hooks.json`): PreToolUse + PostToolUse `apply_patch` matchers wire `validate_artifact.py` for real-time artifact validation, parity with Claude Code PostToolUse and OpenCode `tool.execute.after`.
 - **`.agents/plugins/marketplace.json`**: Codex marketplace manifest enables `codex plugin marketplace add jgabor/agentera` plus interactive `/plugins` installation of the aggregate Agentera plugin.
-- **12 per-skill `agents/<name>.toml` Codex agent stubs** with explicit `model = "gpt-5-codex"`, `model_reasoning_effort`, and `developer_instructions` fields pointing at bundled SKILL.md paths.
-- **`scripts/setup_codex.py --enable-agents`** flag writes `[agents.<name>]` entries to `~/.codex/config.toml` for all 12 agentera skills so orkestrera dispatch maps natively to Codex `[agents.*]`.
+- **Historical v1.x Codex agent stubs**: 12 per-skill `agents/<name>.toml` stubs existed before the v2 single-bundle cutover; v2 removes this shape in favor of `skills/agentera`.
+- **Historical v1.x `scripts/setup_codex.py --enable-agents`**: previously wrote `[agents.<name>]` entries. In v2 the flag is a compatibility no-op because those per-skill config files no longer exist.
 - **`scripts/smoke_live_hosts.py --yes` flag plus `AGENTERA_LIVE_CONSENT=1` env var**: bypass the interactive consent prompt for non-interactive realisera/orkestrera invocation; cost line still prints; explicit `auto-consented via flag` audit line emitted to stdout.
 - **Codex apply_patch hook firing verification section** in `smoke_live_hosts.py`: one extra `codex exec` invocation under a tmp `CODEX_HOME` with sentinel-recording wrapper proves the `hooks/codex-hooks.json` wiring fires PreToolUse + PostToolUse end-to-end.
 - **README install documentation**: runtime-specific AGENTERA_HOME setup paths (recommended `setup_codex.py` / `setup_copilot.py` plus manual snippet alternatives). Codex plugin limitations and Copilot manifest descriptions surface the requirement.
@@ -245,7 +247,7 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 ### Fixed
 
 - Claude Code marketplace metadata now validates against current CLI schema, and Copilot metadata uses supported `skills` and `hooks` component paths instead of stale custom shapes
-- Codex UI metadata now resolves from the plugin install root, including aggregate and per-skill metadata paths with guarded profilera limitations
+- Codex UI metadata now resolves from the plugin install root with guarded profilera limitations
 - README and Codex metadata now describe profilera's Copilot/Codex collectors as capability-gated degradation instead of missing-collector limitations
 - `analyze_progress.py` now reports the newest cycles from current newest-first PROGRESS.md files, so realisera orientation sees the live recent window
 - OpenCode bootstrap versioning now tracks 1.18.0, and adapter tests compare the plugin marker against registry release metadata
