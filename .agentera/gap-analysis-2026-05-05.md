@@ -49,7 +49,7 @@ Current verification:
 | Define agent-facing artifact schemas | Complete | `skills/agentera/schemas/artifacts/*.yaml` | None |
 | Build artifact migration tool | Complete | `scripts/migrate_artifacts_v1_to_v2`; `scripts/agentera upgrade --only artifacts`; migration and upgrade tests pass | None |
 | Rewrite hook to validate against schemas | Complete | `hooks/validate_artifact.py`; `tests/test_hook_v2.py` covers adapter routing, YAML validation, duplicate numbers, blank Decision 41 regression | None |
-| Set up v2 branch/worktree | Complete | v2 work was integrated into main; current release worktree is `$HOME/git/agentera` | None |
+| Set up v2 branch/worktree | Complete | v2 work was integrated into main; current release worktree is `$PWD` | None |
 
 Phase 1 verdict: complete.
 
