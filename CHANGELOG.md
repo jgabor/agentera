@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.1.0] · 2026-05-05
+
 ### Changed
 
 - Agentera dispatcher, hej, realisera, and optimera guidance now prefer top-level state commands and reserve `agentera query` for advanced/custom inspection.
