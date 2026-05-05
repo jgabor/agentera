@@ -9,7 +9,7 @@
 
 ## Recommended upgrade
 
-### Clone-free installs
+### No local clone
 
 Use this path if you installed Agentera through `npx skills`, the Copilot
 marketplace, the Codex marketplace, or the OpenCode plugin and do not have a
@@ -24,23 +24,24 @@ uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /pa
 Apply local, idempotent upgrade actions:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /path/to/project --yes
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /path/to/project --yes --update-packages
 ```
 
 When the Python package is published, the shorter command is equivalent:
 
 ```bash
 uvx agentera upgrade --project /path/to/project --dry-run
-uvx agentera upgrade --project /path/to/project --yes
+uvx agentera upgrade --project /path/to/project --yes --update-packages
 ```
 
-The clone-free command installs or refreshes a durable Agentera bundle at
+This command installs or refreshes a durable Agentera bundle at
 `~/.agents/agentera` before it wires runtime config. Runtime config should not
 point at uv's disposable tool cache.
 
 `npx skills update` alone refreshes skill files but does not migrate project
-artifacts or runtime config. The bundled `/agentera` skill should detect v1
-artifacts, preview the command above, and ask before running the `--yes` apply.
+artifacts or runtime config. Agentera v2.0.1 keeps a legacy `/hej` bridge so old
+entry points can hand users to the command above, but the command above is the
+complete upgrade path and also installs `/agentera`.
 
 ### Local clone
 
@@ -61,7 +62,7 @@ bundle when needed, configures selected runtime surfaces, removes fixable stale
 v1 runtime artifacts, and runs a postflight setup doctor. Re-running it after a
 successful apply should report `noop`.
 
-External package updates are deliberately opt-in because they run `npx` and may touch global runtime installs:
+External package updates are deliberately opt-in because they run `npx` and may touch global runtime installs. The package phase installs the active `/agentera` skill and refreshes the legacy `/hej` bridge for v1 users:
 
 ```bash
 uv run scripts/agentera upgrade --project /path/to/project --yes --update-packages

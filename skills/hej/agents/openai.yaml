@@ -1,0 +1,8 @@
+version: 1
+skill:
+  name: hej
+  display_name: Agentera v1 upgrade bridge
+  description: Legacy Agentera v1 entry-point bridge to the v2 /agentera upgrade flow.
+  invocation_hint: Use $hej only when an old Agentera v1 install is still present; then move to $agentera.
+  policy:
+    allow_implicit_invocation: true

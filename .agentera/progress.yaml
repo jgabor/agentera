@@ -1,4 +1,31 @@
 cycles:
+- number: 264
+  timestamp: 2026-05-05 14:07
+  type: fix
+  phase: verify
+  what: Closed the transcript-derived v1 entry-point gap. Added a legacy `skills/hej` bridge that refuses the old v1 HEJ
+    workflow and points users to `agentera upgrade`, refreshed package-update commands to install both `/agentera` and the
+    `/hej` bridge, added an OpenCode managed `/hej` bridge command, and bumped patch surfaces to 2.0.1.
+  commit: this commit
+  inspiration: OpenCode session `ses_2080d5c94ffeaOL51P6gQ0CwtF` showed `/agentera` prompt text loading stale v1 `hej`
+    after `npx skills update`.
+  discovered: v2.0.0's `/agentera` guard cannot help users whose runtime never installed `/agentera`; the old `/hej` entry
+    point needs to become an upgrade bridge until users complete the v2 package refresh.
+  verified: 'Validation passed: uv run --with pytest --with pyyaml pytest -q (538 passed, 1 skipped); uv run scripts/validate_capability.py
+    --self-validate; uv run scripts/validate_capability.py for all 12 capabilities; uv run scripts/validate_cross_capability.py;
+    uv run scripts/validate_lifecycle_adapters.py --check-uv-runtime; node --check .opencode/plugins/agentera.js; node
+    scripts/smoke_opencode_bootstrap.mjs; uv run scripts/smoke_setup_helpers.py; uv run scripts/smoke_live_hosts.py; uv
+    run scripts/smoke_live_hosts.py --live --yes; uv run scripts/measure_token_payload.py (v2 315,974 bytes vs v1 352,213
+    bytes, -10.3%); uv run scripts/agentera upgrade --only packages --runtime opencode --json; uvx --from . agentera
+    upgrade --only bundle --home <tmp>/home --install-root <tmp>/home/.agents/agentera --yes --json; npx skills add .
+    --list; npx skills add . --list --full-depth; isolated npx installs of --skill agentera and --skill hej both succeeded
+    and the installed hej bridge retained legacy_bridge plus agentera upgrade guidance.'
+  next: Commit and integrate the v2.0.1 compatibility fix. Create or push a v2.0.1 tag only after explicit approval.
+  context:
+    intent: make v1 npx-updated installs detect v2 migration even when `/agentera` is not installed yet
+    constraints: no Agentera skill loading during self-review; Claude Code live smoke remains optional and deferred
+    unknowns: exact remote `npx skills update` behavior can only be proven after publishing the bridge to the source repository
+    scope: legacy hej bridge, package-refresh commands, OpenCode bridge command, docs, gap analysis, version surfaces, and tests
 - number: 263
   timestamp: 2026-05-05 13:21
   type: chore

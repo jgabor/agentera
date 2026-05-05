@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [2.0.1] · 2026-05-05
+
+### Fixed
+
+- Added a legacy `/hej` bridge so v1 installs refreshed through `npx skills update` can detect v1 project artifacts and hand users to the v2 `agentera upgrade` flow.
+- Updated the package-refresh phase to install the active `/agentera` skill and refresh the legacy `/hej` bridge instead of only updating already-installed skills.
+- OpenCode now ships a managed `/hej` bridge command while keeping `/agentera` as the active v2 entry point.
+
 ## [2.0.0] · 2026-05-05
 
 ### Added

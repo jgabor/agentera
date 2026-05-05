@@ -34,8 +34,38 @@ RUNTIMES = ("claude", "opencode", "copilot", "codex")
 PHASES = ("bundle", "artifacts", "runtime", "cleanup", "packages")
 STATUSES = ("pending", "applied", "noop", "blocked", "failed", "skipped")
 PACKAGE_COMMANDS = {
-    "claude": ["npx", "skills", "update", "-g", "-a", "claude-code", "--skill", "*", "-y"],
-    "opencode": ["npx", "skills", "update", "-g", "-a", "opencode", "-y"],
+    "claude": [
+        {
+            "action": "install-agentera-skill",
+            "command": [
+                "npx", "skills", "add", "jgabor/agentera", "-g", "-a",
+                "claude-code", "--skill", "agentera", "-y",
+            ],
+        },
+        {
+            "action": "install-hej-bridge",
+            "command": [
+                "npx", "skills", "add", "jgabor/agentera", "-g", "-a",
+                "claude-code", "--skill", "hej", "-y",
+            ],
+        },
+    ],
+    "opencode": [
+        {
+            "action": "install-agentera-skill",
+            "command": [
+                "npx", "skills", "add", "jgabor/agentera", "-g", "-a",
+                "opencode", "--skill", "agentera", "-y",
+            ],
+        },
+        {
+            "action": "install-hej-bridge",
+            "command": [
+                "npx", "skills", "add", "jgabor/agentera", "-g", "-a",
+                "opencode", "--skill", "hej", "-y",
+            ],
+        },
+    ],
 }
 BUNDLE_DIRECTORIES = (
     "skills",
@@ -671,18 +701,18 @@ def plan_package_phase(runtimes: set[str], *, enabled: bool) -> dict[str, Any]:
     for runtime in ("claude", "opencode"):
         if runtime not in runtimes:
             continue
-        command = PACKAGE_COMMANDS[runtime]
-        items.append({
-            "status": "pending" if enabled else "skipped",
-            "runtime": runtime,
-            "action": "run-command",
-            "command": command,
-            "message": (
-                "will run external package update"
-                if enabled
-                else "external package update skipped; pass --update-packages to run"
-            ),
-        })
+        for entry in PACKAGE_COMMANDS[runtime]:
+            items.append({
+                "status": "pending" if enabled else "skipped",
+                "runtime": runtime,
+                "action": entry["action"],
+                "command": entry["command"],
+                "message": (
+                    "will run external package update"
+                    if enabled
+                    else "external package update skipped; pass --update-packages to run"
+                ),
+            })
     return _phase("packages", items, message="no package-managed runtime selected" if not items else "")
 
 

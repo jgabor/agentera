@@ -1,4 +1,4 @@
-last_audit: 2026-05-05 (v2 reliability repair checkpoint)
+last_audit: 2026-05-05 (v2.0.1 legacy bridge checkpoint)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -138,11 +138,11 @@ index:
   status: current
 - document: Registry
   path: registry.json
-  last_updated: '2026-04-30'
+  last_updated: '2026-05-05'
   status: current
 - document: Marketplace manifest
   path: .claude-plugin/marketplace.json
-  last_updated: '2026-04-30'
+  last_updated: '2026-05-05'
   status: current
 - document: Codex marketplace manifest
   path: .agents/plugins/marketplace.json
@@ -150,15 +150,15 @@ index:
   status: current
 - document: Copilot plugin manifest
   path: plugin.json
-  last_updated: '2026-04-30'
+  last_updated: '2026-05-05'
   status: current
 - document: Copilot repo plugin manifest
   path: .github/plugin/plugin.json
-  last_updated: '2026-04-30'
+  last_updated: '2026-05-05'
   status: current
 - document: Codex plugin manifest
   path: .codex-plugin/plugin.json
-  last_updated: '2026-04-30'
+  last_updated: '2026-05-05'
   status: current
 - document: OpenCode plugin adapter
   path: .opencode/plugins/agentera.js
