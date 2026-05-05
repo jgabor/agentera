@@ -1,4 +1,26 @@
 cycles:
+- number: 278
+  timestamp: 2026-05-05 21:12
+  type: chore
+  phase: verify
+  what: Retagged and reverified the corrected v2.1.0 release after approval.
+  commit: pending
+  inspiration: Task 7 required the approved release mutation to move v2.1.0 to the corrected dashboard repair and then reverify branch and tag state.
+  discovered: >
+    Approval was granted after Task 6 presented the commands and force-tag risk. The first release push moved main and v2.1.0 to
+    8b48cb4efabbf94cc1c8f1f3fa16fc6d42d3f8ed. This closeout records Task 7 completion so the final tag can include its own
+    release-state evidence.
+  verified: >
+    Executed approved mutation: git add -A; git commit -m "fix(hej): preserve dashboard in v2.1.0"; git tag -f v2.1.0 HEAD;
+    git push origin main; git push --force origin refs/tags/v2.1.0. Reverification passed: git rev-parse HEAD and git rev-parse
+    v2.1.0 both returned 8b48cb4efabbf94cc1c8f1f3fa16fc6d42d3f8ed, and GIT_SSH_COMMAND="ssh -F /dev/null" git ls-remote
+    --heads --tags origin main refs/tags/v2.1.0 showed origin/main and refs/tags/v2.1.0 at the same commit.
+  next: 'Commit this closeout, move v2.1.0 to the closeout commit, push main, and force-update the tag one final time.'
+  context:
+    intent: close the approval-gated retag task with concrete remote evidence
+    constraints: preserve the corrected v2.1.0 release state and avoid additional product changes
+    unknowns: none for this release lane
+    scope: plan/progress closeout and final tag alignment
 - number: 277
   timestamp: 2026-05-05 21:02
   type: chore
