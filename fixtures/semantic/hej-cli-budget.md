@@ -71,6 +71,7 @@ Task 5 is ready to run from the active plan.
   "forbidden_output": [
     "agentera hej\nmode:",
     "next_action:",
+    "source_contract:",
     "object=PLAN Task 5"
   ],
   "required_tool_calls": [

@@ -5,158 +5,141 @@ header:
   reviewed: '2026-05-06'
   critic_issues: "8 found, 8 addressed, 0 dismissed"
   revised: >
-    Added an isolated registry-contract task, bounded CLI consumers, measurable no-hardcoded-map acceptance, explicit docs.yaml override
-    semantics, and special-case artifact coverage after adversarial review.
-  title: Deepen Artifact Registry Interface
+    Added a source-field audit task, separated semantic output checks from runtime
+    one-command checks, made the one-command invariant precise, narrowed
+    docs/version updates, preserved direct CLI compactness, and replaced vague
+    "impossible to miss" wording with dispatcher-boundary acceptance.
+  title: Repair Bare Agentera Hej Dashboard Rendering
 what: >
-  Deepen Agentera artifact metadata into a real registry Interface. Canonical artifact schemas should own artifact identity, display names,
-  default paths, producers, consumers, scope, and special-case classifications. Capability-local artifact schemas should reference canonical
-  artifact IDs plus local usage role instead of repeating canonical names and paths, while validators, docs consumers, tests, and bounded CLI
-  artifact-resolution reads consume the same registry facts.
+  Repair the bare Agentera orientation path so a returning project produces the
+  README/pre-2.0 Hej dashboard instead of raw CLI-style source output, while
+  preserving the v2 one-command state-source invariant.
 why: >
-  TODO [arch-artifact-registry] identifies a shallow registry seam: scripts/validate_cross_capability.py, skills/agentera/schemas/artifacts/*.yaml,
-  capability-local artifacts.yaml files, .agentera/docs.yaml, scripts/agentera, and tests repeat artifact names, paths, producers, consumers,
-  display names, and exception knowledge. Canonical artifact schemas already carry metadata, but callers still need translation maps and
-  validator exceptions, so artifact moves or renames remain broad and brittle.
+  Agentera 2.x moved from standalone /hej to bundled /agentera with a composite
+  CLI data source. The dashboard contract remains in README.md,
+  skills/agentera/SKILL.md, hej prose, and semantic fixtures, but the live
+  assistant path can still miss the nested rendering contract and expose raw
+  source data.
 constraints: >
-  Preserve current observable CLI behavior unless an acceptance criterion names an intentional change. Keep docs.yaml as runtime project
-  mapping/override state, not the canonical registry. Do not implement artifact write validation, health freshness, optional live smoke,
-  generated install-root contract, package/runtime/install-root changes, version bump, release publication, remote push, objective/vision
-  changes, or broad migration beyond capability artifact schemas referencing canonical artifact IDs plus local usage role.
+  Preserve agentera hej as compact source data for direct CLI users. During
+  normal bare /agentera orientation, the runtime path may invoke one composite
+  Agentera state-source command and must not invoke individual routine state
+  commands or direct artifact reads. Test fixtures may seed state. Do not mutate
+  vision or objective state. Do not implement unrelated hook validation, health
+  command freshness, optional live smoke, registry, remote push, commit, or
+  release publication work. Version bump only if docs policy requires it.
 scope:
   included:
-    - archive the completed routing and exit vocabulary plan with cycle 327 validation evidence
-    - characterize duplicate artifact identity, path, producer, consumer, display-name, and exception knowledge
-    - define canonical artifact registry metadata for IDs, display names, defaults, roles, scope, and explicit special cases
-    - migrate capability artifact schemas to canonical artifact ID references plus local usage role
-    - migrate cross-capability validation and bounded CLI artifact-resolution reads to registry facts while preserving observable behavior
-    - replace hardcoded relationship tests with registry-backed validation, including global/local/archive/harness/objective cases
-    - update only documentation and TODO state needed to describe artifact metadata ownership and plan completion
+    - archive the completed artifact registry plan before replacing the active plan
+    - audit current bare /agentera routing instructions and composite source fields
+    - surface the README-style dashboard rendering contract at the dispatcher boundary
+    - clarify source-data wording only if needed while preserving direct CLI behavior
+    - restore final user-facing dashboard rendering behavior for returning projects
+    - add separate output-shape and runtime/tool-trace regressions
+    - update only required docs, changelog, progress, TODO, and version surfaces
   excluded:
+    - artifact schema redesign
+    - routine per-artifact state reads during normal orientation
+    - broad runtime adapter rewrites
     - artifact write validation hook split
     - health command freshness fix
-    - optional live model/runtime smoke
-    - generated install-root contract or install-root behavior
-    - package/runtime manifest changes
-    - version bump or release publication
-    - release metadata changes
+    - optional Claude live model smoke
+    - package/runtime/install-root registry work
     - objective or vision changes
-    - remote push or commit
+    - remote push, commit, tag, or release publication
   deferred:
     - [arch-artifact-write-validation]
     - [audit-20-health-command-stale]
     - [agentera-optional-claude-live-smoke]
-    - [install-root-generated-cross-language-contract]
 design: >
-  Put the seam at canonical artifact identity. The registry should answer what an artifact is and how it is named by default; capability
-  schemas should answer how a capability uses that artifact locally; docs.yaml should answer project-local runtime mapping/override questions.
-  Registry consumers should prove relationships through loaded registry facts, not duplicate translation tables. Explicit global, local,
-  archive, harness, and objective path-template cases belong in the registry model rather than validator exception sets.
+  Keep agentera hej as the single compact state source. The skill boundary owns
+  transforming that source into the dashboard. The source contract should expose
+  enough state for mode, profile, health, issue counts, plan progress, objective,
+  attention, and next action without implying the dashboard has already been
+  rendered. Regressions should prove final user-facing output shape separately
+  from the one-command runtime invariant.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-06-deepen-artifact-registry-interface.yaml
 tasks:
   - number: 1
-    name: Reconcile Plan State And Registry Scope
+    name: Audit Route And Source Fields
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN the routing and exit vocabulary plan is complete WHEN this plan becomes active THEN the completed plan is archived with cycle 327 validation evidence intact
-      - GIVEN TODO has multiple open findings WHEN the next item is selected THEN [arch-artifact-registry] is identified as the planned work and unrelated TODOs remain open
-      - GIVEN registry planning starts WHEN scope is recorded THEN artifact write validation, health freshness, live smoke, install-root, package/runtime, version, release, vision, objective, commit, and push changes are explicitly out of scope
-      - GIVEN CLI behavior is in scope only as a consumer concern WHEN baseline is recorded THEN current outputs for hej, todo, docs, query --list-artifacts, and a representative query command are preserved unless a later task records an intentional difference
+      - GIVEN a returning project invokes bare Agentera WHEN the current route is inspected THEN the source command, final rendering step, and user-facing output boundary are named before edits
+      - GIVEN the composite source output is compared to the dashboard contract WHEN required fields are listed THEN mode, profile, health, issue counts, plan progress, objective, attention, and next action are either present or recorded as source gaps
+      - GIVEN a source gap is found WHEN remediation is selected THEN the source contract is strengthened rather than adding routine fallback state reads to normal orientation
+      - GIVEN the one-command invariant is recorded WHEN tests are planned THEN test setup is separated from the normal runtime path being measured
   - number: 2
-    name: Characterize Artifact Registry Duplication
+    name: Define Entry-Boundary Dashboard Contract
     depends_on:
       - Task 1
     status: complete
     acceptance:
-      - GIVEN current artifact metadata surfaces are inspected WHEN duplication is inventoried THEN repeated names, paths, producers, consumers, display names, and special-case rules are recorded before edits
-      - GIVEN .agentera/docs.yaml is inspected WHEN mapping data is classified THEN runtime project overrides are separated from canonical registry facts
-      - GIVEN scripts/agentera and scripts/validate_cross_capability.py are inspected WHEN consumers are characterized THEN each consumer of canonical artifact identity or path metadata is named with its observable behavior boundary
-      - GIVEN PROFILE.md, PLAN_archive, harness paths, objective paths, and global/local artifacts exist WHEN special cases are classified THEN each is described as an explicit registry case or scoped path template, not a validator exception
+      - GIVEN a returning project invokes bare Agentera WHEN final output is rendered THEN the output includes the README-style logo, status section, non-empty attention section when source attention exists, next section, and Hej exit marker
+      - GIVEN source fields are available WHEN final output is rendered THEN raw source field labels are not used as the user-facing briefing
+      - GIVEN future agents inspect the entry instructions WHEN they route bare Agentera THEN the instruction to render the README-style dashboard is visible before nested capability prose is required
+      - GIVEN no attention items exist WHEN final output is rendered THEN the attention section is omitted rather than filled with invented content
   - number: 3
-    name: Define Registry Interface And Identity Model
+    name: Clarify Source Data Semantics
     depends_on:
-      - Task 2
+      - Task 1
     status: complete
     acceptance:
-      - GIVEN canonical artifact schemas carry metadata WHEN the registry Interface is defined THEN artifact ID, display name, default path, producer, consumer, artifact type, scope, and path-template facts have one authoritative source
-      - GIVEN docs.yaml may override project-local paths WHEN precedence is defined THEN the registry owns known artifact identity and defaults while docs.yaml cannot create canonical IDs or own producers, consumers, scope, or type
-      - GIVEN capability-local schemas need local meaning WHEN their reference shape is specified THEN canonical identity is expressed by artifact ID and local usage role while role-specific descriptions remain optional
-      - GIVEN special cases are modeled WHEN registry metadata is reviewed THEN PROFILE.md, PLAN_archive, harness paths, objective paths, and global/local artifacts are represented without name-specific validator exceptions
+      - GIVEN a direct user runs the composite source command WHEN output is read THEN it remains compact source data and is not reformatted as the dashboard
+      - GIVEN source-data wording could imply rendering is complete WHEN the wording is reviewed THEN it is removed, renamed, or explicitly justified with test coverage
+      - GIVEN normal orientation data is available WHEN bare Agentera runs THEN no individual routine state command or direct artifact read is part of the normal runtime path
+      - GIVEN source wording changes are made WHEN CLI behavior is checked THEN direct source users retain the same actionable state facts
   - number: 4
-    name: Validate Registry Contract In Isolation
+    name: Restore Dashboard Rendering Behavior
     depends_on:
+      - Task 2
       - Task 3
     status: complete
     acceptance:
-      - GIVEN registry fields are defined WHEN focused validation runs THEN canonical IDs, display names, paths, producers, consumers, scope, type, and override semantics validate before capability migration
-      - GIVEN hardcoded maps are tempting WHEN tests are added THEN tests import or load registry facts rather than duplicating expected artifact maps
-      - GIVEN capability artifact references will change WHEN the contract is checked THEN invalid artifact IDs, missing local roles, and unsupported special-case shapes fail clearly
-      - GIVEN docs.yaml remains runtime state WHEN contract validation runs THEN docs mapping overrides are accepted only as project-local mapping data, not as canonical registry definitions
+      - GIVEN normal source data is available WHEN bare Agentera renders THEN the user sees the dashboard rather than a summary of source lines
+      - GIVEN the source next action names concrete work WHEN the dashboard renders THEN the next section names one concrete suggested action derived from that source
+      - GIVEN critical or degraded attention exists WHEN the dashboard renders THEN severity is visible in the attention section and the exit status reflects flagged or waiting state appropriately
+      - GIVEN the user has not approved a downstream capability WHEN orientation completes THEN the output waits for user confirmation instead of starting implementation work
   - number: 5
-    name: Migrate Capability Artifact Schemas To References
+    name: Add Output And Runtime Regressions
     depends_on:
       - Task 4
     status: complete
     acceptance:
-      - GIVEN capability artifacts.yaml files repeat canonical names and paths WHEN they are migrated THEN each canonical artifact use references an artifact ID and local produces/consumes role instead
-      - GIVEN local descriptions add capability intent WHEN schemas are migrated THEN useful local usage descriptions are preserved without restating canonical paths or producers/consumers
-      - GIVEN special-case artifacts are used by capabilities WHEN schemas are migrated THEN they reference explicit registry entries or scoped templates instead of relying on validator exceptions
-      - GIVEN old and new schema shapes are compared WHEN migration completes THEN no broad compatibility layer remains unless a concrete persisted or external consumer requires it
+      - GIVEN a captured or simulated bare Agentera response contains only raw source-style fields WHEN output evaluation runs THEN the check fails
+      - GIVEN a captured or simulated response renders the dashboard and includes the Hej exit marker WHEN output evaluation runs THEN the check passes
+      - GIVEN normal bare Agentera orientation is exercised WHEN the runtime trace is checked THEN exactly one composite source command is counted and individual routine state commands are absent
+      - GIVEN tests are added for this behavior WHEN proportionality is reviewed THEN each new testable unit has at least one passing and one failing case or a recorded rationale
   - number: 6
-    name: Migrate Registry Consumers
+    name: Plan-Level Freshness And Version Checkpoint
     depends_on:
+      - Task 1
+      - Task 2
+      - Task 3
+      - Task 4
       - Task 5
     status: complete
     acceptance:
-      - GIVEN cross-capability validation runs WHEN artifact relationships are checked THEN names, paths, producers, consumers, and special cases come from registry facts rather than hardcoded translation or exception maps
-      - GIVEN scripts/agentera reads canonical artifact metadata WHEN bounded CLI consumers are updated THEN hej, todo, docs, query --list-artifacts, and one representative query command preserve baseline output except for intentional documented formatting-neutral differences
-      - GIVEN docs.yaml supplies runtime mapping overrides WHEN consumers resolve project-local paths THEN override precedence is applied after canonical registry identity is known
-      - GIVEN hardcoded artifact display/path/producer/consumer maps remain outside runtime docs override loading WHEN validation checks for duplication THEN the remaining duplication is removed or explicitly justified by an artifact contract
-  - number: 7
-    name: Replace Tests And Align Artifacts
-    depends_on:
-      - Task 6
-    status: complete
-    acceptance:
-      - GIVEN registry-backed validation exists WHEN tests assert artifact relationships THEN they derive expected relationships from registry facts instead of re-encoding display-name or path maps
-      - GIVEN PROFILE.md, PLAN_archive, harness paths, objective paths, and global/local artifacts are special cases WHEN tests run THEN validators fail if those names are special-cased directly outside the registry model
-      - GIVEN documentation is updated WHEN ownership is described THEN only artifact metadata ownership, registry fields, capability-local references, and docs.yaml override semantics are changed
-      - GIVEN TODO is updated WHEN implementation is complete THEN only [arch-artifact-registry] is resolved and only after validation and CLI preservation evidence are recorded in progress or plan artifacts
-  - number: 8
-    name: Validate And Close
-    depends_on:
-      - Task 7
-    status: complete
-    acceptance:
-      - GIVEN focused validation runs WHEN the plan closes THEN registry tests, cross-capability validation, capability validation, docs CLI, TODO CLI, and bounded CLI preservation checks pass
-      - GIVEN broader validation is practical WHEN closure is attempted THEN full pytest, all capability validations, artifact query, and relevant py_compile checks pass or any skipped check is justified
-      - GIVEN future work remains WHEN this plan closes THEN artifact write validation, health freshness, optional live smoke, and generated install-root follow-up remain separate TODOs
-      - GIVEN worktree changes are reviewed WHEN validation ends THEN only artifact registry plan changes are present or unrelated changes are reported without reverting
+      - GIVEN the rendering fix is complete WHEN freshness is updated THEN required docs, changelog, progress, TODO, and plan state describe the restored dashboard behavior and verification evidence
+      - GIVEN version policy applies to this fix WHEN release readiness is assessed THEN patch-version surfaces are updated or a no-bump rationale is recorded
+      - GIVEN validation completes WHEN the plan closes THEN focused dashboard tests, relevant CLI tests, semantic fixtures, capability validation, and the practical full test suite pass or skipped checks are justified
+      - GIVEN unrelated findings remain open WHEN the plan closes THEN hook validation, health freshness, optional live smoke, and registry follow-ups remain separate work
 overall_acceptance:
-  - GIVEN artifact identity is needed by a validator, test, capability schema, docs consumer, or bounded CLI consumer WHEN it asks for artifact metadata THEN canonical artifact schemas and the registry Interface are the source of truth for IDs, display names, default paths, producers, consumers, scope, type, and explicit special cases
-  - GIVEN a capability declares artifact usage WHEN its artifacts.yaml is inspected THEN canonical artifact identity is expressed by artifact ID plus local usage role rather than repeated canonical paths, display names, producers, or consumers
-  - GIVEN docs.yaml is inspected after the refactor WHEN path mappings are interpreted THEN it remains project runtime mapping/override state and does not own canonical artifact IDs, producers, consumers, scope, or type
-  - GIVEN validators, tests, and bounded CLI consumers are inspected WHEN artifact translation knowledge is searched THEN display/path/producer/consumer maps are absent outside the registry model and runtime docs override loading unless explicitly justified by an artifact contract
-  - GIVEN unrelated TODOs are inspected WHEN this plan closes THEN artifact write validation, health freshness, optional live smoke, and generated install-root follow-up remain untouched unless separately planned
-surprises: []
-validation_evidence:
-  source_artifact: .agentera/progress.yaml
-  cycle: 336
-  timestamp: '2026-05-06 20:45'
+  - GIVEN bare Agentera is invoked on a returning project WHEN normal source data is available THEN the user sees the README-style dashboard rather than raw CLI source fields
+  - GIVEN orientation gathers state WHEN normal data exists THEN the runtime path uses exactly one composite source command and no individual routine state commands or direct artifact reads
+  - GIVEN direct source users run the composite command WHEN they read its output THEN it remains compact state data and does not become the dashboard
+  - GIVEN future agents inspect the entry instructions WHEN they execute bare Agentera THEN the dashboard rendering contract and raw-source prohibition are visible at the dispatcher boundary
+validation:
   summary: >
-    Artifact registry closure validation passed after fixing three Task 8 validation blockers: mapped plan path registry lookup in temporary
-    AGENTERA_HOME projects, packaged-script metadata for scripts/artifact_registry.py, and the minimal query smoke bundle's missing registry
-    helper/model files.
-  commands:
-    - uv run pytest tests/test_artifact_registry_contract.py tests/test_validate_cross_capability.py -q (10 passed)
-    - uv run scripts/validate_cross_capability.py
-    - uv run scripts/validate_capability.py --validate-protocol
+    Restored the bare /agentera dashboard contract at the dispatcher boundary,
+    renamed the direct CLI sentinel to source_contract, preserved compact
+    agentera hej source output, added output/runtime regressions, and bumped
+    patch version surfaces to 2.1.1.
+  evidence:
+    - uv run pytest tests/test_hej_routing_fixture.py tests/test_query_cli.py::TestHej tests/test_cross_capability.py::test_master_skill_requires_cli_first_state_access tests/test_cross_capability.py::test_master_skill_exposes_bare_agentera_dashboard_boundary tests/test_bundle_freshness.py::test_stale_bundle_refresh_dry_run_then_apply_preserves_install_root tests/test_package_registry.py
+    - uv run scripts/validate_capability.py skills/agentera/capabilities/hej
     - uv run scripts/validate_capability.py --self-validate
-    - uv run scripts/validate_capability.py for all 12 capability directories with --check-primitives
-    - uv run scripts/agentera hej
-    - uv run scripts/agentera todo
-    - uv run scripts/agentera docs
-    - uv run scripts/agentera query --list-artifacts
-    - uv run scripts/agentera query open-todos --format yaml
-    - uv run pytest -q (711 passed)
-    - python3 -m py_compile scripts/artifact_registry.py scripts/validate_cross_capability.py scripts/agentera scripts/validate_capability.py scripts/capability_contract.py scripts/smoke_live_hosts.py
+    - uv run pytest tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_version_marker_is_documented tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_version_bearing_package_surfaces_align tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_agentera_version_reader_extracts_current_literal tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_surface_characterization_distinguishes_non_version_opencode_manifest
+    - uv run pytest -q
+  result: 713 passed
+surprises: []

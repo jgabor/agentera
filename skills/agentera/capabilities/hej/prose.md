@@ -25,9 +25,12 @@ uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
 ```
 
 Use that output to render the dashboard and select the concrete next action. Do
-not relay raw CLI lines as the user-facing briefing. Do not run `agentera plan`,
-`agentera progress`, `agentera health`, `agentera todo`, `agentera decisions`,
-or `agentera objective` as part of normal hej briefing assembly. Do not read raw
+not relay raw CLI lines as the user-facing briefing. Source labels such as
+`mode:`, `profile:`, `health:`, `issues:`, `plan:`, `objective:`, `attention:`,
+`next_action:`, and `source_contract:` are parsing aids, not dashboard lines. Do
+not run `agentera plan`, `agentera progress`, `agentera health`, `agentera todo`,
+`agentera decisions`, or `agentera objective` as part of normal hej briefing
+assembly. Do not read raw
 `.agentera/*.yaml` files for normal hej orientation. If a normal dashboard field
 is missing from `agentera hej`, fix or extend the composite CLI contract instead
 of adding routine fallback reads. Use top-level fallback commands only when

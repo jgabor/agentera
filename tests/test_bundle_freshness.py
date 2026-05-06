@@ -213,7 +213,8 @@ def test_stale_bundle_refresh_dry_run_then_apply_preserves_install_root(tmp_path
         check=False,
     )
     assert retry.returncode == 0, retry.stderr
-    assert "dashboard:" in retry.stdout
+    assert "source_contract:" in retry.stdout
+    assert "render=caller-owned README-style hej dashboard" in retry.stdout
 
 
 def test_bundle_upgrade_missing_root_dry_run_writes_nothing(tmp_path: Path) -> None:
@@ -242,7 +243,7 @@ def test_bundle_status_reports_pre_argparse_cli_failures_as_refresh_gaps(tmp_pat
     _write_stale_bundle(
         install_root,
         body="#!/usr/bin/env python3\nraise RuntimeError('wrong support module')\n",
-        version="2.1.0",
+        version="2.1.1",
     )
 
     result = _run("bundle-status", "--install-root", str(install_root), "--json")

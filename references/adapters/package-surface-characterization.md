@@ -6,7 +6,7 @@ The executable PackageManifest registry at `references/adapters/package-registry
 
 ## Version-Bearing Surfaces
 
-`registry.json` is the persisted suite-version authority. The current suite version is `2.1.0` at `skills[0].version`.
+`registry.json` is the persisted suite-version authority. The current suite version is `2.1.1` at `skills[0].version`.
 
 The current version-bearing surfaces are:
 

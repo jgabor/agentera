@@ -5,7 +5,7 @@ description: >
   One bundled skill with twelve capabilities, each defined by human-readable
   prose and machine-readable schemas. The agent reads this file to route
   incoming requests to the right capability.
-version: "2.1.0"
+version: "2.1.1"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 ---
 
@@ -82,16 +82,35 @@ Do not silently bypass the CLI and read raw `.agentera/*.yaml` files first. If
 all CLI paths fail, report that the CLI was unavailable, then use raw artifact
 reads only as a fallback.
 
-For bare `/agentera`, run `agentera hej` first and render the hej dashboard from
-that single composite result. The CLI output is the data source, not the
-user-facing dashboard; do not relay raw `agentera hej` lines as the final
+For bare `/agentera`, run `agentera hej` first and render the README-style hej
+dashboard from that single composite result. The CLI output is source data, not
+the user-facing dashboard; do not relay raw `agentera hej` lines as the final
 briefing. Do not run individual `plan`, `progress`, `health`, `todo`, or
 `decisions` commands unless `agentera hej` fails or explicitly asks for
-fallback. For `/agentera <capability-name>`, run the top-level command or
-commands named by that capability before opening raw artifacts. Reading a
-capability's `prose.md` file is not itself a capability invocation; invocation
-means routing to the capability, following its prose, and using the CLI state
-layer first.
+fallback. The final response must transform source labels such as `mode:`,
+`profile:`, `health:`, `issues:`, `plan:`, `objective:`, `attention:`,
+`next_action:`, and `source_contract:` into the dashboard below; never paste
+those labels as the briefing.
+
+Bare `/agentera` returning-project output must include these visible markers:
+
+```text
+┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
+├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
+┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
+
+─── status ─────────────────────────────
+─── attention ──────────────────────────
+─── next ───────────────────────────────
+```
+
+Omit `attention` only when the source has no attention items. Always include the
+mandatory `⌂ hej · <status>` marker below the dashboard code fence, and ask for
+confirmation before invoking the suggested downstream capability. For
+`/agentera <capability-name>`, run the top-level command or commands named by
+that capability before opening raw artifacts. Reading a capability's `prose.md`
+file is not itself a capability invocation; invocation means routing to the
+capability, following its prose, and using the CLI state layer first.
 
 ### Step -1a: Bundle freshness guard
 

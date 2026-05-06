@@ -1,11 +1,11 @@
 {
   "metadata": {
-    "version": "2.1.0"
+    "version": "2.1.1"
   },
   "plugins": [
     {
       "name": "agentera",
-      "version": "2.1.0",
+      "version": "2.1.1",
       "description": "Compound agent orchestration suite - 12 capabilities in one bundled skill",
       "author": { "name": "jgabor" },
       "source": "./skills/agentera",
@@ -28,7 +28,7 @@
     },
     {
       "name": "hej",
-      "version": "2.1.0",
+      "version": "2.1.1",
       "description": "Legacy Agentera v1 entry-point bridge to the v2 /agentera upgrade flow.",
       "author": { "name": "jgabor" },
       "source": "./skills/hej",

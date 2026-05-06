@@ -38,7 +38,7 @@ def test_package_registry_returns_package_facts_in_deterministic_order_without_d
     registry = registry_module.load_registry(REGISTRY_PATH)
 
     assert registry.package_ids == ("agentera",)
-    assert registry.suite_version() == "2.1.0"
+    assert registry.suite_version() == "2.1.1"
     assert len(registry.package_ids) == len(set(registry.package_ids))
     assert registry.version_surface_ids() == (
         "registry",

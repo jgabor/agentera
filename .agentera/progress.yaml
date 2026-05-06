@@ -1,4 +1,26 @@
 cycles:
+- number: 339
+  timestamp: 2026-05-06 22:10
+  type: fix
+  phase: build
+  what: Restored the bare Agentera Hej dashboard rendering boundary.
+  commit: pending
+  inspiration: The active plan required bare `/agentera` to render the README-style dashboard from one compact `agentera hej` source command instead of exposing raw source fields.
+  discovered: >
+    `agentera hej` already emitted the required mode, profile, health, issue, plan, objective,
+    attention, and next-action fields. The weak seam was boundary visibility: dispatcher guidance
+    lacked the full dashboard markers, and the CLI sentinel said `dashboard:` even though no
+    dashboard had been rendered.
+  verified: >
+    Validation passed: focused dashboard, CLI, dispatcher-boundary, bundle-freshness, and package
+    registry tests reported 25 passed; Hej capability validation and contract self-validation passed;
+    version-surface alignment tests reported 4 passed; uv run pytest -q reported 713 passed.
+  next: 'Plan complete; no commit or push performed.'
+  context:
+    intent: preserve README-style Hej rendering while keeping `agentera hej` compact for direct CLI users
+    constraints: no remote push, no unrelated TODO work, no vision or objective mutation
+    unknowns: none for the dashboard rendering fix
+    scope: dispatcher and Hej prose, CLI source sentinel, semantic/runtime tests, package version surfaces, and plan/progress freshness
 - number: 338
   timestamp: 2026-05-06 20:43
   type: fix

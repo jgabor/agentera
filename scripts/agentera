@@ -1168,8 +1168,9 @@ def cmd_hej(_args: argparse.Namespace) -> int:
             print(f"- {item}")
     print("next_action:")
     print(f"- {_format_next_action(next_action)}")
-    print("dashboard:")
-    print("- source=agentera hej | render=hej dashboard | status=complete")
+    print("source_contract:")
+    print("- fields=mode,profile,health,issues,plan,objective,attention,next_action")
+    print("- render=caller-owned README-style hej dashboard")
     return 0
 
 
