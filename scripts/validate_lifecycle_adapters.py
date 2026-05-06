@@ -25,6 +25,7 @@ SCRIPTS_DIR = ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
+from package_registry import PackageRegistry, load_registry as load_package_registry
 from runtime_adapter_registry import RegistryError, RuntimeAdapterRegistry, load_registry
 
 REGISTRY_CONTRACT_ERROR_PREFIX = "registry contract error"
@@ -39,26 +40,12 @@ CODEX_AGENTERA_METADATA_TERMS = (
     "AGENTERA_HOME",
 )
 CODEX_PROFILERA_STATUS_VALUES = ("ok", "degraded")
-SUITE_BUNDLE_REQUIRED_PATHS = {
-    "skills": "dir",
-    "scripts": "dir",
-    "hooks": "dir",
-    "registry.json": "file",
-    "plugin.json": "file",
-    "pyproject.toml": "file",
-    "README.md": "file",
-}
+PACKAGE_REGISTRY_PATH = ROOT / "references/adapters/package-registry.yaml"
 UV_SCRIPT_SHEBANG = "#!/usr/bin/env -S uv run --script"
 UV_INSTALL_GUIDANCE = (
     "uv is required to run packaged Agentera Python scripts; install it from "
     "https://docs.astral.sh/uv/getting-started/installation/ and then rerun the check"
 )
-RUNTIME_PACKAGE_SURFACES = {
-    "claude": ".claude-plugin/marketplace.json",
-    "codex": ".codex-plugin/plugin.json",
-    "copilot": "plugin.json",
-    "opencode": ".opencode/package.json",
-}
 HARD_GATE_DOC_REQUIREMENTS = {
     "references/adapters/runtime-feature-parity.md": ("opencode", "copilot"),
     "references/adapters/opencode.md": ("opencode",),
@@ -79,6 +66,21 @@ def _registry_contract_error(exc: Exception) -> str:
 
 def _runtime_view(registry: RuntimeAdapterRegistry, runtime: str) -> dict[str, Any]:
     return registry.consumer_view("lifecycle", runtime)
+
+
+def _package_manifest(root: Path) -> PackageRegistry:
+    registry_path = root / "references/adapters/package-registry.yaml"
+    if registry_path.is_file():
+        return load_package_registry(registry_path, root=root)
+    return load_package_registry(PACKAGE_REGISTRY_PATH)
+
+
+def _runtime_package_surfaces(registry: PackageRegistry) -> dict[str, str]:
+    return registry.runtime_manifest_paths()
+
+
+def _suite_bundle_required_paths(registry: PackageRegistry) -> dict[str, str]:
+    return registry.shared_path_requirements()
 
 
 def _supported_events(registry: RuntimeAdapterRegistry, runtime: str) -> set[str]:
@@ -260,6 +262,7 @@ def validate_uv_runtime(path: str | None = None) -> list[str]:
 def validate_suite_bundle_surface(
     root: Path,
     runtime_names: set[str] | None = None,
+    package_registry: PackageRegistry | None = None,
 ) -> list[str]:
     """Validate aggregate runtime metadata for the shared bundle root.
 
@@ -268,10 +271,15 @@ def validate_suite_bundle_surface(
     ``sharedPaths`` are resolved from that root.
     """
     errors: list[str] = []
-    active = runtime_names if runtime_names is not None else set(RUNTIME_PACKAGE_SURFACES)
+    if package_registry is None:
+        package_registry = _package_manifest(root)
+    runtime_package_surfaces = _runtime_package_surfaces(package_registry)
+    required_paths = _suite_bundle_required_paths(package_registry)
+    package_shapes = package_registry.runtime_package_shapes()
+    active = runtime_names if runtime_names is not None else set(runtime_package_surfaces)
 
     for runtime in sorted(active):
-        relative_manifest = RUNTIME_PACKAGE_SURFACES.get(runtime)
+        relative_manifest = runtime_package_surfaces.get(runtime)
         if relative_manifest is None:
             errors.append(f"{runtime}: unknown runtime package surface")
             continue
@@ -303,8 +311,9 @@ def validate_suite_bundle_surface(
         if not isinstance(metadata, dict):
             errors.append(f"{runtime}: missing agentera suite bundle metadata")
             continue
-        if metadata.get("packageShape") != "suite-bundle":
-            errors.append(f"{runtime}: agentera.packageShape must be suite-bundle")
+        expected_shape = package_shapes.get(runtime)
+        if metadata.get("packageShape") != expected_shape:
+            errors.append(f"{runtime}: agentera.packageShape must be {expected_shape}")
 
         install_root_value = metadata.get("installRoot")
         if not isinstance(install_root_value, str) or not install_root_value:
@@ -322,7 +331,7 @@ def validate_suite_bundle_surface(
             errors.append(f"{runtime}: agentera.sharedPaths must list bundle paths")
             continue
         listed = set(shared_paths)
-        for path, expected_kind in SUITE_BUNDLE_REQUIRED_PATHS.items():
+        for path, expected_kind in required_paths.items():
             if path not in listed:
                 errors.append(f"{runtime}: shared tool path {path} missing from package metadata")
                 continue
@@ -658,7 +667,8 @@ def main(argv: list[str] | None = None) -> int:
     errors.extend(validate_codex(codex, registry))
     errors.extend(validate_codex_profilera_metadata(root, codex))
     errors.extend(validate_opencode(root, registry))
-    errors.extend(validate_suite_bundle_surface(root))
+    package_manifest = _package_manifest(root)
+    errors.extend(validate_suite_bundle_surface(root, package_registry=package_manifest))
     errors.extend(validate_packaged_python_scripts(root))
     if args.check_uv_runtime:
         errors.extend(validate_uv_runtime())

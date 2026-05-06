@@ -1,4 +1,4 @@
-last_audit: 2026-05-06 (RuntimeAdapter registry documentation closure)
+last_audit: 2026-05-06 (PackageManifest registry documentation closure)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -13,6 +13,7 @@ conventions:
   - .claude-plugin/marketplace.json
   - .opencode/plugins/agentera.js
   - registry.json
+  version_files_registry: references/adapters/package-registry.yaml docs_targets.version_files
   semver_policy:
     feat: minor
     fix: patch
@@ -169,6 +170,18 @@ index:
   path: references/adapters/runtime-adapter-characterization.md
   last_updated: '2026-05-06'
   status: current
+- document: Package surface characterization
+  path: references/adapters/package-surface-characterization.md
+  last_updated: '2026-05-06'
+  status: current
+- document: PackageManifest interface model
+  path: references/adapters/package-manifest-interface-model.yaml
+  last_updated: '2026-05-06'
+  status: current
+- document: PackageManifest registry
+  path: references/adapters/package-registry.yaml
+  last_updated: '2026-05-06'
+  status: current
 - document: RuntimeAdapter interface model
   path: references/adapters/runtime-adapter-interface-model.yaml
   last_updated: '2026-05-06'
@@ -279,6 +292,21 @@ coverage:
   stale: none
   tests: 610 passed, 1 skipped across the current v2 suite; CI runs on push/PR via GitHub Actions
 audit_log:
+- date: '2026-05-06'
+  label: PackageManifest registry documentation closure
+  findings:
+  - type: freshness
+    description: DOCS now indexes references/adapters/package-registry.yaml alongside the interface model and surface characterization, and manifest projection alignment tests validate version surface, runtime manifest, and docs target parity through the registry.
+    resolution: fixed
+    severity: info
+  - type: freshness
+    description: DOCS version_files and registry docs_targets.version_files are validated as identical by the new alignment test; registry excluded_version_files match non-version-bearing manifest paths.
+    resolution: fixed
+    severity: info
+  - type: scoped-deferral
+    description: Capability schema contract, routing/exit vocabulary, artifact registry, and artifact write validation work remain separate open TODOs.
+    resolution: fixed
+    severity: info
 - date: '2026-05-06'
   label: RuntimeAdapter registry documentation closure
   findings:

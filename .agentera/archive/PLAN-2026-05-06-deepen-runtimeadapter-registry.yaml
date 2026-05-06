@@ -1,0 +1,100 @@
+header:
+  level: full
+  created: '2026-05-06'
+  status: complete
+  reviewed: '2026-05-06'
+  critic_issues: "8 found, 8 addressed, 0 dismissed"
+  title: Deepen RuntimeAdapter Registry
+what: >
+  Replace scattered runtime adapter knowledge with one registry-backed
+  RuntimeAdapter Module. The registry describes Claude Code, OpenCode,
+  Copilot CLI, and Codex CLI runtime facts behind one Interface: runtime
+  identity, host detection, lifecycle events, artifact-validation support,
+  configuration targets, diagnostic labels, and documentation claims. Doctor,
+  upgrade planning, lifecycle validation, adapter documentation, and runtime
+  tests consume that Interface instead of preserving separate runtime tables
+  and conditionals.
+why: >
+  TODO [arch-runtime-adapter-registry] identified runtime adapter behavior as a
+  shallow seam: runtime facts were spread across scripts/setup_doctor.py,
+  scripts/agentera_upgrade.py, scripts/validate_lifecycle_adapters.py,
+  references/adapters/runtime-feature-parity.md, references/adapters/opencode.md,
+  and tests/test_runtime_adapters.py. A deeper Module gives locality for runtime
+  support changes and leverage for validators, docs, and tests.
+constraints: >
+  Preserve current user-visible doctor, upgrade, lifecycle validation, and
+  runtime documentation behavior unless a characterization task explicitly names
+  an intentional correction. Do not change install-root classification semantics;
+  scripts/install_root.py remains the only Module for AGENTERA_HOME precedence,
+  default durable root, managed/stale/unmanaged classification, and root
+  diagnostics. Do not implement the separate package manifest registry or move
+  version authority, package shared paths, package manifest schemas, or release
+  metadata into RuntimeAdapter. No live model calls, no remote pushes, and no
+  unapproved runtime config writes.
+scope:
+  included:
+    - archived the completed install-root Module plan
+    - characterized current runtime adapter outputs before migration
+    - defined RuntimeAdapter ownership, schema, and typed field groups
+    - introduced a registry Module with contract tests for all four current runtimes
+    - migrated lifecycle adapter validation to consume registry facts
+    - migrated setup doctor read-only diagnostics to consume registry facts
+    - migrated upgrade runtime planning to consume registry facts while preserving dry-run and confirmation safety
+    - consolidated runtime tests around the registry and validated documentation parity
+  excluded:
+    - package manifest registry and package version authority
+    - generated install-root cross-language contract
+    - artifact write validation Module split
+    - adding new runtime support beyond existing Claude Code, OpenCode, Copilot CLI, and Codex CLI claims
+    - live runtime smoke calls
+    - changing install-root root classification behavior
+  deferred:
+    - [arch-package-manifest-registry]
+    - [arch-artifact-write-validation]
+    - [install-root-generated-cross-language-contract]
+tasks:
+  - number: 1
+    name: Reconcile Plan State And Runtime Scope
+    status: complete
+  - number: 2
+    name: Characterize Runtime Adapter Outputs And Drift
+    status: complete
+  - number: 3
+    name: Define RuntimeAdapter Interface And Ownership Model
+    status: complete
+  - number: 4
+    name: Introduce Registry Module And Contract Tests
+    status: complete
+  - number: 5
+    name: Migrate Lifecycle Validation To Registry
+    status: complete
+  - number: 6
+    name: Migrate Doctor Read-Only Diagnostics
+    status: complete
+  - number: 7
+    name: Migrate Upgrade Planning And Runtime Tests
+    status: complete
+  - number: 8
+    name: Align Documentation And Validate Close
+    status: complete
+overall_acceptance:
+  - GIVEN a runtime fact changes WHEN lifecycle validation, doctor, upgrade, docs, and tests need that fact THEN the change is made in one RuntimeAdapter Interface rather than duplicated across callers
+  - GIVEN runtime registry work completes WHEN package metadata or install-root behavior is inspected THEN those facts remain owned by their separate Modules and TODOs
+validation_evidence:
+  source_artifact: .agentera/progress.yaml
+  cycle: 298
+  timestamp: '2026-05-06 07:06'
+  summary: >
+    RuntimeAdapter closure validation passed with registry tests, runtime adapter tests, lifecycle validation, setup doctor, upgrade,
+    bundle freshness, setup/install-root checks, artifact CLI checks, capability validation, cross-capability validation, py_compile,
+    and full pytest reporting 610 passed, 1 skipped.
+  commands:
+    - uv run pytest tests/test_runtime_adapter_registry.py -q (5 passed)
+    - uv run pytest tests/test_runtime_adapters.py -q (62 passed)
+    - uv run scripts/validate_lifecycle_adapters.py
+    - uv run pytest tests/test_setup_doctor.py -q (18 passed)
+    - uv run pytest tests/test_upgrade_cli.py -q (13 passed)
+    - uv run pytest tests/test_bundle_freshness.py -q (6 passed)
+    - uv run pytest -q (610 passed, 1 skipped)
+    - uv run scripts/validate_capability.py for all 12 current capabilities
+    - uv run scripts/validate_cross_capability.py

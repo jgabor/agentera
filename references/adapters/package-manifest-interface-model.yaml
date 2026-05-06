@@ -1,0 +1,336 @@
+interface: PackageManifest
+status: implemented
+implemented_by: references/adapters/package-registry.yaml
+intent: >
+  Define the package and release-surface access Interface before introducing an
+  executable registry Module. This model records ownership boundaries and the
+  validation contract for future PackageManifest records. The executable registry
+  at references/adapters/package-registry.yaml and its loader scripts/package_registry.py
+  now implement this interface; this model remains the authoritative design contract.
+record:
+  required_groups:
+    - identity
+    - version_authority
+    - version_surfaces
+    - runtime_package_manifests
+    - bundle_surfaces
+    - package_commands
+    - docs_targets
+    - release_policy
+  groups:
+    identity:
+      type: object
+      owns:
+        - package id
+        - suite name
+        - skill path
+        - capability count expectation
+      required_fields:
+        id: string
+        name: string
+        skill_path: repo_relative_path
+        expected_capabilities: integer
+    version_authority:
+      type: object
+      owns:
+        - suite version access selector
+        - persisted authority declaration
+        - authority transition rule
+      required_fields:
+        persisted_authority: repo_relative_path
+        selector: string
+        access_interface: string
+        future_authority_change_requires: string
+    version_surfaces:
+      type: object
+      owns:
+        - version-bearing repository surfaces
+        - version extraction selectors
+        - non-version surface exclusions
+      required_fields:
+        surfaces: list[object]
+        excluded_runtime_manifests: list[repo_relative_path]
+    runtime_package_manifests:
+      type: object
+      owns:
+        - runtime package manifest paths
+        - runtime package shape expectations
+        - shared package path expectations
+      required_fields:
+        manifests: list[object]
+        shared_paths_policy: string
+    bundle_surfaces:
+      type: object
+      owns:
+        - bundled directories
+        - bundled files
+        - bundle skip rules
+        - bundle drift standardization target
+      required_fields:
+        directories: list[repo_relative_path]
+        files: list[repo_relative_path]
+        skip_parts: list[string]
+        skip_suffixes: list[string]
+    package_commands:
+      type: object
+      owns:
+        - package-manager command specifications
+        - package command action names
+        - package command runtime scope
+        - package write-gate preservation
+      required_fields:
+        commands: list[object]
+        safety: object
+    docs_targets:
+      type: object
+      owns:
+        - docs version targets
+        - docs index targets for package surfaces
+        - non-version docs exclusions
+      required_fields:
+        version_files_source: string
+        version_files: list[repo_relative_path]
+        index_targets: list[repo_relative_path]
+        excluded_version_files: list[repo_relative_path]
+    release_policy:
+      type: object
+      owns:
+        - semver policy projection
+        - changelog decision guidance
+        - release publication exclusion
+      required_fields:
+        semver_policy_source: string
+        version_bump_required_for_interface_only_change: boolean
+        release_publication_in_scope: boolean
+ownership:
+  registry_json_version_authority:
+    owner: registry.json
+    persisted_authority: true
+    path: registry.json
+    selector: skills[0].version
+    access_interface: PackageManifest
+    rule: >
+      registry.json remains the persisted suite-version authority. PackageManifest
+      becomes the typed access Interface for consumers after migration, unless an
+      explicit future ADR changes persisted authority.
+    future_authority_change_requires: explicit ADR
+  install_root_delegated:
+    owner: scripts/install_root.py
+    forbidden_in_package_manifest:
+      - AGENTERA_HOME precedence
+      - default durable root
+      - managed classification
+      - stale classification
+      - unmanaged classification
+      - install-root diagnostics
+  runtime_adapter_delegated:
+    owner: scripts/runtime_adapter_registry.py
+    forbidden_in_package_manifest:
+      - runtime discovery
+      - lifecycle events
+      - artifact validation hooks
+      - config target paths
+      - runtime diagnostics
+      - documentation claims
+command_safety:
+  argv_only: true
+  approved_executables:
+    - npx
+  approved_actions:
+    - remove-legacy-skills
+    - install-agentera-skill
+  approved_runtimes:
+    - all
+    - claude
+    - opencode
+  approved_runtime_agents:
+    - claude-code
+    - opencode
+  approved_package_tool:
+    executable: npx
+    command_namespace: skills
+    actions:
+      - remove
+      - add
+  cleanup_actions:
+    - remove-legacy-skills
+  runtime_install_actions:
+    - install-agentera-skill
+  gates:
+    update_packages_required_to_plan: true
+    yes_required_to_execute: true
+    preserve_existing_write_gates: true
+sample_manifest:
+  identity:
+    id: agentera
+    name: agentera
+    skill_path: skills/agentera
+    expected_capabilities: 12
+  version_authority:
+    persisted_authority: registry.json
+    selector: skills[0].version
+    access_interface: PackageManifest
+    future_authority_change_requires: explicit ADR
+  version_surfaces:
+    surfaces:
+      - id: registry
+        path: registry.json
+        selector: skills[0].version
+      - id: python-project
+        path: pyproject.toml
+        selector: project.version
+      - id: copilot-root
+        path: plugin.json
+        selector: version
+      - id: copilot-repository
+        path: .github/plugin/plugin.json
+        selector: version
+      - id: codex-plugin
+        path: .codex-plugin/plugin.json
+        selector: version
+      - id: claude-marketplace-metadata
+        path: .claude-plugin/marketplace.json
+        selector: metadata.version
+      - id: claude-marketplace-plugins
+        path: .claude-plugin/marketplace.json
+        selector: plugins[*].version
+      - id: opencode-plugin-marker
+        path: .opencode/plugins/agentera.js
+        selector: AGENTERA_VERSION
+    excluded_runtime_manifests:
+      - .opencode/package.json
+  runtime_package_manifests:
+    manifests:
+      - runtime: copilot
+        path: plugin.json
+        version_bearing: true
+        package_shape: suite-bundle
+      - runtime: copilot
+        path: .github/plugin/plugin.json
+        version_bearing: true
+        package_shape: suite-bundle
+      - runtime: codex
+        path: .codex-plugin/plugin.json
+        version_bearing: true
+        package_shape: suite-bundle
+      - runtime: claude
+        path: .claude-plugin/marketplace.json
+        version_bearing: true
+        package_shape: suite-bundle
+      - runtime: opencode
+        path: .opencode/package.json
+        version_bearing: false
+        package_shape: suite-bundle
+    shared_paths_policy: validate minimum shared paths separately from full bundle includes
+  bundle_surfaces:
+    directories:
+      - skills
+      - scripts
+      - hooks
+      - references
+      - agents
+      - .agents/plugins
+      - .codex-plugin
+      - .claude-plugin
+      - .github/hooks
+      - .github/plugin
+      - .opencode/commands
+      - .opencode/plugins
+    files:
+      - README.md
+      - UPGRADE.md
+      - CHANGELOG.md
+      - DESIGN.md
+      - LICENSE
+      - pyproject.toml
+      - registry.json
+      - plugin.json
+      - .opencode/package.json
+    skip_parts:
+      - __pycache__
+      - .pytest_cache
+      - node_modules
+    skip_suffixes:
+      - .pyc
+      - .pyo
+  package_commands:
+    commands:
+      - runtime: all
+        action: remove-legacy-skills
+        phase: cleanup
+        argv:
+          - npx
+          - skills
+          - remove
+          - hej
+          - visionera
+          - resonera
+          - inspirera
+          - planera
+          - realisera
+          - inspektera
+          - optimera
+          - orkestrera
+          - visualisera
+          - dokumentera
+          - profilera
+          - -g
+          - -y
+        skipped_without_update_packages_message: legacy skill removal skipped; pass --update-packages to run
+      - runtime: claude
+        action: install-agentera-skill
+        phase: runtime-install
+        argv:
+          - npx
+          - skills
+          - add
+          - jgabor/agentera
+          - -g
+          - -a
+          - claude-code
+          - --skill
+          - agentera
+          - -y
+        skipped_without_update_packages_message: external package update skipped; pass --update-packages to run
+      - runtime: opencode
+        action: install-agentera-skill
+        phase: runtime-install
+        argv:
+          - npx
+          - skills
+          - add
+          - jgabor/agentera
+          - -g
+          - -a
+          - opencode
+          - --skill
+          - agentera
+          - -y
+        skipped_without_update_packages_message: external package update skipped; pass --update-packages to run
+    safety:
+      argv_only: true
+      update_packages_required_to_plan: true
+      yes_required_to_execute: true
+      preserve_existing_write_gates: true
+      cleanup_phase: cleanup
+      runtime_install_phase: runtime-install
+  docs_targets:
+    version_files_source: .agentera/docs.yaml conventions.version_files
+    version_files:
+      - pyproject.toml
+      - uv.lock
+      - plugin.json
+      - .github/plugin/plugin.json
+      - .codex-plugin/plugin.json
+      - .claude-plugin/marketplace.json
+      - .opencode/plugins/agentera.js
+      - registry.json
+    index_targets:
+      - references/adapters/package-surface-characterization.md
+      - references/adapters/package-manifest-interface-model.yaml
+    excluded_version_files:
+      - .opencode/package.json
+  release_policy:
+    semver_policy_source: .agentera/docs.yaml conventions.semver_policy
+    version_bump_required_for_interface_only_change: false
+    release_publication_in_scope: false
