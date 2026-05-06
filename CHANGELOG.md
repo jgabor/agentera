@@ -17,6 +17,7 @@
 
 ### Fixed
 
+- `agentera health` now reads the newest health audit consistently with `agentera hej`, with a newest-first regression covering Audit 20 before Audit 10.
 - Bare `/agentera` dispatcher guidance now exposes the README-style Hej dashboard contract at the entry boundary, forbids raw source-field briefings, and keeps `agentera hej` as compact caller-owned source data.
 - Progress cycle phases now stay within the protocol enum: recent verification-lane cycles and fixtures use `phase: build`, and artifact validation rejects invalid enum values such as `verify`.
 - Skill frontmatter now matches the suite version authority from `registry.json`, avoiding stale-version ambiguity during bundle freshness checks.
