@@ -34,6 +34,11 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import install_root as install_root_module
+
 SCHEMA_VERSION = "agentera.setupDoctor.v1"
 STATUSES = ("pass", "warn", "fail", "skip")
 RUNTIMES = ("claude", "opencode", "copilot", "codex")
@@ -51,12 +56,7 @@ OPENCODE_SKILL_NAMES = (
 OPENCODE_COMMAND_DESCRIPTIONS = {
     "agentera": "Compound agent orchestration suite: 12 capabilities in one bundled skill",
 }
-CANONICAL_ENTRIES = (
-    "scripts/validate_capability.py",
-    "hooks",
-    "skills",
-    "skills/agentera/SKILL.md",
-)
+CANONICAL_ENTRIES = install_root_module.SETUP_EVIDENCE
 HELPER_ENTRIES = (
     "scripts/validate_capability.py",
     "hooks/validate_artifact.py",
@@ -72,7 +72,10 @@ SUPPORT_PATH_RE: Pattern[str] = compile_re(
 
 
 def verify_install_root(root: Path) -> list[str]:
-    return [entry for entry in CANONICAL_ENTRIES if not (root / entry).exists()]
+    classification = install_root_module.classify_resolved_root(root, source="explicit")
+    if classification.kind == "managed_fresh":
+        return []
+    return [entry for entry in install_root_module.SETUP_EVIDENCE if not (root / entry).exists()]
 
 
 def verify_helper_access(root: Path) -> list[str]:
@@ -98,6 +101,14 @@ def auto_detect_install_root(
     return None
 
 
+def _root_classification(root: Path, source: str) -> install_root_module.Classification:
+    return install_root_module.classify_resolved_root(root, source=source)
+
+
+def _setup_missing(root: Path) -> list[str]:
+    return [entry for entry in install_root_module.SETUP_EVIDENCE if not (root / entry).exists()]
+
+
 def classify_install_root(
     explicit_root: Path | None,
     env: Mapping[str, str],
@@ -115,11 +126,11 @@ def classify_install_root(
                 "could not resolve an Agentera install root; pass --install-root "
                 "or set AGENTERA_HOME"
             ),
-            "missing": list(CANONICAL_ENTRIES),
+            "missing": list(install_root_module.SETUP_EVIDENCE),
         }
 
-    missing = verify_install_root(root)
-    if missing:
+    classification = _root_classification(root, "explicit" if explicit_root is not None else "default")
+    if classification.kind != "managed_fresh":
         return {
             "status": "fail",
             "path": str(root),
@@ -127,7 +138,7 @@ def classify_install_root(
             "kind": None,
             "gap": "bundle_packaging",
             "message": "install root is missing canonical Agentera entries",
-            "missing": missing,
+            "missing": _setup_missing(root),
         }
 
     helper_missing = verify_helper_access(root)
@@ -222,7 +233,8 @@ def _configured_root_check(
     install_root: Path,
     source: str,
 ) -> dict[str, Any]:
-    if not candidate.exists():
+    classification = _root_classification(candidate, "environment")
+    if classification.kind.startswith("missing_"):
         return _check(
             name,
             "fail",
@@ -232,8 +244,7 @@ def _configured_root_check(
             gap="runtime_config",
         )
 
-    missing = verify_install_root(candidate)
-    if missing:
+    if classification.kind != "managed_fresh":
         return _check(
             name,
             "fail",
@@ -241,7 +252,7 @@ def _configured_root_check(
             source=source,
             path=candidate,
             gap="bundle_packaging",
-            details=missing,
+            details=_setup_missing(candidate),
         )
 
     helper_missing = verify_helper_access(candidate)

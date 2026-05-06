@@ -66,6 +66,12 @@ paths still work, but Copilot warns they are deprecated.
 
 ## Source of truth
 
+Install-root classification is not runtime-specific. `scripts/install_root.py` is
+the shared Module for `AGENTERA_HOME`, default durable root, managed root, stale
+root, unmanaged root, and diagnostic semantics. Runtime adapter registry
+extraction remains deferred to `[arch-runtime-adapter-registry]`; package
+metadata registry work stays outside the install-root Module.
+
 | Surface | Path |
 |---------|------|
 | Shared artifact validator | `hooks/validate_artifact.py` |

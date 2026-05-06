@@ -33,10 +33,13 @@ is missing from `agentera hej`, fix or extend the composite CLI contract instead
 of adding routine fallback reads. Use top-level fallback commands only when
 `agentera hej` fails or explicitly reports fallback-only recovery.
 
-Resolve `RESOLVED_AGENTERA_HOME` from `AGENTERA_HOME` when set, otherwise from
-`$HOME/.agents/agentera`. If that installed command is stale, missing `hej`,
-fails before argparse, or has a stale `.agentera-bundle.json` marker, treat it
-as a bundle freshness gap. Preview the repair with:
+Resolve `RESOLVED_AGENTERA_HOME` through the shared install-root Module contract
+implemented by `scripts/install_root.py`: `AGENTERA_HOME` when set, otherwise the
+default durable root `$HOME/.agents/agentera`. Treat managed, stale, missing,
+invalid, and unmanaged root semantics as Module-owned contract states. If the
+installed command is stale, missing `hej`, fails before argparse, or has a stale
+`.agentera-bundle.json` marker, treat it as a bundle freshness gap. Preview the
+repair with:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --dry-run

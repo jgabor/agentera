@@ -279,7 +279,9 @@ Profile data already uses the platform data directory by default:
 macOS, and `%APPDATA%/agentera` on Windows.
 
 `AGENTERA_HOME` points to the Agentera install root. Runtime installers and the
-upgrade flow use it for helper scripts, hooks, and artifact checks.
+upgrade flow use it for helper scripts, hooks, and artifact checks. Install-root
+source precedence, managed/stale/unmanaged classification, default durable root
+fallback, and no-write diagnostics are owned by `scripts/install_root.py`.
 
 ### Keep the durable bundle current
 
@@ -304,9 +306,10 @@ Then retry the installed dashboard data source:
 uv run "$AGENTERA_HOME/scripts/agentera" hej
 ```
 
-If `AGENTERA_HOME` is unset, Agentera uses the default durable root
-`~/.agents/agentera`. If it points at a missing, invalid, or user-owned
-directory, fix the setting or choose a managed install root before applying.
+If `AGENTERA_HOME` is unset, the shared install-root Module uses the default
+durable root `~/.agents/agentera`. If it points at a missing, invalid, or
+unmanaged user-owned directory, fix the setting or choose a managed install root
+before applying.
 
 <details>
 <summary><strong>Claude Code hooks</strong></summary>

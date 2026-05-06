@@ -148,6 +148,10 @@ def _setup_doctor_module() -> ModuleType:
     return _load_script_module("agentera_setup_doctor", ROOT / "scripts" / "setup_doctor.py")
 
 
+def _install_root_module() -> ModuleType:
+    return _load_script_module("agentera_install_root", ROOT / "scripts" / "install_root.py")
+
+
 def _relative(path: Path, root: Path) -> str:
     try:
         return str(path.relative_to(root))
@@ -171,16 +175,18 @@ def _sha256(path: Path) -> str | None:
     return digest.hexdigest()
 
 
-def _install_root_missing(root: Path) -> list[str]:
-    return [
-        entry
-        for entry in ("scripts/agentera", "hooks", "skills", "skills/agentera/SKILL.md")
-        if not (root / entry).exists()
-    ]
+def _source_root_missing(root: Path) -> list[str]:
+    install_root = _install_root_module()
+    return [entry for entry in install_root.SETUP_EVIDENCE if not (root / entry).exists()]
+
+
+def _classify_root(root: Path, *, source: str = "explicit", expected_version: str | None = None) -> Any:
+    return _install_root_module().classify_resolved_root(root, source=source, expected_version=expected_version)
 
 
 def _valid_install_root(root: Path) -> bool:
-    return not _install_root_missing(root)
+    classification = _classify_root(root)
+    return classification.managed_status == "managed"
 
 
 def _load_suite_version(source_root: Path) -> str | None:
@@ -214,13 +220,11 @@ def _bundle_marker_path(install_root: Path) -> Path:
     return install_root / BUNDLE_MARKER
 
 
-def _install_root_looks_managed(install_root: Path) -> bool:
-    if _bundle_marker_path(install_root).is_file():
+def _bundle_target_is_safe(install_root: Path, *, expected_version: str | None = None) -> bool:
+    if not install_root.exists():
         return True
-    return (
-        (install_root / "skills" / "agentera" / "SKILL.md").is_file()
-        and (install_root / "registry.json").is_file()
-    )
+    classification = _classify_root(install_root, expected_version=expected_version)
+    return classification.managed_status == "managed"
 
 
 def _shell_quote(value: str) -> str:
@@ -240,15 +244,18 @@ def resolve_bundle_status_install_root(
     env: dict[str, str] | None = None,
 ) -> tuple[Path, str]:
     env = env or os.environ
-    if value is not None:
-        return value.expanduser().resolve(), "explicit --install-root"
-    configured = env.get("AGENTERA_HOME")
-    if configured:
-        return Path(configured).expanduser().resolve(), "AGENTERA_HOME"
-    default = env.get(DEFAULT_INSTALL_ROOT_ENV)
-    if default:
-        return Path(default).expanduser().resolve(), DEFAULT_INSTALL_ROOT_ENV
-    return (home.expanduser().resolve() / ".agents" / "agentera").resolve(), "default durable root"
+    root, source = _install_root_module().resolve_candidate(value, env=env, home=home)
+    return root, _install_root_module().SOURCE_LABELS.get(source, source)
+
+
+def _source_key(root_source: str) -> str:
+    labels = _install_root_module().SOURCE_LABELS
+    for key, label in labels.items():
+        if root_source == label:
+            return key
+    if root_source == "AGENTERA_HOME":
+        return "environment"
+    return "explicit"
 
 
 def _probe_bundle_cli(
@@ -321,32 +328,30 @@ def build_bundle_status(
     expected_commands: tuple[str, ...] = EXPECTED_STATE_COMMANDS,
 ) -> dict[str, Any]:
     expected = expected_version or _load_suite_version(source_root) or "unknown"
-    marker = _read_bundle_marker(install_root)
-    marker_version = marker.get("version") if marker else None
+    classification = _classify_root(install_root, source=_source_key(root_source), expected_version=expected)
+    marker_version = classification.current_version
     signals: list[dict[str, Any]] = []
     blocked = False
 
-    root_exists = install_root.exists()
-    root_is_dir = install_root.is_dir()
-    if not root_exists:
+    if classification.kind == "missing_default":
         root_status = "missing"
-        if root_source in {"AGENTERA_HOME", "explicit --install-root"}:
-            blocked = True
-            signals.append({
-                "status": "blocked",
-                "kind": "invalid_install_root",
-                "message": (
-                    f"{root_source} points at a missing path; fix the setting, "
-                    "choose a managed --install-root, or rerun with explicit force guidance"
-                ),
-            })
-        else:
-            signals.append({
-                "status": "stale",
-                "kind": "missing_bundle",
-                "message": "default durable Agentera bundle is not installed",
-            })
-    elif not root_is_dir:
+        signals.append({
+            "status": "stale",
+            "kind": "missing_bundle",
+            "message": "default durable Agentera bundle is not installed",
+        })
+    elif classification.kind == "missing_explicit_or_environment":
+        root_status = "missing"
+        blocked = True
+        signals.append({
+            "status": "blocked",
+            "kind": "invalid_install_root",
+            "message": (
+                f"{root_source} points at a missing path; fix the setting, "
+                "choose a managed --install-root, or rerun with explicit force guidance"
+            ),
+        })
+    elif classification.kind == "file_valued_root":
         root_status = "invalid"
         blocked = True
         signals.append({
@@ -354,7 +359,7 @@ def build_bundle_status(
             "kind": "invalid_install_root",
             "message": f"{root_source} points at a file, not an install root directory",
         })
-    elif not _install_root_looks_managed(install_root):
+    elif classification.kind == "unmanaged_directory":
         root_status = "unmanaged"
         blocked = True
         signals.append({
@@ -362,15 +367,24 @@ def build_bundle_status(
             "kind": "unmanaged_install_root",
             "message": "target exists but is not an Agentera-managed bundle",
         })
+    elif classification.kind == "invalid_bundle":
+        root_status = "invalid"
+        blocked = True
+        signals.append({
+            "status": "blocked",
+            "kind": "invalid_bundle",
+            "message": classification.diagnostic.message,
+        })
     else:
         root_status = "managed"
-        if marker is None:
+        reason = classification.diagnostic.evidence.get("reason")
+        if classification.kind == "managed_stale" and reason == "missing_marker":
             signals.append({
                 "status": "stale",
                 "kind": "missing_marker",
                 "message": f"{BUNDLE_MARKER} is missing or unreadable",
             })
-        elif marker_version != expected:
+        elif classification.kind == "managed_stale" and reason == "version_mismatch":
             signals.append({
                 "status": "stale",
                 "kind": "version_mismatch",
@@ -487,7 +501,7 @@ def plan_bundle_phase(source_root: Path, install_root: Path, *, force: bool) -> 
             }],
         )
 
-    source_missing = _install_root_missing(source_root)
+    source_missing = _source_root_missing(source_root)
     if source_missing:
         return _phase(
             "bundle",
@@ -500,7 +514,7 @@ def plan_bundle_phase(source_root: Path, install_root: Path, *, force: bool) -> 
             }],
         )
 
-    if install_root.exists() and not _install_root_looks_managed(install_root) and not force:
+    if not _bundle_target_is_safe(install_root, expected_version=_load_suite_version(source_root)) and not force:
         return _phase(
             "bundle",
             [{
@@ -548,7 +562,7 @@ def apply_bundle_phase(phase: dict[str, Any], source_root: Path, install_root: P
         if item["status"] != "pending":
             continue
         try:
-            if install_root.exists() and not _install_root_looks_managed(install_root) and not force:
+            if not _bundle_target_is_safe(install_root, expected_version=_load_suite_version(source_root)) and not force:
                 item["status"] = "blocked"
                 item["message"] = "target exists but is not an Agentera-managed bundle"
                 continue
@@ -1009,7 +1023,7 @@ def apply_package_phase(phase: dict[str, Any]) -> None:
 
 def resolve_source_root() -> Path:
     root = Path(os.environ.get(BOOTSTRAP_SOURCE_ROOT_ENV, str(ROOT))).expanduser().resolve()
-    missing = _install_root_missing(root)
+    missing = _source_root_missing(root)
     if missing:
         raise ValueError(f"bootstrap source root {root} is missing: {', '.join(missing)}")
     return root

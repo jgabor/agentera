@@ -1,0 +1,95 @@
+title: Install Root Behavior Inventory
+plan: Deepen Agentera Install Root Module
+task: 2
+captured: '2026-05-05'
+purpose: >
+  Record current setup, doctor, upgrade, and runtime install-root outcomes before
+  introducing a shared install-root Module. Entries marked change are known
+  inconsistencies to standardize later; this task only characterizes them.
+standardization:
+  name: canonical-suite-root-vs-managed-bundle-root
+  intent: >
+    Replace caller-local proof rules with one read-only classification that
+    separates source, root kind, managed status, stale status, safe action, and
+    diagnostic text. Setup helpers and doctor currently prove a suite root with
+    scripts/validate_capability.py, hooks, skills, and skills/agentera/SKILL.md;
+    upgrade/runtime freshness currently prove durable bundle roots with
+    scripts/agentera and/or managed bundle metadata.
+diagnostics:
+  machine_readable:
+    - caller: setup_doctor.classify_install_root
+      exit_code: n/a
+      primary_message: install root is valid
+      decision: preserve
+    - caller: agentera bundle-status --json
+      exit_code: 0 when fresh, 1 when stale or blocked, 2 for source-root resolution errors
+      primary_message: signals[*].message and status/rootStatus fields
+      decision: preserve
+  human_facing:
+    - caller: setup_codex.py/setup_copilot.py
+      exit_code: 0 for no-op or write, 1 for dry-run pending, 2 for bad roots or conflicts
+      primary_message: >
+        --install-root <path> is not a valid agentera install: missing
+        canonical entries: ...
+      decision: preserve until shared diagnostics intentionally standardize wording
+    - caller: setup_doctor render_human/json
+      exit_code: 0 when report ok, 1 when failures are present
+      primary_message: could not resolve an Agentera install root; pass --install-root or set AGENTERA_HOME
+      decision: preserve
+    - caller: agentera bundle-status
+      exit_code: 0 when fresh, 1 when stale or blocked
+      primary_message: Agentera bundle status; status/root status; first signal message
+      decision: preserve
+behavior_matrix:
+  - shape: valid setup root
+    exercised_by: setup_codex/setup_copilot resolve_install_root, setup_doctor classify_install_root
+    current_outcome: accepted; doctor status pass; message install root is valid
+    decision: preserve
+  - shape: missing explicit setup root
+    exercised_by: setup_codex/setup_copilot resolve_install_root, setup_doctor classify_install_root
+    current_outcome: rejected as missing all canonical entries; setup helpers exit 2 at CLI boundary
+    decision: preserve primary exit; later standardize kind/action
+  - shape: file explicit setup root
+    exercised_by: setup_codex/setup_copilot resolve_install_root, setup_doctor classify_install_root
+    current_outcome: rejected as missing all canonical entries, not distinguished from missing directory
+    decision: change classification later to file-valued root while preserving non-zero outcome
+  - shape: unmanaged explicit setup directory
+    exercised_by: setup_codex/setup_copilot resolve_install_root, setup_doctor classify_install_root
+    current_outcome: rejected as missing canonical entries; doctor gap bundle_packaging
+    decision: change classification later to unmanaged directory while preserving non-zero outcome
+  - shape: env-derived valid setup root
+    exercised_by: setup_codex/setup_copilot/setup_doctor auto_detect_install_root
+    current_outcome: AGENTERA_HOME wins over walk-up when it points at a canonical setup root
+    decision: preserve precedence
+  - shape: auto-detect/default setup root
+    exercised_by: setup_codex/setup_copilot/setup_doctor auto_detect_install_root
+    current_outcome: walks upward from script/start path after env fallbacks
+    decision: preserve precedence unless shared interface exposes source more explicitly
+  - shape: fresh managed upgrade root
+    exercised_by: agentera_upgrade.build_bundle_status
+    current_outcome: status fresh, rootStatus managed, exit 0 at bundle-status CLI boundary
+    decision: preserve
+  - shape: stale managed upgrade root
+    exercised_by: agentera_upgrade.build_bundle_status
+    current_outcome: status stale, rootStatus managed, signals include missing_marker/version_mismatch/CLI probe gaps
+    decision: preserve
+  - shape: missing explicit or AGENTERA_HOME upgrade root
+    exercised_by: agentera_upgrade.build_bundle_status
+    current_outcome: status blocked, rootStatus missing, signal invalid_install_root, no dryRunCommand/applyCommand
+    decision: preserve safety outcome
+  - shape: missing default upgrade root
+    exercised_by: agentera_upgrade.build_bundle_status
+    current_outcome: status stale, rootStatus missing, signal missing_bundle, dryRunCommand/applyCommand provided
+    decision: preserve default self-healing outcome
+  - shape: file upgrade root
+    exercised_by: agentera_upgrade.build_bundle_status
+    current_outcome: status blocked, rootStatus invalid, signal invalid_install_root
+    decision: preserve
+  - shape: unmanaged upgrade directory
+    exercised_by: agentera_upgrade.build_bundle_status
+    current_outcome: status blocked, rootStatus unmanaged, signal unmanaged_install_root
+    decision: preserve
+  - shape: OpenCode runtime AGENTERA_HOME candidate
+    exercised_by: .opencode/plugins/agentera.js resolveAgenteraHome
+    current_outcome: accepts a candidate when scripts/agentera or scripts/validate_capability.py exists
+    decision: change later to shared contract fixture semantics

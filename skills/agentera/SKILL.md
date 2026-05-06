@@ -100,7 +100,11 @@ durable bundle under `AGENTERA_HOME` stale. Treat that split state as an
 Agentera-owned freshness gap, not as a reason to call the local checkout a
 successful installed run.
 
-For bare `/agentera`, resolve the bundle root in this order:
+For bare `/agentera`, follow the shared install-root Module contract in
+`scripts/install_root.py`: AGENTERA_HOME wins over the default durable root,
+classification is read-only, and managed/stale/unmanaged semantics belong to
+that Module rather than caller-local heuristics. Resolve the bundle root in this
+order:
 
 1. `AGENTERA_HOME`, when set
 2. `$HOME/.agents/agentera`
@@ -136,7 +140,7 @@ After apply, retry the installed command from the same refreshed root:
 uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
 ```
 
-If `AGENTERA_HOME` points at a missing path, a file, or a non-managed directory,
+If `AGENTERA_HOME` points at a missing path, a file, or an unmanaged directory,
 do not overwrite it silently. Ask the user to fix/unset `AGENTERA_HOME`, choose
 a managed `--install-root`, or explicitly request a forced bundle install.
 

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Install-root identity and diagnostics now route through the shared `scripts/install_root.py` Module for Python setup, doctor, upgrade, and bundle freshness paths; RuntimeAdapter registry, package manifest registry, and optional generated cross-language contract work remain separate follow-ups.
+
 ### Added
 
 - `agentera bundle-status` now diagnoses durable bundle freshness, including stale markers, missing `hej`, pre-argparse CLI failures, unset defaults, and unsafe `AGENTERA_HOME` roots before any write.

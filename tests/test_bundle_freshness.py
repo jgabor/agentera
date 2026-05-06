@@ -124,6 +124,27 @@ def test_bundle_status_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path)
     assert payload["signals"][0]["kind"] == "invalid_install_root"
     assert not missing.exists()
 
+    invalid = tmp_path / "partial-agentera"
+    (invalid / "skills" / "agentera").mkdir(parents=True)
+    (invalid / "skills" / "agentera" / "SKILL.md").write_text("---\nname: agentera\n---\n", encoding="utf-8")
+    before = sorted(path.relative_to(invalid) for path in invalid.rglob("*"))
+    result = _run(
+        "bundle-status",
+        "--json",
+        "--home",
+        str(tmp_path / "home"),
+        env={"AGENTERA_HOME": str(invalid)},
+    )
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "blocked"
+    assert payload["rootStatus"] == "invalid"
+    assert payload["signals"][0]["kind"] == "invalid_bundle"
+    assert payload["dryRunCommand"] is None
+    assert payload["applyCommand"] is None
+    assert sorted(path.relative_to(invalid) for path in invalid.rglob("*")) == before
+
 
 def test_bundle_status_targets_default_root_when_agentera_home_is_unset(tmp_path: Path) -> None:
     home = tmp_path / "home"
@@ -193,6 +214,27 @@ def test_stale_bundle_refresh_dry_run_then_apply_preserves_install_root(tmp_path
     )
     assert retry.returncode == 0, retry.stderr
     assert "dashboard:" in retry.stdout
+
+
+def test_bundle_upgrade_missing_root_dry_run_writes_nothing(tmp_path: Path) -> None:
+    install_root = tmp_path / "home" / ".agents" / "agentera"
+
+    preview = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--install-root",
+        str(install_root),
+        "--dry-run",
+        "--json",
+    )
+
+    assert preview.returncode == 1, preview.stderr
+    payload = json.loads(preview.stdout)
+    assert payload["installRoot"] == str(install_root)
+    assert payload["status"] == "pending"
+    assert payload["phases"][0]["status"] == "pending"
+    assert not install_root.exists()
 
 
 def test_bundle_status_reports_pre_argparse_cli_failures_as_refresh_gaps(tmp_path: Path) -> None:

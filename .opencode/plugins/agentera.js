@@ -256,6 +256,13 @@ function findAgenteraRoot(startDir) {
 }
 
 export function resolveAgenteraHome() {
+  // Keep this adapter-local resolver aligned with the shared install-root
+  // contract fixture in `.agentera/install_root_interface_model.yaml` and the
+  // Python implementation in `scripts/install_root.py`: AGENTERA_HOME first,
+  // then the default durable root. The legacy
+  // `~/.agents/skills/agentera` fallback below is a temporary OpenCode-only
+  // compatibility exception for older manual skill installs; do not add more
+  // install-root identity rules here.
   const candidates = [
     process.env.AGENTERA_HOME,
     path.join(process.env.HOME, ".agents", "agentera"),
