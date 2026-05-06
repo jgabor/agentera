@@ -440,6 +440,65 @@ def test_runtime_upgrade_apply_characterizes_write_and_package_apply_messages(tm
     assert {item["status"] for item in package_phase["items"]} == {"applied"}
 
 
+def test_package_phase_characterizes_skip_dry_run_and_mocked_apply(monkeypatch) -> None:
+    upgrade = _load_upgrade_module()
+
+    skipped = upgrade.plan_package_phase({"claude", "opencode", "codex", "copilot"}, enabled=False)
+    skipped_items = {(item["runtime"], item["action"]): item for item in skipped["items"]}
+    assert skipped["status"] == "skipped"
+    assert skipped_items[("all", "remove-legacy-skills")]["status"] == "skipped"
+    assert skipped_items[("all", "remove-legacy-skills")]["message"] == (
+        "legacy skill removal skipped; pass --update-packages to run"
+    )
+    assert skipped_items[("claude", "install-agentera-skill")]["command"] == [
+        "npx",
+        "skills",
+        "add",
+        "jgabor/agentera",
+        "-g",
+        "-a",
+        "claude-code",
+        "--skill",
+        "agentera",
+        "-y",
+    ]
+    assert skipped_items[("opencode", "install-agentera-skill")]["command"] == [
+        "npx",
+        "skills",
+        "add",
+        "jgabor/agentera",
+        "-g",
+        "-a",
+        "opencode",
+        "--skill",
+        "agentera",
+        "-y",
+    ]
+    assert not any(item["runtime"] in {"codex", "copilot"} for item in skipped["items"])
+
+    executed: list[list[str]] = []
+
+    def fake_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        executed.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout="line1\npackage ok\n", stderr="")
+
+    monkeypatch.setattr(upgrade.subprocess, "run", fake_run)
+    dry_run = upgrade.plan_package_phase({"claude", "opencode"}, enabled=True)
+    assert dry_run["status"] == "pending"
+    assert {item["message"] for item in dry_run["items"]} == {
+        "will remove legacy v1 package-managed skill entries",
+        "will run external package update",
+    }
+    assert executed == []
+
+    upgrade.apply_package_phase(dry_run)
+    assert len(executed) == 3
+    assert dry_run["status"] == "applied"
+    assert {item["status"] for item in dry_run["items"]} == {"applied"}
+    assert {item["message"] for item in dry_run["items"]} == {"package update completed"}
+    assert all(item["stdoutTail"] == ["line1", "package ok"] for item in dry_run["items"])
+
+
 def test_runtime_upgrade_applies_safe_items_even_when_one_item_is_blocked(tmp_path: Path) -> None:
     home = tmp_path / "home"
     opencode_dir = home / ".config" / "opencode"
@@ -471,6 +530,81 @@ def test_runtime_upgrade_applies_safe_items_even_when_one_item_is_blocked(tmp_pa
         encoding="utf-8"
     )
     assert plugin.read_text(encoding="utf-8") == "// user-owned plugin\n"
+
+
+def test_bundle_rel_paths_reads_directories_from_package_registry(monkeypatch) -> None:
+    upgrade = _load_upgrade_module()
+    pkg_module = upgrade._package_registry_module()
+    fixture = yaml.safe_load(
+        (REPO_ROOT / "references/adapters/package-registry.yaml").read_text(encoding="utf-8")
+    )
+    fixture["records"][0]["bundle_surfaces"]["directories"] = [
+        {"id": "skills", "path": "skills"},
+    ]
+    fixture["records"][0]["bundle_surfaces"]["files"] = [
+        {"id": "registry", "path": "registry.json"},
+    ]
+    registry = pkg_module.PackageRegistry(tuple(fixture["records"]))
+    monkeypatch.setattr(upgrade, "_package_registry", lambda: registry)
+
+    paths = upgrade._bundle_rel_paths(REPO_ROOT)
+
+    assert all(str(p).startswith("skills/") or str(p) == "registry.json" for p in paths)
+    assert not any(str(p).startswith("scripts/") for p in paths)
+    assert not any(str(p).startswith("hooks/") for p in paths)
+
+
+def test_package_phase_reads_commands_from_package_registry(monkeypatch) -> None:
+    upgrade = _load_upgrade_module()
+    pkg_module = upgrade._package_registry_module()
+    fixture = yaml.safe_load(
+        (REPO_ROOT / "references/adapters/package-registry.yaml").read_text(encoding="utf-8")
+    )
+    fixture["records"][0]["package_commands"]["commands"][0]["argv"] = [
+        "npx", "skills", "remove", "custom-legacy-skill", "-g", "-y",
+    ]
+    fixture["records"][0]["package_commands"]["commands"][1]["argv"] = [
+        "npx", "skills", "add", "jgabor/agentera", "-g", "-a",
+        "claude-code", "--skill", "agentera", "-y",
+    ]
+    fixture["records"][0]["package_commands"]["commands"][2]["argv"] = [
+        "npx", "skills", "add", "jgabor/agentera", "-g", "-a",
+        "opencode", "--skill", "agentera-canary", "-y",
+    ]
+    registry = pkg_module.PackageRegistry(tuple(fixture["records"]))
+    monkeypatch.setattr(upgrade, "_package_registry", lambda: registry)
+
+    phase = upgrade.plan_package_phase({"claude", "opencode"}, enabled=False)
+    items = {(item["runtime"], item["action"]): item for item in phase["items"]}
+
+    assert items[("all", "remove-legacy-skills")]["command"] == [
+        "npx", "skills", "remove", "custom-legacy-skill", "-g", "-y",
+    ]
+    assert items[("opencode", "install-agentera-skill")]["command"] == [
+        "npx", "skills", "add", "jgabor/agentera", "-g", "-a",
+        "opencode", "--skill", "agentera-canary", "-y",
+    ]
+
+
+def test_load_suite_version_reads_authority_from_package_registry(tmp_path: Path, monkeypatch) -> None:
+    upgrade = _load_upgrade_module()
+    pkg_module = upgrade._package_registry_module()
+
+    (tmp_path / "custom-version.json").write_text(
+        json.dumps({"skills": [{"version": "9.9.9"}]}),
+        encoding="utf-8",
+    )
+
+    fixture = yaml.safe_load(
+        (REPO_ROOT / "references/adapters/package-registry.yaml").read_text(encoding="utf-8")
+    )
+    fixture["records"][0]["version_authority"]["persisted_authority"] = "custom-version.json"
+
+    registry = pkg_module.PackageRegistry(tuple(fixture["records"]), root=tmp_path)
+    monkeypatch.setattr(upgrade, "_package_registry", lambda: registry)
+
+    version = upgrade._load_suite_version(tmp_path)
+    assert version == "9.9.9"
 
 
 def test_cleanup_upgrade_removes_fixable_v1_artifacts_and_reports_codex(tmp_path: Path) -> None:

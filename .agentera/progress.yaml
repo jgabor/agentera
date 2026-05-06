@@ -1,4 +1,270 @@
 cycles:
+- number: 309
+  timestamp: 2026-05-06 10:00
+  type: test
+  phase: build
+  what: Validated and closed the Deepen PackageManifest Registry plan.
+  commit: pending
+  inspiration: Task 8 requires focused validation of package registry tests, runtime adapter tests, lifecycle validation, upgrade tests, bundle freshness tests, docs CLI, and artifact query checks, plus broader validation of full pytest, capability validation, cross-capability validation, and py_compile checks, before marking the plan complete.
+  discovered: >
+    All acceptance criteria pass. Focused: package registry tests (9 passed), runtime adapter tests (77 passed), lifecycle validation (ok),
+    upgrade tests (17 passed), bundle freshness tests (6 passed), docs CLI (current=54, last_audit=2026-05-06), artifact query (12 artifacts listed).
+    Broad: full pytest 633 passed, 1 skipped; capability validation self-validate plus all 12 capabilities passed; cross-capability artifact graph ok;
+    py_compile on 6 key files passed; git diff --check clean. TODO resolves only [arch-package-manifest-registry] as completed; capability schema
+    contract, routing/exit vocabulary, artifact registry, artifact write validation, and optional live smoke TODOs remain separate open findings.
+    Worktree changes are all package-registry plan scope: 8 modified files and 6 new files, all directly related to PackageManifest registry
+    implementation, migration, docs, characterization, interface model, and the RuntimeAdapter archive.
+  verified: >
+    Validation passed: uv run pytest tests/test_package_registry.py -q (9 passed); uv run pytest tests/test_runtime_adapters.py
+    tests/test_runtime_adapter_registry.py -q (77 passed); uv run scripts/validate_lifecycle_adapters.py (lifecycle adapter metadata ok);
+    uv run pytest tests/test_upgrade_cli.py -q (17 passed); uv run pytest tests/test_bundle_freshness.py -q (6 passed);
+    uv run scripts/agentera docs reported last_audit=2026-05-06, current=54; uv run scripts/agentera query --list-artifacts (12 artifacts);
+    uv run pytest -q (633 passed, 1 skipped); uv run scripts/validate_capability.py --self-validate passed; all 12 capabilities validated;
+    uv run scripts/validate_cross_capability.py (cross-capability artifact graph ok); python3 -m py_compile on package_registry.py,
+    agentera_upgrade.py, validate_lifecycle_adapters.py, test_package_registry.py, test_runtime_adapters.py, test_upgrade_cli.py passed;
+    git diff --check clean; uv run scripts/agentera todo confirmed only [arch-package-manifest-registry] resolved with 5 critical findings
+    remaining open.
+  next: 'PackageManifest registry plan is complete; select the next unresolved TODO separately.'
+  context:
+    intent: satisfy Task 8 validate and close criteria only
+    constraints: no new feature scope; no commit or push; no vision or objective mutation; no install-root semantic changes; no RuntimeAdapter ownership changes; no artifact write validation; no release publication
+    unknowns: live package-manager smoke remains outside this plan; capability schema contract, routing/exit vocabulary, artifact registry, and artifact write validation remain separate open architecture findings
+    scope: .agentera/plan.yaml and .agentera/progress.yaml
+- number: 308
+  timestamp: 2026-05-06 09:45
+  type: docs
+  phase: build
+  what: Aligned docs, manifest projections, and version policy with the PackageManifest registry.
+  commit: pending
+  inspiration: Task 7 of the Deepen PackageManifest Registry plan requires docs to point at the PackageManifest registry, manifest projections to be validated through registry-backed checks, version policy to be evaluated, and TODO to resolve only [arch-package-manifest-registry].
+  discovered: >
+    docs.yaml now indexes references/adapters/package-registry.yaml and records the registry as the version_files source through the version_files_registry annotation. The manifest projection alignment test validates that docs.yaml version_files match registry docs_targets.version_files, excluded files match non-version-bearing manifest paths, and every version-bearing surface carries the suite version from the persisted authority. The interface model status is updated from interface_model_only to implemented with the registry path. The characterization reference now records that the executable registry owns the single source of truth. Version policy evaluated: this refactor is registry/docs/artifact closure with no user-visible behavior change, so no version bump is required per semver_policy docs/chore/test: no bump.
+  verified: >
+    Validation passed: uv run pytest tests/test_package_registry.py -q (9 passed, including 2 new manifest projection
+    alignment tests); uv run pytest tests/test_runtime_adapters.py -q (72 passed); uv run pytest
+    tests/test_package_registry.py tests/test_runtime_adapter_registry.py tests/test_runtime_adapters.py
+    tests/test_upgrade_cli.py tests/test_bundle_freshness.py -q (109 passed); uv run pytest
+    tests/test_setup_doctor.py tests/test_install_root_characterization.py tests/test_install_root_module.py
+    tests/test_install_root_interface_model.py tests/test_setup_codex.py tests/test_setup_copilot.py -q (56 passed);
+    uv run scripts/validate_lifecycle_adapters.py passed with lifecycle adapter metadata ok; uv run scripts/agentera docs
+    reported last_audit=2026-05-06 PackageManifest registry documentation closure, current=54; python3 -m py_compile
+    tests/test_package_registry.py scripts/package_registry.py passed; git diff --check passed.
+  next: 'Implement Task 8: validate and close.'
+  context:
+    intent: satisfy Task 7 docs alignment, manifest projection validation, version policy, and TODO closure only
+    constraints: no package version changes; no install-root semantic changes; no RuntimeAdapter ownership changes; no artifact write validation; no release publication; no vision or objective mutation; no commit or push
+    unknowns: Task 8 closure validation remains
+    scope: tests/test_package_registry.py, .agentera/docs.yaml, .agentera/plan.yaml, .agentera/progress.yaml, TODO.md, references/adapters/package-surface-characterization.md, references/adapters/package-manifest-interface-model.yaml
+- number: 307
+  timestamp: 2026-05-06 09:12
+  type: refactor
+  phase: build
+  what: Migrated upgrade bundle and package planning to consume PackageManifest records.
+  commit: pending
+  inspiration: Task 6 of the Deepen PackageManifest Registry plan requires upgrade bundle directories, files, skip rules, package command specs, and version authority to come from PackageManifest records while preserving existing --dry-run, --yes, --force, and --update-packages write gates.
+  discovered: >
+    scripts/agentera_upgrade.py now loads the PackageManifest registry for bundle surfaces (directories, files, skip_parts, skip_suffixes),
+    package commands (argv lists, phases, skipped messages via registry-backed safety config), and version authority (persisted_authority
+    path and selector from version_authority group). The hardcoded BUNDLE_DIRECTORIES, BUNDLE_FILES, BUNDLE_SKIP_PARTS, BUNDLE_SKIP_SUFFIXES,
+    PACKAGE_COMMANDS, LEGACY_BRIDGE_SKILLS, and _package_commands constants are removed. _load_suite_version now derives the authority file
+    path and selector from PackageManifest version_authority instead of hardcoding registry.json and skills[0].version. plan_package_phase
+    reads cleanup and runtime-install commands from the registry, using safety.cleanup_phase and safety.runtime_install_phase to separate
+    command phases. Focused fixture tests prove changed bundle surfaces, changed command argv, and changed version authority paths are all
+    observed through the registry without editing upgrade-local constants.
+  verified: >
+    Validation passed: uv run pytest tests/test_upgrade_cli.py -q (17 passed); uv run pytest tests/test_bundle_freshness.py -q (6 passed);
+    uv run pytest tests/test_package_registry.py tests/test_runtime_adapter_registry.py tests/test_runtime_adapters.py -q (84 passed);
+    uv run scripts/validate_lifecycle_adapters.py passed with lifecycle adapter metadata ok; uv run pytest comprehensive suite including
+    upgrade, bundle freshness, package registry, runtime adapter, setup doctor, setup codex, setup copilot, install root tests -q (163 passed);
+    python3 -m py_compile scripts/agentera_upgrade.py passed; git diff --check passed.
+  next: 'Implement Task 7: align docs, manifest projections, and version policy.'
+  context:
+    intent: satisfy Task 6 upgrade bundle and package planning migration only
+    constraints: no package-manager live execution; no package version changes; no install-root semantic changes; no RuntimeAdapter ownership changes; no artifact write validation migration; no release publication; no vision or objective mutation; no commit or push
+    unknowns: docs alignment and manifest projection validation remain for Task 7
+    scope: scripts/agentera_upgrade.py, tests/test_upgrade_cli.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 306
+  timestamp: 2026-05-06 08:58
+  type: refactor
+  phase: build
+  what: Migrated package validation and runtime package tests to PackageManifest records.
+  commit: pending
+  inspiration: Task 5 of the Deepen PackageManifest Registry plan requires package/version validators and runtime package tests to read version surfaces, runtime manifest paths, shared paths, package shapes, and ownership boundaries from PackageManifest records instead of validator-local package constants.
+  discovered: >
+    Runtime package validators now derive OpenCode and Claude manifest paths, registry identity expectations, OpenCode non-version package
+    characterization, and docs version-marker expectations through PackageManifest. PackageRegistry runtime manifest path lookup now preserves
+    the first PackageManifest record for duplicate runtime ids, keeping the root Copilot package metadata manifest as the lifecycle-validation
+    package surface while retaining the repository Copilot manifest as a separate runtime manifest record. Focused fixture tests prove changed
+    version-surface paths and runtime manifest paths are observed without editing validator-local constants, and PackageRegistry validation
+    continues to reject forbidden RuntimeAdapter lifecycle fields and install-root classification fields.
+  verified: >
+    Validation passed: uv run pytest tests/test_package_registry.py -q (7 passed); uv run pytest focused package validation selection including
+    TestSuiteBundleSurface, registry structure checks, Claude/OpenCode package checks, OpenCode manifest-path fixture change, OpenCode version
+    marker/drift checks, package surface characterization, and version-surface fixture change (16 passed); uv run pytest focused lifecycle
+    validation characterization/registry-contract checks (2 passed); uv run pytest tests/test_package_registry.py tests/test_runtime_adapter_registry.py
+    tests/test_runtime_adapters.py -q (84 passed); uv run scripts/validate_lifecycle_adapters.py passed with lifecycle adapter metadata ok;
+    python3 -m py_compile scripts/package_registry.py scripts/validate_lifecycle_adapters.py passed; git diff --check passed.
+  next: 'Implement Task 6: migrate upgrade bundle and package planning to consume PackageManifest records while preserving write gates.'
+  context:
+    intent: satisfy Task 5 package validation and runtime package test migration only
+    constraints: no upgrade bundle/package planning migration; no package-manager live execution; no package version changes; no install-root semantic changes; no RuntimeAdapter ownership changes; no artifact write validation migration; no release publication; no vision or objective mutation; no commit or push
+    unknowns: upgrade bundle/package planning still duplicates PackageManifest facts until Task 6
+    scope: scripts/package_registry.py, tests/test_runtime_adapters.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 305
+  timestamp: 2026-05-06 08:24
+  type: refactor
+  phase: flagged
+  what: Blocked PackageManifest Task 5 after two empty dispatch results.
+  commit: pending
+  inspiration: Orkestrera retry guard requires stopping after two failed attempts rather than continuing past an unevaluated migration task.
+  discovered: >
+    Task 5 Migrate Package Validation And Runtime Package Tests was dispatched twice. Both subagent runs returned empty results and produced
+    no Task 5 plan update or progress entry. The active plan still has Tasks 1-4 complete, Task 5 blocked, and Tasks 6-8 pending behind it.
+  verified: >
+    Validation evidence: uv run scripts/agentera plan before blocking showed Task 5 pending and latest progress cycle 304; both Task 5 dispatches returned empty task_result payloads; .agentera/plan.yaml now marks Task 5 blocked and records the retry-guard surprise.
+  next: 'Human decision needed: retry Task 5 manually, replan PackageManifest migration, or inspect why Task 5 subagent returns empty.'
+  context:
+    intent: stop orchestration after repeated empty Task 5 results
+    constraints: no commit; no push; no package validation migration was completed; no vision or objective mutation
+    unknowns: why the Task 5 realisera subagent returned empty twice
+    scope: .agentera/plan.yaml and .agentera/progress.yaml
+- number: 304
+  timestamp: 2026-05-06 08:18
+  type: test
+  phase: build
+  what: Introduced the PackageManifest registry Module, canonical registry data, and contract tests.
+  commit: pending
+  inspiration: Task 4 of the Deepen PackageManifest Registry plan requires an executable package registry seam with deterministic package facts, malformed fixture diagnostics, shared simulated consumer views, and explicit separation of non-version-bearing runtime package manifests before any production consumer migration.
+  discovered: >
+    references/adapters/package-registry.yaml now records the agentera PackageManifest groups for identity, registry.json suite-version
+    authority, version-bearing surfaces, runtime package manifests, bundle surfaces, package command specs, docs targets, and release policy.
+    scripts/package_registry.py validates the registry contract, rejects duplicate ids, unknown repo paths, shell-string package commands,
+    forbidden install-root fields, and forbidden RuntimeAdapter fields, and exposes simulated validator, upgrade, docs, and tests consumer
+    views without migrating production lifecycle validation, upgrade planning, docs indexing, or runtime package tests. .opencode/package.json
+    is represented as a non-version-bearing runtime package manifest and remains excluded from version surfaces.
+  verified: >
+    Validation passed: uv run pytest tests/test_package_registry.py -q (7 passed); uv run pytest tests/test_runtime_adapter_registry.py -q
+    (5 passed); uv run pytest tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_version_bearing_package_surfaces_align
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_surface_characterization_distinguishes_non_version_opencode_manifest
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_drift_inventory_names_decisions_and_surface_classes
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_manifest_interface_model_defines_typed_groups_and_ownership
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_manifest_command_model_preserves_argv_safety_and_write_gates
+    tests/test_runtime_adapters.py::TestSuiteBundleSurface::test_suite_bundle_surface_passes_for_each_runtime_shape -q (6 passed);
+    python3 -m py_compile scripts/package_registry.py passed; git diff --check passed.
+  next: 'Implement Task 5: migrate package validation and runtime package tests to consume PackageManifest records.'
+  context:
+    intent: satisfy Task 4 registry Module and contract-test criteria only
+    constraints: no production consumer migration; no package version changes; no install-root semantic changes; no RuntimeAdapter ownership changes; no artifact write validation migration; no live package-manager behavior changes; no vision or objective mutation; no commit or push
+    unknowns: package/version validators, runtime package tests, upgrade planning, and docs indexing remain hardcoded until later tasks migrate them
+    scope: references/adapters/package-registry.yaml, scripts/package_registry.py, tests/test_package_registry.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 303
+  timestamp: 2026-05-06 08:08
+  type: docs
+  phase: build
+  what: Defined the PackageManifest Interface and ownership model without introducing an executable registry Module.
+  commit: pending
+  inspiration: Task 3 of the Deepen PackageManifest Registry plan requires a typed PackageManifest record shape, explicit registry.json version authority, delegated install-root and RuntimeAdapter ownership, and package-command safety rules before any consumer migration.
+  discovered: >
+    PackageManifest is now documented as an interface-only model with typed groups for identity, version authority, version surfaces,
+    runtime package manifests, bundle surfaces, package commands, docs targets, and release policy. registry.json remains the persisted
+    suite-version authority at skills[0].version, while PackageManifest is only the future access Interface unless an explicit ADR changes
+    authority. install-root facts remain forbidden and delegated to scripts/install_root.py; RuntimeAdapter facts remain forbidden and
+    delegated to scripts/runtime_adapter_registry.py. Package command specs remain argv-list only, limited to npx skills remove/add for
+    all/claude/opencode, keep cleanup separate from runtime installs, and preserve --update-packages plus --yes write gates.
+  verified: >
+    Validation passed: uv run pytest tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_manifest_interface_model_defines_typed_groups_and_ownership
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_manifest_command_model_preserves_argv_safety_and_write_gates
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_manifest_command_model_rejects_shell_strings
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_manifest_command_model_rejects_cleanup_runtime_mix -q (4 passed);
+    uv run pytest tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_version_bearing_package_surfaces_align
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_surface_characterization_distinguishes_non_version_opencode_manifest
+    tests/test_upgrade_cli.py::test_package_phase_characterizes_skip_dry_run_and_mocked_apply -q (3 passed); git diff --check passed.
+  next: 'Implement Task 4: introduce the PackageManifest registry Module and contract tests.'
+  context:
+    intent: satisfy Task 3 interface and ownership criteria only
+    constraints: no executable PackageManifest registry Module; no consumer migration; no package version changes; no install-root semantic changes; no RuntimeAdapter ownership changes; no artifact write validation migration; no live package-manager behavior changes; no vision or objective mutation; no commit or push
+    unknowns: executable registry loading and malformed fixture validation remain for Task 4
+    scope: references/adapters/package-manifest-interface-model.yaml, tests/test_runtime_adapters.py, .agentera/docs.yaml, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 302
+  timestamp: 2026-05-06 07:59
+  type: test
+  phase: build
+  what: Characterized package surfaces and package drift before PackageManifest migration.
+  commit: pending
+  inspiration: Task 2 of the Deepen PackageManifest Registry plan requires current version-bearing surfaces, non-version runtime package manifests, upgrade package command planning, bundle/docs/lifecycle drift, and write gates to be recorded before any registry implementation or migration.
+  discovered: >
+    registry.json remains the persisted suite-version authority at skills[0].version 2.1.0. pyproject.toml, plugin.json,
+    .github/plugin/plugin.json, .codex-plugin/plugin.json, .claude-plugin/marketplace.json metadata/plugins, and
+    .opencode/plugins/agentera.js AGENTERA_VERSION are version-bearing surfaces; .opencode/package.json is bundled runtime package
+    metadata only, with no name/version and @opencode-ai/plugin 1.14.33. Package-manager command planning is limited to Claude Code
+    and OpenCode plus all-runtime legacy cleanup, uses argv lists, skips without --update-packages, remains pending in dry-run, and only
+    applies behind --yes with subprocess.run mocked in characterization tests. Bundle drift is now named by surface class and decision:
+    duplicated pyproject/upgrade bundle lists and lifecycle/sharedPaths disagreements are standardize, non-version OpenCode manifest
+    treatment and current package command scope are preserve, and legacy hej marketplace version plus live package-manager behavior are defer.
+  verified: >
+    Validation passed: uv run pytest tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_version_bearing_package_surfaces_align
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_surface_characterization_distinguishes_non_version_opencode_manifest
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_drift_inventory_names_decisions_and_surface_classes
+    tests/test_runtime_adapters.py::TestSuiteBundleSurface::test_suite_bundle_surface_passes_for_each_runtime_shape -q (4 passed);
+    uv run pytest tests/test_upgrade_cli.py::test_package_upgrade_removes_legacy_skills_and_installs_agentera
+    tests/test_upgrade_cli.py::test_runtime_upgrade_plan_characterizes_runtime_and_package_items
+    tests/test_upgrade_cli.py::test_package_phase_characterizes_skip_dry_run_and_mocked_apply -q (3 passed).
+  next: 'Implement Task 3: define the PackageManifest Interface and ownership model without migrating consumers.'
+  context:
+    intent: satisfy Task 2 characterization only before PackageManifest registry implementation
+    constraints: no PackageManifest registry implementation; no package version changes; no install-root semantic changes; no RuntimeAdapter ownership changes; no artifact write validation migration; no live package-manager execution; no vision or objective mutation; no commit or push
+    unknowns: exact PackageManifest record shape and consumer permissions remain for Task 3
+    scope: references/adapters/package-surface-characterization.md, tests/test_runtime_adapters.py, tests/test_upgrade_cli.py, .agentera/docs.yaml, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 301
+  timestamp: 2026-05-06 07:36
+  type: docs
+  phase: build
+  what: Reconciled the PackageManifest registry plan state and package scope.
+  commit: pending
+  inspiration: Task 1 of the Deepen PackageManifest Registry plan requires the completed RuntimeAdapter registry plan archive, TODO selection, and package scope boundaries to be proven before PackageManifest implementation starts.
+  discovered: >
+    The completed RuntimeAdapter registry plan is archived at .agentera/archive/PLAN-2026-05-06-deepen-runtimeadapter-registry.yaml
+    with status complete, all eight tasks complete, and validation evidence referencing progress cycle 298. TODO still selects
+    [arch-package-manifest-registry] as the first unresolved critical item while capability schema contract, routing/exit vocabulary,
+    artifact registry, and artifact write validation findings remain open. The active PackageManifest plan excludes install-root
+    classification, RuntimeAdapter lifecycle/diagnostic/config ownership, artifact write validation, live package-manager calls, version
+    bumps, and release publication.
+  verified: >
+    Validation passed: uv run scripts/agentera plan reported active plan Deepen PackageManifest Registry with Task 1 pending before
+    this reconciliation; uv run scripts/agentera todo selected [arch-package-manifest-registry] first and left unrelated critical
+    findings open; Python YAML artifact assertions passed for RuntimeAdapter archive status complete, archive validation_evidence cycle
+    298 with commands, active plan Task 1 complete, required scope exclusions, TODO selection, and non-empty progress evidence.
+  next: 'Implement Task 2: characterize package surfaces and drift before migration.'
+  context:
+    intent: satisfy Task 1 by preserving archive evidence, proving TODO selection, and recording package registry out-of-scope boundaries
+    constraints: no PackageManifest implementation; no source migration; no tests beyond artifact and CLI verification; no install-root classification changes; no RuntimeAdapter ownership changes; no artifact write validation split; no live package-manager calls; no release publication; no commit or push; no vision or objective mutation
+    unknowns: exact package surface drift remains for Task 2 characterization
+    scope: .agentera/plan.yaml, .agentera/progress.yaml, .agentera/archive/PLAN-2026-05-06-deepen-runtimeadapter-registry.yaml, and TODO.md
+- number: 300
+  timestamp: 2026-05-06 07:25
+  type: plan
+  phase: plan
+  what: Planned the PackageManifest registry deepening work.
+  commit: pending
+  inspiration: The next unresolved critical TODO is [arch-package-manifest-registry], after install-root and RuntimeAdapter registry plans closed with separate ownership boundaries.
+  discovered: >
+    Package metadata remains scattered across pyproject.toml force-includes, registry.json skills[0].version, runtime plugin manifests,
+    .opencode/package.json, scripts/agentera_upgrade.py bundle/package constants, scripts/validate_lifecycle_adapters.py package
+    surface constants, .agentera/docs.yaml version_files, and tests/test_runtime_adapters.py package validators. The adversarial critic
+    found seven issues; the plan now explicitly preserves registry.json as persisted suite-version authority behind the PackageManifest
+    Interface, separates version-bearing surfaces from runtime package manifests, validates package command argv safety, and keeps
+    install-root plus RuntimeAdapter ownership out of scope.
+  verified: >
+    Validation passed: uv run scripts/agentera todo selected [arch-package-manifest-registry] as the first critical unresolved TODO;
+    uv run scripts/agentera plan showed the RuntimeAdapter registry plan complete before archival; adversarial review found 7 issues
+    and all 7 were addressed; .agentera/archive/PLAN-2026-05-06-deepen-runtimeadapter-registry.yaml preserves RuntimeAdapter validation
+    evidence from progress cycle 298; .agentera/plan.yaml now contains active full plan Deepen PackageManifest Registry with 8 pending tasks.
+  next: 'Run orkestrera to execute the PackageManifest registry plan.'
+  context:
+    intent: create a full plan for the next unresolved critical architecture TODO
+    constraints: no install-root classification changes; no RuntimeAdapter ownership changes; no package-manager live calls; no version bump unless later validation requires it; no commit or push
+    unknowns: exact package drift corrections remain for Task 2 characterization
+    scope: .agentera/plan.yaml, .agentera/progress.yaml, and .agentera/archive/PLAN-2026-05-06-deepen-runtimeadapter-registry.yaml
 - number: 299
   timestamp: 2026-05-06 07:16
   type: docs

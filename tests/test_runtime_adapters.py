@@ -39,6 +39,21 @@ def _load_module(name: str, path: Path) -> ModuleType:
     return module
 
 
+def _load_package_registry_module() -> ModuleType:
+    return _load_module("package_registry", REPO_ROOT / "scripts/package_registry.py")
+
+
+def _package_manifest(root: Path = REPO_ROOT, fixture: dict[str, Any] | None = None) -> Any:
+    registry_module = _load_package_registry_module()
+    if fixture is not None:
+        return registry_module.PackageRegistry(tuple(fixture["records"]), root=root)
+    registry_path = REPO_ROOT / "references/adapters/package-registry.yaml"
+    if root == REPO_ROOT:
+        return registry_module.load_registry(registry_path, root=root)
+    fixture = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
+    return registry_module.PackageRegistry(tuple(fixture["records"]), root=root)
+
+
 def _skill_names(root: Path = REPO_ROOT) -> list[str]:
     return sorted(path.name for path in (root / "skills").iterdir() if (path / "SKILL.md").is_file())
 
@@ -207,7 +222,9 @@ def _validate_codex_ui_metadata(path: Path) -> list[str]:
 
 def _validate_claude_package(root: Path = REPO_ROOT) -> list[str]:
     errors: list[str] = []
-    marketplace = _load_json(root / ".claude-plugin/marketplace.json")
+    package_manifest = _package_manifest(root)
+    manifest_path = package_manifest.runtime_manifest_paths()["claude"]
+    marketplace = _load_json(root / manifest_path)
     plugins = marketplace.get("plugins")
     if not isinstance(plugins, list):
         return ["claude marketplace plugins must be a list"]
@@ -232,9 +249,12 @@ def _validate_claude_package(root: Path = REPO_ROOT) -> list[str]:
     return errors
 
 
-def _validate_opencode_package(root: Path = REPO_ROOT) -> list[str]:
+def _validate_opencode_package(root: Path = REPO_ROOT, package_manifest: Any | None = None) -> list[str]:
     errors: list[str] = []
-    package = _load_json(root / ".opencode/package.json")
+    if package_manifest is None:
+        package_manifest = _package_manifest(root)
+    manifest_path = package_manifest.runtime_manifest_paths()["opencode"]
+    package = _load_json(root / manifest_path)
     if package.get("type") != "module":
         errors.append("opencode package must stay ESM")
 
@@ -285,63 +305,77 @@ def _read_opencode_agentera_version(plugin_text: str) -> str:
 
 def _validate_opencode_version(root: Path, plugin_text: str) -> list[str]:
     errors: list[str] = []
-    registry = _load_json(root / "registry.json")
-    versions = {
-        skill.get("version")
-        for skill in registry.get("skills", [])
-        if isinstance(skill, dict)
-    }
-    if len(versions) != 1:
+    package_manifest = _package_manifest(root)
+    try:
+        suite_version = package_manifest.suite_version()
+    except Exception:
         errors.append("opencode registry comparison needs one suite version")
-    else:
-        suite_version = versions.pop()
-        if f'AGENTERA_VERSION = "{suite_version}"' not in plugin_text:
-            errors.append("opencode AGENTERA_VERSION must match registry suite version")
+        return errors
+    marker_surfaces = [
+        surface
+        for surface in package_manifest.consumer_view("validator")["version_surfaces"]["surfaces"]
+        if surface["selector"] == "AGENTERA_VERSION"
+    ]
+    if not marker_surfaces:
+        errors.append("opencode registry comparison needs one suite version")
+    elif f'AGENTERA_VERSION = "{suite_version}"' not in plugin_text:
+        errors.append("opencode AGENTERA_VERSION must match registry suite version")
 
     return errors
 
 
-def _validate_package_versions(root: Path = REPO_ROOT) -> list[str]:
+def _validate_package_versions(root: Path = REPO_ROOT, package_manifest: Any | None = None) -> list[str]:
     errors: list[str] = []
-    registry = _load_json(root / "registry.json")
-    registry_versions = {
-        skill.get("version")
-        for skill in registry.get("skills", [])
-        if isinstance(skill, dict)
-    }
-    if len(registry_versions) != 1:
+    if package_manifest is None:
+        package_manifest = _package_manifest(root)
+    try:
+        suite_version = package_manifest.suite_version()
+    except Exception:
         return ["registry skill versions must share one suite version"]
-    suite_version = registry_versions.pop()
 
-    surfaces = {
-        "pyproject.toml": tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
-        .get("project", {})
-        .get("version"),
-        "plugin.json": _load_json(root / "plugin.json").get("version"),
-        ".github/plugin/plugin.json": _load_json(root / ".github/plugin/plugin.json").get("version"),
-        ".codex-plugin/plugin.json": _load_json(root / ".codex-plugin/plugin.json").get("version"),
-        ".claude-plugin/marketplace.json metadata": _load_json(root / ".claude-plugin/marketplace.json")
-        .get("metadata", {})
-        .get("version"),
-        ".opencode/plugins/agentera.js": _read_opencode_agentera_version(
-            (root / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
-        ),
-    }
-
-    marketplace = _load_json(root / ".claude-plugin/marketplace.json")
-    for plugin in marketplace.get("plugins", []):
-        if isinstance(plugin, dict):
-            surfaces[f".claude-plugin/marketplace.json plugin {plugin.get('name')}"] = plugin.get("version")
-
-    for label, version in surfaces.items():
+    for label, version in _version_surface_values(root, package_manifest).items():
         if version != suite_version:
             errors.append(f"{label} version must match registry suite version {suite_version}")
 
     return errors
 
 
+def _version_surface_values(root: Path, package_manifest: Any) -> dict[str, Any]:
+    surfaces: dict[str, Any] = {}
+    for surface in package_manifest.consumer_view("validator")["version_surfaces"]["surfaces"]:
+        path = surface["path"]
+        selector = surface["selector"]
+        if selector == "skills[0].version":
+            continue
+        if selector == "project.version":
+            version = tomllib.loads((root / path).read_text(encoding="utf-8")).get("project", {}).get("version")
+            label = path
+        elif selector == "AGENTERA_VERSION":
+            version = _read_opencode_agentera_version((root / path).read_text(encoding="utf-8"))
+            label = path
+        else:
+            data = _load_json(root / path)
+            if selector == "version":
+                version = data.get("version")
+                label = path
+            elif selector == "metadata.version":
+                version = data.get("metadata", {}).get("version")
+                label = f"{path} metadata"
+            elif selector == "plugins[*].version":
+                for plugin in data.get("plugins", []):
+                    if isinstance(plugin, dict):
+                        surfaces[f"{path} plugin {plugin.get('name')}"] = plugin.get("version")
+                continue
+            else:
+                raise AssertionError(f"unsupported PackageManifest version selector {selector!r}")
+        surfaces[label] = version
+    return surfaces
+
+
 def _validate_registry(root: Path = REPO_ROOT) -> list[str]:
     errors: list[str] = []
+    package_manifest = _package_manifest(root)
+    identity = package_manifest.get("agentera")["identity"]
     registry = _load_json(root / "registry.json")
     skills = registry.get("skills")
     if not isinstance(skills, list):
@@ -353,13 +387,13 @@ def _validate_registry(root: Path = REPO_ROOT) -> list[str]:
         if not isinstance(skill, dict):
             errors.append("registry skill entry must be an object")
         else:
-            if skill.get("name") != "agentera":
-                errors.append("registry skill name must be agentera")
+            if skill.get("name") != identity["name"]:
+                errors.append(f"registry skill name must be {identity['name']}")
             if not isinstance(skill.get("version"), str):
                 errors.append("registry skill must have a version string")
             capabilities = skill.get("capabilities")
-            if not isinstance(capabilities, list) or len(capabilities) != 12:
-                errors.append("registry skill must list 12 capabilities")
+            if not isinstance(capabilities, list) or len(capabilities) != identity["expected_capabilities"]:
+                errors.append(f"registry skill must list {identity['expected_capabilities']} capabilities")
             elif sorted(capabilities) != sorted(capabilities):
                 errors.append("registry capabilities must be unique")
     return errors
@@ -437,6 +471,14 @@ def _validate_install_root_documentation(root: Path = REPO_ROOT) -> list[str]:
 def _load_runtime_adapter_interface_model(root: Path = REPO_ROOT) -> dict[str, Any]:
     model = yaml.safe_load(
         (root / "references/adapters/runtime-adapter-interface-model.yaml").read_text(encoding="utf-8")
+    )
+    assert isinstance(model, dict)
+    return model
+
+
+def _load_package_manifest_interface_model(root: Path = REPO_ROOT) -> dict[str, Any]:
+    model = yaml.safe_load(
+        (root / "references/adapters/package-manifest-interface-model.yaml").read_text(encoding="utf-8")
     )
     assert isinstance(model, dict)
     return model
@@ -523,11 +565,222 @@ def _validate_runtime_adapter_interface_model(root: Path = REPO_ROOT) -> list[st
     return errors
 
 
+def _validate_package_manifest_interface_model(root: Path = REPO_ROOT) -> list[str]:
+    errors: list[str] = []
+    model = _load_package_manifest_interface_model(root)
+    record = model.get("record")
+    if not isinstance(record, dict):
+        return ["PackageManifest model must define a record object"]
+
+    expected_groups = {
+        "identity",
+        "version_authority",
+        "version_surfaces",
+        "runtime_package_manifests",
+        "bundle_surfaces",
+        "package_commands",
+        "docs_targets",
+        "release_policy",
+    }
+    if set(record.get("required_groups") or []) != expected_groups:
+        errors.append("PackageManifest record must require only the approved typed groups")
+    groups = record.get("groups")
+    if not isinstance(groups, dict):
+        errors.append("PackageManifest record groups must be typed objects")
+    else:
+        for group in expected_groups:
+            spec = groups.get(group)
+            if not isinstance(spec, dict):
+                errors.append(f"PackageManifest group {group} must be defined")
+                continue
+            if spec.get("type") != "object":
+                errors.append(f"PackageManifest group {group} must be typed as object")
+            if not isinstance(spec.get("owns"), list) or not spec["owns"]:
+                errors.append(f"PackageManifest group {group} must list owned facts")
+            if not isinstance(spec.get("required_fields"), dict) or not spec["required_fields"]:
+                errors.append(f"PackageManifest group {group} must list required typed fields")
+
+    ownership = model.get("ownership")
+    if not isinstance(ownership, dict):
+        errors.append("PackageManifest model must define ownership boundaries")
+    else:
+        registry = ownership.get("registry_json_version_authority")
+        if not isinstance(registry, dict):
+            errors.append("PackageManifest must define registry.json version authority")
+        else:
+            if registry.get("owner") != "registry.json" or registry.get("persisted_authority") is not True:
+                errors.append("registry.json must remain the persisted suite-version authority")
+            if registry.get("access_interface") != "PackageManifest":
+                errors.append("PackageManifest must be the suite-version access Interface")
+            if registry.get("future_authority_change_requires") != "explicit ADR":
+                errors.append("registry.json authority changes must require an explicit ADR")
+
+        install_root = ownership.get("install_root_delegated")
+        if not isinstance(install_root, dict) or install_root.get("owner") != "scripts/install_root.py":
+            errors.append("PackageManifest install-root facts must stay delegated to scripts/install_root.py")
+        else:
+            for fact in ("AGENTERA_HOME precedence", "default durable root", "managed classification"):
+                if fact not in install_root.get("forbidden_in_package_manifest", []):
+                    errors.append(f"PackageManifest must forbid install-root fact {fact}")
+
+        runtime = ownership.get("runtime_adapter_delegated")
+        if not isinstance(runtime, dict) or runtime.get("owner") != "scripts/runtime_adapter_registry.py":
+            errors.append(
+                "PackageManifest RuntimeAdapter facts must stay delegated to scripts/runtime_adapter_registry.py"
+            )
+        else:
+            for fact in ("lifecycle events", "artifact validation hooks", "runtime diagnostics"):
+                if fact not in runtime.get("forbidden_in_package_manifest", []):
+                    errors.append(f"PackageManifest must forbid RuntimeAdapter fact {fact}")
+
+    manifest = model.get("sample_manifest")
+    if not isinstance(manifest, dict):
+        return errors + ["PackageManifest model must include a sample manifest fixture"]
+    if set(manifest) != expected_groups:
+        errors.append("PackageManifest sample manifest must instantiate every typed group")
+
+    version_authority = manifest.get("version_authority", {})
+    if version_authority.get("persisted_authority") != "registry.json":
+        errors.append("PackageManifest fixture must keep registry.json as version authority")
+    if version_authority.get("access_interface") != "PackageManifest":
+        errors.append("PackageManifest fixture must expose PackageManifest as access Interface")
+
+    runtime_manifests = manifest.get("runtime_package_manifests", {}).get("manifests")
+    if not isinstance(runtime_manifests, list):
+        errors.append("PackageManifest fixture must list runtime package manifests")
+    else:
+        opencode_package = [entry for entry in runtime_manifests if entry.get("path") == ".opencode/package.json"]
+        if not opencode_package or opencode_package[0].get("version_bearing") is not False:
+            errors.append("OpenCode package.json must be a non-version-bearing runtime package manifest")
+
+    errors.extend(_validate_package_manifest_command_safety(model))
+    return errors
+
+
+def _validate_package_manifest_command_safety(model: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    safety = model.get("command_safety")
+    manifest = model.get("sample_manifest") if isinstance(model.get("sample_manifest"), dict) else {}
+    package_commands = manifest.get("package_commands", {}) if isinstance(manifest, dict) else {}
+    commands = package_commands.get("commands")
+    if not isinstance(safety, dict) or not isinstance(commands, list):
+        return ["PackageManifest command safety must define command specs"]
+
+    approved_executables = set(safety.get("approved_executables") or [])
+    approved_actions = set(safety.get("approved_actions") or [])
+    approved_runtimes = set(safety.get("approved_runtimes") or [])
+    approved_agents = set(safety.get("approved_runtime_agents") or [])
+    cleanup_actions = set(safety.get("cleanup_actions") or [])
+    runtime_install_actions = set(safety.get("runtime_install_actions") or [])
+
+    if safety.get("argv_only") is not True:
+        errors.append("PackageManifest package-manager commands must be argv-list only")
+    gates = safety.get("gates")
+    if not isinstance(gates, dict) or gates.get("update_packages_required_to_plan") is not True:
+        errors.append("PackageManifest package commands must preserve --update-packages planning gate")
+    if not isinstance(gates, dict) or gates.get("yes_required_to_execute") is not True:
+        errors.append("PackageManifest package commands must preserve --yes execution gate")
+    if not isinstance(gates, dict) or gates.get("preserve_existing_write_gates") is not True:
+        errors.append("PackageManifest package commands must preserve existing write gates")
+
+    for command in commands:
+        if not isinstance(command, dict):
+            errors.append("PackageManifest command specs must be objects")
+            continue
+        runtime = command.get("runtime")
+        action = command.get("action")
+        argv = command.get("argv")
+        phase = command.get("phase")
+        if runtime not in approved_runtimes:
+            errors.append(f"PackageManifest command runtime {runtime!r} is not approved")
+        if action not in approved_actions:
+            errors.append(f"PackageManifest command action {action!r} is not approved")
+        if not isinstance(argv, list) or not argv or not all(isinstance(part, str) for part in argv):
+            errors.append(f"PackageManifest command {action!r} must use list argv")
+            continue
+        if argv[0] not in approved_executables:
+            errors.append(f"PackageManifest command {action!r} uses unapproved executable {argv[0]!r}")
+        if len(argv) < 3 or argv[1] != "skills" or argv[2] not in {"remove", "add"}:
+            errors.append(f"PackageManifest command {action!r} must use approved skills action")
+        if action in cleanup_actions and (runtime != "all" or phase != "cleanup" or argv[2] != "remove"):
+            errors.append("PackageManifest cleanup commands must stay separate from runtime installs")
+        if action in runtime_install_actions:
+            if runtime == "all" or phase != "runtime-install" or argv[2] != "add":
+                errors.append("PackageManifest runtime install commands must stay out of cleanup")
+            if "-a" not in argv:
+                errors.append("PackageManifest runtime install commands must declare runtime agent")
+            else:
+                agent = argv[argv.index("-a") + 1]
+                if agent not in approved_agents:
+                    errors.append(f"PackageManifest runtime install agent {agent!r} is not approved")
+    return errors
+
+
 def _validate_docs_version_targets(root: Path) -> list[str]:
+    package_manifest = _package_manifest(root)
+    version_files = package_manifest.consumer_view("validator")["version_surfaces"]["surfaces"]
+    marker_paths = [surface["path"] for surface in version_files if surface["selector"] == "AGENTERA_VERSION"]
     docs = (root / ".agentera/docs.yaml").read_text(encoding="utf-8")
-    if ".opencode/plugins/agentera.js" not in docs:
-        return ["DOCS version_files must include OpenCode version marker"]
+    for marker_path in marker_paths:
+        if marker_path not in docs:
+            return ["DOCS version_files must include OpenCode version marker"]
     return []
+
+
+def _validate_package_surface_characterization(root: Path = REPO_ROOT) -> list[str]:
+    errors: list[str] = []
+    package_manifest = _package_manifest(root)
+    validator_view = package_manifest.consumer_view("validator")
+    opencode_manifest = next(
+        manifest
+        for manifest in validator_view["runtime_package_manifests"]["manifests"]
+        if manifest["runtime"] == "opencode"
+    )
+    package = _load_json(root / opencode_manifest["path"])
+    if "version" in package or "name" in package:
+        errors.append("OpenCode package.json must remain non-version-bearing runtime package metadata")
+    if package.get("dependencies", {}).get("@opencode-ai/plugin") != "1.14.33":
+        errors.append("OpenCode package.json behavior must record @opencode-ai/plugin runtime dependency")
+    if package.get("agentera", {}).get("packageShape") != opencode_manifest["package_shape"]:
+        errors.append("OpenCode package.json must record suite-bundle runtime package metadata")
+
+    docs = yaml.safe_load((root / ".agentera/docs.yaml").read_text(encoding="utf-8"))
+    version_files = set(docs["conventions"]["version_files"])
+    excluded_paths = set(validator_view["version_surfaces"]["excluded_runtime_manifests"])
+    excluded_paths.update(manifest["path"] for manifest in package_manifest.non_version_bearing_runtime_manifests())
+    for excluded_path in excluded_paths:
+        if excluded_path in version_files:
+            errors.append("DOCS version_files must exclude non-version-bearing OpenCode package.json")
+    for surface in validator_view["version_surfaces"]["surfaces"]:
+        if surface["path"] not in version_files:
+            errors.append(f"DOCS version_files must include version-bearing surface {surface['path']}")
+    return errors
+
+
+def _validate_package_drift_inventory(root: Path = REPO_ROOT) -> list[str]:
+    text = (root / "references/adapters/package-surface-characterization.md").read_text(encoding="utf-8")
+    errors: list[str] = []
+    for classification in (
+        "version-bearing surface",
+        "runtime package manifest",
+        "bundle metadata surface",
+        "package-manager command surface",
+    ):
+        if classification not in text:
+            errors.append(f"package characterization must distinguish {classification}")
+    for decision in ("`preserve`", "`standardize`", "`defer`"):
+        if decision not in text:
+            errors.append(f"package drift inventory must include decision {decision}")
+    for drift_point in (
+        "pyproject.toml` force-includes and `scripts/agentera_upgrade.py` bundle lists duplicate",
+        "Runtime manifest `agentera.sharedPaths` includes `UPGRADE.md`",
+        "`.agentera/docs.yaml` `version_files` includes version-bearing surfaces and excludes `.opencode/package.json`",
+        "Upgrade package commands are represented as argv lists for Claude Code and OpenCode only",
+        "Live package-manager behavior is not characterized by this task",
+    ):
+        if drift_point not in text:
+            errors.append(f"package drift inventory missing: {drift_point}")
+    return errors
 
 
 def _validate_copilot_install_reference(text: str) -> list[str]:
@@ -997,29 +1250,54 @@ class TestSuiteBundleSurface:
 
     def test_suite_bundle_surface_passes_for_each_runtime_shape(self, tmp_path):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
-        for runtime in sorted(validator.RUNTIME_PACKAGE_SURFACES):
+        package_manifest = _package_manifest()
+        for runtime in sorted(package_manifest.runtime_manifest_paths()):
             root = tmp_path / runtime
-            self._write_bundle_fixture(root, validator, runtime)
-            assert validator.validate_suite_bundle_surface(root, {runtime}) == []
+            self._write_bundle_fixture(root, package_manifest, runtime)
+            assert validator.validate_suite_bundle_surface(root, {runtime}, package_manifest) == []
 
     def test_suite_bundle_surface_fails_with_owning_runtime_name(self, tmp_path):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
-        for runtime in sorted(validator.RUNTIME_PACKAGE_SURFACES):
+        package_manifest = _package_manifest()
+        for runtime in sorted(package_manifest.runtime_manifest_paths()):
             root = tmp_path / runtime
-            self._write_bundle_fixture(root, validator, runtime, omit_shared_path="scripts")
-            errors = validator.validate_suite_bundle_surface(root, {runtime})
+            self._write_bundle_fixture(root, package_manifest, runtime, omit_shared_path="scripts")
+            errors = validator.validate_suite_bundle_surface(root, {runtime}, package_manifest)
             assert f"{runtime}: shared tool path scripts missing from package metadata" in errors
+
+    def test_suite_bundle_surface_observes_manifest_path_fixture_change(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        fixture = yaml.safe_load((REPO_ROOT / "references/adapters/package-registry.yaml").read_text(encoding="utf-8"))
+        fixture["records"][0]["runtime_package_manifests"]["manifests"][-1]["path"] = ".opencode/alternate-package.json"
+        package_manifest = _package_manifest(fixture=fixture)
+        root = tmp_path / "repo"
+        self._write_bundle_fixture(root, package_manifest, "opencode")
+
+        assert validator.validate_suite_bundle_surface(root, {"opencode"}, package_manifest) == []
+        assert not (root / ".opencode/package.json").exists()
+
+    def test_suite_bundle_surface_rejects_runtime_adapter_and_install_root_facts(self):
+        registry_module = _load_package_registry_module()
+        fixture = yaml.safe_load((REPO_ROOT / "references/adapters/package-registry.yaml").read_text(encoding="utf-8"))
+        fixture["records"][0]["runtime_package_manifests"]["lifecycle_events"] = []
+        fixture["records"][0]["runtime_package_manifests"]["install_root_classification"] = "managed"
+
+        errors = registry_module.validate_registry_data(fixture)
+
+        assert "records[0].runtime_package_manifests: forbidden RuntimeAdapter field lifecycle_events" in errors
+        assert "records[0].runtime_package_manifests: forbidden install-root field install_root_classification" in errors
 
     @staticmethod
     def _write_bundle_fixture(
         root: Path,
-        validator: ModuleType,
+        package_manifest: Any,
         runtime: str,
         *,
         omit_shared_path: str | None = None,
     ) -> None:
         root.mkdir(parents=True)
-        for path, kind in validator.SUITE_BUNDLE_REQUIRED_PATHS.items():
+        required_paths = package_manifest.shared_path_requirements()
+        for path, kind in required_paths.items():
             target = root / path
             if kind == "dir":
                 target.mkdir(parents=True)
@@ -1027,14 +1305,12 @@ class TestSuiteBundleSurface:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text("fixture\n", encoding="utf-8")
 
-        manifest = root / validator.RUNTIME_PACKAGE_SURFACES[runtime]
+        manifest = root / package_manifest.runtime_manifest_paths()[runtime]
         manifest.parent.mkdir(parents=True, exist_ok=True)
-        shared_paths = [
-            path for path in validator.SUITE_BUNDLE_REQUIRED_PATHS if path != omit_shared_path
-        ]
+        shared_paths = [path for path in required_paths if path != omit_shared_path]
         package = {
             "agentera": {
-                "packageShape": "suite-bundle",
+                "packageShape": package_manifest.runtime_package_shapes()[runtime],
                 "installRoot": os.path.relpath(root, manifest.parent),
                 "sharedPaths": shared_paths,
                 "singleSkillInstall": (
@@ -1202,6 +1478,29 @@ class TestLegacyRuntimeCompatibility:
     def test_opencode_package_passes(self):
         assert _validate_opencode_package() == []
 
+    def test_opencode_package_observes_manifest_path_fixture_change(self, tmp_path):
+        root = tmp_path / "repo"
+        (root / "skills/agentera").mkdir(parents=True)
+        (root / "skills/agentera/SKILL.md").write_text("# agentera\n", encoding="utf-8")
+        (root / ".opencode/plugins").mkdir(parents=True)
+        (root / ".opencode/alternate").mkdir(parents=True)
+        (root / "registry.json").write_text(
+            json.dumps({"skills": [{"name": "agentera", "version": "1.18.0"}]}), encoding="utf-8"
+        )
+        (root / ".opencode/alternate/package.json").write_text(json.dumps({"type": "module"}), encoding="utf-8")
+        (root / ".opencode/plugins/agentera.js").write_text(
+            'export const AGENTERA_VERSION = "1.18.0";\n\nexport const COMMAND_TEMPLATES = {\n  "agentera": `---\nagentera_managed: true\n---\nLoad and execute the agentera bundled skill.\n`,\n};\n\nevent:\n"shell.env"\n"tool.execute.before"\n"tool.execute.after"\n',
+            encoding="utf-8",
+        )
+        fixture = yaml.safe_load((REPO_ROOT / "references/adapters/package-registry.yaml").read_text(encoding="utf-8"))
+        fixture["records"][0]["runtime_package_manifests"]["manifests"][-1]["path"] = (
+            ".opencode/alternate/package.json"
+        )
+        package_manifest = _package_manifest(root, fixture)
+
+        assert _validate_opencode_package(root, package_manifest) == []
+        assert not (root / ".opencode/package.json").exists()
+
     def test_opencode_reference_uses_single_agentera_install(self):
         text = (REPO_ROOT / "references/adapters/opencode.md").read_text(encoding="utf-8")
         assert _validate_opencode_reference(text) == []
@@ -1284,6 +1583,58 @@ class TestLegacyRuntimeCompatibility:
     def test_version_bearing_package_surfaces_align(self):
         assert _validate_package_versions() == []
 
+    def test_package_surface_characterization_distinguishes_non_version_opencode_manifest(self):
+        assert _validate_package_surface_characterization() == []
+
+    def test_package_drift_inventory_names_decisions_and_surface_classes(self):
+        assert _validate_package_drift_inventory() == []
+
+    def test_package_manifest_interface_model_defines_typed_groups_and_ownership(self):
+        assert _validate_package_manifest_interface_model() == []
+
+        model = _load_package_manifest_interface_model()
+        assert model["interface"] == "PackageManifest"
+        assert set(model["record"]["groups"]) == set(model["record"]["required_groups"])
+        assert model["ownership"]["registry_json_version_authority"]["owner"] == "registry.json"
+        assert model["ownership"]["registry_json_version_authority"]["access_interface"] == "PackageManifest"
+        assert model["ownership"]["install_root_delegated"]["owner"] == "scripts/install_root.py"
+        assert model["ownership"]["runtime_adapter_delegated"]["owner"] == "scripts/runtime_adapter_registry.py"
+
+    def test_package_manifest_command_model_preserves_argv_safety_and_write_gates(self):
+        model = _load_package_manifest_interface_model()
+        assert _validate_package_manifest_command_safety(model) == []
+
+        commands = model["sample_manifest"]["package_commands"]["commands"]
+        assert commands[0]["action"] == "remove-legacy-skills"
+        assert commands[0]["runtime"] == "all"
+        assert commands[0]["phase"] == "cleanup"
+        assert {command["runtime"] for command in commands[1:]} == {"claude", "opencode"}
+        assert {command["phase"] for command in commands[1:]} == {"runtime-install"}
+        assert all(isinstance(command["argv"], list) for command in commands)
+        assert model["command_safety"]["gates"] == {
+            "update_packages_required_to_plan": True,
+            "yes_required_to_execute": True,
+            "preserve_existing_write_gates": True,
+        }
+
+    def test_package_manifest_command_model_rejects_shell_strings(self):
+        model = _load_package_manifest_interface_model()
+        model["sample_manifest"]["package_commands"]["commands"][1]["argv"] = (
+            "npx skills add jgabor/agentera -g -a claude-code --skill agentera -y"
+        )
+
+        assert "PackageManifest command 'install-agentera-skill' must use list argv" in (
+            _validate_package_manifest_command_safety(model)
+        )
+
+    def test_package_manifest_command_model_rejects_cleanup_runtime_mix(self):
+        model = _load_package_manifest_interface_model()
+        model["sample_manifest"]["package_commands"]["commands"][0]["phase"] = "runtime-install"
+
+        assert "PackageManifest cleanup commands must stay separate from runtime installs" in (
+            _validate_package_manifest_command_safety(model)
+        )
+
     def test_version_bearing_package_surfaces_fail_on_drift(self, tmp_path):
         root = tmp_path / "repo"
         (root / ".github/plugin").mkdir(parents=True)
@@ -1313,6 +1664,41 @@ class TestLegacyRuntimeCompatibility:
         errors = _validate_package_versions(root)
 
         assert ".codex-plugin/plugin.json version must match registry suite version 1.27.0" in errors
+
+    def test_version_bearing_package_surfaces_observe_fixture_path_change(self, tmp_path):
+        root = tmp_path / "repo"
+        (root / ".github/plugin").mkdir(parents=True)
+        (root / ".codex-plugin").mkdir()
+        (root / ".claude-plugin").mkdir()
+        (root / ".opencode/plugins").mkdir(parents=True)
+        (root / "registry.json").write_text(
+            json.dumps({"skills": [{"name": "agentera", "version": "1.27.0"}]}), encoding="utf-8"
+        )
+        (root / "pyproject.toml").write_text('[project]\nversion = "1.27.0"\n', encoding="utf-8")
+        (root / "plugin.json").write_text(json.dumps({"version": "1.27.0"}), encoding="utf-8")
+        (root / ".github/plugin/plugin.json").write_text(json.dumps({"version": "1.27.0"}), encoding="utf-8")
+        (root / ".codex-plugin/plugin.json").write_text(json.dumps({"version": "1.27.0"}), encoding="utf-8")
+        (root / ".codex-plugin/alternate-plugin.json").write_text(json.dumps({"version": "0.0.0"}), encoding="utf-8")
+        (root / ".claude-plugin/marketplace.json").write_text(
+            json.dumps(
+                {
+                    "metadata": {"version": "1.27.0"},
+                    "plugins": [{"name": "agentera", "version": "1.27.0"}],
+                }
+            ),
+            encoding="utf-8",
+        )
+        (root / ".opencode/plugins/agentera.js").write_text(
+            'export const AGENTERA_VERSION = "1.27.0";\n', encoding="utf-8"
+        )
+        fixture = yaml.safe_load((REPO_ROOT / "references/adapters/package-registry.yaml").read_text(encoding="utf-8"))
+        fixture["records"][0]["version_surfaces"]["surfaces"][4]["path"] = ".codex-plugin/alternate-plugin.json"
+        package_manifest = _package_manifest(root, fixture)
+
+        errors = _validate_package_versions(root, package_manifest)
+
+        assert ".codex-plugin/alternate-plugin.json version must match registry suite version 1.27.0" in errors
+        assert ".codex-plugin/plugin.json version must match registry suite version 1.27.0" not in errors
 
     def test_opencode_package_fails_on_missing_command_file(self, tmp_path):
         root = tmp_path / "repo"

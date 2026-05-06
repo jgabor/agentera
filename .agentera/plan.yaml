@@ -3,147 +3,142 @@ header:
   created: '2026-05-06'
   status: complete
   reviewed: '2026-05-06'
-  critic_issues: "8 found, 8 addressed, 0 dismissed"
-  title: Deepen RuntimeAdapter Registry
+  critic_issues: "7 found, 7 addressed, 0 dismissed"
+  title: Deepen PackageManifest Registry
 what: >
-  Replace scattered runtime adapter knowledge with one registry-backed
-  RuntimeAdapter Module. The registry should describe Claude Code, OpenCode,
-  Copilot CLI, and Codex CLI runtime facts behind one Interface: runtime
-  identity, host detection, lifecycle events, artifact-validation support,
-  configuration targets, diagnostic labels, and documentation claims. Doctor,
-  upgrade planning, lifecycle validation, adapter documentation, and runtime
-  tests should consume that Interface instead of preserving separate runtime
-  tables and conditionals.
+  Replace scattered package metadata and release-surface knowledge with one registry-backed PackageManifest Module. The registry
+  should expose one Interface for suite version authority, runtime package surfaces, version-bearing surfaces, bundle surface lists,
+  package-manager command specifications, manifest projection expectations, and release validation facts. Validators, upgrade
+  bundle/package planning, docs indexing, runtime package tests, and version-surface checks should consume that Interface instead
+  of duplicating package constants.
 why: >
-  TODO [arch-runtime-adapter-registry] identifies runtime adapter behavior as a
-  shallow seam: runtime facts are spread across scripts/setup_doctor.py,
-  scripts/agentera_upgrade.py, scripts/validate_lifecycle_adapters.py,
-  references/adapters/runtime-feature-parity.md, references/adapters/opencode.md,
-  and tests/test_runtime_adapters.py. A deeper Module gives locality for runtime
-  support changes and leverage for validators, docs, and tests.
+  TODO [arch-package-manifest-registry] identifies package metadata as the next shallow seam after the install-root and
+  RuntimeAdapter Modules were deepened. Current package facts live across pyproject.toml force-include paths, registry.json
+  skills[0].version, plugin manifests, .opencode/package.json, scripts/agentera_upgrade.py bundle/package constants,
+  scripts/validate_lifecycle_adapters.py package-surface constants, .agentera/docs.yaml version_files/index, and
+  tests/test_runtime_adapters.py production-like package validators. One PackageManifest Interface gives locality for release
+  changes and leverage for validators, docs, and upgrade planning.
 constraints: >
-  Preserve current user-visible doctor, upgrade, lifecycle validation, and
-  runtime documentation behavior unless a characterization task explicitly names
-  an intentional correction. Do not change install-root classification semantics;
-  scripts/install_root.py remains the only Module for AGENTERA_HOME precedence,
-  default durable root, managed/stale/unmanaged classification, and root
-  diagnostics. Do not implement the separate package manifest registry or move
-  version authority, package shared paths, package manifest schemas, or release
-  metadata into RuntimeAdapter. No live model calls, no remote pushes, and no
-  unapproved runtime config writes.
+  Preserve current package versions and user-visible CLI behavior unless characterization explicitly names an intentional
+  correction. registry.json remains the persisted suite-version authority unless a task proves and documents a safer authority
+  transition; consumers should access that authority through the PackageManifest Interface after migration. Do not change
+  install-root classification semantics owned by scripts/install_root.py. Do not move runtime lifecycle, diagnostic, or config
+  facts out of RuntimeAdapter. Do not implement capability schema contract, routing/exit vocabulary, artifact registry, artifact
+  write validation, or live package-manager execution. No remote pushes and no unapproved writes.
 scope:
   included:
-    - archive the completed install-root Module plan
-    - characterize current runtime adapter outputs before migration
-    - define RuntimeAdapter ownership, schema, and typed field groups
-    - introduce a registry Module with contract tests for all four current runtimes
-    - migrate lifecycle adapter validation to consume registry facts
-    - migrate setup doctor read-only diagnostics to consume registry facts
-    - migrate upgrade runtime planning to consume registry facts while preserving dry-run and confirmation safety
-    - consolidate runtime tests around the registry and validate documentation parity
+    - archive the completed RuntimeAdapter registry plan with validation evidence
+    - characterize current package, version, bundle, docs, and package-command surfaces before migration
+    - define PackageManifest ownership, projections, command safety, and consumer permissions
+    - introduce a registry Module, data fixture, and contract tests
+    - migrate package/version validation and runtime package tests to the PackageManifest Interface
+    - migrate upgrade bundle and package planning to consume registry-owned facts while preserving write gates
+    - align docs, manifest projection validation, and version policy without changing package versions unless required
+    - validate and close only [arch-package-manifest-registry]
   excluded:
-    - package manifest registry and package version authority
-    - generated install-root cross-language contract
+    - install-root classification or AGENTERA_HOME semantics
+    - RuntimeAdapter lifecycle, diagnostic, config-target, or documentation-claim ownership
+    - capability schema contract refactor
+    - routing and exit vocabulary refactor
+    - artifact registry refactor
     - artifact write validation Module split
-    - adding new runtime support beyond existing Claude Code, OpenCode, Copilot CLI, and Codex CLI claims
-    - live runtime smoke calls
-    - changing install-root root classification behavior
+    - live package-manager or live runtime smoke calls
+    - version bump or release publication
   deferred:
-    - [arch-package-manifest-registry]
+    - [arch-capability-schema-contract]
+    - [arch-routing-exit-vocabulary]
+    - [arch-artifact-registry]
     - [arch-artifact-write-validation]
-    - [install-root-generated-cross-language-contract]
+    - [agentera-optional-claude-live-smoke]
 design: >
-  Put the seam at runtime adapter facts, not package metadata and not install-root
-  classification. A RuntimeAdapter record should expose typed groups for
-  identity, host detection, lifecycle events, artifact validation support,
-  configuration targets, diagnostics, and documentation claims. Consumers may
-  read only the groups they own: lifecycle validation reads lifecycle and
-  artifact-validation facts; setup doctor reads host/config/diagnostic facts;
-  upgrade reads install/config target facts and write-safety labels; docs and
-  tests check claims against the same registry. Package manifest/version fields
-  and install-root source precedence remain outside this Interface.
+  Put the seam at package and release-surface facts, not runtime behavior and not install-root classification. PackageManifest
+  should distinguish persisted version authority, version-bearing surfaces, runtime package manifests, bundle include surfaces,
+  package-manager command surfaces, and docs version targets. Command data must be validated as argv lists with allowed
+  executables/actions/runtimes and must remain gated by existing --update-packages, --yes, and force behavior. RuntimeAdapter and
+  install-root Modules remain consumers or neighbors, not owners of package metadata.
 tasks:
   - number: 1
-    name: Reconcile Plan State And Runtime Scope
+    name: Reconcile Plan State And Package Scope
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN the install-root plan is complete WHEN this plan becomes active THEN the completed plan is archived with its evidence intact
-      - GIVEN TODO has multiple critical findings WHEN the next item is selected THEN [arch-runtime-adapter-registry] is identified as the planned work and unrelated findings remain open
-      - GIVEN runtime registry work starts WHEN scope is recorded THEN package manifest registry, install-root classification, artifact write validation, and live runtime calls are explicitly out of scope
+      - GIVEN the RuntimeAdapter registry plan is complete WHEN this package plan becomes active THEN the completed plan is archived with validation evidence intact
+      - GIVEN TODO has multiple critical findings WHEN the next item is selected THEN [arch-package-manifest-registry] is identified as the planned work and unrelated findings remain open
+      - GIVEN package registry work starts WHEN scope is recorded THEN install-root classification, RuntimeAdapter ownership, artifact write validation, live package-manager calls, and release publication are explicitly out of scope
   - number: 2
-    name: Characterize Runtime Adapter Outputs And Drift
+    name: Characterize Package Surfaces And Drift
     depends_on:
       - Task 1
     status: complete
     acceptance:
-      - GIVEN current doctor runtime checks run WHEN Claude Code, OpenCode, Copilot CLI, and Codex CLI are represented in fixtures THEN JSON fields, statuses, primary messages, and diagnostic labels are recorded before migration
-      - GIVEN current upgrade runtime planning runs WHEN runtime config, hook, plugin, and package phases are planned THEN runtime, action, target, status, message, dry-run, and apply behavior are characterized before migration
-      - GIVEN lifecycle validation runs WHEN runtime metadata is valid or intentionally malformed THEN current pass and fail messages are captured before registry extraction
-      - GIVEN docs and tests encode runtime facts WHEN drift is found THEN each drift point is named as preserve, standardize, or defer before code migration
+      - GIVEN current version checks run WHEN version-bearing and non-version-bearing surfaces are inspected THEN registry.json, pyproject.toml, plugin manifests, OpenCode plugin version marker, and .opencode/package.json behavior are recorded before migration
+      - GIVEN upgrade package planning runs WHEN package phases are skipped, dry-run, or applied with mocked commands THEN runtime, action, command argv, status, message, and write-gating behavior are characterized before migration
+      - GIVEN bundle surfaces are inspected WHEN pyproject force-includes, upgrade bundle lists, lifecycle required paths, and docs version_files disagree THEN each drift point is named as preserve, standardize, or defer
+      - GIVEN package docs and tests encode package facts WHEN drift is found THEN each drift point distinguishes version-bearing surface, runtime package manifest, bundle metadata surface, or package-manager command surface
   - number: 3
-    name: Define RuntimeAdapter Interface And Ownership Model
+    name: Define PackageManifest Interface And Ownership Model
     depends_on:
       - Task 2
     status: complete
     acceptance:
-      - GIVEN a RuntimeAdapter record is valid WHEN it is loaded THEN it has typed groups for identity, host detection, lifecycle events, artifact validation, config targets, diagnostics, and documentation claims
-      - GIVEN package metadata facts are encountered WHEN ownership is assigned THEN version authority, package manifest schemas, shared package paths, and release metadata remain outside RuntimeAdapter
-      - GIVEN install-root facts are encountered WHEN ownership is assigned THEN AGENTERA_HOME precedence, default durable root, managed/stale/unmanaged classification, and root diagnostics remain delegated to scripts/install_root.py
-      - GIVEN a consumer reads the Interface WHEN its allowed groups are checked THEN lifecycle validation, doctor, upgrade, docs, and tests have explicit consumer permissions
+      - GIVEN a PackageManifest record is valid WHEN it is loaded THEN it has typed groups for identity, version authority, version surfaces, runtime package manifests, bundle surfaces, package commands, docs targets, and release policy
+      - GIVEN registry.json version facts are encountered WHEN ownership is assigned THEN registry.json remains the persisted authority and PackageManifest becomes the access Interface unless an explicit future ADR changes that authority
+      - GIVEN install-root or RuntimeAdapter facts are encountered WHEN ownership is assigned THEN those facts remain delegated to scripts/install_root.py and scripts/runtime_adapter_registry.py
+      - GIVEN command specs are defined WHEN validation runs THEN package-manager commands are list argv only, use approved executables/actions/runtimes, separate cleanup from runtime installs, and preserve existing write gates
   - number: 4
-    name: Introduce Registry Module And Contract Tests
+    name: Introduce Package Registry Module And Contract Tests
     depends_on:
       - Task 3
     status: complete
     acceptance:
-      - GIVEN the registry loads WHEN all four current runtimes are present THEN runtime IDs are unique, required fields exist, and unsupported event names are rejected
-      - GIVEN a caller asks for a runtime by ID WHEN the ID is known or unknown THEN known records are returned and unknown records fail with one clear diagnostic
-      - GIVEN a registry fact changes in a fixture WHEN lifecycle, doctor, upgrade, or docs tests consume that fact THEN at least one relevant consumer observes the changed fact instead of a hardcoded copy
-      - GIVEN install-root and package fields are absent WHEN registry validation runs THEN the registry still passes because those facts belong to other Modules
+      - GIVEN the package registry loads WHEN package records are requested THEN suite version, version-bearing surfaces, runtime manifests, bundle surfaces, command specs, and docs targets are returned deterministically without duplicate IDs
+      - GIVEN malformed registry fixtures exist WHEN contract validation runs THEN missing groups, duplicate IDs, unknown paths, unsafe command strings, forbidden install-root fields, and forbidden RuntimeAdapter fields fail with clear errors
+      - GIVEN one package fact changes in a fixture WHEN validator, upgrade, docs, and tests are simulated THEN every relevant consumer observes the changed fact rather than a hardcoded copy
+      - GIVEN non-version-bearing runtime package manifests are present WHEN registry validation runs THEN they are represented separately from version-bearing surfaces
   - number: 5
-    name: Migrate Lifecycle Validation To Registry
+    name: Migrate Package Validation And Runtime Package Tests
     depends_on:
       - Task 4
     status: complete
     acceptance:
-      - GIVEN lifecycle adapter validation checks runtime support WHEN it validates hook events, substrate support, and limitations THEN it reads RuntimeAdapter records instead of local runtime constants
-      - GIVEN a runtime lacks a supported lifecycle feature WHEN validation reports the limitation THEN the message matches the characterized behavior or an intentional correction is documented
-      - GIVEN malformed lifecycle metadata is tested WHEN validation fails THEN failure messages remain stable or each wording change is documented with a reason
-      - GIVEN package manifest facts appear during lifecycle validation WHEN they are needed THEN validation delegates or preserves existing package checks without moving package-registry ownership into RuntimeAdapter
+      - GIVEN package/version validators check suite metadata WHEN they need version surfaces, runtime package manifests, shared paths, or package shapes THEN those facts come from PackageManifest records
+      - GIVEN existing runtime package tests run WHEN migration lands THEN primary package validation messages remain stable or intentional changes are documented
+      - GIVEN a PackageManifest fixture changes a version surface or manifest path WHEN package validation runs THEN the validator observes the fixture change without editing validator-local constants
+      - GIVEN RuntimeAdapter and install-root ownership boundaries are checked WHEN package validation runs THEN package validation rejects attempts to absorb runtime lifecycle or root classification facts
   - number: 6
-    name: Migrate Doctor Read-Only Diagnostics
+    name: Migrate Upgrade Bundle And Package Planning
     depends_on:
       - Task 5
     status: complete
     acceptance:
-      - GIVEN setup doctor diagnoses each runtime WHEN runtime host/config facts are needed THEN it reads RuntimeAdapter records rather than duplicated runtime tables
-      - GIVEN doctor output is JSON WHEN tests compare pre- and post-migration fixtures THEN runtime statuses, check names, primary messages, and install-root diagnostics are preserved or intentionally documented
-      - GIVEN doctor classification touches an install root WHEN it reports root state THEN it still delegates root semantics to scripts/install_root.py
-      - GIVEN doctor remains read-only WHEN diagnostics run against temp runtime config THEN no config, hook, plugin, or bundle files are created, deleted, or modified
+      - GIVEN upgrade builds bundle plans WHEN bundle directories, files, skip rules, or required package surfaces are needed THEN registry-owned facts come from PackageManifest records
+      - GIVEN upgrade builds package phases WHEN package command specs are needed THEN command argv, cleanup action, runtime install actions, skipped behavior, and apply messages are registry-backed while package execution remains mocked in tests
+      - GIVEN dry-run and apply paths run WHEN writes or package commands would occur THEN existing --dry-run, --yes, --force, and --update-packages gates remain stable
+      - GIVEN package version authority is needed WHEN bundle-status or upgrade reports expected/current versions THEN the value is read through PackageManifest while registry.json remains the persisted source
   - number: 7
-    name: Migrate Upgrade Planning And Runtime Tests
+    name: Align Docs, Manifest Projections, And Version Policy
     depends_on:
       - Task 6
     status: complete
     acceptance:
-      - GIVEN upgrade plans runtime config, hook, plugin, or package operations WHEN runtime facts are needed THEN it reads RuntimeAdapter records instead of local runtime conditionals where behavior is registry-owned
-      - GIVEN upgrade dry-run and apply paths are exercised WHEN writes would occur THEN existing --dry-run, --yes, force, and confirmation safety behavior is preserved
-      - GIVEN runtime tests validate adapter behavior WHEN the registry exists THEN production-like validators move to registry-facing test helpers or production validation Modules rather than remaining only as test-local rule copies
-      - GIVEN package version or manifest metadata is tested WHEN runtime tests run THEN those checks remain separate from RuntimeAdapter or are deferred to [arch-package-manifest-registry]
+      - GIVEN docs mention package/version surfaces WHEN this task completes THEN docs point at the PackageManifest registry and do not duplicate registry-owned values without validation
+      - GIVEN manifest projections are validated WHEN package metadata changes THEN plugin.json, .github/plugin/plugin.json, .codex-plugin/plugin.json, .claude-plugin/marketplace.json, .opencode/package.json, registry.json, and pyproject.toml remain aligned through registry-backed checks
+      - GIVEN version policy is evaluated WHEN this refactor is closed THEN CHANGELOG, docs index, and version files are updated or explicit no-bump rationale is recorded
+      - GIVEN unrelated architecture findings remain open WHEN TODO is updated THEN only [arch-package-manifest-registry] is resolved or narrowed
   - number: 8
-    name: Align Documentation And Validate Close
+    name: Validate And Close
     depends_on:
       - Task 7
     status: complete
     acceptance:
-      - GIVEN adapter docs mention runtime support WHEN docs are validated THEN runtime-feature parity and OpenCode references match RuntimeAdapter registry claims
-      - GIVEN focused and broad validation runs WHEN the plan closes THEN runtime adapter tests, setup doctor tests, upgrade tests, lifecycle validation, query/artifact CLI checks, and the relevant broader suite pass
-      - GIVEN TODO and docs are updated WHEN this plan completes THEN [arch-runtime-adapter-registry] is resolved or narrowed without closing [arch-package-manifest-registry], [arch-artifact-write-validation], or other unrelated architecture findings
-      - GIVEN release impact is assessed WHEN runtime-visible behavior changes THEN CHANGELOG, docs index, and version policy are updated or deferral is recorded with rationale
+      - GIVEN focused validation runs WHEN the plan closes THEN package registry tests, package/runtime adapter tests, lifecycle validation, upgrade tests, bundle freshness tests, docs CLI, and artifact query checks pass
+      - GIVEN broader validation runs WHEN practical THEN full pytest, capability validation, cross-capability validation, and relevant py_compile checks pass
+      - GIVEN future work remains WHEN this plan closes THEN capability schema contract, routing/exit vocabulary, artifact registry, artifact write validation, and optional live smoke TODOs remain separate
+      - GIVEN worktree changes are reviewed WHEN validation ends THEN only package-registry plan changes are present or unrelated changes are reported without reverting
 overall_acceptance:
-  - GIVEN a runtime fact changes WHEN lifecycle validation, doctor, upgrade, docs, and tests need that fact THEN the change is made in one RuntimeAdapter Interface rather than duplicated across callers
-  - GIVEN a runtime Adapter is unsupported or degraded for a lifecycle event WHEN users inspect diagnostics or docs THEN the same limitation is reported consistently across validators and references
-  - GIVEN runtime registry work completes WHEN package metadata or install-root behavior is inspected THEN those facts remain owned by their separate Modules and TODOs
-  - GIVEN runtime planning or diagnostics run without explicit write approval WHEN registry-backed callers execute THEN no runtime config, hook, plugin, or bundle writes occur
-surprises: []
+  - GIVEN a package or release-surface fact changes WHEN validators, upgrade planning, docs, and tests need that fact THEN the change is made in one PackageManifest Interface rather than duplicated across callers
+  - GIVEN a runtime package manifest exists WHEN version validation runs THEN version-bearing surfaces are distinguished from non-version-bearing package manifests
+  - GIVEN package commands are planned WHEN dry-run or apply behavior is inspected THEN no package-manager command executes without existing explicit flags and mocked tests prove command shape safety
+  - GIVEN package registry work completes WHEN install-root or RuntimeAdapter behavior is inspected THEN those facts remain owned by their existing Modules
+surprises:
+  - Task 5 dispatch returned an empty result twice without updating plan or progress; orkestrera stopped per retry guard before package validation migration.

@@ -34,86 +34,7 @@ BUNDLE_MARKER = ".agentera-bundle.json"
 PHASES = ("bundle", "artifacts", "runtime", "cleanup", "packages")
 STATUSES = ("pending", "applied", "noop", "blocked", "failed", "skipped")
 EXPECTED_STATE_COMMANDS = ("hej",)
-LEGACY_BRIDGE_SKILLS = (
-    "hej",
-    "visionera",
-    "resonera",
-    "inspirera",
-    "planera",
-    "realisera",
-    "inspektera",
-    "optimera",
-    "orkestrera",
-    "visualisera",
-    "dokumentera",
-    "profilera",
-)
 
-
-def _package_commands(agent: str) -> list[dict[str, Any]]:
-    return [
-        {
-            "action": "install-agentera-skill",
-            "command": [
-                "npx",
-                "skills",
-                "add",
-                "jgabor/agentera",
-                "-g",
-                "-a",
-                agent,
-                "--skill",
-                "agentera",
-                "-y",
-            ],
-        },
-    ]
-
-
-PACKAGE_COMMANDS = {
-    "cleanup": [
-        {
-            "action": "remove-legacy-skills",
-            "command": [
-                "npx",
-                "skills",
-                "remove",
-                *LEGACY_BRIDGE_SKILLS,
-                "-g",
-                "-y",
-            ],
-        },
-    ],
-    "claude": _package_commands("claude-code"),
-    "opencode": _package_commands("opencode"),
-}
-BUNDLE_DIRECTORIES = (
-    "skills",
-    "scripts",
-    "hooks",
-    "references",
-    "agents",
-    ".agents/plugins",
-    ".codex-plugin",
-    ".claude-plugin",
-    ".github/hooks",
-    ".github/plugin",
-    ".opencode/commands",
-    ".opencode/plugins",
-)
-BUNDLE_FILES = (
-    "README.md",
-    "UPGRADE.md",
-    "CHANGELOG.md",
-    "DESIGN.md",
-    "LICENSE",
-    "pyproject.toml",
-    "registry.json",
-    "plugin.json",
-    ".opencode/package.json",
-)
-BUNDLE_SKIP_PARTS = {"__pycache__", ".pytest_cache", "node_modules"}
-BUNDLE_SKIP_SUFFIXES = {".pyc", ".pyo"}
 
 
 def _load_script_module(name: str, path: Path) -> ModuleType:
@@ -163,6 +84,14 @@ def _runtime_ids() -> tuple[str, ...]:
     return _runtime_registry().runtime_ids
 
 
+def _package_registry_module() -> ModuleType:
+    return _load_script_module("agentera_package_registry", ROOT / "scripts" / "package_registry.py")
+
+
+def _package_registry() -> Any:
+    return _package_registry_module().load_registry()
+
+
 def _relative(path: Path, root: Path) -> str:
     try:
         return str(path.relative_to(root))
@@ -201,12 +130,17 @@ def _valid_install_root(root: Path) -> bool:
 
 
 def _load_suite_version(source_root: Path) -> str | None:
-    registry = source_root / "registry.json"
-    if not registry.is_file():
+    pkg = _package_registry()
+    record = pkg.get("agentera")
+    authority = record["version_authority"]
+    authority_path = source_root / authority["persisted_authority"]
+    if not authority_path.is_file():
         return None
     try:
-        data = json.loads(registry.read_text(encoding="utf-8"))
+        data = json.loads(authority_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
+        return None
+    if authority["selector"] != "skills[0].version":
         return None
     skills = data.get("skills")
     if not isinstance(skills, list) or not skills:
@@ -472,22 +406,28 @@ def build_bundle_status(
     }
 
 
-def _skip_bundle_path(path: Path) -> bool:
-    return any(part in BUNDLE_SKIP_PARTS for part in path.parts) or path.suffix in BUNDLE_SKIP_SUFFIXES
+def _skip_bundle_path(path: Path, skip_parts: set[str], skip_suffixes: set[str]) -> bool:
+    return any(part in skip_parts for part in path.parts) or path.suffix in skip_suffixes
 
 
 def _bundle_rel_paths(source_root: Path) -> list[Path]:
+    pkg = _package_registry()
+    bs = pkg.get("agentera")["bundle_surfaces"]
+    directories = tuple(entry["path"] for entry in bs["directories"])
+    files = tuple(entry["path"] for entry in bs["files"])
+    skip_parts = set(bs["skip_parts"])
+    skip_suffixes = set(bs["skip_suffixes"])
     paths: set[Path] = set()
-    for directory in BUNDLE_DIRECTORIES:
+    for directory in directories:
         root = source_root / directory
         if not root.is_dir():
             continue
         for path in root.rglob("*"):
-            if path.is_file() and not _skip_bundle_path(path):
+            if path.is_file() and not _skip_bundle_path(path, skip_parts, skip_suffixes):
                 paths.add(path.relative_to(source_root))
-    for filename in BUNDLE_FILES:
+    for filename in files:
         path = source_root / filename
-        if path.is_file() and not _skip_bundle_path(path):
+        if path.is_file() and not _skip_bundle_path(path, skip_parts, skip_suffixes):
             paths.add(path.relative_to(source_root))
     return sorted(paths)
 
@@ -1012,35 +952,40 @@ def apply_cleanup_phase(phase: dict[str, Any], home: Path, env: dict[str, str]) 
 
 
 def plan_package_phase(runtimes: set[str], *, enabled: bool) -> dict[str, Any]:
+    pkg = _package_registry()
+    record = pkg.get("agentera")
+    commands = record["package_commands"]["commands"]
+    safety = record["package_commands"]["safety"]
     items: list[dict[str, Any]] = []
+    cleanup_commands = [cmd for cmd in commands if cmd["phase"] == safety["cleanup_phase"]]
     if runtimes.intersection({"claude", "opencode"}):
-        for entry in PACKAGE_COMMANDS["cleanup"]:
+        for cmd in cleanup_commands:
             items.append({
                 "status": "pending" if enabled else "skipped",
-                "runtime": "all",
-                "action": entry["action"],
-                "command": entry["command"],
+                "runtime": cmd["runtime"],
+                "action": cmd["action"],
+                "command": cmd["argv"],
                 "message": (
                     "will remove legacy v1 package-managed skill entries"
                     if enabled
-                    else "legacy skill removal skipped; pass --update-packages to run"
+                    else cmd["skipped_without_update_packages_message"]
                 ),
             })
-    for runtime in ("claude", "opencode"):
-        if runtime not in runtimes:
+    install_commands = [cmd for cmd in commands if cmd["phase"] == safety["runtime_install_phase"]]
+    for cmd in install_commands:
+        if cmd["runtime"] not in runtimes:
             continue
-        for entry in PACKAGE_COMMANDS[runtime]:
-            items.append({
-                "status": "pending" if enabled else "skipped",
-                "runtime": runtime,
-                "action": entry["action"],
-                "command": entry["command"],
-                "message": (
-                    "will run external package update"
-                    if enabled
-                    else "external package update skipped; pass --update-packages to run"
-                ),
-            })
+        items.append({
+            "status": "pending" if enabled else "skipped",
+            "runtime": cmd["runtime"],
+            "action": cmd["action"],
+            "command": cmd["argv"],
+            "message": (
+                "will run external package update"
+                if enabled
+                else cmd["skipped_without_update_packages_message"]
+            ),
+        })
     return _phase("packages", items, message="no package-managed runtime selected" if not items else "")
 
 
