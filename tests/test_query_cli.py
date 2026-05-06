@@ -575,6 +575,11 @@ class TestHej:
         assert "attention:" in r.stdout
         assert "object=PLAN Task 2: Composite hej" in r.stdout
         assert "capability=orkestrera" in r.stdout
+        assert "source_contract:" in r.stdout
+        assert "fields=mode,profile,health,issues,plan,objective,attention,next_action" in r.stdout
+        assert "render=caller-owned README-style hej dashboard" in r.stdout
+        assert "┌─┐┌─┐┌─┐" not in r.stdout
+        assert "render=hej dashboard | status=complete" not in r.stdout
 
     def test_completed_plan_routes_to_open_todo_before_vision(self, project):
         _write_artifact(project, ".agentera/plan.yaml", {

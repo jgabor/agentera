@@ -144,6 +144,38 @@ def test_cli_budget_fixture_rejects_raw_cli_output(semantic_eval, semantic_fixtu
     assert result["failing_fact"]["fact"] == "required_output[0]"
 
 
+def test_cli_budget_fixture_rejects_source_contract_in_dashboard(semantic_eval, semantic_fixtures):
+    fixture = _load_cli_budget_fixture_with_output(
+        semantic_fixtures,
+        """
+        ┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
+        ├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
+        ┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
+
+        ─── status ─────────────────────────────
+
+          ≡ plan      [██████▓▓░░] 4/6 tasks
+
+        ─── attention ──────────────────────────
+
+          → PLAN Task 5: Add Tool-Budget And Regression Tests
+
+        ─── next ───────────────────────────────
+
+          suggested → ⎈ /orkestrera (PLAN Task 5)
+
+        source_contract:
+
+        ⌂ hej · waiting
+        """,
+    )
+
+    result = semantic_eval.evaluate_fixture(fixture, str(CLI_BUDGET_FIXTURE_PATH))
+
+    assert result["status"] == "fail"
+    assert result["failing_fact"]["fact"] == "forbidden_output[2]"
+
+
 def test_cli_budget_fixture_rejects_individual_state_command(semantic_eval, semantic_fixtures):
     text = CLI_BUDGET_FIXTURE_PATH.read_text(encoding="utf-8")
     text = text.replace(

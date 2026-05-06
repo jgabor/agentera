@@ -226,6 +226,22 @@ def test_master_skill_requires_cli_first_state_access():
     assert "Do not run individual `plan`, `progress`, `health`" in text
 
 
+def test_master_skill_exposes_bare_agentera_dashboard_boundary():
+    text = SKILL_MD_PATH.read_text(encoding="utf-8")
+
+    assert "render the README-style hej" in text
+    assert "Bare `/agentera` returning-project output must include" in text
+    assert "┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐" in text
+    assert "─── status ─────────────────────────────" in text
+    assert "─── attention ──────────────────────────" in text
+    assert "─── next ───────────────────────────────" in text
+    assert "⌂ hej · <status>" in text
+    assert "`mode:`" in text
+    assert "`next_action:`" in text
+    assert "`source_contract:`" in text
+    assert "never paste" in text
+
+
 def test_routine_capability_guidance_uses_top_level_state_commands():
     realisera = (CAPABILITIES_DIR / "realisera" / "prose.md").read_text(encoding="utf-8")
     optimera = (CAPABILITIES_DIR / "optimera" / "prose.md").read_text(encoding="utf-8")
