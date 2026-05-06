@@ -1,7 +1,7 @@
 """Tests for hooks/validate_artifact.py (v2 schema-backed hook).
 
-Covers: 4 adapter parsers, YAML schema validation (pass + fail),
-markdown validation, main() integration via stdin.
+Covers: runtime event parsing, artifact schema validation (pass + fail),
+markdown validation, and CLI adapter integration via stdin.
 """
 
 from __future__ import annotations
@@ -11,7 +11,6 @@ import io
 import json
 import subprocess
 import sys
-import textwrap
 from pathlib import Path
 
 import pytest
@@ -35,97 +34,98 @@ def project_dir(tmp_path):
     return tmp_path
 
 
+@pytest.fixture()
+def parser(hook):
+    return hook.RuntimeEventParser()
+
+
+@pytest.fixture()
+def write_cls(hook):
+    return hook.ArtifactWrite
+
+
 # ── Adapter parsers ────────────────────────────────────────────────
 
 
 class TestParseClaude:
-    def test_edit_with_content(self, hook):
+    def test_edit_with_content(self, parser, write_cls):
         data = {"tool_name": "Edit", "tool_input": {"file_path": "/a.md", "content": "x"}}
-        assert hook._parse_claude(data) == ("/a.md", "x")
+        assert parser.parse_claude(data) == write_cls("/a.md", "x")
 
-    def test_write_no_content(self, hook):
+    def test_write_no_content(self, parser, write_cls):
         data = {"tool_name": "Write", "tool_input": {"file_path": "/b.yaml"}}
-        assert hook._parse_claude(data) == ("/b.yaml", None)
+        assert parser.parse_claude(data) == write_cls("/b.yaml")
 
-    def test_no_tool_input(self, hook):
-        assert hook._parse_claude({}) is None
+    def test_no_tool_input(self, parser):
+        assert parser.parse_claude({}) is None
 
-    def test_no_file_path(self, hook):
-        assert hook._parse_claude({"tool_input": {"content": "x"}}) is None
+    def test_no_file_path(self, parser):
+        assert parser.parse_claude({"tool_input": {"content": "x"}}) is None
 
 
 class TestParseOpenCode:
-    def test_path_and_content(self, hook):
+    def test_path_and_content(self, parser, write_cls):
         data = {"input": {"path": "progress.yaml", "content": "cycles: []"}}
-        assert hook._parse_opencode(data) == ("progress.yaml", "cycles: []")
+        assert parser.parse_opencode(data) == write_cls("progress.yaml", "cycles: []")
 
-    def test_path_only(self, hook):
+    def test_path_only(self, parser, write_cls):
         data = {"input": {"path": "f.yaml"}}
-        assert hook._parse_opencode(data) == ("f.yaml", None)
+        assert parser.parse_opencode(data) == write_cls("f.yaml")
 
-    def test_no_path(self, hook):
-        assert hook._parse_opencode({"input": {"content": "x"}}) is None
+    def test_no_path(self, parser):
+        assert parser.parse_opencode({"input": {"content": "x"}}) is None
 
 
 class TestParseCodex:
-    def test_direct_path(self, hook):
+    def test_direct_path(self, parser, write_cls):
         data = {"tool_input": {"path": ".agentera/health.yaml", "patch": "@@\n-old\n+new"}}
-        assert hook._parse_codex(data) == (".agentera/health.yaml", None)
+        assert parser.parse_codex(data) == write_cls(".agentera/health.yaml")
 
-    def test_patch_file_header(self, hook):
+    def test_patch_file_header(self, parser, write_cls):
         body = "*** Begin Patch\n*** Update File: .agentera/plan.yaml\n@@\n-old\n+new\n"
         data = {"tool_input": {"command": body}}
-        assert hook._parse_codex(data) == (".agentera/plan.yaml", None)
+        assert parser.parse_codex(data) == write_cls(".agentera/plan.yaml")
 
-    def test_no_path_no_headers(self, hook):
-        assert hook._parse_codex({"tool_input": {"command": "plain text"}}) is None
+    def test_no_path_no_headers(self, parser):
+        assert parser.parse_codex({"tool_input": {"command": "plain text"}}) is None
 
 
 class TestParseCopilot:
-    def test_filePath(self, hook):
+    def test_filePath(self, parser, write_cls):
         data = {"input": {"filePath": "/TODO.md", "content": "# TODO"}}
-        assert hook._parse_copilot(data) == ("/TODO.md", "# TODO")
+        assert parser.parse_copilot(data) == write_cls("/TODO.md", "# TODO")
 
-    def test_file_path_key(self, hook):
+    def test_file_path_key(self, parser, write_cls):
         data = {"input": {"file_path": "TODO.md"}}
-        assert hook._parse_copilot(data) == ("TODO.md", None)
+        assert parser.parse_copilot(data) == write_cls("TODO.md")
 
 
 class TestRoute:
-    def test_routes_claude_edit(self, hook):
+    def test_routes_claude_edit(self, parser, write_cls):
         data = {"tool_name": "Edit", "tool_input": {"file_path": "f.yaml", "content": "x"}}
-        assert hook._route(data) == ("f.yaml", "x")
+        assert parser.parse(data) == write_cls("f.yaml", "x")
 
-    def test_routes_codex_apply_patch(self, hook):
+    def test_routes_codex_apply_patch(self, parser, write_cls):
         data = {"tool_name": "apply_patch", "tool_input": {"path": "f.yaml", "patch": "@@"}}
-        assert hook._route(data) == ("f.yaml", None)
+        assert parser.parse(data) == write_cls("f.yaml")
 
-    def test_routes_opencode(self, hook):
+    def test_routes_opencode(self, parser, write_cls):
         data = {"input": {"path": "f.yaml", "content": "x"}}
-        assert hook._route(data) == ("f.yaml", "x")
+        assert parser.parse(data) == write_cls("f.yaml", "x")
 
-    def test_routes_copilot(self, hook):
+    def test_routes_copilot(self, parser, write_cls):
         data = {"tool_name": "create", "input": {"filePath": "f.yaml", "content": "x"}}
-        assert hook._route(data) == ("f.yaml", "x")
+        assert parser.parse(data) == write_cls("f.yaml", "x")
 
-    def test_returns_none_for_unknown(self, hook):
-        assert hook._route({}) is None
+    def test_returns_none_for_unknown(self, parser):
+        assert parser.parse({}) is None
 
 
 # ── YAML validation ────────────────────────────────────────────────
 
-
-def _load_schema(name: str) -> dict:
-    import yaml
-
-    path = REPO_ROOT / "skills" / "agentera" / "schemas" / "artifacts" / f"{name}.yaml"
-    with open(path) as f:
-        return yaml.safe_load(f)
-
-
 class TestValidateYamlProgress:
     def test_valid_progress(self, hook):
-        schema = _load_schema("progress")
+        schema = hook.load_schema("progress")
         content = yaml_dump({
             "cycles": [
                 {
@@ -139,17 +139,17 @@ class TestValidateYamlProgress:
                 }
             ]
         })
-        violations = hook._validate_yaml(content, schema, "progress")
+        violations = hook.validate_yaml(content, schema, "progress")
         assert violations == []
 
     def test_non_mapping_root(self, hook):
-        schema = _load_schema("progress")
+        schema = hook.load_schema("progress")
         content = yaml_dump([{"number": 1}])
-        violations = hook._validate_yaml(content, schema, "progress")
+        violations = hook.validate_yaml(content, schema, "progress")
         assert any("root must be a mapping" in v for v in violations)
 
     def test_duplicate_cycle_numbers(self, hook):
-        schema = _load_schema("progress")
+        schema = hook.load_schema("progress")
         content = yaml_dump({
             "cycles": [
                 {"number": 2, "timestamp": "2026-05-04 10:00", "type": "feat",
@@ -160,11 +160,11 @@ class TestValidateYamlProgress:
                  "context": {"intent": "w"}},
             ]
         })
-        violations = hook._validate_yaml(content, schema, "progress")
+        violations = hook.validate_yaml(content, schema, "progress")
         assert any("duplicate numbers" in v for v in violations)
 
     def test_progress_cycles_are_newest_first(self, hook):
-        schema = _load_schema("progress")
+        schema = hook.load_schema("progress")
         content = yaml_dump({
             "cycles": [
                 {"number": 2, "timestamp": "2026-05-04 11:00", "type": "fix",
@@ -175,10 +175,10 @@ class TestValidateYamlProgress:
                  "context": {"intent": "y"}},
             ]
         })
-        assert hook._validate_yaml(content, schema, "progress") == []
+        assert hook.validate_yaml(content, schema, "progress") == []
 
     def test_progress_cycles_reject_invalid_phase(self, hook):
-        schema = _load_schema("progress")
+        schema = hook.load_schema("progress")
         content = yaml_dump({
             "cycles": [
                 {"number": 2, "timestamp": "2026-05-04 11:00", "type": "fix",
@@ -186,11 +186,11 @@ class TestValidateYamlProgress:
                  "context": {"intent": "w"}},
             ]
         })
-        violations = hook._validate_yaml(content, schema, "progress")
+        violations = hook.validate_yaml(content, schema, "progress")
         assert any("invalid value 'verify'" in v for v in violations)
 
     def test_progress_cycles_reject_oldest_first(self, hook):
-        schema = _load_schema("progress")
+        schema = hook.load_schema("progress")
         content = yaml_dump({
             "cycles": [
                 {"number": 1, "timestamp": "2026-05-04 10:00", "type": "feat",
@@ -201,23 +201,23 @@ class TestValidateYamlProgress:
                  "context": {"intent": "w"}},
             ]
         })
-        violations = hook._validate_yaml(content, schema, "progress")
+        violations = hook.validate_yaml(content, schema, "progress")
         assert any("not in descending order" in v for v in violations)
 
     def test_invalid_yaml_syntax(self, hook):
-        schema = _load_schema("progress")
-        violations = hook._validate_yaml("{{{\n  invalid", schema, "progress")
+        schema = hook.load_schema("progress")
+        violations = hook.validate_yaml("{{{\n  invalid", schema, "progress")
         assert any("invalid YAML" in v for v in violations)
 
     def test_non_mapping_root(self, hook):
-        schema = _load_schema("progress")
-        violations = hook._validate_yaml("[1, 2, 3]", schema, "progress")
+        schema = hook.load_schema("progress")
+        violations = hook.validate_yaml("[1, 2, 3]", schema, "progress")
         assert any("root must be a mapping" in v for v in violations)
 
 
 class TestValidateYamlPlan:
     def test_valid_plan(self, hook):
-        schema = _load_schema("plan")
+        schema = hook.load_schema("plan")
         content = yaml_dump({
             "header": {"level": "full", "created": "2026-05-04", "status": "active",
                        "title": "Test plan"},
@@ -226,11 +226,11 @@ class TestValidateYamlPlan:
             "scope": {"included": ["src/"], "excluded": ["vendor/"]},
             "tasks": [{"number": 1, "name": "First", "status": "pending"}],
         })
-        violations = hook._validate_yaml(content, schema, "plan")
+        violations = hook.validate_yaml(content, schema, "plan")
         assert violations == []
 
     def test_missing_scope(self, hook):
-        schema = _load_schema("plan")
+        schema = hook.load_schema("plan")
         content = yaml_dump({
             "header": {"level": "full", "created": "2026-05-04", "status": "active",
                        "title": "Plan"},
@@ -239,13 +239,13 @@ class TestValidateYamlPlan:
             "scope": {},
             "tasks": [{"number": 1, "name": "T1", "status": "pending"}],
         })
-        violations = hook._validate_yaml(content, schema, "plan")
+        violations = hook.validate_yaml(content, schema, "plan")
         assert any("missing required field" in v for v in violations)
 
 
 class TestValidateYamlDecisions:
     def test_valid_decisions(self, hook):
-        schema = _load_schema("decisions")
+        schema = hook.load_schema("decisions")
         content = yaml_dump({
             "decisions": [
                 {
@@ -257,11 +257,11 @@ class TestValidateYamlDecisions:
                 }
             ]
         })
-        violations = hook._validate_yaml(content, schema, "decisions")
+        violations = hook.validate_yaml(content, schema, "decisions")
         assert violations == []
 
     def test_out_of_order_numbers(self, hook):
-        schema = _load_schema("decisions")
+        schema = hook.load_schema("decisions")
         content = yaml_dump({
             "decisions": [
                 {"number": 2, "date": "2026-05-04", "question": "Q",
@@ -274,11 +274,11 @@ class TestValidateYamlDecisions:
                  "alternatives": [{"name": "B", "status": "chosen"}]},
             ]
         })
-        violations = hook._validate_yaml(content, schema, "decisions")
+        violations = hook.validate_yaml(content, schema, "decisions")
         assert any("not in ascending order" in v for v in violations)
 
     def test_blank_decision_entry_fails_required_fields(self, hook):
-        schema = _load_schema("decisions")
+        schema = hook.load_schema("decisions")
         content = yaml_dump({
             "decisions": [
                 {
@@ -293,7 +293,7 @@ class TestValidateYamlDecisions:
                 }
             ]
         })
-        violations = hook._validate_yaml(content, schema, "decisions")
+        violations = hook.validate_yaml(content, schema, "decisions")
         assert any("empty required field 'decisions[0].question'" in v for v in violations)
         assert any("empty required field 'decisions[0].context'" in v for v in violations)
         assert any("decisions[0].alternatives" in v for v in violations)
@@ -301,7 +301,7 @@ class TestValidateYamlDecisions:
 
 class TestValidateYamlVision:
     def test_valid_vision(self, hook):
-        schema = _load_schema("vision")
+        schema = hook.load_schema("vision")
         content = yaml_dump({
             "header": {"project_name": "Test"},
             "north_star": {"content": "Be the best"},
@@ -316,11 +316,11 @@ class TestValidateYamlVision:
             },
             "tension": {"content": "Speed vs quality"},
         })
-        violations = hook._validate_yaml(content, schema, "vision")
+        violations = hook.validate_yaml(content, schema, "vision")
         assert violations == []
 
     def test_missing_identity_field(self, hook):
-        schema = _load_schema("vision")
+        schema = hook.load_schema("vision")
         content = yaml_dump({
             "header": {"project_name": "Test"},
             "north_star": {"content": "Be the best"},
@@ -330,13 +330,13 @@ class TestValidateYamlVision:
             "identity": {"personality": "Friendly"},
             "tension": {"content": "Speed vs quality"},
         })
-        violations = hook._validate_yaml(content, schema, "vision")
+        violations = hook.validate_yaml(content, schema, "vision")
         assert any("missing required field" in v for v in violations)
 
 
 class TestValidateYamlHealth:
     def test_valid_health(self, hook):
-        schema = _load_schema("health")
+        schema = hook.load_schema("health")
         content = yaml_dump({
             "finding": {
                 "heading": "Complex coupling",
@@ -348,41 +348,41 @@ class TestValidateYamlHealth:
                 "confidence": 85,
             }
         })
-        violations = hook._validate_yaml(content, schema, "health")
+        violations = hook.validate_yaml(content, schema, "health")
         assert violations == []
 
     def test_missing_required_field(self, hook):
-        schema = _load_schema("health")
+        schema = hook.load_schema("health")
         content = yaml_dump({
             "finding": {
                 "heading": "Complex coupling",
                 "location": "src/main.py:42",
             }
         })
-        violations = hook._validate_yaml(content, schema, "health")
+        violations = hook.validate_yaml(content, schema, "health")
         assert any("missing required field" in v for v in violations)
 
 
 class TestValidateYamlSession:
     def test_valid_session(self, hook):
-        schema = _load_schema("session")
+        schema = hook.load_schema("session")
         content = yaml_dump({
             "bookmarks": [
                 {"timestamp": "2026-05-04 10:00", "artifacts": ["PROGRESS"]}
             ]
         })
-        violations = hook._validate_yaml(content, schema, "session")
+        violations = hook.validate_yaml(content, schema, "session")
         assert violations == []
 
     def test_invalid_yaml_fails(self, hook):
-        schema = _load_schema("session")
-        violations = hook._validate_yaml("{{{\n  broken", schema, "session")
+        schema = hook.load_schema("session")
+        violations = hook.validate_yaml("{{{\n  broken", schema, "session")
         assert any("invalid YAML" in v for v in violations)
 
 
 class TestValidateYamlDocs:
     def test_valid_docs(self, hook):
-        schema = _load_schema("docs")
+        schema = hook.load_schema("docs")
         content = yaml_dump({
             "header": {"last_audit": "2026-05-04 (test)"},
             "conventions": {
@@ -399,11 +399,11 @@ class TestValidateYamlDocs:
                 "tests": "10 tests",
             },
         })
-        violations = hook._validate_yaml(content, schema, "docs")
+        violations = hook.validate_yaml(content, schema, "docs")
         assert violations == []
 
     def test_missing_required_field(self, hook):
-        schema = _load_schema("docs")
+        schema = hook.load_schema("docs")
         content = yaml_dump({
             "header": {"last_audit": "2026-05-04 (test)"},
             "conventions": {
@@ -411,13 +411,13 @@ class TestValidateYamlDocs:
                 "style": "technical",
             },
         })
-        violations = hook._validate_yaml(content, schema, "docs")
+        violations = hook.validate_yaml(content, schema, "docs")
         assert any("missing required field" in v for v in violations)
 
 
 class TestValidateYamlExperiments:
     def test_valid_experiments(self, hook):
-        schema = _load_schema("experiments")
+        schema = hook.load_schema("experiments")
         content = yaml_dump({
             "experiments": [
                 {
@@ -433,18 +433,18 @@ class TestValidateYamlExperiments:
                 }
             ]
         })
-        violations = hook._validate_yaml(content, schema, "experiments")
+        violations = hook.validate_yaml(content, schema, "experiments")
         assert violations == []
 
     def test_non_mapping_root(self, hook):
-        schema = _load_schema("experiments")
-        violations = hook._validate_yaml("[1, 2, 3]", schema, "experiments")
+        schema = hook.load_schema("experiments")
+        violations = hook.validate_yaml("[1, 2, 3]", schema, "experiments")
         assert any("root must be a mapping" in v for v in violations)
 
 
 class TestValidateYamlObjective:
     def test_valid_objective(self, hook):
-        schema = _load_schema("objective")
+        schema = hook.load_schema("objective")
         content = yaml_dump({
             "header": {"title": "Reduce latency", "status": "open"},
             "objective": {
@@ -463,11 +463,11 @@ class TestValidateYamlObjective:
                 "excluded": ["vendor/"],
             },
         })
-        violations = hook._validate_yaml(content, schema, "objective")
+        violations = hook.validate_yaml(content, schema, "objective")
         assert violations == []
 
     def test_missing_required_field(self, hook):
-        schema = _load_schema("objective")
+        schema = hook.load_schema("objective")
         content = yaml_dump({
             "header": {"title": "Reduce latency", "status": "open"},
             "objective": {
@@ -475,13 +475,13 @@ class TestValidateYamlObjective:
                 "measurement": "Benchmark harness",
             },
         })
-        violations = hook._validate_yaml(content, schema, "objective")
+        violations = hook.validate_yaml(content, schema, "objective")
         assert any("missing required field" in v for v in violations)
 
 
 class TestWordBudget:
     def test_within_budget(self, hook):
-        schema = _load_schema("vision")
+        schema = hook.load_schema("vision")
         content = yaml_dump({
             "header": {"project_name": "T"},
             "north_star": {"content": "X"},
@@ -492,15 +492,15 @@ class TestWordBudget:
                          "emotional_register": "H", "naming": "I"},
             "tension": {"content": "J"},
         })
-        violations = hook._validate_yaml(content, schema, "vision")
+        violations = hook.validate_yaml(content, schema, "vision")
         assert not any("budget" in v for v in violations)
 
     def test_advisory_budget_does_not_block(self, hook):
-        schema = _load_schema("health")
+        schema = hook.load_schema("health")
         padding = " ".join(["word"] * 3000)
         content = yaml_dump({"header": {"last_audit": "2026-05-04 (test)"},
                              "data": padding})
-        violations = hook._validate_yaml(content, schema, "health")
+        violations = hook.validate_yaml(content, schema, "health")
         assert not any("budget" in v for v in violations)
 
     def test_error_budget_blocks(self, hook):
@@ -512,7 +512,7 @@ class TestWordBudget:
                 1: {"rule": "word_budget", "severity": "error"},
             },
         }
-        violations = hook._validate_yaml("field: too many words\n", schema, "test")
+        violations = hook.validate_yaml("field: too many words\n", schema, "test")
         assert any("budget" in v for v in violations)
 
 
@@ -521,13 +521,13 @@ class TestWordBudget:
 
 class TestValidateMarkdown:
     def test_valid_md(self, hook):
-        assert hook._validate_md("# TODO\n\n- [ ] item\n", "TODO.md") == []
+        assert hook.validate_markdown("# TODO\n\n- [ ] item\n", "TODO.md") == []
 
     def test_empty_content(self, hook):
-        assert any("empty" in v for v in hook._validate_md("  \n", "TODO.md"))
+        assert any("empty" in v for v in hook.validate_markdown("  \n", "TODO.md"))
 
     def test_unclosed_fence(self, hook):
-        assert any("code fence" in v for v in hook._validate_md("# T\n```\ncode\n", "TODO.md"))
+        assert any("code fence" in v for v in hook.validate_markdown("# T\n```\ncode\n", "TODO.md"))
 
 
 # ── Schema loading ─────────────────────────────────────────────────
@@ -535,10 +535,26 @@ class TestValidateMarkdown:
 
 class TestSchemaLoading:
     def test_known_schema(self, hook):
-        assert hook._load_schema("progress") is not None
+        assert hook.ArtifactSchemaValidator().load_schema("progress") is not None
 
     def test_unknown_schema(self, hook):
-        assert hook._load_schema("nonexistent_xyz") is None
+        assert hook.ArtifactSchemaValidator().load_schema("nonexistent_xyz") is None
+
+
+class TestHookCliAdapter:
+    def test_run_reports_validation_violations(self, hook, project_dir):
+        artifact = project_dir / ".agentera" / "session.yaml"
+        artifact.write_text("{{{\n  broken yaml")
+        payload = json.dumps({
+            "tool_name": "Write",
+            "tool_input": {"file_path": str(artifact)},
+            "cwd": str(project_dir),
+        })
+
+        rc, violations = hook.HookCliAdapter().run(payload)
+
+        assert rc == 2
+        assert any("invalid YAML" in violation for violation in violations)
 
 
 # ── Main integration via stdin ─────────────────────────────────────
