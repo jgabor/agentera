@@ -66,11 +66,17 @@ paths still work, but Copilot warns they are deprecated.
 
 ## Source of truth
 
+Runtime adapter facts are owned by the RuntimeAdapter registry at
+`references/adapters/runtime-adapter-registry.yaml` and loaded through
+`scripts/runtime_adapter_registry.py`. This reference may describe registry
+claims, but changes to runtime identity, lifecycle events, artifact-validation
+support, config targets, diagnostics, or documentation claims must be validated
+against the registry rather than duplicated here as an independent table.
+
 Install-root classification is not runtime-specific. `scripts/install_root.py` is
 the shared Module for `AGENTERA_HOME`, default durable root, managed root, stale
-root, unmanaged root, and diagnostic semantics. Runtime adapter registry
-extraction remains deferred to `[arch-runtime-adapter-registry]`; package
-metadata registry work stays outside the install-root Module.
+root, unmanaged root, and diagnostic semantics. Package metadata registry work
+stays outside both the RuntimeAdapter registry and the install-root Module.
 
 | Surface | Path |
 |---------|------|
@@ -79,4 +85,6 @@ metadata registry work stays outside the install-root Module.
 | OpenCode plugin | `.opencode/plugins/agentera.js` |
 | Copilot pre-write hook | `.github/hooks/preToolUse.json` |
 | Codex hook config | `hooks/codex-hooks.json` |
+| RuntimeAdapter registry | `references/adapters/runtime-adapter-registry.yaml` |
+| RuntimeAdapter registry loader | `scripts/runtime_adapter_registry.py` |
 | Lifecycle metadata validator | `scripts/validate_lifecycle_adapters.py` |

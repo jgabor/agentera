@@ -1,0 +1,179 @@
+interface: RuntimeAdapter
+status: design_contract
+purpose: >-
+  Define the runtime-owned facts that a later registry Module may expose without
+  absorbing package metadata, install-root classification, or caller behavior.
+record:
+  required_groups:
+    - identity
+    - host_detection
+    - lifecycle_events
+    - artifact_validation
+    - config_targets
+    - diagnostics
+    - documentation_claims
+  groups:
+    identity:
+      type: object
+      owns:
+        - runtime_id
+        - display_name
+        - adapter_family
+        - support_status
+      required_fields:
+        runtime_id: string
+        display_name: string
+        adapter_family: string
+        support_status: enum
+    host_detection:
+      type: object
+      owns:
+        - binary_names
+        - host_config_locations
+        - availability_probe_label
+      required_fields:
+        binary_names: list[string]
+        host_config_locations: list[string]
+        availability_probe_label: string
+    lifecycle_events:
+      type: object
+      owns:
+        - supported_events
+        - unsupported_events
+        - event_status
+        - limitations
+      required_fields:
+        supported_events: list[string]
+        unsupported_events: list[string]
+        event_status: map[string,string]
+        limitations: list[string]
+    artifact_validation:
+      type: object
+      owns:
+        - validation_events
+        - hard_gate_claims
+        - payload_reconstruction_limitations
+      required_fields:
+        validation_events: list[string]
+        hard_gate_claims: list[string]
+        payload_reconstruction_limitations: list[string]
+    config_targets:
+      type: object
+      owns:
+        - runtime_config_files
+        - hook_targets
+        - plugin_targets
+        - environment_exports
+        - write_safety_labels
+      required_fields:
+        runtime_config_files: list[string]
+        hook_targets: list[string]
+        plugin_targets: list[string]
+        environment_exports: list[string]
+        write_safety_labels: list[string]
+    diagnostics:
+      type: object
+      owns:
+        - check_names
+        - status_labels
+        - gap_labels
+        - primary_messages
+      required_fields:
+        check_names: list[string]
+        status_labels: list[string]
+        gap_labels: list[string]
+        primary_messages: list[string]
+    documentation_claims:
+      type: object
+      owns:
+        - reference_paths
+        - parity_claims
+        - install_claims
+        - known_drifts
+      required_fields:
+        reference_paths: list[string]
+        parity_claims: list[string]
+        install_claims: list[string]
+        known_drifts: list[string]
+ownership:
+  runtime_adapter_owns:
+    - runtime identity and display labels
+    - host detection facts used by runtime-facing consumers
+    - lifecycle event support and limitations
+    - artifact validation support claims
+    - runtime config, hook, plugin, and environment target paths
+    - diagnostic check names, statuses, gaps, and messages
+    - adapter documentation parity and known-drift claims
+  package_metadata_out_of_scope:
+    owner: package_manifest_registry
+    deferred_todo: arch-package-manifest-registry
+    facts:
+      - version_authority
+      - package_manifest_schemas
+      - shared_package_paths
+      - release_metadata
+  install_root_out_of_scope:
+    owner: scripts/install_root.py
+    facts:
+      - AGENTERA_HOME precedence
+      - default durable root
+      - managed classification
+      - stale classification
+      - unmanaged classification
+      - root diagnostics
+consumer_permissions:
+  lifecycle_validation:
+    allowed_groups:
+      - identity
+      - lifecycle_events
+      - artifact_validation
+      - documentation_claims
+    forbidden_ownership:
+      - package_metadata_out_of_scope
+      - install_root_out_of_scope
+  doctor:
+    allowed_groups:
+      - identity
+      - host_detection
+      - config_targets
+      - diagnostics
+      - documentation_claims
+    forbidden_ownership:
+      - package_metadata_out_of_scope
+      - install_root_out_of_scope
+  upgrade:
+    allowed_groups:
+      - identity
+      - host_detection
+      - config_targets
+      - diagnostics
+    forbidden_ownership:
+      - package_metadata_out_of_scope
+      - install_root_out_of_scope
+  docs:
+    allowed_groups:
+      - identity
+      - lifecycle_events
+      - artifact_validation
+      - config_targets
+      - diagnostics
+      - documentation_claims
+    forbidden_ownership:
+      - package_metadata_out_of_scope
+      - install_root_out_of_scope
+  tests:
+    allowed_groups:
+      - identity
+      - host_detection
+      - lifecycle_events
+      - artifact_validation
+      - config_targets
+      - diagnostics
+      - documentation_claims
+    forbidden_ownership:
+      - package_metadata_out_of_scope
+      - install_root_out_of_scope
+non_goals:
+  - Do not introduce an executable RuntimeAdapter registry Module in this task.
+  - Do not migrate lifecycle validation, doctor, upgrade, docs, or runtime tests to consume a registry in this task.
+  - Do not change install-root classification, package metadata validation, artifact write validation, or live runtime behavior.

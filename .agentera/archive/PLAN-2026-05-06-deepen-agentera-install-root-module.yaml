@@ -1,0 +1,155 @@
+header:
+  level: full
+  created: '2026-05-05'
+  status: complete
+  reviewed: '2026-05-05'
+  critic_issues: "8 found, 8 addressed, 0 dismissed"
+  title: Deepen Agentera Install Root Module
+what: >
+  Replace duplicated Agentera install-root identity, discovery, classification,
+  and diagnostic behavior with one deeper Module. Setup helpers, doctor,
+  upgrade, and runtime adapter checks should cross the same Interface instead
+  of carrying separate canonical-entry lists, environment fallback rules, and
+  stale-root interpretations.
+why: >
+  Architecture review found the install-root Module is shallow: deleting any
+  caller-local root check mostly moves the same complexity into another caller.
+  Decision 33 makes AGENTERA_HOME the installable suite bundle root, and the
+  self-healing bundle refresh lane depends on that identity being consistent.
+  A deeper Module concentrates bundle identity, safety semantics, and tests so
+  future setup and refresh work has locality and leverage.
+constraints: >
+  Preserve confirmed writes: discovery and classification never mutate durable
+  bundle state. Do not broaden this lane into the full RuntimeAdapter registry,
+  package metadata registry, external CLI distribution, or live host testing.
+  Preserve existing primary CLI behavior unless a documented inconsistency is
+  intentionally standardized. JavaScript runtime code is only aligned through a
+  contract fixture in this plan unless a safe shared source already exists.
+scope:
+  included:
+    - archive the completed self-healing bundle refresh plan
+    - inventory current install-root behavior in setup helpers, doctor, upgrade, and runtime adapter checks
+    - characterize valid managed roots, missing paths, file-valued roots, unmanaged directories, stale managed roots, invalid bundles, explicit roots, env roots, and default roots
+    - define one read-only install-root Interface with source, kind, action, diagnostic, and mutation-safety semantics
+    - migrate Python callers in risk order: doctor first, setup helpers second, upgrade last
+    - align JavaScript runtime behavior through contract fixture checks, not broad cross-language migration
+    - update docs and artifacts after behavior is proven
+  excluded:
+    - full RuntimeAdapter registry
+    - suite package metadata registry
+    - external CLI distribution
+    - package-manager hooks
+    - broad artifact migration
+    - live model calls
+    - runtime setup behavior outside install-root resolution and diagnostics
+  deferred:
+    - generated cross-language install-root contract if fixture validation is not enough
+    - RuntimeAdapter registry work tracked by [arch-runtime-adapter-registry]
+    - package metadata registry work tracked by future package-contract findings
+design: >
+  Put the seam at install-root discovery and classification. Callers provide an
+  explicit root, environment, default-root policy, and current working context;
+  the Module returns a typed, read-only result that says where the root came
+  from, what kind of root it is, what action is safe, and what diagnostic should
+  be shown or exposed as structured data. Setup helpers, doctor, and upgrade
+  keep their runtime-specific responsibilities, but stop owning bundle identity.
+  Upgrade remains the last migration because it can write bundle state.
+tasks:
+  - number: 1
+    name: Reconcile Plan State And Carry Forward Evidence
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN the previous plan is complete WHEN this plan becomes active THEN prior evidence remains available in the plan archive
+      - GIVEN critical architecture findings exist WHEN work is picked up later THEN TODO lists the install-root Module finding with concrete file anchors
+      - GIVEN this plan is loaded WHEN a caller asks what changed THEN it identifies install-root depth as the active work
+  - number: 2
+    name: Inventory Install-Root Behavior And Characterization Cases
+    depends_on:
+      - Task 1
+    status: complete
+    acceptance:
+      - GIVEN existing setup and upgrade paths are exercised WHEN roots are valid, missing, files, unmanaged, stale, invalid, explicit, environment-derived, or defaulted THEN current user-visible outcomes are recorded before refactor
+      - GIVEN two callers currently disagree WHEN the same root shape is evaluated THEN the intentional standardization is named before code changes
+      - GIVEN characterization tests are added WHEN they run before migration THEN they capture current behavior or explicitly document the behavior being corrected
+      - GIVEN diagnostics are inspected WHEN they are machine-readable or human-facing THEN existing exit codes and primary messages are marked preserve-or-change
+  - number: 3
+    name: Define The Install-Root Interface And Safety Model
+    depends_on:
+      - Task 2
+    status: complete
+    acceptance:
+      - GIVEN any root is classified WHEN the result is returned THEN it includes source, kind, safe action, diagnostic, managed status, stale status, and missing evidence without writing files
+      - GIVEN a valid managed root comes from the environment WHEN it is classified THEN the result can be used by setup and upgrade callers without caller-local bundle identity rules
+      - GIVEN a missing path, file-valued path, unmanaged directory, stale managed root, or invalid bundle is classified WHEN callers inspect the result THEN each state has one unambiguous action
+      - GIVEN default-root discovery is available WHEN the environment root is unset THEN default use is explicit and lower precedence than explicit or environment roots
+  - number: 4
+    name: Introduce The Shared Read-Only Module
+    depends_on:
+      - Task 3
+    status: complete
+    acceptance:
+      - GIVEN the shared Module is called by tests WHEN all characterized root shapes are evaluated THEN results match the approved behavior matrix
+      - GIVEN classification runs on a temp root WHEN the test snapshots the filesystem before and after THEN no files are created, deleted, or modified
+      - GIVEN a stale managed root is classified WHEN diagnostics are requested THEN expected and current version evidence are available without starting a refresh
+      - GIVEN a caller needs display text WHEN it asks for a diagnostic THEN structured data remains available separately from human wording
+  - number: 5
+    name: Migrate Read-Only And Setup Callers
+    depends_on:
+      - Task 4
+    status: complete
+    acceptance:
+      - GIVEN doctor and setup callers evaluate the same root shapes WHEN their commands run THEN they agree on root classification and safe action
+      - GIVEN setup callers receive invalid or unmanaged roots WHEN they report the issue THEN confirmed-write behavior and existing primary outcomes are preserved unless the plan identified a correction
+      - GIVEN duplicate caller-local bundle identity rules are removed WHEN focused tests run THEN setup behavior still passes valid, missing, file, unmanaged, and default-root cases
+      - GIVEN tests cover migrated callers WHEN they assert behavior THEN the proportionality target is at least one passing and one failing root case per migrated caller family
+  - number: 6
+    name: Migrate Upgrade Last
+    depends_on:
+      - Task 5
+    status: complete
+    acceptance:
+      - GIVEN upgrade evaluates root state WHEN classification reports unsafe or stale states THEN upgrade preserves existing confirmation and dry-run safety behavior
+      - GIVEN upgrade applies writes WHEN approval or existing write flags are absent THEN no durable bundle mutation occurs
+      - GIVEN upgrade uses shared root classification WHEN stale, invalid, and current managed roots are tested THEN local checkout fallback cannot mask a stale durable bundle
+      - GIVEN upgrade migration completes WHEN duplicate root checks are searched THEN remaining caller-local logic is justified or removed
+  - number: 7
+    name: Align Runtime Adapter Contract And Documentation
+    depends_on:
+      - Task 6
+    status: complete
+    acceptance:
+      - GIVEN JavaScript runtime behavior is checked WHEN install-root fixture cases run THEN it agrees with the shared root contract without requiring cross-language executable sharing
+      - GIVEN documentation describes install roots WHEN users read setup or upgrade guidance THEN AGENTERA_HOME, default durable root, managed root, stale root, and unmanaged root semantics match the shared Interface
+      - GIVEN TODO and docs are refreshed WHEN the install-root finding is addressed THEN the finding is either resolved or narrowed to remaining JavaScript/generated-contract work
+  - number: 8
+    name: Validate And Close
+    depends_on:
+      - Task 7
+    status: complete
+    acceptance:
+      - GIVEN focused install-root tests run THEN shared Module, doctor, setup helpers, upgrade, and runtime contract fixtures pass
+      - GIVEN suite validators run THEN capability validation, cross-capability validation, lifecycle adapter validation, and relevant CLI tests pass
+      - GIVEN the plan closes WHEN artifacts are updated THEN PROGRESS, TODO, DOCS, CHANGELOG, and PLAN record what changed and what remains deferred
+      - GIVEN release impact is assessed WHEN the work changes user-visible setup or refresh behavior THEN version policy is applied or explicitly deferred with rationale
+overall_acceptance:
+  - GIVEN any Agentera caller needs an install root WHEN it resolves or validates that root THEN it crosses one shared Interface for bundle identity and diagnostics
+  - GIVEN root discovery or classification runs WHEN approval is absent THEN no durable bundle writes occur
+  - GIVEN the same root shape reaches doctor, setup, upgrade, or runtime contract checks WHEN behavior is compared THEN classification and safe action agree
+  - GIVEN install-root behavior changes in the future WHEN maintainers update tests THEN the change is localized to the shared Module and its caller contract tests
+surprises: []
+validation_evidence:
+  preserved_by_reference: .agentera/progress.yaml cycle 287
+  cycle: 287
+  timestamp: 2026-05-05 23:59
+  verified: >
+    Validation passed: python3 -m py_compile scripts/install_root.py scripts/setup_doctor.py scripts/setup_codex.py
+    scripts/setup_copilot.py scripts/agentera_upgrade.py; uv run pytest tests/test_install_root_module.py
+    tests/test_install_root_interface_model.py tests/test_install_root_characterization.py tests/test_setup_doctor.py
+    tests/test_setup_codex.py tests/test_setup_copilot.py tests/test_upgrade_cli.py tests/test_bundle_freshness.py
+    tests/test_runtime_adapters.py tests/test_query_cli.py -q (177 passed); uv run pytest -q (593 passed, 1 skipped);
+    uv run scripts/validate_capability.py --self-validate; uv run scripts/validate_capability.py for all 12 current capabilities;
+    uv run scripts/validate_cross_capability.py; uv run scripts/validate_lifecycle_adapters.py --check-uv-runtime; uv run
+    scripts/setup_doctor.py --json; uv run scripts/agentera bundle-status --install-root . --json; uv run scripts/agentera
+    upgrade --dry-run --install-root .; uv run scripts/agentera query --list-artifacts; uv run scripts/agentera docs; uv run
+    scripts/agentera todo; uv run scripts/agentera progress.

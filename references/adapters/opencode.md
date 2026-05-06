@@ -226,7 +226,7 @@ export const AgenteraPlugin = async ({ project, client, $, directory, worktree }
 
 Install-root semantics used by the plugin are contract-bound to `scripts/install_root.py` and `.agentera/install_root_interface_model.yaml`. OpenCode still keeps one temporary adapter-local compatibility exception for older manual `~/.agents/skills/agentera` installs; new install-root behavior should change the shared Module/fixture first, not add more JavaScript-local root identity rules.
 
-RuntimeAdapter registry extraction is explicitly deferred to `[arch-runtime-adapter-registry]`. The install-root Module must keep package manifest registry and package metadata consolidation work outside its scope.
+OpenCode runtime facts are owned by the RuntimeAdapter registry at `references/adapters/runtime-adapter-registry.yaml` and loaded through `scripts/runtime_adapter_registry.py`. This reference describes the OpenCode adapter behavior, but registry-owned values such as event support, artifact-validation claims, config targets, diagnostic labels, and documentation claims must be validated against the registry rather than changed here as an independent source. The install-root Module must keep package manifest registry and package metadata consolidation work outside its scope.
 
 1. **SessionStart** (`event.type === "session.created"`): Observe session creation through the event hook. Session-start context preload remains deferred because no supported model-context injection path is verified for this adapter. Do not attach dead preload code to event observation alone.
 

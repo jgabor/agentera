@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.10"
-# dependencies = []
+# dependencies = ["pyyaml"]
 # ///
 """Validate runtime lifecycle hook adapter metadata.
 
@@ -21,26 +21,13 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = ROOT / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
 
-COPILOT_EVENTS = {
-    "sessionStart",
-    "sessionEnd",
-    "userPromptSubmitted",
-    "preToolUse",
-    "postToolUse",
-    "errorOccurred",
-}
-CODEX_EVENTS = {
-    "SessionStart",
-    "Stop",
-    "UserPromptSubmit",
-    "PreToolUse",
-    "PostToolUse",
-    "PermissionRequest",
-}
-CODEX_LIFECYCLE_STATUS_VALUES = ("stable", "beta")
-CODEX_LIFECYCLE_REQUIRED_LIMITATION_TERMS = ("codex_hooks", "apply_patch", "openai/codex#18391")
-COPILOT_PROFILERA_TERMS = ("profilera", "bounded", "corpus", "metadata", "missing source families")
+from runtime_adapter_registry import RegistryError, RuntimeAdapterRegistry, load_registry
+
+REGISTRY_CONTRACT_ERROR_PREFIX = "registry contract error"
 CODEX_PROFILERA_TERMS = (
     "allow_implicit_invocation: false",
     "codex_session_corpus",
@@ -52,8 +39,6 @@ CODEX_AGENTERA_METADATA_TERMS = (
     "AGENTERA_HOME",
 )
 CODEX_PROFILERA_STATUS_VALUES = ("ok", "degraded")
-OPENCODE_EVENT_TYPES = {"session.created", "session.idle"}
-COPILOT_REQUIRED_PREWRITE_HOOK = "preToolUse"
 SUITE_BUNDLE_REQUIRED_PATHS = {
     "skills": "dir",
     "scripts": "dir",
@@ -75,22 +60,8 @@ RUNTIME_PACKAGE_SURFACES = {
     "opencode": ".opencode/package.json",
 }
 HARD_GATE_DOC_REQUIREMENTS = {
-    "references/adapters/runtime-feature-parity.md": {
-        "OpenCode": (
-            "Conditional hard gate for reconstructable `write` and `edit` candidates",
-            "Sparse payloads and `apply_patch` `patchText` without reconstructed full content are allowed",
-        ),
-        "Copilot": (
-            "Conditional hard gate via `preToolUse`",
-            "Malformed, sparse, or non-reconstructable `toolArgs` are allowed",
-        ),
-    },
-    "references/adapters/opencode.md": {
-        "OpenCode": (
-            "Blocks invalid reconstructable artifact candidates",
-            "Sparse payloads and `apply_patch` `patchText` without reconstructed full content are allowed",
-        ),
-    },
+    "references/adapters/runtime-feature-parity.md": ("opencode", "copilot"),
+    "references/adapters/opencode.md": ("opencode",),
 }
 
 
@@ -100,6 +71,63 @@ def _load_json(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError(f"{path}: expected JSON object")
     return data
+
+
+def _registry_contract_error(exc: Exception) -> str:
+    return f"{REGISTRY_CONTRACT_ERROR_PREFIX}: {exc}"
+
+
+def _runtime_view(registry: RuntimeAdapterRegistry, runtime: str) -> dict[str, Any]:
+    return registry.consumer_view("lifecycle", runtime)
+
+
+def _supported_events(registry: RuntimeAdapterRegistry, runtime: str) -> set[str]:
+    return set(_runtime_view(registry, runtime)["lifecycle_events"]["supported_events"])
+
+
+def _unsupported_events(registry: RuntimeAdapterRegistry, runtime: str) -> set[str]:
+    return set(_runtime_view(registry, runtime)["lifecycle_events"]["unsupported_events"])
+
+
+def _validation_events(registry: RuntimeAdapterRegistry, runtime: str) -> list[str]:
+    return _runtime_view(registry, runtime)["artifact_validation"]["validation_events"]
+
+
+def _claim_terms(text: str, candidates: tuple[str, ...]) -> tuple[str, ...]:
+    normalized = text.lower()
+    return tuple(term for term in candidates if term.lower() in normalized)
+
+
+def _copilot_profilera_terms(registry: RuntimeAdapterRegistry) -> tuple[str, ...]:
+    view = _runtime_view(registry, "copilot")
+    text = " ".join(view["lifecycle_events"]["limitations"] + view["documentation_claims"]["parity_claims"])
+    return _claim_terms(text, ("profilera", "bounded", "corpus", "metadata", "missing source families"))
+
+
+def _codex_lifecycle_status_values(registry: RuntimeAdapterRegistry) -> tuple[str, ...]:
+    event_status = _runtime_view(registry, "codex")["lifecycle_events"]["event_status"]
+    statuses = ["stable"]
+    for event in _runtime_view(registry, "codex")["lifecycle_events"]["supported_events"]:
+        status = event_status.get(event)
+        if isinstance(status, str) and status != "unsupported" and status not in statuses:
+            statuses.append(status)
+    return tuple(statuses)
+
+
+def _codex_limitation_terms(registry: RuntimeAdapterRegistry) -> tuple[str, ...]:
+    view = _runtime_view(registry, "codex")
+    text = " ".join(view["lifecycle_events"]["limitations"] + view["artifact_validation"]["hard_gate_claims"])
+    return _claim_terms(text, ("codex_hooks", "apply_patch", "openai/codex#18391"))
+
+
+def _hard_gate_doc_terms(registry: RuntimeAdapterRegistry, runtime: str, relative_path: str) -> list[str]:
+    view = _runtime_view(registry, runtime)
+    artifact = view["artifact_validation"]
+    if relative_path == "references/adapters/opencode.md":
+        primary = view["documentation_claims"]["parity_claims"]
+    else:
+        primary = artifact["hard_gate_claims"]
+    return primary + artifact["payload_reconstruction_limitations"]
 
 
 def _validate_command_handler(
@@ -316,7 +344,13 @@ def validate_suite_bundle_surface(
     return errors
 
 
-def validate_copilot(plugin: dict[str, Any], plugin_root: Path) -> list[str]:
+def validate_copilot(
+    plugin: dict[str, Any],
+    plugin_root: Path,
+    registry: RuntimeAdapterRegistry | None = None,
+) -> list[str]:
+    if registry is None:
+        registry = load_registry()
     errors: list[str] = []
     if "lifecycleHooks" in plugin:
         errors.append("copilot: use supported hooks component field, not lifecycleHooks")
@@ -348,14 +382,23 @@ def validate_copilot(plugin: dict[str, Any], plugin_root: Path) -> list[str]:
                 errors.append("copilot.hooks paths must resolve to a hook directory")
 
     description = plugin.get("description")
-    if not isinstance(description, str) or any(term not in description for term in COPILOT_PROFILERA_TERMS):
+    profilera_terms = _copilot_profilera_terms(registry)
+    if not isinstance(description, str) or any(term not in description for term in profilera_terms):
         errors.append("copilot.profilera: description must expose bounded corpus metadata limits")
 
     return errors
 
 
-def validate_copilot_hooks(plugin_root: Path, plugin: dict[str, Any]) -> list[str]:
+def validate_copilot_hooks(
+    plugin_root: Path,
+    plugin: dict[str, Any],
+    registry: RuntimeAdapterRegistry | None = None,
+) -> list[str]:
+    if registry is None:
+        registry = load_registry()
     errors: list[str] = []
+    copilot_events = _supported_events(registry, "copilot")
+    required_prewrite_hook = next(iter(_validation_events(registry, "copilot")), "")
     hook_paths = _string_paths(plugin.get("hooks"))
     if not hook_paths:
         return errors
@@ -373,12 +416,12 @@ def validate_copilot_hooks(plugin_root: Path, plugin: dict[str, Any]) -> list[st
         for path in sorted(hook_dir.glob("*.json")):
             hook = _load_json(path)
             event = hook.get("name")
-            if path.stem not in COPILOT_EVENTS:
+            if path.stem not in copilot_events:
                 errors.append(f"copilot: unsupported lifecycle hook file configured: {path.name}")
             if not isinstance(event, str):
                 errors.append(f"copilot.{path.name}: hook name must be a string")
                 continue
-            if event not in COPILOT_EVENTS:
+            if event not in copilot_events:
                 errors.append(f"copilot: unsupported lifecycle event configured: {event}")
                 continue
             if path.stem != event:
@@ -387,31 +430,40 @@ def validate_copilot_hooks(plugin_root: Path, plugin: dict[str, Any]) -> list[st
                 errors.append(f"copilot: event must be lower-camel: {event}")
             _validate_command_handler(errors, "copilot", event, 0, hook)
             seen_events.add(event)
-            if event == COPILOT_REQUIRED_PREWRITE_HOOK:
+            if event == required_prewrite_hook:
                 command_text = _handler_command_text(hook)
                 if "hooks/validate_artifact.py" not in command_text:
                     errors.append(
                         "copilot.preToolUse: artifact hard gate must run hooks/validate_artifact.py"
                     )
 
-        if COPILOT_REQUIRED_PREWRITE_HOOK not in seen_events:
+        if required_prewrite_hook not in seen_events:
             errors.append("copilot: missing required preToolUse artifact validation hook")
 
     return errors
 
 
-def validate_codex(plugin: dict[str, Any]) -> list[str]:
+def validate_codex(
+    plugin: dict[str, Any],
+    registry: RuntimeAdapterRegistry | None = None,
+) -> list[str]:
+    if registry is None:
+        registry = load_registry()
     errors: list[str] = []
+    codex_events = _supported_events(registry, "codex")
+    unsupported_codex_events = _unsupported_events(registry, "codex")
+    lifecycle_status_values = _codex_lifecycle_status_values(registry)
+    limitation_terms = _codex_limitation_terms(registry)
     lifecycle = plugin.get("lifecycleHooks")
     if not isinstance(lifecycle, dict):
         return ["codex: missing lifecycleHooks limitation metadata"]
 
     if lifecycle.get("configured") is not False:
         errors.append("codex: lifecycleHooks.configured must be false")
-    if lifecycle.get("status") not in CODEX_LIFECYCLE_STATUS_VALUES:
+    if lifecycle.get("status") not in lifecycle_status_values:
         errors.append(
             "codex: lifecycleHooks.status must be one of "
-            + ", ".join(CODEX_LIFECYCLE_STATUS_VALUES)
+            + ", ".join(lifecycle_status_values)
         )
 
     events = lifecycle.get("events", {})
@@ -419,14 +471,14 @@ def validate_codex(plugin: dict[str, Any]) -> list[str]:
         errors.append("codex: lifecycleHooks.events must be an object when present")
     else:
         for event in events:
-            if event not in CODEX_EVENTS:
+            if event not in codex_events:
                 errors.append(f"codex: unsupported lifecycle event configured: {event}")
 
     supported = lifecycle.get("supportedEvents")
-    if not isinstance(supported, list) or set(supported) != CODEX_EVENTS:
+    if not isinstance(supported, list) or set(supported) != codex_events:
         errors.append(
             "codex: supportedEvents must list every Codex codex_hooks event "
-            "(SessionStart, Stop, UserPromptSubmit, PreToolUse, PostToolUse, PermissionRequest)"
+            "(" + ", ".join(_runtime_view(registry, "codex")["lifecycle_events"]["supported_events"]) + ")"
         )
 
     unsupported = lifecycle.get("unsupportedEvents")
@@ -438,17 +490,19 @@ def validate_codex(plugin: dict[str, Any]) -> list[str]:
                 errors.append("codex: unsupportedEvents entries must be objects with event and reason fields")
                 continue
             event = entry.get("event")
-            if event in CODEX_EVENTS:
+            if event in codex_events:
                 errors.append(
                     f"codex: unsupportedEvents must not list event {event!r} that codex_hooks now supports"
                 )
+            elif event not in unsupported_codex_events:
+                errors.append(f"codex: unsupportedEvents entry {event!r} is not claimed by the registry")
 
     limitations = lifecycle.get("limitations")
     if not isinstance(limitations, list) or not limitations:
         errors.append("codex: limitations must document codex_hooks status and apply_patch interception")
     else:
         joined = " ".join(item for item in limitations if isinstance(item, str))
-        for term in CODEX_LIFECYCLE_REQUIRED_LIMITATION_TERMS:
+        for term in limitation_terms:
             if term not in joined:
                 errors.append(
                     f"codex: limitations must cite {term!r} so apply_patch interception ground truth stays surfaced"
@@ -517,7 +571,12 @@ def validate_codex_profilera_metadata(root: Path, plugin: dict[str, Any]) -> lis
     return errors
 
 
-def validate_opencode(root: Path) -> list[str]:
+def validate_opencode(
+    root: Path,
+    registry: RuntimeAdapterRegistry | None = None,
+) -> list[str]:
+    if registry is None:
+        registry = load_registry()
     errors: list[str] = []
     plugin_path = root / ".opencode/plugins/agentera.js"
     if not plugin_path.is_file():
@@ -526,12 +585,12 @@ def validate_opencode(root: Path) -> list[str]:
     text = plugin_path.read_text(encoding="utf-8")
     if "event: async" not in text:
         errors.append("opencode: session lifecycle must use the generic event hook")
-    for event_type in OPENCODE_EVENT_TYPES:
+    for event_type in _unsupported_events(registry, "opencode"):
         if f'event.type !== "{event_type}"' not in text and f'event.type === "{event_type}"' not in text:
             errors.append(f"opencode: event hook must handle or explicitly skip {event_type}")
         if f'"{event_type}":' in text:
             errors.append(f"opencode: must not register phantom direct hook {event_type}")
-    for hook in ('"shell.env"', '"tool.execute.before"', '"tool.execute.after"'):
+    for hook in (f'"{event}"' for event in _supported_events(registry, "opencode")):
         if hook not in text:
             errors.append(f"opencode: missing {hook} hook")
     if "validateArtifactCandidate" not in text:
@@ -544,20 +603,26 @@ def _normalized_doc_text(path: Path) -> str:
     return path.read_text(encoding="utf-8").replace("`", "")
 
 
-def validate_hard_gate_docs(root: Path) -> list[str]:
+def validate_hard_gate_docs(
+    root: Path,
+    registry: RuntimeAdapterRegistry | None = None,
+) -> list[str]:
+    if registry is None:
+        registry = load_registry()
     errors: list[str] = []
-    for relative_path, runtime_requirements in HARD_GATE_DOC_REQUIREMENTS.items():
+    for relative_path, runtimes in HARD_GATE_DOC_REQUIREMENTS.items():
         path = root / relative_path
         if not path.is_file():
             errors.append(f"{relative_path}: missing hard-gate documentation surface")
             continue
         text = _normalized_doc_text(path)
-        for runtime, terms in runtime_requirements.items():
-            for term in terms:
-                normalized_term = term.replace("`", "")
+        for runtime in runtimes:
+            display_name = _runtime_view(registry, runtime)["identity"]["display_name"].removesuffix(" CLI")
+            for term in _hard_gate_doc_terms(registry, runtime, relative_path):
+                normalized_term = term.replace("`", "").rstrip(".")
                 if normalized_term not in text:
                     errors.append(
-                        f"{relative_path}: {runtime} hard-gate docs must keep scoped claim term "
+                        f"{relative_path}: {display_name} hard-gate docs must keep scoped claim term "
                         f"{term!r}"
                     )
     return errors
@@ -575,18 +640,29 @@ def main(argv: list[str] | None = None) -> int:
 
     root = args.root.resolve()
     errors: list[str] = []
+    try:
+        registry = load_registry(root / "references/adapters/runtime-adapter-registry.yaml")
+    except (OSError, RegistryError) as exc:
+        errors.append(_registry_contract_error(exc))
+
+    if errors:
+        print("lifecycle adapter validation failed:")
+        for error in errors:
+            print(f"- {error}")
+        return 1
+
     copilot = _load_json(root / "plugin.json")
-    errors.extend(validate_copilot(copilot, root))
-    errors.extend(validate_copilot_hooks(root, copilot))
+    errors.extend(validate_copilot(copilot, root, registry))
+    errors.extend(validate_copilot_hooks(root, copilot, registry))
     codex = _load_json(root / ".codex-plugin/plugin.json")
-    errors.extend(validate_codex(codex))
+    errors.extend(validate_codex(codex, registry))
     errors.extend(validate_codex_profilera_metadata(root, codex))
-    errors.extend(validate_opencode(root))
+    errors.extend(validate_opencode(root, registry))
     errors.extend(validate_suite_bundle_surface(root))
     errors.extend(validate_packaged_python_scripts(root))
     if args.check_uv_runtime:
         errors.extend(validate_uv_runtime())
-    errors.extend(validate_hard_gate_docs(root))
+    errors.extend(validate_hard_gate_docs(root, registry))
 
     if errors:
         print("lifecycle adapter validation failed:")

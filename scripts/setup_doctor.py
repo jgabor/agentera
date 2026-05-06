@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = []
+# dependencies = ["pyyaml"]
 # ///
 """Setup diagnosis and confirmed installation for an Agentera suite bundle.
 
@@ -38,16 +38,19 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 import install_root as install_root_module
+from runtime_adapter_registry import load_registry
 
 SCHEMA_VERSION = "agentera.setupDoctor.v1"
 STATUSES = ("pass", "warn", "fail", "skip")
-RUNTIMES = ("claude", "opencode", "copilot", "codex")
+REGISTRY = load_registry()
+DOCTOR_RUNTIME_VIEWS = {
+    runtime: REGISTRY.consumer_view("doctor", runtime) for runtime in REGISTRY.runtime_ids
+}
+RUNTIMES = REGISTRY.runtime_ids
 WRITABLE_RUNTIMES = ("copilot", "codex")
 RUNTIME_BINARIES = {
-    "claude": "claude",
-    "opencode": "opencode",
-    "copilot": "copilot",
-    "codex": "codex",
+    runtime: DOCTOR_RUNTIME_VIEWS[runtime]["host_detection"]["binary_names"][0]
+    for runtime in RUNTIMES
 }
 OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode --skill agentera -y"
 OPENCODE_SKILL_NAMES = (
@@ -69,6 +72,127 @@ SUPPORT_PATH_RE: Pattern[str] = compile_re(
     r"(?<![\w/.$-])"
     r"(?P<path>references/[A-Za-z0-9][A-Za-z0-9_./-]*)"
 )
+
+
+def _diagnostic_check_names(runtime: str) -> tuple[str, ...]:
+    return tuple(DOCTOR_RUNTIME_VIEWS[runtime]["diagnostics"]["check_names"])
+
+
+def _diagnostic_messages(runtime: str) -> tuple[str, ...]:
+    return tuple(DOCTOR_RUNTIME_VIEWS[runtime]["diagnostics"]["primary_messages"])
+
+
+def _diagnostic_status_labels(runtime: str) -> tuple[str, ...]:
+    return tuple(DOCTOR_RUNTIME_VIEWS[runtime]["diagnostics"]["status_labels"])
+
+
+def _diagnostic_gap_labels(runtime: str) -> tuple[str, ...]:
+    return tuple(DOCTOR_RUNTIME_VIEWS[runtime]["diagnostics"]["gap_labels"])
+
+
+def _availability_probe_label(runtime: str) -> str:
+    return str(DOCTOR_RUNTIME_VIEWS[runtime]["host_detection"]["availability_probe_label"])
+
+
+CLAUDE_ROOT_CHECK = _diagnostic_check_names("claude")[0]
+CLAUDE_AVAILABILITY_CHECK = _availability_probe_label("claude")
+CLAUDE_MISSING_ENV_MESSAGE = _diagnostic_messages("claude")[1]
+CLAUDE_PASS_STATUS, CLAUDE_WARN_STATUS, CLAUDE_FAIL_STATUS, CLAUDE_SKIP_STATUS = _diagnostic_status_labels("claude")
+CLAUDE_RUNTIME_CONFIG_GAP, CLAUDE_USER_ENVIRONMENT_GAP = _diagnostic_gap_labels("claude")
+(
+    OPENCODE_PLUGIN_CHECK,
+    OPENCODE_HOME_CHECK,
+    OPENCODE_COMMANDS_CHECK,
+    OPENCODE_SKILL_PATHS_CHECK,
+    OPENCODE_SUPPORT_CHECK,
+) = _diagnostic_check_names("opencode")
+(
+    OPENCODE_PLUGIN_PRESENT_MESSAGE,
+    OPENCODE_PLUGIN_MISSING_MESSAGE,
+    _,
+    OPENCODE_HOME_MISSING_MESSAGE,
+    OPENCODE_COMMANDS_CURRENT_MESSAGE,
+    OPENCODE_COMMANDS_DRIFT_MESSAGE,
+    OPENCODE_SKILL_PATHS_CURRENT_MESSAGE,
+    OPENCODE_SKILL_PATHS_DRIFT_MESSAGE,
+    OPENCODE_SUPPORT_REFERENCES_PASS_MESSAGE,
+    OPENCODE_SUPPORT_REFERENCES_DRIFT_MESSAGE,
+) = _diagnostic_messages("opencode")
+(
+    OPENCODE_PASS_STATUS,
+    OPENCODE_WARN_STATUS,
+    OPENCODE_FAIL_STATUS,
+    OPENCODE_SKIP_STATUS,
+) = _diagnostic_status_labels("opencode")
+(
+    OPENCODE_RUNTIME_CONFIG_GAP,
+    OPENCODE_USER_ENVIRONMENT_GAP,
+    OPENCODE_COMMAND_DRIFT_GAP,
+    OPENCODE_SKILL_PATH_DRIFT_GAP,
+    OPENCODE_VALIDATION_DRIFT_GAP,
+) = _diagnostic_gap_labels("opencode")
+OPENCODE_AVAILABILITY_CHECK = _availability_probe_label("opencode")
+COPILOT_HOME_CHECK = _diagnostic_check_names("copilot")[0]
+(
+    COPILOT_HELPER_MESSAGE,
+    COPILOT_MISSING_MESSAGE,
+    COPILOT_RC_CONFIGURED_MESSAGE,
+) = _diagnostic_messages("copilot")
+COPILOT_PASS_STATUS, COPILOT_WARN_STATUS, COPILOT_FAIL_STATUS, COPILOT_SKIP_STATUS = _diagnostic_status_labels("copilot")
+COPILOT_RUNTIME_CONFIG_GAP, COPILOT_USER_ENVIRONMENT_GAP = _diagnostic_gap_labels("copilot")
+COPILOT_AVAILABILITY_CHECK = _availability_probe_label("copilot")
+CODEX_HOME_CHECK = _diagnostic_check_names("codex")[0]
+CODEX_CONFIG_ERROR_MESSAGE = _diagnostic_messages("codex")[1]
+CODEX_PASS_STATUS, CODEX_WARN_STATUS, CODEX_FAIL_STATUS, CODEX_SKIP_STATUS = _diagnostic_status_labels("codex")
+CODEX_RUNTIME_CONFIG_GAP, CODEX_USER_ENVIRONMENT_GAP = _diagnostic_gap_labels("codex")
+CODEX_AVAILABILITY_CHECK = _availability_probe_label("codex")
+HELPER_ACCESS_MESSAGE = COPILOT_HELPER_MESSAGE
+AVAILABILITY_CHECKS = {
+    "claude": CLAUDE_AVAILABILITY_CHECK,
+    "opencode": OPENCODE_AVAILABILITY_CHECK,
+    "copilot": COPILOT_AVAILABILITY_CHECK,
+    "codex": CODEX_AVAILABILITY_CHECK,
+}
+PASS_STATUSES = {
+    "claude": CLAUDE_PASS_STATUS,
+    "opencode": OPENCODE_PASS_STATUS,
+    "copilot": COPILOT_PASS_STATUS,
+    "codex": CODEX_PASS_STATUS,
+}
+WARN_STATUSES = {
+    "claude": CLAUDE_WARN_STATUS,
+    "opencode": OPENCODE_WARN_STATUS,
+    "copilot": COPILOT_WARN_STATUS,
+    "codex": CODEX_WARN_STATUS,
+}
+FAIL_STATUSES = {
+    "claude": CLAUDE_FAIL_STATUS,
+    "opencode": OPENCODE_FAIL_STATUS,
+    "copilot": COPILOT_FAIL_STATUS,
+    "codex": CODEX_FAIL_STATUS,
+}
+SKIP_STATUSES = {
+    "claude": CLAUDE_SKIP_STATUS,
+    "opencode": OPENCODE_SKIP_STATUS,
+    "copilot": COPILOT_SKIP_STATUS,
+    "codex": CODEX_SKIP_STATUS,
+}
+USER_ENVIRONMENT_GAPS = {
+    "claude": CLAUDE_USER_ENVIRONMENT_GAP,
+    "opencode": OPENCODE_USER_ENVIRONMENT_GAP,
+    "copilot": COPILOT_USER_ENVIRONMENT_GAP,
+    "codex": CODEX_USER_ENVIRONMENT_GAP,
+}
+RUNTIME_CONFIG_GAPS = {
+    "claude": CLAUDE_RUNTIME_CONFIG_GAP,
+    "opencode": OPENCODE_RUNTIME_CONFIG_GAP,
+    "copilot": COPILOT_RUNTIME_CONFIG_GAP,
+    "codex": CODEX_RUNTIME_CONFIG_GAP,
+}
+INSTALLER_FIXABLE_GAPS = {
+    "copilot": (COPILOT_RUNTIME_CONFIG_GAP, COPILOT_USER_ENVIRONMENT_GAP),
+    "codex": (CODEX_RUNTIME_CONFIG_GAP, CODEX_USER_ENVIRONMENT_GAP),
+}
 
 
 def verify_install_root(root: Path) -> list[str]:
@@ -211,16 +335,16 @@ def _runtime_skip(runtime: str, env: Mapping[str, str]) -> dict[str, Any]:
     binary = RUNTIME_BINARIES[runtime]
     return {
         "runtime": runtime,
-        "status": "skip",
+        "status": SKIP_STATUSES[runtime],
         "available": False,
         "binary": None,
         "checks": [
             _check(
-                "runtime_binary",
-                "skip",
+                AVAILABILITY_CHECKS[runtime],
+                SKIP_STATUSES[runtime],
                 f"{binary} executable not found on PATH",
                 source="PATH",
-                gap="user_environment",
+                gap=USER_ENVIRONMENT_GAPS[runtime],
                 details=[env.get("PATH", "")],
             )
         ],
@@ -228,6 +352,7 @@ def _runtime_skip(runtime: str, env: Mapping[str, str]) -> dict[str, Any]:
 
 
 def _configured_root_check(
+    runtime: str,
     name: str,
     candidate: Path,
     install_root: Path,
@@ -237,17 +362,17 @@ def _configured_root_check(
     if classification.kind.startswith("missing_"):
         return _check(
             name,
-            "fail",
+            FAIL_STATUSES[runtime],
             "configured Agentera root does not exist",
             source=source,
             path=candidate,
-            gap="runtime_config",
+            gap=RUNTIME_CONFIG_GAPS[runtime],
         )
 
     if classification.kind != "managed_fresh":
         return _check(
             name,
-            "fail",
+            FAIL_STATUSES[runtime],
             "configured Agentera root is not a valid suite bundle",
             source=source,
             path=candidate,
@@ -259,7 +384,7 @@ def _configured_root_check(
     if helper_missing:
         return _check(
             name,
-            "fail",
+            FAIL_STATUSES[runtime],
             "configured Agentera root cannot reach shared helper scripts",
             source=source,
             path=candidate,
@@ -270,17 +395,17 @@ def _configured_root_check(
     if candidate.resolve() != install_root.resolve():
         return _check(
             name,
-            "warn",
+            WARN_STATUSES[runtime],
             "runtime points at a different valid Agentera install root",
             source=source,
             path=candidate,
-            gap="runtime_config",
+            gap=RUNTIME_CONFIG_GAPS[runtime],
         )
 
     return _check(
         name,
-        "pass",
-        "runtime can reach shared Agentera helper scripts",
+        PASS_STATUSES[runtime],
+        HELPER_ACCESS_MESSAGE,
         source=source,
         path=candidate,
     )
@@ -315,8 +440,8 @@ def _runtime_result(
     if binary is None:
         return _runtime_skip(runtime, env)
     binary_check = _check(
-        "runtime_binary",
-        "pass",
+        AVAILABILITY_CHECKS[runtime],
+        PASS_STATUSES[runtime],
         f"{RUNTIME_BINARIES[runtime]} executable found",
         source="PATH",
         path=binary,
@@ -381,9 +506,9 @@ def _diagnose_opencode_commands(home: Path, env: Mapping[str, str]) -> dict[str,
     if not missing and not stale:
         details = [f"user-owned command preserved: {name}" for name in user_owned]
         return _check(
-            "opencode_managed_commands",
-            "pass",
-            "OpenCode managed Agentera commands are current",
+            OPENCODE_COMMANDS_CHECK,
+            OPENCODE_PASS_STATUS,
+            OPENCODE_COMMANDS_CURRENT_MESSAGE,
             path=commands_dir,
             details=details,
         )
@@ -393,11 +518,11 @@ def _diagnose_opencode_commands(home: Path, env: Mapping[str, str]) -> dict[str,
         details.extend(f"user-owned command preserved: {name}" for name in user_owned)
     details.append("action: start OpenCode with the Agentera plugin to restore managed commands")
     return _check(
-        "opencode_managed_commands",
-        "warn",
-        "OpenCode managed Agentera commands are missing or stale",
+        OPENCODE_COMMANDS_CHECK,
+        OPENCODE_WARN_STATUS,
+        OPENCODE_COMMANDS_DRIFT_MESSAGE,
         path=commands_dir,
-        gap="command_drift",
+        gap=OPENCODE_COMMAND_DRIFT_GAP,
         details=details,
     )
 
@@ -437,9 +562,9 @@ def _diagnose_opencode_skill_paths(install_root: Path, home: Path, env: Mapping[
     if not missing and not broken and not missing_source:
         details = [f"user-owned skill path preserved: {name}" for name in user_owned]
         return _check(
-            "opencode_skill_paths",
-            "pass",
-            "OpenCode Agentera skill paths resolve to SKILL.md",
+            OPENCODE_SKILL_PATHS_CHECK,
+            OPENCODE_PASS_STATUS,
+            OPENCODE_SKILL_PATHS_CURRENT_MESSAGE,
             path=skills_dir,
             details=details,
         )
@@ -453,11 +578,11 @@ def _diagnose_opencode_skill_paths(install_root: Path, home: Path, env: Mapping[
     if user_owned:
         details.extend(f"user-owned skill path preserved: {name}" for name in user_owned)
     return _check(
-        "opencode_skill_paths",
-        "warn",
-        "OpenCode Agentera skill paths are missing or broken",
+        OPENCODE_SKILL_PATHS_CHECK,
+        OPENCODE_WARN_STATUS,
+        OPENCODE_SKILL_PATHS_DRIFT_MESSAGE,
         path=skills_dir,
-        gap="skill_path_drift",
+        gap=OPENCODE_SKILL_PATH_DRIFT_GAP,
         details=details,
     )
 
@@ -495,18 +620,18 @@ def _diagnose_bundled_reference_validation(install_root: Path) -> dict[str, Any]
 
     if not missing:
         return _check(
-            "bundled_support_references",
-            "pass",
-            "bundled support references validate separately from installer freshness",
+            OPENCODE_SUPPORT_CHECK,
+            OPENCODE_PASS_STATUS,
+            OPENCODE_SUPPORT_REFERENCES_PASS_MESSAGE,
             path=skills_dir,
         )
 
     return _check(
-        "bundled_support_references",
-        "warn",
-        "bundled reference validation drift found despite installer freshness",
+        OPENCODE_SUPPORT_CHECK,
+        OPENCODE_WARN_STATUS,
+        OPENCODE_SUPPORT_REFERENCES_DRIFT_MESSAGE,
         path=skills_dir,
-        gap="validation_drift",
+        gap=OPENCODE_VALIDATION_DRIFT_GAP,
         details=missing,
     )
 
@@ -805,17 +930,18 @@ def diagnose_claude(install_root: Path, home: Path, env: Mapping[str, str]) -> d
     if not value:
         checks = [
             _check(
-                "CLAUDE_PLUGIN_ROOT",
-                "warn",
-                "Claude Code plugin root is not present in this process environment",
+                CLAUDE_ROOT_CHECK,
+                CLAUDE_WARN_STATUS,
+                CLAUDE_MISSING_ENV_MESSAGE,
                 source="environment",
-                gap="user_environment",
+                gap=CLAUDE_USER_ENVIRONMENT_GAP,
             )
         ]
     else:
         checks = [
             _configured_root_check(
-                "CLAUDE_PLUGIN_ROOT",
+                "claude",
+                CLAUDE_ROOT_CHECK,
                 Path(value).expanduser().resolve(),
                 install_root,
                 "environment",
@@ -829,21 +955,21 @@ def diagnose_opencode(install_root: Path, home: Path, env: Mapping[str, str]) ->
     config_dir = _opencode_config_dir(home, env)
     plugin = config_dir / "plugins" / "agentera.js"
     if plugin.is_file():
-        checks.append(_check("plugin_file", "pass", "OpenCode plugin file is present", path=plugin))
+        checks.append(_check(OPENCODE_PLUGIN_CHECK, OPENCODE_PASS_STATUS, OPENCODE_PLUGIN_PRESENT_MESSAGE, path=plugin))
     else:
         checks.append(
             _check(
-                "plugin_file",
-                "warn",
-                "OpenCode plugin file is not installed at the native plugin path",
+                OPENCODE_PLUGIN_CHECK,
+                OPENCODE_WARN_STATUS,
+                OPENCODE_PLUGIN_MISSING_MESSAGE,
                 path=plugin,
-                gap="runtime_config",
+                gap=OPENCODE_RUNTIME_CONFIG_GAP,
             )
         )
 
     if env.get("AGENTERA_HOME"):
         path = Path(env["AGENTERA_HOME"]).expanduser().resolve()
-        checks.append(_configured_root_check("AGENTERA_HOME", path, install_root, "environment"))
+        checks.append(_configured_root_check("opencode", OPENCODE_HOME_CHECK, path, install_root, "environment"))
     else:
         candidates = [
             ("default-install-root", home / ".agents" / "agentera"),
@@ -852,15 +978,15 @@ def diagnose_opencode(install_root: Path, home: Path, env: Mapping[str, str]) ->
         existing = [(source, path) for source, path in candidates if path.exists()]
         if existing:
             source, path = existing[0]
-            checks.append(_configured_root_check("AGENTERA_HOME", path.resolve(), install_root, source))
+            checks.append(_configured_root_check("opencode", OPENCODE_HOME_CHECK, path.resolve(), install_root, source))
         else:
             checks.append(
                 _check(
-                    "AGENTERA_HOME",
-                    "warn",
-                    "OpenCode cannot see AGENTERA_HOME or a documented default Agentera root",
+                    OPENCODE_HOME_CHECK,
+                    OPENCODE_WARN_STATUS,
+                    OPENCODE_HOME_MISSING_MESSAGE,
                     source="environment/defaults",
-                    gap="runtime_config",
+                    gap=OPENCODE_RUNTIME_CONFIG_GAP,
             )
         )
 
@@ -898,7 +1024,8 @@ def diagnose_copilot(install_root: Path, home: Path, env: Mapping[str, str]) -> 
     if value:
         checks = [
             _configured_root_check(
-                "AGENTERA_HOME",
+                "copilot",
+                COPILOT_HOME_CHECK,
                 Path(value).expanduser().resolve(),
                 install_root,
                 "environment",
@@ -913,24 +1040,25 @@ def diagnose_copilot(install_root: Path, home: Path, env: Mapping[str, str]) -> 
         if marker_root is None:
             continue
         check = _configured_root_check(
-            "AGENTERA_HOME",
+            "copilot",
+            COPILOT_HOME_CHECK,
             Path(marker_root).expanduser().resolve(),
             install_root,
             str(rc_path),
         )
-        if check["status"] == "pass":
+        if check["status"] == COPILOT_PASS_STATUS:
             check["message"] = (
-                "Copilot rc file is configured; restart the shell to load AGENTERA_HOME"
+                COPILOT_RC_CONFIGURED_MESSAGE
             )
         return _runtime_result("copilot", env, [check])
 
     checks = [
         _check(
-            "AGENTERA_HOME",
-            "warn",
-            "Copilot helper access is not configured in the environment or known shell rc files",
+            COPILOT_HOME_CHECK,
+            COPILOT_WARN_STATUS,
+            COPILOT_MISSING_MESSAGE,
             source="environment/rc",
-            gap="runtime_config",
+            gap=COPILOT_RUNTIME_CONFIG_GAP,
         )
     ]
     return _runtime_result("copilot", env, checks)
@@ -959,21 +1087,22 @@ def diagnose_codex(install_root: Path, home: Path, env: Mapping[str, str]) -> di
     config = home / ".codex" / "config.toml"
     value, error = _read_codex_agentera_home(config)
     if error is not None:
-        status = "warn" if error == "missing" or error.startswith("missing ") else "fail"
+        status = CODEX_WARN_STATUS if error == "missing" or error.startswith("missing ") else CODEX_FAIL_STATUS
         checks = [
             _check(
-                "config.AGENTERA_HOME",
+                CODEX_HOME_CHECK,
                 status,
-                f"Codex config cannot provide helper-script access: {error}",
+                f"{CODEX_CONFIG_ERROR_MESSAGE}: {error}",
                 source=str(config),
                 path=config,
-                gap="runtime_config",
+                gap=CODEX_RUNTIME_CONFIG_GAP,
             )
         ]
     else:
         checks = [
             _configured_root_check(
-                "config.AGENTERA_HOME",
+                "codex",
+                CODEX_HOME_CHECK,
                 Path(value).expanduser().resolve(),
                 install_root,
                 str(config),
@@ -1033,16 +1162,18 @@ def _fixable_reason(
     runtime_report: Mapping[str, Any],
     check_name: str,
     *,
-    gaps: tuple[str, ...] = ("runtime_config", "user_environment"),
+    gaps: tuple[str, ...] | None = None,
 ) -> str | None:
     if not runtime_report.get("available"):
         return None
+    runtime = str(runtime_report.get("runtime") or "")
+    fixable_gaps = gaps if gaps is not None else INSTALLER_FIXABLE_GAPS.get(runtime, ())
     for check in runtime_report.get("checks", []):
         if check.get("name") != check_name:
             continue
-        if check.get("status") not in ("warn", "fail"):
+        if check.get("status") not in (WARN_STATUSES.get(runtime), FAIL_STATUSES.get(runtime)):
             continue
-        if check.get("gap") not in gaps:
+        if check.get("gap") not in fixable_gaps:
             continue
         return str(check.get("message") or "doctor found a fixable setup gap")
     return None
@@ -1055,8 +1186,8 @@ def _plan_codex_installer_change(
 ) -> dict[str, Any] | None:
     reason = _fixable_reason(
         runtime_report,
-        "config.AGENTERA_HOME",
-        gaps=("runtime_config",),
+        CODEX_HOME_CHECK,
+        gaps=(CODEX_RUNTIME_CONFIG_GAP,),
     )
     if reason is None:
         return None

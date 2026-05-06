@@ -31,7 +31,6 @@ ROOT = Path(__file__).resolve().parents[1]
 BOOTSTRAP_SOURCE_ROOT_ENV = "AGENTERA_BOOTSTRAP_SOURCE_ROOT"
 DEFAULT_INSTALL_ROOT_ENV = "AGENTERA_DEFAULT_INSTALL_ROOT"
 BUNDLE_MARKER = ".agentera-bundle.json"
-RUNTIMES = ("claude", "opencode", "copilot", "codex")
 PHASES = ("bundle", "artifacts", "runtime", "cleanup", "packages")
 STATUSES = ("pending", "applied", "noop", "blocked", "failed", "skipped")
 EXPECTED_STATE_COMMANDS = ("hej",)
@@ -150,6 +149,18 @@ def _setup_doctor_module() -> ModuleType:
 
 def _install_root_module() -> ModuleType:
     return _load_script_module("agentera_install_root", ROOT / "scripts" / "install_root.py")
+
+
+def _runtime_registry_module() -> ModuleType:
+    return _load_script_module("agentera_runtime_adapter_registry", ROOT / "scripts" / "runtime_adapter_registry.py")
+
+
+def _runtime_registry() -> Any:
+    return _runtime_registry_module().load_registry()
+
+
+def _runtime_ids() -> tuple[str, ...]:
+    return _runtime_registry().runtime_ids
 
 
 def _relative(path: Path, root: Path) -> str:
@@ -770,9 +781,28 @@ def _opencode_config_dir(home: Path, env: dict[str, str]) -> Path:
     return Path(value).expanduser().resolve() if value else home / ".config" / "opencode"
 
 
-def _plan_codex_config(install_root: Path, home: Path, *, force: bool) -> dict[str, Any]:
+def _home_target(home: Path, target: str) -> Path:
+    if target.startswith("~/"):
+        return home / target[2:]
+    return Path(target).expanduser()
+
+
+def _first_target(adapter: dict[str, Any], group: str, field: str) -> str:
+    targets = adapter[group][field]
+    if not targets:
+        raise ValueError(f"runtime {adapter['identity']['runtime_id']} has no {field} registry target")
+    return targets[0]
+
+
+def _write_label(adapter: dict[str, Any], fallback: str) -> str:
+    labels = adapter["config_targets"]["write_safety_labels"]
+    return labels[0] if labels else fallback
+
+
+def _plan_codex_config(adapter: dict[str, Any], install_root: Path, home: Path, *, force: bool) -> dict[str, Any]:
     setup_codex = _setup_codex_module()
-    target = home / ".codex" / "config.toml"
+    runtime_id = adapter["identity"]["runtime_id"]
+    target = _home_target(home, _first_target(adapter, "config_targets", "runtime_config_files"))
     try:
         current = _read_text_or_none(target)
         if current is not None and current.strip():
@@ -781,24 +811,32 @@ def _plan_codex_config(install_root: Path, home: Path, *, force: bool) -> dict[s
     except Exception as exc:  # noqa: BLE001
         return {
             "status": "blocked",
-            "runtime": "codex",
-            "action": "configure",
+            "runtime": runtime_id,
+            "action": _write_label(adapter, "configure"),
             "target": str(target),
             "message": f"cannot safely plan Codex config change: {exc}",
         }
     status = "noop" if outcome.action == "noop" else "blocked" if outcome.action == "conflict" else "pending"
     return {
         "status": status,
-        "runtime": "codex",
-        "action": "configure",
+        "runtime": runtime_id,
+        "action": _write_label(adapter, "configure"),
         "target": str(target),
         "message": outcome.message,
         "newText": outcome.new_text,
     }
 
 
-def _plan_copilot_config(install_root: Path, home: Path, env: dict[str, str], rc_file: Path | None) -> dict[str, Any]:
+def _plan_copilot_config(
+    adapter: dict[str, Any],
+    install_root: Path,
+    home: Path,
+    env: dict[str, str],
+    rc_file: Path | None,
+) -> dict[str, Any]:
     setup_copilot = _setup_copilot_module()
+    runtime_id = adapter["identity"]["runtime_id"]
+    action = _write_label(adapter, "configure")
     if rc_file is not None:
         shell_target = setup_copilot.resolve_rc_target(rc_file)
         target, syntax = shell_target.rc_path, shell_target.syntax
@@ -813,8 +851,8 @@ def _plan_copilot_config(install_root: Path, home: Path, env: dict[str, str], rc
         else:
             return {
                 "status": "blocked",
-                "runtime": "copilot",
-                "action": "configure",
+                "runtime": runtime_id,
+                "action": action,
                 "target": None,
                 "message": f"unsupported shell for Copilot rc automation: {shell_name or '(unset $SHELL)'}",
             }
@@ -823,15 +861,15 @@ def _plan_copilot_config(install_root: Path, home: Path, env: dict[str, str], rc
     except Exception as exc:  # noqa: BLE001
         return {
             "status": "blocked",
-            "runtime": "copilot",
-            "action": "configure",
+            "runtime": runtime_id,
+            "action": action,
             "target": str(target),
             "message": f"cannot safely plan Copilot rc change: {exc}",
         }
     return {
         "status": "noop" if outcome.action == "noop" else "pending",
-        "runtime": "copilot",
-        "action": "configure",
+        "runtime": runtime_id,
+        "action": action,
         "target": str(target),
         "message": outcome.message,
         "newText": outcome.new_text,
@@ -849,32 +887,39 @@ def plan_runtime_phase(
     copilot_rc_file: Path | None,
 ) -> dict[str, Any]:
     items: list[dict[str, Any]] = []
+    registry = _runtime_registry()
+    adapters = {runtime_id: registry.consumer_view("upgrade", runtime_id) for runtime_id in runtimes}
     if "codex" in runtimes:
-        items.append(_plan_codex_config(install_root, home, force=force))
+        adapter = adapters["codex"]
+        labels = adapter["config_targets"]["write_safety_labels"]
+        items.append(_plan_codex_config(adapter, install_root, home, force=force))
         items.append(_copy_item(
-            "codex",
+            adapter["identity"]["runtime_id"],
             runtime_source_root / "hooks" / "codex-hooks.json",
-            home / ".codex" / "hooks.json",
+            _home_target(home, _first_target(adapter, "config_targets", "hook_targets")),
             force=force,
-            action="copy-hooks",
+            action=labels[1] if len(labels) > 1 else "copy-hooks",
         ))
     if "copilot" in runtimes:
-        items.append(_plan_copilot_config(install_root, home, env, copilot_rc_file))
+        items.append(_plan_copilot_config(adapters["copilot"], install_root, home, env, copilot_rc_file))
     if "opencode" in runtimes:
+        adapter = adapters["opencode"]
+        plugin_source = _first_target(adapter, "config_targets", "plugin_targets")
         items.append(_copy_item(
-            "opencode",
-            runtime_source_root / ".opencode" / "plugins" / "agentera.js",
+            adapter["identity"]["runtime_id"],
+            runtime_source_root / plugin_source,
             _opencode_config_dir(home, env) / "plugins" / "agentera.js",
             force=force,
-            action="copy-plugin",
+            action=_write_label(adapter, "copy-plugin"),
         ))
     if "claude" in runtimes:
+        adapter = adapters["claude"]
         items.append({
             "status": "noop",
-            "runtime": "claude",
+            "runtime": adapter["identity"]["runtime_id"],
             "action": "configure",
             "target": None,
-            "message": "Claude Code plugin installs expose the bundle root without local config writes",
+            "message": _write_label(adapter, "Claude Code plugin installs expose the bundle root without local config writes"),
         })
     return _phase("runtime", items)
 
@@ -1043,7 +1088,7 @@ def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
     home = args.home.expanduser().resolve()
     source_root = resolve_source_root()
     install_root = resolve_install_root(args.install_root, source_root, home)
-    runtimes = set(args.runtime or RUNTIMES)
+    runtimes = set(args.runtime or _runtime_ids())
     only = set(args.only or PHASES)
     env = dict(os.environ)
     if args.opencode_config_dir is not None:
