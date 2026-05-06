@@ -458,7 +458,7 @@ def _query_health(args: argparse.Namespace, schemas: dict) -> int:
     if not entries:
         return 0
     dimension = getattr(args, "dimension", None)
-    latest = entries[-1]
+    latest = entries[0]
     if dimension:
         dim_lower = dimension.lower()
         grades = latest.get("grades", {})

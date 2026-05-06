@@ -91,7 +91,7 @@ audits:
     degraded: Direct health output still reads stale history.
     stable: Architecture, patterns, coupling, complexity, version, prose, and security remain healthy.
     new_findings: Direct health state command reports stale audit history.
-    resolved: Audit 19 DOCS coverage-count warning is resolved; progress cycle phases now use protocol values and validation rejects `phase: verify`.
+    resolved: 'Audit 19 DOCS coverage-count warning is resolved; progress cycle phases now use protocol values and validation rejects `phase: verify`.'
   patterns:
   - 'Module structure: one bundled `skills/agentera` skill owns capability prose and schemas; root `skills/hej` remains a temporary v1 bridge.'
   - 'State access: `scripts/agentera` provides flat routine state commands plus advanced `query` for custom artifact access.'

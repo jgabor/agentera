@@ -1,4 +1,23 @@
 cycles:
+- number: 341
+  timestamp: 2026-05-06 23:46
+  type: fix
+  phase: build
+  what: Fixed direct health CLI selection for newest-first audit state.
+  commit: pending
+  inspiration: The degraded Audit 20 TODO required `scripts/agentera health` to report the same newest audit that `hej` already used for orientation.
+  discovered: >
+    `_query_health` selected `entries[-1]`, which made newest-first health artifacts read stale audit history while `_health_summary` used `entries[0]`.
+    Real-state smoke also exposed one malformed `.agentera/health.yaml` scalar containing `phase: verify`; a syntax-only quote repair made the current artifact parseable without changing audit meaning.
+  verified: >
+    Validation passed: uv run pytest tests/test_query_cli.py::TestHealth -q reported 5 passed; uv run pytest -q reported 715 passed;
+    uv run scripts/agentera health now reports Audit 20 with current grades; direct YAML parse of .agentera/health.yaml loaded 11 audits.
+  next: 'Health command freshness TODO resolved; commit left pending because no explicit commit authorization was provided.'
+  context:
+    intent: resolve the degraded direct health command freshness TODO
+    constraints: no vision or objective mutation, no unrelated optional live-smoke or install-root follow-up work, no push, no commit without explicit request
+    unknowns: whether a future inspektera audit should supersede Audit 20 wording that described the pre-fix stale health command
+    scope: scripts/agentera, tests/test_query_cli.py, .agentera/health.yaml syntax, TODO.md, CHANGELOG.md, and progress logging
 - number: 340
   timestamp: 2026-05-06 21:51
   type: refactor

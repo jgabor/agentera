@@ -4,8 +4,6 @@
 
 ## ⇉ Degraded
 
-- [ ] [audit-20-health-command-stale] [fix] Make `scripts/agentera health` select the newest health entry consistently with `hej`, and add a newest-first regression test.
-
 ## → Normal
 
 - [ ] [agentera-optional-claude-live-smoke] Optional future-version work: add an explicit opt-in Claude Code live model-host smoke when Claude Pro/Max or API access is available. Current required live evidence covers Codex, Copilot, and OpenCode.
@@ -15,6 +13,7 @@
 
 ## Resolved
 
+- [x] ~~[audit-20-health-command-stale] [fix] Make `scripts/agentera health` select the newest health entry consistently with `hej`, and add a newest-first regression test.~~ · fixed by aligning `_query_health` with newest-first health audits, adding a direct regression for Audit 20 before Audit 10, and repairing one malformed health YAML scalar so the current project smoke reads Audit 20.
 - [x] ~~[arch-artifact-write-validation] [refactor] Deepen artifact write validation into explicit hook Modules.~~ · resolved by splitting `hooks/validate_artifact.py` into explicit `RuntimeEventParser`, `ArtifactSchemaValidator`, and `HookCliAdapter` interfaces while keeping the executable hook path stable. `tests/test_hook_v2.py` now targets named interfaces and full hook behavior instead of private runtime parser functions; runtime adapter coverage and full pytest passed. Health command freshness, optional Claude live smoke, and generated install-root follow-up remain separate open findings.
 - [x] ~~[arch-artifact-registry] [refactor] Deepen the artifact registry Module.~~ · resolved by the Deepen Artifact Registry Interface plan; `scripts/artifact_registry.py` projects canonical artifact schema metadata plus `references/artifacts/artifact-registry-interface-model.yaml`, capability-local schemas reference `artifact_id` plus `local_role`, `scripts/validate_cross_capability.py` and bounded CLI artifact-resolution reads consume registry facts, and `tests/test_validate_cross_capability.py` now verifies relationships and special cases through registry-backed fixtures. Artifact write validation, health command freshness, optional Claude live smoke, and generated install-root follow-up remain separate open findings.
 - [x] ~~[arch-routing-exit-vocabulary] [refactor] Deepen capability routing and exit vocabulary.~~ · resolved by the Deepen Capability Routing And Exit Vocabulary plan; `skills/agentera/SKILL.md` now stays thin, schema-backed routing tests exercise trigger-schema priorities, thresholds, disambiguation, and hej fallback through `tests/routing_test_interface.py`, and `protocol.yaml` remains the authority for complete, flagged, stuck, and waiting exit signals. Artifact registry, artifact write validation, health command freshness, optional Claude live smoke, and generated install-root follow-up remain separate open findings.

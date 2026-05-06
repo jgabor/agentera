@@ -210,6 +210,32 @@ class TestHealth:
         assert "stable" in r.stdout
         assert "coupling" in r.stdout
 
+    def test_health_summary_uses_newest_audit_first(self, project):
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [
+                {
+                    "number": 20,
+                    "date": "2026-05-05",
+                    "trajectory": "current",
+                    "grades": {"Freshness": "B"},
+                },
+                {
+                    "number": 10,
+                    "date": "2026-04-20",
+                    "trajectory": "stale",
+                    "grades": {"Freshness": "D"},
+                },
+            ],
+        })
+
+        r = _run("health", cwd=project)
+
+        assert r.returncode == 0
+        assert "Audit 20: current" in r.stdout
+        assert "Audit 10" not in r.stdout
+        assert "Freshness: B" in r.stdout
+        assert "Freshness: D" not in r.stdout
+
     def test_fail_missing_artifact(self, project):
         r = _run("health", cwd=project)
         assert r.returncode == 0
