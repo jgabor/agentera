@@ -12,7 +12,7 @@ agentera v2: one bundled skill (`skills/agentera/`) with twelve capabilities. Ea
 skills/agentera/
   SKILL.md                          # Master dispatcher (frontmatter + routing + safety rails)
   protocol.yaml                     # Shared primitives (confidence, severity, phases, glyphs)
-  capability_schema_contract.yaml   # Self-referential schema contract
+  capability_schema_contract.yaml   # Capability schema structure contract
   capabilities/
     <name>/
       prose.md                      # Behavioral instructions for the capability
@@ -25,7 +25,8 @@ skills/agentera/
   schemas/                          # Skill-level schemas
 scripts/
   agentera                          # CLI for project state, artifact queries, upgrade, and diagnostics
-  validate_capability.py            # Validate a capability against the schema contract
+  capability_contract.py            # Load the capability schema contract model
+  validate_capability.py            # Validate a capability through the contract model
   eval_skills.py                    # Tier 2 eval runner (smoke-tests via claude -p)
   semantic_eval.py                  # Offline semantic eval for captured fixtures
   usage_stats.py                    # Suite usage analytics from the session corpus
@@ -42,7 +43,12 @@ tests/                              # pytest suite
 
 ## Capability validation
 
-Validate any capability against the schema contract:
+Validate any capability against the schema contract. `capability_schema_contract.yaml`
+owns capability schema structure; `scripts/capability_contract.py` loads the
+model consumed by `scripts/validate_capability.py`. Do not duplicate
+contract-owned groups, priority values, directory rules, or primitive-reference
+field mappings in tests or docs unless a validation check ties them back to the
+loader/model.
 
 ```bash
 uv run scripts/validate_capability.py skills/agentera/capabilities/<name>

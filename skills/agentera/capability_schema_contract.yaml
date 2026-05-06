@@ -8,6 +8,7 @@
 #   2. Entry structure within each group (numbered, stable IDs)
 #   3. Deprecation protocol (deprecated + replaced_by)
 #   4. Directory structure requirements (prose.md, schemas/)
+#   5. Machine-readable validation rules consumed by future contract loaders
 
 meta:
   name: capability_schema_contract
@@ -67,6 +68,21 @@ GROUP_PREFIXES:
   EXIT_CONDITIONS: E
 
 DIRECTORY_REQUIREMENTS:
+  prose_file:
+    path: prose.md
+    type: file
+    required: true
+    description: Behavioral instructions the agent reads.
+  schemas_directory:
+    path: schemas
+    type: directory
+    required: true
+    description: Directory containing YAML schema files.
+  schema_files:
+    directory: schemas
+    glob: "*.yaml"
+    minimum_count: 1
+    description: Capability schema files whose union must satisfy REQUIRED_GROUPS.
   required_files:
     - path: prose.md
       description: Behavioral instructions the agent reads.
@@ -74,6 +90,78 @@ DIRECTORY_REQUIREMENTS:
       description: Directory containing YAML schema files.
       type: directory
   optional_files: []
+
+ENTRY_REQUIREMENTS:
+  description: >-
+    Structured entry rules for each required capability schema group. These
+    rules mirror current validator behavior without changing enforcement yet.
+  default_required_fields:
+    - id
+    - description
+  groups:
+    TRIGGERS:
+      required_fields:
+        - id
+        - description
+        - priority
+    ARTIFACTS:
+      required_fields:
+        - id
+        - description
+    VALIDATION:
+      required_fields:
+        - id
+        - description
+    EXIT_CONDITIONS:
+      required_fields:
+        - id
+        - description
+  deprecation:
+    marker_field: deprecated
+    marker_value: true
+    replacement_field: replaced_by
+    replacement_required_when_deprecated: true
+    replacement_scope: same_group
+    replacement_target_field: id
+    unresolved_replacement_severity: warning
+    preserve_deprecated_entries: true
+
+FIELD_RULES:
+  TRIGGERS:
+    priority:
+      required: true
+      allowed_values:
+        - high
+        - medium
+        - low
+      description: Priority of this trigger entry for routing confidence.
+
+PRIMITIVE_REFERENCE_FIELDS:
+  description: >-
+    Capability schema fields that reference protocol primitive groups. This
+    contract owns the field-to-group mapping; protocol.yaml owns the primitive
+    group definitions and allowed values.
+  protocol_values_authority: protocol.yaml
+  fields:
+    severity:
+      protocol_groups:
+        - SEVERITY_FINDING
+        - SEVERITY_ISSUE
+    finding_severity:
+      protocol_groups:
+        - SEVERITY_FINDING
+    issue_severity:
+      protocol_groups:
+        - SEVERITY_ISSUE
+    decision_label:
+      protocol_groups:
+        - DECISION_LABELS
+    exit_signal:
+      protocol_groups:
+        - EXIT_SIGNALS
+    phase:
+      protocol_groups:
+        - PHASES
 
 # ---------------------------------------------------------------------------
 # The four required groups follow. The contract IS a valid capability schema,

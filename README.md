@@ -257,7 +257,11 @@ You do not need to remember capability names. Type `/agentera` followed by what 
 | "research this pattern" | → inspirera (external analysis) |
 | "what should I work on" | → hej (briefing) |
 
-Validate any capability against the schema contract:
+Validate any capability against the schema contract. Capability schema structure
+is owned by `skills/agentera/capability_schema_contract.yaml` and loaded through
+`scripts/capability_contract.py`; `scripts/validate_capability.py` consumes that
+model instead of duplicating required groups, priority values, directory rules,
+or capability-field primitive mappings.
 
 ```bash
 uv run scripts/validate_capability.py skills/agentera/capabilities/<name>
@@ -399,7 +403,8 @@ when the host runtime changes.
 The core surfaces:
 
 - [`skills/agentera/protocol.yaml`](./skills/agentera/protocol.yaml): shared primitives and vocabulary.
-- [`skills/agentera/capability_schema_contract.yaml`](./skills/agentera/capability_schema_contract.yaml): schema contract for capabilities.
+- [`skills/agentera/capability_schema_contract.yaml`](./skills/agentera/capability_schema_contract.yaml): capability schema contract.
+- [`scripts/capability_contract.py`](./scripts/capability_contract.py): loader/model that makes the capability schema contract executable for validators and tests.
 - [`registry.json`](./registry.json): capability index, versions, tags, paths.
 - [`references/adapters/runtime-feature-parity.md`](./references/adapters/runtime-feature-parity.md):
   runtime capability comparison.

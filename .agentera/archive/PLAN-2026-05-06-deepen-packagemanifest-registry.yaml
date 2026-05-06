@@ -1,0 +1,68 @@
+header:
+  level: full
+  created: '2026-05-06'
+  status: complete
+  reviewed: '2026-05-06'
+  critic_issues: "7 found, 7 addressed, 0 dismissed"
+  title: Deepen PackageManifest Registry
+what: >
+  Replace scattered package metadata and release-surface knowledge with one registry-backed PackageManifest Module. The registry
+  exposes one Interface for suite version authority, runtime package surfaces, version-bearing surfaces, bundle surface lists,
+  package-manager command specifications, manifest projection expectations, and release validation facts. Validators, upgrade
+  bundle/package planning, docs indexing, runtime package tests, and version-surface checks consume that Interface instead of
+  duplicating package constants.
+why: >
+  TODO [arch-package-manifest-registry] identified package metadata as the next shallow seam after the install-root and
+  RuntimeAdapter Modules were deepened. Package facts lived across pyproject.toml force-include paths, registry.json
+  skills[0].version, plugin manifests, .opencode/package.json, scripts/agentera_upgrade.py bundle/package constants,
+  scripts/validate_lifecycle_adapters.py package-surface constants, .agentera/docs.yaml version_files/index, and
+  tests/test_runtime_adapters.py production-like package validators.
+constraints: >
+  Preserve current package versions and user-visible CLI behavior unless characterization explicitly names an intentional
+  correction. registry.json remains the persisted suite-version authority behind the PackageManifest Interface. Do not change
+  install-root classification semantics, RuntimeAdapter ownership, artifact write validation, or release publication behavior.
+tasks:
+  - number: 1
+    name: Reconcile Plan State And Package Scope
+    status: complete
+  - number: 2
+    name: Characterize Package Surfaces And Drift
+    status: complete
+  - number: 3
+    name: Define PackageManifest Interface And Ownership Model
+    status: complete
+  - number: 4
+    name: Introduce Package Registry Module And Contract Tests
+    status: complete
+  - number: 5
+    name: Migrate Package Validation And Runtime Package Tests
+    status: complete
+  - number: 6
+    name: Migrate Upgrade Bundle And Package Planning
+    status: complete
+  - number: 7
+    name: Align Docs, Manifest Projections, And Version Policy
+    status: complete
+  - number: 8
+    name: Validate And Close
+    status: complete
+validation_evidence:
+  source_artifact: .agentera/progress.yaml
+  cycle: 309
+  timestamp: '2026-05-06 10:00'
+  summary: >
+    PackageManifest closure validation passed with package registry tests, package/runtime adapter tests, lifecycle validation,
+    upgrade tests, bundle freshness tests, docs CLI, artifact query, full pytest reporting 633 passed and 1 skipped,
+    capability validation, cross-capability validation, py_compile checks, and git diff hygiene.
+  commands:
+    - uv run pytest tests/test_package_registry.py -q (9 passed)
+    - uv run pytest tests/test_runtime_adapters.py tests/test_runtime_adapter_registry.py -q (77 passed)
+    - uv run scripts/validate_lifecycle_adapters.py
+    - uv run pytest tests/test_upgrade_cli.py -q (17 passed)
+    - uv run pytest tests/test_bundle_freshness.py -q (6 passed)
+    - uv run scripts/agentera docs
+    - uv run scripts/agentera query --list-artifacts
+    - uv run pytest -q (633 passed, 1 skipped)
+    - uv run scripts/validate_capability.py --self-validate
+    - uv run scripts/validate_capability.py for all 12 current capabilities
+    - uv run scripts/validate_cross_capability.py

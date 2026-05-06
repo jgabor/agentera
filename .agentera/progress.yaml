@@ -1,4 +1,237 @@
 cycles:
+- number: 318
+  timestamp: 2026-05-06 17:03
+  type: test
+  phase: build
+  what: Validated and closed the Deepen Capability Schema Contract plan.
+  commit: pending
+  inspiration: Task 8 requires focused validation of the capability contract loader, validator characterization, per-capability validation,
+    primitive-reference tests, and protocol self-validation, plus practical broad validation before marking the active plan complete.
+  discovered: >
+    All Task 8 acceptance criteria pass. Focused contract loader, structure, validator characterization, interface/primitive-reference,
+    per-capability, and protocol validation passed. Broad validation passed for full pytest, all 12 capability directories,
+    contract self-validation, cross-capability validation, lifecycle adapter validation, docs CLI, artifact query, and py_compile. The first
+    broad run exposed that the new scripts/capability_contract.py loader lacked the existing packaged-script uv shebang and inline metadata;
+    adding that metadata was required closure hygiene for the capability-contract plan and did not change validator semantics. TODO remains
+    scoped: routing/exit vocabulary, artifact registry, artifact write validation, health command freshness, optional Claude live smoke, and
+    generated install-root follow-up stay separate open work.
+  verified: >
+    Validation passed: uv run pytest tests/test_capability_contract_loader.py tests/test_capability_contract_structure.py
+    tests/test_capability_validator_characterization.py tests/test_capability_contract_interface_usage.py -q (45 passed); uv run pytest all
+    12 per-capability test files -q (65 passed); uv run scripts/validate_capability.py --validate-protocol (PASS: protocol is internally
+    consistent); uv run pytest -q (678 passed, 1 skipped); uv run scripts/validate_capability.py --self-validate (PASS: contract is
+    self-referentially valid); all 12 capability directories passed uv run scripts/validate_capability.py; uv run
+    scripts/validate_cross_capability.py (cross-capability artifact graph ok); uv run scripts/validate_lifecycle_adapters.py (lifecycle
+    adapter metadata ok); uv run scripts/agentera docs reported current=58 with last_audit=2026-05-06; uv run scripts/agentera query
+    --list-artifacts listed 12 artifacts; python3 -m py_compile scripts/capability_contract.py scripts/validate_capability.py and focused
+    contract tests passed; uv run scripts/agentera todo listed only the deferred separate findings; git status showed capability-contract
+    plan changes and the PackageManifest archive handoff from Task 1, with no unrelated changes identified.
+  next: 'Deepen Capability Schema Contract plan is complete; select the next unresolved TODO separately.'
+  context:
+    intent: satisfy Task 8 validation and closure only
+    constraints: no routing/exit vocabulary, artifact registry, artifact write validation, package/runtime/install-root semantic changes,
+      protocol value authority changes, vision, objective, commit, or push changes
+    unknowns: deferred TODOs remain separate open work
+    scope: .agentera/plan.yaml, .agentera/progress.yaml, and scripts/capability_contract.py packaged-script metadata
+- number: 317
+  timestamp: 2026-05-06 16:58
+  type: docs
+  phase: build
+  what: Aligned capability contract tests, documentation, version-policy rationale, and TODO status.
+  commit: pending
+  inspiration: Task 7 requires capability contract docs to point at capability_schema_contract.yaml plus the loader/model, per-capability schema tests to exercise the contract Interface, version policy to be evaluated without unvalidated version-file drift, and TODO to resolve only [arch-capability-schema-contract].
+  discovered: >
+    README and AGENTS now identify skills/agentera/capability_schema_contract.yaml plus scripts/capability_contract.py as the executable
+    capability schema-rule authority consumed by scripts/validate_capability.py. Added interface-level capability contract tests that validate
+    all 12 capabilities through the loaded CapabilitySchemaContract model and prove a fixture contract changes validation behavior without
+    validator-local REQUIRED_GROUPS, GROUP_PREFIXES, VALID_PRIORITIES, or PROTOCOL_REFERENCEABLE_FIELDS constants. CHANGELOG and DOCS record
+    the refactor closure and explicit no-bump rationale: this is docs/test/internal validation alignment, so semver_policy docs/chore/test
+    requires no package version bump and version_files remain unchanged. TODO resolves only [arch-capability-schema-contract]; routing/exit
+    vocabulary, artifact registry, artifact write validation, health command freshness, optional Claude live smoke, and generated install-root
+    follow-up remain open.
+  verified: >
+    Validation passed: uv run pytest tests/test_capability_contract_interface_usage.py -q (14 passed); uv run scripts/agentera docs reported
+    last_audit=2026-05-06 Capability schema contract documentation closure and current=58; uv run pytest tests/test_capability_contract_loader.py
+    tests/test_capability_contract_structure.py tests/test_capability_validator_characterization.py tests/test_capability_contract_interface_usage.py
+    -q (45 passed); uv run pytest all 12 per-capability test files -q (65 passed); uv run scripts/validate_capability.py --self-validate
+    passed with PASS: contract is self-referentially valid; uv run scripts/agentera todo listed routing/exit vocabulary, artifact registry,
+    artifact write validation, health command freshness, optional Claude live smoke, and generated install-root follow-up while omitting
+    [arch-capability-schema-contract] from open findings.
+  next: 'Implement Task 8: validate and close.'
+  context:
+    intent: satisfy Task 7 docs/tests/TODO alignment only
+    constraints: no routing/exit vocabulary, artifact registry, artifact write validation, package/runtime/install-root, protocol value authority, vision, objective, version bump, commit, or push changes
+    unknowns: none for Task 7
+    scope: README.md, AGENTS.md, CHANGELOG.md, TODO.md, .agentera/docs.yaml, .agentera/plan.yaml, .agentera/progress.yaml, scripts/capability_contract.py, and tests/test_capability_contract_interface_usage.py
+- number: 316
+  timestamp: 2026-05-06 16:53
+  type: refactor
+  phase: build
+  what: Migrated capability primitive-reference field mapping to the capability schema contract model.
+  commit: pending
+  inspiration: Task 6 requires primitive reference checks for severity, finding_severity, issue_severity, decision_label, exit_signal, and phase to derive field-to-protocol-group mapping from CapabilitySchemaContract while protocol.yaml remains the only source for primitive groups, values, and protocol self-validation structure.
+  discovered: >
+    scripts/validate_capability.py no longer carries validator-local PROTOCOL_REFERENCEABLE_FIELDS. check_primitive_references now loads
+    CapabilitySchemaContract from contract_path and iterates contract.primitive_references.fields, while build_protocol_value_lookup and
+    validate_protocol_self still use protocol.yaml-owned PROTOCOL_GROUPS structure and primitive values. The CLI --check-primitives path now
+    passes --contract into primitive checks. Characterization coverage now proves a fixture contract can remap severity to EXIT_SIGNALS and
+    primitive validation observes that changed mapping without validator-local constants.
+  verified: >
+    Validation passed: uv run pytest tests/test_capability_validator_characterization.py tests/test_capability_contract_loader.py
+    tests/test_capability_contract_structure.py plus all per-capability primitive/reference tests for hej, visualisera, visionera, resonera,
+    realisera, profilera, planera, inspektera, orkestrera, inspirera, optimera, and dokumentera (96 passed); uv run
+    scripts/validate_capability.py --validate-protocol passed with PASS: protocol is internally consistent; all 12 capability directories
+    passed uv run scripts/validate_capability.py <capability> --check-primitives; uv run scripts/validate_capability.py --self-validate
+    passed; python3 -m py_compile scripts/validate_capability.py scripts/capability_contract.py
+    tests/test_capability_validator_characterization.py passed.
+  next: 'Implement Task 7: align tests, docs, and TODO status.'
+  context:
+    intent: satisfy Task 6 primitive reference mapping migration only
+    constraints: no protocol value authority change; protocol self-validation and PROTOCOL_GROUPS remain protocol-owned; no routing/exit vocabulary, artifact registry, artifact write validation, package/runtime/install-root, live behavior, vision, objective, commit, or push changes
+    unknowns: none for Task 6
+    scope: scripts/validate_capability.py, tests/test_capability_validator_characterization.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 315
+  timestamp: 2026-05-06 16:50
+  type: refactor
+  phase: build
+  what: Migrated capability directory validation to consume the loaded capability schema contract model.
+  commit: pending
+  inspiration: Task 5 requires directory, required-group, numbered-entry, stable-id, priority, and deprecation checks to come from the contract model, while preserving characterized CLI behavior and leaving primitive-reference field mapping for Task 6.
+  discovered: >
+    scripts/validate_capability.py now loads CapabilitySchemaContract through contract_path for capability and contract self-validation.
+    Directory paths/globs/minimum YAML count, required groups, numbered-entry scope, required entry fields, TRIGGERS priority requiredness
+    and allowed values, and deprecation marker/replacement fields are read from the model. Validator-local capability constants for required
+    groups, group prefixes, and priority values were removed from capability validation. Primitive reference mapping remains validator-local
+    and protocol primitive values remain protocol.yaml-owned for Task 6. Group prefixes remain declared and loaded but not enforced, with
+    characterization coverage preserving that behavior.
+  verified: >
+    Validation passed: uv run pytest tests/test_capability_validator_characterization.py tests/test_capability_contract_loader.py
+    tests/test_capability_contract_structure.py -q (30 passed); uv run pytest per-capability test suite for realisera, inspektera,
+    profilera, planera, orkestrera, dokumentera, optimera, inspirera, visualisera, visionera, resonera, and hej -q (65 passed);
+    uv run scripts/validate_capability.py --self-validate (PASS: contract is self-referentially valid); all 12 capability directories
+    validated with uv run scripts/validate_capability.py; python3 -m py_compile scripts/validate_capability.py scripts/capability_contract.py
+    tests/test_capability_validator_characterization.py tests/test_capability_contract_structure.py passed.
+  next: 'Implement Task 6: migrate primitive reference mapping safely.'
+  context:
+    intent: satisfy Task 5 validator migration only
+    constraints: no primitive-reference mapping migration; no protocol value authority change; no routing/exit vocabulary, artifact registry, artifact write validation, package/runtime/install-root, vision, objective, commit, or push changes
+    unknowns: none for Task 5
+    scope: scripts/validate_capability.py, tests/test_capability_validator_characterization.py, tests/test_capability_contract_structure.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 314
+  timestamp: 2026-05-06 16:44
+  type: test
+  phase: build
+  what: Defined the capability schema contract loader and bootstrap model without migrating validator behavior.
+  commit: pending
+  inspiration: Task 4 requires malformed contract files to fail deterministically before model build, and valid contracts to expose capability schema structure rules from one model while protocol primitive values remain protocol-owned.
+  discovered: >
+    Added scripts/capability_contract.py with bootstrap validation, ContractBootstrapError diagnostics, and a CapabilitySchemaContract model
+    exposing required groups, directory rules, entry schema, per-group entry rules, trigger priority rules, deprecation rules, group-prefix
+    policy, and primitive-reference field mappings. The loader validates missing REQUIRED_GROUPS, bad ENTRY_SCHEMA, bad GROUP_PREFIXES,
+    missing rule sections, and missing self groups before building the model. Protocol group definitions and primitive values remain outside
+    the model; only capability field-to-protocol-group mappings are represented.
+  verified: >
+    Validation passed: uv run pytest tests/test_capability_contract_loader.py -q (12 passed); python3 -m py_compile
+    scripts/capability_contract.py; uv run pytest tests/test_capability_contract_loader.py tests/test_capability_contract_structure.py
+    tests/test_capability_validator_characterization.py -q (26 passed); uv run scripts/validate_capability.py --self-validate
+    (PASS: contract is self-referentially valid); uv run scripts/validate_capability.py --validate-protocol (PASS: protocol is internally
+    consistent). Existing contract structure and validator characterization tests remained green, so CLI behavior was not migrated or changed.
+  next: 'Implement Task 5: migrate capability directory validation to contract data.'
+  context:
+    intent: satisfy Task 4 loader/model and malformed-contract fixture coverage only
+    constraints: no validator migration; no primitive reference migration; no live behavior change; no protocol primitive value authority change; no routing/exit vocabulary, artifact registry, artifact write validation, package/runtime/install-root, vision, objective, commit, or push changes
+    unknowns: exact compatibility handling for malformed non-mapping capability groups remains for Task 5 migration
+    scope: scripts/capability_contract.py, tests/test_capability_contract_loader.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 313
+  timestamp: 2026-05-06 16:40
+  type: test
+  phase: build
+  what: Made capability schema contract rules machine-readable without migrating validator behavior.
+  commit: pending
+  inspiration: Task 3 requires structured contract data for trigger priority rules, directory requirements, per-group entry requirements, deprecation replacement behavior, and capability field-to-protocol-group primitive mapping before later loader and validator migration tasks consume those rules.
+  discovered: >
+    capability_schema_contract.yaml now records TRIGGERS priority requiredness and high/medium/low allowed values in FIELD_RULES;
+    prose.md, schemas, schemas/*.yaml, and minimum YAML count in DIRECTORY_REQUIREMENTS; per-group required fields plus same-group
+    deprecated/replaced_by replacement behavior in ENTRY_REQUIREMENTS; and severity, finding_severity, issue_severity, decision_label,
+    exit_signal, and phase capability field mappings in PRIMITIVE_REFERENCE_FIELDS. protocol.yaml remains the authority for primitive
+    group definitions and primitive values, and scripts/validate_capability.py was not migrated in this task.
+  verified: >
+    Validation passed: uv run pytest tests/test_capability_contract_structure.py -q (4 passed); uv run pytest
+    tests/test_capability_validator_characterization.py -q (10 passed); uv run scripts/validate_capability.py --self-validate
+    (PASS: contract is self-referentially valid). The structure tests assert priority, directory, entry, deprecation, and primitive-reference
+    rule shapes directly from contract YAML and compare current validator constants only to prove behavior was not migrated or changed.
+  next: 'Implement Task 4: define contract loader and bootstrap model.'
+  context:
+    intent: satisfy Task 3 machine-readable contract structure only
+    constraints: no validator migration; no live behavior change; no protocol primitive value authority change; no routing/exit vocabulary, artifact registry, artifact write validation, package/runtime/install-root, vision, objective, commit, or push changes
+    unknowns: exact loader/bootstrap diagnostic shape remains for Task 4
+    scope: skills/agentera/capability_schema_contract.yaml, tests/test_capability_contract_structure.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 312
+  timestamp: 2026-05-06 16:35
+  type: test
+  phase: build
+  what: Characterized current capability validator behavior and contract drift before migration.
+  commit: pending
+  inspiration: Task 2 requires recording validator CLI stdout, stderr, exit codes, labels, ordering, ignored contract_path behavior, contract drift decisions, and primitive-reference ownership before changing validator behavior.
+  discovered: >
+    Added focused characterization coverage for valid, missing-directory, empty-schemas, missing-group, malformed-group, invalid-priority,
+    and deprecation-warning validator CLI fixtures. Current malformed-group behavior is permissive: a required group with non-mapping content
+    is treated as present and empty, so the fixture exits 0 with PASS and no stderr. Normal capability validation prints --contract but ignores
+    the contract_path argument. Drift inventory records group prefix enforcement as preserve, priority and directory rules as standardize,
+    and routing/exit vocabulary as defer. Primitive reference checks currently split ownership between validator-local capability field mapping
+    and protocol.yaml primitive values.
+  verified: >
+    Validation passed: uv run pytest tests/test_capability_validator_characterization.py -q (10 passed). The focused tests assert exact CLI
+    stdout/stderr line ordering, exit codes, V1/V2/V5/V5b labels, deprecation warning placement, ignored alternate contract_path behavior,
+    declared-but-unenforced/prose-only drift decisions, and protocol-value-driven primitive reference resolution.
+  next: 'Implement Task 3: make contract rules machine-readable.'
+  context:
+    intent: satisfy Task 2 characterization only
+    constraints: no contract schema changes; no validator migration; no production behavior change; no protocol value authority change; no routing/exit vocabulary, artifact registry, artifact write validation, package/runtime/install-root, vision, objective, commit, or push changes
+    unknowns: whether later migration should preserve malformed non-mapping group permissiveness or intentionally standardize it after this characterization
+    scope: tests/test_capability_validator_characterization.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 311
+  timestamp: 2026-05-06 16:29
+  type: docs
+  phase: build
+  what: Reconciled the active capability contract plan state and scope boundaries.
+  commit: pending
+  inspiration: Task 1 requires closing only the plan-state handoff before capability contract implementation starts.
+  discovered: >
+    The completed PackageManifest registry plan is already archived at .agentera/archive/PLAN-2026-05-06-deepen-packagemanifest-registry.yaml
+    with cycle 309 validation evidence intact. TODO still has multiple critical findings, with [arch-capability-schema-contract]
+    first and routing/exit vocabulary, artifact registry, and artifact write validation still open. The active contract plan now records
+    protocol value authority, routing/exit vocabulary, artifact registry, artifact write validation, package/runtime/install-root changes,
+    and release publication as out of scope for this plan boundary.
+  verified: >
+    Validation passed: uv run scripts/agentera plan showed active title Deepen Capability Schema Contract with Task 1 pending before this
+    update; uv run scripts/agentera todo selected [arch-capability-schema-contract] first while unrelated critical findings remained open;
+    raw archive check confirmed .agentera/archive/PLAN-2026-05-06-deepen-packagemanifest-registry.yaml exists and preserves validation_evidence
+    from progress cycle 309; raw plan check confirmed explicit scope exclusions for protocol value authority, routing/exit vocabulary,
+    artifact registry, artifact write validation, package/runtime/install-root changes, and release publication before marking Task 1 complete.
+  next: 'Implement Task 2: characterize validator behavior and drift.'
+  context:
+    intent: satisfy Task 1 state reconciliation only
+    constraints: no capability contract implementation; no source migration; no tests beyond artifact/CLI verification; no vision or objective mutation; no commit or push
+    unknowns: none for Task 1
+    scope: .agentera/plan.yaml, .agentera/progress.yaml, and existing PackageManifest archive verification
+- number: 310
+  timestamp: 2026-05-06 10:18
+  type: plan
+  phase: plan
+  what: Planned the capability schema contract deepening work.
+  commit: pending
+  inspiration: The next unresolved critical TODO is [arch-capability-schema-contract], after install-root, RuntimeAdapter, and PackageManifest registry plans closed their ownership seams.
+  discovered: >
+    capability_schema_contract.yaml documents required groups, entry schema, group prefixes, directory requirements, priority rules, and deprecation behavior, but scripts/validate_capability.py still owns the executable rules through hardcoded REQUIRED_GROUPS, GROUP_PREFIXES, VALID_PRIORITIES, PROTOCOL_GROUPS, and PROTOCOL_REFERENCEABLE_FIELDS. The adversarial critic found eight issues; the plan now keeps protocol primitive values in protocol.yaml, requires machine-readable rule sections before migration, preserves current CLI/error behavior unless characterized, and adds bootstrap validation for malformed contract files.
+  verified: >
+    Validation passed: uv run scripts/agentera todo selected [arch-capability-schema-contract] as the first critical unresolved TODO; uv run scripts/agentera plan showed the PackageManifest registry plan complete before archival; adversarial review found 8 issues and all 8 were addressed; .agentera/archive/PLAN-2026-05-06-deepen-packagemanifest-registry.yaml preserves PackageManifest validation evidence from progress cycle 309; .agentera/plan.yaml now contains active full plan Deepen Capability Schema Contract with 8 pending tasks.
+  next: 'Run orkestrera to execute the capability schema contract plan.'
+  context:
+    intent: create a full plan for the next unresolved critical architecture TODO
+    constraints: no protocol value authority change; no routing/exit vocabulary implementation; no artifact registry or artifact write validation; no package/runtime/install-root changes; no release publication; no commit or push
+    unknowns: whether group prefix enforcement should remain non-enforced or become an intentional semantic change after characterization
+    scope: .agentera/plan.yaml, .agentera/progress.yaml, and .agentera/archive/PLAN-2026-05-06-deepen-packagemanifest-registry.yaml
 - number: 309
   timestamp: 2026-05-06 10:00
   type: test
