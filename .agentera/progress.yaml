@@ -1,4 +1,502 @@
 cycles:
+- number: 338
+  timestamp: 2026-05-06 20:43
+  type: fix
+  phase: build
+  what: Retried stale docs metadata cleanup for completed artifact registry validation and closure.
+  commit: pending
+  inspiration: Second retry finding reported .agentera/docs.yaml still claimed Task 8 remained pending for full validation and plan closure and still listed artifact registry as remaining open work despite cycle 336/337 completion evidence.
+  discovered: >
+    uv run scripts/agentera docs, plan, and progress confirmed the Deepen Artifact Registry Interface plan is complete, Task 8 is complete,
+    and recent progress records already preserve validation evidence. .agentera/docs.yaml retained historical scoped-deferral wording that could
+    be read as current registry-open state, so the retry scope was limited to stale docs metadata wording plus this progress entry.
+  verified: >
+    Validation passed: focused docs.yaml stale-string checks found no remaining Task 8 pending, pending full-validation/plan-closure,
+    or artifact registry remaining-open language; uv run scripts/agentera docs reported docs current with stale=none; uv run scripts/agentera
+    plan reported status=complete with all 8 tasks complete; uv run scripts/agentera progress surfaced this retry entry and prior cycle
+    336/337 evidence.
+  next: 'Second retry finding fixed; no commit or push performed.'
+  context:
+    intent: satisfy second retry finding for stale artifact registry docs metadata only
+    constraints: no source, tests, vision, objective, package/runtime/install-root surface, version, release, unrelated TODO, commit, or push changes
+    unknowns: none for the retry scope
+    scope: .agentera/docs.yaml and .agentera/progress.yaml
+- number: 337
+  timestamp: 2026-05-06 21:05
+  type: fix
+  phase: build
+  what: Retried the post-plan health gate for registry-backed PROFILE.md resolution and stale docs metadata.
+  commit: pending
+  inspiration: Failed /inspektera retry found scripts/agentera still resolving PROFILE.md through a hardcoded helper instead of the profile explicit special-case registry record, and docs.yaml still describing Task 8 validation and closure as pending.
+  discovered: >
+    scripts/agentera now resolves the hej profile path through the artifact registry profile record, preserving the existing PROFILERA_PROFILE_DIR,
+    XDG_DATA_HOME/agentera, and ~/.local/share/agentera observable path behavior via resolve_artifact_path. .agentera/docs.yaml now records that
+    final validation and Task 8 plan closure are complete while leaving the plan complete and unrelated TODOs untouched.
+  verified: >
+    Validation passed: uv run scripts/agentera hej preserved the default loaded profile path; PROFILERA_PROFILE_DIR=/tmp/opencode/agentera-profile-check
+    uv run scripts/agentera hej preserved override path behavior; uv run scripts/agentera todo, docs, query --list-artifacts, and query open-todos
+    --format yaml passed baseline checks; uv run pytest tests/test_artifact_registry_contract.py tests/test_validate_cross_capability.py -q reported
+    10 passed; uv run scripts/validate_cross_capability.py reported cross-capability artifact graph ok; python3 -m py_compile scripts/agentera
+    passed; grep found no remaining _profile_path helper or hardcoded profile environment resolution in scripts/agentera.
+  next: 'Retry findings fixed; no commit or push performed.'
+  context:
+    intent: satisfy post-plan health retry findings only
+    constraints: no vision, objective, package/runtime/install-root surface, version, release, unrelated TODO, commit, or push changes
+    unknowns: none for the retry scope
+    scope: scripts/agentera, .agentera/docs.yaml, and .agentera/progress.yaml
+- number: 336
+  timestamp: 2026-05-06 20:45
+  type: test
+  phase: build
+  what: Validated and closed the Deepen Artifact Registry Interface plan.
+  commit: pending
+  inspiration: Task 8 requires focused registry validation, broader practical validation, bounded CLI preservation checks, TODO separation, and worktree review before plan closure.
+  discovered: >
+    Task 8 validation initially found three registry-related blockers in broader pytest: mapped plan summaries ignored docs.yaml overrides when
+    tests used a temporary AGENTERA_HOME with copied schemas only, scripts/artifact_registry.py lacked packaged uv script metadata, and the
+    minimal live-host query smoke bundle omitted artifact_registry.py plus the registry model files required by scripts/agentera. Fixed those
+    blockers without touching vision, objective state, package/runtime/install-root manifests, version files, release metadata, commits, pushes,
+    or unrelated TODOs. Future work remains separate for artifact write validation, health freshness, optional Claude live smoke, and generated
+    install-root follow-up. Worktree review found artifact-registry plan changes plus pre-existing completed routing/exit plan artifacts; those
+    unrelated existing changes were reported and not reverted.
+  verified: >
+    Validation passed: uv run pytest tests/test_artifact_registry_contract.py tests/test_validate_cross_capability.py -q reported 10 passed;
+    uv run scripts/validate_cross_capability.py reported cross-capability artifact graph ok; uv run scripts/validate_capability.py
+    --validate-protocol reported PASS; uv run scripts/validate_capability.py --self-validate reported PASS; all 12
+    skills/agentera/capabilities/* directories passed uv run scripts/validate_capability.py <capability> --check-primitives; uv run
+    scripts/agentera hej, todo, docs, query --list-artifacts, and query open-todos --format yaml passed bounded CLI checks while unrelated
+    TODOs stayed open; uv run pytest -q reported 711 passed; python3 -m py_compile scripts/artifact_registry.py
+    scripts/validate_cross_capability.py scripts/agentera scripts/validate_capability.py scripts/capability_contract.py
+    scripts/smoke_live_hosts.py passed; targeted rerun of the three previously failing pytest cases reported 3 passed.
+  next: 'Plan complete; no commit or push performed.'
+  context:
+    intent: satisfy Task 8 validation and closure only
+    constraints: no vision, objective, package/runtime/install-root manifest, version, release, unrelated TODO, commit, or push changes
+    unknowns: none for Task 8
+    scope: scripts/artifact_registry.py, scripts/agentera, scripts/smoke_live_hosts.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 335
+  timestamp: 2026-05-06 20:40
+  type: test
+  phase: build
+  what: Replaced stale cross-capability tests and aligned Task 7 artifacts.
+  commit: pending
+  inspiration: Task 7 requires registry-backed relationship tests, explicit special-case coverage through the registry model, and only the documentation/TODO alignment needed for artifact metadata ownership.
+  discovered: >
+    tests/test_validate_cross_capability.py now uses artifact_id plus local_role fixtures for producer/consumer relationship validation, unknown
+    artifact ID failures, and registry-derived special-case coverage. The tests no longer encode canonical display-name or path maps and assert
+    scripts/validate_cross_capability.py has no validator-local special-case map constants or explicit special-case display names. TODO resolves
+    only [arch-artifact-registry]; Task 8 remains pending for final validation and plan closure.
+  verified: >
+    Validation passed: uv run pytest tests/test_validate_cross_capability.py tests/test_artifact_registry_contract.py -q reported 10 passed;
+    uv run scripts/validate_cross_capability.py reported cross-capability artifact graph ok. CLI preservation evidence from cycle 334 remains
+    recorded for uv run scripts/agentera hej, todo, docs, query --list-artifacts, and query open-todos --format yaml with baseline-compatible output.
+  next: 'Execute Task 8 when ready; run final validation and closure only in that task. Do not modify vision, objective state, package/runtime/install-root surfaces, version files, release metadata, commit, or push.'
+  context:
+    intent: satisfy Task 7 replaced-test and artifact-alignment acceptance criteria only
+    constraints: no overall plan closure, Task 8 validation closure, vision, objective, package/runtime, install-root, version, release, commit, or push changes
+    unknowns: final full-suite validation and worktree review remain Task 8 scope
+    scope: tests/test_validate_cross_capability.py, TODO.md, CHANGELOG.md, .agentera/docs.yaml, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 334
+  timestamp: 2026-05-06 20:26
+  type: chore
+  phase: build
+  what: Migrated registry consumers for Task 6.
+  commit: pending
+  inspiration: Task 6 requires cross-capability validation and bounded CLI artifact-resolution consumers to load registry facts instead of duplicating canonical display, path, producer, consumer, or special-case maps.
+  discovered: >
+    Added scripts/artifact_registry.py as a registry-backed projection over references/artifacts/artifact-registry-interface-model.yaml and
+    skills/agentera/schemas/artifacts/*.yaml. scripts/validate_cross_capability.py now reads artifact_id plus local_role capability references,
+    validates known identities from registry records, and compares producer/consumer relationships only where the registry owns those facts.
+    scripts/agentera now resolves artifact paths from registry records and applies .agentera/docs.yaml mapping only after known display-name
+    identity lookup and only for override-eligible artifacts. Legacy cross-capability pytest fixtures still encode the old name/path/produces/consumes
+    shape and remain Task 7 replacement scope.
+  verified: >
+    Validation passed: uv run scripts/validate_cross_capability.py reported cross-capability artifact graph ok; python3 -m py_compile
+    scripts/artifact_registry.py scripts/validate_cross_capability.py scripts/agentera passed; uv run pytest tests/test_artifact_registry_contract.py
+    -q reported 5 passed; grep found no CANONICAL_BY_SCHEMA, DISPLAY_NAME_BY_SCHEMA, or EXTERNAL_OR_LOCAL_ARTIFACTS maps in scripts; grep found
+    no legacy name/path/produces/consumes fields in capability-local artifacts.yaml files; bounded CLI baseline checks passed for uv run scripts/agentera
+    hej, todo, docs, query --list-artifacts, and query open-todos --format yaml with baseline-compatible output.
+  next: 'Execute Task 7 when ready; replace legacy tests and align docs/TODO only in that task. Do not close TODO/docs/changelog, package/runtime, install-root, version, release, vision, objective, commit, or push changes from Task 6.'
+  context:
+    intent: satisfy Task 6 registry consumer migration acceptance criteria only
+    constraints: no Task 7 test replacement, docs/TODO/changelog closure, vision, objective, package/runtime, install-root, version, release, commit, or push changes
+    unknowns: legacy tests/test_validate_cross_capability.py fixtures still need registry-backed replacement in Task 7
+    scope: scripts/artifact_registry.py, scripts/validate_cross_capability.py, scripts/agentera, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 333
+  timestamp: 2026-05-06 20:20
+  type: chore
+  phase: build
+  what: Migrated capability-local artifact schemas to registry references for Task 5.
+  commit: pending
+  inspiration: Task 5 requires capability artifacts.yaml files to reference canonical artifact IDs plus local produces/consumes roles without migrating validator or CLI consumers.
+  discovered: >
+    All twelve skills/agentera/capabilities/*/schemas/artifacts.yaml files now use artifact_id plus local_role entries instead of local
+    name, path, produces, or consumes fields. Local usage descriptions were retained and trimmed to avoid restating canonical paths,
+    producer lists, consumer lists, or special-case path semantics. Special-case capability uses now reference explicit registry IDs including
+    profile, plan_archive, and optimera_harness, while objective and experiments use scoped canonical artifact IDs.
+  verified: >
+    Validation passed: grep found no legacy name/path/produces/consumes fields in capability-local artifacts.yaml files; uv run pytest
+    tests/test_artifact_registry_contract.py collected 5 tests and passed all 5, including the new check that every capability artifact entry
+    uses a known registry artifact_id and supported local_role with no legacy fields; uv run scripts/validate_capability.py passed for all
+    twelve capability directories.
+  next: 'Execute Task 6 only when ready; do not migrate registry consumers, CLI consumers, docs/TODO closure, package/runtime, install-root, version, release, vision, objective, commit, or push changes from Task 5.'
+  context:
+    intent: satisfy Task 5 capability artifact schema migration acceptance criteria only
+    constraints: no validator consumer migration, CLI consumer migration, docs/TODO closure, vision, objective, package/runtime, install-root, version, release, commit, or push changes
+    unknowns: cross-capability validator and bounded CLI consumer migrations remain Task 6 scope
+    scope: skills/agentera/capabilities/*/schemas/artifacts.yaml, tests/test_artifact_registry_contract.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 332
+  timestamp: 2026-05-06 20:15
+  type: test
+  phase: build
+  what: Validated the ArtifactRegistry contract in isolation for Task 4.
+  commit: pending
+  inspiration: Task 4 requires focused registry Interface validation before capability schema migration, validator migration, CLI consumer migration, or broader test replacement.
+  discovered: >
+    tests/test_artifact_registry_contract.py now loads references/artifacts/artifact-registry-interface-model.yaml and
+    skills/agentera/schemas/artifacts/*.yaml as contract facts instead of duplicating an expected artifact map. The focused tests validate
+    canonical IDs, display names, schema-backed default paths, producers, consumers, artifact type, scope, path-template requirements,
+    capability-local artifact_id plus local_role shape, explicit special-case failures, and docs.yaml override boundaries. Unknown docs.yaml
+    mapping entries remain runtime mapping data and cannot define canonical artifact IDs, scope, type, path-template, or relationships.
+  verified: >
+    Validation passed: uv run pytest tests/test_artifact_registry_contract.py collected 4 tests and passed all 4. The tests include malformed
+    fixtures proving invalid artifact IDs, missing local roles, unsupported local roles, repeated canonical capability-reference facts, unsupported
+    special-case artifact types, rejected placeholder aliases, and docs.yaml canonical-definition attempts fail clearly.
+  next: 'Execute Task 5 only when ready; do not migrate capability schemas, validator consumers, CLI consumers, docs/TODO closure, package/runtime, install-root, version, release, vision, objective, commit, or push changes from Task 4.'
+  context:
+    intent: satisfy Task 4 isolated registry contract validation acceptance criteria only
+    constraints: no capability artifact migration, validator migration, CLI migration, docs/TODO closure, vision, objective, package/runtime, install-root, version, release, commit, or push changes
+    unknowns: executable registry loader and consumer migrations remain Task 5 and Task 6 scope
+    scope: tests/test_artifact_registry_contract.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 331
+  timestamp: 2026-05-06 20:13
+  type: chore
+  phase: build
+  what: Defined the ArtifactRegistry Interface and identity model for Task 3.
+  commit: pending
+  inspiration: Task 3 requires only the registry Interface and identity model before isolated validation, capability schema migration, validator migration, CLI migration, or test replacement.
+  discovered: >
+    references/artifacts/artifact-registry-interface-model.yaml now defines canonical artifact identity ownership, docs.yaml override precedence,
+    capability-local artifact reference shape, and explicit special-case modeling. The model keeps canonical artifact schema metadata as the
+    persisted authority for artifact IDs, display names, default paths, producers, consumers, artifact type, scope, and path-template facts;
+    keeps docs.yaml limited to runtime mapping/override data for known identities; specifies artifact_id plus local_role for future
+    capability-local references; and models PROFILE.md, PLAN_archive, harness, objective-scoped paths, and global/local/project-root/project-agent-state
+    scopes without name-specific validator exceptions.
+  verified: >
+    Validation passed: uv run python -c loaded references/artifacts/artifact-registry-interface-model.yaml, verified required record groups match
+    defined groups, verified unique artifact IDs and display names, verified all current skills/agentera/schemas/artifacts/*.yaml meta.name values
+    are represented, verified profile, plan_archive, and optimera_harness special cases exist, and verified docs.yaml unknown mapping semantics are
+    non-empty; uv run scripts/agentera query --list-artifacts still listed only changelog, decisions, design, docs, experiments, health, objective,
+    plan, progress, session, todo, and vision.
+  next: 'Execute Task 4 only when ready; do not migrate capability schemas, validator consumers, CLI consumers, tests, docs.yaml mappings, or runtime behavior from Task 3.'
+  context:
+    intent: satisfy Task 3 registry Interface and identity model acceptance criteria only
+    constraints: no capability artifact migration, validator migration, CLI migration, test replacement, docs.yaml mapping migration, vision, objective, package/runtime, install-root, version, release, commit, or push changes
+    unknowns: executable loader and failing contract validation remain Task 4 scope
+    scope: references/artifacts/artifact-registry-interface-model.yaml, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 330
+  timestamp: 2026-05-06 20:09
+  type: chore
+  phase: build
+  what: Characterized artifact registry duplication for Task 2.
+  commit: pending
+  inspiration: Task 2 requires characterization before implementation so later registry work can remove duplication without guessing at current behavior.
+  discovered: >
+    Artifact identity, display names, default paths, producers, consumers, docs.yaml mapping semantics, objective path templates,
+    PROFILE.md global paths, PLAN_archive, and harness are duplicated across skill-level artifact schemas, capability-local artifacts.yaml
+    files, .agentera/docs.yaml, scripts/validate_cross_capability.py, scripts/agentera, and tests/test_validate_cross_capability.py.
+    .agentera/artifact_registry_duplication_characterization.yaml records the split between runtime project overrides and canonical registry
+    facts, names each validator and CLI consumer boundary, and classifies PROFILE.md, PLAN_archive, harness, objective paths, and global/local
+    artifacts as explicit registry cases or scoped path templates.
+  verified: >
+    Validation passed: inspected .agentera/plan.yaml Task 2 acceptance criteria; uv run scripts/agentera plan, progress, and docs succeeded;
+    read scripts/validate_cross_capability.py, scripts/agentera, tests/test_validate_cross_capability.py, .agentera/docs.yaml, all
+    skill-level artifact schema paths, and representative capability-local artifact schemas; grep searches located DISPLAY_NAME_BY_SCHEMA,
+    CANONICAL_BY_SCHEMA, EXTERNAL_OR_LOCAL_ARTIFACTS, _resolve_artifact_path, _profile_path, PROFILE.md, PLAN_archive, harness, objective
+    paths, producer, consumer, and path duplication evidence.
+  next: 'Execute Task 3 only when ready; do not implement registry loaders or migrations from Task 2.'
+  context:
+    intent: satisfy Task 2 characterization acceptance criteria only
+    constraints: no registry loaders, schema migrations, validator changes, CLI behavior changes, test replacements, docs.yaml migration, vision, objective, package/runtime, install-root, version, release, commit, or push changes
+    unknowns: exact field names for the future registry Interface remain Task 3 scope
+    scope: .agentera/artifact_registry_duplication_characterization.yaml, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 329
+  timestamp: 2026-05-06 20:05
+  type: chore
+  phase: build
+  what: Reconciled active artifact registry plan state and scope.
+  commit: pending
+  inspiration: Task 1 of the Deepen Artifact Registry Interface plan requires plan-state and registry scope reconciliation only before registry loaders, migrations, validators, CLI changes, or tests begin.
+  discovered: >
+    The completed Deepen Capability Routing And Exit Vocabulary plan is archived at
+    .agentera/archive/PLAN-2026-05-06-deepen-capability-routing-and-exit-vocabulary.yaml with validation_evidence cycle 327 intact.
+    TODO still selects [arch-artifact-registry] as the first unresolved critical item while [arch-artifact-write-validation],
+    [audit-20-health-command-stale], [agentera-optional-claude-live-smoke], and [install-root-generated-cross-language-contract]
+    remain open. The active plan explicitly excludes artifact write validation, health freshness, live smoke, install-root,
+    package/runtime, version, release, vision, objective, commit, and push changes.
+  verified: >
+    Validation passed: uv run scripts/agentera hej baseline reported active plan progress 0/8 and next_action PLAN Task 1;
+    uv run scripts/agentera todo and uv run scripts/agentera query open-todos --format yaml both listed [arch-artifact-registry]
+    first and preserved the unrelated open findings; uv run scripts/agentera docs reported Mapping entries=12 and Docs status current=63;
+    uv run scripts/agentera query --list-artifacts listed changelog, decisions, design, docs, experiments, health, objective, plan,
+    progress, session, todo, and vision; .agentera/archive/PLAN-2026-05-06-deepen-capability-routing-and-exit-vocabulary.yaml contains
+    validation_evidence cycle 327 with focused and broad validation commands; .agentera/plan.yaml now marks only Task 1 complete.
+  next: 'Execute Task 2 only after this Task 1 checkpoint; do not start registry implementation in this cycle.'
+  context:
+    intent: satisfy Task 1 plan-state and registry scope reconciliation only
+    constraints: no registry loaders, schema migrations, validators, CLI changes, tests, vision, objective, package/runtime, install-root, version, release, commit, push, or unrelated TODO changes
+    unknowns: representative custom query support excludes routine artifact names; query open-todos is the preserved supported query baseline
+    scope: .agentera/plan.yaml and .agentera/progress.yaml
+- number: 328
+  timestamp: 2026-05-06 20:02
+  type: plan
+  phase: plan
+  what: Planned the artifact registry Interface deepening work.
+  commit: pending
+  inspiration: The next unresolved critical TODO is [arch-artifact-registry], after the routing and exit vocabulary plan closed and passed its post-plan health gate.
+  discovered: >
+    The new active plan makes canonical artifact schemas and a registry Interface the source of truth for artifact IDs, display names, default
+    paths, producers, consumers, scope, type, and explicit special cases. It keeps docs.yaml as runtime project mapping/override state and
+    narrows capability-local artifact schemas toward artifact ID plus local usage role. The completed Deepen Capability Routing And Exit
+    Vocabulary plan is archived at .agentera/archive/PLAN-2026-05-06-deepen-capability-routing-and-exit-vocabulary.yaml with cycle 327
+    validation evidence preserved. Adversarial review found 8 issues; all were addressed by adding contract isolation, bounded CLI baseline
+    evidence, measurable no-hardcoded-map checks, docs.yaml precedence rules, and explicit global/local/archive/harness/objective coverage.
+  verified: >
+    Validation passed: uv run scripts/agentera plan reports active plan Deepen Artifact Registry Interface with 8 pending tasks; uv run
+    scripts/agentera progress reports cycle 328 with this plan entry; uv run scripts/agentera todo still lists [arch-artifact-registry]
+    first and leaves artifact write validation, health freshness, optional Claude live smoke, and generated install-root follow-up open; uv
+    run scripts/agentera docs confirms PLAN maps to .agentera/plan.yaml and PROGRESS maps to .agentera/progress.yaml; uv run scripts/agentera
+    query --list-artifacts lists the 12 canonical artifacts; .agentera/archive/PLAN-2026-05-06-deepen-capability-routing-and-exit-vocabulary.yaml
+    preserves validation_evidence cycle 327.
+  next: 'Run orkestrera to execute the artifact registry Interface plan.'
+  context:
+    intent: create a full plan for the next unresolved critical architecture TODO
+    constraints: no artifact write validation, health freshness, live smoke, generated install-root contract, package/runtime/install-root changes, version bump, release publication, remote push, objective, or vision changes
+    unknowns: exact bounded CLI consumer set may narrow during characterization; plan preserves observable behavior unless evidence requires an intentional documented difference
+    scope: .agentera/plan.yaml, .agentera/progress.yaml, and .agentera/archive/PLAN-2026-05-06-deepen-capability-routing-and-exit-vocabulary.yaml
+- number: 327
+  timestamp: 2026-05-06 19:57
+  type: test
+  phase: build
+  what: Validated and closed the Deepen Capability Routing And Exit Vocabulary plan.
+  commit: pending
+  inspiration: Task 8 requires final focused and broader validation before marking the routing and exit vocabulary plan complete, while leaving unrelated TODOs open and avoiding version, release, install-root, objective, vision, commit, or push changes.
+  discovered: >
+    All Task 8 acceptance criteria pass. Focused routing, schema-backed cross-capability, exit vocabulary, capability contract, protocol,
+    per-capability primitive-reference, and cross-capability graph validation passed. Broader project validation passed through the full pytest
+    suite, docs CLI, artifact query, TODO CLI, and py_compile checks. Unrelated TODOs remain open for artifact registry, artifact write
+    validation, health command freshness, optional Claude live smoke, and generated install-root follow-up; they were not folded into this plan.
+  verified: >
+    Validation passed: uv run pytest tests/test_schema_backed_routing_interface.py tests/test_cross_capability.py
+    tests/test_exit_vocabulary_authority.py tests/test_capability_contract_loader.py tests/test_capability_contract_structure.py
+    tests/test_capability_validator_characterization.py tests/test_capability_contract_interface_usage.py tests/test_validate_cross_capability.py
+    -q reported 112 passed; uv run scripts/validate_capability.py --validate-protocol reported PASS: protocol is internally consistent; uv
+    run scripts/validate_capability.py --self-validate reported PASS: contract is self-referentially valid; all 12
+    skills/agentera/capabilities/* directories passed uv run scripts/validate_capability.py <capability> --check-primitives; uv run
+    scripts/validate_cross_capability.py reported cross-capability artifact graph ok; uv run pytest -q reported 704 passed; uv run
+    scripts/agentera docs reported Docs status current=63; uv run scripts/agentera query --list-artifacts listed 12 artifacts; uv run
+    scripts/agentera todo still listed [arch-artifact-registry], [arch-artifact-write-validation], [audit-20-health-command-stale],
+    [agentera-optional-claude-live-smoke], and [install-root-generated-cross-language-contract] as separate open work; python3 -m py_compile
+    scripts/capability_contract.py scripts/validate_capability.py scripts/validate_cross_capability.py tests/routing_test_interface.py passed.
+  next: 'Plan complete; no commit or push performed.'
+  context:
+    intent: satisfy Task 8 validation and closure only
+    constraints: no vision, objective, package/runtime, install-root, version, release, unrelated TODO, commit, or push changes
+    unknowns: none for Task 8
+    scope: .agentera/plan.yaml and .agentera/progress.yaml
+- number: 326
+  timestamp: 2026-05-06 19:54
+  type: docs
+  phase: build
+  what: Aligned docs and TODO status for Task 7.
+  commit: pending
+  inspiration: Task 7 requires documentation and TODO closure for the completed routing and exit vocabulary work without running full final validation or changing version/release surfaces.
+  discovered: >
+    TODO now resolves only [arch-routing-exit-vocabulary], while artifact registry, artifact write validation, health command freshness,
+    optional Claude live smoke, and generated install-root follow-up remain open. CHANGELOG and DOCS now describe schema-backed routing
+    tests and protocol.yaml-owned exit vocabulary without changing semver policy, version files, release metadata, vision, objective,
+    package/runtime, install-root, commit, or push state. Task 8 remains pending for full validation and plan closure.
+  verified: >
+    Focused artifact checks passed: uv run scripts/agentera todo lists [arch-artifact-registry], [arch-artifact-write-validation],
+    [audit-20-health-command-stale], [agentera-optional-claude-live-smoke], and [install-root-generated-cross-language-contract] as still
+    open while [arch-routing-exit-vocabulary] is resolved; uv run scripts/agentera docs reports last_audit as routing and exit vocabulary
+    documentation alignment; uv run scripts/agentera plan reports complete=7, pending=1 with Task 7 complete and Task 8 pending; uv run
+    scripts/agentera progress reports this cycle with non-empty verified evidence; grep found no open TODO checkbox for
+    [arch-routing-exit-vocabulary] and confirmed .agentera/docs.yaml still contains version_files and semver_policy metadata.
+  next: 'Execute Task 8 full validation and plan closure when ready.'
+  context:
+    intent: satisfy Task 7 documentation and TODO alignment only
+    constraints: no full final validation, vision, objective, package/runtime, install-root, version, release, commit, push, or unrelated TODO changes
+    unknowns: none for Task 7
+    scope: TODO.md, CHANGELOG.md, .agentera/docs.yaml, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 325
+  timestamp: 2026-05-06 19:52
+  type: test
+  phase: build
+  what: Validated exit vocabulary authority for Task 6.
+  commit: pending
+  inspiration: Task 6 requires protocol.yaml EXIT_SIGNALS and capability exit schemas to be the checked authority for exit signals while allowing legitimate non-exit task/status terminology.
+  discovered: >
+    Added tests/test_exit_vocabulary_authority.py to assert protocol EXIT_SIGNALS are exactly complete, flagged, stuck, and waiting; every
+    capability schemas/exit.yaml condition and exit_signal value is owned by protocol.yaml; blocked, escalated, and partial are rejected as
+    exit_signal values; and the same stale words remain allowed in non-exit descriptions/status fields.
+  verified: >
+    Validation passed: uv run pytest tests/test_exit_vocabulary_authority.py reported 17 passed; uv run scripts/validate_capability.py
+    --validate-protocol passed; all skills/agentera/capabilities/* directories passed uv run scripts/validate_capability.py <capability>
+    --check-primitives; uv run pytest tests/test_capability_validator_characterization.py tests/test_capability_contract_interface_usage.py
+    tests/test_exit_vocabulary_authority.py reported 46 passed; grep found no capability exit.yaml condition/exit_signal values using
+    blocked/escalated/partial and no stale exit-signal table rows in SKILL.md.
+  next: 'Execute Task 7 only when ready; do not close docs/TODO from Task 6.'
+  context:
+    intent: satisfy Task 6 exit vocabulary authority validation only
+    constraints: no Task 7 docs/TODO closure, vision, objective, package/runtime, install-root, version, release, commit, or push changes
+    unknowns: none for Task 6
+    scope: tests/test_exit_vocabulary_authority.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 324
+  timestamp: 2026-05-06 19:49
+  type: test
+  phase: build
+  what: Replaced cross-capability routing tests for Task 5.
+  commit: pending
+  inspiration: Task 5 requires broader cross-capability routing coverage to use trigger schemas and the schema-backed routing Interface instead of the old longest-substring test router.
+  discovered: >
+    tests/test_cross_capability.py now loads current capability triggers through tests/routing_test_interface.py from each
+    schemas/triggers.yaml file. The routing tests cover high-priority capability routing per capability, exact trigger loading from schema
+    files, high/medium/low priority scoring and threshold metadata, same-tier disambiguation using the current refine-the-vision overlap,
+    and explicit fallback-to-hej behavior for unmatched text.
+  verified: >
+    Validation passed: uv run pytest tests/test_cross_capability.py reported 43 passed; uv run pytest
+    tests/test_schema_backed_routing_interface.py reported 4 passed. These focused checks satisfy Task 5 acceptance for schema-backed
+    routing input, priority/threshold behavior, same-tier disambiguation, and unmatched fallback-to-hej.
+  next: 'Implement Task 6: validate exit vocabulary authority.'
+  context:
+    intent: satisfy Task 5 cross-capability routing-test replacement only
+    constraints: no Task 6 exit vocabulary validation changes, vision, objective, package/runtime, install-root, version, release, commit, or push changes
+    unknowns: none for Task 5
+    scope: tests/test_cross_capability.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 323
+  timestamp: 2026-05-06 19:47
+  type: test
+  phase: build
+  what: Defined the schema-backed routing test Interface for Task 4.
+  commit: pending
+  inspiration: Task 4 of the Deepen Capability Routing And Exit Vocabulary plan requires a focused helper that preserves trigger-schema routing metadata and reports disambiguation and fallback outcomes before Task 5 replaces broader cross-capability routing tests.
+  discovered: >
+    tests/routing_test_interface.py now loads capability trigger patterns from schemas/triggers.yaml and derives priority weights plus the
+    medium minimum threshold from the capability schema contract priority ordering. The helper preserves pattern, priority, capability,
+    trigger id, description, fallback flag, threshold metadata, source file, entry key, and disambiguation key. evaluate_route reports route,
+    disambiguate, or fallback instead of silently choosing among same-tier matches or below-threshold signals.
+  verified: >
+    Validation passed: uv run pytest tests/test_schema_backed_routing_interface.py reported 4 passed; uv run pytest
+    tests/test_cross_capability.py reported 38 passed and 1 skipped, confirming the focused Task 4 interface works and existing broader
+    cross-capability tests were not broken.
+  next: 'Implement Task 5: replace cross-capability routing tests.'
+  context:
+    intent: satisfy Task 4 schema-backed routing test Interface only
+    constraints: no broader cross-capability routing replacement, exit validation changes, SKILL.md prose changes, vision, objective, package/runtime, install-root, version, release, commit, or push changes
+    unknowns: none for Task 4
+    scope: tests/routing_test_interface.py, tests/test_schema_backed_routing_interface.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 322
+  timestamp: 2026-05-06 19:45
+  type: docs
+  phase: build
+  what: Thinned SKILL.md dispatcher routing and exit prose.
+  commit: pending
+  inspiration: Task 3 of the Deepen Capability Routing And Exit Vocabulary plan requires SKILL.md prose cleanup only after Task 2 characterized duplicate routing discovery prose and stale exit labels.
+  discovered: >
+    SKILL.md now has a single concise Trigger Pattern Discovery section. Natural-language routing and borderline disambiguation prose delegates
+    pattern matching, priority, thresholds, fallback, and disambiguation metadata to capability trigger schemas and the capability schema
+    contract instead of duplicating extraction or scoring rules. Exit signal prose now identifies protocol.yaml EXIT_SIGNALS as the authority
+    and says capability schemas/exit.yaml files reference that protocol authority, with no separate SKILL.md exit table.
+  verified: >
+    Validation passed: grep found exactly one '^### Trigger Pattern Discovery' heading in skills/agentera/SKILL.md; grep for stale exit table
+    rows matching blocked, escalated, or partial found no files; grep for duplicated extraction/scoring prose matching 'Extract the TRIGGERS',
+    'Collect all pattern strings', 'Sum the priorities', or 'same priority tier' found no files; inspected SKILL.md lines 197-234 and
+    confirmed it remains a dispatcher pointing to schemas/triggers.yaml, capability directories/schemas, the capability schema contract, and
+    protocol.yaml EXIT_SIGNALS as detailed Interface sources.
+  next: 'Implement Task 4: define schema-backed routing test Interface.'
+  context:
+    intent: satisfy Task 3 SKILL.md prose cleanup only
+    constraints: no routing helper implementation, cross-capability test replacement, exit validation tests, vision, objective, package/runtime, install-root, version, release, commit, or push changes
+    unknowns: none for Task 3
+    scope: skills/agentera/SKILL.md, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 321
+  timestamp: 2026-05-06 19:42
+  type: chore
+  phase: build
+  what: Characterized routing and exit vocabulary drift before edits.
+  commit: pending
+  inspiration: Task 2 of the Deepen Capability Routing And Exit Vocabulary plan requires characterization only before SKILL.md, routing helper, test, or exit validation edits.
+  discovered: >
+    SKILL.md lines 197-235 contain priority/threshold and disambiguation claims plus duplicate Trigger Pattern Discovery sections, with the
+    first duplicate collecting pattern strings and priority and the second collecting only pattern strings. tests/test_cross_capability.py
+    currently loads only pattern strings, routes by longest matching substring, ignores priority, threshold, and fallback metadata, and lacks
+    disambiguation coverage. protocol.yaml EXIT_SIGNALS and all 12 capability exit schemas agree on complete, flagged, stuck, and waiting.
+    The stale labels blocked, escalated, and partial are exit-signal prose drift in SKILL.md lines 257-259, while other occurrences are task,
+    status, visual-token, runtime, install-root, verification, or corpus terminology.
+  verified: >
+    Validation passed: inspected skills/agentera/SKILL.md, tests/test_cross_capability.py, skills/agentera/protocol.yaml, and all 12
+    skills/agentera/capabilities/*/schemas/exit.yaml files; grep for exit_signal stale labels found no capability exit_schema values using
+    blocked/escalated/partial and found the stale exit table only in SKILL.md lines 257-259; repository stale-label grep separated legitimate
+    blocked/partial task, status, visual-token, runtime, install-root, verification, and corpus uses from exit-signal prose; characterization
+    evidence is recorded in .agentera/routing_exit_drift_characterization.yaml; .agentera/plan.yaml marks only Task 2 complete.
+  next: 'Implement Task 3: thin SKILL dispatcher prose.'
+  context:
+    intent: satisfy Task 2 characterization only
+    constraints: no SKILL.md cleanup, routing helper replacement, cross-capability test replacement, exit validation changes, vision, objective, package/runtime, install-root, version, release, commit, or push changes
+    unknowns: whether later cleanup should revise non-exit references/contract.md line 531 wording
+    scope: .agentera/routing_exit_drift_characterization.yaml, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 320
+  timestamp: 2026-05-06 19:40
+  type: chore
+  phase: build
+  what: Reconciled active plan state and vocabulary cleanup scope.
+  commit: pending
+  inspiration: Task 1 of the Deepen Capability Routing And Exit Vocabulary plan requires plan-state and scope reconciliation only before implementation tasks begin.
+  discovered: >
+    The completed Deepen Capability Schema Contract plan is archived at .agentera/archive/PLAN-2026-05-06-deepen-capability-schema-contract.yaml
+    with cycle 318 validation evidence intact. TODO still has multiple open findings, and [arch-routing-exit-vocabulary] remains the first
+    unresolved critical item while artifact registry, artifact write validation, health freshness, live smoke, install-root, package/runtime,
+    version, release, vision, and objective changes remain out of scope. Vocabulary cleanup is limited to exit-signal drift; blocked in task,
+    upgrade, install-root, runtime, health, or generic status contexts is not a cleanup target for this plan-state task.
+  verified: >
+    Validation passed: uv run scripts/agentera plan showed active plan Deepen Capability Routing And Exit Vocabulary with Task 1 pending before
+    this reconciliation and Task 1 complete after it with complete=1, pending=7; uv run scripts/agentera progress showed cycle 320 with this
+    non-empty verified evidence; uv run scripts/agentera todo listed [arch-routing-exit-vocabulary] first and left [arch-artifact-registry],
+    [arch-artifact-write-validation], [audit-20-health-command-stale], [agentera-optional-claude-live-smoke], and
+    [install-root-generated-cross-language-contract] open; .agentera/archive/PLAN-2026-05-06-deepen-capability-schema-contract.yaml contains
+    validation_evidence cycle 318 with focused and broad validation commands; grep for blocked/escalated/partial found legitimate blocked/status
+    contexts outside exit-signal prose, so only exit-signal vocabulary drift is in scope.
+  next: 'Implement Task 2: characterize routing and exit drift.'
+  context:
+    intent: satisfy Task 1 plan-state and scope reconciliation only
+    constraints: no routing helper, test, prose, artifact registry, artifact write validation, health freshness, live smoke, install-root, package/runtime, version, release, vision, objective, commit, or push changes
+    unknowns: whether later characterization will find external or persisted stale exit-signal dependencies
+    scope: .agentera/plan.yaml and .agentera/progress.yaml
+- number: 319
+  timestamp: 2026-05-06 19:39
+  type: plan
+  phase: plan
+  what: Planned the capability routing and exit vocabulary deepening work.
+  commit: pending
+  inspiration: The next unresolved critical TODO is [arch-routing-exit-vocabulary], after the capability schema contract plan closed and passed its post-plan health gate.
+  discovered: >
+    The new active plan makes trigger schemas the routing input surface, protocol.yaml the exit vocabulary authority, and SKILL.md a thin
+    dispatcher narrative. It explicitly targets duplicate Trigger Pattern Discovery prose, stale SKILL.md exit labels, and the cross-capability
+    longest-substring test router that ignores priority, thresholds, fallback metadata, and disambiguation. The completed Deepen Capability
+    Schema Contract plan is archived at .agentera/archive/PLAN-2026-05-06-deepen-capability-schema-contract.yaml with cycle 318 validation
+    evidence preserved.
+  verified: >
+    Validation passed: uv run scripts/agentera plan showed the previous Deepen Capability Schema Contract plan complete; uv run
+    scripts/agentera todo selected [arch-routing-exit-vocabulary] as the first critical unresolved TODO; uv run scripts/agentera docs
+    confirmed PLAN maps to .agentera/plan.yaml and PROGRESS maps to .agentera/progress.yaml; .agentera/plan.yaml now contains active full
+    plan Deepen Capability Routing And Exit Vocabulary with 8 pending tasks and Given/When/Then acceptance criteria.
+  next: 'Run orkestrera to execute the capability routing and exit vocabulary plan.'
+  context:
+    intent: create a full plan for the next unresolved critical architecture TODO
+    constraints: no artifact registry, artifact write validation, health command freshness, live smoke, generated install-root contract, package/runtime/install-root changes, version bump, release publication, remote push, vision, or objective changes
+    unknowns: whether any external/persisted dependency on stale exit labels exists; plan assumes no aliases unless explicitly justified by evidence
+    scope: .agentera/plan.yaml, .agentera/progress.yaml, and .agentera/archive/PLAN-2026-05-06-deepen-capability-schema-contract.yaml
 - number: 318
   timestamp: 2026-05-06 17:03
   type: test

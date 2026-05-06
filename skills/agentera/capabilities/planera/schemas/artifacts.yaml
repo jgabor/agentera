@@ -1,87 +1,62 @@
 ARTIFACTS:
   1:
     id: A1
-    name: PLAN.md
-    path: ".agentera/plan.yaml"
+    artifact_id: plan
+    local_role: produces_and_consumes
     description: >-
       Active plan with tasks, dependencies, and behavioral acceptance criteria.
-      Planera writes this during the planning session. Realisera reads pending
-      tasks for work selection and updates task status and surprises. When
-      complete, archived to .agentera/archive/PLAN-{date}.md.
-    produces: true
-    consumes: true
+      Planera writes this during the planning session and may read existing
+      plan context before replacing or refining it.
   2:
     id: A2
-    name: PLAN_archive
-    path: ".agentera/archive/PLAN-{date}.md"
+    artifact_id: plan_archive
+    local_role: produces
     description: >-
-      Archived completed or discarded plans. Created when PLAN.md is fully
+      Created when a plan is fully
       executed or explicitly discarded by the user. Preserved for historical
       reference.
-    produces: true
-    consumes: false
   3:
     id: A3
-    name: VISION.md
-    path: ".agentera/vision.yaml or mapped path per docs.yaml"
+    artifact_id: vision
+    local_role: consumes
     description: >-
-      Project direction and north star. Produced by visionera.
       Planera reads this during Orient to understand project direction and
       align the plan with the vision.
-    produces: false
-    consumes: true
   4:
     id: A4
-    name: DECISIONS.md
-    path: ".agentera/decisions.yaml"
+    artifact_id: decisions
+    local_role: consumes
     description: >-
-      Reasoning trail with confidence labels. Produced by resonera.
       Planera reads firm (DL1) entries only as hard constraints for planning.
-    produces: false
-    consumes: true
   5:
     id: A5
-    name: TODO.md
-    path: "TODO.md"
+    artifact_id: todo
+    local_role: consumes
     description: >-
-      Open problems by severity. Planera reads this to identify related known
+      Planera reads this to identify related known
       issues that the plan should address.
-    produces: false
-    consumes: true
   6:
     id: A6
-    name: HEALTH.md
-    path: ".agentera/health.yaml"
+    artifact_id: health
+    local_role: consumes
     description: >-
-      Codebase health grades and trends. Produced by inspektera.
       Planera reads this to factor structural issues into the plan.
-    produces: false
-    consumes: true
   7:
     id: A7
-    name: PROGRESS.md
-    path: ".agentera/progress.yaml"
+    artifact_id: progress
+    local_role: consumes
     description: >-
-      Recent cycle history. Produced by realisera.
       Planera reads this to understand what was built recently.
-    produces: false
-    consumes: true
   8:
     id: A8
-    name: PROFILE.md
-    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    artifact_id: profile
+    local_role: consumes
     description: >-
-      Decision profile. Produced by profilera.
       Planera reads this to calibrate planning depth and pattern preferences.
-    produces: false
-    consumes: true
   9:
     id: A9
-    name: DOCS.md
-    path: ".agentera/docs.yaml"
+    artifact_id: docs
+    local_role: consumes
     description: >-
-      Artifact path resolution and documentation coverage. Produced by dokumentera.
-      Planera reads this FIRST to resolve artifact paths and reads the
-      versioning block for version bump task generation.
-    produces: false
-    consumes: true
+      Planera reads this first to resolve project-local artifact mappings and
+      reads the versioning block for version bump task generation.

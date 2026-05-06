@@ -1,0 +1,65 @@
+header:
+  level: full
+  created: '2026-05-06'
+  status: complete
+  reviewed: '2026-05-06'
+  critic_issues: "8 found, 8 addressed, 0 dismissed"
+  title: Deepen Capability Schema Contract
+what: >
+  Make skills/agentera/capability_schema_contract.yaml the real Interface for capability validation. Replace validator-local
+  hardcoded capability contract facts in scripts/validate_capability.py with a contract loader/model that derives required groups,
+  directory requirements, entry required fields, trigger priority rules, deprecation behavior, group-prefix policy, and capability
+  primitive-reference field mappings from machine-readable contract sections.
+why: >
+  TODO [arch-capability-schema-contract] identified capability_schema_contract.yaml as a shallow Interface: it documented the
+  contract, but scripts/validate_capability.py owned the actual Implementation through hardcoded validation facts. The completed
+  plan moved those facts behind the contract loader/model while leaving protocol primitive values owned by protocol.yaml.
+constraints: >
+  Preserve protocol primitive value authority in protocol.yaml. Keep routing/exit vocabulary, artifact registry, artifact write
+  validation, package/runtime/install-root changes, version bumps, release publication, remote pushes, and unapproved writes out
+  of scope.
+tasks:
+  - number: 1
+    name: Reconcile Plan State And Contract Scope
+    status: complete
+  - number: 2
+    name: Characterize Validator Behavior And Drift
+    status: complete
+  - number: 3
+    name: Make Contract Rules Machine-Readable
+    status: complete
+  - number: 4
+    name: Define Contract Loader And Bootstrap Model
+    status: complete
+  - number: 5
+    name: Migrate Capability Validation To Contract Data
+    status: complete
+  - number: 6
+    name: Migrate Primitive Reference Mapping Safely
+    status: complete
+  - number: 7
+    name: Align Tests, Docs, And TODO Status
+    status: complete
+  - number: 8
+    name: Validate And Close
+    status: complete
+validation_evidence:
+  source_artifact: .agentera/progress.yaml
+  cycle: 318
+  timestamp: '2026-05-06 17:03'
+  summary: >
+    Capability schema contract closure validation passed with focused contract loader, structure, validator characterization,
+    interface/primitive-reference, per-capability, protocol validation, full pytest, all capability validations,
+    cross-capability validation, lifecycle validation, docs CLI, artifact query, and py_compile checks.
+  commands:
+    - uv run pytest tests/test_capability_contract_loader.py tests/test_capability_contract_structure.py tests/test_capability_validator_characterization.py tests/test_capability_contract_interface_usage.py -q (45 passed)
+    - uv run pytest all 12 per-capability test files -q (65 passed)
+    - uv run scripts/validate_capability.py --validate-protocol
+    - uv run pytest -q (678 passed, 1 skipped)
+    - uv run scripts/validate_capability.py --self-validate
+    - uv run scripts/validate_capability.py for all 12 capability directories
+    - uv run scripts/validate_cross_capability.py
+    - uv run scripts/validate_lifecycle_adapters.py
+    - uv run scripts/agentera docs
+    - uv run scripts/agentera query --list-artifacts
+    - python3 -m py_compile scripts/capability_contract.py scripts/validate_capability.py

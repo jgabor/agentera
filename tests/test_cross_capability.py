@@ -20,6 +20,13 @@ from pathlib import Path
 import yaml
 import pytest
 
+from routing_test_interface import (
+    TriggerPattern,
+    evaluate_route,
+    load_routing_policy,
+    load_trigger_patterns,
+)
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CAPABILITIES_DIR = REPO_ROOT / "skills" / "agentera" / "capabilities"
@@ -57,42 +64,6 @@ def _extract_protocol_refs_from_schemas(cap_dir: Path) -> set[str]:
     return refs
 
 
-def _collect_all_triggers() -> dict[str, list[str]]:
-    result: dict[str, list[str]] = {}
-    for cap_dir in sorted(CAPABILITIES_DIR.iterdir()):
-        if not cap_dir.is_dir():
-            continue
-        schemas_dir = cap_dir / "schemas"
-        if not schemas_dir.is_dir():
-            continue
-        patterns: list[str] = []
-        for yaml_file in sorted(schemas_dir.glob("*.yaml")):
-            data = yaml.safe_load(yaml_file.read_text()) or {}
-            triggers = data.get("TRIGGERS")
-            if not isinstance(triggers, dict):
-                continue
-            for key, entry in triggers.items():
-                if isinstance(entry, dict) and "patterns" in entry:
-                    for p in entry["patterns"]:
-                        if p != "*":
-                            patterns.append(p)
-        if patterns:
-            result[cap_dir.name] = patterns
-    return result
-
-
-def _route_trigger(message: str, trigger_map: dict[str, list[str]]) -> str:
-    best: str | None = None
-    best_len = 0
-    for cap, patterns in trigger_map.items():
-        for p in patterns:
-            if p in message:
-                if len(p) > best_len:
-                    best = cap
-                    best_len = len(p)
-    return best if best is not None else "hej"
-
-
 def _extract_capability_refs_from_prose(cap_dir: Path) -> set[str]:
     prose_path = cap_dir / "prose.md"
     if not prose_path.is_file():
@@ -125,25 +96,109 @@ def test_protocol_refs_resolve(cap_name: str, protocol_ids: set[str]):
 # ── Trigger routing: 1 test per capability ─────────────────────────────
 
 @pytest.fixture(scope="module")
-def trigger_map() -> dict[str, list[str]]:
-    return _collect_all_triggers()
+def schema_triggers() -> tuple[TriggerPattern, ...]:
+    return load_trigger_patterns()
 
 
 @pytest.mark.parametrize("cap_name", CAPABILITY_NAMES)
-def test_trigger_routing(cap_name: str, trigger_map: dict[str, list[str]]):
-    if cap_name == "hej":
-        pytest.skip("hej is the fallback; routing tests verify non-hej dispatch")
-    assert cap_name in trigger_map, f"{cap_name} has no trigger patterns"
-    patterns = trigger_map[cap_name]
-    non_self = [p for p in patterns if p != cap_name and not p.startswith("/")]
-    if not non_self:
-        non_self = [p for p in patterns if not p.startswith("/")]
-    assert non_self, f"{cap_name} has no testable trigger patterns"
-    sample = non_self[0]
-    routed = _route_trigger(sample, trigger_map)
-    assert routed == cap_name, (
-        f"Trigger {sample!r} routed to {routed!r}, expected {cap_name!r}"
+def test_high_priority_trigger_routes_to_capability(
+    cap_name: str,
+    schema_triggers: tuple[TriggerPattern, ...],
+):
+    high_trigger = next(
+        (
+            trigger
+            for trigger in schema_triggers
+            if trigger.capability == cap_name
+            and trigger.priority == "high"
+            and not trigger.pattern.startswith("/")
+        ),
+        None,
     )
+    assert high_trigger is not None, f"{cap_name} has no high-priority trigger"
+
+    routed = evaluate_route(f"please use {high_trigger.pattern}", schema_triggers)
+
+    assert routed.kind == "route"
+    assert routed.capability == cap_name
+    assert routed.score == high_trigger.priority_weight
+
+
+def test_routing_loads_all_current_triggers_from_trigger_schemas(
+    schema_triggers: tuple[TriggerPattern, ...],
+):
+    expected_patterns = []
+    for cap_dir in sorted(path for path in CAPABILITIES_DIR.iterdir() if path.is_dir()):
+        triggers_path = cap_dir / "schemas" / "triggers.yaml"
+        data = yaml.safe_load(triggers_path.read_text()) or {}
+        for entry_key, entry in data["TRIGGERS"].items():
+            for pattern in entry["patterns"]:
+                expected_patterns.append((cap_dir.name, str(entry_key), pattern))
+
+    loaded_patterns = [
+        (trigger.capability, trigger.entry_key, trigger.pattern)
+        for trigger in schema_triggers
+    ]
+
+    assert loaded_patterns == expected_patterns
+    assert {trigger.source.name for trigger in schema_triggers} == {"triggers.yaml"}
+
+
+def test_priority_scoring_and_threshold_use_schema_metadata(
+    schema_triggers: tuple[TriggerPattern, ...],
+):
+    policy = load_routing_policy()
+    high = next(
+        trigger
+        for trigger in schema_triggers
+        if trigger.capability == "realisera" and trigger.pattern == "realisera"
+    )
+    medium = next(
+        trigger
+        for trigger in schema_triggers
+        if trigger.capability == "hej" and trigger.pattern == "hello"
+    )
+    low = next(trigger for trigger in schema_triggers if trigger.pattern == "*")
+
+    assert high.priority_weight == policy.priority_weights["high"]
+    assert medium.priority_weight == policy.priority_weights["medium"]
+    assert low.priority_weight == policy.priority_weights["low"]
+    assert medium.priority_weight == policy.minimum_threshold_weight
+    assert low.priority_weight < policy.minimum_threshold_weight
+    assert low.fallback is True
+
+    high_result = evaluate_route(high.pattern, schema_triggers)
+    medium_result = evaluate_route(medium.pattern, schema_triggers)
+    low_result = evaluate_route("schema metadata fallback exercise", schema_triggers)
+
+    assert high_result.kind == "route"
+    assert high_result.capability == "realisera"
+    assert high_result.score == policy.priority_weights["high"]
+    assert medium_result.kind == "route"
+    assert medium_result.capability == "hej"
+    assert medium_result.score == policy.minimum_threshold_weight
+    assert low_result.kind == "fallback"
+    assert low_result.capability == "hej"
+
+
+def test_same_tier_matches_disambiguate_explicitly(
+    schema_triggers: tuple[TriggerPattern, ...],
+):
+    result = evaluate_route("refine the vision", schema_triggers)
+
+    assert result.kind == "disambiguate"
+    assert result.capability is None
+    assert {match.capability for match in result.matches} == {"realisera", "visionera"}
+    assert {match.highest_priority for match in result.matches} == {"medium"}
+
+
+def test_unmatched_text_falls_back_to_hej(schema_triggers: tuple[TriggerPattern, ...]):
+    result = evaluate_route("zqvx schema-backed route miss", schema_triggers)
+
+    assert result.kind == "fallback"
+    assert result.capability == "hej"
+    assert result.fallback_capability == "hej"
+    assert result.matches == ()
 
 
 # ── Inter-capability prose references ──────────────────────────────────

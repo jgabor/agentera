@@ -79,6 +79,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SETUP_HELPERS_SMOKE = REPO_ROOT / "scripts" / "smoke_setup_helpers.py"
 AGENTERA_CLI = REPO_ROOT / "scripts" / "agentera"
+AGENTERA_ARTIFACT_REGISTRY = REPO_ROOT / "scripts" / "artifact_registry.py"
 AGENTERA_UPGRADE = REPO_ROOT / "scripts" / "agentera_upgrade.py"
 EXTRACT_CORPUS = REPO_ROOT / "scripts" / "extract_corpus.py"
 
@@ -128,10 +129,15 @@ def _install_query_cli_bundle(install_root: Path) -> None:
     """Install the minimal files needed for `agentera query` smoke probes."""
     (install_root / "scripts").mkdir(parents=True)
     shutil.copy2(AGENTERA_CLI, install_root / "scripts" / "agentera")
+    shutil.copy2(AGENTERA_ARTIFACT_REGISTRY, install_root / "scripts" / "artifact_registry.py")
     shutil.copy2(AGENTERA_UPGRADE, install_root / "scripts" / "agentera_upgrade.py")
     shutil.copytree(
         REPO_ROOT / "skills" / "agentera" / "schemas",
         install_root / "skills" / "agentera" / "schemas",
+    )
+    shutil.copytree(
+        REPO_ROOT / "references" / "artifacts",
+        install_root / "references" / "artifacts",
     )
 
 

@@ -1,110 +1,75 @@
 ARTIFACTS:
   1:
     id: A1
-    name: VISION.md
-    path: ".agentera/vision.yaml or mapped path per docs.yaml"
+    artifact_id: vision
+    local_role: consumes
     description: >-
-      Project direction and north star. Produced by visionera.
       Hej reads this for the briefing's project context.
-    produces: false
-    consumes: true
   2:
     id: A2
-    name: DECISIONS.md
-    path: ".agentera/decisions.yaml"
+    artifact_id: decisions
+    local_role: consumes
     description: >-
-      Pending and recent decisions. Produced by resonera.
       Hej reads this to identify unresolved decisions requiring follow-up.
-    produces: false
-    consumes: true
   3:
     id: A3
-    name: PLAN.md
-    path: ".agentera/plan.yaml"
+    artifact_id: plan
+    local_role: consumes
     description: >-
-      Active tasks with dependencies and completion status. Produced by planera.
       Hej reads this to identify the next executable task and plan progress.
-    produces: false
-    consumes: true
   4:
     id: A4
-    name: PROGRESS.md
-    path: ".agentera/progress.yaml"
+    artifact_id: progress
+    local_role: consumes
     description: >-
-      Recent cycle history and what shipped. Produced by realisera.
       Hej reads this for the briefing's "what shipped" context.
-    produces: false
-    consumes: true
   5:
     id: A5
-    name: TODO.md
-    path: "TODO.md"
+    artifact_id: todo
+    local_role: consumes
     description: >-
-      Open problems by severity. Human-maintained or produced by realisera.
       Hej reads this to identify high-severity open items for routing.
-    produces: false
-    consumes: true
   6:
     id: A6
-    name: HEALTH.md
-    path: ".agentera/health.yaml"
+    artifact_id: health
+    local_role: consumes
     description: >-
-      Codebase health grades and trends. Produced by inspektera.
       Hej reads this for the health status line and attention items.
-    produces: false
-    consumes: true
   7:
     id: A7
-    name: OBJECTIVE.md
-    path: ".agentera/optimera/<objective-name>/objective.yaml"
+    artifact_id: objective
+    local_role: consumes
     description: >-
-      Optimization target and current metric value. Produced by optimera.
       Hej reads this to check for active optimization objectives.
-    produces: false
-    consumes: true
   8:
     id: A8
-    name: EXPERIMENTS.md
-    path: ".agentera/optimera/<objective-name>/experiments.yaml"
+    artifact_id: experiments
+    local_role: consumes
     description: >-
-      Experiment status and history. Produced by optimera.
-      Hej reads this alongside OBJECTIVE.md to determine optimization status.
-    produces: false
-    consumes: true
+      Hej reads this alongside the active optimization target to determine
+      optimization status.
   9:
     id: A9
-    name: DOCS.md
-    path: ".agentera/docs.yaml"
+    artifact_id: docs
+    local_role: consumes
     description: >-
-      Artifact path resolution and documentation coverage. Produced by dokumentera.
-      Hej reads this FIRST to resolve artifact paths before reading other artifacts.
-    produces: false
-    consumes: true
+      Hej reads this first to resolve project-local artifact mappings before
+      reading other artifacts.
   10:
     id: A10
-    name: DESIGN.md
-    path: "DESIGN.md"
+    artifact_id: design
+    local_role: consumes
     description: >-
-      Visual identity system status. Produced by visualisera.
       Hej reads this for the briefing's design status.
-    produces: false
-    consumes: true
   11:
     id: A11
-    name: PROFILE.md
-    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    artifact_id: profile
+    local_role: consumes
     description: >-
-      Decision profile with per-entry confidence scoring. Produced by profilera.
       Hej reads this to report profile status (loaded/not found) in the briefing.
-      Path is global, resolved via PROFILERA_PROFILE_DIR or XDG_DATA_HOME.
-    produces: false
-    consumes: true
   12:
     id: A12
-    name: SESSION.md
-    path: ".agentera/session.yaml"
+    artifact_id: session
+    local_role: consumes
     description: >-
-      Recent session bookmark context. Produced by the session stop hook.
       Hej reads this for returning-project continuity when present.
-    produces: false
-    consumes: true

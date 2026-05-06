@@ -196,11 +196,11 @@ If the request text exactly matches a capability name (case-insensitive, e.g., "
 
 ### Layer 3: Natural language with high-confidence match
 
-If the request is natural language (e.g., "help me think through this"), evaluate trigger patterns from capability schemas. Each trigger entry has a `priority` field (high, medium, low). Sum the priorities of all matched patterns per capability. If the highest-scoring capability meets the minimum threshold (medium or higher), route to it.
+If the request is natural language (e.g., "help me think through this"), evaluate capability trigger schemas and route when the schema-owned semantics produce a high-confidence match.
 
 ### Layer 4: Borderline match — disambiguation
 
-If multiple capabilities score within the same priority tier (e.g., two capabilities both have high-priority matches), present a disambiguation prompt instead of silently choosing. List the matching capabilities with brief descriptions and ask the user to confirm or clarify.
+If the schema-owned routing semantics produce competing borderline matches, present a disambiguation prompt instead of silently choosing. List the matching capabilities with brief descriptions and ask the user to confirm or clarify.
 
 ### Layer 5: No match — fallback to hej
 
@@ -208,31 +208,7 @@ If no capability matches with sufficient confidence, route to hej for orientatio
 
 ### Trigger Pattern Discovery
 
-The trigger-to-capability map for Layers 3-4 is derived from schema files, not hardcoded here. To discover triggers:
-
-```
-For each capability directory in capabilities/:
-  Read all YAML files in schemas/
-  Extract the TRIGGERS group
-  Collect all pattern strings and their priority from trigger entries
-  Map each pattern to the capability name
-```
-
-This keeps the master SKILL.md thin: a dispatcher, not an encyclopedia. Adding a new capability means adding a directory with schemas; the routing logic adapts automatically.
-
-### Trigger Pattern Discovery
-
-The trigger-to-capability map is derived from schema files, not hardcoded here. To discover triggers:
-
-```
-For each capability directory in capabilities/:
-  Read all YAML files in schemas/
-  Extract the TRIGGERS group
-  Collect all pattern strings from trigger entries
-  Map each pattern to the capability name
-```
-
-This keeps the master SKILL.md thin: a dispatcher, not an encyclopedia. Adding a new capability means adding a directory with schemas; the routing logic adapts automatically.
+The trigger-to-capability map for Layers 3-4 is derived from each capability's `schemas/triggers.yaml`, not hardcoded here. Pattern matching, priority, thresholds, fallback, and disambiguation metadata belong to those trigger schemas and the capability schema contract. This keeps `SKILL.md` a dispatcher; capability directories and schemas remain the detailed Interface sources.
 
 ---
 
@@ -249,20 +225,13 @@ This keeps the master SKILL.md thin: a dispatcher, not an encyclopedia. Adding a
 
 ## Exit signals
 
-All capabilities use a consistent exit vocabulary:
-
-| Signal | Meaning | Exit code |
-|--------|---------|-----------|
-| complete | Task finished successfully | 0 |
-| blocked | Cannot proceed, needs human input -- stuck | 0 |
-| escalated | Issue exceeds capability scope, handoff needed -- flagged | 0 |
-| partial | Task partially done, more cycles needed -- waiting | 0 |
+All capabilities use the exit vocabulary defined by `protocol.yaml` `EXIT_SIGNALS`. Capability `schemas/exit.yaml` files reference that protocol authority; `SKILL.md` does not maintain a separate exit-signal table.
 
 ---
 
 ## Cross-skill integration
 
-The twelve-skill suite is collapsed into a single bundled skill. Each capability's schemas define cross-capability artifact references using stable IDs. Cross-capability routing is handled by the trigger pattern discovery mechanism described in the Routing Logic section. Capabilities read from and write to the same artifact store (`.agentera/` for agent-facing, project root for human-facing), so inter-capability data flows through shared artifacts, not direct invocation.
+The twelve-skill suite is collapsed into a single bundled skill. Each capability's schemas define cross-capability artifact references using stable IDs. Cross-capability routing is handled through capability trigger schemas described in the Routing Logic section. Capabilities read from and write to the same artifact store (`.agentera/` for agent-facing, project root for human-facing), so inter-capability data flows through shared artifacts, not direct invocation.
 
 ### Artifact path resolution
 

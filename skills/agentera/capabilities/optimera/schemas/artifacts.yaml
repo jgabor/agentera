@@ -1,81 +1,61 @@
 ARTIFACTS:
   1:
     id: A1
-    name: OBJECTIVE.md
-    path: ".agentera/optimera/<objective-name>/objective.yaml"
+    artifact_id: objective
+    local_role: produces_and_consumes
     description: >-
       Optimization target definition: metric, current value, target, constraints,
       scope, and measurement approach. Optimera writes this during brainstorm
       and reads it every cycle. Written to only during brainstorm, refine, or
       canonical closure.
-    produces: true
-    consumes: true
   2:
     id: A2
-    name: harness
-    path: ".agentera/optimera/<objective-name>/harness"
+    artifact_id: optimera_harness
+    local_role: produces
     description: >-
-      Eval script that measures the metric and outputs structured JSON.
-      Written during brainstorm, approved by user, then locked.
+      Eval script that measures the metric and outputs structured JSON. Written
+      during brainstorm, approved by user, then locked.
       Never modified during optimization cycles.
-    produces: true
-    consumes: false
   3:
     id: A3
-    name: EXPERIMENTS.md
-    path: ".agentera/optimera/<objective-name>/experiments.yaml"
+    artifact_id: experiments
+    local_role: produces_and_consumes
     description: >-
       Log of every experiment: hypothesis, method, change, metric before/after,
       regression result, status (kept/discarded/error), conclusion, and next
       suggestion. Optimera appends to this each cycle.
-    produces: true
-    consumes: true
   4:
     id: A4
-    name: PROGRESS.md
-    path: ".agentera/progress.yaml"
+    artifact_id: progress
+    local_role: consumes
     description: >-
-      Recent cycle history. Produced by realisera.
       Optimera inspects the last 3 entries to detect 3 consecutive failures
       before reporting exit status.
-    produces: false
-    consumes: true
   5:
     id: A5
-    name: TODO.md
-    path: "TODO.md"
+    artifact_id: todo
+    local_role: produces
     description: >-
-      Open problems by severity. Optimera writes to this when logging a
-      failure pattern after 3 consecutive failures.
-    produces: true
-    consumes: false
+      Optimera writes to this when logging a failure pattern after 3
+      consecutive failures.
   6:
     id: A6
-    name: DECISIONS.md
-    path: ".agentera/decisions.yaml"
+    artifact_id: decisions
+    local_role: consumes
     description: >-
-      Pending and recent decisions. Produced by resonera.
       Optimera reads this during Orient for context on prior deliberations
       about the optimization objective.
-    produces: false
-    consumes: true
   7:
     id: A7
-    name: PROFILE.md
-    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    artifact_id: profile
+    local_role: consumes
     description: >-
-      Decision profile with per-entry confidence scoring. Produced by profilera.
       Optimera reads this to modulate experiment aggressiveness and constraint
       tolerance based on user preferences.
-    produces: false
-    consumes: true
   8:
     id: A8
-    name: DOCS.md
-    path: ".agentera/docs.yaml"
+    artifact_id: docs
+    local_role: consumes
     description: >-
-      Artifact path resolution and documentation coverage. Produced by dokumentera.
-      Optimera reads this FIRST to resolve artifact paths before accessing
-      other artifacts.
-    produces: false
-    consumes: true
+      Optimera reads this first to resolve project-local artifact mappings
+      before accessing other artifacts.

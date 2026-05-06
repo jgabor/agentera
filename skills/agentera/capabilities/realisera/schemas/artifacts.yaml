@@ -1,96 +1,67 @@
 ARTIFACTS:
   1:
     id: A1
-    name: VISION.md
-    path: ".agentera/vision.yaml or mapped path per docs.yaml"
+    artifact_id: vision
+    local_role: produces_and_consumes
     description: >-
-      Project direction and north star. Produced by visionera or realisera brainstorm.
       Realisera reads this for work selection and never modifies it during cycles.
       Created during brainstorm (bootstrap or user-requested refinement).
-    produces: true
-    consumes: true
   2:
     id: A2
-    name: TODO.md
-    path: "TODO.md"
+    artifact_id: todo
+    local_role: produces_and_consumes
     description: >-
-      Open problems by severity. Realisera reads this for work candidates and
-      writes newly discovered issues and resolved entries. Severity classified
-      per protocol SI1-SI4.
-    produces: true
-    consumes: true
+      Realisera reads this for work candidates and writes newly discovered
+      issues and resolved entries. Severity classified per protocol SI1-SI4.
   3:
     id: A3
-    name: CHANGELOG.md
-    path: "CHANGELOG.md"
+    artifact_id: changelog
+    local_role: produces_and_consumes
     description: >-
-      Public change history in keep-a-changelog format. Realisera appends
-      entries under [Unreleased] based on commit type and promotes on
-      version bumps.
-    produces: true
-    consumes: true
+      Realisera appends public change entries under [Unreleased] based on
+      commit type and promotes on version bumps.
   4:
     id: A4
-    name: PROGRESS.md
-    path: ".agentera/progress.yaml"
+    artifact_id: progress
+    local_role: produces_and_consumes
     description: >-
       Operational cycle log. Realisera appends one entry per cycle with
       mandatory Verified field. Compacted by applying schema COMPACTION rules.
-    produces: true
-    consumes: true
   5:
     id: A5
-    name: HEALTH.md
-    path: ".agentera/health.yaml"
+    artifact_id: health
+    local_role: consumes
     description: >-
-      Codebase health grades and trends. Produced by inspektera.
       Realisera reads critical and degraded findings for work selection.
-    produces: false
-    consumes: true
   6:
     id: A6
-    name: DECISIONS.md
-    path: ".agentera/decisions.yaml"
+    artifact_id: decisions
+    local_role: consumes
     description: >-
-      Reasoning trail with confidence labels. Produced by resonera.
       Realisera reads firm (DL1) entries as constraints and exploratory (DL3)
       entries as uncertain foundations during work selection.
-    produces: false
-    consumes: true
   7:
     id: A7
-    name: PLAN.md
-    path: ".agentera/plan.yaml"
+    artifact_id: plan
+    local_role: produces_and_consumes
     description: >-
-      Active plan with tasks and acceptance criteria. Produced by planera.
       Realisera reads pending tasks for work selection and updates task status
-      and surprises. Archives to .agentera/archive/ when complete.
-    produces: true
-    consumes: true
+      and surprises.
   8:
     id: A8
-    name: PROFILE.md
-    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    artifact_id: profile
+    local_role: consumes
     description: >-
-      Decision profile with per-entry confidence scoring. Produced by profilera.
       Realisera reads this directly when it exists.
-    produces: false
-    consumes: true
   9:
     id: A9
-    name: DOCS.md
-    path: ".agentera/docs.yaml"
+    artifact_id: docs
+    local_role: consumes
     description: >-
-      Artifact path resolution and documentation coverage. Produced by dokumentera.
-      Realisera reads this FIRST to resolve artifact paths.
-    produces: false
-    consumes: true
+      Realisera reads this first to resolve project-local artifact mappings.
   10:
     id: A10
-    name: DESIGN.md
-    path: "DESIGN.md"
+    artifact_id: design
+    local_role: consumes
     description: >-
-      Visual identity system status. Produced by visualisera.
       Realisera reads this when building user-facing features.
-    produces: false
-    consumes: true

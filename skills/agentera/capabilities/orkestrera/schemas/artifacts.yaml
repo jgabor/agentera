@@ -1,81 +1,57 @@
 ARTIFACTS:
   1:
     id: A1
-    name: PLAN.md
-    path: ".agentera/plan.yaml"
+    artifact_id: plan
+    local_role: produces_and_consumes
     description: >-
-      Task queue with dependencies and completion status. Produced by planera.
       Orkestrera reads task statuses, picks work, and updates status
-      (pending → complete/blocked).
-    produces: true
-    consumes: true
+      (pending -> complete/blocked).
   2:
     id: A2
-    name: PROGRESS.md
-    path: ".agentera/progress.yaml"
+    artifact_id: progress
+    local_role: consumes
     description: >-
-      Cross-cycle context and what shipped. Produced by realisera (and other
-      dispatched capabilities). Orkestrera reads recent entries for the
+      Orkestrera reads recent cross-cycle entries for the
       presence check in Step 3 evaluation.
-    produces: false
-    consumes: true
   3:
     id: A3
-    name: HEALTH.md
-    path: ".agentera/health.yaml"
+    artifact_id: health
+    local_role: consumes
     description: >-
-      Codebase health grades and trends. Produced by inspektera.
       Orkestrera reads this after plan completion to decide whether to
       start a new plan cycle.
-    produces: false
-    consumes: true
   4:
     id: A4
-    name: TODO.md
-    path: "TODO.md"
+    artifact_id: todo
+    local_role: produces
     description: >-
-      Open problems by severity. Orkestrera writes to TODO.md when a task
-      exhausts its retry budget (blocked task logging).
-    produces: true
-    consumes: false
+      Orkestrera writes blocked task logging when a task exhausts its retry
+      budget.
   5:
     id: A5
-    name: DECISIONS.md
-    path: ".agentera/decisions.yaml"
+    artifact_id: decisions
+    local_role: consumes
     description: >-
-      Pending and recent decisions. Produced by resonera.
       Orkestrera reads this during task selection to identify firm constraints
       and exploratory uncertainties that affect dispatch context.
-    produces: false
-    consumes: true
   6:
     id: A6
-    name: VISION.md
-    path: ".agentera/vision.yaml or mapped path per docs.yaml"
+    artifact_id: vision
+    local_role: consumes
     description: >-
-      Project direction and north star. Produced by visionera.
       Orkestrera reads this during bootstrap when chaining inspirera
       for vision-gap analysis.
-    produces: false
-    consumes: true
   7:
     id: A7
-    name: PROFILE.md
-    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    artifact_id: profile
+    local_role: consumes
     description: >-
-      Decision profile with per-entry confidence scoring. Produced by profilera.
       Orkestrera reads this for persona context when calibrating dispatch
-      decisions. Path is global, resolved via PROFILERA_PROFILE_DIR or
-      XDG_DATA_HOME. If missing, proceed without persona grounding.
-    produces: false
-    consumes: true
+      decisions. If missing, proceed without persona grounding.
   8:
     id: A8
-    name: DOCS.md
-    path: ".agentera/docs.yaml"
+    artifact_id: docs
+    local_role: consumes
     description: >-
-      Artifact path resolution and documentation coverage. Produced by dokumentera.
-      Orkestrera reads this FIRST to resolve artifact paths before reading
-      or writing other artifacts.
-    produces: false
-    consumes: true
+      Orkestrera reads this first to resolve project-local artifact mappings
+      before reading or writing other artifacts.

@@ -1,0 +1,279 @@
+interface: ArtifactRegistry
+status: design_contract
+purpose: >-
+  Define the canonical artifact identity Interface before introducing a loader,
+  consumer migration, or capability-local schema migration. Canonical artifact
+  schema metadata remains the persisted authority; this model defines the shape
+  and ownership rules those schemas must satisfy.
+source_of_truth:
+  persisted_authority: skills/agentera/schemas/artifacts/*.yaml meta
+  artifact_id_field: meta.name
+  default_path_field: meta.path
+  producer_field: meta.producer
+  consumers_field: meta.consumers
+  artifact_type_field: meta.artifact_type
+  added_contract_fields:
+    display_name: >-
+      Human-facing canonical artifact name used by capability schemas, docs.yaml
+      mapping keys, validators, and bounded CLI override lookup.
+    scope: >-
+      Where the artifact lives and how path overrides may apply.
+    path_template: >-
+      Structured path facts when meta.path contains a placeholder or points to a
+      global, archive, or local-harness location.
+  single_authority_rule: >-
+    Consumers may project these facts into views, but must not maintain separate
+    display-name, default-path, producer, consumer, scope, type, or special-case
+    maps outside this registry Interface and runtime docs.yaml override loading.
+record:
+  required_groups:
+    - identity
+    - default_location
+    - relationships
+    - override_semantics
+    - capability_reference
+    - special_cases
+  groups:
+    identity:
+      type: object
+      owns:
+        - artifact ID
+        - display name
+        - artifact type
+        - artifact scope
+      required_fields:
+        artifact_id: string
+        display_name: string
+        artifact_type: enum
+        scope: enum
+    default_location:
+      type: object
+      owns:
+        - default path
+        - path-template placeholder facts
+        - path resolution phase
+      required_fields:
+        default_path: string
+        path_template: object|null
+        resolved_after_identity_lookup: boolean
+    relationships:
+      type: object
+      owns:
+        - producer capability IDs
+        - consumer capability IDs
+      required_fields:
+        producers: list[string]
+        consumers: list[string]
+    override_semantics:
+      type: object
+      owns:
+        - docs.yaml precedence boundaries
+        - project-local override eligibility
+      required_fields:
+        docs_yaml_can_override_path: boolean
+        docs_yaml_can_define_identity: boolean
+        forbidden_docs_yaml_authority: list[string]
+    capability_reference:
+      type: object
+      owns:
+        - capability-local artifact reference shape
+        - local usage role vocabulary
+        - optional role-specific description rule
+      required_fields:
+        artifact_id_field: string
+        local_role_field: string
+        local_role_values: list[string]
+        description_required: boolean
+    special_cases:
+      type: object
+      owns:
+        - global profile artifact
+        - plan archive artifact
+        - optimera harness path
+        - objective-scoped path placeholders
+        - global/local/project-root/project-agent-state distinctions
+      required_fields:
+        cases: list[object]
+owned_enums:
+  artifact_type:
+    - human_facing
+    - agent_facing
+    - global_user_state
+    - archive
+    - local_harness
+  scope:
+    - project_root
+    - project_agent_state
+    - global_user_state
+    - archive
+    - objective_scoped
+    - local_harness
+  local_usage_role:
+    - produces
+    - consumes
+    - produces_and_consumes
+docs_yaml_precedence:
+  owns:
+    - project-local path mapping overrides for known registry display names
+    - documentation index and producer notes for human docs state
+  does_not_own:
+    - canonical artifact IDs
+    - display names
+    - default paths
+    - producers
+    - consumers
+    - artifact type
+    - scope
+    - path-template semantics
+  resolution_order:
+    - Load canonical artifact identity from registry facts.
+    - Match docs.yaml mapping by known display_name only.
+    - Apply mapping path only when docs_yaml_can_override_path is true.
+    - Resolve placeholders or global environment defaults after identity lookup.
+  unknown_mapping_rule: >-
+    A docs.yaml mapping entry that does not match a known registry display_name
+    remains documentation/runtime mapping data only; it must not create a
+    canonical artifact ID or relationship.
+capability_local_reference_shape:
+  canonical_reference:
+    artifact_id: string
+    local_role: enum[produces, consumes, produces_and_consumes]
+    description: optional string
+  forbidden_repetition:
+    - canonical display_name
+    - canonical default_path
+    - canonical producers
+    - canonical consumers
+    - canonical artifact_type
+    - canonical scope
+  description_rule: >-
+    Capability-local descriptions may explain how the capability uses the
+    artifact, but must not restate canonical paths, producer lists, consumer
+    lists, or special-case path semantics.
+required_artifact_identities:
+  project_agent_state:
+    - artifact_id: plan
+      display_name: PLAN.md
+      default_path: .agentera/plan.yaml
+    - artifact_id: progress
+      display_name: PROGRESS.md
+      default_path: .agentera/progress.yaml
+    - artifact_id: docs
+      display_name: DOCS.md
+      default_path: .agentera/docs.yaml
+    - artifact_id: decisions
+      display_name: DECISIONS.md
+      default_path: .agentera/decisions.yaml
+    - artifact_id: health
+      display_name: HEALTH.md
+      default_path: .agentera/health.yaml
+    - artifact_id: vision
+      display_name: VISION.md
+      default_path: .agentera/vision.yaml
+    - artifact_id: session
+      display_name: SESSION.md
+      default_path: .agentera/session.yaml
+  project_root:
+    - artifact_id: todo
+      display_name: TODO.md
+      default_path: TODO.md
+    - artifact_id: changelog
+      display_name: CHANGELOG.md
+      default_path: CHANGELOG.md
+    - artifact_id: design
+      display_name: DESIGN.md
+      default_path: DESIGN.md
+  objective_scoped:
+    - artifact_id: objective
+      display_name: OBJECTIVE.md
+      default_path: .agentera/optimera/<name>/objective.yaml
+      path_template:
+        placeholder: <name>
+        meaning: active objective directory name
+        aliases_rejected_after_migration:
+          - <objective-name>
+    - artifact_id: experiments
+      display_name: EXPERIMENTS.md
+      default_path: .agentera/optimera/<name>/experiments.yaml
+      path_template:
+        placeholder: <name>
+        meaning: active objective directory name
+        aliases_rejected_after_migration:
+          - <objective-name>
+explicit_special_cases:
+  - artifact_id: profile
+    display_name: PROFILE.md
+    artifact_type: global_user_state
+    scope: global_user_state
+    default_path: $PROFILERA_PROFILE_DIR/PROFILE.md
+    path_template:
+      env_precedence:
+        - PROFILERA_PROFILE_DIR
+        - XDG_DATA_HOME/agentera
+        - ~/.local/share/agentera
+    docs_yaml_can_override_path: false
+  - artifact_id: plan_archive
+    display_name: PLAN_archive
+    artifact_type: archive
+    scope: archive
+    default_path: .agentera/archive/PLAN-{date}.md
+    path_template:
+      placeholder: '{date}'
+      meaning: archive date or archive-safe plan suffix
+    docs_yaml_can_override_path: false
+  - artifact_id: optimera_harness
+    display_name: harness
+    artifact_type: local_harness
+    scope: local_harness
+    default_path: .agentera/optimera/<name>/harness
+    path_template:
+      placeholder: <name>
+      meaning: active objective directory name
+      aliases_rejected_after_migration:
+        - <objective-name>
+    docs_yaml_can_override_path: false
+consumer_permissions:
+  cross_capability_validator:
+    allowed_groups:
+      - identity
+      - default_location
+      - relationships
+      - capability_reference
+      - special_cases
+    forbidden_ownership:
+      - display-name translation maps
+      - name-specific exception sets
+      - producer or consumer expectation maps
+  bounded_cli_artifact_resolution:
+    allowed_groups:
+      - identity
+      - default_location
+      - override_semantics
+      - special_cases
+    forbidden_ownership:
+      - canonical display-name maps outside registry projection
+      - objective placeholder aliases outside path_template facts
+  docs_consumers:
+    allowed_groups:
+      - identity
+      - override_semantics
+    forbidden_ownership:
+      - canonical artifact ID creation
+      - canonical producer or consumer ownership
+  tests:
+    allowed_groups:
+      - identity
+      - default_location
+      - relationships
+      - override_semantics
+      - capability_reference
+      - special_cases
+    forbidden_ownership:
+      - duplicated expected artifact maps
+      - name-specific validator exception assertions outside registry facts
+non_goals:
+  - Do not introduce an executable ArtifactRegistry loader in this task.
+  - Do not migrate capability-local artifacts.yaml files in this task.
+  - Do not migrate scripts/validate_cross_capability.py or scripts/agentera in this task.
+  - Do not change docs.yaml mapping semantics at runtime in this task.
+  - Do not change package, runtime, install-root, version, release, vision, or objective state.
