@@ -1,64 +1,44 @@
 ARTIFACTS:
   1:
     id: A1
-    name: DESIGN.md
-    path: "DESIGN.md or mapped path per DOCS.md"
+    artifact_id: design
+    local_role: produces_and_consumes
     description: >-
       Visual identity system with design tokens, typography, colors,
-      spacing, constraints, and component contracts. Produced by visualisera.
-      Contains agent-readable YAML token blocks with HTML comment markers.
-      Visualisera writes and reads this artifact.
-    produces: true
-    consumes: true
+      spacing, constraints, and component contracts. Visualisera writes and
+      reads agent-readable YAML token blocks with HTML comment markers.
   2:
     id: A2
-    name: VISION.md
-    path: ".agentera/vision.yaml or mapped path per docs.yaml"
+    artifact_id: vision
+    local_role: consumes
     description: >-
-      Project direction and north star. Produced by visionera or realisera.
       Visualisera reads the Identity section to propose visual tokens
-      coherent with the declared verbal personality. Visualisera never
-      writes VISION.md.
-    produces: false
-    consumes: true
+      coherent with the declared verbal personality.
   3:
     id: A3
-    name: PROGRESS.md
-    path: ".agentera/progress.yaml"
+    artifact_id: progress
+    local_role: consumes
     description: >-
-      Recent cycle history and what shipped. Produced by realisera.
       Visualisera reads this during refine mode to identify UI work and
       inline design decisions since the design system was written.
-    produces: false
-    consumes: true
   4:
     id: A4
-    name: TODO.md
-    path: "TODO.md"
+    artifact_id: todo
+    local_role: produces_and_consumes
     description: >-
-      Open problems by severity. Human-maintained or produced by realisera.
       Visualisera reads this to check for design-related issues and files
       code drift findings here during audit mode.
-    produces: true
-    consumes: true
   5:
     id: A5
-    name: DOCS.md
-    path: ".agentera/docs.yaml"
+    artifact_id: docs
+    local_role: consumes
     description: >-
-      Artifact path resolution and documentation coverage. Produced by dokumentera.
-      Visualisera reads this FIRST to resolve artifact paths before accessing
-      other artifacts.
-    produces: false
-    consumes: true
+      Visualisera reads this first to resolve project-local artifact mappings
+      before accessing other artifacts.
   6:
     id: A6
-    name: PROFILE.md
-    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    artifact_id: profile
+    local_role: consumes
     description: >-
-      Decision profile with per-entry confidence scoring. Produced by profilera.
       Visualisera reads aesthetic preferences from the profile as defaults
-      during the create conversation. Path resolved via PROFILERA_PROFILE_DIR
-      or XDG_DATA_HOME.
-    produces: false
-    consumes: true
+      during the create conversation.

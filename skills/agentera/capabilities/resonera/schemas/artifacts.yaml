@@ -1,61 +1,45 @@
 ARTIFACTS:
   1:
     id: A1
-    name: DECISIONS.md
-    path: ".agentera/decisions.yaml"
+    artifact_id: decisions
+    local_role: produces_and_consumes
     description: >-
       Reasoning trail with confidence labels. Resonera reads existing decisions
       to avoid re-deliberation and writes new decision entries with confidence
       (DL1 firm, DL2 provisional, DL3 exploratory). Compact older entries by
       applying schema COMPACTION rules.
-    produces: true
-    consumes: true
   2:
     id: A2
-    name: VISION.md
-    path: ".agentera/vision.yaml or mapped path per docs.yaml"
+    artifact_id: vision
+    local_role: produces_and_consumes
     description: >-
-      Project direction and north star. Resonera may write to VISION.md only
-      with explicit user confirmation when a decision feeds into project
-      direction. Read for context during deliberation.
-    produces: true
-    consumes: true
+      Resonera may update project direction only with explicit user
+      confirmation when a decision feeds into project direction. Read for
+      context during deliberation.
   3:
     id: A3
-    name: TODO.md
-    path: "TODO.md"
+    artifact_id: todo
+    local_role: produces_and_consumes
     description: >-
-      Open problems by severity. Resonera may add tech debt items surfaced
-      during deliberation only with explicit user confirmation. Severity
-      per protocol SI1-SI4.
-    produces: true
-    consumes: true
+      Resonera may add tech debt items surfaced during deliberation only with
+      explicit user confirmation. Severity per protocol SI1-SI4.
   4:
     id: A4
-    name: OBJECTIVE.md
-    path: ".agentera/optimera/<objective-name>/objective.yaml"
+    artifact_id: objective
+    local_role: produces_and_consumes
     description: >-
-      Optimization target. Resonera may write optimization decisions into
-      OBJECTIVE.md only with explicit user confirmation when a decision feeds
-      into what to optimize.
-    produces: true
-    consumes: true
+      Resonera may write optimization decisions only with explicit user
+      confirmation when a decision feeds into what to optimize.
   5:
     id: A5
-    name: PROFILE.md
-    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    artifact_id: profile
+    local_role: consumes
     description: >-
-      Decision profile with per-entry confidence scoring. Produced by profilera.
       Resonera reads this at session start to acknowledge high-confidence
       entries and avoid re-deliberating settled ground.
-    produces: false
-    consumes: true
   6:
     id: A6
-    name: DOCS.md
-    path: ".agentera/docs.yaml"
+    artifact_id: docs
+    local_role: consumes
     description: >-
-      Artifact path resolution and documentation coverage. Produced by dokumentera.
-      Resonera reads this FIRST to resolve artifact paths.
-    produces: false
-    consumes: true
+      Resonera reads this first to resolve project-local artifact mappings.

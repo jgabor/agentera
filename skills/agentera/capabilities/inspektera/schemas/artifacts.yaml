@@ -1,90 +1,65 @@
 ARTIFACTS:
   1:
     id: A1
-    name: HEALTH.md
-    path: ".agentera/health.yaml"
+    artifact_id: health
+    local_role: produces_and_consumes
     description: >-
       Codebase health assessment with findings, dimension grades, and trajectory.
-      Inspektera produces this artifact. Contains audit entries with per-dimension
-      grades, findings with severity and confidence scores, trend comparisons,
-      and de facto architecture patterns.
-    produces: true
-    consumes: true
+      Inspektera writes audit entries with per-dimension grades, findings with
+      severity and confidence scores, trend comparisons, and de facto
+      architecture patterns.
   2:
     id: A2
-    name: VISION.md
-    path: ".agentera/vision.yaml or mapped path per docs.yaml"
+    artifact_id: vision
+    local_role: consumes
     description: >-
-      Project direction and north star. Produced by visionera.
       Inspektera reads this to compare "what SHOULD BE" against "what IS"
       during the architecture alignment dimension.
-    produces: false
-    consumes: true
   3:
     id: A3
-    name: DECISIONS.md
-    path: ".agentera/decisions.yaml"
+    artifact_id: decisions
+    local_role: consumes
     description: >-
-      Pending and recent decisions. Produced by resonera.
       Inspektera reads this to prevent flagging deliberate decisions as findings.
-    produces: false
-    consumes: true
   4:
     id: A4
-    name: TODO.md
-    path: "TODO.md"
+    artifact_id: todo
+    local_role: produces_and_consumes
     description: >-
-      Open problems by severity. Inspektera reads this to avoid re-reporting
-      known issues and writes to it (with user confirmation) when filing
+      Inspektera reads this to avoid re-reporting known issues and writes to it
+      with user confirmation when filing
       critical and warning findings.
-    produces: true
-    consumes: true
   5:
     id: A5
-    name: PROGRESS.md
-    path: ".agentera/progress.yaml"
+    artifact_id: progress
+    local_role: consumes
     description: >-
-      Recent cycle history. Produced by realisera.
       Inspektera reads the last 3 entries to identify recent changes as
       higher-priority audit targets.
-    produces: false
-    consumes: true
   6:
     id: A6
-    name: PLAN.md
-    path: ".agentera/plan.yaml"
+    artifact_id: plan
+    local_role: consumes
     description: >-
-      Active plan with task status. Produced by planera.
       Inspektera reads this for the artifact freshness dimension: the plan's
       Created date provides the staleness baseline for dispatched capabilities.
-    produces: false
-    consumes: true
   7:
     id: A7
-    name: DESIGN.md
-    path: "DESIGN.md"
+    artifact_id: design
+    local_role: consumes
     description: >-
-      Visual identity system. Produced by visualisera.
       Inspektera reads this to audit design token consistency.
-    produces: false
-    consumes: true
   8:
     id: A8
-    name: DOCS.md
-    path: ".agentera/docs.yaml"
+    artifact_id: docs
+    local_role: consumes
     description: >-
-      Artifact path resolution and documentation coverage. Produced by dokumentera.
-      Inspektera reads this FIRST to resolve artifact paths and checks the
-      versioning convention for the version health dimension.
-    produces: false
-    consumes: true
+      Inspektera reads this first to resolve project-local artifact mappings
+      and checks the versioning convention for the version health dimension.
   9:
     id: A9
-    name: PROFILE.md
-    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    artifact_id: profile
+    local_role: consumes
     description: >-
-      Decision profile with per-entry confidence scoring. Produced by profilera.
       Inspektera reads this to calibrate what "healthy" means for this user's
       preferences and quality thresholds.
-    produces: false
-    consumes: true

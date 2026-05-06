@@ -39,6 +39,7 @@ from typing import Any
 
 import yaml
 
+from artifact_registry import ArtifactRecord, load_artifact_registry, resolve_artifact_path
 from agentera_upgrade import cmd_bundle_status, cmd_upgrade
 
 PRIME_BLOB = """\
@@ -113,6 +114,7 @@ def _discover_schemas_dir() -> Path:
 def _load_schemas(schemas_dir: Path) -> dict[str, dict[str, Any]]:
     if not schemas_dir.is_dir():
         return {}
+    registry = _load_registry_for_schemas(schemas_dir)
     schemas: dict[str, dict[str, Any]] = {}
     for schema_file in sorted(schemas_dir.glob("*.yaml")):
         try:
@@ -130,10 +132,22 @@ def _load_schemas(schemas_dir: Path) -> dict[str, dict[str, Any]]:
         fields = _discover_fields(schema)
         schemas[name] = {
             "path": artifact_path,
+            "record": registry.get(name),
             "schema": schema,
             "fields": fields,
         }
     return schemas
+
+
+def _load_registry_for_schemas(schemas_dir: Path) -> dict[str, ArtifactRecord]:
+    root = schemas_dir.parents[3] if len(schemas_dir.parents) > 3 else Path.cwd()
+    model_path = root / "references" / "artifacts" / "artifact-registry-interface-model.yaml"
+    if not model_path.is_file():
+        model_path = Path(__file__).resolve().parent.parent / "references" / "artifacts" / "artifact-registry-interface-model.yaml"
+    try:
+        return load_artifact_registry(schemas_dir, model_path)
+    except Exception:
+        return {}
 
 
 def _discover_fields(schema: dict) -> dict[str, dict]:
@@ -149,44 +163,6 @@ def _discover_fields(schema: dict) -> dict[str, dict]:
             if isinstance(entry, dict) and "field" in entry:
                 fields[entry["field"]] = entry
     return fields
-
-
-CANONICAL_BY_SCHEMA = {
-    "changelog": "CHANGELOG.md",
-    "decisions": "DECISIONS.md",
-    "design": "DESIGN.md",
-    "docs": "DOCS.md",
-    "experiments": "EXPERIMENTS.md",
-    "health": "HEALTH.md",
-    "objective": "OBJECTIVE.md",
-    "plan": "PLAN.md",
-    "progress": "PROGRESS.md",
-    "session": "SESSION.md",
-    "todo": "TODO.md",
-    "vision": "VISION.md",
-}
-
-
-def _load_artifact_overrides() -> dict[str, str]:
-    docs_path = Path.cwd() / ".agentera" / "docs.yaml"
-    if not docs_path.exists():
-        return {}
-    try:
-        data = yaml.safe_load(docs_path.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-    mapping = data.get("mapping") if isinstance(data, dict) else None
-    if not isinstance(mapping, list):
-        return {}
-    overrides: dict[str, str] = {}
-    for entry in mapping:
-        if not isinstance(entry, dict):
-            continue
-        artifact = entry.get("artifact")
-        path = entry.get("path")
-        if isinstance(artifact, str) and isinstance(path, str):
-            overrides[artifact] = path
-    return overrides
 
 
 def _active_objective_name() -> str | None:
@@ -222,11 +198,10 @@ def _active_objective_name() -> str | None:
 def _resolve_artifact_path(
     artifact_rel_path: str,
     schema_name: str | None = None,
+    record: ArtifactRecord | None = None,
 ) -> Path:
-    canonical = CANONICAL_BY_SCHEMA.get(schema_name or "")
-    overrides = _load_artifact_overrides()
-    if canonical and canonical in overrides:
-        artifact_rel_path = overrides[canonical]
+    if record is not None:
+        return resolve_artifact_path(record, Path.cwd(), _active_objective_name())
     if "<name>" in artifact_rel_path:
         objective_name = _active_objective_name()
         if objective_name:
@@ -235,6 +210,15 @@ def _resolve_artifact_path(
     if p.is_absolute():
         return p
     return Path.cwd() / p
+
+
+def _artifact_path(info: dict[str, Any], schema_name: str) -> Path:
+    record = info.get("record")
+    return _resolve_artifact_path(
+        str(info.get("path", "")),
+        schema_name,
+        record if isinstance(record, ArtifactRecord) else None,
+    )
 
 
 def _load_artifact(path: Path) -> Any:
@@ -247,13 +231,11 @@ def _load_artifact(path: Path) -> Any:
         return None
 
 
-def _profile_path() -> Path:
-    explicit = os.environ.get("PROFILERA_PROFILE_DIR")
-    if explicit:
-        return Path(explicit) / "PROFILE.md"
-    xdg = os.environ.get("XDG_DATA_HOME")
-    base = Path(xdg) if xdg else Path.home() / ".local" / "share"
-    return base / "agentera" / "PROFILE.md"
+def _registry_artifact_path(artifact_id: str, schemas_dir: Path) -> Path:
+    record = _load_registry_for_schemas(schemas_dir).get(artifact_id)
+    if record is None:
+        raise RuntimeError(f"artifact registry does not define {artifact_id!r}")
+    return _resolve_artifact_path("", record=record)
 
 
 V1_ARTIFACT_PAIRS = [
@@ -426,7 +408,7 @@ def _query_last_phase(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No progress schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_resolve_artifact_path(info["path"], "progress"))
+    data = _load_artifact(_artifact_path(info, "progress"))
     entries = _extract_entries(data)
     if not entries:
         if output_format != "text":
@@ -447,7 +429,7 @@ def _query_decisions(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No decisions schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_resolve_artifact_path(info["path"], "decisions"))
+    data = _load_artifact(_artifact_path(info, "decisions"))
     entries = _extract_entries(data)
     if not entries:
         return 0
@@ -471,7 +453,7 @@ def _query_health(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No health schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_resolve_artifact_path(info["path"], "health"))
+    data = _load_artifact(_artifact_path(info, "health"))
     entries = _extract_entries(data)
     if not entries:
         return 0
@@ -520,7 +502,7 @@ def _query_todo(
     open_only: bool = False,
 ) -> int:
     info = schemas.get("todo", {"path": "TODO.md", "fields": {}})
-    todo_path = _resolve_artifact_path(info["path"], "todo")
+    todo_path = _artifact_path(info, "todo")
     if not todo_path.exists():
         return 0
     severity = getattr(args, "severity", None)
@@ -584,7 +566,7 @@ def _query_plan(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No plan schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_resolve_artifact_path(info["path"], "plan"))
+    data = _load_artifact(_artifact_path(info, "plan"))
     if not isinstance(data, dict):
         return 0
     legacy_entries = _as_list(data.get("entries"))
@@ -623,7 +605,7 @@ def _query_progress(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No progress schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_resolve_artifact_path(info["path"], "progress"))
+    data = _load_artifact(_artifact_path(info, "progress"))
     entries = _extract_entries(data)
     if not entries:
         return 0
@@ -648,7 +630,7 @@ def _query_docs(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No docs schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_resolve_artifact_path(info["path"], "docs"))
+    data = _load_artifact(_artifact_path(info, "docs"))
     if not isinstance(data, dict):
         return 0
     legacy_entries = _as_list(data.get("entries"))
@@ -696,7 +678,7 @@ def _query_session(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No session schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_resolve_artifact_path(info["path"], "session"))
+    data = _load_artifact(_artifact_path(info, "session"))
     entries = _extract_entries(data)
     if not entries:
         return 0
@@ -714,7 +696,7 @@ def _query_design(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No design schema found", file=sys.stderr)
         return 1
-    path = _resolve_artifact_path(info["path"], "design")
+    path = _artifact_path(info, "design")
     data = _load_artifact(path)
     entries = _extract_entries(data)
     if entries:
@@ -745,7 +727,7 @@ def _query_objective(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No objective schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_resolve_artifact_path(info["path"], "objective"))
+    data = _load_artifact(_artifact_path(info, "objective"))
     if not isinstance(data, dict):
         return 0
     legacy_entries = _as_list(data.get("entries"))
@@ -778,7 +760,7 @@ def _query_experiments(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No experiments schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_resolve_artifact_path(info["path"], "experiments"))
+    data = _load_artifact(_artifact_path(info, "experiments"))
     if not isinstance(data, dict):
         return 0
     entries = _as_list(data.get("experiments"))
@@ -831,7 +813,7 @@ def _load_named_artifact(schemas: dict, name: str) -> Any:
     info = schemas.get(name)
     if not info:
         return None
-    return _load_artifact(_resolve_artifact_path(info["path"], name))
+    return _load_artifact(_artifact_path(info, name))
 
 
 def _entry_status(entry: dict, default: str = "open") -> str:
@@ -852,7 +834,7 @@ def _normalize_severity(value: Any, default: str = "normal") -> str:
 
 def _load_todo_items(schemas: dict) -> list[dict[str, str]]:
     info = schemas.get("todo", {"path": "TODO.md", "fields": {}})
-    todo_path = _resolve_artifact_path(info["path"], "todo")
+    todo_path = _artifact_path(info, "todo")
     if not todo_path.exists():
         return []
     data = _load_artifact(todo_path)
@@ -1109,9 +1091,10 @@ def _select_hej_next_action(
 
 
 def cmd_hej(_args: argparse.Namespace) -> int:
-    schemas = _load_schemas(_discover_schemas_dir())
+    schemas_dir = _discover_schemas_dir()
+    schemas = _load_schemas(schemas_dir)
     mode = "returning" if any((Path.cwd() / ".agentera").glob("*.yaml")) else "fresh"
-    profile = _profile_path()
+    profile = _registry_artifact_path("profile", schemas_dir)
     profile_status = "loaded" if profile.exists() else "not found"
     v1_artifacts = _detect_v1_artifacts()
     plan = _plan_summary(schemas)
@@ -1192,7 +1175,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
 
 def _query_generic_entries(args: argparse.Namespace, schemas: dict, name: str) -> list[dict]:
     info = schemas[name]
-    data = _load_artifact(_resolve_artifact_path(info["path"], name))
+    data = _load_artifact(_artifact_path(info, name))
     entries = _extract_entries(data)
     if not entries:
         return []

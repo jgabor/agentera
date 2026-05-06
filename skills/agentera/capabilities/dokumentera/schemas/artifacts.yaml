@@ -1,84 +1,59 @@
 ARTIFACTS:
   1:
     id: A1
-    name: DOCS.md
-    path: ".agentera/docs.yaml"
+    artifact_id: docs
+    local_role: produces_and_consumes
     description: >-
       Documentation contract with conventions, artifact mapping, and
-      documentation index. Produced by dokumentera. Contains the doc root,
-      style conventions, auto-generated doc tracking, artifact paths,
-      and a status index (current/stale/missing) for all tracked docs.
-      Dokumentera writes and reads this artifact.
-    produces: true
-    consumes: true
+      documentation index. Dokumentera writes and reads doc root, style
+      conventions, auto-generated doc tracking, project-local artifact mappings,
+      and a status index (current/stale/missing) for tracked docs.
   2:
     id: A2
-    name: VISION.md
-    path: ".agentera/vision.yaml or mapped path per docs.yaml"
+    artifact_id: vision
+    local_role: consumes
     description: >-
-      Project direction and north star. Produced by visionera or realisera.
       Dokumentera reads this to understand who the documentation is for
-      and what tone to use. Dokumentera never writes VISION.md.
-    produces: false
-    consumes: true
+      and what tone to use.
   3:
     id: A3
-    name: PROGRESS.md
-    path: ".agentera/progress.yaml"
+    artifact_id: progress
+    local_role: consumes
     description: >-
-      Recent cycle history and what shipped. Produced by realisera.
       Dokumentera reads this during explore-and-generate mode to understand
       recent project context.
-    produces: false
-    consumes: true
   4:
     id: A4
-    name: DECISIONS.md
-    path: ".agentera/decisions.yaml"
+    artifact_id: decisions
+    local_role: consumes
     description: >-
-      Pending and recent decisions. Produced by resonera.
       Dokumentera reads this during explore-and-generate mode for project
       context and decision awareness.
-    produces: false
-    consumes: true
   5:
     id: A5
-    name: HEALTH.md
-    path: ".agentera/health.yaml"
+    artifact_id: health
+    local_role: consumes
     description: >-
-      Codebase health grades and trends. Produced by inspektera.
       Dokumentera reads this to discover documentation gaps surfaced
       during health audits.
-    produces: false
-    consumes: true
   6:
     id: A6
-    name: TODO.md
-    path: "TODO.md"
+    artifact_id: todo
+    local_role: produces_and_consumes
     description: >-
-      Open problems by severity. Human-maintained or produced by realisera.
       Dokumentera writes to this when code diverges from docs (per DTC,
       the code is wrong). Also reads for context during documentation work.
-    produces: true
-    consumes: true
   7:
     id: A7
-    name: DESIGN.md
-    path: "DESIGN.md"
+    artifact_id: design
+    local_role: consumes
     description: >-
-      Visual identity system. Produced by visualisera.
       Dokumentera reads this to respect the declared aesthetic and voice
       when generating user-facing documentation.
-    produces: false
-    consumes: true
   8:
     id: A8
-    name: PROFILE.md
-    path: "$PROFILERA_PROFILE_DIR/PROFILE.md (global, not project-scoped)"
+    artifact_id: profile
+    local_role: consumes
     description: >-
-      Decision profile with per-entry confidence scoring. Produced by profilera.
       Dokumentera reads this to calibrate documentation style preferences:
-      detail level, tone, format. Path resolved via PROFILERA_PROFILEDIR
-      or XDG_DATA_HOME.
-    produces: false
-    consumes: true
+      detail level, tone, format.

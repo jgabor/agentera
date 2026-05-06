@@ -1,4 +1,4 @@
-last_audit: 2026-05-06 (Capability schema contract documentation closure)
+last_audit: 2026-05-06 (Artifact registry documentation alignment)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -258,6 +258,14 @@ index:
   path: scripts/validate_capability.py
   last_updated: '2026-05-06'
   status: current
+- document: Agentera skill dispatcher
+  path: skills/agentera/SKILL.md
+  last_updated: '2026-05-06'
+  status: current
+- document: Agentera protocol
+  path: skills/agentera/protocol.yaml
+  last_updated: '2026-05-06'
+  status: current
 - document: OpenCode bootstrap smoke runner
   path: scripts/smoke_opencode_bootstrap.mjs
   last_updated: '2026-04-28'
@@ -294,6 +302,18 @@ index:
   path: tests/test_capability_contract_interface_usage.py
   last_updated: '2026-05-06'
   status: current
+- document: Schema-backed routing test interface
+  path: tests/routing_test_interface.py
+  last_updated: '2026-05-06'
+  status: current
+- document: Schema-backed routing interface tests
+  path: tests/test_schema_backed_routing_interface.py
+  last_updated: '2026-05-06'
+  status: current
+- document: Exit vocabulary authority tests
+  path: tests/test_exit_vocabulary_authority.py
+  last_updated: '2026-05-06'
+  status: current
 - document: Lefthook config
   path: .lefthook.yml
   last_updated: '2026-05-05'
@@ -306,8 +326,38 @@ coverage:
   documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: Task 7 focused verification passed 45 capability-contract tests and 65 per-capability tests; CI runs on push/PR via GitHub Actions
+  tests: Artifact registry alignment records registry-backed cross-capability tests, ArtifactRegistry contract tests, cross-capability validator evidence, full validation, and Task 8 closure evidence.
 audit_log:
+- date: '2026-05-06'
+  label: Artifact registry documentation alignment
+  findings:
+  - type: authority
+    description: Artifact metadata ownership now points at canonical artifact schemas plus references/artifacts/artifact-registry-interface-model.yaml and scripts/artifact_registry.py for artifact IDs, display names, default paths, producers, consumers, type, scope, special cases, and docs.yaml override boundaries.
+    resolution: fixed
+    severity: info
+  - type: tests
+    description: Cross-capability validator tests now use artifact_id plus local_role fixtures and derive special-case expectations from registry facts instead of re-encoding display-name, path, producer, consumer, or special-case maps.
+    resolution: fixed
+    severity: info
+  - type: scoped-deferral
+    description: TODO resolves only [arch-artifact-registry]. Task 8 completed final validation and plan closure, while artifact write validation, health command freshness, optional live smoke, and generated install-root follow-up remain open TODOs.
+    resolution: fixed
+    severity: info
+- date: '2026-05-06'
+  label: Routing and exit vocabulary documentation alignment
+  findings:
+  - type: freshness
+    description: TODO, CHANGELOG, and DOCS now reference the completed schema-backed routing test surface and protocol.yaml-owned exit vocabulary without duplicating trigger or exit values in docs metadata.
+    resolution: fixed
+    severity: info
+  - type: version-policy
+    description: Version policy evaluated as docs/chore/test alignment only. Per semver_policy docs/chore/test no package version bump is required, so version_files and release metadata remain unchanged.
+    resolution: fixed
+    severity: info
+  - type: scoped-deferral
+    description: Task 7 updated documentation and TODO status only at the time; the later alignment cycle completed Task 8 final validation and plan closure. Separate open TODOs are artifact write validation, health command freshness, optional live smoke, and generated install-root follow-up.
+    resolution: fixed
+    severity: info
 - date: '2026-05-06'
   label: Capability schema contract documentation closure
   findings:
@@ -324,7 +374,7 @@ audit_log:
     resolution: fixed
     severity: info
   - type: scoped-deferral
-    description: TODO resolves only [arch-capability-schema-contract]; routing/exit vocabulary, artifact registry, artifact write validation, health command freshness, and optional Claude live smoke remain separate open findings.
+    description: TODO resolves only [arch-capability-schema-contract]; routing/exit vocabulary, then-separate artifact registry work, artifact write validation, health command freshness, and optional Claude live smoke were deferred, with artifact registry closure now recorded in the later artifact registry alignment entry.
     resolution: fixed
     severity: info
 - date: '2026-05-06'
@@ -339,7 +389,7 @@ audit_log:
     resolution: fixed
     severity: info
   - type: scoped-deferral
-    description: Capability schema contract, routing/exit vocabulary, artifact registry, and artifact write validation work remain separate open TODOs.
+    description: Capability schema contract, routing/exit vocabulary, then-separate artifact registry work, and artifact write validation work were deferred at the time, with artifact registry closure now recorded in the later artifact registry alignment entry.
     resolution: fixed
     severity: info
 - date: '2026-05-06'
@@ -354,7 +404,7 @@ audit_log:
     resolution: fixed
     severity: info
   - type: scoped-deferral
-    description: Package manifest registry, artifact write validation, capability schema contract, routing and exit vocabulary, and artifact registry work remain separate open TODOs.
+    description: Package manifest registry, artifact write validation, capability schema contract, routing and exit vocabulary, and then-separate artifact registry work were deferred at the time, with artifact registry closure now recorded in the later artifact registry alignment entry.
     resolution: fixed
     severity: info
 - date: '2026-05-05'

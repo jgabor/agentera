@@ -5,17 +5,14 @@
 # ///
 """Validate cross-capability artifact producer/consumer consistency.
 
-The capability-local ``schemas/artifacts.yaml`` files are the behavioral
-contracts: they say which capability produces or consumes each canonical
-artifact. The skill-level artifact schemas are the shared API. This script
-checks that those two layers agree on artifact names, paths, producers, and
-consumers.
+The registry owns canonical artifact identity and shared relationships. The
+capability-local ``schemas/artifacts.yaml`` files declare local usage through
+``artifact_id`` plus ``local_role`` references.
 """
 
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,37 +20,19 @@ from typing import Any
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from artifact_registry import ArtifactRecord, load_artifact_registry
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CAPABILITIES_DIR = REPO_ROOT / "skills" / "agentera" / "capabilities"
 ARTIFACT_SCHEMAS_DIR = REPO_ROOT / "skills" / "agentera" / "schemas" / "artifacts"
 
-EXTERNAL_OR_LOCAL_ARTIFACTS = {
-    "PROFILE.md",
-    "PLAN_archive",
-    "harness",
-}
-
-DISPLAY_NAME_BY_SCHEMA = {
-    "changelog": "CHANGELOG.md",
-    "decisions": "DECISIONS.md",
-    "design": "DESIGN.md",
-    "docs": "DOCS.md",
-    "experiments": "EXPERIMENTS.md",
-    "health": "HEALTH.md",
-    "objective": "OBJECTIVE.md",
-    "plan": "PLAN.md",
-    "progress": "PROGRESS.md",
-    "session": "SESSION.md",
-    "todo": "TODO.md",
-    "vision": "VISION.md",
-}
-
 
 @dataclass(frozen=True)
 class CanonicalArtifact:
-    name: str
-    path: str
+    artifact_id: str
+    display_name: str
     producers: set[str]
     consumers: set[str]
 
@@ -61,20 +40,10 @@ class CanonicalArtifact:
 @dataclass(frozen=True)
 class CapabilityArtifact:
     capability: str
-    name: str
-    path: str
-    produces: bool
-    consumes: bool
-
-
-def _as_set(value: Any) -> set[str]:
-    if value is None:
-        return set()
-    if isinstance(value, str):
-        return {value}
-    if isinstance(value, list):
-        return {str(v) for v in value}
-    return {str(value)}
+    artifact_id: str
+    display_name: str
+    producers: set[str]
+    consumers: set[str]
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -83,39 +52,18 @@ def _load_yaml(path: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
-def _display_name(schema_name: str) -> str:
-    return DISPLAY_NAME_BY_SCHEMA.get(schema_name, f"{schema_name.upper()}.md")
-
-
-def _normalize_path(path: str) -> str:
-    """Collapse capability prose variants to comparable canonical paths."""
-    p = str(path).strip()
-    p = re.sub(r"\s*\([^)]*\)\s*$", "", p)
-    p = re.sub(r"\s+or\s+mapped\s+path\s+per\s+(?:docs\.yaml|DOCS\.md)$", "", p)
-    p = p.replace("<objective-name>", "<name>")
-    return p.strip()
-
-
 def load_canonical_artifacts(
     artifact_schemas_dir: Path = ARTIFACT_SCHEMAS_DIR,
 ) -> dict[str, CanonicalArtifact]:
-    artifacts: dict[str, CanonicalArtifact] = {}
-    for schema_path in sorted(artifact_schemas_dir.glob("*.yaml")):
-        data = _load_yaml(schema_path)
-        meta = data.get("meta", {})
-        if not isinstance(meta, dict):
-            continue
-        schema_name = str(meta.get("name", "")).strip()
-        if not schema_name:
-            continue
-        display_name = _display_name(schema_name)
-        artifacts[display_name] = CanonicalArtifact(
-            name=display_name,
-            path=_normalize_path(str(meta.get("path", ""))),
-            producers=_as_set(meta.get("producer")),
-            consumers=_as_set(meta.get("consumers")),
+    return {
+        artifact_id: CanonicalArtifact(
+            artifact_id=record.artifact_id,
+            display_name=record.display_name,
+            producers=record.producers,
+            consumers=record.consumers,
         )
-    return artifacts
+        for artifact_id, record in load_artifact_registry(artifact_schemas_dir).items()
+    }
 
 
 def load_capability_artifacts(
@@ -133,63 +81,63 @@ def load_capability_artifacts(
         for entry in entries.values():
             if not isinstance(entry, dict):
                 continue
-            name = str(entry.get("name", "")).strip()
-            path = str(entry.get("path", "")).strip()
-            if not name:
+            artifact_id = str(entry.get("artifact_id", "")).strip()
+            local_role = str(entry.get("local_role", "")).strip()
+            if not artifact_id:
                 continue
+            produces = local_role in {"produces", "produces_and_consumes"}
+            consumes = local_role in {"consumes", "produces_and_consumes"}
             records.append(CapabilityArtifact(
                 capability=cap_dir.name,
-                name=name,
-                path=_normalize_path(path),
-                produces=bool(entry.get("produces")),
-                consumes=bool(entry.get("consumes")),
+                artifact_id=artifact_id,
+                display_name=artifact_id,
+                producers={cap_dir.name} if produces else set(),
+                consumers={cap_dir.name} if consumes else set(),
             ))
     return records
+
+
+def _display_name(record: CapabilityArtifact, registry: dict[str, ArtifactRecord]) -> str:
+    artifact = registry.get(record.artifact_id)
+    return artifact.display_name if artifact else record.artifact_id
 
 
 def validate_graph(
     artifact_schemas_dir: Path = ARTIFACT_SCHEMAS_DIR,
     capabilities_dir: Path = CAPABILITIES_DIR,
 ) -> list[str]:
+    registry = load_artifact_registry(artifact_schemas_dir)
     canonical = load_canonical_artifacts(artifact_schemas_dir)
     capability_artifacts = load_capability_artifacts(capabilities_dir)
     capability_names = {p.name for p in capabilities_dir.iterdir() if p.is_dir()}
     errors: list[str] = []
 
-    by_name: dict[str, list[CapabilityArtifact]] = {}
+    by_artifact_id: dict[str, list[CapabilityArtifact]] = {}
     for record in capability_artifacts:
-        by_name.setdefault(record.name, []).append(record)
-        if record.name not in canonical:
-            if record.name not in EXTERNAL_OR_LOCAL_ARTIFACTS:
-                errors.append(
-                    f"{record.capability}: unknown artifact {record.name!r}"
-                )
+        by_artifact_id.setdefault(record.artifact_id, []).append(record)
+        name = _display_name(record, registry)
+        if record.artifact_id not in canonical:
+            errors.append(f"{record.capability}: unknown artifact_id {record.artifact_id!r}")
             continue
-        if not record.produces and not record.consumes:
+        if not record.producers and not record.consumers:
             errors.append(
-                f"{record.capability}: {record.name} neither produces nor consumes"
-            )
-        expected_path = canonical[record.name].path
-        if record.path != expected_path:
-            errors.append(
-                f"{record.capability}: {record.name} path {record.path!r} "
-                f"does not match canonical {expected_path!r}"
+                f"{record.capability}: {name} neither produces nor consumes"
             )
 
-    for name, artifact in canonical.items():
-        records = by_name.get(name, [])
-        produced_by = {r.capability for r in records if r.produces}
-        consumed_by = {r.capability for r in records if r.consumes}
+    for artifact_id, artifact in canonical.items():
+        records = by_artifact_id.get(artifact_id, [])
+        produced_by = set().union(*(r.producers for r in records)) if records else set()
+        consumed_by = set().union(*(r.consumers for r in records)) if records else set()
         schema_producers = artifact.producers & capability_names
         schema_consumers = artifact.consumers & capability_names
-        if schema_producers != produced_by:
+        if schema_producers and schema_producers != produced_by:
             errors.append(
-                f"{name}: skill-level producers {sorted(schema_producers)} "
+                f"{artifact.display_name}: registry producers {sorted(schema_producers)} "
                 f"do not match capability producers {sorted(produced_by)}"
             )
-        if "all_skills" not in artifact.consumers and schema_consumers != consumed_by:
+        if artifact.consumers and "all_skills" not in artifact.consumers and schema_consumers != consumed_by:
             errors.append(
-                f"{name}: skill-level consumers {sorted(schema_consumers)} "
+                f"{artifact.display_name}: registry consumers {sorted(schema_consumers)} "
                 f"do not match capability consumers {sorted(consumed_by)}"
             )
 

@@ -4,135 +4,159 @@ header:
   status: complete
   reviewed: '2026-05-06'
   critic_issues: "8 found, 8 addressed, 0 dismissed"
-  title: Deepen Capability Schema Contract
+  revised: >
+    Added an isolated registry-contract task, bounded CLI consumers, measurable no-hardcoded-map acceptance, explicit docs.yaml override
+    semantics, and special-case artifact coverage after adversarial review.
+  title: Deepen Artifact Registry Interface
 what: >
-  Make skills/agentera/capability_schema_contract.yaml the real Interface for capability validation. Replace validator-local
-  hardcoded capability contract facts in scripts/validate_capability.py with a contract loader/model that derives required groups,
-  directory requirements, entry required fields, trigger priority rules, deprecation behavior, group-prefix policy, and capability
-  primitive-reference field mappings from machine-readable contract sections. Capability tests should prove changing a fixture
-  contract changes validation behavior.
+  Deepen Agentera artifact metadata into a real registry Interface. Canonical artifact schemas should own artifact identity, display names,
+  default paths, producers, consumers, scope, and special-case classifications. Capability-local artifact schemas should reference canonical
+  artifact IDs plus local usage role instead of repeating canonical names and paths, while validators, docs consumers, tests, and bounded CLI
+  artifact-resolution reads consume the same registry facts.
 why: >
-  TODO [arch-capability-schema-contract] identifies capability_schema_contract.yaml as a shallow Interface: it documents the
-  contract, but scripts/validate_capability.py owns the actual Implementation through REQUIRED_GROUPS, GROUP_PREFIXES,
-  PROTOCOL_GROUPS, PROTOCOL_REFERENCEABLE_FIELDS, VALID_PRIORITIES, and directory checks. validate_capability(cap_dir,
-  contract_path) accepts a contract path, but normal capability validation currently ignores that path.
+  TODO [arch-artifact-registry] identifies a shallow registry seam: scripts/validate_cross_capability.py, skills/agentera/schemas/artifacts/*.yaml,
+  capability-local artifacts.yaml files, .agentera/docs.yaml, scripts/agentera, and tests repeat artifact names, paths, producers, consumers,
+  display names, and exception knowledge. Canonical artifact schemas already carry metadata, but callers still need translation maps and
+  validator exceptions, so artifact moves or renames remain broad and brittle.
 constraints: >
-  Preserve current capability validation semantics and CLI output unless characterization explicitly names an intentional change.
-  capability_schema_contract.yaml owns capability schema structure only. protocol.yaml remains the sole owner of protocol primitive
-  groups, primitive values, protocol group prefixes, and protocol self-validation. Do not implement routing/exit vocabulary fixes,
-  artifact registry, artifact write validation, package/runtime/install-root changes, version bumps, release
-  publication, remote pushes, or unapproved writes.
+  Preserve current observable CLI behavior unless an acceptance criterion names an intentional change. Keep docs.yaml as runtime project
+  mapping/override state, not the canonical registry. Do not implement artifact write validation, health freshness, optional live smoke,
+  generated install-root contract, package/runtime/install-root changes, version bump, release publication, remote push, objective/vision
+  changes, or broad migration beyond capability artifact schemas referencing canonical artifact IDs plus local usage role.
 scope:
   included:
-    - archive the completed PackageManifest registry plan with validation evidence
-    - characterize current validator behavior, CLI output, warnings, exit codes, and contract drift before migration
-    - make missing contract rules machine-readable before relying on them
-    - define CapabilitySchemaContract ownership, bootstrap rules, and protocol boundary
-    - introduce a contract loader/model with malformed-contract fixture tests
-    - migrate capability directory validation to use contract data through contract_path
-    - migrate capability primitive-reference field mapping while keeping protocol primitive values in protocol.yaml
-    - align capability tests, docs, and TODO status
-    - validate all capabilities and close only [arch-capability-schema-contract]
+    - archive the completed routing and exit vocabulary plan with cycle 327 validation evidence
+    - characterize duplicate artifact identity, path, producer, consumer, display-name, and exception knowledge
+    - define canonical artifact registry metadata for IDs, display names, defaults, roles, scope, and explicit special cases
+    - migrate capability artifact schemas to canonical artifact ID references plus local usage role
+    - migrate cross-capability validation and bounded CLI artifact-resolution reads to registry facts while preserving observable behavior
+    - replace hardcoded relationship tests with registry-backed validation, including global/local/archive/harness/objective cases
+    - update only documentation and TODO state needed to describe artifact metadata ownership and plan completion
   excluded:
-    - protocol.yaml primitive value authority or protocol self-validation ownership changes
-    - routing/exit vocabulary changes, including routing scoring implementation and SKILL.md exit vocabulary correction
-    - artifact registry refactor
-    - artifact write validation Module split
-    - package/runtime/install-root changes, including PackageManifest registry, RuntimeAdapter registry, and install-root changes
+    - artifact write validation hook split
+    - health command freshness fix
+    - optional live model/runtime smoke
+    - generated install-root contract or install-root behavior
+    - package/runtime manifest changes
     - version bump or release publication
+    - release metadata changes
+    - objective or vision changes
+    - remote push or commit
   deferred:
-    - [arch-routing-exit-vocabulary]
-    - [arch-artifact-registry]
     - [arch-artifact-write-validation]
     - [audit-20-health-command-stale]
     - [agentera-optional-claude-live-smoke]
+    - [install-root-generated-cross-language-contract]
 design: >
-  Put the seam at capability schema structure, not protocol values. The contract may say which capability fields reference protocol
-  primitives; protocol.yaml still defines the primitive groups and values. Use a small bootstrap validation layer for the contract file
-  itself so malformed contract fixtures fail deterministically before the full model is built. Preserve currently unenforced group-prefix
-  behavior unless a characterization task explicitly records and approves enforcement as a semantic change.
+  Put the seam at canonical artifact identity. The registry should answer what an artifact is and how it is named by default; capability
+  schemas should answer how a capability uses that artifact locally; docs.yaml should answer project-local runtime mapping/override questions.
+  Registry consumers should prove relationships through loaded registry facts, not duplicate translation tables. Explicit global, local,
+  archive, harness, and objective path-template cases belong in the registry model rather than validator exception sets.
 tasks:
   - number: 1
-    name: Reconcile Plan State And Contract Scope
+    name: Reconcile Plan State And Registry Scope
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN the PackageManifest registry plan is complete WHEN this contract plan becomes active THEN the completed plan is archived with validation evidence intact
-      - GIVEN TODO has multiple critical findings WHEN the next item is selected THEN [arch-capability-schema-contract] is identified as the planned work and unrelated findings remain open
-      - GIVEN capability contract work starts WHEN scope is recorded THEN protocol value authority, routing/exit vocabulary, artifact registry, artifact write validation, package/runtime/install-root changes, and release publication are explicitly out of scope
+      - GIVEN the routing and exit vocabulary plan is complete WHEN this plan becomes active THEN the completed plan is archived with cycle 327 validation evidence intact
+      - GIVEN TODO has multiple open findings WHEN the next item is selected THEN [arch-artifact-registry] is identified as the planned work and unrelated TODOs remain open
+      - GIVEN registry planning starts WHEN scope is recorded THEN artifact write validation, health freshness, live smoke, install-root, package/runtime, version, release, vision, objective, commit, and push changes are explicitly out of scope
+      - GIVEN CLI behavior is in scope only as a consumer concern WHEN baseline is recorded THEN current outputs for hej, todo, docs, query --list-artifacts, and a representative query command are preserved unless a later task records an intentional difference
   - number: 2
-    name: Characterize Validator Behavior And Drift
+    name: Characterize Artifact Registry Duplication
     depends_on:
       - Task 1
     status: complete
     acceptance:
-      - GIVEN current validator CLI paths run WHEN valid, missing-directory, empty-schemas, missing-group, malformed-group, invalid-priority, and deprecation-warning fixtures are checked THEN stdout, stderr, exit codes, error labels, and ordering are recorded before migration
-      - GIVEN validate_capability receives alternate contract_path WHEN current behavior is characterized THEN the ignored-contract behavior is recorded before refactor
-      - GIVEN capability_schema_contract.yaml declares group prefixes, priority rules, and directory requirements WHEN current validator behavior is inspected THEN declared-but-unenforced and prose-only rules are named as preserve, standardize, or defer
-      - GIVEN primitive reference validation runs WHEN protocol fields are checked THEN current ownership split between capability field mapping and protocol.yaml values is recorded
+      - GIVEN current artifact metadata surfaces are inspected WHEN duplication is inventoried THEN repeated names, paths, producers, consumers, display names, and special-case rules are recorded before edits
+      - GIVEN .agentera/docs.yaml is inspected WHEN mapping data is classified THEN runtime project overrides are separated from canonical registry facts
+      - GIVEN scripts/agentera and scripts/validate_cross_capability.py are inspected WHEN consumers are characterized THEN each consumer of canonical artifact identity or path metadata is named with its observable behavior boundary
+      - GIVEN PROFILE.md, PLAN_archive, harness paths, objective paths, and global/local artifacts exist WHEN special cases are classified THEN each is described as an explicit registry case or scoped path template, not a validator exception
   - number: 3
-    name: Make Contract Rules Machine-Readable
+    name: Define Registry Interface And Identity Model
     depends_on:
       - Task 2
     status: complete
     acceptance:
-      - GIVEN priority requirements are represented WHEN the contract is loaded THEN TRIGGERS priority requiredness and allowed values are encoded as structured data, not prose parsing
-      - GIVEN directory requirements are represented WHEN the contract is loaded THEN prose.md, schemas directory, schema glob, and minimum YAML file count are encoded as structured data
-      - GIVEN entry requirements are represented WHEN the contract is loaded THEN per-group required fields and deprecation replacement behavior are encoded as structured data
-      - GIVEN primitive-reference field mapping is represented WHEN the contract is loaded THEN the contract owns capability field-to-protocol-group mapping while protocol.yaml still owns primitive group values
+      - GIVEN canonical artifact schemas carry metadata WHEN the registry Interface is defined THEN artifact ID, display name, default path, producer, consumer, artifact type, scope, and path-template facts have one authoritative source
+      - GIVEN docs.yaml may override project-local paths WHEN precedence is defined THEN the registry owns known artifact identity and defaults while docs.yaml cannot create canonical IDs or own producers, consumers, scope, or type
+      - GIVEN capability-local schemas need local meaning WHEN their reference shape is specified THEN canonical identity is expressed by artifact ID and local usage role while role-specific descriptions remain optional
+      - GIVEN special cases are modeled WHEN registry metadata is reviewed THEN PROFILE.md, PLAN_archive, harness paths, objective paths, and global/local artifacts are represented without name-specific validator exceptions
   - number: 4
-    name: Define Contract Loader And Bootstrap Model
+    name: Validate Registry Contract In Isolation
     depends_on:
       - Task 3
     status: complete
     acceptance:
-      - GIVEN a contract file is loaded WHEN bootstrap validation runs THEN missing REQUIRED_GROUPS, bad ENTRY_SCHEMA, bad GROUP_PREFIXES, missing rule sections, and missing self groups fail deterministically with clear errors
-      - GIVEN a valid contract is loaded WHEN the model is built THEN required groups, directory rules, entry rules, trigger priority rules, deprecation rules, group-prefix policy, and primitive-reference mappings are available from one model
-      - GIVEN malformed contract fixtures exist WHEN contract tests run THEN each rule family has a focused failing fixture and message
-      - GIVEN protocol.yaml is loaded WHEN protocol self-validation runs THEN protocol group definitions and primitive values remain outside the CapabilitySchemaContract model
+      - GIVEN registry fields are defined WHEN focused validation runs THEN canonical IDs, display names, paths, producers, consumers, scope, type, and override semantics validate before capability migration
+      - GIVEN hardcoded maps are tempting WHEN tests are added THEN tests import or load registry facts rather than duplicating expected artifact maps
+      - GIVEN capability artifact references will change WHEN the contract is checked THEN invalid artifact IDs, missing local roles, and unsupported special-case shapes fail clearly
+      - GIVEN docs.yaml remains runtime state WHEN contract validation runs THEN docs mapping overrides are accepted only as project-local mapping data, not as canonical registry definitions
   - number: 5
-    name: Migrate Capability Validation To Contract Data
+    name: Migrate Capability Artifact Schemas To References
     depends_on:
       - Task 4
     status: complete
     acceptance:
-      - GIVEN capability directory validation runs WHEN directory, required-group, numbered-entry, stable-id, priority, and deprecation checks execute THEN those rules come from the loaded contract model
-      - GIVEN a fixture contract changes required groups, required fields, priority enum, or directory YAML minimum WHEN validation runs THEN capability validation observes the changed contract without editing validator-local constants
-      - GIVEN existing capability tests run WHEN migration lands THEN primary validation messages, warning behavior, and exit codes remain stable or intentional changes are documented
-      - GIVEN group prefixes remain non-enforced WHEN migration lands THEN the behavior is either preserved by test or explicitly changed with characterization evidence
+      - GIVEN capability artifacts.yaml files repeat canonical names and paths WHEN they are migrated THEN each canonical artifact use references an artifact ID and local produces/consumes role instead
+      - GIVEN local descriptions add capability intent WHEN schemas are migrated THEN useful local usage descriptions are preserved without restating canonical paths or producers/consumers
+      - GIVEN special-case artifacts are used by capabilities WHEN schemas are migrated THEN they reference explicit registry entries or scoped templates instead of relying on validator exceptions
+      - GIVEN old and new schema shapes are compared WHEN migration completes THEN no broad compatibility layer remains unless a concrete persisted or external consumer requires it
   - number: 6
-    name: Migrate Primitive Reference Mapping Safely
+    name: Migrate Registry Consumers
     depends_on:
       - Task 5
     status: complete
     acceptance:
-      - GIVEN capability primitive reference checks run WHEN severity, finding_severity, issue_severity, decision_label, exit_signal, and phase fields are inspected THEN field-to-protocol-group mapping comes from the contract model
-      - GIVEN a fixture contract changes a referenceable capability field mapping WHEN primitive checks run THEN validation observes that mapping without editing validator-local constants
-      - GIVEN protocol primitive values are needed WHEN primitive checks run THEN values still come only from protocol.yaml
-      - GIVEN protocol self-validation runs WHEN this migration completes THEN PROTOCOL_GROUPS-style protocol structure checks remain protocol-owned and unchanged
+      - GIVEN cross-capability validation runs WHEN artifact relationships are checked THEN names, paths, producers, consumers, and special cases come from registry facts rather than hardcoded translation or exception maps
+      - GIVEN scripts/agentera reads canonical artifact metadata WHEN bounded CLI consumers are updated THEN hej, todo, docs, query --list-artifacts, and one representative query command preserve baseline output except for intentional documented formatting-neutral differences
+      - GIVEN docs.yaml supplies runtime mapping overrides WHEN consumers resolve project-local paths THEN override precedence is applied after canonical registry identity is known
+      - GIVEN hardcoded artifact display/path/producer/consumer maps remain outside runtime docs override loading WHEN validation checks for duplication THEN the remaining duplication is removed or explicitly justified by an artifact contract
   - number: 7
-    name: Align Tests, Docs, And TODO Status
+    name: Replace Tests And Align Artifacts
     depends_on:
       - Task 6
     status: complete
     acceptance:
-      - GIVEN capability contract docs mention validation authority WHEN this task completes THEN docs point at capability_schema_contract.yaml plus the loader/model and avoid duplicating contract-owned values without validation
-      - GIVEN per-capability tests validate schemas WHEN this task completes THEN tests exercise the contract Interface rather than re-encoding validator-local constants
-      - GIVEN version policy is evaluated WHEN this refactor is closed THEN CHANGELOG, docs index, and version files are updated or explicit no-bump rationale is recorded
-      - GIVEN unrelated architecture findings remain open WHEN TODO is updated THEN only [arch-capability-schema-contract] is resolved or narrowed
+      - GIVEN registry-backed validation exists WHEN tests assert artifact relationships THEN they derive expected relationships from registry facts instead of re-encoding display-name or path maps
+      - GIVEN PROFILE.md, PLAN_archive, harness paths, objective paths, and global/local artifacts are special cases WHEN tests run THEN validators fail if those names are special-cased directly outside the registry model
+      - GIVEN documentation is updated WHEN ownership is described THEN only artifact metadata ownership, registry fields, capability-local references, and docs.yaml override semantics are changed
+      - GIVEN TODO is updated WHEN implementation is complete THEN only [arch-artifact-registry] is resolved and only after validation and CLI preservation evidence are recorded in progress or plan artifacts
   - number: 8
     name: Validate And Close
     depends_on:
       - Task 7
     status: complete
     acceptance:
-      - GIVEN focused validation runs WHEN the plan closes THEN contract loader tests, validator characterization tests, per-capability validation tests, primitive-reference tests, and protocol self-validation pass
-      - GIVEN broader validation runs WHEN practical THEN full pytest, all 12 capability validations, cross-capability validation, lifecycle validation, docs CLI, artifact query, and py_compile checks pass
-      - GIVEN future work remains WHEN this plan closes THEN routing/exit vocabulary, artifact registry, artifact write validation, health command freshness, and optional live smoke TODOs remain separate
-      - GIVEN worktree changes are reviewed WHEN validation ends THEN only capability-contract plan changes are present or unrelated changes are reported without reverting
+      - GIVEN focused validation runs WHEN the plan closes THEN registry tests, cross-capability validation, capability validation, docs CLI, TODO CLI, and bounded CLI preservation checks pass
+      - GIVEN broader validation is practical WHEN closure is attempted THEN full pytest, all capability validations, artifact query, and relevant py_compile checks pass or any skipped check is justified
+      - GIVEN future work remains WHEN this plan closes THEN artifact write validation, health freshness, optional live smoke, and generated install-root follow-up remain separate TODOs
+      - GIVEN worktree changes are reviewed WHEN validation ends THEN only artifact registry plan changes are present or unrelated changes are reported without reverting
 overall_acceptance:
-  - GIVEN a capability schema rule changes WHEN validator, tests, and docs need that rule THEN the change is made in capability_schema_contract.yaml or its model rather than duplicated across callers
-  - GIVEN a protocol primitive value changes WHEN capability primitive checks run THEN the value still comes from protocol.yaml, not from the capability contract
-  - GIVEN a malformed contract is supplied WHEN validation starts THEN the failure is deterministic and does not depend on a fully built contract model
-  - GIVEN capability contract work completes WHEN routing/exit vocabulary or artifact behavior is inspected THEN those findings remain owned by their separate TODOs
+  - GIVEN artifact identity is needed by a validator, test, capability schema, docs consumer, or bounded CLI consumer WHEN it asks for artifact metadata THEN canonical artifact schemas and the registry Interface are the source of truth for IDs, display names, default paths, producers, consumers, scope, type, and explicit special cases
+  - GIVEN a capability declares artifact usage WHEN its artifacts.yaml is inspected THEN canonical artifact identity is expressed by artifact ID plus local usage role rather than repeated canonical paths, display names, producers, or consumers
+  - GIVEN docs.yaml is inspected after the refactor WHEN path mappings are interpreted THEN it remains project runtime mapping/override state and does not own canonical artifact IDs, producers, consumers, scope, or type
+  - GIVEN validators, tests, and bounded CLI consumers are inspected WHEN artifact translation knowledge is searched THEN display/path/producer/consumer maps are absent outside the registry model and runtime docs override loading unless explicitly justified by an artifact contract
+  - GIVEN unrelated TODOs are inspected WHEN this plan closes THEN artifact write validation, health freshness, optional live smoke, and generated install-root follow-up remain untouched unless separately planned
 surprises: []
+validation_evidence:
+  source_artifact: .agentera/progress.yaml
+  cycle: 336
+  timestamp: '2026-05-06 20:45'
+  summary: >
+    Artifact registry closure validation passed after fixing three Task 8 validation blockers: mapped plan path registry lookup in temporary
+    AGENTERA_HOME projects, packaged-script metadata for scripts/artifact_registry.py, and the minimal query smoke bundle's missing registry
+    helper/model files.
+  commands:
+    - uv run pytest tests/test_artifact_registry_contract.py tests/test_validate_cross_capability.py -q (10 passed)
+    - uv run scripts/validate_cross_capability.py
+    - uv run scripts/validate_capability.py --validate-protocol
+    - uv run scripts/validate_capability.py --self-validate
+    - uv run scripts/validate_capability.py for all 12 capability directories with --check-primitives
+    - uv run scripts/agentera hej
+    - uv run scripts/agentera todo
+    - uv run scripts/agentera docs
+    - uv run scripts/agentera query --list-artifacts
+    - uv run scripts/agentera query open-todos --format yaml
+    - uv run pytest -q (711 passed)
+    - python3 -m py_compile scripts/artifact_registry.py scripts/validate_cross_capability.py scripts/agentera scripts/validate_capability.py scripts/capability_contract.py scripts/smoke_live_hosts.py

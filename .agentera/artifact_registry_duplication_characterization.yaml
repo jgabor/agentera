@@ -1,0 +1,162 @@
+header:
+  created: '2026-05-06'
+  status: current
+  task: 'Task 2: Characterize Artifact Registry Duplication'
+  plan: Deepen Artifact Registry Interface
+scope:
+  intent: Characterization only before registry implementation.
+  recorded_before_edits: true
+  excluded:
+    - registry loader implementation
+    - schema migration
+    - validator behavior changes
+    - CLI behavior changes
+    - test replacement
+    - docs.yaml mapping migration
+inspected_surfaces:
+  - path: skills/agentera/schemas/artifacts/*.yaml
+    role: canonical artifact schemas with existing metadata fields
+  - path: skills/agentera/capabilities/*/schemas/artifacts.yaml
+    role: capability-local artifact usage declarations that repeat canonical names, paths, and relationship facts
+  - path: .agentera/docs.yaml
+    role: project runtime artifact mapping and documentation state
+  - path: scripts/validate_cross_capability.py
+    role: cross-capability consistency validator and hardcoded artifact translation seam
+  - path: scripts/agentera
+    role: bounded CLI consumer for routine state commands, advanced artifact queries, path overrides, and objective path templates
+  - path: tests/test_validate_cross_capability.py
+    role: current validator behavior characterization through fixture-level hardcoded display names and paths
+duplication_inventory:
+  repeated_names:
+    - sources:
+        - skills/agentera/schemas/artifacts/*.yaml meta.name values such as plan, progress, docs, objective, and experiments
+        - skills/agentera/capabilities/*/schemas/artifacts.yaml name values such as PLAN.md, PROGRESS.md, DOCS.md, OBJECTIVE.md, EXPERIMENTS.md, PROFILE.md, PLAN_archive, and harness
+        - scripts/validate_cross_capability.py lines 37-50 DISPLAY_NAME_BY_SCHEMA
+        - scripts/agentera lines 154-167 CANONICAL_BY_SCHEMA
+        - .agentera/docs.yaml lines 21-71 mapping artifact names
+      classification: Canonical artifact identity is repeated as schema names, display names, docs mapping keys, and validator/CLI translation tables.
+  repeated_paths:
+    - sources:
+        - skill-level schema meta.path fields, for example .agentera/plan.yaml, TODO.md, and .agentera/optimera/<name>/objective.yaml
+        - capability-local path fields, often with prose suffixes such as 'or mapped path per docs.yaml' or '(per DOCS.md mapping)'
+        - .agentera/docs.yaml mapping paths for runtime project resolution
+        - scripts/agentera _resolve_artifact_path and _active_objective_name behavior at lines 192-237
+        - scripts/validate_cross_capability.py _normalize_path behavior at lines 90-96
+      classification: Default paths, runtime override paths, and human-readable path variants are currently intermingled and normalized by consumers.
+  repeated_producers:
+    - sources:
+        - skill-level schema meta.producer fields
+        - capability-local produces booleans plus descriptions that restate producer capability names
+        - .agentera/docs.yaml mapping producers at lines 24-71
+        - scripts/validate_cross_capability.py producer comparison at lines 179-189
+      classification: Producer authority is split between canonical schemas, capability-local booleans, docs mapping metadata, and validator comparison logic.
+  repeated_consumers:
+    - sources:
+        - skill-level schema meta.consumers fields, including all_skills
+        - capability-local consumes booleans and descriptions that restate local read behavior
+        - scripts/validate_cross_capability.py consumer comparison at lines 179-194
+      classification: Consumer authority exists canonically but is re-derived from every capability-local artifact entry.
+  repeated_display_names:
+    - sources:
+        - scripts/validate_cross_capability.py DISPLAY_NAME_BY_SCHEMA at lines 37-50
+        - scripts/agentera CANONICAL_BY_SCHEMA at lines 154-167
+        - capability-local artifact name fields across all 12 capabilities
+        - .agentera/docs.yaml mapping artifact keys
+      classification: Display names are not owned by the canonical schema metadata yet, so each consumer keeps or relies on its own name mapping.
+  repeated_special_case_rules:
+    - sources:
+        - scripts/validate_cross_capability.py EXTERNAL_OR_LOCAL_ARTIFACTS at lines 31-35
+        - scripts/validate_cross_capability.py _normalize_path special handling for docs mapping suffixes and <objective-name> at lines 90-96
+        - scripts/agentera _profile_path global profile path resolver at lines 250-256
+        - scripts/agentera objective directory and <name> resolution at lines 192-237 and 984-1012
+        - capability-local PLAN_archive and harness entries in planera and optimera schemas
+      classification: Special cases are encoded as validator exceptions, CLI helpers, and capability-only entries rather than explicit registry scope or path-template facts.
+docs_yaml_classification:
+  source: .agentera/docs.yaml lines 21-71
+  runtime_override_facts:
+    - mapping entries pair display artifact names with project-local paths
+    - mapping producers document current local artifact owners for documentation purposes
+    - PROFILE.md and USAGE.md entries describe global paths resolved through environment or XDG defaults
+  not_canonical_registry_facts:
+    - docs.yaml does not define artifact IDs
+    - docs.yaml does not define artifact type or scope
+    - docs.yaml does not own canonical consumer lists
+    - docs.yaml does not own canonical path-template semantics for objective-scoped artifacts
+    - docs.yaml cannot create new canonical registry identities merely by adding mapping entries
+  classification: docs.yaml should remain runtime project mapping and documentation state; canonical artifact identity, defaults, producers, consumers, scope, type, and special cases belong in registry facts.
+consumer_characterization:
+  scripts/validate_cross_capability.py:
+    identity_consumed:
+      - display names derived from schema filenames through DISPLAY_NAME_BY_SCHEMA
+      - canonical paths from skill-level meta.path
+      - producers and consumers from skill-level meta fields
+      - capability names, paths, produces flags, and consumes flags from capability-local artifacts.yaml files
+    observable_behavior_boundary: CLI exits 0 and prints 'cross-capability artifact graph ok' when names, normalized paths, producers, and consumers agree; otherwise prints FAIL lines and exits 1.
+    current_duplication_boundary: Validation currently depends on hardcoded display-name translation, special-case unknown artifact exemptions, and path normalization rules.
+  scripts/agentera:
+    identity_consumed:
+      - schema names and default paths from skill-level artifact schemas loaded by _load_schemas
+      - display names for docs overrides from CANONICAL_BY_SCHEMA
+      - docs.yaml mapping artifact/path pairs from _load_artifact_overrides
+      - active objective directory selection for objective-scoped path templates
+      - global profile path from PROFILERA_PROFILE_DIR or XDG_DATA_HOME
+    observable_behavior_boundary: Preserve routine command outputs for hej, todo, docs, objective, experiments, plan, progress, health, decisions, and generic query behavior including query --list-artifacts and representative custom queries.
+    current_duplication_boundary: CLI path resolution duplicates canonical display-name mapping and objective/profile special-case path semantics outside the artifact schemas.
+  tests/test_validate_cross_capability.py:
+    identity_consumed:
+      - fixture schema names such as plan and health
+      - fixture display names such as PLAN.md and HEALTH.md
+      - fixture default paths and producer/consumer fields
+    observable_behavior_boundary: Characterizes current validator errors for path and producer mismatch without proving a registry-backed source of truth.
+special_cases:
+  PROFILE.md:
+    current_sources:
+      - .agentera/docs.yaml lines 64-67
+      - capability-local artifacts.yaml entries across hej, planera, realisera, optimera, profilera, and other capabilities
+      - scripts/agentera _profile_path at lines 250-256
+      - scripts/validate_cross_capability.py EXTERNAL_OR_LOCAL_ARTIFACTS
+    registry_case: global artifact with environment/XDG path template and explicit non-project scope.
+  PLAN_archive:
+    current_sources:
+      - planera capability artifacts lines 13-22
+      - planera and realisera prose descriptions of plan archival
+      - scripts/validate_cross_capability.py EXTERNAL_OR_LOCAL_ARTIFACTS
+    registry_case: archive artifact or archive path template scoped under .agentera/archive rather than an unknown-artifact validator exception.
+  harness:
+    current_sources:
+      - optimera capability artifacts lines 13-22
+      - objective schema measurement fields that mention harness behavior
+      - scripts/validate_cross_capability.py EXTERNAL_OR_LOCAL_ARTIFACTS
+    registry_case: objective-scoped local path template under .agentera/optimera/<name>/harness with lifecycle metadata.
+  objective_paths:
+    current_sources:
+      - objective and experiments skill-level schema meta.path values using <name>
+      - capability-local OBJECTIVE.md and EXPERIMENTS.md paths using <objective-name>
+      - scripts/validate_cross_capability.py path normalization replacing <objective-name> with <name>
+      - scripts/agentera active objective discovery and <name> substitution
+    registry_case: scoped path templates for optimera objective state, with a single placeholder convention and active-objective resolution handled after identity lookup.
+  global_and_local_artifacts:
+    current_sources:
+      - human-facing root defaults TODO.md, CHANGELOG.md, and DESIGN.md in skill-level schemas and capability schemas
+      - agent-facing defaults under .agentera/*.yaml
+      - docs.yaml runtime mappings for project-local overrides
+      - global PROFILE.md and USAGE.md docs mapping entries
+    registry_case: explicit artifact scope values such as project_root, project_agent_state, global_user_state, archive, objective_scoped, and local_harness.
+verification:
+  inspected_files:
+    - .agentera/plan.yaml
+    - .agentera/docs.yaml
+    - scripts/validate_cross_capability.py
+    - scripts/agentera
+    - tests/test_validate_cross_capability.py
+    - skills/agentera/schemas/artifacts/*.yaml
+    - skills/agentera/capabilities/*/schemas/artifacts.yaml
+  commands:
+    - uv run scripts/agentera plan
+    - uv run scripts/agentera progress
+    - uv run scripts/agentera docs
+  searches:
+    - pattern: CANONICAL_BY_SCHEMA|DISPLAY_NAME_BY_SCHEMA|EXTERNAL_OR_LOCAL_ARTIFACTS|_resolve_artifact_path|_profile_path
+      scope: scripts/agentera and scripts/validate_cross_capability.py
+    - pattern: PROFILE.md|PLAN_archive|harness|objective|path|producer|consumers
+      scope: skills/agentera/**/*.yaml and tests/**/*.py

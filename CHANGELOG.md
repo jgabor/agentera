@@ -4,6 +4,8 @@
 
 ### Changed
 
+- Agentera routing and exit-vocabulary documentation now points at schema-backed routing tests and protocol-owned exit signals instead of duplicating trigger or exit values in `SKILL.md`.
+- Artifact metadata ownership now routes through canonical artifact schemas plus `references/artifacts/artifact-registry-interface-model.yaml` and `scripts/artifact_registry.py`; capability-local artifact schemas use `artifact_id` plus `local_role`, while cross-capability tests and bounded CLI artifact resolution consume registry facts instead of display-name or path maps.
 - Capability validation now treats `skills/agentera/capability_schema_contract.yaml` plus `scripts/capability_contract.py` as the executable schema-rule authority, with validators and tests consuming the loaded model instead of validator-local capability constants.
 - Install-root identity and diagnostics now route through the shared `scripts/install_root.py` Module for Python setup, doctor, upgrade, and bundle freshness paths; RuntimeAdapter registry, package manifest registry, and optional generated cross-language contract work remain separate follow-ups.
 

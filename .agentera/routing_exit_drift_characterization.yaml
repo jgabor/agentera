@@ -1,0 +1,86 @@
+header:
+  created: '2026-05-06'
+  status: current
+  task: 'Task 2: Characterize Routing And Exit Drift'
+  plan: Deepen Capability Routing And Exit Vocabulary
+scope:
+  intent: Characterization only before edits.
+  excluded:
+    - SKILL.md prose cleanup
+    - routing helper replacement
+    - cross-capability test replacement
+    - exit vocabulary validation changes
+routing_prose_inventory:
+  source: skills/agentera/SKILL.md
+  recorded_before_edits: true
+  findings:
+    - lines: 197-199
+      summary: Natural-language routing prose claims trigger entries have priority fields, priorities are summed per capability, and a medium-or-higher threshold is required.
+    - lines: 201-203
+      summary: Borderline routing prose claims same-tier matches should produce a disambiguation prompt instead of silently choosing.
+    - lines: 209-221
+      summary: First duplicate Trigger Pattern Discovery section says Layers 3-4 derive trigger maps from schemas and collect pattern strings plus priority.
+    - lines: 223-235
+      summary: Second duplicate Trigger Pattern Discovery section repeats the same schema-discovery algorithm but omits priority collection.
+current_test_routing_behavior:
+  source: tests/test_cross_capability.py
+  findings:
+    - lines: 60-81
+      summary: _collect_all_triggers returns only capability-to-pattern lists; trigger priority, thresholds, fallback metadata, and disambiguation metadata are not preserved.
+    - lines: 84-93
+      summary: _route_trigger chooses the matching pattern with the longest substring and falls back to hej only when no substring matches.
+    - lines: 132-146
+      summary: test_trigger_routing exercises one sample pattern per non-hej capability and asserts a single routed capability, so disambiguation behavior is not covered.
+  named_gaps:
+    - longest-substring matching
+    - ignored priority
+    - ignored threshold
+    - ignored fallback metadata
+    - missing disambiguation coverage
+exit_signal_inventory:
+  protocol_source: skills/agentera/protocol.yaml lines 209-238
+  canonical_values:
+    - complete
+    - flagged
+    - stuck
+    - waiting
+  capability_exit_schemas:
+    inspected_count: 12
+    pattern: skills/agentera/capabilities/*/schemas/exit.yaml
+    result: All inspected capability exit schemas use the same four condition and exit_signal values: complete, flagged, stuck, and waiting.
+stale_label_search:
+  labels:
+    - blocked
+    - escalated
+    - partial
+  exit_signal_prose_occurrences:
+    - source: skills/agentera/SKILL.md lines 257-259
+      summary: The exit-signal table documents stale labels blocked, escalated, and partial while mapping their meanings to stuck, flagged, and waiting.
+  legitimate_task_or_status_terminology:
+    - source: skills/agentera/SKILL.md line 120
+      summary: blocked appears as bundle freshness status terminology, not exit-signal vocabulary.
+    - source: skills/agentera/protocol.yaml lines 47 and 261
+      summary: blocked appears as visual status token terminology, not exit-signal vocabulary.
+    - source: skills/agentera/schemas/artifacts/plan.yaml line 263
+      summary: blocked is a plan task status value.
+    - source: skills/agentera/capabilities/*/prose.md and schemas
+      summary: blocked and partial appear in task, experiment, verification, corpus, documentation, and retry contexts; these are not stale exit-signal labels unless they replace exit_signal values.
+    - source: tests/*.py and scripts/*.py
+      summary: blocked and partial appear in upgrade, install-root, runtime, setup, and test fixture status contexts.
+  notable_non_exit_reference:
+    - source: skills/agentera/references/contract.md line 442
+      summary: blocked appears as a visual token table entry; line 531 mentions blocked in a bare status note and should be reviewed in later prose cleanup only if it is treated as exit vocabulary.
+verification:
+  commands:
+    - uv run scripts/agentera plan
+    - uv run scripts/agentera progress
+  inspected_files:
+    - skills/agentera/SKILL.md
+    - tests/test_cross_capability.py
+    - skills/agentera/protocol.yaml
+    - skills/agentera/capabilities/*/schemas/exit.yaml
+  searches:
+    - pattern: '\\b(blocked|escalated|partial)\\b'
+      scope: repository markdown, yaml, and python files
+    - pattern: 'exit_signal:\\s*(blocked|escalated|partial)\\b|\\|\\s*(blocked|escalated|partial)\\s*\\|'
+      scope: repository markdown and yaml files

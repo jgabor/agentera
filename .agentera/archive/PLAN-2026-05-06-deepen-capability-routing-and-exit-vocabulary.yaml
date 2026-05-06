@@ -1,0 +1,64 @@
+header:
+  level: full
+  created: '2026-05-06'
+  status: complete
+  reviewed: '2026-05-06'
+  critic_issues: "8 found, 8 addressed, 0 dismissed"
+  title: Deepen Capability Routing And Exit Vocabulary
+what: >
+  Consolidate Agentera capability routing and exit vocabulary around their authoritative Interfaces. Trigger schemas became the routing
+  input surface used by tests, protocol.yaml remained the exit vocabulary authority, and skills/agentera/SKILL.md became a thin dispatcher
+  narrative instead of duplicating routing mechanics or stale exit labels.
+why: >
+  TODO [arch-routing-exit-vocabulary] identified drift between SKILL.md prose, trigger schemas, protocol.yaml, exit schemas, and
+  tests/test_cross_capability.py. The completed plan removed stale routing and exit duplication while leaving artifact registry,
+  artifact write validation, health freshness, live smoke, install-root, package/runtime, version, release, objective, and vision work out
+  of scope.
+constraints: >
+  Keep capability trigger schemas as the routing input surface and protocol.yaml as the exit vocabulary authority. No artifact registry,
+  artifact write validation, health freshness, live smoke, install-root, package/runtime, version, release, objective, vision, commit, or
+  push changes were included.
+tasks:
+  - number: 1
+    name: Reconcile Plan State And Vocabulary Scope
+    status: complete
+  - number: 2
+    name: Characterize Routing And Exit Drift
+    status: complete
+  - number: 3
+    name: Thin SKILL Dispatcher Prose
+    status: complete
+  - number: 4
+    name: Define Schema-Backed Routing Test Interface
+    status: complete
+  - number: 5
+    name: Replace Cross-Capability Routing Tests
+    status: complete
+  - number: 6
+    name: Validate Exit Vocabulary Authority
+    status: complete
+  - number: 7
+    name: Align Docs And TODO Status
+    status: complete
+  - number: 8
+    name: Validate And Close
+    status: complete
+validation_evidence:
+  source_artifact: .agentera/progress.yaml
+  cycle: 327
+  timestamp: '2026-05-06 19:57'
+  summary: >
+    Routing and exit vocabulary closure validation passed with focused schema-backed routing, cross-capability, exit vocabulary,
+    capability contract, protocol, primitive-reference, and cross-capability graph validation, plus full pytest, docs CLI, artifact query,
+    TODO CLI, and py_compile checks.
+  commands:
+    - uv run pytest tests/test_schema_backed_routing_interface.py tests/test_cross_capability.py tests/test_exit_vocabulary_authority.py tests/test_capability_contract_loader.py tests/test_capability_contract_structure.py tests/test_capability_validator_characterization.py tests/test_capability_contract_interface_usage.py tests/test_validate_cross_capability.py -q (112 passed)
+    - uv run scripts/validate_capability.py --validate-protocol
+    - uv run scripts/validate_capability.py --self-validate
+    - uv run scripts/validate_capability.py for all 12 capability directories with --check-primitives
+    - uv run scripts/validate_cross_capability.py
+    - uv run pytest -q (704 passed)
+    - uv run scripts/agentera docs
+    - uv run scripts/agentera query --list-artifacts
+    - uv run scripts/agentera todo
+    - python3 -m py_compile scripts/capability_contract.py scripts/validate_capability.py scripts/validate_cross_capability.py tests/routing_test_interface.py
