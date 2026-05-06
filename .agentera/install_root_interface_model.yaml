@@ -1,0 +1,164 @@
+title: Install Root Interface And Safety Model
+plan: Deepen Agentera Install Root Module
+task: 3
+captured: '2026-05-05'
+purpose: >
+  Define the read-only install-root classification contract that setup, doctor,
+  upgrade, and runtime callers will share in later tasks. This file is a model
+  fixture only; it does not perform discovery, mutate bundle state, or migrate
+  callers.
+source_precedence:
+  - source: explicit
+    rank: 1
+    label: explicit --install-root
+    rule: Caller-provided roots always win.
+  - source: environment
+    rank: 2
+    label: AGENTERA_HOME
+    rule: Environment roots are considered only when no explicit root was provided.
+  - source: default
+    rank: 3
+    label: default durable root
+    rule: Default roots are used only when explicit and environment roots are absent.
+result_schema:
+  required_fields:
+    - source
+    - kind
+    - safe_action
+    - diagnostic
+    - managed_status
+    - stale_status
+    - missing_evidence
+  field_contract:
+    source: One of explicit, environment, or default, with source_precedence.rank preserved.
+    kind: One root shape from root_kinds; callers must not infer bundle identity from paths.
+    safe_action: One action from safe_actions; classification itself never writes files.
+    diagnostic: Structured code, severity, message, and evidence for humans and JSON callers.
+    managed_status: managed, unmanaged, missing, invalid, or unknown.
+    stale_status: fresh, stale, not_applicable, or unknown.
+    missing_evidence: Required canonical evidence that was absent; empty when no evidence is missing.
+mutation_policy:
+  classification_writes_files: false
+  durable_bundle_writes_allowed: false
+  dry_run_allowed: true
+  apply_requires_separate_confirmation: true
+bundle_identity:
+  owner: install_root_interface
+  caller_local_identity_rules_allowed: false
+  managed_bundle_evidence:
+    - scripts/agentera
+    - skills/agentera/SKILL.md
+    - registry.json
+    - .agentera-bundle.json
+  valid_for_callers:
+    - setup
+    - doctor
+    - upgrade
+    - runtime
+safe_actions:
+  use_root:
+    description: Root is fresh and managed; callers may use the root without extra bundle identity checks.
+    writes_files: false
+  preview_refresh:
+    description: Root is managed but stale or missing at the default location; callers may present a dry-run refresh preview only.
+    writes_files: false
+  require_existing_managed_root:
+    description: Root was explicitly or environmentally selected but missing; callers must ask for a different managed root or explicit install approval.
+    writes_files: false
+  reject_file_path:
+    description: Root resolves to a file; callers must reject it and ask for a directory.
+    writes_files: false
+  reject_unmanaged_directory:
+    description: Root is a directory but lacks managed bundle evidence; callers must not overwrite it without an explicit force/install path.
+    writes_files: false
+  reject_invalid_bundle:
+    description: Root has partial or malformed bundle evidence; callers must report the invalid evidence and avoid refresh/apply commands.
+    writes_files: false
+root_kinds:
+  managed_fresh:
+    managed_status: managed
+    stale_status: fresh
+    safe_action: use_root
+    diagnostic:
+      code: install_root.managed_fresh
+      severity: info
+      message: install root is managed and fresh
+    missing_evidence: []
+  managed_stale:
+    managed_status: managed
+    stale_status: stale
+    safe_action: preview_refresh
+    diagnostic:
+      code: install_root.managed_stale
+      severity: warning
+      message: install root is managed but stale
+    missing_evidence:
+      - current bundle marker/version or required CLI command evidence
+  missing_explicit_or_environment:
+    managed_status: missing
+    stale_status: not_applicable
+    safe_action: require_existing_managed_root
+    diagnostic:
+      code: install_root.missing_selected_root
+      severity: error
+      message: selected install root does not exist
+    missing_evidence:
+      - directory
+      - managed bundle evidence
+  missing_default:
+    managed_status: missing
+    stale_status: stale
+    safe_action: preview_refresh
+    diagnostic:
+      code: install_root.missing_default_root
+      severity: warning
+      message: default durable root is missing and may be created only by a confirmed install or refresh
+    missing_evidence:
+      - directory
+      - managed bundle evidence
+  file_valued_root:
+    managed_status: invalid
+    stale_status: not_applicable
+    safe_action: reject_file_path
+    diagnostic:
+      code: install_root.file_path
+      severity: error
+      message: selected install root is a file, not a directory
+    missing_evidence:
+      - directory
+  unmanaged_directory:
+    managed_status: unmanaged
+    stale_status: not_applicable
+    safe_action: reject_unmanaged_directory
+    diagnostic:
+      code: install_root.unmanaged_directory
+      severity: error
+      message: selected directory is not a managed Agentera bundle
+    missing_evidence:
+      - managed bundle evidence
+  invalid_bundle:
+    managed_status: invalid
+    stale_status: unknown
+    safe_action: reject_invalid_bundle
+    diagnostic:
+      code: install_root.invalid_bundle
+      severity: error
+      message: selected directory has incomplete or malformed Agentera bundle evidence
+    missing_evidence:
+      - valid bundle marker and complete managed bundle evidence
+inventory_links:
+  canonical-suite-root-vs-managed-bundle-root: canonical-suite-root-vs-managed-bundle-root
+  behavior_shape_map:
+    valid setup root: managed_fresh
+    missing explicit setup root: missing_explicit_or_environment
+    file explicit setup root: file_valued_root
+    unmanaged explicit setup directory: unmanaged_directory
+    env-derived valid setup root: managed_fresh
+    auto-detect/default setup root: managed_fresh
+    fresh managed upgrade root: managed_fresh
+    stale managed upgrade root: managed_stale
+    missing explicit or AGENTERA_HOME upgrade root: missing_explicit_or_environment
+    missing default upgrade root: missing_default
+    file upgrade root: file_valued_root
+    unmanaged upgrade directory: unmanaged_directory
+    OpenCode runtime AGENTERA_HOME candidate: managed_fresh

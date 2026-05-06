@@ -61,19 +61,18 @@ import tomllib
 from pathlib import Path
 from typing import NamedTuple
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import install_root as install_root_module
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-# Canonical entries that prove a directory is an agentera install root.
-# Verified before any write so users cannot wire AGENTERA_HOME at a path
-# that does not actually contain the suite.
-CANONICAL_ENTRIES: tuple[str, ...] = (
-    "scripts/validate_capability.py",
-    "hooks",
-    "skills",
-    "skills/agentera/SKILL.md",
-)
+# Shared setup evidence used by scripts/install_root.py. Kept as a public alias
+# for older direct imports; root classification itself is delegated below.
+CANONICAL_ENTRIES: tuple[str, ...] = install_root_module.SETUP_EVIDENCE
 
 # The single key the helper manages. Any other env var is the user's.
 MANAGED_KEY = "AGENTERA_HOME"
@@ -104,18 +103,16 @@ class InstallRootError(RuntimeError):
 
 
 def verify_install_root(root: Path) -> list[str]:
-    """Return the list of canonical entries missing from ``root``.
+    """Return setup evidence missing from ``root`` via the shared classifier.
 
     Empty list means ``root`` is a valid agentera install. The check is
-    a presence-only test on each canonical sibling (no parsing) so it
-    stays cheap and survives partial installs honestly: a directory
-    with only ``SPEC.md`` is still rejected.
+    delegated to ``scripts/install_root.py`` so caller behavior follows the
+    install-root Interface rather than local canonical-entry rules.
     """
-    missing: list[str] = []
-    for entry in CANONICAL_ENTRIES:
-        if not (root / entry).exists():
-            missing.append(entry)
-    return missing
+    classification = install_root_module.classify_resolved_root(root, source="explicit")
+    if classification.kind == "managed_fresh":
+        return []
+    return [entry for entry in install_root_module.SETUP_EVIDENCE if not (root / entry).exists()]
 
 
 def auto_detect_install_root(start: Path | None = None) -> Path | None:
@@ -161,8 +158,9 @@ def resolve_install_root(explicit: str | None) -> Path:
     """
     if explicit is not None:
         root = Path(explicit).expanduser().resolve()
-        missing = verify_install_root(root)
-        if missing:
+        classification = install_root_module.classify_resolved_root(root, source="explicit")
+        if classification.kind != "managed_fresh":
+            missing = verify_install_root(root)
             raise InstallRootError(
                 f"--install-root {root} is not a valid agentera install: "
                 f"missing canonical entries: {', '.join(missing)}"

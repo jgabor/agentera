@@ -1,4 +1,172 @@
 cycles:
+- number: 287
+  timestamp: 2026-05-05 23:59
+  type: refactor
+  phase: build
+  what: Validated and closed the deepened install-root Module plan.
+  commit: pending
+  inspiration: Task 8 of the Deepen Agentera Install Root Module plan required focused and broader validation before closing the install-root architecture finding without closing unrelated registry or artifact findings.
+  discovered: >
+    The shared install-root Module now validates across Python setup, doctor, upgrade, bundle-status, runtime contract fixtures,
+    artifact CLI paths, capability schemas, cross-capability relationships, lifecycle adapter metadata, and the full pytest suite.
+    Lifecycle validation caught one packaging contract gap in scripts/install_root.py; adding the standard uv script shebang and
+    inline metadata fixed it without changing install-root behavior. Direct setup doctor and upgrade dry-run probes still report
+    local environment drift as warnings or blocked pending operations, but no validation failure or unapproved durable write occurred.
+  verified: >
+    Validation passed: python3 -m py_compile scripts/install_root.py scripts/setup_doctor.py scripts/setup_codex.py
+    scripts/setup_copilot.py scripts/agentera_upgrade.py; uv run pytest tests/test_install_root_module.py
+    tests/test_install_root_interface_model.py tests/test_install_root_characterization.py tests/test_setup_doctor.py
+    tests/test_setup_codex.py tests/test_setup_copilot.py tests/test_upgrade_cli.py tests/test_bundle_freshness.py
+    tests/test_runtime_adapters.py tests/test_query_cli.py -q (177 passed); uv run pytest -q (593 passed, 1 skipped);
+    uv run scripts/validate_capability.py --self-validate; uv run scripts/validate_capability.py for all 12 current capabilities;
+    uv run scripts/validate_cross_capability.py; uv run scripts/validate_lifecycle_adapters.py --check-uv-runtime; uv run
+    scripts/setup_doctor.py --json; uv run scripts/agentera bundle-status --install-root . --json; uv run scripts/agentera
+    upgrade --dry-run --install-root .; uv run scripts/agentera query --list-artifacts; uv run scripts/agentera docs; uv run
+    scripts/agentera todo; uv run scripts/agentera progress.
+  next: 'Install-root Module work is closed; address RuntimeAdapter registry, package manifest registry, and optional generated cross-language contract follow-ups separately.'
+  context:
+    intent: validate and close only the install-root Module plan
+    constraints: no commits, no pushes, no vision or objective mutation, no unrelated architecture finding closure, no durable bundle writes
+    unknowns: optional generated cross-language contract work remains separate if fixture validation becomes insufficient
+    scope: .agentera/plan.yaml, .agentera/progress.yaml, TODO.md, CHANGELOG.md, .agentera/docs.yaml, and the packaging metadata fix in scripts/install_root.py
+- number: 286
+  timestamp: 2026-05-05 23:48
+  type: docs
+  phase: build
+  what: Aligned runtime adapter install-root contract documentation with the shared Module.
+  commit: pending
+  inspiration: Task 7 of the Deepen Agentera Install Root Module plan required OpenCode runtime heuristics and user-facing install-root docs to point at the shared contract without implementing the deferred RuntimeAdapter registry or package metadata registry.
+  discovered: >
+    OpenCode still needs a JavaScript-local resolver for shell.env injection, but its default durable root and AGENTERA_HOME semantics are now
+    validated against .agentera/install_root_interface_model.yaml. The remaining legacy ~/.agents/skills/agentera fallback is documented as a
+    temporary OpenCode-only compatibility exception. README, UPGRADE, dispatcher, hej prose, adapter references, TODO, and DOCS now point
+    install-root semantics at scripts/install_root.py and explicitly keep RuntimeAdapter registry extraction in [arch-runtime-adapter-registry]
+    while keeping package metadata registry work outside the install-root Module.
+  verified: >
+    Validation passed: uv run pytest tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_package_uses_documented_manual_install_root
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_package_fails_on_manual_install_root_drift
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_install_root_documentation_points_to_shared_contract
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_install_root_documentation_fails_without_registry_deferral
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_reference_uses_single_agentera_install
+    tests/test_install_root_module.py tests/test_install_root_characterization.py -q (16 passed). This covers OpenCode contract fixture alignment,
+    legacy adapter-local exception documentation, shared Module behavior, characterization boundaries, registry deferral wording, and package
+    metadata non-mixing.
+  next: 'Implement Task 8: validate and close the install-root Module plan.'
+  context:
+    intent: align runtime adapter contract and install-root documentation only
+    constraints: no commits, no RuntimeAdapter registry implementation, no JavaScript migration beyond contract/documentation alignment, no package metadata registry, no vision/objective mutation
+    unknowns: generated cross-language install-root contract remains a possible future narrowing if fixture validation is not enough
+    scope: .opencode/plugins/agentera.js, tests/test_runtime_adapters.py, README.md, UPGRADE.md, skills/agentera/SKILL.md, skills/agentera/capabilities/hej/prose.md, references/adapters/opencode.md, references/adapters/runtime-feature-parity.md, TODO.md, .agentera/docs.yaml, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 285
+  timestamp: 2026-05-05 23:44
+  type: refactor
+  phase: build
+  what: Migrated upgrade and bundle-status root classification to the shared install-root Module.
+  commit: pending
+  inspiration: Task 6 of the Deepen Agentera Install Root Module plan required agentera_upgrade.py to stop owning duplicate install-root identity rules while preserving dry-run, confirmation, and structured bundle-status behavior.
+  discovered: >
+    Upgrade now resolves bundle-status roots and classifies missing, file, unmanaged, invalid, stale, and current managed roots through
+    scripts/install_root.py. The remaining local upgrade logic adapts the shared classification into legacy upgrade/bundle JSON fields,
+    runs the existing CLI probe for detailed stale command failures, and keeps bundle writes behind --yes or --force exactly as before.
+  verified: >
+    Validation passed: python3 -m py_compile scripts/install_root.py scripts/agentera_upgrade.py; uv run pytest
+    tests/test_install_root_module.py tests/test_install_root_characterization.py tests/test_bundle_freshness.py tests/test_upgrade_cli.py
+    tests/test_setup_codex.py tests/test_setup_copilot.py tests/test_setup_doctor.py -q (64 passed); uv run pytest
+    tests/test_bundle_freshness.py tests/test_upgrade_cli.py -q (16 passed). Coverage proves shared classification for upgrade/bundle-status,
+    invalid partial bundle blocking, missing-root dry-run no-write behavior, stale dry-run before apply, same-root refresh apply, and setup caller
+    regressions.
+  next: 'Implement Task 7: align runtime adapter contract and documentation.'
+  context:
+    intent: migrate only the upgrade and bundle-status install-root path to the shared Module
+    constraints: no commits, no runtime adapter registry, no JavaScript/runtime migration, no objective or vision mutation, preserve write safety
+    unknowns: runtime adapter fixture/documentation alignment remains for Task 7
+    scope: scripts/agentera_upgrade.py, tests/test_bundle_freshness.py, tests/test_install_root_characterization.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 284
+  timestamp: 2026-05-05 23:38
+  type: refactor
+  phase: build
+  what: Migrated setup helpers and setup doctor root classification to the shared install-root Module.
+  commit: pending
+  inspiration: Task 5 of the Deepen Agentera Install Root Module plan required setup_codex, setup_copilot, and setup_doctor to stop owning duplicated canonical-entry root rules while preserving primary setup/doctor behavior.
+  discovered: >
+    The migration seam could stay read-only: setup_codex.py, setup_copilot.py, and setup_doctor.py now delegate root
+    classification to scripts/install_root.py and adapt the shared result back into their existing human and JSON messages.
+    Runtime adapter, JavaScript, package metadata, and agentera_upgrade.py surfaces were intentionally left outside this task.
+  verified: >
+    Validation passed: uv run pytest tests/test_install_root_module.py tests/test_install_root_characterization.py
+    tests/test_setup_codex.py tests/test_setup_copilot.py tests/test_setup_doctor.py (48 passed). This covers the shared Module,
+    setup helper valid/invalid/no-op/dry-run behavior, doctor pass/warn/fail/skip behavior, installer dry-run/confirmation/write
+    behavior, and the characterization boundary that upgrade remains unmigrated for Task 6.
+  next: 'Implement Task 6: migrate upgrade last without weakening confirmation or dry-run safety.'
+  context:
+    intent: migrate read-only and setup callers to the shared install-root Interface only
+    constraints: no commits, no agentera_upgrade.py migration, no runtime adapter or JavaScript migration, no vision/objective mutation
+    unknowns: upgrade stale-root and refresh behavior remain for Task 6
+    scope: scripts/setup_codex.py, scripts/setup_copilot.py, scripts/setup_doctor.py, tests/test_install_root_characterization.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 283
+  timestamp: 2026-05-05 23:59
+  type: feat
+  phase: build
+  what: Introduced the shared read-only install-root classification Module and executable Task 4 coverage.
+  commit: pending
+  inspiration: Task 4 of the Deepen Agentera Install Root Module plan required a shared Module that classifies all characterized root shapes without writes and keeps diagnostics structured.
+  discovered: >
+    The first shared seam can live in scripts/install_root.py without migrating setup, doctor, upgrade, or runtime callers yet.
+    It returns typed read-only classifications with source, kind, safe action, managed/stale status, missing evidence, expected/current
+    version evidence, and a separate display-text helper.
+  verified: >
+    Validation passed: python3 -m py_compile scripts/install_root.py; uv run pytest tests/test_install_root_module.py
+    tests/test_install_root_interface_model.py tests/test_install_root_characterization.py -q (16 passed). Coverage proves the
+    inventory behavior matrix maps to the approved interface model, classification leaves existing and missing temp roots unchanged,
+    stale managed diagnostics expose expected/current version evidence without refresh, and display wording does not replace structured data.
+  next: 'Implement Task 5: migrate read-only and setup callers to the shared Module.'
+  context:
+    intent: add the executable shared install-root Module while preserving existing caller behavior
+    constraints: no caller migration, no durable bundle writes, no commits, no objective or vision mutation
+    unknowns: exact caller-facing wording preservation belongs to Task 5 and later migration tasks
+    scope: scripts/install_root.py, tests/test_install_root_module.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 282
+  timestamp: 2026-05-05 23:45
+  type: test
+  phase: build
+  what: Defined the read-only install-root Interface and safety model for later shared Module work.
+  commit: pending
+  inspiration: Task 3 of the Deepen Agentera Install Root Module plan required one classification result model with source, kind, safe action, diagnostic, managed status, stale status, and missing evidence.
+  discovered: >
+    The model can resolve the named canonical-suite-root-vs-managed-bundle-root disagreement at the contract layer without
+    migrating callers yet: bundle identity belongs to the future install-root Interface, caller-local identity rules are disallowed,
+    and explicit, environment, then default source precedence is documented.
+  verified: >
+    Validation passed: uv run pytest tests/test_install_root_interface_model.py tests/test_install_root_characterization.py -q
+    (11 passed). The model tests assert required result fields, read-only mutation policy, setup/upgrade reusable managed-root
+    identity, deterministic actions for missing/file/unmanaged/stale/invalid states, default-root precedence, and inventory linkage.
+  next: 'Implement Task 4: introduce the shared read-only install-root Module using this model.'
+  context:
+    intent: define the install-root Interface and safety semantics before implementation migration
+    constraints: no durable bundle writes, no caller migration, no shared implementation Module beyond the contract fixture, no commits, no objective or vision mutation
+    unknowns: executable classification belongs to Task 4
+    scope: .agentera/install_root_interface_model.yaml, tests/test_install_root_interface_model.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 281
+  timestamp: 2026-05-05 23:28
+  type: test
+  phase: build
+  what: Characterized current install-root behavior before the shared Module migration.
+  commit: pending
+  inspiration: Task 2 of the Deepen Agentera Install Root Module plan required setup, doctor, upgrade, and runtime install-root outcomes to be inventoried before refactor.
+  discovered: >
+    Setup helpers and doctor currently prove suite roots with scripts/validate_capability.py, hooks, skills, and
+    skills/agentera/SKILL.md, while upgrade/freshness paths prove managed bundle roots with scripts/agentera and bundle
+    metadata. The intentional future standardization is named canonical-suite-root-vs-managed-bundle-root.
+  verified: >
+    Validation passed: uv run pytest tests/test_install_root_characterization.py -q (6 passed); uv run pytest
+    tests/test_install_root_characterization.py tests/test_setup_codex.py tests/test_setup_copilot.py tests/test_setup_doctor.py
+    tests/test_bundle_freshness.py tests/test_upgrade_cli.py -q (58 passed).
+  next: 'Implement Task 3: define the shared read-only install-root Interface and safety model.'
+  context:
+    intent: record current install-root behavior and disagreements before changing caller implementations
+    constraints: no shared Module yet, no caller migration, no commits, no objective or vision mutation
+    unknowns: exact shared Interface wording belongs to Task 3
+    scope: .agentera/install_root_behavior_inventory.yaml, characterization tests, plan status, and progress evidence
 - number: 280
   timestamp: 2026-05-05 23:05
   type: fix

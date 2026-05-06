@@ -49,7 +49,9 @@ skill entries and installs `/agentera`.
 `codex plugin marketplace upgrade`, `copilot plugin marketplace upgrade`, and
 `npx skills update -g -y` refresh package-managed surfaces. They do not
 guarantee that the durable suite bundle under `AGENTERA_HOME` has the latest
-`scripts/agentera` CLI.
+`scripts/agentera` CLI. Install-root semantics are centralized in
+`scripts/install_root.py`: it defines AGENTERA_HOME precedence, the default
+durable root, managed/stale/unmanaged classifications, and read-only diagnostics.
 
 Bare `/agentera` owns this recovery path. When the installed CLI is missing
 `hej`, fails before command discovery, has a stale `.agentera-bundle.json`
@@ -74,10 +76,11 @@ Afterward, retry:
 uv run "$AGENTERA_HOME/scripts/agentera" hej
 ```
 
-If `AGENTERA_HOME` is unset, use `~/.agents/agentera`. If it points at a
-missing path, a file, or a non-managed directory, do not overwrite it silently;
-fix/unset `AGENTERA_HOME`, choose a managed `--install-root`, or intentionally
-use the broader upgrade flow with force guidance.
+If `AGENTERA_HOME` is unset, use the shared Module's default durable root
+`~/.agents/agentera`. If it points at a missing path, a file, or an unmanaged
+directory, do not overwrite it silently; fix/unset `AGENTERA_HOME`, choose a
+managed `--install-root`, or intentionally use the broader upgrade flow with
+force guidance.
 
 ### Local clone
 

@@ -224,6 +224,10 @@ export const AgenteraPlugin = async ({ project, client, $, directory, worktree }
 
 **Adapter approach**: Implement agentera's three hooks as an OpenCode plugin in `.opencode/plugins/agentera.js`:
 
+Install-root semantics used by the plugin are contract-bound to `scripts/install_root.py` and `.agentera/install_root_interface_model.yaml`. OpenCode still keeps one temporary adapter-local compatibility exception for older manual `~/.agents/skills/agentera` installs; new install-root behavior should change the shared Module/fixture first, not add more JavaScript-local root identity rules.
+
+RuntimeAdapter registry extraction is explicitly deferred to `[arch-runtime-adapter-registry]`. The install-root Module must keep package manifest registry and package metadata consolidation work outside its scope.
+
 1. **SessionStart** (`event.type === "session.created"`): Observe session creation through the event hook. Session-start context preload remains deferred because no supported model-context injection path is verified for this adapter. Do not attach dead preload code to event observation alone.
 
 2. **PreToolUse** (`tool.execute.before`): When `write` or `edit` args expose a path plus candidate content or exact replacement evidence, validate the candidate through `hooks/validate_artifact.py`. Throw an error to block invalid artifact content before mutation. Sparse payloads and `apply_patch` `patchText` without reconstructed full content are allowed rather than guessed.

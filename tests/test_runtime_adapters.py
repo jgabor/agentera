@@ -16,6 +16,8 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
+import yaml
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -361,10 +363,21 @@ def _validate_registry(root: Path = REPO_ROOT) -> list[str]:
     return errors
 
 
-def _validate_opencode_install_root(plugin_text: str) -> list[str]:
+def _validate_opencode_install_root(plugin_text: str, root: Path = REPO_ROOT) -> list[str]:
+    errors: list[str] = []
+    model = yaml.safe_load((root / ".agentera/install_root_interface_model.yaml").read_text(encoding="utf-8"))
+    source_labels = {entry["source"]: entry["label"] for entry in model["source_precedence"]}
+
+    if "process.env.AGENTERA_HOME" not in plugin_text or source_labels["environment"] not in plugin_text:
+        errors.append("opencode install-root resolver must honor AGENTERA_HOME from the shared contract")
     if 'path.join(process.env.HOME, ".agents", "agentera")' not in plugin_text:
-        return ["opencode validation must resolve documented manual install root"]
-    return []
+        errors.append("opencode validation must resolve documented default durable root")
+    if source_labels["default"] not in plugin_text or "scripts/install_root.py" not in plugin_text:
+        errors.append("opencode install-root resolver must point maintainers at the shared install-root Module")
+    if 'path.join(process.env.HOME, ".agents", "skills", "agentera")' in plugin_text:
+        if "temporary OpenCode-only" not in plugin_text or "compatibility exception" not in plugin_text:
+            errors.append("opencode legacy skills-root fallback must be documented as an adapter-local exception")
+    return errors
 
 
 def _validate_opencode_reference(text: str) -> list[str]:
@@ -374,6 +387,12 @@ def _validate_opencode_reference(text: str) -> list[str]:
         errors.append("OpenCode reference must document single /agentera install command")
     if "temporary `skills/hej/` entry point is a v1 upgrade bridge" not in text:
         errors.append("OpenCode reference must mark /hej as upgrade bridge only")
+    if "scripts/install_root.py" not in text:
+        errors.append("OpenCode reference must point install-root semantics at the shared Module")
+    if "[arch-runtime-adapter-registry]" not in text:
+        errors.append("OpenCode reference must defer RuntimeAdapter registry extraction")
+    if "package metadata consolidation work" in text and "outside" not in text:
+        errors.append("OpenCode install-root reference must keep package metadata registry work outside")
     for stale in (
         "OpenCode discovers all 12 skills",
         "skills/realisera",
@@ -383,6 +402,33 @@ def _validate_opencode_reference(text: str) -> list[str]:
     ):
         if stale in text:
             errors.append("OpenCode reference must not document v1 multi-skill manual install")
+    return errors
+
+
+def _validate_install_root_documentation(root: Path = REPO_ROOT) -> list[str]:
+    errors: list[str] = []
+    surfaces = {
+        "README.md": root / "README.md",
+        "UPGRADE.md": root / "UPGRADE.md",
+        "skills/agentera/SKILL.md": root / "skills/agentera/SKILL.md",
+        "skills/agentera/capabilities/hej/prose.md": root / "skills/agentera/capabilities/hej/prose.md",
+        ".agentera/docs.yaml": root / ".agentera/docs.yaml",
+        "TODO.md": root / "TODO.md",
+        "runtime-feature-parity.md": root / "references/adapters/runtime-feature-parity.md",
+    }
+    for label, path in surfaces.items():
+        text = path.read_text(encoding="utf-8")
+        if "scripts/install_root.py" not in text:
+            errors.append(f"{label} must point install-root semantics at scripts/install_root.py")
+
+    docs_text = "\n".join(path.read_text(encoding="utf-8") for path in surfaces.values())
+    for term in ("AGENTERA_HOME", "default durable root", "managed", "stale", "unmanaged"):
+        if term not in docs_text:
+            errors.append(f"install-root docs must preserve shared contract term {term!r}")
+    if "[arch-runtime-adapter-registry]" not in docs_text:
+        errors.append("install-root docs must defer RuntimeAdapter registry extraction to [arch-runtime-adapter-registry]")
+    if "package metadata registry work stays outside" not in docs_text:
+        errors.append("install-root docs must keep package metadata registry work outside the install-root Module")
     return errors
 
 
@@ -929,7 +975,36 @@ class TestLegacyRuntimeCompatibility:
     def test_opencode_package_fails_on_manual_install_root_drift(self):
         plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
         stale = plugin_text.replace('path.join(process.env.HOME, ".agents", "agentera")', "legacyMissingPath")
-        assert "opencode validation must resolve documented manual install root" in _validate_opencode_install_root(stale)
+        assert "opencode validation must resolve documented default durable root" in _validate_opencode_install_root(stale)
+
+    def test_install_root_documentation_points_to_shared_contract(self):
+        assert _validate_install_root_documentation() == []
+
+    def test_install_root_documentation_fails_without_registry_deferral(self, tmp_path):
+        root = tmp_path / "repo"
+        for relative in (
+            "skills/agentera/capabilities/hej",
+            "references/adapters",
+            ".agentera",
+        ):
+            (root / relative).mkdir(parents=True, exist_ok=True)
+        text = (
+            "AGENTERA_HOME default durable root managed stale unmanaged "
+            "scripts/install_root.py package metadata registry work stays outside\n"
+        )
+        for relative in (
+            "README.md",
+            "UPGRADE.md",
+            "skills/agentera/SKILL.md",
+            "skills/agentera/capabilities/hej/prose.md",
+            ".agentera/docs.yaml",
+            "TODO.md",
+            "references/adapters/runtime-feature-parity.md",
+        ):
+            (root / relative).write_text(text, encoding="utf-8")
+
+        errors = _validate_install_root_documentation(root)
+        assert "install-root docs must defer RuntimeAdapter registry extraction to [arch-runtime-adapter-registry]" in errors
 
     def test_opencode_version_marker_is_documented(self):
         assert _validate_docs_version_targets(REPO_ROOT) == []

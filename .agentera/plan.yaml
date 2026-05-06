@@ -1,7 +1,7 @@
 header:
   level: full
   created: '2026-05-05'
-  status: active
+  status: complete
   reviewed: '2026-05-05'
   critic_issues: "8 found, 8 addressed, 0 dismissed"
   title: Deepen Agentera Install Root Module
@@ -67,7 +67,7 @@ tasks:
     name: Inventory Install-Root Behavior And Characterization Cases
     depends_on:
       - Task 1
-    status: pending
+    status: complete
     acceptance:
       - GIVEN existing setup and upgrade paths are exercised WHEN roots are valid, missing, files, unmanaged, stale, invalid, explicit, environment-derived, or defaulted THEN current user-visible outcomes are recorded before refactor
       - GIVEN two callers currently disagree WHEN the same root shape is evaluated THEN the intentional standardization is named before code changes
@@ -77,7 +77,7 @@ tasks:
     name: Define The Install-Root Interface And Safety Model
     depends_on:
       - Task 2
-    status: pending
+    status: complete
     acceptance:
       - GIVEN any root is classified WHEN the result is returned THEN it includes source, kind, safe action, diagnostic, managed status, stale status, and missing evidence without writing files
       - GIVEN a valid managed root comes from the environment WHEN it is classified THEN the result can be used by setup and upgrade callers without caller-local bundle identity rules
@@ -87,7 +87,7 @@ tasks:
     name: Introduce The Shared Read-Only Module
     depends_on:
       - Task 3
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the shared Module is called by tests WHEN all characterized root shapes are evaluated THEN results match the approved behavior matrix
       - GIVEN classification runs on a temp root WHEN the test snapshots the filesystem before and after THEN no files are created, deleted, or modified
@@ -97,7 +97,7 @@ tasks:
     name: Migrate Read-Only And Setup Callers
     depends_on:
       - Task 4
-    status: pending
+    status: complete
     acceptance:
       - GIVEN doctor and setup callers evaluate the same root shapes WHEN their commands run THEN they agree on root classification and safe action
       - GIVEN setup callers receive invalid or unmanaged roots WHEN they report the issue THEN confirmed-write behavior and existing primary outcomes are preserved unless the plan identified a correction
@@ -107,7 +107,7 @@ tasks:
     name: Migrate Upgrade Last
     depends_on:
       - Task 5
-    status: pending
+    status: complete
     acceptance:
       - GIVEN upgrade evaluates root state WHEN classification reports unsafe or stale states THEN upgrade preserves existing confirmation and dry-run safety behavior
       - GIVEN upgrade applies writes WHEN approval or existing write flags are absent THEN no durable bundle mutation occurs
@@ -117,7 +117,7 @@ tasks:
     name: Align Runtime Adapter Contract And Documentation
     depends_on:
       - Task 6
-    status: pending
+    status: complete
     acceptance:
       - GIVEN JavaScript runtime behavior is checked WHEN install-root fixture cases run THEN it agrees with the shared root contract without requiring cross-language executable sharing
       - GIVEN documentation describes install roots WHEN users read setup or upgrade guidance THEN AGENTERA_HOME, default durable root, managed root, stale root, and unmanaged root semantics match the shared Interface
@@ -126,7 +126,7 @@ tasks:
     name: Validate And Close
     depends_on:
       - Task 7
-    status: pending
+    status: complete
     acceptance:
       - GIVEN focused install-root tests run THEN shared Module, doctor, setup helpers, upgrade, and runtime contract fixtures pass
       - GIVEN suite validators run THEN capability validation, cross-capability validation, lifecycle adapter validation, and relevant CLI tests pass
