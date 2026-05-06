@@ -23,13 +23,8 @@ from pathlib import Path
 
 import yaml
 
-REQUIRED_GROUPS = ("TRIGGERS", "ARTIFACTS", "VALIDATION", "EXIT_CONDITIONS")
-GROUP_PREFIXES = {
-    "TRIGGERS": "T",
-    "ARTIFACTS": "A",
-    "VALIDATION": "V",
-    "EXIT_CONDITIONS": "E",
-}
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from capability_contract import CapabilitySchemaContract, load_capability_schema_contract
 
 PROTOCOL_GROUPS = (
     "CONFIDENCE_SCALE",
@@ -43,16 +38,6 @@ PROTOCOL_GROUPS = (
     "PHASES",
 )
 
-PROTOCOL_REFERENCEABLE_FIELDS = {
-    "severity": ["SEVERITY_FINDING", "SEVERITY_ISSUE"],
-    "finding_severity": ["SEVERITY_FINDING"],
-    "issue_severity": ["SEVERITY_ISSUE"],
-    "decision_label": ["DECISION_LABELS"],
-    "exit_signal": ["EXIT_SIGNALS"],
-    "phase": ["PHASES"],
-}
-
-
 def load_contract(contract_path: Path) -> dict:
     with open(contract_path) as f:
         return yaml.safe_load(f)
@@ -63,13 +48,15 @@ def load_schema_file(path: Path) -> dict:
         return yaml.safe_load(f) or {}
 
 
-def collect_schema_groups(schemas_dir: Path) -> dict[str, dict]:
+def collect_schema_groups(
+    schemas_dir: Path, required_groups: tuple[str, ...], schema_glob: str = "*.yaml"
+) -> dict[str, dict]:
     """Load all YAML files in schemas/ and union their top-level groups."""
     combined: dict[str, dict] = {}
-    for yaml_file in sorted(schemas_dir.glob("*.yaml")):
+    for yaml_file in sorted(schemas_dir.glob(schema_glob)):
         data = load_schema_file(yaml_file)
         for group_name, group_data in data.items():
-            if group_name in REQUIRED_GROUPS:
+            if group_name in required_groups:
                 if group_name not in combined:
                     combined[group_name] = {}
                 if isinstance(group_data, dict):
@@ -77,35 +64,40 @@ def collect_schema_groups(schemas_dir: Path) -> dict[str, dict]:
     return combined
 
 
-def check_directory_structure(cap_dir: Path) -> list[str]:
+def check_directory_structure(cap_dir: Path, contract: CapabilitySchemaContract) -> list[str]:
     """V1: Check prose.md and schemas/ exist."""
     errors = []
-    prose = cap_dir / "prose.md"
-    schemas = cap_dir / "schemas"
+    directory_rules = contract.directory_rules
+    prose = cap_dir / directory_rules.prose_path
+    schemas = cap_dir / directory_rules.schemas_path
 
     if not prose.is_file():
-        errors.append(f"V1 [error]: prose.md not found in {cap_dir}")
+        errors.append(f"V1 [error]: {directory_rules.prose_path} not found in {cap_dir}")
     if not schemas.is_dir():
-        errors.append(f"V1 [error]: schemas/ directory not found in {cap_dir}")
-    elif not list(schemas.glob("*.yaml")):
-        errors.append(f"V1 [error]: schemas/ contains no .yaml files in {cap_dir}")
+        errors.append(f"V1 [error]: {directory_rules.schemas_path}/ directory not found in {cap_dir}")
+    elif len(list(schemas.glob(directory_rules.schema_glob))) < directory_rules.minimum_schema_files:
+        errors.append(f"V1 [error]: {directory_rules.schemas_path}/ contains no .yaml files in {cap_dir}")
     return errors
 
 
-def check_required_groups(groups: dict[str, dict], source_label: str) -> list[str]:
+def check_required_groups(
+    groups: dict[str, dict], source_label: str, contract: CapabilitySchemaContract
+) -> list[str]:
     """V2: Check all required groups are present."""
     errors = []
-    for rg in REQUIRED_GROUPS:
+    for rg in contract.required_groups:
         if rg not in groups:
             errors.append(f"V2 [error]: required group {rg} missing in {source_label}")
     return errors
 
 
-def check_numbered_entries(groups: dict[str, dict], source_label: str) -> list[str]:
+def check_numbered_entries(
+    groups: dict[str, dict], source_label: str, contract: CapabilitySchemaContract
+) -> list[str]:
     """V3: Check entries use numeric keys."""
     errors = []
     for group_name, entries in groups.items():
-        if group_name not in REQUIRED_GROUPS:
+        if group_name not in contract.required_groups:
             continue
         if not isinstance(entries, dict):
             errors.append(f"V3 [error]: {group_name} in {source_label} is not a mapping")
@@ -118,82 +110,92 @@ def check_numbered_entries(groups: dict[str, dict], source_label: str) -> list[s
     return errors
 
 
-def check_stable_ids(groups: dict[str, dict], source_label: str) -> list[str]:
-    """V4: Check every entry has id and description fields."""
+def check_stable_ids(
+    groups: dict[str, dict], source_label: str, contract: CapabilitySchemaContract
+) -> list[str]:
+    """V4: Check every entry has contract-required identity fields."""
     errors = []
     for group_name, entries in groups.items():
-        if group_name not in REQUIRED_GROUPS:
+        if group_name not in contract.required_groups:
             continue
         if not isinstance(entries, dict):
             continue
+        required_fields = contract.entry_rules.required_fields_by_group.get(
+            group_name, contract.entry_rules.default_required_fields
+        )
         for key, entry in entries.items():
             if not isinstance(entry, dict):
                 errors.append(
                     f"V4 [error]: entry {key} in {group_name} in {source_label} is not a mapping"
                 )
                 continue
-            if "id" not in entry:
-                errors.append(
-                    f"V4 [error]: entry {key} in {group_name} in {source_label} missing 'id'"
-                )
-            if "description" not in entry:
-                errors.append(
-                    f"V4 [error]: entry {key} in {group_name} in {source_label} missing 'description'"
-                )
+            for field_name in required_fields:
+                if group_name == "TRIGGERS" and field_name == "priority":
+                    continue
+                if field_name not in entry:
+                    errors.append(
+                        f"V4 [error]: entry {key} in {group_name} in {source_label} missing '{field_name}'"
+                    )
     return errors
 
 
-VALID_PRIORITIES = {"high", "medium", "low"}
-
-
-def check_trigger_priorities(groups: dict[str, dict], source_label: str) -> list[str]:
+def check_trigger_priorities(
+    groups: dict[str, dict], source_label: str, contract: CapabilitySchemaContract
+) -> list[str]:
     """V5b: Check TRIGGERS entries have valid priority fields."""
     errors = []
     triggers = groups.get("TRIGGERS", {})
     if not isinstance(triggers, dict):
         return errors
+    priority_rules = contract.trigger_priority_rules
     for key, entry in triggers.items():
         if not isinstance(entry, dict):
             continue
         priority = entry.get("priority")
-        if priority is None:
+        if priority is None and priority_rules.required:
             errors.append(
                 f"V5b [error]: TRIGGERS entry {key} in {source_label} missing 'priority'"
             )
-        elif priority not in VALID_PRIORITIES:
+        elif priority is not None and priority not in priority_rules.allowed_values:
             errors.append(
                 f"V5b [error]: TRIGGERS entry {key} in {source_label} has invalid priority={priority!r} "
-                f"(must be one of: high, medium, low)"
+                f"(must be one of: {', '.join(priority_rules.allowed_values)})"
             )
     return errors
 
 
-def check_deprecation(groups: dict[str, dict], source_label: str) -> list[str]:
+def check_deprecation(
+    groups: dict[str, dict], source_label: str, contract: CapabilitySchemaContract
+) -> list[str]:
     """V5: Check deprecated entries have replaced_by referencing valid IDs."""
     warnings = []
+    marker_field = contract.deprecation_rules["marker_field"]
+    marker_value = contract.deprecation_rules["marker_value"]
+    replacement_field = contract.deprecation_rules["replacement_field"]
+    replacement_target = contract.deprecation_rules["replacement_target_field"]
     for group_name, entries in groups.items():
-        if group_name not in REQUIRED_GROUPS:
+        if group_name not in contract.required_groups:
             continue
         if not isinstance(entries, dict):
             continue
         valid_ids = set()
         for entry in entries.values():
-            if isinstance(entry, dict) and "id" in entry:
-                valid_ids.add(entry["id"])
+            if isinstance(entry, dict) and replacement_target in entry:
+                valid_ids.add(entry[replacement_target])
         for key, entry in entries.items():
             if not isinstance(entry, dict):
                 continue
-            if entry.get("deprecated"):
-                replaced = entry.get("replaced_by")
+            if entry.get(marker_field) == marker_value:
+                replaced = entry.get(replacement_field)
                 if not replaced:
                     warnings.append(
                         f"V5 [warning]: entry {key} ({entry.get('id', '?')}) "
-                        f"in {group_name} in {source_label} is deprecated but has no replaced_by"
+                        f"in {group_name} in {source_label} is deprecated but has no {replacement_field}"
                     )
                 elif replaced not in valid_ids:
                     warnings.append(
                         f"V5 [warning]: entry {key} ({entry.get('id', '?')}) "
-                        f"in {group_name} in {source_label} has replaced_by={replaced!r} "
+                        f"in {group_name} in {source_label} has {replacement_field}={replaced!r} "
                         f"which does not match any entry ID"
                     )
     return warnings
@@ -205,20 +207,21 @@ def validate_contract_self(contract_path: Path) -> list[str]:
     The contract file IS a valid capability schema. We load it, extract the
     required groups, and run all checks on it.
     """
+    contract = load_capability_schema_contract(contract_path)
     data = load_contract(contract_path)
     errors: list[str] = []
 
     groups: dict[str, dict] = {}
-    for group_name in REQUIRED_GROUPS:
+    for group_name in contract.required_groups:
         if group_name in data and isinstance(data[group_name], dict):
             groups[group_name] = data[group_name]
 
-    errors.extend(check_required_groups(groups, str(contract_path)))
-    errors.extend(check_numbered_entries(groups, str(contract_path)))
-    errors.extend(check_stable_ids(groups, str(contract_path)))
-    errors.extend(check_trigger_priorities(groups, str(contract_path)))
+    errors.extend(check_required_groups(groups, str(contract_path), contract))
+    errors.extend(check_numbered_entries(groups, str(contract_path), contract))
+    errors.extend(check_stable_ids(groups, str(contract_path), contract))
+    errors.extend(check_trigger_priorities(groups, str(contract_path), contract))
 
-    warnings = check_deprecation(groups, str(contract_path))
+    warnings = check_deprecation(groups, str(contract_path), contract)
     for w in warnings:
         print(w, file=sys.stderr)
 
@@ -227,19 +230,22 @@ def validate_contract_self(contract_path: Path) -> list[str]:
 
 def validate_capability(cap_dir: Path, contract_path: Path) -> list[str]:
     """Full validation of a capability directory."""
+    contract = load_capability_schema_contract(contract_path)
     all_errors: list[str] = []
 
-    all_errors.extend(check_directory_structure(cap_dir))
+    all_errors.extend(check_directory_structure(cap_dir, contract))
 
-    schemas_dir = cap_dir / "schemas"
+    schemas_dir = cap_dir / contract.directory_rules.schemas_path
     if schemas_dir.is_dir():
-        groups = collect_schema_groups(schemas_dir)
-        all_errors.extend(check_required_groups(groups, str(cap_dir)))
-        all_errors.extend(check_numbered_entries(groups, str(cap_dir)))
-        all_errors.extend(check_stable_ids(groups, str(cap_dir)))
-        all_errors.extend(check_trigger_priorities(groups, str(cap_dir)))
+        groups = collect_schema_groups(
+            schemas_dir, contract.required_groups, contract.directory_rules.schema_glob
+        )
+        all_errors.extend(check_required_groups(groups, str(cap_dir), contract))
+        all_errors.extend(check_numbered_entries(groups, str(cap_dir), contract))
+        all_errors.extend(check_stable_ids(groups, str(cap_dir), contract))
+        all_errors.extend(check_trigger_priorities(groups, str(cap_dir), contract))
 
-        warnings = check_deprecation(groups, str(cap_dir))
+        warnings = check_deprecation(groups, str(cap_dir), contract)
         for w in warnings:
             print(w, file=sys.stderr)
 
@@ -364,9 +370,12 @@ def validate_protocol_self(protocol_path: Path) -> list[str]:
 
 
 def check_primitive_references(
-    cap_dir: Path, protocol_path: Path
+    cap_dir: Path,
+    protocol_path: Path,
+    contract_path: Path = Path("skills/agentera/capability_schema_contract.yaml"),
 ) -> list[str]:
     """Check that capability schema primitive references resolve against protocol.yaml."""
+    contract = load_capability_schema_contract(contract_path)
     protocol_data = load_protocol(protocol_path)
     lookup = build_protocol_value_lookup(protocol_data)
     errors: list[str] = []
@@ -384,7 +393,7 @@ def check_primitive_references(
                 if not isinstance(key, int) or not isinstance(entry, dict):
                     continue
                 entry_id = entry.get("id", f"{group_name}.{key}")
-                for field_name, protocol_groups in PROTOCOL_REFERENCEABLE_FIELDS.items():
+                for field_name, protocol_groups in contract.primitive_references.fields.items():
                     if field_name not in entry:
                         continue
                     value = entry[field_name]
@@ -399,7 +408,7 @@ def check_primitive_references(
                             errors.append(
                                 f"[error]: {entry_id} field {field_name}={v!r} "
                                 f"does not resolve to any protocol primitive "
-                                f"in groups {protocol_groups}"
+                                f"in groups {list(protocol_groups)}"
                             )
 
     return errors
@@ -477,7 +486,7 @@ def main() -> None:
 
     if args.check_primitives:
         print(f"Checking primitive references against: {args.protocol}")
-        errors.extend(check_primitive_references(cap_dir, args.protocol))
+        errors.extend(check_primitive_references(cap_dir, args.protocol, args.contract))
 
     if errors:
         print("FAILED:", file=sys.stderr)

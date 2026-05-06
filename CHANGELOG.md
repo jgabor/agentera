@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Capability validation now treats `skills/agentera/capability_schema_contract.yaml` plus `scripts/capability_contract.py` as the executable schema-rule authority, with validators and tests consuming the loaded model instead of validator-local capability constants.
 - Install-root identity and diagnostics now route through the shared `scripts/install_root.py` Module for Python setup, doctor, upgrade, and bundle freshness paths; RuntimeAdapter registry, package manifest registry, and optional generated cross-language contract work remain separate follow-ups.
 
 ### Added

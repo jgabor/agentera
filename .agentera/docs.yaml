@@ -1,4 +1,4 @@
-last_audit: 2026-05-06 (PackageManifest registry documentation closure)
+last_audit: 2026-05-06 (Capability schema contract documentation closure)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -72,7 +72,7 @@ mapping:
 index:
 - document: README
   path: README.md
-  last_updated: '2026-05-05'
+  last_updated: '2026-05-06'
   status: current
 - document: Python package manifest
   path: pyproject.toml
@@ -104,7 +104,7 @@ index:
   status: current
 - document: Changelog
   path: CHANGELOG.md
-  last_updated: '2026-05-05'
+  last_updated: '2026-05-06'
   status: current
 - document: Health
   path: .agentera/health.yaml
@@ -246,6 +246,18 @@ index:
   path: scripts/runtime_adapter_registry.py
   last_updated: '2026-05-06'
   status: current
+- document: Capability schema contract
+  path: skills/agentera/capability_schema_contract.yaml
+  last_updated: '2026-05-06'
+  status: current
+- document: Capability contract loader/model
+  path: scripts/capability_contract.py
+  last_updated: '2026-05-06'
+  status: current
+- document: Capability validator
+  path: scripts/validate_capability.py
+  last_updated: '2026-05-06'
+  status: current
 - document: OpenCode bootstrap smoke runner
   path: scripts/smoke_opencode_bootstrap.mjs
   last_updated: '2026-04-28'
@@ -278,6 +290,10 @@ index:
   path: tests/test_runtime_adapter_registry.py
   last_updated: '2026-05-06'
   status: current
+- document: Capability contract interface tests
+  path: tests/test_capability_contract_interface_usage.py
+  last_updated: '2026-05-06'
+  status: current
 - document: Lefthook config
   path: .lefthook.yml
   last_updated: '2026-05-05'
@@ -290,8 +306,27 @@ coverage:
   documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: 610 passed, 1 skipped across the current v2 suite; CI runs on push/PR via GitHub Actions
+  tests: Task 7 focused verification passed 45 capability-contract tests and 65 per-capability tests; CI runs on push/PR via GitHub Actions
 audit_log:
+- date: '2026-05-06'
+  label: Capability schema contract documentation closure
+  findings:
+  - type: authority
+    description: Capability validation documentation now points at skills/agentera/capability_schema_contract.yaml plus scripts/capability_contract.py as the executable schema-rule authority consumed by scripts/validate_capability.py.
+    resolution: fixed
+    severity: info
+  - type: tests
+    description: Capability contract interface tests validate all capability schemas through the loaded CapabilitySchemaContract model and prove a fixture contract changes validation behavior without validator-local capability constants.
+    resolution: fixed
+    severity: info
+  - type: version-policy
+    description: Version policy evaluated for this refactor closure as docs/test/internal validation alignment. Per semver_policy docs/chore/test no package version bump is required, so version_files remain unchanged.
+    resolution: fixed
+    severity: info
+  - type: scoped-deferral
+    description: TODO resolves only [arch-capability-schema-contract]; routing/exit vocabulary, artifact registry, artifact write validation, health command freshness, and optional Claude live smoke remain separate open findings.
+    resolution: fixed
+    severity: info
 - date: '2026-05-06'
   label: PackageManifest registry documentation closure
   findings:

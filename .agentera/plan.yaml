@@ -3,142 +3,136 @@ header:
   created: '2026-05-06'
   status: complete
   reviewed: '2026-05-06'
-  critic_issues: "7 found, 7 addressed, 0 dismissed"
-  title: Deepen PackageManifest Registry
+  critic_issues: "8 found, 8 addressed, 0 dismissed"
+  title: Deepen Capability Schema Contract
 what: >
-  Replace scattered package metadata and release-surface knowledge with one registry-backed PackageManifest Module. The registry
-  should expose one Interface for suite version authority, runtime package surfaces, version-bearing surfaces, bundle surface lists,
-  package-manager command specifications, manifest projection expectations, and release validation facts. Validators, upgrade
-  bundle/package planning, docs indexing, runtime package tests, and version-surface checks should consume that Interface instead
-  of duplicating package constants.
+  Make skills/agentera/capability_schema_contract.yaml the real Interface for capability validation. Replace validator-local
+  hardcoded capability contract facts in scripts/validate_capability.py with a contract loader/model that derives required groups,
+  directory requirements, entry required fields, trigger priority rules, deprecation behavior, group-prefix policy, and capability
+  primitive-reference field mappings from machine-readable contract sections. Capability tests should prove changing a fixture
+  contract changes validation behavior.
 why: >
-  TODO [arch-package-manifest-registry] identifies package metadata as the next shallow seam after the install-root and
-  RuntimeAdapter Modules were deepened. Current package facts live across pyproject.toml force-include paths, registry.json
-  skills[0].version, plugin manifests, .opencode/package.json, scripts/agentera_upgrade.py bundle/package constants,
-  scripts/validate_lifecycle_adapters.py package-surface constants, .agentera/docs.yaml version_files/index, and
-  tests/test_runtime_adapters.py production-like package validators. One PackageManifest Interface gives locality for release
-  changes and leverage for validators, docs, and upgrade planning.
+  TODO [arch-capability-schema-contract] identifies capability_schema_contract.yaml as a shallow Interface: it documents the
+  contract, but scripts/validate_capability.py owns the actual Implementation through REQUIRED_GROUPS, GROUP_PREFIXES,
+  PROTOCOL_GROUPS, PROTOCOL_REFERENCEABLE_FIELDS, VALID_PRIORITIES, and directory checks. validate_capability(cap_dir,
+  contract_path) accepts a contract path, but normal capability validation currently ignores that path.
 constraints: >
-  Preserve current package versions and user-visible CLI behavior unless characterization explicitly names an intentional
-  correction. registry.json remains the persisted suite-version authority unless a task proves and documents a safer authority
-  transition; consumers should access that authority through the PackageManifest Interface after migration. Do not change
-  install-root classification semantics owned by scripts/install_root.py. Do not move runtime lifecycle, diagnostic, or config
-  facts out of RuntimeAdapter. Do not implement capability schema contract, routing/exit vocabulary, artifact registry, artifact
-  write validation, or live package-manager execution. No remote pushes and no unapproved writes.
+  Preserve current capability validation semantics and CLI output unless characterization explicitly names an intentional change.
+  capability_schema_contract.yaml owns capability schema structure only. protocol.yaml remains the sole owner of protocol primitive
+  groups, primitive values, protocol group prefixes, and protocol self-validation. Do not implement routing/exit vocabulary fixes,
+  artifact registry, artifact write validation, package/runtime/install-root changes, version bumps, release
+  publication, remote pushes, or unapproved writes.
 scope:
   included:
-    - archive the completed RuntimeAdapter registry plan with validation evidence
-    - characterize current package, version, bundle, docs, and package-command surfaces before migration
-    - define PackageManifest ownership, projections, command safety, and consumer permissions
-    - introduce a registry Module, data fixture, and contract tests
-    - migrate package/version validation and runtime package tests to the PackageManifest Interface
-    - migrate upgrade bundle and package planning to consume registry-owned facts while preserving write gates
-    - align docs, manifest projection validation, and version policy without changing package versions unless required
-    - validate and close only [arch-package-manifest-registry]
+    - archive the completed PackageManifest registry plan with validation evidence
+    - characterize current validator behavior, CLI output, warnings, exit codes, and contract drift before migration
+    - make missing contract rules machine-readable before relying on them
+    - define CapabilitySchemaContract ownership, bootstrap rules, and protocol boundary
+    - introduce a contract loader/model with malformed-contract fixture tests
+    - migrate capability directory validation to use contract data through contract_path
+    - migrate capability primitive-reference field mapping while keeping protocol primitive values in protocol.yaml
+    - align capability tests, docs, and TODO status
+    - validate all capabilities and close only [arch-capability-schema-contract]
   excluded:
-    - install-root classification or AGENTERA_HOME semantics
-    - RuntimeAdapter lifecycle, diagnostic, config-target, or documentation-claim ownership
-    - capability schema contract refactor
-    - routing and exit vocabulary refactor
+    - protocol.yaml primitive value authority or protocol self-validation ownership changes
+    - routing/exit vocabulary changes, including routing scoring implementation and SKILL.md exit vocabulary correction
     - artifact registry refactor
     - artifact write validation Module split
-    - live package-manager or live runtime smoke calls
+    - package/runtime/install-root changes, including PackageManifest registry, RuntimeAdapter registry, and install-root changes
     - version bump or release publication
   deferred:
-    - [arch-capability-schema-contract]
     - [arch-routing-exit-vocabulary]
     - [arch-artifact-registry]
     - [arch-artifact-write-validation]
+    - [audit-20-health-command-stale]
     - [agentera-optional-claude-live-smoke]
 design: >
-  Put the seam at package and release-surface facts, not runtime behavior and not install-root classification. PackageManifest
-  should distinguish persisted version authority, version-bearing surfaces, runtime package manifests, bundle include surfaces,
-  package-manager command surfaces, and docs version targets. Command data must be validated as argv lists with allowed
-  executables/actions/runtimes and must remain gated by existing --update-packages, --yes, and force behavior. RuntimeAdapter and
-  install-root Modules remain consumers or neighbors, not owners of package metadata.
+  Put the seam at capability schema structure, not protocol values. The contract may say which capability fields reference protocol
+  primitives; protocol.yaml still defines the primitive groups and values. Use a small bootstrap validation layer for the contract file
+  itself so malformed contract fixtures fail deterministically before the full model is built. Preserve currently unenforced group-prefix
+  behavior unless a characterization task explicitly records and approves enforcement as a semantic change.
 tasks:
   - number: 1
-    name: Reconcile Plan State And Package Scope
+    name: Reconcile Plan State And Contract Scope
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN the RuntimeAdapter registry plan is complete WHEN this package plan becomes active THEN the completed plan is archived with validation evidence intact
-      - GIVEN TODO has multiple critical findings WHEN the next item is selected THEN [arch-package-manifest-registry] is identified as the planned work and unrelated findings remain open
-      - GIVEN package registry work starts WHEN scope is recorded THEN install-root classification, RuntimeAdapter ownership, artifact write validation, live package-manager calls, and release publication are explicitly out of scope
+      - GIVEN the PackageManifest registry plan is complete WHEN this contract plan becomes active THEN the completed plan is archived with validation evidence intact
+      - GIVEN TODO has multiple critical findings WHEN the next item is selected THEN [arch-capability-schema-contract] is identified as the planned work and unrelated findings remain open
+      - GIVEN capability contract work starts WHEN scope is recorded THEN protocol value authority, routing/exit vocabulary, artifact registry, artifact write validation, package/runtime/install-root changes, and release publication are explicitly out of scope
   - number: 2
-    name: Characterize Package Surfaces And Drift
+    name: Characterize Validator Behavior And Drift
     depends_on:
       - Task 1
     status: complete
     acceptance:
-      - GIVEN current version checks run WHEN version-bearing and non-version-bearing surfaces are inspected THEN registry.json, pyproject.toml, plugin manifests, OpenCode plugin version marker, and .opencode/package.json behavior are recorded before migration
-      - GIVEN upgrade package planning runs WHEN package phases are skipped, dry-run, or applied with mocked commands THEN runtime, action, command argv, status, message, and write-gating behavior are characterized before migration
-      - GIVEN bundle surfaces are inspected WHEN pyproject force-includes, upgrade bundle lists, lifecycle required paths, and docs version_files disagree THEN each drift point is named as preserve, standardize, or defer
-      - GIVEN package docs and tests encode package facts WHEN drift is found THEN each drift point distinguishes version-bearing surface, runtime package manifest, bundle metadata surface, or package-manager command surface
+      - GIVEN current validator CLI paths run WHEN valid, missing-directory, empty-schemas, missing-group, malformed-group, invalid-priority, and deprecation-warning fixtures are checked THEN stdout, stderr, exit codes, error labels, and ordering are recorded before migration
+      - GIVEN validate_capability receives alternate contract_path WHEN current behavior is characterized THEN the ignored-contract behavior is recorded before refactor
+      - GIVEN capability_schema_contract.yaml declares group prefixes, priority rules, and directory requirements WHEN current validator behavior is inspected THEN declared-but-unenforced and prose-only rules are named as preserve, standardize, or defer
+      - GIVEN primitive reference validation runs WHEN protocol fields are checked THEN current ownership split between capability field mapping and protocol.yaml values is recorded
   - number: 3
-    name: Define PackageManifest Interface And Ownership Model
+    name: Make Contract Rules Machine-Readable
     depends_on:
       - Task 2
     status: complete
     acceptance:
-      - GIVEN a PackageManifest record is valid WHEN it is loaded THEN it has typed groups for identity, version authority, version surfaces, runtime package manifests, bundle surfaces, package commands, docs targets, and release policy
-      - GIVEN registry.json version facts are encountered WHEN ownership is assigned THEN registry.json remains the persisted authority and PackageManifest becomes the access Interface unless an explicit future ADR changes that authority
-      - GIVEN install-root or RuntimeAdapter facts are encountered WHEN ownership is assigned THEN those facts remain delegated to scripts/install_root.py and scripts/runtime_adapter_registry.py
-      - GIVEN command specs are defined WHEN validation runs THEN package-manager commands are list argv only, use approved executables/actions/runtimes, separate cleanup from runtime installs, and preserve existing write gates
+      - GIVEN priority requirements are represented WHEN the contract is loaded THEN TRIGGERS priority requiredness and allowed values are encoded as structured data, not prose parsing
+      - GIVEN directory requirements are represented WHEN the contract is loaded THEN prose.md, schemas directory, schema glob, and minimum YAML file count are encoded as structured data
+      - GIVEN entry requirements are represented WHEN the contract is loaded THEN per-group required fields and deprecation replacement behavior are encoded as structured data
+      - GIVEN primitive-reference field mapping is represented WHEN the contract is loaded THEN the contract owns capability field-to-protocol-group mapping while protocol.yaml still owns primitive group values
   - number: 4
-    name: Introduce Package Registry Module And Contract Tests
+    name: Define Contract Loader And Bootstrap Model
     depends_on:
       - Task 3
     status: complete
     acceptance:
-      - GIVEN the package registry loads WHEN package records are requested THEN suite version, version-bearing surfaces, runtime manifests, bundle surfaces, command specs, and docs targets are returned deterministically without duplicate IDs
-      - GIVEN malformed registry fixtures exist WHEN contract validation runs THEN missing groups, duplicate IDs, unknown paths, unsafe command strings, forbidden install-root fields, and forbidden RuntimeAdapter fields fail with clear errors
-      - GIVEN one package fact changes in a fixture WHEN validator, upgrade, docs, and tests are simulated THEN every relevant consumer observes the changed fact rather than a hardcoded copy
-      - GIVEN non-version-bearing runtime package manifests are present WHEN registry validation runs THEN they are represented separately from version-bearing surfaces
+      - GIVEN a contract file is loaded WHEN bootstrap validation runs THEN missing REQUIRED_GROUPS, bad ENTRY_SCHEMA, bad GROUP_PREFIXES, missing rule sections, and missing self groups fail deterministically with clear errors
+      - GIVEN a valid contract is loaded WHEN the model is built THEN required groups, directory rules, entry rules, trigger priority rules, deprecation rules, group-prefix policy, and primitive-reference mappings are available from one model
+      - GIVEN malformed contract fixtures exist WHEN contract tests run THEN each rule family has a focused failing fixture and message
+      - GIVEN protocol.yaml is loaded WHEN protocol self-validation runs THEN protocol group definitions and primitive values remain outside the CapabilitySchemaContract model
   - number: 5
-    name: Migrate Package Validation And Runtime Package Tests
+    name: Migrate Capability Validation To Contract Data
     depends_on:
       - Task 4
     status: complete
     acceptance:
-      - GIVEN package/version validators check suite metadata WHEN they need version surfaces, runtime package manifests, shared paths, or package shapes THEN those facts come from PackageManifest records
-      - GIVEN existing runtime package tests run WHEN migration lands THEN primary package validation messages remain stable or intentional changes are documented
-      - GIVEN a PackageManifest fixture changes a version surface or manifest path WHEN package validation runs THEN the validator observes the fixture change without editing validator-local constants
-      - GIVEN RuntimeAdapter and install-root ownership boundaries are checked WHEN package validation runs THEN package validation rejects attempts to absorb runtime lifecycle or root classification facts
+      - GIVEN capability directory validation runs WHEN directory, required-group, numbered-entry, stable-id, priority, and deprecation checks execute THEN those rules come from the loaded contract model
+      - GIVEN a fixture contract changes required groups, required fields, priority enum, or directory YAML minimum WHEN validation runs THEN capability validation observes the changed contract without editing validator-local constants
+      - GIVEN existing capability tests run WHEN migration lands THEN primary validation messages, warning behavior, and exit codes remain stable or intentional changes are documented
+      - GIVEN group prefixes remain non-enforced WHEN migration lands THEN the behavior is either preserved by test or explicitly changed with characterization evidence
   - number: 6
-    name: Migrate Upgrade Bundle And Package Planning
+    name: Migrate Primitive Reference Mapping Safely
     depends_on:
       - Task 5
     status: complete
     acceptance:
-      - GIVEN upgrade builds bundle plans WHEN bundle directories, files, skip rules, or required package surfaces are needed THEN registry-owned facts come from PackageManifest records
-      - GIVEN upgrade builds package phases WHEN package command specs are needed THEN command argv, cleanup action, runtime install actions, skipped behavior, and apply messages are registry-backed while package execution remains mocked in tests
-      - GIVEN dry-run and apply paths run WHEN writes or package commands would occur THEN existing --dry-run, --yes, --force, and --update-packages gates remain stable
-      - GIVEN package version authority is needed WHEN bundle-status or upgrade reports expected/current versions THEN the value is read through PackageManifest while registry.json remains the persisted source
+      - GIVEN capability primitive reference checks run WHEN severity, finding_severity, issue_severity, decision_label, exit_signal, and phase fields are inspected THEN field-to-protocol-group mapping comes from the contract model
+      - GIVEN a fixture contract changes a referenceable capability field mapping WHEN primitive checks run THEN validation observes that mapping without editing validator-local constants
+      - GIVEN protocol primitive values are needed WHEN primitive checks run THEN values still come only from protocol.yaml
+      - GIVEN protocol self-validation runs WHEN this migration completes THEN PROTOCOL_GROUPS-style protocol structure checks remain protocol-owned and unchanged
   - number: 7
-    name: Align Docs, Manifest Projections, And Version Policy
+    name: Align Tests, Docs, And TODO Status
     depends_on:
       - Task 6
     status: complete
     acceptance:
-      - GIVEN docs mention package/version surfaces WHEN this task completes THEN docs point at the PackageManifest registry and do not duplicate registry-owned values without validation
-      - GIVEN manifest projections are validated WHEN package metadata changes THEN plugin.json, .github/plugin/plugin.json, .codex-plugin/plugin.json, .claude-plugin/marketplace.json, .opencode/package.json, registry.json, and pyproject.toml remain aligned through registry-backed checks
+      - GIVEN capability contract docs mention validation authority WHEN this task completes THEN docs point at capability_schema_contract.yaml plus the loader/model and avoid duplicating contract-owned values without validation
+      - GIVEN per-capability tests validate schemas WHEN this task completes THEN tests exercise the contract Interface rather than re-encoding validator-local constants
       - GIVEN version policy is evaluated WHEN this refactor is closed THEN CHANGELOG, docs index, and version files are updated or explicit no-bump rationale is recorded
-      - GIVEN unrelated architecture findings remain open WHEN TODO is updated THEN only [arch-package-manifest-registry] is resolved or narrowed
+      - GIVEN unrelated architecture findings remain open WHEN TODO is updated THEN only [arch-capability-schema-contract] is resolved or narrowed
   - number: 8
     name: Validate And Close
     depends_on:
       - Task 7
     status: complete
     acceptance:
-      - GIVEN focused validation runs WHEN the plan closes THEN package registry tests, package/runtime adapter tests, lifecycle validation, upgrade tests, bundle freshness tests, docs CLI, and artifact query checks pass
-      - GIVEN broader validation runs WHEN practical THEN full pytest, capability validation, cross-capability validation, and relevant py_compile checks pass
-      - GIVEN future work remains WHEN this plan closes THEN capability schema contract, routing/exit vocabulary, artifact registry, artifact write validation, and optional live smoke TODOs remain separate
-      - GIVEN worktree changes are reviewed WHEN validation ends THEN only package-registry plan changes are present or unrelated changes are reported without reverting
+      - GIVEN focused validation runs WHEN the plan closes THEN contract loader tests, validator characterization tests, per-capability validation tests, primitive-reference tests, and protocol self-validation pass
+      - GIVEN broader validation runs WHEN practical THEN full pytest, all 12 capability validations, cross-capability validation, lifecycle validation, docs CLI, artifact query, and py_compile checks pass
+      - GIVEN future work remains WHEN this plan closes THEN routing/exit vocabulary, artifact registry, artifact write validation, health command freshness, and optional live smoke TODOs remain separate
+      - GIVEN worktree changes are reviewed WHEN validation ends THEN only capability-contract plan changes are present or unrelated changes are reported without reverting
 overall_acceptance:
-  - GIVEN a package or release-surface fact changes WHEN validators, upgrade planning, docs, and tests need that fact THEN the change is made in one PackageManifest Interface rather than duplicated across callers
-  - GIVEN a runtime package manifest exists WHEN version validation runs THEN version-bearing surfaces are distinguished from non-version-bearing package manifests
-  - GIVEN package commands are planned WHEN dry-run or apply behavior is inspected THEN no package-manager command executes without existing explicit flags and mocked tests prove command shape safety
-  - GIVEN package registry work completes WHEN install-root or RuntimeAdapter behavior is inspected THEN those facts remain owned by their existing Modules
-surprises:
-  - Task 5 dispatch returned an empty result twice without updating plan or progress; orkestrera stopped per retry guard before package validation migration.
+  - GIVEN a capability schema rule changes WHEN validator, tests, and docs need that rule THEN the change is made in capability_schema_contract.yaml or its model rather than duplicated across callers
+  - GIVEN a protocol primitive value changes WHEN capability primitive checks run THEN the value still comes from protocol.yaml, not from the capability contract
+  - GIVEN a malformed contract is supplied WHEN validation starts THEN the failure is deterministic and does not depend on a fully built contract model
+  - GIVEN capability contract work completes WHEN routing/exit vocabulary or artifact behavior is inspected THEN those findings remain owned by their separate TODOs
+surprises: []
