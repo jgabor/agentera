@@ -31,93 +31,97 @@ SCHEMAS_DIR = REPO_ROOT / "skills" / "agentera" / "schemas" / "artifacts"
 _AGENT_YAML_RE = re.compile(r"\.agentera/([a-z_]+)\.yaml$")
 _HUMAN_FACING = {"TODO.md", "CHANGELOG.md", "DESIGN.md"}
 
-_schema_cache: dict[str, dict | None] = {}
+
+# ── Runtime event parsing ──────────────────────────────────────────
 
 
-def _load_schema(name: str) -> dict | None:
-    if name not in _schema_cache:
-        path = SCHEMAS_DIR / f"{name}.yaml"
-        if path.is_file():
-            with open(path) as f:
-                _schema_cache[name] = yaml.safe_load(f)
-        else:
-            _schema_cache[name] = None
-    return _schema_cache[name]
+class ArtifactWrite:
+    __slots__ = ("file_path", "content")
 
+    def __init__(self, file_path: str, content: str | None = None):
+        self.file_path = file_path
+        self.content = content
 
-# ── Adapter parsers ────────────────────────────────────────────────
-
-
-def _parse_claude(data: dict) -> tuple[str, str | None] | None:
-    ti = data.get("tool_input")
-    if not isinstance(ti, dict):
-        return None
-    fp = ti.get("file_path")
-    if fp:
-        return str(fp), ti.get("content")
-    return None
-
-
-def _parse_opencode(data: dict) -> tuple[str, str | None] | None:
-    inp = data.get("input")
-    if not isinstance(inp, dict):
-        return None
-    fp = inp.get("path")
-    if fp:
-        return str(fp), inp.get("content")
-    return None
-
-
-def _parse_codex(data: dict) -> tuple[str, str | None] | None:
-    ti = data.get("tool_input")
-    if not isinstance(ti, dict):
-        return None
-    fp = ti.get("path")
-    patch_body = ti.get("patch") or ti.get("command", "")
-    if fp:
-        return str(fp), None
-    if isinstance(patch_body, str):
-        headers = re.findall(
-            r"^\*\*\*\s+(?:Add File|Update File):\s+(.+?)\s*$",
-            patch_body,
-            re.MULTILINE,
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, ArtifactWrite)
+            and self.file_path == other.file_path
+            and self.content == other.content
         )
-        if headers:
-            return headers[0], None
-    return None
+
+    def __repr__(self) -> str:
+        return f"ArtifactWrite(file_path={self.file_path!r}, content={self.content!r})"
 
 
-def _parse_copilot(data: dict) -> tuple[str, str | None] | None:
-    inp = data.get("input")
-    if not isinstance(inp, dict):
+class RuntimeEventParser:
+    """Parse supported runtime hook payloads into artifact write candidates."""
+
+    def parse_claude(self, data: dict) -> ArtifactWrite | None:
+        ti = data.get("tool_input")
+        if not isinstance(ti, dict):
+            return None
+        fp = ti.get("file_path")
+        if fp:
+            return ArtifactWrite(str(fp), ti.get("content"))
         return None
-    fp = inp.get("filePath") or inp.get("file_path")
-    if fp:
-        return str(fp), inp.get("content")
-    return None
 
+    def parse_opencode(self, data: dict) -> ArtifactWrite | None:
+        inp = data.get("input")
+        if not isinstance(inp, dict):
+            return None
+        fp = inp.get("path")
+        if fp:
+            return ArtifactWrite(str(fp), inp.get("content"))
+        return None
 
-def _route(data: dict) -> tuple[str, str | None] | None:
-    tn = data.get("tool_name", "")
-    if tn == "apply_patch":
-        r = _parse_codex(data)
-        if r:
-            return r
-    if tn in ("Edit", "Write") or (
-        "tool_input" in data
-        and isinstance(data.get("tool_input"), dict)
-        and "file_path" in data["tool_input"]
-    ):
-        r = _parse_claude(data)
-        if r:
-            return r
-    if isinstance(data.get("input"), dict):
-        inp = data["input"]
-        if "filePath" in inp or "file_path" in inp:
-            return _parse_copilot(data)
-        if "path" in inp:
-            return _parse_opencode(data)
-    return None
+    def parse_codex(self, data: dict) -> ArtifactWrite | None:
+        ti = data.get("tool_input")
+        if not isinstance(ti, dict):
+            return None
+        fp = ti.get("path")
+        patch_body = ti.get("patch") or ti.get("command", "")
+        if fp:
+            return ArtifactWrite(str(fp))
+        if isinstance(patch_body, str):
+            headers = re.findall(
+                r"^\*\*\*\s+(?:Add File|Update File):\s+(.+?)\s*$",
+                patch_body,
+                re.MULTILINE,
+            )
+            if headers:
+                return ArtifactWrite(headers[0])
+        return None
+
+    def parse_copilot(self, data: dict) -> ArtifactWrite | None:
+        inp = data.get("input")
+        if not isinstance(inp, dict):
+            return None
+        fp = inp.get("filePath") or inp.get("file_path")
+        if fp:
+            return ArtifactWrite(str(fp), inp.get("content"))
+        return None
+
+    def parse(self, data: dict) -> ArtifactWrite | None:
+        tn = data.get("tool_name", "")
+        if tn == "apply_patch":
+            candidate = self.parse_codex(data)
+            if candidate:
+                return candidate
+        if tn in ("Edit", "Write") or (
+            "tool_input" in data
+            and isinstance(data.get("tool_input"), dict)
+            and "file_path" in data["tool_input"]
+        ):
+            candidate = self.parse_claude(data)
+            if candidate:
+                return candidate
+        if isinstance(data.get("input"), dict):
+            inp = data["input"]
+            if "filePath" in inp or "file_path" in inp:
+                return self.parse_copilot(data)
+            if "path" in inp:
+                return self.parse_opencode(data)
+        return None
 
 
 # ── Validation ─────────────────────────────────────────────────────
@@ -469,54 +473,100 @@ def _read_if_needed(content: str | None, abs_path: str) -> str | None:
         return None
 
 
+class ArtifactSchemaValidator:
+    """Validate agent-facing YAML and human-facing Markdown artifacts."""
+
+    def __init__(self, schemas_dir: Path = SCHEMAS_DIR):
+        self.schemas_dir = schemas_dir
+        self._schema_cache: dict[str, dict | None] = {}
+
+    def load_schema(self, name: str) -> dict | None:
+        if name not in self._schema_cache:
+            path = self.schemas_dir / f"{name}.yaml"
+            if path.is_file():
+                with open(path) as f:
+                    self._schema_cache[name] = yaml.safe_load(f)
+            else:
+                self._schema_cache[name] = None
+        return self._schema_cache[name]
+
+    def validate_yaml(self, content: str, schema: dict, name: str) -> list[str]:
+        return _validate_yaml(content, schema, name)
+
+    def validate_markdown(self, content: str, name: str) -> list[str]:
+        return _validate_md(content, name)
+
+    def validate_write(self, write: ArtifactWrite, cwd: str) -> list[str]:
+        abs_path = _resolve(write.file_path, cwd)
+        rel = os.path.relpath(abs_path, cwd).replace("\\", "/")
+        basename = os.path.basename(abs_path)
+
+        match = _AGENT_YAML_RE.search(rel)
+        if match:
+            name = match.group(1)
+            schema = self.load_schema(name)
+            if schema is None:
+                return []
+            content = _read_if_needed(write.content, abs_path)
+            return [] if content is None else self.validate_yaml(content, schema, name)
+
+        if basename in _HUMAN_FACING:
+            content = _read_if_needed(write.content, abs_path)
+            return [] if content is None else self.validate_markdown(content, basename)
+
+        return []
+
+
+def load_schema(name: str) -> dict | None:
+    return ArtifactSchemaValidator().load_schema(name)
+
+
+def validate_yaml(content: str, schema: dict, name: str) -> list[str]:
+    return ArtifactSchemaValidator().validate_yaml(content, schema, name)
+
+
+def validate_markdown(content: str, name: str) -> list[str]:
+    return ArtifactSchemaValidator().validate_markdown(content, name)
+
+
+class HookCliAdapter:
+    """Translate hook stdin/stdout/exit-code behavior around core modules."""
+
+    def __init__(
+        self,
+        parser: RuntimeEventParser | None = None,
+        validator: ArtifactSchemaValidator | None = None,
+    ):
+        self.parser = parser or RuntimeEventParser()
+        self.validator = validator or ArtifactSchemaValidator()
+
+    def run(self, raw: str, default_cwd: str | None = None) -> tuple[int, list[str]]:
+        try:
+            if not raw.strip():
+                return 0, []
+            data = json.loads(raw)
+        except (json.JSONDecodeError, KeyError):
+            return 0, []
+        if not isinstance(data, dict):
+            return 0, []
+
+        write = self.parser.parse(data)
+        if write is None:
+            return 0, []
+
+        cwd = data.get("cwd", default_cwd or os.getcwd())
+        violations = self.validator.validate_write(write, cwd)
+        return (2, violations) if violations else (0, [])
+
+    def main(self) -> int:
+        rc, violations = self.run(sys.stdin.read(), os.getcwd())
+        for violation in violations:
+            print(violation, file=sys.stderr)
+        return rc
+
+
 def main() -> int:
-    try:
-        raw = sys.stdin.read()
-        if not raw.strip():
-            return 0
-        data = json.loads(raw)
-    except (json.JSONDecodeError, KeyError):
-        return 0
-    if not isinstance(data, dict):
-        return 0
-
-    cwd = data.get("cwd", os.getcwd())
-    routed = _route(data)
-    if routed is None:
-        return 0
-
-    file_path, content = routed
-    abs_path = _resolve(file_path, cwd)
-    rel = os.path.relpath(abs_path, cwd).replace("\\", "/")
-    basename = os.path.basename(abs_path)
-
-    m = _AGENT_YAML_RE.search(rel)
-    if m:
-        schema = _load_schema(m.group(1))
-        if schema is None:
-            return 0
-        content = _read_if_needed(content, abs_path)
-        if content is None:
-            return 0
-        violations = _validate_yaml(content, schema, m.group(1))
-        if violations:
-            for v in violations:
-                print(v, file=sys.stderr)
-            return 2
-        return 0
-
-    if basename in _HUMAN_FACING:
-        content = _read_if_needed(content, abs_path)
-        if content is None:
-            return 0
-        violations = _validate_md(content, basename)
-        if violations:
-            for v in violations:
-                print(v, file=sys.stderr)
-            return 2
-        return 0
-
-    return 0
+    return HookCliAdapter().main()
 
 
 if __name__ == "__main__":

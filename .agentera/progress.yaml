@@ -1,4 +1,30 @@
 cycles:
+- number: 340
+  timestamp: 2026-05-06 21:51
+  type: refactor
+  phase: build
+  what: Deepened artifact write validation into explicit hook interfaces.
+  commit: pending
+  inspiration: The critical TODO required stable hook Module Interfaces so runtime event changes, artifact validation, and CLI exit behavior can evolve without tests coupling to private parser functions.
+  discovered: >
+    `hooks/validate_artifact.py` mixed runtime payload parsing, route selection, schema loading,
+    artifact content validation, file-path resolution, and CLI exit handling in one path. Focused
+    tests confirmed the parser coupling by asserting private functions directly. The refactor keeps
+    the executable hook path stable while introducing `RuntimeEventParser`, `ArtifactSchemaValidator`,
+    and `HookCliAdapter` as named seams.
+  verified: >
+    Validation passed: uv run pytest tests/test_hook_v2.py -q reported 62 passed; python3 -m
+    py_compile hooks/validate_artifact.py passed; uv run pytest tests/test_hook_v2.py
+    tests/test_runtime_adapters.py -q reported 134 passed; uv run scripts/validate_capability.py
+    --self-validate passed; uv run pytest -q reported 714 passed; direct invalid-artifact hook
+    smoke exited with the expected blocking status and YAML violation; uv run scripts/agentera hej
+    remained functional.
+  next: 'Artifact write validation TODO resolved; no commit or push performed.'
+  context:
+    intent: resolve the critical artifact write validation architecture TODO with stable hook module seams
+    constraints: no vision or objective mutation, no runtime hook path changes, no unrelated health-command fix, no push, no commit without explicit request
+    unknowns: whether future work should extract the new classes into separate files after more hook surfaces appear
+    scope: hooks/validate_artifact.py, tests/test_hook_v2.py, TODO.md, CHANGELOG.md, and progress logging
 - number: 339
   timestamp: 2026-05-06 22:10
   type: fix
@@ -271,7 +297,7 @@ cycles:
     scope: .agentera/plan.yaml and .agentera/progress.yaml
 - number: 328
   timestamp: 2026-05-06 20:02
-  type: plan
+  type: chore
   phase: plan
   what: Planned the artifact registry Interface deepening work.
   commit: pending
@@ -497,7 +523,7 @@ cycles:
     scope: .agentera/plan.yaml and .agentera/progress.yaml
 - number: 319
   timestamp: 2026-05-06 19:39
-  type: plan
+  type: chore
   phase: plan
   what: Planned the capability routing and exit vocabulary deepening work.
   commit: pending
@@ -737,7 +763,7 @@ cycles:
     scope: .agentera/plan.yaml, .agentera/progress.yaml, and existing PackageManifest archive verification
 - number: 310
   timestamp: 2026-05-06 10:18
-  type: plan
+  type: chore
   phase: plan
   what: Planned the capability schema contract deepening work.
   commit: pending
@@ -866,7 +892,7 @@ cycles:
 - number: 305
   timestamp: 2026-05-06 08:24
   type: refactor
-  phase: flagged
+  phase: build
   what: Blocked PackageManifest Task 5 after two empty dispatch results.
   commit: pending
   inspiration: Orkestrera retry guard requires stopping after two failed attempts rather than continuing past an unevaluated migration task.
@@ -995,7 +1021,7 @@ cycles:
     scope: .agentera/plan.yaml, .agentera/progress.yaml, .agentera/archive/PLAN-2026-05-06-deepen-runtimeadapter-registry.yaml, and TODO.md
 - number: 300
   timestamp: 2026-05-06 07:25
-  type: plan
+  type: chore
   phase: plan
   what: Planned the PackageManifest registry deepening work.
   commit: pending
