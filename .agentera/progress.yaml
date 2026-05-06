@@ -1,4 +1,270 @@
 cycles:
+- number: 299
+  timestamp: 2026-05-06 07:16
+  type: docs
+  phase: build
+  what: Refreshed DOCS for RuntimeAdapter registry closure.
+  commit: pending
+  inspiration: The completed RuntimeAdapter registry plan validated 610 passed, 1 skipped, while .agentera/docs.yaml still reported the pre-plan 593 passed, 1 skipped coverage and lacked entries for the new registry artifacts.
+  discovered: >
+    .agentera/docs.yaml now records the 2026-05-06 RuntimeAdapter documentation closure, indexes references/adapters/runtime-adapter-registry.yaml,
+    references/adapters/runtime-adapter-interface-model.yaml, references/adapters/runtime-adapter-characterization.md, scripts/runtime_adapter_registry.py,
+    and tests/test_runtime_adapter_registry.py, and keeps package manifest registry plus other architecture findings as separate open TODOs.
+  verified: >
+    Validation passed: python3 YAML parse check loaded .agentera/docs.yaml and .agentera/progress.yaml; uv run scripts/agentera docs reports last_audit=2026-05-06, current=51, and tests=610 passed, 1 skipped; uv run scripts/agentera query --list-artifacts succeeded; git diff --check passed.
+  next: 'Dokumentera update complete; commit only if the user requests it.'
+  context:
+    intent: update documentation index and audit log after RuntimeAdapter registry closure
+    constraints: user approved docs writes; no package manifest registry; no install-root semantics changes; no unrelated TODO closure; no commit or push
+    unknowns: live runtime smoke remains outside the completed RuntimeAdapter plan
+    scope: .agentera/docs.yaml and .agentera/progress.yaml
+- number: 298
+  timestamp: 2026-05-06 07:06
+  type: refactor
+  phase: build
+  what: Aligned RuntimeAdapter documentation and validated plan closure.
+  commit: pending
+  inspiration: Task 8 of the Deepen RuntimeAdapter Registry plan requires runtime docs to point at the RuntimeAdapter registry, TODO closure for only [arch-runtime-adapter-registry], focused and broad validation evidence, and worktree review without changing package manifest registry or install-root classification ownership.
+  discovered: >
+    references/adapters/runtime-feature-parity.md and references/adapters/opencode.md now point runtime facts at references/adapters/runtime-adapter-registry.yaml and scripts/runtime_adapter_registry.py instead of describing RuntimeAdapter extraction as deferred. Documentation parity tests now require that registry pointer while preserving scripts/install_root.py as install-root owner and package_manifest_registry as the separate package metadata owner. TODO.md resolves only [arch-runtime-adapter-registry]; [arch-package-manifest-registry], [arch-artifact-write-validation], and the other unrelated critical findings remain open. Release impact was assessed as no version or CHANGELOG entry for this Task 8 close because validation preserved runtime-visible behavior and the change is registry/docs/artifact closure rather than a shipped behavior change.
+  verified: >
+    Validation passed: uv run pytest tests/test_runtime_adapter_registry.py -q (5 passed); uv run pytest tests/test_runtime_adapters.py -q (62 passed); uv run scripts/validate_lifecycle_adapters.py reported lifecycle adapter metadata ok; uv run pytest tests/test_setup_doctor.py -q (18 passed); uv run pytest tests/test_upgrade_cli.py -q (13 passed); uv run pytest tests/test_bundle_freshness.py -q (6 passed); uv run scripts/agentera query --list-artifacts listed the artifact registry; uv run scripts/agentera docs reported docs status; uv run pytest tests/test_setup_codex.py tests/test_setup_copilot.py tests/test_install_root_characterization.py tests/test_install_root_module.py tests/test_install_root_interface_model.py -q (38 passed); python3 -m py_compile scripts/runtime_adapter_registry.py scripts/setup_doctor.py scripts/agentera_upgrade.py scripts/validate_lifecycle_adapters.py; uv run scripts/validate_capability.py --self-validate passed; uv run scripts/validate_capability.py skills/agentera/capabilities/realisera passed; uv run scripts/validate_cross_capability.py reported cross-capability artifact graph ok; uv run scripts/agentera plan showed Task 8 pending before closure; uv run scripts/agentera todo showed unrelated critical findings still open; uv run pytest -q reported 610 passed, 1 skipped; all capability directories validated with uv run scripts/validate_capability.py.
+  next: 'RuntimeAdapter registry plan is complete; select the next unresolved TODO separately.'
+  context:
+    intent: close Task 8 with documentation parity, TODO status, validation evidence, and plan completion only
+    constraints: no commit; no push; no package manifest registry; no install-root classification semantic changes; no vision or objective mutation; leave unrelated critical findings open
+    unknowns: live runtime smoke remains outside this plan; package manifest registry and artifact write validation remain separate open architecture findings
+    scope: references/adapters/runtime-feature-parity.md, references/adapters/opencode.md, tests/test_runtime_adapters.py, TODO.md, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 297
+  timestamp: 2026-05-06 07:02
+  type: refactor
+  phase: build
+  what: Migrated upgrade runtime planning to RuntimeAdapter registry facts.
+  commit: pending
+  inspiration: Task 7 of the Deepen RuntimeAdapter Registry plan requires upgrade planning and runtime tests to read registry-owned runtime identity, config targets, write labels, and no-write messages from RuntimeAdapter records while preserving dry-run/apply write safety and keeping package command/version authority local.
+  discovered: >
+    scripts/agentera_upgrade.py now loads the RuntimeAdapter registry for upgrade consumer views. Default runtime selection comes from registry order, Codex config and hook targets come from config_targets, OpenCode plugin source/action labels come from config_targets, Copilot and Codex runtime/action identity comes from identity/write_safety_labels, and Claude's no-local-config-write message is registry-owned through write_safety_labels. PACKAGE_COMMANDS remains local to upgrade, so external package commands and version/manifest authority were not moved into RuntimeAdapter. A copied registry fixture changing the Codex hook target now changes the generated runtime plan without editing upgrade-local constants. Public dry-run JSON still strips newText and apply remains behind --yes/force/package flags.
+  verified: >
+    Validation passed: uv run pytest tests/test_upgrade_cli.py -q (13 passed); uv run pytest tests/test_runtime_adapter_registry.py -q (5 passed); uv run pytest tests/test_setup_doctor.py -q (18 passed); uv run scripts/validate_lifecycle_adapters.py reported lifecycle adapter metadata ok; python3 -m py_compile scripts/agentera_upgrade.py scripts/runtime_adapter_registry.py scripts/setup_doctor.py scripts/validate_lifecycle_adapters.py; uv run pytest tests/test_bundle_freshness.py -q (6 passed); uv run pytest tests/test_runtime_adapters.py -q (62 passed).
+  next: 'Implement Task 8: align runtime adapter documentation and validate close.'
+  context:
+    intent: migrate upgrade runtime planning and characterization tests only
+    constraints: no commit; no push; no package manifest registry; no install-root classification semantic changes; no objective or vision mutation; dry-run must remain read-only and apply writes must remain approval-gated
+    unknowns: documentation parity and TODO closure remain pending for Task 8
+    scope: scripts/agentera_upgrade.py, references/adapters/runtime-adapter-registry.yaml, tests/test_upgrade_cli.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 296
+  timestamp: 2026-05-06 06:57
+  type: refactor
+  phase: build
+  what: Retried Task 6 doctor diagnostics registry migration.
+  commit: pending
+  inspiration: The Task 6 evaluator failed the first migration because setup_doctor still hardcoded registry-owned diagnostics.status_labels, diagnostics.gap_labels, host_detection.availability_probe_label, and OpenCode drift labels such as runtime_binary, runtime_config, command_drift, skill_path_drift, and validation_drift.
+  discovered: >
+    setup_doctor now derives runtime availability check names from host_detection.availability_probe_label and derives runtime diagnostic pass/warn/fail/skip statuses plus runtime_config, user_environment, command_drift, skill_path_drift, and validation_drift gaps from diagnostics.status_labels and diagnostics.gap_labels. The registry now explicitly lists the status and gap labels doctor already emits for unavailable hosts and configured-root failures, preserving existing JSON values while making the registry their owner. Install-root classification and bundle_packaging semantics still flow through scripts/install_root.py and local root helpers; upgrade was not migrated.
+  verified: >
+    Validation passed: python3 -m py_compile scripts/setup_doctor.py scripts/runtime_adapter_registry.py; uv run pytest tests/test_setup_doctor.py -q (18 passed); uv run pytest tests/test_runtime_adapter_registry.py -q (5 passed); uv run scripts/validate_lifecycle_adapters.py reported lifecycle adapter metadata ok; uv run pytest tests/test_setup_doctor.py::test_setup_doctor_cli_json_is_stable_and_non_mutating tests/test_setup_doctor.py::test_setup_doctor_read_only_diagnostics_do_not_modify_runtime_config tests/test_setup_doctor.py::test_setup_doctor_reports_opencode_command_drift_without_writing tests/test_setup_doctor.py::test_setup_doctor_reports_opencode_skill_path_drift_without_writing tests/test_setup_doctor.py::test_setup_doctor_reports_bundled_reference_validation_drift_separately -q (5 passed); Grep found no remaining setup_doctor.py literals for runtime_binary, runtime_config, command_drift, skill_path_drift, validation_drift, gap="user_environment", gap="runtime_config", or "config.AGENTERA_HOME".
+  next: 'Keep Task 6 complete; proceed to Task 7 only when upgrade migration is explicitly selected.'
+  context:
+    intent: retry failed Task 6 acceptance without expanding into upgrade migration
+    constraints: no commit; no upgrade migration; no package manifest registry; install-root root semantics remain owned by scripts/install_root.py; doctor read-only behavior must stay stable
+    unknowns: broader upgrade and documentation parity work remains pending for later plan tasks
+    scope: scripts/setup_doctor.py, references/adapters/runtime-adapter-registry.yaml, and .agentera/progress.yaml
+- number: 295
+  timestamp: 2026-05-06 06:52
+  type: refactor
+  phase: build
+  what: Migrated setup doctor read-only diagnostics to RuntimeAdapter registry facts.
+  commit: pending
+  inspiration: Task 6 of the Deepen RuntimeAdapter Registry plan requires setup doctor runtime names, host detection, command/diagnostic labels, support-reference labels, and primary diagnostic messages to come from the RuntimeAdapter registry without changing install-root classification or writing runtime files.
+  discovered: >
+    setup_doctor now loads the doctor consumer view from references/adapters/runtime-adapter-registry.yaml and derives runtime order,
+    runtime binaries, diagnostic check names, and primary messages from that registry. The registry OpenCode diagnostic label was corrected
+    from the stale opencode_commands fact to the characterized opencode_managed_commands label, and the full doctor primary-message set is
+    represented there. Install-root status and missing-evidence semantics still call scripts/install_root.py through the existing classify and
+    verification helpers, and installer write planning was not migrated.
+  verified: >
+    Validation passed: python3 -m py_compile scripts/setup_doctor.py scripts/runtime_adapter_registry.py; uv run pytest
+    tests/test_setup_doctor.py -q (18 passed); uv run pytest tests/test_runtime_adapter_registry.py -q (5 passed); uv run
+    scripts/validate_lifecycle_adapters.py reported lifecycle adapter metadata ok; uv run pytest
+    tests/test_setup_doctor.py::test_setup_doctor_cli_json_is_stable_and_non_mutating
+    tests/test_setup_doctor.py::test_setup_doctor_read_only_diagnostics_do_not_modify_runtime_config
+    tests/test_setup_doctor.py::test_setup_doctor_reports_opencode_command_drift_without_writing
+    tests/test_setup_doctor.py::test_setup_doctor_reports_opencode_skill_path_drift_without_writing -q (4 passed).
+  next: 'Implement Task 7: migrate upgrade planning and runtime tests to consume RuntimeAdapter registry facts without weakening write safety.'
+  context:
+    intent: migrate doctor read-only diagnostics only
+    constraints: no upgrade migration; no package manifest registry; no install-root classification semantic changes; no vision/objective mutation; no commits; no pushes
+    unknowns: upgrade planning registry migration and broader docs alignment remain pending for later tasks
+    scope: scripts/setup_doctor.py, references/adapters/runtime-adapter-registry.yaml, tests/test_setup_doctor.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 294
+  timestamp: 2026-05-06 07:05
+  type: refactor
+  phase: build
+  what: Migrated lifecycle adapter validation to RuntimeAdapter registry facts.
+  commit: pending
+  inspiration: Task 5 of the Deepen RuntimeAdapter Registry plan requires lifecycle validation to read runtime identity, event support, artifact validation events, and support claims from the registry instead of duplicated constants while keeping package metadata ownership local.
+  discovered: >
+    Lifecycle validation now loads references/adapters/runtime-adapter-registry.yaml at startup and reports registry contract errors before reading runtime manifests.
+    Copilot hook events and artifact validation hooks, Codex supported and unsupported event claims, OpenCode supported hooks and phantom session events,
+    and hard-gate documentation claim checks are read through the lifecycle consumer view. Package metadata, suite bundle, install-root, version,
+    and manifest assertions remain in scripts/validate_lifecycle_adapters.py outside RuntimeAdapter ownership.
+  verified: >
+    Validation passed: uv run scripts/validate_lifecycle_adapters.py; uv run pytest tests/test_runtime_adapter_registry.py tests/test_runtime_adapters.py -q
+    (67 passed); uv run pytest tests/test_runtime_adapters.py::TestLifecycleAdapters::test_lifecycle_validation_messages_are_characterized_before_registry_migration
+    tests/test_runtime_adapters.py::TestLifecycleAdapters::test_lifecycle_validation_reads_supported_events_from_registry
+    tests/test_runtime_adapters.py::TestLifecycleAdapters::test_lifecycle_validation_reports_registry_contract_error_before_fallback -q (3 passed);
+    python3 -m py_compile scripts/runtime_adapter_registry.py scripts/validate_lifecycle_adapters.py.
+  next: 'Implement Task 6: migrate setup doctor read-only diagnostics to consume RuntimeAdapter registry facts.'
+  context:
+    intent: migrate lifecycle validation only
+    constraints: no doctor or upgrade migration; no package manifest registry; no install-root classification semantic changes; no vision/objective mutation; no commits; no pushes
+    unknowns: doctor and upgrade registry consumers remain pending for later tasks
+    scope: scripts/validate_lifecycle_adapters.py, scripts/runtime_adapter_registry.py, references/adapters/runtime-adapter-registry.yaml, tests/test_runtime_adapters.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 293
+  timestamp: 2026-05-06 06:41
+  type: test
+  phase: build
+  what: Introduced the RuntimeAdapter registry Module and contract tests without migrating production consumers.
+  commit: pending
+  inspiration: Task 4 of the Deepen RuntimeAdapter Registry plan requires a registry-backed source of runtime records and malformed-fixture contract validation before lifecycle, doctor, upgrade, docs, or runtime tests are migrated.
+  discovered: >
+    The registry now loads Claude Code, OpenCode, Copilot CLI, and Codex CLI records from references/adapters/runtime-adapter-registry.yaml
+    in the characterized deterministic order. Contract validation rejects missing required groups, unknown or duplicate runtime IDs,
+    unsupported event names, and forbidden package metadata or install-root ownership fields. Simulated lifecycle, doctor, upgrade,
+    docs, and tests consumers read the same changed identity fact from one registry fixture through allowed registry views.
+  verified: >
+    Validation passed: uv run pytest tests/test_runtime_adapter_registry.py -q (5 passed); uv run pytest tests/test_runtime_adapters.py -q
+    (60 passed); python3 -m py_compile scripts/runtime_adapter_registry.py; uv run pytest tests/test_runtime_adapter_registry.py
+    tests/test_runtime_adapters.py -q (65 passed).
+  next: 'Implement Task 5: migrate lifecycle validation to consume registry facts while preserving characterized behavior.'
+  context:
+    intent: introduce RuntimeAdapter registry Module and contract tests only
+    constraints: no production lifecycle, doctor, upgrade, or docs consumer migration; no install-root classification semantic changes; no package manifest registry ownership changes; no vision/objective mutation; no commits; no pushes
+    unknowns: exact production consumer rewrites and any message wording corrections belong to later tasks
+    scope: scripts/runtime_adapter_registry.py, references/adapters/runtime-adapter-registry.yaml, tests/test_runtime_adapter_registry.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 292
+  timestamp: 2026-05-06 06:36
+  type: test
+  phase: build
+  what: Defined the RuntimeAdapter Interface ownership contract without introducing an executable registry.
+  commit: pending
+  inspiration: Task 3 of the Deepen RuntimeAdapter Registry plan requires typed RuntimeAdapter groups, external ownership boundaries, and explicit consumer permissions before any registry Module or caller migration starts.
+  discovered: >
+    The interface seam can be captured as a non-executable design contract in references/adapters/runtime-adapter-interface-model.yaml.
+    RuntimeAdapter owns identity, host detection, lifecycle events, artifact validation, config targets, diagnostics, and documentation
+    claims only. Package version authority, manifest schemas, shared package paths, and release metadata remain outside with the deferred
+    package manifest registry; AGENTERA_HOME precedence, default durable root, managed/stale/unmanaged classification, and root diagnostics
+    remain delegated to scripts/install_root.py.
+  verified: >
+    Validation passed: uv run pytest tests/test_runtime_adapters.py::TestLifecycleAdapters::test_runtime_adapter_interface_model_defines_typed_groups_and_permissions
+    tests/test_runtime_adapters.py::TestLifecycleAdapters::test_runtime_adapter_interface_model_keeps_external_ownership_out -q (2 passed);
+    uv run scripts/validate_lifecycle_adapters.py; uv run pytest tests/test_runtime_adapters.py -q (60 passed).
+  next: 'Implement Task 4: introduce the registry Module and contract tests without changing install-root or package metadata ownership.'
+  context:
+    intent: define RuntimeAdapter interface and ownership model only
+    constraints: no executable RuntimeAdapter registry Module, no lifecycle/doctor/upgrade/docs/runtime-test migration, no install-root semantic changes, no package manifest registry, no artifact write validation split, no vision/objective mutation, no commits, no pushes
+    unknowns: concrete registry records and loader behavior belong to Task 4
+    scope: references/adapters/runtime-adapter-interface-model.yaml, tests/test_runtime_adapters.py, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 291
+  timestamp: 2026-05-06 06:32
+  type: test
+  phase: build
+  what: Characterized current RuntimeAdapter-related outputs and drift before registry migration.
+  commit: pending
+  inspiration: Task 2 of the Deepen RuntimeAdapter Registry plan requires current doctor, upgrade, lifecycle validation, and docs/test drift behavior to be locked down before any RuntimeAdapter registry implementation starts.
+  discovered: >
+    Doctor JSON currently exposes stable runtime result and check fields with runtime-specific primary messages and gap labels.
+    Upgrade runtime planning exposes config, hook, plugin, and package items separately; public JSON strips private newText, while apply changes
+    runtime item messages to runtime update applied and package apply messages to package update completed. Lifecycle validation has a single
+    pass line and exact fail messages for malformed Copilot and Codex metadata. Drift inventory names duplicated runtime order as standardize,
+    current package command coverage and scoped hard-gate claims as preserve, and Claude lifecycle metadata extraction as defer.
+  verified: >
+    Validation passed: uv run pytest tests/test_setup_doctor.py::test_setup_doctor_runtime_json_characterization_before_registry_migration -q;
+    uv run pytest tests/test_upgrade_cli.py::test_runtime_upgrade_plan_characterizes_runtime_and_package_items
+    tests/test_upgrade_cli.py::test_runtime_upgrade_apply_characterizes_write_and_package_apply_messages -q; uv run pytest
+    tests/test_runtime_adapters.py::TestLifecycleAdapters::test_lifecycle_validation_messages_are_characterized_before_registry_migration
+    tests/test_runtime_adapters.py::TestLifecycleAdapters::test_runtime_adapter_drift_inventory_names_each_decision_class -q; uv run
+    scripts/validate_lifecycle_adapters.py; uv run pytest tests/test_setup_doctor.py tests/test_upgrade_cli.py tests/test_runtime_adapters.py -q
+    reported 86 passed.
+  next: 'Implement Task 3: define the RuntimeAdapter interface and ownership model without migrating consumers yet.'
+  context:
+    intent: characterize current runtime adapter outputs and drift only
+    constraints: no RuntimeAdapter registry implementation, no doctor/upgrade/lifecycle production migration, no install-root semantic changes, no package manifest registry, no artifact write validation split, no vision/objective mutation, no commits, no pushes
+    unknowns: exact RuntimeAdapter schema and consumer permissions belong to Task 3
+    scope: tests/test_setup_doctor.py, tests/test_upgrade_cli.py, tests/test_runtime_adapters.py, references/adapters/runtime-adapter-characterization.md, .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 290
+  timestamp: 2026-05-06 00:25
+  type: docs
+  phase: build
+  what: Retried Task 1 evidence reconciliation for the RuntimeAdapter registry plan.
+  commit: pending
+  inspiration: Inspektera failed Task 1 because the archived install-root plan preserved completed state but did not carry embedded evidence or an explicit evidence reference.
+  discovered: >
+    The install-root archive now carries a validation_evidence section that preserves progress cycle 287, timestamp, and the exact validation
+    command list. The active RuntimeAdapter plan remains on Task 1 complete with Task 2 pending, TODO still selects
+    [arch-runtime-adapter-registry] first, and the plan still excludes package manifest registry, install-root classification,
+    artifact write validation, and live runtime calls.
+  verified: >
+    Validation passed: uv run scripts/agentera plan reported active plan Deepen RuntimeAdapter Registry with Task 1 complete
+    and seven pending tasks; uv run scripts/agentera todo showed [arch-runtime-adapter-registry] as the first critical open item
+    with package manifest registry, capability schema contract, routing/exit vocabulary, artifact registry, and artifact write
+    validation still open; uv run scripts/agentera progress surfaced this retry cycle; Python YAML artifact assertions passed for
+    the archived install-root plan validation_evidence reference to cycle 287, active plan scope exclusions, TODO selection, and
+    non-empty progress verification evidence.
+  next: 'Implement Task 2: characterize current runtime adapter outputs and drift before migration.'
+  context:
+    intent: satisfy Task 1 retry by preserving archive evidence and correcting progress evidence claims
+    constraints: no RuntimeAdapter implementation, no source migration, no package manifest registry, no install-root semantic changes, no artifact write validation Module split, no live runtime calls, no commits, no pushes, no vision/objective mutation
+    unknowns: none for Task 1 evidence reconciliation
+    scope: .agentera/archive/PLAN-2026-05-06-deepen-agentera-install-root-module.yaml, .agentera/progress.yaml, TODO.md, and .agentera/plan.yaml
+- number: 289
+  timestamp: 2026-05-06 00:15
+  type: docs
+  phase: build
+  what: Reconciled the RuntimeAdapter registry plan state and runtime scope boundary.
+  commit: pending
+  inspiration: Task 1 of the Deepen RuntimeAdapter Registry plan requires the completed install-root plan archive, TODO selection, and non-runtime scope exclusions to be proven before any registry implementation begins.
+  discovered: >
+    The completed install-root Module plan is archived at .agentera/archive/PLAN-2026-05-06-deepen-agentera-install-root-module.yaml
+    with complete status and all eight tasks complete. TODO keeps [arch-runtime-adapter-registry] as the first unresolved critical
+    finding while package manifest registry, capability schema contract, routing/exit vocabulary, artifact registry, and artifact
+    write validation findings remain open. The active RuntimeAdapter plan explicitly excludes package manifest registry work,
+    install-root classification changes, artifact write validation splitting, and live runtime smoke calls.
+  verified: >
+    Validation passed: uv run scripts/agentera plan showed active plan Deepen RuntimeAdapter Registry with Task 1 pending before this
+    reconciliation; uv run scripts/agentera todo showed [arch-runtime-adapter-registry] as the first critical open item and unrelated
+    critical findings still open; raw artifact checks confirmed the archived install-root plan is complete and its validation evidence is preserved by reference to progress cycle 287;
+    .agentera/plan.yaml scope excludes package manifest registry, install-root classification, artifact write validation, and live
+    runtime calls; uv run scripts/agentera plan now reports Task 1 complete and seven tasks pending; uv run scripts/agentera progress
+    shows this cycle with non-empty verified evidence; YAML parse validation passed for .agentera/plan.yaml, .agentera/progress.yaml,
+    and the archived install-root plan. No runtime source, runtime tests, vision, objective state, commit, or push changes were made.
+  next: 'Implement Task 2: characterize current runtime adapter outputs and drift before migration.'
+  context:
+    intent: reconcile active plan state before runtime registry implementation starts
+    constraints: no RuntimeAdapter implementation, no source migration, no runtime tests, no package manifest registry, no install-root semantic changes, no artifact write validation Module split, no live runtime calls, no commits, no pushes, no vision/objective mutation
+    unknowns: executable RuntimeAdapter shape belongs to later tasks after characterization
+    scope: .agentera/plan.yaml, .agentera/progress.yaml, TODO.md, and .agentera/archive/PLAN-2026-05-06-deepen-agentera-install-root-module.yaml
+- number: 288
+  timestamp: 2026-05-06 00:00
+  type: docs
+  phase: plan
+  what: 'Planned the next critical TODO: deepen the RuntimeAdapter registry.'
+  commit: pending
+  inspiration: TODO [arch-runtime-adapter-registry] is now the first unresolved critical architecture finding after the install-root Module closure.
+  discovered: >
+    RuntimeAdapter planning must not absorb install-root classification or package manifest registry work. The adversarial critic found eight
+    issues in the draft plan, including missing characterization, doctor/upgrade risk coupling, docs-before-consumers ordering, package-registry
+    leakage, and weak cross-consumer parity checks; the active plan addresses all eight.
+  verified: >
+    Validation passed: uv run scripts/agentera todo identified [arch-runtime-adapter-registry] as the next critical TODO; uv run scripts/agentera
+    plan confirmed the prior install-root plan was complete; the completed install-root plan was archived to
+    .agentera/archive/PLAN-2026-05-06-deepen-agentera-install-root-module.yaml; the new .agentera/plan.yaml is active with 8 pending tasks.
+  next: 'Run /agentera orkestrera to execute the RuntimeAdapter registry plan.'
+  context:
+    intent: create a full plan for the next unresolved TODO without implementing it
+    constraints: no code migration, no RuntimeAdapter registry implementation, no package manifest registry, no install-root semantic changes, no commits
+    unknowns: exact registry representation belongs to Task 3 and executable Module design belongs to Task 4
+    scope: .agentera/plan.yaml, .agentera/archive, and .agentera/progress.yaml
 - number: 287
   timestamp: 2026-05-05 23:59
   type: refactor
@@ -173,7 +439,7 @@ cycles:
   phase: build
   what: Aligned progress phase values with the protocol enum and added validation coverage.
   commit: pending
-  inspiration: TODO [audit-20-progress-phase-enum] identified recent `phase: verify` entries outside the protocol phase model.
+  inspiration: 'TODO [audit-20-progress-phase-enum] identified recent `phase: verify` entries outside the protocol phase model.'
   discovered: >
     `verify` is a realisera workflow step and verification evidence field, not a protocol phase. The hook validation layer also
     accepted documented enum strings without enforcing them, so future invalid phase values could recur.

@@ -1,140 +1,149 @@
 header:
   level: full
-  created: '2026-05-05'
+  created: '2026-05-06'
   status: complete
-  reviewed: '2026-05-05'
+  reviewed: '2026-05-06'
   critic_issues: "8 found, 8 addressed, 0 dismissed"
-  title: Deepen Agentera Install Root Module
+  title: Deepen RuntimeAdapter Registry
 what: >
-  Replace duplicated Agentera install-root identity, discovery, classification,
-  and diagnostic behavior with one deeper Module. Setup helpers, doctor,
-  upgrade, and runtime adapter checks should cross the same Interface instead
-  of carrying separate canonical-entry lists, environment fallback rules, and
-  stale-root interpretations.
+  Replace scattered runtime adapter knowledge with one registry-backed
+  RuntimeAdapter Module. The registry should describe Claude Code, OpenCode,
+  Copilot CLI, and Codex CLI runtime facts behind one Interface: runtime
+  identity, host detection, lifecycle events, artifact-validation support,
+  configuration targets, diagnostic labels, and documentation claims. Doctor,
+  upgrade planning, lifecycle validation, adapter documentation, and runtime
+  tests should consume that Interface instead of preserving separate runtime
+  tables and conditionals.
 why: >
-  Architecture review found the install-root Module is shallow: deleting any
-  caller-local root check mostly moves the same complexity into another caller.
-  Decision 33 makes AGENTERA_HOME the installable suite bundle root, and the
-  self-healing bundle refresh lane depends on that identity being consistent.
-  A deeper Module concentrates bundle identity, safety semantics, and tests so
-  future setup and refresh work has locality and leverage.
+  TODO [arch-runtime-adapter-registry] identifies runtime adapter behavior as a
+  shallow seam: runtime facts are spread across scripts/setup_doctor.py,
+  scripts/agentera_upgrade.py, scripts/validate_lifecycle_adapters.py,
+  references/adapters/runtime-feature-parity.md, references/adapters/opencode.md,
+  and tests/test_runtime_adapters.py. A deeper Module gives locality for runtime
+  support changes and leverage for validators, docs, and tests.
 constraints: >
-  Preserve confirmed writes: discovery and classification never mutate durable
-  bundle state. Do not broaden this lane into the full RuntimeAdapter registry,
-  package metadata registry, external CLI distribution, or live host testing.
-  Preserve existing primary CLI behavior unless a documented inconsistency is
-  intentionally standardized. JavaScript runtime code is only aligned through a
-  contract fixture in this plan unless a safe shared source already exists.
+  Preserve current user-visible doctor, upgrade, lifecycle validation, and
+  runtime documentation behavior unless a characterization task explicitly names
+  an intentional correction. Do not change install-root classification semantics;
+  scripts/install_root.py remains the only Module for AGENTERA_HOME precedence,
+  default durable root, managed/stale/unmanaged classification, and root
+  diagnostics. Do not implement the separate package manifest registry or move
+  version authority, package shared paths, package manifest schemas, or release
+  metadata into RuntimeAdapter. No live model calls, no remote pushes, and no
+  unapproved runtime config writes.
 scope:
   included:
-    - archive the completed self-healing bundle refresh plan
-    - inventory current install-root behavior in setup helpers, doctor, upgrade, and runtime adapter checks
-    - characterize valid managed roots, missing paths, file-valued roots, unmanaged directories, stale managed roots, invalid bundles, explicit roots, env roots, and default roots
-    - define one read-only install-root Interface with source, kind, action, diagnostic, and mutation-safety semantics
-    - migrate Python callers in risk order: doctor first, setup helpers second, upgrade last
-    - align JavaScript runtime behavior through contract fixture checks, not broad cross-language migration
-    - update docs and artifacts after behavior is proven
+    - archive the completed install-root Module plan
+    - characterize current runtime adapter outputs before migration
+    - define RuntimeAdapter ownership, schema, and typed field groups
+    - introduce a registry Module with contract tests for all four current runtimes
+    - migrate lifecycle adapter validation to consume registry facts
+    - migrate setup doctor read-only diagnostics to consume registry facts
+    - migrate upgrade runtime planning to consume registry facts while preserving dry-run and confirmation safety
+    - consolidate runtime tests around the registry and validate documentation parity
   excluded:
-    - full RuntimeAdapter registry
-    - suite package metadata registry
-    - external CLI distribution
-    - package-manager hooks
-    - broad artifact migration
-    - live model calls
-    - runtime setup behavior outside install-root resolution and diagnostics
+    - package manifest registry and package version authority
+    - generated install-root cross-language contract
+    - artifact write validation Module split
+    - adding new runtime support beyond existing Claude Code, OpenCode, Copilot CLI, and Codex CLI claims
+    - live runtime smoke calls
+    - changing install-root root classification behavior
   deferred:
-    - generated cross-language install-root contract if fixture validation is not enough
-    - RuntimeAdapter registry work tracked by [arch-runtime-adapter-registry]
-    - package metadata registry work tracked by future package-contract findings
+    - [arch-package-manifest-registry]
+    - [arch-artifact-write-validation]
+    - [install-root-generated-cross-language-contract]
 design: >
-  Put the seam at install-root discovery and classification. Callers provide an
-  explicit root, environment, default-root policy, and current working context;
-  the Module returns a typed, read-only result that says where the root came
-  from, what kind of root it is, what action is safe, and what diagnostic should
-  be shown or exposed as structured data. Setup helpers, doctor, and upgrade
-  keep their runtime-specific responsibilities, but stop owning bundle identity.
-  Upgrade remains the last migration because it can write bundle state.
+  Put the seam at runtime adapter facts, not package metadata and not install-root
+  classification. A RuntimeAdapter record should expose typed groups for
+  identity, host detection, lifecycle events, artifact validation support,
+  configuration targets, diagnostics, and documentation claims. Consumers may
+  read only the groups they own: lifecycle validation reads lifecycle and
+  artifact-validation facts; setup doctor reads host/config/diagnostic facts;
+  upgrade reads install/config target facts and write-safety labels; docs and
+  tests check claims against the same registry. Package manifest/version fields
+  and install-root source precedence remain outside this Interface.
 tasks:
   - number: 1
-    name: Reconcile Plan State And Carry Forward Evidence
+    name: Reconcile Plan State And Runtime Scope
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN the previous plan is complete WHEN this plan becomes active THEN prior evidence remains available in the plan archive
-      - GIVEN critical architecture findings exist WHEN work is picked up later THEN TODO lists the install-root Module finding with concrete file anchors
-      - GIVEN this plan is loaded WHEN a caller asks what changed THEN it identifies install-root depth as the active work
+      - GIVEN the install-root plan is complete WHEN this plan becomes active THEN the completed plan is archived with its evidence intact
+      - GIVEN TODO has multiple critical findings WHEN the next item is selected THEN [arch-runtime-adapter-registry] is identified as the planned work and unrelated findings remain open
+      - GIVEN runtime registry work starts WHEN scope is recorded THEN package manifest registry, install-root classification, artifact write validation, and live runtime calls are explicitly out of scope
   - number: 2
-    name: Inventory Install-Root Behavior And Characterization Cases
+    name: Characterize Runtime Adapter Outputs And Drift
     depends_on:
       - Task 1
     status: complete
     acceptance:
-      - GIVEN existing setup and upgrade paths are exercised WHEN roots are valid, missing, files, unmanaged, stale, invalid, explicit, environment-derived, or defaulted THEN current user-visible outcomes are recorded before refactor
-      - GIVEN two callers currently disagree WHEN the same root shape is evaluated THEN the intentional standardization is named before code changes
-      - GIVEN characterization tests are added WHEN they run before migration THEN they capture current behavior or explicitly document the behavior being corrected
-      - GIVEN diagnostics are inspected WHEN they are machine-readable or human-facing THEN existing exit codes and primary messages are marked preserve-or-change
+      - GIVEN current doctor runtime checks run WHEN Claude Code, OpenCode, Copilot CLI, and Codex CLI are represented in fixtures THEN JSON fields, statuses, primary messages, and diagnostic labels are recorded before migration
+      - GIVEN current upgrade runtime planning runs WHEN runtime config, hook, plugin, and package phases are planned THEN runtime, action, target, status, message, dry-run, and apply behavior are characterized before migration
+      - GIVEN lifecycle validation runs WHEN runtime metadata is valid or intentionally malformed THEN current pass and fail messages are captured before registry extraction
+      - GIVEN docs and tests encode runtime facts WHEN drift is found THEN each drift point is named as preserve, standardize, or defer before code migration
   - number: 3
-    name: Define The Install-Root Interface And Safety Model
+    name: Define RuntimeAdapter Interface And Ownership Model
     depends_on:
       - Task 2
     status: complete
     acceptance:
-      - GIVEN any root is classified WHEN the result is returned THEN it includes source, kind, safe action, diagnostic, managed status, stale status, and missing evidence without writing files
-      - GIVEN a valid managed root comes from the environment WHEN it is classified THEN the result can be used by setup and upgrade callers without caller-local bundle identity rules
-      - GIVEN a missing path, file-valued path, unmanaged directory, stale managed root, or invalid bundle is classified WHEN callers inspect the result THEN each state has one unambiguous action
-      - GIVEN default-root discovery is available WHEN the environment root is unset THEN default use is explicit and lower precedence than explicit or environment roots
+      - GIVEN a RuntimeAdapter record is valid WHEN it is loaded THEN it has typed groups for identity, host detection, lifecycle events, artifact validation, config targets, diagnostics, and documentation claims
+      - GIVEN package metadata facts are encountered WHEN ownership is assigned THEN version authority, package manifest schemas, shared package paths, and release metadata remain outside RuntimeAdapter
+      - GIVEN install-root facts are encountered WHEN ownership is assigned THEN AGENTERA_HOME precedence, default durable root, managed/stale/unmanaged classification, and root diagnostics remain delegated to scripts/install_root.py
+      - GIVEN a consumer reads the Interface WHEN its allowed groups are checked THEN lifecycle validation, doctor, upgrade, docs, and tests have explicit consumer permissions
   - number: 4
-    name: Introduce The Shared Read-Only Module
+    name: Introduce Registry Module And Contract Tests
     depends_on:
       - Task 3
     status: complete
     acceptance:
-      - GIVEN the shared Module is called by tests WHEN all characterized root shapes are evaluated THEN results match the approved behavior matrix
-      - GIVEN classification runs on a temp root WHEN the test snapshots the filesystem before and after THEN no files are created, deleted, or modified
-      - GIVEN a stale managed root is classified WHEN diagnostics are requested THEN expected and current version evidence are available without starting a refresh
-      - GIVEN a caller needs display text WHEN it asks for a diagnostic THEN structured data remains available separately from human wording
+      - GIVEN the registry loads WHEN all four current runtimes are present THEN runtime IDs are unique, required fields exist, and unsupported event names are rejected
+      - GIVEN a caller asks for a runtime by ID WHEN the ID is known or unknown THEN known records are returned and unknown records fail with one clear diagnostic
+      - GIVEN a registry fact changes in a fixture WHEN lifecycle, doctor, upgrade, or docs tests consume that fact THEN at least one relevant consumer observes the changed fact instead of a hardcoded copy
+      - GIVEN install-root and package fields are absent WHEN registry validation runs THEN the registry still passes because those facts belong to other Modules
   - number: 5
-    name: Migrate Read-Only And Setup Callers
+    name: Migrate Lifecycle Validation To Registry
     depends_on:
       - Task 4
     status: complete
     acceptance:
-      - GIVEN doctor and setup callers evaluate the same root shapes WHEN their commands run THEN they agree on root classification and safe action
-      - GIVEN setup callers receive invalid or unmanaged roots WHEN they report the issue THEN confirmed-write behavior and existing primary outcomes are preserved unless the plan identified a correction
-      - GIVEN duplicate caller-local bundle identity rules are removed WHEN focused tests run THEN setup behavior still passes valid, missing, file, unmanaged, and default-root cases
-      - GIVEN tests cover migrated callers WHEN they assert behavior THEN the proportionality target is at least one passing and one failing root case per migrated caller family
+      - GIVEN lifecycle adapter validation checks runtime support WHEN it validates hook events, substrate support, and limitations THEN it reads RuntimeAdapter records instead of local runtime constants
+      - GIVEN a runtime lacks a supported lifecycle feature WHEN validation reports the limitation THEN the message matches the characterized behavior or an intentional correction is documented
+      - GIVEN malformed lifecycle metadata is tested WHEN validation fails THEN failure messages remain stable or each wording change is documented with a reason
+      - GIVEN package manifest facts appear during lifecycle validation WHEN they are needed THEN validation delegates or preserves existing package checks without moving package-registry ownership into RuntimeAdapter
   - number: 6
-    name: Migrate Upgrade Last
+    name: Migrate Doctor Read-Only Diagnostics
     depends_on:
       - Task 5
     status: complete
     acceptance:
-      - GIVEN upgrade evaluates root state WHEN classification reports unsafe or stale states THEN upgrade preserves existing confirmation and dry-run safety behavior
-      - GIVEN upgrade applies writes WHEN approval or existing write flags are absent THEN no durable bundle mutation occurs
-      - GIVEN upgrade uses shared root classification WHEN stale, invalid, and current managed roots are tested THEN local checkout fallback cannot mask a stale durable bundle
-      - GIVEN upgrade migration completes WHEN duplicate root checks are searched THEN remaining caller-local logic is justified or removed
+      - GIVEN setup doctor diagnoses each runtime WHEN runtime host/config facts are needed THEN it reads RuntimeAdapter records rather than duplicated runtime tables
+      - GIVEN doctor output is JSON WHEN tests compare pre- and post-migration fixtures THEN runtime statuses, check names, primary messages, and install-root diagnostics are preserved or intentionally documented
+      - GIVEN doctor classification touches an install root WHEN it reports root state THEN it still delegates root semantics to scripts/install_root.py
+      - GIVEN doctor remains read-only WHEN diagnostics run against temp runtime config THEN no config, hook, plugin, or bundle files are created, deleted, or modified
   - number: 7
-    name: Align Runtime Adapter Contract And Documentation
+    name: Migrate Upgrade Planning And Runtime Tests
     depends_on:
       - Task 6
     status: complete
     acceptance:
-      - GIVEN JavaScript runtime behavior is checked WHEN install-root fixture cases run THEN it agrees with the shared root contract without requiring cross-language executable sharing
-      - GIVEN documentation describes install roots WHEN users read setup or upgrade guidance THEN AGENTERA_HOME, default durable root, managed root, stale root, and unmanaged root semantics match the shared Interface
-      - GIVEN TODO and docs are refreshed WHEN the install-root finding is addressed THEN the finding is either resolved or narrowed to remaining JavaScript/generated-contract work
+      - GIVEN upgrade plans runtime config, hook, plugin, or package operations WHEN runtime facts are needed THEN it reads RuntimeAdapter records instead of local runtime conditionals where behavior is registry-owned
+      - GIVEN upgrade dry-run and apply paths are exercised WHEN writes would occur THEN existing --dry-run, --yes, force, and confirmation safety behavior is preserved
+      - GIVEN runtime tests validate adapter behavior WHEN the registry exists THEN production-like validators move to registry-facing test helpers or production validation Modules rather than remaining only as test-local rule copies
+      - GIVEN package version or manifest metadata is tested WHEN runtime tests run THEN those checks remain separate from RuntimeAdapter or are deferred to [arch-package-manifest-registry]
   - number: 8
-    name: Validate And Close
+    name: Align Documentation And Validate Close
     depends_on:
       - Task 7
     status: complete
     acceptance:
-      - GIVEN focused install-root tests run THEN shared Module, doctor, setup helpers, upgrade, and runtime contract fixtures pass
-      - GIVEN suite validators run THEN capability validation, cross-capability validation, lifecycle adapter validation, and relevant CLI tests pass
-      - GIVEN the plan closes WHEN artifacts are updated THEN PROGRESS, TODO, DOCS, CHANGELOG, and PLAN record what changed and what remains deferred
-      - GIVEN release impact is assessed WHEN the work changes user-visible setup or refresh behavior THEN version policy is applied or explicitly deferred with rationale
+      - GIVEN adapter docs mention runtime support WHEN docs are validated THEN runtime-feature parity and OpenCode references match RuntimeAdapter registry claims
+      - GIVEN focused and broad validation runs WHEN the plan closes THEN runtime adapter tests, setup doctor tests, upgrade tests, lifecycle validation, query/artifact CLI checks, and the relevant broader suite pass
+      - GIVEN TODO and docs are updated WHEN this plan completes THEN [arch-runtime-adapter-registry] is resolved or narrowed without closing [arch-package-manifest-registry], [arch-artifact-write-validation], or other unrelated architecture findings
+      - GIVEN release impact is assessed WHEN runtime-visible behavior changes THEN CHANGELOG, docs index, and version policy are updated or deferral is recorded with rationale
 overall_acceptance:
-  - GIVEN any Agentera caller needs an install root WHEN it resolves or validates that root THEN it crosses one shared Interface for bundle identity and diagnostics
-  - GIVEN root discovery or classification runs WHEN approval is absent THEN no durable bundle writes occur
-  - GIVEN the same root shape reaches doctor, setup, upgrade, or runtime contract checks WHEN behavior is compared THEN classification and safe action agree
-  - GIVEN install-root behavior changes in the future WHEN maintainers update tests THEN the change is localized to the shared Module and its caller contract tests
+  - GIVEN a runtime fact changes WHEN lifecycle validation, doctor, upgrade, docs, and tests need that fact THEN the change is made in one RuntimeAdapter Interface rather than duplicated across callers
+  - GIVEN a runtime Adapter is unsupported or degraded for a lifecycle event WHEN users inspect diagnostics or docs THEN the same limitation is reported consistently across validators and references
+  - GIVEN runtime registry work completes WHEN package metadata or install-root behavior is inspected THEN those facts remain owned by their separate Modules and TODOs
+  - GIVEN runtime planning or diagnostics run without explicit write approval WHEN registry-backed callers execute THEN no runtime config, hook, plugin, or bundle writes occur
 surprises: []

@@ -11,6 +11,8 @@ import importlib.util
 import json
 import os
 import re
+import subprocess
+import sys
 import tomllib
 from pathlib import Path
 from types import ModuleType
@@ -389,8 +391,8 @@ def _validate_opencode_reference(text: str) -> list[str]:
         errors.append("OpenCode reference must mark /hej as upgrade bridge only")
     if "scripts/install_root.py" not in text:
         errors.append("OpenCode reference must point install-root semantics at the shared Module")
-    if "[arch-runtime-adapter-registry]" not in text:
-        errors.append("OpenCode reference must defer RuntimeAdapter registry extraction")
+    if "references/adapters/runtime-adapter-registry.yaml" not in text or "scripts/runtime_adapter_registry.py" not in text:
+        errors.append("OpenCode reference must point runtime facts at the RuntimeAdapter registry")
     if "package metadata consolidation work" in text and "outside" not in text:
         errors.append("OpenCode install-root reference must keep package metadata registry work outside")
     for stale in (
@@ -425,10 +427,99 @@ def _validate_install_root_documentation(root: Path = REPO_ROOT) -> list[str]:
     for term in ("AGENTERA_HOME", "default durable root", "managed", "stale", "unmanaged"):
         if term not in docs_text:
             errors.append(f"install-root docs must preserve shared contract term {term!r}")
-    if "[arch-runtime-adapter-registry]" not in docs_text:
-        errors.append("install-root docs must defer RuntimeAdapter registry extraction to [arch-runtime-adapter-registry]")
+    if "references/adapters/runtime-adapter-registry.yaml" not in docs_text:
+        errors.append("install-root docs must point runtime facts at the RuntimeAdapter registry")
     if "package metadata registry work stays outside" not in docs_text:
         errors.append("install-root docs must keep package metadata registry work outside the install-root Module")
+    return errors
+
+
+def _load_runtime_adapter_interface_model(root: Path = REPO_ROOT) -> dict[str, Any]:
+    model = yaml.safe_load(
+        (root / "references/adapters/runtime-adapter-interface-model.yaml").read_text(encoding="utf-8")
+    )
+    assert isinstance(model, dict)
+    return model
+
+
+def _validate_runtime_adapter_interface_model(root: Path = REPO_ROOT) -> list[str]:
+    errors: list[str] = []
+    model = _load_runtime_adapter_interface_model(root)
+    record = model.get("record")
+    if not isinstance(record, dict):
+        return ["RuntimeAdapter model must define a record object"]
+
+    required_groups = record.get("required_groups")
+    groups = record.get("groups")
+    expected_groups = {
+        "identity",
+        "host_detection",
+        "lifecycle_events",
+        "artifact_validation",
+        "config_targets",
+        "diagnostics",
+        "documentation_claims",
+    }
+    if set(required_groups or []) != expected_groups:
+        errors.append("RuntimeAdapter record must require only the approved typed groups")
+    if not isinstance(groups, dict):
+        errors.append("RuntimeAdapter record groups must be typed objects")
+    else:
+        for group in expected_groups:
+            spec = groups.get(group)
+            if not isinstance(spec, dict):
+                errors.append(f"RuntimeAdapter group {group} must be defined")
+                continue
+            if spec.get("type") != "object":
+                errors.append(f"RuntimeAdapter group {group} must be typed as object")
+            if not isinstance(spec.get("owns"), list) or not spec["owns"]:
+                errors.append(f"RuntimeAdapter group {group} must list owned facts")
+            if not isinstance(spec.get("required_fields"), dict) or not spec["required_fields"]:
+                errors.append(f"RuntimeAdapter group {group} must list required typed fields")
+
+    ownership = model.get("ownership")
+    if not isinstance(ownership, dict):
+        return errors + ["RuntimeAdapter model must define ownership boundaries"]
+    package = ownership.get("package_metadata_out_of_scope")
+    if not isinstance(package, dict) or package.get("owner") != "package_manifest_registry":
+        errors.append("RuntimeAdapter package metadata facts must stay with package_manifest_registry")
+    else:
+        for fact in ("version_authority", "package_manifest_schemas", "shared_package_paths", "release_metadata"):
+            if fact not in package.get("facts", []):
+                errors.append(f"RuntimeAdapter must exclude package metadata fact {fact}")
+
+    install_root = ownership.get("install_root_out_of_scope")
+    if not isinstance(install_root, dict) or install_root.get("owner") != "scripts/install_root.py":
+        errors.append("RuntimeAdapter install-root facts must stay delegated to scripts/install_root.py")
+    else:
+        for fact in (
+            "AGENTERA_HOME precedence",
+            "default durable root",
+            "managed classification",
+            "stale classification",
+            "unmanaged classification",
+            "root diagnostics",
+        ):
+            if fact not in install_root.get("facts", []):
+                errors.append(f"RuntimeAdapter must delegate install-root fact {fact}")
+
+    permissions = model.get("consumer_permissions")
+    if not isinstance(permissions, dict):
+        errors.append("RuntimeAdapter model must define consumer permissions")
+    else:
+        for consumer in ("lifecycle_validation", "doctor", "upgrade", "docs", "tests"):
+            spec = permissions.get(consumer)
+            if not isinstance(spec, dict):
+                errors.append(f"RuntimeAdapter consumer {consumer} must be explicit")
+                continue
+            allowed = spec.get("allowed_groups")
+            if not isinstance(allowed, list) or not allowed:
+                errors.append(f"RuntimeAdapter consumer {consumer} must list allowed groups")
+            elif not set(allowed).issubset(expected_groups):
+                errors.append(f"RuntimeAdapter consumer {consumer} may only read approved groups")
+            if spec.get("forbidden_ownership") != ["package_metadata_out_of_scope", "install_root_out_of_scope"]:
+                errors.append(f"RuntimeAdapter consumer {consumer} must forbid external ownership domains")
+
     return errors
 
 
@@ -608,7 +699,8 @@ class TestLifecycleAdapters:
         root = tmp_path / "repo"
         hook_dir = root / ".github/hooks"
         hook_dir.mkdir(parents=True)
-        for event in validator.COPILOT_EVENTS:
+        registry = validator.load_registry()
+        for event in validator._runtime_view(registry, "copilot")["lifecycle_events"]["supported_events"]:
             (hook_dir / f"{event}.json").write_text(
                 json.dumps(
                     {
@@ -694,6 +786,96 @@ class TestLifecycleAdapters:
         plugin["lifecycleHooks"]["limitations"] = []
         assert "codex: limitations must document codex_hooks status and apply_patch interception" in validator.validate_codex(plugin)
 
+    def test_lifecycle_validation_messages_are_characterized_before_registry_migration(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        result = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts/validate_lifecycle_adapters.py")],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stderr
+        assert result.stdout.strip() == "lifecycle adapter metadata ok"
+
+        copilot_root = tmp_path / "copilot"
+        copilot_root.mkdir()
+        malformed_copilot = {
+            "lifecycleHooks": {"events": {"sessionStart": []}},
+            "skills": ["../outside"],
+            "hooks": 7,
+            "description": "agentera portable skills",
+        }
+        assert validator.validate_copilot(malformed_copilot, copilot_root) == [
+            "copilot: use supported hooks component field, not lifecycleHooks",
+            "copilot.skills paths must stay inside plugin root",
+            "copilot.hooks must be a string or string array path",
+            "copilot.profilera: description must expose bounded corpus metadata limits",
+        ]
+
+        hook_dir = copilot_root / ".github/hooks"
+        hook_dir.mkdir(parents=True)
+        (hook_dir / "stop.json").write_text(
+            json.dumps({"name": "stop", "type": "command", "command": "python hooks/session_stop.py"}),
+            encoding="utf-8",
+        )
+        assert validator.validate_copilot_hooks(copilot_root, {"hooks": ".github/hooks"}) == [
+            "copilot: unsupported lifecycle hook file configured: stop.json",
+            "copilot: unsupported lifecycle event configured: stop",
+            "copilot: missing required preToolUse artifact validation hook",
+        ]
+
+        malformed_codex = {"lifecycleHooks": {"configured": True, "status": "experimental", "events": []}}
+        assert validator.validate_codex(malformed_codex) == [
+            "codex: lifecycleHooks.configured must be false",
+            "codex: lifecycleHooks.status must be one of stable, beta",
+            "codex: lifecycleHooks.events must be an object when present",
+            "codex: supportedEvents must list every Codex codex_hooks event (SessionStart, Stop, UserPromptSubmit, PreToolUse, PostToolUse, PermissionRequest)",
+            "codex: unsupportedEvents must list Claude-Code-specific events with no Codex equivalent",
+            "codex: limitations must document codex_hooks status and apply_patch interception",
+        ]
+
+    def test_lifecycle_validation_reads_supported_events_from_registry(self, tmp_path):
+        validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
+        registry_data = yaml.safe_load(
+            (REPO_ROOT / "references/adapters/runtime-adapter-registry.yaml").read_text(encoding="utf-8")
+        )
+        for record in registry_data["records"]:
+            if record["identity"]["runtime_id"] == "copilot":
+                record["lifecycle_events"]["supported_events"].remove("errorOccurred")
+        registry = validator.RuntimeAdapterRegistry(tuple(registry_data["records"]))
+
+        root = tmp_path / "repo"
+        hook_dir = root / ".github/hooks"
+        hook_dir.mkdir(parents=True)
+        (hook_dir / "errorOccurred.json").write_text(
+            json.dumps({"name": "errorOccurred", "type": "command", "bash": "uv run hooks/session_stop.py"}),
+            encoding="utf-8",
+        )
+
+        errors = validator.validate_copilot_hooks(root, {"hooks": ".github/hooks"}, registry)
+
+        assert "copilot: unsupported lifecycle hook file configured: errorOccurred.json" in errors
+        assert "copilot: unsupported lifecycle event configured: errorOccurred" in errors
+
+    def test_lifecycle_validation_reports_registry_contract_error_before_fallback(self, tmp_path):
+        registry_path = tmp_path / "references/adapters/runtime-adapter-registry.yaml"
+        registry_path.parent.mkdir(parents=True)
+        registry_path.write_text("schema_version: stale\nruntime_order: []\nrecords: []\n", encoding="utf-8")
+
+        result = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts/validate_lifecycle_adapters.py"), "--root", str(tmp_path)],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert result.returncode == 1
+        assert "lifecycle adapter validation failed:" in result.stdout
+        assert "registry contract error: RuntimeAdapter registry validation failed:" in result.stdout
+        assert "registry.schema_version must be agentera.runtimeAdapterRegistry.v1" in result.stdout
+
     def test_hard_gate_docs_pass(self):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
         assert validator.validate_hard_gate_docs(REPO_ROOT) == []
@@ -721,6 +903,67 @@ class TestLifecycleAdapters:
         )
         errors = validator.validate_hard_gate_docs(tmp_path)
         assert any("references/adapters/opencode.md: OpenCode hard-gate docs" in error for error in errors)
+
+    def test_runtime_adapter_drift_inventory_names_each_decision_class(self):
+        text = (REPO_ROOT / "references/adapters/runtime-adapter-characterization.md").read_text(encoding="utf-8")
+        for decision in ("preserve", "standardize", "defer"):
+            assert f"`{decision}`" in text
+        for drift_point in (
+            "duplicated runtime order",
+            "upgrade package phase only manages Claude Code and OpenCode",
+            "Codex supports hook events but shipped config wires only apply_patch validation",
+            "Claude lifecycle behavior is validated through native hook files, not lifecycle metadata",
+        ):
+            assert drift_point in text
+
+    def test_runtime_adapter_interface_model_defines_typed_groups_and_permissions(self):
+        assert _validate_runtime_adapter_interface_model() == []
+
+        model = _load_runtime_adapter_interface_model()
+        assert model["interface"] == "RuntimeAdapter"
+        assert set(model["record"]["groups"]) == set(model["record"]["required_groups"])
+        assert model["consumer_permissions"]["lifecycle_validation"]["allowed_groups"] == [
+            "identity",
+            "lifecycle_events",
+            "artifact_validation",
+            "documentation_claims",
+        ]
+        assert model["consumer_permissions"]["doctor"]["allowed_groups"] == [
+            "identity",
+            "host_detection",
+            "config_targets",
+            "diagnostics",
+            "documentation_claims",
+        ]
+        assert model["consumer_permissions"]["upgrade"]["allowed_groups"] == [
+            "identity",
+            "host_detection",
+            "config_targets",
+            "diagnostics",
+        ]
+
+    def test_runtime_adapter_interface_model_keeps_external_ownership_out(self):
+        model = _load_runtime_adapter_interface_model()
+        package = model["ownership"]["package_metadata_out_of_scope"]
+        install_root = model["ownership"]["install_root_out_of_scope"]
+
+        assert package["owner"] == "package_manifest_registry"
+        assert package["deferred_todo"] == "arch-package-manifest-registry"
+        assert package["facts"] == [
+            "version_authority",
+            "package_manifest_schemas",
+            "shared_package_paths",
+            "release_metadata",
+        ]
+        assert install_root["owner"] == "scripts/install_root.py"
+        assert install_root["facts"] == [
+            "AGENTERA_HOME precedence",
+            "default durable root",
+            "managed classification",
+            "stale classification",
+            "unmanaged classification",
+            "root diagnostics",
+        ]
 
     @staticmethod
     def _write_hard_gate_docs(
@@ -980,7 +1223,7 @@ class TestLegacyRuntimeCompatibility:
     def test_install_root_documentation_points_to_shared_contract(self):
         assert _validate_install_root_documentation() == []
 
-    def test_install_root_documentation_fails_without_registry_deferral(self, tmp_path):
+    def test_install_root_documentation_fails_without_registry_pointer(self, tmp_path):
         root = tmp_path / "repo"
         for relative in (
             "skills/agentera/capabilities/hej",
@@ -1004,7 +1247,7 @@ class TestLegacyRuntimeCompatibility:
             (root / relative).write_text(text, encoding="utf-8")
 
         errors = _validate_install_root_documentation(root)
-        assert "install-root docs must defer RuntimeAdapter registry extraction to [arch-runtime-adapter-registry]" in errors
+        assert "install-root docs must point runtime facts at the RuntimeAdapter registry" in errors
 
     def test_opencode_version_marker_is_documented(self):
         assert _validate_docs_version_targets(REPO_ROOT) == []

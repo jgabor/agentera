@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import os
 import subprocess
 import sys
 from pathlib import Path
+from types import ModuleType
 
 import yaml
 
@@ -44,6 +46,15 @@ def _run(*args: str, cwd: Path | None = None, env: dict[str, str] | None = None)
         capture_output=True,
         check=False,
     )
+
+
+def _load_upgrade_module() -> ModuleType:
+    path = REPO_ROOT / "scripts" / "agentera_upgrade.py"
+    spec = importlib.util.spec_from_file_location("agentera_upgrade", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _write_v1_progress(project: Path) -> Path:
@@ -305,6 +316,128 @@ def test_runtime_upgrade_configures_codex_without_v1_agent_blocks(tmp_path: Path
     payload = json.loads(second.stdout)
     assert payload["status"] == "noop"
     assert payload["phases"][0]["summary"]["noop"] == 2
+
+
+def test_runtime_upgrade_plan_characterizes_runtime_and_package_items(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    result = _run(
+        "upgrade",
+        "--only",
+        "runtime",
+        "--only",
+        "packages",
+        "--runtime",
+        "claude",
+        "--runtime",
+        "opencode",
+        "--runtime",
+        "copilot",
+        "--runtime",
+        "codex",
+        "--home",
+        str(home),
+        "--json",
+    )
+
+    assert result.returncode == 1, result.stderr
+    payload = json.loads(result.stdout)
+    runtime_phase = next(phase for phase in payload["phases"] if phase["name"] == "runtime")
+    package_phase = next(phase for phase in payload["phases"] if phase["name"] == "packages")
+    runtime_items = {(item["runtime"], item["action"]): item for item in runtime_phase["items"]}
+    package_items = {(item["runtime"], item["action"]): item for item in package_phase["items"]}
+
+    assert payload["mode"] == "plan"
+    assert runtime_phase["status"] == "pending"
+    assert runtime_items[("codex", "configure")]["target"] == str(home / ".codex/config.toml")
+    assert runtime_items[("codex", "configure")]["status"] == "pending"
+    assert runtime_items[("codex", "copy-hooks")]["target"] == str(home / ".codex/hooks.json")
+    assert runtime_items[("codex", "copy-hooks")]["message"] == "will copy current Agentera file"
+    assert runtime_items[("copilot", "configure")]["target"] == str(home / ".bashrc")
+    assert runtime_items[("opencode", "copy-plugin")]["target"] == str(home / ".config/opencode/plugins/agentera.js")
+    assert runtime_items[("claude", "configure")] == {
+        "status": "noop",
+        "runtime": "claude",
+        "action": "configure",
+        "target": None,
+        "message": "Claude Code plugin installs expose the bundle root without local config writes",
+    }
+    assert all("newText" not in item for item in runtime_phase["items"])
+    assert not (home / ".codex/config.toml").exists()
+    assert not (home / ".codex/hooks.json").exists()
+    assert package_phase["status"] == "skipped"
+    assert package_items[("all", "remove-legacy-skills")]["status"] == "skipped"
+    assert package_items[("claude", "install-agentera-skill")]["message"] == (
+        "external package update skipped; pass --update-packages to run"
+    )
+    assert package_items[("opencode", "install-agentera-skill")]["status"] == "skipped"
+
+
+def test_runtime_upgrade_planning_reads_runtime_targets_from_registry_fixture(tmp_path: Path, monkeypatch) -> None:
+    upgrade = _load_upgrade_module()
+    registry_module = upgrade._runtime_registry_module()
+    registry_path = REPO_ROOT / "references" / "adapters" / "runtime-adapter-registry.yaml"
+    fixture = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
+    fixture["records"][3]["config_targets"]["hook_targets"] = ["~/.codex/fixture-hooks.json"]
+    registry = registry_module.RuntimeAdapterRegistry(tuple(fixture["records"]))
+    monkeypatch.setattr(upgrade, "_runtime_registry", lambda: registry)
+
+    phase = upgrade.plan_runtime_phase(
+        REPO_ROOT,
+        REPO_ROOT,
+        tmp_path / "home",
+        {"SHELL": "/bin/bash"},
+        {"codex"},
+        force=False,
+        copilot_rc_file=None,
+    )
+
+    copy_hooks = next(item for item in phase["items"] if item["action"] == "copy-hooks")
+    assert copy_hooks["target"] == str(tmp_path / "home" / ".codex" / "fixture-hooks.json")
+
+
+def test_runtime_upgrade_apply_characterizes_write_and_package_apply_messages(tmp_path: Path, monkeypatch) -> None:
+    home = tmp_path / "home"
+    result = _run(
+        "upgrade",
+        "--only",
+        "runtime",
+        "--runtime",
+        "claude",
+        "--runtime",
+        "codex",
+        "--runtime",
+        "opencode",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    runtime_items = {(item["runtime"], item["action"]): item for item in payload["phases"][0]["items"]}
+    assert payload["mode"] == "apply"
+    assert runtime_items[("codex", "configure")]["status"] == "applied"
+    assert runtime_items[("codex", "configure")]["message"] == "runtime update applied"
+    assert runtime_items[("codex", "copy-hooks")]["status"] == "applied"
+    assert runtime_items[("opencode", "copy-plugin")]["status"] == "applied"
+    assert runtime_items[("claude", "configure")]["status"] == "noop"
+    assert (home / ".codex/config.toml").is_file()
+    assert (home / ".codex/hooks.json").is_file()
+    assert (home / ".config/opencode/plugins/agentera.js").is_file()
+
+    upgrade = _load_upgrade_module()
+
+    def fake_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(command, 0, stdout="package ok\n", stderr="")
+
+    monkeypatch.setattr(upgrade.subprocess, "run", fake_run)
+    package_phase = upgrade.plan_package_phase({"claude", "opencode"}, enabled=True)
+    upgrade.apply_package_phase(package_phase)
+
+    assert package_phase["status"] == "applied"
+    assert {item["message"] for item in package_phase["items"]} == {"package update completed"}
+    assert {item["status"] for item in package_phase["items"]} == {"applied"}
 
 
 def test_runtime_upgrade_applies_safe_items_even_when_one_item_is_blocked(tmp_path: Path) -> None:

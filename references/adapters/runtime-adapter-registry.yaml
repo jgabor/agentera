@@ -1,0 +1,311 @@
+schema_version: agentera.runtimeAdapterRegistry.v1
+runtime_order:
+  - claude
+  - opencode
+  - copilot
+  - codex
+records:
+  - identity:
+      runtime_id: claude
+      display_name: Claude Code
+      adapter_family: native-plugin
+      support_status: supported
+    host_detection:
+      binary_names:
+        - claude
+      host_config_locations:
+        - CLAUDE_PLUGIN_ROOT
+      availability_probe_label: runtime_binary
+    lifecycle_events:
+      supported_events:
+        - PreToolUse
+        - PostToolUse
+        - UserPromptSubmit
+        - SessionStart
+        - Stop
+        - SubagentStop
+      unsupported_events: []
+      event_status:
+        PreToolUse: native
+        PostToolUse: native
+        UserPromptSubmit: native
+        SessionStart: native
+        Stop: native
+        SubagentStop: native
+      limitations:
+        - Claude lifecycle behavior is validated through native hook files rather than lifecycle metadata.
+    artifact_validation:
+      validation_events:
+        - PreToolUse
+      hard_gate_claims:
+        - Native hook files can run artifact validation before tool writes.
+      payload_reconstruction_limitations: []
+    config_targets:
+      runtime_config_files: []
+      hook_targets:
+        - .claude-plugin/marketplace.json
+      plugin_targets:
+        - skills/*/.claude-plugin/plugin.json
+      environment_exports:
+        - CLAUDE_PLUGIN_ROOT
+      write_safety_labels:
+        - Claude Code plugin installs expose the bundle root without local config writes
+    diagnostics:
+      check_names:
+        - CLAUDE_PLUGIN_ROOT
+      status_labels:
+        - pass
+        - warn
+        - fail
+        - skip
+      gap_labels:
+        - runtime_config
+        - user_environment
+      primary_messages:
+        - runtime can reach shared Agentera helper scripts
+        - Claude Code plugin root is not present in this process environment
+    documentation_claims:
+      reference_paths:
+        - references/adapters/runtime-feature-parity.md
+      parity_claims:
+        - Claude Code uses native plugin and hook surfaces.
+      install_claims:
+        - Claude Code plugin installs expose the bundle root without local config writes.
+      known_drifts:
+        - Claude lifecycle behavior is validated through native hook files, not lifecycle metadata.
+  - identity:
+      runtime_id: opencode
+      display_name: OpenCode
+      adapter_family: javascript-plugin
+      support_status: supported
+    host_detection:
+      binary_names:
+        - opencode
+      host_config_locations:
+        - OPENCODE_CONFIG_DIR
+        - AGENTERA_HOME
+      availability_probe_label: runtime_binary
+    lifecycle_events:
+      supported_events:
+        - shell.env
+        - tool.execute.before
+        - tool.execute.after
+      unsupported_events:
+        - session.created
+        - session.idle
+      event_status:
+        shell.env: supported
+        tool.execute.before: supported
+        tool.execute.after: supported
+        session.created: phantom
+        session.idle: phantom
+      limitations:
+        - OpenCode session preload observes session.created but has no verified context injection path.
+    artifact_validation:
+      validation_events:
+        - tool.execute.before
+      hard_gate_claims:
+        - Conditional hard gate for reconstructable write and edit candidates.
+      payload_reconstruction_limitations:
+        - Sparse payloads and apply_patch patchText without reconstructed full content are allowed.
+    config_targets:
+      runtime_config_files:
+        - ~/.config/opencode/plugins/agentera.js
+      hook_targets: []
+      plugin_targets:
+        - .opencode/plugins/agentera.js
+      environment_exports:
+        - AGENTERA_HOME
+      write_safety_labels:
+        - copy-plugin
+    diagnostics:
+      check_names:
+        - plugin_file
+        - AGENTERA_HOME
+        - opencode_managed_commands
+        - opencode_skill_paths
+        - bundled_support_references
+      status_labels:
+        - pass
+        - warn
+        - fail
+        - skip
+      gap_labels:
+        - runtime_config
+        - user_environment
+        - command_drift
+        - skill_path_drift
+        - validation_drift
+      primary_messages:
+        - OpenCode plugin file is present
+        - OpenCode plugin file is not installed at the native plugin path
+        - runtime can reach shared Agentera helper scripts
+        - OpenCode cannot see AGENTERA_HOME or a documented default Agentera root
+        - OpenCode managed Agentera commands are current
+        - OpenCode managed Agentera commands are missing or stale
+        - OpenCode Agentera skill paths resolve to SKILL.md
+        - OpenCode Agentera skill paths are missing or broken
+        - bundled support references validate separately from installer freshness
+        - bundled reference validation drift found despite installer freshness
+    documentation_claims:
+      reference_paths:
+        - references/adapters/runtime-feature-parity.md
+        - references/adapters/opencode.md
+      parity_claims:
+        - Blocks invalid reconstructable artifact candidates.
+      install_claims:
+        - OpenCode plugin is copied to the native plugin path.
+      known_drifts:
+        - OpenCode session preload observes session.created but has no verified context injection path.
+  - identity:
+      runtime_id: copilot
+      display_name: Copilot CLI
+      adapter_family: portable-plugin
+      support_status: supported
+    host_detection:
+      binary_names:
+        - copilot
+      host_config_locations:
+        - AGENTERA_HOME
+        - ~/.bashrc
+        - ~/.zshrc
+        - ~/.config/fish/config.fish
+      availability_probe_label: runtime_binary
+    lifecycle_events:
+      supported_events:
+        - sessionStart
+        - sessionEnd
+        - userPromptSubmitted
+        - preToolUse
+        - postToolUse
+        - errorOccurred
+      unsupported_events: []
+      event_status:
+        sessionStart: supported
+        sessionEnd: supported
+        userPromptSubmitted: supported
+        preToolUse: supported
+        postToolUse: supported
+        errorOccurred: supported
+      limitations:
+        - Profilera exposes bounded corpus metadata limits with missing source families.
+    artifact_validation:
+      validation_events:
+        - preToolUse
+      hard_gate_claims:
+        - Conditional hard gate via preToolUse.
+      payload_reconstruction_limitations:
+        - Malformed, sparse, or non-reconstructable toolArgs are allowed.
+    config_targets:
+      runtime_config_files:
+        - ~/.bashrc
+        - ~/.zshrc
+        - ~/.config/fish/config.fish
+      hook_targets:
+        - .github/hooks
+      plugin_targets:
+        - plugin.json
+      environment_exports:
+        - AGENTERA_HOME
+      write_safety_labels:
+        - configure
+    diagnostics:
+      check_names:
+        - AGENTERA_HOME
+      status_labels:
+        - pass
+        - warn
+        - fail
+        - skip
+      gap_labels:
+        - runtime_config
+        - user_environment
+      primary_messages:
+        - runtime can reach shared Agentera helper scripts
+        - Copilot helper access is not configured in the environment or known shell rc files
+        - Copilot rc file is configured; restart the shell to load AGENTERA_HOME
+    documentation_claims:
+      reference_paths:
+        - references/adapters/runtime-feature-parity.md
+      parity_claims:
+        - Copilot supports lifecycle hook JSON files under .github/hooks.
+      install_claims:
+        - Copilot marketplace install path is verified working.
+      known_drifts:
+        - Upgrade package phase currently has no Copilot package command item.
+  - identity:
+      runtime_id: codex
+      display_name: Codex CLI
+      adapter_family: portable-plugin
+      support_status: degraded
+    host_detection:
+      binary_names:
+        - codex
+      host_config_locations:
+        - ~/.codex/config.toml
+      availability_probe_label: runtime_binary
+    lifecycle_events:
+      supported_events:
+        - SessionStart
+        - Stop
+        - UserPromptSubmit
+        - PreToolUse
+        - PostToolUse
+        - PermissionRequest
+      unsupported_events:
+        - SubagentStop
+        - PreCompact
+        - Notification
+      event_status:
+        SessionStart: beta
+        Stop: beta
+        UserPromptSubmit: beta
+        PreToolUse: beta
+        PostToolUse: beta
+        PermissionRequest: beta
+        SubagentStop: unsupported
+      limitations:
+        - codex_hooks status is beta and shipped Agentera wiring intercepts apply_patch validation only; see openai/codex#18391.
+    artifact_validation:
+      validation_events:
+        - PreToolUse
+      hard_gate_claims:
+        - Codex can route pre-tool validation through codex_hooks when configured.
+      payload_reconstruction_limitations:
+        - Shipped config wires apply_patch validation only.
+    config_targets:
+      runtime_config_files:
+        - ~/.codex/config.toml
+      hook_targets:
+        - ~/.codex/hooks.json
+      plugin_targets:
+        - .codex-plugin/plugin.json
+        - .agents/plugins/marketplace.json
+      environment_exports:
+        - AGENTERA_HOME
+      write_safety_labels:
+        - configure
+        - copy-hooks
+    diagnostics:
+      check_names:
+        - config.AGENTERA_HOME
+      status_labels:
+        - pass
+        - warn
+        - fail
+        - skip
+      gap_labels:
+        - runtime_config
+        - user_environment
+      primary_messages:
+        - runtime can reach shared Agentera helper scripts
+        - Codex config cannot provide helper-script access
+    documentation_claims:
+      reference_paths:
+        - references/adapters/runtime-feature-parity.md
+      parity_claims:
+        - Codex supports codex_hooks events but shipped config wires only apply_patch validation.
+      install_claims:
+        - Codex config and hook files are planned as runtime updates.
+      known_drifts:
+        - Codex supports hook events but shipped config wires only apply_patch validation.

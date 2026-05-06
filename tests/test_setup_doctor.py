@@ -168,6 +168,85 @@ def test_setup_doctor_passes_for_each_runtime_family(tmp_path: Path) -> None:
         assert report["runtimes"][runtime]["status"] == "pass"
 
 
+def test_setup_doctor_runtime_json_characterization_before_registry_migration(tmp_path: Path) -> None:
+    doctor = _load_doctor()
+    expected_checks = {
+        "claude": [
+            ("runtime_binary", "pass", "claude executable found", None),
+            ("CLAUDE_PLUGIN_ROOT", "pass", "runtime can reach shared Agentera helper scripts", None),
+        ],
+        "opencode": [
+            ("runtime_binary", "pass", "opencode executable found", None),
+            ("plugin_file", "pass", "OpenCode plugin file is present", None),
+            ("AGENTERA_HOME", "pass", "runtime can reach shared Agentera helper scripts", None),
+            ("opencode_managed_commands", "pass", "OpenCode managed Agentera commands are current", None),
+            ("opencode_skill_paths", "pass", "OpenCode Agentera skill paths resolve to SKILL.md", None),
+            (
+                "bundled_support_references",
+                "pass",
+                "bundled support references validate separately from installer freshness",
+                None,
+            ),
+        ],
+        "copilot": [
+            ("runtime_binary", "pass", "copilot executable found", None),
+            ("AGENTERA_HOME", "pass", "runtime can reach shared Agentera helper scripts", None),
+        ],
+        "codex": [
+            ("runtime_binary", "pass", "codex executable found", None),
+            ("config.AGENTERA_HOME", "pass", "runtime can reach shared Agentera helper scripts", None),
+        ],
+    }
+
+    for runtime, expected in expected_checks.items():
+        root = tmp_path / runtime / "agentera"
+        home = tmp_path / runtime / "home"
+        _write_install_root(root, doctor)
+        env = _base_env(_path_with_binary(tmp_path / runtime, doctor.RUNTIME_BINARIES[runtime]))
+        _prepare_pass(runtime, home, root, env)
+
+        report = json.loads(json.dumps(doctor.build_report(install_root=root, home=home, env=env, runtimes=(runtime,))))
+        runtime_report = report["runtimes"][runtime]
+        checks = [
+            (check["name"], check["status"], check["message"], check["gap"])
+            for check in runtime_report["checks"]
+        ]
+
+        assert set(report) == {"schemaVersion", "ok", "installRoot", "runtimes", "summary", "smoke"}
+        assert set(runtime_report) == {"runtime", "status", "available", "binary", "checks"}
+        assert report["schemaVersion"] == "agentera.setupDoctor.v1"
+        assert report["installRoot"]["message"] == "install root is valid"
+        assert runtime_report["runtime"] == runtime
+        assert runtime_report["status"] == "pass"
+        assert runtime_report["available"] is True
+        assert checks == expected
+
+
+def test_setup_doctor_runtime_diagnostic_facts_are_registry_backed(tmp_path: Path) -> None:
+    doctor = _load_doctor()
+
+    assert doctor.RUNTIMES == doctor.REGISTRY.runtime_ids
+    for runtime in doctor.RUNTIMES:
+        view = doctor.DOCTOR_RUNTIME_VIEWS[runtime]
+        assert doctor.RUNTIME_BINARIES[runtime] == view["host_detection"]["binary_names"][0]
+
+        root = tmp_path / runtime / "agentera"
+        home = tmp_path / runtime / "home"
+        _write_install_root(root, doctor)
+        env = _base_env(_path_with_binary(tmp_path / runtime, doctor.RUNTIME_BINARIES[runtime]))
+        _prepare_pass(runtime, home, root, env)
+
+        report = doctor.build_report(install_root=root, home=home, env=env, runtimes=(runtime,))
+        registry_checks = set(view["diagnostics"]["check_names"])
+        registry_messages = set(view["diagnostics"]["primary_messages"])
+
+        for check in report["runtimes"][runtime]["checks"]:
+            if check["name"] == view["host_detection"]["availability_probe_label"]:
+                continue
+            assert check["name"] in registry_checks
+            assert check["message"] in registry_messages
+
+
 def test_setup_doctor_warns_or_fails_with_classified_helper_access_gaps(tmp_path: Path) -> None:
     doctor = _load_doctor()
     cases = {
@@ -247,6 +326,54 @@ def test_setup_doctor_cli_json_is_stable_and_non_mutating(tmp_path: Path) -> Non
     assert before == after == []
     assert payload["schemaVersion"] == doctor.SCHEMA_VERSION
     assert payload["summary"] == {"fail": 0, "pass": 0, "skip": 4, "warn": 0}
+
+
+def test_setup_doctor_read_only_diagnostics_do_not_modify_runtime_config(tmp_path: Path) -> None:
+    doctor = _load_doctor()
+    root = tmp_path / "agentera"
+    home = tmp_path / "home"
+    _write_install_root(root, doctor)
+    copilot_rc = home / ".bashrc"
+    copilot_rc.parent.mkdir(parents=True, exist_ok=True)
+    copilot_rc.write_text(
+        f"{doctor.COPILOT_MARKER}\nexport AGENTERA_HOME=\"{root}\"\n",
+        encoding="utf-8",
+    )
+    codex_config = home / ".codex" / "config.toml"
+    codex_config.parent.mkdir(parents=True, exist_ok=True)
+    codex_config.write_text(
+        '[shell_environment_policy]\nset = { AGENTERA_HOME = "' + str(root) + '" }\n',
+        encoding="utf-8",
+    )
+    before = {
+        path.relative_to(home): path.read_text(encoding="utf-8")
+        for path in sorted(home.rglob("*"))
+        if path.is_file()
+    }
+    codex_path_root = tmp_path / "codex-path"
+    codex_path_root.mkdir()
+    runtime_path = os.pathsep.join(
+        (
+            _path_with_binary(tmp_path, "copilot"),
+            _path_with_binary(codex_path_root, "codex"),
+        )
+    )
+
+    report = doctor.build_report(
+        install_root=root,
+        home=home,
+        env=_base_env(runtime_path),
+        runtimes=("copilot", "codex"),
+    )
+    after = {
+        path.relative_to(home): path.read_text(encoding="utf-8")
+        for path in sorted(home.rglob("*"))
+        if path.is_file()
+    }
+
+    assert report["runtimes"]["copilot"]["status"] == "pass"
+    assert report["runtimes"]["codex"]["status"] == "pass"
+    assert after == before
 
 
 def test_setup_doctor_reports_opencode_command_drift_without_writing(tmp_path: Path) -> None:
