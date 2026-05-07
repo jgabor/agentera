@@ -243,6 +243,7 @@ sample_manifest:
       - DESIGN.md
       - LICENSE
       - pyproject.toml
+      - uv.lock
       - registry.json
       - plugin.json
       - .opencode/package.json

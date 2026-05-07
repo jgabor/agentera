@@ -57,5 +57,6 @@ packages = ["src/agentera_cli"]
 "DESIGN.md" = "agentera_cli/bundle/DESIGN.md"
 "LICENSE" = "agentera_cli/bundle/LICENSE"
 "pyproject.toml" = "agentera_cli/bundle/pyproject.toml"
+"uv.lock" = "agentera_cli/bundle/uv.lock"
 "registry.json" = "agentera_cli/bundle/registry.json"
 "plugin.json" = "agentera_cli/bundle/plugin.json"

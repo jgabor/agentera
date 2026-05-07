@@ -201,6 +201,43 @@ def test_manifest_projections_align_with_registry_docs_targets():
         assert (REPO_ROOT / target).exists(), f"registry docs_targets.index_targets missing: {target}"
 
 
+def test_docs_version_targets_are_present_in_packaged_bundle_surfaces():
+    registry = _load_module().load_registry(REGISTRY_PATH)
+    record = registry.get("agentera")
+    bundle_dirs = [Path(entry["path"]) for entry in record["bundle_surfaces"]["directories"]]
+    bundle_files = {entry["path"] for entry in record["bundle_surfaces"]["files"]}
+
+    missing = []
+    for target in record["docs_targets"]["version_files"]:
+        target_path = Path(target)
+        if target in bundle_files or any(
+            target_path.is_relative_to(bundle_dir) for bundle_dir in bundle_dirs
+        ):
+            continue
+        missing.append(target)
+
+    assert missing == []
+
+
+def test_wheel_force_includes_cover_bundle_surface_roots():
+    import tomllib
+
+    registry = _load_module().load_registry(REGISTRY_PATH)
+    record = registry.get("agentera")
+    pyproject = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    force_include = set(
+        pyproject["tool"]["hatch"]["build"]["targets"]["wheel"]["force-include"]
+    )
+
+    bundle_roots = {
+        entry["path"]
+        for group in ("directories", "files")
+        for entry in record["bundle_surfaces"][group]
+    }
+
+    assert sorted(bundle_roots - force_include) == []
+
+
 def test_manifest_projection_versions_align_through_registry():
     import json
     import re

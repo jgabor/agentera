@@ -132,6 +132,8 @@ records:
           path: LICENSE
         - id: python-project
           path: pyproject.toml
+        - id: python-lock
+          path: uv.lock
         - id: registry
           path: registry.json
         - id: copilot-root-manifest
