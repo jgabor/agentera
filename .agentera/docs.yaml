@@ -1,4 +1,4 @@
-last_audit: 2026-05-06 (Artifact registry documentation alignment)
+last_audit: 2026-05-07 (Vocabulary index)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -117,6 +117,10 @@ index:
 - document: DOCS
   path: .agentera/docs.yaml
   last_updated: '2026-05-06'
+  status: current
+- document: Vocabulary
+  path: docs/vocabulary.md
+  last_updated: '2026-05-07'
   status: current
 - document: Gap analysis
   path: .agentera/gap-analysis-2026-05-05.md
@@ -328,6 +332,17 @@ coverage:
   stale: none
   tests: Artifact registry alignment records registry-backed cross-capability tests, ArtifactRegistry contract tests, cross-capability validator evidence, full validation, and Task 8 closure evidence.
 audit_log:
+- date: '2026-05-07'
+  label: Vocabulary index
+  findings:
+  - type: authority
+    description: docs/vocabulary.md now indexes shared Agentera grammar across protocol primitives, capabilities, artifacts, routing, CLI labels, freshness terms, runtime install language, validation, and visual tokens.
+    resolution: fixed
+    severity: info
+  - type: freshness
+    description: The index explicitly distinguishes plan-level freshness checkpoint, bundle freshness guard, bundle-status diagnostic, artifact staleness, upgrade guard, and pre-dispatch checkpoint commit.
+    resolution: fixed
+    severity: info
 - date: '2026-05-06'
   label: Artifact registry documentation alignment
   findings:

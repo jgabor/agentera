@@ -1,6 +1,7 @@
 .claude
 .codex
-docs/
+docs/*
+!docs/vocabulary.md
 __pycache__/
 *.pyc
 .leda
