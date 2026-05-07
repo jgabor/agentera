@@ -1,44 +1,4 @@
 decisions:
-- number: 34
-  date: '2026-04-29'
-  question: How should agentera prevent artifact prose from snowballing toward verbosity and abstraction over long-running
-    projects?
-  context: 'The inspirera analysis of WRITING.md revealed a gap: existing compaction thresholds (§4) cap entry count but not
-    entry quality. Over 300+ cycles, the 10 full-detail slots per artifact fill with increasingly verbose, abstract prose.
-    This matches the profile entries "Be Direct And Concise" (88% effective) and "Reject Bloated Operational Artifacts" (77%).
-    WRITING.md''s self-audit workflow provides the operational pattern, but agentera needs its own check spec.'
-  alternatives:
-  - name: New inspektera audit dimension
-    status: rejected
-    description: post-only; drift is already entrenched by the time it reaches periodic audit.
-  - name: Section 24 extension with pre + post layers
-    status: chosen
-    description: pre-write gate catches at the source; post-layer catches what slips through.
-  - name: PostToolUse validation hook
-    status: rejected
-    description: hooks validate artifact structure, not content quality; prose checks need semantic judgment.
-  choice: "Extend SPEC.md §24 with a \"Self-Audit Protocol\" defining 3 agentera-native checks. Each artifact-producing skill\
-    \ runs them as a mandatory pre-write gate. Post-layer: dokumentera enforces for docs, inspektera adds a \"prose health\"\
-    \ audit dimension for all artifacts. The 3 checks are: (1) verbosity drift — word count vs. §4 token budget, fail if over;\
-    \ (2) abstraction creep — entry must contain ≥1 concrete anchor (file path, line number, commit hash, metric value, identifier,\
-    \ or direct quote); (3) filler accumulation — scan for banned verbosity patterns (§24), fail if any found.\n  **Reasoning**:\
-    \ WRITING.md's regularity checks are the right philosophy but the wrong spec — agentera's structured, token-budgeted,\
-    \ multi-skill artifact format needs its own check design. A mandatory pre-write gate is the only way to prevent the snowball:\
-    \ advisory gates accumulate drift faster than post-audits can clean it up. This matches \"Reject Quality Gate Bypasses\"\
-    \ (86% effective). The post-layer exists because pre-write gates can't catch everything — some abstraction creep is only\
-    \ visible when comparing entries across time.\n  **Confidence**: firm\n  **Feeds into**: SPEC.md (§24 extension), skills/inspektera/SKILL.md\
-    \ (prose health dimension), skills/dokumentera/SKILL.md (doc prose enforcement), SKILL.md files of all producing skills\
-    \ (pre-write gate step)"
-  reasoning: "WRITING.md's regularity checks are the right philosophy but the wrong spec — agentera's structured, token-budgeted,\
-    \ multi-skill artifact format needs its own check design. A mandatory pre-write gate is the only way to prevent the snowball:\
-    \ advisory gates accumulate drift faster than post-audits can clean it up. This matches \"Reject Quality Gate Bypasses\"\
-    \ (86% effective). The post-layer exists because pre-write gates can't catch everything — some abstraction creep is only\
-    \ visible when comparing entries across time.\n  **Confidence**: firm\n  **Feeds into**: SPEC.md (§24 extension), skills/inspektera/SKILL.md\
-    \ (prose health dimension), skills/dokumentera/SKILL.md (doc prose enforcement), SKILL.md files of all producing skills\
-    \ (pre-write gate step)"
-  confidence: provisional
-  feeds_into: SPEC.md (§24 extension), skills/inspektera/SKILL.md (prose health dimension), skills/dokumentera/SKILL.md (doc
-    prose enforcement), SKILL.md files of all producing skills (pre-write gate step)
 - number: 35
   date: '2026-04-29'
   question: Should the three §24 self-audit checks be extracted from duplicated SKILL.md prose into a shared Python module?
@@ -314,7 +274,35 @@ decisions:
     not become canonical identity.
   confidence: firm
   feeds_into: SKILL.md routing, schemas/triggers.yaml, README.md, docs/vocabulary.md, tests
+- number: 44
+  date: '2026-05-07'
+  question: How should Agentera handle plain-English vocabulary inside capability prose and internal protocol docs after Decision 43?
+  context: >-
+    Decision 43 kept Swedish names while adding aliases. This review found abstract prose terms such as `freshness`, non-Git
+    `checkpoint`, `guard`, `Reality Verification Gate`, `conductor protocol`, `memory layer`, `operating record`, `drift`,
+    and `DTC` kept as internal vocabulary even when plain wording is equally precise.
+  alternatives:
+  - name: Keep current internal vocabulary
+    status: rejected
+    description: preserves avoidable jargon.
+  - name: Rename all identifiers now
+    status: rejected
+    description: high schema, test, and history churn.
+  - name: Plain prose with stable IDs
+    status: chosen
+    description: replace prose and labels first; migrate identifiers deliberately.
+  choice: >-
+    Use plain English for capability/protocol prose and labels. Deprecate `freshness`; use current/up-to-date/out-of-date/synced/status
+    wording. Keep `checkpoint` only for Git commits. Replace most `guard` with check/stop-condition wording; keep `gate` only
+    for hard pass/fail. Use `behavioral verification gate`, `orchestration loop`, `saved project context`, mismatch/out-of-sync
+    wording, and `docs-first` workflow language.
+  reasoning: >-
+    Identity belongs in stable names and IDs, not every workflow noun. Plain prose reduces cognitive load; stable IDs protect
+    compatibility until migration earns its cost.
+  confidence: firm
+  feeds_into: docs/vocabulary.md, capability prose, safe labels/tests, active plan wording, TODO.md
 archive:
+- 'Decision 34 (2026-04-29): [Self-audit protocol] — Producing skills run prose checks before artifact writes.'
 - 'Decision 31 (2026-04-12): [Named per-objective subdirs] — Self-contained optimera objectives live under `.agentera/optimera/`.'
 - 'Decision 32 (2026-04-26): [`scripts/usage_stats.py`] — Usage analytics count completed workflows from session corpus markers.'
 - 'Decision 33 (2026-04-28): [Suite bundle first] — Installed suite bundle owns shared tools and runtime infrastructure.'

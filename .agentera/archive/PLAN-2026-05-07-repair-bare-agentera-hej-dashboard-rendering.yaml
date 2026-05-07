@@ -1,0 +1,145 @@
+header:
+  level: full
+  created: '2026-05-06'
+  status: complete
+  reviewed: '2026-05-06'
+  critic_issues: "8 found, 8 addressed, 0 dismissed"
+  revised: >
+    Added a source-field audit task, separated semantic output checks from runtime
+    one-command checks, made the one-command invariant precise, narrowed
+    docs/version updates, preserved direct CLI compactness, and replaced vague
+    "impossible to miss" wording with dispatcher-boundary acceptance.
+  title: Repair Bare Agentera Hej Dashboard Rendering
+what: >
+  Repair the bare Agentera orientation path so a returning project produces the
+  README/pre-2.0 Hej dashboard instead of raw CLI-style source output, while
+  preserving the v2 one-command state-source invariant.
+why: >
+  Agentera 2.x moved from standalone /hej to bundled /agentera with a composite
+  CLI data source. The dashboard contract remains in README.md,
+  skills/agentera/SKILL.md, hej prose, and semantic fixtures, but the live
+  assistant path can still miss the nested rendering contract and expose raw
+  source data.
+constraints: >
+  Preserve agentera hej as compact source data for direct CLI users. During
+  normal bare /agentera orientation, the runtime path may invoke one composite
+  Agentera state-source command and must not invoke individual routine state
+  commands or direct artifact reads. Test fixtures may seed state. Do not mutate
+  vision or objective state. Do not implement unrelated hook validation, health
+  command freshness, optional live smoke, registry, remote push, commit, or
+  release publication work. Version bump only if docs policy requires it.
+scope:
+  included:
+    - archive the completed artifact registry plan before replacing the active plan
+    - audit current bare /agentera routing instructions and composite source fields
+    - surface the README-style dashboard rendering contract at the dispatcher boundary
+    - clarify source-data wording only if needed while preserving direct CLI behavior
+    - restore final user-facing dashboard rendering behavior for returning projects
+    - add separate output-shape and runtime/tool-trace regressions
+    - update only required docs, changelog, progress, TODO, and version surfaces
+  excluded:
+    - artifact schema redesign
+    - routine per-artifact state reads during normal orientation
+    - broad runtime adapter rewrites
+    - artifact write validation hook split
+    - health command freshness fix
+    - optional Claude live model smoke
+    - package/runtime/install-root registry work
+    - objective or vision changes
+    - remote push, commit, tag, or release publication
+  deferred:
+    - [arch-artifact-write-validation]
+    - [audit-20-health-command-stale]
+    - [agentera-optional-claude-live-smoke]
+design: >
+  Keep agentera hej as the single compact state source. The skill boundary owns
+  transforming that source into the dashboard. The source contract should expose
+  enough state for mode, profile, health, issue counts, plan progress, objective,
+  attention, and next action without implying the dashboard has already been
+  rendered. Regressions should prove final user-facing output shape separately
+  from the one-command runtime invariant.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-06-deepen-artifact-registry-interface.yaml
+tasks:
+  - number: 1
+    name: Audit Route And Source Fields
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN a returning project invokes bare Agentera WHEN the current route is inspected THEN the source command, final rendering step, and user-facing output boundary are named before edits
+      - GIVEN the composite source output is compared to the dashboard contract WHEN required fields are listed THEN mode, profile, health, issue counts, plan progress, objective, attention, and next action are either present or recorded as source gaps
+      - GIVEN a source gap is found WHEN remediation is selected THEN the source contract is strengthened rather than adding routine fallback state reads to normal orientation
+      - GIVEN the one-command invariant is recorded WHEN tests are planned THEN test setup is separated from the normal runtime path being measured
+  - number: 2
+    name: Define Entry-Boundary Dashboard Contract
+    depends_on:
+      - Task 1
+    status: complete
+    acceptance:
+      - GIVEN a returning project invokes bare Agentera WHEN final output is rendered THEN the output includes the README-style logo, status section, non-empty attention section when source attention exists, next section, and Hej exit marker
+      - GIVEN source fields are available WHEN final output is rendered THEN raw source field labels are not used as the user-facing briefing
+      - GIVEN future agents inspect the entry instructions WHEN they route bare Agentera THEN the instruction to render the README-style dashboard is visible before nested capability prose is required
+      - GIVEN no attention items exist WHEN final output is rendered THEN the attention section is omitted rather than filled with invented content
+  - number: 3
+    name: Clarify Source Data Semantics
+    depends_on:
+      - Task 1
+    status: complete
+    acceptance:
+      - GIVEN a direct user runs the composite source command WHEN output is read THEN it remains compact source data and is not reformatted as the dashboard
+      - GIVEN source-data wording could imply rendering is complete WHEN the wording is reviewed THEN it is removed, renamed, or explicitly justified with test coverage
+      - GIVEN normal orientation data is available WHEN bare Agentera runs THEN no individual routine state command or direct artifact read is part of the normal runtime path
+      - GIVEN source wording changes are made WHEN CLI behavior is checked THEN direct source users retain the same actionable state facts
+  - number: 4
+    name: Restore Dashboard Rendering Behavior
+    depends_on:
+      - Task 2
+      - Task 3
+    status: complete
+    acceptance:
+      - GIVEN normal source data is available WHEN bare Agentera renders THEN the user sees the dashboard rather than a summary of source lines
+      - GIVEN the source next action names concrete work WHEN the dashboard renders THEN the next section names one concrete suggested action derived from that source
+      - GIVEN critical or degraded attention exists WHEN the dashboard renders THEN severity is visible in the attention section and the exit status reflects flagged or waiting state appropriately
+      - GIVEN the user has not approved a downstream capability WHEN orientation completes THEN the output waits for user confirmation instead of starting implementation work
+  - number: 5
+    name: Add Output And Runtime Regressions
+    depends_on:
+      - Task 4
+    status: complete
+    acceptance:
+      - GIVEN a captured or simulated bare Agentera response contains only raw source-style fields WHEN output evaluation runs THEN the check fails
+      - GIVEN a captured or simulated response renders the dashboard and includes the Hej exit marker WHEN output evaluation runs THEN the check passes
+      - GIVEN normal bare Agentera orientation is exercised WHEN the runtime trace is checked THEN exactly one composite source command is counted and individual routine state commands are absent
+      - GIVEN tests are added for this behavior WHEN proportionality is reviewed THEN each new testable unit has at least one passing and one failing case or a recorded rationale
+  - number: 6
+    name: Plan-Level Freshness And Version Checkpoint
+    depends_on:
+      - Task 1
+      - Task 2
+      - Task 3
+      - Task 4
+      - Task 5
+    status: complete
+    acceptance:
+      - GIVEN the rendering fix is complete WHEN freshness is updated THEN required docs, changelog, progress, TODO, and plan state describe the restored dashboard behavior and verification evidence
+      - GIVEN version policy applies to this fix WHEN release readiness is assessed THEN patch-version surfaces are updated or a no-bump rationale is recorded
+      - GIVEN validation completes WHEN the plan closes THEN focused dashboard tests, relevant CLI tests, semantic fixtures, capability validation, and the practical full test suite pass or skipped checks are justified
+      - GIVEN unrelated findings remain open WHEN the plan closes THEN hook validation, health freshness, optional live smoke, and registry follow-ups remain separate work
+overall_acceptance:
+  - GIVEN bare Agentera is invoked on a returning project WHEN normal source data is available THEN the user sees the README-style dashboard rather than raw CLI source fields
+  - GIVEN orientation gathers state WHEN normal data exists THEN the runtime path uses exactly one composite source command and no individual routine state commands or direct artifact reads
+  - GIVEN direct source users run the composite command WHEN they read its output THEN it remains compact state data and does not become the dashboard
+  - GIVEN future agents inspect the entry instructions WHEN they execute bare Agentera THEN the dashboard rendering contract and raw-source prohibition are visible at the dispatcher boundary
+validation:
+  summary: >
+    Restored the bare /agentera dashboard contract at the dispatcher boundary,
+    renamed the direct CLI sentinel to source_contract, preserved compact
+    agentera hej source output, added output/runtime regressions, and bumped
+    patch version surfaces to 2.1.1.
+  evidence:
+    - uv run pytest tests/test_hej_routing_fixture.py tests/test_query_cli.py::TestHej tests/test_cross_capability.py::test_master_skill_requires_cli_first_state_access tests/test_cross_capability.py::test_master_skill_exposes_bare_agentera_dashboard_boundary tests/test_bundle_freshness.py::test_stale_bundle_refresh_dry_run_then_apply_preserves_install_root tests/test_package_registry.py
+    - uv run scripts/validate_capability.py skills/agentera/capabilities/hej
+    - uv run scripts/validate_capability.py --self-validate
+    - uv run pytest tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_version_marker_is_documented tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_version_bearing_package_surfaces_align tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_agentera_version_reader_extracts_current_literal tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_surface_characterization_distinguishes_non_version_opencode_manifest
+    - uv run pytest -q
+  result: 713 passed
+surprises: []

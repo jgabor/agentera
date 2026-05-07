@@ -7,6 +7,7 @@
 ## → Normal
 
 - [ ] [agentera-capability-route-aliases] [feat] Implement one primary plain `/agentera <alias>` per capability while preserving canonical Swedish capability names: `status`→hej, `vision`→visionera, `discuss`→resonera, `research`→inspirera, `plan`→planera, `build`→realisera, `optimize`→optimera, `audit`→inspektera, `document`→dokumentera, `profile`→profilera, `design`→visualisera, `orchestrate`→orkestrera. Keep secondary phrases in trigger schemas and update README, docs/vocabulary, and tests.
+- [ ] [agentera-plain-prose-vocabulary] [refactor] Apply Decision 44 plain-English vocabulary: remove `freshness`, non-Git `checkpoint`, most `guard`, `Reality Verification Gate`, `conductor protocol`, `memory layer`, `operating record`, prose/label `drift`, and `DTC` from docs/vocabulary, capability prose, safe labels/tests, and active plan wording; preserve stable IDs/enums unless a deliberate migration is planned.
 - [ ] [agentera-optional-claude-live-smoke] Optional future-version work: add an explicit opt-in Claude Code live model-host smoke when Claude Pro/Max or API access is available. Current required live evidence covers Codex, Copilot, and OpenCode.
 - [ ] [install-root-generated-cross-language-contract] Optional follow-up: generate the JavaScript runtime install-root contract from the shared Python/interface fixture if fixture validation becomes insufficient. Current coverage validates `.opencode/plugins/agentera.js` against `.agentera/install_root_interface_model.yaml`, so this is not part of the closed install-root Module plan.
 

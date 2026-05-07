@@ -1,145 +1,133 @@
 header:
   level: full
-  created: '2026-05-06'
-  status: complete
-  reviewed: '2026-05-06'
-  critic_issues: "8 found, 8 addressed, 0 dismissed"
+  created: '2026-05-07'
+  status: active
+  reviewed: '2026-05-07'
+  critic_issues: "9 found, 9 addressed, 0 dismissed"
   revised: >
-    Added a source-field audit task, separated semantic output checks from runtime
-    one-command checks, made the one-command invariant precise, narrowed
-    docs/version updates, preserved direct CLI compactness, and replaced vague
-    "impossible to miss" wording with dispatcher-boundary acceptance.
-  title: Repair Bare Agentera Hej Dashboard Rendering
+    Added a prerequisite archive reference, narrowed the route/CLI boundary,
+    limited secondary wording to Decision 43, consolidated validation work,
+    softened version-bump assumptions, and made the final state sync explicit.
+  title: Implement Capability Route Aliases
 what: >
-  Repair the bare Agentera orientation path so a returning project produces the
-  README/pre-2.0 Hej dashboard instead of raw CLI-style source output, while
-  preserving the v2 one-command state-source invariant.
+  Implement Decision 43 by giving each Agentera capability one primary plain
+  `/agentera <alias>` route while keeping Swedish `-era` capability names
+  canonical. Secondary user wording stays in routing phrases, docs explain the
+  route/CLI split, and validation proves routing remains predictable.
 why: >
-  Agentera 2.x moved from standalone /hej to bundled /agentera with a composite
-  CLI data source. The dashboard contract remains in README.md,
-  skills/agentera/SKILL.md, hej prose, and semantic fixtures, but the live
-  assistant path can still miss the nested rendering contract and expose raw
-  source data.
+  Decision 43 reduces first-contact friction without renaming protocol objects.
+  Users can type memorable routes like `/agentera status`, `/agentera discuss`,
+  or `/agentera build`, while capabilities, artifacts, schemas, and historical
+  decisions keep their canonical names.
 constraints: >
-  Preserve agentera hej as compact source data for direct CLI users. During
-  normal bare /agentera orientation, the runtime path may invoke one composite
-  Agentera state-source command and must not invoke individual routine state
-  commands or direct artifact reads. Test fixtures may seed state. Do not mutate
-  vision or objective state. Do not implement unrelated hook validation, health
-  command freshness, optional live smoke, registry, remote push, commit, or
-  release publication work. Version bump only if docs policy requires it.
+  Preserve canonical Swedish capability names, existing bare `/agentera` hej
+  behavior, and the state-oriented `agentera` CLI command surface. Do not add
+  non-hej capability or alias commands to the CLI. Do not mutate vision or
+  objective state. Keep secondary phrases below explicit route aliases so
+  build, research, audit, and document intent is not stolen by vague discussion
+  wording.
 scope:
   included:
-    - archive the completed artifact registry plan before replacing the active plan
-    - audit current bare /agentera routing instructions and composite source fields
-    - surface the README-style dashboard rendering contract at the dispatcher boundary
-    - clarify source-data wording only if needed while preserving direct CLI behavior
-    - restore final user-facing dashboard rendering behavior for returning projects
-    - add separate output-shape and runtime/tool-trace regressions
-    - update only required docs, changelog, progress, TODO, and version surfaces
+    - archive the completed Hej dashboard plan before replacing the active plan
+    - define one primary alias per capability from Decision 43
+    - preserve secondary request wording without creating extra exact aliases
+    - update README and vocabulary documentation for aliases and route behavior
+    - prove routing behavior and capability validation
+    - assess version policy for the feature
+    - run the final state sync and close plan state
   excluded:
-    - artifact schema redesign
-    - routine per-artifact state reads during normal orientation
-    - broad runtime adapter rewrites
-    - artifact write validation hook split
-    - health command freshness fix
-    - optional Claude live model smoke
-    - package/runtime/install-root registry work
-    - objective or vision changes
-    - remote push, commit, tag, or release publication
+    - renaming capability directories, artifacts, or schema IDs
+    - changing the state-oriented `agentera <command>` CLI surface
+    - adding multiple exact aliases per capability
+    - broad vocabulary cleanup outside Decision 43
+    - remote push, release publication, or package-manager updates
+    - vision or objective edits
   deferred:
-    - [arch-artifact-write-validation]
-    - [audit-20-health-command-stale]
-    - [agentera-optional-claude-live-smoke]
+    - optional future alias telemetry or user research
 design: >
-  Keep agentera hej as the single compact state source. The skill boundary owns
-  transforming that source into the dashboard. The source contract should expose
-  enough state for mode, profile, health, issue counts, plan progress, objective,
-  attention, and next action without implying the dashboard has already been
-  rendered. Regressions should prove final user-facing output shape separately
-  from the one-command runtime invariant.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-06-deepen-artifact-registry-interface.yaml
+  Add deterministic route behavior at the dispatcher boundary: canonical
+  capability names and one primary plain `/agentera <alias>` route directly;
+  broader user phrasing remains secondary request language. Documentation
+  presents plain aliases first for user action, then preserves canonical names
+  as protocol identity. Validation proves the full alias map, route priority, CLI
+  separation, and fallback behavior.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-07-repair-bare-agentera-hej-dashboard-rendering.yaml
 tasks:
   - number: 1
-    name: Audit Route And Source Fields
+    name: Define Route Alias Contract
     depends_on: []
-    status: complete
+    status: pending
     acceptance:
-      - GIVEN a returning project invokes bare Agentera WHEN the current route is inspected THEN the source command, final rendering step, and user-facing output boundary are named before edits
-      - GIVEN the composite source output is compared to the dashboard contract WHEN required fields are listed THEN mode, profile, health, issue counts, plan progress, objective, attention, and next action are either present or recorded as source gaps
-      - GIVEN a source gap is found WHEN remediation is selected THEN the source contract is strengthened rather than adding routine fallback state reads to normal orientation
-      - GIVEN the one-command invariant is recorded WHEN tests are planned THEN test setup is separated from the normal runtime path being measured
+      - GIVEN the primary alias table is reviewed WHEN each alias is matched to a capability THEN all 12 aliases map to Decision 43 and no capability has zero or multiple primary aliases
+      - GIVEN canonical capability names are invoked WHEN alias routing exists THEN existing direct routes still bypass natural-language matching
+      - GIVEN slash routes and state commands share words WHEN documented THEN `/agentera plan` and `agentera plan` remain distinct
   - number: 2
-    name: Define Entry-Boundary Dashboard Contract
+    name: Make Alias Routing Observable
     depends_on:
       - Task 1
-    status: complete
+    status: pending
     acceptance:
-      - GIVEN a returning project invokes bare Agentera WHEN final output is rendered THEN the output includes the README-style logo, status section, non-empty attention section when source attention exists, next section, and Hej exit marker
-      - GIVEN source fields are available WHEN final output is rendered THEN raw source field labels are not used as the user-facing briefing
-      - GIVEN future agents inspect the entry instructions WHEN they route bare Agentera THEN the instruction to render the README-style dashboard is visible before nested capability prose is required
-      - GIVEN no attention items exist WHEN final output is rendered THEN the attention section is omitted rather than filled with invented content
+      - GIVEN `/agentera status`, `/agentera discuss`, and `/agentera build` are requested WHEN routing is evaluated THEN they route to hej, resonera, and realisera without disambiguation
+      - GIVEN non-exact requests such as `build everything` or `run the plan` are evaluated WHEN routing chooses a capability THEN existing concrete work intent is preserved
+      - GIVEN no alias or trigger matches WHEN routing runs THEN hej fallback is unchanged
   - number: 3
-    name: Clarify Source Data Semantics
+    name: Preserve Secondary Request Language
     depends_on:
       - Task 1
-    status: complete
+      - Task 2
+    status: pending
     acceptance:
-      - GIVEN a direct user runs the composite source command WHEN output is read THEN it remains compact source data and is not reformatted as the dashboard
-      - GIVEN source-data wording could imply rendering is complete WHEN the wording is reviewed THEN it is removed, renamed, or explicitly justified with test coverage
-      - GIVEN normal orientation data is available WHEN bare Agentera runs THEN no individual routine state command or direct artifact read is part of the normal runtime path
-      - GIVEN source wording changes are made WHEN CLI behavior is checked THEN direct source users retain the same actionable state facts
+      - GIVEN accepted secondary wording such as `deliberate`, `brainstorm`, `rubber duck`, `brief`, and `what's next` is used WHEN routing is evaluated THEN it reaches the intended capability without becoming a primary alias
+      - GIVEN discussion wording appears with build, research, audit, or document intent WHEN routing runs THEN concrete work intent wins or disambiguates
+      - GIVEN supported secondary phrases are documented WHEN users read examples THEN primary aliases remain singular
   - number: 4
-    name: Restore Dashboard Rendering Behavior
+    name: Document Alias And Command Surfaces
+    depends_on:
+      - Task 1
+      - Task 2
+      - Task 3
+    status: pending
+    acceptance:
+      - GIVEN a first-time user reads capability docs WHEN aliases appear THEN every canonical name has exactly one visible plain route alias
+      - GIVEN docs show slash routes and state commands together WHEN a user follows examples THEN alias names are not taught as CLI state commands
+      - GIVEN vocabulary docs define direct routes WHEN alias language appears THEN `status`, `discuss`, and the one-primary-alias rule are preserved
+  - number: 5
+    name: Prove Routing Behavior
     depends_on:
       - Task 2
       - Task 3
-    status: complete
-    acceptance:
-      - GIVEN normal source data is available WHEN bare Agentera renders THEN the user sees the dashboard rather than a summary of source lines
-      - GIVEN the source next action names concrete work WHEN the dashboard renders THEN the next section names one concrete suggested action derived from that source
-      - GIVEN critical or degraded attention exists WHEN the dashboard renders THEN severity is visible in the attention section and the exit status reflects flagged or waiting state appropriately
-      - GIVEN the user has not approved a downstream capability WHEN orientation completes THEN the output waits for user confirmation instead of starting implementation work
-  - number: 5
-    name: Add Output And Runtime Regressions
-    depends_on:
       - Task 4
-    status: complete
+    status: pending
     acceptance:
-      - GIVEN a captured or simulated bare Agentera response contains only raw source-style fields WHEN output evaluation runs THEN the check fails
-      - GIVEN a captured or simulated response renders the dashboard and includes the Hej exit marker WHEN output evaluation runs THEN the check passes
-      - GIVEN normal bare Agentera orientation is exercised WHEN the runtime trace is checked THEN exactly one composite source command is counted and individual routine state commands are absent
-      - GIVEN tests are added for this behavior WHEN proportionality is reviewed THEN each new testable unit has at least one passing and one failing case or a recorded rationale
+      - GIVEN the alias map is exercised WHEN validation runs THEN each alias reaches its `Decision 43` capability and target drift fails
+      - GIVEN canonical names, existing request phrases, fallback, and disambiguation are exercised WHEN validation runs THEN existing routing behavior still passes
+      - GIVEN new route checks are added WHEN proportionality is reviewed THEN each testable unit has pass/fail evidence or a recorded rationale
   - number: 6
-    name: Plan-Level Freshness And Version Checkpoint
+    name: Version And Release Readiness Check
+    depends_on:
+      - Task 5
+    status: pending
+    acceptance:
+      - GIVEN this `feat` is complete WHEN version policy is evaluated THEN required version files are updated or a no-bump rationale is recorded
+      - GIVEN version values change WHEN compatibility checks run THEN runtime and package readers agree
+      - GIVEN no release publication was approved WHEN version work completes THEN no tag, push, or package update occurs
+  - number: 7
+    name: Final State Sync, The Plan-Level Freshness Checkpoint
     depends_on:
       - Task 1
       - Task 2
       - Task 3
       - Task 4
       - Task 5
-    status: complete
+      - Task 6
+    status: pending
     acceptance:
-      - GIVEN the rendering fix is complete WHEN freshness is updated THEN required docs, changelog, progress, TODO, and plan state describe the restored dashboard behavior and verification evidence
-      - GIVEN version policy applies to this fix WHEN release readiness is assessed THEN patch-version surfaces are updated or a no-bump rationale is recorded
-      - GIVEN validation completes WHEN the plan closes THEN focused dashboard tests, relevant CLI tests, semantic fixtures, capability validation, and the practical full test suite pass or skipped checks are justified
-      - GIVEN unrelated findings remain open WHEN the plan closes THEN hook validation, health freshness, optional live smoke, and registry follow-ups remain separate work
+      - GIVEN implementation is complete WHEN final state sync runs THEN TODO, CHANGELOG, PROGRESS, docs metadata, and plan state reflect Decision 43 execution evidence
+      - GIVEN the active plan closes WHEN all tasks are complete THEN future `/agentera` briefing no longer treats it as pending work
+      - GIVEN unrelated TODOs remain WHEN closure completes THEN optional live-smoke and install-root follow-ups stay separate, and vision/objective state is untouched
 overall_acceptance:
-  - GIVEN bare Agentera is invoked on a returning project WHEN normal source data is available THEN the user sees the README-style dashboard rather than raw CLI source fields
-  - GIVEN orientation gathers state WHEN normal data exists THEN the runtime path uses exactly one composite source command and no individual routine state commands or direct artifact reads
-  - GIVEN direct source users run the composite command WHEN they read its output THEN it remains compact state data and does not become the dashboard
-  - GIVEN future agents inspect the entry instructions WHEN they execute bare Agentera THEN the dashboard rendering contract and raw-source prohibition are visible at the dispatcher boundary
-validation:
-  summary: >
-    Restored the bare /agentera dashboard contract at the dispatcher boundary,
-    renamed the direct CLI sentinel to source_contract, preserved compact
-    agentera hej source output, added output/runtime regressions, and bumped
-    patch version surfaces to 2.1.1.
-  evidence:
-    - uv run pytest tests/test_hej_routing_fixture.py tests/test_query_cli.py::TestHej tests/test_cross_capability.py::test_master_skill_requires_cli_first_state_access tests/test_cross_capability.py::test_master_skill_exposes_bare_agentera_dashboard_boundary tests/test_bundle_freshness.py::test_stale_bundle_refresh_dry_run_then_apply_preserves_install_root tests/test_package_registry.py
-    - uv run scripts/validate_capability.py skills/agentera/capabilities/hej
-    - uv run scripts/validate_capability.py --self-validate
-    - uv run pytest tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_version_marker_is_documented tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_version_bearing_package_surfaces_align tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_agentera_version_reader_extracts_current_literal tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_surface_characterization_distinguishes_non_version_opencode_manifest
-    - uv run pytest -q
-  result: 713 passed
+  - GIVEN all primary aliases from Decision 43 are used as `/agentera <alias>` requests WHEN routing is evaluated THEN each routes to the intended capability without renaming canonical Agentera objects
+  - GIVEN users read README and vocabulary docs WHEN they compare slash routes to state commands THEN they can tell `/agentera plan` from `agentera plan`
+  - GIVEN secondary phrasing is used WHEN the request has more specific build, research, audit, document, or orchestration intent THEN the more specific capability wins or Agentera asks for disambiguation
+  - GIVEN validation completes WHEN the plan is ready to close THEN alias routing, canonical routing, trigger routing, fallback behavior, capability contracts, and version policy have evidence
 surprises: []
