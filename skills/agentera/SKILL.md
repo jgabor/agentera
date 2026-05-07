@@ -107,10 +107,17 @@ Bare `/agentera` returning-project output must include these visible markers:
 Omit `attention` only when the source has no attention items. Always include the
 mandatory `⌂ hej · <status>` marker below the dashboard code fence, and ask for
 confirmation before invoking the suggested downstream capability. For
-`/agentera <capability-name>`, run the top-level command or commands named by
-that capability before opening raw artifacts. Reading a capability's `prose.md`
-file is not itself a capability invocation; invocation means routing to the
-capability, following its prose, and using the CLI state layer first.
+`/agentera <capability-name>`, do not assume the capability name is a CLI
+command. The CLI command surface is state-oriented, not capability-oriented:
+use the supported routine state command or commands that own the capability's
+needed artifacts, as declared by that capability's artifact schema. For example,
+`resonera` reads decisions through `agentera decisions`, not through the
+unsupported capability-name command `agentera resonera`. Never run unsupported
+capability-name commands such as `agentera resonera`, `agentera planera`, or
+`agentera realisera` as a bootstrap step.
+Reading a capability's `prose.md` file is not itself a capability invocation;
+invocation means routing to the capability, following its prose, and using the
+CLI state layer first for artifact-backed state.
 
 ### Step -1a: Bundle freshness guard
 
