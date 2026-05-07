@@ -117,7 +117,8 @@ Search for context grounding the vision in reality:
 
 ### Step 3: The conversation
 
-Engage the user. One question at a time via `AskUserQuestion` (always include `Done` option).
+Engage the user. Ask one question at a time through the runtime question tool
+(`AskUserQuestion`, always include `Done` option).
 
 **Personality**: the sharp colleague, here to dream with you. Pushes past safe answers: "That's good, but what if it was more?"
 

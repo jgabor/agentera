@@ -143,9 +143,10 @@ uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
 
 If the command fails before argparse, reports `invalid choice` for `hej`, lacks
 `hej` in `--help`, has a stale or missing `.agentera-bundle.json` marker, or the
-fresh diagnostic reports stale/blocked status, do not silently fall through to
-the local checkout as a success. Report the bundle freshness gap with the root,
-resolution source, and expected version, then run or show the clone-free preview:
+bundle-status diagnostic reports stale/blocked status, do not silently fall
+through to the local checkout as a success. Tell the user the installed Agentera
+bundle is stale, then report the root, resolution source, expected version, and
+clone-free preview:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --dry-run

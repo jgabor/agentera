@@ -1,115 +1,4 @@
 decisions:
-- number: 31
-  date: '2026-04-12'
-  question: How should optimera represent multiple objectives, and should `.optimera/` consolidate under `.agentera/`?
-  context: Today optimera pins a single OBJECTIVE.md / EXPERIMENTS.md / `.optimera/harness`. Rotating targets (hej-token to
-    realisera-token) requires hand-written archive moves. `.optimera/` lives outside `.agentera/`, splitting artifact roots.
-    Decision 4 established single-root artifact resolution via `.agentera/DOCS.md`.
-  alternatives:
-  - name: Flat files + registry
-    status: rejected
-    description: keep OBJECTIVE.md/EXPERIMENTS.md in `.agentera/`, add a registry file with an active pointer. More machinery,
-      single-objective illusion.
-  - name: Active symlink
-    status: rejected
-    description: named subdirs with a symlink marking the active one. Cross-platform fragility.
-  - name: 'Named subdirs, self-contained: one directory per objective u'
-    status: chosen
-    description: 'Named subdirs, self-contained: one directory per objective under `.agentera/optimera/`, each containing
-      OBJECTIVE.md, EXPERIMENTS.md, harness, helpers, vehicle/, runs/. No registry, no symlinks. Directory existence is the
-      registry.'
-  choice: "Named subdirs under `.agentera/optimera/`. Each objective is fully self-contained (helpers duplicated per-objective,\
-    \ no shared dir). Active objective inferred from context: single objective = use it, multiple = most recent activity,\
-    \ ambiguous = ask. DOCS.md drops OBJECTIVE.md/EXPERIMENTS.md from artifact mapping (optimera owns its own path resolution).\
-    \ One-shot migration of existing hej-token and realisera-token data.\n  **Reasoning**: Convention over configuration.\
-    \ The directory structure IS the multi-objective representation. Self-contained objectives are independently archivable,\
-    \ independently measurable, and require zero coordination. Single root under `.agentera/` aligns with Decision 4. Dropping\
-    \ DOCS.md mapping is correct because OBJECTIVE.md/EXPERIMENTS.md are no longer at fixed paths.\n  **Confidence**: firm\n\
-    \  **Feeds into**: TODO.md (implementation), optimera SKILL.md (path changes), DOCS.md (mapping update), .gitignore (path\
-    \ update)"
-  reasoning: "Convention over configuration. The directory structure IS the multi-objective representation. Self-contained\
-    \ objectives are independently archivable, independently measurable, and require zero coordination. Single root under\
-    \ `.agentera/` aligns with Decision 4. Dropping DOCS.md mapping is correct because OBJECTIVE.md/EXPERIMENTS.md are no\
-    \ longer at fixed paths.\n  **Confidence**: firm\n  **Feeds into**: TODO.md (implementation), optimera SKILL.md (path\
-    \ changes), DOCS.md (mapping update), .gitignore (path update)"
-  confidence: provisional
-  feeds_into: TODO.md (implementation), optimera SKILL.md (path changes), DOCS.md (mapping update), .gitignore (path update)
-- number: 32
-  date: '2026-04-26'
-  question: How should agentera observe its own usage across host runtimes and feed adoption signal back into the suite?
-  context: 'Profilera mines Claude Code, OpenCode, Copilot, and Codex sessions into a Section 21 corpus envelope (Decision
-    27). The corpus is consumed only by PROFILE.md generation. Agentera ships no mechanism to ask "how is the suite being
-    used?": adoption stats, completion ratios, slash-vs-NL trigger reliability.'
-  alternatives:
-  - name: 'One-off diagnostic script: cheap, throw-away; no recurring v'
-    status: rejected
-    description: 'One-off diagnostic script: cheap, throw-away; no recurring value.'
-  - name: New skill (e.g. /telemetera)
-    status: rejected
-    description: full lifecycle, heavy for descriptive analytics.
-  - name: Reusable script under scripts/
-    status: rejected
-    description: re-runnable, no SKILL.md ceremony, can grow into a skill later.
-  choice: "`scripts/usage_stats.py` reading the existing Section 21 corpus. Detects invocations via skill workflow markers\
-    \ (`─── <glyph> <skill> · <phase> ───`) in assistant turns. Pairs each marker with its matching exit signal to count completed\
-    \ workflows; orphans count as incomplete. Tags each invocation slash-vs-NL by inspecting the prior user turn. Cross-project\
-    \ default with `--project PATH` to scope. Writes markdown to `~/.local/share/agentera/USAGE.md` (sibling to PROFILE.md)\
-    \ plus a brief stdout summary. Flags: `--json` for machine output; generated-at timestamp combats staleness.\n  **Reasoning**:\
-    \ Workflow markers unify slash and NL triggering, especially in OpenCode where slash UX differs. Completed workflows measure\
-    \ follow-through, not just intent. Global XDG path matches PROFILE.md and fits cross-project scope naturally. A script\
-    \ avoids skill-lifecycle overhead while leveraging the existing corpus pipeline. Friction and failure analysis are deferred\
-    \ until an adoption baseline exists.\n  **Confidence**: provisional\n  **Feeds into**: TODO.md (implementation), standalone"
-  reasoning: "Workflow markers unify slash and NL triggering, especially in OpenCode where slash UX differs. Completed workflows\
-    \ measure follow-through, not just intent. Global XDG path matches PROFILE.md and fits cross-project scope naturally.\
-    \ A script avoids skill-lifecycle overhead while leveraging the existing corpus pipeline. Friction and failure analysis\
-    \ are deferred until an adoption baseline exists.\n  **Confidence**: provisional\n  **Feeds into**: TODO.md (implementation),\
-    \ standalone"
-  confidence: provisional
-  feeds_into: TODO.md (implementation), standalone
-- number: 33
-  date: '2026-04-28'
-  question: 'How should Agentera make multi-runtime setup feel simple while
-
-    keeping the 1.20 release stable?'
-  context: 'The 1.20 release supports Claude Code, OpenCode, Copilot CLI, and
-
-    Codex CLI, but setup still reads as four runtime stories plus helper scripts.
-
-    Marketplace users should not need a git clone to access shared tools. Skill
-
-    workflow scripts can live inside their owning skill, but doctor, installer,
-
-    hooks, validators, and compaction are suite infrastructure. No behavioral skill
-
-    should own them. Single-skill installs must still work for core behavior.'
-  alternatives:
-  - name: Docs-only setup polish
-    status: rejected
-    description: leaves the real product gap unresolved.
-  - name: Root scripts only
-    status: rejected
-    description: requires a clone and weakens marketplace installs.
-  - name: One skill owns doctor/install
-    status: rejected
-    description: violates standalone-and-mesh ownership.
-  - name: External CLI first
-    status: rejected
-    description: useful later, but adds another distribution surface.
-  - name: Suite bundle first
-    status: chosen
-    description: aggregate installs carry shared infrastructure.
-  choice: "Make the installable Agentera suite bundle the primary home for\n  shared tools. Runtime marketplace installs should\
-    \ include skills, shared\n  scripts, hooks, manifests, and docs in one package root. `AGENTERA_HOME` points\n  to that\
-    \ installed root, not necessarily a clone. Doctor validates that bundle\n  without mutation; installer applies confirmed\
-    \ runtime-native fixes. External\n  CLI support is deferred.\n  **Reasoning**: Standalone skills mean core workflow independence,\
-    \ not that each\n  skill must carry every shared helper. Suite installs should provide suite\n  infrastructure. This keeps\
-    \ behavioral skill ownership clean while letting\n  co-installed skills mesh through one verified package root.\n  **Confidence**:\
-    \ firm\n  **Feeds into**: PLAN.md, README.md, scripts/"
-  reasoning: "Standalone skills mean core workflow independence, not that each\n  skill must carry every shared helper. Suite\
-    \ installs should provide suite\n  infrastructure. This keeps behavioral skill ownership clean while letting\n  co-installed\
-    \ skills mesh through one verified package root.\n  **Confidence**: firm\n  **Feeds into**: PLAN.md, README.md, scripts/"
-  confidence: provisional
-  feeds_into: PLAN.md, README.md, scripts/
 - number: 34
   date: '2026-04-29'
   question: How should agentera prevent artifact prose from snowballing toward verbosity and abstraction over long-running
@@ -400,7 +289,35 @@ decisions:
     \ logic update), README.md (user-facing docs), capability prose.md (trigger pattern refinement)"
   confidence: provisional
   feeds_into: SKILL.md (routing logic update), README.md (user-facing docs), capability prose.md (trigger pattern refinement)
+- number: 43
+  date: '2026-05-07'
+  question: How should Agentera expose plain user-facing routes without losing canonical Swedish capability identity?
+  context: The 2026-05-07 vocabulary deliberation settled on "Brand the worldview. Boring-name the work." Users should not
+    need to know Swedish capability names first, but Decisions 39-40 made capabilities canonical v2 protocol objects and
+    Decision 42 routes explicit capability names through `/agentera`.
+  alternatives:
+  - name: Rename capabilities to plain English
+    status: rejected
+    description: Clearer first contact, but high churn across directories, schemas, artifacts, markers, tests, and product identity.
+  - name: Trigger phrases only
+    status: rejected
+    description: Improves natural-language routing but gives users no stable plain shortcut.
+  - name: One primary plain alias per capability
+    status: chosen
+    description: Keep canonical names and add a small documented action alias surface; colloquial variants stay in trigger schemas.
+  choice: >-
+    Keep Swedish `-era` names canonical and add one primary plain `/agentera <alias>` per capability: `status`, `vision`,
+    `discuss`, `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`, `design`, and `orchestrate`.
+  reasoning: >-
+    Aliases reduce first-contact friction without renaming protocol objects. Exact aliases stay few and stable; secondary
+    phrases like `brief`, `what's next`, `deliberate`, `brainstorm`, and `rubber duck` belong in trigger schemas so they do
+    not become canonical identity.
+  confidence: firm
+  feeds_into: SKILL.md routing, schemas/triggers.yaml, README.md, docs/vocabulary.md, tests
 archive:
+- 'Decision 31 (2026-04-12): [Named per-objective subdirs] — Self-contained optimera objectives live under `.agentera/optimera/`.'
+- 'Decision 32 (2026-04-26): [`scripts/usage_stats.py`] — Usage analytics count completed workflows from session corpus markers.'
+- 'Decision 33 (2026-04-28): [Suite bundle first] — Installed suite bundle owns shared tools and runtime infrastructure.'
 - 'Decision 1 (2026-03-29): **Question**: How should planera (a planning skill) be designed to fit the agent-skills suite?'
 - 'Decision 2 (2026-03-29): **Question**: Should the vision brainstorm be extracted from realisera into a dedicated skill?'
 - 'Decision 3 (2026-03-29): **Question**: How should dokumentera (a documentation skill) be designed for the suite?'

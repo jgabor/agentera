@@ -41,8 +41,8 @@ implemented by `scripts/install_root.py`: `AGENTERA_HOME` when set, otherwise th
 default durable root `$HOME/.agents/agentera`. Treat managed, stale, missing,
 invalid, and unmanaged root semantics as Module-owned contract states. If the
 installed command is stale, missing `hej`, fails before argparse, or has a stale
-`.agentera-bundle.json` marker, treat it as a bundle freshness gap. Preview the
-repair with:
+`.agentera-bundle.json` marker, tell the user the installed Agentera bundle is
+stale and preview the repair with:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
@@ -81,8 +81,8 @@ VT14, flow arrow VT17, skill glyphs SG1-SG12, exits EX1-EX4, issues SI1-SI4.
 ## Step 0: Detect mode
 
 Run the resolved installed `agentera hej` and use its `mode` field. If the
-installed bundle freshness guard fires, show the refresh preview before normal
-mode handling.
+install status check fails because the installed bundle is stale, show the
+refresh preview before normal mode handling.
 
 - **No artifacts found** → Step 1a (first time on this project)
 - **Artifacts found** → Step 1b (returning to known project)

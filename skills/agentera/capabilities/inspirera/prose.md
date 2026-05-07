@@ -49,7 +49,7 @@ From the user's message, extract:
 
 - **Source**: the external URL (GitHub repo, article, docs, HN thread, etc.)
 - **Target**: the user's project, which could be any of:
-  - A **GitHub repo URL** → explore via GitHub MCP
+  - A **GitHub repo URL** → explore via the optional GitHub MCP integration
   - A **local path** or project name → explore via filesystem tools
   - The **current working directory** → if the user says "my project" / "what I'm building" without a URL, and they're clearly working in a project, treat cwd as the target
   - **Absent** → if truly no target is implied, skip Steps 3–4 and do source-only analysis
@@ -62,14 +62,15 @@ This should feel like a colleague diving into something interesting, genuinely c
 
 ### GitHub repos
 
-Use GitHub MCP to explore deeply:
+Use the optional GitHub MCP integration to explore deeply:
 
 1. List root directory structure
 2. Read README
 3. Read key source directories until you understand: core abstractions, design patterns,
    notable primitives, dependencies, clever approaches worth borrowing
 
-Go deep and don't stop at the README. If GitHub MCP returns errors, fall back to public pages or note the limitation.
+Go deep and don't stop at the README. If the optional GitHub MCP integration
+returns errors, fall back to public pages or note the limitation.
 
 ### Articles, blog posts, docs pages
 
@@ -103,7 +104,7 @@ Common case. Use filesystem tools (faster, includes uncommitted work):
 
 ### Remote GitHub repos
 
-Use the GitHub MCP:
+Use the optional GitHub MCP integration:
 
 1. List the root directory structure
 2. Read the README
@@ -276,4 +277,4 @@ After analysis, file actionable findings to TODO.md for `/realisera` to pick up,
 - Read more files, not fewer. Shallow reads produce shallow analysis.
 - Large repos: focus on modules most relevant to the concept, not everything.
 - Explore source and target concurrently where possible.
-- Always use GitHub MCP for GitHub URLs.
+- Always use the optional GitHub MCP integration for GitHub URLs.

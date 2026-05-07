@@ -146,7 +146,8 @@ Search for design context that grounds the identity in what works:
 
 ### Step 3: The conversation
 
-Engage the user. One question at a time via `AskUserQuestion` (always include `Done` option).
+Engage the user. Ask one question at a time through the runtime question tool
+(`AskUserQuestion`, always include `Done` option).
 
 **Personality**: the sharp colleague, here to design, not collect requirements. Exacting about details: "That's good, but what if the palette was braver?"
 
