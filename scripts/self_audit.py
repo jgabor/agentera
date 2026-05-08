@@ -50,7 +50,7 @@ _PER_ENTRY_BUDGETS: dict[str, int] = {
 # ---------------------------------------------------------------------------
 
 _FILE_PATH_RE = re.compile(
-    r"\b(?:[a-zA-Z0-9_\-./]+/)+[a-zA-Z0-9_\-.]+\.[a-zA-Z]{1,10}\b"
+    r"\b(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+\.[A-Za-z]{1,10}\b"
 )
 
 _LINE_NUMBER_RE = re.compile(r":\d{2,}\b")
