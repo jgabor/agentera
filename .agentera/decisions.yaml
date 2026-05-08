@@ -1,94 +1,4 @@
 decisions:
-- number: 37
-  date: '2026-04-29'
-  question: Should hooks/validate_artifact.py add an explicit fail-open contract to prevent crashes from blocking agent writes?
-  context: The hook currently exits 0 for Claude Code (advisory warnings) but uses deny/exit-2 for Copilot, OpenCode, and
-    Codex pre-write paths. There is no top-level exception handler — an unhandled crash would propagate and could block all
-    writes. The inspirera analysis identified open-bias's fail-open pattern (safe_hook catches all, logs, passes through)
-    as a low-effort safety improvement.
-  alternatives:
-  - name: Top-level try/except only
-    status: chosen
-    description: wrap main() in try/except — catch all exceptions, log with traceback, exit 0. Existing blocking logic unchanged.
-      No timeout. Minimal, immediately effective.
-  - name: Full contract with timeout
-    status: rejected
-    description: adds platform-dependent complexity (signal handling) without proportional safety gain at v1.
-  - name: Do nothing
-    status: rejected
-    description: implicit fail-open is not the same as explicit. The contract should be unambiguous.
-  choice: Wrap main() in hooks/validate_artifact.py with a top-level try/except. On unhandled exception, log the error with
-    traceback to stderr and exit 0 (allow through). Add a comment documenting the fail-open contract. No changes to existing
-    blocking paths.
-  reasoning: One try/except prevents crashes from blocking the agent. The existing blocking paths (structural violations on
-    Copilot/OpenCode/Codex) are explicit and intentional — they don't need fail-open protection. This catches only the unexpected.
-  confidence: firm
-  feeds_into: TODO.md
-- number: 38
-  date: '2026-04-30'
-  question: How should Agentera implement SOB-inspired structured-output benchmark concepts?
-  context: Inspirera analysis of Interfaze SOB showed that schema-valid output can still be value-wrong. Agentera has runtime
-    smoke tests in `scripts/eval_skills.py`, artifact validators in `hooks/validate_artifact.py`, and Section 20 reality verification,
-    but `eval_skills.py` explicitly does not evaluate output correctness.
-  alternatives:
-  - name: Anchor on value-level skill evals
-    status: chosen
-    description: tests visible skill output and artifact-derived meaning before broader scoring.
-  - name: Anchor on artifact field recall
-    status: rejected
-    description: useful later, but risks repeating the schema-only trap.
-  - name: Anchor on weighted summaries
-    status: rejected
-    description: premature until semantic correctness signals exist.
-  - name: Extend eval_skills.py directly
-    status: rejected
-    description: smoke and semantic evals have different boundaries.
-  choice: "Add a separate stdlib semantic eval surface, starting with `hej` routing fixtures that assert both output facts\
-    \ and artifact-derived next-action correctness.\n  **Reasoning**: `hej` proves the core SOB lesson in Agentera terms:\
-    \ a clean response is not enough if it routes to the wrong concrete work. A separate script keeps runtime smoke checks\
-    \ simple while semantic fixtures grow.\n  **Confidence**: firm\n  **Feeds into**: TODO.md"
-  reasoning: "`hej` proves the core SOB lesson in Agentera terms: a clean response is not enough if it routes to the wrong\
-    \ concrete work. A separate script keeps runtime smoke checks simple while semantic fixtures grow.\n  **Confidence**:\
-    \ firm\n  **Feeds into**: TODO.md"
-  confidence: provisional
-  feeds_into: TODO.md
-- number: 39
-  date: '2026-05-04'
-  question: What should Agentera 2.0 look like, and should it be a rewrite or an incremental refactor?
-  context: 'After 254+ cycles, 38 decisions, 577 tests, and 4 runtime targets, three systemic pains dominate: token consumption
-    per session is high (large SKILL.md payloads + artifact ceremony), maintenance surface is scattered (3-way artifact identity
-    sync, 908-line validate_artifact.py monolith, ~180 lines duplicated install-root logic), and the 12-skill model fragments
-    the feedback loop across many files. The system works but is costly to operate and heavy to evolve.'
-  alternatives:
-  - name: Targeted refactors
-    status: rejected
-    description: 'fix 3-way sync, decompose validate_artifact.py, extract shared scripts. ~70% of maintenance benefit at ~10%
-      of cost. Rejected: doesn''t address token consumption or artifact ceremony, which are structural problems.'
-  - name: 12 autonomous skills with companion schemas
-    status: rejected
-    description: 'keep the current distribution model but add per-skill schemas and selective reading. Rejected: cross-skill
-      mesh complexity persists; the 12-file distribution model remains a token tax.'
-  - name: Single bundled skill with capability schemas
-    status: chosen
-    description: one install, one entry point, 12 capabilities as sub-modules with lean prose + companion schemas. Chosen.
-  choice: "Agentera 2.0 is a single bundled skill (`/agentera`) with 12 capabilities. Each capability has lean behavioral\
-    \ prose + companion schemas (artifact shapes, validation rules, triggers). A thin shared protocol schema covers confidence,\
-    \ severity, and visual tokens. SPEC.md dissolves into capability schemas. Artifacts split: 3 human-facing at root (TODO.md,\
-    \ CHANGELOG.md, DESIGN.md), rest as structured agent-facing data in `.agentera/`. A universal query CLI replaces direct\
-    \ artifact reads. Master SKILL.md starts full (hej-style orientation + routing), optimizes toward thin schema-driven dispatcher\
-    \ over time. Transition: big bang cutover from a feat/v2 branch/worktree.\n  **Reasoning**: The feedback loop is the core\
-    \ product, and it's fragmented across 12 skill files and 12 artifact formats. Bundling with schema-driven dispatch and\
-    \ a query CLI concentrates the loop into one deep module. Structured artifacts + query CLI eliminates the read/write ceremony\
-    \ that burns tokens. The worktree strategy preserves the working system during development. The strongest blind spot (master\
-    \ SKILL.md becoming a God Object) is mitigated by schema-driven routing and a stated optimization trajectory from full\
-    \ to thin.\n  **Confidence**: firm\n  **Feeds into**: ROADMAP.md, VISION.md"
-  reasoning: "The feedback loop is the core product, and it's fragmented across 12 skill files and 12 artifact formats. Bundling\
-    \ with schema-driven dispatch and a query CLI concentrates the loop into one deep module. Structured artifacts + query\
-    \ CLI eliminates the read/write ceremony that burns tokens. The worktree strategy preserves the working system during\
-    \ development. The strongest blind spot (master SKILL.md becoming a God Object) is mitigated by schema-driven routing\
-    \ and a stated optimization trajectory from full to thin.\n  **Confidence**: firm\n  **Feeds into**: ROADMAP.md, VISION.md"
-  confidence: provisional
-  feeds_into: ROADMAP.md, VISION.md
 - number: 40
   date: '2026-05-04'
   question: 'How should the four open questions from the ROADMAP be resolved: artifact format, master SKILL.md size, backward
@@ -326,7 +236,102 @@ decisions:
     makes handoffs more consistent, and keeps the release scope smaller than lifecycle archival or YAML write support.
   confidence: firm
   feeds_into: SKILL.md, capability prose, tests, CHANGELOG.md, docs/vocabulary.md
+- number: 47
+  date: '2026-05-08'
+  question: How should Agentera rename bundle semantics and organize app, profile, and user data roots?
+  context: >-
+    Current `AGENTERA_HOME` means a replaceable installed bundle root, while `PROFILE.md` lives in the platform data directory.
+    That split makes “bundle” leak into user language and blurs mutable user data versus managed app files.
+  alternatives:
+  - name: App-home layout
+    status: chosen
+    description: >-
+      `AGENTERA_HOME` is a durable platform data home; managed app files live under `AGENTERA_HOME/app`; profile and usage data live at the home root.
+  - name: Rename only in user-facing prose
+    status: rejected
+    description: Keeps root semantics and internal contracts confusing.
+  - name: Keep current bundle root
+    status: rejected
+    description: Preserves the profile/app split and stale install-root ambiguity.
+  - name: Mutate through doctor
+    status: rejected
+    description: Makes the self-check command write state instead of preserving read-only diagnostics.
+  choice: >-
+    Replace bundle terminology with app terminology across live internals, redefine default `AGENTERA_HOME` as the platform data home, place the managed Agentera app under `AGENTERA_HOME/app`, and keep `PROFILE.md`, `USAGE.md`, history, and intermediate corpus data under `AGENTERA_HOME`.
+  reasoning: >-
+    “Install the Agentera app” is clearer than “install the Agentera bundle,” and home/app separation protects user data from app refreshes. `agentera doctor` should detect legacy bundle-root installs and report migration_required with exact dry-run/apply commands; `agentera upgrade` owns the idempotent migration writes.
+  confidence: firm
+  feeds_into: TODO.md, PLAN.md, README.md, UPGRADE.md, scripts/install_root.py, scripts/agentera_upgrade.py, scripts/agentera, package/runtime registries, tests
+- number: 48
+  date: '2026-05-08'
+  question: How should Agentera expose self-audit and maintainer scripts through the CLI?
+  context: >-
+    Agents currently call `scripts/self_audit.py` through inline Python for pre-write artifact checks. Decision 45 made the
+    CLI an agent-ready state interface, and Decision 47 keeps `agentera doctor` read-only for install/app/runtime diagnostics
+    while `agentera upgrade` owns writes. README still exposes several direct maintainer scripts.
+  alternatives:
+  - name: Add agentera lint first
+    status: chosen
+    description: >-
+      Expose self-audit through a dedicated lint namespace with structured output, advisory default behavior, and optional strict mode.
+  - name: Fold self-audit into doctor
+    status: rejected
+    description: >-
+      Blurs doctor beyond install/app/runtime health into artifact prose quality and codebase health.
+  - name: Merge all scripts now
+    status: rejected
+    description: >-
+      Creates a junk-drawer CLI before stable command namespaces are defined.
+  - name: Keep scripts only
+    status: rejected
+    description: >-
+      Leaves agents using ad hoc inline Python for a contractually required pre-write check.
+  choice: >-
+    Expose `scripts/self_audit.py` through `agentera lint` first. Keep `agentera doctor` scoped to install/app/runtime diagnostics.
+    Promote other scripts only behind cohesive namespaces: `agentera validate` for validators, `agentera verify` or `agentera smoke`
+    for eval and smoke gates, and `agentera corpus`/`agentera usage` for profile analytics. Keep registry/model modules private.
+  reasoning: >-
+    A lint command solves the immediate agent ergonomics problem without changing doctor semantics. Script promotion should be
+    driven by stable workflow value and structured I/O, not by the existence of a standalone Python file.
+  confidence: firm
+  feeds_into: TODO.md, scripts/agentera, README.md, capability prose, tests
+- number: 49
+  date: '2026-05-08'
+  question: What TODO.md item contract should replace ISS-N counters and bracketed slug IDs?
+  context: >-
+    `skills/agentera/references/contract.md` still documents `ISS-N` TODO identities while live `TODO.md` items use bracketed
+    slugs such as `[agentera-221-...]`. The user rejected both as volatile, duplicate-prone manual identity, but still wants
+    an optional exact release target such as `2.2.5` or patch-lane target such as `2.2.x`.
+  alternatives:
+  - name: Keep ISS-N counters
+    status: rejected
+    description: Requires a central counter and creates collision/renumbering risk during concurrent artifact edits.
+  - name: Keep bracketed slug IDs
+    status: rejected
+    description: Human-generated slugs drift, duplicate easily, and make TODO lines noisier than the work requires.
+  - name: Separate release-target tag
+    status: rejected
+    description: Parseable, but adds a second metadata token when one token can express both required type and optional target.
+  - name: Single type-or-type-target tag
+    status: chosen
+    description: Use `[type]` for untargeted work, `[type:X.Y.Z]` for work targeted at an exact release, and `[type:X.Y.x]` for work targeted at a patch lane whose exact patch is intentionally not chosen yet.
+  choice: >-
+    Use one mandatory TODO prefix tag: `[type]` for untargeted items, `[type:X.Y.Z]` for exact release-targeted items, and
+    `[type:X.Y.x]` for a patch-lane target whose exact patch is intentionally not chosen yet. Type is one of `feat`, `fix`,
+    `docs`, `refactor`, `chore`, `test`, or `perf`; `X.Y.Z` is an exact semver target, and `x` is allowed only in the patch
+    position. Forbid scopes, `v` prefixes, minor/major ranges like `2.x` or `2.2.*`, inequality ranges, multiple targets,
+    and generated item IDs. When the release is selected, convert `[type:X.Y.x]` to `[type:X.Y.Z]`. Status comes from the
+    checkbox, priority from the section, and identity from normalized summary text.
+  reasoning: >-
+    Only change type and optional release target carry durable TODO metadata. Patch-lane targets preserve useful release intent
+    without forcing false precision before the exact patch is selected. Content identity avoids counters and slug churn, while
+    the single prefix tag keeps `TODO.md` readable and deterministic for `agentera todo`, compaction, and release queries.
+  confidence: firm
+  feeds_into: TODO.md, skills/agentera/references/contract.md, skills/agentera/schemas/artifacts/todo.yaml, scripts/agentera, hooks/compaction.py, tests
 archive:
+- 'Decision 39 (2026-05-04): [Single bundled v2 skill] — Agentera 2.0 collapsed 12 skills into one `/agentera` entry point with capability schemas and CLI-backed state.'
+- 'Decision 38 (2026-04-30): [Separate semantic eval surface] — Hej semantic fixtures assert output facts and artifact-derived next actions.'
+- 'Decision 37 (2026-04-29): [Fail-open artifact hook] — Unhandled validation-hook crashes log and allow writes.'
 - 'Decision 36 (2026-04-29): [Generate contracts JSON schema] — SPEC table parser outputs structured validation JSON.'
 - 'Decision 35 (2026-04-29): [Build shared self_audit.py module] — Shared module plus hook enforce self-audit checks.'
 - 'Decision 34 (2026-04-29): [Self-audit protocol] — Producing skills run prose checks before artifact writes.'
