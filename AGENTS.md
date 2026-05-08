@@ -98,6 +98,44 @@ uv run scripts/agentera query decisions --topic <topic>
 - `skills/agentera/SKILL.md` is the single entry point; capabilities live under `capabilities/`
 - Shared primitives are defined in `protocol.yaml`, not per-skill specs
 - Skills never push to remote repos or modify `.agentera/vision.yaml` or objective state during execution cycles
-- Conventional commits: feat/fix/docs/refactor/chore/test
+- Conventional commits: feat/fix/docs/refactor/chore/test; scopes follow the closed vocabulary below
 - Visual identity: glyphs and semantic tokens defined in `protocol.yaml`
 - Versioning convention in canonical `DOCS.md` (mapped here to `.agentera/docs.yaml`): `version_files` lists what to bump, `semver_policy` maps commit types to bump levels
+
+## Commit message scopes
+
+Scopes are optional. Omit the scope for broad suite-wide changes instead of using a generic scope.
+
+Do not use `agentera` as a default scope; the repository already provides that context. Do not use vague scopes such as `suite`, `skills`, `capability`, `progress`, `plan`, `todo`, `docs`, or `changelog` unless they are added to the vocabulary below with a precise definition. Do not use comma scopes such as `hooks,scripts`; choose the dominant subsystem or omit the scope.
+
+Use the scope for the primary behavior changed, not every file touched.
+
+| Scope | Use for |
+|-------|---------|
+| `cli` | `scripts/agentera`, command behavior, CLI output, command tests |
+| `hooks` | `hooks/*`, artifact validation hooks, session hooks, compaction hooks |
+| `schemas` | `protocol.yaml`, `capability_schema_contract.yaml`, artifact schemas, schema contracts |
+| `eval` | Semantic eval runner, fixtures, evaluation harnesses |
+| `install` | Install root, upgrade, bundle freshness, setup, doctor install behavior |
+| `package` | `registry.json`, plugin manifests, lockfiles, version-bearing package surfaces |
+| `runtime` | Cross-runtime behavior or shared adapter contracts |
+| `opencode` | OpenCode-specific runtime behavior or packaging |
+| `claude` | Claude-specific runtime behavior or packaging |
+| `codex` | Codex-specific runtime behavior or packaging |
+| `copilot` | Copilot-specific runtime behavior or packaging |
+| `release` | Version bumps, changelog promotion, release readiness, tag/publication prep |
+| `agents` | `AGENTS.md` or runtime-neutral agent operating guidance |
+| `hej` | Hej capability behavior, prose, schemas, or tests |
+| `visionera` | Visionera capability behavior, prose, schemas, or tests |
+| `resonera` | Resonera capability behavior, prose, schemas, or tests |
+| `inspirera` | Inspirera capability behavior, prose, schemas, or tests |
+| `planera` | Planera capability behavior, prose, schemas, or tests |
+| `realisera` | Realisera capability behavior, prose, schemas, or tests |
+| `optimera` | Optimera capability behavior, prose, schemas, or tests |
+| `inspektera` | Inspektera capability behavior, prose, schemas, or tests |
+| `dokumentera` | Dokumentera capability behavior, prose, schemas, or tests |
+| `profilera` | Profilera capability behavior, prose, schemas, or tests |
+| `visualisera` | Visualisera capability behavior, prose, schemas, or tests |
+| `orkestrera` | Orkestrera capability behavior, prose, schemas, or tests |
+
+New scopes are closed by default. If a commit needs a new scope, update this table with a one-line definition in the same commit; otherwise omit the scope.
