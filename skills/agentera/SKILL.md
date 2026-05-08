@@ -146,7 +146,7 @@ uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
 
 If the command fails before argparse, reports `invalid choice` for `hej`, lacks
 `hej` in `--help`, has a stale or missing `.agentera-bundle.json` marker, or the
-bundle-status diagnostic reports stale/blocked status, do not silently fall
+doctor diagnostic reports stale/blocked status, do not silently fall
 through to the local checkout as a success. Tell the user the installed Agentera
 bundle is stale, then report the root, resolution source, expected version, and
 clone-free preview:
@@ -174,7 +174,7 @@ If `AGENTERA_HOME` points at a missing path, a file, or an unmanaged directory,
 do not overwrite it silently. Ask the user to fix/unset `AGENTERA_HOME`, choose
 a managed `--install-root`, or explicitly request a forced bundle install.
 
-When a fresh local checkout is available, `uv run scripts/agentera bundle-status
+When a fresh local checkout is available, `uv run scripts/agentera doctor
 --install-root "$RESOLVED_AGENTERA_HOME" --json` can diagnose the same contract
 without writing. In no-clone situations, the uvx dry-run above is the portable
 diagnostic and preview.

@@ -21,7 +21,7 @@ diagnostics:
       exit_code: n/a
       primary_message: install root is valid
       decision: preserve
-    - caller: agentera bundle-status --json
+    - caller: agentera doctor --json
       exit_code: 0 when fresh, 1 when stale or blocked, 2 for source-root resolution errors
       primary_message: signals[*].message and status/rootStatus fields
       decision: preserve
@@ -36,9 +36,9 @@ diagnostics:
       exit_code: 0 when report ok, 1 when failures are present
       primary_message: could not resolve an Agentera install root; pass --install-root or set AGENTERA_HOME
       decision: preserve
-    - caller: agentera bundle-status
+    - caller: agentera doctor
       exit_code: 0 when fresh, 1 when stale or blocked
-      primary_message: Agentera bundle status; status/root status; first signal message
+      primary_message: Agentera doctor; status/root status; first signal message
       decision: preserve
 behavior_matrix:
   - shape: valid setup root
@@ -66,27 +66,27 @@ behavior_matrix:
     current_outcome: walks upward from script/start path after env fallbacks
     decision: preserve precedence unless shared interface exposes source more explicitly
   - shape: fresh managed upgrade root
-    exercised_by: agentera_upgrade.build_bundle_status
-    current_outcome: status fresh, rootStatus managed, exit 0 at bundle-status CLI boundary
+    exercised_by: agentera_upgrade.build_doctor_status
+    current_outcome: status fresh, rootStatus managed, exit 0 at doctor CLI boundary
     decision: preserve
   - shape: stale managed upgrade root
-    exercised_by: agentera_upgrade.build_bundle_status
+    exercised_by: agentera_upgrade.build_doctor_status
     current_outcome: status stale, rootStatus managed, signals include missing_marker/version_mismatch/CLI probe gaps
     decision: preserve
   - shape: missing explicit or AGENTERA_HOME upgrade root
-    exercised_by: agentera_upgrade.build_bundle_status
+    exercised_by: agentera_upgrade.build_doctor_status
     current_outcome: status blocked, rootStatus missing, signal invalid_install_root, no dryRunCommand/applyCommand
     decision: preserve safety outcome
   - shape: missing default upgrade root
-    exercised_by: agentera_upgrade.build_bundle_status
+    exercised_by: agentera_upgrade.build_doctor_status
     current_outcome: status stale, rootStatus missing, signal missing_bundle, dryRunCommand/applyCommand provided
     decision: preserve default self-healing outcome
   - shape: file upgrade root
-    exercised_by: agentera_upgrade.build_bundle_status
+    exercised_by: agentera_upgrade.build_doctor_status
     current_outcome: status blocked, rootStatus invalid, signal invalid_install_root
     decision: preserve
   - shape: unmanaged upgrade directory
-    exercised_by: agentera_upgrade.build_bundle_status
+    exercised_by: agentera_upgrade.build_doctor_status
     current_outcome: status blocked, rootStatus unmanaged, signal unmanaged_install_root
     decision: preserve
   - shape: OpenCode runtime AGENTERA_HOME candidate

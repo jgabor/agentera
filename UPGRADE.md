@@ -63,6 +63,12 @@ bundle-only dry run for the resolved install root:
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --dry-run
 ```
 
+From a current local clone, inspect the same read-only self-check with:
+
+```bash
+uv run scripts/agentera doctor --install-root "$AGENTERA_HOME" --json
+```
+
 Only after explicit approval for that same root should it apply:
 
 ```bash

@@ -18,7 +18,7 @@ included when they shape cross-suite usage.
 | `references/artifacts/artifact-registry-interface-model.yaml` | Artifact identity facts: `artifact_id`, display name, default path, producers, consumers, type, scope. |
 | `skills/agentera/SKILL.md` | Bundle dispatcher, routing model, CLI-first state access, installed-bundle status checks, and safety rails. |
 | `skills/agentera/capabilities/*/prose.md` | Capability behavior, workflow grammar, step markers, and cross-capability boundaries. |
-| `scripts/agentera` and `scripts/agentera_upgrade.py` | CLI-visible command labels, upgrade output, and bundle-status diagnostics. |
+| `scripts/agentera` and `scripts/agentera_upgrade.py` | CLI-visible command labels, upgrade output, and doctor diagnostics. |
 | `README.md`, `UPGRADE.md`, `DESIGN.md`, `.agentera/*.yaml` | User-facing phrasing, design vocabulary, and current project-state examples. |
 
 ## Normalization rules
@@ -361,7 +361,7 @@ not add precision:
 
 Canonical runtime names are Claude Code, OpenCode, Copilot CLI, and Codex CLI.
 
-CLI-visible bundle-status labels to preserve: `Agentera bundle status`,
+CLI-visible doctor labels to preserve: `Agentera doctor`,
 `status:`, `expected version:`, `install root:`, `install root source:`,
 `root status:`, `marker version:`, `missing commands:`, `dry run:`,
 `apply after approval:`, `approval phrase:`, `retry:`, and `recovery:`.
@@ -472,7 +472,7 @@ High-signal source surfaces for this vocabulary:
 | `skills/agentera/schemas/artifacts/*.yaml` | Artifact fields, status enums, validation vocabulary, and protected current-state fields. |
 | `references/artifacts/artifact-registry-interface-model.yaml` | Canonical artifact registry language. |
 | `scripts/agentera` | Flat State CLI labels and `agentera hej` source contract. |
-| `scripts/agentera_upgrade.py` | Upgrade and bundle-status output grammar. |
+| `scripts/agentera_upgrade.py` | Upgrade and doctor output grammar. |
 | `scripts/install_root.py` | Install-root classification semantics. |
 | `hooks/validate_artifact.py` | Runtime artifact-write validation and hook exit codes. |
 | `README.md` | Product, invocation, artifact, and user-facing capability language. |

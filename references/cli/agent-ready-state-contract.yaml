@@ -1,0 +1,244 @@
+interface: AgentReadyStateCli
+status: design_contract
+decision: 45
+purpose: >-
+  Define the Agentera state CLI command vocabulary and agent-ready interface
+  boundaries before executable Decision 45 tasks implement doctor, structured
+  output, field selection, describe, and input hardening behavior.
+sources:
+  decisions:
+    - .agentera/decisions.yaml#Decision-45
+    - .agentera/decisions.yaml#Decision-43
+  playbook: /home/jgabor/docs/agent-ready-interface-playbook.md
+  active_plan: .agentera/plan.yaml
+principles:
+  - Keep the CLI state-oriented; capability routing remains a slash-command surface.
+  - Preserve stable routine state command names unless a task records an explicit migration.
+  - Prefer runtime structured output and introspection over static prompt stuffing.
+  - Validate agent-facing inputs at the CLI boundary before resolving paths or emitting partial output.
+routine_state_commands:
+  status: stable
+  commands:
+    - hej
+    - plan
+    - progress
+    - health
+    - todo
+    - decisions
+    - docs
+    - objective
+    - experiments
+    - query
+  rationale: >-
+    Decision 45 explicitly preserves routine state command names. These commands
+    are the top-level state seam used by agents and docs; changing them would
+    break Decision 44's stable labels and Decision 39's query-CLI direction.
+slash_route_aliases:
+  status: excluded_from_cli_commands
+  aliases:
+    status: hej
+    vision: visionera
+    discuss: resonera
+    research: inspirera
+    plan: planera
+    build: realisera
+    optimize: optimera
+    audit: inspektera
+    document: dokumentera
+    profile: profilera
+    design: visualisera
+    orchestrate: orkestrera
+  rationale: >-
+    Decision 43 aliases are exact `/agentera <alias>` routes, not CLI state
+    commands. Teaching `status`, `build`, `audit`, or `document` as CLI commands
+    would blur route vocabulary with state access; the shared word `plan` keeps
+    separate meanings as `/agentera plan` routing and `agentera plan` state.
+doctor:
+  status: implemented_hard_rename
+  command: doctor
+  removed_command: bundle-status
+  compatibility_alias: forbidden
+  owns:
+    - Agentera CLI self-check status
+    - installed bundle status
+    - install-root status
+    - runtime adapter availability and configuration diagnostics
+    - hook, package, and schema availability checks when implemented
+  excludes:
+    - project artifact health
+    - codebase quality audit findings
+    - inspektera architecture, test, dependency, or documentation audit output
+  adjacent_surfaces:
+    project_artifact_health: agentera health
+    codebase_audit: /agentera audit routes to inspektera
+    setup_specific_diagnostics: scripts/setup_doctor.py
+  rationale: >-
+    Decision 45 rejects `bundle-status` as too narrow and rejects an alias for
+    release-clean vocabulary. `doctor` is Agentera CLI/install/runtime
+    self-check vocabulary only; artifact health and codebase audits remain owned
+    by `agentera health` and inspektera.
+describe:
+  status: implemented_runtime_introspection
+  command: describe
+  owns:
+    - command discovery
+    - filters and output format discovery
+    - structured output shapes
+    - field selection metadata
+    - Decision 43 slash-route alias descriptions
+    - artifact schema discovery
+    - doctor self-check categories
+  does_not_own:
+    - adding CLI commands for slash aliases
+    - replacing routine state commands
+    - claiming unavailable schema facts as implemented
+  rationale: >-
+    The playbook prioritizes runtime schema introspection so agents can discover
+    the current interface on demand. Task 5 owns executable `describe` behavior;
+    this contract only fixes its boundary.
+structured_output:
+  status: implemented_for_routine_state_commands
+  formats:
+    - json
+    - yaml
+  applies_to:
+    - hej
+    - plan
+    - progress
+    - health
+    - todo
+    - decisions
+    - docs
+    - objective
+    - experiments
+  excludes:
+    - adding new route-alias commands
+    - replacing human text output
+    - changing persisted artifact shapes
+    - selecting undocumented raw artifact fields
+  envelope:
+    routine_state_commands:
+      fields:
+        - command
+        - status
+        - entries
+        - counts
+        - source
+        - filters
+        - summary
+      status_values:
+        - ok
+        - empty
+      source_metadata:
+        - artifact
+        - path
+        - exists
+        - kind
+      empty_state: >-
+        Missing or empty artifacts emit status=empty, entries=[], counts.entries=0,
+        and source.exists=false when the source file is absent.
+    hej:
+      fields:
+        - command
+        - status
+        - mode
+        - profile
+        - health
+        - issues
+        - plan
+        - objective
+        - attention
+        - next_action
+        - source
+        - source_contract
+      empty_state: >-
+        Fresh projects emit mode=fresh with missing artifact summaries, zero issue
+        counts, source.artifacts_present=false, and a caller-owned dashboard
+        source_contract.
+  rationale: >-
+    The playbook calls for machine-readable output as a first-class path. Task 3
+    should add parseable routine output while keeping current command names and
+    useful human text output stable.
+field_selection:
+  status: implemented_sparse_response_layer
+  applies_after: structured_output
+  syntax: --fields FIELD[,FIELD...]
+  applies_to:
+    - hej
+    - plan
+    - progress
+    - health
+    - todo
+    - decisions
+    - docs
+    - objective
+    - experiments
+  fields_by_command:
+    routine_state_commands:
+      fields:
+        - command
+        - status
+        - entries
+        - counts
+        - source
+        - filters
+        - summary
+    hej:
+      fields:
+        - command
+        - status
+        - mode
+        - profile
+        - health
+        - issues
+        - plan
+        - objective
+        - attention
+        - next_action
+        - source
+        - source_contract
+  retained_context:
+    - command
+    - status
+  owns:
+    - sparse selection over documented structured output fields
+    - clear unsupported-field errors with available fields
+    - required identity or status context retained in sparse responses
+  does_not_own:
+    - selecting arbitrary raw YAML artifact paths
+    - silently dropping unsupported fields
+    - changing default human text behavior
+  rationale: >-
+    The playbook treats context as currency. Field selection belongs on the
+    structured output contract from Task 3, not on raw artifact internals.
+input_hardening:
+  status: implemented_boundary_validation
+  applies_to:
+    - artifact names
+    - field names
+    - output formats
+    - path-like values
+    - doctor roots
+    - upgrade roots
+  required_boundaries:
+    - reject unsupported identifiers with clear errors
+    - reject traversal and encoded traversal in path-like inputs
+    - reject control characters in agent-facing strings
+    - sandbox project artifact paths to project-owned or documented global roots
+    - preserve explicit approval flows before writes
+  does_not_own:
+    - mutating install roots without approval
+    - expanding artifact identity beyond the artifact registry and docs.yaml mapping rules
+    - response sanitization for externally ingested untrusted content
+    - typed protocol surfaces such as MCP or JSON-RPC
+  rationale: >-
+    The playbook warns that agents hallucinate structurally unsafe inputs. Task 6
+    should validate these boundaries without broadening the CLI command surface.
+non_goals_for_task_1:
+  - Do not rename bundle-status to doctor.
+  - Do not add doctor behavior.
+  - Do not add describe behavior.
+  - Do not add structured output behavior.
+  - Do not add field selection behavior.
+  - Do not harden executable inputs.
+  - Do not mark Task 1 complete in .agentera/plan.yaml.

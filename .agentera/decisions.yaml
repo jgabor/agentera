@@ -301,6 +301,48 @@ decisions:
     compatibility until migration earns its cost.
   confidence: firm
   feeds_into: docs/vocabulary.md, capability prose, safe labels/tests, active plan wording, TODO.md
+- number: 45
+  date: '2026-05-08'
+  question: >-
+    How should Agentera apply the agent-ready interface playbook to its CLI surface after the 2.2.0 alias and vocabulary work?
+  context: >-
+    Inspirera analysis of `~/docs/agent-ready-interface-playbook.md` identified structured routine output, runtime schema
+    introspection, sparse responses, and input hardening as the highest-value Agentera interface improvements. Decision 44
+    protects stable command names and parseable labels, while Decision 43 keeps slash route aliases separate from CLI state
+    commands. The current `bundle-status` command names a narrow installed-bundle check even though the desired surface is a
+    broader Agentera CLI/install/runtime self-check.
+  alternatives:
+  - name: Freeze state commands and improve outputs
+    status: chosen
+    description: >-
+      Preserve routine state command names, add structured output and field selection, add runtime describe/schema
+      introspection, and harden inputs without adding slash-route aliases as CLI commands.
+  - name: Add CLI commands for route aliases
+    status: rejected
+    description: >-
+      Would blur the Decision 43 route/CLI boundary by teaching aliases like status, build, audit, and document as CLI state
+      commands.
+  - name: Keep bundle-status as the long-term diagnostic command
+    status: rejected
+    description: >-
+      Accurate for today's installed-bundle check, but too narrow for future Agentera CLI self-audit, runtime, hook, package,
+      and schema health checks.
+  - name: Add doctor while keeping bundle-status as an alias
+    status: rejected
+    description: >-
+      Safer for compatibility, but leaves duplicate CLI vocabulary in the pending release and weakens the plain-English command
+      surface cleanup.
+  choice: >-
+    Build one phased agent-ready state interface plan for pending 2.2.0: keep routine state command names stable, improve human
+    text output where useful, add structured routine output, add runtime describe/schema introspection, add field selection,
+    harden artifact/path inputs, and hard-rename `agentera bundle-status` to `agentera doctor` with no compatibility alias.
+  reasoning: >-
+    The playbook's core lesson is that agent-facing interfaces need predictable structured I/O, runtime self-description,
+    scoped responses, and defensive boundaries. Agentera already has the schema and registry foundations; the next step is to
+    expose them through the CLI without collapsing slash routes into state commands. `doctor` is the right plain command for
+    Agentera's own install/runtime/CLI health, while artifact health remains `agentera health`.
+  confidence: firm
+  feeds_into: PLAN.md, scripts/agentera, README.md, docs/vocabulary.md, tests
 archive:
 - 'Decision 34 (2026-04-29): [Self-audit protocol] — Producing skills run prose checks before artifact writes.'
 - 'Decision 31 (2026-04-12): [Named per-objective subdirs] — Self-contained optimera objectives live under `.agentera/optimera/`.'

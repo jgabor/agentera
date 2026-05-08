@@ -59,6 +59,34 @@ def normalize_path(path: str) -> str:
     return p.strip()
 
 
+CONTROL_CHAR_RE = re.compile(r"[\x00-\x1f\x7f]")
+URI_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+ENCODED_TRAVERSAL_RE = re.compile(r"%(?:2e|2f|5c)", re.IGNORECASE)
+
+
+def _reject_unsafe_artifact_path(path: str, *, artifact_id: str) -> None:
+    if CONTROL_CHAR_RE.search(path):
+        raise ValueError(f"artifact {artifact_id!r} path contains control characters")
+    if ENCODED_TRAVERSAL_RE.search(path):
+        raise ValueError(f"artifact {artifact_id!r} path contains encoded traversal or separators")
+    if URI_SCHEME_RE.match(path) and not re.match(r"^[A-Za-z]:[\\/]", path):
+        raise ValueError(f"artifact {artifact_id!r} path uses unsupported URI syntax")
+    if any(part == ".." for part in Path(path).parts):
+        raise ValueError(f"artifact {artifact_id!r} path contains traversal segments")
+
+
+def _project_path(project_root: Path, artifact_path: str, *, artifact_id: str) -> Path:
+    _reject_unsafe_artifact_path(artifact_path, artifact_id=artifact_id)
+    path = Path(artifact_path)
+    resolved_project = project_root.resolve()
+    resolved = path.expanduser().resolve() if path.is_absolute() else (resolved_project / path).resolve()
+    try:
+        resolved.relative_to(resolved_project)
+    except ValueError as exc:
+        raise ValueError(f"artifact {artifact_id!r} path escapes the project boundary") from exc
+    return resolved
+
+
 def _schema_metas(artifact_schemas_dir: Path) -> dict[str, dict[str, Any]]:
     metas: dict[str, dict[str, Any]] = {}
     if not artifact_schemas_dir.is_dir():
@@ -165,7 +193,4 @@ def resolve_artifact_path(
         xdg = os.environ.get("XDG_DATA_HOME")
         base = Path(xdg) if xdg else Path.home() / ".local" / "share"
         return base / "agentera" / suffix
-    path = Path(artifact_path)
-    if path.is_absolute():
-        return path
-    return project_root / path
+    return _project_path(project_root, artifact_path, artifact_id=record.artifact_id)

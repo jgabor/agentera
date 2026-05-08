@@ -1,127 +1,141 @@
 header:
   level: full
-  created: '2026-05-07'
+  created: '2026-05-08'
   status: complete
-  reviewed: '2026-05-07'
-  critic_issues: "7 found, 7 addressed, 0 dismissed"
+  reviewed: '2026-05-08'
+  critic_issues: "10 found, 10 addressed, 0 dismissed"
   revised: >
-    Split final synchronization into evidence and closure tasks, made release
-    evidence ownership explicit, required the active plan itself to follow
-    Decision 44 wording, tied edits to the replacement inventory, and narrowed
-    observable wording changes so stable protocol identity stays intact.
-  title: Apply Decision 44 Plain-English Vocabulary For 2.2.0
+    Named `agentera describe` as the introspection surface, separated the
+    `doctor` self-check boundary from artifact health, tightened structured
+    output and field-selection dependencies, split hardening from release proof,
+    and made the hard `bundle-status` removal explicit for 2.2.0.
+  title: Implement Decision 45 Agent-Ready State Interface For 2.2.0
 what: >
-  Apply Decision 44 plain-English vocabulary across Agentera's current docs,
-  capability instructions, diagnostics, tests, and state labels before the
-  pending 2.2.0 release is considered ready. Replace ambiguous protocol jargon
-  with current/up-to-date/status wording, Git-only checkpoint language, saved
-  project context, behavioral verification gate, orchestration loop, and
-  docs-first workflow language while preserving stable identifiers and enums
-  unless a deliberate migration is justified.
+  Implement Decision 45 by making Agentera's state CLI more agent-ready for the
+  pending 2.2.0 release. Preserve routine state command names, hard-rename
+  `agentera bundle-status` to `agentera doctor` with no compatibility alias, add
+  structured routine output, sparse field selection, runtime describe/schema
+  introspection, and hardened agent-facing inputs while preserving Decision 43
+  route aliases and stable artifact contracts.
 why: >
-  Decision 44 reduces first-contact friction for the same 2.2.0 release that
-  added plain capability route aliases. The alias work made Agentera easier to
-  invoke; this plan makes the surrounding protocol language easier to understand
-  without weakening existing contracts, routing behavior, or package metadata.
+  The agent-ready interface playbook showed that Agentera already has strong
+  schema, registry, dry-run, and multi-runtime foundations, but its main state
+  commands remain mostly text-first and its installed-bundle diagnostic command
+  is too narrow for future CLI/install/runtime self-checks. Decision 45 turns
+  those findings into a coherent 2.2.0 interface cleanup rather than a set of
+  unrelated CLI tweaks.
 constraints: >
-  Treat this as vocabulary cleanup for the pending 2.2.0 release, not a new
-  feature surface. User-visible wording may change, but schema fields, stable
-  IDs, enums, routing semantics, CLI exit behavior, persisted state shape,
-  canonical Swedish capability names, and Decision 43 aliases must not change
-  unless a migration rationale is recorded and validated. Do not create a
-  version beyond 2.2.0 unless policy requires it. Do not tag, push, publish,
-  update packages, refresh the installed bundle, or mutate vision/objective
-  state. Keep optional Claude live-smoke and install-root generated-contract
-  work separate.
+  Preserve routine state command names: `hej`, `plan`, `progress`, `health`,
+  `todo`, `decisions`, `docs`, `objective`, `experiments`, and advanced `query`.
+  Do not add CLI commands for Decision 43 slash route aliases such as `status`,
+  `build`, `audit`, or `document`. Treat `doctor` as Agentera CLI/install/runtime
+  self-check vocabulary, not project artifact health. Remove `bundle-status`
+  rather than keeping a compatibility alias. Keep the release at 2.2.0 unless
+  version policy requires otherwise. Do not tag, push, publish, update packages,
+  refresh the installed bundle, mutate vision/objective state, or rename stable
+  schema fields, IDs, enums, persisted artifact shapes, canonical capability
+  names, or Decision 43 aliases unless a deliberate migration rationale and
+  validation path are recorded.
 scope:
   included:
-    - archive the completed Decision 43 route-alias plan before replacing the active plan
-    - classify Decision 44 terms into replacement, allowed-use, and protected-compatibility groups
-    - update current user-facing docs and examples that teach protocol language
-    - update current capability and protocol instructions without renaming capabilities or schemas
-    - align visible diagnostics, test labels, and safe labels where wording is user-facing or maintained as current guidance
-    - prove vocabulary coverage with an explicit scan/check and existing behavior validation
-    - record Decision 44 under the pending 2.2.0 release without publication
-    - resolve the Decision 44 TODO and close plan state after verified execution
+    - archive the completed Decision 44 plain-English vocabulary plan before replacing the active plan
+    - define the Decision 45 CLI contract and command vocabulary boundary
+    - hard-rename `agentera bundle-status` to `agentera doctor` with no compatibility alias
+    - add structured JSON/YAML output for routine state commands
+    - add sparse field selection for supported structured state output
+    - add `agentera describe` runtime introspection for commands, filters, output shapes, aliases, artifacts, and doctor self-check categories
+    - harden agent-facing artifact, field, output-format, path-like, doctor, and upgrade inputs
+    - prove compatibility and record 2.2.0 release inclusion without publication
+    - synchronize TODO, changelog, progress, docs metadata, and plan pre-closure state after verified execution
   excluded:
-    - rewriting historical archive, changelog, or progress entries solely to alter old wording
-    - renaming capability directories, artifact names, schema IDs, enum values, or persisted fields without an explicit migration decision
-    - changing state-oriented `agentera <command>` CLI commands or `/agentera <alias>` routing behavior
-    - release publication, remote push, git tag creation, package-manager updates, or installed bundle refresh
+    - adding CLI commands for slash route aliases
+    - changing canonical Swedish capability names, Decision 43 aliases, routing semantics, artifact schemas, or persisted state shape without an explicit migration decision
+    - turning `doctor` into project artifact health or codebase quality audit output
+    - rewriting historical progress, changelog, archive, or decision entries solely to rename `bundle-status`
+    - publishing, tagging, pushing, updating package managers, or refreshing installed bundles
+    - optional Claude live smoke and generated install-root cross-language contract work
     - vision or objective edits
   deferred:
-    - optional future generated cross-language install-root contract
-    - optional Claude Code live model-host smoke
+    - response sanitization for externally ingested untrusted content
+    - typed protocol surfaces beyond the CLI, such as MCP or JSON-RPC
 design: >
-  Start with a source-of-truth vocabulary boundary, then apply it outward from
-  docs to capability instructions to diagnostics and tests. Validation should
-  check both sides of the migration: deprecated wording is no longer preferred
-  in current surfaces, and protected compatibility vocabulary remains only where
-  stable contracts or deliberately scoped exceptions require it. Release work
-  only attaches the completed vocabulary cleanup to 2.2.0; it does not publish
-  or refresh installed bundles.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-07-implement-capability-route-aliases.yaml
+  Treat the CLI as two layered surfaces: stable command vocabulary for humans and
+  structured, self-describing output for agents. Keep routine state commands as
+  the top-level state seam, add machine-readable output and fields around those
+  commands, and expose `agentera describe` as the runtime schema/introspection
+  surface. `doctor` becomes the single Agentera self-check entry point for
+  install, runtime, CLI, bundle, hook, package, and schema availability over
+  time; project artifact health remains `agentera health` and capability audits
+  remain `inspektera`.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-08-apply-decision-44-plain-english-vocabulary-for-220.yaml
 tasks:
   - number: 1
-    name: Define Decision 44 Replacement Boundary
+    name: Define Agent-Ready State CLI Contract
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN current preferred and deprecated wording is reviewed WHEN the Decision 44 boundary is recorded THEN every target term is classified as replacement, allowed use, or protected compatibility with a rationale
-      - GIVEN stable identifiers, enums, and persisted state shapes exist WHEN the boundary is applied THEN they are preserved unless a deliberate migration rationale and validation path are recorded
-      - GIVEN the active Decision 44 plan is read WHEN wording is reviewed THEN it uses plain English and does not teach deprecated wording as preferred protocol language
-      - GIVEN the previous route-alias plan was complete WHEN this plan becomes active THEN the previous plan is archived and the active plan tracks only Decision 44 work
+      - GIVEN Decision 45 and the agent-ready interface playbook are reviewed WHEN the CLI contract is recorded THEN stable state commands, slash route aliases, doctor, describe, structured output, field selection, and input-hardening boundaries are classified with rationale
+      - GIVEN routine state commands are reviewed WHEN command vocabulary is defined THEN `hej`, `plan`, `progress`, `health`, `todo`, `decisions`, `docs`, `objective`, `experiments`, and `query` remain stable
+      - GIVEN Decision 43 aliases are reviewed WHEN CLI vocabulary is defined THEN slash routes such as `status`, `build`, `audit`, and `document` are not taught as CLI commands
+      - GIVEN Agentera self-check vocabulary is reviewed WHEN doctor scope is defined THEN CLI/install/runtime health is separated from project artifact health and codebase audit output
   - number: 2
-    name: Update User-Facing Documentation Language
+    name: Rename Bundle Status To Doctor
     depends_on:
       - Task 1
     status: complete
     acceptance:
-      - GIVEN a first-time user reads current Agentera docs WHEN setup, routing, state, and workflow language appears THEN plain English terms explain current status, up-to-date state, saved project context, and docs-first workflow
-      - GIVEN Git and non-Git lifecycle language appears WHEN examples are followed THEN checkpoint wording is limited to Git commit contexts and non-Git lifecycle wording uses current-state or final-sync language
-      - GIVEN canonical capability names and Decision 43 aliases appear WHEN docs are updated THEN names and aliases remain unchanged while surrounding explanation follows Decision 44
+      - GIVEN a user runs the Agentera self-check command WHEN the CLI is inspected THEN `agentera doctor` is the primary command for Agentera CLI, install, bundle, and runtime status
+      - GIVEN `agentera bundle-status` is invoked WHEN command parsing runs THEN it is intentionally unavailable and no compatibility alias is exposed
+      - GIVEN project artifact health is needed WHEN users inspect codebase or artifact quality THEN `agentera health` and inspektera remain the health and audit surfaces rather than doctor
+      - GIVEN repository references are reviewed WHEN the rename is complete THEN current docs, tests, scripts, and help text use `doctor`, while historical references are either preserved as history or explicitly scoped
   - number: 3
-    name: Update Capability And Protocol Instructions
+    name: Add Structured Routine State Output
     depends_on:
       - Task 1
     status: complete
     acceptance:
-      - GIVEN an agent reads current capability instructions WHEN route, install, migration, evaluation, and orchestration wording appears THEN the instructions use Decision 44 terms without weakening required checks or stop conditions
-      - GIVEN hard pass/fail verification is described WHEN gate language remains THEN it names a behavioral verification gate or another explicit hard pass/fail boundary
-      - GIVEN canonical capability identity and protocol exit signals are reviewed WHEN wording changes are complete THEN capability names, exit statuses, and routing semantics are preserved
+      - GIVEN routine state commands are run with structured output WHEN a machine consumer requests JSON or YAML THEN `hej`, `plan`, `progress`, `health`, `todo`, `decisions`, `docs`, `objective`, and `experiments` return parseable state without raw artifact reads
+      - GIVEN routine state commands are run without structured output WHEN a human reads the result THEN command names remain stable and the text output remains clear even if presentation improves
+      - GIVEN structured output is documented WHEN agents use the routine commands THEN status, entries, counts, source metadata, and empty-state behavior are discoverable without static prompt stuffing
+      - GIVEN output checks are added WHEN structured output validation runs THEN each covered command has pass/fail evidence or a recorded proportionality rationale
   - number: 4
-    name: Align Tests Diagnostics And Safe Labels
+    name: Add Sparse Field Selection
     depends_on:
-      - Task 1
+      - Task 3
     status: complete
     acceptance:
-      - GIVEN maintained diagnostics, test labels, and safe labels are read WHEN Decision 44 wording is applied THEN current labels prefer mismatch, out-of-sync, status, check, or stop-condition language instead of deprecated preferred wording
-      - GIVEN compatibility cases or stable contract terms still use old words WHEN they are reviewed THEN each exception is tied back to the Task 1 boundary rather than left accidental
-      - GIVEN wording changes are user-visible WHEN validation runs THEN existing behavior, routing, CLI command semantics, and package version readers still behave as before
+      - GIVEN a supported structured command has documented fields WHEN a caller requests a subset THEN the response includes only requested supported fields plus required identity or status context
+      - GIVEN an unsupported field is requested WHEN the command runs THEN the error identifies the unsupported field, available fields, and avoids ambiguous partial output
+      - GIVEN field selection is reviewed WHEN docs and tests name fields THEN they come from the structured output contract rather than assumptions about raw YAML artifacts
+      - GIVEN text output is used WHEN field selection is absent THEN the default human-readable behavior remains coherent
   - number: 5
-    name: Prove Decision 44 Vocabulary Coverage
+    name: Add Runtime Describe Introspection
+    depends_on:
+      - Task 1
+      - Task 2
+      - Task 3
+    status: complete
+    acceptance:
+      - GIVEN an agent needs runtime interface knowledge WHEN `agentera describe` is run in structured mode THEN it can discover commands, filters, output formats, structured fields, Decision 43 aliases, artifact schemas, and doctor self-check categories from one CLI surface
+      - GIVEN user-facing docs explain introspection WHEN users read the feature THEN `describe` is presented as runtime self-description rather than static prompt stuffing
+      - GIVEN command vocabulary is inspected WHEN describe exists THEN it does not add CLI commands for slash route aliases and does not rename stable routine state commands
+      - GIVEN schema or state discovery is incomplete WHEN describe runs THEN the output reports missing or unknown facts explicitly rather than fabricating capabilities
+  - number: 6
+    name: Harden Agent-Facing CLI Inputs
     depends_on:
       - Task 2
       - Task 3
       - Task 4
-    status: complete
-    acceptance:
-      - GIVEN current surfaces are scanned WHEN deprecated preferred wording appears THEN the scan fails unless the occurrence is an allowed or protected exception from the Decision 44 boundary
-      - GIVEN protected compatibility wording remains WHEN validation reviews exceptions THEN each exception has a recorded reason and does not teach the term as preferred user language
-      - GIVEN routing, package, docs, and capability checks run WHEN vocabulary validation completes THEN existing behavior still passes with proportional pass/fail evidence or a recorded rationale
-  - number: 6
-    name: Confirm 2.2.0 Release Inclusion Without Publication
-    depends_on:
       - Task 5
     status: complete
     acceptance:
-      - GIVEN Decision 44 work is complete WHEN release readiness is reviewed THEN its evidence is recorded under the pending 2.2.0 release rather than a later version
-      - GIVEN version policy and current release metadata are reviewed WHEN the work is classified THEN version files remain at 2.2.0 or a required bump/no-bump rationale is recorded
-      - GIVEN no release publication was approved WHEN release readiness completes THEN no tag, push, package publication, package-manager update, or installed bundle refresh occurs
+      - GIVEN agent-facing inputs include artifact names, field names, output formats, path-like values, doctor roots, and upgrade roots WHEN unsupported or unsafe values are supplied THEN the CLI rejects them with clear status and no unintended writes
+      - GIVEN path or root inputs are reviewed WHEN validation runs THEN project and durable-root boundaries reject traversal, unmanaged overwrite, and unsupported target forms unless an existing explicit approval flow applies
+      - GIVEN existing valid workflows run WHEN hardening is complete THEN query, upgrade dry-run, doctor, structured state, describe, and field selection still behave as documented
+      - GIVEN exit or error behavior changes are required WHEN unsupported inputs fail THEN the evidence records whether existing CLI exit behavior was preserved or deliberately migrated
   - number: 7
-    name: Resolve Decision 44 TODO And Evidence State
+    name: Prove Compatibility And 2.2.0 Release Readiness
     depends_on:
-      - Task 1
       - Task 2
       - Task 3
       - Task 4
@@ -129,9 +143,10 @@ tasks:
       - Task 6
     status: complete
     acceptance:
-      - GIVEN Decision 44 execution evidence exists WHEN project state is synchronized THEN TODO, changelog, progress, docs metadata, and plan evidence reflect the completed vocabulary cleanup
-      - GIVEN unrelated follow-ups remain WHEN TODO is synchronized THEN optional Claude live-smoke and install-root generated-contract work stay open and separate
-      - GIVEN protected compatibility exceptions remain WHEN state is synchronized THEN the recorded evidence distinguishes deliberate exceptions from unfinished vocabulary cleanup
+      - GIVEN the interface work is complete WHEN validation runs THEN routing, package and runtime version readers, docs status, capability and protocol validation, doctor, describe, structured outputs, fields, and hardening checks pass with proportional evidence
+      - GIVEN `bundle-status` is a hard rename WHEN repository references are reviewed THEN current surfaces use `doctor`, stale invocation is intentionally tested as unavailable, and historical references are treated as history only
+      - GIVEN release policy is evaluated WHEN 2.2.0 readiness is checked THEN Decision 45 evidence is attached to 2.2.0 without creating a version beyond 2.2.0 unless docs policy requires it
+      - GIVEN no publication was approved WHEN release evidence is recorded THEN local tag, remote tag, branch push, package-manager update, package publication, and installed-bundle refresh checks are recorded with scope and limitations
   - number: 8
     name: Final State Sync, The Plan-Level Current-State Check
     depends_on:
@@ -144,12 +159,14 @@ tasks:
       - Task 7
     status: complete
     acceptance:
-      - GIVEN Tasks 1-7 are complete WHEN the final current-state check runs THEN the active plan is ready for conductor closure and future `/agentera` briefing will no longer treat Decision 44 as pending after closure
-      - GIVEN final state is reviewed WHEN pre-closure sync completes THEN TODO, changelog, progress, docs metadata, and plan status agree on the 2.2.0 Decision 44 evidence while Task 8 remains pending for conductor ownership
-      - GIVEN release and safety boundaries are reviewed WHEN pre-closure sync completes THEN vision/objective state is untouched and no tag, push, publication, package update, or bundle refresh occurred without approval
+      - GIVEN Tasks 1-7 are complete WHEN final current-state check runs THEN TODO, changelog, progress, docs metadata, and plan state reflect Decision 45 execution evidence only
+      - GIVEN the active plan is ready for conductor closure WHEN all tasks are complete THEN future `/agentera` briefing will no longer treat Decision 45 as pending work after conductor-owned closure
+      - GIVEN unrelated follow-ups remain WHEN pre-closure sync completes THEN optional Claude live-smoke and generated install-root contract work stay separate and vision/objective state is untouched
+      - GIVEN Decision 45 introduced a breaking CLI rename WHEN final docs state is reviewed THEN current docs and changelog summarize the `doctor` change without claiming release publication
 overall_acceptance:
-  - GIVEN a first-time user reads current Agentera docs and capability guidance WHEN protocol language appears THEN the preferred wording is plain English and matches Decision 44
-  - GIVEN maintained diagnostics, tests, and state labels are reviewed WHEN deprecated wording appears THEN each occurrence is either replaced or recorded as an allowed/protected exception with rationale
-  - GIVEN 2.2.0 release readiness is checked WHEN Decision 44 work is complete THEN the vocabulary cleanup is included in 2.2.0 without unapproved publication or bundle refresh
-  - GIVEN `/agentera` runs after closure WHEN the briefing chooses next work THEN Decision 44 is no longer the pending attention item and unrelated TODOs remain separate
+  - GIVEN users run routine Agentera state commands WHEN Decision 45 is complete THEN command names remain stable except the deliberate `bundle-status` to `doctor` hard rename
+  - GIVEN agents need machine-readable state WHEN routine commands, field selection, and describe are used THEN they can obtain structured, scoped, self-described data without raw artifact reads
+  - GIVEN CLI vocabulary is reviewed WHEN route aliases and state commands overlap THEN slash route aliases remain out of CLI command vocabulary
+  - GIVEN unsafe or unsupported agent-generated inputs are supplied WHEN CLI checks run THEN they fail clearly without unintended writes or ambiguous partial results
+  - GIVEN 2.2.0 readiness is checked WHEN Decision 45 is complete THEN the interface cleanup is included in 2.2.0 without unapproved tag, push, publication, package update, or installed bundle refresh
 surprises: []

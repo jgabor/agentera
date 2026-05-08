@@ -48,7 +48,7 @@ audits:
   - name: Complexity hotspots
     grade: A
     summary: >-
-      `scripts/agentera` and `scripts/agentera_upgrade.py` are large, but their command parsing, bundle-status, upgrade, and artifact-query responsibilities remain sectioned and covered by focused tests.
+      `scripts/agentera` and `scripts/agentera_upgrade.py` are large, but their command parsing, doctor, upgrade, and artifact-query responsibilities remain sectioned and covered by focused tests.
     findings: []
   - name: Test health
     grade: B

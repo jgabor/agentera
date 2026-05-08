@@ -18,6 +18,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CLI = str(REPO_ROOT / "scripts" / "agentera")
 SCHEMAS_SRC = REPO_ROOT / "skills" / "agentera" / "schemas" / "artifacts"
+CONTRACT_PATH = REPO_ROOT / "references" / "cli" / "agent-ready-state-contract.yaml"
 
 
 def _run(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
@@ -874,3 +875,243 @@ class TestArtifactTypeCoverage:
         names = json.loads(r.stdout)
         assert "session" in names
         assert "plan" in names
+
+
+ROUTINE_STRUCTURED_COMMANDS = [
+    "hej",
+    "plan",
+    "progress",
+    "health",
+    "todo",
+    "decisions",
+    "docs",
+    "objective",
+    "experiments",
+]
+
+
+class TestRoutineStructuredOutput:
+    def _seed(self, project: Path, command: str) -> None:
+        if command == "hej":
+            return
+        fixture = ARTIFACT_FIXTURES[command]
+        _write_fixture_artifact(project, fixture)
+
+    @pytest.mark.parametrize("command", ROUTINE_STRUCTURED_COMMANDS)
+    def test_json_output_has_agent_ready_envelope(self, project, command):
+        self._seed(project, command)
+
+        r = _run(command, "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["command"] == command
+        assert data["status"] in {"ok", "empty"}
+        assert "source" in data
+        if command == "hej":
+            assert "next_action" in data
+            assert "source_contract" in data
+        else:
+            assert isinstance(data["entries"], list)
+            assert isinstance(data["counts"]["entries"], int)
+            assert "exists" in data["source"]
+            assert "path" in data["source"]
+
+    @pytest.mark.parametrize("command", ROUTINE_STRUCTURED_COMMANDS)
+    def test_yaml_output_is_parseable(self, project, command):
+        self._seed(project, command)
+
+        r = _run(command, "--format", "yaml", cwd=project)
+
+        assert r.returncode == 0
+        data = yaml.safe_load(r.stdout)
+        assert data["command"] == command
+        assert data["status"] in {"ok", "empty"}
+
+    @pytest.mark.parametrize("command", [c for c in ROUTINE_STRUCTURED_COMMANDS if c != "hej"])
+    def test_empty_json_state_is_explicit(self, project, command):
+        r = _run(command, "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["command"] == command
+        assert data["status"] == "empty"
+        assert data["entries"] == []
+        assert data["counts"]["entries"] == 0
+        assert data["source"]["exists"] is False
+
+    def test_sparse_routine_output_uses_contract_fields_with_context(self, project):
+        self._seed(project, "plan")
+        contract = yaml.safe_load(CONTRACT_PATH.read_text(encoding="utf-8"))
+        available = contract["field_selection"]["fields_by_command"]["routine_state_commands"]["fields"]
+
+        r = _run("plan", "--format", "json", "--fields", "summary,entries", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert list(data) == ["command", "status", "summary", "entries"]
+        assert set(data).issubset(set(available))
+        assert data["command"] == "plan"
+        assert data["status"] == "ok"
+
+    @pytest.mark.parametrize("command", ROUTINE_STRUCTURED_COMMANDS)
+    def test_sparse_status_field_is_supported_for_every_routine_command(self, project, command):
+        self._seed(project, command)
+
+        r = _run(command, "--format", "json", "--fields", "status", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert list(data) == ["command", "status"]
+        assert data["command"] == command
+        assert data["status"] in {"ok", "empty"}
+
+    def test_sparse_hej_output_uses_hej_contract_fields_with_context(self, project):
+        contract = yaml.safe_load(CONTRACT_PATH.read_text(encoding="utf-8"))
+        available = contract["field_selection"]["fields_by_command"]["hej"]["fields"]
+
+        r = _run("hej", "--format", "yaml", "--fields", "mode,next_action", cwd=project)
+
+        assert r.returncode == 0
+        data = yaml.safe_load(r.stdout)
+        assert list(data) == ["command", "status", "mode", "next_action"]
+        assert set(data).issubset(set(available))
+        assert data["command"] == "hej"
+        assert data["status"] == "ok"
+
+    def test_sparse_output_rejects_unsupported_field_without_partial_stdout(self, project):
+        self._seed(project, "plan")
+        contract = yaml.safe_load(CONTRACT_PATH.read_text(encoding="utf-8"))
+        available = contract["field_selection"]["fields_by_command"]["routine_state_commands"]["fields"]
+
+        r = _run("plan", "--format", "json", "--fields", "summary,raw_yaml", cwd=project)
+
+        assert r.returncode == 1
+        assert r.stdout == ""
+        assert "unsupported field 'raw_yaml'" in r.stderr
+        assert "Available fields: " + ", ".join(available) in r.stderr
+
+    def test_sparse_output_rejects_unsafe_field_without_partial_stdout(self, project):
+        self._seed(project, "plan")
+
+        r = _run("plan", "--format", "json", "--fields", "summary,raw/yaml", cwd=project)
+
+        assert r.returncode == 2
+        assert r.stdout == ""
+        assert "unsupported field" in r.stderr
+
+    def test_text_output_without_field_selection_remains_human_readable(self, project):
+        self._seed(project, "plan")
+
+        r = _run("plan", cwd=project)
+
+        assert r.returncode == 0
+        assert "status=active" in r.stdout
+        assert not r.stdout.lstrip().startswith("{")
+
+
+class TestInputHardening:
+    def test_query_rejects_path_like_artifact_name_without_reading(self, project):
+        r = _run("query", "../progress", cwd=project)
+
+        assert r.returncode == 2
+        assert r.stdout == ""
+        assert "path-like values are not artifact names" in r.stderr
+
+    def test_query_rejects_control_character_filter(self, project):
+        _write_fixture_artifact(project, ARTIFACT_FIXTURES["decisions"])
+
+        r = _run("decisions", "--topic", "runtime\nunsafe", cwd=project)
+
+        assert r.returncode == 2
+        assert r.stdout == ""
+        assert "topic contains control characters" in r.stderr
+
+    def test_docs_yaml_mapping_rejects_project_escape(self, project):
+        _write_fixture_artifact(project, ARTIFACT_FIXTURES["plan"])
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [{"artifact": "PLAN.md", "path": "../outside.yaml"}],
+        })
+
+        r = _run("plan", "--format", "json", cwd=project)
+
+        assert r.returncode == 2
+        assert r.stdout == ""
+        assert "path contains traversal segments" in r.stderr
+
+    def test_doctor_rejects_traversal_install_root(self, project):
+        r = _run("doctor", "--install-root", "../agentera", "--json", cwd=project)
+
+        assert r.returncode == 2
+        assert r.stdout == ""
+        assert "unsafe path" in r.stderr
+
+    def test_upgrade_dry_run_rejects_uri_project_before_writes(self, project):
+        r = _run("upgrade", "--project", "file:///tmp/project", "--dry-run", "--json", cwd=project)
+
+        assert r.returncode == 2
+        assert r.stdout == ""
+        assert "URI-style paths are not supported" in r.stderr
+
+
+class TestDescribeIntrospection:
+    def test_describe_json_exposes_runtime_interface_without_route_alias_commands(self, project):
+        r = _run("describe", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["schemaVersion"] == "agentera.describe.v1"
+        assert data["command"] == "describe"
+        assert data["status"] == "ok"
+        command_names = {entry["name"] for entry in data["commands"]}
+        assert set(ROUTINE_STRUCTURED_COMMANDS).issubset(command_names)
+        assert {"query", "describe", "doctor", "upgrade", "prime"}.issubset(command_names)
+        assert "bundle-status" not in command_names
+        assert "build" not in command_names
+        assert "audit" not in command_names
+        assert data["slash_route_aliases"]["aliases"]["build"] == "realisera"
+        assert data["slash_route_aliases"]["cli_commands_added"] is False
+
+    def test_describe_json_exposes_formats_fields_schemas_and_doctor_boundaries(self, project):
+        r = _run("describe", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["structured_output"]["formats"] == ["json", "yaml"]
+        assert data["structured_output"]["fields_by_command"]["routine_state_commands"] == [
+            "command",
+            "status",
+            "entries",
+            "counts",
+            "source",
+            "filters",
+            "summary",
+        ]
+        assert data["field_selection"]["syntax"] == "--fields FIELD[,FIELD...]"
+        schemas = {entry["name"]: entry for entry in data["artifact_schemas"]}
+        assert "plan" in schemas
+        assert schemas["plan"]["status"] == "discovered"
+        assert any(field["field"] == "status" and field["id"] == "PH3" for field in schemas["plan"]["fields"])
+        assert data["doctor"]["command"] == "doctor"
+        assert data["doctor"]["removed_command"] == "bundle-status"
+        assert data["doctor"]["compatibility_alias"] == "forbidden"
+        assert "project artifact health" in data["doctor"]["excludes"]
+        assert "version_mismatch" in data["doctor"]["signal_kinds"]
+
+    def test_describe_yaml_is_parseable(self, project):
+        r = _run("describe", "--format", "yaml", cwd=project)
+
+        assert r.returncode == 0
+        data = yaml.safe_load(r.stdout)
+        assert data["command"] == "describe"
+        assert data["status"] == "ok"
+        assert data["source"]["schemas_dir_exists"] is True
+
+    def test_describe_reports_missing_schema_discovery_explicitly(self, tmp_path):
+        r = _run("describe", "--format", "json", cwd=tmp_path)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["status"] == "incomplete"
+        assert data["artifact_schemas"] == []
+        assert any(gap["scope"] == "artifact_schemas" and gap["status"] == "missing" for gap in data["gaps"])

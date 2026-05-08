@@ -147,6 +147,15 @@ routes to `realisera`; primary aliases are not CLI commands. Shared words keep
 their state meaning in the CLI: `/agentera plan` routes to `planera`, while
 `agentera plan` reads plan state.
 
+Use `agentera doctor` for Agentera CLI, install, bundle, and runtime self-checks.
+It is separate from `agentera health`, which reports project artifact health.
+
+Use `agentera describe --format json` when an agent needs to discover the live
+CLI interface instead of relying on static prompt stuffing. It reports commands,
+filters, output formats, structured fields, slash-route aliases, artifact schema
+fields, and doctor self-check categories from one runtime surface. Missing
+schema or contract facts are reported as explicit `gaps` entries.
+
 ## Quick start
 
 Pick one runtime, install Agentera, then run `/agentera` (`$agentera` in Codex).

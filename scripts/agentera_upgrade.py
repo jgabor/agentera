@@ -182,7 +182,7 @@ def _command_text(parts: list[str]) -> str:
     return " ".join(_shell_quote(part) for part in parts)
 
 
-def resolve_bundle_status_install_root(
+def resolve_doctor_install_root(
     value: Path | None,
     *,
     home: Path,
@@ -262,7 +262,7 @@ def _probe_bundle_cli(
     }
 
 
-def build_bundle_status(
+def build_doctor_status(
     install_root: Path,
     *,
     root_source: str,
@@ -1200,9 +1200,9 @@ def cmd_upgrade(args: argparse.Namespace) -> int:
     return 0
 
 
-def render_bundle_status(status: dict[str, Any]) -> str:
+def render_doctor_status(status: dict[str, Any]) -> str:
     lines = [
-        "Agentera bundle status",
+        "Agentera doctor",
         f"status: {status['status']}",
         f"expected version: {status['expectedVersion']}",
         f"install root: {status['installRoot']}",
@@ -1227,18 +1227,18 @@ def render_bundle_status(status: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def cmd_bundle_status(args: argparse.Namespace) -> int:
+def cmd_doctor(args: argparse.Namespace) -> int:
     try:
         source_root = resolve_source_root()
     except ValueError as exc:
-        print(f"bundle-status error: {exc}", file=sys.stderr)
+        print(f"doctor error: {exc}", file=sys.stderr)
         return 2
     home = args.home.expanduser().resolve()
-    install_root, root_source = resolve_bundle_status_install_root(
+    install_root, root_source = resolve_doctor_install_root(
         args.install_root,
         home=home,
     )
-    status = build_bundle_status(
+    status = build_doctor_status(
         install_root,
         root_source=root_source,
         source_root=source_root,
@@ -1250,5 +1250,5 @@ def cmd_bundle_status(args: argparse.Namespace) -> int:
     if args.json:
         print(json.dumps(status, indent=2, sort_keys=True))
     else:
-        print(render_bundle_status(status))
+        print(render_doctor_status(status))
     return 0 if status["status"] == "fresh" else 1

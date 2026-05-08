@@ -14,9 +14,15 @@
 - Artifact metadata ownership now routes through canonical artifact schemas plus `references/artifacts/artifact-registry-interface-model.yaml` and `scripts/artifact_registry.py`; capability-local artifact schemas use `artifact_id` plus `local_role`, while cross-capability tests and bounded CLI artifact resolution consume registry facts instead of display-name or path maps.
 - Capability validation now treats `skills/agentera/capability_schema_contract.yaml` plus `scripts/capability_contract.py` as the executable schema-rule authority, with validators and tests consuming the loaded model instead of validator-local capability constants.
 - Install-root identity and diagnostics now route through the shared `scripts/install_root.py` Module for Python setup, doctor, upgrade, and bundle freshness paths; RuntimeAdapter registry, package manifest registry, and optional generated cross-language contract work remain separate follow-ups.
+- `agentera doctor` is now the primary Agentera CLI/install/runtime self-check command, replacing `agentera bundle-status` without a compatibility alias while leaving `agentera health` and inspektera as the artifact and codebase health surfaces.
+- Routine state commands now support `--format json|yaml` for agent-ready state envelopes while preserving default human-readable output for `hej`, `plan`, `progress`, `health`, `todo`, `decisions`, `docs`, `objective`, and `experiments`.
+- Routine structured state commands now support sparse `--fields FIELD[,FIELD...]` selection over the documented structured output contract, retaining `command` and `status` context and rejecting unsupported fields without partial output.
+- `agentera describe --format json|yaml` now exposes runtime CLI introspection for commands, filters, formats, structured fields, Decision 43 slash-route aliases, artifact schemas, and doctor self-check categories while reporting missing discovery facts as explicit gaps.
+- Agent-facing CLI inputs now reject unsafe artifact/query names, sparse field names, control-character filters, traversal/URI path values, unsafe docs.yaml artifact path overrides, and unsafe doctor/upgrade roots before reading or writing.
 
 ### Added
 
+- Decision 45 now has an agent-ready state CLI contract at `references/cli/agent-ready-state-contract.yaml`, classifying stable state commands, Decision 43 route-alias exclusions, future `doctor`, `describe`, structured output, field selection, and input-hardening boundaries before executable CLI changes.
 - Decision 44 vocabulary coverage now has an executable proof in `tests/test_decision44_vocabulary.py`, scanning current docs, capability prose, maintained tests, diagnostics, and safe labels while requiring explicit reasons for protected terms.
 - Decision 44 now has a recorded vocabulary replacement boundary for the pending 2.2.0 cleanup, classifying deprecated wording, allowed uses, and protected compatibility surfaces before bulk prose edits.
 - README and vocabulary docs now show exactly one plain `/agentera <alias>` route per canonical capability while keeping alias words out of the CLI state-command surface.
@@ -24,7 +30,7 @@
 - Secondary request wording such as `deliberate`, `brainstorm`, `rubber duck`, `brief`, and `what's next` now routes through trigger schemas without expanding the one-primary-alias contract.
 - Schema-backed routing tests now observe exact Decision 43 aliases, proving `/agentera status`, `/agentera discuss`, and `/agentera build` route directly while non-exact work phrases stay trigger-driven.
 - Capability schema contract now defines the Decision 43 primary `/agentera <alias>` table while preserving Swedish capability names and the state-oriented CLI boundary.
-- `agentera bundle-status` now diagnoses durable bundle freshness, including stale markers, missing `hej`, pre-argparse CLI failures, unset defaults, and unsafe `AGENTERA_HOME` roots before any write.
+- `agentera doctor` now diagnoses durable bundle status, including stale markers, missing `hej`, pre-argparse CLI failures, unset defaults, and unsafe `AGENTERA_HOME` roots before any write.
 - Bare `/agentera` guidance now has a self-healing bundle-refresh path: preview `uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root <root> --dry-run`, require approval, apply the same root with `--yes`, then retry installed `agentera hej`.
 
 ### Fixed
@@ -36,6 +42,13 @@
 
 ### Verified
 
+- Decision 45 final pre-closure state is synchronized for 2.2.0: Tasks 1-7 are complete, Task 8 remains pending for conductor evaluation and closure, TODO shows only unrelated follow-ups as open, docs metadata is current, progress has Task 8 verification evidence, and the plan remains active until conductor-owned inspektera PASS. No release publication, tag, push, package update, installed-bundle refresh, or version beyond 2.2.0 is claimed.
+- Decision 45 Task 7 compatibility and 2.2.0 release-readiness evidence is recorded without publication or final closure: focused routing, package/runtime registry, capability/protocol, doctor, describe, structured output, field-selection, and hardening checks pass; `bundle-status` remains intentionally unavailable; release policy attaches the work to pending 2.2.0 with no version beyond 2.2.0; local/remote tag, branch push, package update, package publication, and installed-bundle refresh remain unperformed.
+- Decision 45 Task 1 contract evidence is recorded without executable CLI behavior changes: the new contract regression validates stable command vocabulary, route-alias separation, doctor self-check scope, and later-task boundaries while Task 1 remains pending for conductor evaluation.
+- Decision 45 Task 5 describe evidence is recorded without broad input hardening, release proof, or final state sync: focused tests cover JSON/YAML describe output, route-alias exclusion from CLI commands, schema field IDs including duplicate field names, doctor boundaries, and explicit missing-schema gaps.
+- Decision 45 Task 6 input-hardening evidence is recorded without release proof or final state sync: focused tests cover invalid artifact names, field names, filters, docs.yaml path escapes, doctor roots, upgrade roots, and unchanged valid query/upgrade/doctor/describe workflows.
+- Decision 45 Task 4 field-selection evidence is recorded without describe or broad input-hardening behavior: focused tests cover sparse JSON/YAML selection for routine and `hej` contract fields, invalid-field rejection, and unchanged human text defaults.
+- Decision 45 Task 3 structured-output evidence is recorded without field selection or describe behavior: focused tests cover JSON/YAML parseability and explicit empty-state envelopes for routine state commands, and direct CLI checks parse every required command in both formats.
 - Decision 44 plain-English vocabulary cleanup is included in the pending 2.2.0 release without a new version: package/version projections still agree on 2.2.0, vocabulary coverage remains green, the 2.2.0 tag is absent, and the installed durable bundle remains intentionally stale until an approved publication or bundle refresh.
 - Decision 44 final pre-closure state is synchronized for 2.2.0: Tasks 1-7 are complete, Task 8 remains pending for conductor evaluation and closure, TODO shows only unrelated follow-ups as open, docs metadata is current, and progress has this verification evidence.
 - Decision 44 TODO and evidence state are synchronized for the pending 2.2.0 release: TODO resolution, progress evidence, changelog evidence, and docs metadata now reference the vocabulary cleanup without claiming publication, while optional Claude live-smoke and install-root/generated-contract follow-ups remain open separately.

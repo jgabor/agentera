@@ -1,4 +1,4 @@
-last_audit: 2026-05-07 (Decision 44 Task 8 final pre-closure state sync)
+last_audit: 2026-05-08 (Decision 45 Task 8 final pre-closure state sync)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -72,7 +72,7 @@ mapping:
 index:
 - document: README
   path: README.md
-  last_updated: '2026-05-07'
+  last_updated: '2026-05-08'
   status: current
 - document: Python package manifest
   path: pyproject.toml
@@ -80,7 +80,7 @@ index:
   status: current
 - document: Upgrade guide
   path: UPGRADE.md
-  last_updated: '2026-05-07'
+  last_updated: '2026-05-08'
   status: current
 - document: CLAUDE.md
   path: CLAUDE.md
@@ -88,7 +88,7 @@ index:
   status: current
 - document: Decisions
   path: .agentera/decisions.yaml
-  last_updated: '2026-05-05'
+  last_updated: '2026-05-08'
   status: current
 - document: Vision
   path: .agentera/vision.yaml
@@ -96,31 +96,31 @@ index:
   status: current
 - document: Progress
   path: .agentera/progress.yaml
-  last_updated: '2026-05-07'
+  last_updated: '2026-05-08'
   status: current
 - document: TODO
   path: TODO.md
-  last_updated: '2026-05-07'
+  last_updated: '2026-05-08'
   status: current
 - document: Changelog
   path: CHANGELOG.md
-  last_updated: '2026-05-07'
+  last_updated: '2026-05-08'
   status: current
 - document: Health
   path: .agentera/health.yaml
-  last_updated: '2026-05-05'
+  last_updated: '2026-05-08'
   status: current
 - document: Plan
   path: .agentera/plan.yaml
-  last_updated: '2026-05-07'
+  last_updated: '2026-05-08'
   status: current
 - document: DOCS
   path: .agentera/docs.yaml
-  last_updated: '2026-05-07'
+  last_updated: '2026-05-08'
   status: current
 - document: Vocabulary
   path: docs/vocabulary.md
-  last_updated: '2026-05-07'
+  last_updated: '2026-05-08'
   status: current
 - document: Gap analysis
   path: .agentera/gap-analysis-2026-05-05.md
@@ -169,6 +169,10 @@ index:
 - document: Runtime parity reference
   path: references/adapters/runtime-feature-parity.md
   last_updated: '2026-05-07'
+  status: current
+- document: Agent-ready state CLI contract
+  path: references/cli/agent-ready-state-contract.yaml
+  last_updated: '2026-05-08'
   status: current
 - document: RuntimeAdapter characterization
   path: references/adapters/runtime-adapter-characterization.md
@@ -228,7 +232,7 @@ index:
   status: current
 - document: Agentera CLI
   path: scripts/agentera
-  last_updated: '2026-05-05'
+  last_updated: '2026-05-08'
   status: current
 - document: Upgrade orchestrator
   path: scripts/agentera_upgrade.py
@@ -334,8 +338,136 @@ coverage:
   documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: Decision 44 is explicitly attached to the pending 2.2.0 release evidence without publication; coverage includes tests/test_decision44_vocabulary.py for deprecated preferred wording scans plus registry-backed cross-capability tests, ArtifactRegistry contract tests, and cross-capability validator evidence. Task 8 final pre-closure state sync confirms Tasks 1-7 complete, Task 8 still pending for conductor closure, and unrelated TODOs separate.
+  tests: Decision 45 Task 8 final pre-closure state sync records TODO, changelog, progress, docs metadata, and plan state after Tasks 1-7 passed. Focused validation confirms only unrelated TODO follow-ups remain open, the plan stays active with Task 8 pending for conductor closure, docs/changelog summarize the doctor hard rename without publication claims, and vision/objective state has no diff.
 audit_log:
+- date: '2026-05-08'
+  label: Decision 45 Task 8 final pre-closure state sync
+  findings:
+  - type: plan-state
+    description: The active Decision 45 plan remains active with Tasks 1-7 complete and Task 8 pending; conductor owns marking Task 8 complete and closing the plan after inspektera PASS.
+    resolution: fixed
+    severity: info
+  - type: evidence-sync
+    description: TODO, changelog, progress, and docs metadata now agree that Decision 45 evidence is attached to pending 2.2.0 without release publication, tag, push, package update, installed-bundle refresh, version beyond 2.2.0, vision edit, or objective edit.
+    resolution: fixed
+    severity: info
+  - type: scoped-deferral
+    description: Optional Claude live-smoke and generated install-root contract TODOs remain open and separate from the resolved Decision 45 state-interface work.
+    resolution: fixed
+    severity: info
+  - type: cli-rename
+    description: Current docs and changelog summarize the breaking self-check rename to `agentera doctor`; `agentera bundle-status` remains intentionally unavailable and historical references are treated as contract/history only.
+    resolution: fixed
+    severity: info
+- date: '2026-05-08'
+  label: Decision 45 Task 7 release readiness
+  findings:
+  - type: verified
+    description: Focused validation passed for routing, package/runtime registries and version readers, docs status, capability contract self-validation, representative capability validation, doctor, describe, structured routine outputs, sparse fields, and hardening checks.
+    resolution: fixed
+    severity: info
+  - type: boundary
+    description: Current tracked surfaces use doctor; remaining bundle-status references are the Decision 45 contract/history, active-plan acceptance text, docs audit history, and tests that assert the removed command is unavailable.
+    resolution: noted
+    severity: info
+  - type: release
+    description: Release policy attaches Decision 45 evidence to pending 2.2.0; package registry reports suite_version 2.2.0 with interface-only changes not requiring a version beyond 2.2.0 and publication out of scope.
+    resolution: noted
+    severity: info
+  - type: publication-safety
+    description: No local tag, remote tag, branch push, package-manager update, package publication, installed-bundle refresh, commit, vision edit, objective edit, or plan completion update was performed during Task 7.
+    resolution: noted
+    severity: info
+- date: '2026-05-08'
+  label: Decision 45 Task 6 input hardening
+  findings:
+  - type: cli-contract
+    description: Agent-facing CLI inputs now validate artifact/query identifiers, sparse field identifiers, filter strings, path-like arguments, doctor roots, upgrade roots, and docs.yaml artifact path overrides at the CLI or artifact-resolution boundary.
+    resolution: fixed
+    severity: info
+  - type: boundary
+    description: Unsafe values fail with return code 2 for validation errors or the existing argparse return code 2 for unsupported choices; unsupported sparse fields keep their existing return code 1, and no partial stdout is emitted for the new unsafe-input failures.
+    resolution: fixed
+    severity: info
+  - type: verified
+    description: Focused validation covers unsafe artifact names, field names, control-character filters, path escapes, doctor roots, upgrade roots, and valid query/upgrade/doctor/structured/describe workflows.
+    resolution: fixed
+    severity: info
+- date: '2026-05-08'
+  label: Decision 45 Task 5 describe introspection
+  findings:
+  - type: cli-contract
+    description: agentera describe now emits runtime CLI/schema introspection in JSON or YAML, including commands, filters, output formats, structured fields, Decision 43 slash-route aliases, artifact schemas, and doctor self-check categories.
+    resolution: fixed
+    severity: info
+  - type: boundary
+    description: describe keeps slash aliases as slash-only routes, does not add build/audit/document/status CLI commands, does not reintroduce bundle-status, and reports missing contract or schema discovery facts through explicit gaps instead of fabricated capabilities.
+    resolution: fixed
+    severity: info
+  - type: verified
+    description: Focused validation covers describe JSON/YAML output, missing-schema gaps, stable command boundaries, doctor categories, structured field metadata, and artifact schema field IDs including duplicate field names.
+    resolution: fixed
+    severity: info
+- date: '2026-05-08'
+  label: Decision 45 Task 4 sparse field selection
+  findings:
+  - type: cli-contract
+    description: Routine structured commands now accept --fields FIELD[,FIELD...] and select only documented structured envelope fields while retaining command/status context.
+    resolution: fixed
+    severity: info
+  - type: boundary
+    description: Field selection rejects unsupported fields with available contract fields and does not select arbitrary raw YAML artifact fields, implement describe, broaden input hardening, add route-alias commands, or reintroduce bundle-status.
+    resolution: fixed
+    severity: info
+  - type: verified
+    description: Focused validation covers sparse JSON and YAML output, invalid-field errors with no partial stdout, unchanged text defaults, and the Decision 45 field-selection contract.
+    resolution: fixed
+    severity: info
+- date: '2026-05-08'
+  label: Decision 45 Task 3 structured routine output
+  findings:
+  - type: cli-contract
+    description: Routine state commands now expose --format json|yaml with command, status, entries, counts, source metadata, filters, and summary where applicable; hej exposes its composite source contract separately.
+    resolution: fixed
+    severity: info
+  - type: boundary
+    description: Task 3 did not add field selection, describe, new route-alias commands, bundle-status compatibility, publication, installed bundle refresh, or plan completion updates.
+    resolution: fixed
+    severity: info
+  - type: verified
+    description: Focused validation covers JSON and YAML parsing for every required routine command, explicit empty-state JSON for artifact-backed commands, and the Decision 45 contract envelope documentation.
+    resolution: fixed
+    severity: info
+- date: '2026-05-08'
+  label: Decision 45 Task 2 doctor rename
+  findings:
+  - type: cli-contract
+    description: agentera doctor is now the primary Agentera CLI/install/runtime self-check command, and agentera bundle-status is intentionally unavailable with no compatibility alias.
+    resolution: fixed
+    severity: info
+  - type: boundary
+    description: README, UPGRADE, CHANGELOG, vocabulary, and dispatcher guidance keep agentera health and inspektera as the project artifact health and codebase audit surfaces rather than doctor.
+    resolution: fixed
+    severity: info
+  - type: verified
+    description: Focused validation covers doctor JSON behavior, hard removal of bundle-status, command help, contract tests, schema self-validation, and documentation metadata.
+    resolution: fixed
+    severity: info
+- date: '2026-05-08'
+  label: Decision 45 Task 1 CLI contract
+  findings:
+  - type: authority
+    description: references/cli/agent-ready-state-contract.yaml is now the Task 1 source-of-truth contract for Decision 45 CLI vocabulary and later implementation boundaries.
+    resolution: fixed
+    severity: info
+  - type: boundary
+    description: The contract preserves `hej`, `plan`, `progress`, `health`, `todo`, `decisions`, `docs`, `objective`, `experiments`, and `query`; excludes Decision 43 aliases such as `status`, `build`, `audit`, and `document` from CLI commands; and separates future `doctor` CLI/install/runtime checks from `agentera health` and inspektera audit output.
+    resolution: fixed
+    severity: info
+  - type: tests
+    description: tests/test_decision45_cli_contract.py validates the stable command list, route-alias boundary, doctor scope, and later-task classifications without changing executable CLI behavior.
+    resolution: fixed
+    severity: info
 - date: '2026-05-07'
   label: Decision 44 Task 8 final pre-closure state sync
   findings:
@@ -381,7 +513,7 @@ audit_log:
     resolution: fixed
     severity: info
   - type: freshness
-    description: The index explicitly distinguishes plan-level freshness checkpoint, bundle freshness guard, bundle-status diagnostic, artifact staleness, upgrade guard, and pre-dispatch checkpoint commit.
+    description: The index explicitly distinguishes plan-level freshness checkpoint, bundle freshness guard, doctor diagnostic, artifact staleness, upgrade guard, and pre-dispatch checkpoint commit.
     resolution: fixed
     severity: info
 - date: '2026-05-06'
@@ -504,7 +636,7 @@ audit_log:
     resolution: fixed
     severity: info
   - type: verified
-    description: Focused bundle-status regressions exercise stale markers, missing hej, unsafe roots, dry-run before apply, same-root refresh, and pre-argparse CLI failures.
+    description: Focused doctor regressions exercise stale markers, missing hej, unsafe roots, dry-run before apply, same-root refresh, unavailable bundle-status alias, and pre-argparse CLI failures.
     resolution: fixed
     severity: info
 - date: '2026-05-05'

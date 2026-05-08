@@ -166,7 +166,7 @@ def test_doctor_characterizes_machine_readable_install_root_diagnostics(
         assert result["missing"] == list(setup_doctor.install_root_module.SETUP_EVIDENCE)
 
 
-def test_upgrade_characterizes_bundle_status_root_shapes(
+def test_upgrade_characterizes_doctor_root_shapes(
     upgrade: ModuleType,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -211,7 +211,7 @@ def test_upgrade_characterizes_bundle_status_root_shapes(
     ]
 
     for root, source_name, expected_status, expected_root_status, expected_kinds in cases:
-        status = upgrade.build_bundle_status(
+        status = upgrade.build_doctor_status(
             root,
             root_source=source_name,
             source_root=source,

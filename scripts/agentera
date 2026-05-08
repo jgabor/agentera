@@ -16,6 +16,7 @@ Commands:
   agentera docs              Documentation contract summary
   agentera objective         Active optimera objective summary
   agentera experiments       Active optimera experiments summary
+  agentera describe          Runtime CLI/schema introspection
   agentera query <artifact>  Advanced custom artifact query
   agentera upgrade           Plan or apply a v1-to-v2 upgrade
 
@@ -33,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -40,7 +42,14 @@ from typing import Any
 import yaml
 
 from artifact_registry import ArtifactRecord, load_artifact_registry, resolve_artifact_path
-from agentera_upgrade import cmd_bundle_status, cmd_upgrade
+from agentera_upgrade import cmd_doctor, cmd_upgrade
+
+
+CONTROL_CHAR_RE = re.compile(r"[\x00-\x1f\x7f]")
+IDENTIFIER_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
+VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.+_-]*$")
+URI_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+ENCODED_TRAVERSAL_RE = re.compile(r"%(?:2e|2f|5c)", re.IGNORECASE)
 
 PRIME_BLOB = """\
 # agentera priming guide
@@ -221,6 +230,68 @@ def _artifact_path(info: dict[str, Any], schema_name: str) -> Path:
     )
 
 
+def _has_control_chars(value: str) -> bool:
+    return CONTROL_CHAR_RE.search(value) is not None
+
+
+def _validate_agent_string(value: str, label: str) -> None:
+    if _has_control_chars(value):
+        raise ValueError(f"{label} contains control characters")
+
+
+def _validate_identifier(value: str, label: str) -> None:
+    _validate_agent_string(value, label)
+    if not IDENTIFIER_RE.fullmatch(value):
+        raise ValueError(f"unsupported {label} {value!r}; use letters, digits, '_' or '-'")
+
+
+def _validate_path_value(value: str, label: str) -> None:
+    _validate_agent_string(value, label)
+    if ENCODED_TRAVERSAL_RE.search(value):
+        raise ValueError(f"unsafe {label}: encoded traversal or path separator is not supported")
+    if URI_SCHEME_RE.match(value) and not re.match(r"^[A-Za-z]:[\\/]", value):
+        raise ValueError(f"unsupported {label}: URI-style paths are not supported")
+    if any(part == ".." for part in Path(value).parts):
+        raise ValueError(f"unsafe {label}: traversal segments are not supported")
+
+
+def _agent_path(value: str) -> Path:
+    try:
+        _validate_path_value(value, "path")
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+    return Path(value)
+
+
+def _agent_command(value: str) -> str:
+    try:
+        _validate_identifier(value, "command name")
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+    return value
+
+
+def _agent_version(value: str) -> str:
+    try:
+        _validate_agent_string(value, "expected version")
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+    if not VERSION_RE.fullmatch(value):
+        raise argparse.ArgumentTypeError(
+            f"unsupported expected version {value!r}; use version characters only",
+        )
+    return value
+
+
+def _validate_filter_values(args: argparse.Namespace, names: list[str]) -> None:
+    for name in names:
+        value = getattr(args, name, None)
+        values = value if isinstance(value, list) else [value]
+        for item in values:
+            if item is not None:
+                _validate_agent_string(str(item), name.replace("_", " "))
+
+
 def _load_artifact(path: Path) -> Any:
     if not path.exists():
         return None
@@ -397,6 +468,366 @@ def _emit_structured(value: Any, output_format: str) -> None:
         print(yaml.safe_dump(value, sort_keys=False), end="")
 
 
+def _output_format(args: argparse.Namespace) -> str:
+    return getattr(args, "format", "text")
+
+
+ROUTINE_STRUCTURED_FIELDS = [
+    "command",
+    "status",
+    "entries",
+    "counts",
+    "source",
+    "filters",
+    "summary",
+]
+
+HEJ_STRUCTURED_FIELDS = [
+    "command",
+    "status",
+    "mode",
+    "profile",
+    "health",
+    "issues",
+    "plan",
+    "objective",
+    "attention",
+    "next_action",
+    "source",
+    "source_contract",
+]
+
+REQUIRED_SPARSE_CONTEXT_FIELDS = ["command", "status"]
+
+ROUTINE_STATE_COMMANDS = [
+    "hej",
+    "plan",
+    "progress",
+    "health",
+    "todo",
+    "decisions",
+    "docs",
+    "objective",
+    "experiments",
+]
+
+COMMAND_FILTERS = {
+    "hej": [],
+    "plan": ["status"],
+    "progress": ["topic", "status", "limit"],
+    "health": ["dimension"],
+    "todo": ["severity", "status"],
+    "decisions": ["topic"],
+    "docs": ["topic", "status"],
+    "objective": ["status"],
+    "experiments": ["topic", "status", "limit"],
+    "query": ["list_artifacts", "topic", "severity", "dimension", "status", "limit"],
+    "doctor": ["install_root", "home", "project", "expected_version", "expect_command"],
+    "upgrade": ["project", "install_root", "home", "runtime", "only", "dry_run", "yes", "force", "update_packages"],
+    "describe": ["format"],
+}
+
+COMMAND_DESCRIPTIONS = {
+    "prime": "Print static agent-priming guidance.",
+    "hej": "Composite orientation briefing.",
+    "plan": "Active plan summary.",
+    "progress": "Recent cycle summary.",
+    "health": "Latest project artifact health audit.",
+    "todo": "TODO summary.",
+    "decisions": "Decision log.",
+    "docs": "Documentation contract summary.",
+    "objective": "Active optimera objective summary.",
+    "experiments": "Active optimera experiments summary.",
+    "query": "Advanced custom artifact query.",
+    "upgrade": "Plan or apply an idempotent v1-to-v2 upgrade.",
+    "doctor": "Check Agentera CLI, install, bundle, and runtime status.",
+    "describe": "Runtime self-description for CLI commands, formats, fields, aliases, schemas, and doctor categories.",
+}
+
+DOCTOR_SIGNAL_KINDS = [
+    "missing_bundle",
+    "invalid_install_root",
+    "unmanaged_install_root",
+    "invalid_bundle",
+    "missing_marker",
+    "version_mismatch",
+    "cli_probe_unavailable",
+    "cli_probe_failed",
+    "missing_command",
+]
+
+
+def _available_structured_fields(command: str) -> list[str]:
+    return HEJ_STRUCTURED_FIELDS if command == "hej" else ROUTINE_STRUCTURED_FIELDS
+
+
+def _requested_fields(args: argparse.Namespace) -> list[str]:
+    raw = getattr(args, "fields", None)
+    if not raw:
+        return []
+    _validate_agent_string(str(raw), "fields")
+    fields: list[str] = []
+    for part in str(raw).split(","):
+        field = part.strip()
+        if field and field not in fields:
+            _validate_identifier(field, "field")
+            fields.append(field)
+    return fields
+
+
+def _select_structured_fields(
+    command: str,
+    value: dict[str, Any],
+    args: argparse.Namespace,
+) -> dict[str, Any] | None:
+    requested = _requested_fields(args)
+    if not requested:
+        return value
+    available = _available_structured_fields(command)
+    unsupported = [field for field in requested if field not in available]
+    if unsupported:
+        print(
+            f"Error: unsupported field '{unsupported[0]}' for {command}. "
+            f"Available fields: {', '.join(available)}",
+            file=sys.stderr,
+        )
+        return None
+    selected: dict[str, Any] = {}
+    for field in [*REQUIRED_SPARSE_CONTEXT_FIELDS, *requested]:
+        if field in value and field not in selected:
+            selected[field] = value[field]
+    return selected
+
+
+def _emit_state_structured(command: str, value: dict[str, Any], args: argparse.Namespace) -> int:
+    selected = _select_structured_fields(command, value, args)
+    if selected is None:
+        return 1
+    _emit_structured(selected, _output_format(args))
+    return 0
+
+
+def _source_metadata(command: str, path: Path | None, *, schema: str | None = None) -> dict[str, Any]:
+    return {
+        "artifact": schema or command,
+        "path": str(path) if path is not None else None,
+        "exists": bool(path and path.exists()),
+        "kind": "markdown" if path and path.suffix.lower() == ".md" else "yaml",
+    }
+
+
+def _structured_state(
+    command: str,
+    entries: list[dict],
+    source: dict[str, Any],
+    *,
+    filters: dict[str, Any] | None = None,
+    summary: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {
+        "command": command,
+        "status": "ok" if entries or source.get("exists") else "empty",
+        "entries": entries,
+        "counts": {
+            "entries": len(entries),
+            "status": _status_counts(entries),
+        },
+        "source": source,
+        "filters": {k: v for k, v in (filters or {}).items() if v is not None},
+        "summary": summary or {},
+    }
+
+
+def _contract_path() -> Path:
+    return Path(__file__).resolve().parent.parent / "references" / "cli" / "agent-ready-state-contract.yaml"
+
+
+def _load_decision45_contract() -> tuple[dict[str, Any] | None, str | None]:
+    path = _contract_path()
+    if not path.is_file():
+        return None, "Decision 45 CLI contract is missing"
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return None, f"Decision 45 CLI contract could not be read: {exc}"
+    if not isinstance(data, dict):
+        return None, "Decision 45 CLI contract did not parse as a mapping"
+    return data, None
+
+
+def _schema_field_description(entry: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": entry.get("id"),
+        "field": entry.get("field"),
+        "type": entry.get("type", "unknown"),
+        "required": entry.get("required", "unknown"),
+        "format": entry.get("format"),
+        "validation": entry.get("validation", []),
+    }
+
+
+def _describe_schema_fields(schema: dict[str, Any]) -> list[dict[str, Any]]:
+    skip = {
+        "meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION",
+        "ARCHIVE",
+    }
+    fields: list[dict[str, Any]] = []
+    for group_key, group_val in schema.items():
+        if group_key in skip or not isinstance(group_val, dict):
+            continue
+        for _num, entry in group_val.items():
+            if isinstance(entry, dict) and "field" in entry:
+                field = _schema_field_description(entry)
+                field["group"] = group_key
+                fields.append(field)
+    return fields
+
+
+def _describe_artifact_schemas(schemas_dir: Path, schemas: dict[str, dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    gaps: list[dict[str, Any]] = []
+    if not schemas_dir.is_dir():
+        gaps.append({
+            "scope": "artifact_schemas",
+            "status": "missing",
+            "message": f"artifact schema directory is missing: {schemas_dir}",
+        })
+        return [], gaps
+
+    artifacts: list[dict[str, Any]] = []
+    for name in sorted(schemas):
+        info = schemas[name]
+        schema = info.get("schema") if isinstance(info.get("schema"), dict) else {}
+        meta = schema.get("meta", {}) if isinstance(schema, dict) else {}
+        schema_file = schemas_dir / f"{name}.yaml"
+        artifacts.append({
+            "name": name,
+            "status": "discovered" if meta else "unknown_metadata",
+            "schema_file": str(schema_file) if schema_file.is_file() else None,
+            "path": info.get("path") or "unknown",
+            "artifact_type": meta.get("artifact_type", "unknown") if isinstance(meta, dict) else "unknown",
+            "format": meta.get("format", "unknown") if isinstance(meta, dict) else "unknown",
+            "producer": meta.get("producer", "unknown") if isinstance(meta, dict) else "unknown",
+            "consumers": meta.get("consumers", "unknown") if isinstance(meta, dict) else "unknown",
+            "fields": _describe_schema_fields(schema),
+        })
+        if not meta:
+            gaps.append({
+                "scope": f"artifact_schemas.{name}",
+                "status": "unknown",
+                "message": "schema metadata is absent or unreadable",
+            })
+    return artifacts, gaps
+
+
+def _command_description(name: str, *, kind: str, fields: list[str] | None = None) -> dict[str, Any]:
+    output_formats = ["text", "json", "yaml"]
+    if name == "doctor":
+        output_formats = ["text", "json"]
+    elif name == "upgrade":
+        output_formats = ["text", "json"]
+    elif name == "describe":
+        output_formats = ["json", "yaml"]
+    elif name == "prime":
+        output_formats = ["text"]
+    return {
+        "name": name,
+        "kind": kind,
+        "description": COMMAND_DESCRIPTIONS.get(name, "unknown"),
+        "filters": COMMAND_FILTERS.get(name, []),
+        "output_formats": output_formats,
+        "structured_fields": fields or [],
+    }
+
+
+def _describe_commands() -> list[dict[str, Any]]:
+    commands = [_command_description("prime", kind="guidance")]
+    for name in ROUTINE_STATE_COMMANDS:
+        commands.append(_command_description(name, kind="routine_state", fields=_available_structured_fields(name)))
+    commands.extend([
+        _command_description("query", kind="advanced_artifact_query"),
+        _command_description("describe", kind="runtime_introspection"),
+        _command_description("upgrade", kind="upgrade"),
+        _command_description("doctor", kind="self_check"),
+    ])
+    return commands
+
+
+def _contract_section(contract: dict[str, Any] | None, key: str, gaps: list[dict[str, Any]]) -> Any:
+    if isinstance(contract, dict) and key in contract:
+        return contract[key]
+    gaps.append({
+        "scope": key,
+        "status": "unknown",
+        "message": f"Decision 45 contract section {key!r} is unavailable",
+    })
+    return None
+
+
+def _build_describe_payload() -> dict[str, Any]:
+    contract, contract_error = _load_decision45_contract()
+    schemas_dir = _discover_schemas_dir()
+    schemas = _load_schemas(schemas_dir)
+    gaps: list[dict[str, Any]] = []
+    if contract_error:
+        gaps.append({"scope": "contract", "status": "missing", "message": contract_error})
+    artifact_schemas, schema_gaps = _describe_artifact_schemas(schemas_dir, schemas)
+    gaps.extend(schema_gaps)
+
+    slash_aliases = _contract_section(contract, "slash_route_aliases", gaps)
+    doctor_contract = _contract_section(contract, "doctor", gaps)
+    structured_output = _contract_section(contract, "structured_output", gaps)
+    field_selection = _contract_section(contract, "field_selection", gaps)
+
+    return {
+        "schemaVersion": "agentera.describe.v1",
+        "command": "describe",
+        "status": "incomplete" if gaps else "ok",
+        "source": {
+            "contract": str(_contract_path()),
+            "contract_exists": _contract_path().is_file(),
+            "schemas_dir": str(schemas_dir),
+            "schemas_dir_exists": schemas_dir.is_dir(),
+            "schema_count": len(artifact_schemas),
+        },
+        "commands": _describe_commands(),
+        "routine_state_commands": ROUTINE_STATE_COMMANDS,
+        "structured_output": {
+            "formats": (structured_output or {}).get("formats", ["json", "yaml"]) if isinstance(structured_output, dict) else "unknown",
+            "fields_by_command": {
+                "routine_state_commands": ROUTINE_STRUCTURED_FIELDS,
+                "hej": HEJ_STRUCTURED_FIELDS,
+            },
+        },
+        "field_selection": {
+            "syntax": (field_selection or {}).get("syntax", "--fields FIELD[,FIELD...]") if isinstance(field_selection, dict) else "unknown",
+            "retained_context": REQUIRED_SPARSE_CONTEXT_FIELDS,
+            "applies_to": (field_selection or {}).get("applies_to", ROUTINE_STATE_COMMANDS) if isinstance(field_selection, dict) else "unknown",
+        },
+        "slash_route_aliases": {
+            "status": (slash_aliases or {}).get("status", "unknown") if isinstance(slash_aliases, dict) else "unknown",
+            "aliases": (slash_aliases or {}).get("aliases", {}) if isinstance(slash_aliases, dict) else {},
+            "cli_commands_added": False,
+            "note": "Decision 43 aliases are slash-route aliases only, not Agentera CLI commands.",
+        },
+        "artifact_schemas": artifact_schemas,
+        "doctor": {
+            "command": "doctor",
+            "removed_command": (doctor_contract or {}).get("removed_command", "unknown") if isinstance(doctor_contract, dict) else "unknown",
+            "compatibility_alias": (doctor_contract or {}).get("compatibility_alias", "unknown") if isinstance(doctor_contract, dict) else "unknown",
+            "self_check_categories": (doctor_contract or {}).get("owns", "unknown") if isinstance(doctor_contract, dict) else "unknown",
+            "excludes": (doctor_contract or {}).get("excludes", "unknown") if isinstance(doctor_contract, dict) else "unknown",
+            "adjacent_surfaces": (doctor_contract or {}).get("adjacent_surfaces", "unknown") if isinstance(doctor_contract, dict) else "unknown",
+            "signal_kinds": DOCTOR_SIGNAL_KINDS,
+        },
+        "gaps": gaps,
+    }
+
+
+def cmd_describe(args: argparse.Namespace) -> int:
+    _emit_structured(_build_describe_payload(), getattr(args, "format", "json"))
+    return 0
+
+
 def cmd_prime(_args: argparse.Namespace) -> int:
     print(PRIME_BLOB, end="")
     return 0
@@ -429,13 +860,25 @@ def _query_decisions(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No decisions schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_artifact_path(info, "decisions"))
+    path = _artifact_path(info, "decisions")
+    data = _load_artifact(path)
     entries = _extract_entries(data)
-    if not entries:
-        return 0
     topic = getattr(args, "topic", None)
     if topic:
         entries = _filter_by_topic(entries, topic, info["fields"])
+    if _output_format(args) != "text":
+        return _emit_state_structured(
+            "decisions",
+            _structured_state(
+                "decisions",
+                entries,
+                _source_metadata("decisions", path),
+                filters={"topic": topic},
+            ),
+            args,
+        )
+    if not entries:
+        return 0
     disp = _display_fields(info["fields"])
     for e in entries:
         parts = []
@@ -453,11 +896,37 @@ def _query_health(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No health schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_artifact_path(info, "health"))
+    path = _artifact_path(info, "health")
+    data = _load_artifact(path)
     entries = _extract_entries(data)
+    dimension = getattr(args, "dimension", None)
+    latest_entries = entries[:1]
+    if dimension and latest_entries:
+        latest = latest_entries[0]
+        dim_lower = dimension.lower()
+        matched = False
+        grades = latest.get("grades", {})
+        if isinstance(grades, dict):
+            matched = any(dim_lower in str(gk).lower() for gk in grades)
+        details = latest.get("dimensions_detail", [])
+        if isinstance(details, list):
+            matched = matched or any(dim_lower in str(d.get("name", "")).lower() for d in details if isinstance(d, dict))
+        if not matched:
+            latest_entries = []
+    if _output_format(args) != "text":
+        return _emit_state_structured(
+            "health",
+            _structured_state(
+                "health",
+                latest_entries,
+                _source_metadata("health", path),
+                filters={"dimension": dimension},
+                summary={"latest_only": True},
+            ),
+            args,
+        )
     if not entries:
         return 0
-    dimension = getattr(args, "dimension", None)
     latest = entries[0]
     if dimension:
         dim_lower = dimension.lower()
@@ -503,10 +972,21 @@ def _query_todo(
 ) -> int:
     info = schemas.get("todo", {"path": "TODO.md", "fields": {}})
     todo_path = _artifact_path(info, "todo")
-    if not todo_path.exists():
-        return 0
     severity = getattr(args, "severity", None)
     status = getattr(args, "status", None)
+    if not todo_path.exists():
+        if _output_format(args) != "text":
+            return _emit_state_structured(
+                "todo",
+                _structured_state(
+                    "todo",
+                    [],
+                    _source_metadata("todo", todo_path),
+                    filters={"severity": severity, "status": status},
+                ),
+                args,
+            )
+        return 0
     data = _load_artifact(todo_path)
     entries = _extract_entries(data)
     if entries:
@@ -519,6 +999,17 @@ def _query_todo(
                 entry for entry in entries
                 if str(entry.get("status", "open")).lower() not in {"done", "closed", "resolved"}
             ]
+        if _output_format(args) != "text":
+            return _emit_state_structured(
+                "todo",
+                _structured_state(
+                    "todo",
+                    entries,
+                    _source_metadata("todo", todo_path),
+                    filters={"severity": severity, "status": status, "open_only": open_only or None},
+                ),
+                args,
+            )
         _print_status_counts("TODO status", _status_counts(entries))
         for entry in entries:
             line = _format_entry(entry, ["severity", "status", "description", "title"])
@@ -538,6 +1029,7 @@ def _query_todo(
     marker = sev_map.get(severity.lower(), severity) if severity else None
     current_section = None
     found = False
+    markdown_entries = []
     for line in text.splitlines():
         s = line.strip()
         if s.startswith("## "):
@@ -557,7 +1049,25 @@ def _query_todo(
         item = s[5:].strip()
         if status and status.lower() not in {"open", "todo"}:
             continue
-        print(f"[{current_section}] {item}")
+        markdown_entries.append({
+            "severity": _normalize_severity(current_section),
+            "status": "open",
+            "description": item,
+            "section": current_section,
+        })
+        if _output_format(args) == "text":
+            print(f"[{current_section}] {item}")
+    if _output_format(args) != "text":
+        return _emit_state_structured(
+            "todo",
+            _structured_state(
+                "todo",
+                markdown_entries,
+                _source_metadata("todo", todo_path),
+                filters={"severity": severity, "status": status, "open_only": open_only or None},
+            ),
+            args,
+        )
     return 0
 
 
@@ -566,14 +1076,27 @@ def _query_plan(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No plan schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_artifact_path(info, "plan"))
+    path = _artifact_path(info, "plan")
+    data = _load_artifact(path)
     if not isinstance(data, dict):
+        if _output_format(args) != "text":
+            return _emit_state_structured(
+                "plan",
+                _structured_state("plan", [], _source_metadata("plan", path), filters={"status": getattr(args, "status", None)}),
+                args,
+            )
         return 0
     legacy_entries = _as_list(data.get("entries"))
     if legacy_entries:
         status_filter = getattr(args, "status", None)
         if status_filter:
             legacy_entries = _filter_by_field_value(legacy_entries, "status", status_filter)
+        if _output_format(args) != "text":
+            return _emit_state_structured(
+                "plan",
+                _structured_state("plan", legacy_entries, _source_metadata("plan", path), filters={"status": status_filter}),
+                args,
+            )
         for entry in legacy_entries:
             line = _format_entry(entry, ["status", "title", "name"])
             if line:
@@ -583,15 +1106,27 @@ def _query_plan(args: argparse.Namespace, schemas: dict) -> int:
     title = _first_present(header, ["title"], data.get("title", ""))
     status = _first_present(header, ["status"], data.get("status", ""))
     created = _first_present(header, ["created"], data.get("created", ""))
+    tasks = _as_list(data.get("tasks"))
+    status_filter = getattr(args, "status", None)
+    if status_filter:
+        tasks = _filter_by_field_value(tasks, "status", status_filter)
+    if _output_format(args) != "text":
+        return _emit_state_structured(
+            "plan",
+            _structured_state(
+                "plan",
+                tasks,
+                _source_metadata("plan", path),
+                filters={"status": status_filter},
+                summary={"title": title, "status": status, "created": created, "what": data.get("what"), "why": data.get("why")},
+            ),
+            args,
+        )
     print(f"Plan: status={status or 'unknown'} | title={_truncate(title)} | created={created or '-'}")
     for key in ("what", "why"):
         value = data.get(key)
         if value:
             print(f"{key}: {_truncate(value)}")
-    tasks = _as_list(data.get("tasks"))
-    status_filter = getattr(args, "status", None)
-    if status_filter:
-        tasks = _filter_by_field_value(tasks, "status", status_filter)
     _print_status_counts("Task status", _status_counts(tasks))
     for task in tasks[:10]:
         line = _format_entry(task, ["number", "status", "name", "title"])
@@ -605,10 +1140,9 @@ def _query_progress(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No progress schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_artifact_path(info, "progress"))
+    path = _artifact_path(info, "progress")
+    data = _load_artifact(path)
     entries = _extract_entries(data)
-    if not entries:
-        return 0
     topic = getattr(args, "topic", None)
     if topic:
         entries = _filter_by_topic(entries, topic, info["fields"])
@@ -616,7 +1150,21 @@ def _query_progress(args: argparse.Namespace, schemas: dict) -> int:
     if status_filter:
         entries = _filter_by_field_value(entries, "type", status_filter)
     limit = getattr(args, "limit", 5) or 5
-    for entry in _recent_cycles(entries, limit):
+    entries = _recent_cycles(entries, limit)
+    if _output_format(args) != "text":
+        return _emit_state_structured(
+            "progress",
+            _structured_state(
+                "progress",
+                entries,
+                _source_metadata("progress", path),
+                filters={"topic": topic, "status": status_filter, "limit": limit},
+            ),
+            args,
+        )
+    if not entries:
+        return 0
+    for entry in entries:
         print(_format_entry(entry, ["number", "timestamp", "type", "phase", "commit"]))
         for key in ("what", "verified", "next"):
             value = entry.get(key)
@@ -630,29 +1178,35 @@ def _query_docs(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No docs schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_artifact_path(info, "docs"))
+    path = _artifact_path(info, "docs")
+    data = _load_artifact(path)
     if not isinstance(data, dict):
+        if _output_format(args) != "text":
+            return _emit_state_structured(
+                "docs",
+                _structured_state("docs", [], _source_metadata("docs", path), filters={"topic": getattr(args, "topic", None), "status": getattr(args, "status", None)}),
+                args,
+            )
         return 0
     legacy_entries = _as_list(data.get("entries"))
     if legacy_entries:
         status_filter = getattr(args, "status", None)
         if status_filter:
             legacy_entries = _filter_by_field_value(legacy_entries, "status", status_filter)
+        if _output_format(args) != "text":
+            return _emit_state_structured(
+                "docs",
+                _structured_state("docs", legacy_entries, _source_metadata("docs", path), filters={"status": status_filter}),
+                args,
+            )
         for entry in legacy_entries:
             line = _format_entry(entry, ["last_audit", "document", "path", "status"])
             if line:
                 print(line)
         return 0
-    print(f"Docs: last_audit={data.get('last_audit', '-')}")
     mapping = _as_list(data.get("mapping"))
     index = _as_list(data.get("index"))
     coverage = data.get("coverage") if isinstance(data.get("coverage"), dict) else {}
-    print(f"Mapping: entries={len(mapping)}")
-    if coverage:
-        print(
-            "Coverage: "
-            + " | ".join(f"{key}={_truncate(value)}" for key, value in coverage.items())
-        )
     topic = getattr(args, "topic", None)
     if topic:
         t = topic.lower()
@@ -665,6 +1219,25 @@ def _query_docs(args: argparse.Namespace, schemas: dict) -> int:
     status_filter = getattr(args, "status", None)
     if status_filter:
         index = _filter_by_field_value(index, "status", status_filter)
+    if _output_format(args) != "text":
+        return _emit_state_structured(
+            "docs",
+            _structured_state(
+                "docs",
+                index,
+                _source_metadata("docs", path),
+                filters={"topic": topic, "status": status_filter},
+                summary={"last_audit": data.get("last_audit"), "mapping_entries": len(mapping), "coverage": coverage},
+            ),
+            args,
+        )
+    print(f"Docs: last_audit={data.get('last_audit', '-')}")
+    print(f"Mapping: entries={len(mapping)}")
+    if coverage:
+        print(
+            "Coverage: "
+            + " | ".join(f"{key}={_truncate(value)}" for key, value in coverage.items())
+        )
     _print_status_counts("Docs status", _status_counts(index))
     for entry in index[:10]:
         line = _format_entry(entry, ["document", "path", "last_updated", "status"])
@@ -727,14 +1300,27 @@ def _query_objective(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No objective schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_artifact_path(info, "objective"))
+    path = _artifact_path(info, "objective")
+    data = _load_artifact(path)
     if not isinstance(data, dict):
+        if _output_format(args) != "text":
+            return _emit_state_structured(
+                "objective",
+                _structured_state("objective", [], _source_metadata("objective", path), filters={"status": getattr(args, "status", None)}),
+                args,
+            )
         return 0
     legacy_entries = _as_list(data.get("entries"))
     if legacy_entries:
         status_filter = getattr(args, "status", None)
         if status_filter:
             legacy_entries = _filter_by_field_value(legacy_entries, "status", status_filter)
+        if _output_format(args) != "text":
+            return _emit_state_structured(
+                "objective",
+                _structured_state("objective", legacy_entries, _source_metadata("objective", path), filters={"status": status_filter}),
+                args,
+            )
         for entry in legacy_entries:
             line = _format_entry(entry, ["title", "status", "target", "reason"])
             if line:
@@ -744,12 +1330,24 @@ def _query_objective(args: argparse.Namespace, schemas: dict) -> int:
     objective = data.get("objective") if isinstance(data.get("objective"), dict) else data
     title = _first_present(header, ["title"], objective.get("title", ""))
     status = _first_present(header, ["status"], objective.get("status", ""))
+    closure = data.get("closure") if isinstance(data.get("closure"), dict) else {}
+    if _output_format(args) != "text":
+        return _emit_state_structured(
+            "objective",
+            _structured_state(
+                "objective",
+                [objective] if objective else [],
+                _source_metadata("objective", path),
+                filters={"status": getattr(args, "status", None)},
+                summary={"title": title, "status": status, "header": header, "closure": closure},
+            ),
+            args,
+        )
     print(f"Objective: title={_truncate(title)} | status={status or 'unknown'}")
     for key in ("description", "target", "measurement", "direction", "unit"):
         value = objective.get(key) or data.get(key)
         if value:
             print(f"{key}: {_truncate(value)}")
-    closure = data.get("closure") if isinstance(data.get("closure"), dict) else {}
     if closure:
         print(_format_entry(closure, ["final_value", "target", "reason"]))
     return 0
@@ -760,8 +1358,15 @@ def _query_experiments(args: argparse.Namespace, schemas: dict) -> int:
     if not info:
         print("No experiments schema found", file=sys.stderr)
         return 1
-    data = _load_artifact(_artifact_path(info, "experiments"))
+    path = _artifact_path(info, "experiments")
+    data = _load_artifact(path)
     if not isinstance(data, dict):
+        if _output_format(args) != "text":
+            return _emit_state_structured(
+                "experiments",
+                _structured_state("experiments", [], _source_metadata("experiments", path), filters={"topic": getattr(args, "topic", None), "status": getattr(args, "status", None), "limit": getattr(args, "limit", 5)}),
+                args,
+            )
         return 0
     entries = _as_list(data.get("experiments"))
     status_filter = getattr(args, "status", None)
@@ -770,9 +1375,23 @@ def _query_experiments(args: argparse.Namespace, schemas: dict) -> int:
     topic = getattr(args, "topic", None)
     if topic:
         entries = _filter_by_topic(entries, topic, info["fields"])
-    _print_status_counts("Experiment status", _status_counts(entries))
     limit = getattr(args, "limit", 5) or 5
-    for entry in entries[-limit:]:
+    entries = entries[-limit:]
+    closure = data.get("closure") if isinstance(data.get("closure"), dict) else {}
+    if _output_format(args) != "text":
+        return _emit_state_structured(
+            "experiments",
+            _structured_state(
+                "experiments",
+                entries,
+                _source_metadata("experiments", path),
+                filters={"topic": topic, "status": status_filter, "limit": limit},
+                summary={"closure": closure},
+            ),
+            args,
+        )
+    _print_status_counts("Experiment status", _status_counts(entries))
+    for entry in entries:
         print(_format_entry(entry, ["number", "date", "label", "status"]))
         metric = entry.get("metric")
         if isinstance(metric, dict):
@@ -783,7 +1402,6 @@ def _query_experiments(args: argparse.Namespace, schemas: dict) -> int:
             value = entry.get(key)
             if value:
                 print(f"  {key}: {_truncate(value)}")
-    closure = data.get("closure") if isinstance(data.get("closure"), dict) else {}
     if closure:
         print("Closure: " + _format_entry(closure, ["final_value", "target", "reason"]))
     return 0
@@ -1104,6 +1722,58 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     counts = _issue_counts(todo_items)
     decision = _decision_follow_up(schemas)
     next_action = _select_hej_next_action(plan, health, objective, todo_items, decision)
+    attention = []
+    if v1_artifacts:
+        command = 'uv run scripts/agentera upgrade --project "$PWD" --dry-run'
+        attention.append(
+            f"degraded: v1 artifacts detected; preview `{command}`; files={', '.join(v1_artifacts)}"
+        )
+    if profile_status == "not found":
+        attention.append(f"degraded: PROFILE.md not found at {profile}")
+    if health.get("degrading"):
+        worst = health.get("worst")
+        attention.append(
+            f"critical: health needs attention ({worst[0]}:{worst[1]})"
+            if worst
+            else "critical: health is degrading"
+        )
+    pending = plan.get("first_pending")
+    if isinstance(pending, dict):
+        title = _first_present(pending, ["name", "title"], "pending task")
+        attention.append(f"normal: PLAN Task {pending.get('number', '?')}: {title}")
+    elif todo_items:
+        first_todo = sorted(
+            todo_items,
+            key=lambda entry: TODO_SEVERITY_ORDER.get(entry["severity"], 2),
+        )[0]
+        attention.append(f"{first_todo['severity']}: TODO: {first_todo['text']}")
+    if _output_format(_args) != "text":
+        return _emit_state_structured(
+            "hej",
+            {
+                "command": "hej",
+                "status": "ok",
+                "mode": mode,
+                "profile": {"status": profile_status, "path": str(profile)},
+                "health": health,
+                "issues": counts,
+                "plan": plan,
+                "objective": objective,
+                "attention": attention[:6],
+                "next_action": next_action,
+                "source": {
+                    "schemas_dir": str(schemas_dir),
+                    "project": str(Path.cwd()),
+                    "artifacts_present": mode == "returning",
+                },
+                "source_contract": {
+                    "fields": ["mode", "profile", "health", "issues", "plan", "objective", "attention", "next_action"],
+                    "render": "caller-owned README-style hej dashboard",
+                    "empty_state": "fresh mode with missing artifact summaries and zero issue counts",
+                },
+            },
+            _args,
+        )
 
     print("agentera hej")
     print(f"mode: {mode}")
@@ -1137,31 +1807,6 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     else:
         print("objective: none active")
 
-    attention = []
-    if v1_artifacts:
-        command = 'uv run scripts/agentera upgrade --project "$PWD" --dry-run'
-        attention.append(
-            f"degraded: v1 artifacts detected; preview `{command}`; files={', '.join(v1_artifacts)}"
-        )
-    if profile_status == "not found":
-        attention.append(f"degraded: PROFILE.md not found at {profile}")
-    if health.get("degrading"):
-        worst = health.get("worst")
-        attention.append(
-            f"critical: health needs attention ({worst[0]}:{worst[1]})"
-            if worst
-            else "critical: health is degrading"
-        )
-    pending = plan.get("first_pending")
-    if isinstance(pending, dict):
-        title = _first_present(pending, ["name", "title"], "pending task")
-        attention.append(f"normal: PLAN Task {pending.get('number', '?')}: {title}")
-    elif todo_items:
-        first_todo = sorted(
-            todo_items,
-            key=lambda entry: TODO_SEVERITY_ORDER.get(entry["severity"], 2),
-        )[0]
-        attention.append(f"{first_todo['severity']}: TODO: {first_todo['text']}")
     if attention:
         print("attention:")
         for item in attention[:6]:
@@ -1229,6 +1874,9 @@ STATE_COMMAND_HANDLERS = {
 
 
 def cmd_state(args: argparse.Namespace) -> int:
+    _validate_filter_values(args, COMMAND_FILTERS.get(args.command, []))
+    if hasattr(args, "limit") and getattr(args, "limit") is not None and getattr(args, "limit") < 0:
+        raise ValueError("limit must be zero or greater")
     schemas = _load_schemas(_discover_schemas_dir())
     handler = STATE_COMMAND_HANDLERS[args.command]
     return handler(args, schemas)
@@ -1236,6 +1884,9 @@ def cmd_state(args: argparse.Namespace) -> int:
 
 def cmd_query(args: argparse.Namespace) -> int:
     output_format = getattr(args, "format", "text")
+    _validate_filter_values(args, COMMAND_FILTERS["query"])
+    if getattr(args, "limit", None) is not None and args.limit < 0:
+        raise ValueError("limit must be zero or greater")
     if getattr(args, "list_artifacts", False):
         schemas = _load_schemas(_discover_schemas_dir())
         names = sorted(schemas)
@@ -1249,6 +1900,9 @@ def cmd_query(args: argparse.Namespace) -> int:
     if not query:
         print("Error: query pattern required (or use --list-artifacts)", file=sys.stderr)
         return 1
+    _validate_agent_string(query, "query")
+    if any(marker in query for marker in ("/", "\\")) or query in {".", ".."} or ENCODED_TRAVERSAL_RE.search(query):
+        raise ValueError(f"unsupported artifact/query name {query!r}; path-like values are not artifact names")
     if query in STATE_COMMAND_HANDLERS:
         print(
             f"Unsupported routine query: {query}. Use `agentera {query}` instead.",
@@ -1281,44 +1935,65 @@ def build_parser() -> argparse.ArgumentParser:
         description="agentera: read project state, upgrade installs, and print priming guidance",
     )
     sub = parser.add_subparsers(dest="command")
+
+    def add_structured_args(command_parser: argparse.ArgumentParser) -> None:
+        command_parser.add_argument("--format", choices=["text", "json", "yaml"], default="text", help="Output format")
+        command_parser.add_argument("--fields", help="Comma-separated structured output fields to include with command/status context")
+
     sub.add_parser(
         "prime",
         help="Print agent-priming guidance (routing, recovery)",
     )
-    sub.add_parser(
+
+    describe = sub.add_parser(
+        "describe",
+        help="Runtime CLI/schema introspection",
+    )
+    describe.add_argument("--format", choices=["json", "yaml"], default="json", help="Output format")
+
+    hej = sub.add_parser(
         "hej",
         help="Composite orientation briefing",
     )
+    add_structured_args(hej)
 
     decisions = sub.add_parser("decisions", help="Decision log")
     decisions.add_argument("--topic", help="Filter by topic (substring match on text fields)")
+    add_structured_args(decisions)
 
     health = sub.add_parser("health", help="Latest health audit")
     health.add_argument("--dimension", help="Filter by dimension name")
+    add_structured_args(health)
 
     todo = sub.add_parser("todo", help="TODO summary")
     todo.add_argument("--severity", help="Filter by severity level")
     todo.add_argument("--status", help="Filter by status")
+    add_structured_args(todo)
 
     plan = sub.add_parser("plan", help="Active plan summary")
     plan.add_argument("--status", help="Filter plan tasks by status")
+    add_structured_args(plan)
 
     progress = sub.add_parser("progress", help="Recent cycle summary")
     progress.add_argument("--topic", help="Filter by topic (substring match on text fields)")
     progress.add_argument("--status", help="Filter progress entries by type")
     progress.add_argument("--limit", type=int, default=5, help="Limit recent entries")
+    add_structured_args(progress)
 
     docs = sub.add_parser("docs", help="Documentation contract summary")
     docs.add_argument("--topic", help="Filter docs by topic")
     docs.add_argument("--status", help="Filter docs by status")
+    add_structured_args(docs)
 
     objective = sub.add_parser("objective", help="Active optimera objective summary")
     objective.add_argument("--status", help="Filter legacy objective entries by status")
+    add_structured_args(objective)
 
     experiments = sub.add_parser("experiments", help="Active optimera experiments summary")
     experiments.add_argument("--topic", help="Filter by topic (substring match on text fields)")
     experiments.add_argument("--status", help="Filter by status")
     experiments.add_argument("--limit", type=int, default=5, help="Limit recent entries")
+    add_structured_args(experiments)
 
     q = sub.add_parser("query", help="Advanced custom artifact query")
     q.add_argument("query", nargs="?", help="Query pattern or artifact name")
@@ -1335,19 +2010,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     u.add_argument(
         "--project",
-        type=Path,
+        type=_agent_path,
         default=Path.cwd(),
         help="Project directory whose .agentera artifacts should be migrated (default: cwd)",
     )
     u.add_argument(
         "--install-root",
-        type=Path,
+        type=_agent_path,
         default=None,
         help="Agentera install root to wire into runtime configs (default: this bundle, or ~/.agents/agentera for packaged uvx runs)",
     )
     u.add_argument(
         "--home",
-        type=Path,
+        type=_agent_path,
         default=Path.home(),
         help="Home directory for runtime config writes/detection (default: current user home)",
     )
@@ -1390,47 +2065,49 @@ def build_parser() -> argparse.ArgumentParser:
     )
     u.add_argument(
         "--copilot-rc-file",
-        type=Path,
+        type=_agent_path,
         default=None,
         help="Override Copilot shell rc target (useful for previewing or tests)",
     )
     u.add_argument(
         "--opencode-config-dir",
-        type=Path,
+        type=_agent_path,
         default=None,
         help="Override OPENCODE_CONFIG_DIR for plugin copy and stale-command cleanup",
     )
 
     b = sub.add_parser(
-        "bundle-status",
-        help="Check installed Agentera bundle status before using an installed CLI",
+        "doctor",
+        help="Check Agentera CLI, install, bundle, and runtime status",
     )
     b.add_argument(
         "--install-root",
-        type=Path,
+        type=_agent_path,
         default=None,
         help="Agentera install root to inspect (default: AGENTERA_HOME, then ~/.agents/agentera)",
     )
     b.add_argument(
         "--home",
-        type=Path,
+        type=_agent_path,
         default=Path.home(),
         help="Home directory used for the default durable install root",
     )
     b.add_argument(
         "--project",
-        type=Path,
+        type=_agent_path,
         default=Path.cwd(),
         help="Project directory used when probing the installed CLI",
     )
     b.add_argument(
         "--expected-version",
+        type=_agent_version,
         default=None,
         help="Expected suite version (default: registry.json in the fresh source)",
     )
     b.add_argument(
         "--expect-command",
         action="append",
+        type=_agent_command,
         help="Installed CLI command that must be discoverable; may be repeated (default: hej)",
     )
     b.add_argument(
@@ -1444,18 +2121,24 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    if args.command == "prime":
-        return cmd_prime(args)
-    if args.command == "hej":
-        return cmd_hej(args)
-    if args.command in STATE_COMMAND_HANDLERS:
-        return cmd_state(args)
-    if args.command == "query":
-        return cmd_query(args)
-    if args.command == "upgrade":
-        return cmd_upgrade(args)
-    if args.command == "bundle-status":
-        return cmd_bundle_status(args)
+    try:
+        if args.command == "prime":
+            return cmd_prime(args)
+        if args.command == "describe":
+            return cmd_describe(args)
+        if args.command == "hej":
+            return cmd_hej(args)
+        if args.command in STATE_COMMAND_HANDLERS:
+            return cmd_state(args)
+        if args.command == "query":
+            return cmd_query(args)
+        if args.command == "upgrade":
+            return cmd_upgrade(args)
+        if args.command == "doctor":
+            return cmd_doctor(args)
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 2
     parser.print_help()
     return 1
 

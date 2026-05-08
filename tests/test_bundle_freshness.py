@@ -1,4 +1,4 @@
-"""Regression tests for self-healing installed bundle status guidance."""
+"""Regression tests for self-healing Agentera doctor guidance."""
 
 from __future__ import annotations
 
@@ -68,11 +68,11 @@ def _write_stale_bundle(root: Path, *, body: str | None = None, version: str = "
     )
 
 
-def test_bundle_status_reports_stale_managed_root_and_same_root_commands(tmp_path: Path) -> None:
+def test_doctor_reports_stale_managed_root_and_same_root_commands(tmp_path: Path) -> None:
     install_root = tmp_path / "home" / ".agents" / "agentera"
     _write_stale_bundle(install_root)
 
-    result = _run("bundle-status", "--install-root", str(install_root), "--json")
+    result = _run("doctor", "--install-root", str(install_root), "--json")
 
     assert result.returncode == 1, result.stderr
     payload = json.loads(result.stdout)
@@ -88,13 +88,13 @@ def test_bundle_status_reports_stale_managed_root_and_same_root_commands(tmp_pat
     assert payload["retryCommand"].endswith(f"{install_root}/scripts/agentera hej")
 
 
-def test_bundle_status_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path) -> None:
+def test_doctor_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path) -> None:
     unmanaged = tmp_path / "not-agentera"
     unmanaged.mkdir()
     (unmanaged / "README.txt").write_text("user-owned directory\n", encoding="utf-8")
 
     result = _run(
-        "bundle-status",
+        "doctor",
         "--json",
         "--home",
         str(tmp_path / "home"),
@@ -111,7 +111,7 @@ def test_bundle_status_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path)
 
     missing = tmp_path / "missing-agentera"
     result = _run(
-        "bundle-status",
+        "doctor",
         "--json",
         "--home",
         str(tmp_path / "home"),
@@ -129,7 +129,7 @@ def test_bundle_status_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path)
     (invalid / "skills" / "agentera" / "SKILL.md").write_text("---\nname: agentera\n---\n", encoding="utf-8")
     before = sorted(path.relative_to(invalid) for path in invalid.rglob("*"))
     result = _run(
-        "bundle-status",
+        "doctor",
         "--json",
         "--home",
         str(tmp_path / "home"),
@@ -146,11 +146,11 @@ def test_bundle_status_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path)
     assert sorted(path.relative_to(invalid) for path in invalid.rglob("*")) == before
 
 
-def test_bundle_status_targets_default_root_when_agentera_home_is_unset(tmp_path: Path) -> None:
+def test_doctor_targets_default_root_when_agentera_home_is_unset(tmp_path: Path) -> None:
     home = tmp_path / "home"
     env = {"AGENTERA_HOME": ""}
 
-    result = _run("bundle-status", "--json", "--home", str(home), env=env)
+    result = _run("doctor", "--json", "--home", str(home), env=env)
 
     assert result.returncode == 1
     payload = json.loads(result.stdout)
@@ -199,7 +199,7 @@ def test_stale_bundle_refresh_dry_run_then_apply_preserves_install_root(tmp_path
     assert apply_payload["installRoot"] == str(install_root)
     assert apply_payload["status"] == "applied"
 
-    status = _run("bundle-status", "--install-root", str(install_root), "--json")
+    status = _run("doctor", "--install-root", str(install_root), "--json")
     assert status.returncode == 0, status.stdout
     status_payload = json.loads(status.stdout)
     assert status_payload["status"] == "fresh"
@@ -238,7 +238,7 @@ def test_bundle_upgrade_missing_root_dry_run_writes_nothing(tmp_path: Path) -> N
     assert not install_root.exists()
 
 
-def test_bundle_status_reports_pre_argparse_cli_failures_as_status_signals(tmp_path: Path) -> None:
+def test_doctor_reports_pre_argparse_cli_failures_as_status_signals(tmp_path: Path) -> None:
     install_root = tmp_path / "home" / ".agents" / "agentera"
     _write_stale_bundle(
         install_root,
@@ -246,7 +246,7 @@ def test_bundle_status_reports_pre_argparse_cli_failures_as_status_signals(tmp_p
         version="2.1.1",
     )
 
-    result = _run("bundle-status", "--install-root", str(install_root), "--json")
+    result = _run("doctor", "--install-root", str(install_root), "--json")
 
     assert result.returncode == 1
     payload = json.loads(result.stdout)
@@ -255,3 +255,16 @@ def test_bundle_status_reports_pre_argparse_cli_failures_as_status_signals(tmp_p
     assert signal["kind"] == "cli_probe_failed"
     assert signal["returnCode"] != 0
     assert "wrong support module" in "\n".join(signal["stderrTail"])
+
+
+def test_bundle_status_is_not_exposed_as_a_compatibility_alias() -> None:
+    help_result = _run("--help")
+    assert help_result.returncode == 0
+    assert "doctor" in help_result.stdout
+    assert "bundle-status" not in help_result.stdout
+
+    result = _run("bundle-status", "--json")
+
+    assert result.returncode == 2
+    assert "invalid choice" in result.stderr
+    assert "bundle-status" in result.stderr
