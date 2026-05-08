@@ -735,6 +735,63 @@ class TestMainYamlArtifact:
         }, str(project_dir))
         assert rc == 0
 
+    def test_todo_resolved_compacts_after_valid_write(self, hook, project_dir, monkeypatch):
+        todo = project_dir / "TODO.md"
+        open_line = "- [ ] [fix:2.2.2] Keep this open"
+        resolved = []
+        for number in range(52, 0, -1):
+            summary = f"Resolved item {number} with useful summary"
+            if number == 3:
+                summary = "Resolved item 3 with Decision 999 in the summary"
+            resolved.append(f"- [x] [fix:2.2.2] {summary}")
+            resolved.append(f"  detail for item {number}")
+        todo.write_text(
+            "# TODO\n\n"
+            "## Normal\n\n"
+            f"{open_line}\n\n"
+            "## Resolved\n\n"
+            + "\n".join(resolved)
+            + "\n"
+        )
+
+        rc, err, out = _run_main(hook, monkeypatch, {
+            "tool_name": "Write",
+            "tool_input": {"file_path": str(todo)},
+        }, str(project_dir))
+
+        text = todo.read_text()
+        assert rc == 0
+        assert err == ""
+        assert open_line in text
+        assert text.count("- [x]") == 50
+        assert text.count("detail for item") == 10
+        assert "Resolved item 1 with useful summary" not in text
+        assert "Resolved item 2 with useful summary" not in text
+        assert text.index("Resolved item 52") < text.index("Resolved item 3 with Decision 999")
+        assert "[fix:2.2.2] Resolved item" in text
+        assert "ISS-?" not in text
+
+    def test_todo_resolved_compaction_noops_below_threshold(self, hook, project_dir, monkeypatch):
+        todo = project_dir / "TODO.md"
+        before = (
+            "# TODO\n\n"
+            "## Normal\n\n"
+            "- [ ] [fix:2.2.2] Keep this open\n\n"
+            "## Resolved\n\n"
+            "- [x] [fix:2.2.2] Small resolved item\n"
+            "  detail stays full\n"
+        )
+        todo.write_text(before)
+
+        rc, err, out = _run_main(hook, monkeypatch, {
+            "tool_name": "Write",
+            "tool_input": {"file_path": str(todo)},
+        }, str(project_dir))
+
+        assert rc == 0
+        assert err == ""
+        assert todo.read_text() == before
+
     def test_human_facing_markdown_invalid(self, hook, project_dir, monkeypatch):
         todo = project_dir / "TODO.md"
         todo.write_text("")

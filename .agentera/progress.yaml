@@ -1,4 +1,55 @@
 cycles:
+- number: 374
+  timestamp: 2026-05-08 23:41
+  type: fix
+  phase: build
+  what: Closed the 2.2.2 patch-release plan and removed active plan state.
+  commit: pending
+  inspiration: >
+    Task 6 required a final state check after all implementation, metadata, and verification tasks passed. Completed plans must be archived and removed so `agentera hej` does not keep reporting stale completed work as active.
+  discovered: >
+    The active plan could close cleanly because all six tasks were complete, the release artifacts agree on 2.2.2, the 2.3.x feature remains open, and no release publication operation was authorized.
+  verified: >
+    Final state check passed: `.agentera/archive/PLAN-2026-05-08-2-2-2-patch-release.yaml` preserves the completed plan, `.agentera/plan.yaml` was removed, `uv run scripts/agentera todo` shows only deferred follow-ups open, and release evidence in TODO, CHANGELOG, PROGRESS, DOCS, and version surfaces agrees on 2.2.2 without tag, push, publication, package update, installed app refresh, live install proof claim, vision edit, or objective edit.
+  next: If release publication is desired, request an explicit commit/tag/push/publication flow. Otherwise the next open work is deferred 2.3.x Profilera corpus parity or optional live-smoke evidence.
+  context:
+    intent: 2.2.2 Task 6 final state check and plan closure
+    constraints: no release tag operation, push, publication, package update, installed app refresh, live install proof claim, vision edit, or objective edit
+    scope: plan archive/removal, final TODO/changelog/progress/docs agreement, and release-readiness handoff
+- number: 373
+  timestamp: 2026-05-08 23:40
+  type: fix
+  phase: build
+  what: Completed 2.2.2 patch release-readiness verification.
+  commit: pending
+  inspiration: >
+    Task 5 required full local verification after the 2.2.2 fixes and metadata sync, while preserving the boundary that live install proof, installed app refresh, release tags, pushes, package updates, and publication require separate authorization.
+  discovered: >
+    `agentera doctor --json` correctly reports the installed app as stale at marker version 2.1.1 versus expected 2.2.2. That is release evidence, not a blocker, because this plan does not refresh installed app state or claim live install confidence.
+  verified: >
+    Final verification passed: `uv run pytest` reported 811 passed; `uv run scripts/validate_capability.py --self-validate` reported PASS; all 12 `skills/agentera/capabilities/*` directories validated; `python3 -m py_compile scripts/agentera hooks/validate_artifact.py hooks/compaction.py scripts/package_registry.py` completed with no output; package registry and runtime version alignment checks passed; local `describe`, `hej`, `plan`, `progress`, `health`, `todo`, `decisions`, `docs`, `objective`, and `experiments` JSON outputs parsed.
+  next: Run the plan-level current-state check, update docs and plan closure state, and avoid any tag, push, publication, package update, installed app refresh, or live install proof claim unless explicitly authorized.
+  context:
+    intent: 2.2.2 Task 5 release-readiness verification
+    constraints: no tag, push, publication, package update, installed app refresh, live install proof claim, vision edit, or objective edit
+    scope: full pytest, capability validation, schema contract self-validation, Python compile, package/version checks, doctor output, and routine state JSON parse checks
+- number: 372
+  timestamp: 2026-05-08 23:37
+  type: fix
+  phase: build
+  what: Synchronized 2.2.2 patch metadata and release state for the two selected fixes.
+  commit: pending
+  inspiration: >
+    The 2.2.2 plan selected only fix-class work for the patch lane after feature work moved to 2.3.x. Decision 49 requires exact release targeting once a patch release is selected.
+  discovered: >
+    TODO Resolved compaction initially sorted by incidental numeric text inside summaries, which could move older resolved entries ahead of newly resolved items. The compactor now preserves file order for TODO Resolved entries because TODO identity comes from normalized summary text, not generated numeric IDs.
+  verified: >
+    Focused evidence passed: `uv run pytest tests/test_query_cli.py::TestHej -q` reported 9 passed; `uv run pytest tests/test_hook_v2.py::TestMainYamlArtifact::test_todo_resolved_compacts_after_valid_write tests/test_hook_v2.py::TestMainYamlArtifact::test_todo_resolved_compaction_noops_below_threshold -q` reported 2 passed; `uv run scripts/agentera todo` shows the two 2.2.2 fixes no longer open and the 2.3.x feature still open.
+  next: Run full 2.2.2 release-readiness verification, then close the plan only if all checks and state surfaces agree.
+  context:
+    intent: 2.2.2 Task 4 metadata and release-state sync
+    constraints: no push, publication, package update, installed app refresh, live install proof claim, vision edit, objective edit, or release tag operation
+    scope: TODO.md, CHANGELOG.md, version files, skill frontmatter, compaction order behavior, docs metadata, progress, and active plan state
 - number: 371
   timestamp: 2026-05-08 19:08
   type: fix

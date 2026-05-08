@@ -1,0 +1,114 @@
+header:
+  level: full
+  created: '2026-05-08'
+  status: complete
+  reviewed: '2026-05-08'
+  critic_issues: 4 found, 4 addressed, 0 dismissed
+  revised: Tightened acceptance criteria to behavioral routing, retention, and release-state outcomes; removed wording that could imply failing tests or publication.
+  title: 2.2.2 Patch Release
+what: >-
+  Deliver the 2.2.2 patch release by closing the two open 2.2.x fixes, preserving
+  2.3.x feature scope, synchronizing release metadata, and recording verification
+  evidence without claiming live install confidence or publication before explicit
+  authorization.
+why: >-
+  The 2.2.1 release state is tagged locally and feature work has been retargeted
+  to 2.3.x, so the remaining 2.2 lane should be a focused patch release. This
+  preserves Decision 49 release targeting, follows the docs semver policy, and
+  fixes two visible Agentera workflow defects before broader 2.3 work.
+constraints: >-
+  Keep 2.2.2 to fix-class work plus release evidence. Do not include Decision 47
+  app-home migration, Decision 48 agentera lint, Profilera corpus parity, optional
+  Claude live smoke, generated JS contract work, package publication, remote push,
+  installed app refresh, vision edits, or objective edits unless separately
+  authorized. Convert only selected 2.2.x fix TODOs to exact 2.2.2 tags.
+scope:
+  included:
+    - Exact 2.2.2 TODO targeting for the two fix items.
+    - Fresh-project hej repeat behavior and evidence.
+    - TODO Resolved compaction-on-write behavior and evidence.
+    - 2.2.2 version, changelog, docs, progress, and TODO release evidence.
+    - Local patch-release verification gates.
+  excluded:
+    - Decision 47 app-home migration.
+    - Decision 48 agentera lint.
+    - Profilera corpus parity and other 2.3.x feature work.
+    - Live install proof claims.
+    - Publication, push, or tag operations without explicit release authorization.
+  deferred:
+    - Profilera corpus parity.
+    - Optional Claude live smoke.
+    - Generated JavaScript install-root contract.
+    - All-runtime live install proof if a future release wants four-runtime live confidence.
+design: >-
+  Execute the patch in evidence-first order: lock the exact 2.2.2 scope, fix the
+  two user-visible workflow defects independently, then synchronize release
+  metadata and verify the full suite. Keep acceptance criteria behavioral and let
+  realisera choose implementation seams.
+tasks:
+  - number: 1
+    name: Select exact 2.2.2 scope and TODO targets
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN the release lane is selected WHEN open 2.2.x TODOs are reviewed THEN only the two fix-class items are retargeted to [fix:2.2.2].
+      - GIVEN 2.3 work exists WHEN release scope is reviewed THEN feature-class work remains outside the 2.2.2 patch lane.
+      - GIVEN release state is queried WHEN the scope task completes THEN the local 2.2.1 baseline is visible and no publication claim is added.
+  - number: 2
+    name: Fix fresh-project hej repeat routing
+    depends_on:
+      - '1'
+    status: complete
+    acceptance:
+      - GIVEN a genuinely first-run empty project WHEN agentera hej is requested THEN the direction prompt still routes to visionera.
+      - GIVEN the first direction prompt was abandoned and no vision exists WHEN agentera hej repeats in the same saved context THEN the next action routes to resonera instead of visionera.
+      - GIVEN a vision-only project state WHEN agentera hej is requested THEN the response does not create a hej-to-visionera loop.
+      - GIVEN first-run, abandoned-repeat, and vision-only states WHEN hej routing is exercised THEN each state produces the expected route and rejects the prior loop behavior.
+  - number: 3
+    name: Wire TODO Resolved compaction into artifact writes
+    depends_on:
+      - '1'
+    status: complete
+    acceptance:
+      - GIVEN resolved TODO entries exceed the retained-entry limits WHEN a TODO resolution is written THEN the Resolved section keeps 10 full entries, 40 one-line entries, and drops older resolved entries.
+      - GIVEN TODO compaction runs WHEN the file is rewritten THEN open severity sections remain unchanged.
+      - GIVEN resolved entries include type prefixes and summaries WHEN compaction runs THEN the retained output preserves those identifiers without generated IDs.
+      - GIVEN threshold, below-threshold, and identifier-preservation cases WHEN TODO resolution is written THEN compaction behavior matches the documented retention contract.
+  - number: 4
+    name: Synchronize 2.2.2 release metadata
+    depends_on:
+      - '2'
+      - '3'
+    status: complete
+    acceptance:
+      - GIVEN both fixes are complete WHEN release metadata is updated THEN version-bearing working-tree surfaces identify 2.2.2 without creating tags, publication state, or live install claims.
+      - GIVEN the changelog is prepared WHEN the release notes are read THEN 2.2.2 lists only patch-scope fixes and verification evidence.
+      - GIVEN TODO state is updated WHEN agentera todo is queried THEN the two 2.2.2 fix items are no longer open.
+      - GIVEN progress and docs state are updated WHEN Agentera state is queried THEN they agree on 2.2.2 scope without claiming live install proof.
+  - number: 5
+    name: Verify patch release readiness
+    depends_on:
+      - '4'
+    status: complete
+    acceptance:
+      - GIVEN local release verification runs WHEN the gate completes THEN suite-level checks pass or blockers are recorded with concrete failure reasons.
+      - GIVEN Agentera CLI verification runs WHEN the gate completes THEN install diagnostics, runtime introspection, and routine state surfaces still report valid output.
+      - GIVEN no live install proof is authorized WHEN release evidence is recorded THEN no four-runtime live confidence claim is made.
+  - number: 6
+    name: Plan-level current-state check
+    depends_on:
+      - '1'
+      - '2'
+      - '3'
+      - '4'
+      - '5'
+    status: complete
+    acceptance:
+      - GIVEN all prior tasks are complete WHEN final state is queried THEN TODO, changelog, progress, docs, and plan state agree on 2.2.2 readiness.
+      - GIVEN release authorization has not been separately granted WHEN the plan closes THEN no remote push, package publication, installed app refresh, or release tag operation is performed.
+      - GIVEN all plan tasks are complete WHEN the plan is closed THEN the active plan is complete only after every task is complete and evidence is recorded.
+overall_acceptance:
+  - GIVEN the 2.2.2 release work is complete WHEN Agentera state is queried THEN only patch-scope fixes are included in the 2.2.2 lane.
+  - GIVEN the release artifacts are read WHEN 2.2.2 metadata is inspected THEN version, changelog, TODO, progress, and docs state agree.
+  - GIVEN no explicit publication authorization is present WHEN the plan completes THEN no remote push, package publication, installed app refresh, or release tag operation has occurred.
+surprises: []

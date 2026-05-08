@@ -15,6 +15,7 @@ Exit codes:
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import re
@@ -30,6 +31,32 @@ SCHEMAS_DIR = REPO_ROOT / "skills" / "agentera" / "schemas" / "artifacts"
 
 _AGENT_YAML_RE = re.compile(r"\.agentera/([a-z_]+)\.yaml$")
 _HUMAN_FACING = {"TODO.md", "CHANGELOG.md", "DESIGN.md"}
+_COMPACTION_MODULE = None
+
+
+def _load_compaction_module():
+    global _COMPACTION_MODULE
+    if _COMPACTION_MODULE is not None:
+        return _COMPACTION_MODULE
+    module_path = REPO_ROOT / "hooks" / "compaction.py"
+    spec = importlib.util.spec_from_file_location("agentera_compaction", module_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot load {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    _COMPACTION_MODULE = module
+    return module
+
+
+def _compact_after_valid_write(basename: str, abs_path: str) -> list[str]:
+    if basename != "TODO.md" or not os.path.exists(abs_path):
+        return []
+    try:
+        _load_compaction_module().compact_file(Path(abs_path), "todo-resolved")
+    except Exception as exc:
+        return [f"TODO.md: compaction failed: {exc}"]
+    return []
 
 
 # ── Runtime event parsing ──────────────────────────────────────────
@@ -623,7 +650,12 @@ class ArtifactSchemaValidator:
 
         if basename in _HUMAN_FACING:
             content = _read_if_needed(write.content, abs_path)
-            return [] if content is None else self.validate_markdown(content, basename)
+            if content is None:
+                return []
+            violations = self.validate_markdown(content, basename)
+            if violations:
+                return violations
+            return _compact_after_valid_write(basename, abs_path)
 
         return []
 

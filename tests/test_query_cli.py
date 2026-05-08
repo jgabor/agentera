@@ -560,6 +560,39 @@ class TestArtifactSpecificSummaries:
 
 
 class TestHej:
+    def test_first_run_empty_project_routes_to_visionera(self, project):
+        r = _run("hej", cwd=project)
+
+        assert r.returncode == 0
+        assert "mode: fresh" in r.stdout
+        assert "capability=visionera" in r.stdout
+        assert "reason=fresh project direction" in r.stdout
+
+    def test_saved_context_without_vision_routes_to_resonera(self, project):
+        _write_artifact(project, ".agentera/session.yaml", {
+            "bookmarks": [{"timestamp": "2026-05-08", "summary": "Direction prompt abandoned"}],
+        })
+
+        r = _run("hej", cwd=project)
+
+        assert r.returncode == 0
+        assert "mode: returning" in r.stdout
+        assert "object=Direction clarification" in r.stdout
+        assert "capability=resonera" in r.stdout
+        assert "capability=visionera" not in r.stdout
+
+    def test_vision_only_state_does_not_route_to_visionera(self, project):
+        _write_artifact(project, ".agentera/vision.yaml", {
+            "principles": [{"name": "Clear direction", "description": "Route from saved intent."}],
+        })
+
+        r = _run("hej", cwd=project)
+
+        assert r.returncode == 0
+        assert "mode: returning" in r.stdout
+        assert "capability=planera" in r.stdout
+        assert "capability=visionera" not in r.stdout
+
     def test_returning_v2_composite_briefing(self, project):
         profile = project / ".xdg" / "agentera" / "PROFILE.md"
         profile.parent.mkdir(parents=True)

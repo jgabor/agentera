@@ -1,4 +1,4 @@
-last_audit: 2026-05-08 (2.2.1 final verification and plan closure)
+last_audit: 2026-05-08 (2.2.2 final state check and plan closure)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -342,8 +342,53 @@ coverage:
   documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: 2.2.1 contract and entrypoint correctness passed full pytest (806 passed), all capability validation, contract self-validation, Python compile, focused lifecycle/validation/hej/gating tests, semantic fixtures, and version metadata checks. Deferred 2.2.x TODOs remain separate; live install proof was not run or claimed.
+  tests: 2.2.2 final state is closed after full pytest (811 passed), all capability validation, contract self-validation, changed Python compile, package/version alignment checks, focused hej and TODO compaction regressions, routine JSON state parse checks, and plan archive/removal. `agentera doctor --json` reports the installed app is stale, so no installed app refresh or live install confidence is claimed.
 audit_log:
+- date: '2026-05-08'
+  label: 2.2.2 final state check and plan closure
+  findings:
+  - type: checked
+    description: The completed 2.2.2 plan is archived at `.agentera/archive/PLAN-2026-05-08-2-2-2-patch-release.yaml` and active `.agentera/plan.yaml` was removed.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: TODO, changelog, progress, docs, and version surfaces agree on 2.2.2 patch scope while the 2.3.x Profilera corpus feature and optional live-smoke work remain open.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: No release tag operation, push, publication, package update, installed app refresh, live install proof claim, vision edit, or objective edit was performed during closure.
+    resolution: fixed
+    severity: info
+- date: '2026-05-08'
+  label: 2.2.2 release-readiness verification
+  findings:
+  - type: checked
+    description: Full pytest passed with 811 tests, capability validation and contract self-validation passed, changed Python entry points compiled, and package/version alignment checks passed.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: Local routine state commands emitted parseable JSON for describe, hej, plan, progress, health, todo, decisions, docs, objective, and experiments.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: Doctor reports the installed app is stale at marker version 2.1.1 versus expected 2.2.2; no installed app refresh, live install proof claim, tag, push, publication, package update, vision edit, or objective edit was performed.
+    resolution: noted
+    severity: info
+- date: '2026-05-08'
+  label: 2.2.2 metadata sync
+  findings:
+  - type: checked
+    description: The two selected 2.2.x fix TODOs are resolved as 2.2.2 work, while the Profilera corpus feature remains targeted to 2.3.x.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: Version-bearing surfaces now identify 2.2.2 across registry, Python, lock, runtime manifests, OpenCode marker, and skill frontmatter.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: Focused hej routing and TODO Resolved compaction tests pass locally; no push, publication, package update, installed app refresh, live install proof claim, vision edit, objective edit, or release tag operation was performed.
+    resolution: fixed
+    severity: info
 - date: '2026-05-08'
   label: 2.2.1 final verification and plan closure
   findings:

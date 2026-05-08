@@ -221,7 +221,6 @@ def _format_experiment_oneline(entry: dict) -> str:
 
 
 _TODO_CHECKBOX_RE = re.compile(r"^-\s*\[x\]\s*")
-_TODO_ISS_RE = re.compile(r"ISS-\d+")
 _TODO_ISS_LABEL_RE = re.compile(r"ISS-\d+:?\s*")
 
 
@@ -230,31 +229,25 @@ def _is_todo_oneline_passthrough(entry: dict) -> bool:
     return entry["kind"] == "oneline" and "~~" in entry["header"]
 
 
-def _extract_iss_id(header: str) -> str:
-    """Return the ISS-NN identifier in the header, or 'ISS-?' if none is present."""
-    match = _TODO_ISS_RE.search(header)
-    return match.group(0) if match else "ISS-?"
-
-
 def _strip_todo_metadata(header: str) -> str:
-    """Strip checkbox prefix, tilde wrappers, and ISS-NN label to leave a free-form summary."""
+    """Strip checkbox, tilde wrappers, legacy IDs, and resolution notes from a TODO header."""
     stripped = _TODO_CHECKBOX_RE.sub("", header)
     stripped = stripped.replace("~~", "").strip()
+    stripped = stripped.split(" · ", 1)[0].strip()
     stripped = _TODO_ISS_LABEL_RE.sub("", stripped).strip()
     return stripped
 
 
 def _format_todo_oneline(entry: dict) -> str:
     """Todo-resolved one-liner: pass through if already one-line + tilde-wrapped, otherwise
-    build `- [x] ~~ISS-NN: <=15-word summary~~`. Parse treats each resolved bullet as an entry
-    whose header holds the item text.
+    build `- [x] ~~[type] <=15-word summary~~`. Parse treats each resolved bullet as an
+    entry whose header holds the item text.
     """
     header = entry["header"].strip()
     if _is_todo_oneline_passthrough(entry):
         return header if header.startswith("- ") else f"- {header}"
-    iss = _extract_iss_id(header)
     summary = _truncate_words(_strip_todo_metadata(header) or "(resolved)", 15)
-    return f"- [x] ~~{iss}: {summary}~~"
+    return f"- [x] ~~{summary}~~"
 
 
 # ---------------------------------------------------------------------------
@@ -560,6 +553,29 @@ def compact_entries(
     return result
 
 
+def _compact_todo_entries(entries: list[dict]) -> list[dict]:
+    """Compact resolved TODO entries in file order.
+
+    TODO entries use content identity, not generated numeric IDs, so summary text
+    such as "Decision 45" must not affect recency. The Resolved section is
+    newest-first.
+    """
+    result: list[dict] = []
+    for i, entry in enumerate(entries):
+        if i < MAX_FULL_ENTRIES:
+            result.append(entry)
+        elif i < MAX_TOTAL_ENTRIES:
+            if entry["kind"] == "full":
+                result.append({
+                    "header": _format_todo_oneline(entry),
+                    "body": "",
+                    "kind": "oneline",
+                })
+            else:
+                result.append(entry)
+    return result
+
+
 # ---------------------------------------------------------------------------
 # File-level compaction
 # ---------------------------------------------------------------------------
@@ -648,10 +664,7 @@ def _compact_todo_resolved(path: Path) -> CompactResult:
     if total_before <= MAX_FULL_ENTRIES + MAX_ONELINE_ENTRIES and full_before <= MAX_FULL_ENTRIES:
         return CompactResult(full_before, oneline_before, full_before, oneline_before, 0, False)
 
-    compacted = compact_entries(
-        entries,
-        format_oneline=spec.format_oneline,
-    )
+    compacted = _compact_todo_entries(entries)
     full_after = sum(1 for e in compacted if e["kind"] == "full")
     oneline_after = sum(1 for e in compacted if e["kind"] == "oneline")
     dropped = total_before - len(compacted)

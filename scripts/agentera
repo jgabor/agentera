@@ -1654,6 +1654,7 @@ def _select_hej_next_action(
     objective: dict[str, Any],
     todo_items: list[dict[str, str]],
     decision: dict[str, Any] | None,
+    saved_context: bool,
 ) -> dict[str, str]:
     pending = plan.get("first_pending")
     if isinstance(pending, dict):
@@ -1707,6 +1708,12 @@ def _select_hej_next_action(
             "capability": "planera",
             "reason": "no executable follow-up",
         }
+    if saved_context:
+        return {
+            "object": "Direction clarification",
+            "capability": "resonera",
+            "reason": "saved context without vision",
+        }
     return {
         "object": "VISION refresh",
         "capability": "visionera",
@@ -1717,7 +1724,8 @@ def _select_hej_next_action(
 def cmd_hej(_args: argparse.Namespace) -> int:
     schemas_dir = _discover_schemas_dir()
     schemas = _load_schemas(schemas_dir)
-    mode = "returning" if any((Path.cwd() / ".agentera").glob("*.yaml")) else "fresh"
+    saved_context = any((Path.cwd() / ".agentera").glob("*.yaml"))
+    mode = "returning" if saved_context else "fresh"
     profile = _registry_artifact_path("profile", schemas_dir)
     profile_status = "loaded" if profile.exists() else "not found"
     v1_artifacts = _detect_v1_artifacts()
@@ -1727,7 +1735,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     todo_items = _load_todo_items(schemas)
     counts = _issue_counts(todo_items)
     decision = _decision_follow_up(schemas)
-    next_action = _select_hej_next_action(plan, health, objective, todo_items, decision)
+    next_action = _select_hej_next_action(plan, health, objective, todo_items, decision, saved_context)
     attention = []
     if v1_artifacts:
         command = 'uv run scripts/agentera upgrade --project "$PWD" --dry-run'

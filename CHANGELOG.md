@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [2.2.2] · 2026-05-08
+
+### Fixed
+
+- Fresh-project `agentera hej` routing now preserves the first-run visionera handoff while routing saved context without a vision artifact to resonera, preventing repeated hej-to-visionera loops.
+- Valid `TODO.md` writes now invoke Resolved-section compaction, preserving open severity sections and type-prefixed summaries while avoiding generated issue IDs.
+
+### Verified
+
+- Focused 2.2.2 evidence is recorded without publication, push, package update, installed app refresh, live install proof, vision edit, or objective edit: hej routing regressions and TODO Resolved compaction hook tests pass in the local checkout.
+- Final 2.2.2 release-readiness verification passed in the local checkout: full pytest reported 811 passed, the capability schema contract self-validated, all 12 capabilities validated, changed Python entry points compiled, version surfaces aligned, and routine JSON state outputs parsed. `agentera doctor --json` reports the installed app is stale, so no installed app refresh or live install confidence is claimed.
+
 ## [2.2.1] · 2026-05-08
 
 ### Fixed
