@@ -16,7 +16,7 @@ included when they shape cross-suite usage.
 | `skills/agentera/capability_schema_contract.yaml` | Capability schema structure, required groups, priorities, and primitive-reference fields. |
 | `skills/agentera/schemas/artifacts/*.yaml` | Artifact field grammar, status values, path contracts, and validation rules. |
 | `references/artifacts/artifact-registry-interface-model.yaml` | Artifact identity facts: `artifact_id`, display name, default path, producers, consumers, type, scope. |
-| `skills/agentera/SKILL.md` | Bundle dispatcher, routing model, CLI-first state access, freshness guards, and safety rails. |
+| `skills/agentera/SKILL.md` | Bundle dispatcher, routing model, CLI-first state access, installed-bundle status checks, and safety rails. |
 | `skills/agentera/capabilities/*/prose.md` | Capability behavior, workflow grammar, step markers, and cross-capability boundaries. |
 | `scripts/agentera` and `scripts/agentera_upgrade.py` | CLI-visible command labels, upgrade output, and bundle-status diagnostics. |
 | `README.md`, `UPGRADE.md`, `DESIGN.md`, `.agentera/*.yaml` | User-facing phrasing, design vocabulary, and current project-state examples. |
@@ -33,8 +33,8 @@ included when they shape cross-suite usage.
 | `query` is advanced access. | `agentera query --list-artifacts`, `agentera query <artifact>` | Calling it the normal state interface. |
 | Canonical artifact names are identifiers. | `VISION.md` maps to `.agentera/vision.yaml` | Assuming display names are literal paths. |
 | Exit signals are fixed. | `complete`, `flagged`, `stuck`, `waiting` | `blocked`, `partial`, `escalated` as exit signals. |
-| Freshness needs a qualifier. | `bundle freshness`, `artifact freshness`, `plan-level freshness checkpoint` | Bare `freshness` when the domain is ambiguous. |
-| Checkpoint needs a qualifier. | `plan-level freshness checkpoint`, `pre-dispatch checkpoint commit` | Bare `checkpoint` in new docs. |
+| Current-state language names the object. | `installed bundle is stale`, `artifacts are current`, `plan-level current-state check` | Bare `freshness` in new docs. |
+| Checkpoint is Git-only. | `pre-dispatch checkpoint commit` | Non-Git `checkpoint` in new docs. |
 
 ## Plain-language rule
 
@@ -76,10 +76,10 @@ brand language before they can act.
 | Shared protocol | The primitive vocabulary in `protocol.yaml`: confidence, severity, decision labels, exits, visual tokens, glyphs, and phases. | `skills/agentera/protocol.yaml` |
 | Capability schema contract | The executable contract for capability schema groups, stable IDs, priorities, deprecations, and primitive references. | `skills/agentera/capability_schema_contract.yaml` |
 | Project state | Structured files that preserve intent, decisions, plans, progress, health, docs, design, and session continuity. | `README.md`, `.agentera/docs.yaml` |
-| Operating record | Durable project history kept in files so future agents do not reconstruct history from chat residue. | `README.md`, `.agentera/progress.yaml` |
-| Memory layer | Project artifacts plus global profile data that let future sessions reuse context and preferences. In onboarding, prefer `persisted project context`. | `README.md`, `profilera` prose |
+| Project history | Durable history kept in files so future agents do not reconstruct history from chat residue. | `README.md`, `.agentera/progress.yaml` |
+| Saved project context | Project artifacts plus global profile data that let future sessions reuse context and preferences. | `README.md`, `profilera` prose |
 | Sharp colleague | Agentera's voice: direct, opinionated, evidence-backed, warm enough to collaborate, and willing to push back. | `.agentera/vision.yaml`, `DESIGN.md`, capability prose |
-| DTC | Document, Test, Code. Docs define intent, tests enforce it, code implements it. | `dokumentera`, `planera`, `realisera` prose |
+| Docs-first workflow | Document intended behavior before tests and code; docs define intent, tests enforce it, code implements it. | `dokumentera`, `planera`, `realisera` prose |
 
 ## Capability grammar
 
@@ -92,8 +92,8 @@ brand language before they can act.
 | `≡` | planera | Planning with behavioral acceptance criteria; owns WHAT and WHY. |
 | `⧉` | realisera | Verified autonomous development cycle; owns HOW. |
 | `⎘` | optimera | Metric-driven optimization through one experiment per invocation. |
-| `⛶` | inspektera | Codebase health audit, architecture review, and artifact freshness review. |
-| `▤` | dokumentera | Documentation layer; the D in DTC. |
+| `⛶` | inspektera | Codebase health audit, architecture review, and artifact current-state review. |
+| `▤` | dokumentera | Documentation layer; owns docs-first workflow guidance. |
 | `♾` | profilera | Reusable decision profile and preference extraction. |
 | `◰` | visualisera | Visual identity, design tokens, and design-system language. |
 | `⎈` | orkestrera | Multi-cycle orchestration; dispatches work and evaluates completion. |
@@ -111,7 +111,10 @@ Capability names use Swedish-style `-era` verb forms. The name is the action:
 | Bare `/agentera` | Invocation without a specific request. It delegates to `hej` and renders the Hej dashboard from one composite source command. |
 | Hej dashboard | User-facing project briefing with logo, status, attention, next action, and `⌂ hej · <status>`. |
 | `agentera hej` | Compact CLI source data for the caller-rendered dashboard. It is not the dashboard itself. |
-| Direct route | `/agentera <capability-name>` routes directly to that capability and bypasses natural-language matching. |
+| Direct route | `/agentera <capability-name>` or `/agentera <primary-alias>` routes directly to that capability and bypasses natural-language matching. |
+| Canonical capability route | `/agentera <capability-name>` using the Swedish capability name, such as `/agentera hej`, `/agentera resonera`, or `/agentera realisera`. Canonical names remain protocol identity. |
+| Primary route alias | The one plain `/agentera <alias>` direct route for a capability, owned by `ROUTE_ALIASES.primary_aliases`. Each canonical capability has exactly one primary alias. |
+| Secondary request wording | Natural-language phrases in capability trigger schemas, such as `deliberate`, `brainstorm`, `rubber duck`, `brief`, and `what's next`. They route through trigger matching and are not primary aliases. |
 | Natural-language trigger | A phrase in `schemas/triggers.yaml` that maps a request to a capability. |
 | Trigger priority | `high`, `medium`, or `low`; owned by the schema contract. |
 | High-confidence match | A natural-language request with enough trigger evidence to route without asking. |
@@ -125,6 +128,27 @@ CLI-visible `agentera hej` labels are source labels. Preserve them in CLI tests
 and parsing code, but transform them before presenting a user dashboard:
 `mode:`, `profile:`, `health:`, `issues:`, `plan:`, `objective:`,
 `attention:`, `next_action:`, and `source_contract:`.
+
+Primary route aliases are slash-route vocabulary, not CLI command vocabulary:
+
+| Canonical capability | Primary route alias |
+| --- | --- |
+| `hej` | `/agentera status` |
+| `visionera` | `/agentera vision` |
+| `resonera` | `/agentera discuss` |
+| `inspirera` | `/agentera research` |
+| `planera` | `/agentera plan` |
+| `realisera` | `/agentera build` |
+| `optimera` | `/agentera optimize` |
+| `inspektera` | `/agentera audit` |
+| `dokumentera` | `/agentera document` |
+| `profilera` | `/agentera profile` |
+| `visualisera` | `/agentera design` |
+| `orkestrera` | `/agentera orchestrate` |
+
+Do not teach primary aliases as CLI state commands. The CLI state surface
+remains `hej`, `plan`, `progress`, `health`, `todo`, `decisions`, `docs`,
+`objective`, `experiments`, and advanced `query`.
 
 ## Artifact grammar
 
@@ -201,37 +225,58 @@ Numeric confidence is `0-100`: `90-100` verified, `70-89` strong,
 | `deliberate` | resonera | Think through tradeoffs and decisions. |
 | `plan` | planera | Break intent into scoped work. |
 | `build` | realisera, optimera, dokumentera, visualisera | Produce code, docs, designs, or measured improvements. |
-| `audit` | inspektera | Evaluate health, risks, and freshness. |
+| `audit` | inspektera | Evaluate health, risks, and state alignment. |
 
 Use `phase` for protocol-level lifecycle state. Use `step` for capability-local
 progress markers such as `── step 2/6: verify`.
 
-## Freshness and checkpoint vocabulary
+## Decision 44 replacement boundary
 
-| Term | Definition | Required qualifier or note |
+This section is the source of truth for Decision 44 wording changes. Later tasks
+must use it before editing docs, capability prose, diagnostics, tests, labels,
+or active state.
+
+Stable identifiers, enums, persisted state shapes, routing semantics, CLI exit
+behavior, canonical Swedish capability names, and Decision 43 aliases are
+protected compatibility surfaces. Do not rename them unless a later decision
+records the migration rationale, validation path, and compatibility impact.
+
+### Replacement terms
+
+| Deprecated preferred wording | Preferred wording | Rationale |
 | --- | --- | --- |
-| Freshness | Whether a state surface reflects current reality. | Qualify the domain. |
-| Artifact freshness | Whether expected artifacts were updated after the work that should have changed them. | Inspektera audits this dimension. |
-| Artifact staleness | A dispatched capability was expected to update an artifact, but the artifact predates the plan creation date. | Without plan context, PROGRESS recency is advisory. |
-| Final state sync | User-facing phrase for the plan closure action that updates durable project state before closing a plan. | Prefer this in README, onboarding, CLI guidance, and explanatory docs. |
-| Plan-level freshness checkpoint | Canonical protocol phrase for the final task of every full plan. It updates aggregate artifacts and closes plan state after all implementation tasks complete. | Use in capability prose, schemas, tests, and mixed docs after `final state sync`. |
-| Freshness-closed | Shorthand that plan closure aligned `CHANGELOG.md`, `.agentera/progress.yaml`, `TODO.md`, docs metadata when relevant, and archived or removed active plan state. | Use only after closure evidence exists. |
-| Bundle freshness guard | Entry-boundary check that proves the durable `AGENTERA_HOME` bundle is current and usable before normal `/agentera` routing. | Distinct from artifact freshness. |
-| Bundle freshness gap | Internal classification: the visible skill/package surface and durable bundle are out of sync, stale, missing, or unusable. | In user diagnostics, say `installed Agentera bundle is stale` and report root, source, expected version, and fix. |
-| Bundle-status diagnostic | `agentera bundle-status`; classifies bundle state and emits dry-run, apply, approval, and retry guidance. | Prefer this over `fresh diagnostic`. |
-| Fresh bundle | Managed install root with expected marker/version and required CLI commands available. | `bundle-status` exits successfully. |
-| Stale bundle | Managed or default-missing bundle that can be repaired through preview plus approved same-root refresh. | Do not write without approval. |
-| Blocked install root | Missing explicit `AGENTERA_HOME`, file-valued root, unmanaged directory, or invalid unsafe root. | User must fix root or request force guidance. |
-| Bundle marker | `.agentera-bundle.json`, the durable bundle identity/version marker. | Marker version should match `registry.json` suite version. |
-| Stale marker | Missing, unreadable, or version-mismatched bundle marker. | Not a synonym for every stale condition. |
-| Upgrade guard | Internal pre-routing detector for v1 Markdown artifacts without v2 YAML counterparts. | In user-facing setup or recovery text, prefer `v1 migration check`. Requires dry-run preview and explicit approval before migration. |
-| Pre-dispatch checkpoint commit | Commit made before worktree-isolated subagent dispatch so the worktree branches from current HEAD. | Commit message pattern: `chore(<skill>): checkpoint before worktree dispatch`. |
+| `freshness` as a general protocol label | `current`, `up to date`, `out of date`, `synced`, `status`, `needs sync` | Plain state words are clearer and avoid turning several conditions into one branded abstraction. |
+| `freshness checkpoint`, `plan-level freshness checkpoint` | `final state sync`, `plan-level current-state check` | Plan closure updates durable state; it is not a Git checkpoint or a special freshness concept. |
+| Non-Git `checkpoint` | `state sync`, `current-state check`, `milestone`, or the specific action | `checkpoint` remains Git-only so commit synchronization is unambiguous. |
+| Most `guard` wording | `check`, `status check`, `stop condition`, `safety rule`, or `pre-routing check` | The replacement says what happens instead of using security-flavored jargon. |
+| `Reality Verification Gate` | `behavioral verification gate` | Keep `gate` only for hard pass/fail verification boundaries, and name the behavior being verified. |
+| `Conductor protocol` | `orchestration loop` | The loop is select, dispatch, evaluate, resolve, and log; the plain phrase explains the action. |
+| `memory layer` | `saved project context` | Agentera persists context in project files and profile data, not model memory. |
+| `operating record` | `saved project context`, `project history`, or `progress log` | The replacement states the artifact role directly. |
+| Prose/label `drift` | `mismatch`, `out of sync`, or the concrete mismatch type | `drift` is vague in user-facing vocabulary; mismatch wording states the observable problem. |
+| `DTC`, `DTC-first` | `docs-first workflow`, `document intended behavior before tests and code` | Keep the working principle while removing acronym friction. |
 
-Do not use bare `freshness checkpoint` or bare `checkpoint` in new
-documentation. Choose `final state sync` for user-facing plan closure,
-`plan-level freshness checkpoint` for protocol/capability prose, or
-`pre-dispatch checkpoint commit` for worktree synchronization. In mixed docs,
-write `final state sync, the plan-level freshness checkpoint`.
+### Allowed uses
+
+| Term | Allowed use | Rationale |
+| --- | --- | --- |
+| `checkpoint` | Git commits only, such as `checkpoint commit` or `pre-dispatch checkpoint commit`. | Git users understand checkpoint as commit synchronization; non-Git lifecycle use is deprecated. |
+| `gate` | Hard pass/fail boundaries, especially `behavioral verification gate` or regression pass/fail decisions. | Gate remains useful when a failed check must stop the workflow. |
+| `guard` | Existing code identifiers, historical text, or conventional phrases where changing the word would imply behavior or API migration. Prefer replacement wording in current prose. | Compatibility and searchability can outweigh prose cleanup in stable surfaces. |
+| `drift` | Historical entries, test fixture names, version-drift/package-drift diagnostics, and deliberate compatibility labels where `drift` is already a stable concept. Prefer `mismatch` or `out of sync` for new user-facing prose. | Some existing diagnostics and tests use drift as a compatibility signal. |
+| `fresh`, `stale`, `fresh project` | Plain English state descriptions when they are natural user wording, especially `fresh project` versus returning project, or `stale installed bundle`. | Decision 44 deprecates `freshness` as protocol jargon, not ordinary adjectives. |
+
+### Protected compatibility
+
+| Surface | Boundary | Rationale |
+| --- | --- | --- |
+| Schema fields and artifact shapes | Preserve field names, enum values, YAML structures, and validation semantics. | Persisted state and validators depend on stable shapes. |
+| Stable IDs | Preserve capability IDs, artifact IDs, group IDs, route IDs, and test fixture IDs unless a migration is planned. | IDs are integration contracts, not prose. |
+| CLI labels and exit behavior | Preserve current command names, parseable labels, exit codes, and source-contract labels unless an explicit CLI migration is recorded. | Shell users and tests consume these labels. |
+| Canonical capability names | Preserve `hej`, `visionera`, `resonera`, `inspirera`, `planera`, `realisera`, `optimera`, `inspektera`, `dokumentera`, `profilera`, `visualisera`, and `orkestrera`. | Decision 43 kept Swedish names as protocol identity. |
+| Decision 43 aliases | Preserve `/agentera status`, `vision`, `discuss`, `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`, `design`, and `orchestrate`. | Alias routing is shipped 2.2.0 behavior. |
+| Historical artifacts | Do not rewrite old progress, changelog, archived plans, or decisions solely for vocabulary cleanup. | History should remain accurate; current surfaces can explain old terms when needed. |
+| Release version | Keep Decision 44 under pending 2.2.0; do not create a later version for this cleanup without policy-driven rationale. | The vocabulary cleanup belongs to the same release as Decision 43 aliases. |
 
 ## Workflow grammar
 
@@ -243,31 +288,31 @@ write `final state sync, the plan-level freshness checkpoint`.
 | `## Safety rails` plus `<critical>` | Non-negotiable constraints. | `NEVER push to remote repos without explicit instruction.` |
 | `Detect mode/context/level` | Step 0 classification before the main workflow. | Dokumentera detects create, update, audit, or first-run survey. |
 | Decision gate | Explicit condition-based branch before proceeding. | Optimera keep/discard decision. |
-| Exit-early guard | Stop condition when work is already complete or unnecessary. | Docs current, no stale work found. |
-| Reality Verification Gate | Realisera check that behavior was verified against real project state. | Tests, builds, or manual verification. |
-| Pre-write self-audit | Prose gate for verbosity drift, abstraction creep, and filler accumulation. | `scripts/self_audit.py` implements the checks. |
+| Exit-early stop condition | Stop condition when work is already complete or unnecessary. | Docs current, no stale work found. |
+| Behavioral verification gate | Realisera check that behavior was verified against real project state. | Tests, builds, or manual verification. |
+| Pre-write self-audit | Prose check for verbosity mismatch, abstraction creep, and filler accumulation. | `scripts/self_audit.py` implements the checks. |
 | Plan-completion sweep | Realisera cleanup when plan tasks finish. | Progress rollup, changelog, TODO, health cross-reference, archive. |
 | Worktree dispatch | Isolated implementation by a subagent in a git worktree. | Realisera and optimera can use it. |
-| Stale-base awareness | Guard against worktrees branching from old `origin/main` or stale HEAD. | Use checkpoint commits before dispatch. |
-| Conductor protocol | Orkestrera loop: select, dispatch, evaluate, resolve, log. | Thin conductor; it dispatches, not implements. |
+| Stale-base awareness | Prevent worktrees from branching from old `origin/main` or stale HEAD. | Use checkpoint commits before dispatch. |
+| Orchestration loop | Orkestrera loop: select, dispatch, evaluate, resolve, log. | Thin conductor; it dispatches, not implements. |
 | Evidence audit | Check that recorded verification actually proves acceptance criteria. | Orkestrera and inspektera use this language. |
-| Loop guard | Stop repeated failed cycles, tasks, or experiments. | Prevents endless retries. |
+| Loop stop condition | Stop repeated failed cycles, tasks, or experiments. | Prevents endless retries. |
 
 For user-facing operations, prefer plain aliases when the branded phrase does
 not add precision:
 
 | Internal or branded phrase | User-facing phrase |
 | --- | --- |
-| Reality Verification Gate | verification gate |
+| Reality Verification Gate | behavioral verification gate |
 | Conductor protocol | orchestration loop |
 | Evidence audit | verification review |
-| Memory layer | persisted project context |
+| Memory layer | saved project context |
 
 ### Artifact-writing checks
 
 | Term | Definition |
 | --- | --- |
-| Verbosity drift | Artifact prose exceeds the intended budget or grows without adding signal. |
+| Verbosity mismatch | Artifact prose exceeds the intended budget or grows without adding signal. |
 | Abstraction creep | Prose lacks a concrete anchor such as a path, line number, metric, identifier, commit, or quote. |
 | Filler accumulation | Prose accumulates hedges, redundant transitions, self-reference, summary preambles, or generic justification. |
 | Concrete anchor | A file path, line number, commit hash, metric value, identifier, or direct quote. |
@@ -282,14 +327,14 @@ not add precision:
 | visionera | North star, persona, principles, direction, identity, tensions, create/refine/replace/audit modes. |
 | resonera | Socratic questioning, one question at a time, honest friction, steelman, tradeoffs, decision pressure. |
 | inspirera | Source analysis, pattern extraction, cross-pollination, worth stealing, external practice, adaptation. |
-| planera | WHAT and WHY, behavioral acceptance criteria, scope, included/excluded/deferred, task dependencies, plan-level freshness checkpoint. |
+| planera | WHAT and WHY, behavioral acceptance criteria, scope, included/excluded/deferred, task dependencies, plan-level current-state check. |
 | realisera | Cycle, orient/select/research/plan/dispatch/verify/commit/audit/log, HOW, progress log, worktree dispatch. |
 | optimera | Objective, experiment, baseline, harness, locked measurement, hypothesis, metric, regression, keep/discard gate. |
-| inspektera | Audit, health grade, dimensions, findings, evidence, impact, suggested action, artifact freshness, deliberate decisions. |
+| inspektera | Audit, health grade, dimensions, findings, evidence, impact, suggested action, artifact current-state review, deliberate decisions. |
 | dokumentera | Intent-first docs, explore-and-generate, update-and-verify, first-run survey, evergreen docs, docs become the spec. |
 | profilera | Decision profile, signal extraction, confidence, preference, validation, reusable user model. |
 | visualisera | Visual identity, design tokens, semantic weight, terminal-native, glyphs, logo scarcity. |
-| orkestrera | Thin conductor, plan execution, dispatch, task-notification result, presence check, evaluate, resolve, loop guard. |
+| orkestrera | Thin conductor, plan execution, dispatch, task-notification result, presence check, evaluate, resolve, loop stop condition. |
 
 ## Runtime, install, and release grammar
 
@@ -303,7 +348,7 @@ not add precision:
 | Unmanaged root | A directory Agentera must not overwrite silently. |
 | Missing default root | Stale and previewable. Agentera can show a dry-run refresh. |
 | Missing explicit root | Blocked when provided through `AGENTERA_HOME` or explicit `--install-root`. |
-| Package refresh | Package-manager or marketplace update. It does not prove durable bundle freshness. |
+| Package refresh | Package-manager or marketplace update. It does not prove the installed bundle is current. |
 | Bundle refresh | Same-root `agentera upgrade --only bundle` flow that updates the durable bundle. In user-facing text, say `update installed bundle`. |
 | Dry-run | Preview mode. Required before upgrade or bundle refresh writes. |
 | `--yes` | Explicit apply flag after preview and approval. |
@@ -374,7 +419,7 @@ Visualisera owns visual identity in `DESIGN.md`. Protocol owns token meanings in
 | “Select the concrete next action before selecting the skill.” | Hej routing discipline. |
 | “A skill name without a concrete object is not a valid suggestion.” | Hej next-action rule. |
 | “Suggest, don’t force.” | Hej confirmation rule. |
-| “DTC-first: document what a feature SHOULD do before building.” | Dokumentera intent-first mode. |
+| “Document intended behavior before building.” | Dokumentera intent-first mode. |
 | “Write as intended steady state.” | Evergreen documentation rule. |
 | “Keep it DRY: reference, don’t repeat.” | Documentation maintenance rule. |
 | “The harness is the immutable ground truth.” | Optimera measurement rule. |
@@ -392,8 +437,8 @@ schema concept, runtime capability, install state, or user action.
 | Skill | Confuses v1 standalone skills, the v2 bundled skill, and internal workflows. | Use `Agentera skill` for the installed runtime bundle, `v1 skill` for history, and `capability` for v2 workflows. |
 | Contract | Could mean schema structure, artifact shape, protocol primitive, adapter behavior, or product promise. | Use `schema contract`, `artifact schema`, `protocol primitives`, `runtime adapter contract`, or `product promise`. |
 | Status | Different surfaces use different state machines and output labels. | Use `exit status`, `task status`, `bundle status`, `install status`, `docs status`, or `health status`. |
-| Freshness | Sounds like a branded synonym for several normal states: current, stale, synced, or out of date. | Use `artifact freshness`, `bundle freshness`, `docs freshness`, or `plan-level freshness checkpoint`. For users, prefer `up to date`, `stale`, `current`, or `needs sync`. |
-| Checkpoint | In software, can mean commit, savepoint, restore point, model checkpoint, or milestone. | Use `final state sync`, `plan-level freshness checkpoint`, `checkpoint commit`, or `pre-dispatch checkpoint commit`. |
+| Freshness | Sounds like a branded synonym for several normal states: current, stale, synced, or out of date. | Use object-specific state wording such as `artifact is current`, `installed bundle is stale`, `docs are current`, or `plan-level current-state check`. |
+| Checkpoint | In software, can mean commit, savepoint, restore point, model checkpoint, or milestone. | Use `final state sync`, `plan-level current-state check`, `checkpoint commit`, or `pre-dispatch checkpoint commit`. |
 | Stale | The cause and fix differ by object. | Use `stale artifact`, `stale installed bundle`, `stale marker`, or `stale worktree base`. |
 | Phase | Conflicts with numbered workflow steps. | Use `phase` only for protocol lifecycle: `envision`, `deliberate`, `plan`, `build`, `audit`. Use `step` for capability-local actions. |
 | Objective state | Clear only inside optimera. | First mention `optimization objective state`; then `objective state` is fine in optimera context. Do not modify outside optimera or explicit user instruction. |
@@ -419,12 +464,12 @@ High-signal source surfaces for this vocabulary:
 
 | Source | Vocabulary surface |
 | --- | --- |
-| `skills/agentera/SKILL.md` | Dispatcher, routing layers, CLI-first access, bundle freshness guard, upgrade guard. |
+| `skills/agentera/SKILL.md` | Dispatcher, routing layers, CLI-first access, installed-bundle status check, and v1 migration check. |
 | `skills/agentera/protocol.yaml` | Protocol primitives, glyphs, phases, visual tokens, exit signals. |
 | `skills/agentera/capability_schema_contract.yaml` | Schema groups, priorities, stable IDs, primitive-reference fields. |
 | `skills/agentera/capabilities/*/prose.md` | Workflow grammar, capability roles, safety rails, exit marker forms. |
 | `skills/agentera/capabilities/*/schemas/*.yaml` | Trigger patterns, artifact roles, validation rules, exit conditions. |
-| `skills/agentera/schemas/artifacts/*.yaml` | Artifact fields, status enums, validation vocabulary, freshness fields. |
+| `skills/agentera/schemas/artifacts/*.yaml` | Artifact fields, status enums, validation vocabulary, and protected current-state fields. |
 | `references/artifacts/artifact-registry-interface-model.yaml` | Canonical artifact registry language. |
 | `scripts/agentera` | Flat State CLI labels and `agentera hej` source contract. |
 | `scripts/agentera_upgrade.py` | Upgrade and bundle-status output grammar. |
@@ -435,9 +480,9 @@ High-signal source surfaces for this vocabulary:
 | `DESIGN.md` | Visual identity, glyph, severity, confidence, and structural token language. |
 | `.agentera/docs.yaml` | Current documentation registry, mapping, coverage, and audit vocabulary. |
 | `.agentera/decisions.yaml` | Decision grammar, v2 architecture rationale, routing decisions. |
-| `.agentera/progress.yaml` | Cycle, evidence, context, and freshness-closure examples. |
-| `.agentera/health.yaml` | Audit dimensions, grades, trajectories, findings, and artifact freshness. |
-| `.agentera/archive/*.md` | Historical plan-level freshness checkpoint and staleness rationale. |
+| `.agentera/progress.yaml` | Cycle, evidence, context, and final state-sync examples. |
+| `.agentera/health.yaml` | Audit dimensions, grades, trajectories, findings, and artifact current-state review. |
+| `.agentera/archive/*.md` | Historical plan-level current-state checks and staleness rationale. |
 | `.agentera/optimera/*` | Objective, experiment, harness, metric, and keep/discard examples. |
 | `fixtures/semantic/*.md` | Semantic eval fixture, oracle, and Hej dashboard constraints. |
-| `tests/` | Regression evidence for CLI labels, bundle freshness, routing, exits, and schema contracts. |
+| `tests/` | Regression evidence for CLI labels, installed-bundle status, routing, exits, and schema contracts. |

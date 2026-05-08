@@ -167,7 +167,7 @@ Inspektera assesses codebases across these dimensions, selecting applicable ones
 
 | Dimension | What it evaluates |
 |-----------|-------------------|
-| Architecture alignment | Code vs stated architecture: pattern drift, boundary violations, layering breaks |
+| Architecture alignment | Code vs stated architecture: pattern mismatches, boundary violations, layering breaks |
 | Pattern consistency | Naming, error handling, structure, abstractions used consistently |
 | Coupling health | Hidden dependencies, circular imports, god modules, inappropriate intimacy |
 | Complexity hotspots | Long functions, deep nesting, high fan-out, accumulated conditionals |
@@ -673,9 +673,9 @@ The fallback is advisory, not authoritative. It surfaces artifacts that may need
 
 **Linter check**: None. Staleness detection is a runtime convention consumed by orkestrera and inspektera, not a SKILL.md structural requirement.
 
-## 20. Reality Verification Gate
+## 20. Behavioral Verification Gate
 
-Passing tests are necessary but not sufficient evidence that a cycle's work is real. A feature can be structurally correct (tests green, build clean, lint clean) and still be behaviorally broken against real project state: stale fixtures, mocked dependencies, or test doubles can hide regressions that only surface when the primary entrypoint runs against production-shaped inputs. The Reality Verification Gate closes this gap by requiring every cycle to observe its own behavior before declaring completion.
+Passing tests are necessary but not sufficient evidence that a cycle's work is real. A feature can be structurally correct (tests green, build clean, lint clean) and still be behaviorally broken against real project state: stale fixtures, mocked dependencies, or test doubles can hide regressions that only surface when the primary entrypoint runs against production-shaped inputs. The behavioral verification gate closes this gap by requiring every cycle to observe its own behavior before declaring completion.
 
 This gate is orthogonal to Section 19 Staleness Detection. Section 19 asks: did the dispatched skill update the artifacts it owns? Section 20 asks: did the cycle's new behavior actually run against real state? The two gates enforce different invariants and must both hold for a cycle to be considered verified.
 
@@ -985,7 +985,7 @@ Profilera's portability status in the Section 21 table moves from "Host-specific
 
 Git worktrees branch from HEAD (the last commit), not the working tree. When a dispatching skill writes artifacts during its orient or plan steps and then spawns a subagent in a worktree without committing, the subagent receives a stale snapshot missing those artifacts. The Pre-dispatch Commit Gate closes this gap by requiring a checkpoint commit before any `isolation: "worktree"` dispatch.
 
-This gate is the entry-side complement to Section 20 (Reality Verification Gate). Section 20 gates the exit from a cycle: did the work actually run against real state? Section 23 gates the entry to a worktree: does the subagent start from current state? The two gates enforce different invariants at different boundaries and must both hold for worktree-dispatched cycles.
+This gate is the entry-side complement to Section 20 (Behavioral Verification Gate). Section 20 gates the exit from a cycle: did the work actually run against real state? Section 23 gates the entry to a worktree: does the subagent start from current state? The two gates enforce different invariants at different boundaries and must both hold for worktree-dispatched cycles.
 
 ### Applicability
 
@@ -1064,7 +1064,7 @@ The two gates form a coherent pair bracketing the worktree lifecycle:
 | Gate | Section | Boundary | Question it answers |
 |------|---------|----------|---------------------|
 | Pre-dispatch Commit Gate | 23 | Entry: before worktree creation | Does the subagent start from current state? |
-| Reality Verification Gate | 20 | Exit: after implementation | Did the work actually run against real state? |
+| Behavioral Verification Gate | 20 | Exit: after implementation | Did the work actually run against real state? |
 
 Both gates are mandatory for worktree-dispatched cycles. A cycle that passes Section 20 verification but skipped the Section 23 gate may have verified behavior built on stale context. A cycle that passes the Section 23 gate but skips Section 20 verification has current context but unverified output.
 

@@ -24,6 +24,7 @@ BOOTSTRAP_RULE_SECTIONS = (
     "ENTRY_REQUIREMENTS",
     "FIELD_RULES",
     "PRIMITIVE_REFERENCE_FIELDS",
+    "ROUTE_ALIASES",
 )
 
 
@@ -68,6 +69,20 @@ class PrimitiveReferenceRules:
 
 
 @dataclass(frozen=True)
+class RouteAlias:
+    alias: str
+    capability: str
+
+
+@dataclass(frozen=True)
+class RouteAliasRules:
+    route_prefix: str
+    canonical_name_precedence: bool
+    cli_boundary: str
+    primary_aliases: tuple[RouteAlias, ...]
+
+
+@dataclass(frozen=True)
 class CapabilitySchemaContract:
     path: Path
     required_groups: tuple[str, ...]
@@ -78,6 +93,7 @@ class CapabilitySchemaContract:
     deprecation_rules: dict[str, Any]
     group_prefixes: dict[str, str]
     primitive_references: PrimitiveReferenceRules
+    route_aliases: RouteAliasRules
 
 
 def load_capability_schema_contract(contract_path: Path) -> CapabilitySchemaContract:
@@ -117,6 +133,7 @@ def build_capability_schema_contract(
     entry_requirements = data["ENTRY_REQUIREMENTS"]
     trigger_priority = data["FIELD_RULES"]["TRIGGERS"]["priority"]
     primitive_refs = data["PRIMITIVE_REFERENCE_FIELDS"]
+    route_aliases = data["ROUTE_ALIASES"]
 
     entry_rules = EntryRules(
         default_required_fields=tuple(entry_requirements["default_required_fields"]),
@@ -150,6 +167,15 @@ def build_capability_schema_contract(
                 field_name: tuple(field_rule["protocol_groups"])
                 for field_name, field_rule in primitive_refs["fields"].items()
             },
+        ),
+        route_aliases=RouteAliasRules(
+            route_prefix=route_aliases["route_prefix"],
+            canonical_name_precedence=bool(route_aliases["canonical_name_precedence"]),
+            cli_boundary=route_aliases["cli_boundary"],
+            primary_aliases=tuple(
+                RouteAlias(alias=entry["alias"], capability=entry["capability"])
+                for entry in route_aliases["primary_aliases"]
+            ),
         ),
     )
 
@@ -220,6 +246,7 @@ def _check_rule_sections(
     _check_entry_rules(data, source_label, errors)
     _check_trigger_priority_rules(data, source_label, errors)
     _check_primitive_reference_rules(data, source_label, errors)
+    _check_route_alias_rules(data, source_label, errors)
 
 
 def _check_directory_rules(
@@ -312,6 +339,64 @@ def _check_primitive_reference_rules(
             errors.append(
                 f"bootstrap [error]: PRIMITIVE_REFERENCE_FIELDS.fields.{field_name}.protocol_groups in {source_label} must be a non-empty list of strings"
             )
+
+
+def _check_route_alias_rules(
+    data: dict[str, Any], source_label: str, errors: list[str]
+) -> None:
+    aliases = data.get("ROUTE_ALIASES")
+    if not isinstance(aliases, dict):
+        return
+    if not isinstance(aliases.get("route_prefix"), str) or not aliases.get("route_prefix"):
+        errors.append(
+            f"bootstrap [error]: ROUTE_ALIASES.route_prefix in {source_label} must be a non-empty string"
+        )
+    if aliases.get("canonical_name_precedence") is not True:
+        errors.append(
+            f"bootstrap [error]: ROUTE_ALIASES.canonical_name_precedence in {source_label} must be true"
+        )
+    if not isinstance(aliases.get("cli_boundary"), str) or not aliases.get("cli_boundary"):
+        errors.append(
+            f"bootstrap [error]: ROUTE_ALIASES.cli_boundary in {source_label} must be a non-empty string"
+        )
+
+    primary_aliases = aliases.get("primary_aliases")
+    if not isinstance(primary_aliases, list) or not primary_aliases:
+        errors.append(
+            f"bootstrap [error]: ROUTE_ALIASES.primary_aliases in {source_label} must be a non-empty list"
+        )
+        return
+
+    seen_aliases: set[str] = set()
+    seen_capabilities: set[str] = set()
+    for index, entry in enumerate(primary_aliases, start=1):
+        if not isinstance(entry, dict):
+            errors.append(
+                f"bootstrap [error]: ROUTE_ALIASES.primary_aliases[{index}] in {source_label} must be a mapping"
+            )
+            continue
+        alias = entry.get("alias")
+        capability = entry.get("capability")
+        if not isinstance(alias, str) or not alias:
+            errors.append(
+                f"bootstrap [error]: ROUTE_ALIASES.primary_aliases[{index}].alias in {source_label} must be a non-empty string"
+            )
+        elif alias in seen_aliases:
+            errors.append(
+                f"bootstrap [error]: ROUTE_ALIASES.primary_aliases alias {alias!r} in {source_label} must be unique"
+            )
+        else:
+            seen_aliases.add(alias)
+        if not isinstance(capability, str) or not capability:
+            errors.append(
+                f"bootstrap [error]: ROUTE_ALIASES.primary_aliases[{index}].capability in {source_label} must be a non-empty string"
+            )
+        elif capability in seen_capabilities:
+            errors.append(
+                f"bootstrap [error]: ROUTE_ALIASES.primary_aliases capability {capability!r} in {source_label} must be unique"
+            )
+        else:
+            seen_capabilities.add(capability)
 
 
 def _check_self_groups(

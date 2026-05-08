@@ -51,11 +51,12 @@ skill entries and installs `/agentera`.
 guarantee that the durable suite bundle under `AGENTERA_HOME` has the latest
 `scripts/agentera` CLI. Install-root semantics are centralized in
 `scripts/install_root.py`: it defines AGENTERA_HOME precedence, the default
-durable root, managed/stale/unmanaged classifications, and read-only diagnostics.
+durable root, managed/stale/unmanaged install-root states, and read-only
+diagnostics.
 
 Bare `/agentera` owns this recovery path. When the installed CLI is missing
-`hej`, fails before command discovery, has a stale `.agentera-bundle.json`
-version, or otherwise fails the freshness contract, it should show the
+`hej`, fails before command discovery, has an outdated `.agentera-bundle.json`
+version, or otherwise fails the install status contract, it should show the
 bundle-only dry run for the resolved install root:
 
 ```bash
@@ -97,8 +98,8 @@ uv run scripts/agentera upgrade --project /path/to/project --yes
 ```
 
 The command migrates v1 project artifacts, installs or refreshes the durable
-bundle when needed, configures selected runtime surfaces, removes fixable stale
-v1 runtime artifacts, and runs a postflight setup doctor. Re-running it after a
+bundle when needed, configures selected runtime surfaces, removes fixable
+outdated v1 runtime artifacts, and runs a postflight setup doctor. Re-running it after a
 successful apply should report `noop`.
 
 External package updates are deliberately opt-in because they run `npx` and may touch global runtime installs. The package phase removes legacy v1 skill entries and installs the active `/agentera` skill:
@@ -115,7 +116,7 @@ uv run scripts/agentera upgrade --project /path/to/project --yes --update-packag
 
 ### OpenCode
 
-The upgrade command can copy the current bundled plugin to the OpenCode config directory and remove stale v1 command files. OpenCode package refresh remains opt-in:
+The upgrade command can copy the current bundled plugin to the OpenCode config directory and remove outdated v1 command files. OpenCode package refresh remains opt-in:
 
 ```bash
 uv run scripts/agentera upgrade --runtime opencode --yes --update-packages

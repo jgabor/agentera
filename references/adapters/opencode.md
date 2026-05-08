@@ -472,7 +472,7 @@ cp .opencode/plugins/agentera.js ~/.config/opencode/plugins/
 
 ### Install health and managed surfaces
 
-Installer freshness and Agentera bundle validation are separate checks. `npx skills update -g -y` can report a current install while the installed bundle is still unhealthy, for example when a bundled support file is missing or a skill path is broken. Agentera validation checks the installed bundle root for shared files and references; installer freshness only reflects package-manager state.
+Installer update status and Agentera bundle validation are separate checks. `npx skills update -g -y` can report a current install while the installed bundle is still unhealthy, for example when a bundled support file is missing or a skill path is broken. Agentera validation checks the installed bundle root for shared files and references; installer update status only reflects package-manager state.
 
 OpenCode repair is ownership-gated. Managed slash commands include `agentera_managed: true` frontmatter, and the command directory stores `.agentera-version`. Repair may overwrite missing or stale managed command files. Same-name command files without that marker are user-owned collisions and must be skipped, not overwritten. Managed skill-path repair follows the same rule: repair Agentera-created OpenCode skill links or directories, preserve user-owned paths, and report skipped collisions.
 

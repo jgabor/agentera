@@ -146,7 +146,7 @@ The sharp colleague figuring out what to optimize. One question at a time, push 
 2. **Motivation**: "Why does this matter? What breaks at current value? What's possible at target?"
 3. **Constraints**: "What must NOT break? Off-limits files? Resource limits?" If a decision profile exists, propose constraints from it.
 4. **Scope**: "Which parts to focus on? Where are the biggest gains?" Read codebase to propose informed boundaries.
-5. **Pre-write self-audit**: check verbosity drift, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`). Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
+5. **Pre-write self-audit**: check verbosity overruns, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`). Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 6. **Write objective.yaml**: synthesize into a precise charter. Write to `.agentera/optimera/<objective-name>/objective.yaml`. Present for approval.
 7. **Write the eval harness**: use the project's own tooling and the objective's measurement fields. Write `.agentera/optimera/<objective-name>/harness` so it outputs JSON with at least `metric` and `direction`. Present, explain, get approval, run once to establish baseline.
 
@@ -187,7 +187,7 @@ Before experimenting: in your response, list the current baseline, target, statu
 
 **Objective closure procedure**: when closing an objective, update objective.yaml with canonical closed state: `status: closed`, `closed_at: <ISO-8601 UTC timestamp>`, `final_value: <value>`, `target: <target>`, and `reason: <reason>`. Append one experiments.yaml closure entry. Do not append duplicates.
 
-**Exit-early guard**: If objective.yaml or experiments.yaml evidence shows the target is already met and the objective is not already closed, run the objective closure procedure with reason `already met at startup`, report exit signal `complete: objective achieved`, and stop before Analyze.
+**Exit-early stop condition**: If objective.yaml or experiments.yaml evidence shows the target is already met and the objective is not already closed, run the objective closure procedure with reason `already met at startup`, report exit signal `complete: objective achieved`, and stop before Analyze.
 
 ### Step 2: Analyze
 
@@ -215,7 +215,7 @@ Parse the JSON output. Record the current metric as the baseline.
 
 Formulate a single, focused hypothesis.
 
-Effort-bias guard: if one hypothesis took more effort to construct, reset before selection. Choose by experiment history, expected metric impact, risk, constraints, and smallest falsifiable test; construction effort is not evidence.
+Effort-bias check: if one hypothesis took more effort to construct, reset before selection. Choose by experiment history, expected metric impact, risk, constraints, and smallest falsifiable test; construction effort is not evidence.
 
 1. **Review history**: what's been tried, what worked, what failed?
 2. **Seek inspiration**: for non-trivial domains, 2-3 targeted web queries for techniques, libraries, or patterns.
@@ -294,7 +294,7 @@ If the kept experiment's new metric also meets the target in the harness directi
 
 ### Step 7: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns table). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`). Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
+Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns table). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`). Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
 "Tightening this up..." · "Cutting the filler first..." · "One more pass..."

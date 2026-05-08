@@ -655,7 +655,7 @@ def build_json_payload(
 ) -> dict:
     """Shape the analysis as a JSON-serializable dict.
 
-    Both timestamps live at the top level so consumers see freshness
+    Both timestamps live at the top level so consumers see current status
     without parsing nested structures. ``generated_at`` is the script's
     run time; ``extracted_at`` is the corpus envelope timestamp (None
     when the corpus envelope omits it, which is unusual).
@@ -820,7 +820,7 @@ def render_stdout_summary(
     """Brief multi-line summary printed to stdout in default mode.
 
     Three to six lines: scope, skills observed, total invocations,
-    completion rate, where the full report was written, and a freshness
+    completion rate, where the full report was written, and a status
     line carrying both timestamps.
     """
     total = sum(b["total"] for b in analysis.skills.values())

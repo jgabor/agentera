@@ -41,8 +41,8 @@ implemented by `scripts/install_root.py`: `AGENTERA_HOME` when set, otherwise th
 default durable root `$HOME/.agents/agentera`. Treat managed, stale, missing,
 invalid, and unmanaged root semantics as Module-owned contract states. If the
 installed command is stale, missing `hej`, fails before argparse, or has a stale
-`.agentera-bundle.json` marker, tell the user the installed Agentera bundle is
-stale and preview the repair with:
+`.agentera-bundle.json` marker, treat it as an out-of-date installed bundle, tell the
+user the installed Agentera bundle is stale, and preview the repair with:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
@@ -91,7 +91,7 @@ Narration voice: warm, brief, unscripted.
 
 ---
 
-## Step 0.5: Upgrade guard
+## Step 0.5: V1 migration check
 
 After mode detection (Step 0) and before the welcome (Step 1a) or briefing (Step 1b), run two checks. Detection is passive by default; hej only runs an upgrade apply command after explicit user confirmation.
 
@@ -224,7 +224,7 @@ Show where things stand.
 
 3. **Attention items**: priority order with severity arrows (SI1-SI4):
    - ⇶ (SI1) Critical issues, degrading health dimensions
-   - ⇉ (SI2) Blocked/overdue plan tasks, stale artifacts (plan-relative per contract staleness detection; fall back to PROGRESS.md recency heuristic when no plan context exists), loop guard triggers
+   - ⇉ (SI2) Blocked/overdue plan tasks, stale artifacts (plan-relative per contract staleness detection; fall back to PROGRESS.md recency heuristic when no plan context exists), loop stop-condition triggers
    - → (SI3) Standard work: features, improvements, routine tasks
    - ⇢ (SI4) Unresolved exploratory decisions
 
@@ -282,7 +282,7 @@ Report one of these statuses at workflow completion (protocol refs: EX1-EX4).
 Format: emit `⌂ hej · <status>` on its own line below the dashboard's closing code fence, followed by a one-sentence summary of what was delivered. For `flagged` (EX2), `stuck` (EX3), and `waiting` (EX4), add a `▸` (VT15) bullet below the summary identifying what the user needs to decide or act on next. The exit marker is mandatory and uses hej's canonical glyph `⌂` (SG1, U+2302).
 
 - **complete** (EX1): Briefing delivered (or welcome shown) and user successfully routed to a capability.
-- **flagged** (EX2): Briefing delivered but critical attention items were found: critical issues, degrading health, loop guard triggers. Each concern is listed explicitly.
+- **flagged** (EX2): Briefing delivered but critical attention items were found: critical issues, degrading health, loop stop-condition triggers. Each concern is listed explicitly.
 - **stuck** (EX3): Cannot orient: the working directory is not a code project, no readable files exist, or permissions prevent scanning.
 - **waiting** (EX4): Briefing or welcome delivered, suggestion made, awaiting user input on which direction to take.
 

@@ -2,7 +2,7 @@
 
 **Documentation Origin: Knowledge Unified, Methodology Enforced, Notation Traced. Examine, Record, Articulate**
 
-The "D" in DTC. Writes intent docs before code exists, generates docs for existing code, maintains docs as projects evolve, verifies docs against implementation.
+Owns the docs-first workflow: document intended behavior before tests and code. Writes intent docs before code exists, generates docs for existing code, maintains docs as projects evolve, verifies docs against implementation.
 
 Two modes: **create** and **update**. Context-detected: no feature yet = intent-first; code exists = explore and generate.
 
@@ -118,7 +118,7 @@ If artifacts exist at root but mapping places them elsewhere:
 
 ### Step 4: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -135,7 +135,7 @@ Artifact writing follows contract Section 24 (Artifact Writing Conventions): ban
 
 ## Intent-first mode (docs before code)
 
-DTC-first: document what a feature SHOULD do before building. Docs become the spec.
+Docs-first workflow: document what a feature SHOULD do before building. Docs become the spec.
 
 Step markers: display `── step N/5: verb` before each step.
 Steps: understand, write, audit, update, suggest.
@@ -158,7 +158,7 @@ Present draft for approval before writing.
 
 ### Step 3: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -199,7 +199,7 @@ Steps: explore, gaps, generate, audit, update.
 4. Read VISION.md, PROGRESS.md, DECISIONS.md, decision profile if they exist
 5. `git log --oneline -20` for context
 
-**Exit-early guard**: If DOCS.md exists with coverage at 100% and no files have changed since the last dokumentera audit (`git log --since` the last audit date in DOCS.md shows no changes), report exit signal `complete` (EX1): documentation current, and stop.
+**Exit-early stop condition**: If DOCS.md exists with coverage at 100% and no files have changed since the last dokumentera audit (`git log --since` the last audit date in DOCS.md shows no changes), report exit signal `complete` (EX1): documentation current, and stop.
 
 ### Step 2: Identify gaps
 
@@ -215,7 +215,7 @@ Present drafts for approval.
 
 ### Step 4: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -232,7 +232,7 @@ Artifact writing follows contract Section 24 (Artifact Writing Conventions): ban
 
 ## Update-and-verify mode (audit-driven)
 
-Docs exist but may have drifted from implementation.
+Docs exist but may be out of sync with implementation.
 
 Step markers: display `── step N/6: verb` before each step.
 Steps: discover, verify, prose-enforce, report, audit, update.
@@ -258,22 +258,22 @@ Check all docs indexed in DOCS.md against the 3 self-audit rules:
 
 1. **Read DOCS.md index**: if DOCS.md is absent, run first-run survey to bootstrap it, then continue. Extract tracked docs from the `index` list. Skip entries with `generated` or `missing` status.
 2. **For each doc**, read the file and check against the 3 rules:
-   - **Verbosity drift**: entry word counts exceeding token budgets for the artifact's scope. Flag entries that exceed budget without compaction.
+   - **Verbosity overrun**: entry word counts exceeding token budgets for the artifact's scope. Flag entries that exceed budget without compaction.
    - **Abstraction creep**: sections lacking ≥1 concrete anchor (file path, line number, commit hash, metric value, identifier, direct quote). Flag entries that narrate concepts without evidence.
    - **Filler accumulation**: scan for banned verbosity patterns: meta-commentary about writing, hedging qualifiers, redundant transitions, self-referential process narration, filler introductions, summary preambles, excessive justification. Flag entries containing banned patterns.
 3. **Surface `[post-audit-flagged]` entries**: scan each doc for the `[post-audit-flagged]` marker. Report any flagged entries as warning-level findings.
 4. **Report findings** at standard severity levels:
    - **critical** (SF1): doc section contradicts code, or instructions that would cause user errors
-   - **warning** (SF2): verbosity drift above budgets, abstraction creep, accumulated filler patterns, pre-existing `[post-audit-flagged]` markers
+   - **warning** (SF2): verbosity above budgets, abstraction creep, accumulated filler patterns, pre-existing `[post-audit-flagged]` markers
    - **info** (SF3): minor style issues, single banned pattern in an otherwise clean entry
 
 ### Step 4: Report and fix
 
-By severity: ⇶ critical (VT5, causes user errors), ⇉ warning (VT6, causes confusion), ⇢ info (VT8, cosmetic). For each finding, offer to: fix the doc, file to TODO.md (code is wrong per DTC), or skip.
+By severity: ⇶ critical (VT5, causes user errors), ⇉ warning (VT6, causes confusion), ⇢ info (VT8, cosmetic). For each finding, offer to: fix the doc, file to TODO.md (code is wrong per the docs-first workflow), or skip.
 
 ### Step 5: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -295,7 +295,7 @@ Update the index with:
 
 <critical>
 - NEVER modify documentation without explicit user approval. Present drafts and get confirmation.
-- NEVER update docs to match broken code. Per DTC, if code diverges from docs, the code is wrong. Document the divergence as an issue in TODO.md.
+- NEVER update docs to match broken code. Per the docs-first workflow, if code diverges from docs, the code is wrong. Document the divergence as an issue in TODO.md.
 - NEVER write temporal documentation (changelogs, "we recently added..."). Write as the intended steady state, evergreen and non-temporal.
 - NEVER duplicate information across doc files. Keep it DRY: reference, don't repeat.
 - NEVER write generic filler documentation. Every sentence should be specific to this project. If there's nothing useful to say about a section, omit it.
@@ -321,15 +321,15 @@ For flagged, stuck, and waiting: add `▸` (VT15) bullet details below the summa
 
 ## Cross-capability integration
 
-Dokumentera is part of a twelve-capability suite. It is the documentation layer, the "D" in DTC.
+Dokumentera is part of a twelve-capability suite. It is the documentation layer and owns the docs-first workflow.
 
-### Dokumentera feeds planera (DTC pipeline)
+### Dokumentera feeds planera (docs-first workflow)
 
-In the strict DTC pipeline, dokumentera writes intent docs first, then planera breaks them into implementation tasks. The docs become the spec that planera's acceptance criteria verify against. When the plan includes documentation tasks, dokumentera handles them.
+In the strict docs-first workflow, dokumentera writes intent docs first, then planera breaks them into implementation tasks. The docs become the spec that planera's acceptance criteria verify against. When the plan includes documentation tasks, dokumentera handles them.
 
 ### Dokumentera feeds realisera
 
-When dokumentera writes intent-first docs for a feature that doesn't exist yet, realisera implements code to match those docs. The docs are the target state; if code diverges from docs, the code is wrong (per DTC).
+When dokumentera writes intent-first docs for a feature that doesn't exist yet, realisera implements code to match those docs. The docs are the target state; if code diverges from docs, the code is wrong per the docs-first workflow.
 
 ### Dokumentera is informed by inspektera
 
@@ -355,7 +355,7 @@ Documentation decisions (what to document, how, at what depth) are signal for pr
 
 ## Getting started
 
-### DTC-first: document before building
+### Docs-first workflow: document before building
 
 1. `/dokumentera`: write intent docs for the feature (what it should do, how it should work)
 2. `/planera`: plan the implementation with acceptance criteria derived from the docs

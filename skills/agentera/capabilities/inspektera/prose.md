@@ -73,13 +73,13 @@ Read HEALTH.md, TODO.md, and PROGRESS.md in parallel. These reads are independen
 4. **TODO.md**: known problems (if exists). Don't re-report unless worsened.
 5. **PROGRESS.md**: last 3 cycle entries only (recent changes = higher-priority audit targets)
 5b. **Change magnitude**: if PROGRESS.md has commit hashes from cycles since the last HEALTH.md audit date, run `git log --stat` on those commits to estimate total change volume. If no PROGRESS.md or no commit hashes, skip; default depth applies.
-5c. **Plan context** (for artifact freshness): if PLAN.md exists, read its `header.created` value and scan task statuses for dispatched capabilities. This provides the plan-relative staleness baseline for the Artifact freshness dimension. If PLAN.md is absent or has no created date, note that plan context is unavailable; the fallback heuristic will apply.
+5c. **Plan context** (for artifact current-state review): if PLAN.md exists, read its `header.created` value and scan task statuses for dispatched capabilities. This provides the plan-relative staleness baseline for the protected Artifact freshness health dimension. If PLAN.md is absent or has no created date, note that plan context is unavailable; the fallback heuristic will apply.
 6. **Decision profile**: read `$PROFILERA_PROFILE_DIR/PROFILE.md` directly when it exists. It calibrates what "healthy" means for this user per contract profile consumption conventions. If missing, proceed without persona grounding.
 7. **Project discovery**: map directory structure, read dependency manifests, README, CLAUDE.md, AGENTS.md, identify language/stack/build commands, `git log --oneline -20`
 
 Before proceeding: in your response, list the key structural facts (module boundaries, dependency patterns, test coverage gaps) you observed. These survive context compaction.
 
-**Exit-early guard**: If `git diff` since the last HEALTH.md update shows no file changes, report exit signal `complete: no changes since last audit` and stop.
+**Exit-early stop condition**: If `git diff` since the last HEALTH.md update shows no file changes, report exit signal `complete: no changes since last audit` and stop.
 
 ---
 
@@ -91,15 +91,15 @@ Choose dimensions based on the codebase and user request. Not every dimension ap
 
 | Dimension | What it evaluates | When to include |
 |-----------|-------------------|-----------------|
-| **Architecture alignment** | Does the code match the stated architecture? Pattern drift, module boundary violations, layering breaks. | VISION.md or README describes architecture |
+| **Architecture alignment** | Does the code match the stated architecture? Pattern mismatches, module boundary violations, layering breaks. | VISION.md or README describes architecture |
 | **Pattern consistency** | Are patterns used consistently? Naming, error handling, structure, abstractions. | Any codebase with 5+ modules or files |
 | **Coupling health** | Hidden dependencies, circular imports, god modules, inappropriate intimacy. | Any codebase with multiple modules |
 | **Complexity hotspots** | Functions too long, deeply nested, high fan-out, accumulated conditionals. | Any codebase |
 | **Test health** | Coverage gaps, test quality, test-to-code ratio, tests testing behavior vs implementation. | Project has tests |
 | **Dependency health** | Outdated deps, security advisories, unused deps, dep sprawl, pinning discipline. | Project has external dependencies |
 | **Version health** | Unreleased significant changes: `feat`/`fix` commits since the last version bump. | DOCS.md has a `versioning` convention block |
-| **Artifact freshness** | Are state artifacts current relative to plan activity or recent development? Detects artifacts that should have been updated but weren't. | Plan context available (PLAN.md with `Created` date) or PROGRESS.md has entries |
-| **Prose health** | Do artifact entries respect the writing rules? Checks verbosity drift, abstraction creep, and filler accumulation across all project artifacts. | Project has 3+ artifact files |
+| **Artifact freshness** | Are state artifacts current relative to plan activity or recent development? Protected health dimension label; current prose should call the work artifact current-state review. Detects artifacts that should have been updated but weren't. | Plan context available (PLAN.md with `Created` date) or PROGRESS.md has entries |
+| **Prose health** | Do artifact entries respect the writing rules? Checks verbosity overruns, abstraction creep, and filler accumulation across all project artifacts. | Project has 3+ artifact files |
 | **Security hygiene** | Hardcoded secrets, dangerous function calls, basic injection patterns. Lightweight regex-based scan, not a replacement for dedicated security tooling. | Any codebase |
 
 ### Depth guidance
@@ -163,7 +163,7 @@ Compare codebase to stated architecture:
 
 - Read VISION.md (or README.md architecture section) for intended structure
 - Map actual module boundaries, dependency graph, data flow
-- Identify drift from stated architecture
+- Identify mismatches from stated architecture
 - Check layering and boundary cleanliness
 - Extract "Patterns Observed": de facto architecture independent of documentation
 
@@ -238,9 +238,9 @@ Only run this dimension if DOCS.md exists and contains a `versioning` convention
 - Severity: warning (SF2) if 1-4 unbumped commits or age ≤ 7 days; critical (SF1) if 5+ unbumped commits or age > 7 days
 - If no `feat`/`fix` commits have landed since the last bump, this dimension is healthy with no finding
 
-### Artifact freshness
+### Artifact current-state review
 
-Evaluates whether state artifacts are current relative to plan activity or recent development. Uses the staleness convention from contract.
+Evaluates whether state artifacts are current relative to plan activity or recent development. The persisted health dimension label remains `Artifact freshness`; current prose should call the work artifact current-state review. Uses the staleness convention from contract.
 
 **With plan context** (PLAN.md has a created date and task execution history):
 
@@ -264,7 +264,7 @@ Evaluates whether state artifacts are current relative to plan activity or recen
 
 Evaluate artifact prose quality against the three Self-Audit Protocol rules. Read all project artifacts (PROGRESS.md, DECISIONS.md, PLAN.md, HEALTH.md, TODO.md, CHANGELOG.md, VISION.md, DESIGN.md, DOCS.md) and check each entry.
 
-**Rule 1: Verbosity drift**: approximate word count per entry. Compare against per-entry budgets. Entries exceeding their budget by 50%+ are findings.
+**Rule 1: Verbosity overrun**: approximate word count per entry. Compare against per-entry budgets. Entries exceeding their budget by 50%+ are findings.
 
 **Rule 2: Abstraction creep**: scan each entry for ≥1 concrete anchor (file path with extension, line number, commit hash with 7+ hex chars, metric value with unit, identifier such as function/class/variable name, direct quote in quotes attributed to a source). Entries with zero concrete anchors are findings.
 
@@ -312,7 +312,7 @@ After all agents complete:
 
 ## Step 5: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns table). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns table). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -426,7 +426,7 @@ Critical and warning findings filed to TODO.md become candidates for realisera's
 
 ### Inspektera feeds /resonera
 
-When the audit reveals architectural drift, suggest `/resonera` before fixes begin.
+When the audit reveals an architecture mismatch, suggest `/resonera` before fixes begin.
 
 Use it when code has moved past stated architecture or competing patterns need a decision.
 

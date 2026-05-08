@@ -202,7 +202,7 @@ Relevant options only:
 
 ### Step 3: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: check verbosity overruns, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 ### Step 4: Write artifacts
@@ -276,7 +276,7 @@ When deliberation concludes with a decision to build something, the natural next
 
 ### Triggered by /inspektera
 
-When audits reveal architecture drift, inspektera suggests `/resonera` to think through the response.
+When audits reveal an architecture mismatch, inspektera suggests `/resonera` to think through the response.
 
 ---
 

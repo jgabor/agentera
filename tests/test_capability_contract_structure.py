@@ -94,3 +94,40 @@ def test_contract_owns_primitive_reference_field_mapping_not_protocol_values():
     for field_rule in primitive_refs["fields"].values():
         assert "allowed_values" not in field_rule
         assert "values" not in field_rule
+
+
+def test_contract_defines_decision_43_primary_route_aliases():
+    contract = _load_yaml(CONTRACT_PATH)
+    aliases = contract["ROUTE_ALIASES"]
+
+    expected = {
+        "status": "hej",
+        "vision": "visionera",
+        "discuss": "resonera",
+        "research": "inspirera",
+        "plan": "planera",
+        "build": "realisera",
+        "optimize": "optimera",
+        "audit": "inspektera",
+        "document": "dokumentera",
+        "profile": "profilera",
+        "design": "visualisera",
+        "orchestrate": "orkestrera",
+    }
+    actual = {entry["alias"]: entry["capability"] for entry in aliases["primary_aliases"]}
+
+    assert aliases["route_prefix"] == "/agentera"
+    assert aliases["canonical_name_precedence"] is True
+    assert actual == expected
+    assert len(actual) == 12
+    assert sorted(actual.values()) == sorted(expected.values())
+    assert len(set(actual.values())) == len(actual.values())
+
+
+def test_contract_documents_slash_route_and_state_cli_boundary():
+    contract = _load_yaml(CONTRACT_PATH)
+    boundary = contract["ROUTE_ALIASES"]["cli_boundary"]
+
+    assert "`/agentera plan` routes to" in boundary
+    assert "`agentera plan` remains" in boundary
+    assert "Do not add non-hej capability or alias commands to the CLI" in boundary

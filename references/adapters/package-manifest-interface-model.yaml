@@ -65,7 +65,7 @@ record:
         - bundled directories
         - bundled files
         - bundle skip rules
-        - bundle drift standardization target
+        - bundle mismatch standardization target
       required_fields:
         directories: list[repo_relative_path]
         files: list[repo_relative_path]

@@ -145,8 +145,8 @@ records:
         - OpenCode managed Agentera commands are missing or stale
         - OpenCode Agentera skill paths resolve to SKILL.md
         - OpenCode Agentera skill paths are missing or broken
-        - bundled support references validate separately from installer freshness
-        - bundled reference validation drift found despite installer freshness
+        - bundled support references validate separately from installer status
+        - bundled reference validation mismatch found despite installer status
     documentation_claims:
       reference_paths:
         - references/adapters/runtime-feature-parity.md

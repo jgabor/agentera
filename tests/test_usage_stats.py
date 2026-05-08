@@ -586,7 +586,7 @@ class TestStdoutSummarizer:
         assert "50%" in summary
         # Report path must be referenced so the operator can find the file.
         assert str(tmp_path / "USAGE.md") in summary
-        # Both timestamps in one freshness line.
+        # Both timestamps in one status line.
         assert "2026-04-26T08:00:00Z" in summary
         assert "2026-04-26T07:00:00Z" in summary
 

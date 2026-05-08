@@ -1,4 +1,4 @@
-last_audit: 2026-05-07 (Vocabulary index)
+last_audit: 2026-05-07 (Decision 44 Task 8 final pre-closure state sync)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -72,7 +72,7 @@ mapping:
 index:
 - document: README
   path: README.md
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-07'
   status: current
 - document: Python package manifest
   path: pyproject.toml
@@ -80,7 +80,7 @@ index:
   status: current
 - document: Upgrade guide
   path: UPGRADE.md
-  last_updated: '2026-05-05'
+  last_updated: '2026-05-07'
   status: current
 - document: CLAUDE.md
   path: CLAUDE.md
@@ -96,15 +96,15 @@ index:
   status: current
 - document: Progress
   path: .agentera/progress.yaml
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-07'
   status: current
 - document: TODO
   path: TODO.md
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-07'
   status: current
 - document: Changelog
   path: CHANGELOG.md
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-07'
   status: current
 - document: Health
   path: .agentera/health.yaml
@@ -112,11 +112,11 @@ index:
   status: current
 - document: Plan
   path: .agentera/plan.yaml
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-07'
   status: current
 - document: DOCS
   path: .agentera/docs.yaml
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-07'
   status: current
 - document: Vocabulary
   path: docs/vocabulary.md
@@ -128,7 +128,7 @@ index:
   status: current
 - document: Roadmap
   path: ROADMAP.md
-  last_updated: '2026-05-05'
+  last_updated: '2026-05-07'
   status: current
 - document: Design
   path: DESIGN.md
@@ -164,11 +164,11 @@ index:
   status: current
 - document: OpenCode adapter reference
   path: references/adapters/opencode.md
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-07'
   status: current
 - document: Runtime parity reference
   path: references/adapters/runtime-feature-parity.md
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-07'
   status: current
 - document: RuntimeAdapter characterization
   path: references/adapters/runtime-adapter-characterization.md
@@ -180,7 +180,7 @@ index:
   status: current
 - document: PackageManifest interface model
   path: references/adapters/package-manifest-interface-model.yaml
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-07'
   status: current
 - document: PackageManifest registry
   path: references/adapters/package-registry.yaml
@@ -188,11 +188,11 @@ index:
   status: current
 - document: RuntimeAdapter interface model
   path: references/adapters/runtime-adapter-interface-model.yaml
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-07'
   status: current
 - document: RuntimeAdapter registry
   path: references/adapters/runtime-adapter-registry.yaml
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-07'
   status: current
 - document: Codex UI metadata
   path: agents/openai.yaml
@@ -252,11 +252,11 @@ index:
   status: current
 - document: Capability schema contract
   path: skills/agentera/capability_schema_contract.yaml
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-07'
   status: current
 - document: Capability contract loader/model
   path: scripts/capability_contract.py
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-07'
   status: current
 - document: Capability validator
   path: scripts/validate_capability.py
@@ -264,7 +264,7 @@ index:
   status: current
 - document: Agentera skill dispatcher
   path: skills/agentera/SKILL.md
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-07'
   status: current
 - document: Agentera protocol
   path: skills/agentera/protocol.yaml
@@ -314,6 +314,10 @@ index:
   path: tests/test_schema_backed_routing_interface.py
   last_updated: '2026-05-06'
   status: current
+- document: Decision 44 vocabulary proof tests
+  path: tests/test_decision44_vocabulary.py
+  last_updated: '2026-05-07'
+  status: current
 - document: Exit vocabulary authority tests
   path: tests/test_exit_vocabulary_authority.py
   last_updated: '2026-05-06'
@@ -330,8 +334,45 @@ coverage:
   documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: Artifact registry alignment records registry-backed cross-capability tests, ArtifactRegistry contract tests, cross-capability validator evidence, full validation, and Task 8 closure evidence.
+  tests: Decision 44 is explicitly attached to the pending 2.2.0 release evidence without publication; coverage includes tests/test_decision44_vocabulary.py for deprecated preferred wording scans plus registry-backed cross-capability tests, ArtifactRegistry contract tests, and cross-capability validator evidence. Task 8 final pre-closure state sync confirms Tasks 1-7 complete, Task 8 still pending for conductor closure, and unrelated TODOs separate.
 audit_log:
+- date: '2026-05-07'
+  label: Decision 44 Task 8 final pre-closure state sync
+  findings:
+  - type: plan-state
+    description: The active plan remains active with Task 8 pending; Tasks 1-7 are complete, and conductor closure is the only remaining plan-state mutation after inspektera PASS.
+    resolution: fixed
+    severity: info
+  - type: evidence-sync
+    description: TODO, changelog, progress, and docs metadata now agree that Decision 44 evidence is attached to pending 2.2.0 without publication, tag, push, package update, installed bundle refresh, version beyond 2.2.0, vision edit, or objective edit.
+    resolution: fixed
+    severity: info
+  - type: scoped-deferral
+    description: Optional Claude live-smoke and install-root generated-contract TODOs remain open and separate from the resolved Decision 44 vocabulary cleanup.
+    resolution: fixed
+    severity: info
+- date: '2026-05-07'
+  label: Decision 44 Task 7 retry evidence metadata sync
+  findings:
+  - type: release-evidence
+    description: Decision 44 TODO/progress/changelog/docs metadata evidence is attached to pending 2.2.0 without claiming tag, push, publication, package update, or installed bundle refresh.
+    resolution: fixed
+    severity: info
+  - type: plan-state
+    description: Task 8 is not closure evidence here; it remains pending for final state sync and plan closure after conductor evaluation of Task 7.
+    resolution: fixed
+    severity: info
+- date: '2026-05-07'
+  label: Decision 44 vocabulary coverage proof
+  findings:
+  - type: tests
+    description: tests/test_decision44_vocabulary.py scans current docs, capability prose, maintained tests, diagnostics, and safe labels for deprecated Decision 44 preferred wording and fails unless the use is classified by the Task 1 boundary.
+    resolution: fixed
+    severity: info
+  - type: compatibility
+    description: Protected exceptions are reasoned in the test allowlist and cover schema fields, stable IDs, CLI labels, compatibility fixtures, historical artifacts, Git checkpoint commit wording, persisted health labels, and Decision 43 routing fixtures without teaching deprecated terms as recommended current prose.
+    resolution: fixed
+    severity: info
 - date: '2026-05-07'
   label: Vocabulary index
   findings:

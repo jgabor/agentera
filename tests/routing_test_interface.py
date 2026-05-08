@@ -8,6 +8,7 @@ contract, so routing tests do not re-encode substring-length heuristics.
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -46,6 +47,13 @@ class RoutingPolicy:
 
 
 @dataclass(frozen=True)
+class DirectRoute:
+    route: str
+    capability: str
+    source: Literal["canonical", "alias"]
+
+
+@dataclass(frozen=True)
 class TriggerPattern:
     pattern: str
     priority: str
@@ -79,6 +87,7 @@ class RoutingResult:
     threshold_weight: int
     fallback_capability: str
     matches: tuple[CapabilityMatch, ...]
+    direct_route: DirectRoute | None = None
 
 
 def load_routing_policy(contract_path: Path = CONTRACT_PATH) -> RoutingPolicy:
@@ -94,6 +103,52 @@ def load_routing_policy(contract_path: Path = CONTRACT_PATH) -> RoutingPolicy:
         minimum_threshold_weight=weights[threshold],
         fallback_capability="hej",
     )
+
+
+def load_direct_routes(
+    capabilities_dir: Path = CAPABILITIES_DIR,
+    contract_path: Path = CONTRACT_PATH,
+) -> tuple[DirectRoute, ...]:
+    """Load exact direct route names from canonical capabilities and aliases."""
+
+    contract = capability_contract.load_capability_schema_contract(contract_path)
+    canonical = tuple(
+        DirectRoute(route=cap_dir.name, capability=cap_dir.name, source="canonical")
+        for cap_dir in sorted(path for path in capabilities_dir.iterdir() if path.is_dir())
+    )
+    aliases = tuple(
+        DirectRoute(route=alias.alias, capability=alias.capability, source="alias")
+        for alias in contract.route_aliases.primary_aliases
+    )
+    if contract.route_aliases.canonical_name_precedence:
+        return canonical + aliases
+    return aliases + canonical
+
+
+def _exact_direct_route(message: str, routes: tuple[DirectRoute, ...]) -> DirectRoute | None:
+    text = message.strip().casefold()
+    if not text:
+        return None
+
+    if text.startswith("/agentera "):
+        text = text.removeprefix("/agentera ").strip()
+        if not text or " " in text:
+            return None
+
+    for route in routes:
+        if text == route.route.casefold():
+            return route
+    return None
+
+
+def _pattern_matches(pattern: str, text: str) -> bool:
+    normalized = pattern.casefold()
+    escaped = re.escape(normalized)
+    if normalized[:1].isalnum():
+        escaped = rf"\b{escaped}"
+    if normalized[-1:].isalnum():
+        escaped = rf"{escaped}\b"
+    return re.search(escaped, text) is not None
 
 
 def load_trigger_patterns(
@@ -146,16 +201,30 @@ def evaluate_route(
     message: str,
     triggers: tuple[TriggerPattern, ...],
     policy: RoutingPolicy | None = None,
+    direct_routes: tuple[DirectRoute, ...] | None = None,
 ) -> RoutingResult:
     """Evaluate a message and report route, disambiguation, or hej fallback."""
 
     policy = policy or load_routing_policy()
+    direct_route = _exact_direct_route(message, direct_routes or load_direct_routes())
+    if direct_route is not None:
+        return RoutingResult(
+            kind="route",
+            capability=direct_route.capability,
+            score=policy.priority_weights["high"],
+            threshold=policy.minimum_threshold,
+            threshold_weight=policy.minimum_threshold_weight,
+            fallback_capability=policy.fallback_capability,
+            matches=(),
+            direct_route=direct_route,
+        )
+
     text = message.casefold()
     by_capability: dict[str, list[TriggerPattern]] = {}
     for trigger in triggers:
         if trigger.fallback or trigger.pattern == "*":
             continue
-        if trigger.pattern.casefold() in text:
+        if _pattern_matches(trigger.pattern, text):
             by_capability.setdefault(trigger.capability, []).append(trigger)
 
     matches = tuple(

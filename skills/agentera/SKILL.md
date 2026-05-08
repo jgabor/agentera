@@ -5,7 +5,7 @@ description: >
   One bundled skill with twelve capabilities, each defined by human-readable
   prose and machine-readable schemas. The agent reads this file to route
   incoming requests to the right capability.
-version: "2.1.1"
+version: "2.2.0"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 ---
 
@@ -30,20 +30,20 @@ Capabilities import these by name. The schema contract ensures consistent usage.
 
 ## Capabilities
 
-| | Capability | Purpose |
-|---|---|---|
-| ⌂ | hej | Orientation and routing |
-| ⛥ | visionera | Define project direction |
-| ❈ | resonera | Structured deliberation |
-| ⬚ | inspirera | External pattern analysis |
-| ≡ | planera | Planning with acceptance criteria |
-| ⧉ | realisera | Autonomous development |
-| ⎘ | optimera | Metric-driven optimization |
-| ⛶ | inspektera | Codebase health audit |
-| ▤ | dokumentera | Documentation |
-| ♾ | profilera | Decision profiling |
-| ◰ | visualisera | Visual identity system |
-| ⎈ | orkestrera | Multi-cycle orchestration |
+| | Capability | Primary route | Purpose |
+|---|---|---|---|
+| ⌂ | hej | `/agentera status` | Orientation and routing |
+| ⛥ | visionera | `/agentera vision` | Define project direction |
+| ❈ | resonera | `/agentera discuss` | Structured deliberation |
+| ⬚ | inspirera | `/agentera research` | External pattern analysis |
+| ≡ | planera | `/agentera plan` | Planning with acceptance criteria |
+| ⧉ | realisera | `/agentera build` | Autonomous development |
+| ⎘ | optimera | `/agentera optimize` | Metric-driven optimization |
+| ⛶ | inspektera | `/agentera audit` | Codebase health audit |
+| ▤ | dokumentera | `/agentera document` | Documentation |
+| ♾ | profilera | `/agentera profile` | Decision profiling |
+| ◰ | visualisera | `/agentera design` | Visual identity system |
+| ⎈ | orkestrera | `/agentera orchestrate` | Multi-cycle orchestration |
 
 ---
 
@@ -107,23 +107,26 @@ Bare `/agentera` returning-project output must include these visible markers:
 Omit `attention` only when the source has no attention items. Always include the
 mandatory `⌂ hej · <status>` marker below the dashboard code fence, and ask for
 confirmation before invoking the suggested downstream capability. For
-`/agentera <capability-name>`, do not assume the capability name is a CLI
-command. The CLI command surface is state-oriented, not capability-oriented:
+`/agentera <capability-name>` or `/agentera <alias>`, do not assume the route
+word is a CLI command. The CLI command surface is state-oriented, not
+capability-oriented:
 use the supported routine state command or commands that own the capability's
 needed artifacts, as declared by that capability's artifact schema. For example,
 `resonera` reads decisions through `agentera decisions`, not through the
 unsupported capability-name command `agentera resonera`. Never run unsupported
 capability-name commands such as `agentera resonera`, `agentera planera`, or
-`agentera realisera` as a bootstrap step.
+`agentera realisera` as a bootstrap step. Shared words stay split by interface:
+`/agentera plan` routes to planera, while `agentera plan` reads plan state from
+the CLI.
 Reading a capability's `prose.md` file is not itself a capability invocation;
 invocation means routing to the capability, following its prose, and using the
 CLI state layer first for artifact-backed state.
 
-### Step -1a: Bundle freshness guard
+### Step -1a: Bundle status check
 
 Package and marketplace updates can refresh the visible skill while leaving the
 durable bundle under `AGENTERA_HOME` stale. Treat that split state as an
-Agentera-owned freshness gap, not as a reason to call the local checkout a
+out-of-date installed bundle, not as a reason to call the local checkout a
 successful installed run.
 
 For bare `/agentera`, follow the shared install-root Module contract in
@@ -176,7 +179,7 @@ When a fresh local checkout is available, `uv run scripts/agentera bundle-status
 without writing. In no-clone situations, the uvx dry-run above is the portable
 diagnostic and preview.
 
-### Step 0: Upgrade guard
+### Step 0: V1 migration check
 
 Before routing, check for an Agentera v1 install state. This is detection and
 orchestration only; do not mutate anything without explicit user confirmation.
@@ -217,9 +220,20 @@ entries and `npx skills add` for `/agentera` remain explicit opt-in via
 
 If the request is `/agentera` with no additional text, delegate immediately to hej. Hej performs state-aware routing by reading project artifacts (PLAN.md, TODO.md, HEALTH.md, etc.) and suggesting the most useful next capability. This is deterministic and never wrong.
 
-### Layer 2: `/agentera <capability-name>` — direct route
+### Layer 2: `/agentera <capability-name-or-primary-alias>` — direct route
 
-If the request text exactly matches a capability name (case-insensitive, e.g., "resonera", "planera", "hej"), route directly to that capability without evaluating natural-language trigger patterns. This gives power users direct access and bypasses all NL matching.
+If the request text exactly matches a capability name (case-insensitive, e.g.,
+"resonera", "planera", "hej"), route directly to that capability without
+evaluating natural-language trigger patterns. Canonical Swedish names remain the
+protocol identity and bypass natural-language matching.
+
+If the request text exactly matches one primary alias from
+`capability_schema_contract.yaml` `ROUTE_ALIASES.primary_aliases`, route directly
+to that alias's capability without evaluating natural-language trigger patterns.
+Each capability has exactly one primary alias. Secondary user wording stays in
+capability trigger schemas below this layer. Examples: `deliberate`,
+`brainstorm`, and `rubber duck` remain resonera trigger wording; `brief` and
+`what's next` remain hej trigger wording. These are not primary aliases.
 
 ### Layer 3: Natural language with high-confidence match
 

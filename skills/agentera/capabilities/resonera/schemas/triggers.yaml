@@ -15,11 +15,14 @@ TRIGGERS:
       through a decision or evaluating tradeoffs.
     priority: medium
     patterns:
+      - "deliberate"
       - "help me think through"
       - "help me decide"
       - "think this through with me"
       - "let's deliberate"
       - "what are the tradeoffs"
+      - "brainstorm"
+      - "rubber duck"
   3:
     id: T3
     description: >-

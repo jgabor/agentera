@@ -1,4 +1,307 @@
 cycles:
+- number: 359
+  timestamp: 2026-05-07 22:02
+  type: docs
+  phase: build
+  what: Synchronized final Decision 44 pre-closure state for the plan-level current-state check without closing the active plan.
+  commit: pending
+  inspiration: >
+    Task 8 required the documentation/state-sync subagent to make TODO, changelog, progress, docs metadata, and plan pre-closure state agree on the completed Decision 44 evidence after Tasks 1-7 passed, while leaving Task 8 completion and `.agentera/plan.yaml` closure to the conductor after inspektera PASS.
+  discovered: >
+    The Decision 44 implementation and Task 7 evidence were already complete: TODO listed only `[agentera-optional-claude-live-smoke]` and `[install-root-generated-cross-language-contract]` as open, changelog and docs metadata attached Decision 44 to pending 2.2.0 without publication, and the active plan showed Tasks 1-7 complete with Task 8 pending. The remaining Task 8 sync was to record this final pre-closure check explicitly, adjust Task 8 acceptance wording so it does not claim subagent-owned closure, and keep unrelated follow-ups separate.
+  verified: >
+    Validation passed: `uv run scripts/agentera todo` reported only `[agentera-optional-claude-live-smoke]` and `[install-root-generated-cross-language-contract]` as open; `uv run scripts/agentera plan` reported status active with Tasks 1-7 complete and Task 8 pending; `uv run scripts/agentera docs` reported last_audit `2026-05-07 (Decision 44 Task 8 final pre-closure state sync)`, docs status current, stale none, and coverage explicitly naming final pre-closure state sync; `uv run scripts/agentera progress` reported cycle 359 as the latest progress entry with this non-empty verified evidence; `uv run pytest tests/test_decision44_vocabulary.py -q` reported 3 passed; `uv run scripts/validate_capability.py --self-validate` reported `PASS: contract is self-referentially valid`; `git diff --name-only -- .agentera/vision.yaml .agentera/optimera` produced no output; `git tag --list '2.2.0'` produced no output; `git status --short --branch` reported `## main...origin/main [ahead 2]` with the expected dirty worktree and no push by this task. No tag, push, publication, package update, installed bundle refresh, commit, version beyond 2.2.0, vision edit, objective edit, Task 8 completion mark, or plan closure was performed.
+  next: 'Conductor should run inspektera evaluation; if it passes, conductor owns marking Task 8 complete and closing `.agentera/plan.yaml` so future `/agentera` briefing no longer treats Decision 44 as pending work.'
+  context:
+    intent: Decision 44 Task 8 final pre-closure state sync only
+    constraints: no orkestrera invocation, no Task 8 completion mark, no `.agentera/plan.yaml` closure, no vision or objective mutation, no schema field/stable ID/enum/persisted-shape migration, no routing/CLI behavior change, no version beyond 2.2.0, no commit, no push, no tag, no publication, no package update, no installed bundle refresh
+    scope: TODO.md resolved Decision 44 evidence, CHANGELOG.md 2.2.0 Verified evidence, .agentera/docs.yaml final audit metadata, .agentera/plan.yaml Task 8 pre-closure acceptance wording, and this progress entry
+- number: 358
+  timestamp: 2026-05-07 22:58
+  type: docs
+  phase: build
+  what: Retried Decision 44 Task 7 evidence metadata after evaluation found docs metadata gaps only.
+  commit: pending
+  inspiration: >
+    The prior Task 7 retry passed TODO/changelog publication boundaries but failed because `.agentera/docs.yaml` did not explicitly attach Decision 44 to pending 2.2.0 and still used premature Task 8 closure wording even though Task 8 remains pending.
+  discovered: >
+    No new Task 7 implementation defect was found. The required correction is metadata-only: bind Decision 44 TODO/progress/changelog/docs evidence to the pending 2.2.0 release without claiming publication, and replace premature Task 8 closure wording with an explicit statement that Task 8 remains pending for final state sync and plan closure.
+  verified: >
+    Retry validation passed: `uv run scripts/agentera docs` reported last_audit `2026-05-07 (Decision 44 Task 7 retry evidence metadata sync)`, docs status current, stale none, and coverage explicitly attaching Decision 44 evidence to pending 2.2.0 without publication while stating Task 8 remains pending; `uv run scripts/agentera progress` reported cycle 358 as the latest progress entry with this retry evidence; `uv run scripts/agentera plan` reported status active with Tasks 1-6 complete and Tasks 7-8 pending; `uv run scripts/agentera todo` reported only `[agentera-optional-claude-live-smoke]` and `[install-root-generated-cross-language-contract]` open. `.agentera/plan.yaml` was not changed, and no tag, push, publication, package update, installed bundle refresh, commit, version beyond 2.2.0, vision edit, or objective edit was performed.
+  next: 'Conductor should re-evaluate Task 7 using this retry evidence; Task 8 still owns final state sync and plan closure.'
+  context:
+    intent: retry Decision 44 Task 7 metadata/evidence correction only
+    constraints: no orkestrera invocation, no Task 7 completion mark, no Task 8 closure claim, no `.agentera/plan.yaml` edit, no vision or objective mutation, no version beyond 2.2.0, no commit, no push, no tag, no publication, no package update, no installed bundle refresh
+    scope: .agentera/docs.yaml metadata and this progress entry only
+- number: 357
+  timestamp: 2026-05-07 21:57
+  type: docs
+  phase: build
+  what: Resolved the Decision 44 TODO and synchronized evidence state for the pending 2.2.0 release without closing the active plan.
+  commit: pending
+  inspiration: >
+    Task 7 required the dokumentera state-sync pass to resolve `[agentera-plain-prose-vocabulary]` after Tasks 1-6 passed, attach TODO/progress/changelog/docs metadata evidence to Decision 44 under 2.2.0, and leave the optional Claude live-smoke and install-root generated-contract follow-ups open and separate.
+  discovered: >
+    The Decision 44 implementation evidence was already recorded across cycles 349-356 and the 2.2.0 changelog, but `TODO.md` still listed `[agentera-plain-prose-vocabulary]` as open. The correct Task 7 action was to move that TODO to Resolved with references to the Decision 44 plan evidence, add a 2.2.0 Verified changelog note that avoids publication claims, and update docs metadata to the Task 7 state-sync audit. `.agentera/plan.yaml` deliberately remains active with Task 7 and Task 8 pending for conductor evaluation and final closure ownership.
+  verified: >
+    Validation passed: `uv run scripts/agentera todo` reported only `[agentera-optional-claude-live-smoke]` and `[install-root-generated-cross-language-contract]` as open; `uv run scripts/agentera docs` reported last_audit `2026-05-07 (Decision 44 Task 7 TODO and evidence state sync)`, docs status current, and stale none; `uv run scripts/agentera plan` reported status active with Tasks 1-6 complete and Tasks 7-8 pending; `uv run pytest tests/test_decision44_vocabulary.py -q` reported 3 passed. No tag, push, publication, package-manager update, installed bundle refresh, commit, version beyond 2.2.0, vision edit, objective edit, or `.agentera/plan.yaml` completion update was performed.
+  next: 'Conductor evaluation should decide Task 7 PASS before updating `.agentera/plan.yaml`; Task 8 owns final plan closure and any final `/agentera` current-state check.'
+  context:
+    intent: Decision 44 Task 7 TODO and evidence state synchronization only
+    constraints: no orkestrera invocation, no Task 7 completion mark, no final plan closure, no vision or objective mutation, no schema field/stable ID/enum/persisted-shape migration, no routing/CLI behavior change, no version beyond 2.2.0, no commit, no push, no tag, no publication, no package update, no installed bundle refresh
+    scope: TODO.md Decision 44 resolution, CHANGELOG.md 2.2.0 Verified evidence, .agentera/docs.yaml audit label, and this progress entry
+- number: 356
+  timestamp: 2026-05-07 21:55
+  type: docs
+  phase: build
+  what: Confirmed Decision 44 release-readiness evidence is attached to pending 2.2.0 without publication or a later version.
+  commit: pending
+  inspiration: >
+    Task 6 required proving the completed Decision 44 vocabulary cleanup belongs under the already-pending 2.2.0 release, that package and runtime version projections still agree on 2.2.0, and that no unapproved publication, package update, tag, push, or installed bundle refresh occurred.
+  discovered: >
+    Decision 44 is already documented under `## [2.2.0]` in `CHANGELOG.md` as changed and added release content, so the correct release action was evidence-only: add a 2.2.0 Verified note rather than bumping beyond 2.2.0. The version-bearing files and runtime marker surfaces remain aligned at 2.2.0, while `agentera bundle-status --json` still reports the installed durable bundle marker at 2.1.1 versus expected 2.2.0, proving no installed bundle refresh happened during this task.
+  verified: >
+    Validation passed: `uv run pytest tests/test_package_registry.py::test_manifest_projection_versions_align_through_registry tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_agentera_version_reader_extracts_current_literal tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_version_bearing_package_surfaces_align tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_surface_characterization_distinguishes_non_version_opencode_manifest -q` reported 4 passed; `uv run pytest tests/test_decision44_vocabulary.py -q` reported 3 passed; `uv run scripts/agentera bundle-status --json` reported expectedVersion `2.2.0`, markerVersion `2.1.1`, status `stale`, and the dry-run/apply bundle-refresh commands as suggestions only; `git tag --list '2.2.0'` produced no output; `git status --short --branch` reported `## main...origin/main [ahead 2]` with a dirty worktree and no push performed by this task; `uv run scripts/agentera docs` reported last_audit `2026-05-07 (Decision 44 Task 6 2.2.0 release inclusion readiness)`, docs status current, and stale none; `uv run scripts/agentera progress` reported cycle 356 as the latest progress entry with non-empty verified evidence; `uv run scripts/agentera plan` reported Tasks 1-5 complete and Tasks 6-8 pending. No tag, package publication, package-manager update, installed bundle refresh, commit, vision edit, objective edit, or `.agentera/plan.yaml` completion update was performed.
+  next: 'Conductor evaluation should decide Task 6 PASS before updating `.agentera/plan.yaml`; Task 7 TODO/evidence sync and Task 8 final closure remain deliberately untouched.'
+  context:
+    intent: Decision 44 Task 6 release inclusion and publication-safety evidence only
+    constraints: no orkestrera invocation, no plan completion update, no TODO/evidence final sync, no final closure, no vision or objective mutation, no schema field/stable ID/enum/persisted-shape migration, no routing/CLI behavior change, no version beyond 2.2.0, no commit, no push, no tag, no publication, no package update, no installed bundle refresh
+    scope: CHANGELOG.md 2.2.0 Verified evidence, .agentera/docs.yaml audit label, and this progress entry
+- number: 355
+  timestamp: 2026-05-07 22:42
+  type: test
+  phase: build
+  what: Proved Decision 44 vocabulary coverage with an executable scanner and recorded protected-use rationale evidence.
+  commit: pending
+  inspiration: >
+    Task 5 required validation that deprecated preferred Decision 44 wording fails across current docs, capability prose, maintained tests, diagnostics, and safe labels unless the Task 1 boundary protects the use.
+  discovered: >
+    The proof needed a reasoned exception model because protected surfaces intentionally retain vocabulary in schema fields, stable IDs, CLI labels, compatibility fixtures, historical artifacts, Git checkpoint commit wording, and the persisted Artifact freshness health dimension. A small blocker existed in current vocabulary/prose guidance: docs/vocabulary.md and inspektera prose still taught some deprecated terms as current vocabulary outside the boundary. Those were narrowed to preferred current wording or explicit protected-label explanations so the proof does not normalize deprecated language.
+  verified: >
+    Validation passed: `uv run pytest tests/test_decision44_vocabulary.py -q` reported 3 passed after the scanner and protected exceptions were added; `uv run pytest tests/test_decision44_vocabulary.py tests/test_schema_backed_routing_interface.py tests/test_package_registry.py tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_agentera_version_reader_extracts_current_literal tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_drift_inventory_names_decisions_and_surface_classes tests/test_runtime_adapters.py::TestLifecycleAdapters::test_runtime_adapter_drift_inventory_names_each_decision_class -q` reported 29 passed; `uv run scripts/agentera docs` reported docs status current, documented 2/2 skill entry points, undocumented 0, and stale none; `uv run scripts/validate_capability.py --self-validate` reported `PASS: contract is self-referentially valid`; `uv run scripts/validate_capability.py --validate-protocol --check-primitives` reported `PASS: protocol is internally consistent`; `for capability in hej visionera resonera planera realisera optimera inspektera dokumentera visualisera orkestrera; do uv run scripts/validate_capability.py "skills/agentera/capabilities/$capability" || exit 1; done` reported `PASS: capability directory is valid` for all 10 checked capabilities.
+  next: 'Conductor evaluation should decide Task 5 PASS before updating `.agentera/plan.yaml`; Tasks 6-8 remain deliberately untouched.'
+  context:
+    intent: Decision 44 Task 5 vocabulary coverage proof only
+    constraints: no orkestrera invocation, no plan completion update, no release readiness work, no TODO/evidence final sync, no final closure, no vision or objective mutation, no schema field/stable ID/enum/persisted-shape migration, no routing/CLI behavior change, no version beyond 2.2.0, no commit, no push, no tag, no publication, no package update, no installed bundle refresh
+    scope: tests/test_decision44_vocabulary.py, narrow vocabulary/prose blockers, CHANGELOG.md, .agentera/docs.yaml, and this progress entry
+- number: 354
+  timestamp: 2026-05-07 22:25
+  type: code
+  phase: build
+  what: Aligned maintained diagnostics, test labels, and safe label prose with Decision 44 wording while preserving stable compatibility labels.
+  commit: pending
+  inspiration: >
+    Task 4 required applying the Task 1 vocabulary boundary to maintained diagnostics, tests, and safe labels without changing routing, CLI command semantics, package version readers, schema fields, stable IDs, enums, persisted state shape, or canonical capability names.
+  discovered: >
+    Safe wording changes existed in installed-bundle status help, self-audit verbosity diagnostics, setup doctor support-reference messages, adapter interface prose, and test labels for upgrade checks, profile status checks, orchestration loop checks, package/version mismatches, and installed-bundle status checks. Stable compatibility exceptions remain for RuntimeAdapter schema field `known_drifts`, setup doctor JSON gap labels `command_drift`, `skill_path_drift`, and `validation_drift`, Decision 43 alias drift fixtures, package/runtime drift inventory characterization helpers, health fixture dimension `Freshness`, historical changelog/archive entries, and stable `guard` identifiers where renaming would imply API or behavior migration.
+  verified: >
+    Validation passed after one order-dependent test assertion was corrected: initial `uv run pytest tests/test_self_audit.py tests/test_setup_doctor.py tests/test_bundle_freshness.py tests/test_cross_capability.py tests/test_hej_capability.py tests/test_orkestrera_capability.py tests/test_package_registry.py tests/test_runtime_adapters.py::TestLifecycleAdapters::test_hard_gate_docs_pass tests/test_runtime_adapters.py::TestLifecycleAdapters::test_hard_gate_docs_fail_on_copilot_overclaim_drift tests/test_runtime_adapters.py::TestLifecycleAdapters::test_hard_gate_docs_fail_on_opencode_apply_patch_drift tests/test_runtime_adapters.py::TestLifecycleAdapters::test_runtime_adapter_drift_inventory_names_each_decision_class tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_package_fails_on_manual_install_root_mismatch tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_package_fails_on_version_mismatch tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_agentera_version_reader_extracts_current_literal tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_drift_inventory_names_decisions_and_surface_classes -q` reported 118 passed and 1 failed because `test_bundle_status_reports_pre_argparse_cli_failures_as_status_signals` assumed `cli_probe_failed` was the first signal even though `version_mismatch` can be first; rerun of the same command after making the assertion order-independent reported 119 passed; `python3 -m py_compile scripts/self_audit.py scripts/usage_stats.py scripts/setup_doctor.py scripts/runtime_adapter_registry.py scripts/agentera_upgrade.py` completed with no output; `uv run scripts/validate_capability.py --self-validate` reported `PASS: contract is self-referentially valid`; `uv run scripts/agentera docs` reported docs status current and stale none; `rg -n "bundle freshness gap|freshness before|installer freshness|validation drift found|version drift|verbosity drift|reports_.*_drift|fails_on_.*_drift|Upgrade guard|upgrade guard|conductor protocol|Conductor protocol" tests scripts references/adapters --glob '*.{py,yaml}'` produced no output.
+  next: 'Conductor evaluation should decide Task 4 PASS before updating `.agentera/plan.yaml`; Tasks 5-8 remain deliberately untouched.'
+  context:
+    intent: Decision 44 Task 4 diagnostics, tests, and safe labels only
+    constraints: no orkestrera invocation, no plan completion update, no broad coverage proof, no release readiness work, no final state sync, no vision or objective mutation, no stable ID/enum/persisted-shape migration, no routing/CLI command/package-reader behavior change, no version beyond 2.2.0, no commit, no push, no tag, no publication, no package update, no installed bundle refresh
+    scope: scripts/agentera, scripts/self_audit.py, scripts/usage_stats.py, adapter registry/interface wording, focused test labels/assertions, docs metadata, changelog, and this progress entry
+- number: 353
+  timestamp: 2026-05-07 22:15
+  type: docs
+  phase: build
+  what: Updated Decision 44 capability, dispatcher, and protocol-reference instruction prose without changing routing, validation, CLI, schema, exit, or persisted-state contracts.
+  commit: pending
+  inspiration: >
+    Task 3 required applying the Task 1 vocabulary boundary to capability prose, master dispatch instructions, and protocol reference text while preserving stable Swedish capability names, Decision 43 aliases, schema vocabulary, exit signals, Git checkpoint commit wording, and behavior/stop-condition semantics.
+  discovered: >
+    Current capability prose still preferred deprecated Decision 44 wording in dispatcher bundle status checks, hej migration/status handling, realisera behavioral verification, orkestrera orchestration wording, docs-first workflow guidance, plan-level current-state wording, and prose-health mismatch descriptions. Schema files still contain protected compatibility vocabulary such as `artifact_freshness`, `consecutive_failure_guard`, and `plan_freshness_checkpoint`; those were left unchanged because they are stable IDs, fields, validation rules, or schema descriptions rather than current prose behavior.
+  verified: >
+    Validation passed after one corrected command: `uv run scripts/validate_capability.py --self-validate` reported `PASS: contract is self-referentially valid`; the first multi-path validator invocation failed with `error: unrecognized arguments` because `scripts/validate_capability.py` accepts one capability directory at a time; rerun as `for capability in hej visionera resonera planera realisera optimera inspektera dokumentera visualisera orkestrera; do uv run scripts/validate_capability.py "skills/agentera/capabilities/$capability" || exit 1; done` reported `PASS: capability directory is valid` for all 10 changed capabilities; `uv run scripts/validate_capability.py --validate-protocol --check-primitives` reported `PASS: protocol is internally consistent`; after a final prose-indentation cleanup, `uv run scripts/validate_capability.py skills/agentera/capabilities/dokumentera` reported `PASS: capability directory is valid`; `rg -n "freshness guard|freshness gap|Upgrade guard|Exit-early guard|Effort-bias guard|Reality Verification Gate|conductor protocol|Conductor protocol|memory layer|operating record|DTC|DTC-first|Plan-level freshness checkpoint|verbosity drift|visual drift|architecture drift|design drift|code drift|drift from|drifted|drifts" skills/agentera --glob '*.md'` produced no output; `uv run scripts/agentera plan` reported status active with Tasks 1-2 complete and Task 3 still pending for conductor ownership; `uv run scripts/agentera docs` reported docs status current and stale none; `git diff --name-only -- .agentera/vision.yaml .agentera/optimera` produced no output.
+  next: 'Conductor evaluation should decide Task 3 PASS before updating `.agentera/plan.yaml`; Tasks 4-8 remain deliberately untouched.'
+  context:
+    intent: Decision 44 Task 3 capability and protocol instruction wording only
+    constraints: no orkestrera invocation, no plan completion update, no diagnostics/tests label migration, no broad vocabulary proof, no release readiness work, no final state sync, no vision or objective mutation, no stable ID/enum/persisted-shape migration, no routing/validation/CLI behavior change, no version beyond 2.2.0, no commit, no push, no tag, no publication, no package update, no installed bundle refresh
+    scope: skills/agentera/SKILL.md, changed capability prose files, skills/agentera/references/contract.md, CHANGELOG.md, and this progress entry
+- number: 352
+  timestamp: 2026-05-07 22:05
+  type: docs
+  phase: build
+  what: Strengthened Decision 44 Task 2 scope evidence after the first Task 2 evaluation failed solely on verification evidence and scope audit.
+  commit: pending
+  inspiration: >
+    The prior Task 2 content evaluation passed all three documentation acceptance criteria, but inspektera failed the cycle because the worktree also contains many pre-existing uncommitted changes from earlier completed Decision 43, Task 1, package/version, and plan-state cycles. This retry does not claim a clean worktree; it records the intended Task 2 evidence boundary explicitly for conductor re-evaluation.
+  discovered: >
+    No additional user-facing documentation defect was found during this retry. The dirty worktree is expected and includes pre-existing changes outside Task 2, including Decision 43 route-alias implementation/test/docs work, Decision 44 Task 1 vocabulary boundary work, package/version surface work, and plan/TODO state. Task 2's intended changed-file allowlist is limited to `README.md`, `UPGRADE.md`, `ROADMAP.md`, `docs/notes.md`, `references/adapters/opencode.md`, `references/adapters/runtime-feature-parity.md`, `CHANGELOG.md`, `.agentera/docs.yaml`, and `.agentera/progress.yaml`; `docs/notes.md` is allowed by scope even though it currently has no git diff. This retry edited only `.agentera/progress.yaml` to add verification evidence and did not perform Task 3+ wording work.
+  verified: >
+    Validation passed with explicit dirty-tree caveats: `uv run scripts/agentera docs` reported last_audit `2026-05-07 (Decision 44 Task 2 user-facing wording)`, docs status current, stale none, and README, Upgrade guide, Changelog, Progress, Plan, DOCS, Vocabulary, Roadmap, OpenCode adapter reference, and Runtime parity reference current; `uv run scripts/agentera plan` reported status active, Task 1 complete, and Task 2 still pending, preserving conductor ownership of completion; `uv run scripts/validate_capability.py --self-validate` reported `PASS: contract is self-referentially valid`; `git status --short -- README.md UPGRADE.md ROADMAP.md docs/notes.md references/adapters/opencode.md references/adapters/runtime-feature-parity.md CHANGELOG.md .agentera/docs.yaml .agentera/progress.yaml` listed only `.agentera/docs.yaml`, `.agentera/progress.yaml`, `CHANGELOG.md`, `README.md`, `ROADMAP.md`, `UPGRADE.md`, `references/adapters/opencode.md`, and `references/adapters/runtime-feature-parity.md` as modified, with no `docs/notes.md` diff; `git diff --name-only -- README.md UPGRADE.md ROADMAP.md docs/notes.md references/adapters/opencode.md references/adapters/runtime-feature-parity.md CHANGELOG.md .agentera/docs.yaml .agentera/progress.yaml` listed the same Task 2 doc/docs-state files; `git status --short -- skills/agentera/capabilities tests pyproject.toml uv.lock plugin.json .github/plugin/plugin.json .codex-plugin/plugin.json .claude-plugin/marketplace.json .opencode/plugins/agentera.js registry.json .agentera/vision.yaml .agentera/optimera` showed pre-existing dirty capability prose/schema, test, package, version, and plugin files but no `.agentera/vision.yaml` or `.agentera/optimera` entry; `git diff --name-only -- .agentera/vision.yaml .agentera/optimera` produced no output, proving no vision/objective diff; `git tag --list '2.2.0'` produced no output; `uv run scripts/agentera bundle-status --json` reported installed bundle status `stale`, markerVersion `2.1.1`, expectedVersion `2.2.0`, proving no installed bundle refresh; `git status --short --branch` reported `## main...origin/main [ahead 2]` with the known dirty tree, and this retry did not run any commit, push, tag, publish, package-manager update, package install, or bundle-refresh command.
+  next: 'Conductor evaluation should re-evaluate Task 2 using this latest evidence and decide PASS before updating `.agentera/plan.yaml`; Tasks 3-8 remain deliberately untouched.'
+  context:
+    intent: retry Decision 44 Task 2 evidence only after scope-audit failure
+    constraints: no orkestrera invocation, no plan completion update, no capability prose/instruction update, no diagnostics/tests label migration, no broad vocabulary proof, no release readiness work, no final state sync, no vision or objective mutation, no stable ID/enum/persisted-shape migration, no commit, no push, no tag, no publication, no package update, no package install, no installed bundle refresh
+    scope: >
+      `.agentera/progress.yaml` evidence update only during this retry; Task 2 intended changed-file allowlist remains README.md, UPGRADE.md, ROADMAP.md, docs/notes.md, references/adapters/opencode.md, references/adapters/runtime-feature-parity.md, CHANGELOG.md, .agentera/docs.yaml, and .agentera/progress.yaml
+- number: 351
+  timestamp: 2026-05-07 21:30
+  type: docs
+  phase: build
+  what: Updated current user-facing docs to use Decision 44 plain-English wording for setup, routing, state, and workflow explanations.
+  commit: pending
+  inspiration: Task 2 required first-time user docs to explain current status, up-to-date state, saved project context, and the docs-first workflow in plain English while preserving canonical Swedish capability names, Decision 43 route aliases, stable IDs, historical compatibility wording, and Git-only checkpoint contexts.
+  discovered: >
+    `README.md` still used `memory layer`, `operating record`, prose `drifting`, stale-work wording, and retry-gate wording in current onboarding sections. `UPGRADE.md`, `ROADMAP.md`, `docs/notes.md`, and adapter references had current setup or install-health prose using freshness/stale language where Decision 44 prefers current, out-of-date, status, or sync wording. Historical changelog entries, stable install-root state labels such as `managed/stale/unmanaged`, capability prose, dispatcher instructions, diagnostics/tests labels, broad vocabulary proof, release readiness, vision state, objective state, installed bundle refresh, tags, pushes, publication, and commits were left untouched for their owning tasks or protected compatibility/history scopes.
+  verified: >
+    Validation passed: `uv run scripts/agentera docs` reported last_audit `2026-05-07 (Decision 44 Task 2 user-facing wording)`, docs status current, and README, Upgrade guide, Changelog, Progress, Plan, DOCS, Vocabulary, Roadmap, OpenCode adapter reference, and Runtime parity reference current; `uv run scripts/agentera plan` reported status active, title `Apply Decision 44 Plain-English Vocabulary For 2.2.0`, Task 1 complete, and Task 2 still pending for conductor ownership; `uv run scripts/validate_capability.py --self-validate` reported `PASS: contract is self-referentially valid`; a targeted Python check reported `PASS: user-facing docs preserve canonical names/Decision 43 aliases and include Decision 44 plain-language replacements`; `rg -n "freshness|Reality Verification Gate|conductor protocol|memory layer|operating record|DTC|DTC-first|\bdrift\b|checkpoint" README.md UPGRADE.md ROADMAP.md docs/notes.md references/adapters/opencode.md references/adapters/runtime-feature-parity.md` produced no output; `git diff -- README.md UPGRADE.md ROADMAP.md docs/notes.md references/adapters/opencode.md references/adapters/runtime-feature-parity.md CHANGELOG.md .agentera/docs.yaml` showed only documentation and docs-metadata wording changes for this task; `git status --short` showed a dirty tree with pre-existing broader Decision 43/44 work plus this task's docs changes, and no commit, tag, push, package update, publication, installed bundle refresh, vision edit, or objective-state edit was performed.
+  next: 'Conductor evaluation should decide Task 2 PASS before updating `.agentera/plan.yaml`; Tasks 3-8 remain deliberately untouched.'
+  context:
+    intent: Decision 44 Task 2 user-facing documentation language only
+    constraints: no orkestrera invocation, no plan completion update, no capability prose/instruction update, no diagnostics/tests label migration, no broad vocabulary proof, no release readiness work, no final state sync, no vision or objective mutation, no stable ID/enum/persisted-shape migration, no version beyond 2.2.0, no commit, no push, no tag, no publication, no package update, no installed bundle refresh
+    scope: README.md, UPGRADE.md, ROADMAP.md, docs/notes.md, references/adapters/opencode.md, references/adapters/runtime-feature-parity.md, CHANGELOG.md, .agentera/docs.yaml, and this progress entry
+- number: 350
+  timestamp: 2026-05-07 21:25
+  type: docs
+  phase: build
+  what: Retried Decision 44 Task 1 after the broad vocabulary replacement failure and narrowed the change back to the boundary.
+  commit: pending
+  inspiration: Task 1 retry required correcting prior evaluation failure by keeping only the Decision 44 replacement boundary, preserving earlier Decision 43 route-alias documentation, and recording concrete evidence that no Tasks 2-8 bulk wording replacement or release-side effect occurred.
+  discovered: >
+    The failed cycle 349 had replaced wording across `docs/vocabulary.md` outside the boundary section, including source rows, examples, workflow grammar, runtime/release grammar, diagnostic wording, and source index wording. This retry restored those unrelated vocabulary rows and left the document diff bounded to the previously accepted Decision 43 route-alias documentation plus the `Decision 44 replacement boundary` section. The active plan remains Decision 44-only with all eight tasks pending, and `.agentera/archive/PLAN-2026-05-07-implement-capability-route-aliases.yaml` remains the complete archived Decision 43 route-alias plan.
+  verified: >
+    Validation passed: `git diff -- docs/vocabulary.md` now shows changes only in the Decision 43 alias routing section and the new `Decision 44 replacement boundary`; `git diff --numstat -- docs/vocabulary.md` reports a narrowed 69 insertions and 24 deletions instead of the failed broad replacement footprint; a targeted boundary check reported `PASS: Decision 44 boundary classifications and rationales present` for the required replacement terms, allowed uses, and protected compatibility rows, including stable identifiers, schema/artifact shapes, CLI labels/exit behavior, canonical capability names, Decision 43 aliases, historical artifacts, and release version; a bounded-diff check reported `PASS: vocabulary additions bounded to route aliases and Decision 44 boundary`, proving no broad wording replacement beyond the Task 1 boundary plus preserved Decision 43 alias docs; `uv run scripts/agentera plan` reported the active title `Apply Decision 44 Plain-English Vocabulary For 2.2.0`, all eight tasks pending, and Task 1 still pending for conductor ownership; `.agentera/plan.yaml` uses plain current-state wording in the Decision 44 plan and tracks only Decision 44 work; `.agentera/archive/PLAN-2026-05-07-implement-capability-route-aliases.yaml` exists with `header.status: complete` and completed Tasks 1-7 for the prior route-alias plan; `git diff --name-only -- .agentera/vision.yaml .agentera/optimera` produced no output, so no vision or objective state was edited; `git tag --list '2.2.0'` produced no output; `git status --short --branch` reported `## main...origin/main [ahead 2]` with uncommitted work, so this retry did not push; `uv run scripts/agentera bundle-status --json` reported installed bundle status `stale` with marker version `2.1.1` versus expected `2.2.0`, proving no installed bundle refresh occurred; no publication or package update command was run during this retry.
+  next: 'Conductor evaluation should decide Task 1 PASS before updating `.agentera/plan.yaml`; Tasks 2-8 bulk wording replacement remain deliberately untouched.'
+  context:
+    intent: retry Decision 44 Task 1 boundary definition only after cycle 349 failed for broad replacement
+    constraints: no orkestrera invocation, no plan completion update, no vision or objective mutation, no schema/enum/persisted-state migration, no routing or CLI behavior changes, no version beyond 2.2.0, no commit, no push, no tag, no publication, no package update, no installed bundle refresh
+    scope: docs/vocabulary.md boundary narrowing and this progress entry only
+- number: 349
+  timestamp: 2026-05-07 21:20
+  type: docs
+  phase: build
+  what: Defined the Decision 44 plain-English replacement boundary for 2.2.0.
+  commit: pending
+  inspiration: Task 1 required a source-of-truth boundary before any bulk wording replacement, including classification of each target term, preservation of stable identifiers and persisted state shapes, confirmation that the active plan teaches plain English, and confirmation that the previous Decision 43 route-alias plan is archived.
+  discovered: >
+    The active plan is already `Apply Decision 44 Plain-English Vocabulary For 2.2.0` with all eight Decision 44 tasks pending, and it records the completed Decision 43 route-alias plan at `.agentera/archive/PLAN-2026-05-07-implement-capability-route-aliases.yaml`. The archived plan exists and has `status: complete`, so no additional archival mutation was needed. `docs/vocabulary.md` still taught several deprecated terms as preferred vocabulary, so the Task 1 boundary now classifies replacement terms, allowed uses, and protected compatibility surfaces without changing schemas, stable IDs, enums, CLI behavior, routing, canonical capability names, Decision 43 aliases, vision state, objective state, packages, tags, commits, or publication state.
+  verified: >
+    Validation passed: `uv run scripts/agentera plan` reported status active, title `Apply Decision 44 Plain-English Vocabulary For 2.2.0`, Task 1 pending, and all eight tasks pending; `uv run scripts/agentera docs` reported docs status current with Vocabulary, Changelog, Progress, Plan, and DOCS metadata current; `uv run scripts/validate_capability.py --self-validate` reported PASS; `python3 - <<'PY' ... PY` targeted boundary check reported `PASS: Decision 44 vocabulary boundary entries present` for the required replacement, allowed-use, and protected-compatibility entries in `docs/vocabulary.md`.
+  next: 'Conductor evaluation should decide Task 1 PASS before updating `.agentera/plan.yaml`; Tasks 2-8 bulk wording replacement, diagnostics/tests alignment, coverage proof, release inclusion evidence, TODO resolution, and final state sync remain deliberately untouched.'
+  context:
+    intent: define Decision 44 replacement boundary only
+    constraints: no orkestrera invocation, no plan completion update, no vision or objective mutation, no schema/enum/persisted-state migration, no routing or CLI behavior changes, no version beyond 2.2.0, no commit, no push, no tag, no publication, no package update, no installed bundle refresh
+    scope: docs/vocabulary.md Decision 44 boundary, minimal changelog evidence, and this progress entry
+- number: 348
+  timestamp: 2026-05-07 21:06
+  type: docs
+  phase: build
+  what: Synced final Decision 43 alias-routing documentation and state before conductor closure.
+  commit: pending
+  inspiration: Task 7 required TODO, CHANGELOG, PROGRESS, docs metadata, and plan pre-closure state to reflect completed Decision 43 execution evidence while leaving Task 7 pending and the plan active for conductor evaluation.
+  discovered: >
+    The active plan already showed Tasks 1-6 complete and Task 7 pending, which confirms `.agentera/plan.yaml` was updated properly after Task 3 because Tasks 4, 5, and 6 were subsequently gated and marked complete. The remaining state gap was human-facing: `TODO.md` still listed the Decision 43 alias work as open even though implementation, documentation, routing proof, and version alignment evidence existed. The optional Claude live-smoke and install-root/generated-contract follow-ups remained separate, and the installed durable bundle marker remained intentionally stale at 2.1.1 versus expected 2.2.0 because refresh/publication work was out of scope.
+  verified: >
+    Validation passed: `uv run scripts/agentera todo` reported only the Decision 44 plain-prose, optional Claude live-smoke, and install-root/generated-contract follow-ups as open; `uv run scripts/agentera docs` reported docs status current with TODO, Changelog, Progress, Plan, and DOCS metadata current; `uv run scripts/agentera plan` reported status active with Tasks 1-6 complete and Task 7 pending under the renamed plain-English current-state check; `uv run scripts/validate_capability.py --self-validate` reported PASS; `uv run pytest tests/test_schema_backed_routing_interface.py -q` reported 12 passed.
+  next: 'Conductor evaluation should decide Task 7 PASS, then mark Task 7 complete and close .agentera/plan.yaml; no publish, push, tag, commit, package update, installed bundle refresh, vision edit, or objective edit was performed.'
+  context:
+    intent: final documentation and state sync for Capability Route Aliases Task 7 only
+    constraints: no orkestrera invocation, no plan completion update, no vision or objective mutation, no commit, no push, no tag, no release publication, no package-manager update, no installed bundle refresh
+    scope: TODO resolution for the completed Decision 43 alias plan, changelog verification note, docs metadata dates, plain-English Task 7 plan label, and this progress entry
+- number: 347
+  timestamp: 2026-05-07 21:20
+  type: feat
+  phase: build
+  what: Completed Decision 43 alias-routing version and release readiness checks.
+  commit: pending
+  inspiration: Task 6 required evaluating the repository version policy for the completed alias-routing feature, applying any required version updates, proving runtime and package version readers agree when values changed, and avoiding tags, pushes, package-manager skill installs, or publication.
+  discovered: >
+    `.agentera/docs.yaml` maps `feat` to a minor bump and lists the required version-bearing files: `pyproject.toml`, `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, and `registry.json`. Decision 43 shipped user-visible alias routing under the existing Unreleased changelog, so the suite version moved from 2.1.1 to 2.2.0. The PackageManifest registry also documents `registry.json` as the persisted suite-version authority; skill frontmatter and package characterization were aligned with that authority so visible metadata did not contradict the release version. The installed durable bundle under `/home/jgabor/.agents/agentera` remains at marker version 2.1.1 and was intentionally not refreshed because package/update publication work is out of scope.
+  verified: >
+    Validation passed and release safety evidence recorded: required version files were updated for the `feat` minor bump from 2.1.1 to 2.2.0 across `pyproject.toml`, `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, `registry.json`, and skill frontmatter; `uv run pytest tests/test_package_registry.py::test_manifest_projection_versions_align_through_registry -q` reported 1 passed after the version file updates; an initial overly specific runtime pytest command used obsolete node ids and reported no tests run, then the corrected `uv run pytest tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_package_fails_on_version_drift tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_agentera_version_reader_extracts_current_literal tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_version_bearing_package_surfaces_align tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_surface_characterization_distinguishes_non_version_opencode_manifest -q` reported 4 passed; after syncing the package-registry test expectation, `uv run pytest tests/test_package_registry.py tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_version_marker_is_documented tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_package_fails_on_version_drift tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_agentera_version_reader_extracts_current_literal tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_version_bearing_package_surfaces_align -q` reported 15 passed, proving runtime/package readers agree with the changed version values; `uv run scripts/validate_capability.py --self-validate` reported PASS; `uv run scripts/agentera docs` reported docs status current; `git tag --list '2.2.0'` produced no output, proving no local 2.2.0 tag exists; `git ls-remote --tags origin 'refs/tags/2.2.0'` produced no output, proving no remote 2.2.0 tag exists on origin; `git status --short --branch` reported `## main...origin/main [ahead 2]` plus uncommitted modified files including the version surfaces, and `git log --oneline '@{u}..HEAD'` reported the two local commits `00293a7 docs(agentera): record alias plan and plain prose policy` and `5d57f5f docs(agentera): clarify vocabulary and route alias policy`, proving current checkout changes have not been pushed to origin; `uv run scripts/agentera bundle-status --json` read the expected suite version as 2.2.0 and reported the installed durable bundle at `/home/jgabor/.agents/agentera` with marker version 2.1.1 and status `stale`, confirming the installed bundle was not refreshed; `uv run scripts/agentera upgrade --only packages --dry-run --json` reported mode `plan`, updatePackages `false`, package phase summary applied 0 and skipped 3, with legacy skill removal and both Claude/OpenCode `npx skills add` package-manager installs skipped because `--update-packages` was not passed, proving no package-manager update was performed by the local upgrade path; package publication was not performed as far as local checkout evidence can establish because there is no local or remote 2.2.0 tag and current changes are unpushed, but external package registries were not queried so this cannot prove absence of publication outside local Git/origin evidence.
+  next: 'Conductor evaluation should decide Task 6 PASS before updating .agentera/plan.yaml; Task 7 final state sync and plan closure are deliberately left untouched.'
+  context:
+    intent: version and release readiness for Capability Route Aliases Task 6 only
+    constraints: no orkestrera invocation, no plan completion update, no vision or objective mutation, no git commit, no tag, no push, no package publication, no package-manager skill install, no installed bundle refresh
+    version_policy: feat maps to minor; Decision 43 alias routing therefore bumps 2.1.1 to 2.2.0
+    scope: version-bearing package surfaces, visible skill/package metadata alignment, changelog promotion, focused compatibility validation, and progress logging
+- number: 346
+  timestamp: 2026-05-07 20:49
+  type: test
+  phase: build
+  what: Proved Decision 43 alias routing behavior across the full alias map.
+  commit: pending
+  inspiration: Task 5 required executable routing proof that every Decision 43 alias reaches its intended capability, target drift fails, and existing canonical names, secondary request phrases, fallback, and disambiguation behavior remain covered.
+  discovered: >
+    The routing seam already had partial alias checks for status, discuss, and build plus existing phrase, fallback, and disambiguation tests. Strengthened the proof by making the full 12-entry Decision 43 alias map the test oracle, exercising every `/agentera <alias>` route through `evaluate_route`, preserving canonical capability-name direct routes in the same route evaluator, and adding a deliberate drift fixture that changes `build` to `optimera` and must raise an assertion. Existing secondary wording, concrete trigger intent, fallback, and disambiguation tests remain in the same focused suite.
+  verified: >
+    Validation passed: uv run pytest tests/test_schema_backed_routing_interface.py -q reported 12 passed, including canonical direct routes, full alias-map routing, drift failure, secondary wording, fallback, and disambiguation coverage; uv run pytest tests/test_capability_contract_structure.py tests/test_capability_contract_loader.py tests/test_cross_capability.py::test_master_skill_documents_route_alias_contract_boundary -q reported 21 passed; uv run scripts/validate_capability.py --self-validate reported PASS.
+  next: 'Conductor evaluation should decide Task 5 PASS before updating .agentera/plan.yaml; Task 6 version/release work and Task 7 final state sync are deliberately left untouched.'
+  context:
+    intent: prove route behavior for Capability Route Aliases Task 5 only
+    constraints: no orkestrera invocation, no plan completion update, no vision or objective mutation, no CLI alias commands, no exact aliases beyond Decision 43, no commit, no push
+    proportionality: each testable unit has pass/fail evidence in the focused routing suite or adjacent contract validation; canonical name routing, secondary phrases, fallback, and disambiguation were retained as existing executable checks rather than duplicated
+    scope: routing tests, changelog, and progress logging
+- number: 345
+  timestamp: 2026-05-07 21:05
+  type: docs
+  phase: build
+  what: Documented the Decision 43 alias and command surfaces for first-time users.
+  commit: pending
+  inspiration: Task 4 required capability docs to show exactly one visible plain route alias per canonical capability while preventing alias words from being taught as CLI state commands, and vocabulary docs had to preserve `status`, `discuss`, and the one-primary-alias rule.
+  discovered: >
+    The dispatcher and schema contract already had the Decision 43 alias contract, but README capability docs did not expose the plain aliases to first-time users. Vocabulary definitions also described direct routes too narrowly as canonical capability names only. Added README alias visibility, clarified that aliases are slash routes rather than CLI commands, added the canonical capability-to-primary-alias vocabulary table, and kept the CLI state surface limited to existing state commands.
+  verified: >
+    Validation passed: uv run pytest tests/test_capability_contract_structure.py tests/test_capability_contract_loader.py tests/test_cross_capability.py::test_master_skill_documents_route_alias_contract_boundary tests/test_schema_backed_routing_interface.py tests/test_skill_dispatch_contract.py::test_non_hej_capabilities_are_not_cli_state_commands -q reported 32 passed; uv run scripts/validate_capability.py --self-validate reported PASS; uv run scripts/agentera docs reported docs status current with README last_updated 2026-05-07; uv run scripts/agentera --help showed the visible CLI surface is exactly state/utility commands bundle-status, decisions, docs, experiments, health, hej, objective, plan, prime, progress, query, todo, and upgrade; uv run python ad hoc CLI/docs/vocabulary boundary check reported PASS that README capability docs contain exactly one visible plain route for each of 12 Decision 43 aliases, the CLI exposes no non-hej capability commands, the CLI exposes no alias-only commands with the only alias/state overlap being the existing state command plan, and vocabulary preserves /agentera status, /agentera discuss, /agentera plan, and the one-primary-alias rule.
+  next: 'Conductor evaluation should decide Task 4 PASS before updating .agentera/plan.yaml; later tasks should handle broader routing proof or version work if the plan calls for them.'
+  context:
+    intent: document route aliases and command-surface boundaries only for Capability Route Aliases Task 4
+    constraints: no orkestrera invocation, no plan completion update, no vision or objective mutation, no CLI alias commands, no exact aliases beyond Decision 43, no commit, no push
+    unknowns: broader routing proof and version-surface updates are deliberately left to later planned tasks
+    scope: README alias table and CLI boundary prose, vocabulary route definitions, changelog, docs metadata, and progress logging
+- number: 344
+  timestamp: 2026-05-07 20:38
+  type: feat
+  phase: build
+  what: Preserved accepted secondary request wording below primary alias routing.
+  commit: pending
+  inspiration: Task 3 required accepted phrases such as `deliberate`, `brainstorm`, `rubber duck`, `brief`, and `what's next` to reach their intended capabilities without becoming additional primary aliases, while concrete build, research, audit, or document intent must still win or disambiguate.
+  discovered: >
+    The exact Decision 43 alias layer was already observable from Task 2, but secondary wording coverage was incomplete: `what's next` and `brief me` existed, while bare `deliberate`, `brainstorm`, `rubber duck`, and `brief` did not. Added those phrases only to capability trigger schemas, documented them as secondary wording examples, and added routing tests proving `/agentera <secondary phrase>` uses trigger matching with no direct alias. Mixed discussion/work phrases now have tests that force disambiguation with realisera, inspirera, inspektera, or dokumentera rather than silently treating discussion wording as a primary route.
+  verified: >
+    Validation passed: uv run pytest tests/test_schema_backed_routing_interface.py -q reported 10 passed; uv run scripts/validate_capability.py skills/agentera/capabilities/resonera reported PASS; uv run scripts/validate_capability.py skills/agentera/capabilities/hej reported PASS; uv run pytest tests/test_cross_capability.py::test_master_skill_documents_route_alias_contract_boundary -q reported 1 passed; uv run scripts/validate_capability.py --self-validate reported PASS.
+  next: 'Conductor evaluation should decide Task 3 PASS before updating .agentera/plan.yaml; later tasks can broaden user-facing documentation coverage if the plan calls for it.'
+  context:
+    intent: preserve secondary request language without expanding Decision 43 primary aliases
+    constraints: no orkestrera invocation, no plan completion update, no vision or objective mutation, no CLI alias commands, no commit, no push
+    unknowns: broader documentation coverage is deliberately left to later planned tasks
+    scope: trigger schemas for resonera and hej, schema-backed routing tests, minimal dispatcher/vocabulary examples, changelog, and progress logging
+- number: 343
+  timestamp: 2026-05-07 00:42
+  type: test
+  phase: build
+  what: Made Decision 43 alias routing observable in the schema-backed routing seam.
+  commit: pending
+  inspiration: Task 2 required `/agentera status`, `/agentera discuss`, and `/agentera build` to route directly without disambiguation while preserving concrete trigger intent for non-exact phrases and leaving Hej fallback unchanged.
+  discovered: >
+    The routing test interface loaded trigger schemas and the alias contract separately, but did not evaluate exact `/agentera <alias>` routes. Adding direct-route loading from `ROUTE_ALIASES.primary_aliases` exposed alias routes as first-class routing results. Focused validation also exposed a short-word trigger collision where `hi` matched inside `everything`; trigger phrase matching now uses word boundaries so `build everything` and `run the plan` remain concrete orchestration trigger requests instead of being polluted by greeting text. No CLI alias commands were added, and `.agentera/plan.yaml` was not updated.
+  verified: >
+    Validation passed: uv run pytest tests/test_schema_backed_routing_interface.py -q reported 8 passed; uv run pytest tests/test_cross_capability.py::test_unmatched_text_falls_back_to_hej tests/test_cross_capability.py::test_priority_scoring_and_threshold_use_schema_metadata -q reported 2 passed; uv run scripts/validate_capability.py --self-validate reported PASS; uv run pytest tests/test_cross_capability.py -q reported 45 passed; python3 -m py_compile tests/routing_test_interface.py passed; uv run pytest tests/test_capability_contract_loader.py tests/test_capability_contract_structure.py tests/test_schema_backed_routing_interface.py tests/test_cross_capability.py -q reported 73 passed.
+  next: 'Conductor evaluation should decide Task 2 PASS before updating .agentera/plan.yaml; later tasks can expand secondary language and documentation breadth.'
+  context:
+    intent: make primary alias routing executable and observable for Capability Route Aliases Task 2
+    constraints: no orkestrera invocation, no plan completion update, no vision or objective mutation, no CLI alias commands, no commit, no push
+    unknowns: broader secondary phrase coverage and user-facing documentation breadth remain later planned tasks
+    scope: tests/routing_test_interface.py, tests/test_schema_backed_routing_interface.py, CHANGELOG.md, and progress logging
+- number: 342
+  timestamp: 2026-05-07 00:18
+  type: feat
+  phase: build
+  what: Defined the Decision 43 primary route alias contract.
+  commit: pending
+  inspiration: Task 1 required one exact plain `/agentera <alias>` route per capability while keeping Swedish -era names canonical and preserving the state-oriented CLI surface.
+  discovered: >
+    The dispatcher already documented canonical capability direct routes and the CLI/state split, but the Decision 43 alias table had no machine-readable contract surface. Added ROUTE_ALIASES to the capability schema contract and loader model, documented canonical-name precedence and the `/agentera plan` versus `agentera plan` boundary, and kept secondary wording in trigger schemas for later routing tasks. Broader routing tests exposed a stale Hej prose phrase assertion; restored the existing bundle freshness gap wording without changing routing behavior.
+  verified: >
+    Validation passed: uv run pytest tests/test_capability_contract_loader.py tests/test_capability_contract_structure.py tests/test_cross_capability.py::test_master_skill_documents_route_alias_contract_boundary -q reported 21 passed; uv run scripts/validate_capability.py --self-validate reported PASS; python3 -m py_compile scripts/capability_contract.py passed; uv run scripts/validate_capability.py skills/agentera/capabilities/realisera reported PASS; after restoring the stale Hej phrase, uv run pytest tests/test_capability_contract_loader.py tests/test_capability_contract_structure.py tests/test_capability_contract_interface_usage.py tests/test_capability_validator_characterization.py tests/test_cross_capability.py -q reported 94 passed.
+  next: 'Conductor evaluation should decide Task 1 PASS before updating .agentera/plan.yaml; later tasks should implement executable alias routing, secondary phrase placement, docs breadth, and broader validation.'
+  context:
+    intent: define the route alias contract only for Capability Route Aliases Task 1
+    constraints: no orkestrera invocation, no plan completion update, no vision or objective mutation, no CLI alias commands, no commit, no push
+    unknowns: executable alias routing and full documentation updates remain later planned tasks
+    scope: capability schema contract, contract loader model, dispatcher contract prose, Hej freshness wording, focused contract tests, changelog, docs metadata, and progress logging
 - number: 341
   timestamp: 2026-05-06 23:46
   type: fix

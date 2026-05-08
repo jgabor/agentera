@@ -5,7 +5,7 @@
 # ///
 """Self-audit checks for artifact writing conventions.
 
-Three functions implement the mandatory pre-write gate: verbosity drift,
+Three functions implement the mandatory pre-write gate: verbosity mismatch,
 abstraction creep, and filler accumulation. Advisory only — report but
 do not block writes.
 """
@@ -112,7 +112,7 @@ def check_verbosity(
 
     Returns:
         ``(True, "")`` if word count is within budget.
-        ``(False, reason)`` with a verbosity drift message otherwise.
+        ``(False, reason)`` with a verbosity mismatch message otherwise.
     """
     word_count = len(text.split())
 
@@ -132,7 +132,7 @@ def check_verbosity(
 
     return (
         False,
-        f"verbosity drift: {word_count} words exceeds {per_entry_budget} budget",
+        f"verbosity mismatch: {word_count} words exceeds {per_entry_budget} budget",
     )
 
 

@@ -145,7 +145,7 @@ uv run ${AGENTERA_HOME:-.}/scripts/agentera progress
 
 Before proceeding, list the 3-5 facts that determine this cycle.
 
-**Exit-early guard (plan-driven mode only)**: If PLAN.md is done and no tasks were added, perform a **plan-completion sweep** before archiving. This guard does NOT apply in vision-driven mode.
+**Exit-early stop condition (plan-driven mode only)**: If PLAN.md is done and no tasks were added, perform a **plan-completion sweep** before archiving. This stop condition does NOT apply in vision-driven mode.
 
 Sweep checklist:
 
@@ -187,7 +187,7 @@ Search for relevant external approaches before planning.
 
 Write a concrete plan: what changes in which files, expected behavior, verification approach.
 
-Read files you plan to modify before committing to the plan. If docs should update first (DTC), include that.
+Read files you plan to modify before committing to the plan. If the docs-first workflow should update intent docs before tests and code, include that.
 
 Keep small enough for one agent session. Too large? Split and save the rest.
 
@@ -232,7 +232,7 @@ Verification has two phases: structural and behavioral. Both must pass before co
 2. **Functional check**: does the changed behavior work end-to-end?
 3. **Run the project's verification suite** (test/build/lint).
 
-**Phase B, behavioral verification (Reality Verification Gate)**: observe the new behavior by running the project's primary entrypoint against real project state:
+**Phase B, behavioral verification gate**: observe the new behavior by running the project's primary entrypoint against real project state:
 
 - CLI tool: invoke with realistic arguments
 - Library/SDK: run a smoke driver
@@ -253,7 +253,7 @@ If the current task is a version bump: read DOCS.md for the `versioning` section
 
 ### Step 8: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: check verbosity overruns, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 ### Step 9: Log
@@ -345,7 +345,7 @@ When PLAN.md exists with pending tasks, Step 2 reads the plan instead of reasoni
 
 ### Reads /dokumentera output
 
-DOCS.md provides artifact path resolution. In the DTC pipeline, dokumentera writes intent docs that feed planera, which feeds realisera.
+DOCS.md provides artifact path resolution. In the docs-first workflow, dokumentera writes intent docs that feed planera, which feeds realisera.
 
 ### Reads /visualisera output
 

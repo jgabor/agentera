@@ -88,6 +88,26 @@ def test_load_valid_contract_builds_single_model_for_capability_rules():
         "exit_signal": ("EXIT_SIGNALS",),
         "phase": ("PHASES",),
     }
+    assert model.route_aliases.route_prefix == "/agentera"
+    assert model.route_aliases.canonical_name_precedence is True
+    assert "`/agentera plan` routes to planera" in model.route_aliases.cli_boundary
+    assert {
+        route.alias: route.capability
+        for route in model.route_aliases.primary_aliases
+    } == {
+        "status": "hej",
+        "vision": "visionera",
+        "discuss": "resonera",
+        "research": "inspirera",
+        "plan": "planera",
+        "build": "realisera",
+        "optimize": "optimera",
+        "audit": "inspektera",
+        "document": "dokumentera",
+        "profile": "profilera",
+        "design": "visualisera",
+        "orchestrate": "orkestrera",
+    }
 
 
 @pytest.mark.parametrize(
@@ -140,6 +160,18 @@ def test_bootstrap_validation_rejects_malformed_contract_fixtures(mutate, messag
         (
             lambda data: data["PRIMITIVE_REFERENCE_FIELDS"]["fields"]["severity"].__setitem__("protocol_groups", []),
             "PRIMITIVE_REFERENCE_FIELDS.fields.severity.protocol_groups in fixture.yaml must be a non-empty list of strings",
+        ),
+        (
+            lambda data: data["ROUTE_ALIASES"]["primary_aliases"].append(
+                {"alias": "status", "capability": "duplicate"}
+            ),
+            "ROUTE_ALIASES.primary_aliases alias 'status' in fixture.yaml must be unique",
+        ),
+        (
+            lambda data: data["ROUTE_ALIASES"]["primary_aliases"].append(
+                {"alias": "duplicate", "capability": "hej"}
+            ),
+            "ROUTE_ALIASES.primary_aliases capability 'hej' in fixture.yaml must be unique",
         ),
     ],
 )

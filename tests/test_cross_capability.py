@@ -252,11 +252,23 @@ def test_routine_capability_guidance_uses_top_level_state_commands():
     assert "scripts/agentera experiments" in optimera
     assert "query experiments" not in optimera
     assert 'uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej' in hej
-    assert "bundle freshness gap" in hej
+    assert "installed Agentera bundle is stale" in hej
     assert "advanced/custom inspection only" in hej
 
 
-def test_master_upgrade_guard_requires_dry_run_preview():
+def test_master_skill_documents_route_alias_contract_boundary():
+    text = SKILL_MD_PATH.read_text(encoding="utf-8")
+
+    assert "`/agentera status`" in text
+    assert "`/agentera build`" in text
+    assert "`/agentera plan` routes to planera" in text
+    assert "`agentera plan` reads plan state" in text
+    assert "ROUTE_ALIASES.primary_aliases" in text
+    assert "Canonical Swedish names remain the" in text
+    assert "Secondary user wording stays in" in text
+
+
+def test_master_upgrade_check_requires_dry_run_preview():
     text = SKILL_MD_PATH.read_text(encoding="utf-8")
 
     assert "The dry-run preview is mandatory" in text

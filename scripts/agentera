@@ -1403,7 +1403,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     b = sub.add_parser(
         "bundle-status",
-        help="Check durable bundle freshness before using an installed Agentera CLI",
+        help="Check installed Agentera bundle status before using an installed CLI",
     )
     b.add_argument(
         "--install-root",

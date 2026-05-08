@@ -1,118 +1,125 @@
 header:
   level: full
   created: '2026-05-07'
-  status: active
+  status: complete
   reviewed: '2026-05-07'
-  critic_issues: "9 found, 9 addressed, 0 dismissed"
+  critic_issues: "7 found, 7 addressed, 0 dismissed"
   revised: >
-    Added a prerequisite archive reference, narrowed the route/CLI boundary,
-    limited secondary wording to Decision 43, consolidated validation work,
-    softened version-bump assumptions, and made the final state sync explicit.
-  title: Implement Capability Route Aliases
+    Split final synchronization into evidence and closure tasks, made release
+    evidence ownership explicit, required the active plan itself to follow
+    Decision 44 wording, tied edits to the replacement inventory, and narrowed
+    observable wording changes so stable protocol identity stays intact.
+  title: Apply Decision 44 Plain-English Vocabulary For 2.2.0
 what: >
-  Implement Decision 43 by giving each Agentera capability one primary plain
-  `/agentera <alias>` route while keeping Swedish `-era` capability names
-  canonical. Secondary user wording stays in routing phrases, docs explain the
-  route/CLI split, and validation proves routing remains predictable.
+  Apply Decision 44 plain-English vocabulary across Agentera's current docs,
+  capability instructions, diagnostics, tests, and state labels before the
+  pending 2.2.0 release is considered ready. Replace ambiguous protocol jargon
+  with current/up-to-date/status wording, Git-only checkpoint language, saved
+  project context, behavioral verification gate, orchestration loop, and
+  docs-first workflow language while preserving stable identifiers and enums
+  unless a deliberate migration is justified.
 why: >
-  Decision 43 reduces first-contact friction without renaming protocol objects.
-  Users can type memorable routes like `/agentera status`, `/agentera discuss`,
-  or `/agentera build`, while capabilities, artifacts, schemas, and historical
-  decisions keep their canonical names.
+  Decision 44 reduces first-contact friction for the same 2.2.0 release that
+  added plain capability route aliases. The alias work made Agentera easier to
+  invoke; this plan makes the surrounding protocol language easier to understand
+  without weakening existing contracts, routing behavior, or package metadata.
 constraints: >
-  Preserve canonical Swedish capability names, existing bare `/agentera` hej
-  behavior, and the state-oriented `agentera` CLI command surface. Do not add
-  non-hej capability or alias commands to the CLI. Do not mutate vision or
-  objective state. Keep secondary phrases below explicit route aliases so
-  build, research, audit, and document intent is not stolen by vague discussion
-  wording.
+  Treat this as vocabulary cleanup for the pending 2.2.0 release, not a new
+  feature surface. User-visible wording may change, but schema fields, stable
+  IDs, enums, routing semantics, CLI exit behavior, persisted state shape,
+  canonical Swedish capability names, and Decision 43 aliases must not change
+  unless a migration rationale is recorded and validated. Do not create a
+  version beyond 2.2.0 unless policy requires it. Do not tag, push, publish,
+  update packages, refresh the installed bundle, or mutate vision/objective
+  state. Keep optional Claude live-smoke and install-root generated-contract
+  work separate.
 scope:
   included:
-    - archive the completed Hej dashboard plan before replacing the active plan
-    - define one primary alias per capability from Decision 43
-    - preserve secondary request wording without creating extra exact aliases
-    - update README and vocabulary documentation for aliases and route behavior
-    - prove routing behavior and capability validation
-    - assess version policy for the feature
-    - run the final state sync and close plan state
+    - archive the completed Decision 43 route-alias plan before replacing the active plan
+    - classify Decision 44 terms into replacement, allowed-use, and protected-compatibility groups
+    - update current user-facing docs and examples that teach protocol language
+    - update current capability and protocol instructions without renaming capabilities or schemas
+    - align visible diagnostics, test labels, and safe labels where wording is user-facing or maintained as current guidance
+    - prove vocabulary coverage with an explicit scan/check and existing behavior validation
+    - record Decision 44 under the pending 2.2.0 release without publication
+    - resolve the Decision 44 TODO and close plan state after verified execution
   excluded:
-    - renaming capability directories, artifacts, or schema IDs
-    - changing the state-oriented `agentera <command>` CLI surface
-    - adding multiple exact aliases per capability
-    - broad vocabulary cleanup outside Decision 43
-    - remote push, release publication, or package-manager updates
+    - rewriting historical archive, changelog, or progress entries solely to alter old wording
+    - renaming capability directories, artifact names, schema IDs, enum values, or persisted fields without an explicit migration decision
+    - changing state-oriented `agentera <command>` CLI commands or `/agentera <alias>` routing behavior
+    - release publication, remote push, git tag creation, package-manager updates, or installed bundle refresh
     - vision or objective edits
   deferred:
-    - optional future alias telemetry or user research
+    - optional future generated cross-language install-root contract
+    - optional Claude Code live model-host smoke
 design: >
-  Add deterministic route behavior at the dispatcher boundary: canonical
-  capability names and one primary plain `/agentera <alias>` route directly;
-  broader user phrasing remains secondary request language. Documentation
-  presents plain aliases first for user action, then preserves canonical names
-  as protocol identity. Validation proves the full alias map, route priority, CLI
-  separation, and fallback behavior.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-07-repair-bare-agentera-hej-dashboard-rendering.yaml
+  Start with a source-of-truth vocabulary boundary, then apply it outward from
+  docs to capability instructions to diagnostics and tests. Validation should
+  check both sides of the migration: deprecated wording is no longer preferred
+  in current surfaces, and protected compatibility vocabulary remains only where
+  stable contracts or deliberately scoped exceptions require it. Release work
+  only attaches the completed vocabulary cleanup to 2.2.0; it does not publish
+  or refresh installed bundles.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-07-implement-capability-route-aliases.yaml
 tasks:
   - number: 1
-    name: Define Route Alias Contract
+    name: Define Decision 44 Replacement Boundary
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
-      - GIVEN the primary alias table is reviewed WHEN each alias is matched to a capability THEN all 12 aliases map to Decision 43 and no capability has zero or multiple primary aliases
-      - GIVEN canonical capability names are invoked WHEN alias routing exists THEN existing direct routes still bypass natural-language matching
-      - GIVEN slash routes and state commands share words WHEN documented THEN `/agentera plan` and `agentera plan` remain distinct
+      - GIVEN current preferred and deprecated wording is reviewed WHEN the Decision 44 boundary is recorded THEN every target term is classified as replacement, allowed use, or protected compatibility with a rationale
+      - GIVEN stable identifiers, enums, and persisted state shapes exist WHEN the boundary is applied THEN they are preserved unless a deliberate migration rationale and validation path are recorded
+      - GIVEN the active Decision 44 plan is read WHEN wording is reviewed THEN it uses plain English and does not teach deprecated wording as preferred protocol language
+      - GIVEN the previous route-alias plan was complete WHEN this plan becomes active THEN the previous plan is archived and the active plan tracks only Decision 44 work
   - number: 2
-    name: Make Alias Routing Observable
+    name: Update User-Facing Documentation Language
     depends_on:
       - Task 1
-    status: pending
+    status: complete
     acceptance:
-      - GIVEN `/agentera status`, `/agentera discuss`, and `/agentera build` are requested WHEN routing is evaluated THEN they route to hej, resonera, and realisera without disambiguation
-      - GIVEN non-exact requests such as `build everything` or `run the plan` are evaluated WHEN routing chooses a capability THEN existing concrete work intent is preserved
-      - GIVEN no alias or trigger matches WHEN routing runs THEN hej fallback is unchanged
+      - GIVEN a first-time user reads current Agentera docs WHEN setup, routing, state, and workflow language appears THEN plain English terms explain current status, up-to-date state, saved project context, and docs-first workflow
+      - GIVEN Git and non-Git lifecycle language appears WHEN examples are followed THEN checkpoint wording is limited to Git commit contexts and non-Git lifecycle wording uses current-state or final-sync language
+      - GIVEN canonical capability names and Decision 43 aliases appear WHEN docs are updated THEN names and aliases remain unchanged while surrounding explanation follows Decision 44
   - number: 3
-    name: Preserve Secondary Request Language
+    name: Update Capability And Protocol Instructions
     depends_on:
       - Task 1
-      - Task 2
-    status: pending
+    status: complete
     acceptance:
-      - GIVEN accepted secondary wording such as `deliberate`, `brainstorm`, `rubber duck`, `brief`, and `what's next` is used WHEN routing is evaluated THEN it reaches the intended capability without becoming a primary alias
-      - GIVEN discussion wording appears with build, research, audit, or document intent WHEN routing runs THEN concrete work intent wins or disambiguates
-      - GIVEN supported secondary phrases are documented WHEN users read examples THEN primary aliases remain singular
+      - GIVEN an agent reads current capability instructions WHEN route, install, migration, evaluation, and orchestration wording appears THEN the instructions use Decision 44 terms without weakening required checks or stop conditions
+      - GIVEN hard pass/fail verification is described WHEN gate language remains THEN it names a behavioral verification gate or another explicit hard pass/fail boundary
+      - GIVEN canonical capability identity and protocol exit signals are reviewed WHEN wording changes are complete THEN capability names, exit statuses, and routing semantics are preserved
   - number: 4
-    name: Document Alias And Command Surfaces
+    name: Align Tests Diagnostics And Safe Labels
     depends_on:
       - Task 1
-      - Task 2
-      - Task 3
-    status: pending
+    status: complete
     acceptance:
-      - GIVEN a first-time user reads capability docs WHEN aliases appear THEN every canonical name has exactly one visible plain route alias
-      - GIVEN docs show slash routes and state commands together WHEN a user follows examples THEN alias names are not taught as CLI state commands
-      - GIVEN vocabulary docs define direct routes WHEN alias language appears THEN `status`, `discuss`, and the one-primary-alias rule are preserved
+      - GIVEN maintained diagnostics, test labels, and safe labels are read WHEN Decision 44 wording is applied THEN current labels prefer mismatch, out-of-sync, status, check, or stop-condition language instead of deprecated preferred wording
+      - GIVEN compatibility cases or stable contract terms still use old words WHEN they are reviewed THEN each exception is tied back to the Task 1 boundary rather than left accidental
+      - GIVEN wording changes are user-visible WHEN validation runs THEN existing behavior, routing, CLI command semantics, and package version readers still behave as before
   - number: 5
-    name: Prove Routing Behavior
+    name: Prove Decision 44 Vocabulary Coverage
     depends_on:
       - Task 2
       - Task 3
       - Task 4
-    status: pending
+    status: complete
     acceptance:
-      - GIVEN the alias map is exercised WHEN validation runs THEN each alias reaches its `Decision 43` capability and target drift fails
-      - GIVEN canonical names, existing request phrases, fallback, and disambiguation are exercised WHEN validation runs THEN existing routing behavior still passes
-      - GIVEN new route checks are added WHEN proportionality is reviewed THEN each testable unit has pass/fail evidence or a recorded rationale
+      - GIVEN current surfaces are scanned WHEN deprecated preferred wording appears THEN the scan fails unless the occurrence is an allowed or protected exception from the Decision 44 boundary
+      - GIVEN protected compatibility wording remains WHEN validation reviews exceptions THEN each exception has a recorded reason and does not teach the term as preferred user language
+      - GIVEN routing, package, docs, and capability checks run WHEN vocabulary validation completes THEN existing behavior still passes with proportional pass/fail evidence or a recorded rationale
   - number: 6
-    name: Version And Release Readiness Check
+    name: Confirm 2.2.0 Release Inclusion Without Publication
     depends_on:
       - Task 5
-    status: pending
+    status: complete
     acceptance:
-      - GIVEN this `feat` is complete WHEN version policy is evaluated THEN required version files are updated or a no-bump rationale is recorded
-      - GIVEN version values change WHEN compatibility checks run THEN runtime and package readers agree
-      - GIVEN no release publication was approved WHEN version work completes THEN no tag, push, or package update occurs
+      - GIVEN Decision 44 work is complete WHEN release readiness is reviewed THEN its evidence is recorded under the pending 2.2.0 release rather than a later version
+      - GIVEN version policy and current release metadata are reviewed WHEN the work is classified THEN version files remain at 2.2.0 or a required bump/no-bump rationale is recorded
+      - GIVEN no release publication was approved WHEN release readiness completes THEN no tag, push, package publication, package-manager update, or installed bundle refresh occurs
   - number: 7
-    name: Final State Sync, The Plan-Level Freshness Checkpoint
+    name: Resolve Decision 44 TODO And Evidence State
     depends_on:
       - Task 1
       - Task 2
@@ -120,14 +127,29 @@ tasks:
       - Task 4
       - Task 5
       - Task 6
-    status: pending
+    status: complete
     acceptance:
-      - GIVEN implementation is complete WHEN final state sync runs THEN TODO, CHANGELOG, PROGRESS, docs metadata, and plan state reflect Decision 43 execution evidence
-      - GIVEN the active plan closes WHEN all tasks are complete THEN future `/agentera` briefing no longer treats it as pending work
-      - GIVEN unrelated TODOs remain WHEN closure completes THEN optional live-smoke and install-root follow-ups stay separate, and vision/objective state is untouched
+      - GIVEN Decision 44 execution evidence exists WHEN project state is synchronized THEN TODO, changelog, progress, docs metadata, and plan evidence reflect the completed vocabulary cleanup
+      - GIVEN unrelated follow-ups remain WHEN TODO is synchronized THEN optional Claude live-smoke and install-root generated-contract work stay open and separate
+      - GIVEN protected compatibility exceptions remain WHEN state is synchronized THEN the recorded evidence distinguishes deliberate exceptions from unfinished vocabulary cleanup
+  - number: 8
+    name: Final State Sync, The Plan-Level Current-State Check
+    depends_on:
+      - Task 1
+      - Task 2
+      - Task 3
+      - Task 4
+      - Task 5
+      - Task 6
+      - Task 7
+    status: complete
+    acceptance:
+      - GIVEN Tasks 1-7 are complete WHEN the final current-state check runs THEN the active plan is ready for conductor closure and future `/agentera` briefing will no longer treat Decision 44 as pending after closure
+      - GIVEN final state is reviewed WHEN pre-closure sync completes THEN TODO, changelog, progress, docs metadata, and plan status agree on the 2.2.0 Decision 44 evidence while Task 8 remains pending for conductor ownership
+      - GIVEN release and safety boundaries are reviewed WHEN pre-closure sync completes THEN vision/objective state is untouched and no tag, push, publication, package update, or bundle refresh occurred without approval
 overall_acceptance:
-  - GIVEN all primary aliases from Decision 43 are used as `/agentera <alias>` requests WHEN routing is evaluated THEN each routes to the intended capability without renaming canonical Agentera objects
-  - GIVEN users read README and vocabulary docs WHEN they compare slash routes to state commands THEN they can tell `/agentera plan` from `agentera plan`
-  - GIVEN secondary phrasing is used WHEN the request has more specific build, research, audit, document, or orchestration intent THEN the more specific capability wins or Agentera asks for disambiguation
-  - GIVEN validation completes WHEN the plan is ready to close THEN alias routing, canonical routing, trigger routing, fallback behavior, capability contracts, and version policy have evidence
+  - GIVEN a first-time user reads current Agentera docs and capability guidance WHEN protocol language appears THEN the preferred wording is plain English and matches Decision 44
+  - GIVEN maintained diagnostics, tests, and state labels are reviewed WHEN deprecated wording appears THEN each occurrence is either replaced or recorded as an allowed/protected exception with rationale
+  - GIVEN 2.2.0 release readiness is checked WHEN Decision 44 work is complete THEN the vocabulary cleanup is included in 2.2.0 without unapproved publication or bundle refresh
+  - GIVEN `/agentera` runs after closure WHEN the briefing chooses next work THEN Decision 44 is no longer the pending attention item and unrelated TODOs remain separate
 surprises: []

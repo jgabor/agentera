@@ -87,7 +87,7 @@ Before decomposing: summarize the constraints from VISION.md and DECISIONS.md.
 
 Define WHAT and WHY. Intent layer, not implementation details.
 
-Effort-bias guard: when comparing plan shapes, do not treat effort spent constructing an option as evidence for it.
+Effort-bias check: when comparing plan shapes, do not treat effort spent constructing an option as evidence for it.
 
 ### Light plans
 
@@ -111,7 +111,7 @@ Deeper conversation:
 - **Design**: high-level approach. NOT implementation details.
 - **Task decomposition**: 3-8 ordered tasks, each one realisera cycle. Per task: description, dependencies, 3-5 behavioral Given/When/Then acceptance criteria
 - **Test proportionality**: for tasks with tests, add a proportionality target. Default: one pass + one fail per testable unit.
-- **Plan-level freshness checkpoint**: every full plan ends with a "Plan-level freshness checkpoint" task depending on all prior tasks.
+- **Plan-level current-state check**: every full plan ends with a final state sync task depending on all prior tasks.
 - **Version bump check**: add a bump task when DOCS.md versioning exists and the plan includes `feat`/`fix` work.
 - **Overall acceptance criteria**: behavioral criteria for the complete feature
 
@@ -149,7 +149,7 @@ Address legitimate issues; dismiss false positives with rationale. Present revie
 
 ## Step 4: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: check verbosity overruns, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 ## Step 5: Write PLAN.md
@@ -297,9 +297,9 @@ When inspirera recommends patterns or libraries, planera incorporates them into 
 
 VISION.md provides the north star that planera reads during Orient.
 
-### Fed by /dokumentera (DTC pipeline)
+### Fed by /dokumentera (docs-first workflow)
 
-In the DTC pipeline, dokumentera writes intent docs first, then planera decomposes them into tasks.
+In the docs-first workflow, dokumentera writes intent docs first, then planera decomposes them into tasks.
 
 ### Reads /dokumentera versioning conventions
 

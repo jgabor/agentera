@@ -658,7 +658,7 @@ class TestMainAdapterFormats:
         assert rc == 2
 
 
-class TestFailOpenGuard:
+class TestFailOpenSafetyRule:
     SCRIPT = str(REPO_ROOT / "hooks" / "validate_artifact.py")
 
     def test_non_dict_json_exits_zero(self, tmp_path):

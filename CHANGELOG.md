@@ -2,8 +2,13 @@
 
 ## [Unreleased]
 
+## [2.2.0] · 2026-05-07
+
 ### Changed
 
+- Maintained diagnostics, tests, and safe label prose now use Decision 44 status, mismatch, check, and stop-condition wording while preserving stable JSON gap labels and compatibility fixtures.
+- Capability and protocol instructions now use Decision 44 plain-English wording for status checks, behavioral verification, orchestration, saved context, and docs-first workflow while preserving routing and validation contracts.
+- User-facing setup, routing, state, and workflow docs now use plain-English Decision 44 wording for current status, up-to-date state, saved project context, and docs-first workflow while preserving canonical capability names and Decision 43 route aliases.
 - Artifact write validation now exposes explicit `RuntimeEventParser`, `ArtifactSchemaValidator`, and `HookCliAdapter` interfaces while preserving the existing hook executable path and runtime adapter behavior.
 - Agentera routing and exit-vocabulary documentation now points at schema-backed routing tests and protocol-owned exit signals instead of duplicating trigger or exit values in `SKILL.md`.
 - Artifact metadata ownership now routes through canonical artifact schemas plus `references/artifacts/artifact-registry-interface-model.yaml` and `scripts/artifact_registry.py`; capability-local artifact schemas use `artifact_id` plus `local_role`, while cross-capability tests and bounded CLI artifact resolution consume registry facts instead of display-name or path maps.
@@ -12,6 +17,13 @@
 
 ### Added
 
+- Decision 44 vocabulary coverage now has an executable proof in `tests/test_decision44_vocabulary.py`, scanning current docs, capability prose, maintained tests, diagnostics, and safe labels while requiring explicit reasons for protected terms.
+- Decision 44 now has a recorded vocabulary replacement boundary for the pending 2.2.0 cleanup, classifying deprecated wording, allowed uses, and protected compatibility surfaces before bulk prose edits.
+- README and vocabulary docs now show exactly one plain `/agentera <alias>` route per canonical capability while keeping alias words out of the CLI state-command surface.
+- Schema-backed routing tests now exercise every Decision 43 alias target, preserve canonical capability direct routes, and include a drift fixture proving alias-to-capability changes fail validation.
+- Secondary request wording such as `deliberate`, `brainstorm`, `rubber duck`, `brief`, and `what's next` now routes through trigger schemas without expanding the one-primary-alias contract.
+- Schema-backed routing tests now observe exact Decision 43 aliases, proving `/agentera status`, `/agentera discuss`, and `/agentera build` route directly while non-exact work phrases stay trigger-driven.
+- Capability schema contract now defines the Decision 43 primary `/agentera <alias>` table while preserving Swedish capability names and the state-oriented CLI boundary.
 - `agentera bundle-status` now diagnoses durable bundle freshness, including stale markers, missing `hej`, pre-argparse CLI failures, unset defaults, and unsafe `AGENTERA_HOME` roots before any write.
 - Bare `/agentera` guidance now has a self-healing bundle-refresh path: preview `uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root <root> --dry-run`, require approval, apply the same root with `--yes`, then retry installed `agentera hej`.
 
@@ -21,6 +33,13 @@
 - Bare `/agentera` dispatcher guidance now exposes the README-style Hej dashboard contract at the entry boundary, forbids raw source-field briefings, and keeps `agentera hej` as compact caller-owned source data.
 - Progress cycle phases now stay within the protocol enum: recent verification-lane cycles and fixtures use `phase: build`, and artifact validation rejects invalid enum values such as `verify`.
 - Skill frontmatter now matches the suite version authority from `registry.json`, avoiding stale-version ambiguity during bundle freshness checks.
+
+### Verified
+
+- Decision 44 plain-English vocabulary cleanup is included in the pending 2.2.0 release without a new version: package/version projections still agree on 2.2.0, vocabulary coverage remains green, the 2.2.0 tag is absent, and the installed durable bundle remains intentionally stale until an approved publication or bundle refresh.
+- Decision 44 final pre-closure state is synchronized for 2.2.0: Tasks 1-7 are complete, Task 8 remains pending for conductor evaluation and closure, TODO shows only unrelated follow-ups as open, docs metadata is current, and progress has this verification evidence.
+- Decision 44 TODO and evidence state are synchronized for the pending 2.2.0 release: TODO resolution, progress evidence, changelog evidence, and docs metadata now reference the vocabulary cleanup without claiming publication, while optional Claude live-smoke and install-root/generated-contract follow-ups remain open separately.
+- Decision 43 alias-routing work is state-synced for 2.2.0: TODO resolution, changelog evidence, progress evidence, docs metadata, and active plan pre-closure state now agree while the installed durable bundle refresh remains an explicit separate follow-up.
 
 ## [2.1.0] · 2026-05-05
 

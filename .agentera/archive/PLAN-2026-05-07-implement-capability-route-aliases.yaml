@@ -1,0 +1,133 @@
+header:
+  level: full
+  created: '2026-05-07'
+  status: complete
+  reviewed: '2026-05-07'
+  critic_issues: "9 found, 9 addressed, 0 dismissed"
+  revised: >
+    Added a prerequisite archive reference, narrowed the route/CLI boundary,
+    limited secondary wording to Decision 43, consolidated validation work,
+    softened version-bump assumptions, and made the final state sync explicit.
+  title: Implement Capability Route Aliases
+what: >
+  Implement Decision 43 by giving each Agentera capability one primary plain
+  `/agentera <alias>` route while keeping Swedish `-era` capability names
+  canonical. Secondary user wording stays in routing phrases, docs explain the
+  route/CLI split, and validation proves routing remains predictable.
+why: >
+  Decision 43 reduces first-contact friction without renaming protocol objects.
+  Users can type memorable routes like `/agentera status`, `/agentera discuss`,
+  or `/agentera build`, while capabilities, artifacts, schemas, and historical
+  decisions keep their canonical names.
+constraints: >
+  Preserve canonical Swedish capability names, existing bare `/agentera` hej
+  behavior, and the state-oriented `agentera` CLI command surface. Do not add
+  non-hej capability or alias commands to the CLI. Do not mutate vision or
+  objective state. Keep secondary phrases below explicit route aliases so
+  build, research, audit, and document intent is not stolen by vague discussion
+  wording.
+scope:
+  included:
+    - archive the completed Hej dashboard plan before replacing the active plan
+    - define one primary alias per capability from Decision 43
+    - preserve secondary request wording without creating extra exact aliases
+    - update README and vocabulary documentation for aliases and route behavior
+    - prove routing behavior and capability validation
+    - assess version policy for the feature
+    - run the final state sync and close plan state
+  excluded:
+    - renaming capability directories, artifacts, or schema IDs
+    - changing the state-oriented `agentera <command>` CLI surface
+    - adding multiple exact aliases per capability
+    - broad vocabulary cleanup outside Decision 43
+    - remote push, release publication, or package-manager updates
+    - vision or objective edits
+  deferred:
+    - optional future alias telemetry or user research
+design: >
+  Add deterministic route behavior at the dispatcher boundary: canonical
+  capability names and one primary plain `/agentera <alias>` route directly;
+  broader user phrasing remains secondary request language. Documentation
+  presents plain aliases first for user action, then preserves canonical names
+  as protocol identity. Validation proves the full alias map, route priority, CLI
+  separation, and fallback behavior.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-07-repair-bare-agentera-hej-dashboard-rendering.yaml
+tasks:
+  - number: 1
+    name: Define Route Alias Contract
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN the primary alias table is reviewed WHEN each alias is matched to a capability THEN all 12 aliases map to Decision 43 and no capability has zero or multiple primary aliases
+      - GIVEN canonical capability names are invoked WHEN alias routing exists THEN existing direct routes still bypass natural-language matching
+      - GIVEN slash routes and state commands share words WHEN documented THEN `/agentera plan` and `agentera plan` remain distinct
+  - number: 2
+    name: Make Alias Routing Observable
+    depends_on:
+      - Task 1
+    status: complete
+    acceptance:
+      - GIVEN `/agentera status`, `/agentera discuss`, and `/agentera build` are requested WHEN routing is evaluated THEN they route to hej, resonera, and realisera without disambiguation
+      - GIVEN non-exact requests such as `build everything` or `run the plan` are evaluated WHEN routing chooses a capability THEN existing concrete work intent is preserved
+      - GIVEN no alias or trigger matches WHEN routing runs THEN hej fallback is unchanged
+  - number: 3
+    name: Preserve Secondary Request Language
+    depends_on:
+      - Task 1
+      - Task 2
+    status: complete
+    acceptance:
+      - GIVEN accepted secondary wording such as `deliberate`, `brainstorm`, `rubber duck`, `brief`, and `what's next` is used WHEN routing is evaluated THEN it reaches the intended capability without becoming a primary alias
+      - GIVEN discussion wording appears with build, research, audit, or document intent WHEN routing runs THEN concrete work intent wins or disambiguates
+      - GIVEN supported secondary phrases are documented WHEN users read examples THEN primary aliases remain singular
+  - number: 4
+    name: Document Alias And Command Surfaces
+    depends_on:
+      - Task 1
+      - Task 2
+      - Task 3
+    status: complete
+    acceptance:
+      - GIVEN a first-time user reads capability docs WHEN aliases appear THEN every canonical name has exactly one visible plain route alias
+      - GIVEN docs show slash routes and state commands together WHEN a user follows examples THEN alias names are not taught as CLI state commands
+      - GIVEN vocabulary docs define direct routes WHEN alias language appears THEN `status`, `discuss`, and the one-primary-alias rule are preserved
+  - number: 5
+    name: Prove Routing Behavior
+    depends_on:
+      - Task 2
+      - Task 3
+      - Task 4
+    status: complete
+    acceptance:
+      - GIVEN the alias map is exercised WHEN validation runs THEN each alias reaches its `Decision 43` capability and target drift fails
+      - GIVEN canonical names, existing request phrases, fallback, and disambiguation are exercised WHEN validation runs THEN existing routing behavior still passes
+      - GIVEN new route checks are added WHEN proportionality is reviewed THEN each testable unit has pass/fail evidence or a recorded rationale
+  - number: 6
+    name: Version And Release Readiness Check
+    depends_on:
+      - Task 5
+    status: complete
+    acceptance:
+      - GIVEN this `feat` is complete WHEN version policy is evaluated THEN required version files are updated or a no-bump rationale is recorded
+      - GIVEN version values change WHEN compatibility checks run THEN runtime and package readers agree
+      - GIVEN no release publication was approved WHEN version work completes THEN no tag, push, or package update occurs
+  - number: 7
+    name: Final State Sync, The Plan-Level Current-State Check
+    depends_on:
+      - Task 1
+      - Task 2
+      - Task 3
+      - Task 4
+      - Task 5
+      - Task 6
+    status: complete
+    acceptance:
+      - GIVEN implementation is complete WHEN final state sync runs THEN TODO, CHANGELOG, PROGRESS, docs metadata, and plan state reflect Decision 43 execution evidence
+      - GIVEN the active plan closes WHEN all tasks are complete THEN future `/agentera` briefing no longer treats it as pending work
+      - GIVEN unrelated TODOs remain WHEN closure completes THEN optional live-smoke and install-root follow-ups stay separate, and vision/objective state is untouched
+overall_acceptance:
+  - GIVEN all primary aliases from Decision 43 are used as `/agentera <alias>` requests WHEN routing is evaluated THEN each routes to the intended capability without renaming canonical Agentera objects
+  - GIVEN users read README and vocabulary docs WHEN they compare slash routes to state commands THEN they can tell `/agentera plan` from `agentera plan`
+  - GIVEN secondary phrasing is used WHEN the request has more specific build, research, audit, document, or orchestration intent THEN the more specific capability wins or Agentera asks for disambiguation
+  - GIVEN validation completes WHEN the plan is ready to close THEN alias routing, canonical routing, trigger routing, fallback behavior, capability contracts, and version policy have evidence
+surprises: []

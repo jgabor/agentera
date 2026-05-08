@@ -103,7 +103,7 @@ ownership:
     - artifact validation support claims
     - runtime config, hook, plugin, and environment target paths
     - diagnostic check names, statuses, gaps, and messages
-    - adapter documentation parity and known-drift claims
+        - adapter documentation parity and known-mismatch claims
   package_metadata_out_of_scope:
     owner: package_manifest_registry
     deferred_todo: arch-package-manifest-registry

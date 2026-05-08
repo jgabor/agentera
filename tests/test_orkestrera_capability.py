@@ -120,13 +120,13 @@ def test_orkestrera_trigger_patterns_route_to_orkestrera():
         assert msg in ork_patterns, f"orkestrera triggers must include {msg!r}"
 
 
-def test_orkestrera_prose_contains_conductor_workflow():
+def test_orkestrera_prose_contains_orchestration_loop_workflow():
     prose_path = ORK_CAP_DIR / "prose.md"
     assert prose_path.is_file(), "prose.md must exist"
 
     content = prose_path.read_text()
     for required in [
-        "The conductor protocol",
+        "The orchestration loop",
         "Step 0: Assess",
         "Step 1: Select task",
         "Step 2: Dispatch",

@@ -74,9 +74,10 @@ support, config targets, diagnostics, or documentation claims must be validated
 against the registry rather than duplicated here as an independent table.
 
 Install-root classification is not runtime-specific. `scripts/install_root.py` is
-the shared Module for `AGENTERA_HOME`, default durable root, managed root, stale
-root, unmanaged root, and diagnostic semantics. Package metadata registry work
-stays outside both the RuntimeAdapter registry and the install-root Module.
+the shared Module for `AGENTERA_HOME`, default durable root, managed root,
+out-of-date root, unmanaged root, and diagnostic semantics. Package metadata
+registry work stays outside both the RuntimeAdapter registry and the install-root
+Module.
 
 | Surface | Path |
 |---------|------|

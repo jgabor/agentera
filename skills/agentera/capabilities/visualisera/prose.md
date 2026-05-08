@@ -95,13 +95,13 @@ Use this section and `skills/agentera/references/contract.md` as the active spec
 
 Narration voice (riff, don't script):
 
-- "Design system's already in place. Evolve it, audit it, or start fresh?" · "Found your visual identity. Refine, check for drift, or clean slate?"
+- "Design system's already in place. Evolve it, audit it, or start fresh?" · "Found your visual identity. Refine, check for mismatches, or clean slate?"
 
 Offer:
 
 > **Refine**: Evolve the existing design system based on what you've learned. Reads the current DESIGN.md, the codebase state, and recent progress to propose informed updates.
 >
-> **Audit**: Check the current design system for consistency, completeness, and drift from the codebase.
+> **Audit**: Check the current design system for consistency, completeness, and mismatches with the codebase.
 >
 > **Replace**: Start fresh with a deep design conversation. Archives the current DESIGN.md and creates a new one from scratch.
 
@@ -171,7 +171,7 @@ Follow a narrative arc, not a checklist. Adapt, but cover:
 
 4. **The constraints**: "What should NEVER happen in this UI? Shadows? Rounded corners? Gradients? Arbitrary values? What are the bright lines?"
 
-   Maps to `<!-- design:constraints -->`. "Every constraint prevents a class of visual drift."
+   Maps to `<!-- design:constraints -->`. "Every constraint prevents a class of visual mismatch."
 
 5. **The components**: "What are the core UI building blocks? Buttons, cards, inputs. What variants does each need? What's the interaction pattern?"
 
@@ -179,7 +179,7 @@ Follow a narrative arc, not a checklist. Adapt, but cover:
 
 ### Step 4: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -213,7 +213,7 @@ Validate the written file against the `DESIGN.md` structure described in this ca
 
 ### Step 7: Next steps
 
-▸ **Set up enforcement**: propose project-local checks for tokens, component usage, and visual drift; no separate bundled enforcement reference ships in v2
+▸ **Set up enforcement**: propose project-local checks for tokens, component usage, and visual mismatches; no separate bundled enforcement reference ships in v2
 ▸ **Build to the spec**: run `/realisera` to implement UI that respects the design tokens
 ▸ **Document it**: run `/dokumentera` to add the design system to project documentation
 ▸ **Refine later**: run `/visualisera` again to evolve the design as the project matures
@@ -240,7 +240,7 @@ Steps: read, propose, audit, update.
 > Here's what's changed since the design system was written:
 >
 > - New components [A, B] were built that aren't in the component contracts
-> - The color palette has drifted: [file:line] uses [value] not in the token set
+> - The color palette is out of sync: [file:line] uses [value] not in the token set
 > - VISION.md Identity now says [X], and the visual system [does/doesn't] reflect that
 >
 > I'd suggest updating:
@@ -251,7 +251,7 @@ Brief conversation (2-4 exchanges) to refine proposed changes.
 
 ### Step 3: Pre-write self-audit
 
-Pre-write self-audit: check verbosity drift (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -279,11 +279,11 @@ Inspect `DESIGN.md` and report structural issues: malformed YAML blocks, missing
 
 ### Step 2: Check adherence
 
-Scan codebase for design drift:
+Scan codebase for design mismatches:
 
 1. **Token usage**: undeclared colors, fonts, or spacing values in code
 2. **Constraint violations**: prohibited properties in use (e.g., shadows when banned)
-3. **Component drift**: undeclared variants or prohibited props
+3. **Component mismatch**: undeclared variants or prohibited props
 4. **Consistency**: ad-hoc styling on similar elements
 
 ### Step 3: Report
@@ -296,7 +296,7 @@ Categorize findings by severity (protocol refs: SF1-SF3 for finding severity):
 
 Present with file:line references. For each finding, offer to:
 ▸ **Fix DESIGN.md**: add missing tokens or constraints
-▸ **File to TODO.md**: if the code is wrong (design is right, code drifted)
+▸ **File to TODO.md**: if the code is wrong (design is right, code is out of sync)
 ▸ **Skip**: intentional or not worth fixing
 
 For framework-specific enforcement beyond audits, derive checks from the project's stack and record them directly in DESIGN.md or TODO.md.
@@ -325,7 +325,7 @@ Format: `◰ visualisera · <status>` followed by a summary sentence.
 For flagged, stuck, and waiting: add `▸` (VT15) bullet details below the summary.
 
 - **complete** (EX1): DESIGN.md was written (Create/Replace mode), updated (Refine mode), or audited with findings reported (Audit mode). Validation script ran without errors, and all changes had explicit user approval before writing.
-- **flagged** (EX2): The design system was produced or audited but with issues worth surfacing. Possible causes: validation passed but with advisory warnings, the design drifts from VISION.md Identity in ways the user acknowledged, or audit findings were discovered that were neither fixed nor filed to TODO.md.
+- **flagged** (EX2): The design system was produced or audited but with issues worth surfacing. Possible causes: validation passed but with advisory warnings, the design mismatches VISION.md Identity in ways the user acknowledged, or audit findings were discovered that were neither fixed nor filed to TODO.md.
 - **stuck** (EX3): Cannot write DESIGN.md because the user declined to approve the draft, the validation script reports errors that cannot be resolved without user input on the design intent, or the project's UI stack is inaccessible and token defaults cannot be reliably inferred.
 - **waiting** (EX4): The visual identity direction is entirely undefined and the user has not engaged with the design conversation, or the project has no UI layer and DESIGN.md would serve no purpose without clarification of what is being designed.
 
@@ -341,7 +341,7 @@ VISION.md's Identity section declares the verbal personality (bold, warm, playfu
 
 ### Visualisera feeds realisera
 
-DESIGN.md's tokens and constraints guide autonomous UI development. When realisera builds components or pages, it reads DESIGN.md to understand what colors, typography, spacing, and constraints to use. The design system prevents visual drift across cycles.
+DESIGN.md's tokens and constraints guide autonomous UI development. When realisera builds components or pages, it reads DESIGN.md to understand what colors, typography, spacing, and constraints to use. The design system prevents visual mismatches across cycles.
 
 ### Visualisera is informed by dokumentera
 
@@ -387,7 +387,7 @@ When design decisions require deliberation, suggest `/resonera` before committin
 
 ```
 
-Select "Audit" mode. Validates structure and scans code for drift.
+Select "Audit" mode. Validates structure and scans code for mismatches.
 
 ### Refine after evolution
 

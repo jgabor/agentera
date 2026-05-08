@@ -1,4 +1,4 @@
-"""Regression tests for self-healing durable bundle freshness guidance."""
+"""Regression tests for self-healing installed bundle status guidance."""
 
 from __future__ import annotations
 
@@ -238,7 +238,7 @@ def test_bundle_upgrade_missing_root_dry_run_writes_nothing(tmp_path: Path) -> N
     assert not install_root.exists()
 
 
-def test_bundle_status_reports_pre_argparse_cli_failures_as_refresh_gaps(tmp_path: Path) -> None:
+def test_bundle_status_reports_pre_argparse_cli_failures_as_status_signals(tmp_path: Path) -> None:
     install_root = tmp_path / "home" / ".agents" / "agentera"
     _write_stale_bundle(
         install_root,
@@ -251,7 +251,7 @@ def test_bundle_status_reports_pre_argparse_cli_failures_as_refresh_gaps(tmp_pat
     assert result.returncode == 1
     payload = json.loads(result.stdout)
     assert payload["status"] == "stale"
-    signal = payload["signals"][0]
+    signal = next(signal for signal in payload["signals"] if signal["kind"] == "cli_probe_failed")
     assert signal["kind"] == "cli_probe_failed"
     assert signal["returnCode"] != 0
     assert "wrong support module" in "\n".join(signal["stderrTail"])

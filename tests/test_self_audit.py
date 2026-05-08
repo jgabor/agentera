@@ -47,7 +47,7 @@ class TestCheckVerbosity:
         text = "word " * 600  # 600 words > 500 PROGRESS.md per-cycle budget
         passed, detail = self_audit.check_verbosity(text, "PROGRESS.md")
         assert passed is False
-        assert "verbosity drift" in detail
+        assert "verbosity mismatch" in detail
         assert "600" in detail
         assert "500" in detail
 

@@ -184,7 +184,7 @@ def test_setup_doctor_runtime_json_characterization_before_registry_migration(tm
             (
                 "bundled_support_references",
                 "pass",
-                "bundled support references validate separately from installer freshness",
+                "bundled support references validate separately from installer status",
                 None,
             ),
         ],
@@ -376,7 +376,7 @@ def test_setup_doctor_read_only_diagnostics_do_not_modify_runtime_config(tmp_pat
     assert after == before
 
 
-def test_setup_doctor_reports_opencode_command_drift_without_writing(tmp_path: Path) -> None:
+def test_setup_doctor_reports_opencode_command_mismatch_without_writing(tmp_path: Path) -> None:
     doctor = _load_doctor()
     root = tmp_path / "agentera"
     home = tmp_path / "home"
@@ -410,7 +410,7 @@ def test_setup_doctor_reports_opencode_command_drift_without_writing(tmp_path: P
     assert "stale: agentera" in checks["opencode_managed_commands"]["details"]
 
 
-def test_setup_doctor_reports_opencode_skill_path_drift_without_writing(tmp_path: Path) -> None:
+def test_setup_doctor_reports_opencode_skill_path_mismatch_without_writing(tmp_path: Path) -> None:
     doctor = _load_doctor()
     root = tmp_path / "agentera"
     home = tmp_path / "home"
@@ -439,7 +439,7 @@ def test_setup_doctor_reports_opencode_skill_path_drift_without_writing(tmp_path
     assert "broken: agentera" in checks["opencode_skill_paths"]["details"]
 
 
-def test_setup_doctor_reports_bundled_reference_validation_drift_separately(tmp_path: Path) -> None:
+def test_setup_doctor_reports_bundled_reference_validation_mismatch_separately(tmp_path: Path) -> None:
     doctor = _load_doctor()
     root = tmp_path / "agentera"
     home = tmp_path / "home"

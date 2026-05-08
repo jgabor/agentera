@@ -7,8 +7,8 @@
 
 <strong>Turn AI coding agents into an engineering team that remembers.</strong>
 
-Agentera gives coding agents shared memory, decision profiles, specialized
-roles, verification gates, and a common project protocol.
+Agentera gives coding agents saved project context, decision profiles,
+specialized roles, behavioral verification gates, and a common project protocol.
 
 <p>
 <a href="#agentera-v2">Agentera v2</a> ·
@@ -19,7 +19,7 @@ roles, verification gates, and a common project protocol.
 <a href="#state-cli">State CLI</a> ·
 <a href="#quick-start">Quick start</a> ·
 <a href="#why-it-works">Why it works</a> ·
-<a href="#the-memory-layer">Memory layer</a> ·
+<a href="#saved-project-context">Saved project context</a> ·
 <a href="#capabilities">Capabilities</a> ·
 <a href="#hooks">Hooks</a>
 </p>
@@ -29,7 +29,7 @@ roles, verification gates, and a common project protocol.
 ## Agentera v2
 
 Agentera v2 is here: one `/agentera` entry point for the full suite, with
-cleaner installs and better shared project memory across Claude Code, OpenCode,
+cleaner installs and better saved project context across Claude Code, OpenCode,
 Copilot CLI, and Codex CLI.
 
 What's new:
@@ -38,8 +38,8 @@ What's new:
   inside the bundled Agentera skill.
 - **Guided v1 upgrades**: Agentera detects older project state and walks through
   the migration instead of leaving users to move files by hand.
-- **More dependable memory**: project state is structured, validated, and easier
-  for the next agent session to read.
+- **More dependable saved context**: project state is structured, validated, and
+  easier for the next agent session to read.
 - **Better runtime support**: Codex, Copilot CLI, OpenCode, and Claude Code now
   share the same bundled suite model.
 
@@ -63,15 +63,15 @@ code with little explanation.
 Agentera fixes that with a single bundled skill containing twelve specialized
 capabilities that coordinate through plain project files. One capability plans,
 another builds, another audits, another documents, another remembers your
-decision style. The work stops being a chat transcript and becomes an operating
-record for the project.
+decision style. The work stops being a chat transcript and becomes saved project
+context for the next session.
 
 ## Features
 
 Agentera gives your AI coding runtime the missing parts of an engineering team:
 
-- **Project briefings**: get a live read on status, risks, stale work, and the
-  next best action.
+- **Project briefings**: get a live read on status, risks, out-of-date work, and
+  the next best action.
 - **Decision memory**: capture why choices were made so future agents do not
   reopen settled questions.
 - **Personal reasoning**: let agents learn your preferences from prior
@@ -81,11 +81,11 @@ Agentera gives your AI coding runtime the missing parts of an engineering team:
 - **Verified execution**: ship work in small increments with explicit evidence
   and handoff notes.
 - **Autonomous orchestration**: run multi-step plans through evaluation and
-  retry gates.
+  retry checks.
 - **Health audits**: track architecture, tests, dependencies, artifacts, and
   release readiness.
-- **Documentation upkeep**: keep README, project docs, and documentation
-  coverage aligned with the code.
+- **Docs-first workflow**: document intended behavior before tests and code,
+  then keep README, project docs, and documentation coverage aligned.
 - **Portable skill protocol**: use the same project artifacts across Claude
   Code, OpenCode, Copilot CLI, and Codex CLI.
 
@@ -142,6 +142,11 @@ uv run scripts/agentera progress --limit 1
 uv run scripts/agentera query session --format json
 ```
 
+Slash routes and CLI state commands are separate surfaces. `/agentera build`
+routes to `realisera`; primary aliases are not CLI commands. Shared words keep
+their state meaning in the CLI: `/agentera plan` routes to `planera`, while
+`agentera plan` reads plan state.
+
 ## Quick start
 
 Pick one runtime, install Agentera, then run `/agentera` (`$agentera` in Codex).
@@ -175,16 +180,17 @@ plain project artifacts that live with the project:
 - `.agentera/decisions.yaml`: why important choices were made.
 - `.agentera/plan.yaml`: what should happen next.
 - `.agentera/progress.yaml`: what shipped, how it was verified, and what changed.
-- `.agentera/health.yaml`: where architecture and quality are drifting.
-- `.agentera/docs.yaml`: which docs exist, what they cover, and what is stale.
+- `.agentera/health.yaml`: where architecture and quality are out of sync with
+  the project's goals.
+- `.agentera/docs.yaml`: which docs exist, what they cover, and what needs sync.
 - `.agentera/optimera/<name>/`: one self-contained optimization objective,
   with `objective.yaml`, `experiments.yaml`, and its locked measurement harness.
 
 Each capability reads the artifacts it needs and writes the artifact it owns.
 That is the trick: the next agent does not have to infer history from chat. It
-can read the project's operating record.
+can read the project's saved project context.
 
-## The memory layer
+## Saved project context
 
 `profilera` is the capability that makes Agentera feel personal instead of merely
 stateful. It studies your decisions, tradeoffs, corrections, and recurring
@@ -204,7 +210,7 @@ can use it to reason more like you. Without it, Agentera still works.
 - **Stuck on a tradeoff**: say "help me decide" to trigger resonera; it records the decision for later agents.
 - **Ready to build one focused thing**: say "build the next feature" to trigger realisera.
 - **Ready to execute a whole plan**: say "run the plan" to trigger orkestrera.
-- **Worried the codebase is drifting**: say "audit the codebase" to trigger inspektera.
+- **Worried the codebase is out of sync with the plan**: say "audit the codebase" to trigger inspektera.
 - **Optimizing a metric**: say "improve test coverage" to trigger optimera.
 
 A good default loop is:
@@ -221,20 +227,24 @@ artifacts, validation rules, and exit signals. The dispatcher in
 `skills/agentera/SKILL.md` routes every `/agentera` request to the matching
 capability automatically.
 
-| | Capability | Use it when you need... |
-|---|---|---|
-| ⌂ | hej | A project briefing and the next best action. |
-| ⛥ | visionera | A strong product direction in `.agentera/vision.yaml`. |
-| ❈ | resonera | Structured deliberation before consequential choices. |
-| ⬚ | inspirera | To map an external link, repo, or pattern to your project. |
-| ▤ | dokumentera | Docs that stay aligned with code and project intent. |
-| ◰ | visualisera | A durable visual identity and design-token direction. |
-| ≡ | planera | A scoped plan with behavioral acceptance criteria. |
-| ⎈ | orkestrera | Autonomous plan execution with evaluation and retry gates. |
-| ⧉ | realisera | One verified development cycle. |
-| ⎘ | optimera | Measured improvement of a concrete metric. |
-| ⛶ | inspektera | Architecture, test, dependency, and artifact health audits. |
-| ♾ | profilera | A reusable decision profile that helps every capability reason more like you. |
+| | Capability | Plain route alias | Use it when you need... |
+|---|---|---|---|
+| ⌂ | hej | `/agentera status` | A project briefing and the next best action. |
+| ⛥ | visionera | `/agentera vision` | A strong product direction in `.agentera/vision.yaml`. |
+| ❈ | resonera | `/agentera discuss` | Structured deliberation before consequential choices. |
+| ⬚ | inspirera | `/agentera research` | To map an external link, repo, or pattern to your project. |
+| ▤ | dokumentera | `/agentera document` | Docs that stay aligned with code and project intent. |
+| ◰ | visualisera | `/agentera design` | A durable visual identity and design-token direction. |
+| ≡ | planera | `/agentera plan` | A scoped plan with behavioral acceptance criteria. |
+| ⎈ | orkestrera | `/agentera orchestrate` | Autonomous plan execution with evaluation and retry checks. |
+| ⧉ | realisera | `/agentera build` | One verified development cycle. |
+| ⎘ | optimera | `/agentera optimize` | Measured improvement of a concrete metric. |
+| ⛶ | inspektera | `/agentera audit` | Architecture, test, dependency, and artifact health audits. |
+| ♾ | profilera | `/agentera profile` | A reusable decision profile that helps every capability reason more like you. |
+
+Each capability has exactly one plain route alias. Canonical Swedish capability
+names such as `realisera` and `dokumentera` remain the protocol identity; aliases
+are only direct `/agentera <alias>` routes, not CLI state commands.
 
 ### Natural language mapping
 
@@ -291,7 +301,7 @@ fallback, and no-write diagnostics are owned by `scripts/install_root.py`.
 
 Package and marketplace updates refresh the visible skill/plugin metadata, but
 they can leave the durable bundle at `AGENTERA_HOME` behind. If `/agentera`
-reports that the installed CLI is stale or `agentera hej` is unavailable,
+reports that the installed CLI is out of date or `agentera hej` is unavailable,
 preview the bundle-only refresh first:
 
 ```bash

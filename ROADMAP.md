@@ -59,7 +59,7 @@ agentera query health --dimension coupling    # Latest coupling grade
 agentera query open-todos --severity critical # Critical open issues
 ```
 
-`agentera prime` takes no arguments and produces identical output every invocation. The output is a concise routing guide: which questions go through agentera, which fall back to native tools, and how to recover from stale or missing artifacts. Inspired by the `leda prime` pattern from the leda dependency-graph CLI.
+`agentera prime` takes no arguments and produces identical output every invocation. The output is a concise routing guide: which questions go through agentera, which fall back to native tools, and how to recover from out-of-date or missing artifacts. Inspired by the `leda prime` pattern from the leda dependency-graph CLI.
 
 The CLI is the deep module: one interface, all artifact knowledge behind it. Changing artifact format only affects CLI internals.
 

@@ -1027,13 +1027,13 @@ class TestLifecycleAdapters:
         plugin["lifecycleHooks"]["events"] = {"SubagentStop": []}
         assert "codex: unsupported lifecycle event configured: SubagentStop" in validator.validate_codex(plugin)
 
-    def test_codex_lifecycle_fails_on_profilera_policy_drift(self):
+    def test_codex_lifecycle_fails_on_profilera_policy_mismatch(self):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
         plugin = _load_json(REPO_ROOT / ".codex-plugin/plugin.json")
         plugin["lifecycleHooks"]["status"] = "experimental"
         assert "codex: lifecycleHooks.status must be one of stable, beta" in validator.validate_codex(plugin)
 
-    def test_codex_lifecycle_fails_on_profilera_invocation_hint_drift(self):
+    def test_codex_lifecycle_fails_on_profilera_invocation_hint_mismatch(self):
         validator = _load_module("validate_lifecycle_adapters", REPO_ROOT / "scripts/validate_lifecycle_adapters.py")
         plugin = _load_json(REPO_ROOT / ".codex-plugin/plugin.json")
         plugin["lifecycleHooks"]["limitations"] = []
@@ -1514,7 +1514,7 @@ class TestLegacyRuntimeCompatibility:
         plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
         assert _validate_opencode_install_root(plugin_text) == []
 
-    def test_opencode_package_fails_on_manual_install_root_drift(self):
+    def test_opencode_package_fails_on_manual_install_root_mismatch(self):
         plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
         stale = plugin_text.replace('path.join(process.env.HOME, ".agents", "agentera")', "legacyMissingPath")
         assert "opencode validation must resolve documented default durable root" in _validate_opencode_install_root(stale)
@@ -1551,7 +1551,7 @@ class TestLegacyRuntimeCompatibility:
     def test_opencode_version_marker_is_documented(self):
         assert _validate_docs_version_targets(REPO_ROOT) == []
 
-    def test_opencode_package_fails_on_version_drift(self):
+    def test_opencode_package_fails_on_version_mismatch(self):
         plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
         current_version = _read_opencode_agentera_version(plugin_text)
         stale_version = "0.0.0-stale-fixture"
@@ -1566,7 +1566,7 @@ class TestLegacyRuntimeCompatibility:
         )
 
     def test_opencode_agentera_version_reader_extracts_current_literal(self):
-        """The drift test must read the live AGENTERA_VERSION from agentera.js at test
+        """The mismatch test must read the live AGENTERA_VERSION from agentera.js at test
         time so future suite bumps do not require manually syncing a hardcoded literal
         in this fixture (logged as Cycle 167 Surprise; resolved in 1.20.0)."""
         plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")

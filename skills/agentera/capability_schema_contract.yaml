@@ -163,6 +163,44 @@ PRIMITIVE_REFERENCE_FIELDS:
       protocol_groups:
         - PHASES
 
+ROUTE_ALIASES:
+  description: >-
+    Primary plain slash-route aliases from Decision 43. These aliases are exact
+    `/agentera <alias>` routes for users; the Swedish -era capability directory
+    names remain canonical protocol identity. Alias routes are not CLI commands.
+  route_prefix: /agentera
+  canonical_name_precedence: true
+  cli_boundary: >-
+    Slash routes and state commands are distinct: `/agentera plan` routes to
+    planera, while `agentera plan` remains the state-oriented CLI command for
+    reading plan state. Do not add non-hej capability or alias commands to the
+    CLI.
+  primary_aliases:
+    - alias: status
+      capability: hej
+    - alias: vision
+      capability: visionera
+    - alias: discuss
+      capability: resonera
+    - alias: research
+      capability: inspirera
+    - alias: plan
+      capability: planera
+    - alias: build
+      capability: realisera
+    - alias: optimize
+      capability: optimera
+    - alias: audit
+      capability: inspektera
+    - alias: document
+      capability: dokumentera
+    - alias: profile
+      capability: profilera
+    - alias: design
+      capability: visualisera
+    - alias: orchestrate
+      capability: orkestrera
+
 # ---------------------------------------------------------------------------
 # The four required groups follow. The contract IS a valid capability schema,
 # so these groups demonstrate the structure they define.

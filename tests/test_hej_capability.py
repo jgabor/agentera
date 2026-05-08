@@ -141,56 +141,56 @@ def test_hej_is_fallback_capability():
 
 
 # ---------------------------------------------------------------------------
-# 5. Upgrade guard: v1 artifacts detected → upgrade notice in briefing
+# 5. Upgrade check: v1 artifacts detected → upgrade notice in briefing
 # ---------------------------------------------------------------------------
 
-def test_upgrade_guard_includes_v1_detection_logic():
+def test_upgrade_check_includes_v1_detection_logic():
     prose_path = HEJ_CAP_DIR / "prose.md"
     content = prose_path.read_text()
 
-    assert "Step 0.5: Upgrade guard" in content, "prose.md must contain upgrade guard step"
+    assert "v1 migration check" in content.lower(), "prose.md must contain v1 migration check guidance"
 
     for v1_artifact in ["PROGRESS.md", "PLAN.md", "DECISIONS.md", "HEALTH.md"]:
-        assert v1_artifact in content, f"upgrade guard must reference v1 artifact {v1_artifact}"
+        assert v1_artifact in content, f"upgrade check must reference v1 artifact {v1_artifact}"
 
-    assert "agentera upgrade" in content, "upgrade guard must reference the upgrade command"
+    assert "agentera upgrade" in content, "upgrade check must reference the upgrade command"
     assert "uvx --from git+https://github.com/jgabor/agentera" in content, \
-        "upgrade guard must include the clone-free uvx path"
+        "upgrade check must include the clone-free uvx path"
     assert "--yes" in content and "confirmation" in content, \
-        "upgrade guard must require explicit confirmation before applying"
+        "upgrade check must require explicit confirmation before applying"
 
 
-def test_upgrade_guard_specifies_no_notice_when_no_v1():
+def test_upgrade_check_specifies_no_notice_when_no_v1():
     prose_path = HEJ_CAP_DIR / "prose.md"
     content = prose_path.read_text()
 
     assert "no upgrade notice" in content.lower() or "emit no upgrade notice" in content.lower(), \
-        "upgrade guard must specify that no notice is emitted when v1 artifacts are absent"
+        "upgrade check must specify that no notice is emitted when v1 artifacts are absent"
 
 
 # ---------------------------------------------------------------------------
-# 6. Upgrade guard: PROFILE.md present → no warning
+# 6. Profile status check: PROFILE.md present → no warning
 # ---------------------------------------------------------------------------
 
-def test_upgrade_guard_no_warning_when_profile_present():
+def test_profile_status_check_no_warning_when_profile_present():
     prose_path = HEJ_CAP_DIR / "prose.md"
     content = prose_path.read_text()
 
     profile_section = content[content.index("PROFILE.md detection"):]
-    assert "profile   loaded" in profile_section, "guard must specify 'loaded' when PROFILE.md exists"
+    assert "profile   loaded" in profile_section, "status check must specify 'loaded' when PROFILE.md exists"
     assert "No warning" in profile_section or "no warning" in profile_section.lower(), \
-        "guard must specify no warning when PROFILE.md exists"
+        "status check must specify no warning when PROFILE.md exists"
 
 
 # ---------------------------------------------------------------------------
-# 7. Upgrade guard: PROFILE.md absent → degraded attention item
+# 7. Profile status check: PROFILE.md absent → degraded attention item
 # ---------------------------------------------------------------------------
 
-def test_upgrade_guard_flags_missing_profile_as_degraded():
+def test_profile_status_check_flags_missing_profile_as_degraded():
     prose_path = HEJ_CAP_DIR / "prose.md"
     content = prose_path.read_text()
 
     profile_section = content[content.index("PROFILE.md detection"):]
-    assert "profile   not found" in profile_section, "guard must specify 'not found' when PROFILE.md is absent"
-    assert "⇉" in profile_section, "guard must use degraded severity arrow for missing PROFILE.md"
-    assert "profilera" in profile_section, "guard must reference profilera as the remediation"
+    assert "profile   not found" in profile_section, "status check must specify 'not found' when PROFILE.md is absent"
+    assert "⇉" in profile_section, "status check must use degraded severity arrow for missing PROFILE.md"
+    assert "profilera" in profile_section, "status check must reference profilera as the remediation"

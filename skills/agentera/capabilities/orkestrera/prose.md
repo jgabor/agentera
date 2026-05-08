@@ -48,9 +48,9 @@ The sharp colleague, here to coordinate. Brief status updates between dispatches
 
 ---
 
-## The conductor protocol
+## The orchestration loop
 
-The conductor follows a deterministic state machine. It does not reason creatively about orchestration; it follows the protocol. All creativity happens in the dispatched capabilities.
+The conductor follows a deterministic state machine. It does not reason creatively about orchestration; it follows the loop. All creativity happens in the dispatched capabilities.
 
 ### Step 0: Assess
 
@@ -73,7 +73,7 @@ When all tasks are complete, check whether dispatched capabilities updated their
 Narration voice (riff, don't script):
 
 - "No plan yet. Setting one up..." · "Need a plan first. Kicking off inspirera, then planera."
-- "Checking for stale artifacts..." · "Quick freshness check before moving on."
+- "Checking for stale artifacts..." · "Quick current-state check before moving on."
 - "Plan's done. Quick health check before the next one..." · "All tasks shipped. Checking health."
 
 ---
@@ -281,7 +281,7 @@ Format: emit `⎈ orkestrera · <status>` on its own line, followed by a summary
 - **stuck** (EX3): Cannot proceed because PLAN.md has circular dependencies that prevent any task from becoming eligible, no target capabilities are available to dispatch, or file access prevents reading or updating artifacts.
 - **waiting** (EX4): No PLAN.md exists and the bootstrap chain cannot proceed because VISION.md is absent and the user has not confirmed how to create one, or a dispatched capability returned `waiting` status requiring user input.
 
-### Loop guard
+### Loop stop condition
 
 Orkestrera uses retry-based failure detection: each task gets max 2 retries before being blocked. Additionally, if 3 consecutive different tasks all fail evaluation (even after their retries), orkestrera stops the session and escalates:
 
@@ -297,7 +297,7 @@ Orkestrera is part of a twelve-capability suite. It is the orchestration layer t
 
 ### Runtime dispatch substrates
 
-The conductor protocol in Step 2 (Dispatch) is runtime-agnostic: it always spawns the target capability as a background subagent. What that spawn maps to differs per runtime, and the table below names each substrate honestly.
+The orchestration loop in Step 2 (Dispatch) is runtime-agnostic: it always spawns the target capability as a background subagent. What that spawn maps to differs per runtime, and the table below names each substrate honestly.
 
 | Runtime | Substrate | Notes |
 |---------|-----------|-------|
