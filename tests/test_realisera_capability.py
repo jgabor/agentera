@@ -114,3 +114,17 @@ def test_realisera_prose_exists_and_contains_workflow():
     content = prose_path.read_text()
     for required in ["Step 1: Orient", "Step 2: Pick work", "Step 5: Dispatch", "Step 6: Verify", "Step 7: Commit", "Step 9: Log", "Safety rails", "Exit signals"]:
         assert required in content, f"prose.md must contain section '{required}'"
+
+
+def test_realisera_prose_enforces_completed_plan_sweep_before_archival():
+    content = (REALISERA_CAP_DIR / "prose.md").read_text()
+
+    for required in [
+        "header.status: complete",
+        "every task is complete",
+        "blocked, skipped, or otherwise incomplete tasks",
+        "plan-completion sweep",
+        "archive PLAN.md before removing active state",
+        "preserve lineage/evidence",
+    ]:
+        assert required in content

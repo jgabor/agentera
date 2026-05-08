@@ -56,9 +56,22 @@ def test_master_skill_defines_capability_handoff_contract() -> None:
     assert "ask_user" in content
     assert "request_user_input" in content
     assert "`question`" in content
+    assert "first Agentera/hej response" in normalized
+    assert "free-form continuation prompt" in normalized
+    assert "at least two meaningful non-terminal next actions" in normalized
+    assert "do not count `Done` or free-form/custom answer affordances" in normalized
     assert "recommended choice first" in normalized
     assert "Selecting a downstream capability option is confirmation" in normalized
     assert "selecting `Done` stops without routing" in normalized
+
+
+def test_master_skill_routes_bare_hej_to_dashboard_path() -> None:
+    content = SKILL_MD.read_text(encoding="utf-8")
+    normalized = " ".join(content.split())
+
+    assert "bare user message exactly `hej`" in normalized
+    assert "run `agentera hej` first" in normalized
+    assert "must not be handled as a generic greeting" in normalized
 
 
 def test_vocabulary_documents_handoff_and_route_boundary() -> None:
@@ -68,6 +81,8 @@ def test_vocabulary_documents_handoff_and_route_boundary() -> None:
     assert "glyph plus canonical name" in content
     assert "Explicit route documentation" in content
     assert "Runtime question tool" in content
+    assert "Question-tool gating" in content
+    assert "Initial Agentera/hej briefs stay free-form" in content
     assert "Handoff confirmation" in content
     assert "not schema authority" in content
 

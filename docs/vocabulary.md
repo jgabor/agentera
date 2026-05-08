@@ -125,6 +125,7 @@ Capability names use Swedish-style `-era` verb forms. The name is the action:
 | Capability handoff label | A recommendation from one capability to another. Use glyph plus canonical name, such as `⧉ realisera` or `≡ planera`, not standalone slash-capability names. |
 | Explicit route documentation | User-facing examples that teach the actual entry route. Use `/agentera <alias>` such as `/agentera build`; do not present aliases as CLI commands. |
 | Runtime question tool | Host-native bounded-choice prompt. Current examples: Claude Code `AskUserQuestion`, Copilot `ask_user`, Codex `request_user_input`, and OpenCode `question`. These are guidance examples, not schema authority. |
+| Question-tool gating | Use a native question tool only for at least two meaningful non-terminal next actions or consequential Proceed/Cancel; `Done` and custom/free-form answers do not count as alternatives. Initial Agentera/hej briefs stay free-form unless bounded choices were requested. |
 | Handoff confirmation | Selecting a downstream capability option in a bounded prompt confirms invocation; selecting `Done` stops without routing. |
 | Legacy bridge | Temporary v1 entry points, especially `/hej`, that guide users to `/agentera` and the v2 upgrade path. |
 

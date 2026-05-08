@@ -5,7 +5,7 @@ description: >
   One bundled skill with twelve capabilities, each defined by human-readable
   prose and machine-readable schemas. The agent reads this file to route
   incoming requests to the right capability.
-version: "2.2.0"
+version: "2.2.1"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 ---
 
@@ -82,15 +82,15 @@ Do not silently bypass the CLI and read raw `.agentera/*.yaml` files first. If
 all CLI paths fail, report that the CLI was unavailable, then use raw artifact
 reads only as a fallback.
 
-For bare `/agentera`, run `agentera hej` first and render the README-style hej
-dashboard from that single composite result. The CLI output is source data, not
-the user-facing dashboard; do not relay raw `agentera hej` lines as the final
-briefing. Do not run individual `plan`, `progress`, `health`, `todo`, or
-`decisions` commands unless `agentera hej` fails or explicitly asks for
-fallback. The final response must transform source labels such as `mode:`,
-`profile:`, `health:`, `issues:`, `plan:`, `objective:`, `attention:`,
-`next_action:`, and `source_contract:` into the dashboard below; never paste
-those labels as the briefing.
+For bare `/agentera` or a bare user message exactly `hej`, run `agentera hej`
+first and render the README-style hej dashboard from that single composite
+result. The CLI output is source data, not the user-facing dashboard; do not
+relay raw `agentera hej` lines as the final briefing. Do not run individual `plan`, `progress`, `health`,
+`todo`, or `decisions` commands unless `agentera hej` fails or explicitly asks
+for fallback. The final response must
+transform source labels such as `mode:`, `profile:`, `health:`, `issues:`,
+`plan:`, `objective:`, `attention:`, `next_action:`, and `source_contract:` into
+the dashboard below; never paste those labels as the briefing.
 
 Bare `/agentera` returning-project output must include these visible markers:
 
@@ -125,12 +125,17 @@ CLI state layer first for artifact-backed state.
 Capability handoffs use glyph plus canonical capability name, for example
 `⧉ realisera` or `≡ planera`. Reserve `/agentera <alias>` wording for explicit
 slash-route documentation and do not use standalone slash-capability names such
-as `/realisera` or `/planera` as handoff labels. When a handoff offers a clear,
-limited set of choices, use the runtime's native question tool when available:
-Claude Code `AskUserQuestion`, Copilot `ask_user`, Codex `request_user_input`,
-and OpenCode `question`. Put the recommended choice first with `(Recommended)`
-in its label and include `Done`. Selecting a downstream capability option is
-confirmation to invoke that capability; selecting `Done` stops without routing.
+as `/realisera` or `/planera` as handoff labels. The first Agentera/hej response
+in a fresh interaction should deliver the brief and a free-form continuation
+prompt, not a native question menu, unless the user explicitly asks for bounded
+choices. Mid-conversation, use the runtime's native question tool only when
+there are at least two meaningful non-terminal next actions or a consequential
+Proceed/Cancel decision; do not count `Done` or free-form/custom answer affordances
+as alternatives. Current host examples are Claude Code `AskUserQuestion`, Copilot
+`ask_user`, Codex `request_user_input`, and OpenCode `question`. Put the
+recommended choice first with `(Recommended)` in its label and include `Done`.
+Selecting a downstream capability option is confirmation to invoke that
+capability; selecting `Done` stops without routing.
 
 ### Step -1a: Bundle status check
 
@@ -226,9 +231,13 @@ runtime artifacts. Package refreshes that run `npx skills remove` for v1 skill
 entries and `npx skills add` for `/agentera` remain explicit opt-in via
 `--update-packages`.
 
-### Layer 1: Bare `/agentera` — delegate to hej
+### Layer 1: Bare `/agentera` or bare `hej` — delegate to hej
 
-If the request is `/agentera` with no additional text, delegate immediately to hej. Hej performs state-aware routing by reading project artifacts (PLAN.md, TODO.md, HEALTH.md, etc.) and suggesting the most useful next capability. This is deterministic and never wrong.
+If the request is `/agentera` with no additional text, or the complete user
+message is exactly `hej`, delegate immediately to hej. Hej performs state-aware
+routing by reading project artifacts (PLAN.md, TODO.md, HEALTH.md, etc.) and
+suggesting the most useful next capability. This is deterministic and never
+wrong. Bare `hej` must not be handled as a generic greeting.
 
 ### Layer 2: `/agentera <capability-name-or-primary-alias>` — direct route
 

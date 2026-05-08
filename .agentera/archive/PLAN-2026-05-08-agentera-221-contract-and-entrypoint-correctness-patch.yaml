@@ -1,0 +1,149 @@
+header:
+  level: full
+  created: '2026-05-08'
+  status: complete
+  reviewed: '2026-05-08'
+  critic_issues: "10 found, 10 addressed, 0 dismissed"
+  revised: >
+    Tightened completed-plan cleanup to completed tasks only; made CLI-visible
+    stale context part of the lifecycle fix; required non-zero parseable critic
+    findings for full plans; defined initial Agentera/hej question-tool gating
+    without new persistent session state; named only the question-tool TODO for
+    2.2.1 retagging; split metadata sync from final verification; and fixed the
+    Decision 46 archive path contract.
+  title: Agentera 2.2.1 Contract And Entrypoint Correctness Patch
+what: >
+  Deliver a focused 2.2.1 patch that fixes Agentera plan-contract enforcement
+  and entrypoint behavior after the 2.2.0 release train. The work closes the
+  completed-plan lifecycle gap, hardens full-plan review validation, makes exact
+  bare `hej` requests enter the Agentera brief path, and promotes the adjacent
+  question-tool gating TODO into the same patch because it governs the same
+  first-response and handoff surface.
+why: >
+  TODO state records three exact 2.2.1 defects and one adjacent 2.2.x handoff
+  gating defect. Grouping them as a single stability patch preserves release
+  intent without turning 2.2.1 into general backlog cleanup. The plan protects
+  the user's preference for evidence-backed, compact operational artifacts by
+  making plan lifecycle, validation, and entrypoint routing observable through
+  tests and CLI state.
+constraints: >
+  Preserve canonical capability names, Decision 43 aliases, CLI command names,
+  existing artifact schema boundaries, v2.2.0 behavior that is not explicitly in
+  scope, existing vision and objective state, unrelated worktree changes, and
+  current no-publication boundaries. Do not include the repeated fresh-project
+  hej loop without a defined saved-context signal. Do not include TODO Resolved
+  compaction in this patch. Do not claim live four-runtime install confidence,
+  publish, tag, push, update package-manager installs, or refresh installed
+  bundles unless a later explicit release instruction authorizes it.
+scope:
+  included:
+    - archive the completed Decision 46 plan before replacing active plan state
+    - preserve plan lineage through `previous_plan_archived`
+    - close the completed-plan lifecycle gap for complete plans with all tasks complete
+    - keep blocked or incomplete plans from being archived as successful completion
+    - stop `agentera hej` from reporting stale complete-plan context after lifecycle cleanup
+    - enforce full-plan adversarial review fields and non-zero critic findings at artifact-validation time
+    - preserve light-plan validation behavior where full-review fields are intentionally absent
+    - make exact bare user message `hej` trigger the Agentera brief/dashboard path
+    - refine question-tool gating for initial Agentera/hej responses and bounded mid-conversation handoffs
+    - retag only the question-tool gating TODO from `[fix:2.2.x]` to `[fix:2.2.1]`
+    - update changelog, docs/progress state, and version files for 2.2.1 when implementation is complete
+    - run focused regressions plus relevant release verification before closure
+  excluded:
+    - repeated fresh-project hej loop behavior without a saved-context/session signal decision
+    - TODO.md Resolved-section compaction and generic artifact post-write normalization
+    - release-readiness live install proof as a scoped product fix
+    - optional Claude Code live model-host smoke
+    - generated JavaScript install-root contract follow-up
+    - CLI write support for decisions or plans outside the planned lifecycle behavior
+    - package publication, tag creation, remote push, package-manager update, installed-bundle refresh, vision edits, or objective edits
+  deferred:
+    - decide the saved-context signal for repeated fresh-project hej before implementation
+    - wire TODO Resolved compaction into artifact-writing path in a separate artifact-maintenance patch
+    - run opt-in live install proof only when release claims require that evidence
+    - consider generated JavaScript install-root contract only if fixture validation becomes insufficient
+design: >
+  Treat 2.2.1 as a stability patch with two lanes. The plan-state lane makes
+  completed-plan closure and full-plan review enforcement observable through the
+  existing artifact and CLI surfaces, while explicitly preserving incomplete or
+  blocked plan evidence. The entrypoint lane makes exact `hej` and initial
+  Agentera/hej responses deterministic without adding new persistent session
+  state. Metadata and version changes happen only after behavior and focused
+  regressions prove the patch boundary.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-08-implement-decision-46-capability-handoff-polish-for-220.yaml
+tasks:
+  - number: 1
+    name: Archive Decision 46 And Establish 2.2.1 Plan Lineage
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN the Decision 46 plan is complete WHEN this plan is written THEN the completed plan is preserved at `.agentera/archive/PLAN-2026-05-08-implement-decision-46-capability-handoff-polish-for-220.yaml`
+      - GIVEN active plan state is inspected WHEN the 2.2.1 plan is active THEN `previous_plan_archived` points to the Decision 46 archive path
+      - GIVEN this plan is a full plan WHEN artifact validation is considered THEN it already includes review date, critic issues, design, task acceptance criteria, and non-zero critic findings before automated enforcement lands
+      - GIVEN release boundaries are inspected WHEN the plan is created THEN no implementation task, version bump, publication, tag, push, package update, installed-bundle refresh, vision edit, or objective edit has occurred
+  - number: 2
+    name: Enforce Completed-Plan Lifecycle And Hej Stale-Context Behavior
+    depends_on:
+      - Task 1
+    status: complete
+    acceptance:
+      - GIVEN a plan has `header.status: complete` and every task is complete WHEN lifecycle closure runs THEN completion evidence is preserved before active plan state is removed
+      - GIVEN a plan has blocked, skipped, or otherwise incomplete tasks WHEN lifecycle closure is evaluated THEN it is not archived as a successful completed plan
+      - GIVEN a completed plan has been archived and active state removed WHEN `agentera hej` runs THEN the dashboard does not report stale complete-plan context or route from that completed plan
+      - GIVEN realisera or orkestrera reaches all-tasks-complete state WHEN the workflow closes THEN the plan-completion sweep runs before handoff back to unplanned work selection
+      - GIVEN regression evidence is reviewed WHEN Task 2 completes THEN both lifecycle prose and CLI-visible hej behavior are covered
+  - number: 3
+    name: Enforce Full-Plan Adversarial Review Validation
+    depends_on:
+      - Task 1
+    status: complete
+    acceptance:
+      - GIVEN a plan has `header.level: full` WHEN required review fields are absent or empty THEN artifact validation fails
+      - GIVEN a full plan has missing design or missing task acceptance criteria WHEN artifact validation runs THEN validation fails
+      - GIVEN `header.critic_issues` reports zero findings or inconsistent counts WHEN artifact validation runs THEN validation fails
+      - GIVEN a light plan omits full-review-only fields WHEN artifact validation runs THEN existing light-plan behavior remains valid
+      - GIVEN validation regressions remove fields from this reviewed plan shape WHEN focused tests run THEN those regressions fail for the intended reasons
+  - number: 4
+    name: Fix Bare Hej Entrypoint And Question-Tool Gating
+    depends_on:
+      - Task 1
+    status: complete
+    acceptance:
+      - GIVEN the user message is exactly `hej` WHEN Agentera routes the request THEN it runs the Agentera brief path from `agentera hej` state and renders the `⌂ hej` dashboard marker
+      - GIVEN exact-`hej` semantic evidence is checked WHEN the response is evaluated THEN generic greeting behavior is absent
+      - GIVEN an initial Agentera or hej brief response is rendered WHEN the user did not request bounded choices THEN the response uses a free-form next prompt rather than a native question menu
+      - GIVEN mid-conversation handoff choices are offered WHEN the native question tool is used THEN there are at least two meaningful non-terminal next actions, excluding `Done` and free-form/custom answer affordances from the count
+      - GIVEN downstream labels are shown WHEN gating prose and fixtures are reviewed THEN labels remain glyph-forward, such as `⧉ realisera`, `⛶ inspektera`, or `▤ dokumentera`
+  - number: 5
+    name: Sync 2.2.1 Metadata And Release State
+    depends_on:
+      - Task 2
+      - Task 3
+      - Task 4
+    status: complete
+    acceptance:
+      - GIVEN TODO scope is updated WHEN the promoted item is retagged THEN only the question-tool gating TODO changes from `[fix:2.2.x]` to `[fix:2.2.1]`
+      - GIVEN deferred TODOs are reviewed WHEN metadata sync completes THEN the repeated fresh-project hej loop and TODO Resolved compaction remain `[fix:2.2.x]`
+      - GIVEN fix work is complete WHEN the documented semver policy is applied THEN version files and changelog state identify 2.2.1 as a patch release
+      - GIVEN docs and progress state are queried WHEN metadata sync completes THEN touched artifacts agree on the 2.2.1 scope and exclusions
+      - GIVEN release boundaries are recorded WHEN state sync runs THEN no publication, tag, push, package update, installed-bundle refresh, vision edit, or objective edit is claimed
+  - number: 6
+    name: Verify Patch And Close Plan State
+    depends_on:
+      - Task 5
+    status: complete
+    acceptance:
+      - GIVEN focused verification runs WHEN Task 6 completes THEN plan lifecycle, full-plan validation, exact-`hej` routing, and question-tool gating regressions pass
+      - GIVEN release verification runs WHEN the patch is ready THEN relevant capability validation, artifact validation, CLI state checks, and test suites pass or documented blockers are recorded
+      - GIVEN live install proof is not run WHEN release notes are finalized THEN the patch does not claim four-runtime live install confidence
+      - GIVEN the worktree is reviewed WHEN execution completes THEN unrelated user or agent changes are not reverted, hidden, or folded into 2.2.1 release claims
+      - GIVEN all tasks are complete WHEN final state sync runs THEN the plan is marked complete or archived according to the completed-plan lifecycle contract being enforced
+overall_acceptance:
+  - GIVEN a completed active plan has all tasks complete WHEN realisera or orkestrera closes it THEN completion evidence and lineage are preserved before active plan state disappears
+  - GIVEN `agentera hej` runs after completed-plan cleanup WHEN no active plan remains THEN it no longer reports stale complete-plan context
+  - GIVEN a full `.agentera/plan.yaml` write skips adversarial review evidence WHEN artifact validation runs THEN the write fails with actionable errors
+  - GIVEN the user sends exactly `hej` WHEN Agentera handles the request THEN the Agentera dashboard path runs and emits the `⌂ hej` marker rather than generic greeting behavior
+  - GIVEN Agentera or hej presents an initial brief WHEN bounded choices were not requested THEN it avoids native question menus and leaves the user a free-form continuation path
+  - GIVEN 2.2.1 metadata is complete WHEN release state is inspected THEN only the approved promoted TODO joined the three exact 2.2.1 fixes, while deferred 2.2.x items remain deferred
+  - GIVEN final verification is recorded WHEN the plan closes THEN tests, validation, docs, progress, changelog, and version state support a 2.2.1 patch without claiming publication or live install evidence not actually produced
+surprises: []

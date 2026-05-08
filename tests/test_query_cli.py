@@ -626,7 +626,43 @@ class TestHej:
         assert r.returncode == 0
         assert "object=TODO: Add smoke coverage" in r.stdout
         assert "capability=realisera" in r.stdout
+        assert "plan: status=complete" not in r.stdout
         assert "capability=visionera" not in r.stdout
+
+    def test_completed_plan_without_open_work_does_not_surface_stale_plan(self, project):
+        _write_artifact(project, ".agentera/vision.yaml", {
+            "principles": [{"name": "Reliable state", "description": "Keep routing current."}],
+        })
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Done plan", "status": "complete"},
+            "tasks": [
+                {"number": 1, "name": "Finished", "status": "complete"},
+            ],
+        })
+
+        r = _run("hej", cwd=project)
+
+        assert r.returncode == 0
+        assert "plan: status=complete" not in r.stdout
+        assert "object=VISION refresh" in r.stdout
+        assert "capability=planera" in r.stdout
+        assert "capability=visionera" not in r.stdout
+
+    def test_incomplete_or_blocked_plan_remains_visible_to_hej(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Blocked plan", "status": "complete"},
+            "tasks": [
+                {"number": 1, "name": "Finished", "status": "complete"},
+                {"number": 2, "name": "Blocked", "status": "blocked"},
+            ],
+        })
+
+        r = _run("hej", cwd=project)
+
+        assert r.returncode == 0
+        assert "plan: status=complete | progress=1/2" in r.stdout
+        assert "object=VISION refresh" in r.stdout
+        assert "capability=planera" in r.stdout
 
     def test_closed_objective_is_not_selected_for_routing(self, project):
         _write_artifact(project, ".agentera/plan.yaml", {

@@ -220,24 +220,84 @@ class TestValidateYamlPlan:
         schema = hook.load_schema("plan")
         content = yaml_dump({
             "header": {"level": "full", "created": "2026-05-04", "status": "active",
+                       "reviewed": "2026-05-04", "critic_issues": "1 found, 1 addressed, 0 dismissed",
                        "title": "Test plan"},
             "what": "Build the thing",
+            "why": "Because reasons",
+            "design": "Use the existing artifact validation path.",
+            "scope": {"included": ["src/"], "excluded": ["vendor/"]},
+            "tasks": [{"number": 1, "name": "First", "status": "pending",
+                       "acceptance": ["GIVEN input WHEN run THEN output"]}],
+        })
+        violations = hook.validate_yaml(content, schema, "plan")
+        assert violations == []
+
+    def test_light_plan_may_omit_full_review_fields(self, hook):
+        schema = hook.load_schema("plan")
+        content = yaml_dump({
+            "header": {"level": "light", "created": "2026-05-04", "status": "active",
+                       "title": "Light plan"},
+            "what": "Build the small thing",
             "why": "Because reasons",
             "scope": {"included": ["src/"], "excluded": ["vendor/"]},
             "tasks": [{"number": 1, "name": "First", "status": "pending"}],
         })
+
+        assert hook.validate_yaml(content, schema, "plan") == []
+
+    def test_full_plan_requires_review_fields_design_and_acceptance(self, hook):
+        schema = hook.load_schema("plan")
+        content = yaml_dump({
+            "header": {"level": "full", "created": "2026-05-04", "status": "active",
+                       "title": "Unreviewed plan"},
+            "what": "Build",
+            "why": "Reasons",
+            "scope": {"included": ["src/"], "excluded": ["vendor/"]},
+            "tasks": [{"number": 1, "name": "T1", "status": "pending"}],
+        })
+
         violations = hook.validate_yaml(content, schema, "plan")
-        assert violations == []
+
+        assert any("missing required field 'header.reviewed'" in v for v in violations)
+        assert any("missing required field 'header.critic_issues'" in v for v in violations)
+        assert any("missing required field 'design'" in v for v in violations)
+        assert any("missing required field 'tasks[0].acceptance'" in v for v in violations)
+
+    def test_full_plan_rejects_non_adversarial_critic_issues(self, hook):
+        schema = hook.load_schema("plan")
+        base = {
+            "header": {"level": "full", "created": "2026-05-04", "status": "active",
+                       "reviewed": "2026-05-04", "title": "Reviewed plan"},
+            "what": "Build",
+            "why": "Reasons",
+            "design": "Use existing hooks.",
+            "scope": {"included": ["src/"], "excluded": ["vendor/"]},
+            "tasks": [{"number": 1, "name": "T1", "status": "pending",
+                       "acceptance": ["GIVEN input WHEN run THEN output"]}],
+        }
+
+        for critic_issues, expected in [
+            ("0 found, 0 addressed, 0 dismissed", "at least 1 found issue"),
+            ("2 found, 1 addressed, 0 dismissed", "addressed + dismissed == found"),
+            ("reviewed", "must match"),
+        ]:
+            plan = dict(base)
+            plan["header"] = dict(base["header"], critic_issues=critic_issues)
+            violations = hook.validate_yaml(yaml_dump(plan), schema, "plan")
+            assert any(expected in v for v in violations)
 
     def test_missing_scope(self, hook):
         schema = hook.load_schema("plan")
         content = yaml_dump({
             "header": {"level": "full", "created": "2026-05-04", "status": "active",
+                       "reviewed": "2026-05-04", "critic_issues": "1 found, 1 addressed, 0 dismissed",
                        "title": "Plan"},
             "what": "Build",
             "why": "Reasons",
+            "design": "Use existing hooks.",
             "scope": {},
-            "tasks": [{"number": 1, "name": "T1", "status": "pending"}],
+            "tasks": [{"number": 1, "name": "T1", "status": "pending",
+                       "acceptance": ["GIVEN input WHEN run THEN output"]}],
         })
         violations = hook.validate_yaml(content, schema, "plan")
         assert any("missing required field" in v for v in violations)
@@ -246,11 +306,14 @@ class TestValidateYamlPlan:
         schema = hook.load_schema("plan")
         content = yaml_dump({
             "header": {"level": "full", "created": "2026-05-04", "status": "done",
+                       "reviewed": "2026-05-04", "critic_issues": "1 found, 1 addressed, 0 dismissed",
                        "title": "Plan"},
             "what": "Build",
             "why": "Reasons",
+            "design": "Use existing hooks.",
             "scope": {"included": ["src/"], "excluded": ["vendor/"]},
-            "tasks": [{"number": 1, "name": "T1", "status": "pending"}],
+            "tasks": [{"number": 1, "name": "T1", "status": "pending",
+                       "acceptance": ["GIVEN input WHEN run THEN output"]}],
         })
         violations = hook.validate_yaml(content, schema, "plan")
         assert any("invalid value 'done' for 'header.status'" in v for v in violations)
@@ -259,12 +322,15 @@ class TestValidateYamlPlan:
         schema = hook.load_schema("plan")
         content = yaml_dump({
             "header": {"level": "full", "created": "2026-05-04", "status": "complete",
+                       "reviewed": "2026-05-04", "critic_issues": "1 found, 1 addressed, 0 dismissed",
                        "title": "Plan"},
             "what": "Build",
             "why": "Reasons",
+            "design": "Use existing hooks.",
             "scope": {"included": ["src/"], "excluded": ["vendor/"]},
             "previous_plan_archived": ".agentera/archive/PLAN-old.yaml",
-            "tasks": [{"number": 1, "name": "T1", "status": "complete"}],
+            "tasks": [{"number": 1, "name": "T1", "status": "complete",
+                       "acceptance": ["GIVEN input WHEN run THEN output"]}],
         })
         violations = hook.validate_yaml(content, schema, "plan")
         assert violations == []
@@ -273,11 +339,14 @@ class TestValidateYamlPlan:
         schema = hook.load_schema("plan")
         content = yaml_dump({
             "header": {"level": "full", "created": "2026-05-04", "status": "active",
+                       "reviewed": "2026-05-04", "critic_issues": "1 found, 1 addressed, 0 dismissed",
                        "title": "Plan", "approved": True},
             "what": "Build",
             "why": "Reasons",
+            "design": "Use existing hooks.",
             "scope": {"included": ["src/"], "excluded": []},
-            "tasks": [{"number": 1, "name": "T1", "status": "pending"}],
+            "tasks": [{"number": 1, "name": "T1", "status": "pending",
+                       "acceptance": ["GIVEN input WHEN run THEN output"]}],
         })
         violations = hook.validate_yaml(content, schema, "plan")
         assert any("unsupported field 'header.approved'" in v for v in violations)
@@ -286,12 +355,15 @@ class TestValidateYamlPlan:
         schema = hook.load_schema("plan")
         content = yaml_dump({
             "header": {"level": "full", "created": "2026-05-04", "status": "active",
+                       "reviewed": "2026-05-04", "critic_issues": "1 found, 1 addressed, 0 dismissed",
                        "title": "Plan"},
             "what": "Build",
             "why": "Reasons",
+            "design": "Use existing hooks.",
             "scope": {"included": ["src/"], "excluded": []},
             "reapproved": True,
-            "tasks": [{"number": 1, "name": "T1", "status": "pending"}],
+            "tasks": [{"number": 1, "name": "T1", "status": "pending",
+                       "acceptance": ["GIVEN input WHEN run THEN output"]}],
         })
         violations = hook.validate_yaml(content, schema, "plan")
         assert any("unsupported field 'reapproved'" in v for v in violations)

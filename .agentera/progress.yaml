@@ -1,4 +1,38 @@
 cycles:
+- number: 371
+  timestamp: 2026-05-08 19:08
+  type: fix
+  phase: build
+  what: Completed final 2.2.1 verification and closed the contract/entrypoint correctness plan.
+  commit: pending
+  inspiration: >
+    Task 6 required final verification after Task 5 synchronized release metadata, while preserving the boundary that publication, tags, pushes, package-manager updates, installed-bundle refreshes, and live install proof remain explicit separate actions.
+  discovered: >
+    The first full pytest run exposed only a protected wording regression in `skills/agentera/SKILL.md` caused by a line wrap that split the expected CLI-first phrase. Restoring the exact phrase fixed the suite without changing behavior. The remaining deferred 2.2.x TODOs are still open and separate.
+  verified: >
+    Final verification passed: `uv run pytest` reported 806 passed; `uv run scripts/validate_capability.py --self-validate` reported PASS; all 12 `skills/agentera/capabilities/*` directories validated; `python3 -m py_compile scripts/agentera hooks/validate_artifact.py scripts/semantic_eval.py scripts/semantic_fixtures.py` completed with no output; `git diff --name-only -- .agentera/vision.yaml .agentera/optimera` produced no output; and `git tag --list 'v2.2.1'` produced no output. Live install proof was not run, so no four-runtime live install confidence is claimed.
+  next: Active plan state is archived and removed. Remaining open work is the release-readiness live install proof plus deferred 2.2.x/future optional follow-ups.
+  context:
+    intent: 2.2.1 final verification and plan closure
+    constraints: no commit, push, tag, publication, package update, installed-bundle refresh, live install proof claim, vision edit, objective edit, repeated fresh-project hej loop, or TODO Resolved compaction
+    scope: final verification evidence, TODO resolution, changelog/docs/progress metadata, and plan archive/removal
+- number: 370
+  timestamp: 2026-05-08 19:06
+  type: fix
+  phase: build
+  what: Synchronized 2.2.1 patch metadata for the approved contract and entrypoint correctness scope.
+  commit: pending
+  inspiration: >
+    Resonera selected the three exact `[fix:2.2.1]` TODOs plus the adjacent question-tool gating TODO for one 2.2.1 patch, while explicitly deferring the repeated fresh-project hej loop and TODO Resolved compaction.
+  discovered: >
+    The version-bearing surfaces follow `.agentera/docs.yaml` semver policy and package registry authority, so a patch fix requires updating registry, Python, lock, runtime manifest, OpenCode marker, and skill frontmatter versions together. Only the question-tool gating TODO was retagged from `[fix:2.2.x]` to `[fix:2.2.1]`; the other 2.2.x items remain deferred.
+  verified: >
+    Focused Task 2 evidence passed with `uv run pytest tests/test_query_cli.py::TestHej tests/test_realisera_capability.py tests/test_orkestrera_capability.py` reporting 18 passed. Task 3 evidence passed with `uv run pytest tests/test_hook_v2.py` reporting 69 passed and active plan validation passing. Task 4 evidence passed with `uv run pytest tests/test_skill_dispatch_contract.py tests/test_schema_backed_routing_interface.py tests/test_hej_routing_fixture.py` reporting 29 passed and `uv run scripts/semantic_eval.py fixtures/semantic/hej-bare-message.md fixtures/semantic/hej-cli-budget.md` reporting pass. No publication, tag, push, package update, installed-bundle refresh, commit, vision edit, or objective edit was performed.
+  next: Task 6 should run final verification, record any blockers, and close or archive plan state according to the completed-plan lifecycle contract.
+  context:
+    intent: 2.2.1 Task 5 metadata and release-state sync
+    constraints: no publication, tag, push, package update, installed-bundle refresh, commit, vision edit, objective edit, live install proof claim, repeated fresh-project hej loop, or TODO Resolved compaction
+    scope: TODO.md, CHANGELOG.md, version files, skill frontmatter, .agentera/docs.yaml, .agentera/progress.yaml, and active plan state
 - number: 369
   timestamp: 2026-05-08 14:03
   type: docs

@@ -4,7 +4,6 @@ docs/*
 !docs/vocabulary.md
 __pycache__/
 *.pyc
-.leda
 .env
 node_modules
 package.json

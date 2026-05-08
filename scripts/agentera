@@ -1527,8 +1527,9 @@ def _plan_summary(schemas: dict) -> dict[str, Any]:
         title = str(_first_present(header, ["title"], data.get("title", "")) or "")
     complete = sum(1 for task in tasks if _entry_status(task, "") in DONE_STATUSES)
     total = len(tasks)
+    complete_plan = status.lower() in DONE_STATUSES and complete == total
     first_pending = None
-    if status.lower() not in DONE_STATUSES:
+    if not complete_plan:
         for task in tasks:
             task_status = _entry_status(task, "pending")
             if task_status in DONE_STATUSES or task_status in BLOCKED_STATUSES:
@@ -1542,6 +1543,8 @@ def _plan_summary(schemas: dict) -> dict[str, Any]:
         "tasks": tasks,
         "complete": complete,
         "total": total,
+        "active": not complete_plan,
+        "complete_plan": complete_plan,
         "first_pending": first_pending,
     }
 
@@ -1691,14 +1694,17 @@ def _select_hej_next_action(
             "capability": "resonera",
             "reason": "unresolved decision follow-up",
         }
-    if plan.get("exists") or (Path.cwd() / ".agentera" / "vision.yaml").exists():
+    vision_exists = (Path.cwd() / ".agentera" / "vision.yaml").exists()
+    if plan.get("exists") and not plan.get("complete_plan"):
         return {
             "object": "VISION refresh",
-            "capability": (
-                "visionera"
-                if str(plan.get("status", "")).lower() in DONE_STATUSES
-                else "planera"
-            ),
+            "capability": "planera",
+            "reason": "no executable follow-up",
+        }
+    if vision_exists:
+        return {
+            "object": "VISION refresh",
+            "capability": "planera",
             "reason": "no executable follow-up",
         }
     return {
@@ -1791,7 +1797,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
         f"critical={counts['critical']} | degraded={counts['degraded']} | "
         f"normal={counts['normal']} | annoying={counts['annoying']}"
     )
-    if plan.get("exists"):
+    if plan.get("exists") and not plan.get("complete_plan"):
         print(
             f"plan: status={plan.get('status') or 'unknown'} | "
             f"progress={plan.get('complete', 0)}/{plan.get('total', 0)}"

@@ -260,7 +260,7 @@ class TestSemanticEvalCliCompatibility:
             [
                 sys.executable,
                 "scripts/semantic_eval.py",
-                "fixtures/semantic/hej-routing-task3.md",
+                "fixtures/semantic/hej-routing-plan-priority.md",
             ],
             cwd=REPO_ROOT,
             capture_output=True,

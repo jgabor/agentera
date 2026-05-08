@@ -2,7 +2,7 @@
 
 **Holistic Entry Junction. Orient, Route, Activate**
 
-Single entry point to the agentera suite. Detects fresh vs returning, delivers a situational briefing, routes to the right capability. Same on first install and 100th session.
+Single entry point to the agentera suite. Detects fresh vs returning, delivers a situational briefing, routes to the right capability. Same on first install and 100th session. A bare user message exactly `hej` uses this same briefing path, not generic greeting behavior.
 
 Each invocation = one orientation. Uses the CLI composite briefing first,
 writes nothing.
@@ -154,7 +154,9 @@ First impression: the colleague meets a new project.
 3. **Give your honest take**: based on the scan, tell the user where you'd start
     and why. "If I were you, I'd start with X because Y." Use the routing logic (no vision → visionera, unknown quality → inspektera, decision needed → resonera, ready to build + has plan → orkestrera, ready to build → realisera, docs gaps → dokumentera) but frame it as judgment, not a lookup table.
 
-4. **Route**: ask what they'd like to do. Invoke the chosen capability.
+4. **Route**: ask what they'd like to do with a free-form prompt. Do not use a
+   native question menu on the initial welcome unless the user explicitly asked
+   for bounded choices. Invoke a capability only after the user confirms it.
 
 ---
 
@@ -205,7 +207,7 @@ Show where things stand.
 
    ─── next ───────────────────────────────
 
-     suggested → [glyph] /[skill] ([reason])
+     suggested → [glyph] [capability] ([reason])
    ```
 
    Output constraint: ≤120 words total briefing, ≤15 words per routing suggestion.
@@ -242,13 +244,15 @@ Show where things stand.
    - TODO.md open items → suggest ⧉ (SG2) realisera for the highest-severity open item; prefer items that unlock product evidence or future plans.
    - Pending DECISIONS.md follow-up → suggest ❈ (SG4) resonera for the named unresolved decision.
    - Vision exists but no plan, objective, decision follow-up, or TODO work is active → suggest ≡ (SG5) planera.
-   - Healthy, no executable follow-ups, and the plan is complete → suggest ⛥ (SG6) visionera to choose a new direction.
+   - No vision, no executable follow-ups, and no active plan → suggest ⛥ (SG6) visionera to choose a direction.
 
    Do not let `healthy + plan complete → ⛥` override active TODO, OBJECTIVE, DECISIONS, or a newer active PLAN. A completed plan means "look for the next executable follow-up," not automatically "refresh vision."
 
 5. **Route**: present one concrete suggestion and let the user choose. No coercion.
    - Do not list generic skill options unless the user asks for the full menu.
    - The waiting bullet should ask whether to run the named action, not ask the user to pick from skills.
+   - On the initial Agentera/hej brief, use a free-form continuation prompt rather than a native question menu unless the user asked for bounded choices.
+   - Mid-conversation, use the native question tool only for at least two meaningful non-terminal next actions or a consequential Proceed/Cancel decision; `Done` and free-form/custom answer affordances do not count as alternatives.
 
 ---
 

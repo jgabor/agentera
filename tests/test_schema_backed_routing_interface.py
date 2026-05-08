@@ -129,6 +129,15 @@ def test_canonical_capability_names_still_route_directly():
         assert result.direct_route.source == "canonical"
 
 
+def test_bare_hej_routes_directly_to_hej_capability():
+    result = evaluate_route("hej", load_trigger_patterns())
+
+    assert result.kind == "route"
+    assert result.capability == "hej"
+    assert result.direct_route is not None
+    assert result.direct_route.source == "canonical"
+
+
 def test_exact_agentera_alias_routes_without_trigger_disambiguation():
     _assert_decision_43_alias_routes()
 

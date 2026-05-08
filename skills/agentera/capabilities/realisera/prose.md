@@ -145,7 +145,7 @@ uv run ${AGENTERA_HOME:-.}/scripts/agentera progress
 
 Before proceeding, list the 3-5 facts that determine this cycle.
 
-**Exit-early stop condition (plan-driven mode only)**: If PLAN.md is done and no tasks were added, perform a **plan-completion sweep** before archiving. This stop condition does NOT apply in vision-driven mode.
+**Exit-early stop condition (plan-driven mode only)**: If PLAN.md has `header.status: complete` and every task is complete, perform a **plan-completion sweep** before archiving. A plan with blocked, skipped, or otherwise incomplete tasks is not a successfully completed plan and must remain visible for replanning or follow-up. This stop condition does NOT apply in vision-driven mode.
 
 Sweep checklist:
 
@@ -154,7 +154,7 @@ Sweep checklist:
 3. **TODO.md milestone advance**: mark each plan task as Resolved.
 4. **HEALTH.md cross-reference**: mention any resolved findings.
 
-After the sweep, archive PLAN.md to `.agentera/archive/plan-{date}.yaml` and report exit signal `complete: plan finished`.
+After the sweep, archive PLAN.md to `.agentera/archive/PLAN-{date}-{slug}.yaml`, preserve lineage/evidence in the archive or next plan's `previous_plan_archived`, remove the active `.agentera/plan.yaml`, and report exit signal `complete: plan finished`.
 
 ### Step 2: Pick work
 
@@ -341,7 +341,7 @@ When the brainstorm or work selection surfaces a decision too complex for inline
 
 ### Consumes ≡ planera plans
 
-When PLAN.md exists with pending tasks, Step 2 reads the plan instead of reasoning from vision. Pick next pending task with satisfied dependencies. Update task status. When all complete, archive PLAN.md.
+When PLAN.md exists with pending tasks, Step 2 reads the plan instead of reasoning from vision. Pick next pending task with satisfied dependencies. Update task status. When `header.status: complete` and every task is complete, run the plan-completion sweep, archive PLAN.md before removing active state, and preserve lineage/evidence.
 
 ### Reads ▤ dokumentera output
 

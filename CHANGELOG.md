@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [2.2.1] · 2026-05-08
+
+### Fixed
+
+- Completed plan state now distinguishes successfully complete plans from blocked or incomplete plans, so `agentera hej` no longer surfaces stale completed-plan context as active work.
+- Full `.agentera/plan.yaml` writes now fail validation when full plans skip adversarial review evidence, design, task acceptance criteria, or non-zero critic findings.
+- Bare user messages exactly matching `hej` now route through the Agentera brief path instead of generic greeting behavior.
+- Agentera/hej handoff guidance now avoids initial native question menus unless bounded choices are requested, and counts only meaningful non-terminal actions for mid-conversation question-tool prompts.
+
+### Verified
+
+- Focused 2.2.1 evidence is recorded without publication, tag, push, package update, or installed-bundle refresh: completed-plan lifecycle, full-plan validation, exact-`hej` routing, handoff gating, semantic fixtures, and version metadata checks pass in the local checkout.
+- Final 2.2.1 verification passed in the local checkout: full pytest reported 806 passed, all 12 Agentera capabilities validated, the capability schema contract self-validated, changed Python entry points compiled, and no vision/objective diff or `v2.2.1` tag was present. Live install proof was not run, so no four-runtime live install confidence is claimed.
+
 ## [2.2.0] · 2026-05-07
 
 ### Changed

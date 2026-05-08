@@ -138,3 +138,17 @@ def test_orkestrera_prose_contains_orchestration_loop_workflow():
         "Cross-capability integration",
     ]:
         assert required in content, f"prose.md must contain section '{required}'"
+
+
+def test_orkestrera_prose_closes_only_successfully_completed_plans():
+    content = (ORK_CAP_DIR / "prose.md").read_text()
+
+    for required in [
+        "header.status: complete",
+        "all tasks complete",
+        "blocked or incomplete tasks remain",
+        "do not archive it as a successful completed plan",
+        "archive PLAN.md before removing active state",
+        "agentera hej",
+    ]:
+        assert required in content

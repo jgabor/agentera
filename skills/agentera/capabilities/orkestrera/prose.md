@@ -57,18 +57,20 @@ The conductor follows a deterministic state machine. It does not reason creative
 Check for PLAN.md (respecting path resolution).
 
 - **No PLAN.md**: bootstrap mode. Dispatch inspirera for vision-gap analysis, then planera for plan creation. If VISION.md is also absent, suggest ⛥ visionera first and wait for user confirmation.
-- **PLAN.md exists, all tasks complete**: new plan cycle. Run the staleness check (see below), then dispatch inspektera for a health check. If clean, chain inspirera then planera for the next plan. Include both staleness findings and any health issues as context for the next plan.
+- **PLAN.md exists, `header.status: complete`, and all tasks complete**: completed-plan closure. Run the plan-completion sweep and staleness check, archive PLAN.md before removing active state, then dispatch inspektera for a health check. If clean, chain inspirera then planera for the next plan. Include lineage, staleness findings, and any health issues as context for the next plan.
+- **PLAN.md exists, but blocked or incomplete tasks remain**: do not archive it as a successful completed plan. Route to the conductor loop or replanning so incomplete evidence stays visible.
 - **PLAN.md exists, tasks pending**: proceed to the conductor loop.
 
 #### Staleness check (plan completion)
 
-When all tasks are complete, check whether dispatched capabilities updated their expected artifacts. This runs before the inspektera health check.
+When `header.status: complete` and all tasks are complete, check whether dispatched capabilities updated their expected artifacts. This runs before the inspektera health check and before active PLAN.md is removed.
 
 1. **Identify dispatched capabilities**: review which capabilities were dispatched during this plan by reading PLAN.md task history and PROGRESS.md cycle entries.
 2. **Look up expected artifacts**: for each dispatched capability, consult the capability-to-expected-artifact mapping in contract (staleness detection section). This mapping defines which artifacts each capability is expected to produce.
 3. **Compare modification dates**: for each expected artifact, check its last modification date (`git log -1 --format=%aI -- <path>`). Compare against the plan's `Created` date from PLAN.md's HTML comment metadata.
 4. **Flag stale artifacts**: an artifact is stale if it was not modified since the plan's creation date and the capability expected to update it was dispatched at least once during the plan. Skip artifacts owned by capabilities that were never dispatched (those are legitimately untouched).
 5. **Surface findings**: include any stale artifact findings as context for the next plan cycle (passed to inspirera/planera). These are informational, not errors. A plan that only dispatched realisera does not expect DESIGN.md updates.
+6. **Archive before removal**: archive PLAN.md to `.agentera/archive/PLAN-{date}-{slug}.yaml`, preserve lineage/evidence, then remove the active `.agentera/plan.yaml` so `agentera hej` no longer reports stale complete-plan context.
 
 Narration voice (riff, don't script):
 
@@ -230,7 +232,8 @@ Artifact writing follows contract artifact writing conventions: banned verbosity
 Check the plan state:
 
 - **More pending tasks with satisfied dependencies?** Return to Step 1.
-- **All tasks complete (or complete + blocked)?** Return to Step 0 (new plan cycle).
+- **All tasks complete?** Return to Step 0 for completed-plan closure.
+- **Complete + blocked or incomplete tasks?** Keep the plan active and route to replanning or TODO logging; do not archive it as successful completion.
 - **Context approaching budget limit?** Stop the session, report current progress.
 - **User interrupt?** Stop the session, report current progress.
 

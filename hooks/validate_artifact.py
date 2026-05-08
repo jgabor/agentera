@@ -203,10 +203,11 @@ def _validate_field(
     field: str,
     path: str,
 ) -> None:
+    full_path = f"{path}.{field}" if path else field
     if field not in scope:
-        violations.append(f"{name}: missing required field '{path}.{field}'")
+        violations.append(f"{name}: missing required field '{full_path}'")
     elif _is_empty_required(scope[field]):
-        violations.append(f"{name}: empty required field '{path}.{field}'")
+        violations.append(f"{name}: empty required field '{full_path}'")
 
 
 def _allowed_values(entry: dict) -> list[str]:
@@ -325,6 +326,45 @@ def _validate_plan_known_fields(data: dict, schema: dict, violations: list[str])
                 _schema_field_names(schema, group),
                 key,
             )
+
+
+def _validate_full_plan_contract(data: dict, violations: list[str]) -> None:
+    header = data.get("header") if isinstance(data.get("header"), dict) else {}
+    if str(header.get("level", "")).lower() != "full":
+        return
+
+    for field in ("reviewed", "critic_issues"):
+        _validate_field(violations, "plan", header, field, "header")
+    _validate_field(violations, "plan", data, "design", "")
+
+    critic_issues = header.get("critic_issues")
+    if not _is_empty_required(critic_issues):
+        match = re.fullmatch(
+            r"\s*(\d+)\s+found,\s*(\d+)\s+addressed,\s*(\d+)\s+dismissed\s*",
+            str(critic_issues),
+        )
+        if not match:
+            violations.append(
+                "plan: header.critic_issues must match "
+                "'N found, M addressed, K dismissed'"
+            )
+        else:
+            found, addressed, dismissed = (int(value) for value in match.groups())
+            if found < 1:
+                violations.append("plan: header.critic_issues must record at least 1 found issue")
+            if addressed + dismissed != found:
+                violations.append(
+                    "plan: header.critic_issues counts must satisfy "
+                    "addressed + dismissed == found"
+                )
+
+    tasks = data.get("tasks")
+    if not isinstance(tasks, list):
+        return
+    for index, task in enumerate(tasks):
+        if not isinstance(task, dict):
+            continue
+        _validate_field(violations, "plan", task, "acceptance", f"tasks[{index}]")
 
 
 def _entry_min_count(schema: dict, group: str) -> int | None:
@@ -483,6 +523,7 @@ def _validate_yaml(content: str, schema: dict, name: str) -> list[str]:
         _validate_singleton_group(violations, name, schema, group, scope, group_lower)
     if name == "plan":
         _validate_plan_known_fields(data, schema, violations)
+        _validate_full_plan_contract(data, violations)
     _validate_sequences(data, schema, name, violations)
     if name == "decisions":
         violations.extend(_validate_decision_alternatives(data, name))

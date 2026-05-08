@@ -308,12 +308,14 @@ VALIDATION:
   3:
     id: PV3
     rule: full_level_requirements
-    severity: warning
+    severity: error
     description: >-
-      Full-level plans should have: design, reviewed, critic_issues,
-      and acceptance criteria on each task.
+      Full-level plans must have: design, reviewed, parseable non-zero
+      critic_issues, and acceptance criteria on each task.
     checks:
       - "design is present for full-level plans"
+      - "reviewed is present for full-level plans"
+      - "critic_issues is present and records at least one found issue for full-level plans"
       - "each task has acceptance criteria for full-level plans"
   4:
     id: PV4

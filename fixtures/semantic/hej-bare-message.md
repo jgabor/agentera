@@ -1,8 +1,8 @@
-# Semantic Fixture: hej-cli-budget
+# Semantic Fixture: hej-bare-message
 
 ## Prompt
 
-Run /agentera for this project and route to the most useful next action.
+hej
 
 ## Seeded Project State
 
@@ -11,11 +11,7 @@ Run /agentera for this project and route to the most useful next action.
   "files": [
     {
       "path": ".agentera/plan.yaml",
-      "content": "header:\n  status: active\n  title: Flat Agentera State CLI\ntasks:\n  - number: 5\n    name: Add Tool-Budget And Regression Tests\n    status: pending\n"
-    },
-    {
-      "path": ".agentera/progress.yaml",
-      "content": "cycles:\n  - number: 270\n    phase: build\n    next: Implement Task 5\n"
+      "content": "header:\n  status: active\n  title: Bare Hej Routing\ntasks:\n  - number: 2\n    name: Verify bare hej path\n    status: pending\n"
     }
   ]
 }
@@ -28,23 +24,23 @@ Run /agentera for this project and route to the most useful next action.
 ├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
 ┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
 
-The active plan is moving; Task 5 is the next concrete checkpoint.
+The active plan has one concrete next step: verify the bare hej path.
 
 ─── status ─────────────────────────────
 
-  ≡ plan      [██████▓▓░░] 4/6 tasks
+  ≡ plan      [░░░░░░░░░░] 0/1 tasks
 
 ─── attention ──────────────────────────
 
-  → PLAN Task 5: Add Tool-Budget And Regression Tests
+  → PLAN Task 2: Verify bare hej path
 
 ─── next ───────────────────────────────
 
-  suggested → ⎈ orkestrera (PLAN Task 5)
+  suggested → ⎈ orkestrera (PLAN Task 2)
 ```
 
 ⌂ hej · waiting
-Task 5 is ready to run from the active plan.
+Briefed the project from `agentera hej`; continue with the suggested plan task when ready.
 
 ## Tool Trace
 
@@ -63,16 +59,19 @@ Task 5 is ready to run from the active plan.
   "required_output": [
     "┌─┐┌─┐┌─┐",
     "─── status ─────────────────────────────",
-    "≡ plan      [██████▓▓░░] 4/6 tasks",
-    "→ PLAN Task 5: Add Tool-Budget And Regression Tests",
-    "suggested → ⎈ orkestrera (PLAN Task 5)",
+    "→ PLAN Task 2: Verify bare hej path",
+    "suggested → ⎈ orkestrera (PLAN Task 2)",
     "⌂ hej · waiting"
   ],
   "forbidden_output": [
+    "Hello",
+    "Hi there",
+    "How can I help",
     "agentera hej\nmode:",
     "next_action:",
     "source_contract:",
-    "object=PLAN Task 5"
+    "object=PLAN Task 2",
+    "question menu"
   ],
   "required_tool_calls": [
     "agentera hej"
@@ -87,10 +86,7 @@ Task 5 is ready to run from the active plan.
     "agentera todo",
     "agentera decisions",
     "agentera objective",
-    "agentera experiments",
-    ".agentera/plan.yaml",
-    ".agentera/progress.yaml",
-    ".agentera/health.yaml"
+    "question"
   ],
   "artifact_expectations": {"writes": "none"}
 }
