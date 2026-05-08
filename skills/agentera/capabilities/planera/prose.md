@@ -53,7 +53,7 @@ Assess work complexity. Read the description (user, DECISIONS.md, or TODO.md). S
 | One module affected, clear scope, fits one realisera cycle | **Light** |
 | Multiple modules, multi-file changes, 3+ logical steps, new feature spanning architecture | **Full** |
 
-**Skip**: This doesn't need a plan. Route to `/realisera`. Stop here.
+**Skip**: This doesn't need a plan. Route to ⧉ realisera. Stop here.
 
 **Light or Full**: Proceed to planning.
 
@@ -210,8 +210,8 @@ surprises: []
 
 ## Step 6: Handoff
 
-- **Single task**: suggest `/realisera` to execute.
-- **Full plan**: suggest `/orkestrera` to execute the entire plan.
+- **Single task**: suggest ⧉ realisera to execute.
+- **Full plan**: suggest ⎈ orkestrera to execute the entire plan.
 
 ---
 
@@ -269,39 +269,39 @@ For flagged, stuck, and waiting: add `▸` (VT15) bullet details.
 
 Planera is the bridge between deliberation and execution.
 
-### Fed by /resonera
+### Fed by ❈ resonera
 
-When resonera's deliberation concludes with a decision to build, the next step is `/planera`. DECISIONS.md provides the "why" context.
+When resonera's deliberation concludes with a decision to build, the next step is ≡ planera. DECISIONS.md provides the "why" context.
 
-### Feeds /realisera
+### Feeds ⧉ realisera
 
 PLAN.md tasks become realisera's work queue. Task acceptance criteria become cycle exit conditions. Realisera updates status and logs surprises.
 
-### Feeds /optimera
+### Feeds ⎘ optimera
 
 When a plan includes optimization-shaped tasks, those tasks can be delegated to optimera.
 
-### Informed by /inspektera
+### Informed by ⛶ inspektera
 
 HEALTH.md findings can trigger remediation plans. Inspektera reveals structural issues; planera produces a plan to address them.
 
-### Informed by /profilera
+### Informed by ♾ profilera
 
 Decision profile calibrates planning depth and pattern preferences.
 
-### Informed by /inspirera
+### Informed by ⬚ inspirera
 
 When inspirera recommends patterns or libraries, planera incorporates them into the plan's design section.
 
-### Reads /visionera output
+### Reads ⛥ visionera output
 
 VISION.md provides the north star that planera reads during Orient.
 
-### Fed by /dokumentera (docs-first workflow)
+### Fed by ▤ dokumentera (docs-first workflow)
 
 In the docs-first workflow, dokumentera writes intent docs first, then planera decomposes them into tasks.
 
-### Reads /dokumentera versioning conventions
+### Reads ▤ dokumentera versioning conventions
 
 Planera reads the `versioning` block from DOCS.md. When the plan includes `feat`/`fix` work, planera appends a version bump task.
 
@@ -311,24 +311,24 @@ Planera reads the `versioning` block from DOCS.md. When the plan includes `feat`
 
 ### Planning a new feature
 
-1. `/resonera`: deliberate on what to build and why
-2. `/planera`: plan how to build it
-3. `/realisera` or `/orkestrera`: execute
+1. ❈ resonera: deliberate on what to build and why
+2. ≡ planera: plan how to build it
+3. ⧉ realisera or ⎈ orkestrera: execute
 
 ### Planning a remediation
 
-1. `/inspektera`: audit codebase health
-2. `/planera`: plan fixes
-3. `/realisera`: execute
+1. ⛶ inspektera: audit codebase health
+2. ≡ planera: plan fixes
+3. ⧉ realisera: execute
 
 ### Mid-feature replanning
 
 If realisera logs multiple surprises in PLAN.md:
 
 1. Read the surprises section
-2. `/planera`: reassess tasks
-3. Resume `/realisera`
+2. ≡ planera: reassess tasks
+3. Resume ⧉ realisera
 
 ### Skipping the plan
 
-For trivial work, planera detects skip level and routes to `/realisera` directly.
+For trivial work, planera detects skip level and routes to ⧉ realisera directly.

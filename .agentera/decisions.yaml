@@ -1,55 +1,4 @@
 decisions:
-- number: 35
-  date: '2026-04-29'
-  question: Should the three §24 self-audit checks be extracted from duplicated SKILL.md prose into a shared Python module?
-  context: SPEC.md §24 defines three pre-write checks duplicated as identical 13-line blocks across 8 SKILL.md files, enforced
-    only by Claude's behavioral compliance. Inspirera analysis of open-bias identified evaluation/enforcement separation as
-    the highest-ROI transferable concept. Profile entries "Use Hooks As Enforcement" (conf:82) and "Reject Bloated Operational
-    Artifacts" (conf:77) favor programmatic enforcement over prose-only instructions.
-  alternatives:
-  - name: Build shared self_audit.py module
-    status: chosen
-    description: one implementation consumed by PostToolUse hook (hard gate), all 8 producing skills (replacing prose), and
-      inspektera prose health dimension.
-  - name: Keep prose-only
-    status: rejected
-    description: duplicated logic, no programmatic enforcement, inspektera re-implements independently.
-  - name: Hook-only
-    status: rejected
-    description: skills lose quality ownership; inspektera still needs separate implementation.
-  choice: Build `scripts/self_audit.py` implementing the three §24 checks as importable functions. Wire into `validate_artifact.py`
-    for automatic enforcement. Replace 8 duplicated prose blocks with module calls. Inspektera uses the same module.
-  reasoning: 'Three consumers, one implementation — the code-level follow-through on Decision 34''s self-audit protocol. Mirrors
-    open-bias evaluation/enforcement separation: module evaluates, hook enforces, skills retain ownership.'
-  confidence: firm
-  feeds_into: TODO.md
-- number: 36
-  date: '2026-04-29'
-  question: Should generate_contracts.py produce structured JSON validation schemas alongside prose contracts?
-  context: SPEC.md §2, §4, and §5 define validation constants (required headings, token budgets, severity mappings, artifact
-    paths) that validate_artifact.py duplicates as hardcoded Python dicts. SPEC.md changes require manual sync. The inspirera
-    analysis identified the open-bias RULES.md → compiler → runtime-config pattern as transferable. Decision 35 covers §24
-    self-audit checks; this addresses the §2/§4/§5 structural contract surface.
-  alternatives:
-  - name: Parse SPEC.md tables into JSON, narrow v1 scope
-    status: chosen
-    description: targeted regex extraction from existing Markdown tables — no spec format changes. v1 covers artifact headings,
-      token budgets, severity mappings, artifact paths. validate_artifact.py replaces hardcoded dicts with the generated JSON.
-      Broader protocol surface (compaction, confidence, visual tokens) in follow-on.
-  - name: Embedded metadata blocks in SPEC.md
-    status: rejected
-    description: dual-format maintenance without sufficient v1 benefit.
-  - name: Defer
-    status: rejected
-    description: internal consumers have low pain today, but the spec-as-protocol north star requires machine-readable output
-      before external consumers arrive.
-  choice: 'Add a --schema flag to generate_contracts.py outputting structured JSON (default: scripts/schemas/contracts.json)
-    by parsing SPEC.md tables. Ship v1 with the validate_artifact.py replacement. Extend to full protocol surface in follow-on
-    cycles.'
-  reasoning: The compiler already walks SPEC.md sections — extending it to extract structured data from known tables is additive,
-    not architectural. The hook replacement proves the schema works and eliminates the manual sync burden.
-  confidence: firm
-  feeds_into: TODO.md
 - number: 37
   date: '2026-04-29'
   question: Should hooks/validate_artifact.py add an explicit fail-open contract to prevent crashes from blocking agent writes?
@@ -227,7 +176,7 @@ decisions:
     status: rejected
     description: require users to name capabilities directly. Reliable but loses the "always type `/agentera`" simplicity.
   - name: Layered guardrails with deterministic heuristics
-    status: rejected
+    status: chosen
     description: combine deterministic state checks, explicit names, confidence thresholds, disambiguation, and fallback.
       Chosen.
   choice: "Five-layer dispatch model, heuristics hardcoded in `SKILL.md`:\n  1. **Bare `/agentera`** → deterministic heuristic\
@@ -343,7 +292,43 @@ decisions:
     Agentera's own install/runtime/CLI health, while artifact health remains `agentera health`.
   confidence: firm
   feeds_into: PLAN.md, scripts/agentera, README.md, docs/vocabulary.md, tests
+- number: 46
+  date: '2026-05-08'
+  question: How should Agentera handle capability handoff wording and confirmation guidance for pending 2.2.0?
+  context: >-
+    `docs/notes.md` identified three related release-polish gaps: capability handoffs still teach standalone slash-capability
+    labels such as `/realisera`, next capability recommendations are inconsistent, and bounded choices do not consistently use
+    runtime-native question tools. Decisions 43 and 45 already separate `/agentera <alias>` routes from CLI state commands, so
+    handoff prose should stop making agents remember runtime-specific slash conventions. The user selected the handoff polish
+    option for v2.2.0 and explicitly required recording this decision before implementation continues.
+  alternatives:
+  - name: Handoff polish for v2.2.0
+    status: chosen
+    description: >-
+      Normalize handoffs to glyph plus canonical capability name, reserve `/agentera <alias>` for explicit route docs, use
+      runtime-native question tools for bounded choices, and add regression coverage.
+  - name: Completed-plan lifecycle cleanup
+    status: rejected
+    description: Relevant, but broader lifecycle behavior that should be planned separately from release polish.
+  - name: CLI write support
+    status: rejected
+    description: Valuable, but too large for the current 2.2.0 release window and likely deserves its own design.
+  - name: Record follow-ups only
+    status: rejected
+    description: Leaves a small but visible v2.2.0 UX inconsistency unresolved after Decisions 43-45 tightened the route surface.
+  choice: >-
+    Include a narrow handoff-polish item in pending 2.2.0: capability prose should recommend downstream capabilities as glyph
+    plus canonical name labels such as `⧉ realisera`, reserve `/agentera <alias>` for explicit slash-route documentation, use
+    the runtime's native question tool for clear bounded choices, put the recommended option first, include `Done`, and ask for
+    confirmation before invoking a downstream capability.
+  reasoning: >-
+    This compounds Decisions 43-45 without changing command semantics. It removes a runtime-convention burden from agents,
+    makes handoffs more consistent, and keeps the release scope smaller than lifecycle archival or YAML write support.
+  confidence: firm
+  feeds_into: SKILL.md, capability prose, tests, CHANGELOG.md, docs/vocabulary.md
 archive:
+- 'Decision 36 (2026-04-29): [Generate contracts JSON schema] — SPEC table parser outputs structured validation JSON.'
+- 'Decision 35 (2026-04-29): [Build shared self_audit.py module] — Shared module plus hook enforce self-audit checks.'
 - 'Decision 34 (2026-04-29): [Self-audit protocol] — Producing skills run prose checks before artifact writes.'
 - 'Decision 31 (2026-04-12): [Named per-objective subdirs] — Self-contained optimera objectives live under `.agentera/optimera/`.'
 - 'Decision 32 (2026-04-26): [`scripts/usage_stats.py`] — Usage analytics count completed workflows from session corpus markers.'

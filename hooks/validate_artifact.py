@@ -148,7 +148,15 @@ _SEQUENCE_ORDER_BY_ARTIFACT = {
 
 def _collect_required(schema: dict) -> list[tuple[str, list[str]]]:
     """Return [(group_lower, [required_field_names])] for singleton groups."""
-    result: list[tuple[str, list[str]]] = []
+    return [
+        (group_lower, fields)
+        for _, group_lower, fields in _collect_singleton_groups(schema)
+    ]
+
+
+def _collect_singleton_groups(schema: dict) -> list[tuple[str, str, list[str]]]:
+    """Return [(GROUP, group_lower, [required_field_names])] for singleton groups."""
+    result: list[tuple[str, str, list[str]]] = []
     for gk, gv in schema.items():
         if gk in _SKIP_META or not isinstance(gv, dict):
             continue
@@ -165,7 +173,7 @@ def _collect_required(schema: dict) -> list[tuple[str, list[str]]]:
             if isinstance(e, dict) and e.get("required") and "field" in e:
                 fields.append(e["field"])
         if fields:
-            result.append((gk.lower(), fields))
+            result.append((gk, gk.lower(), fields))
     return result
 
 
@@ -256,6 +264,67 @@ def _validate_required_fields(
                         child["field"],
                         f"{path}.{field}",
                     )
+
+
+def _validate_singleton_group(
+    violations: list[str],
+    name: str,
+    schema: dict,
+    group: str,
+    scope: dict,
+    path: str,
+) -> None:
+    for entry in _iter_group_entries(schema, group):
+        field = entry.get("field")
+        if entry.get("parent") or field == "entry":
+            continue
+        if entry.get("required"):
+            _validate_field(violations, name, scope, field, path)
+        _validate_allowed_value(violations, name, scope, entry, path)
+
+
+def _schema_field_names(schema: dict, group: str) -> set[str]:
+    return {
+        entry["field"]
+        for entry in _iter_group_entries(schema, group)
+        if entry.get("field")
+        and not entry.get("parent")
+        and entry.get("field") != "entry"
+    }
+
+
+def _validate_unknown_fields(
+    violations: list[str],
+    name: str,
+    scope: dict,
+    allowed: set[str],
+    path: str,
+) -> None:
+    for field in scope:
+        if field not in allowed:
+            full_path = f"{path}.{field}" if path else field
+            violations.append(f"{name}: unsupported field '{full_path}'")
+
+
+def _validate_plan_known_fields(data: dict, schema: dict, violations: list[str]) -> None:
+    grouped_scopes = {"header": "HEADER", "scope": "SCOPE"}
+    sequence_keys = set(_SEQUENCE_KEYS_BY_ARTIFACT.get("plan", {}).values())
+    allowed_top_level = (
+        _schema_field_names(schema, "PLAN")
+        | set(grouped_scopes)
+        | sequence_keys
+    )
+    _validate_unknown_fields(violations, "plan", data, allowed_top_level, "")
+    for key, group in grouped_scopes.items():
+        scope = data.get(key)
+        if isinstance(scope, dict):
+            _validate_unknown_fields(
+                violations,
+                "plan",
+                scope,
+                _schema_field_names(schema, group),
+                key,
+            )
 
 
 def _entry_min_count(schema: dict, group: str) -> int | None:
@@ -404,15 +473,16 @@ def _validate_yaml(content: str, schema: dict, name: str) -> list[str]:
         return [f"{name}: invalid YAML: {exc}"]
     if not isinstance(data, dict):
         return [f"{name}: root must be a mapping"]
-    for group_lower, fields in _collect_required(schema):
+    for group, group_lower, fields in _collect_singleton_groups(schema):
         if group_lower in data and isinstance(data[group_lower], dict):
             scope = data[group_lower]
         elif any(f in data for f in fields):
             scope = data
         else:
             continue
-        for field in fields:
-            _validate_field(violations, name, scope, field, group_lower)
+        _validate_singleton_group(violations, name, schema, group, scope, group_lower)
+    if name == "plan":
+        _validate_plan_known_fields(data, schema, violations)
     _validate_sequences(data, schema, name, violations)
     if name == "decisions":
         violations.extend(_validate_decision_alternatives(data, name))

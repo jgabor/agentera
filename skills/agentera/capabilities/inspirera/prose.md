@@ -236,7 +236,7 @@ If a decision profile exists at `$PROFILERA_PROFILE_DIR/PROFILE.md`, read it dir
 
 ### Feeding into visionera
 
-When the analysis shifts thinking about the project's direction (a new paradigm, a competitor's approach, or a user need not yet captured), the findings can inform vision refinement. Suggest `/visionera` to revisit VISION.md with the new context.
+When the analysis shifts thinking about the project's direction (a new paradigm, a competitor's approach, or a user need not yet captured), the findings can inform vision refinement. Suggest ⛥ visionera to revisit VISION.md with the new context.
 
 ### Feeding into planera
 
@@ -244,7 +244,7 @@ When the analysis recommends adopting patterns or libraries, planera can incorpo
 
 ### Feeding into resonera
 
-When the analysis surfaces recommendations that require deliberation (competing approaches, unclear adoption cost, or tradeoffs the user needs to resolve), suggest `/resonera` to think it through before acting. Resonera can evaluate which recommendations are actually worth adopting and capture the reasoning in DECISIONS.md.
+When the analysis surfaces recommendations that require deliberation (competing approaches, unclear adoption cost, or tradeoffs the user needs to resolve), suggest ❈ resonera to think it through before acting. Resonera can evaluate which recommendations are actually worth adopting and capture the reasoning in DECISIONS.md.
 
 ---
 
@@ -253,7 +253,7 @@ When the analysis surfaces recommendations that require deliberation (competing 
 ### Analyze a GitHub repo
 
 ```
-/inspirera https://github.com/org/repo
+/agentera research https://github.com/org/repo
 ```
 
 Reads the repo, maps its patterns to your current project.
@@ -261,14 +261,14 @@ Reads the repo, maps its patterns to your current project.
 ### Analyze an article or docs page
 
 ```
-/inspirera https://example.com/blog/interesting-approach
+/agentera research https://example.com/blog/interesting-approach
 ```
 
 Extracts transferable concepts and assesses applicability.
 
 ### Feed findings into the development loop
 
-After analysis, file actionable findings to TODO.md for `/realisera` to pick up, or refine VISION.md if the research shifts your project's direction.
+After analysis, file actionable findings to TODO.md for ⧉ realisera to pick up, or refine VISION.md if the research shifts your project's direction.
 
 ---
 

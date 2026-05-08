@@ -214,9 +214,9 @@ Validate the written file against the `DESIGN.md` structure described in this ca
 ### Step 7: Next steps
 
 ▸ **Set up enforcement**: propose project-local checks for tokens, component usage, and visual mismatches; no separate bundled enforcement reference ships in v2
-▸ **Build to the spec**: run `/realisera` to implement UI that respects the design tokens
-▸ **Document it**: run `/dokumentera` to add the design system to project documentation
-▸ **Refine later**: run `/visualisera` again to evolve the design as the project matures
+▸ **Build to the spec**: use ⧉ realisera to implement UI that respects the design tokens
+▸ **Document it**: use ▤ dokumentera to add the design system to project documentation
+▸ **Refine later**: use ◰ visualisera again to evolve the design as the project matures
 
 ---
 
@@ -361,7 +361,7 @@ When inspirera analyzes external design systems or visual patterns, the findings
 
 ### Visualisera is informed by resonera
 
-When design decisions require deliberation, suggest `/resonera` before committing. Use it for competing aesthetics, brand evolution, or significant visual pivots.
+When design decisions require deliberation, suggest ❈ resonera before committing. Use it for competing aesthetics, brand evolution, or significant visual pivots.
 
 ---
 
@@ -369,13 +369,13 @@ When design decisions require deliberation, suggest `/resonera` before committin
 
 ### New project: design before building
 
-1. `/visionera`: create VISION.md with Identity section (who the project IS)
-2. `/visualisera`: create DESIGN.md (how it LOOKS), coherent with the Identity
-3. `/realisera`: build UI to the design spec
+1. ⛥ visionera: create VISION.md with Identity section (who the project IS)
+2. ◰ visualisera: create DESIGN.md (how it LOOKS), coherent with the Identity
+3. ⧉ realisera: build UI to the design spec
 
 ### Existing project: capture the visual identity
 
-1. `/visualisera`: reads existing styles, proposes tokens from what's already there
+1. ◰ visualisera: reads existing styles, proposes tokens from what's already there
 2. Review and refine the generated DESIGN.md
 3. Set up enforcement from project-local checks
 
@@ -383,7 +383,7 @@ When design decisions require deliberation, suggest `/resonera` before committin
 
 ```
 
-/visualisera
+/agentera design
 
 ```
 
@@ -393,7 +393,7 @@ Select "Audit" mode. Validates structure and scans code for mismatches.
 
 ```
 
-/visualisera
+/agentera design
 
 ```
 

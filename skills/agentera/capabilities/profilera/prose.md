@@ -189,7 +189,7 @@ When presenting the profile, frame it as a colleague reflecting on what they've 
 <!-- Sources: {N} memory files, {N} history prompts, {N} conversation exchanges, {N} configs -->
 <!-- Decay parameters: stable λ=0.001, durable λ=0.005, situational λ=0.015 -->
 <!-- Formula: effective_conf = conf × e^(-λ × days_since_confirmed), floor 20 -->
-<!-- Regenerate with /profilera -->
+<!-- Regenerate with /agentera profile -->
 
 ## How to Use This Profile
 
@@ -365,7 +365,7 @@ All consuming capabilities read `$PROFILERA_PROFILE_DIR/PROFILE.md` directly whe
 ### First profile generation
 
 ```
-/profilera
+/agentera profile
 ```
 
 Full extraction across all sources. Produces `$PROFILERA_PROFILE_DIR/PROFILE.md`.
@@ -373,7 +373,7 @@ Full extraction across all sources. Produces `$PROFILERA_PROFILE_DIR/PROFILE.md`
 ### Regular validation
 
 ```
-/profilera validate
+/agentera profile validate
 ```
 
 Quick confidence refresh without full regeneration. Run weekly or per-session.

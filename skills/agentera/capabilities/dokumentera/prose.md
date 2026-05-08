@@ -179,7 +179,7 @@ Artifact writing follows contract Section 24 (Artifact Writing Conventions): ban
 
 ### Step 5: Suggest next steps
 
-- Feature docs: suggest `/planera` to plan implementation
+- Feature docs: suggest ≡ planera to plan implementation
 - Standalone docs: suggest update mode later for verification
 
 ---
@@ -357,24 +357,24 @@ Documentation decisions (what to document, how, at what depth) are signal for pr
 
 ### Docs-first workflow: document before building
 
-1. `/dokumentera`: write intent docs for the feature (what it should do, how it should work)
-2. `/planera`: plan the implementation with acceptance criteria derived from the docs
-3. `/realisera`: build to match the docs
-4. `/dokumentera`: update mode to verify docs still match implementation
+1. ▤ dokumentera: write intent docs for the feature (what it should do, how it should work)
+2. ≡ planera: plan the implementation with acceptance criteria derived from the docs
+3. ⧉ realisera: build to match the docs
+4. ▤ dokumentera: update mode to verify docs still match implementation
 
 ### Document existing code
 
-1. `/dokumentera`: explore-and-generate mode reads the codebase and writes docs for what exists
+1. ▤ dokumentera: explore-and-generate mode reads the codebase and writes docs for what exists
 2. Review generated docs for accuracy and completeness
 
 ### Audit and maintain
 
-1. `/dokumentera`: update-and-verify mode checks all docs against code
+1. ▤ dokumentera: update-and-verify mode checks all docs against code
 2. Fix findings or file code issues to TODO.md
 
 ### Project bootstrap
 
-1. `/visionera`: create VISION.md (strategic direction)
-2. `/dokumentera`: create README.md, CLAUDE.md, AGENTS.md (project documentation)
-3. `/planera`: plan first features
-4. `/realisera`: start building
+1. ⛥ visionera: create VISION.md (strategic direction)
+2. ▤ dokumentera: create README.md, CLAUDE.md, AGENTS.md (project documentation)
+3. ≡ planera: plan first features
+4. ⧉ realisera: start building

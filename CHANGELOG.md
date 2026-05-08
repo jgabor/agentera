@@ -19,6 +19,7 @@
 - Routine structured state commands now support sparse `--fields FIELD[,FIELD...]` selection over the documented structured output contract, retaining `command` and `status` context and rejecting unsupported fields without partial output.
 - `agentera describe --format json|yaml` now exposes runtime CLI introspection for commands, filters, formats, structured fields, Decision 43 slash-route aliases, artifact schemas, and doctor self-check categories while reporting missing discovery facts as explicit gaps.
 - Agent-facing CLI inputs now reject unsafe artifact/query names, sparse field names, control-character filters, traversal/URI path values, unsafe docs.yaml artifact path overrides, and unsafe doctor/upgrade roots before reading or writing.
+- Capability handoff guidance now uses glyph plus canonical capability labels, reserves `/agentera <alias>` for explicit route documentation, and defines runtime question-tool confirmation semantics for bounded next-step choices.
 
 ### Added
 
@@ -35,6 +36,7 @@
 
 ### Fixed
 
+- Artifact validation now rejects unsupported plan top-level, header, and scope fields, applies enum checks to singleton artifact groups, and aligns plan lifecycle schema status with the shipped `complete` value.
 - `agentera health` now reads the newest health audit consistently with `agentera hej`, with a newest-first regression covering Audit 20 before Audit 10.
 - Bare `/agentera` dispatcher guidance now exposes the README-style Hej dashboard contract at the entry boundary, forbids raw source-field briefings, and keeps `agentera hej` as compact caller-owned source data.
 - Progress cycle phases now stay within the protocol enum: recent verification-lane cycles and fixtures use `phase: build`, and artifact validation rejects invalid enum values such as `verify`.

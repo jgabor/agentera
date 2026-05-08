@@ -1,4 +1,4 @@
-last_audit: 2026-05-08 (Decision 45 Task 8 final pre-closure state sync)
+last_audit: 2026-05-08 (Decision 46 handoff polish state sync)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -268,11 +268,15 @@ index:
   status: current
 - document: Agentera skill dispatcher
   path: skills/agentera/SKILL.md
-  last_updated: '2026-05-07'
+  last_updated: '2026-05-08'
   status: current
 - document: Agentera protocol
   path: skills/agentera/protocol.yaml
   last_updated: '2026-05-06'
+  status: current
+- document: Plan artifact schema
+  path: skills/agentera/schemas/artifacts/plan.yaml
+  last_updated: '2026-05-08'
   status: current
 - document: OpenCode bootstrap smoke runner
   path: scripts/smoke_opencode_bootstrap.mjs
@@ -292,7 +296,7 @@ index:
   status: current
 - document: Validation hook
   path: hooks/validate_artifact.py
-  last_updated: '2026-05-05'
+  last_updated: '2026-05-08'
   status: current
 - document: Shared hook utils
   path: hooks/common.py
@@ -300,7 +304,7 @@ index:
   status: current
 - document: Test suite
   path: tests/
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-08'
   status: current
 - document: RuntimeAdapter registry tests
   path: tests/test_runtime_adapter_registry.py
@@ -338,8 +342,38 @@ coverage:
   documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: Decision 45 Task 8 final pre-closure state sync records TODO, changelog, progress, docs metadata, and plan state after Tasks 1-7 passed. Focused validation confirms only unrelated TODO follow-ups remain open, the plan stays active with Task 8 pending for conductor closure, docs/changelog summarize the doctor hard rename without publication claims, and vision/objective state has no diff.
+  tests: Decision 46 handoff polish is covered for pending 2.2.0. `tests/test_skill_dispatch_contract.py` rejects standalone slash-capability handoff labels in capability prose and checks dispatcher/vocabulary handoff contracts; routing, vocabulary, artifact, CLI, and capability validation remain green.
 audit_log:
+- date: '2026-05-08'
+  label: Decision 46 handoff polish state sync
+  findings:
+  - type: checked
+    description: Agentera dispatcher and vocabulary guidance now define glyph/name handoff labels, explicit `/agentera <alias>` route documentation, runtime question-tool examples, recommended-first choices, `Done`, and confirmation semantics.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: Capability prose now avoids standalone slash-capability handoff labels; explicit current invocation examples use `/agentera <alias>` route documentation and path-like `.agentera/optimera/` references remain unchanged.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: Focused validation passed with handoff, routing, vocabulary, artifact, CLI, capability, and Python compile checks; no tag, push, publication, package update, installed-bundle refresh, vision edit, or objective edit was performed.
+    resolution: fixed
+    severity: info
+- date: '2026-05-08'
+  label: plan artifact validation release gap
+  findings:
+  - type: checked
+    description: '`hooks/validate_artifact.py` now applies allowed-value validation to singleton artifact groups and rejects unsupported plan top-level, header, and scope fields.'
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: '`skills/agentera/schemas/artifacts/plan.yaml` now uses shipped lifecycle value `complete` and documents `previous_plan_archived` as an optional plan field.'
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: Focused validation passed with `tests/test_hook_v2.py`, `tests/test_query_cli.py`, `tests/test_decision45_cli_contract.py`, current plan validation, and local describe schema inspection.
+    resolution: fixed
+    severity: info
 - date: '2026-05-08'
   label: Decision 45 Task 8 final pre-closure state sync
   findings:

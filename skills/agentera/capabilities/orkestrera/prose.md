@@ -56,7 +56,7 @@ The conductor follows a deterministic state machine. It does not reason creative
 
 Check for PLAN.md (respecting path resolution).
 
-- **No PLAN.md**: bootstrap mode. Dispatch inspirera for vision-gap analysis, then planera for plan creation. If VISION.md is also absent, suggest `/visionera` first and wait for user confirmation.
+- **No PLAN.md**: bootstrap mode. Dispatch inspirera for vision-gap analysis, then planera for plan creation. If VISION.md is also absent, suggest ⛥ visionera first and wait for user confirmation.
 - **PLAN.md exists, all tasks complete**: new plan cycle. Run the staleness check (see below), then dispatch inspektera for a health check. If clean, chain inspirera then planera for the next plan. Include both staleness findings and any health issues as context for the next plan.
 - **PLAN.md exists, tasks pending**: proceed to the conductor loop.
 
@@ -96,15 +96,15 @@ Infer which capability handles the task based on its description:
 
 | Task signals | Target capability |
 |--------------|-------------------|
-| Implementation, building, coding, feature, fix, refactor | `/realisera` |
-| Documentation, docs, README.md, CHANGELOG.md, DOCS.md | `/dokumentera` |
-| Health audit, architecture review, code quality check | `/inspektera` |
-| Research, external patterns, library evaluation | `/inspirera` |
-| Optimization, performance, metric improvement, benchmark | `/optimera` |
-| Visual identity, design tokens, DESIGN.md | `/visualisera` |
-| Version bump | `/realisera` (with bump instructions from DOCS.md) |
+| Implementation, building, coding, feature, fix, refactor | ⧉ realisera |
+| Documentation, docs, README.md, CHANGELOG.md, DOCS.md | ▤ dokumentera |
+| Health audit, architecture review, code quality check | ⛶ inspektera |
+| Research, external patterns, library evaluation | ⬚ inspirera |
+| Optimization, performance, metric improvement, benchmark | ⎘ optimera |
+| Visual identity, design tokens, DESIGN.md | ◰ visualisera |
+| Version bump | ⧉ realisera (with bump instructions from DOCS.md) |
 
-If the task does not clearly map, default to `/realisera`.
+If the task does not clearly map, default to ⧉ realisera.
 
 Spawn the target capability as a background subagent. Substrate per runtime is resolved by the host adapter, not the conductor.
 
@@ -287,7 +287,7 @@ Orkestrera uses retry-based failure detection: each task gets max 2 retries befo
 
 1. **Stop**: do not dispatch more tasks
 2. **Log**: file the pattern to TODO.md with what was attempted across the 3 tasks and what the capability believes is systematically wrong
-3. **Surface**: tell the user and recommend a course of action (e.g., "/inspektera for a full audit", "/resonera to reconsider the plan approach", "the plan may need replanning via /planera")
+3. **Surface**: tell the user and recommend a course of action (e.g., "⛶ inspektera for a full audit", "❈ resonera to reconsider the plan approach", "the plan may need replanning via ≡ planera")
 
 ---
 
@@ -308,43 +308,43 @@ The orchestration loop in Step 2 (Dispatch) is runtime-agnostic: it always spawn
 
 The conductor's prose is the same on every runtime. Step 2 (Dispatch) does not branch by runtime; the host adapter resolves the substrate. Conductor-side instructions, retry logic, and inspektera evaluation gating are unchanged.
 
-### Orkestrera dispatches /realisera
+### Orkestrera dispatches ⧉ realisera
 
 Implementation tasks are routed to realisera. Realisera runs its full cycle (orient, select, plan, dispatch, verify, commit, log) as a subagent. It writes to PROGRESS.md and CHANGELOG.md. Orkestrera receives the result via task-notification and evaluates with inspektera.
 
-### Orkestrera dispatches /inspektera
+### Orkestrera dispatches ⛶ inspektera
 
 Two roles: (1) as evaluator after each task completion, verifying acceptance criteria against the codebase, and (2) as health checker after plan completion, producing HEALTH.md grades. Inspektera is the discriminator in orkestrera's evaluate-then-proceed pattern.
 
-### Orkestrera dispatches /dokumentera
+### Orkestrera dispatches ▤ dokumentera
 
 Documentation tasks are routed to dokumentera. DOCS.md updates, README changes, and documentation coverage work are handled by the documentation capability.
 
-### Orkestrera dispatches /inspirera
+### Orkestrera dispatches ⬚ inspirera
 
 Research tasks are routed to inspirera. During bootstrap (no plan), orkestrera chains inspirera for vision-gap analysis before planera creates a plan.
 
-### Orkestrera dispatches /optimera
+### Orkestrera dispatches ⎘ optimera
 
 Optimization-shaped tasks (metric improvement, performance tuning) are routed to optimera rather than realisera.
 
-### Orkestrera dispatches /visualisera
+### Orkestrera dispatches ◰ visualisera
 
 Visual identity tasks (DESIGN.md updates, design token changes) are routed to visualisera.
 
-### Orkestrera chains /planera
+### Orkestrera chains ≡ planera
 
 When no plan exists or the current plan is complete, orkestrera invokes planera to create the next plan. Planera produces PLAN.md; orkestrera executes it.
 
-### Orkestrera reads /resonera output
+### Orkestrera reads ❈ resonera output
 
 DECISIONS.md provides firm constraints that orkestrera reads during task selection. If a task relates to an exploratory decision, orkestrera notes the uncertainty in the dispatch context.
 
-### Orkestrera reads /visionera output
+### Orkestrera reads ⛥ visionera output
 
 VISION.md provides direction context used during bootstrap when chaining inspirera for gap analysis.
 
-### Orkestrera reads /profilera output
+### Orkestrera reads ♾ profilera output
 
 The decision profile provides persona context for calibrating dispatch decisions. Read `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) directly per contract profile consumption conventions. If missing, proceed without persona grounding.
 
@@ -355,24 +355,24 @@ The decision profile provides persona context for calibrating dispatch decisions
 ### Execute an existing plan
 
 ```
-/planera                        # Create the plan first
-/orkestrera                     # Execute it with evaluation gating
+/agentera plan                  # Create the plan first
+/agentera orchestrate           # Execute it with evaluation gating
 ```
 
 ### Full autonomous session
 
 ```
-/orkestrera                     # No plan? Creates one via inspirera → planera, then executes
+/agentera orchestrate           # No plan? Creates one via inspirera → planera, then executes
 ```
 
 ### Replacing /loop
 
-Instead of `/loop 10m /realisera`, use `/orkestrera` for plan-aware, evaluated, multi-cycle execution. Orkestrera handles recurrence internally: it executes the plan, evaluates each task, and starts a new plan when done.
+Instead of repeatedly invoking ⧉ realisera through a host loop, use ⎈ orkestrera for plan-aware, evaluated, multi-cycle execution. Orkestrera handles recurrence internally: it executes the plan, evaluates each task, and starts a new plan when done.
 
 ### After a deliberation
 
 ```
-/resonera                       # Deliberate on what to build (produces Decision)
-/planera                        # Plan the work (produces PLAN.md)
-/orkestrera                     # Execute with evaluation gating
+/agentera discuss               # Deliberate on what to build (produces Decision)
+/agentera plan                  # Plan the work (produces PLAN.md)
+/agentera orchestrate           # Execute with evaluation gating
 ```

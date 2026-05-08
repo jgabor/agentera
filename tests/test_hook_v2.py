@@ -242,6 +242,60 @@ class TestValidateYamlPlan:
         violations = hook.validate_yaml(content, schema, "plan")
         assert any("missing required field" in v for v in violations)
 
+    def test_plan_rejects_invalid_header_status(self, hook):
+        schema = hook.load_schema("plan")
+        content = yaml_dump({
+            "header": {"level": "full", "created": "2026-05-04", "status": "done",
+                       "title": "Plan"},
+            "what": "Build",
+            "why": "Reasons",
+            "scope": {"included": ["src/"], "excluded": ["vendor/"]},
+            "tasks": [{"number": 1, "name": "T1", "status": "pending"}],
+        })
+        violations = hook.validate_yaml(content, schema, "plan")
+        assert any("invalid value 'done' for 'header.status'" in v for v in violations)
+
+    def test_plan_accepts_complete_header_status(self, hook):
+        schema = hook.load_schema("plan")
+        content = yaml_dump({
+            "header": {"level": "full", "created": "2026-05-04", "status": "complete",
+                       "title": "Plan"},
+            "what": "Build",
+            "why": "Reasons",
+            "scope": {"included": ["src/"], "excluded": ["vendor/"]},
+            "previous_plan_archived": ".agentera/archive/PLAN-old.yaml",
+            "tasks": [{"number": 1, "name": "T1", "status": "complete"}],
+        })
+        violations = hook.validate_yaml(content, schema, "plan")
+        assert violations == []
+
+    def test_plan_rejects_unknown_header_field(self, hook):
+        schema = hook.load_schema("plan")
+        content = yaml_dump({
+            "header": {"level": "full", "created": "2026-05-04", "status": "active",
+                       "title": "Plan", "approved": True},
+            "what": "Build",
+            "why": "Reasons",
+            "scope": {"included": ["src/"], "excluded": []},
+            "tasks": [{"number": 1, "name": "T1", "status": "pending"}],
+        })
+        violations = hook.validate_yaml(content, schema, "plan")
+        assert any("unsupported field 'header.approved'" in v for v in violations)
+
+    def test_plan_rejects_unknown_top_level_field(self, hook):
+        schema = hook.load_schema("plan")
+        content = yaml_dump({
+            "header": {"level": "full", "created": "2026-05-04", "status": "active",
+                       "title": "Plan"},
+            "what": "Build",
+            "why": "Reasons",
+            "scope": {"included": ["src/"], "excluded": []},
+            "reapproved": True,
+            "tasks": [{"number": 1, "name": "T1", "status": "pending"}],
+        })
+        violations = hook.validate_yaml(content, schema, "plan")
+        assert any("unsupported field 'reapproved'" in v for v in violations)
+
 
 class TestValidateYamlDecisions:
     def test_valid_decisions(self, hook):

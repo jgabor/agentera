@@ -122,6 +122,10 @@ Capability names use Swedish-style `-era` verb forms. The name is the action:
 | Fallback to hej | No sufficient match routes to hej for orientation. |
 | Concrete next action | A route suggestion tied to an object such as `PLAN Task N`, `TODO`, `OBJECTIVE`, or `VISION refresh`. |
 | Suggest, don't force | Hej recommends the next capability but waits for user confirmation. |
+| Capability handoff label | A recommendation from one capability to another. Use glyph plus canonical name, such as `⧉ realisera` or `≡ planera`, not standalone slash-capability names. |
+| Explicit route documentation | User-facing examples that teach the actual entry route. Use `/agentera <alias>` such as `/agentera build`; do not present aliases as CLI commands. |
+| Runtime question tool | Host-native bounded-choice prompt. Current examples: Claude Code `AskUserQuestion`, Copilot `ask_user`, Codex `request_user_input`, and OpenCode `question`. These are guidance examples, not schema authority. |
+| Handoff confirmation | Selecting a downstream capability option in a bounded prompt confirms invocation; selecting `Done` stops without routing. |
 | Legacy bridge | Temporary v1 entry points, especially `/hej`, that guide users to `/agentera` and the v2 upgrade path. |
 
 CLI-visible `agentera hej` labels are source labels. Preserve them in CLI tests
@@ -149,6 +153,10 @@ Primary route aliases are slash-route vocabulary, not CLI command vocabulary:
 Do not teach primary aliases as CLI state commands. The CLI state surface
 remains `hej`, `plan`, `progress`, `health`, `todo`, `decisions`, `docs`,
 `objective`, `experiments`, and advanced `query`.
+
+When capability prose recommends another capability, use the handoff label
+grammar (`<glyph> <capability>`). Keep slash forms only when documenting the
+entry route (`/agentera <alias>`) or preserving clearly historical evidence.
 
 ## Artifact grammar
 

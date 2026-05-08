@@ -379,8 +379,8 @@ Feed actionable findings into the suite:
 1. **TODO.md**: for each critical finding not already tracked, offer to add under the appropriate severity section.
    Severity mapping (protocol: SM1-SM3): critical (SF1) → `## ⇶ Critical` (SI1), warning (SF2) → `## ⇉ Degraded` (SI2), info (SF3) → `## ⇢ Annoying` (SI4). Each entry is a checkbox line: `- [ ] [finding description]`. Get user confirmation before writing.
    Output constraint per contract token budgets.
-2. **VISION.md**: if architecture has intentionally evolved past stated architecture, suggest updating via `/resonera`.
-3. **Present findings** and ask if the user wants to: file to TODO.md, deliberate via `/resonera`, deep-dive on a dimension, or investigate a specific finding.
+2. **VISION.md**: if architecture has intentionally evolved past stated architecture, suggest updating via ❈ resonera.
+3. **Present findings** and ask if the user wants to: file to TODO.md, deliberate via ❈ resonera, deep-dive on a dimension, or investigate a specific finding.
 
 ---
 
@@ -420,37 +420,37 @@ For flagged, stuck, and waiting: add `▸` bullet details below the summary.
 
 Inspektera is part of a twelve-capability suite. It is the feedback loop, the capability that tells realisera whether its work is making things better.
 
-### Inspektera feeds /realisera
+### Inspektera feeds ⧉ realisera
 
 Critical and warning findings filed to TODO.md become candidates for realisera's work selection. The severity mapping ensures structural problems compete fairly with feature work. The "Patterns Observed" section helps realisera understand the codebase's de facto architecture when planning changes.
 
-### Inspektera feeds /resonera
+### Inspektera feeds ❈ resonera
 
-When the audit reveals an architecture mismatch, suggest `/resonera` before fixes begin.
+When the audit reveals an architecture mismatch, suggest ❈ resonera before fixes begin.
 
 Use it when code has moved past stated architecture or competing patterns need a decision.
 
-### Inspektera feeds /planera
+### Inspektera feeds ≡ planera
 
-When the audit reveals multiple related structural issues, suggest `/planera` to create a remediation plan. The plan's acceptance criteria give inspektera concrete targets to verify in the next audit.
+When the audit reveals multiple related structural issues, suggest ≡ planera to create a remediation plan. The plan's acceptance criteria give inspektera concrete targets to verify in the next audit.
 
-### Inspektera feeds /optimera
+### Inspektera feeds ⎘ optimera
 
-When a dimension grade is poor and the improvement is measurable (test coverage, dependency count, complexity score), the finding can become an optimization objective. Suggest `/optimera` when the metric and direction are clear.
+When a dimension grade is poor and the improvement is measurable (test coverage, dependency count, complexity score), the finding can become an optimization objective. Suggest ⎘ optimera when the metric and direction are clear.
 
-### Inspektera reads /realisera output
+### Inspektera reads ⧉ realisera output
 
 PROGRESS.md tells inspektera what was built recently. Recent changes are higher-priority audit targets because they're the most likely source of regressions or pattern breaks. Cycle count since last audit signals when a health check is overdue.
 
-### Inspektera reads /resonera output
+### Inspektera reads ❈ resonera output
 
 DECISIONS.md explains why things are the way they are. Findings that contradict deliberate decisions are not findings. This prevents inspektera from flagging intentional tradeoffs as problems.
 
-### Inspektera reads /visualisera output
+### Inspektera reads ◰ visualisera output
 
 DESIGN.md provides visual identity constraints that inspektera can audit for consistency, checking whether the codebase respects the declared design tokens and patterns.
 
-### Inspektera is informed by /profilera
+### Inspektera is informed by ♾ profilera
 
 The decision profile calibrates what "healthy" means for this user. A user who values simplicity over flexibility will have different complexity thresholds than one who values extensibility. High-confidence quality preferences from the profile weight the grading.
 
@@ -460,13 +460,13 @@ The decision profile calibrates what "healthy" means for this user. A user who v
 
 ### First audit
 
-1. `/inspektera`: runs a full audit across all applicable dimensions, bootstraps HEALTH.md
+1. `/agentera audit`: runs a full audit across all applicable dimensions, bootstraps HEALTH.md
 2. Review findings, file critical ones to TODO.md
-3. `/realisera`: next cycle picks up the filed issues and starts fixing
+3. `/agentera build`: next cycle picks up the filed issues and starts fixing
 
 ### Periodic health checks
 
-Run `/inspektera` every 5-10 realisera cycles, or when:
+Run ⛶ inspektera every 5-10 realisera cycles, or when:
 
 - A major feature was added
 - Significant refactoring occurred
@@ -476,7 +476,7 @@ Run `/inspektera` every 5-10 realisera cycles, or when:
 ### Targeted audits
 
 ```
-/inspektera architecture coupling
+/agentera audit architecture coupling
 ```
 
 Specify dimensions to narrow the audit scope. Useful after specific kinds of changes.
@@ -485,4 +485,4 @@ Specify dimensions to narrow the audit scope. Useful after specific kinds of cha
 
 - **Good grades (A/B)**: Celebrate. Keep building.
 - **Mixed grades (C)**: File the critical findings, deliberate on the warnings.
-- **Poor grades (D/F)**: Consider pausing feature work. Use `/resonera` to deliberate on priorities, then `/realisera` to fix the structural problems before building more.
+- **Poor grades (D/F)**: Consider pausing feature work. Use ❈ resonera to deliberate on priorities, then ⧉ realisera to fix the structural problems before building more.

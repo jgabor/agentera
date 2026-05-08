@@ -166,13 +166,13 @@ Each cycle: **build toward the vision, or fix something broken?** Consult the de
 
 **Fixing issues:** Pick from TODO.md by severity (critical > degraded > annoying).
 
-**Optimization-shaped work:** Delegate to `/optimera` for measurable metrics.
+**Optimization-shaped work:** Delegate to ⎘ optimera for measurable metrics.
 
 Write a 1-2 sentence rationale. Scope down aggressively.
 
 Compose a Context block for this cycle: intent, constraints, unknowns, and scope. Keep it ≤80 words.
 
-**Decision gate**: After selecting work, check whether any `exploratory` (DL3) entries in DECISIONS.md relate to the selected work area. If found: flag the uncertain foundation, suggest `/resonera` to firm up the decision. In autonomous mode, proceed with the work but log the risk.
+**Decision gate**: After selecting work, check whether any `exploratory` (DL3) entries in DECISIONS.md relate to the selected work area. If found: flag the uncertain foundation, suggest ❈ resonera to firm up the decision. In autonomous mode, proceed with the work but log the risk.
 
 ### Step 3: Seek inspiration
 
@@ -319,38 +319,38 @@ Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3
 
 Realisera is part of a twelve-capability suite.
 
-### Delegates to /visionera
+### Delegates to ⛥ visionera
 
-When visionera is installed and the vision artifact doesn't exist, suggest `/visionera` for deep vision creation. If visionera is NOT installed, the built-in brainstorm works as a standalone fallback.
+When visionera is installed and the vision artifact doesn't exist, suggest ⛥ visionera for deep vision creation. If visionera is NOT installed, the built-in brainstorm works as a standalone fallback.
 
-### Delegates to /optimera
+### Delegates to ⎘ optimera
 
 When picked work is optimization-shaped (improving a measurable metric), delegate to optimera.
 
-### Uses /inspirera
+### Uses ⬚ inspirera
 
-In Step 3 (Seek inspiration), search for external approaches. For deeper analysis, run `/inspirera <url>`.
+In Step 3 (Seek inspiration), search for external approaches. For deeper analysis, use `/agentera research <url>`.
 
-### Reads /profilera output
+### Reads ♾ profilera output
 
 Every cycle runs the effective profile script. Confidence thresholds (CS1-CS5) determine which entries are strong constraints vs suggestions.
 
-### Uses /resonera for complex decisions
+### Uses ❈ resonera for complex decisions
 
-When the brainstorm or work selection surfaces a decision too complex for inline resolution, suggest `/resonera`.
+When the brainstorm or work selection surfaces a decision too complex for inline resolution, suggest ❈ resonera.
 
-### Consumes /planera plans
+### Consumes ≡ planera plans
 
 When PLAN.md exists with pending tasks, Step 2 reads the plan instead of reasoning from vision. Pick next pending task with satisfied dependencies. Update task status. When all complete, archive PLAN.md.
 
-### Reads /dokumentera output
+### Reads ▤ dokumentera output
 
 DOCS.md provides artifact path resolution. In the docs-first workflow, dokumentera writes intent docs that feed planera, which feeds realisera.
 
-### Reads /visualisera output
+### Reads ◰ visualisera output
 
 DESIGN.md provides visual identity context respected when building user-facing features.
 
-### Audited by /inspektera
+### Audited by ⛶ inspektera
 
-HEALTH.md findings become candidates for work selection. Run `/inspektera` every 5-10 cycles.
+HEALTH.md findings become candidates for work selection. Run ⛶ inspektera every 5-10 cycles.

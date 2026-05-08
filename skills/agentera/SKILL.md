@@ -122,6 +122,16 @@ Reading a capability's `prose.md` file is not itself a capability invocation;
 invocation means routing to the capability, following its prose, and using the
 CLI state layer first for artifact-backed state.
 
+Capability handoffs use glyph plus canonical capability name, for example
+`⧉ realisera` or `≡ planera`. Reserve `/agentera <alias>` wording for explicit
+slash-route documentation and do not use standalone slash-capability names such
+as `/realisera` or `/planera` as handoff labels. When a handoff offers a clear,
+limited set of choices, use the runtime's native question tool when available:
+Claude Code `AskUserQuestion`, Copilot `ask_user`, Codex `request_user_input`,
+and OpenCode `question`. Put the recommended choice first with `(Recommended)`
+in its label and include `Done`. Selecting a downstream capability option is
+confirmation to invoke that capability; selecting `Done` stops without routing.
+
 ### Step -1a: Bundle status check
 
 Package and marketplace updates can refresh the visible skill while leaving the

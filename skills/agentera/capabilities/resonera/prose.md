@@ -250,33 +250,33 @@ For flagged, stuck, and waiting: add `▸` (VT15) bullet details.
 
 Resonera is the deliberation layer.
 
-### Feeds into /realisera
+### Feeds into ⧉ realisera
 
 Decisions about project direction captured in VISION.md. DECISIONS.md entries with `Feeds into: VISION.md` give realisera reasoning context.
 
-### Feeds into /optimera
+### Feeds into ⎘ optimera
 
 Decisions about what to optimize captured in OBJECTIVE.md at `.agentera/optimera/<objective-name>/objective.yaml`.
 
-### Triggers /inspirera
+### Triggers ⬚ inspirera
 
-During deliberation, if the user needs external research: "Sounds like we need to research X. Want to run `/inspirera`?"
+During deliberation, if the user needs external research: "Sounds like we need to research X with ⬚ inspirera?"
 
-### Informed by /profilera
+### Informed by ♾ profilera
 
 If a decision profile exists, read it at session start. High-confidence entries acknowledged; low-confidence entries treated as hypotheses.
 
-### Feeds /profilera
+### Feeds ♾ profilera
 
 DECISIONS.md is a high-signal source for profilera's extraction scripts.
 
-### Feeds /planera
+### Feeds ≡ planera
 
-When deliberation concludes with a decision to build something, the natural next step is `/planera`.
+When deliberation concludes with a decision to build something, the natural next step is ≡ planera.
 
-### Triggered by /inspektera
+### Triggered by ⛶ inspektera
 
-When audits reveal an architecture mismatch, inspektera suggests `/resonera` to think through the response.
+When audits reveal an architecture mismatch, inspektera suggests ❈ resonera to think through the response.
 
 ---
 
@@ -284,16 +284,16 @@ When audits reveal an architecture mismatch, inspektera suggests `/resonera` to 
 
 ### Before a realisera session
 
-Run `/resonera` to think through project direction before creating VISION.md.
+Run `/agentera discuss` to think through project direction before creating VISION.md.
 
 ### Before an optimera session
 
-Run `/resonera` to think through what metric matters and why before creating OBJECTIVE.md.
+Run `/agentera discuss` to think through what metric matters and why before creating OBJECTIVE.md.
 
 ### After an inspirera analysis
 
-Run `/resonera` to evaluate which recommendations to adopt.
+Run `/agentera discuss` to evaluate which recommendations to adopt.
 
 ### Standalone
 
-Run `/resonera` whenever you need to think through something complex.
+Run `/agentera discuss` whenever you need to think through something complex.

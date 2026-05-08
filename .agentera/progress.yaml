@@ -1,4 +1,38 @@
 cycles:
+- number: 369
+  timestamp: 2026-05-08 14:03
+  type: docs
+  phase: build
+  what: Executed Decision 46 capability handoff polish for pending v2.2.0.
+  commit: pending
+  inspiration: >
+    Decision 46 selected the docs/notes.md handoff-polish item for 2.2.0 after Decisions 43 and 45 separated slash routes from CLI state commands. The goal was to remove standalone slash-capability handoff labels without changing routing semantics or broadening into lifecycle cleanup, CLI writes, runtime bundle review, v1 SPEC reconciliation, or personality restoration.
+  discovered: >
+    Capability prose mixed three surfaces: current handoff recommendations, explicit invocation examples, and path/historical references. The fix classified those surfaces: handoffs now use glyph plus canonical capability names, explicit current route examples use `/agentera <alias>`, and `.agentera/optimera/` paths remain unchanged. Dispatcher and vocabulary guidance now also define runtime question-tool examples, recommended-first options, `Done`, and confirmation semantics.
+  verified: >
+    Validation passed: `uv run pytest tests/test_skill_dispatch_contract.py tests/test_schema_backed_routing_interface.py tests/test_decision44_vocabulary.py -q` reported 20 passed; `uv run pytest tests/test_hook_v2.py tests/test_query_cli.py tests/test_decision45_cli_contract.py -q` reported 172 passed; `python3 -m py_compile hooks/validate_artifact.py scripts/agentera` completed with no output; changed artifact validation reported PASS; `uv run scripts/validate_capability.py --self-validate` and all 12 capability validations reported PASS.
+  next: No further Decision 46 implementation remains after final state sync. Keep remaining docs/notes.md ideas as separate follow-up candidates unless explicitly selected for another v2.2.0 slice.
+  context:
+    intent: Include Decision 46 capability handoff polish in pending v2.2.0.
+    constraints: no routing behavior change, CLI command change, Decision 43 alias change, artifact schema migration, release publication, tag, push, package update, installed bundle refresh, commit, vision edit, or objective edit
+    scope: skills/agentera/SKILL.md, capability prose handoff wording, docs/vocabulary.md, tests/test_skill_dispatch_contract.py, CHANGELOG.md, docs/notes.md, .agentera/plan.yaml, .agentera/docs.yaml, and this progress entry
+- number: 368
+  timestamp: 2026-05-08 12:57
+  type: fix
+  phase: build
+  what: Closed the v2.2.0 plan-artifact validation gap surfaced from docs/notes.md.
+  commit: pending
+  inspiration: >
+    Resonera triage of docs/notes.md found line 35 relevant to pending 2.2.0 because Decision 45 claims hardened agent-facing inputs and stable artifact contracts. The selected scope was to fix the plan-schema enforcement gap without broadening the release into unrelated notes.
+  discovered: >
+    `hooks/validate_artifact.py` only applied enum checks inside sequence entries, so singleton groups such as `header.status` skipped allowed-value validation. The plan schema also documented `completed` while shipped plan artifacts use `complete`, and recent plans use `previous_plan_archived` without schema coverage.
+  verified: >
+    Validation passed: `uv run pytest tests/test_hook_v2.py -q` reported 66 passed; `python3 -m py_compile hooks/validate_artifact.py` completed with no output; `uv run python -c "from hooks.validate_artifact import ArtifactSchemaValidator, ArtifactWrite; violations=ArtifactSchemaValidator().validate_write(ArtifactWrite('.agentera/plan.yaml'), '.'); print('PASS current plan' if not violations else '\n'.join(violations))"` reported PASS current plan; `uv run pytest tests/test_query_cli.py tests/test_decision45_cli_contract.py -q` reported 106 passed; `uv run scripts/agentera plan --format json` returned status ok with 8 complete tasks; `AGENTERA_HOME= uv run python -c "import json, subprocess, sys; r=subprocess.run([sys.executable, 'scripts/agentera', 'describe', '--format', 'json'], text=True, capture_output=True); data=json.loads(r.stdout); plan=next(s for s in data['artifact_schemas'] if s['name']=='plan'); fields={f['id']: f for f in plan['fields']}; print(r.returncode, data['status'], fields['PH3']['validation'], fields['PL22']['field'])"` reported `0 ok ['Must be one of: active, complete'] previous_plan_archived`.
+  next: Keep v2.2.0 scoped to Decision 45 plus this validation fix; the remaining docs/notes.md ideas should stay follow-up candidates unless separately selected.
+  context:
+    intent: Include the docs/notes.md plan-schema enforcement gap in pending 2.2.0.
+    constraints: no release publication, tag, push, package update, installed bundle refresh, commit, vision/objective edit, broad notes cleanup, or general unknown-field enforcement outside plan artifacts
+    scope: hooks/validate_artifact.py, skills/agentera/schemas/artifacts/plan.yaml, tests/test_hook_v2.py, CHANGELOG.md, docs/notes.md, .agentera/docs.yaml, and this progress entry
 - number: 367
   timestamp: 2026-05-08 12:08
   type: docs
@@ -35,7 +69,7 @@ cycles:
     scope: CHANGELOG.md, .agentera/docs.yaml, .agentera/progress.yaml, and read-only validation/audit commands
 - number: 365
   timestamp: 2026-05-08 11:55
-  type: code
+  type: fix
   phase: build
   what: Hardened Decision 45 Task 6 agent-facing CLI inputs.
   commit: pending
@@ -52,7 +86,7 @@ cycles:
     scope: scripts/agentera, scripts/artifact_registry.py, tests/test_query_cli.py, tests/test_decision45_cli_contract.py, references/cli/agent-ready-state-contract.yaml, CHANGELOG.md, .agentera/docs.yaml, and this progress entry
 - number: 364
   timestamp: 2026-05-08 11:44
-  type: code
+  type: feat
   phase: build
   what: Added Decision 45 Task 5 runtime describe introspection.
   commit: pending
@@ -69,7 +103,7 @@ cycles:
     scope: scripts/agentera, tests/test_query_cli.py, tests/test_decision45_cli_contract.py, references/cli/agent-ready-state-contract.yaml, README.md, CHANGELOG.md, .agentera/docs.yaml, and this progress entry
 - number: 363
   timestamp: 2026-05-08 11:31
-  type: code
+  type: feat
   phase: build
   what: Added Decision 45 Task 4 sparse field selection for structured routine state output.
   commit: pending
@@ -86,7 +120,7 @@ cycles:
     scope: scripts/agentera, tests/test_query_cli.py, tests/test_decision45_cli_contract.py, references/cli/agent-ready-state-contract.yaml, CHANGELOG.md, .agentera/docs.yaml, and this progress entry
 - number: 362
   timestamp: 2026-05-08 11:38
-  type: code
+  type: feat
   phase: build
   what: Added Decision 45 Task 3 structured JSON/YAML output for routine state commands.
   commit: pending
@@ -103,7 +137,7 @@ cycles:
     scope: scripts/agentera, tests/test_query_cli.py, tests/test_decision45_cli_contract.py, references/cli/agent-ready-state-contract.yaml, CHANGELOG.md, .agentera/docs.yaml, and this progress entry
 - number: 361
   timestamp: 2026-05-08 11:07
-  type: code
+  type: feat
   phase: build
   what: Hard-renamed the Agentera installed-bundle self-check command from bundle-status to doctor for Decision 45 Task 2.
   commit: pending
@@ -222,7 +256,7 @@ cycles:
     scope: tests/test_decision44_vocabulary.py, narrow vocabulary/prose blockers, CHANGELOG.md, .agentera/docs.yaml, and this progress entry
 - number: 354
   timestamp: 2026-05-07 22:25
-  type: code
+  type: refactor
   phase: build
   what: Aligned maintained diagnostics, test labels, and safe label prose with Decision 44 wording while preserving stable compatibility labels.
   commit: pending

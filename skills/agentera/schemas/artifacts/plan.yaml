@@ -99,10 +99,10 @@ HEADER:
     type: string
     required: true
     description: >-
-      Plan lifecycle status. Active plans are being executed; completed
+      Plan lifecycle status. Active plans are being executed; complete
       plans are candidates for archival.
     validation:
-      - "Must be one of: active, completed"
+      - "Must be one of: active, complete"
   4:
     id: PH4
     field: reviewed
@@ -192,6 +192,14 @@ PLAN:
     description: >-
       Runtime surprises discovered during plan execution. Populated
       by realisera when reality diverges from plan. Default: empty.
+  7:
+    id: PL22
+    field: previous_plan_archived
+    type: string
+    required: false
+    description: >-
+      Path to the previous active plan archived when this plan was created.
+      Preserves plan lineage without changing lifecycle status.
 
 SCOPE:
   1:

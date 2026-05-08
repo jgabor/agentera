@@ -292,17 +292,17 @@ When a new or refined vision changes the project's direction, planera can produc
 
 ### New project
 
-1. `/visionera`: deep creation of the vision artifact through codebase exploration, domain research, and aspirational conversation
-2. `/planera`: plan the first features (if complex)
-3. `/realisera`: start building
+1. ⛥ visionera: deep creation of the vision artifact through codebase exploration, domain research, and aspirational conversation
+2. ≡ planera: plan the first features (if complex)
+3. ⧉ realisera: start building
 
 ### Existing project without a vision
 
-1. `/visionera`: reads the codebase, understands what exists, then pushes the user to articulate where it should go
+1. ⛥ visionera: reads the codebase, understands what exists, then pushes the user to articulate where it should go
 
 ### Vision refinement
 
-1. `/visionera`: detects the existing vision artifact, offers refine mode, reads progress and decisions since last update, proposes informed changes
+1. ⛥ visionera: detects the existing vision artifact, offers refine mode, reads progress and decisions since last update, proposes informed changes
 
 ### Without visionera installed
 

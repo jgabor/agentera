@@ -209,7 +209,7 @@ chmod +x .agentera/optimera/<objective-name>/harness && .agentera/optimera/<obje
 
 Parse the JSON output. Record the current metric as the baseline.
 
-**Plateau detection**: if `plateau_detected: true` (no improvement in 3+ experiments), flag explicitly. Consider a radically different approach, `/inspirera`, or escalate to the user.
+**Plateau detection**: if `plateau_detected: true` (no improvement in 3+ experiments), flag explicitly. Consider a radically different approach, ⬚ inspirera, or escalate to the user.
 
 ### Step 3: Hypothesize
 
@@ -363,25 +363,25 @@ Before reporting any status, inspect the last 3 entries in PROGRESS.md. If all 3
 
 Optimera is part of a twelve-capability suite. Each capability can invoke the others when the work calls for it.
 
-### Optimera invokes /inspirera
+### Optimera invokes ⬚ inspirera
 
-When the Hypothesize step needs external techniques (especially after a plateau), search for approaches the way `/inspirera` would. Read the source deeply, extract transferable patterns, and fold them into the next hypothesis.
+When the Hypothesize step needs external techniques (especially after a plateau), search for approaches the way ⬚ inspirera would. Read the source deeply, extract transferable patterns, and fold them into the next hypothesis.
 
-### Realisera invokes /optimera
+### Realisera invokes ⎘ optimera
 
 When realisera picks work that is optimization-shaped (e.g., "improve test performance by 20%", "reduce build time", "increase coverage"), it can delegate to optimera. Realisera provides the context; optimera runs the optimization loop.
 
-### Optimera reads /profilera output
+### Optimera reads ♾ profilera output
 
 Every experiment reads `$PROFILERA_PROFILE_DIR/PROFILE.md` when it exists and applies confidence thresholds per contract profile consumption conventions. Effective confidence weighting ensures stale preferences don't over-constrain experiments.
 
-### Optimera uses /resonera for objective decisions
+### Optimera uses ❈ resonera for objective decisions
 
-When the brainstorm session surfaces ambiguity about what to optimize (competing metrics, unclear constraints, or tradeoffs between measurement approaches), suggest `/resonera` to deliberate first. Resonera can produce or refine objective.yaml directly, and its DECISIONS.md entries give optimera context for why the objective was chosen. If `DECISIONS.md` exists, read it during the Orient step for context on prior deliberations.
+When the brainstorm session surfaces ambiguity about what to optimize (competing metrics, unclear constraints, or tradeoffs between measurement approaches), suggest ❈ resonera to deliberate first. Resonera can produce or refine objective.yaml directly, and its DECISIONS.md entries give optimera context for why the objective was chosen. If `DECISIONS.md` exists, read it during the Orient step for context on prior deliberations.
 
-### Inspektera feeds /optimera
+### Inspektera feeds ⎘ optimera
 
-When an inspektera audit reveals a poor dimension grade with a clearly measurable improvement path (test coverage, complexity score, dependency count), the finding can become an optimization objective. `/inspektera` may suggest `/optimera` when the metric and direction are clear.
+When an inspektera audit reveals a poor dimension grade with a clearly measurable improvement path (test coverage, complexity score, dependency count), the finding can become an optimization objective. ⛶ inspektera may suggest ⎘ optimera when the metric and direction are clear.
 
 ---
 
@@ -389,22 +389,22 @@ When an inspektera audit reveals a poor dimension grade with a clearly measurabl
 
 ### First optimization
 
-1. `/profilera`: generate or refresh the decision profile (skip if recent)
-2. `/optimera`: the first run detects no objective.yaml, runs a brainstorm with you to define the objective and write the eval harness, then proceeds to experiment 1
-3. `/loop 5m /optimera`: set up continuous optimization
+1. `/agentera profile`: generate or refresh the decision profile (skip if recent)
+2. `/agentera optimize`: the first run detects no objective.yaml, runs a brainstorm with you to define the objective and write the eval harness, then proceeds to experiment 1
+3. Host loop + `/agentera optimize`: set up continuous optimization where supported
 
 ### Resuming optimization
 
-1. `/optimera`: if objective.yaml and the eval harness exist, starts experimenting immediately. Reads experiments.yaml to understand what's been tried.
+1. `/agentera optimize`: if objective.yaml and the eval harness exist, starts experimenting immediately. Reads experiments.yaml to understand what's been tried.
 
 ### Changing the target
 
 Edit objective.yaml directly to adjust the target value or constraints, or tell optimera to "refine the objective" for a guided session. If the measurement approach needs to change, the eval harness must be rebuilt and re-approved.
 
-### Optimera is fed by /planera
+### Optimera is fed by ≡ planera
 
 When a plan includes optimization-shaped tasks (improving a measurable metric), planera can delegate those tasks to optimera. The plan's acceptance criteria inform the optimization objective.
 
 ### Drawing in external techniques
 
-Run `/inspirera <url>` with a relevant article, repo, or resource. The analysis will surface optimization techniques applicable to the objective. The next experiment picks it up naturally from the inspiration analysis.
+Run `/agentera research <url>` with a relevant article, repo, or resource. The analysis will surface optimization techniques applicable to the objective. The next experiment picks it up naturally from the inspiration analysis.
