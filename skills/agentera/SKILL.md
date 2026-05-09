@@ -51,45 +51,34 @@ Capabilities import these by name. The schema contract ensures consistent usage.
 
 When a request arrives, route to the matching capability using the five-layer dispatch model from Decision 42.
 
-### Prerequisite: Bundle health gate
+### Prerequisite: Single-call installed CLI gate
 
-This is a mandatory check that must pass before any routing layer below is
-evaluated. Do not skip or short-circuit it — a stale installed bundle produces
-wrong routing despite a working local checkout.
-
-Package and marketplace updates can refresh the visible skill while leaving the
-durable bundle under `AGENTERA_HOME` stale. Treat that split state as an
-out-of-date installed bundle.
-
-Resolve `RESOLVED_AGENTERA_HOME` through the shared install-root Module
-contract implemented by `scripts/install_root.py`; do not invent caller-local
-root identity rules. Resolution precedence is:
-
-1. `AGENTERA_HOME`, when set
-2. `$HOME/.agents/agentera`
-
-Classification is owned by that Module. A missing, file, invalid, or unmanaged
-`AGENTERA_HOME` is an explicit environment-selected root and must block instead
-of falling through to the default root.
-
-The expected durable bundle version is the suite version in `registry.json`
-(`skills[0].version`); SKILL.md frontmatter mirrors that value. The installed
-bundle marker `.agentera-bundle.json` should carry the same version, and the
-installed CLI must discover the expected routine commands, including `hej`.
-
-Then try the installed CLI:
+This gate is mandatory, but the gate and the hej dashboard source are the same
+installed CLI invocation. For bare `/agentera` or bare `hej`, the first normal
+state-access tool call is:
 
 ```bash
 uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
 ```
 
-If the command fails before argparse, reports `invalid choice` for `hej`, lacks
-`hej` in `--help`, has a stale or missing `.agentera-bundle.json` marker, or the
-doctor diagnostic reports stale/blocked status:
+Resolve `RESOLVED_AGENTERA_HOME` with the install-root precedence `AGENTERA_HOME`
+when set, otherwise `$HOME/.agents/agentera`. Do not run `glob`, `grep`, `read`,
+`ls`, `python`, `doctor`, `--help`, `scripts/install_root.py`, `registry.json`,
+or `.agentera-bundle.json` preflight checks before this call. The CLI owns bundle
+validation, v1 detection, profile detection, artifact condensation, and the
+`source_contract` that tells the caller how to render the dashboard.
+
+If the command exits successfully, inspect the CLI-provided `bundle.status`. If
+it is `fresh`, treat the installed bundle gate as passed for that briefing and
+render from the output. The `bundle` object includes `expectedVersion`,
+`expectedVersionSource`, `installRoot`, `installRootSource`, repair commands, and
+approval text. If the command cannot execute, fails before argparse, reports
+`invalid choice` for `hej`, or reports `bundle.status` as `stale`, `blocked`,
+missing-command, or refresh-required:
 
 - Tell the user the bundle is stale
-- Report the root, resolution source, and expected version
-- Show the clone-free dry-run preview:
+- Report the resolved root and resolution source from the `bundle` object
+- Show the clone-free dry-run preview from `bundle.dryRunCommand` when present:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
@@ -110,13 +99,14 @@ After apply, retry:
 uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
 ```
 
-If `AGENTERA_HOME` points at a missing path, a file, or an unmanaged directory,
-do not overwrite it silently. Ask the user to fix/unset `AGENTERA_HOME`, choose
-a managed `--install-root`, or explicitly request a forced bundle install.
+If `AGENTERA_HOME` points at a missing path, a file, or an unmanaged directory
+and the single command cannot run, do not overwrite it silently or fall back to a
+local checkout. Ask the user to fix/unset `AGENTERA_HOME`, choose a managed
+`--install-root`, or explicitly request a forced bundle install.
 
-Only after the installed CLI succeeds, proceed to Step -1 and the routing
-layers below. Do not fall through to a local checkout as a workaround; the uvx
-commands above are portable and require no local checkout.
+Only after the installed CLI succeeds, proceed to Step -1 and the routing layers
+below. Do not fall through to a local checkout as a workaround; the uvx commands
+above are portable and require no local checkout.
 
 ### Step -1: Top-level CLI-first state access
 
@@ -145,8 +135,9 @@ relay raw `agentera hej` lines as the final briefing. Do not run individual `pla
 `todo`, or `decisions` commands unless `agentera hej` fails or explicitly asks
 for fallback. The final response must
 transform source labels such as `mode:`, `profile:`, `health:`, `issues:`,
-`plan:`, `objective:`, `attention:`, `next_action:`, and `source_contract:` into
-the dashboard below; never paste those labels as the briefing.
+`plan:`, `objective:`, `attention:`, `next_action:`, `bundle:`,
+`v1_migration:`, and `source_contract:` into the dashboard below; never paste
+those labels as the briefing.
 
 Bare `/agentera` returning-project output must include these visible markers:
 
@@ -193,35 +184,24 @@ recommended choice first with `(Recommended)` in its label and include `Done`.
 Selecting a downstream capability option is confirmation to invoke that
 capability; selecting `Done` stops without routing.
 
-### Step 0: V1 migration check
+### Step 0: V1 migration handling
 
-Before routing, check for an Agentera v1 install state. This is detection and
-orchestration only; do not mutate anything without explicit user confirmation.
+Do not perform separate v1 Markdown/YAML discovery before a normal hej briefing.
+The top-level CLI owns v1 detection. For bare `/agentera` or bare `hej`, render
+any `v1 artifacts detected` attention item and affected-file list from
+`agentera hej`; do not spend extra tool calls on `.agentera/*.md`,
+`.agentera/*.yaml`, or `VISION.md` globs.
 
-V1 state is present when any v1 Markdown artifact exists without its v2 YAML
-counterpart, for example `.agentera/PROGRESS.md` without
-`.agentera/progress.yaml`, `.agentera/PLAN.md` without `.agentera/plan.yaml`,
-`.agentera/DECISIONS.md` without `.agentera/decisions.yaml`,
-`.agentera/HEALTH.md` without `.agentera/health.yaml`,
-`.agentera/SESSION.md` without `.agentera/session.yaml`, `.agentera/DOCS.md`
-without `.agentera/docs.yaml`, or root `VISION.md` without
-`.agentera/vision.yaml`.
-
-If v1 state is found:
-
-1. Report the affected files once in the briefing or response.
-2. Run the dry-run preview through the no-clone CLI whenever shell access is
-   available:
-   `uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run`
-3. If running inside a local Agentera checkout that has `scripts/agentera`, the
-   equivalent local preview is:
-   `uv run scripts/agentera upgrade --project "$PWD" --dry-run`
-4. Ask the user before applying. Only after confirmation, run the same command
-   with `--yes`. Never infer consent from the presence of v1 artifacts.
-
-The dry-run preview is mandatory for v1 state detection. Do not replace it with
-manual artifact inspection, hand-written migration steps, or raw YAML reads.
-Only the apply step requires confirmation.
+If the CLI reports v1 state, use the `v1_migration.dry_run_command` preview it
+supplies. The dry-run preview is mandatory before any apply command. Ask the
+user before applying. Only after confirmation, run `v1_migration.apply_command`.
+Never infer consent from the presence of v1 artifacts.
+The preview command shape is
+`uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run`
+or the local-checkout equivalent `uv run scripts/agentera upgrade --project "$PWD" --dry-run`
+when supplied by the CLI.
+Do not replace the CLI-owned preview with manual artifact inspection,
+hand-written migration steps, or raw YAML reads. Only the apply step requires confirmation.
 
 The upgrade command is idempotent. It installs or refreshes a durable bundle at
 `~/.agents/agentera` when invoked through `uvx`, migrates v1 artifacts, wires
@@ -234,9 +214,9 @@ entries and `npx skills add` for `/agentera` remain explicit opt-in via
 
 If the request is `/agentera` with no additional text, or the complete user
 message is exactly `hej`, delegate immediately to hej. Hej performs state-aware
-routing by reading project artifacts (PLAN.md, TODO.md, HEALTH.md, etc.) and
-suggesting the most useful next capability. This is deterministic and never
-wrong. Bare `hej` must not be handled as a generic greeting.
+routing through the `agentera hej` composite result, which condenses project
+artifacts and suggests the most useful next capability. This is deterministic
+and never wrong. Bare `hej` must not be handled as a generic greeting.
 
 ### Layer 2: `/agentera <capability-name-or-primary-alias>` — direct route
 

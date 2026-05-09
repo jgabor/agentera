@@ -219,11 +219,13 @@ def test_master_skill_requires_cli_first_state_access():
 
     assert "Step -1: Top-level CLI-first state access" in text
     assert "agentera hej" in text
+    assert "Single-call installed CLI gate" in text
     assert "query --list-artifacts" in text
     assert "query <artifact-name> --format json|yaml" in text
     assert "Do not silently bypass the CLI" in text
     assert "reads only as a fallback" in text
     assert "Do not run individual `plan`, `progress`, `health`" in text
+    assert "Do not run `glob`, `grep`, `read`" in text
 
 
 def test_master_skill_exposes_bare_agentera_dashboard_boundary():
@@ -254,6 +256,8 @@ def test_routine_capability_guidance_uses_top_level_state_commands():
     assert 'uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej' in hej
     assert "installed Agentera bundle is stale" in hej
     assert "advanced/custom inspection only" in hej
+    assert "Do not preflight bundle health" in hej
+    assert "Do not run separate v1 artifact or PROFILE.md checks" in hej
 
 
 def test_master_skill_documents_route_alias_contract_boundary():
@@ -276,12 +280,14 @@ def test_master_upgrade_check_requires_dry_run_preview():
     assert "Only the apply step requires confirmation" in text
 
 
-def test_master_bundle_health_gate_uses_install_root_contract():
+def test_master_bundle_health_gate_is_single_call():
     text = SKILL_MD_PATH.read_text(encoding="utf-8")
 
-    assert "shared install-root Module" in text
-    assert "scripts/install_root.py" in text
-    assert "1. `AGENTERA_HOME`, when set" in text
-    assert "must block instead\nof falling through to the default root" in text
-    assert "registry.json" in text
-    assert "`skills[0].version`" in text
+    assert "Single-call installed CLI gate" in text
+    assert "Resolve `RESOLVED_AGENTERA_HOME` with the install-root precedence" in text
+    assert "otherwise `$HOME/.agents/agentera`" in text
+    assert "Do not run `glob`, `grep`, `read`" in text
+    assert "scripts/install_root.py`, `registry.json`" in text
+    assert "If the command exits successfully" in text
+    assert "inspect the CLI-provided `bundle.status`" in text
+    assert "`bundle.dryRunCommand`" in text

@@ -43,7 +43,14 @@ from typing import Any
 import yaml
 
 from artifact_registry import ArtifactRecord, load_artifact_registry, resolve_artifact_path
-from agentera_upgrade import cmd_doctor, cmd_upgrade
+from agentera_upgrade import (
+    build_doctor_status,
+    cmd_doctor,
+    cmd_upgrade,
+    load_suite_version,
+    resolve_doctor_install_root,
+    resolve_source_root,
+)
 
 
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x1f\x7f]")
@@ -330,6 +337,116 @@ def _detect_v1_artifacts() -> list[str]:
     return found
 
 
+def _is_local_agentera_checkout(root: Path) -> bool:
+    return all(
+        (root / rel).exists()
+        for rel in ("scripts/agentera", "skills/agentera/SKILL.md", "registry.json")
+    )
+
+
+def _v1_migration_summary(v1_artifacts: list[str]) -> dict[str, Any]:
+    dry_run = 'uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run'
+    apply = 'uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --yes'
+    summary: dict[str, Any] = {
+        "detected": bool(v1_artifacts),
+        "affected_files": v1_artifacts,
+        "dry_run_command": dry_run if v1_artifacts else None,
+        "apply_command": apply if v1_artifacts else None,
+        "requires_confirmation": bool(v1_artifacts),
+    }
+    if v1_artifacts and _is_local_agentera_checkout(Path.cwd()):
+        summary["local_dry_run_command"] = 'uv run scripts/agentera upgrade --project "$PWD" --dry-run'
+        summary["local_apply_command"] = 'uv run scripts/agentera upgrade --project "$PWD" --yes'
+    return summary
+
+
+def _frontmatter_version(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+    if not lines or lines[0].strip() != "---":
+        return None
+    for line in lines[1:]:
+        stripped = line.strip()
+        if stripped == "---":
+            return None
+        if stripped.startswith("version:"):
+            version = stripped.split(":", 1)[1].strip().strip('"\'')
+            return version if version else None
+    return None
+
+
+def _version_key(version: str | None) -> tuple[int, ...]:
+    if not version:
+        return ()
+    parts = []
+    for item in re.split(r"[.+_-]", version):
+        if item.isdigit():
+            parts.append(int(item))
+        else:
+            break
+    return tuple(parts)
+
+
+def _visible_skill_version(home: Path) -> tuple[str | None, str | None]:
+    candidates = []
+    if os.environ.get("AGENTERA_VISIBLE_SKILL_ROOT"):
+        candidates.append(Path(os.environ["AGENTERA_VISIBLE_SKILL_ROOT"]).expanduser())
+    candidates.extend([
+        home / ".agents" / "skills" / "agentera",
+        home / ".config" / "opencode" / "skills" / "agentera",
+    ])
+    versions: list[tuple[tuple[int, ...], str, Path]] = []
+    for root in candidates:
+        version = _frontmatter_version(root / "SKILL.md")
+        if version:
+            versions.append((_version_key(version), version, root))
+    if not versions:
+        return None, None
+    versions.sort(reverse=True)
+    _key, version, root = versions[0]
+    return version, str(root)
+
+
+def _hej_expected_version(args: argparse.Namespace, source_root: Path, home: Path) -> tuple[str | None, str]:
+    explicit = getattr(args, "expected_version", None)
+    if explicit:
+        return explicit, "--expected-version"
+    env_version = os.environ.get("AGENTERA_EXPECTED_VERSION")
+    if env_version:
+        return env_version, "AGENTERA_EXPECTED_VERSION"
+    source_version = load_suite_version(source_root)
+    visible_version, visible_source = _visible_skill_version(home)
+    if visible_version and _version_key(visible_version) >= _version_key(source_version):
+        return visible_version, visible_source or "visible skill"
+    return source_version, "source registry"
+
+
+def _hej_bundle_status(args: argparse.Namespace) -> dict[str, Any]:
+    home = getattr(args, "home", Path.home()).expanduser().resolve()
+    install_root, root_source = resolve_doctor_install_root(
+        getattr(args, "install_root", None),
+        home=home,
+    )
+    source_root = resolve_source_root()
+    expected, expected_source = _hej_expected_version(args, source_root, home)
+    status = build_doctor_status(
+        install_root,
+        root_source=root_source,
+        source_root=source_root,
+        home=home,
+        project=Path.cwd().resolve(),
+        expected_version=expected,
+        expected_commands=("hej",),
+        probe_cli=False,
+    )
+    status["expectedVersionSource"] = expected_source
+    return status
+
+
 def _extract_entries(data: Any) -> list[dict]:
     if data is None:
         return []
@@ -486,8 +603,10 @@ ROUTINE_STRUCTURED_FIELDS = [
 HEJ_STRUCTURED_FIELDS = [
     "command",
     "status",
+    "bundle",
     "mode",
     "profile",
+    "v1_migration",
     "health",
     "issues",
     "plan",
@@ -1756,12 +1875,15 @@ def _select_hej_next_action(
 def cmd_hej(_args: argparse.Namespace) -> int:
     schemas_dir = _discover_schemas_dir()
     schemas = _load_schemas(schemas_dir)
+    bundle = _hej_bundle_status(_args)
     saved_context = any((Path.cwd() / ".agentera").glob("*.yaml"))
     mode = "returning" if saved_context else "fresh"
     profile = _registry_artifact_path("profile", schemas_dir)
     profile_status = "loaded" if profile.exists() else "not found"
     profile_staleness = _check_profilera_staleness(profile) if profile.exists() else None
     profile_dict: dict[str, Any] = {"status": profile_status, "path": str(profile)}
+    if profile_status == "not found":
+        profile_dict["suggested_action"] = "Run profilera to generate PROFILE.md"
     if profile_staleness is not None:
         is_stale, days_since, stale_days = profile_staleness
         profile_dict["days_since_generated"] = days_since
@@ -1770,6 +1892,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
         if is_stale:
             profile_dict["suggested_action"] = "Run profilera to refresh PROFILE.md"
     v1_artifacts = _detect_v1_artifacts()
+    v1_migration = _v1_migration_summary(v1_artifacts)
     plan = _plan_summary(schemas)
     health = _health_summary(schemas)
     objective = _active_objective_summary()
@@ -1778,13 +1901,24 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     decision = _decision_follow_up(schemas)
     next_action = _select_hej_next_action(plan, health, objective, todo_items, decision, saved_context)
     attention = []
-    if v1_artifacts:
-        command = 'uv run scripts/agentera upgrade --project "$PWD" --dry-run'
+    if bundle["status"] != "fresh":
+        dry_run = bundle.get("dryRunCommand")
+        if dry_run:
+            attention.append(
+                f"degraded: bundle {bundle['status']}; preview `{dry_run}`; root={bundle['installRoot']}"
+            )
+        else:
+            attention.append(
+                f"critical: bundle {bundle['status']}; fix AGENTERA_HOME or choose a managed install root; "
+                f"root={bundle['installRoot']}"
+            )
+    if v1_migration["detected"]:
+        command = v1_migration["dry_run_command"]
         attention.append(
             f"degraded: v1 artifacts detected; preview `{command}`; files={', '.join(v1_artifacts)}"
         )
     if profile_status == "not found":
-        attention.append(f"degraded: PROFILE.md not found at {profile}")
+        attention.append(f"degraded: PROFILE.md not found at {profile}; suggest running profilera to generate PROFILE.md")
     elif profile_staleness is not None and profile_staleness[0]:
         _, days_since, stale_days = profile_staleness
         attention.append(
@@ -1814,8 +1948,10 @@ def cmd_hej(_args: argparse.Namespace) -> int:
             {
                 "command": "hej",
                 "status": "ok",
+                "bundle": bundle,
                 "mode": mode,
                 "profile": profile_dict,
+                "v1_migration": v1_migration,
                 "health": health,
                 "issues": counts,
                 "plan": plan,
@@ -1828,8 +1964,9 @@ def cmd_hej(_args: argparse.Namespace) -> int:
                     "artifacts_present": mode == "returning",
                 },
                 "source_contract": {
-                    "fields": ["mode", "profile", "health", "issues", "plan", "objective", "attention", "next_action"],
+                    "fields": ["bundle", "mode", "profile", "v1_migration", "health", "issues", "plan", "objective", "attention", "next_action"],
                     "render": "caller-owned README-style hej dashboard",
+                    "access": "single installed CLI call; bundle/v1/profile safety included; no preflight glob/read/import/doctor calls during normal hej",
                     "empty_state": "fresh mode with missing artifact summaries and zero issue counts",
                 },
             },
@@ -1837,6 +1974,11 @@ def cmd_hej(_args: argparse.Namespace) -> int:
         )
 
     print("agentera hej")
+    print(
+        f"bundle: status={bundle['status']} | root={bundle['installRoot']} | "
+        f"source={bundle['installRootSource']} | expected={bundle['expectedVersion']} | "
+        f"expected_source={bundle.get('expectedVersionSource', '-')} | current={bundle.get('markerVersion') or '-'}"
+    )
     print(f"mode: {mode}")
     print(f"profile: {profile_status} | path={profile}")
     if health.get("exists"):
@@ -1875,8 +2017,9 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     print("next_action:")
     print(f"- {_format_next_action(next_action)}")
     print("source_contract:")
-    print("- fields=mode,profile,health,issues,plan,objective,attention,next_action")
+    print("- fields=bundle,mode,profile,v1_migration,health,issues,plan,objective,attention,next_action")
     print("- render=caller-owned README-style hej dashboard")
+    print("- access=single installed CLI call; bundle/v1/profile safety included; no preflight glob/read/import/doctor calls")
     return 0
 
 
@@ -2015,6 +2158,24 @@ def build_parser() -> argparse.ArgumentParser:
     hej = sub.add_parser(
         "hej",
         help="Composite orientation briefing",
+    )
+    hej.add_argument(
+        "--install-root",
+        type=_agent_path,
+        default=None,
+        help="Agentera install root to include in the bundle status (default: AGENTERA_HOME, then ~/.agents/agentera)",
+    )
+    hej.add_argument(
+        "--home",
+        type=_agent_path,
+        default=Path.home(),
+        help="Home directory used for the default durable install root",
+    )
+    hej.add_argument(
+        "--expected-version",
+        type=_agent_version,
+        default=None,
+        help="Expected suite version for bundle status (default: AGENTERA_EXPECTED_VERSION, then registry.json in this source)",
     )
     add_structured_args(hej)
 

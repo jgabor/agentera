@@ -141,8 +141,10 @@ structured_output:
       fields:
         - command
         - status
+        - bundle
         - mode
         - profile
+        - v1_migration
         - health
         - issues
         - plan
@@ -187,8 +189,10 @@ field_selection:
       fields:
         - command
         - status
+        - bundle
         - mode
         - profile
+        - v1_migration
         - health
         - issues
         - plan

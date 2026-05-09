@@ -150,6 +150,10 @@ def _load_suite_version(source_root: Path) -> str | None:
     return version if isinstance(version, str) and version else None
 
 
+def load_suite_version(source_root: Path) -> str | None:
+    return _load_suite_version(source_root)
+
+
 def _read_bundle_marker(install_root: Path) -> dict[str, Any] | None:
     marker = _bundle_marker_path(install_root)
     if not marker.is_file():
@@ -271,6 +275,7 @@ def build_doctor_status(
     project: Path,
     expected_version: str | None = None,
     expected_commands: tuple[str, ...] = EXPECTED_STATE_COMMANDS,
+    probe_cli: bool = True,
 ) -> dict[str, Any]:
     expected = expected_version or _load_suite_version(source_root) or "unknown"
     classification = _classify_root(install_root, source=_source_key(root_source), expected_version=expected)
@@ -337,10 +342,14 @@ def build_doctor_status(
                 "actual": marker_version,
                 "message": "bundle marker version does not match the expected suite version",
             })
-        probe = _probe_bundle_cli(
-            install_root,
-            project=project,
-            expected_commands=expected_commands,
+        probe = (
+            _probe_bundle_cli(
+                install_root,
+                project=project,
+                expected_commands=expected_commands,
+            )
+            if probe_cli
+            else {"ok": True}
         )
         if not probe["ok"]:
             kind = "cli_probe_unavailable"

@@ -144,20 +144,30 @@ def test_hej_is_fallback_capability():
 # 5. Upgrade check: v1 artifacts detected → upgrade notice in briefing
 # ---------------------------------------------------------------------------
 
-def test_upgrade_check_includes_v1_detection_logic():
+def test_upgrade_check_is_cli_owned_for_v1_detection():
+    prose_path = HEJ_CAP_DIR / "prose.md"
+    content = prose_path.read_text()
+    compact = content.replace("\n", " ")
+
+    assert "CLI-owned checks" in content, "prose.md must route v1 checks through the CLI"
+    assert "Do not run separate v1 artifact" in content, \
+        "hej must not require separate v1 artifact discovery calls"
+    assert "v1_migration.detected" in content, \
+        "hej must render the CLI-provided v1 migration state"
+    assert ".agentera/*.md" in content and "VISION.md" in content, \
+        "hej must explicitly forbid redundant v1 discovery globs"
+    assert "dry-run preview" in compact, "upgrade check must reference the CLI-supplied preview"
+    assert "v1_migration.apply_command" in content and "confirmation" in content, \
+        "upgrade check must require explicit confirmation before applying"
+
+
+def test_bundle_status_check_is_cli_owned():
     prose_path = HEJ_CAP_DIR / "prose.md"
     content = prose_path.read_text()
 
-    assert "v1 migration check" in content.lower(), "prose.md must contain v1 migration check guidance"
-
-    for v1_artifact in ["PROGRESS.md", "PLAN.md", "DECISIONS.md", "HEALTH.md"]:
-        assert v1_artifact in content, f"upgrade check must reference v1 artifact {v1_artifact}"
-
-    assert "agentera upgrade" in content, "upgrade check must reference the upgrade command"
-    assert "uvx --from git+https://github.com/jgabor/agentera" in content, \
-        "upgrade check must include the clone-free uvx path"
-    assert "--yes" in content and "confirmation" in content, \
-        "upgrade check must require explicit confirmation before applying"
+    assert "bundle.status" in content, "hej must inspect the CLI-provided bundle status"
+    assert "bundle.dryRunCommand" in content, "hej must use the CLI-provided bundle repair preview"
+    assert "bundle.applyCommand" in content, "hej must use the CLI-provided bundle apply command after approval"
 
 
 def test_upgrade_check_specifies_no_notice_when_no_v1():
@@ -176,10 +186,15 @@ def test_profile_status_check_no_warning_when_profile_present():
     prose_path = HEJ_CAP_DIR / "prose.md"
     content = prose_path.read_text()
 
-    profile_section = content[content.index("PROFILE.md detection"):]
-    assert "profile   loaded" in profile_section, "status check must specify 'loaded' when PROFILE.md exists"
-    assert "No warning" in profile_section or "no warning" in profile_section.lower(), \
-        "status check must specify no warning when PROFILE.md exists"
+    profile_section = content[content.index("CLI-owned checks"):]
+    compact = profile_section.replace("\n", " ")
+    assert "PROFILE.md checks" in profile_section, "profile checks must be covered"
+    assert "global profile-path discovery" in compact, \
+        "hej must forbid separate global profile discovery calls"
+    assert "profile: loaded" in profile_section, \
+        "status check must specify the loaded profile output from agentera hej"
+    assert "without warning" in profile_section, \
+        "status check must specify no warning when agentera hej reports a loaded profile"
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +205,8 @@ def test_profile_status_check_flags_missing_profile_as_degraded():
     prose_path = HEJ_CAP_DIR / "prose.md"
     content = prose_path.read_text()
 
-    profile_section = content[content.index("PROFILE.md detection"):]
-    assert "profile   not found" in profile_section, "status check must specify 'not found' when PROFILE.md is absent"
-    assert "⇉" in profile_section, "status check must use degraded severity arrow for missing PROFILE.md"
-    assert "profilera" in profile_section, "status check must reference profilera as the remediation"
+    profile_section = content[content.index("CLI-owned checks"):]
+    assert "missing-profile attention item" in profile_section, \
+        "missing-profile status must be rendered only from agentera hej attention"
+    assert "agentera hej" in profile_section, \
+        "profile remediation guidance must come from the composite CLI output"

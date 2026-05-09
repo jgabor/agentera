@@ -27,7 +27,8 @@ def _run(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
     env = None
     if cwd is not None:
         import os
-        env = {**os.environ, "AGENTERA_HOME": str(cwd), "XDG_DATA_HOME": str(cwd / ".xdg")}
+        agentera_home = REPO_ROOT if args and args[0] == "hej" else cwd
+        env = {**os.environ, "AGENTERA_HOME": str(agentera_home), "XDG_DATA_HOME": str(cwd / ".xdg")}
     return subprocess.run(
         [sys.executable, CLI, *args],
         capture_output=True,
@@ -562,13 +563,79 @@ class TestArtifactSpecificSummaries:
 
 
 class TestHej:
+    def _write_bundle_root(self, root: Path, marker_version: str = "1.0.0") -> Path:
+        (root / "scripts").mkdir(parents=True)
+        (root / "scripts" / "agentera").write_text("subcommand: hej\n", encoding="utf-8")
+        (root / "skills" / "agentera").mkdir(parents=True)
+        (root / "skills" / "agentera" / "SKILL.md").write_text("# agentera\n", encoding="utf-8")
+        (root / "registry.json").write_text('{"skills":[{"version":"1.0.0"}]}\n', encoding="utf-8")
+        (root / ".agentera-bundle.json").write_text(
+            json.dumps({"version": marker_version}),
+            encoding="utf-8",
+        )
+        return root
+
     def test_first_run_empty_project_routes_to_visionera(self, project):
         r = _run("hej", cwd=project)
 
         assert r.returncode == 0
+        assert "bundle: status=fresh" in r.stdout
         assert "mode: fresh" in r.stdout
         assert "capability=visionera" in r.stdout
         assert "reason=fresh project direction" in r.stdout
+
+    def test_stale_bundle_is_reported_by_hej_without_preflight(self, project):
+        install_root = self._write_bundle_root(project / "bundle", marker_version="1.0.0")
+
+        r = _run("hej", "--install-root", str(install_root), "--expected-version", "2.0.0", cwd=project)
+
+        assert r.returncode == 0
+        assert "bundle: status=stale" in r.stdout
+        assert "bundle stale" in r.stdout
+        assert "upgrade --only bundle" in r.stdout
+        assert str(install_root) in r.stdout
+
+    def test_stale_bundle_structured_output_has_repair_contract(self, project):
+        install_root = self._write_bundle_root(project / "bundle", marker_version="1.0.0")
+
+        r = _run("hej", "--install-root", str(install_root), "--expected-version", "2.0.0", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        bundle = data["bundle"]
+        assert bundle["status"] == "stale"
+        assert bundle["expectedVersion"] == "2.0.0"
+        assert bundle["markerVersion"] == "1.0.0"
+        assert bundle["dryRunCommand"].startswith("uvx --from git+https://github.com/jgabor/agentera")
+        assert "--only bundle" in bundle["dryRunCommand"]
+        assert bundle["applyCommand"].endswith("--yes")
+        assert bundle["approval"] == f"approve bundle refresh for {install_root}"
+
+    def test_visible_skill_version_can_mark_bundle_stale_without_preflight(self, project):
+        install_root = self._write_bundle_root(project / "bundle", marker_version="1.0.0")
+        visible = project / "visible-skill"
+        visible.mkdir()
+        visible.joinpath("SKILL.md").write_text('---\nversion: "9.0.0"\n---\n# agentera\n', encoding="utf-8")
+        env = {
+            **os.environ,
+            "AGENTERA_HOME": str(REPO_ROOT),
+            "AGENTERA_VISIBLE_SKILL_ROOT": str(visible),
+            "XDG_DATA_HOME": str(project / ".xdg"),
+        }
+
+        r = subprocess.run(
+            [sys.executable, CLI, "hej", "--install-root", str(install_root), "--format", "json"],
+            capture_output=True,
+            text=True,
+            cwd=project,
+            env=env,
+        )
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["bundle"]["status"] == "stale"
+        assert data["bundle"]["expectedVersion"] == "9.0.0"
+        assert data["bundle"]["expectedVersionSource"] == str(visible)
 
     def test_saved_context_without_vision_routes_to_resonera(self, project):
         _write_artifact(project, ".agentera/session.yaml", {
@@ -637,9 +704,11 @@ class TestHej:
         assert "attention:" in r.stdout
         assert "object=PLAN Task 2: Composite hej" in r.stdout
         assert "capability=orkestrera" in r.stdout
+        assert "bundle: status=fresh" in r.stdout
         assert "source_contract:" in r.stdout
-        assert "fields=mode,profile,health,issues,plan,objective,attention,next_action" in r.stdout
+        assert "fields=bundle,mode,profile,v1_migration,health,issues,plan,objective,attention,next_action" in r.stdout
         assert "render=caller-owned README-style hej dashboard" in r.stdout
+        assert "access=single installed CLI call; bundle/v1/profile safety included; no preflight glob/read/import/doctor calls" in r.stdout
         assert "┌─┐┌─┐┌─┐" not in r.stdout
         assert "render=hej dashboard | status=complete" not in r.stdout
 
@@ -726,8 +795,28 @@ class TestHej:
 
         assert r.returncode == 0
         assert "v1 artifacts detected" in r.stdout
-        assert 'uv run scripts/agentera upgrade --project "$PWD" --dry-run' in r.stdout
+        assert 'uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run' in r.stdout
         assert ".agentera/PLAN.md" in r.stdout
+
+    def test_v1_migration_structured_output_has_safe_commands(self, project):
+        legacy = project / ".agentera" / "PLAN.md"
+        legacy.parent.mkdir(parents=True)
+        legacy.write_text("# Plan\n")
+
+        r = _run("hej", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        migration = data["v1_migration"]
+        assert migration["detected"] is True
+        assert migration["affected_files"] == [".agentera/PLAN.md"]
+        assert migration["dry_run_command"] == (
+            'uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run'
+        )
+        assert migration["apply_command"] == (
+            'uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --yes'
+        )
+        assert migration["requires_confirmation"] is True
 
     def _write_profile(self, project: Path, date_str: str) -> Path:
         profile_dir = project / ".xdg" / "agentera"
@@ -777,13 +866,20 @@ class TestHej:
         r = _run("hej", cwd=project)
         assert r.returncode == 0
         assert "PROFILE.md not found" in r.stdout
-        assert "profilera" not in r.stdout
+        assert "suggest running profilera to generate PROFILE.md" in r.stdout
+
+    def test_missing_profile_structured_output_has_suggested_action(self, project):
+        r = _run("hej", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["profile"]["status"] == "not found"
+        assert data["profile"]["suggested_action"] == "Run profilera to generate PROFILE.md"
 
     def test_env_var_overrides_stale_threshold(self, project):
         self._write_profile(project, self._profile_date(days_ago=7))
         env = {
             **os.environ,
-            "AGENTERA_HOME": str(project),
+            "AGENTERA_HOME": str(REPO_ROOT),
             "XDG_DATA_HOME": str(project / ".xdg"),
             "AGENTERA_PROFILERA_MAX_AGE_DAYS": "14",
         }
@@ -800,7 +896,7 @@ class TestHej:
         self._write_profile(project, self._profile_date(days_ago=1))
         env = {
             **os.environ,
-            "AGENTERA_HOME": str(project),
+            "AGENTERA_HOME": str(REPO_ROOT),
             "XDG_DATA_HOME": str(project / ".xdg"),
             "AGENTERA_PROFILERA_MAX_AGE_DAYS": "1",
         }
@@ -817,7 +913,7 @@ class TestHej:
         self._write_profile(project, self._profile_date(days_ago=30))
         env = {
             **os.environ,
-            "AGENTERA_HOME": str(project),
+            "AGENTERA_HOME": str(REPO_ROOT),
             "XDG_DATA_HOME": str(project / ".xdg"),
             "AGENTERA_PROFILERA_MAX_AGE_DAYS": "not-a-number",
         }
@@ -1093,7 +1189,12 @@ class TestRoutineStructuredOutput:
         assert "source" in data
         if command == "hej":
             assert "next_action" in data
+            assert "bundle" in data
+            assert "v1_migration" in data
             assert "source_contract" in data
+            assert data["source_contract"]["access"] == (
+                "single installed CLI call; bundle/v1/profile safety included; no preflight glob/read/import/doctor calls during normal hej"
+            )
         else:
             assert isinstance(data["entries"], list)
             assert isinstance(data["counts"]["entries"], int)

@@ -26,30 +26,37 @@ uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
 
 Use that output to render the dashboard and select the concrete next action. Do
 not relay raw CLI lines as the user-facing briefing. Source labels such as
-`mode:`, `profile:`, `health:`, `issues:`, `plan:`, `objective:`, `attention:`,
-`next_action:`, and `source_contract:` are parsing aids, not dashboard lines. Do
-not run `agentera plan`, `agentera progress`, `agentera health`, `agentera todo`,
-`agentera decisions`, or `agentera objective` as part of normal hej briefing
-assembly. Do not read raw
+`bundle:`, `mode:`, `profile:`, `v1_migration:`, `health:`, `issues:`, `plan:`,
+`objective:`, `attention:`, `next_action:`, and `source_contract:` are parsing
+aids, not dashboard lines. Do not run `agentera plan`, `agentera progress`,
+`agentera health`, `agentera todo`, `agentera decisions`, or `agentera objective`
+as part of normal hej briefing assembly. Do not read raw
 `.agentera/*.yaml` files for normal hej orientation. If a normal dashboard field
 is missing from `agentera hej`, fix or extend the composite CLI contract instead
 of adding routine fallback reads. Use top-level fallback commands only when
 `agentera hej` fails or explicitly reports fallback-only recovery.
 
-Resolve `RESOLVED_AGENTERA_HOME` through the shared install-root Module contract
-implemented by `scripts/install_root.py`: `AGENTERA_HOME` when set, otherwise the
-default durable root `$HOME/.agents/agentera`. Treat managed, stale, missing,
-invalid, and unmanaged root semantics as Module-owned contract states. If the
-installed command is stale, missing `hej`, fails before argparse, or has a stale
-`.agentera-bundle.json` marker, treat it as an out-of-date installed bundle, tell the
-user the installed Agentera bundle is stale, and preview the repair with:
+Resolve `RESOLVED_AGENTERA_HOME` with the install-root precedence `AGENTERA_HOME`
+when set, otherwise the default durable root `$HOME/.agents/agentera`, then run
+the installed command once. Do not preflight bundle health with `glob`, `grep`,
+`read`, `ls`, `python`, `doctor`, `--help`, `scripts/install_root.py`,
+`registry.json`, or `.agentera-bundle.json`. If the command exits successfully,
+inspect the CLI-provided `bundle.status`; only `fresh` passes the installed
+Agentera bundle gate for normal briefing. The `bundle` object also carries
+`expectedVersionSource`, repair commands, and approval text. If the installed
+command cannot execute, is stale, missing `hej`, fails before argparse, or
+reports `bundle.status` as blocked/refresh-required, tell the user the installed
+Agentera bundle is stale and preview the repair with `bundle.dryRunCommand` when
+present:
+
+Use the exact stale-bundle summary phrase `installed Agentera bundle is stale`.
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
 ```
 
-Do not run the matching `--yes` command until the user explicitly approves the
-same bundle root, preferably with `approve bundle refresh for
+Do not run the matching `bundle.applyCommand` until the user explicitly approves
+the same bundle root, preferably with `approve bundle refresh for
 <resolved-root>`. After apply, retry `uv run
 "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej`; do not treat local checkout
 fallback as installed-bundle success. If `AGENTERA_HOME` points at a missing,
@@ -61,8 +68,9 @@ custom artifact inspection when no top-level command serves the needed state.
 
 ### Artifact path resolution
 
-Before reading artifacts, check `.agentera/docs.yaml` for path mappings. Without
-a mapping, use the default layout:
+Only if `agentera hej` fails and fallback raw artifact access is explicitly
+needed, check `.agentera/docs.yaml` for path mappings before reading artifacts.
+Without a mapping, use the default layout:
 
 - Human-facing artifacts at the project root (Markdown): `TODO.md`, `CHANGELOG.md`, `DESIGN.md`
 - Agent-facing artifacts in `.agentera/` (YAML): `progress.yaml`, `decisions.yaml`, `health.yaml`, `plan.yaml`, `docs.yaml`, `vision.yaml`, `session.yaml`, and per-objective `objective.yaml` / `experiments.yaml`
@@ -81,8 +89,8 @@ VT14, flow arrow VT17, skill glyphs SG1-SG12, exits EX1-EX4, issues SI1-SI4.
 ## Step 0: Detect mode
 
 Run the resolved installed `agentera hej` and use its `mode` field. If the
-install status check fails because the installed bundle is stale, show the
-refresh preview before normal mode handling.
+`bundle.status` check reports stale or blocked, show the CLI-provided refresh
+preview before normal mode handling.
 
 - **No artifacts found** → Step 1a (first time on this project)
 - **Artifacts found** → Step 1b (returning to known project)
@@ -91,50 +99,22 @@ Narration voice: warm, brief, unscripted.
 
 ---
 
-## Step 0.5: V1 migration check
+## Step 0.5: CLI-owned checks
 
-After mode detection (Step 0) and before the welcome (Step 1a) or briefing (Step 1b), run two checks. Detection is passive by default; hej only runs an upgrade apply command after explicit user confirmation.
+Do not run separate v1 artifact or PROFILE.md checks during normal hej
+orientation. `agentera hej` owns those checks and emits the mode, profile status,
+`v1_migration.detected`, `v1_migration.affected_files`,
+`v1_migration.dry_run_command`, `v1_migration.apply_command`, attention items,
+and next action. Render those fields; do not spend additional tool calls on
+`.agentera/*.md`, `.agentera/*.yaml`, `VISION.md`, or global profile-path
+discovery. Treat `v1_migration.dry_run_command` as the CLI-supplied dry-run
+preview. Ask before any upgrade apply command, and only run
+`v1_migration.apply_command` after confirmation.
 
-### V1 artifact detection
-
-Check `.agentera/` for v1 Markdown artifacts that lack a corresponding v2 YAML counterpart. The v1→v2 mapping is:
-
-| v1 (Markdown) | v2 (YAML) |
-|----------------|-----------|
-| `.agentera/PROGRESS.md` | `.agentera/progress.yaml` |
-| `.agentera/PLAN.md` | `.agentera/plan.yaml` |
-| `.agentera/DECISIONS.md` | `.agentera/decisions.yaml` |
-| `.agentera/HEALTH.md` | `.agentera/health.yaml` |
-| `.agentera/SESSION.md` | `.agentera/session.yaml` |
-| `.agentera/DOCS.md` | `.agentera/docs.yaml` |
-| `VISION.md` (project root) | `.agentera/vision.yaml` |
-
-For each v1 file that exists where the corresponding v2 file does **not**:
-
-<!-- markdownlint-disable MD034 -->
-
-- Add to the briefing's attention section as a degraded (SI2, ⇉) item:
-  `⇉ v1 artifacts detected · preview \`uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run\``
-
-<!-- markdownlint-enable MD034 -->
-
-- If the current project is a local Agentera checkout with `scripts/agentera`, the local equivalent is
-  `uv run scripts/agentera upgrade --project "$PWD" --dry-run`.
-- Include the notice once (not per-file); list the affected files after the command.
-- Ask before applying. After confirmation, run the same command with `--yes`.
-  If the user reached this flow from a legacy `/hej` install or stale runtime
-  package state, include `--update-packages` so `/agentera` is installed too.
-- This applies to both Step 1a (welcome) and Step 1b (briefing) flows.
-
-If no v1 artifacts exist (fresh install or already migrated), emit no upgrade notice.
-
-### PROFILE.md detection
-
-Check `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) for the global decision profile.
-
-- **PROFILE.md exists** → report `♾ profile   loaded` in the status line. No warning.
-- **PROFILE.md absent** → report `♾ profile   not found` in the status line **and** add a degraded (SI2, ⇉) attention item:
-  `⇉ PROFILE.md not found at global path · use profilera to generate your decision profile`
+If `v1_migration.detected` is false, emit no upgrade notice. Profile status is
+also CLI-owned: render `profile: loaded` without warning, and render
+`profile.suggested_action` or a missing-profile attention item only when
+`agentera hej` supplies one.
 
 ---
 
@@ -142,19 +122,14 @@ Check `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PRO
 
 First impression: the colleague meets a new project.
 
-1. **Quick scan**: language(s), framework(s), README.md, last 5 commits, approximate size.
-   Fast, no deep analysis.
+1. **Use composite state**: Build the welcome from `agentera hej` output only.
+   Do not scan README files, git history, languages, framework files, or project
+   size during bare orientation.
 
-2. **Share what's available**: lead with the 2-3 capabilities most relevant to
-   the scan. Do not enumerate the full suite unless asked. Common phrases:
-   define direction, help me decide, research this pattern, plan this, build the
-   next feature, improve test coverage, audit the codebase, update docs, build
-   decision profile, design visual identity, run the plan.
+2. **Share what's available**: lead with the suggested capability from
+   `next_action`. Do not enumerate the full suite unless asked.
 
-3. **Give your honest take**: based on the scan, tell the user where you'd start
-    and why. "If I were you, I'd start with X because Y." Use the routing logic (no vision → visionera, unknown quality → inspektera, decision needed → resonera, ready to build + has plan → orkestrera, ready to build → realisera, docs gaps → dokumentera) but frame it as judgment, not a lookup table.
-
-4. **Route**: ask what they'd like to do with a free-form prompt. Do not use a
+3. **Route**: ask what they'd like to do with a free-form prompt. Do not use a
    native question menu on the initial welcome unless the user explicitly asked
    for bounded choices. Invoke a capability only after the user confirms it.
 
