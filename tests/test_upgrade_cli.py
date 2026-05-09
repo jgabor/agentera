@@ -294,9 +294,17 @@ def test_runtime_upgrade_configures_codex_without_v1_agent_blocks(tmp_path: Path
 
     assert first.returncode == 0, first.stderr
     config = (home / ".codex" / "config.toml").read_text(encoding="utf-8")
+    hooks_path = home / ".codex" / "hooks.json"
     assert f'AGENTERA_HOME = "{REPO_ROOT}"' in config
+    assert "[features]" in config
+    assert "hooks = true" in config
+    assert "[hooks.state]" in config
+    assert f"{hooks_path}:pre_tool_use:0:0" in config
+    assert f"{hooks_path}:post_tool_use:0:0" in config
+    assert "trusted_hash = \"sha256:" in config
+    assert "enabled = true" in config
     assert "[agents." not in config
-    assert (home / ".codex" / "hooks.json").read_text(encoding="utf-8") == (
+    assert hooks_path.read_text(encoding="utf-8") == (
         REPO_ROOT / "hooks" / "codex-hooks.json"
     ).read_text(encoding="utf-8")
 

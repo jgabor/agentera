@@ -8,8 +8,10 @@ missing artifacts, and filter-no-match.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -726,6 +728,118 @@ class TestHej:
         assert "v1 artifacts detected" in r.stdout
         assert 'uv run scripts/agentera upgrade --project "$PWD" --dry-run' in r.stdout
         assert ".agentera/PLAN.md" in r.stdout
+
+    def _write_profile(self, project: Path, date_str: str) -> Path:
+        profile_dir = project / ".xdg" / "agentera"
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        profile = profile_dir / "PROFILE.md"
+        profile.write_text(f"# Profile\n<!-- Generated: {date_str} -->\n")
+        return profile
+
+    def _profile_date(self, days_ago: int) -> str:
+        return (date.today() - timedelta(days=days_ago)).isoformat()
+
+    def test_stale_profile_shows_attention(self, project):
+        self._write_profile(project, self._profile_date(days_ago=30))
+        r = _run("hej", cwd=project)
+        assert r.returncode == 0
+        assert "profile: loaded" in r.stdout
+        assert "profilera profile stale" in r.stdout
+        assert "suggest running profilera" in r.stdout
+
+    def test_stale_profile_in_structured_output(self, project):
+        self._write_profile(project, self._profile_date(days_ago=30))
+        r = _run("hej", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["profile"]["status"] == "loaded"
+        assert data["profile"]["stale"] is True
+        assert data["profile"]["days_since_generated"] > 0
+        assert data["profile"]["stale_threshold_days"] == 7
+        assert "Run profilera" in data["profile"]["suggested_action"]
+
+    def test_fresh_profile_no_stale_attention(self, project):
+        self._write_profile(project, self._profile_date(days_ago=0))
+        r = _run("hej", cwd=project)
+        assert r.returncode == 0
+        assert "profile: loaded" in r.stdout
+        assert "profilera profile stale" not in r.stdout
+
+    def test_fresh_profile_structured_output_shows_stale_false(self, project):
+        self._write_profile(project, self._profile_date(days_ago=0))
+        r = _run("hej", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["profile"]["stale"] is False
+        assert data["profile"]["days_since_generated"] <= 1
+
+    def test_profile_missing_no_stale_output(self, project):
+        r = _run("hej", cwd=project)
+        assert r.returncode == 0
+        assert "PROFILE.md not found" in r.stdout
+        assert "profilera" not in r.stdout
+
+    def test_env_var_overrides_stale_threshold(self, project):
+        self._write_profile(project, self._profile_date(days_ago=7))
+        env = {
+            **os.environ,
+            "AGENTERA_HOME": str(project),
+            "XDG_DATA_HOME": str(project / ".xdg"),
+            "AGENTERA_PROFILERA_MAX_AGE_DAYS": "14",
+        }
+        r = subprocess.run(
+            [sys.executable, CLI, "hej", "--format", "json"],
+            capture_output=True, text=True, cwd=project, env=env,
+        )
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["profile"]["stale"] is False, f"Expected not stale with 14 day threshold, got {data}"
+        assert data["profile"]["stale_threshold_days"] == 14
+
+    def test_env_var_lower_threshold_triggers_stale(self, project):
+        self._write_profile(project, self._profile_date(days_ago=1))
+        env = {
+            **os.environ,
+            "AGENTERA_HOME": str(project),
+            "XDG_DATA_HOME": str(project / ".xdg"),
+            "AGENTERA_PROFILERA_MAX_AGE_DAYS": "1",
+        }
+        r = subprocess.run(
+            [sys.executable, CLI, "hej", "--format", "json"],
+            capture_output=True, text=True, cwd=project, env=env,
+        )
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["profile"]["stale"] is True, f"Expected stale with 1 day threshold, got {data}"
+        assert "profilera profile stale" in r.stdout if r.stdout else ""
+
+    def test_invalid_env_var_threshold_uses_default(self, project):
+        self._write_profile(project, self._profile_date(days_ago=30))
+        env = {
+            **os.environ,
+            "AGENTERA_HOME": str(project),
+            "XDG_DATA_HOME": str(project / ".xdg"),
+            "AGENTERA_PROFILERA_MAX_AGE_DAYS": "not-a-number",
+        }
+        r = subprocess.run(
+            [sys.executable, CLI, "hej", "--format", "json"],
+            capture_output=True, text=True, cwd=project, env=env,
+        )
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["profile"]["stale"] is True
+        assert data["profile"]["stale_threshold_days"] == 7
+
+    def test_stale_profile_generates_suggested_action(self, project):
+        self._write_profile(project, self._profile_date(days_ago=30))
+        r = _run("hej", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        attentions = data.get("attention", [])
+        stale_attentions = [a for a in attentions if "profilera" in a]
+        assert len(stale_attentions) > 0
+        assert any("stale" in a for a in stale_attentions)
+        assert any("suggest running profilera" in a for a in stale_attentions)
 
 
 # ---------------------------------------------------------------------------

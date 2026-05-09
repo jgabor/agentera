@@ -132,7 +132,7 @@ Use `--opencode-config-dir PATH` to target a non-default OpenCode config directo
 
 ### Codex
 
-The upgrade command writes `AGENTERA_HOME` into `~/.codex/config.toml` and copies `hooks/codex-hooks.json` to `~/.codex/hooks.json`. Agentera v2 is one bundled `$agentera` skill; the old per-skill `[agents.<name>]` Codex config blocks are v1 artifacts and are not written.
+The upgrade command writes `AGENTERA_HOME` into `~/.codex/config.toml`, enables trusted Codex hooks state for the installed `~/.codex/hooks.json`, and copies `hooks/codex-hooks.json` to `~/.codex/hooks.json`. Agentera v2 is one bundled `$agentera` skill; the old per-skill `[agents.<name>]` Codex config blocks are v1 artifacts and are not written.
 
 ```bash
 uv run scripts/agentera upgrade --runtime codex --yes

@@ -1,4 +1,4 @@
-last_audit: 2026-05-08 (2.2.2 final state check and plan closure)
+last_audit: 2026-05-09 (2.2.3 release metadata sync and readiness gate)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -76,11 +76,11 @@ index:
   status: current
 - document: Python package manifest
   path: pyproject.toml
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-09'
   status: current
 - document: Upgrade guide
   path: UPGRADE.md
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-09'
   status: current
 - document: CLAUDE.md
   path: CLAUDE.md
@@ -96,15 +96,15 @@ index:
   status: current
 - document: Progress
   path: .agentera/progress.yaml
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-09'
   status: current
 - document: TODO
   path: TODO.md
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-09'
   status: current
 - document: Changelog
   path: CHANGELOG.md
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-09'
   status: current
 - document: Health
   path: .agentera/health.yaml
@@ -112,11 +112,11 @@ index:
   status: current
 - document: Plan
   path: .agentera/plan.yaml
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-09'
   status: current
 - document: DOCS
   path: .agentera/docs.yaml
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-09'
   status: current
 - document: Vocabulary
   path: docs/vocabulary.md
@@ -136,11 +136,11 @@ index:
   status: current
 - document: Registry
   path: registry.json
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-09'
   status: current
 - document: Marketplace manifest
   path: .claude-plugin/marketplace.json
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-09'
   status: current
 - document: Codex marketplace manifest
   path: .agents/plugins/marketplace.json
@@ -148,19 +148,19 @@ index:
   status: current
 - document: Copilot plugin manifest
   path: plugin.json
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-09'
   status: current
 - document: Copilot repo plugin manifest
   path: .github/plugin/plugin.json
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-09'
   status: current
 - document: Codex plugin manifest
   path: .codex-plugin/plugin.json
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-09'
   status: current
 - document: OpenCode plugin adapter
   path: .opencode/plugins/agentera.js
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-09'
   status: current
 - document: OpenCode adapter reference
   path: references/adapters/opencode.md
@@ -342,8 +342,31 @@ coverage:
   documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: 2.2.2 final state is closed after full pytest (811 passed), all capability validation, contract self-validation, changed Python compile, package/version alignment checks, focused hej and TODO compaction regressions, routine JSON state parse checks, and plan archive/removal. `agentera doctor --json` reports the installed app is stale, so no installed app refresh or live install confidence is claimed.
+  tests: '2.2.3 release-readiness validation passed locally: focused package/version tests reported 12 passed, non-live host smoke passed, uv run pytest -q reported 824 passed, docs JSON parsed 67 current entries, and git diff --check passed. Opt-in live smoke remains the prior approved evidence with Claude Code skipped for expected auth/subscription access; no commit, tag, push, publication, package update, installed bundle refresh, vision edit, or objective edit was performed.'
 audit_log:
+- date: '2026-05-09'
+  label: 2.2.3 release metadata sync and readiness validation
+  findings:
+  - type: checked
+    description: Version-bearing source surfaces now identify 2.2.3 across registry, Python, lockfile, runtime manifests, Claude marketplace metadata/plugins, OpenCode marker, and skill frontmatter.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: 'CHANGELOG.md records the 2.2.3 patch scope: Profilera staleness suggestion, all-runtime live smoke with Claude auth skip, generated OpenCode install-root contract, Codex live hook trust, and installed Codex hook trust.'
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: No release tag operation, push, publication, package update, installed bundle refresh, vision edit, or objective edit was performed during metadata sync.
+    resolution: noted
+    severity: info
+  - type: checked
+    description: 'Release-readiness validation passed: focused package/version tests reported 12 passed, non-live host smoke passed, uv run pytest -q reported 824 passed, docs JSON parsed 67 current entries, and git diff --check passed.'
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: Doctor reports the installed bundle is stale at marker version 2.1.1 versus expected 2.2.3, so installed bundle refresh remains intentionally unperformed pending explicit approval.
+    resolution: noted
+    severity: info
 - date: '2026-05-08'
   label: 2.2.2 final state check and plan closure
   findings:

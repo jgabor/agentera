@@ -1,4 +1,232 @@
 cycles:
+- number: 380
+  timestamp: 2026-05-09
+  type: release
+  phase: build
+  what: >
+    Completed the 2.2.3 release metadata readiness gate by closing the active
+    plan after local validation and final state checks.
+  commit: pending
+  inspiration: >
+    The release surfaces were synchronized, but the final plan still needed
+    executable validation and a state handoff before any commit, tag, push, or
+    publication request.
+  discovered: >
+    The first focused test rerun caught invalid YAML in .agentera/docs.yaml from
+    an unquoted colon in the 2.2.3 changelog-scope evidence. Quoting that scalar
+    restored docs parsing; structured docs now reports 67 current entries.
+  verified: >
+    Focused version/package tests initially found the docs YAML parse error, then
+    after the fix uv run pytest tests/test_package_registry.py
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_agentera_version_reader_extracts_current_literal
+    -q reported 12 passed. uv run scripts/smoke_live_hosts.py passed in non-live
+    mode, uv run scripts/agentera docs --format json reported status ok with 67
+    current entries, git diff --check passed, and uv run pytest -q reported 824
+    passed. Final state checks show TODO only has the deferred [feat:2.3.x]
+    Profilera corpus parity item, the plan is complete with 4/4 tasks, hej
+    selects that TODO as next action while also flagging the stale Profilera
+    profile, and doctor reports the installed bundle intentionally stale at
+    marker version 2.1.1 versus expected 2.2.3.
+  next: >
+    Await explicit user approval for a commit. Tag, push, package publication,
+    package-manager updates, and installed bundle refresh remain separate
+    explicit requests.
+  context:
+    intent: 2.2.3 release-readiness closure
+    constraints: no commit, tag, push, publication, package update, installed
+      bundle refresh, vision edit, or objective edit
+    scope: .agentera/plan.yaml, .agentera/docs.yaml, .agentera/progress.yaml,
+      validation gates, final state checks
+
+- number: 379
+  timestamp: 2026-05-09
+  type: release
+  phase: build
+  what: >
+    Synchronized 2.2.3 release metadata across version surfaces, changelog, docs,
+    and active plan evidence after the patch implementation and Codex hook trust
+    follow-up completed.
+  commit: pending
+  inspiration: >
+    Release readiness was blocked because implementation and live-smoke evidence
+    were complete but version-bearing surfaces still identified 2.2.2 and
+    CHANGELOG.md had no 2.2.3 entry.
+  discovered: >
+    Package registry tests intentionally pin the expected suite version, so the
+    release metadata sync must update both source version surfaces and the
+    executable test expectation. Historical 2.2.2 archive/progress/changelog text
+    remains unchanged.
+  verified: >
+    Focused version evidence passed: grep found no active source version surface
+    still declaring 2.2.2, and uv run pytest tests/test_package_registry.py
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_agentera_version_reader_extracts_current_literal
+    -q reported 12 passed. Final full release-readiness validation remains Task
+    3 of the active plan.
+  next: Run final 2.2.3 release-readiness validation before handoff.
+  context:
+    intent: 2.2.3 release metadata sync
+    constraints: no publication, tag, push, package update, installed bundle
+      refresh, commit, vision edit, or objective edit
+    scope: version files, CHANGELOG.md, .agentera/docs.yaml,
+      .agentera/progress.yaml, .agentera/plan.yaml, tests/test_package_registry.py
+
+- number: 378
+  timestamp: 2026-05-09
+  type: fix
+  phase: build
+  what: >
+    Codex installed hook trust: made the runtime upgrade config write the same
+    trusted hooks.state entries required by Codex 0.129.0 for the installed
+    ~/.codex/hooks.json apply_patch hooks.
+  commit: pending
+  inspiration: >
+    The live smoke debug proved temporary Codex hooks only fired after matching
+    trusted hashes were written to config.toml. The actual upgrade path copied
+    hooks.json but did not trust the installed user hooks, so installed Codex
+    hook behavior could remain discovered-but-inactive.
+  discovered: >
+    scripts/setup_codex.py can compute Codex's normalized command-hook trust
+    hash by hashing the TOML-shaped identity as canonical JSON while omitting
+    absent optional fields. scripts/agentera_upgrade.py now passes the actual
+    runtime hook target into the Codex config planner so fixture and real
+    ~/.codex/hooks.json paths get matching hook-state keys.
+  verified: >
+    python3 -m py_compile scripts/setup_codex.py scripts/agentera_upgrade.py
+    scripts/smoke_live_hosts.py passed; uv run pytest tests/test_setup_codex.py
+    tests/test_upgrade_cli.py tests/test_smoke_live_hosts.py -q reported 32
+    passed; uv run scripts/smoke_live_hosts.py passed in non-live mode; git
+    diff --check passed; uv run pytest -q reported 824 passed; uv run
+    scripts/agentera docs reported stale=none with UPGRADE, TODO, and Progress
+    current after metadata updates.
+  next: 2.2.3 Codex installed hook trust follow-up complete.
+  context:
+    intent: 2.2.3 patch follow-up — Codex installed hook trust
+    constraints: no publication, tag, push, package update, installed bundle
+      refresh, vision edit, or objective edit
+    scope: scripts/setup_codex.py, scripts/agentera_upgrade.py,
+      tests/test_upgrade_cli.py, UPGRADE.md, docs/notes.md,
+      .agentera/docs.yaml, .agentera/progress.yaml
+
+- number: 376
+  timestamp: 2026-05-09
+  type: test
+  phase: build
+  what: >
+    All-runtime live install proof test: added run_claude_live_section to
+    scripts/smoke_live_hosts.py, covering the missing Claude Code runtime so
+    --live --yes now exercises all four runtimes (Claude Code, Codex, Copilot
+    CLI, OpenCode) with isolated temp state, explicit consent via cost_gate,
+    and SKIP for auth/network failures.
+  commit: pending
+  inspiration: >
+    The existing smoke_live_hosts.py covered codex, copilot, and opencode but
+    was missing the claude runtime. The 2.2.3 AC requires all four runtimes
+    with the same isolated-temp-state, explicit-consent, and skip-on-auth-fail
+    patterns the other three sections already implement.
+  discovered: >
+    The claude binary uses `-p` pipe mode (same shape as copilot -p) and
+    inherits AGENTERA_HOME from the subprocess env. The section now redirects
+    HOME, XDG_CONFIG_HOME, XDG_DATA_HOME, XDG_CACHE_HOME, and CLAUDE_CONFIG_DIR
+    into temporary directories, copies only selected auth/config files into
+    that isolated state, and hashes the user's real Claude state before/after
+    as defense-in-depth. Live debugging found Codex 0.129.0 discovers the
+    temporary hooks.json but silently leaves user-sourced hooks inactive unless
+    the normalized hook identity hash is present under hooks.state in
+    config.toml, so the smoke now writes trusted temp PreToolUse/PostToolUse
+    state for the wrapper hooks.
+  verified: >
+    python3 -m py_compile scripts/smoke_live_hosts.py passed; follow-up review
+    validation reran python3 -m py_compile for changed scripts and uv run
+    scripts/smoke_live_hosts.py in non-live mode. The Claude section now uses
+    isolated HOME/XDG/CLAUDE_CONFIG_DIR state for version, auth, and live query
+    probes. After explicit approval, uv run scripts/smoke_live_hosts.py --live
+    --yes passed: Claude Code skipped for auth/subscription, Codex AGENTERA_HOME
+    and query output passed, Codex apply_patch hooks fired both PreToolUse and
+    PostToolUse with exit 0, Copilot AGENTERA_HOME/query passed with shell rc
+    files byte-identical, and OpenCode AGENTERA_HOME/query passed with real auth
+    storage byte-identical.
+  next: 2.2.3 patch complete.
+  context:
+    intent: 2.2.3 patch — All-runtime live install proof test
+    constraints: no publication, tag, push, package update, installed bundle
+      refresh, commit, vision edit, objective edit, or live install confidence
+      claim
+    scope: scripts/smoke_live_hosts.py (new run_claude_live_section, updated
+      cost/consent lines, main wiring), TODO.md (resolved [test:2.2.3]),
+      .agentera/progress.yaml (this entry), .agentera/plan.yaml (Task 2
+      complete)
+
+- number: 377
+  timestamp: 2026-05-09
+  type: chore
+  phase: build
+  what: >
+    JS install-root contract generation: created
+    scripts/generate_js_install_root_contract.py and ran it with --write to
+    embed the INSTALL_ROOT_CONTRACT export in .opencode/plugins/agentera.js,
+    matching .agentera/install_root_interface_model.yaml.
+  commit: pending
+  inspiration: >
+    Task 3 of the 2.2.3 patch required a generator script that reads the shared
+    install-root interface model YAML fixture and produces a matching JavaScript
+    contract export for the OpenCode runtime adapter.
+  discovered: >
+    re.sub interprets \n escape sequences in string replacement arguments as
+    actual newlines, requiring a lambda callback instead. The generator uses
+    marker comments (BEGIN/END GENERATED) to keep the section idempotent.
+  verified: >
+    uv run scripts/generate_js_install_root_contract.py --write produced the
+    generated JS block, and follow-up review validation confirmed explicit
+    --verify support with uv run scripts/generate_js_install_root_contract.py
+    --verify. uv run pytest tests/test_install_root_interface_model.py
+    tests/test_install_root_module.py tests/test_install_root_characterization.py
+    tests/test_runtime_adapters.py -q previously reported 88 passed; focused
+    review regression coverage now includes the generator --verify path.
+  next: null
+  context:
+    intent: Generate the JavaScript runtime install-root contract from the shared YAML fixture
+    constraints: no publication, tag, push, bundle refresh, commit, vision edit,
+      objective edit, or live install confidence claim
+    scope: scripts/generate_js_install_root_contract.py,
+      .opencode/plugins/agentera.js,
+      .agentera/progress.yaml, .agentera/plan.yaml
+
+- number: 375
+  timestamp: 2026-05-09 00:00
+  type: feat
+  phase: build
+  what: "Profilera stale tracking: configurable threshold via AGENTERA_PROFILERA_MAX_AGE_DAYS env var with staleness suggestion in hej."
+  commit: pending
+  inspiration: >
+    Decision 44 deprecated the 'freshness' term. The 2.2.3 patch requires
+    Profilera staleness tracking with a configurable threshold env var and
+    structured output coverage so agents can detect stale profiles and
+    suggest a profilera run.
+  discovered: >
+    _check_profilera_freshness used a module constant (PROFILERA_STALE_DAYS=7)
+    with no env var override and the deprecated term. The function was renamed
+    to _check_profilera_staleness, the env var AGENTERA_PROFILERA_MAX_AGE_DAYS
+    (default 7) was added, and the CLI's cmd_hej now populates the profile
+    structured field with stale: true/false when a profile exists.
+  verified: >
+    uv run pytest tests/test_query_cli.py::TestHej tests/test_install_root_interface_model.py
+    tests/test_smoke_live_hosts.py -q reported 26 passed. TestHej covers stale
+    profile detection, structured output stale fields, fresh profile no-stale
+    path, missing profile no-stale path, env var override (14 days), env var
+    lower threshold (1 day), invalid-threshold fallback, deterministic relative
+    dates, and direct suggested action in the attention block. The final review
+    gate also ran python3 -m py_compile for changed scripts, uv run
+    scripts/generate_js_install_root_contract.py --verify, uv run
+    scripts/smoke_live_hosts.py, git diff --check, and uv run pytest -q
+    (822 passed).
+  next: No remaining 2.2.3 profilera staleness tracking work.
+  context:
+    intent: 2.2.3 patch — Profilera staleness tracking
+    constraints: no publication, tag, push, package update, installed bundle
+      refresh, commit, vision edit, or objective edit
+    scope: scripts/agentera (function rename, env var, cmd_hej references),
+      tests/test_query_cli.py::TestHej (8 new tests),
+      .agentera/progress.yaml (this entry)
 - number: 374
   timestamp: 2026-05-08 23:41
   type: fix

@@ -54,6 +54,8 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import hashlib
+import json
 import os
 import re
 import sys
@@ -87,6 +89,13 @@ DEFAULT_CONFIG_PATH = Path.home() / ".codex" / "config.toml"
 # Env-var fallbacks for auto-detection. Checked in order before the
 # script-location walk-up so an explicit override always wins.
 ENV_FALLBACKS: tuple[str, ...] = ("AGENTERA_HOME", "CLAUDE_PLUGIN_ROOT")
+
+# Codex user hooks are discovered from hooks.json, but current Codex requires
+# user-sourced hook handlers to be trusted through [hooks.state] before they run.
+CODEX_HOOK_COMMAND = 'uv run "${AGENTERA_HOME}/hooks/validate_artifact.py"'
+CODEX_HOOK_MATCHER = "^apply_patch$"
+CODEX_HOOK_TIMEOUT = 10
+CODEX_HOOK_STATUS_MESSAGE = "validating artifact"
 
 # ---------------------------------------------------------------------------
 # Install-root resolution
@@ -298,6 +307,57 @@ def render_fresh_config(install_root: Path) -> str:
     )
 
 
+def codex_hook_trusted_hash(
+    event_label: str,
+    matcher: str | None,
+    command: str = CODEX_HOOK_COMMAND,
+    timeout: int = CODEX_HOOK_TIMEOUT,
+    status_message: str | None = CODEX_HOOK_STATUS_MESSAGE,
+) -> str:
+    """Mirror Codex's normalized command-hook trust hash.
+
+    Codex hashes the TOML-shaped hook identity after converting it to
+    canonical JSON. Optional TOML fields that are absent must be omitted here;
+    serializing them as JSON null produces a different hash and leaves the hook
+    discovered-but-untrusted.
+    """
+    handler: dict[str, object] = {
+        "type": "command",
+        "command": command,
+        "timeout": timeout,
+        "async": False,
+    }
+    if status_message is not None:
+        handler["statusMessage"] = status_message
+    identity: dict[str, object] = {
+        "event_name": event_label,
+        "hooks": [handler],
+    }
+    if matcher is not None:
+        identity["matcher"] = matcher
+    payload = json.dumps(
+        identity,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(payload).hexdigest()
+
+
+def codex_hook_state_entries(hooks_path: Path) -> dict[str, str]:
+    """Return required [hooks.state] entries for the installed hooks.json."""
+    hooks_path = hooks_path.expanduser().resolve()
+    return {
+        f"{hooks_path}:pre_tool_use:0:0": codex_hook_trusted_hash(
+            "pre_tool_use",
+            CODEX_HOOK_MATCHER,
+        ),
+        f"{hooks_path}:post_tool_use:0:0": codex_hook_trusted_hash(
+            "post_tool_use",
+            CODEX_HOOK_MATCHER,
+        ),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Line-based mutation helpers
 # ---------------------------------------------------------------------------
@@ -456,6 +516,151 @@ def rewrite_set_line(text: str, merged_pairs: dict[str, str]) -> str:
     return "".join(new_lines)
 
 
+def _table_header_re(table: str) -> re.Pattern[str]:
+    dotted = r"\s*\.\s*".join(re.escape(part) for part in table.split("."))
+    return re.compile(r"^\s*\[\s*" + dotted + r"\s*\]\s*$")
+
+
+def _find_table_header_index(lines: list[str], table: str) -> int | None:
+    pattern = _table_header_re(table)
+    for idx, line in enumerate(lines):
+        if pattern.match(line):
+            return idx
+    return None
+
+
+def _line_terminator(line_with_end: str) -> str:
+    if line_with_end.endswith("\r\n"):
+        return "\r\n"
+    if line_with_end.endswith("\n"):
+        return "\n"
+    return "\n"
+
+
+def _find_table_key_index(lines: list[str], table_idx: int, key_literal: str) -> int | None:
+    key_re = re.compile(r"^\s*" + re.escape(key_literal) + r"\s*=")
+    for idx in range(table_idx + 1, len(lines)):
+        line = lines[idx]
+        if re.match(r"^\s*\[", line):
+            return None
+        if key_re.match(line):
+            return idx
+    return None
+
+
+def _insert_table_key_line(text: str, table: str, line: str) -> str:
+    lines_with_ends = text.splitlines(keepends=True)
+    plain_lines = [line_text.rstrip("\r\n") for line_text in lines_with_ends]
+    table_idx = _find_table_header_index(plain_lines, table)
+    if table_idx is None:
+        raise ValueError(f"[{table}] header not found")
+    terminator = _line_terminator(lines_with_ends[table_idx])
+    return "".join(
+        lines_with_ends[: table_idx + 1]
+        + [line + terminator]
+        + lines_with_ends[table_idx + 1 :]
+    )
+
+
+def _replace_table_key_line(text: str, table: str, key_literal: str, line: str) -> str:
+    lines_with_ends = text.splitlines(keepends=True)
+    plain_lines = [line_text.rstrip("\r\n") for line_text in lines_with_ends]
+    table_idx = _find_table_header_index(plain_lines, table)
+    if table_idx is None:
+        raise ValueError(f"[{table}] header not found")
+    key_idx = _find_table_key_index(plain_lines, table_idx, key_literal)
+    if key_idx is None:
+        raise ValueError(f"{key_literal} not found in [{table}]")
+    if "{" in plain_lines[key_idx] and "}" not in plain_lines[key_idx]:
+        raise ValueError(f"{key_literal} spans multiple lines in [{table}]")
+    terminator = _line_terminator(lines_with_ends[key_idx])
+    return "".join(
+        lines_with_ends[:key_idx]
+        + [line + terminator]
+        + lines_with_ends[key_idx + 1 :]
+    )
+
+
+def _append_table(text: str, table: str, lines: list[str]) -> str:
+    prefix = text
+    if not prefix.endswith("\n"):
+        prefix += "\n"
+    if not prefix.endswith("\n\n"):
+        prefix += "\n"
+    return prefix + f"[{table}]\n" + "\n".join(lines) + "\n"
+
+
+def _ensure_features_hooks_enabled(text: str) -> str:
+    parsed = tomllib.loads(text) if text.strip() else {}
+    features = parsed.get("features")
+    if isinstance(features, dict) and features.get("hooks") is True:
+        return text
+
+    lines = [line.rstrip("\r\n") for line in text.splitlines(keepends=True)]
+    table_idx = _find_table_header_index(lines, "features")
+    if table_idx is None:
+        if isinstance(features, dict):
+            raise ValueError("[features] uses an unsupported inline or dotted-table form")
+        return _append_table(text, "features", ["hooks = true"])
+
+    key_idx = _find_table_key_index(lines, table_idx, "hooks")
+    if key_idx is None:
+        return _insert_table_key_line(text, "features", "hooks = true")
+    return _replace_table_key_line(text, "features", "hooks", "hooks = true")
+
+
+def _hook_state_line(key: str, trusted_hash: str) -> str:
+    return (
+        f"{_toml_basic_string(key)} = "
+        f"{{ trusted_hash = {_toml_basic_string(trusted_hash)}, enabled = true }}"
+    )
+
+
+def _ensure_codex_hook_state(text: str, hooks_path: Path) -> str:
+    entries = codex_hook_state_entries(hooks_path)
+    parsed = tomllib.loads(text) if text.strip() else {}
+    state = parsed.get("hooks", {}).get("state", {}) if isinstance(parsed.get("hooks"), dict) else {}
+    if not isinstance(state, dict):
+        state = {}
+
+    if all(
+        isinstance(state.get(key), dict)
+        and state[key].get("trusted_hash") == trusted_hash
+        and state[key].get("enabled") is True
+        for key, trusted_hash in entries.items()
+    ):
+        return text
+
+    lines = [line.rstrip("\r\n") for line in text.splitlines(keepends=True)]
+    table_idx = _find_table_header_index(lines, "hooks.state")
+    if table_idx is None:
+        if state:
+            raise ValueError("[hooks.state] uses an unsupported inline or dotted-table form")
+        return _append_table(
+            text,
+            "hooks.state",
+            [_hook_state_line(key, trusted_hash) for key, trusted_hash in entries.items()],
+        )
+
+    for key, trusted_hash in entries.items():
+        key_literal = _toml_basic_string(key)
+        line = _hook_state_line(key, trusted_hash)
+        lines = [line_text.rstrip("\r\n") for line_text in text.splitlines(keepends=True)]
+        table_idx = _find_table_header_index(lines, "hooks.state")
+        if table_idx is None:
+            raise ValueError("[hooks.state] header disappeared during update")
+        if _find_table_key_index(lines, table_idx, key_literal) is None:
+            text = _insert_table_key_line(text, "hooks.state", line)
+        else:
+            text = _replace_table_key_line(text, "hooks.state", key_literal, line)
+    return text
+
+
+def ensure_codex_hook_trust(text: str, hooks_path: Path) -> str:
+    """Ensure Codex will execute the installed Agentera apply_patch hooks."""
+    return _ensure_codex_hook_state(_ensure_features_hooks_enabled(text), hooks_path)
+
+
 # ---------------------------------------------------------------------------
 # Top-level decision: read state, compute desired text, classify outcome
 # ---------------------------------------------------------------------------
@@ -479,11 +684,47 @@ class Outcome(NamedTuple):
     diff: str
 
 
+def _with_codex_hook_trust(
+    outcome: Outcome,
+    before_text: str | None,
+    hooks_path: Path | None,
+) -> Outcome:
+    if hooks_path is None or outcome.action == "conflict":
+        return outcome
+
+    try:
+        new_text = ensure_codex_hook_trust(outcome.new_text, hooks_path)
+    except ValueError as exc:
+        return Outcome(
+            action="conflict",
+            new_text="",
+            message=f"cannot safely update Codex hook trust state: {exc}",
+            diff="",
+        )
+
+    if new_text == outcome.new_text:
+        return outcome
+
+    before = before_text or ""
+    action = outcome.action if outcome.action != "noop" else "insert"
+    if outcome.action == "noop":
+        message = "would trust Codex apply_patch hooks in config.toml"
+    else:
+        message = f"{outcome.message}; would trust Codex apply_patch hooks"
+    return Outcome(
+        action=action,
+        new_text=new_text,
+        message=message,
+        diff=_unified_diff(before, new_text),
+    )
+
+
 def plan_change(
     current_text: str | None,
     install_root: Path,
     *,
     force: bool,
+    hooks_path: Path | None = None,
 ) -> Outcome:
     """Inspect ``current_text`` and decide which write path applies.
 
@@ -500,7 +741,7 @@ def plan_change(
     if current_text is None or not current_text.strip():
         new_text = render_fresh_config(install_root)
         diff = _unified_diff("", new_text)
-        return Outcome(
+        return _with_codex_hook_trust(Outcome(
             action="fresh",
             new_text=new_text,
             message=(
@@ -508,7 +749,7 @@ def plan_change(
                 f"{SECTION_NAME}.set.{MANAGED_KEY} = {desired_path}"
             ),
             diff=diff,
-        )
+        ), current_text, hooks_path)
 
     state = classify_toml(current_text)
 
@@ -524,7 +765,7 @@ def plan_change(
             prefix = prefix + "\n"
         new_text = prefix + render_fresh_config(install_root)
         diff = _unified_diff(current_text, new_text)
-        return Outcome(
+        return _with_codex_hook_trust(Outcome(
             action="fresh",
             new_text=new_text,
             message=(
@@ -532,13 +773,13 @@ def plan_change(
                 f"{MANAGED_KEY} = {desired_path}"
             ),
             diff=diff,
-        )
+        ), current_text, hooks_path)
 
     # Branch 3a: section present, no set key → insert set line.
     if not state.set_present:
         new_text = insert_set_line(current_text, install_root)
         diff = _unified_diff(current_text, new_text)
-        return Outcome(
+        return _with_codex_hook_trust(Outcome(
             action="insert",
             new_text=new_text,
             message=(
@@ -546,19 +787,19 @@ def plan_change(
                 f"into [{SECTION_NAME}]"
             ),
             diff=diff,
-        )
+        ), current_text, hooks_path)
 
     # Branch 3b: section + set + AGENTERA_HOME at correct value → noop.
     current_value = state.set_table.get(MANAGED_KEY)
     if current_value == desired_path:
-        return Outcome(
+        return _with_codex_hook_trust(Outcome(
             action="noop",
             new_text=current_text,
             message=(
                 f"{MANAGED_KEY} already set to {desired_path}; nothing to do"
             ),
             diff="",
-        )
+        ), current_text, hooks_path)
 
     # Branch 3c: section + set, AGENTERA_HOME at wrong value or missing
     # alongside sibling keys → either merge (--force) or conflict.
@@ -583,7 +824,7 @@ def plan_change(
                 diff="",
             )
         diff = _unified_diff(current_text, new_text)
-        return Outcome(
+        return _with_codex_hook_trust(Outcome(
             action="insert",
             new_text=new_text,
             message=(
@@ -591,7 +832,7 @@ def plan_change(
                 f"{state.set_table[MANAGED_KEY]} to {desired_path}"
             ),
             diff=diff,
-        )
+        ), current_text, hooks_path)
 
     # Sibling keys exist. Without --force, refuse.
     if not force:
@@ -622,7 +863,7 @@ def plan_change(
             diff="",
         )
     diff = _unified_diff(current_text, new_text)
-    return Outcome(
+    return _with_codex_hook_trust(Outcome(
         action="force-merge",
         new_text=new_text,
         message=(
@@ -630,7 +871,7 @@ def plan_change(
             f"(siblings preserved: {', '.join(sorted(siblings))})"
         ),
         diff=diff,
-    )
+    ), current_text, hooks_path)
 
 
 def _unified_diff(before: str, after: str) -> str:

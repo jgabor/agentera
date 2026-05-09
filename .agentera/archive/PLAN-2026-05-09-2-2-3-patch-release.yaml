@@ -1,0 +1,46 @@
+header:
+  level: light
+  created: 2026-05-09
+  status: complete
+  title: "2.2.3 patch: profilera staleness, install proof, JS contract"
+what: >
+  Three scoped items for the 2.2.3 patch release. Profilera staleness: track time
+  or cycles since last profilera run and suggest when stale. All-runtime install
+  proof: add a test gate that validates package/runtime install and discovery paths
+  across Claude Code, OpenCode, Copilot CLI, and Codex CLI with isolated temp state.
+  JS install-root contract: generate the JavaScript runtime install-root contract
+  from the shared Python/interface fixture.
+why: >
+  These are the three highest-value small-scope items identified by resonera for
+  the next 2.2.x patch. Profilera staleness tracking closes a user-facing automation gap.
+  The install proof hardens release-readiness testing. The JS contract closes a
+  deferred compatibility item.
+constraints:
+  - No schema, stable ID, or route alias changes (patch scope only)
+  - No publication, tag, push, bundle refresh, or live install confidence claim
+  - No vision.yaml or objective state changes
+  - No scope expansion into 2.3.x feature work
+design: Execute three independent tasks in dependency-free order.
+tasks:
+  - number: 1
+    name: Profilera staleness tracking
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN profilera has not run in N cycles AND a configurable threshold is exceeded WHEN agent dispatches THEN the agent suggests a profilera run
+  - number: 2
+    name: All-runtime live install proof test
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN a release-readiness context WHEN `scripts/smoke_live_hosts.py --live --yes` runs THEN Claude Code, OpenCode, Copilot CLI, and Codex CLI install paths validate with isolated temp state, explicit consent for live calls, and SKIP for auth/network failures
+  - number: 3
+    name: JS install-root contract generation
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN the shared Python/interface fixture exists WHEN the JS install-root contract generator runs THEN `.opencode/plugins/agentera.js` matches `.agentera/install_root_interface_model.yaml`
+overall_acceptance:
+  - GIVEN profilera has not run in N cycles AND a configurable threshold is exceeded WHEN agentera dispatches THEN the agent suggests a profilera run
+  - GIVEN a release-readiness context WHEN `scripts/smoke_live_hosts.py --live --yes` runs THEN Claude Code, OpenCode, Copilot CLI, and Codex CLI install paths validate with isolated temp state, explicit consent for live calls, and SKIP for auth/network failures
+  - GIVEN the shared Python/interface fixture exists WHEN the JS install-root contract generator runs THEN `.opencode/plugins/agentera.js` matches `.agentera/install_root_interface_model.yaml`

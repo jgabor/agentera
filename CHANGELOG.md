@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [2.2.3] · 2026-05-09
+
+### Added
+
+- `agentera hej` now detects stale Profilera profiles with a configurable `AGENTERA_PROFILERA_MAX_AGE_DAYS` threshold, emits an explicit "suggest running profilera" attention item, and exposes structured stale-profile metadata for agents.
+- `scripts/smoke_live_hosts.py --live --yes` now covers Claude Code alongside Codex CLI, Copilot CLI, and OpenCode with isolated temporary runtime state and auth/network SKIP handling.
+- `scripts/generate_js_install_root_contract.py` now generates and verifies the OpenCode JavaScript install-root contract from `.agentera/install_root_interface_model.yaml`.
+
+### Fixed
+
+- Codex live hook smoke now writes trusted temporary `hooks.state` entries so Codex 0.129.0 executes the wrapper `apply_patch` hooks instead of merely discovering `hooks.json`.
+- `agentera upgrade --runtime codex` now writes trusted installed `hooks.state` entries for the copied `~/.codex/hooks.json`, so installed Codex `apply_patch` validation hooks can execute on current Codex builds.
+
+### Verified
+
+- Opt-in live smoke passed after explicit approval: Claude Code skipped for expected auth/subscription access, Codex AGENTERA_HOME/query passed, Codex `apply_patch` hooks fired both PreToolUse and PostToolUse, Copilot AGENTERA_HOME/query passed, and OpenCode AGENTERA_HOME/query passed with real user state restored.
+
 ## [2.2.2] · 2026-05-08
 
 ### Fixed

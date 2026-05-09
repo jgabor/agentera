@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -10,6 +12,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MODEL = REPO_ROOT / ".agentera" / "install_root_interface_model.yaml"
 INVENTORY = REPO_ROOT / ".agentera" / "install_root_behavior_inventory.yaml"
+GENERATOR = REPO_ROOT / "scripts" / "generate_js_install_root_contract.py"
 
 REQUIRED_RESULT_FIELDS = {
     "source",
@@ -103,3 +106,16 @@ def test_model_is_tied_to_inventory_behavior_shapes() -> None:
     assert model["inventory_links"]["canonical-suite-root-vs-managed-bundle-root"] == inventory["standardization"]["name"]
     assert inventory_shapes <= set(shape_map)
     assert set(shape_map.values()) <= set(model["root_kinds"])
+
+
+def test_js_install_root_contract_generator_verify_mode_passes() -> None:
+    result = subprocess.run(
+        [sys.executable, str(GENERATOR), "--verify"],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "OK: JS install-root contract matches model" in result.stdout

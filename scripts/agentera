@@ -36,6 +36,7 @@ import json
 import os
 import re
 import sys
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -1409,6 +1410,9 @@ def _query_experiments(args: argparse.Namespace, schemas: dict) -> int:
 
 DONE_STATUSES = {"complete", "completed", "closed", "done", "resolved", "retired"}
 BLOCKED_STATUSES = {"blocked", "stuck"}
+
+_PROFILERA_STALE_DAYS_ENV = "AGENTERA_PROFILERA_MAX_AGE_DAYS"
+_DEFAULT_PROFILERA_STALE_DAYS = 7
 TODO_SEVERITY_ORDER = {
     "critical": 0,
     "degraded": 1,
@@ -1425,6 +1429,34 @@ TODO_SECTION_SEVERITIES = {
     "info": "info",
     "annoying": "annoying",
 }
+
+
+def _profilera_stale_threshold_days() -> int:
+    raw_value = os.environ.get(_PROFILERA_STALE_DAYS_ENV, str(_DEFAULT_PROFILERA_STALE_DAYS))
+    try:
+        stale_days = int(raw_value)
+    except ValueError:
+        return _DEFAULT_PROFILERA_STALE_DAYS
+    return stale_days if stale_days >= 0 else _DEFAULT_PROFILERA_STALE_DAYS
+
+
+def _check_profilera_staleness(profile_path: Path) -> tuple[bool, int, int] | None:
+    if not profile_path.exists():
+        return None
+    try:
+        text = profile_path.read_text(encoding="utf-8")
+    except Exception:
+        return None
+    m = re.search(r"<!-- Generated:\s*(\d{4}-\d{2}-\d{2})", text)
+    if not m:
+        return None
+    try:
+        generated = date.fromisoformat(m.group(1))
+    except ValueError:
+        return None
+    stale_days = _profilera_stale_threshold_days()
+    days_since = (date.today() - generated).days
+    return days_since >= stale_days, days_since, stale_days
 
 
 def _load_named_artifact(schemas: dict, name: str) -> Any:
@@ -1728,6 +1760,15 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     mode = "returning" if saved_context else "fresh"
     profile = _registry_artifact_path("profile", schemas_dir)
     profile_status = "loaded" if profile.exists() else "not found"
+    profile_staleness = _check_profilera_staleness(profile) if profile.exists() else None
+    profile_dict: dict[str, Any] = {"status": profile_status, "path": str(profile)}
+    if profile_staleness is not None:
+        is_stale, days_since, stale_days = profile_staleness
+        profile_dict["days_since_generated"] = days_since
+        profile_dict["stale"] = is_stale
+        profile_dict["stale_threshold_days"] = stale_days
+        if is_stale:
+            profile_dict["suggested_action"] = "Run profilera to refresh PROFILE.md"
     v1_artifacts = _detect_v1_artifacts()
     plan = _plan_summary(schemas)
     health = _health_summary(schemas)
@@ -1744,6 +1785,12 @@ def cmd_hej(_args: argparse.Namespace) -> int:
         )
     if profile_status == "not found":
         attention.append(f"degraded: PROFILE.md not found at {profile}")
+    elif profile_staleness is not None and profile_staleness[0]:
+        _, days_since, stale_days = profile_staleness
+        attention.append(
+            f"normal: profilera profile stale ({days_since} days since generated; "
+            f"threshold={stale_days}); suggest running profilera to refresh PROFILE.md"
+        )
     if health.get("degrading"):
         worst = health.get("worst")
         attention.append(
@@ -1768,7 +1815,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
                 "command": "hej",
                 "status": "ok",
                 "mode": mode,
-                "profile": {"status": profile_status, "path": str(profile)},
+                "profile": profile_dict,
                 "health": health,
                 "issues": counts,
                 "plan": plan,

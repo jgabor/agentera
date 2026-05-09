@@ -18,18 +18,21 @@ might mutate. The two top-level modes:
         ``PASS: all smoke checks passed``.
 
     Live mode (--live)
-        Probes the ``codex``, ``copilot``, and ``opencode`` binaries.
-        Missing binaries, broken version probes, and auth-style failures
-        become distinct SKIP outcomes; substantive live assertion failures
-        fail the run. Snapshots ``~/.codex/config.toml``, Codex hooks,
-        shell rc files, and OpenCode auth storage before any section that
-        could touch them; restores from tmp snapshots in the top-level
+        Probes the ``claude``, ``codex``, ``copilot``, and ``opencode``
+        binaries. Missing binaries, broken version probes, and auth-style
+        failures become distinct SKIP outcomes; substantive live assertion
+        failures fail the run. Snapshots ``~/.codex/config.toml``, Codex
+        hooks, shell rc files, and OpenCode auth storage before any section
+        that could touch them; restores from tmp snapshots in the top-level
         ``finally`` block on every exit path. OpenCode's live section also
         redirects config/data/cache paths to temporary XDG directories so
-        session state stays off the user's real OpenCode store.
+        session state stays off the user's real OpenCode store. The Claude
+        section runs with temporary ``HOME``, ``XDG_*``, and
+        ``CLAUDE_CONFIG_DIR`` state plus ``AGENTERA_HOME`` and
+        ``CLAUDE_PLUGIN_ROOT`` exported to a temporary install root.
 
 Cost gate (live mode only):
-    Prints ``Estimated cost: $0.40-2.00 across four model calls`` and a
+    Prints ``Estimated cost: $0.50-2.50 across five model calls`` and a
     one-line consent prompt before any subprocess CLI invocation. The
     user must type ``y`` or ``yes`` (case-insensitive) to proceed;
     anything else aborts with a non-zero exit and no CLI invocation.
@@ -448,15 +451,15 @@ def run_setup_helpers_smoke() -> None:
 
 
 COST_LINE = (
-    "Estimated cost: $0.40-2.00 across four model calls "
-    "(codex exec AGENTERA_HOME + query probe, codex exec "
-    "apply_patch hook firing probe, copilot -p AGENTERA_HOME + "
-    "query probe, opencode run AGENTERA_HOME + query probe; "
-    "--live mode only)"
+    "Estimated cost: $0.50-2.50 across five model calls "
+    "(claude -p AGENTERA_HOME + query probe, codex exec "
+    "AGENTERA_HOME + query probe, codex exec apply_patch hook "
+    "firing probe, copilot -p AGENTERA_HOME + query probe, "
+    "opencode run AGENTERA_HOME + query probe; --live mode only)"
 )
 CONSENT_LINE = (
-    "Proceed with live CLI invocations (codex exec x2 + copilot -p "
-    "--allow-all-tools + opencode run --pure)? [y/N]: "
+    "Proceed with live CLI invocations (claude -p + codex exec x2 + "
+    "copilot -p --allow-all-tools + opencode run --pure)? [y/N]: "
 )
 
 
@@ -926,7 +929,77 @@ CODEX_HOOK_EXEC_TIMEOUT_SECONDS = 300
 # src/engine/discovery.rs::load_hooks_json`: `$CODEX_HOME/hooks.json`
 # is the user-layer discovery path; with CODEX_HOME pointed at a tmp dir,
 # Codex reads our wrapper config without ever touching `~/.codex/hooks.json`).
+# Current Codex also requires user-sourced hooks to be trusted through matching
+# `[hooks.state]` hashes, so the smoke writes a temp config.toml alongside it.
 CODEX_HOOKS_FILENAME = "hooks.json"
+
+
+def _toml_basic_string(value: str) -> str:
+    """Return a TOML-compatible basic string literal."""
+    return json.dumps(value)
+
+
+def _codex_hook_trusted_hash(
+    event_label: str,
+    matcher: str | None,
+    command: str,
+    timeout: int,
+    status_message: str | None,
+) -> str:
+    """Mirror Codex's normalized command-hook trust hash.
+
+    Codex hashes a TOML-shaped identity converted to canonical JSON. TOML has
+    no null, so absent optional fields must be omitted rather than serialized as
+    JSON null; otherwise the hash will not match and Codex silently leaves the
+    user hook untrusted.
+    """
+    handler: dict[str, object] = {
+        "type": "command",
+        "command": command,
+        "timeout": timeout,
+        "async": False,
+    }
+    if status_message is not None:
+        handler["statusMessage"] = status_message
+    identity: dict[str, object] = {
+        "event_name": event_label,
+        "hooks": [handler],
+    }
+    if matcher is not None:
+        identity["matcher"] = matcher
+    payload = json.dumps(identity, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return "sha256:" + hashlib.sha256(payload).hexdigest()
+
+
+def _write_codex_hook_trust_config(
+    codex_home: Path,
+    hooks_config: Path,
+    hook_command: str,
+    matcher: str,
+    timeout: int,
+    status_message: str,
+) -> Path:
+    """Trust the temp user-layer Codex hook handlers for this smoke run."""
+    pre_key = f"{hooks_config}:pre_tool_use:0:0"
+    post_key = f"{hooks_config}:post_tool_use:0:0"
+    pre_hash = _codex_hook_trusted_hash(
+        "pre_tool_use", matcher, hook_command, timeout, status_message
+    )
+    post_hash = _codex_hook_trusted_hash(
+        "post_tool_use", matcher, hook_command, timeout, status_message
+    )
+    config = codex_home / "config.toml"
+    config.write_text(
+        "[features]\n"
+        "hooks = true\n"
+        "\n[hooks.state]\n"
+        f"{_toml_basic_string(pre_key)} = "
+        f"{{ trusted_hash = {_toml_basic_string(pre_hash)}, enabled = true }}\n"
+        f"{_toml_basic_string(post_key)} = "
+        f"{{ trusted_hash = {_toml_basic_string(post_hash)}, enabled = true }}\n",
+        encoding="utf-8",
+    )
+    return config
 
 
 def run_codex_hook_section(
@@ -955,10 +1028,11 @@ def run_codex_hook_section(
        targeted the real path.
     4. Build a tmp ``CODEX_HOME`` directory; copy the user's
        ``auth.json`` so codex is authenticated; write a wrapper hooks
-       config that records every hook firing to a sentinel file AND
-       invokes the real ``hooks/validate_artifact.py``. The wrapper's
-       exit code is the real hook's exit code, so the wiring is
-       byte-faithful to T3 plus we get observable evidence on disk.
+       config plus matching trusted ``hooks.state`` hashes in temp
+       ``config.toml``. The wrapper records every hook firing to a
+       sentinel file AND invokes the real ``hooks/validate_artifact.py``.
+       The wrapper's exit code is the real hook's exit code, so the wiring
+       is byte-faithful to T3 plus we get observable evidence on disk.
     5. Issue exactly ONE ``codex exec`` invocation in a tmp workdir with
        a prompt asking the agent to create a one-line file via the
        apply_patch tool. ``CODEX_HOME`` exports the tmp config; the same
@@ -1053,6 +1127,8 @@ def run_codex_hook_section(
         # firing, then execs the real validate_artifact.py with the same
         # stdin so the wiring is byte-faithful to T3. Hook exit code is
         # the wrapper's exit code (== validate_artifact.py exit code).
+        # Codex 0.129.0 requires user hooks to be trusted, so write the
+        # matching temp config.toml state immediately after hooks.json.
         sentinel_path = tmp_codex_home / "hook-fired.log"
         wrapper_script = tmp_codex_home / "hook_wrapper.py"
         wrapper_script.write_text(
@@ -1118,6 +1194,9 @@ def run_codex_hook_section(
         # contains spaces.
         tmp_hooks_config = tmp_codex_home / CODEX_HOOKS_FILENAME
         hook_command = f'uv run "{wrapper_script}"'
+        hook_matcher = "^apply_patch$"
+        hook_timeout = 10
+        hook_status = "validating artifact (smoke)"
         tmp_hooks_config.write_text(
             json.dumps(
                 {
@@ -1129,26 +1208,26 @@ def run_codex_hook_section(
                     "hooks": {
                         "PreToolUse": [
                             {
-                                "matcher": "^apply_patch$",
+                                "matcher": hook_matcher,
                                 "hooks": [
                                     {
                                         "type": "command",
                                         "command": hook_command,
-                                        "timeout": 10,
-                                        "statusMessage": "validating artifact (smoke)",
+                                        "timeout": hook_timeout,
+                                        "statusMessage": hook_status,
                                     }
                                 ],
                             }
                         ],
                         "PostToolUse": [
                             {
-                                "matcher": "^apply_patch$",
+                                "matcher": hook_matcher,
                                 "hooks": [
                                     {
                                         "type": "command",
                                         "command": hook_command,
-                                        "timeout": 10,
-                                        "statusMessage": "validating artifact (smoke)",
+                                        "timeout": hook_timeout,
+                                        "statusMessage": hook_status,
                                     }
                                 ],
                             }
@@ -1160,6 +1239,15 @@ def run_codex_hook_section(
             encoding="utf-8",
         )
         info(f"codex-hook: wrote tmp hooks.json to {tmp_hooks_config}")
+        tmp_config = _write_codex_hook_trust_config(
+            tmp_codex_home,
+            tmp_hooks_config,
+            hook_command,
+            hook_matcher,
+            hook_timeout,
+            hook_status,
+        )
+        info(f"codex-hook: wrote trusted hook state to {tmp_config}")
 
         # Step 5: spawn an apply_patch via codex exec. The prompt names
         # exactly one tiny file edit so the agent uses apply_patch
@@ -1391,6 +1479,368 @@ def _extract_between(text: str, begin: str, end: str) -> str | None:
     if ei < 0:
         return None
     return text[bi_end:ei]
+
+
+# Wall-clock cap for the substantive `claude -p` invocation. Mirrors the
+# Copilot section's 300s ceiling: comfortably above any normal model latency
+# for a two-step shell-tool prompt; below the 10-minute Bash tool cap so a
+# hung run cannot strand the harness.
+CLAUDE_EXEC_TIMEOUT_SECONDS = 300
+
+_CLAUDE_STATE_FILENAMES = (
+    ".credentials.json",
+    "auth.json",
+    "config.json",
+    "oauth.json",
+    "settings.json",
+    "settings.local.json",
+)
+
+
+def _real_claude_config_dir() -> Path:
+    configured = os.environ.get("CLAUDE_CONFIG_DIR")
+    if configured:
+        return Path(configured).expanduser()
+    return Path.home() / ".claude"
+
+
+def _claude_state_candidates() -> list[Path]:
+    real_home = Path.home()
+    config_dirs = [real_home / ".claude"]
+    real_config_dir = _real_claude_config_dir()
+    if real_config_dir not in config_dirs:
+        config_dirs.append(real_config_dir)
+
+    candidates = [real_home / ".claude.json"]
+    for config_dir in config_dirs:
+        candidates.extend(config_dir / name for name in _CLAUDE_STATE_FILENAMES)
+    return list(dict.fromkeys(candidates))
+
+
+def _claude_state_sha() -> dict[Path, str]:
+    return {path: _sha256(path) for path in _claude_state_candidates()}
+
+
+def _assert_claude_state_unchanged(sha_before: dict[Path, str]) -> None:
+    for path, before in sha_before.items():
+        after = _sha256(path)
+        info(f"claude-state sha256 (after) {path}: {after}")
+        assert_true(
+            before == after,
+            f"claude: runtime state changed during harness run: "
+            f"{path} before={before} after={after}",
+        )
+
+
+def _copy_claude_runtime_state(tmp_home: Path, tmp_config_dir: Path) -> None:
+    tmp_config_dir.mkdir(parents=True, exist_ok=True)
+    copied = 0
+    real_home = Path.home()
+    for src in _claude_state_candidates():
+        if not src.is_file():
+            continue
+        destinations = (
+            [tmp_home / ".claude.json", tmp_config_dir / ".claude.json"]
+            if src == real_home / ".claude.json"
+            else [tmp_config_dir / src.name]
+        )
+        for dst in destinations:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+            copied += 1
+    if copied:
+        info(f"claude: copied {copied} auth/config file(s) into isolated runtime state")
+    else:
+        info("claude: no auth/config files found; live run will rely on provider environment variables")
+
+
+def _claude_isolated_env(tmp_home: Path, tmp_xdg: Path, tmp_config_dir: Path, tmp_install_root: Path) -> dict[str, str]:
+    xdg_config = tmp_xdg / "config"
+    xdg_data = tmp_xdg / "data"
+    xdg_cache = tmp_xdg / "cache"
+    for path in (xdg_config, xdg_data, xdg_cache, tmp_config_dir):
+        path.mkdir(parents=True, exist_ok=True)
+
+    env = dict(os.environ)
+    env["HOME"] = str(tmp_home)
+    env["XDG_CONFIG_HOME"] = str(xdg_config)
+    env["XDG_DATA_HOME"] = str(xdg_data)
+    env["XDG_CACHE_HOME"] = str(xdg_cache)
+    env["CLAUDE_CONFIG_DIR"] = str(tmp_config_dir)
+    env["AGENTERA_HOME"] = str(tmp_install_root)
+    env["CLAUDE_PLUGIN_ROOT"] = str(tmp_install_root)
+    return env
+
+
+def run_claude_live_section(
+    snapshots: SnapshotRegistry,
+    skips: list[tuple[str, str]],
+) -> None:
+    """Claude Code live section — one isolated ``claude -p`` invocation.
+
+    Verifies that Claude Code inherits ``AGENTERA_HOME`` from the parent
+    environment and can resolve the Agentera query CLI through it. The
+    ``CLAUDE_PLUGIN_ROOT`` env var is also exported so the Claude runtime
+    has both standard discovery paths available.
+
+    Sequence:
+
+    1. PATH probe (``shutil.which("claude")``); skip ``not-on-path`` on
+       miss without invoking the binary.
+    2. Build isolated temporary ``HOME``, ``XDG_*``, and
+       ``CLAUDE_CONFIG_DIR`` state, copying only selected auth/config files.
+    3. ``claude --version`` sanity probe in the isolated env; skip
+       ``not-authed`` on non-zero / timeout (covers a half-broken install).
+    4. Auth probe: ``claude -p "reply with OK"`` in the isolated env with a 30s timeout.
+       Timeout, non-zero exit, or output that does not contain ``OK``
+       records a SKIP with guidance pointing at Claude auth.
+    5. Build a tmp install root directory containing the v2 query CLI
+       and artifact schemas (the ``AGENTERA_HOME`` value for export).
+    6. Compose a combined prompt with the same marker brackets as the
+       other sections (``===AGENTERA_HOME_ECHO_BEGIN===`` /
+       ``===QUERY_OUTPUT_BEGIN===``).
+    7. Issue exactly ONE ``claude -p`` invocation with isolated runtime state,
+       ``AGENTERA_HOME``, and ``CLAUDE_PLUGIN_ROOT`` all exported in the subprocess env.
+       The ``claude -p`` pipe mode is non-interactive and Claude's shell
+       tool runs without approval round-trips.
+    8. Parse the agent output between the markers and assert
+       ``AGENTERA_HOME=<tmp install root>`` echoed back and the query
+       output includes core artifact names.
+
+    On any substantive failure step, hard-fail via :func:`fail` (the
+    top-level ``finally`` still restores snapshots). The skip path covers
+    only "binary missing or unauthenticated" cases per AC; the user
+    pre-authorized live spend and expects assertive verification.
+    """
+    info("--- claude live section ---")
+
+    # Step 1: PATH probe.
+    if shutil.which("claude") is None:
+        skip("claude", "not on PATH", skips)
+        return
+    info(f"probe: claude resolved to {shutil.which('claude')}")
+
+    real_state_sha_before = _claude_state_sha()
+    for path, digest in real_state_sha_before.items():
+        info(f"claude-state sha256 (before) {path}: {digest}")
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="agentera-smoke-claude-install-") as tmp_install_root_str:
+            with tempfile.TemporaryDirectory(prefix="agentera-smoke-claude-home-") as tmp_home_str:
+                with tempfile.TemporaryDirectory(prefix="agentera-smoke-claude-xdg-") as tmp_xdg_str:
+                    with tempfile.TemporaryDirectory(prefix="agentera-smoke-claude-query-") as tmp_workdir_str:
+                        tmp_install_root = Path(tmp_install_root_str)
+                        tmp_home = Path(tmp_home_str)
+                        tmp_xdg = Path(tmp_xdg_str)
+                        tmp_workdir = Path(tmp_workdir_str)
+                        tmp_config_dir = tmp_home / ".claude"
+                        info(f"claude: tmp AGENTERA_HOME={tmp_install_root}")
+                        info(f"claude: tmp HOME={tmp_home}")
+                        info(f"claude: tmp CLAUDE_CONFIG_DIR={tmp_config_dir}")
+                        info(f"claude: tmp XDG root={tmp_xdg}")
+                        info(f"claude: tmp workdir={tmp_workdir}")
+                        _install_query_cli_bundle(tmp_install_root)
+                        _copy_claude_runtime_state(tmp_home, tmp_config_dir)
+                        env = _claude_isolated_env(tmp_home, tmp_xdg, tmp_config_dir, tmp_install_root)
+
+                        # Step 3: --version sanity probe in isolated runtime state.
+                        try:
+                            version_result = subprocess.run(
+                                ["claude", "--version"],
+                                env=env,
+                                cwd=str(tmp_workdir),
+                                capture_output=True,
+                                text=True,
+                                timeout=10,
+                                check=False,
+                            )
+                        except subprocess.TimeoutExpired:
+                            skip(
+                                "claude",
+                                "binary present but `claude --version` timed out",
+                                skips,
+                            )
+                            return
+                        if version_result.returncode != 0:
+                            skip(
+                                "claude",
+                                f"binary present but `claude --version` exited "
+                                f"{version_result.returncode}",
+                                skips,
+                            )
+                            return
+                        version_text = (
+                            version_result.stdout.strip()
+                            or version_result.stderr.strip()
+                            or "version probe returned no text"
+                        )
+                        info(f"probe: claude {version_text.splitlines()[0]}")
+
+                        # Step 4: auth probe via a deterministic 30s prompt.
+                        auth_prompt = "Reply with the literal text OK and nothing else"
+                        try:
+                            auth_result = subprocess.run(
+                                ["claude", "-p", auth_prompt],
+                                env=env,
+                                cwd=str(tmp_workdir),
+                                capture_output=True,
+                                text=True,
+                                timeout=AUTH_PROBE_TIMEOUT_SECONDS,
+                                check=False,
+                            )
+                        except subprocess.TimeoutExpired:
+                            skip(
+                                "claude",
+                                f"binary present but auth probe timed out at "
+                                f"{AUTH_PROBE_TIMEOUT_SECONDS}s; run `claude` interactively "
+                                f"to complete auth, then retry",
+                                skips,
+                            )
+                            return
+                        if auth_result.returncode != 0:
+                            skip(
+                                "claude",
+                                f"binary present but auth probe exited "
+                                f"{auth_result.returncode}; run `claude` interactively to "
+                                f"complete auth, then retry "
+                                f"(stderr={auth_result.stderr.strip()[:120]!r})",
+                                skips,
+                            )
+                            return
+                        if "OK" not in auth_result.stdout:
+                            skip(
+                                "claude",
+                                f"auth probe returned 0 but output missing 'OK'; likely "
+                                f"unauthed or degraded; run `claude` interactively to "
+                                f"complete auth "
+                                f"(stdout={auth_result.stdout.strip()[:120]!r})",
+                                skips,
+                            )
+                            return
+                        info("probe: claude auth probe healthy (output contains 'OK')")
+
+                        # Step 6: compose the combined prompt. Same marker shape as
+                        # the other sections so the parser code path is shared.
+                        prompt = (
+                            "Run exactly these two shell commands (in order) using your "
+                            "shell tool. After running them, print the markers below "
+                            "with the captured outputs filled in.\n\n"
+                            'Command 1: echo "AGENTERA_HOME=$AGENTERA_HOME"\n'
+                            "Command 2: uv run \"$AGENTERA_HOME/scripts/agentera\" "
+                            "query --list-artifacts\n\n"
+                            "Then print this block as your final message, replacing "
+                            "<value1> and <value2> with the literal stdout you observed:\n\n"
+                            "===AGENTERA_HOME_ECHO_BEGIN===\n"
+                            "<value1>\n"
+                            "===AGENTERA_HOME_ECHO_END===\n"
+                            "===QUERY_OUTPUT_BEGIN===\n"
+                            "<value2>\n"
+                            "===QUERY_OUTPUT_END==="
+                        )
+
+                        info(
+                            f"claude: invoking `claude -p` "
+                            f"(AGENTERA_HOME={tmp_install_root}, "
+                            f"CLAUDE_PLUGIN_ROOT={tmp_install_root}, "
+                            f"HOME={tmp_home}, CLAUDE_CONFIG_DIR={tmp_config_dir})"
+                        )
+                        t0 = time.time()
+                        try:
+                            exec_result = subprocess.run(
+                                ["claude", "-p", prompt],
+                                env=env,
+                                capture_output=True,
+                                text=True,
+                                timeout=CLAUDE_EXEC_TIMEOUT_SECONDS,
+                                check=False,
+                                cwd=str(tmp_workdir),
+                            )
+                        except subprocess.TimeoutExpired as exc:
+                            fail(
+                                f"`claude -p` timed out at "
+                                f"{CLAUDE_EXEC_TIMEOUT_SECONDS}s "
+                                f"(partial stdout={exc.stdout!r})"
+                            )
+                            return  # unreachable; satisfies type checker
+                        elapsed = time.time() - t0
+                        info(
+                            f"claude: `claude -p` returned "
+                            f"exit={exec_result.returncode} in {elapsed:.1f}s"
+                        )
+
+                        if exec_result.returncode != 0:
+                            stderr_lower = exec_result.stderr.lower()
+                            if "auth" in stderr_lower or "login" in stderr_lower:
+                                skip(
+                                    "claude",
+                                    f"`claude -p` returned auth-style failure "
+                                    f"(exit {exec_result.returncode}); see stderr",
+                                    skips,
+                                )
+                                info(f"claude: stdout={exec_result.stdout!r}")
+                                info(f"claude: stderr={exec_result.stderr!r}")
+                                return
+                            fail(
+                                f"`claude -p` exit {exec_result.returncode}: "
+                                f"stdout={exec_result.stdout!r} "
+                                f"stderr={exec_result.stderr!r}"
+                            )
+
+                        # Step 8a: parse the AGENTERA_HOME echo between markers.
+                        agent_output = exec_result.stdout
+                        info("claude: --- captured agent output begin ---")
+                        for line in agent_output.rstrip("\n").splitlines():
+                            info(f"  {line}")
+                        info("claude: --- captured agent output end ---")
+
+                        ah_value = _extract_between(
+                            agent_output,
+                            "===AGENTERA_HOME_ECHO_BEGIN===",
+                            "===AGENTERA_HOME_ECHO_END===",
+                        )
+                        assert_true(
+                            ah_value is not None,
+                            "claude: could not find AGENTERA_HOME echo markers in output",
+                        )
+                        assert ah_value is not None  # for type checker
+                        ah_value = ah_value.strip()
+                        expected_marker = f"AGENTERA_HOME={tmp_install_root}"
+                        assert_true(
+                            expected_marker in ah_value,
+                            f"claude: AGENTERA_HOME echo {ah_value!r} does not "
+                            f"contain expected {expected_marker!r}",
+                        )
+                        info(f"claude: AGENTERA_HOME echo verified: {ah_value}")
+
+                        # Step 8b: assert the query CLI resolved through AGENTERA_HOME.
+                        query_output = _extract_between(
+                            agent_output,
+                            "===QUERY_OUTPUT_BEGIN===",
+                            "===QUERY_OUTPUT_END===",
+                        )
+                        assert_true(
+                            query_output is not None,
+                            "claude: could not find query output markers in output",
+                        )
+                        assert query_output is not None
+                        missing = [
+                            artifact
+                            for artifact in ("decisions", "progress", "session")
+                            if artifact not in query_output.split()
+                        ]
+                        assert_true(
+                            not missing,
+                            f"claude: query output missing expected artifact names: "
+                            f"{missing}; output={query_output!r}",
+                        )
+                        info(f"claude: query output verified: {query_output.strip()}")
+    finally:
+        _assert_claude_state_unchanged(real_state_sha_before)
+
+    info(
+        "claude: verified under `claude -p` with isolated HOME/XDG/"
+        "CLAUDE_CONFIG_DIR plus exported AGENTERA_HOME and CLAUDE_PLUGIN_ROOT"
+    )
 
 
 # Wall-clock cap for the substantive `copilot -p` invocation. Mirrors the
@@ -1967,18 +2417,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="smoke_live_hosts.py",
         description=(
-            "Live-host smoke harness for Codex, Copilot, and OpenCode AGENTERA_HOME "
-            "inheritance. Default mode runs offline checks only; --live "
-            "gates per-runtime CLI sections behind a cost prompt."
+            "Live-host smoke harness for Claude Code, Codex, Copilot, and "
+            "OpenCode AGENTERA_HOME inheritance. Default mode runs offline "
+            "checks only; --live gates per-runtime CLI sections behind a "
+            "cost prompt."
         ),
     )
     parser.add_argument(
         "--live",
         action="store_true",
         help=(
-            "Enable live CLI invocations (gated behind cost prompt + "
-            "consent). Without this flag the harness runs the offline "
-            "audit and delegated setup helpers smoke only."
+            "Enable live CLI invocations for Claude Code, Codex, Copilot, "
+            "and OpenCode (gated behind cost prompt + consent). Without "
+            "this flag the harness runs the offline audit and delegated "
+            "setup helpers smoke only."
         ),
     )
     parser.add_argument(
@@ -2015,6 +2467,7 @@ def main(argv: list[str] | None = None) -> int:
             if not cost_gate(auto_consent=args.yes):
                 info("aborted: consent declined; no live CLI invoked")
                 return 1
+            run_claude_live_section(snapshots, skips)
             run_codex_live_section(snapshots, skips)
             run_codex_hook_section(snapshots, skips)
             run_copilot_live_section(snapshots, skips)

@@ -739,7 +739,14 @@ def _write_label(adapter: dict[str, Any], fallback: str) -> str:
     return labels[0] if labels else fallback
 
 
-def _plan_codex_config(adapter: dict[str, Any], install_root: Path, home: Path, *, force: bool) -> dict[str, Any]:
+def _plan_codex_config(
+    adapter: dict[str, Any],
+    install_root: Path,
+    home: Path,
+    *,
+    force: bool,
+    hooks_path: Path,
+) -> dict[str, Any]:
     setup_codex = _setup_codex_module()
     runtime_id = adapter["identity"]["runtime_id"]
     target = _home_target(home, _first_target(adapter, "config_targets", "runtime_config_files"))
@@ -747,7 +754,12 @@ def _plan_codex_config(adapter: dict[str, Any], install_root: Path, home: Path, 
         current = _read_text_or_none(target)
         if current is not None and current.strip():
             setup_codex.tomllib.loads(current)
-        outcome = setup_codex.plan_change(current, install_root, force=force)
+        outcome = setup_codex.plan_change(
+            current,
+            install_root,
+            force=force,
+            hooks_path=hooks_path,
+        )
     except Exception as exc:  # noqa: BLE001
         return {
             "status": "blocked",
@@ -832,11 +844,18 @@ def plan_runtime_phase(
     if "codex" in runtimes:
         adapter = adapters["codex"]
         labels = adapter["config_targets"]["write_safety_labels"]
-        items.append(_plan_codex_config(adapter, install_root, home, force=force))
+        hook_target = _home_target(home, _first_target(adapter, "config_targets", "hook_targets"))
+        items.append(_plan_codex_config(
+            adapter,
+            install_root,
+            home,
+            force=force,
+            hooks_path=hook_target,
+        ))
         items.append(_copy_item(
             adapter["identity"]["runtime_id"],
             runtime_source_root / "hooks" / "codex-hooks.json",
-            _home_target(home, _first_target(adapter, "config_targets", "hook_targets")),
+            hook_target,
             force=force,
             action=labels[1] if len(labels) > 1 else "copy-hooks",
         ))
