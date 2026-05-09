@@ -1212,6 +1212,26 @@ class TestRoutineStructuredOutput:
         assert data["command"] == command
         assert data["status"] in {"ok", "empty"}
 
+    def test_json_output_serializes_yaml_date_scalars(self, project):
+        progress = project / ".agentera" / "progress.yaml"
+        progress.parent.mkdir(parents=True, exist_ok=True)
+        progress.write_text(
+            "cycles:\n"
+            "- number: 1\n"
+            "  timestamp: 2026-05-09\n"
+            "  type: fix\n"
+            "  phase: build\n"
+            "  what: Date scalar regression\n"
+            "  commit: pending\n",
+            encoding="utf-8",
+        )
+
+        r = _run("progress", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["entries"][0]["timestamp"] == "2026-05-09"
+
     @pytest.mark.parametrize("command", [c for c in ROUTINE_STRUCTURED_COMMANDS if c != "hej"])
     def test_empty_json_state_is_explicit(self, project, command):
         r = _run(command, "--format", "json", cwd=project)

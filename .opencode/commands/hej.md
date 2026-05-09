@@ -1,5 +1,5 @@
 ---
-description: "Legacy Agentera v1 entry point: upgrade bridge to /agentera"
+description: "Legacy /hej slash bridge only; bare text hej routes through agentera"
 agentera_managed: true
 ---
-Load and execute the hej legacy upgrade bridge for this project.
+Use this only for explicit legacy /hej slash-command upgrades. For a bare text message exactly hej, load agentera and run the Agentera hej dashboard path.

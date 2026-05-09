@@ -75,6 +75,7 @@ SUPPORTED_EVENT_NAMES = {
     "userPromptSubmitted",
     "errorOccurred",
     "shell.env",
+    "chat.message",
     "tool.execute.before",
     "tool.execute.after",
     "session.created",

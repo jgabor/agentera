@@ -6,7 +6,7 @@
     {
       "name": "agentera",
       "version": "2.2.3",
-      "description": "Compound agent orchestration suite - 12 capabilities in one bundled skill",
+      "description": "Compound agent orchestration suite - 12 capabilities in one bundled skill; exact bare hej uses the Agentera dashboard path",
       "author": { "name": "jgabor" },
       "source": "./skills/agentera",
       "skills": "./",
@@ -29,7 +29,7 @@
     {
       "name": "hej",
       "version": "2.2.3",
-      "description": "Legacy Agentera v1 entry-point bridge to the v2 /agentera upgrade flow.",
+      "description": "Legacy Agentera v1 explicit /hej bridge to the v2 /agentera upgrade flow; do not use for bare text hej.",
       "author": { "name": "jgabor" },
       "source": "./skills/hej",
       "skills": "./",

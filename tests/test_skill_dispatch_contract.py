@@ -69,6 +69,7 @@ def test_master_skill_routes_bare_hej_to_dashboard_path() -> None:
     content = SKILL_MD.read_text(encoding="utf-8")
     normalized = " ".join(content.split())
 
+    assert "complete user message exactly `hej`" in normalized
     assert "bare user message exactly `hej`" in normalized
     assert "run `agentera hej` first" in normalized
     assert "must not be handled as a generic greeting" in normalized

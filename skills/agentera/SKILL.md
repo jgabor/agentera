@@ -4,7 +4,9 @@ description: >
   The open protocol for turning AI agents into engineering teams.
   One bundled skill with twelve capabilities, each defined by human-readable
   prose and machine-readable schemas. The agent reads this file to route
-  incoming requests to the right capability.
+  incoming requests to the right capability. Use this skill for /agentera,
+  Agentera capability requests, and a complete user message exactly `hej`;
+  bare `hej` runs the agentera hej dashboard path instead of a generic greeting.
 version: "2.2.3"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 ---

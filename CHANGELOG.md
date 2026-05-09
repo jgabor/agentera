@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Bare text `hej` now has explicit cross-runtime metadata, an OpenCode exact-match `chat.message` router, and legacy `hej` bridge metadata that points only at explicit slash/package upgrade flows.
+- Structured JSON state output now serializes YAML date scalars as ISO strings, preventing `agentera progress --format json` from failing on unquoted progress timestamps.
+
+### Added
+
+- Added an empty-project semantic fixture proving bare `hej` still uses exactly one `agentera hej` dashboard source call and does not fall back to a generic greeting.
+
 ## [2.2.3] · 2026-05-09
 
 ### Added

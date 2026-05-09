@@ -33,9 +33,13 @@ try {
   delete process.env.AGENTERA_HOME;
   delete process.env.PROFILERA_PROFILE_DIR;
 
+  const moduleExports = await import(PLUGIN_PATH);
+  const { Agentera } = moduleExports;
+  assert(
+    Object.keys(moduleExports).join(",") === "Agentera",
+    "OpenCode plugin file must export only plugin functions"
+  );
   const {
-    default: DefaultAgentera,
-    Agentera,
     bootstrapCommands,
     bootstrapSkills,
     COMMAND_TEMPLATES,
@@ -48,11 +52,14 @@ try {
     resolveOpencodeCommandsDir,
     resolveOpencodeSkillsDir,
     writeSessionBookmark,
+    isBareHejUserMessage,
+    normalizeBareHejTransportText,
+    routeBareHejMessage,
+    BARE_HEJ_ROUTED_PROMPT,
     lifecycle,
-  } = await import(PLUGIN_PATH);
+  } = Agentera.__test;
 
-  assert(typeof DefaultAgentera === "function", "plugin must expose default function export for OpenCode");
-  assert(DefaultAgentera === Agentera, "default plugin export should be the Agentera function");
+  assert(typeof Agentera === "function", "plugin must expose the Agentera function for OpenCode");
 
   const commandNames = Object.keys(COMMAND_TEMPLATES);
   const commandsDir = resolveOpencodeCommandsDir();
@@ -139,8 +146,9 @@ try {
   fs.mkdirSync(path.dirname(isolatedPluginPath), { recursive: true });
   fs.copyFileSync(PLUGIN_PATH, isolatedPluginPath);
   const isolated = await import(`${pathToFileURL(isolatedPluginPath)}?missing-source=${Date.now()}`);
+  const isolatedTest = isolated.Agentera.__test;
   fs.rmSync(skillsDir, { recursive: true, force: true });
-  const missingSourceReport = isolated.bootstrapSkills();
+  const missingSourceReport = isolatedTest.bootstrapSkills();
   assert(
     missingSourceReport.installCommand === OPENCODE_SKILL_INSTALL_COMMAND,
     "bootstrapSkills should report the exact OpenCode install command when Agentera skills are missing"
@@ -150,7 +158,7 @@ try {
     "bootstrapSkills must not create unusable skill paths when source skills are missing"
   );
   assert(
-    isolated.skillBootstrap.lastReport.installCommand === OPENCODE_SKILL_INSTALL_COMMAND,
+    isolatedTest.skillBootstrap.lastReport.installCommand === OPENCODE_SKILL_INSTALL_COMMAND,
     "skillBootstrap.lastReport should retain the missing-source install command"
   );
 
@@ -308,6 +316,10 @@ try {
     `Agentera() return must include shell.env hook (got: ${hookKeys.join(", ")})`
   );
   assert(
+    hookKeys.includes("chat.message"),
+    `Agentera() return must include chat.message hook (got: ${hookKeys.join(", ")})`
+  );
+  assert(
     hookKeys.includes("tool.execute.after"),
     `Agentera() return must include tool.execute.after hook (got: ${hookKeys.join(", ")})`
   );
@@ -322,6 +334,33 @@ try {
   assert(
     !hookKeys.includes("session.idle"),
     "Agentera() return must NOT include phantom session.idle hook"
+  );
+
+  // --- Test 6b: OpenCode exact bare hej route ---
+  const bareHejOutput = { parts: [{ type: "text", text: "hej" }] };
+  assert(isBareHejUserMessage(bareHejOutput.parts), "bare lowercase hej should match the exact router predicate");
+  assert(routeBareHejMessage(bareHejOutput), "routeBareHejMessage should rewrite exact bare hej");
+  assert(
+    bareHejOutput.parts[0].text === BARE_HEJ_ROUTED_PROMPT,
+    "routeBareHejMessage should replace text with the Agentera routing prompt"
+  );
+  assert(
+    bareHejOutput.parts[0].metadata.agenteraRoute === "bare-hej",
+    "routeBareHejMessage should annotate the deterministic route"
+  );
+  assert(normalizeBareHejTransportText("hej\n") === "hej", "OpenCode CLI transport newline should normalize");
+  const cliBareHejOutput = { parts: [{ type: "text", text: "hej\n" }] };
+  assert(isBareHejUserMessage(cliBareHejOutput.parts), "OpenCode CLI bare hej should match with one transport newline");
+  assert(routeBareHejMessage(cliBareHejOutput), "routeBareHejMessage should rewrite OpenCode CLI bare hej");
+  for (const text of ["Hej", "hej there", "/hej", "agentera hej", " hej ", "hej\n\n", "hej \n"]) {
+    const output = { parts: [{ type: "text", text }] };
+    assert(!isBareHejUserMessage(output.parts), `${text} must not match exact bare hej routing`);
+    assert(!routeBareHejMessage(output), `${text} must not be rewritten by exact bare hej routing`);
+    assert(output.parts[0].text === text, `${text} should remain unchanged`);
+  }
+  assert(
+    !isBareHejUserMessage([{ type: "text", text: "hej" }, { type: "file", filename: "note.md" }]),
+    "bare hej routing must not fire when the user message has attachments or other meaningful parts"
   );
 
   // --- Test 7: Direct bookmark helper — missing hook script no-op ---
@@ -446,8 +485,8 @@ try {
   const envOut3 = { env: {} };
   await hooksPreset["shell.env"]({ cwd: tmpdir }, envOut3);
   assert(
-    !("AGENTERA_HOME" in envOut3.env),
-    "shell.env must not overwrite a pre-existing AGENTERA_HOME (process.env): user value already inherited downstream"
+    envOut3.env.AGENTERA_HOME === userPreset,
+    "shell.env must propagate a caller-selected AGENTERA_HOME when OpenCode has not already merged it"
   );
   delete process.env.AGENTERA_HOME;
 

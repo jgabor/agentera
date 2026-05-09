@@ -149,7 +149,10 @@ def _validate_codex_package(plugin: dict[str, Any]) -> list[str]:
             errors.append(f"codex.{name}: path must resolve to SKILL.md")
         if skill.get("runtimeSupport") != "portable":
             errors.append(f"codex.{name}: runtimeSupport must be portable")
-        if not policy.get("allow_implicit_invocation"):
+        if name == "hej":
+            if policy.get("allow_implicit_invocation") is not False:
+                errors.append("codex.hej: legacy bridge must not allow implicit invocation")
+        elif not policy.get("allow_implicit_invocation"):
             errors.append(f"codex.{name}: implicit invocation policy must allow implicit")
         if skill.get("invocationHint") and f"${name}" not in skill["invocationHint"]:
             errors.append(f"codex.{name}: invocation hint must name ${name}")
@@ -265,7 +268,7 @@ def _validate_opencode_package(root: Path = REPO_ROOT, package_manifest: Any | N
     if command_names != expected:
         errors.append("opencode command templates must match skills/*/SKILL.md")
 
-    for hook in ('event:', '"shell.env"', '"tool.execute.before"', '"tool.execute.after"'):
+    for hook in ('event:', '"shell.env"', '"chat.message"', '"tool.execute.before"', '"tool.execute.after"'):
         if hook not in plugin_text:
             errors.append(f"opencode plugin missing {hook} hook")
     for phantom in ('"session.created":', '"session.idle":'):
@@ -413,6 +416,32 @@ def _validate_opencode_install_root(plugin_text: str, root: Path = REPO_ROOT) ->
     if 'path.join(process.env.HOME, ".agents", "skills", "agentera")' in plugin_text:
         if "temporary OpenCode-only" not in plugin_text or "compatibility exception" not in plugin_text:
             errors.append("opencode legacy skills-root fallback must be documented as an adapter-local exception")
+    return errors
+
+
+def _validate_opencode_bare_hej_router(plugin_text: str) -> list[str]:
+    errors: list[str] = []
+    required = {
+        '"chat.message"': "opencode bare-hej router must register chat.message",
+        "isBareHejUserMessage": "opencode bare-hej router must expose an exact-match predicate",
+        "normalizeBareHejTransportText": "opencode bare-hej router must account for the CLI transport newline without broad trimming",
+        "routeBareHejMessage": "opencode bare-hej router must expose a routing helper",
+        'normalizeBareHejTransportText(part.text) === "hej"': "opencode bare-hej router must match only exact lowercase hej plus transport newline",
+        "original complete user message was exactly `hej`": "opencode bare-hej router must preserve original-prompt intent",
+        "do not answer as a generic greeting": "opencode bare-hej router must block generic greeting fallback",
+    }
+    for needle, message in required.items():
+        if needle not in plugin_text:
+            errors.append(message)
+    for broad in (
+        'part.text.includes("hej")',
+        'part.text.toLowerCase()',
+        'part.text.startsWith("hej")',
+        'part.text.trim()',
+        'normalizeBareHejTransportText(part.text).trim()',
+    ):
+        if broad in plugin_text:
+            errors.append("opencode bare-hej router must not use broad greeting matching")
     return errors
 
 
@@ -877,6 +906,12 @@ class TestCodexPackaging:
         bundled = plugin["skillMetadata"][0]
         bundled["policy"]["allow_implicit_invocation"] = False
         assert "codex.agentera: implicit invocation policy must allow implicit" in _validate_codex_package(plugin)
+
+    def test_codex_legacy_hej_fails_when_implicit(self):
+        plugin = _load_json(REPO_ROOT / ".codex-plugin/plugin.json")
+        legacy = plugin["skillMetadata"][1]
+        legacy["policy"]["allow_implicit_invocation"] = True
+        assert "codex.hej: legacy bridge must not allow implicit invocation" in _validate_codex_package(plugin)
 
     def test_codex_marketplace_fails_when_pointing_at_skill_directory(self, tmp_path):
         (tmp_path / ".agents/plugins").mkdir(parents=True)
@@ -1442,8 +1477,9 @@ class TestLegacyRuntimeCompatibility:
 
     def test_legacy_hej_bridge_routes_to_upgrade(self):
         text = (REPO_ROOT / "skills/hej/SKILL.md").read_text(encoding="utf-8")
-        assert "Legacy Agentera v1 entry-point bridge" in text
+        assert "Legacy Agentera v1 explicit /hej bridge" in text
         assert "legacy_bridge: true" in text
+        assert "Do not use this skill for bare text `hej`" in text
         assert "Do not run the old HEJ orientation workflow" in text
         assert "agentera upgrade --project \"$PWD\" --dry-run" in text
         assert "agentera upgrade --project \"$PWD\" --yes --update-packages" in text
@@ -1489,7 +1525,7 @@ class TestLegacyRuntimeCompatibility:
         )
         (root / ".opencode/alternate/package.json").write_text(json.dumps({"type": "module"}), encoding="utf-8")
         (root / ".opencode/plugins/agentera.js").write_text(
-            'export const AGENTERA_VERSION = "1.18.0";\n\nexport const COMMAND_TEMPLATES = {\n  "agentera": `---\nagentera_managed: true\n---\nLoad and execute the agentera bundled skill.\n`,\n};\n\nevent:\n"shell.env"\n"tool.execute.before"\n"tool.execute.after"\n',
+            'export const AGENTERA_VERSION = "1.18.0";\n\nexport const COMMAND_TEMPLATES = {\n  "agentera": `---\nagentera_managed: true\n---\nLoad and execute the agentera bundled skill.\n`,\n};\n\nevent:\n"shell.env"\n"chat.message"\n"tool.execute.before"\n"tool.execute.after"\n',
             encoding="utf-8",
         )
         fixture = yaml.safe_load((REPO_ROOT / "references/adapters/package-registry.yaml").read_text(encoding="utf-8"))
@@ -1513,6 +1549,20 @@ class TestLegacyRuntimeCompatibility:
     def test_opencode_package_uses_documented_manual_install_root(self):
         plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
         assert _validate_opencode_install_root(plugin_text) == []
+
+    def test_opencode_package_routes_bare_hej_exactly(self):
+        plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
+        assert _validate_opencode_bare_hej_router(plugin_text) == []
+
+    def test_opencode_package_rejects_broad_bare_hej_matching(self):
+        plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
+        stale = plugin_text.replace(
+            'normalizeBareHejTransportText(part.text) === "hej"',
+            'part.text.toLowerCase().includes("hej")',
+        )
+        errors = _validate_opencode_bare_hej_router(stale)
+        assert "opencode bare-hej router must match only exact lowercase hej plus transport newline" in errors
+        assert "opencode bare-hej router must not use broad greeting matching" in errors
 
     def test_opencode_package_fails_on_manual_install_root_mismatch(self):
         plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
@@ -1711,7 +1761,7 @@ class TestLegacyRuntimeCompatibility:
         )
         (root / ".opencode/package.json").write_text(json.dumps({"type": "module"}), encoding="utf-8")
         (root / ".opencode/plugins/agentera.js").write_text(
-            'export const AGENTERA_VERSION = "1.18.0";\n\nexport const COMMAND_TEMPLATES = {\n  "agentera": `---\ndescription: "test"\n---\nNo managed marker.\n`,\n};\n\nevent:\n"shell.env"\n"tool.execute.before"\n"tool.execute.after"\n',
+            'export const AGENTERA_VERSION = "1.18.0";\n\nexport const COMMAND_TEMPLATES = {\n  "agentera": `---\ndescription: "test"\n---\nNo managed marker.\n`,\n};\n\nevent:\n"shell.env"\n"chat.message"\n"tool.execute.before"\n"tool.execute.after"\n',
             encoding="utf-8",
         )
         assert "opencode.agentera: command template must keep managed marker" in _validate_opencode_package(root)
@@ -1728,6 +1778,7 @@ class TestLegacyRuntimeCompatibility:
         assert '"session.idle":' not in plugin_text
         assert "event:" in plugin_text
         assert '"shell.env"' in plugin_text
+        assert '"chat.message"' in plugin_text
         assert '"tool.execute.before"' in plugin_text
         assert '"tool.execute.after"' in plugin_text
 
@@ -1743,7 +1794,7 @@ class TestLegacyRuntimeCompatibility:
         (root / ".opencode/package.json").write_text(json.dumps({"type": "module"}), encoding="utf-8")
         (root / ".opencode/plugins/agentera.js").write_text(
             'export const AGENTERA_VERSION = "1.18.0";\n\nexport const COMMAND_TEMPLATES = {\n  "agentera": `---\nagentera_managed: true\n---\nLoad and execute the agentera bundled skill.\n`,\n};\n'
-            + '"session.created": async () => {}\n"session.idle": async () => {}\nevent:\n"shell.env"\n"tool.execute.before"\n"tool.execute.after"\n',
+            + '"session.created": async () => {}\n"session.idle": async () => {}\nevent:\n"shell.env"\n"chat.message"\n"tool.execute.before"\n"tool.execute.after"\n',
             encoding="utf-8",
         )
         errors = _validate_opencode_package(root)

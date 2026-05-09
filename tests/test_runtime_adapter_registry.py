@@ -45,6 +45,7 @@ def test_runtime_adapter_registry_returns_current_runtimes_in_deterministic_orde
         "Copilot CLI",
         "Codex CLI",
     ]
+    assert "chat.message" in registry.get("opencode")["lifecycle_events"]["supported_events"]
 
 
 def test_runtime_adapter_registry_known_and_unknown_ids_have_clear_diagnostics():

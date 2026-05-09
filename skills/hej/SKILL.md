@@ -1,9 +1,10 @@
 ---
 name: hej
 description: >
-  Legacy Agentera v1 entry-point bridge. Use this only to guide existing
+  Legacy Agentera v1 explicit /hej bridge. Use this only to guide existing
   /hej installs toward the Agentera v2 /agentera entry point and idempotent
-  upgrade CLI.
+  upgrade CLI. Do not use this skill for bare text `hej`; route that through
+  the bundled agentera skill and the agentera hej dashboard path.
 version: "2.2.3"
 legacy_bridge: true
 ---
@@ -12,7 +13,8 @@ legacy_bridge: true
 
 This skill exists only for users who still have the Agentera v1 `/hej`
 entry point installed. Agentera v2 uses `/agentera` as the single active
-entry point.
+entry point. A bare text message exactly `hej` is not this legacy bridge; it
+belongs to the bundled `agentera` skill and its `agentera hej` dashboard path.
 
 Do not run the old HEJ orientation workflow from v1. Do not produce the v1
 dashboard. This bridge is an upgrade handoff.

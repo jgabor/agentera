@@ -581,9 +581,15 @@ def _format_entry(entry: dict, fields: list[str]) -> str:
 
 def _emit_structured(value: Any, output_format: str) -> None:
     if output_format == "json":
-        print(json.dumps(value, ensure_ascii=False, indent=2))
+        print(json.dumps(value, ensure_ascii=False, indent=2, default=_json_default))
     elif output_format == "yaml":
         print(yaml.safe_dump(value, sort_keys=False), end="")
+
+
+def _json_default(value: Any) -> str:
+    if isinstance(value, date):
+        return value.isoformat()
+    raise TypeError(f"Object of type {value.__class__.__name__} is not JSON serializable")
 
 
 def _output_format(args: argparse.Namespace) -> str:

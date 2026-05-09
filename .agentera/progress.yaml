@@ -1,4 +1,49 @@
 cycles:
+- number: 381
+  timestamp: 2026-05-09
+  type: fix
+  phase: build
+  what: >
+    Implemented exact bare-hej runtime routing metadata and OpenCode adapter
+    behavior so bare text hej no longer falls through to a generic greeting or
+    the legacy hej bridge.
+  commit: pending
+  inspiration: >
+    Cross-runtime research showed bare hej failed before Agentera loaded because
+    the exact routing rule lived inside the skill body; only OpenCode exposed a
+    verified raw-message adapter surface suitable for deterministic routing.
+  discovered: >
+    Adding chat.message to the RuntimeAdapter registry required extending the
+    registry validator event vocabulary and documenting the new OpenCode parity
+    claim exactly, otherwise lifecycle validation rejected the new hook.
+  verified: >
+    uv run pytest tests/test_runtime_adapters.py tests/test_runtime_adapter_registry.py
+    tests/test_hej_routing_fixture.py tests/test_skill_dispatch_contract.py passed
+    with 97 tests. node scripts/smoke_opencode_bootstrap.mjs passed, including
+    exact-match bare-hej rewrite checks. uv run scripts/validate_lifecycle_adapters.py
+    reported lifecycle adapter metadata ok. uv run scripts/validate_capability.py
+    skills/agentera/capabilities/hej and .../realisera both passed. After fixing
+    YAML date JSON serialization, uv run pytest tests/test_query_cli.py::TestRoutineStructuredOutput
+    tests/test_runtime_adapters.py tests/test_runtime_adapter_registry.py
+    tests/test_hej_routing_fixture.py tests/test_skill_dispatch_contract.py passed
+    with 138 tests, and uv run scripts/agentera progress --format json parsed
+    the new progress entry. Final uv run pytest passed with 836 tests. uv run
+    scripts/validate_capability.py --self-validate passed. python3 -m py_compile
+    scripts/agentera scripts/runtime_adapter_registry.py scripts/validate_lifecycle_adapters.py,
+    node --check .opencode/plugins/agentera.js, and git diff --check produced no
+    output.
+  next: >
+    Await user review or commit instruction. Runtime publication, package-manager
+    updates, installed bundle refresh, tag, push, and live host proof remain
+    separate explicit requests.
+  context:
+    intent: exact bare hej routing across runtime metadata with deterministic
+      OpenCode adapter support
+    constraints: no commit, tag, push, package update, installed bundle refresh,
+      vision edit, or objective edit
+    scope: OpenCode plugin and commands, Agentera/Codex/Copilot/Claude metadata,
+      runtime registry/docs, semantic fixture, tests, changelog, progress
+
 - number: 380
   timestamp: 2026-05-09
   type: release

@@ -1,7 +1,8 @@
 // Agentera plugin for OpenCode
 // Bootstraps slash commands at plugin init, injects AGENTERA_HOME via shell.env,
-// writes session.yaml bookmarks via the generic event hook, and validates
-// artifact writes via tool.execute.before plus tool.execute.after.
+// writes session.yaml bookmarks via the generic event hook, routes exact bare
+// `hej` messages through Agentera via chat.message, and validates artifact
+// writes via tool.execute.before plus tool.execute.after.
 // Install: copy to ~/.config/opencode/plugins/agentera.js or .opencode/plugins/agentera.js
 
 import { execFileSync } from "child_process";
@@ -9,39 +10,78 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-export const AGENTERA_VERSION = "2.2.3";
-export const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode --skill agentera -y";
+const AGENTERA_VERSION = "2.2.3";
+const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode --skill agentera -y";
 const REQUIRED_SKILL_NAMES = ["agentera"];
 const LEGACY_BRIDGE_SKILL_NAMES = new Set(["hej"]);
 
-export const COMMAND_TEMPLATES = {
+const COMMAND_TEMPLATES = {
   "agentera": `---
-description: "Compound agent orchestration suite: 12 capabilities in one bundled skill"
+description: "Compound agent orchestration suite: 12 capabilities in one bundled skill; exact bare hej routes to the Agentera dashboard"
 agentera_managed: true
 ---
-Load and execute the agentera bundled skill for this project.
+Load and execute the agentera bundled skill for this project. If the user's complete message is exactly hej, route it through Agentera's hej dashboard path instead of a generic greeting.
 `,
   "hej": `---
-description: "Legacy Agentera v1 entry point: upgrade bridge to /agentera"
+description: "Legacy /hej slash bridge only; bare text hej routes through agentera"
 agentera_managed: true
 ---
-Load and execute the hej legacy upgrade bridge for this project.
+Use this only for explicit legacy /hej slash-command upgrades. For a bare text message exactly hej, load agentera and run the Agentera hej dashboard path.
 `,
 };
 
-export function resolveOpencodeCommandsDir() {
+const BARE_HEJ_ROUTED_PROMPT = [
+  "agentera",
+  "",
+  "OpenCode adapter note: the original complete user message was exactly `hej`.",
+  "Route it as Agentera Layer 1 bare `hej`: run `agentera hej` first, render the hej dashboard, and do not answer as a generic greeting.",
+].join("\n");
+
+function meaningfulParts(parts) {
+  return Array.isArray(parts)
+    ? parts.filter((part) => part && part.ignored !== true)
+    : [];
+}
+
+function normalizeBareHejTransportText(text) {
+  // `opencode run "hej"` arrives as `hej\n`; strip only that transport newline.
+  return text.replace(/\r?\n$/, "");
+}
+
+function isBareHejUserMessage(parts) {
+  const active = meaningfulParts(parts);
+  if (active.length !== 1) return false;
+  const [part] = active;
+  return part.type === "text"
+    && typeof part.text === "string"
+    && normalizeBareHejTransportText(part.text) === "hej";
+}
+
+function routeBareHejMessage(output) {
+  if (!isBareHejUserMessage(output?.parts)) return false;
+  const part = meaningfulParts(output.parts)[0];
+  part.text = BARE_HEJ_ROUTED_PROMPT;
+  part.metadata = {
+    ...(part.metadata || {}),
+    agenteraRoute: "bare-hej",
+    originalText: "hej",
+  };
+  return true;
+}
+
+function resolveOpencodeCommandsDir() {
   return process.env.OPENCODE_CONFIG_DIR
     ? path.join(process.env.OPENCODE_CONFIG_DIR, "commands")
     : path.join(process.env.HOME, ".config", "opencode", "commands");
 }
 
-export function resolveOpencodeSkillsDir() {
+function resolveOpencodeSkillsDir() {
   return process.env.OPENCODE_CONFIG_DIR
     ? path.join(process.env.OPENCODE_CONFIG_DIR, "skills")
     : path.join(process.env.HOME, ".config", "opencode", "skills");
 }
 
-export function hasManagedMarker(filePath) {
+function hasManagedMarker(filePath) {
   let content;
   try {
     content = fs.readFileSync(filePath, "utf8");
@@ -56,7 +96,7 @@ export function hasManagedMarker(filePath) {
   return /^agentera_managed:\s*true\s*$/m.test(frontmatter);
 }
 
-export const commandBootstrap = { lastReport: null };
+const commandBootstrap = { lastReport: null };
 
 function validSkillDir(skillDir, name) {
   return fs.existsSync(path.join(skillDir, name, "SKILL.md"));
@@ -72,7 +112,7 @@ function validManagedSkillDir(skillDir, name) {
   }
 }
 
-export function resolveInstalledAgenteraSkillsDir() {
+function resolveInstalledAgenteraSkillsDir() {
   const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
   const candidates = [
     process.env.AGENTERA_HOME && path.join(process.env.AGENTERA_HOME, "skills"),
@@ -102,9 +142,9 @@ function isManagedSkillSymlink(targetPath, name) {
   return normalized.includes("agentera") || path.basename(linkTarget) === name;
 }
 
-export const skillBootstrap = { lastReport: null };
+const skillBootstrap = { lastReport: null };
 
-export function bootstrapSkills() {
+function bootstrapSkills() {
   const report = {
     repaired: [],
     restored: [],
@@ -165,7 +205,7 @@ export function bootstrapSkills() {
   return report;
 }
 
-export function bootstrapCommands() {
+function bootstrapCommands() {
   const report = {
     restored: [],
     refreshed: [],
@@ -255,7 +295,7 @@ function findAgenteraRoot(startDir) {
   return startDir;
 }
 
-export function resolveAgenteraHome() {
+function resolveAgenteraHome() {
   // Keep this adapter-local resolver aligned with the shared install-root
   // contract fixture in `.agentera/install_root_interface_model.yaml` and the
   // Python implementation in `scripts/install_root.py`: AGENTERA_HOME first,
@@ -281,7 +321,7 @@ export function resolveAgenteraHome() {
   return null;
 }
 
-export function validateArtifact(filePath, projectRoot) {
+function validateArtifact(filePath, projectRoot) {
   try {
     const agenteraHome = resolveAgenteraHome();
     if (!agenteraHome || !filePath) return;
@@ -352,7 +392,7 @@ function reconstructCandidate(tool, args, root) {
   };
 }
 
-export function validateArtifactCandidate(filePath, content, projectRoot) {
+function validateArtifactCandidate(filePath, content, projectRoot) {
   try {
     const agenteraHome = resolveAgenteraHome();
     if (!agenteraHome) return { permissionDecision: "allow" };
@@ -397,7 +437,7 @@ function hardGateArtifactCandidate(input, output, projectRoot) {
   throw new Error(decision.permissionDecisionReason || "Artifact validation failed");
 }
 
-export function writeSessionBookmark(projectRoot) {
+function writeSessionBookmark(projectRoot) {
   try {
     const agenteraHome = resolveAgenteraHome();
     if (!agenteraHome) return;
@@ -437,7 +477,7 @@ function setProfileDir() {
 // Lifecycle counter: increments every time OpenCode invokes the Agentera
 // plugin function. Exported (and reset by) the smoke runner so the test
 // harness can confirm the plan's "once per plugin load" assumption empirically.
-export const lifecycle = { initCount: 0, lastInitAt: null };
+const lifecycle = { initCount: 0, lastInitAt: null };
 
 export const Agentera = async (input = {}, _options) => {
   lifecycle.initCount += 1;
@@ -468,10 +508,18 @@ export const Agentera = async (input = {}, _options) => {
     "shell.env": async (_input, output) => {
       const env = output && output.env;
       if (!env || typeof env !== "object") return;
-      // Honor any pre-existing value (process env or already-merged shell env).
-      if (env.AGENTERA_HOME || process.env.AGENTERA_HOME) return;
+      // Honor already-merged shell env, otherwise propagate caller-selected env.
+      if (env.AGENTERA_HOME) return;
+      if (process.env.AGENTERA_HOME) {
+        env.AGENTERA_HOME = process.env.AGENTERA_HOME;
+        return;
+      }
       if (!initialAgenteraHome) return;
       env.AGENTERA_HOME = initialAgenteraHome;
+    },
+
+    "chat.message": async (_input, output) => {
+      routeBareHejMessage(output);
     },
 
     "tool.execute.before": async (input, output) => {
@@ -490,10 +538,29 @@ export const Agentera = async (input = {}, _options) => {
   };
 };
 
-export default Agentera;
+Agentera.__test = {
+  AGENTERA_VERSION,
+  OPENCODE_SKILL_INSTALL_COMMAND,
+  COMMAND_TEMPLATES,
+  BARE_HEJ_ROUTED_PROMPT,
+  bootstrapCommands,
+  bootstrapSkills,
+  commandBootstrap,
+  hasManagedMarker,
+  isBareHejUserMessage,
+  lifecycle,
+  normalizeBareHejTransportText,
+  resolveAgenteraHome,
+  resolveOpencodeCommandsDir,
+  resolveOpencodeSkillsDir,
+  routeBareHejMessage,
+  skillBootstrap,
+  validateArtifactCandidate,
+  writeSessionBookmark,
+};
 
 // --- BEGIN GENERATED: INSTALL_ROOT_CONTRACT ---
-export const INSTALL_ROOT_CONTRACT = {
+const INSTALL_ROOT_CONTRACT = {
     "title": "Install Root Interface And Safety Model",
     "plan": "Deepen Agentera Install Root Module",
     "task": 3,

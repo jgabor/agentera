@@ -1,7 +1,7 @@
 {
   "name": "agentera",
   "version": "2.2.3",
-  "description": "Compound agent orchestration suite \u2014 12 capabilities in one bundled skill",
+  "description": "Compound agent orchestration suite \u2014 12 capabilities in one bundled skill; exact bare hej belongs to the bundled agentera dashboard path",
   "author": {
     "name": "Jonathan Gabor",
     "url": "https://github.com/jgabor"
@@ -20,8 +20,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Agentera",
-    "shortDescription": "Portable skills that give Codex project memory, planning, execution, and review workflows.",
-    "longDescription": "Agentera turns Codex into a coordinated engineering partner with shared project artifacts, decision memory, planning, autonomous execution, audits, documentation, visual identity, research, optimization, and orchestration.",
+    "shortDescription": "Portable skills that give Codex exact bare hej routing, project memory, planning, execution, and review workflows.",
+    "longDescription": "Agentera turns Codex into a coordinated engineering partner with shared project artifacts, decision memory, planning, autonomous execution, audits, documentation, visual identity, research, optimization, and orchestration. A complete user message exactly `hej` belongs to the bundled agentera skill and its agentera hej dashboard path, not the legacy hej bridge.",
     "developerName": "Jonathan Gabor",
     "category": "Coding",
     "capabilities": ["Interactive", "Read", "Write"],
@@ -29,7 +29,7 @@
     "privacyPolicyURL": "https://github.com/jgabor/agentera",
     "termsOfServiceURL": "https://github.com/jgabor/agentera/blob/main/LICENSE",
     "defaultPrompt": [
-      "Use $agentera to inspect this project and suggest the next best action."
+      "Use $agentera to inspect this project and suggest the next best action. If the complete user message is exactly `hej`, use $agentera's hej dashboard path."
     ],
     "brandColor": "#111827",
     "screenshots": []
@@ -40,7 +40,7 @@
       "skills": "/skills",
       "plugins": "/plugins"
     },
-    "invocationHint": "Use $agentera for explicit invocation. The bundled skill routes to the appropriate capability automatically.",
+    "invocationHint": "Use $agentera for explicit invocation. If the complete user message is exactly `hej`, route it through $agentera and the hej dashboard path; $hej is only a legacy explicit bridge.",
     "limitations": [
       "profilera collects bounded Codex session corpus data when present and reports any absent source families in corpus metadata.",
       "AGENTERA_HOME must be set in ~/.codex/config.toml under [shell_environment_policy].set so SKILL.md helper-script invocations resolve to the install root; see README install instructions."
@@ -95,22 +95,22 @@
   "skillMetadata": [
     {
       "name": "agentera",
-      "description": "Compound agent orchestration suite \u2014 12 capabilities in one bundled skill",
+      "description": "Compound agent orchestration suite \u2014 12 capabilities in one bundled skill; use for exact bare hej dashboard routing",
       "path": "./skills/agentera",
       "runtimeSupport": "portable",
-      "invocationHint": "$agentera",
+      "invocationHint": "$agentera; for a complete bare `hej`, use the agentera hej dashboard path",
       "policy": {
         "allow_implicit_invocation": true
       }
     },
     {
       "name": "hej",
-      "description": "Legacy Agentera v1 entry-point bridge to the v2 /agentera upgrade flow.",
+      "description": "Legacy Agentera v1 explicit $hej bridge to the v2 $agentera upgrade flow; do not use for bare text hej.",
       "path": "./skills/hej",
       "runtimeSupport": "portable",
-      "invocationHint": "$hej legacy bridge, then $agentera",
+      "invocationHint": "$hej only when explicitly requested as a legacy bridge; bare text hej belongs to $agentera",
       "policy": {
-        "allow_implicit_invocation": true
+        "allow_implicit_invocation": false
       }
     }
   ]

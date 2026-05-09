@@ -1,29 +1,29 @@
 display_name: Agentera
-description: Portable Agentera suite for Codex: one bundled skill with twelve routed capabilities.
+description: Portable Agentera suite for Codex: one bundled skill with exact bare hej routing and twelve routed capabilities.
 icon: AG
 brand_color: "#111827"
-default_prompt: Use $agentera to inspect project state and route to the right capability.
+default_prompt: Use $agentera to inspect project state and route to the right capability; exact bare hej uses the agentera hej dashboard path.
 policy:
   allow_implicit_invocation: true
 support:
   skill_discovery: /skills
   plugin_discovery: /plugins
   explicit_invocation: $agentera
-  implicit_invocation: the bundled skill may be invoked implicitly
+  implicit_invocation: the bundled skill may be invoked implicitly; exact bare text hej belongs to agentera, not the legacy hej bridge
   lifecycle_hooks: stable via codex_hooks; bundled config lives at hooks/codex-hooks.json and can be copied to ~/.codex/hooks.json or a project .codex/hooks.json for apply_patch artifact validation
 skills:
   - name: agentera
     display_name: agentera
     path: ./skills/agentera
     metadata: ./agents/openai.yaml
-    description: Compound agent orchestration suite with twelve capabilities in one bundled skill.
-    invocation_hint: Use $agentera, or inspect it with /skills and /plugins.
+    description: Compound agent orchestration suite with exact bare hej routing and twelve capabilities in one bundled skill.
+    invocation_hint: Use $agentera, or inspect it with /skills and /plugins. For a complete bare hej message, use the agentera hej dashboard path.
     policy:
       allow_implicit_invocation: true
     capabilities:
       - name: hej
-        description: Entry-point orientation and routing for fresh or returning projects.
-        invocation_hint: Use $agentera hej or ask $agentera for project status.
+        description: Entry-point orientation and routing for fresh or returning projects, including a complete user message exactly `hej`.
+        invocation_hint: Use $agentera hej or ask $agentera for project status; exact bare hej uses this dashboard path.
         policy:
           allow_implicit_invocation: true
       - name: inspirera

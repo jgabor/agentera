@@ -9,6 +9,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 FIXTURE_PATH = REPO_ROOT / "fixtures" / "semantic" / "hej-routing-plan-priority.md"
 CLI_BUDGET_FIXTURE_PATH = REPO_ROOT / "fixtures" / "semantic" / "hej-cli-budget.md"
 BARE_HEJ_FIXTURE_PATH = REPO_ROOT / "fixtures" / "semantic" / "hej-bare-message.md"
+BARE_HEJ_EMPTY_FIXTURE_PATH = REPO_ROOT / "fixtures" / "semantic" / "hej-bare-empty-repo.md"
 
 
 def _load_fixture_with_output(semantic_fixtures, output: str):
@@ -130,6 +131,18 @@ def test_bare_hej_fixture_requires_dashboard_path(semantic_eval, semantic_fixtur
     assert errors == []
 
     result = semantic_eval.evaluate_fixture(fixture, str(BARE_HEJ_FIXTURE_PATH))
+
+    assert result["status"] == "pass"
+    facts = {fact["fact"]: fact for fact in result["checked_facts"]}
+    assert facts["required_tool_calls[0]"]["status"] == "pass"
+    assert facts["tool_call_counts[agentera hej]"]["status"] == "pass"
+
+
+def test_bare_hej_empty_repo_fixture_requires_dashboard_path(semantic_eval, semantic_fixtures):
+    fixture, errors = semantic_fixtures.load_fixture(BARE_HEJ_EMPTY_FIXTURE_PATH)
+    assert errors == []
+
+    result = semantic_eval.evaluate_fixture(fixture, str(BARE_HEJ_EMPTY_FIXTURE_PATH))
 
     assert result["status"] == "pass"
     facts = {fact["fact"]: fact for fact in result["checked_facts"]}

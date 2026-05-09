@@ -14,6 +14,15 @@ may expose an event while agentera still lacks a shipped adapter path for it.
 | Copilot CLI | Full for portable skills through plugin or skill-folder install paths | Active via `sessionStart` | Conditional hard gate via `preToolUse` when `toolArgs` include path plus candidate content or exact replacement evidence | Active via `sessionEnd` |
 | Codex CLI | Full for portable skills through plugin install, `.agents/skills`, and `$skill` invocation | Not wired by the shipped hook config | Advisory `apply_patch` path validation through shipped PreToolUse and PostToolUse hooks; final patch content is not reconstructed | Not wired by the shipped hook config |
 
+## Bare `hej` routing
+
+| Runtime | Bare text `hej` behavior | Evidence |
+|---------|--------------------------|----------|
+| OpenCode | Deterministic exact-match adapter route through `chat.message`; only a complete lowercase text message `hej` is rewritten to load `agentera` and run the `agentera hej` dashboard path, accepting OpenCode's CLI-added single trailing newline as a transport artifact. | `.opencode/plugins/agentera.js`, `scripts/smoke_opencode_bootstrap.mjs` |
+| Claude Code | Metadata/context only; `UserPromptSubmit` can observe or add context but is not a verified prompt rewrite router. | `skills/agentera/SKILL.md`, marketplace metadata |
+| Copilot CLI | Metadata/context only; skills, prompts, hooks, and plugins expose Agentera but do not guarantee pre-model bare-prompt routing. | `plugin.json`, `.github/plugin/plugin.json`, `.github/hooks` |
+| Codex CLI | Metadata/context only; `$agentera` is explicit and the legacy `$hej` bridge is not implicitly invocable. | `.codex-plugin/plugin.json`, `agents/openai.yaml` |
+
 ## Artifact validation
 
 | Runtime | Blocking surface | Implemented gate | Evidence-insufficient paths | Verification surface |

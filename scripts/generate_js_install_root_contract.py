@@ -7,7 +7,7 @@
 
 Reads `.agentera/install_root_interface_model.yaml` and either verifies that
 ``.opencode/plugins/agentera.js`` embeds a matching ``INSTALL_ROOT_CONTRACT``
-export (default, exit code 0 on match, 1 on mismatch) or writes the generated
+constant (default, exit code 0 on match, 1 on mismatch) or writes the generated
 contract into the JS file with ``--write``.
 
 Usage::
@@ -93,9 +93,9 @@ def json_quote(s: str) -> str:
 
 
 def generate_contract_code(model: dict[str, Any]) -> str:
-    """Produce the JS export source for the install-root contract."""
+    """Produce the JS source for the install-root contract constant."""
     obj = _py_to_js(model, indent=1)
-    return f"export const INSTALL_ROOT_CONTRACT = {obj};"
+    return f"const INSTALL_ROOT_CONTRACT = {obj};"
 
 
 def extract_contract(plugin_text: str) -> str | None:
