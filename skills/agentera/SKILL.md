@@ -51,6 +51,73 @@ Capabilities import these by name. The schema contract ensures consistent usage.
 
 When a request arrives, route to the matching capability using the five-layer dispatch model from Decision 42.
 
+### Prerequisite: Bundle health gate
+
+This is a mandatory check that must pass before any routing layer below is
+evaluated. Do not skip or short-circuit it — a stale installed bundle produces
+wrong routing despite a working local checkout.
+
+Package and marketplace updates can refresh the visible skill while leaving the
+durable bundle under `AGENTERA_HOME` stale. Treat that split state as an
+out-of-date installed bundle.
+
+Resolve `RESOLVED_AGENTERA_HOME` through the shared install-root Module
+contract implemented by `scripts/install_root.py`; do not invent caller-local
+root identity rules. Resolution precedence is:
+
+1. `AGENTERA_HOME`, when set
+2. `$HOME/.agents/agentera`
+
+Classification is owned by that Module. A missing, file, invalid, or unmanaged
+`AGENTERA_HOME` is an explicit environment-selected root and must block instead
+of falling through to the default root.
+
+The expected durable bundle version is the suite version in `registry.json`
+(`skills[0].version`); SKILL.md frontmatter mirrors that value. The installed
+bundle marker `.agentera-bundle.json` should carry the same version, and the
+installed CLI must discover the expected routine commands, including `hej`.
+
+Then try the installed CLI:
+
+```bash
+uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
+```
+
+If the command fails before argparse, reports `invalid choice` for `hej`, lacks
+`hej` in `--help`, has a stale or missing `.agentera-bundle.json` marker, or the
+doctor diagnostic reports stale/blocked status:
+
+- Tell the user the bundle is stale
+- Report the root, resolution source, and expected version
+- Show the clone-free dry-run preview:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
+```
+
+Ask for explicit approval before writes. The canonical approval phrase is
+`approve bundle refresh for <resolved-root>`; a normal affirmative response is
+acceptable only when it clearly authorizes the same bundle refresh and root. If
+approved, apply:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --yes
+```
+
+After apply, retry:
+
+```bash
+uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
+```
+
+If `AGENTERA_HOME` points at a missing path, a file, or an unmanaged directory,
+do not overwrite it silently. Ask the user to fix/unset `AGENTERA_HOME`, choose
+a managed `--install-root`, or explicitly request a forced bundle install.
+
+Only after the installed CLI succeeds, proceed to Step -1 and the routing
+layers below. Do not fall through to a local checkout as a workaround; the uvx
+commands above are portable and require no local checkout.
+
 ### Step -1: Top-level CLI-first state access
 
 The `agentera` CLI is the authoritative interface to project state. Use
@@ -59,24 +126,13 @@ advanced/custom artifact inspection when no normal command serves the needed
 state.
 
 Before any artifact-backed briefing, route decision, or capability state read,
-run the top-level command that owns the needed state:
-
-1. Installed bundle:
-   `uv run "$AGENTERA_HOME/scripts/agentera" <command>`
-2. Default durable bundle:
-   `uv run "$HOME/.agents/agentera/scripts/agentera" <command>`
-3. Local Agentera checkout:
-   `uv run scripts/agentera <command>`
+run the top-level command that owns the needed state. The bundle health gate
+above must have already confirmed the installed CLI is usable.
 
 Routine commands are: `hej`, `plan`, `progress`, `health`, `todo`,
 `decisions`, `docs`, `objective`, and `experiments`. Discovery and custom
 inspection remain available through `query --list-artifacts` and
 `query <artifact-name> --format json|yaml`.
-
-The expected durable bundle version is the suite version in `registry.json`
-(`skills[0].version`); SKILL.md frontmatter mirrors that value. The installed
-bundle marker `.agentera-bundle.json` should carry the same version, and the
-installed CLI must discover the expected routine commands, including `hej`.
 
 Do not silently bypass the CLI and read raw `.agentera/*.yaml` files first. If
 all CLI paths fail, report that the CLI was unavailable, then use raw artifact
@@ -136,63 +192,6 @@ as alternatives. Current host examples are Claude Code `AskUserQuestion`, Copilo
 recommended choice first with `(Recommended)` in its label and include `Done`.
 Selecting a downstream capability option is confirmation to invoke that
 capability; selecting `Done` stops without routing.
-
-### Step -1a: Bundle status check
-
-Package and marketplace updates can refresh the visible skill while leaving the
-durable bundle under `AGENTERA_HOME` stale. Treat that split state as an
-out-of-date installed bundle, not as a reason to call the local checkout a
-successful installed run.
-
-For bare `/agentera`, follow the shared install-root Module contract in
-`scripts/install_root.py`: AGENTERA_HOME wins over the default durable root,
-classification is read-only, and managed/stale/unmanaged semantics belong to
-that Module rather than caller-local heuristics. Resolve the bundle root in this
-order:
-
-1. `AGENTERA_HOME`, when set
-2. `$HOME/.agents/agentera`
-
-Then try the installed command:
-
-```bash
-uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
-```
-
-If the command fails before argparse, reports `invalid choice` for `hej`, lacks
-`hej` in `--help`, has a stale or missing `.agentera-bundle.json` marker, or the
-doctor diagnostic reports stale/blocked status, do not silently fall
-through to the local checkout as a success. Tell the user the installed Agentera
-bundle is stale, then report the root, resolution source, expected version, and
-clone-free preview:
-
-```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
-```
-
-Ask for explicit approval before writes. The canonical approval phrase is
-`approve bundle refresh for <resolved-root>`; a normal affirmative response is
-acceptable only when it clearly authorizes the same bundle refresh and root. If
-approved, apply the same-root command:
-
-```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --yes
-```
-
-After apply, retry the installed command from the same refreshed root:
-
-```bash
-uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
-```
-
-If `AGENTERA_HOME` points at a missing path, a file, or an unmanaged directory,
-do not overwrite it silently. Ask the user to fix/unset `AGENTERA_HOME`, choose
-a managed `--install-root`, or explicitly request a forced bundle install.
-
-When a fresh local checkout is available, `uv run scripts/agentera doctor
---install-root "$RESOLVED_AGENTERA_HOME" --json` can diagnose the same contract
-without writing. In no-clone situations, the uvx dry-run above is the portable
-diagnostic and preview.
 
 ### Step 0: V1 migration check
 

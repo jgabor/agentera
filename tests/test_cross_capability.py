@@ -274,3 +274,14 @@ def test_master_upgrade_check_requires_dry_run_preview():
     assert "The dry-run preview is mandatory" in text
     assert 'agentera upgrade --project "$PWD" --dry-run' in text
     assert "Only the apply step requires confirmation" in text
+
+
+def test_master_bundle_health_gate_uses_install_root_contract():
+    text = SKILL_MD_PATH.read_text(encoding="utf-8")
+
+    assert "shared install-root Module" in text
+    assert "scripts/install_root.py" in text
+    assert "1. `AGENTERA_HOME`, when set" in text
+    assert "must block instead\nof falling through to the default root" in text
+    assert "registry.json" in text
+    assert "`skills[0].version`" in text
