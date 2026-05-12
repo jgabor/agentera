@@ -255,13 +255,13 @@ def test_routine_capability_guidance_uses_top_level_state_commands():
     assert "scripts/agentera experiments" in optimera
     assert "query experiments" not in optimera
     assert 'uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej' in hej
-    assert "installed Agentera app is stale" in hej
+    assert "Agentera found an old or broken local copy" in hej
     assert "advanced/custom inspection only" in hej
     assert "Do not preflight app health" in hej
     assert "Do not run separate v1 artifact or PROFILE.md checks" in hej
-    assert "platform app-home recovery preview" in hej
+    assert "Use the safe fix" in hej
     assert "agentera upgrade --only bundle --dry-run" in hej
-    assert "target the platform app home" in hej
+    assert "normal Agentera directory" in hej
 
 
 def test_master_skill_documents_route_alias_contract_boundary():
@@ -279,7 +279,7 @@ def test_master_skill_documents_route_alias_contract_boundary():
 def test_master_upgrade_check_requires_dry_run_preview():
     text = SKILL_MD_PATH.read_text(encoding="utf-8")
 
-    assert "The dry-run preview is mandatory" in text
+    assert "A no-write preview is mandatory" in text
     assert 'agentera upgrade --project "$PWD" --dry-run' in text
     assert "Only the apply step requires confirmation" in text
     assert "The artifacts phase migrates supported v1 Markdown files to YAML with backups" in text
@@ -296,17 +296,17 @@ def test_master_bundle_health_gate_is_single_call():
     assert "If the command exits successfully" in text
     assert "inspect the CLI-provided `bundle.status`" in text
     assert "`bundle.dryRunCommand`" in text
-    assert "do not require a successful stale CLI invocation" in text
+    assert "do not require a successful failed CLI invocation" in text
     assert "agentera upgrade --only bundle --dry-run" in text
-    assert "target the platform app home" in text
+    assert "normal platform app directory" in text
 
 
 def test_upgrade_guide_documents_app_home_recovery_and_artifact_backups():
     text = UPGRADE_MD_PATH.read_text(encoding="utf-8")
 
     assert "npx skills update" in text
-    assert "does not refresh\nthe managed Agentera app" in text
-    assert "do not require a successful\nstale CLI invocation" in text
+    assert "does not refresh\nAgentera's local app files" in text
+    assert "do not require a successful failed CLI invocation" in text
     assert "agentera upgrade --only bundle --dry-run" in text
     assert "without `--install-root`" in text
     assert "backups under `.agentera/backup-v1/` after preview and confirmation" in text

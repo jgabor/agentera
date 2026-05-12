@@ -41,6 +41,25 @@ def test_app_home_contract_validator_reports_offending_surface(tmp_path: Path) -
     assert "live-bundle wording" in result.stderr
 
 
+def test_app_home_contract_validator_rejects_recovery_jargon(tmp_path: Path) -> None:
+    (tmp_path / "README.md").write_text(
+        "Agentera-managed bundle install is blocked; use the platform app-home recovery path\n",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [sys.executable, str(VALIDATOR), "--root", str(tmp_path)],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "README.md:1" in result.stderr
+    assert "jargon in recovery wording" in result.stderr
+
+
 def test_app_home_contract_validator_inspects_authoritative_contract_reference(tmp_path: Path) -> None:
     contract = tmp_path / "skills" / "agentera" / "references" / "contract.md"
     contract.parent.mkdir(parents=True)

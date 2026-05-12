@@ -115,7 +115,8 @@ If artifacts are corrupted:
 
 If schemas are missing:
   1. Run `agentera describe --format json`.
-  2. Fix the reported appHome/managedAppRoot/skillRoot; these match doctor.
+  2. Make sure Agentera's app files exist at the reported `managedAppRoot` path.
+  3. Run `agentera doctor` for a plain-language repair preview.
 """
 
 
@@ -152,11 +153,13 @@ def _app_model_payload(model: dict[str, Path | str] | None = None) -> dict[str, 
 def _surface_missing_message(surface: str, path: Path, model: dict[str, Path | str] | None = None) -> str:
     payload = _app_model_payload(model)
     return (
-        f"{surface} is missing at {path}; active app model: "
-        f"appHome={payload['appHome']} source={payload['appHomeSource']} "
-        f"managedAppRoot={payload['managedAppRoot']} skillRoot={payload['skillRoot']} "
-        f"runtimeRoot={payload['runtimeRoot']}; run `agentera doctor --format json` "
-        "to inspect the same root model"
+        f"{surface} is missing. Agentera cannot find it at {path}. "
+        f"Agentera directory: {payload['appHome']}. "
+        f"App files directory: {payload['managedAppRoot']}. "
+        "Run `agentera doctor` to preview the repair; run "
+        "`agentera doctor --format json` for structured details. "
+        f"Technical details: appHome={payload['appHome']} managedAppRoot={payload['managedAppRoot']} "
+        f"skillRoot={payload['skillRoot']} runtimeRoot={payload['runtimeRoot']}."
     )
 
 

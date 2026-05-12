@@ -41,55 +41,62 @@ Resolve `RESOLVED_AGENTERA_HOME` with the app-home precedence `AGENTERA_HOME`
 when set, otherwise the platform data home, then run
 the installed command once. Do not preflight app health with `glob`, `grep`,
 `read`, `ls`, `python`, `doctor`, `--help`, `scripts/install_root.py`,
-`registry.json`, or `.agentera-bundle.json`. If the command cannot execute
-because `AGENTERA_HOME` is exactly the deprecated default
+`registry.json`, or `.agentera-bundle.json`.
+
+Recovery copy must be plain-language and recommendation-first. Never ask users
+to choose between technical install concepts, internal directory states,
+command-mode flags, or package-layout terms. Say what happened, what changed,
+what the safe fix does, and what it will not touch. Good recovery labels are `Use the safe fix
+(Recommended)`, `Choose a different directory`, and `Stop`.
+
+If the command cannot execute because `AGENTERA_HOME` names the old default
 `$HOME/.agents/agentera` and `$AGENTERA_HOME/app/scripts/agentera` is missing,
-do not require a successful stale CLI invocation and do not first ask the user to
-unset `AGENTERA_HOME`. Use the exact stale-app summary phrase `installed
-Agentera app is stale`, then show this platform app-home recovery preview:
+do not require a successful failed CLI invocation and do not first ask the user to
+unset `AGENTERA_HOME`. Say: `Agentera found an old or broken local copy of
+itself. The safe fix is to install a fresh copy in the normal Agentera directory.`
+Then show this preview command and say it changes nothing:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --dry-run
 ```
 
 That preview writes nothing. Because no explicit `--install-root` is supplied,
-upgrade can classify the exact deprecated default as recoverable, target the platform app home,
-and preview old-default retirement. Ask for explicit approval before writes,
-then apply the same platform app-home recovery path:
+upgrade can choose the normal platform app directory and preview cleanup of the old
+directory. Ask for explicit approval before writes, using plain wording such as
+`Approve the safe Agentera repair at <directory>`. Then apply the same safe repair path:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --yes
 ```
 
 After apply, retry the installed command from the platform app home reported by
-the upgrade output, not from the deprecated old default. If the command exits
+the upgrade output, not from the old default directory. If the command exits
 successfully, inspect the CLI-provided `bundle.status` installed-app status
 object. Only `fresh` passes the installed Agentera app gate for normal briefing.
 The object also carries `appHome`, `managedAppRoot`, `userDataRoot`,
 `expectedVersionSource`, `bundle.dryRunCommand`, `bundle.applyCommand`, and
-approval text. If the installed command cannot execute, is stale,
-missing `hej`, fails before argparse, or reports blocked/refresh-required status,
-tell the user the installed Agentera app is stale and preview the repair with the
-CLI-provided dry-run command when present:
-
-Use the exact stale-app summary phrase `installed Agentera app is stale`.
+approval text. If the installed command cannot execute, is out of date, missing
+`hej`, fails before argparse, or reports blocked/refresh-required status, tell
+the user `Agentera found an old or broken local copy of itself.` Then preview the
+repair with the CLI-provided command when present:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
 ```
 
 Do not run the matching apply command until the user explicitly approves the
-same app home, preferably with `approve app refresh for <resolved-app-home>`.
+same Agentera repair and directory.
 After apply, retry `uv run
 "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej`; do not treat local checkout
-fallback as installed-app success. If `AGENTERA_HOME` is exactly the deprecated
-default `$HOME/.agents/agentera`, no explicit `--install-root` was supplied, and
-`$AGENTERA_HOME/app/scripts/agentera` is missing or stale, classify it as a
-recoverable stale default and show the platform app-home recovery preview above
-instead of first asking the user to unset `AGENTERA_HOME`; do not claim to prove
-where the environment value came from. If `AGENTERA_HOME` points at any other
-missing, invalid, or non-managed root, ask the user to fix it, choose a managed
-app home, or explicitly request forced install guidance.
+fallback as installed-app success. If `AGENTERA_HOME` names the old default
+`$HOME/.agents/agentera`, no explicit `--install-root` was supplied, and
+`$AGENTERA_HOME/app/scripts/agentera` is missing or out of date, show the normal
+Agentera directory preview above instead of first asking the user to unset
+`AGENTERA_HOME`; do not claim to prove where the environment value came from. If
+`AGENTERA_HOME` points at any other missing path, file, or directory with unknown
+files, say: `Agentera was told to use a directory it cannot safely use. Choose a
+different Agentera directory, or approve --force only after checking that directory is
+safe to replace.`
 
 Use `agentera query <artifact-name> --format json|yaml` only for advanced or
 custom artifact inspection when no top-level command serves the needed state.
@@ -117,7 +124,7 @@ VT14, flow arrow VT17, skill glyphs SG1-SG12, exits EX1-EX4, issues SI1-SI4.
 ## Step 0: Detect mode
 
 Run the resolved installed `agentera hej` and use its `mode` field. If the
-installed-app status check reports stale or blocked, show the CLI-provided
+installed-app status check reports out-of-date or blocked, show the CLI-provided
 refresh preview before normal mode handling.
 
 - **No artifacts found** → Step 1a (first time on this project)
@@ -135,8 +142,8 @@ orientation. `agentera hej` owns those checks and emits the mode, profile status
 `v1_migration.dry_run_command`, `v1_migration.apply_command`, attention items,
 and next action. Render those fields; do not spend additional tool calls on
 `.agentera/*.md`, `.agentera/*.yaml`, `VISION.md`, or global profile-path
-discovery. Treat `v1_migration.dry_run_command` as the CLI-supplied dry-run
-preview. Ask before any upgrade apply command, and only run
+discovery. Treat `v1_migration.dry_run_command` as the CLI-supplied preview and
+tell the user it changes nothing. Ask before any upgrade apply command, and only run
 `v1_migration.apply_command` after confirmation.
 The artifacts phase migrates supported v1 Markdown files to YAML with backups
 after preview and confirmation.
@@ -147,9 +154,9 @@ also CLI-owned: render `profile: loaded` without warning, and render
 `agentera hej` supplies one.
 
 If `npx skills update` refreshed only the visible skill and `/agentera` next
-finds a stale or missing managed app, explain that managed app refresh and exact
-old-default retirement happen through app-home upgrade, not through the visible
-skill update alone.
+finds missing or out-of-date app files, explain in plain language that Agentera
+also needs to repair its local app copy; the visible skill update alone is not
+enough.
 
 ---
 

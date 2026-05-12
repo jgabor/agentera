@@ -5,7 +5,7 @@ description: >
   /hej installs toward the Agentera v2 /agentera entry point and idempotent
   upgrade CLI. Do not use this skill for bare text `hej`; route that through
   the bundled agentera skill and the agentera hej dashboard path.
-version: "2.3.1"
+version: "2.3.2"
 legacy_bridge: true
 ---
 
@@ -21,8 +21,8 @@ dashboard. This bridge is an upgrade handoff.
 
 ## When Loaded
 
-1. Explain briefly that this is a legacy Agentera v1 entry point and that
-   Agentera v2 starts from `/agentera` (`$agentera` in Codex).
+1. Explain briefly in plain language: `This is the old /hej entry point.
+   Agentera now starts from /agentera` (`$agentera` in Codex).
 2. Check the current project for v1 Markdown artifacts that do not yet have
    v2 YAML counterparts:
    - `.agentera/PROGRESS.md` without `.agentera/progress.yaml`
@@ -32,16 +32,16 @@ dashboard. This bridge is an upgrade handoff.
    - `.agentera/SESSION.md` without `.agentera/session.yaml`
    - `.agentera/DOCS.md` without `.agentera/docs.yaml`
    - root `VISION.md` without `.agentera/vision.yaml`
-3. If any v1 state is present, show the affected files and run or offer this
-   preview command:
+3. If any old project state is present, show the affected files and run or offer
+   this preview command. Say clearly that the preview changes nothing:
 
    ```bash
    uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run
    ```
 
-4. Ask before applying changes. After explicit confirmation, use the package
-   refresh path so `/agentera` is installed alongside the migrated project
-   state:
+4. Ask before applying changes. Explain the apply step plainly: it installs the
+   new `/agentera` entry point and converts old Agentera project notes to the new
+   format with backups. After explicit confirmation, use:
 
    ```bash
    uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --yes --update-packages

@@ -39,57 +39,54 @@ app home before it wires runtime config. Runtime config should not point at uv's
 disposable tool cache.
 
 `npx skills update` alone refreshes the visible skill files but does not refresh
-the managed Agentera app, migrate project artifacts, retire the old default app
-home, or rewrite runtime config. Agentera v2.0.2 keeps a legacy `/hej` bridge so
+Agentera's local app files, migrate project artifacts, clean up the old Agentera
+directory, or rewrite runtime config. Agentera v2.0.2 keeps a legacy `/hej` bridge so
 old entry points can hand users to the command above, but the command above is
 the complete upgrade path. With `--update-packages`, it removes package-managed
 v1 skill entries and installs `/agentera`.
 
-### Managed app refresh
+### App repair
 
 `codex plugin marketplace upgrade`, `copilot plugin marketplace upgrade`, and
 `npx skills update -g -y` refresh package-managed surfaces. They do not
-guarantee that the managed app under `AGENTERA_HOME` has the latest
-`scripts/agentera` CLI. App-home semantics are centralized in
-`scripts/install_root.py`: it defines AGENTERA_HOME precedence, the default
-app home, managed/stale/unmanaged states, and read-only
-diagnostics.
+guarantee that the app files under `AGENTERA_HOME/app` have the latest
+`scripts/agentera` CLI. Directory selection and read-only repair checks are
+centralized in `scripts/install_root.py`.
 
 Bare `/agentera` owns this recovery path. When the installed CLI is missing
 `hej`, fails before command discovery, has an outdated `.agentera-bundle.json`
 version, or otherwise fails the install status contract, it should show the
-app refresh dry run for the resolved app home:
+app repair preview for the resolved Agentera directory. The preview changes nothing:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --dry-run
 ```
 
-`--only bundle` is the current compatibility selector for the managed app refresh
-phase. The durable location is still the app home, and managed app code is still
+`--only bundle` is the current compatibility selector for the app repair phase.
+The durable location is still the Agentera directory, and app files are still
 installed under `$AGENTERA_HOME/app`.
 
-If the installed app gate cannot execute because `AGENTERA_HOME` is exactly the
-deprecated default `$HOME/.agents/agentera` and
-`$AGENTERA_HOME/app/scripts/agentera` is missing, do not require a successful
-stale CLI invocation and do not first ask the user to unset `AGENTERA_HOME`.
-Preview the platform app-home recovery path without `--install-root` so upgrade
-can classify the exact deprecated default as recoverable, target the platform app
-home, and preview old-default retirement:
+If the installed app gate cannot execute because `AGENTERA_HOME` names the old
+`$HOME/.agents/agentera` directory and `$AGENTERA_HOME/app/scripts/agentera` is
+missing, do not require a successful failed CLI invocation and do not first ask
+the user to unset `AGENTERA_HOME`. Preview the normal Agentera directory repair path
+without `--install-root` so upgrade can choose the normal platform directory and
+preview cleanup of the old directory:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --dry-run
 ```
 
-Only after explicit approval should it apply the same platform app-home recovery
-path:
+Only after explicit approval should it apply the same safe repair path:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --yes
 ```
 
-Custom invalid `AGENTERA_HOME` values are different: fix the setting, choose a
-managed `--install-root`, or intentionally use force guidance. Do not describe
-the exact deprecated default as proof of where the environment value came from.
+Custom invalid `AGENTERA_HOME` values are different: choose a different Agentera
+directory, or use `--force` only after checking that directory is safe to replace. Do
+not describe the old default directory as proof of where the environment value came
+from.
 
 From a current local clone, inspect the same read-only self-check with:
 
@@ -112,10 +109,9 @@ uv run "$AGENTERA_HOME/app/scripts/agentera" hej
 ```
 
 If `AGENTERA_HOME` is unset, use the shared app-home contract's default platform
-data home. If it points at a missing path, a file, or an unmanaged
-directory, do not overwrite it silently; fix/unset `AGENTERA_HOME`, choose a
-managed app home, or intentionally use the broader upgrade flow with
-force guidance.
+data home. If it points at a missing path, a file, or a directory with unrelated
+files, Agentera stops instead of guessing. Choose a different Agentera directory,
+or use `--force` only after checking that directory is safe to replace.
 
 ### Local clone
 
@@ -131,17 +127,17 @@ Apply local, idempotent upgrade actions:
 uv run scripts/agentera upgrade --project /path/to/project --yes
 ```
 
-The command migrates v1 project artifacts, installs or refreshes the managed app
-when needed, configures selected runtime surfaces, removes fixable outdated v1
-runtime artifacts, and runs a postflight setup doctor. Re-running it after a
-successful apply should report `noop`.
+The command migrates v1 project artifacts, installs or refreshes Agentera app
+files when needed, configures selected runtime surfaces, removes fixable outdated
+v1 runtime artifacts, and runs a final check. Re-running it after a successful
+apply should report that nothing else needs to change.
 
-When `AGENTERA_HOME` is unset, the default app home is the platform data home
-for Agentera. If the old default `~/.agents/agentera` still contains
-Agentera-managed files, the bundle phase previews retirement of that location,
-moves known user state into the selected app home, removes managed legacy files,
-and deletes `~/.agents/agentera` when it becomes empty. The artifacts phase also
-migrates supported v1 Markdown project artifacts such as `.agentera/PROGRESS.md`,
+When `AGENTERA_HOME` is unset, Agentera uses the normal data directory for your
+operating system. If the old `~/.agents/agentera` directory still contains Agentera
+files, the preview says it will clean up that old directory, move known user data
+into the selected Agentera directory, remove old app files, and delete
+`~/.agents/agentera` when it becomes empty. The artifacts phase also migrates
+supported v1 Markdown project artifacts such as `.agentera/PROGRESS.md`,
 `.agentera/PLAN.md`, `.agentera/DOCS.md`, and root `VISION.md` into v2 YAML with
 backups under `.agentera/backup-v1/` after preview and confirmation.
 

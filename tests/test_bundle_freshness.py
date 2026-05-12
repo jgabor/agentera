@@ -162,8 +162,8 @@ def test_doctor_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path) -> Non
     assert payload["dryRunCommand"] is None
     assert payload["applyCommand"] is None
     assert payload["signals"][0]["kind"] == "unmanaged_install_root"
-    assert "fix AGENTERA_HOME" in payload["signals"][0]["message"]
-    assert "use --force only after reviewing the target" in payload["signals"][0]["message"]
+    assert "files Agentera does not recognize" in payload["signals"][0]["message"]
+    assert "use --force only if you checked" in payload["signals"][0]["message"]
 
     missing = tmp_path / "missing-agentera"
     result = _run(
@@ -178,8 +178,7 @@ def test_doctor_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path) -> Non
     payload = json.loads(result.stdout)
     assert payload["status"] == "blocked"
     assert payload["signals"][0]["kind"] == "invalid_install_root"
-    assert "fix the setting" in payload["signals"][0]["message"]
-    assert "explicit force guidance" in payload["signals"][0]["message"]
+    assert "directory that does not exist" in payload["signals"][0]["message"]
     assert not missing.exists()
 
     file_root = tmp_path / "file-agentera"
@@ -196,9 +195,8 @@ def test_doctor_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path) -> Non
     payload = json.loads(result.stdout)
     assert payload["status"] == "blocked"
     assert payload["signals"][0]["kind"] == "invalid_install_root"
-    assert "file, not an app home directory" in payload["signals"][0]["message"]
-    assert "fix AGENTERA_HOME" in payload["signals"][0]["message"]
-    assert "use --force only after reviewing the target" in payload["signals"][0]["message"]
+    assert "file instead of a directory" in payload["signals"][0]["message"]
+    assert "use --force only if you checked" in payload["signals"][0]["message"]
 
     invalid = tmp_path / "partial-agentera"
     (invalid / "skills" / "agentera").mkdir(parents=True)
@@ -217,8 +215,8 @@ def test_doctor_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path) -> Non
     assert payload["status"] == "blocked"
     assert payload["rootStatus"] == "invalid"
     assert payload["signals"][0]["kind"] == "invalid_bundle"
-    assert "fix AGENTERA_HOME" in payload["signals"][0]["message"]
-    assert "use --force only after reviewing the target" in payload["signals"][0]["message"]
+    assert "broken Agentera install" in payload["signals"][0]["message"]
+    assert "use --force only if you checked" in payload["signals"][0]["message"]
     assert payload["dryRunCommand"] is None
     assert payload["applyCommand"] is None
     assert sorted(path.relative_to(invalid) for path in invalid.rglob("*")) == before
@@ -333,7 +331,7 @@ def test_upgrade_blocks_user_data_only_app_home_with_unknown_data(tmp_path: Path
     item = payload["phases"][0]["items"][0]
     assert item["status"] == "blocked"
     assert item["target"] == str(app_home / "app")
-    assert "not Agentera-managed" in item["message"]
+    assert "files Agentera does not recognize" in item["message"]
     assert not (app_home / "app").exists()
 
 
@@ -433,8 +431,8 @@ def test_doctor_blocks_explicit_or_custom_invalid_paths_without_stale_default_re
         assert payload["dryRunCommand"] is None
         assert payload["applyCommand"] is None
         assert "recoverable_stale_default" not in {signal["kind"] for signal in payload["signals"]}
-    assert "choose a valid --install-root" in json.loads(explicit_file_result.stdout)["signals"][0]["message"]
-    assert "use --force only after reviewing the target" in json.loads(explicit_file_result.stdout)["signals"][0]["message"]
+    assert "choose a different Agentera directory" in json.loads(explicit_file_result.stdout)["signals"][0]["message"]
+    assert "use --force only if you checked" in json.loads(explicit_file_result.stdout)["signals"][0]["message"]
 
 
 def test_stale_bundle_refresh_dry_run_then_apply_preserves_install_root(tmp_path: Path) -> None:

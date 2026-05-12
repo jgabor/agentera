@@ -370,7 +370,7 @@ def _recoverable_stale_default_signal(app_home: Path, roots: dict[str, Path]) ->
     return {
         "status": "stale",
         "kind": "recoverable_stale_default",
-        "message": "deprecated default AGENTERA_HOME has no current managed app and can be refreshed without unsetting it",
+        "message": "Agentera found an old app directory and can repair it without asking you to edit shell settings",
         "deprecatedDefaultAppHome": str(app_home),
         "managedAppRoot": str(roots["managed_app_root"]),
     }
@@ -380,7 +380,7 @@ def _user_data_only_signal(app_home: Path, roots: dict[str, Path]) -> dict[str, 
     return {
         "status": "stale",
         "kind": "user_data_only_app_home",
-        "message": "app home contains only recognized Agentera user state and can receive managed app code under app/",
+        "message": "This Agentera directory only has your Agentera data, so Agentera can safely add fresh app files under app/",
         "appHome": str(app_home),
         "managedAppRoot": str(roots["managed_app_root"]),
     }
@@ -388,8 +388,8 @@ def _user_data_only_signal(app_home: Path, roots: dict[str, Path]) -> dict[str, 
 
 def _blocked_root_recovery_message(root_source: str) -> str:
     if root_source == "AGENTERA_HOME":
-        return "fix AGENTERA_HOME, choose a managed --install-root, or use --force only after reviewing the target"
-    return "choose a valid --install-root or use --force only after reviewing the target"
+        return "choose a different Agentera directory, or use --force only if you checked this directory and want Agentera to replace files there"
+    return "choose a different Agentera directory, or use --force only if you checked this directory and want Agentera to replace files there"
 
 
 def resolve_active_app_model(
@@ -443,7 +443,7 @@ def build_doctor_status(
         signals.append({
             "status": "stale",
             "kind": "missing_bundle",
-            "message": "default durable Agentera bundle is not installed",
+            "message": "Agentera is not installed in the normal directory yet",
         })
     elif classification.kind == "missing_explicit_or_environment" and recoverable_stale_default:
         root_status = "missing"
@@ -455,8 +455,8 @@ def build_doctor_status(
             "status": "blocked",
             "kind": "invalid_install_root",
             "message": (
-                f"{root_source} points at a missing path; fix the setting, "
-                "choose a managed --install-root, or rerun with explicit force guidance"
+                "Agentera was told to use a directory that does not exist. "
+                "Choose an existing Agentera directory, or install into the normal Agentera directory."
             ),
         })
     elif classification.kind == "file_valued_root":
@@ -465,7 +465,7 @@ def build_doctor_status(
         signals.append({
             "status": "blocked",
             "kind": "invalid_install_root",
-            "message": f"{root_source} points at a file, not an app home directory; {_blocked_root_recovery_message(root_source)}",
+            "message": f"Agentera was told to use a file instead of a directory; {_blocked_root_recovery_message(root_source)}",
         })
     elif classification.kind in {"invalid_bundle", "unmanaged_directory"} and recoverable_stale_default:
         root_status = "stale_default"
@@ -479,7 +479,7 @@ def build_doctor_status(
         signals.append({
             "status": "blocked",
             "kind": "unmanaged_install_root",
-            "message": f"target exists but is not an Agentera-managed bundle; {_blocked_root_recovery_message(root_source)}",
+            "message": f"This directory already has files Agentera does not recognize, so Agentera will not change it automatically; {_blocked_root_recovery_message(root_source)}",
         })
     elif classification.kind == "invalid_bundle":
         root_status = "invalid"
@@ -487,7 +487,7 @@ def build_doctor_status(
         signals.append({
             "status": "blocked",
             "kind": "invalid_bundle",
-            "message": f"{classification.diagnostic.message}; {_blocked_root_recovery_message(root_source)}",
+            "message": f"This directory looks like a broken Agentera install; {_blocked_root_recovery_message(root_source)}",
         })
     else:
         root_status = "managed"
@@ -495,7 +495,7 @@ def build_doctor_status(
             signals.append({
                 "status": "migration_required",
                 "kind": "migration_required",
-                "message": "managed app code is installed at the app-home root instead of under app/",
+                "message": "Agentera app files are in the old place and can be moved into app/",
                 "legacyBundleRoot": str(install_root),
                 "managedAppRoot": str(roots["managed_app_root"]),
             })
@@ -506,7 +506,7 @@ def build_doctor_status(
             signals.append({
                 "status": "stale",
                 "kind": "missing_marker",
-                "message": f"{BUNDLE_MARKER} is missing or unreadable",
+                "message": "Agentera cannot prove these app files are current, so it should refresh them",
             })
         elif classification.kind == "managed_stale" and reason == "version_mismatch":
             if recoverable_stale_default:
@@ -516,7 +516,7 @@ def build_doctor_status(
                 "kind": "version_mismatch",
                 "expected": expected,
                 "actual": marker_version,
-                "message": "bundle marker version does not match the expected suite version",
+                "message": "Agentera app files are from a different version and should be refreshed",
             })
         probe = (
             _probe_bundle_cli(
@@ -727,7 +727,7 @@ def _plan_legacy_default_retirement(
             "action": "retire-legacy-default-app-home",
             "source": str(legacy_root),
             "target": str(app_home),
-            "message": "legacy default app home exists but is not a directory",
+            "message": "The old Agentera location is a file, not a directory, so Agentera will not touch it automatically",
         }
 
     conflicts = _legacy_default_conflicts(legacy_root, app_home, rel_paths)
@@ -745,9 +745,9 @@ def _plan_legacy_default_retirement(
         "changedPreview": user_entries[:20],
         "conflicts": conflicts,
         "message": (
-            "legacy default user state conflicts with the selected app home; use --force only after review"
+            "Some old Agentera data already exists in the new directory; check it before using --force"
             if conflicts and not force
-            else "will move legacy default user state and remove managed files from the old default app home"
+            else "will move your old Agentera data to the current directory and remove old app files"
         ),
     }
 
@@ -805,7 +805,7 @@ def plan_bundle_phase(source_root: Path, install_root: Path, home: Path, *, forc
                 "action": "install-bundle",
                 "source": str(source_root),
                 "target": str(app_root),
-                "message": "running from the selected Agentera app home",
+                "message": "Agentera is already running from the selected app directory",
             }],
         )
 
@@ -818,7 +818,7 @@ def plan_bundle_phase(source_root: Path, install_root: Path, home: Path, *, forc
                 "action": "install-bundle",
                 "source": str(source_root),
                 "target": str(install_root),
-                "message": f"bootstrap source is missing: {', '.join(source_missing)}",
+                "message": f"Agentera cannot find required app files: {', '.join(source_missing)}",
             }],
         )
 
@@ -830,7 +830,12 @@ def plan_bundle_phase(source_root: Path, install_root: Path, home: Path, *, forc
                 "action": "install-bundle",
                 "source": str(source_root),
                 "target": str(app_root),
-                "message": "app home exists but is not Agentera-managed; use --force or --install-root",
+                "message": (
+                    "This directory already has files Agentera does not recognize. "
+                    "Agentera will not change it automatically. Choose another "
+                    "Agentera directory, or use --force only after checking this "
+                    "directory is safe to replace."
+                ),
             }],
         )
 
@@ -845,10 +850,10 @@ def plan_bundle_phase(source_root: Path, install_root: Path, home: Path, *, forc
     marker_missing = not _bundle_marker_path(app_root).is_file()
     if not changed and not marker_missing:
         status = "noop"
-        message = "durable Agentera bundle already matches source"
+        message = "Agentera app files are already current"
     else:
         status = "pending"
-        message = "will install or refresh the durable Agentera bundle"
+        message = "will install or refresh Agentera app files"
 
     items = [{
             "status": status,
@@ -876,9 +881,9 @@ def plan_bundle_phase(source_root: Path, install_root: Path, home: Path, *, forc
             "legacyManagedFileCount": legacy_count,
             "changedPreview": legacy_files[:20],
             "message": (
-                "will move managed app code under app/ and remove legacy root-managed files"
+                "will move Agentera app files into app/ and remove old copies from the directory root"
                 if legacy_count
-                else "legacy root-managed files already removed"
+                else "old root-level Agentera app files are already removed"
             ),
         })
 
@@ -898,7 +903,7 @@ def apply_bundle_phase(phase: dict[str, Any], source_root: Path, install_root: P
         try:
             if not _bundle_target_is_safe(install_root, expected_version=_load_suite_version(source_root)) and not force:
                 item["status"] = "blocked"
-                item["message"] = "app home exists but is not Agentera-managed"
+                item["message"] = "This directory already has files Agentera does not recognize. Agentera will not change it automatically."
                 continue
             if item["action"] == "install-bundle":
                 for rel_path in rel_paths:
@@ -913,19 +918,19 @@ def apply_bundle_phase(phase: dict[str, Any], source_root: Path, install_root: P
                     json.dumps(marker, indent=2, sort_keys=True) + "\n",
                     encoding="utf-8",
                 )
-                item["message"] = "durable Agentera app installed under app/"
+                item["message"] = "Agentera app files installed under app/"
             elif item["action"] == "migrate-app-home":
                 if not _valid_install_root(install_root):
                     item["status"] = "blocked"
-                    item["message"] = "managed app root is not available after install"
+                    item["message"] = "Agentera could not find the refreshed app files after install"
                     continue
                 removed = _remove_legacy_bundle_files(install_root, rel_paths)
                 item["legacyManagedFileCount"] = removed
-                item["message"] = "app-home migration applied"
+                item["message"] = "Agentera app files moved into app/"
             elif item["action"] == "retire-legacy-default-app-home":
                 if not _valid_install_root(install_root):
                     item["status"] = "blocked"
-                    item["message"] = "selected app home is not available after install"
+                    item["message"] = "Agentera could not find the selected app directory after install"
                     continue
                 legacy_root = Path(item["source"])
                 moved = _move_legacy_default_user_state(legacy_root, install_root, rel_paths, force=force)
@@ -933,10 +938,10 @@ def apply_bundle_phase(phase: dict[str, Any], source_root: Path, install_root: P
                 item["userStateCount"] = moved
                 item["legacyManagedFileCount"] = removed
                 item["removedLegacyDefaultAppHome"] = _remove_empty_legacy_default_root(legacy_root, install_root.parent)
-                item["message"] = "legacy default app home retired"
+                item["message"] = "old Agentera directory cleaned up"
         except Exception as exc:  # noqa: BLE001
             item["status"] = "failed"
-            item["message"] = f"bundle install failed: {exc}"
+            item["message"] = f"Agentera app repair failed: {exc}"
             continue
         item["status"] = "applied"
     phase.update(_phase("bundle", phase["items"], message=phase.get("message", "")))
@@ -1495,8 +1500,8 @@ def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
                     "action": "configure",
                     "target": str(install_root),
                     "message": (
-                        "app home is missing or incomplete; include --only bundle, "
-                        "choose a valid --install-root app home, or run the default upgrade flow"
+                        "Agentera app files are missing or incomplete. Run the normal upgrade flow first, "
+                        "or choose a different Agentera directory."
                     ),
                 }],
             ))
@@ -1558,7 +1563,7 @@ def apply_upgrade_plan(plan: dict[str, Any], args: argparse.Namespace) -> None:
             apply_artifact_phase(phase, project, force=args.force)
         elif phase["name"] == "runtime":
             if not _valid_install_root(install_root):
-                block_runtime_phase(phase, "durable Agentera bundle is not available after bundle phase")
+                block_runtime_phase(phase, "Agentera app files are not available after the app repair step")
             else:
                 apply_runtime_phase(phase)
         elif phase["name"] == "cleanup":
@@ -1602,30 +1607,97 @@ def public_doctor_status(status: dict[str, Any]) -> dict[str, Any]:
     return public
 
 
+PLAIN_STATUS = {
+    "pending": "ready to fix",
+    "applied": "fixed",
+    "noop": "already OK",
+    "blocked": "needs a decision",
+    "failed": "failed",
+    "skipped": "skipped",
+    "fresh": "ready",
+    "stale": "needs repair",
+    "migration_required": "needs repair",
+}
+
+PHASE_LABELS = {
+    "bundle": "Agentera app files",
+    "artifacts": "Project notes",
+    "runtime": "Runtime setup",
+    "cleanup": "Old Agentera files",
+    "packages": "Skill package refresh",
+}
+
+ACTION_LABELS = {
+    "install-bundle": "install or refresh Agentera app files",
+    "migrate-app-home": "move Agentera app files into app/",
+    "retire-legacy-default-app-home": "move old Agentera data and clean up old app files",
+    "migrate": "convert old project notes",
+    "copy": "copy current Agentera file",
+    "configure": "connect Agentera to a runtime",
+    "cleanup": "remove old Agentera runtime files",
+    "validate": "check the project directory",
+}
+
+
+def _plain_status(value: str) -> str:
+    return PLAIN_STATUS.get(value, value.replace("_", " ").replace("-", " "))
+
+
+def _plain_action(item: dict[str, Any]) -> str:
+    action = str(item.get("action") or item.get("kind") or "check")
+    return ACTION_LABELS.get(action, action.replace("-", " ").replace("_", " "))
+
+
+def _plain_location(item: dict[str, Any]) -> str | None:
+    for key in ("target", "path", "runtime", "source"):
+        value = item.get(key)
+        if value:
+            return str(value)
+    return None
+
+
 def render_upgrade(plan: dict[str, Any]) -> str:
     lines = [
-        "Agentera upgrade",
-        f"mode: {plan['mode']}",
-        f"status: {plan['status']}",
+        "Agentera repair",
+        f"status: {_plain_status(plan['status'])}",
+        (
+            "mode: preview only; no files were changed"
+            if plan["mode"] == "plan"
+            else "mode: applying approved changes"
+        ),
         f"project: {plan['project']}",
-        f"app home: {plan['appHome']}",
-        f"managed app root: {plan['managedAppRoot']}",
-        f"user data root: {plan['userDataRoot']}",
+        f"Agentera directory: {plan['appHome']}",
+        f"App files directory: {plan['managedAppRoot']}",
+        f"Your Agentera data directory: {plan['userDataRoot']}",
     ]
     for phase in plan["phases"]:
-        lines.append(f"{phase['name']}: {phase['status']} {phase['summary']}")
+        lines.append("")
+        lines.append(f"{PHASE_LABELS.get(phase['name'], phase['name'])}:")
         if phase.get("message") and not phase["items"]:
-            lines.append(f"  {phase['message']}")
+            lines.append(f"  {_plain_status(phase['status'])}: {phase['message']}")
         for item in phase["items"]:
-            label = item.get("source") or item.get("target") or item.get("path") or item.get("runtime")
-            lines.append(f"  - {item['status']}: {item.get('action') or item.get('kind')} {label}")
+            lines.append(f"  - {_plain_status(item['status'])}: {_plain_action(item)}")
             if item.get("message"):
                 lines.append(f"    {item['message']}")
+            location = _plain_location(item)
+            if location:
+                lines.append(f"    directory: {location}")
     if plan["mode"] == "plan" and plan["summary"]["pending"]:
-        lines.append("run with --yes to apply pending changes")
+        lines.append("")
+        lines.append(
+            "Next: if this preview looks right, rerun the same command "
+            "with `--yes` to make the changes."
+        )
+    if plan["summary"]["blocked"]:
+        lines.append("")
+        lines.append(
+            "Next: choose a safer Agentera directory, or use `--force` "
+            "only after checking the directory is safe to replace."
+        )
     if plan.get("postflight") is not None:
         after = plan["postflight"]
-        lines.append(f"postflight doctor: {'pass' if after.get('ok') else 'fail'} {after.get('summary')}")
+        lines.append("")
+        lines.append(f"After-check: {'passed' if after.get('ok') else 'failed'} {after.get('summary')}")
     return "\n".join(lines)
 
 
@@ -1656,33 +1728,30 @@ def cmd_upgrade(args: argparse.Namespace) -> int:
 def render_doctor_status(status: dict[str, Any]) -> str:
     lines = [
         "Agentera doctor",
-        f"status: {status['status']}",
+        f"status: {_plain_status(status['status'])}",
         f"expected version: {status['expectedVersion']}",
-        f"app home: {status['appHome']}",
-        f"app home source: {status['appHomeSource']}",
-        f"managed app root: {status['managedAppRoot']}",
-        f"user data root: {status['userDataRoot']}",
-        f"active bundle root: {status['activeBundleRoot']}",
-        f"authoritative root: {status['authoritativeRoot']}",
-        f"skill root: {status['skillRoot']}",
-        f"runtime root: {status['runtimeRoot']}",
-        f"source root: {status['sourceRoot']}",
-        f"root status: {status['rootStatus']}",
-        f"marker version: {status.get('markerVersion') or '-'}",
+        f"Agentera directory: {status['appHome']}",
+        f"App files directory: {status['managedAppRoot']}",
+        f"Your Agentera data directory: {status['userDataRoot']}",
     ]
-    for signal in status["signals"]:
-        lines.append(f"- {signal['status']}: {signal['kind']} - {signal['message']}")
-        if signal.get("missingCommands"):
-            lines.append(f"  missing commands: {', '.join(signal['missingCommands'])}")
+    if status["signals"]:
+        lines.append("")
+        lines.append("What needs attention:")
+        for signal in status["signals"]:
+            lines.append(f"  - {_plain_status(signal['status'])}: {signal['message']}")
+            if signal.get("missingCommands"):
+                lines.append(f"    Missing command: {', '.join(signal['missingCommands'])}")
     if status["dryRunCommand"]:
-        lines.append(f"dry run: {status['dryRunCommand']}")
-        lines.append(f"apply after approval: {status['applyCommand']}")
-        lines.append(f"approval phrase: {status['approval']}")
-        lines.append(f"retry: {status['retryCommand']}")
+        lines.append("")
+        lines.append("Next:")
+        lines.append(f"  1. Preview the repair: {status['dryRunCommand']}")
+        lines.append(f"  2. If the preview looks right, apply it: {status['applyCommand']}")
+        lines.append(f"  3. Then retry Agentera: {status['retryCommand']}")
     else:
+        lines.append("")
         lines.append(
-            "recovery: fix AGENTERA_HOME, choose a managed app home, "
-            "or rerun upgrade with explicit force guidance"
+            "Next: choose a safer Agentera directory, or use `--force` "
+            "only after checking the directory is safe to replace."
         )
     return "\n".join(lines)
 

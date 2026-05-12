@@ -156,7 +156,8 @@ def test_upgrade_check_is_cli_owned_for_v1_detection():
         "hej must render the CLI-provided v1 migration state"
     assert ".agentera/*.md" in content and "VISION.md" in content, \
         "hej must explicitly forbid redundant v1 discovery globs"
-    assert "dry-run preview" in compact, "upgrade check must reference the CLI-supplied preview"
+    assert "preview" in compact and "changes nothing" in compact, \
+        "upgrade check must reference the CLI-supplied no-write preview"
     assert "v1_migration.apply_command" in content and "confirmation" in content, \
         "upgrade check must require explicit confirmation before applying"
     assert "The artifacts phase migrates supported v1 Markdown files to YAML with backups" in content
@@ -169,9 +170,9 @@ def test_bundle_status_check_is_cli_owned():
     assert "bundle.status" in content, "hej must inspect the CLI-provided bundle status"
     assert "bundle.dryRunCommand" in content, "hej must use the CLI-provided bundle repair preview"
     assert "bundle.applyCommand" in content, "hej must use the CLI-provided bundle apply command after approval"
-    assert "do not require a successful stale CLI invocation" in content
+    assert "do not require a successful failed CLI invocation" in content
     assert "agentera upgrade --only bundle --dry-run" in content
-    assert "target the platform app home" in content
+    assert "normal Agentera directory" in content
 
 
 def test_hej_documents_visible_skill_update_is_not_app_refresh():
@@ -179,9 +180,8 @@ def test_hej_documents_visible_skill_update_is_not_app_refresh():
     content = prose_path.read_text()
 
     assert "npx skills update" in content
-    assert "managed app refresh" in content
-    assert "old-default retirement" in content
-    assert "app-home upgrade" in content
+    assert "repair its local app copy" in content
+    assert "visible skill update alone is not\nenough" in content
 
 
 def test_upgrade_check_specifies_no_notice_when_no_v1():

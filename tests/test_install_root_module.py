@@ -186,7 +186,7 @@ def test_display_text_does_not_replace_structured_diagnostic_data(tmp_path: Path
     text = install_root.format_diagnostic(result)
     data = result.to_dict()
 
-    assert "selected directory is not a managed Agentera bundle" in text
+    assert "files Agentera does not recognize" in text
     assert data["diagnostic"]["code"] == "install_root.unmanaged_directory"
     assert data["diagnostic"]["evidence"]["path"] == str(root.resolve())
     assert data["safe_action"] == "reject_unmanaged_directory"

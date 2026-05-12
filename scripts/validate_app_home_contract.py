@@ -51,6 +51,34 @@ FORBIDDEN = (
     (re.compile(r"\binstall root\b.*\bAGENTERA_HOME\b", re.IGNORECASE), "install root named as AGENTERA_HOME"),
     (re.compile(r"\bdefault durable root\b", re.IGNORECASE), "default durable root wording"),
 )
+RECOVERY_FORBIDDEN = (
+    (re.compile(r"\bAgentera-managed\b", re.IGNORECASE), "jargon in recovery wording"),
+    (re.compile(r"\bunmanaged (?:user-owned )?directory\b", re.IGNORECASE), "jargon in recovery wording"),
+    (re.compile(r"\bdeprecated default\b", re.IGNORECASE), "jargon in recovery wording"),
+    (re.compile(r"\bplatform app-home recovery\b", re.IGNORECASE), "jargon in recovery wording"),
+    (re.compile(r"\bdry-run preview\b", re.IGNORECASE), "jargon in recovery wording"),
+    (re.compile(r"\bbundle install\b", re.IGNORECASE), "jargon in recovery wording"),
+    (re.compile(r"\bmanaged app refresh\b", re.IGNORECASE), "jargon in recovery wording"),
+    (re.compile(r"\binstalled Agentera app is stale\b", re.IGNORECASE), "jargon in recovery wording"),
+    (re.compile(r"\bdurable Agentera bundle\b", re.IGNORECASE), "jargon in recovery wording"),
+    (re.compile(r"\bapp home exists but is not\b", re.IGNORECASE), "jargon in recovery wording"),
+    (re.compile(r"\buse --force only after reviewing\b", re.IGNORECASE), "jargon in recovery wording"),
+    (re.compile(r"\bUse platform home\b", re.IGNORECASE), "jargon in recovery wording"),
+    (re.compile(r"\bForce deprecated home\b", re.IGNORECASE), "jargon in recovery wording"),
+)
+
+
+def _is_plain_language_rule_line(line: str) -> bool:
+    lowered = line.lower()
+    return any(
+        marker in lowered
+        for marker in (
+            "never ask the user",
+            "bad labels",
+            "avoid these prompt labels",
+            "jargon in recovery wording",
+        )
+    )
 
 
 def _check_text(surface: str, text: str) -> list[str]:
@@ -59,6 +87,10 @@ def _check_text(surface: str, text: str) -> list[str]:
         for pattern, reason in FORBIDDEN:
             if pattern.search(line):
                 errors.append(f"{surface}:{number}: {reason}: {line.strip()}")
+        if not _is_plain_language_rule_line(line):
+            for pattern, reason in RECOVERY_FORBIDDEN:
+                if pattern.search(line):
+                    errors.append(f"{surface}:{number}: {reason}: {line.strip()}")
         if surface.startswith("agentera "):
             if re.search(r"\binstall root:", line, re.IGNORECASE):
                 errors.append(f"{surface}:{number}: CLI output names app home as install root: {line.strip()}")

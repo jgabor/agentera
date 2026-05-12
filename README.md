@@ -307,53 +307,53 @@ Profile data already uses the platform data directory by default:
 `$XDG_DATA_HOME/agentera` on Linux, `~/Library/Application Support/agentera` on
 macOS, and `%APPDATA%/agentera` on Windows.
 
-`AGENTERA_HOME` points to the Agentera app home. User-owned state remains at the
-home root: `PROFILE.md`, `USAGE.md`, history, and intermediate corpus data. The
-managed Agentera app code lives separately under `$AGENTERA_HOME/app`.
-App-home source precedence, managed/stale/unmanaged classification, default
-durable home fallback, and no-write diagnostics are owned by
-`scripts/install_root.py`.
+`AGENTERA_HOME` points to the Agentera directory. User-owned state remains at the
+directory root: `PROFILE.md`, `USAGE.md`, history, and intermediate corpus data.
+Agentera's app files live separately under `$AGENTERA_HOME/app`.
+Directory selection, repair checks, the normal-platform-directory fallback, and
+no-write diagnostics are owned by `scripts/install_root.py`.
 
-`agentera doctor` reports the active app home, managed app root, skill root,
-runtime root, and source root. If it finds legacy managed app code directly in
-`AGENTERA_HOME`, it reports `migration_required` and prints exact dry-run and
+`agentera doctor` reports the active Agentera directory, app files directory, skill
+root, runtime root, and source root. If it finds old app files directly in
+`AGENTERA_HOME`, it reports `migration_required` and prints exact preview and
 apply upgrade commands; doctor remains read-only. The current compatibility
-selector for refreshing the managed app is still `--only bundle`, but user-facing
-docs and diagnostics describe that flow as an app refresh.
+selector for refreshing Agentera's app files is still `--only bundle`, but
+user-facing docs and diagnostics describe that flow as an app repair. Human
+output says `needs repair` when a no-write preview is the next safe step.
 
-### Keep the managed app current
+### Keep Agentera's app files current
 
-Package and marketplace updates refresh the visible skill/plugin metadata, but
-they can leave the managed app under `AGENTERA_HOME` behind. If `/agentera`
-reports that the installed CLI is out of date or `agentera hej` is unavailable,
-preview the app refresh first:
+Package and marketplace updates refresh what the host sees, but they may not
+update the local app copy that actually runs Agentera. If `/agentera` reports
+that Agentera is out of date or `agentera hej` is unavailable, preview the repair
+first. The preview changes nothing:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --dry-run
 ```
 
-After confirming the preview, apply the same root:
+After confirming the preview, apply the same Agentera directory:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --yes
 ```
 
-Then retry the installed dashboard data source:
+Then retry Agentera:
 
 ```bash
 uv run "$AGENTERA_HOME/app/scripts/agentera" hej
 ```
 
-If `AGENTERA_HOME` is unset, the shared app-home contract uses the default
-platform data home for Agentera. If it points at a missing, invalid, or
-unmanaged user-owned directory, fix the setting or choose a managed app home
-before applying.
+If `AGENTERA_HOME` is unset, Agentera uses the normal data directory for your
+operating system. If it points at a missing path, a file, or a directory with
+unrelated files, Agentera stops instead of guessing. Choose a different Agentera
+directory before applying, or use `--force` only after checking that directory is safe
+to replace.
 
-When the default platform app home is selected and the deprecated
-`~/.agents/agentera` location still contains Agentera-managed files, the bundle
-upgrade phase previews a `retire-legacy-default-app-home` action. Apply mode
-moves known user state such as `PROFILE.md` and `USAGE.md` into the selected app
-home, removes managed files from the old default, and removes
+When the normal platform directory is selected and the old `~/.agents/agentera`
+directory still contains Agentera files, the preview says it will clean up the old
+directory. Apply mode moves known user data such as `PROFILE.md` and `USAGE.md`
+into the selected Agentera directory, removes old app files, and removes
 `~/.agents/agentera` when it becomes empty.
 
 <details>

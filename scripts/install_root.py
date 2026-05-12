@@ -122,7 +122,7 @@ def classify_resolved_root(
                 Diagnostic(
                     "install_root.missing_default_root",
                     "warning",
-                    "default app home is missing and may be created only by a confirmed install or refresh",
+                    "Agentera is not installed in the normal directory yet; a preview can show the repair before anything changes",
                     {"path": str(root), "source": source_label},
                 ),
                 expected_version=expected,
@@ -138,7 +138,7 @@ def classify_resolved_root(
             Diagnostic(
                 "install_root.missing_selected_root",
                 "error",
-                "selected install root does not exist",
+                "Agentera was told to use a directory that does not exist",
                 {"path": str(root), "source": source_label},
             ),
             expected_version=expected,
@@ -156,7 +156,7 @@ def classify_resolved_root(
             Diagnostic(
                 "install_root.file_path",
                 "error",
-                "selected install root is a file, not a directory",
+                "Agentera was told to use a file instead of a directory",
                 {"path": str(root), "source": source_label},
             ),
             expected_version=expected,
@@ -225,7 +225,7 @@ def classify_resolved_root(
             Diagnostic(
                 "install_root.invalid_bundle",
                 "error",
-                "selected directory has incomplete or malformed Agentera bundle evidence",
+                "This directory looks like a broken Agentera install",
                 {
                     "path": str(root),
                     "source": source_label,
@@ -249,7 +249,7 @@ def classify_resolved_root(
         Diagnostic(
             "install_root.unmanaged_directory",
             "error",
-            "selected directory is not a managed Agentera bundle",
+            "This directory already has files Agentera does not recognize",
             {"path": str(root), "source": source_label},
         ),
         expected_version=expected,
@@ -319,7 +319,7 @@ def _managed_fresh(
         Diagnostic(
             "install_root.managed_fresh",
             "info",
-            "install root is managed and fresh",
+            "Agentera app files are ready",
             {
                 "path": str(root),
                 "source": SOURCE_LABELS.get(source, source),
@@ -355,7 +355,7 @@ def _managed_stale(
         Diagnostic(
             "install_root.managed_stale",
             "warning",
-            "install root is managed but stale",
+            "Agentera app files need repair",
             {"path": str(root), "source": SOURCE_LABELS.get(source, source), "reason": reason, **evidence},
         ),
         expected_version=expected,
