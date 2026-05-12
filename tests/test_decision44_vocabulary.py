@@ -129,6 +129,11 @@ ALLOWED_USES = (
         "Package/runtime drift inventories are stable compatibility labels from pre-Decision 44 adapter work.",
     ),
     AllowedUse(
+        r"^tests/test_self_audit\.py$",
+        r"verbosity drift",
+        "Self-audit CLI fixture preserves installed-bundle diagnostic wording until the app-home bundle is refreshed.",
+    ),
+    AllowedUse(
         r"^tests/test_migration\.py$",
         r"Version and freshness remain green",
         "Migration fixture text preserves historical v1 expected output.",

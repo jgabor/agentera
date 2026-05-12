@@ -8,12 +8,36 @@ text, mixed valid+banned).
 from __future__ import annotations
 
 import importlib.util
+import json
+import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+CLI = REPO_ROOT / "scripts" / "agentera"
+
+
+def _run_lint(*args: str, input_text: str | None = None) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, str(CLI), "lint", *args],
+        input=input_text,
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
+
+
+def _run_lint_with_home(app_home: Path, *args: str, input_text: str | None = None) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, str(CLI), "lint", *args],
+        input=input_text,
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        env={"AGENTERA_HOME": str(app_home)},
+    )
 
 
 @pytest.fixture(scope="session")
@@ -186,3 +210,73 @@ class TestCheckFiller:
         assert "summary preambles" in detail
         # Clean content doesn't cancel the violation
         assert "meta-commentary about writing" not in detail
+
+
+class TestLintCli:
+    def test_describe_lists_lint_command(self):
+        r = subprocess.run(
+            [sys.executable, str(CLI), "describe", "--format", "json"],
+            capture_output=True,
+            text=True,
+            cwd=REPO_ROOT,
+        )
+        assert r.returncode == 0
+        payload = json.loads(r.stdout)
+        commands = {entry["name"]: entry for entry in payload["commands"]}
+        assert commands["lint"]["kind"] == "artifact_lint"
+        assert commands["lint"]["output_formats"] == ["text", "json"]
+
+    def test_lint_passes_from_stdin_without_helper_path(self):
+        r = _run_lint(
+            "--artifact",
+            "PROGRESS.md",
+            input_text="Updated `scripts/agentera` with a 1ms smoke check.",
+        )
+        assert r.returncode == 0
+        assert "lint pass" in r.stdout
+        assert "all self-audit checks passed" in r.stdout
+
+    def test_lint_reports_bounded_actionable_diagnostics_by_default(self):
+        text = "Here is the update. " + ("word " * 600)
+        r = _run_lint("--artifact", "PROGRESS.md", "--text", text)
+        assert r.returncode == 0
+        assert r.stdout.count("- ") == 3
+        assert "verbosity drift" in r.stdout
+        assert "abstraction creep" in r.stdout
+        assert "filler:" in r.stdout
+        assert "action:" in r.stdout
+
+    def test_lint_strict_fails_with_json_summary(self):
+        r = _run_lint(
+            "--artifact",
+            "TODO.md",
+            "--text",
+            "This improves the system broadly.",
+            "--strict",
+            "--format",
+            "json",
+        )
+        assert r.returncode == 1
+        payload = json.loads(r.stdout)
+        assert payload["command"] == "lint"
+        assert payload["status"] == "fail"
+        assert payload["summary"] == {"failed": 1, "passed": 2, "advisory": False}
+        assert payload["checks"][1]["name"] == "abstraction"
+
+    def test_lint_missing_installed_helper_reports_app_model(self, tmp_path):
+        app_home = tmp_path / "agentera-home"
+        (app_home / "app" / "scripts").mkdir(parents=True)
+
+        r = _run_lint_with_home(
+            app_home,
+            "--artifact",
+            "PROGRESS.md",
+            "--text",
+            "Updated `scripts/agentera` with a 1ms smoke check.",
+        )
+
+        assert r.returncode == 2
+        assert "lint helper is missing" in r.stderr
+        assert f"appHome={app_home}" in r.stderr
+        assert f"managedAppRoot={app_home / 'app'}" in r.stderr
+        assert "run `agentera doctor --format json`" in r.stderr

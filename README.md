@@ -147,8 +147,14 @@ routes to `realisera`; primary aliases are not CLI commands. Shared words keep
 their state meaning in the CLI: `/agentera plan` routes to `planera`, while
 `agentera plan` reads plan state.
 
-Use `agentera doctor` for Agentera CLI, install, bundle, and runtime self-checks.
+Use `agentera doctor` for Agentera CLI, app-home, install, and runtime self-checks.
 It is separate from `agentera health`, which reports project artifact health.
+
+Use `agentera lint --artifact <ARTIFACT>` for the pre-write artifact prose
+self-audit. It reads text from stdin by default, or from `--file`/`--text`, and
+reports bounded diagnostics for verbosity, abstraction, and filler issues. Lint
+is advisory by default; add `--strict` when a failing check should return a
+non-zero exit code.
 
 Use `agentera describe --format json` when an agent needs to discover the live
 CLI interface instead of relying on static prompt stuffing. It reports commands,
@@ -301,17 +307,26 @@ Profile data already uses the platform data directory by default:
 `$XDG_DATA_HOME/agentera` on Linux, `~/Library/Application Support/agentera` on
 macOS, and `%APPDATA%/agentera` on Windows.
 
-`AGENTERA_HOME` points to the Agentera install root. Runtime installers and the
-upgrade flow use it for helper scripts, hooks, and artifact checks. Install-root
-source precedence, managed/stale/unmanaged classification, default durable root
-fallback, and no-write diagnostics are owned by `scripts/install_root.py`.
+`AGENTERA_HOME` points to the Agentera app home. User-owned state remains at the
+home root: `PROFILE.md`, `USAGE.md`, history, and intermediate corpus data. The
+managed Agentera app code lives separately under `$AGENTERA_HOME/app`.
+App-home source precedence, managed/stale/unmanaged classification, default
+durable home fallback, and no-write diagnostics are owned by
+`scripts/install_root.py`.
 
-### Keep the durable bundle current
+`agentera doctor` reports the active app home, managed app root, skill root,
+runtime root, and source root. If it finds legacy managed app code directly in
+`AGENTERA_HOME`, it reports `migration_required` and prints exact dry-run and
+apply upgrade commands; doctor remains read-only. The current compatibility
+selector for refreshing the managed app is still `--only bundle`, but user-facing
+docs and diagnostics describe that flow as an app refresh.
+
+### Keep the managed app current
 
 Package and marketplace updates refresh the visible skill/plugin metadata, but
-they can leave the durable bundle at `AGENTERA_HOME` behind. If `/agentera`
+they can leave the managed app under `AGENTERA_HOME` behind. If `/agentera`
 reports that the installed CLI is out of date or `agentera hej` is unavailable,
-preview the bundle-only refresh first:
+preview the app refresh first:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --dry-run
@@ -326,12 +341,12 @@ uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle
 Then retry the installed dashboard data source:
 
 ```bash
-uv run "$AGENTERA_HOME/scripts/agentera" hej
+uv run "$AGENTERA_HOME/app/scripts/agentera" hej
 ```
 
-If `AGENTERA_HOME` is unset, the shared install-root Module uses the default
-durable root `~/.agents/agentera`. If it points at a missing, invalid, or
-unmanaged user-owned directory, fix the setting or choose a managed install root
+If `AGENTERA_HOME` is unset, the shared app-home contract uses the default
+platform data home for Agentera. If it points at a missing, invalid, or
+unmanaged user-owned directory, fix the setting or choose a managed app home
 before applying.
 
 <details>
@@ -339,7 +354,7 @@ before applying.
 
 No extra setup is needed when Agentera is installed as a Claude Code plugin.
 
-Claude Code provides the install-root environment Agentera needs. Hooks can
+Claude Code provides the app-home environment Agentera needs. Hooks can
 preload recent project context, validate artifact writes, and save session
 bookmarks.
 
@@ -357,7 +372,7 @@ curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plug
 ```
 
 The plugin does not install the skills. It adds Agentera commands,
-install-root discovery, artifact checks, and session bookmarks around skills
+app-home discovery, artifact checks, and session bookmarks around skills
 installed through `npx skills add jgabor/agentera -g -a opencode --skill agentera -y` or another
 OpenCode skill path.
 

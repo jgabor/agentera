@@ -42,6 +42,7 @@ def test_packaged_launcher_runs_upgrade_with_durable_default(tmp_path: Path) -> 
 
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["installRoot"] == str(install_root)
+    assert payload["appHome"] == str(install_root)
+    assert "installRoot" not in payload
     assert payload["sourceRoot"] == str(REPO_ROOT)
-    assert (install_root / ".agentera-bundle.json").is_file()
+    assert (install_root / "app" / ".agentera-bundle.json").is_file()

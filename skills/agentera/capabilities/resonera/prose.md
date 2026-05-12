@@ -24,7 +24,7 @@ One file in `.agentera/`, bootstrapped if absent.
 |------|---------|-----------|
 | `DECISIONS.md` | Canonical decision artifact, stored as `.agentera/decisions.yaml` unless mapped otherwise. What was decided, alternatives considered, and why. | First decision entry in YAML form. |
 
-Use `skills/agentera/schemas/artifacts/decisions.yaml` and existing decisions artifacts as the structure.
+Use `agentera describe --format json` and its `artifact_schemas` entry for `decisions` to locate the active installed schema; do not search install roots manually. Existing decisions artifacts provide repository-local examples of the shape.
 
 ### Artifact path resolution
 
@@ -202,7 +202,7 @@ Relevant options only:
 
 ### Step 3: Pre-write self-audit
 
-Pre-write self-audit: check verbosity overruns, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns, abstraction creep, and filler accumulation.
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 ### Step 4: Write artifacts

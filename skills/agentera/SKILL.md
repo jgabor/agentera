@@ -7,7 +7,7 @@ description: >
   incoming requests to the right capability. Use this skill for /agentera,
   Agentera capability requests, and a complete user message exactly `hej`;
   bare `hej` runs the agentera hej dashboard path instead of a generic greeting.
-version: "2.2.3"
+version: "2.3.0"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 ---
 
@@ -60,26 +60,26 @@ installed CLI invocation. For bare `/agentera` or bare `hej`, the first normal
 state-access tool call is:
 
 ```bash
-uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
+uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej
 ```
 
-Resolve `RESOLVED_AGENTERA_HOME` with the install-root precedence `AGENTERA_HOME`
-when set, otherwise `$HOME/.agents/agentera`. Do not run `glob`, `grep`, `read`,
+Resolve `RESOLVED_AGENTERA_HOME` with the app-home precedence `AGENTERA_HOME`
+when set, otherwise the platform data home. Do not run `glob`, `grep`, `read`,
 `ls`, `python`, `doctor`, `--help`, `scripts/install_root.py`, `registry.json`,
-or `.agentera-bundle.json` preflight checks before this call. The CLI owns bundle
+or `.agentera-bundle.json` preflight checks before this call. The CLI owns app
 validation, v1 detection, profile detection, artifact condensation, and the
 `source_contract` that tells the caller how to render the dashboard.
 
-If the command exits successfully, inspect the CLI-provided `bundle.status`. If
-it is `fresh`, treat the installed bundle gate as passed for that briefing and
-render from the output. The `bundle` object includes `expectedVersion`,
-`expectedVersionSource`, `installRoot`, `installRootSource`, repair commands, and
-approval text. If the command cannot execute, fails before argparse, reports
-`invalid choice` for `hej`, or reports `bundle.status` as `stale`, `blocked`,
-missing-command, or refresh-required:
+If the command exits successfully, inspect the CLI-provided `bundle.status`
+installed-app status object. If its value is `fresh`, treat the installed app gate as passed
+for that briefing and render from the output. The object includes
+`expectedVersion`, `expectedVersionSource`, `appHome`, `managedAppRoot`,
+`userDataRoot`, repair commands, and approval text. If the command cannot
+execute, fails before argparse, reports `invalid choice` for `hej`, or reports a
+status of `stale`, `blocked`, missing-command, or refresh-required:
 
-- Tell the user the bundle is stale
-- Report the resolved root and resolution source from the `bundle` object
+- Tell the user the installed app is stale
+- Report the resolved app home and resolution source from the `bundle` object
 - Show the clone-free dry-run preview from `bundle.dryRunCommand` when present:
 
 ```bash
@@ -87,8 +87,8 @@ uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle
 ```
 
 Ask for explicit approval before writes. The canonical approval phrase is
-`approve bundle refresh for <resolved-root>`; a normal affirmative response is
-acceptable only when it clearly authorizes the same bundle refresh and root. If
+`approve app refresh for <resolved-app-home>`; a normal affirmative response is
+acceptable only when it clearly authorizes the same app refresh and home. If
 approved, apply:
 
 ```bash
@@ -98,13 +98,13 @@ uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle
 After apply, retry:
 
 ```bash
-uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
+uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej
 ```
 
 If `AGENTERA_HOME` points at a missing path, a file, or an unmanaged directory
 and the single command cannot run, do not overwrite it silently or fall back to a
 local checkout. Ask the user to fix/unset `AGENTERA_HOME`, choose a managed
-`--install-root`, or explicitly request a forced bundle install.
+`--install-root`, or explicitly request a forced app install.
 
 Only after the installed CLI succeeds, proceed to Step -1 and the routing layers
 below. Do not fall through to a local checkout as a workaround; the uvx commands
@@ -118,7 +118,7 @@ advanced/custom artifact inspection when no normal command serves the needed
 state.
 
 Before any artifact-backed briefing, route decision, or capability state read,
-run the top-level command that owns the needed state. The bundle health gate
+run the top-level command that owns the needed state. The app health gate
 above must have already confirmed the installed CLI is usable.
 
 Routine commands are: `hej`, `plan`, `progress`, `health`, `todo`,
@@ -137,7 +137,7 @@ relay raw `agentera hej` lines as the final briefing. Do not run individual `pla
 `todo`, or `decisions` commands unless `agentera hej` fails or explicitly asks
 for fallback. The final response must
 transform source labels such as `mode:`, `profile:`, `health:`, `issues:`,
-`plan:`, `objective:`, `attention:`, `next_action:`, `bundle:`,
+`plan:`, `objective:`, `attention:`, `next_action:`, `app_home:`,
 `v1_migration:`, and `source_contract:` into the dashboard below; never paste
 those labels as the briefing.
 
@@ -205,9 +205,9 @@ when supplied by the CLI.
 Do not replace the CLI-owned preview with manual artifact inspection,
 hand-written migration steps, or raw YAML reads. Only the apply step requires confirmation.
 
-The upgrade command is idempotent. It installs or refreshes a durable bundle at
-`~/.agents/agentera` when invoked through `uvx`, migrates v1 artifacts, wires
-runtime config to that durable install root, and removes fixable stale v1
+The upgrade command is idempotent. It installs or refreshes the managed app under
+the Agentera app home when invoked through `uvx`, migrates v1 artifacts, wires
+runtime config to that app home, and removes fixable stale v1
 runtime artifacts. Package refreshes that run `npx skills remove` for v1 skill
 entries and `npx skills add` for `/agentera` remain explicit opt-in via
 `--update-packages`.

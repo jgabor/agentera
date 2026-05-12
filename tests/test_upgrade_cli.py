@@ -92,11 +92,14 @@ def test_bundle_upgrade_installs_durable_bundle_from_packaged_source(tmp_path: P
     payload = json.loads(first.stdout)
     assert payload["status"] == "applied"
     assert payload["sourceRoot"] == str(REPO_ROOT)
-    assert payload["installRoot"] == str(install_root)
-    assert (install_root / ".agentera-bundle.json").is_file()
-    assert (install_root / "scripts" / "agentera").is_file()
-    assert (install_root / "skills" / "agentera" / "SKILL.md").is_file()
-    assert (install_root / ".opencode" / "commands" / "agentera.md").is_file()
+    assert payload["appHome"] == str(install_root)
+    assert payload["managedAppRoot"] == str(install_root / "app")
+    assert payload["userDataRoot"] == str(install_root)
+    assert "installRoot" not in payload
+    assert (install_root / "app" / ".agentera-bundle.json").is_file()
+    assert (install_root / "app" / "scripts" / "agentera").is_file()
+    assert (install_root / "app" / "skills" / "agentera" / "SKILL.md").is_file()
+    assert (install_root / "app" / ".opencode" / "commands" / "agentera.md").is_file()
 
     second = _run(
         "upgrade",
@@ -173,6 +176,52 @@ def test_packaged_runtime_upgrade_blocks_without_bundle_phase(tmp_path: Path) ->
     payload = json.loads(result.stdout)
     assert payload["phases"][0]["status"] == "blocked"
     assert not (home / ".codex" / "config.toml").exists()
+
+
+def test_runtime_upgrade_accepts_coherent_app_home_without_bundle_phase(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    install_root = home / ".agents" / "agentera"
+
+    installed = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+        env={
+            "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
+            "AGENTERA_DEFAULT_INSTALL_ROOT": str(install_root),
+        },
+    )
+    assert installed.returncode == 0, installed.stderr
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "runtime",
+        "--runtime",
+        "codex",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+        env={
+            "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
+            "AGENTERA_DEFAULT_INSTALL_ROOT": str(install_root),
+        },
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["summary"]["blocked"] == 0
+    assert f'AGENTERA_HOME = "{install_root}"' in (home / ".codex" / "config.toml").read_text(
+        encoding="utf-8"
+    )
+    assert (home / ".codex" / "hooks.json").read_text(encoding="utf-8") == (
+        install_root / "app" / "hooks" / "codex-hooks.json"
+    ).read_text(encoding="utf-8")
 
 
 def test_package_upgrade_removes_legacy_skills_and_installs_agentera(tmp_path: Path) -> None:
@@ -367,7 +416,7 @@ def test_runtime_upgrade_plan_characterizes_runtime_and_package_items(tmp_path: 
         "runtime": "claude",
         "action": "configure",
         "target": None,
-        "message": "Claude Code plugin installs expose the bundle root without local config writes",
+        "message": "Claude Code plugin installs expose the app home without local config writes",
     }
     assert all("newText" not in item for item in runtime_phase["items"])
     assert not (home / ".codex/config.toml").exists()

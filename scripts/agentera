@@ -17,6 +17,7 @@ Commands:
   agentera objective         Active optimera objective summary
   agentera experiments       Active optimera experiments summary
   agentera describe          Runtime CLI/schema introspection
+  agentera lint              Pre-write artifact prose self-audit
   agentera query <artifact>  Advanced custom artifact query
   agentera upgrade           Plan or apply a v1-to-v2 upgrade
 
@@ -24,14 +25,15 @@ Advanced query patterns:
   query --list-artifacts          List all discovered artifact schemas
   query <artifact-name>           Generic query against custom discovered schemas
 
-Schema discovery is automatic. The CLI reads artifact schemas from
-skills/agentera/schemas/artifacts/ (relative to AGENTERA_HOME or cwd)
-and supports queries against any artifact whose schema exists.
+Schema discovery is automatic. The CLI resolves artifact schemas from the
+active app model reported by `agentera describe` and `agentera doctor`, then
+supports queries against any artifact whose schema exists.
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
 import re
@@ -48,6 +50,8 @@ from agentera_upgrade import (
     cmd_doctor,
     cmd_upgrade,
     load_suite_version,
+    public_doctor_status,
+    resolve_active_app_model,
     resolve_doctor_install_root,
     resolve_source_root,
 )
@@ -81,6 +85,7 @@ Supported state commands:
   agentera docs                                 # Docs mappings + stale docs
   agentera objective                            # Active optimera objective
   agentera experiments                          # Active optimera experiments
+  agentera lint --artifact PROGRESS.md          # Pre-write artifact prose self-audit
   agentera query --list-artifacts               # Discover advanced schemas
   agentera query <artifact-name>                # Advanced custom artifact query
 
@@ -105,27 +110,68 @@ If `agentera <state>` returns empty:
 
 If artifacts are corrupted:
   1. Check the YAML file in .agentera/ directly.
-  2. Validate against the schema in skills/agentera/schemas/artifacts/.
+  2. Run `agentera describe --format json` and use `source.schemas_dir`.
   3. Re-run the producing capability to regenerate the artifact.
 
 If schemas are missing:
-  1. Set AGENTERA_HOME to the agentera install root.
-  2. Verify skills/agentera/schemas/artifacts/ contains YAML files.
+  1. Run `agentera describe --format json`.
+  2. Fix the reported appHome/managedAppRoot/skillRoot; these match doctor.
 """
 
 
-def _discover_schemas_dir() -> Path:
-    env = os.environ.get("AGENTERA_HOME")
-    if env:
-        p = Path(env) / "skills" / "agentera" / "schemas" / "artifacts"
-        if p.is_dir():
-            return p
-    bootstrap = os.environ.get("AGENTERA_BOOTSTRAP_SOURCE_ROOT")
-    if bootstrap:
-        p = Path(bootstrap) / "skills" / "agentera" / "schemas" / "artifacts"
-        if p.is_dir():
-            return p
-    return Path.cwd() / "skills" / "agentera" / "schemas" / "artifacts"
+def _active_app_model() -> dict[str, Path | str]:
+    source_root = Path(__file__).resolve().parent.parent
+    if not os.environ.get("AGENTERA_HOME") and not os.environ.get("AGENTERA_DEFAULT_INSTALL_ROOT") and _is_local_agentera_checkout(source_root):
+        return {
+            "appHome": source_root,
+            "appHomeSource": "local checkout",
+            "managedAppRoot": source_root,
+            "activeBundleRoot": source_root,
+            "authoritativeRoot": source_root,
+            "skillRoot": source_root / "skills" / "agentera",
+            "runtimeRoot": source_root,
+        }
+    return resolve_active_app_model(home=Path.home().expanduser().resolve())
+
+
+def _model_path(model: dict[str, Path | str], key: str) -> Path:
+    value = model[key]
+    return value if isinstance(value, Path) else Path(str(value))
+
+
+def _discover_schemas_dir(model: dict[str, Path | str] | None = None) -> Path:
+    model = model or _active_app_model()
+    return _model_path(model, "skillRoot") / "schemas" / "artifacts"
+
+
+def _app_model_payload(model: dict[str, Path | str] | None = None) -> dict[str, str]:
+    model = model or _active_app_model()
+    return {key: str(value) for key, value in model.items()}
+
+
+def _surface_missing_message(surface: str, path: Path, model: dict[str, Path | str] | None = None) -> str:
+    payload = _app_model_payload(model)
+    return (
+        f"{surface} is missing at {path}; active app model: "
+        f"appHome={payload['appHome']} source={payload['appHomeSource']} "
+        f"managedAppRoot={payload['managedAppRoot']} skillRoot={payload['skillRoot']} "
+        f"runtimeRoot={payload['runtimeRoot']}; run `agentera doctor --format json` "
+        "to inspect the same root model"
+    )
+
+
+def _load_self_audit_helper(model: dict[str, Path | str] | None = None) -> Any:
+    model = model or _active_app_model()
+    helper = _model_path(model, "activeBundleRoot") / "scripts" / "self_audit.py"
+    if not helper.is_file():
+        raise RuntimeError(_surface_missing_message("lint helper", helper, model))
+    spec = importlib.util.spec_from_file_location("agentera_self_audit", helper)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(_surface_missing_message("lint helper", helper, model))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["agentera_self_audit"] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _load_schemas(schemas_dir: Path) -> dict[str, dict[str, Any]]:
@@ -154,6 +200,12 @@ def _load_schemas(schemas_dir: Path) -> dict[str, dict[str, Any]]:
             "fields": fields,
         }
     return schemas
+
+
+def _missing_schema_error(schema_name: str) -> str:
+    model = _active_app_model()
+    schemas_dir = _discover_schemas_dir(model)
+    return _surface_missing_message(f"{schema_name} schema", schemas_dir / f"{schema_name}.yaml", model)
 
 
 def _load_registry_for_schemas(schemas_dir: Path) -> dict[str, ArtifactRecord]:
@@ -609,6 +661,7 @@ ROUTINE_STRUCTURED_FIELDS = [
 HEJ_STRUCTURED_FIELDS = [
     "command",
     "status",
+    "app_home",
     "bundle",
     "mode",
     "profile",
@@ -648,6 +701,7 @@ COMMAND_FILTERS = {
     "objective": ["status"],
     "experiments": ["topic", "status", "limit"],
     "query": ["list_artifacts", "topic", "severity", "dimension", "status", "limit"],
+    "lint": ["artifact", "file", "text", "strict", "format"],
     "doctor": ["install_root", "home", "project", "expected_version", "expect_command"],
     "upgrade": ["project", "install_root", "home", "runtime", "only", "dry_run", "yes", "force", "update_packages"],
     "describe": ["format"],
@@ -665,8 +719,9 @@ COMMAND_DESCRIPTIONS = {
     "objective": "Active optimera objective summary.",
     "experiments": "Active optimera experiments summary.",
     "query": "Advanced custom artifact query.",
+    "lint": "Run pre-write artifact prose self-audit.",
     "upgrade": "Plan or apply an idempotent v1-to-v2 upgrade.",
-    "doctor": "Check Agentera CLI, install, bundle, and runtime status.",
+    "doctor": "Check Agentera CLI, app, and runtime status.",
     "describe": "Runtime self-description for CLI commands, formats, fields, aliases, schemas, and doctor categories.",
 }
 
@@ -809,13 +864,17 @@ def _describe_schema_fields(schema: dict[str, Any]) -> list[dict[str, Any]]:
     return fields
 
 
-def _describe_artifact_schemas(schemas_dir: Path, schemas: dict[str, dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def _describe_artifact_schemas(
+    schemas_dir: Path,
+    schemas: dict[str, dict[str, Any]],
+    model: dict[str, Path | str],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     gaps: list[dict[str, Any]] = []
     if not schemas_dir.is_dir():
         gaps.append({
             "scope": "artifact_schemas",
             "status": "missing",
-            "message": f"artifact schema directory is missing: {schemas_dir}",
+            "message": _surface_missing_message("artifact schema directory", schemas_dir, model),
         })
         return [], gaps
 
@@ -847,7 +906,9 @@ def _describe_artifact_schemas(schemas_dir: Path, schemas: dict[str, dict[str, A
 
 def _command_description(name: str, *, kind: str, fields: list[str] | None = None) -> dict[str, Any]:
     output_formats = ["text", "json", "yaml"]
-    if name == "doctor":
+    if name == "lint":
+        output_formats = ["text", "json"]
+    elif name == "doctor":
         output_formats = ["text", "json"]
     elif name == "upgrade":
         output_formats = ["text", "json"]
@@ -871,6 +932,7 @@ def _describe_commands() -> list[dict[str, Any]]:
         commands.append(_command_description(name, kind="routine_state", fields=_available_structured_fields(name)))
     commands.extend([
         _command_description("query", kind="advanced_artifact_query"),
+        _command_description("lint", kind="artifact_lint", fields=["command", "status", "artifact", "checks", "summary"]),
         _command_description("describe", kind="runtime_introspection"),
         _command_description("upgrade", kind="upgrade"),
         _command_description("doctor", kind="self_check"),
@@ -891,12 +953,13 @@ def _contract_section(contract: dict[str, Any] | None, key: str, gaps: list[dict
 
 def _build_describe_payload() -> dict[str, Any]:
     contract, contract_error = _load_decision45_contract()
-    schemas_dir = _discover_schemas_dir()
+    app_model = _active_app_model()
+    schemas_dir = _discover_schemas_dir(app_model)
     schemas = _load_schemas(schemas_dir)
     gaps: list[dict[str, Any]] = []
     if contract_error:
         gaps.append({"scope": "contract", "status": "missing", "message": contract_error})
-    artifact_schemas, schema_gaps = _describe_artifact_schemas(schemas_dir, schemas)
+    artifact_schemas, schema_gaps = _describe_artifact_schemas(schemas_dir, schemas, app_model)
     gaps.extend(schema_gaps)
 
     slash_aliases = _contract_section(contract, "slash_route_aliases", gaps)
@@ -914,6 +977,7 @@ def _build_describe_payload() -> dict[str, Any]:
             "schemas_dir": str(schemas_dir),
             "schemas_dir_exists": schemas_dir.is_dir(),
             "schema_count": len(artifact_schemas),
+            "app_model": _app_model_payload(app_model),
         },
         "commands": _describe_commands(),
         "routine_state_commands": ROUTINE_STATE_COMMANDS,
@@ -959,11 +1023,94 @@ def cmd_prime(_args: argparse.Namespace) -> int:
     return 0
 
 
+LINT_CHECKS = [
+    ("verbosity", "Shorten the entry or split it into smaller concrete entries."),
+    ("abstraction", "Add a concrete anchor such as a path, line number, metric, command, identifier, or quote."),
+    ("filler", "Remove the named filler phrase category before writing the artifact."),
+]
+
+
+def _lint_input_text(args: argparse.Namespace) -> tuple[str, str]:
+    if getattr(args, "text", None) is not None:
+        return str(args.text), "text"
+    if getattr(args, "file", None) is not None:
+        path = Path(args.file)
+        try:
+            return path.read_text(encoding="utf-8"), str(path)
+        except OSError as exc:
+            raise ValueError(f"could not read lint file {path}: {exc}") from exc
+    if sys.stdin.isatty():
+        raise ValueError("lint requires --text, --file, or piped stdin")
+    return sys.stdin.read(), "stdin"
+
+
+def _lint_checks(text: str, artifact: str) -> list[dict[str, Any]]:
+    self_audit = _load_self_audit_helper()
+    raw_results = {
+        "verbosity": self_audit.check_verbosity(text, artifact),
+        "abstraction": self_audit.check_abstraction(text),
+        "filler": self_audit.check_filler(text),
+    }
+    checks: list[dict[str, Any]] = []
+    actions = dict(LINT_CHECKS)
+    for name, _action in LINT_CHECKS:
+        passed, detail = raw_results[name]
+        checks.append({
+            "name": name,
+            "status": "pass" if passed else "fail",
+            "detail": detail,
+            "action": "" if passed else actions[name],
+        })
+    return checks
+
+
+def _lint_payload(args: argparse.Namespace) -> dict[str, Any]:
+    text, source = _lint_input_text(args)
+    artifact = str(args.artifact)
+    _validate_agent_string(artifact, "artifact")
+    checks = _lint_checks(text, artifact)
+    failures = [check for check in checks if check["status"] == "fail"]
+    return {
+        "command": "lint",
+        "status": "fail" if failures else "pass",
+        "artifact": artifact,
+        "source": source,
+        "strict": bool(getattr(args, "strict", False)),
+        "checks": checks,
+        "summary": {
+            "failed": len(failures),
+            "passed": len(checks) - len(failures),
+            "advisory": not bool(getattr(args, "strict", False)),
+        },
+    }
+
+
+def _emit_lint_text(payload: dict[str, Any]) -> None:
+    failures = [check for check in payload["checks"] if check["status"] == "fail"]
+    print(f"lint {payload['status']}: {payload['artifact']} ({payload['source']})")
+    if not failures:
+        print("all self-audit checks passed")
+        return
+    print(f"{len(failures)} issue(s); advisory by default, use --strict to fail on issues")
+    for check in failures:
+        print(f"- {check['name']}: {check['detail']}")
+        print(f"  action: {check['action']}")
+
+
+def cmd_lint(args: argparse.Namespace) -> int:
+    payload = _lint_payload(args)
+    if getattr(args, "format", "text") == "json":
+        _emit_structured(payload, "json")
+    else:
+        _emit_lint_text(payload)
+    return 1 if payload["status"] == "fail" and getattr(args, "strict", False) else 0
+
+
 def _query_last_phase(args: argparse.Namespace, schemas: dict) -> int:
     output_format = getattr(args, "format", "text")
     info = schemas.get("progress")
     if not info:
-        print("No progress schema found", file=sys.stderr)
+        print(_missing_schema_error("progress"), file=sys.stderr)
         return 1
     data = _load_artifact(_artifact_path(info, "progress"))
     entries = _extract_entries(data)
@@ -984,7 +1131,7 @@ def _query_last_phase(args: argparse.Namespace, schemas: dict) -> int:
 def _query_decisions(args: argparse.Namespace, schemas: dict) -> int:
     info = schemas.get("decisions")
     if not info:
-        print("No decisions schema found", file=sys.stderr)
+        print(_missing_schema_error("decisions"), file=sys.stderr)
         return 1
     path = _artifact_path(info, "decisions")
     data = _load_artifact(path)
@@ -1020,7 +1167,7 @@ def _query_decisions(args: argparse.Namespace, schemas: dict) -> int:
 def _query_health(args: argparse.Namespace, schemas: dict) -> int:
     info = schemas.get("health")
     if not info:
-        print("No health schema found", file=sys.stderr)
+        print(_missing_schema_error("health"), file=sys.stderr)
         return 1
     path = _artifact_path(info, "health")
     data = _load_artifact(path)
@@ -1200,7 +1347,7 @@ def _query_todo(
 def _query_plan(args: argparse.Namespace, schemas: dict) -> int:
     info = schemas.get("plan")
     if not info:
-        print("No plan schema found", file=sys.stderr)
+        print(_missing_schema_error("plan"), file=sys.stderr)
         return 1
     path = _artifact_path(info, "plan")
     data = _load_artifact(path)
@@ -1264,7 +1411,7 @@ def _query_plan(args: argparse.Namespace, schemas: dict) -> int:
 def _query_progress(args: argparse.Namespace, schemas: dict) -> int:
     info = schemas.get("progress")
     if not info:
-        print("No progress schema found", file=sys.stderr)
+        print(_missing_schema_error("progress"), file=sys.stderr)
         return 1
     path = _artifact_path(info, "progress")
     data = _load_artifact(path)
@@ -1302,7 +1449,7 @@ def _query_progress(args: argparse.Namespace, schemas: dict) -> int:
 def _query_docs(args: argparse.Namespace, schemas: dict) -> int:
     info = schemas.get("docs")
     if not info:
-        print("No docs schema found", file=sys.stderr)
+        print(_missing_schema_error("docs"), file=sys.stderr)
         return 1
     path = _artifact_path(info, "docs")
     data = _load_artifact(path)
@@ -1375,7 +1522,7 @@ def _query_docs(args: argparse.Namespace, schemas: dict) -> int:
 def _query_session(args: argparse.Namespace, schemas: dict) -> int:
     info = schemas.get("session")
     if not info:
-        print("No session schema found", file=sys.stderr)
+        print(_missing_schema_error("session"), file=sys.stderr)
         return 1
     data = _load_artifact(_artifact_path(info, "session"))
     entries = _extract_entries(data)
@@ -1393,7 +1540,7 @@ def _query_session(args: argparse.Namespace, schemas: dict) -> int:
 def _query_design(args: argparse.Namespace, schemas: dict) -> int:
     info = schemas.get("design")
     if not info:
-        print("No design schema found", file=sys.stderr)
+        print(_missing_schema_error("design"), file=sys.stderr)
         return 1
     path = _artifact_path(info, "design")
     data = _load_artifact(path)
@@ -1424,7 +1571,7 @@ def _query_design(args: argparse.Namespace, schemas: dict) -> int:
 def _query_objective(args: argparse.Namespace, schemas: dict) -> int:
     info = schemas.get("objective")
     if not info:
-        print("No objective schema found", file=sys.stderr)
+        print(_missing_schema_error("objective"), file=sys.stderr)
         return 1
     path = _artifact_path(info, "objective")
     data = _load_artifact(path)
@@ -1482,7 +1629,7 @@ def _query_objective(args: argparse.Namespace, schemas: dict) -> int:
 def _query_experiments(args: argparse.Namespace, schemas: dict) -> int:
     info = schemas.get("experiments")
     if not info:
-        print("No experiments schema found", file=sys.stderr)
+        print(_missing_schema_error("experiments"), file=sys.stderr)
         return 1
     path = _artifact_path(info, "experiments")
     data = _load_artifact(path)
@@ -1911,12 +2058,12 @@ def cmd_hej(_args: argparse.Namespace) -> int:
         dry_run = bundle.get("dryRunCommand")
         if dry_run:
             attention.append(
-                f"degraded: bundle {bundle['status']}; preview `{dry_run}`; root={bundle['installRoot']}"
+                f"degraded: app {bundle['status']}; preview `{dry_run}`; app_home={bundle['appHome']}"
             )
         else:
             attention.append(
-                f"critical: bundle {bundle['status']}; fix AGENTERA_HOME or choose a managed install root; "
-                f"root={bundle['installRoot']}"
+                f"critical: app {bundle['status']}; fix AGENTERA_HOME or choose a managed app home; "
+                f"app_home={bundle['appHome']}"
             )
     if v1_migration["detected"]:
         command = v1_migration["dry_run_command"]
@@ -1949,12 +2096,21 @@ def cmd_hej(_args: argparse.Namespace) -> int:
         )[0]
         attention.append(f"{first_todo['severity']}: TODO: {first_todo['text']}")
     if _output_format(_args) != "text":
+        bundle_public = public_doctor_status(bundle)
+        app_home = {
+            "status": bundle["status"],
+            "home": bundle["appHome"],
+            "source": bundle["appHomeSource"],
+            "managed_app_root": bundle["managedAppRoot"],
+            "user_data_root": bundle["userDataRoot"],
+        }
         return _emit_state_structured(
             "hej",
             {
                 "command": "hej",
                 "status": "ok",
-                "bundle": bundle,
+                "app_home": app_home,
+                "bundle": bundle_public,
                 "mode": mode,
                 "profile": profile_dict,
                 "v1_migration": v1_migration,
@@ -1970,9 +2126,9 @@ def cmd_hej(_args: argparse.Namespace) -> int:
                     "artifacts_present": mode == "returning",
                 },
                 "source_contract": {
-                    "fields": ["bundle", "mode", "profile", "v1_migration", "health", "issues", "plan", "objective", "attention", "next_action"],
+                    "fields": ["app_home", "mode", "profile", "v1_migration", "health", "issues", "plan", "objective", "attention", "next_action"],
                     "render": "caller-owned README-style hej dashboard",
-                    "access": "single installed CLI call; bundle/v1/profile safety included; no preflight glob/read/import/doctor calls during normal hej",
+                    "access": "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal hej",
                     "empty_state": "fresh mode with missing artifact summaries and zero issue counts",
                 },
             },
@@ -1981,8 +2137,8 @@ def cmd_hej(_args: argparse.Namespace) -> int:
 
     print("agentera hej")
     print(
-        f"bundle: status={bundle['status']} | root={bundle['installRoot']} | "
-        f"source={bundle['installRootSource']} | expected={bundle['expectedVersion']} | "
+        f"app_home: status={bundle['status']} | home={bundle['appHome']} | "
+        f"source={bundle['appHomeSource']} | managed_app={bundle['managedAppRoot']} | user_data={bundle['userDataRoot']} | expected={bundle['expectedVersion']} | "
         f"expected_source={bundle.get('expectedVersionSource', '-')} | current={bundle.get('markerVersion') or '-'}"
     )
     print(f"mode: {mode}")
@@ -2023,9 +2179,9 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     print("next_action:")
     print(f"- {_format_next_action(next_action)}")
     print("source_contract:")
-    print("- fields=bundle,mode,profile,v1_migration,health,issues,plan,objective,attention,next_action")
+    print("- fields=app_home,mode,profile,v1_migration,health,issues,plan,objective,attention,next_action")
     print("- render=caller-owned README-style hej dashboard")
-    print("- access=single installed CLI call; bundle/v1/profile safety included; no preflight glob/read/import/doctor calls")
+    print("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls")
     return 0
 
 
@@ -2169,19 +2325,19 @@ def build_parser() -> argparse.ArgumentParser:
         "--install-root",
         type=_agent_path,
         default=None,
-        help="Agentera install root to include in the bundle status (default: AGENTERA_HOME, then ~/.agents/agentera)",
+        help="Agentera app home to include in app status (default: AGENTERA_HOME, then platform data home)",
     )
     hej.add_argument(
         "--home",
         type=_agent_path,
         default=Path.home(),
-        help="Home directory used for the default durable install root",
+        help="Home directory used for the default app home",
     )
     hej.add_argument(
         "--expected-version",
         type=_agent_version,
         default=None,
-        help="Expected suite version for bundle status (default: AGENTERA_EXPECTED_VERSION, then registry.json in this source)",
+        help="Expected suite version for app status (default: AGENTERA_EXPECTED_VERSION, then registry.json in this source)",
     )
     add_structured_args(hej)
 
@@ -2232,6 +2388,26 @@ def build_parser() -> argparse.ArgumentParser:
     q.add_argument("--dimension", help="Filter by dimension name")
     q.add_argument("--status", help="Filter by status/type where supported")
     q.add_argument("--limit", type=int, default=5, help="Limit recent entries for summary queries")
+
+    lint = sub.add_parser(
+        "lint",
+        help="Run pre-write artifact prose self-audit",
+    )
+    lint.add_argument(
+        "--artifact",
+        required=True,
+        help="Canonical artifact name for budget selection, e.g. PROGRESS.md",
+    )
+    lint_input = lint.add_mutually_exclusive_group()
+    lint_input.add_argument("--file", type=_agent_path, help="Read artifact prose from a file")
+    lint_input.add_argument("--text", help="Read artifact prose from this argument")
+    lint.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit non-zero when self-audit checks fail",
+    )
+    lint.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+
     u = sub.add_parser(
         "upgrade",
         help="Plan or apply an idempotent v1-to-v2 upgrade",
@@ -2246,7 +2422,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--install-root",
         type=_agent_path,
         default=None,
-        help="Agentera install root to wire into runtime configs (default: this bundle, or ~/.agents/agentera for packaged uvx runs)",
+        help="Agentera app home to wire into runtime configs (default: this app, or platform data home for packaged uvx runs)",
     )
     u.add_argument(
         "--home",
@@ -2306,19 +2482,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     b = sub.add_parser(
         "doctor",
-        help="Check Agentera CLI, install, bundle, and runtime status",
+        help="Check Agentera CLI, app, and runtime status",
     )
     b.add_argument(
         "--install-root",
         type=_agent_path,
         default=None,
-        help="Agentera install root to inspect (default: AGENTERA_HOME, then ~/.agents/agentera)",
+        help="Agentera app home to inspect (default: AGENTERA_HOME, then platform data home)",
     )
     b.add_argument(
         "--home",
         type=_agent_path,
         default=Path.home(),
-        help="Home directory used for the default durable install root",
+        help="Home directory used for the default app home",
     )
     b.add_argument(
         "--project",
@@ -2360,11 +2536,13 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_state(args)
         if args.command == "query":
             return cmd_query(args)
+        if args.command == "lint":
+            return cmd_lint(args)
         if args.command == "upgrade":
             return cmd_upgrade(args)
         if args.command == "doctor":
             return cmd_doctor(args)
-    except ValueError as exc:
+    except (RuntimeError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
     parser.print_help()

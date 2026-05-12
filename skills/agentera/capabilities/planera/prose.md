@@ -29,7 +29,7 @@ One file and one archive directory in `.agentera/`.
 
 **Presence signal**: `.agentera/plan.yaml` means active planned work. Absence means no plan, so realisera reasons from VISION.md.
 
-Use `skills/agentera/schemas/artifacts/plan.yaml` and existing plan artifacts as the structure.
+Use `agentera describe --format json` and its `artifact_schemas` entry for `plan` to locate the active installed schema; do not search install roots manually. Existing plan artifacts provide repository-local examples of the shape.
 
 ### Artifact path resolution
 
@@ -149,7 +149,7 @@ Address legitimate issues; dismiss false positives with rationale. Present revie
 
 ## Step 4: Pre-write self-audit
 
-Pre-write self-audit: check verbosity overruns, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns, abstraction creep, and filler accumulation.
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 ## Step 5: Write PLAN.md

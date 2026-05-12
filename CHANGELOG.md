@@ -2,13 +2,20 @@
 
 ## [Unreleased]
 
+### Changed
+
+- 2.3.0 release state now aligns with Decisions 47, 48, and 50: app-home migration, `agentera lint`, installed schema/helper discovery, and app/runtime root diagnostics are the focused reliability scope, while Profilera corpus parity remains deferred beyond 2.3.0.
+
 ### Fixed
 
+- Installed capability instructions now describe schema and helper discovery through `agentera describe --format json`, `agentera lint`, and the active app-home model instead of manual install-root searches.
+- Public `agentera doctor --json` and `agentera hej --format json` now expose app-home fields without `installRoot` compatibility fields, and release validation blocks stale structured output.
 - Bare text `hej` now has explicit cross-runtime metadata, an OpenCode exact-match `chat.message` router, and legacy `hej` bridge metadata that points only at explicit slash/package upgrade flows.
 - Structured JSON state output now serializes YAML date scalars as ISO strings, preventing `agentera progress --format json` from failing on unquoted progress timestamps.
 
 ### Added
 
+- `agentera lint --artifact <ARTIFACT>` exposes the pre-write self-audit checks through the CLI with stdin/file/text input, bounded text diagnostics, JSON output, and optional `--strict` failures.
 - Added an empty-project semantic fixture proving bare `hej` still uses exactly one `agentera hej` dashboard source call and does not fall back to a generic greeting.
 
 ## [2.2.3] · 2026-05-09

@@ -1,4 +1,503 @@
 cycles:
+- number: 393
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Executed Task 8 final validation and repaired validation blockers found in the
+    2.3.0 release candidate without marking Task 8 complete.
+  commit: pending
+  inspiration: >
+    Task 8 requires broad release-candidate validation, state agreement evidence,
+    and a handoff that proves no live/package publication or installed app refresh
+    occurred.
+  discovered: >
+    Full pytest initially found four blockers: missing exact `bundle.status`
+    contract wording in the master skill and hej prose, deprecated-vocabulary test
+    exposure around the installed-bundle `verbosity drift` fixture, and a minimal
+    live-host query bundle that omitted `scripts/install_root.py`. Hook artifact
+    validation then exposed historical progress schema issues: `type: release` is
+    invalid and cycles 376/377 were out of descending order.
+  verified: >
+    After focused fixes, `uv run pytest` passed with 851 tests. `uv run
+    scripts/validate_capability.py --self-validate` passed, and capability
+    validation passed for hej, realisera, planera, dokumentera, and profilera.
+    `git diff --check` passed. `hooks/validate_artifact.py` passed for plan,
+    progress, docs, TODO, and CHANGELOG after progress schema repair. `uv run
+    scripts/agentera query --list-artifacts` listed the expected artifact
+    mappings. `uv run scripts/agentera plan`, `todo`, `docs`, `progress`, and
+    `health` were queried for state agreement. Artifact lint ran for TODO,
+    CHANGELOG, DOCS, PLAN, and PROGRESS in advisory mode; full-file
+    verbosity/filler advisories remain historical noise and are not release
+    blockers.
+  next: >
+    Leave Task 8 pending for conductor evaluation; do not commit, tag, push,
+    publish, update package-manager installs, refresh installed bundles/apps,
+    edit vision, or edit objective state.
+  context:
+    intent: Task 8 final validation, state sync, and handoff for 2.3.0
+    constraints: no commit, tag, push, publication, package-manager update,
+      installed bundle/app refresh, .agentera/vision.yaml edit, objective-state
+      edit, or Task 8 plan completion mark
+    scope: validation evidence, focused blocker fixes, progress schema repair,
+      and release-candidate handoff
+- number: 392
+  timestamp: 2026-05-12
+  type: chore
+  phase: build
+  what: >
+    Implemented Task 7 by bumping active Agentera release/version surfaces from
+    2.2.3 to 2.3.0 without marking the plan task complete.
+  commit: pending
+  inspiration: >
+    The 2.3.0 release includes feature and fix work, so registry, Python,
+    lockfile, runtime manifests, OpenCode marker, and active skill frontmatter
+    must report the same suite version while historical archive and changelog
+    mentions of older releases remain valid history.
+  discovered: >
+    The mapped version files still declared 2.2.3 in pyproject.toml, uv.lock,
+    plugin manifests, registry.json, and .opencode/plugins/agentera.js; the
+    active bundled and legacy bridge SKILL.md frontmatter also mirrored 2.2.3.
+    Historical changelog/archive/progress references intentionally remain older
+    release evidence and were not rewritten.
+  verified: >
+    uv run pytest tests/test_package_registry.py tests/test_runtime_adapters.py
+    -q passed with 87 tests. rg "2\.2\.3" across pyproject.toml, uv.lock,
+    registry.json, plugin.json, .github/plugin/plugin.json,
+    .codex-plugin/plugin.json, .claude-plugin/marketplace.json,
+    .opencode/plugins/agentera.js, skills/agentera/SKILL.md, skills/hej/SKILL.md,
+    and tests/test_package_registry.py found only the new guard assertions in the
+    focused test, not active release declarations. rg "2\.3\.0" across the same
+    surfaces confirmed the current version in registry, Python, lockfile,
+    package/runtime manifests, OpenCode marker, active skill frontmatter, and the
+    focused package-registry test.
+    uv run scripts/agentera progress --limit 1 reported this Task 7 entry. uv
+    run scripts/agentera lint --artifact PROGRESS.md --text <anchored Task 7
+    evidence> --strict passed. uv run scripts/agentera lint --artifact
+    PROGRESS.md --file .agentera/progress.yaml --strict still fails only the
+    known full-file verbosity/filler drift from historical progress size, so no
+    historical progress rewrite was performed.
+  next: >
+    Leave Task 7 pending for conductor evaluation; Task 8 broad final validation
+    remains intentionally unstarted.
+  context:
+    intent: Task 7 2.3.0 version bump
+    constraints: no commit, tag, push, publish, package-manager update,
+      installed app refresh, .agentera/vision.yaml edit, objective-state edit,
+      historical archive/changelog rewrite, Task 8 broad final validation, or
+      .agentera/plan.yaml completion mark
+    scope: pyproject.toml, uv.lock, plugin manifests, registry.json,
+      .opencode/plugins/agentera.js, active skill frontmatter, focused version
+      consistency test, and this progress entry
+- number: 391
+  timestamp: 2026-05-12
+  type: docs
+  phase: build
+  what: >
+    Clarified the Task 6 decision-record boundary after evaluation treated the
+    pre-existing `.agentera/decisions.yaml` diff as a Task 6 edit.
+  commit: pending
+  inspiration: >
+    Task 6 must reflect Decisions 47, 48, and 50 in downstream docs and release
+    state without modifying historical decision records. The existing Decision 50
+    logging and Decision 40 compaction diff is source context from earlier work,
+    not Task 6 implementation output.
+  discovered: >
+    The prior Task 6 docs/progress evidence said no decision-record edit occurred
+    but did not explicitly explain why `.agentera/decisions.yaml` was already
+    dirty relative to HEAD. That ambiguity caused the evaluator to attribute the
+    pre-existing decision-log diff to Task 6.
+  verified: >
+    uv run scripts/agentera docs reported last_audit 2026-05-12 Task 6 retry,
+    12 artifact mappings, 67 current docs entries, and Decision records still
+    indexed as current without changing `.agentera/decisions.yaml`. uv run
+    scripts/agentera todo reported only the retargeted Profilera corpus parity
+    TODO open beyond 2.3.0. uv run scripts/agentera progress --limit 1 reported
+    this retry entry. uv run pytest tests/test_packaged_cli.py
+    tests/test_query_cli.py::TestDescribeIntrospection tests/test_self_audit.py
+    -q passed with 26 tests. uv run scripts/validate_capability.py
+    skills/agentera/capabilities/hej passed. uv run scripts/agentera lint
+    --artifact PROGRESS.md --text <Task 6 retry evidence> --strict passed. git
+    diff --check passed. No commit, tag, push, publication, package update,
+    installed app refresh, vision edit, objective-state edit, decision-record
+    edit, version bump, Task 7/8 work, or Task 6 plan completion mark occurred.
+  next: >
+    Leave Task 6 pending for conductor evaluation; Task 7 version bumps and Task
+    8 final validation remain untouched.
+  context:
+    intent: Task 6 retry decision-record boundary clarification
+    constraints: no commit, tag, push, publish, package-manager install/update,
+      installed app refresh, .agentera/vision.yaml edit, objective-state edit,
+      historical decision edit, version bump, Task 7/8 work, or
+      .agentera/plan.yaml completion mark
+    source_context: .agentera/decisions.yaml is dirty from earlier Resonera
+      Decision 50 logging and Decision 40 compaction, and was not edited by Task
+      6
+    scope: .agentera/docs.yaml and .agentera/progress.yaml evidence only
+- number: 390
+  timestamp: 2026-05-12
+  type: docs
+  phase: build
+  what: >
+    Implemented Task 6 documentation and release-state alignment for the focused
+    2.3.0 reliability release without marking the plan task complete.
+  commit: pending
+  inspiration: >
+    Decisions 47, 48, and 50 define 2.3.0 as app-home migration,
+    `agentera lint`, and installed helper/schema/root diagnostics, with Profilera
+    corpus parity and broad script namespaces deferred beyond this release.
+  discovered: >
+    README, UPGRADE, hej routing guidance, TODO, changelog, and docs state still
+    mixed completed 2.3.0 reliability work with older bundle-status wording or
+    open TODOs. The focused packaged CLI check also reproduced the known stale
+    marker expectation: tests/test_packaged_cli.py still looked for
+    `.agentera-bundle.json` at the app home root instead of under
+    `$AGENTERA_HOME/app`.
+  verified: >
+    uv run pytest tests/test_packaged_cli.py
+    tests/test_query_cli.py::TestDescribeIntrospection tests/test_self_audit.py
+    -q passed with 26 tests after aligning the packaged marker expectation to
+    `$AGENTERA_HOME/app/.agentera-bundle.json`. uv run
+    scripts/validate_capability.py skills/agentera/capabilities/hej passed. uv
+    run scripts/agentera lint --artifact PROGRESS.md --text <Task 6 evidence>
+    --strict passed. uv run scripts/agentera lint --artifact TODO.md --file
+    TODO.md ran in advisory mode and reported only the existing full-file
+    verbosity issue from the large historical Resolved section. uv run
+    scripts/agentera docs and uv run scripts/agentera todo were used to confirm
+    current docs mappings and open TODO state. No commit, tag, push,
+    publication, package update, installed app refresh, vision edit,
+    objective-state edit, version bump, decision-record edit, or Task 6 plan
+    completion mark occurred.
+  next: >
+    Leave Task 6 pending for conductor evaluation; Task 7 owns version bumps and
+    Task 8 owns broad final validation.
+  context:
+    intent: Task 6 documentation and release state alignment
+    constraints: no commit, tag, push, publish, package-manager install/update,
+      installed app refresh, .agentera/vision.yaml edit, objective-state edit,
+      historical decision edit, version bump, or .agentera/plan.yaml completion
+      mark
+    residual_risks: TODO.md full-file lint remains advisory-noisy because of the
+      large historical Resolved section; full Task 8 validation remains pending
+      by plan design
+    scope: README.md, UPGRADE.md, CHANGELOG.md, TODO.md, docs/vocabulary.md,
+      .agentera/docs.yaml, .agentera/progress.yaml, skills/agentera/SKILL.md,
+      skills/agentera/capabilities/hej/prose.md, and tests/test_packaged_cli.py
+- number: 389
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Implemented Task 5 by resolving installed artifact schemas and lint helper
+    access through the active app model instead of project-local or manual
+    install-root searches.
+  commit: pending
+  inspiration: >
+    Task 5 requires installed capabilities to discover schema and helper
+    surfaces from the same app-home, managed-app, skill-root, and runtime-root
+    model that doctor reports, while keeping doctor free of helper/schema checks
+    and preserving the narrow `agentera lint` surface.
+  discovered: >
+    `scripts/agentera` still discovered schemas from AGENTERA_HOME/cwd paths and
+    imported `self_audit` at startup. Producing capability prose also named raw
+    `skills/agentera/schemas/artifacts/*.yaml` paths. The fix adds a shared
+    active-app-model resolver, points schema discovery at `skillRoot`, lazy-loads
+    the lint helper from `activeBundleRoot/scripts/self_audit.py`, reports missing
+    surfaces with appHome/managedAppRoot/skillRoot/runtimeRoot, and redirects
+    schema instructions to `agentera describe --format json`.
+  verified: >
+    Validation passed: `uv run pytest tests/test_query_cli.py tests/test_self_audit.py
+    -q` reported 144 passed, covering installed app-home schema discovery without
+    a project schema copy, missing-schema describe gaps tied to the active app
+    model, and missing installed lint-helper diagnostics tied to the same model.
+    `python3 -m py_compile scripts/agentera scripts/agentera_upgrade.py` completed
+    with no output. No doctor helper/schema checks, package-manager installs,
+    installed bundle refresh, commit, tag, push, publication, vision edit,
+    objective-state edit, or `.agentera/plan.yaml` completion update occurred.
+  next: >
+    Leave Task 5 pending for conductor evaluation; Task 6 owns broader docs and
+    release-state alignment.
+  context:
+    intent: Task 5 installed schema and helper discovery
+    constraints: no commit, tag, push, publish, package-manager install,
+      installed bundle refresh, .agentera/vision.yaml edit, objective-state edit,
+      or .agentera/plan.yaml completion mark
+    unknowns: the known stale packaged upgrade marker expectation remains outside
+      this lint/discovery change
+    scope: scripts/agentera, scripts/agentera_upgrade.py, focused tests,
+      producing capability prose, and progress evidence
+- number: 388
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Implemented Task 4 by exposing the pre-write self-audit checks through the
+    `agentera lint` CLI surface.
+  commit: pending
+  inspiration: >
+    Decision 48 requires self-audit behavior to be reachable through a narrow
+    lint namespace first, while keeping doctor scoped to install, app, and
+    runtime diagnostics and avoiding broad script consolidation.
+  discovered: >
+    Producing capability prose still pointed agents at `scripts/self_audit.py`,
+    which is unreliable from installed skill roots. The fix keeps the existing
+    private audit module but routes artifact writers through `agentera lint
+    --artifact <ARTIFACT>` with stdin, file, text, JSON, advisory, and strict
+    modes.
+  verified: >
+    uv run pytest tests/test_self_audit.py
+    tests/test_query_cli.py::TestDescribeIntrospection -q passed with 24 tests.
+    python3 -m py_compile scripts/agentera scripts/self_audit.py completed with
+    no output. uv run scripts/validate_capability.py passed for realisera,
+    visionera, planera, resonera, optimera, visualisera, dokumentera, and
+    inspektera. uv run scripts/agentera lint --artifact PROGRESS.md --text
+    "Task 4 exposed self-audit via scripts/agentera using agentera lint, with
+    tests/test_self_audit.py proving stdin, bounded diagnostics, JSON, and
+    strict-mode behavior." --strict passed. PYTHONPATH=src python3 -m
+    agentera_cli lint --artifact PROGRESS.md --text "Packaged launcher reaches
+    `scripts/agentera` lint with 1ms evidence." --strict --format json passed.
+  next: >
+    Leave Task 4 pending for conductor evaluation; do not mark .agentera/plan.yaml
+    complete and do not start later helper/schema discovery, release, packaging,
+    publication, or installed app refresh tasks.
+  context:
+    intent: Task 4 lint entrypoint for self-audit
+    constraints: no commit, tag, push, publish, package-manager install,
+      installed bundle refresh, .agentera/vision.yaml edit, objective-state edit,
+      or .agentera/plan.yaml completion mark
+    scope: agentera lint CLI surface, focused tests, capability prose, README,
+      TODO, CHANGELOG, vocabulary docs
+
+- number: 387
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Implemented Task 3 upgrade-owned app-home migration writes for legacy
+    bundle-root installs.
+  commit: pending
+  inspiration: >
+    Decision 47 requires `agentera upgrade` to own idempotent migration writes
+    from legacy root-managed app code into `$AGENTERA_HOME/app`, while Decision
+    48 keeps doctor read-only and limited to diagnostics.
+  discovered: >
+    The bundle phase still wrote managed files directly into the app home, so
+    doctor could report migration_required but upgrade could not resolve it. The
+    fix makes preview expose both the managed-app install target and legacy root
+    cleanup, then apply installs under app/ and removes only known managed root
+    files.
+  verified: >
+    uv run pytest tests/test_bundle_freshness.py tests/test_upgrade_cli.py
+    tests/test_install_root_characterization.py tests/test_query_cli.py::TestHej
+    tests/test_cross_capability.py -q passed with 101 tests. python3 -m
+    py_compile scripts/agentera scripts/agentera_upgrade.py
+    scripts/install_root.py completed with no output. uv run
+    scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera
+    passed. Coverage includes preview no-write behavior for legacy installs,
+    approved app-home migration into app/, repeated apply idempotence, runtime
+    use of coherent app homes, and doctor no longer reporting migration_required
+    after migration.
+  next: >
+    Leave Task 3 pending for conductor evaluation; do not mark .agentera/plan.yaml
+    complete and do not start later release/version/package/publish tasks.
+  context:
+    intent: Task 3 upgrade-owned migration flow
+    constraints: no commit, tag, push, publish, installed bundle refresh,
+      package-manager install, .agentera/vision.yaml edit, objective-state edit,
+      or .agentera/plan.yaml completion mark
+    scope: upgrade bundle/app-home migration, focused tests, retry-path docs
+
+- number: 386
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Implemented Task 2 doctor app/runtime root diagnostics for app-home installs.
+  commit: pending
+  inspiration: >
+    Decision 47 requires doctor to identify legacy bundle-root installs as
+    migration_required with exact upgrade preview/apply commands, while Decision
+    48 keeps doctor read-only and scoped to install, app, and runtime roots.
+  discovered: >
+    Doctor still classified AGENTERA_HOME itself as the managed bundle root. The
+    fix routes coherent installs through AGENTERA_HOME/app, reports active bundle
+    root, authoritative root, skill root, runtime root, and source root, and
+    treats non-checkout managed code at the app-home root as a migration-required
+    legacy shape.
+  verified: >
+    uv run pytest tests/test_bundle_freshness.py
+    tests/test_install_root_characterization.py tests/test_query_cli.py::TestHej
+    tests/test_app_home_contract.py -q passed with 43 tests. python3 -m
+    py_compile scripts/agentera scripts/agentera_upgrade.py completed with no
+    output. uv run scripts/validate_app_home_contract.py --root
+    /home/jgabor/git/agentera passed. Focused regressions cover legacy
+    migration_required output with exact dry-run/apply commands, coherent
+    app/runtime roots without migration_required or split_root warnings, invalid
+    app-home blocking, default app-home diagnostics, and hej structured status.
+  next: >
+    Leave Task 2 pending for conductor evaluation; upgrade-owned migration
+    writes, helper/schema checks, later reliability tasks, installed bundle
+    refresh, release tagging, publication, and package updates remain out of
+    scope.
+  context:
+    intent: Task 2 doctor app and runtime root diagnostics
+    constraints: no commit, tag, push, publish, package-manager install,
+      installed bundle refresh, .agentera/vision.yaml edit, objective-state edit,
+      or .agentera/plan.yaml completion mark
+    scope: doctor status roots, migration_required diagnostics, focused tests,
+      README behavior note
+
+- number: 385
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Completed the app-home public JSON migration for Task 1 by removing exposed
+    installRoot fields from doctor and hej structured output.
+  commit: pending
+  inspiration: >
+    Orkestrera blocked Task 1 after evaluator checks found doctor and hej JSON
+    still exposed installRoot fields despite app-home text output passing.
+  discovered: >
+    The remaining issue was at the public projection boundary. Internal upgrade
+    plans still need installRoot for apply behavior, but doctor and hej JSON can
+    strip it before output.
+  verified: >
+    uv run scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera
+    passed. uv run pytest tests/test_app_home_contract.py tests/test_query_cli.py::TestHej
+    tests/test_bundle_freshness.py tests/test_upgrade_cli.py tests/test_packaged_cli.py
+    -q passed with 54 tests. python3 -m py_compile scripts/agentera
+    scripts/agentera_upgrade.py scripts/validate_app_home_contract.py completed
+    with no output. A structured-output smoke confirmed doctor and hej JSON no
+    longer contain installRoot. uv run pytest -q passed with 842 tests after
+    updating the stale app-home structured-output expectation.
+  next: >
+    Continue the 2.3.0 plan with doctor app and runtime root diagnostics.
+  context:
+    intent: resolve blocked Task 1 app-home JSON failure
+    constraints: no commit, tag, push, publication, installed app refresh,
+      vision edit, or objective edit
+    scope: doctor and hej public JSON projection, app-home validator,
+      vocabulary docs, focused tests, plan/TODO/changelog state
+
+- number: 384
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Completed the final Task 1 retry by converting active upgrade dry-run output
+    and public upgrade JSON from install-root/bundle-root terminology to app-home
+    terminology while preserving internal upgrade apply behavior.
+  commit: pending
+  inspiration: >
+    Re-evaluation found that upgrade human output still printed install root,
+    public JSON still exposed installRoot, runtime planning still said Claude
+    exposed a bundle root, and the app-home validator did not scan upgrade
+    output.
+  discovered: >
+    The stale Claude message came from runtime-adapter registry write-safety
+    labels, not the fallback string in agentera_upgrade.py. Public JSON could be
+    fixed at the projection boundary by retaining internal installRoot for apply
+    code and removing it from _public_plan.
+  verified: >
+    uv run scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera
+    passed after adding representative upgrade output scans. uv run pytest
+    tests/test_app_home_contract.py tests/test_upgrade_cli.py
+    tests/test_bundle_freshness.py tests/test_packaged_cli.py -q passed with 30
+    tests. uv run pytest tests/test_runtime_adapter_registry.py
+    tests/test_runtime_adapters.py -q passed with 80 tests. uv run
+    scripts/validate_lifecycle_adapters.py reported lifecycle adapter metadata
+    ok. python3 -m py_compile scripts/validate_app_home_contract.py
+    scripts/agentera_upgrade.py scripts/agentera scripts/install_root.py
+    completed with no output. Manual upgrade checks showed app home, managed app
+    root, and user data root in text output; JSON output exposes appHome and no
+    installRoot.
+  next: >
+    Leave Task 1 pending for conductor evaluation; do not start Task 2 or mark
+    the plan complete.
+  context:
+    intent: final app-home migration contract retry
+    constraints: no commit, tag, push, publish, installed bundle refresh,
+      .agentera/vision.yaml edit, objective-state edit, or plan completion edit
+    scope: upgrade public output, runtime adapter message, app-home validator,
+      focused tests
+
+- number: 383
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Closed the Task 1 evaluation misses by updating the authoritative Agentera
+    contract reference to describe AGENTERA_HOME as app home, with home-root
+    user data separated from managed app code under AGENTERA_HOME/app.
+  commit: pending
+  inspiration: >
+    Evaluation found that agent-facing contract.md still used install-root
+    wording and that the release validator did not inspect that surface or
+    representative CLI output.
+  discovered: >
+    Representative hej output from the live repository can include active plan
+    acceptance text, so the validator now probes CLI output from an empty
+    temporary project while keeping AGENTERA_HOME pointed at the app under test.
+  verified: >
+    uv run scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera
+    passed after adding skills/agentera/references/contract.md and CLI output
+    surfaces to the validator. uv run pytest tests/test_app_home_contract.py
+    tests/test_query_cli.py::TestHej tests/test_bundle_freshness.py
+    tests/test_cross_capability.py tests/test_install_root_characterization.py
+    tests/test_install_root_module.py -q passed with 91 tests. python3 -m
+    py_compile scripts/validate_app_home_contract.py scripts/agentera
+    scripts/agentera_upgrade.py scripts/install_root.py completed with no
+    output.
+  next: >
+    Leave Task 1 pending for conductor evaluation; do not start Task 2 or mark
+    the plan complete.
+  context:
+    intent: app-home migration contract retry
+    constraints: no commit, tag, push, publish, installed bundle refresh,
+      .agentera/vision.yaml edit, objective-state edit, or plan completion edit
+    scope: authoritative contract reference, app-home validator, focused tests
+
+- number: 382
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Implemented the Task 1 app-home migration contract across active docs,
+    dispatcher guidance, hej/doctor-facing CLI descriptions, and release
+    validation so the durable Agentera location is described as an app home with
+    user data separated from managed app code.
+  commit: pending
+  inspiration: >
+    Decisions 47, 48, and 50 make app-home terminology a hard 2.3.0 reliability
+    requirement while keeping doctor/upgrade migration mechanics for later plan
+    tasks.
+  discovered: >
+    Existing CLI and prose exposed the durable location as a bundle/install root;
+    focused tests also inherited a real PROFILERA_PROFILE_DIR, so the hej profile
+    tests needed explicit per-test profile state to keep user-data behavior
+    isolated.
+  verified: >
+    uv run scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera
+    passed and reports release-ready app-home terminology. uv run pytest
+    tests/test_app_home_contract.py tests/test_query_cli.py::TestHej
+    tests/test_bundle_freshness.py tests/test_cross_capability.py
+    tests/test_install_root_characterization.py tests/test_install_root_module.py
+    -q passed with 89 tests. python3 -m py_compile scripts/agentera scripts/agentera_upgrade.py
+    scripts/install_root.py scripts/validate_app_home_contract.py completed with
+    no output.
+  next: >
+    Leave Task 1 pending for conductor evaluation. Doctor app/runtime root
+    diagnostics, upgrade-owned migration writes, versioning, publication, tag,
+    push, installed bundle refresh, vision edits, and objective edits remain out
+    of scope.
+  context:
+    intent: app-home migration contract
+    constraints: no commit, tag, push, publish, installed bundle refresh,
+      .agentera/vision.yaml edit, objective-state edit, or plan completion edit
+    scope: README, UPGRADE, vocabulary docs, Agentera dispatcher and hej prose,
+      hej/doctor CLI terminology, app-home validation, focused tests
+
 - number: 381
   timestamp: 2026-05-09
   type: fix
@@ -46,7 +545,7 @@ cycles:
 
 - number: 380
   timestamp: 2026-05-09
-  type: release
+  type: chore
   phase: build
   what: >
     Completed the 2.2.3 release metadata readiness gate by closing the active
@@ -85,7 +584,7 @@ cycles:
 
 - number: 379
   timestamp: 2026-05-09
-  type: release
+  type: chore
   phase: build
   what: >
     Synchronized 2.2.3 release metadata across version surfaces, changelog, docs,
@@ -152,6 +651,41 @@ cycles:
       tests/test_upgrade_cli.py, UPGRADE.md, docs/notes.md,
       .agentera/docs.yaml, .agentera/progress.yaml
 
+- number: 377
+  timestamp: 2026-05-09
+  type: chore
+  phase: build
+  what: >
+    JS install-root contract generation: created
+    scripts/generate_js_install_root_contract.py and ran it with --write to
+    embed the INSTALL_ROOT_CONTRACT export in .opencode/plugins/agentera.js,
+    matching .agentera/install_root_interface_model.yaml.
+  commit: pending
+  inspiration: >
+    Task 3 of the 2.2.3 patch required a generator script that reads the shared
+    install-root interface model YAML fixture and produces a matching JavaScript
+    contract export for the OpenCode runtime adapter.
+  discovered: >
+    re.sub interprets \n escape sequences in string replacement arguments as
+    actual newlines, requiring a lambda callback instead. The generator uses
+    marker comments (BEGIN/END GENERATED) to keep the section idempotent.
+  verified: >
+    uv run scripts/generate_js_install_root_contract.py --write produced the
+    generated JS block, and follow-up review validation confirmed explicit
+    --verify support with uv run scripts/generate_js_install_root_contract.py
+    --verify. uv run pytest tests/test_install_root_interface_model.py
+    tests/test_install_root_module.py tests/test_install_root_characterization.py
+    tests/test_runtime_adapters.py -q previously reported 88 passed; focused
+    review regression coverage now includes the generator --verify path.
+  next: null
+  context:
+    intent: Generate the JavaScript runtime install-root contract from the shared YAML fixture
+    constraints: no publication, tag, push, bundle refresh, commit, vision edit,
+      objective edit, or live install confidence claim
+    scope: scripts/generate_js_install_root_contract.py,
+      .opencode/plugins/agentera.js,
+      .agentera/progress.yaml, .agentera/plan.yaml
+
 - number: 376
   timestamp: 2026-05-09
   type: test
@@ -200,41 +734,6 @@ cycles:
       cost/consent lines, main wiring), TODO.md (resolved [test:2.2.3]),
       .agentera/progress.yaml (this entry), .agentera/plan.yaml (Task 2
       complete)
-
-- number: 377
-  timestamp: 2026-05-09
-  type: chore
-  phase: build
-  what: >
-    JS install-root contract generation: created
-    scripts/generate_js_install_root_contract.py and ran it with --write to
-    embed the INSTALL_ROOT_CONTRACT export in .opencode/plugins/agentera.js,
-    matching .agentera/install_root_interface_model.yaml.
-  commit: pending
-  inspiration: >
-    Task 3 of the 2.2.3 patch required a generator script that reads the shared
-    install-root interface model YAML fixture and produces a matching JavaScript
-    contract export for the OpenCode runtime adapter.
-  discovered: >
-    re.sub interprets \n escape sequences in string replacement arguments as
-    actual newlines, requiring a lambda callback instead. The generator uses
-    marker comments (BEGIN/END GENERATED) to keep the section idempotent.
-  verified: >
-    uv run scripts/generate_js_install_root_contract.py --write produced the
-    generated JS block, and follow-up review validation confirmed explicit
-    --verify support with uv run scripts/generate_js_install_root_contract.py
-    --verify. uv run pytest tests/test_install_root_interface_model.py
-    tests/test_install_root_module.py tests/test_install_root_characterization.py
-    tests/test_runtime_adapters.py -q previously reported 88 passed; focused
-    review regression coverage now includes the generator --verify path.
-  next: null
-  context:
-    intent: Generate the JavaScript runtime install-root contract from the shared YAML fixture
-    constraints: no publication, tag, push, bundle refresh, commit, vision edit,
-      objective edit, or live install confidence claim
-    scope: scripts/generate_js_install_root_contract.py,
-      .opencode/plugins/agentera.js,
-      .agentera/progress.yaml, .agentera/plan.yaml
 
 - number: 375
   timestamp: 2026-05-09 00:00

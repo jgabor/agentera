@@ -200,12 +200,12 @@ def test_upgrade_characterizes_doctor_root_shapes(
     )
 
     cases = [
-        (fresh, "explicit --install-root", "fresh", "managed", []),
-        (stale_missing_marker, "explicit --install-root", "stale", "managed", ["missing_marker"]),
-        (stale_version, "explicit --install-root", "stale", "managed", ["version_mismatch"]),
+        (fresh, "explicit --install-root", "migration_required", "managed", ["migration_required"]),
+        (stale_missing_marker, "explicit --install-root", "migration_required", "managed", ["migration_required", "missing_marker"]),
+        (stale_version, "explicit --install-root", "migration_required", "managed", ["migration_required", "version_mismatch"]),
         (tmp_path / "missing-explicit", "explicit --install-root", "blocked", "missing", ["invalid_install_root"]),
         (tmp_path / "missing-env", "AGENTERA_HOME", "blocked", "missing", ["invalid_install_root"]),
-        (tmp_path / "missing-default", "default durable root", "stale", "missing", ["missing_bundle"]),
+        (tmp_path / "missing-default", "default app home", "stale", "missing", ["missing_bundle"]),
         (file_root, "explicit --install-root", "blocked", "invalid", ["invalid_install_root"]),
         (unmanaged, "explicit --install-root", "blocked", "unmanaged", ["unmanaged_install_root"]),
     ]

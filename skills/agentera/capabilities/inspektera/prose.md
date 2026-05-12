@@ -22,7 +22,7 @@ One file in `.agentera/`, bootstrapped if absent.
 |------|---------|-----------|
 | `HEALTH.md` | Canonical health artifact, stored as `.agentera/health.yaml` unless mapped otherwise. Findings, dimension grades, trajectory. | First audit entry in YAML form. |
 
-Use `skills/agentera/schemas/artifacts/health.yaml` and existing health artifacts as the structure.
+Use `agentera describe --format json` and its `artifact_schemas` entry for `health` to locate the active installed schema; do not search install roots manually. Existing health artifacts provide repository-local examples of the shape.
 
 ### Artifact path resolution
 
@@ -312,7 +312,7 @@ After all agents complete:
 
 ## Step 5: Pre-write self-audit
 
-Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns table). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns table).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):

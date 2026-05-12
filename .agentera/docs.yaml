@@ -1,4 +1,4 @@
-last_audit: 2026-05-09 (2.2.3 release metadata sync and readiness gate)
+last_audit: 2026-05-12 (2.3.0 Task 6 docs and release state alignment retry)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -72,7 +72,7 @@ mapping:
 index:
 - document: README
   path: README.md
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-12'
   status: current
 - document: Python package manifest
   path: pyproject.toml
@@ -80,7 +80,7 @@ index:
   status: current
 - document: Upgrade guide
   path: UPGRADE.md
-  last_updated: '2026-05-09'
+  last_updated: '2026-05-12'
   status: current
 - document: CLAUDE.md
   path: CLAUDE.md
@@ -96,15 +96,15 @@ index:
   status: current
 - document: Progress
   path: .agentera/progress.yaml
-  last_updated: '2026-05-09'
+  last_updated: '2026-05-12'
   status: current
 - document: TODO
   path: TODO.md
-  last_updated: '2026-05-09'
+  last_updated: '2026-05-12'
   status: current
 - document: Changelog
   path: CHANGELOG.md
-  last_updated: '2026-05-09'
+  last_updated: '2026-05-12'
   status: current
 - document: Health
   path: .agentera/health.yaml
@@ -116,11 +116,11 @@ index:
   status: current
 - document: DOCS
   path: .agentera/docs.yaml
-  last_updated: '2026-05-09'
+  last_updated: '2026-05-12'
   status: current
 - document: Vocabulary
   path: docs/vocabulary.md
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-12'
   status: current
 - document: Gap analysis
   path: .agentera/gap-analysis-2026-05-05.md
@@ -268,7 +268,7 @@ index:
   status: current
 - document: Agentera skill dispatcher
   path: skills/agentera/SKILL.md
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-12'
   status: current
 - document: Agentera protocol
   path: skills/agentera/protocol.yaml
@@ -304,7 +304,7 @@ index:
   status: current
 - document: Test suite
   path: tests/
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-12'
   status: current
 - document: RuntimeAdapter registry tests
   path: tests/test_runtime_adapter_registry.py
@@ -342,8 +342,70 @@ coverage:
   documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: '2.2.3 release-readiness validation passed locally: focused package/version tests reported 12 passed, non-live host smoke passed, uv run pytest -q reported 824 passed, docs JSON parsed 67 current entries, and git diff --check passed. Opt-in live smoke remains the prior approved evidence with Claude Code skipped for expected auth/subscription access; no commit, tag, push, publication, package update, installed bundle refresh, vision edit, or objective edit was performed.'
+  tests: '2.3.0 Task 6 focused verification passed locally: uv run pytest tests/test_packaged_cli.py tests/test_query_cli.py::TestDescribeIntrospection tests/test_self_audit.py -q reported 26 passed after aligning the packaged app marker expectation with $AGENTERA_HOME/app; uv run scripts/validate_capability.py skills/agentera/capabilities/hej passed; uv run scripts/agentera lint --artifact PROGRESS.md --text <Task 6 retry evidence> --strict passed; docs and TODO queries reported current downstream state. Advisory TODO lint still reports full-file verbosity because TODO.md keeps a large historical Resolved section. The dirty .agentera/decisions.yaml diff is pre-existing Decision 50 logging and Decision 40 compaction source context from earlier work, not a Task 6 edit; Task 6 only reflected Decisions 47/48/50 in downstream docs and artifacts. No commit, tag, push, publication, package update, installed app refresh, vision edit, objective edit, decision-record edit, or Task 6 plan completion mark was performed.'
 audit_log:
+- date: '2026-05-12'
+  label: 2.3.0 Task 6 decision-record boundary retry
+  findings:
+  - type: checked
+    description: >
+      The `.agentera/decisions.yaml` worktree diff is explicitly treated as
+      pre-existing source context from earlier Resonera Decision 50 logging and
+      Decision 40 compaction, not as Task 6 output. Task 6 did not edit the
+      decision file and only reflected Decisions 47, 48, and 50 in downstream
+      docs, TODO, docs state, capability prose, and focused tests.
+    resolution: noted
+    severity: info
+  - type: checked
+    description: >
+      Focused retry verification queried docs, TODO, and progress state after the
+      boundary clarification and reran the Task 6 regression suite; Task 6 remains
+      pending for conductor evaluation.
+    resolution: fixed
+    severity: info
+- date: '2026-05-12'
+  label: 2.3.0 Task 6 docs and release state alignment
+  findings:
+  - type: checked
+    description: >
+      README, UPGRADE, Agentera dispatcher guidance, hej capability prose,
+      vocabulary guidance, changelog, TODO, and docs state now describe 2.3.0
+      as the focused Decisions 47/48/50 reliability release: app-home
+      migration, `agentera lint`, installed schema/helper discovery, and
+      app/runtime root diagnostics.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      The included 2.3.0 reliability TODOs for app-home migration, schema
+      discovery, split-root diagnostics, and self-audit helper exposure are
+      resolved; Profilera corpus parity remains open and explicitly retargeted
+      beyond 2.3.0 by Decision 50.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Focused verification passed with packaged CLI, describe introspection,
+      self-audit, and hej capability validation; the known stale packaged
+      app-home marker expectation was aligned to
+      `$AGENTERA_HOME/app/.agentera-bundle.json` without running broad Task 8
+      validation.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Advisory TODO lint still reports verbosity because TODO.md includes the
+      large historical Resolved section; this is not expanded in Task 6 to avoid
+      changing compaction behavior or broad release validation scope.
+    resolution: noted
+    severity: info
+  - type: checked
+    description: >
+      No historical decision records, plan completion status, version bump,
+      release tag, push, publication, package-manager install/update, installed
+      app refresh, vision state, or objective state were changed.
+    resolution: noted
+    severity: info
 - date: '2026-05-09'
   label: 2.2.3 release metadata sync and readiness validation
   findings:

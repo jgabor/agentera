@@ -22,7 +22,7 @@ One index file; writes individual doc files across the project.
 |----------|---------|-----------|
 | `DOCS.md` | Canonical documentation contract, stored as `.agentera/docs.yaml` unless mapped otherwise. Conventions, artifact mapping, and documentation index. | Created on first dokumentera run. |
 
-Use `skills/agentera/schemas/artifacts/docs.yaml` and the repository's existing `.agentera/docs.yaml` shape as the structure. Individual documentation files are written to their mapped locations.
+Use `agentera describe --format json` and its `artifact_schemas` entry for `docs` to locate the active installed schema; do not search install roots manually. The repository's existing `.agentera/docs.yaml` shape provides the local structure. Individual documentation files are written to their mapped locations.
 
 ### Artifact path resolution
 
@@ -118,7 +118,7 @@ If artifacts exist at root but mapping places them elsewhere:
 
 ### Step 4: Pre-write self-audit
 
-Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -158,7 +158,7 @@ Present draft for approval before writing.
 
 ### Step 3: Pre-write self-audit
 
-Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -215,7 +215,7 @@ Present drafts for approval.
 
 ### Step 4: Pre-write self-audit
 
-Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -273,7 +273,7 @@ By severity: ⇶ critical (VT5, causes user errors), ⇉ warning (VT6, causes co
 
 ### Step 5: Pre-write self-audit
 
-Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):

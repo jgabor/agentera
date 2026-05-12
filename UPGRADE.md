@@ -34,9 +34,9 @@ uvx agentera upgrade --project /path/to/project --dry-run
 uvx agentera upgrade --project /path/to/project --yes --update-packages
 ```
 
-This command installs or refreshes a durable Agentera bundle at
-`~/.agents/agentera` before it wires runtime config. Runtime config should not
-point at uv's disposable tool cache.
+This command installs or refreshes the managed Agentera app under the Agentera
+app home before it wires runtime config. Runtime config should not point at uv's
+disposable tool cache.
 
 `npx skills update` alone refreshes skill files but does not migrate project
 artifacts or runtime config. Agentera v2.0.2 keeps a legacy `/hej` bridge so old
@@ -44,24 +44,28 @@ entry points can hand users to the command above, but the command above is the
 complete upgrade path. With `--update-packages`, it removes package-managed v1
 skill entries and installs `/agentera`.
 
-### Durable bundle refresh
+### Managed app refresh
 
 `codex plugin marketplace upgrade`, `copilot plugin marketplace upgrade`, and
 `npx skills update -g -y` refresh package-managed surfaces. They do not
-guarantee that the durable suite bundle under `AGENTERA_HOME` has the latest
-`scripts/agentera` CLI. Install-root semantics are centralized in
+guarantee that the managed app under `AGENTERA_HOME` has the latest
+`scripts/agentera` CLI. App-home semantics are centralized in
 `scripts/install_root.py`: it defines AGENTERA_HOME precedence, the default
-durable root, managed/stale/unmanaged install-root states, and read-only
+app home, managed/stale/unmanaged states, and read-only
 diagnostics.
 
 Bare `/agentera` owns this recovery path. When the installed CLI is missing
 `hej`, fails before command discovery, has an outdated `.agentera-bundle.json`
 version, or otherwise fails the install status contract, it should show the
-bundle-only dry run for the resolved install root:
+app refresh dry run for the resolved app home:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --dry-run
 ```
+
+`--only bundle` is the current compatibility selector for the managed app refresh
+phase. The durable location is still the app home, and managed app code is still
+installed under `$AGENTERA_HOME/app`.
 
 From a current local clone, inspect the same read-only self-check with:
 
@@ -69,24 +73,24 @@ From a current local clone, inspect the same read-only self-check with:
 uv run scripts/agentera doctor --install-root "$AGENTERA_HOME" --json
 ```
 
-Only after explicit approval for that same root should it apply:
+Only after explicit approval for that same app home should it apply:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --yes
 ```
 
-The apply command refreshes the durable bundle only. It does not run package
+The apply command refreshes the managed app only. It does not run package
 updates, artifact migration, runtime config rewrites, or cleanup phases.
 Afterward, retry:
 
 ```bash
-uv run "$AGENTERA_HOME/scripts/agentera" hej
+uv run "$AGENTERA_HOME/app/scripts/agentera" hej
 ```
 
-If `AGENTERA_HOME` is unset, use the shared Module's default durable root
-`~/.agents/agentera`. If it points at a missing path, a file, or an unmanaged
+If `AGENTERA_HOME` is unset, use the shared app-home contract's default platform
+data home. If it points at a missing path, a file, or an unmanaged
 directory, do not overwrite it silently; fix/unset `AGENTERA_HOME`, choose a
-managed `--install-root`, or intentionally use the broader upgrade flow with
+managed app home, or intentionally use the broader upgrade flow with
 force guidance.
 
 ### Local clone
@@ -103,9 +107,9 @@ Apply local, idempotent upgrade actions:
 uv run scripts/agentera upgrade --project /path/to/project --yes
 ```
 
-The command migrates v1 project artifacts, installs or refreshes the durable
-bundle when needed, configures selected runtime surfaces, removes fixable
-outdated v1 runtime artifacts, and runs a postflight setup doctor. Re-running it after a
+The command migrates v1 project artifacts, installs or refreshes the managed app
+when needed, configures selected runtime surfaces, removes fixable outdated v1
+runtime artifacts, and runs a postflight setup doctor. Re-running it after a
 successful apply should report `noop`.
 
 External package updates are deliberately opt-in because they run `npx` and may touch global runtime installs. The package phase removes legacy v1 skill entries and installs the active `/agentera` skill:

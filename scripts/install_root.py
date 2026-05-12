@@ -13,6 +13,8 @@ diagnostic message for humans with ``format_diagnostic``.
 from __future__ import annotations
 
 import json
+import os
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Mapping
@@ -35,7 +37,7 @@ MANAGED_EVIDENCE = tuple(dict.fromkeys((*SETUP_EVIDENCE, *BUNDLE_EVIDENCE)))
 SOURCE_LABELS = {
     "explicit": "explicit --install-root",
     "environment": "AGENTERA_HOME",
-    "default": "default durable root",
+    "default": "default app home",
 }
 
 
@@ -80,7 +82,20 @@ def resolve_candidate(
     default = env.get("AGENTERA_DEFAULT_INSTALL_ROOT")
     if default:
         return Path(default).expanduser().resolve(), "default"
-    return (home.expanduser().resolve() / ".agents" / "agentera").resolve(), "default"
+    return _default_app_home(env, home).resolve(), "default"
+
+
+def _default_app_home(env: Mapping[str, str], home: Path) -> Path:
+    """Return the platform data-home default for the Agentera app home."""
+    if sys.platform == "darwin":
+        return home.expanduser() / "Library" / "Application Support" / "agentera"
+    if os.name == "nt":
+        appdata = env.get("APPDATA")
+        base = Path(appdata).expanduser() if appdata else home.expanduser() / "AppData" / "Roaming"
+        return base / "agentera"
+    xdg = env.get("XDG_DATA_HOME")
+    base = Path(xdg).expanduser() if xdg else home.expanduser() / ".local" / "share"
+    return base / "agentera"
 
 
 def classify_resolved_root(
@@ -107,7 +122,7 @@ def classify_resolved_root(
                 Diagnostic(
                     "install_root.missing_default_root",
                     "warning",
-                    "default durable root is missing and may be created only by a confirmed install or refresh",
+                    "default app home is missing and may be created only by a confirmed install or refresh",
                     {"path": str(root), "source": source_label},
                 ),
                 expected_version=expected,

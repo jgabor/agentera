@@ -253,10 +253,10 @@ def test_routine_capability_guidance_uses_top_level_state_commands():
     assert "query progress" not in realisera
     assert "scripts/agentera experiments" in optimera
     assert "query experiments" not in optimera
-    assert 'uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej' in hej
-    assert "installed Agentera bundle is stale" in hej
+    assert 'uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej' in hej
+    assert "installed Agentera app is stale" in hej
     assert "advanced/custom inspection only" in hej
-    assert "Do not preflight bundle health" in hej
+    assert "Do not preflight app health" in hej
     assert "Do not run separate v1 artifact or PROFILE.md checks" in hej
 
 
@@ -284,8 +284,8 @@ def test_master_bundle_health_gate_is_single_call():
     text = SKILL_MD_PATH.read_text(encoding="utf-8")
 
     assert "Single-call installed CLI gate" in text
-    assert "Resolve `RESOLVED_AGENTERA_HOME` with the install-root precedence" in text
-    assert "otherwise `$HOME/.agents/agentera`" in text
+    assert "Resolve `RESOLVED_AGENTERA_HOME` with the app-home precedence" in text
+    assert "otherwise the platform data home" in text
     assert "Do not run `glob`, `grep`, `read`" in text
     assert "scripts/install_root.py`, `registry.json`" in text
     assert "If the command exits successfully" in text

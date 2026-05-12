@@ -49,7 +49,7 @@ records:
       environment_exports:
         - CLAUDE_PLUGIN_ROOT
       write_safety_labels:
-        - Claude Code plugin installs expose the bundle root without local config writes
+        - Claude Code plugin installs expose the app home without local config writes
     diagnostics:
       check_names:
         - CLAUDE_PLUGIN_ROOT
@@ -70,7 +70,7 @@ records:
       parity_claims:
         - Claude Code uses native plugin and hook surfaces.
       install_claims:
-        - Claude Code plugin installs expose the bundle root without local config writes.
+        - Claude Code plugin installs expose the app home without local config writes.
       known_drifts:
         - Claude lifecycle behavior is validated through native hook files, not lifecycle metadata.
   - identity:

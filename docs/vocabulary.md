@@ -16,7 +16,7 @@ included when they shape cross-suite usage.
 | `skills/agentera/capability_schema_contract.yaml` | Capability schema structure, required groups, priorities, and primitive-reference fields. |
 | `skills/agentera/schemas/artifacts/*.yaml` | Artifact field grammar, status values, path contracts, and validation rules. |
 | `references/artifacts/artifact-registry-interface-model.yaml` | Artifact identity facts: `artifact_id`, display name, default path, producers, consumers, type, scope. |
-| `skills/agentera/SKILL.md` | Bundle dispatcher, routing model, CLI-first state access, installed-bundle status checks, and safety rails. |
+| `skills/agentera/SKILL.md` | Agentera skill dispatcher, routing model, CLI-first state access, installed-app status checks, and safety rails. |
 | `skills/agentera/capabilities/*/prose.md` | Capability behavior, workflow grammar, step markers, and cross-capability boundaries. |
 | `scripts/agentera` and `scripts/agentera_upgrade.py` | CLI-visible command labels, upgrade output, and doctor diagnostics. |
 | `README.md`, `UPGRADE.md`, `DESIGN.md`, `.agentera/*.yaml` | User-facing phrasing, design vocabulary, and current project-state examples. |
@@ -26,14 +26,14 @@ included when they shape cross-suite usage.
 | Rule | Use | Avoid |
 | --- | --- | --- |
 | Internal workflows are capabilities. | `capability`, `twelve capabilities`, `capability prose`, `capability schemas` | Calling hej/realisera/etc. standalone skills, except in v1 history. |
-| The runtime surface is a skill. | `bundled skill`, `Agentera skill`, `single installed bundle` | `twelve-skill suite` for v2 behavior. |
+| The runtime surface is a skill. | `bundled skill`, `Agentera skill`, `single installed Agentera app` | `twelve-skill suite` for v2 behavior. |
 | `/agentera` is the main invocation. | `/agentera`, `$agentera` for Codex-specific docs | `/hej` except as a legacy bridge. |
 | The CLI source and rendered dashboard are different. | `agentera hej` source data, `Hej dashboard` rendered briefing | Treating raw CLI labels as the user-facing dashboard. |
 | Routine state uses flat commands. | `agentera plan`, `agentera docs`, `agentera health` | `agentera query plan` for routine state. |
 | `query` is advanced access. | `agentera query --list-artifacts`, `agentera query <artifact>` | Calling it the normal state interface. |
 | Canonical artifact names are identifiers. | `VISION.md` maps to `.agentera/vision.yaml` | Assuming display names are literal paths. |
 | Exit signals are fixed. | `complete`, `flagged`, `stuck`, `waiting` | `blocked`, `partial`, `escalated` as exit signals. |
-| Current-state language names the object. | `installed bundle is stale`, `artifacts are current`, `plan-level current-state check` | Bare `freshness` in new docs. |
+| Current-state language names the object. | `installed Agentera app is stale`, `artifacts are current`, `plan-level current-state check` | Bare `freshness` in new docs. |
 | Checkpoint is Git-only. | `pre-dispatch checkpoint commit` | Non-Git `checkpoint` in new docs. |
 
 ## Plain-language rule
@@ -50,7 +50,7 @@ second:
 | Use | Avoid |
 | --- | --- |
 | `final state sync, the plan-level freshness checkpoint` | Bare `freshness checkpoint` |
-| `installed Agentera bundle is stale` | `bundle freshness gap` in user-facing diagnostics |
+| `installed Agentera app is stale` | `bundle freshness gap` in user-facing diagnostics |
 | `v1 migration check` | Bare `upgrade guard` in onboarding or recovery text |
 | `checkpoint commit` | Bare `checkpoint` |
 
@@ -273,7 +273,7 @@ records the migration rationale, validation path, and compatibility impact.
 | `gate` | Hard pass/fail boundaries, especially `behavioral verification gate` or regression pass/fail decisions. | Gate remains useful when a failed check must stop the workflow. |
 | `guard` | Existing code identifiers, historical text, or conventional phrases where changing the word would imply behavior or API migration. Prefer replacement wording in current prose. | Compatibility and searchability can outweigh prose cleanup in stable surfaces. |
 | `drift` | Historical entries, test fixture names, version-drift/package-drift diagnostics, and deliberate compatibility labels where `drift` is already a stable concept. Prefer `mismatch` or `out of sync` for new user-facing prose. | Some existing diagnostics and tests use drift as a compatibility signal. |
-| `fresh`, `stale`, `fresh project` | Plain English state descriptions when they are natural user wording, especially `fresh project` versus returning project, or `stale installed bundle`. | Decision 44 deprecates `freshness` as protocol jargon, not ordinary adjectives. |
+| `fresh`, `stale`, `fresh project` | Plain English state descriptions when they are natural user wording, especially `fresh project` versus returning project, or `installed Agentera app is stale`. | Decision 44 deprecates `freshness` as protocol jargon, not ordinary adjectives. |
 
 ### Protected compatibility
 
@@ -299,7 +299,7 @@ records the migration rationale, validation path, and compatibility impact.
 | Decision gate | Explicit condition-based branch before proceeding. | Optimera keep/discard decision. |
 | Exit-early stop condition | Stop condition when work is already complete or unnecessary. | Docs current, no stale work found. |
 | Behavioral verification gate | Realisera check that behavior was verified against real project state. | Tests, builds, or manual verification. |
-| Pre-write self-audit | Prose check for verbosity mismatch, abstraction creep, and filler accumulation. | `scripts/self_audit.py` implements the checks. |
+| Pre-write self-audit | Prose check for verbosity mismatch, abstraction creep, and filler accumulation. | `agentera lint --artifact <ARTIFACT>` exposes the checks through the CLI. |
 | Plan-completion sweep | Realisera cleanup when plan tasks finish. | Progress rollup, changelog, TODO, health cross-reference, archive. |
 | Worktree dispatch | Isolated implementation by a subagent in a git worktree. | Realisera and optimera can use it. |
 | Stale-base awareness | Prevent worktrees from branching from old `origin/main` or stale HEAD. | Use checkpoint commits before dispatch. |
@@ -349,17 +349,19 @@ not add precision:
 
 | Term | Definition |
 | --- | --- |
-| Durable bundle | Internal phrase for the installed Agentera bundle root containing skills, scripts, hooks, manifests, docs, and `.agentera-bundle.json`. In user-facing text, say `installed Agentera bundle`. |
-| `AGENTERA_HOME` | Environment variable pointing at the durable Agentera install root. |
-| Default durable root | `$HOME/.agents/agentera` when `AGENTERA_HOME` is unset. |
-| Install root | The resolved bundle root. Its classification is owned by `scripts/install_root.py`. |
+| App home | Durable Agentera home named by `AGENTERA_HOME`; user state remains at this home root. |
+| Managed app root | Agentera-managed app code under `$AGENTERA_HOME/app`, separate from user state. |
+| User data root | The `AGENTERA_HOME` root that keeps `PROFILE.md`, `USAGE.md`, history, and intermediate corpus data. |
+| `AGENTERA_HOME` | Environment variable pointing at the Agentera app home. |
+| Default app home | Platform data home for Agentera when `AGENTERA_HOME` is unset. |
+| Install root | Compatibility flag wording for existing CLI options; user-facing descriptions should say app home. |
 | Managed root | A root Agentera owns and may refresh after preview and approval. |
 | Unmanaged root | A directory Agentera must not overwrite silently. |
 | Missing default root | Stale and previewable. Agentera can show a dry-run refresh. |
 | Missing explicit root | Blocked when provided through `AGENTERA_HOME` or explicit `--install-root`. |
-| Package refresh | Package-manager or marketplace update. It does not prove the installed bundle is current. |
-| Bundle refresh | Same-root `agentera upgrade --only bundle` flow that updates the durable bundle. In user-facing text, say `update installed bundle`. |
-| Dry-run | Preview mode. Required before upgrade or bundle refresh writes. |
+| Package refresh | Package-manager or marketplace update. It does not prove the managed app is current. |
+| App refresh | Same-home `agentera upgrade --only bundle` flow that updates the managed app. |
+| Dry-run | Preview mode. Required before upgrade or managed app refresh writes. |
 | `--yes` | Explicit apply flag after preview and approval. |
 | Postflight doctor | Setup validation after upgrade apply. |
 | Package-update opt-in | External package manager changes require `--update-packages`. |
@@ -371,12 +373,12 @@ not add precision:
 Canonical runtime names are Claude Code, OpenCode, Copilot CLI, and Codex CLI.
 
 CLI-visible doctor labels to preserve: `Agentera doctor`,
-`status:`, `expected version:`, `install root:`, `install root source:`,
+`status:`, `expected version:`, `app home:`, `app home source:`,
 `root status:`, `marker version:`, `missing commands:`, `dry run:`,
 `apply after approval:`, `approval phrase:`, `retry:`, and `recovery:`.
 
 CLI-visible upgrade labels to preserve: `Agentera upgrade`, `mode:`,
-`status:`, `project:`, `install root:`, phase lines, item lines,
+`status:`, `project:`, `app home:`, `managed app root:`, `user data root:`, phase lines, item lines,
 `run with --yes to apply pending changes`, and `postflight doctor:`.
 
 ## Evaluation and evidence grammar
@@ -445,10 +447,10 @@ schema concept, runtime capability, install state, or user action.
 | --- | --- | --- |
 | Skill | Confuses v1 standalone skills, the v2 bundled skill, and internal workflows. | Use `Agentera skill` for the installed runtime bundle, `v1 skill` for history, and `capability` for v2 workflows. |
 | Contract | Could mean schema structure, artifact shape, protocol primitive, adapter behavior, or product promise. | Use `schema contract`, `artifact schema`, `protocol primitives`, `runtime adapter contract`, or `product promise`. |
-| Status | Different surfaces use different state machines and output labels. | Use `exit status`, `task status`, `bundle status`, `install status`, `docs status`, or `health status`. |
-| Freshness | Sounds like a branded synonym for several normal states: current, stale, synced, or out of date. | Use object-specific state wording such as `artifact is current`, `installed bundle is stale`, `docs are current`, or `plan-level current-state check`. |
+| Status | Different surfaces use different state machines and output labels. | Use `exit status`, `task status`, `installed-app status`, `install status`, `docs status`, or `health status`. |
+| Freshness | Sounds like a branded synonym for several normal states: current, stale, synced, or out of date. | Use object-specific state wording such as `artifact is current`, `installed Agentera app is stale`, `docs are current`, or `plan-level current-state check`. |
 | Checkpoint | In software, can mean commit, savepoint, restore point, model checkpoint, or milestone. | Use `final state sync`, `plan-level current-state check`, `checkpoint commit`, or `pre-dispatch checkpoint commit`. |
-| Stale | The cause and fix differ by object. | Use `stale artifact`, `stale installed bundle`, `stale marker`, or `stale worktree base`. |
+| Stale | The cause and fix differ by object. | Use `stale artifact`, `installed Agentera app is stale`, `stale marker`, or `stale worktree base`. |
 | Phase | Conflicts with numbered workflow steps. | Use `phase` only for protocol lifecycle: `envision`, `deliberate`, `plan`, `build`, `audit`. Use `step` for capability-local actions. |
 | Objective state | Clear only inside optimera. | First mention `optimization objective state`; then `objective state` is fine in optimera context. Do not modify outside optimera or explicit user instruction. |
 | Support | Could mean theoretical host capability, shipped Agentera wiring, or verified behavior. | Use `host capability`, `Agentera adapter support`, or `tested support`. |
@@ -460,9 +462,9 @@ High-risk diagnostic rewrites:
 
 | Avoid in diagnostics | Use instead |
 | --- | --- |
-| `bundle freshness gap detected` | `installed Agentera bundle is stale` |
+| `bundle freshness gap detected` | `installed Agentera app is stale` |
 | `bundle freshness guard failed` | `install status check failed` |
-| `bundle refresh required` | `update installed bundle` |
+| `bundle refresh required` | `update managed app` |
 | `upgrade guard triggered` | `v1 migration check found legacy files` |
 | `stale marker` | `missing or outdated version marker` |
 | `artifact freshness failed` | `artifact is stale` or `artifact needs sync` |
@@ -473,7 +475,7 @@ High-signal source surfaces for this vocabulary:
 
 | Source | Vocabulary surface |
 | --- | --- |
-| `skills/agentera/SKILL.md` | Dispatcher, routing layers, CLI-first access, installed-bundle status check, and v1 migration check. |
+| `skills/agentera/SKILL.md` | Dispatcher, routing layers, CLI-first access, installed-app status check, and v1 migration check. |
 | `skills/agentera/protocol.yaml` | Protocol primitives, glyphs, phases, visual tokens, exit signals. |
 | `skills/agentera/capability_schema_contract.yaml` | Schema groups, priorities, stable IDs, primitive-reference fields. |
 | `skills/agentera/capabilities/*/prose.md` | Workflow grammar, capability roles, safety rails, exit marker forms. |
@@ -494,4 +496,4 @@ High-signal source surfaces for this vocabulary:
 | `.agentera/archive/*.md` | Historical plan-level current-state checks and staleness rationale. |
 | `.agentera/optimera/*` | Objective, experiment, harness, metric, and keep/discard examples. |
 | `fixtures/semantic/*.md` | Semantic eval fixture, oracle, and Hej dashboard constraints. |
-| `tests/` | Regression evidence for CLI labels, installed-bundle status, routing, exits, and schema contracts. |
+| `tests/` | Regression evidence for CLI labels, installed-app status, routing, exits, and schema contracts. |

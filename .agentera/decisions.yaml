@@ -1,35 +1,4 @@
 decisions:
-- number: 40
-  date: '2026-05-04'
-  question: 'How should the four open questions from the ROADMAP be resolved: artifact format, master SKILL.md size, backward
-    compatibility, and sub-module naming?'
-  context: Decision 39 committed to Agentera 2.0. ROADMAP.md listed four open questions blocking Phase 1. A token-profile
-    experiment measured YAML vs JSON vs JSONL for representative PROGRESS entries.
-  alternatives:
-  - name: YAML
-    status: chosen
-    description: human-glanceable, smallest bytes for single entries. Token experiment showed ~18% more tokens than JSONL
-      for 10-entry files, but query CLI abstracts the format so raw tokens never enter agent context. Chosen for artifacts.
-  - name: JSONL
-    status: rejected
-    description: 'most compact for multi-entry files, append-friendly. Rejected: marginal token savings irrelevant when CLI
-      is the interface.'
-  - name: JSON
-    status: rejected
-    description: 'best schema validation tooling (JSON Schema universal). Rejected: larger than YAML for single entries, no
-      meaningful advantage when CLI abstracts access.'
-  choice: "YAML for all agent-facing artifacts. No backward compatibility with v1 (migration tool handles conversion). Sub-modules\
-    \ called \"capabilities.\" Master SKILL.md size deferred to Phase 1 (measure after hej port).\n  **Reasoning**: The token\
-    \ experiment proved format choice doesn't affect agent-visible token consumption because the query CLI is the seam. YAML\
-    \ wins on human-glanceability and smallest bytes for typical single-entry reads. No backward compat is consistent with\
-    \ D39's big bang. \"Capabilities\" aligns with SKILL.md vocabulary and distinguishes from the v1 \"skills\" concept.\n\
-    \  **Confidence**: firm\n  **Feeds into**: ROADMAP.md"
-  reasoning: "The token experiment proved format choice doesn't affect agent-visible token consumption because the query CLI\
-    \ is the seam. YAML wins on human-glanceability and smallest bytes for typical single-entry reads. No backward compat\
-    \ is consistent with D39's big bang. \"Capabilities\" aligns with SKILL.md vocabulary and distinguishes from the v1 \"\
-    skills\" concept.\n  **Confidence**: firm\n  **Feeds into**: ROADMAP.md"
-  confidence: provisional
-  feeds_into: ROADMAP.md
 - number: 41
   date: '2026-05-04'
   question: What did the Agentera 2.0 token benchmark prove against the revised 10% reduction target?
@@ -328,7 +297,35 @@ decisions:
     the single prefix tag keeps `TODO.md` readable and deterministic for `agentera todo`, compaction, and release queries.
   confidence: firm
   feeds_into: TODO.md, skills/agentera/references/contract.md, skills/agentera/schemas/artifacts/todo.yaml, scripts/agentera, hooks/compaction.py, tests
+- number: 50
+  date: '2026-05-12'
+  question: What should Agentera 2.3.0 include?
+  context: >-
+    2.2.3 release prep is complete and no open 2.2.x TODOs remain. Open degraded items cluster around installed capability
+    reliability: self-audit helper exposure, schema discovery, and split install roots. Decision 47 requires app-home migration;
+    Decision 48 says expose self-audit via `agentera lint` without merging every script into the CLI.
+  alternatives:
+  - name: Focused reliability release
+    status: chosen
+    description: Anchor 2.3.0 on app-home migration, `agentera lint`, and installed-capability diagnostics.
+  - name: Patch-only reliability
+    status: rejected
+    description: Fix helper/schema/root defects without app-home migration, leaving the root ambiguity intact.
+  - name: Broad capability expansion
+    status: rejected
+    description: Include Profilera corpus parity too, increasing validation scope before the app surface is coherent.
+  choice: >-
+    Make 2.3.0 a focused reliability release. Include Decision 47 app-home migration as a hard requirement; implement Decision
+    48 first through `agentera lint`; resolve the degraded helper exposure/removal, schema discovery, and split-root doctor
+    checks. Defer Profilera corpus parity and broad script namespace promotion beyond `lint`.
+  reasoning: >-
+    The highest-friction failures share one cause: agents cannot confidently locate the active app, helper scripts, schemas,
+    and install roots. App-home migration gives those surfaces one durable model, while `lint` solves the immediate self-audit
+    ergonomics without turning the CLI into a script dump.
+  confidence: firm
+  feeds_into: TODO.md, .agentera/plan.yaml, scripts/install_root.py, scripts/agentera_upgrade.py, scripts/agentera, README.md, UPGRADE.md, capability prose, tests
 archive:
+- 'Decision 40 (2026-05-04): [YAML agent artifacts] — Use YAML, no v1 compatibility, and call sub-modules capabilities.'
 - 'Decision 39 (2026-05-04): [Single bundled v2 skill] — Agentera 2.0 collapsed 12 skills into one `/agentera` entry point with capability schemas and CLI-backed state.'
 - 'Decision 38 (2026-04-30): [Separate semantic eval surface] — Hej semantic fixtures assert output facts and artifact-derived next actions.'
 - 'Decision 37 (2026-04-29): [Fail-open artifact hook] — Unhandled validation-hook crashes log and allow writes.'

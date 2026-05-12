@@ -25,7 +25,7 @@ Four artifacts, bootstrapped if absent. TODO.md and CHANGELOG.md stay at project
 | `CHANGELOG.md` | Public change history. | `# Changelog\n\n## [Unreleased]\n` |
 | `PROGRESS.md` | Canonical progress artifact. Operational cycle log. | First cycle entry in `.agentera/progress.yaml` by default. |
 
-Use `skills/agentera/schemas/artifacts/vision.yaml` and `skills/agentera/schemas/artifacts/progress.yaml` for the agent-facing artifact structure.
+Use `agentera describe --format json` and its `artifact_schemas` entries for `vision` and `progress` to locate the active installed schemas; do not search install roots manually.
 
 ### Artifact path resolution
 
@@ -253,7 +253,7 @@ If the current task is a version bump: read DOCS.md for the `versioning` section
 
 ### Step 8: Pre-write self-audit
 
-Pre-write self-audit: check verbosity overruns, abstraction creep, and filler accumulation. See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns, abstraction creep, and filler accumulation.
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 ### Step 9: Log

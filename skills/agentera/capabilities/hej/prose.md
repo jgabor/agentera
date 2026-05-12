@@ -21,47 +21,49 @@ For returning projects, run one composite command before any individual state
 access:
 
 ```bash
-uv run "$RESOLVED_AGENTERA_HOME/scripts/agentera" hej
+uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej
 ```
 
 Use that output to render the dashboard and select the concrete next action. Do
 not relay raw CLI lines as the user-facing briefing. Source labels such as
-`bundle:`, `mode:`, `profile:`, `v1_migration:`, `health:`, `issues:`, `plan:`,
-`objective:`, `attention:`, `next_action:`, and `source_contract:` are parsing
-aids, not dashboard lines. Do not run `agentera plan`, `agentera progress`,
-`agentera health`, `agentera todo`, `agentera decisions`, or `agentera objective`
-as part of normal hej briefing assembly. Do not read raw
+`mode:`, `profile:`, `v1_migration:`, `health:`, `issues:`, `plan:`,
+`objective:`, `attention:`, `next_action:`, `source_contract:`, and the
+compatibility `bundle:` installed-app status object are parsing aids, not
+dashboard lines. Do not run `agentera plan`, `agentera progress`, `agentera
+health`, `agentera todo`, `agentera decisions`, or `agentera objective` as part
+of normal hej briefing assembly. Do not read raw
 `.agentera/*.yaml` files for normal hej orientation. If a normal dashboard field
 is missing from `agentera hej`, fix or extend the composite CLI contract instead
 of adding routine fallback reads. Use top-level fallback commands only when
 `agentera hej` fails or explicitly reports fallback-only recovery.
 
-Resolve `RESOLVED_AGENTERA_HOME` with the install-root precedence `AGENTERA_HOME`
-when set, otherwise the default durable root `$HOME/.agents/agentera`, then run
-the installed command once. Do not preflight bundle health with `glob`, `grep`,
+Resolve `RESOLVED_AGENTERA_HOME` with the app-home precedence `AGENTERA_HOME`
+when set, otherwise the platform data home, then run
+the installed command once. Do not preflight app health with `glob`, `grep`,
 `read`, `ls`, `python`, `doctor`, `--help`, `scripts/install_root.py`,
 `registry.json`, or `.agentera-bundle.json`. If the command exits successfully,
-inspect the CLI-provided `bundle.status`; only `fresh` passes the installed
-Agentera bundle gate for normal briefing. The `bundle` object also carries
-`expectedVersionSource`, repair commands, and approval text. If the installed
-command cannot execute, is stale, missing `hej`, fails before argparse, or
-reports `bundle.status` as blocked/refresh-required, tell the user the installed
-Agentera bundle is stale and preview the repair with `bundle.dryRunCommand` when
-present:
+inspect the CLI-provided `bundle.status` installed-app status object. Only
+`fresh` passes the installed Agentera app gate for normal briefing. The object
+also carries `appHome`, `managedAppRoot`, `userDataRoot`,
+`expectedVersionSource`, `bundle.dryRunCommand`, `bundle.applyCommand`, and
+approval text. If the installed command cannot execute, is stale,
+missing `hej`, fails before argparse, or reports blocked/refresh-required status,
+tell the user the installed Agentera app is stale and preview the repair with the
+CLI-provided dry-run command when present:
 
-Use the exact stale-bundle summary phrase `installed Agentera bundle is stale`.
+Use the exact stale-app summary phrase `installed Agentera app is stale`.
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
 ```
 
-Do not run the matching `bundle.applyCommand` until the user explicitly approves
-the same bundle root, preferably with `approve bundle refresh for
-<resolved-root>`. After apply, retry `uv run
-"$RESOLVED_AGENTERA_HOME/scripts/agentera" hej`; do not treat local checkout
-fallback as installed-bundle success. If `AGENTERA_HOME` points at a missing,
+Do not run the matching apply command until the user explicitly approves the
+same app home, preferably with `approve app refresh for <resolved-app-home>`.
+After apply, retry `uv run
+"$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej`; do not treat local checkout
+fallback as installed-app success. If `AGENTERA_HOME` points at a missing,
 invalid, or non-managed root, ask the user to fix/unset it, choose a managed
-root, or explicitly request forced install guidance.
+app home, or explicitly request forced install guidance.
 
 Use `agentera query <artifact-name> --format json|yaml` only for advanced or
 custom artifact inspection when no top-level command serves the needed state.
@@ -89,8 +91,8 @@ VT14, flow arrow VT17, skill glyphs SG1-SG12, exits EX1-EX4, issues SI1-SI4.
 ## Step 0: Detect mode
 
 Run the resolved installed `agentera hej` and use its `mode` field. If the
-`bundle.status` check reports stale or blocked, show the CLI-provided refresh
-preview before normal mode handling.
+installed-app status check reports stale or blocked, show the CLI-provided
+refresh preview before normal mode handling.
 
 - **No artifacts found** → Step 1a (first time on this project)
 - **Artifacts found** → Step 1b (returning to known project)

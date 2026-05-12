@@ -124,8 +124,12 @@ def _classify_root(root: Path, *, source: str = "explicit", expected_version: st
     return _install_root_module().classify_resolved_root(root, source=source, expected_version=expected_version)
 
 
+def _active_bundle_root(app_home: Path) -> Path:
+    return _doctor_roots(app_home)["active_bundle_root"]
+
+
 def _valid_install_root(root: Path) -> bool:
-    classification = _classify_root(root)
+    classification = _classify_root(_active_bundle_root(root))
     return classification.managed_status == "managed"
 
 
@@ -169,11 +173,25 @@ def _bundle_marker_path(install_root: Path) -> Path:
     return install_root / BUNDLE_MARKER
 
 
-def _bundle_target_is_safe(install_root: Path, *, expected_version: str | None = None) -> bool:
-    if not install_root.exists():
+def _managed_app_root(app_home: Path) -> Path:
+    return app_home / "app"
+
+
+def _legacy_app_home_has_bundle(app_home: Path) -> bool:
+    return _has_bundle_root_evidence(app_home) and not (app_home / ".git").exists()
+
+
+def _bundle_target_is_safe(app_home: Path, *, expected_version: str | None = None) -> bool:
+    if not app_home.exists():
         return True
-    classification = _classify_root(install_root, expected_version=expected_version)
-    return classification.managed_status == "managed"
+    if not app_home.is_dir():
+        return False
+    app_root = _managed_app_root(app_home)
+    if app_root.exists():
+        return _classify_root(app_root, expected_version=expected_version).managed_status == "managed"
+    if _legacy_app_home_has_bundle(app_home):
+        return _classify_root(app_home, expected_version=expected_version).managed_status == "managed"
+    return False
 
 
 def _shell_quote(value: str) -> str:
@@ -208,12 +226,13 @@ def _source_key(root_source: str) -> str:
 
 
 def _probe_bundle_cli(
-    install_root: Path,
+    bundle_root: Path,
     *,
+    app_home: Path,
     project: Path,
     expected_commands: tuple[str, ...],
 ) -> dict[str, Any]:
-    cli = install_root / "scripts" / "agentera"
+    cli = bundle_root / "scripts" / "agentera"
     if not cli.is_file():
         return {
             "ok": False,
@@ -229,7 +248,7 @@ def _probe_bundle_cli(
         result = subprocess.run(
             command,
             cwd=project,
-            env={**os.environ, "AGENTERA_HOME": str(install_root)},
+            env={**os.environ, "AGENTERA_HOME": str(app_home)},
             text=True,
             capture_output=True,
             check=False,
@@ -266,6 +285,50 @@ def _probe_bundle_cli(
     }
 
 
+def _has_bundle_root_evidence(root: Path) -> bool:
+    return (root / "scripts" / "agentera").is_file() and (root / "skills" / "agentera" / "SKILL.md").is_file()
+
+
+def _doctor_roots(app_home: Path) -> dict[str, Path]:
+    managed_app_root = app_home / "app"
+    if _has_bundle_root_evidence(managed_app_root):
+        active_bundle_root = managed_app_root
+    elif managed_app_root.exists():
+        active_bundle_root = managed_app_root
+    elif _has_bundle_root_evidence(app_home):
+        active_bundle_root = app_home
+    else:
+        active_bundle_root = app_home
+    return {
+        "app_home": app_home,
+        "managed_app_root": managed_app_root,
+        "active_bundle_root": active_bundle_root,
+        "skill_root": active_bundle_root / "skills" / "agentera",
+        "runtime_root": ROOT,
+    }
+
+
+def resolve_active_app_model(
+    value: Path | None = None,
+    *,
+    home: Path | None = None,
+    env: dict[str, str] | None = None,
+) -> dict[str, Path | str]:
+    """Return the active app roots used by doctor without running diagnostics."""
+    resolved_home = home or Path.home()
+    app_home, app_home_source = resolve_doctor_install_root(value, home=resolved_home, env=env)
+    roots = _doctor_roots(app_home)
+    return {
+        "appHome": roots["app_home"],
+        "appHomeSource": app_home_source,
+        "managedAppRoot": roots["managed_app_root"],
+        "activeBundleRoot": roots["active_bundle_root"],
+        "authoritativeRoot": roots["managed_app_root"],
+        "skillRoot": roots["skill_root"],
+        "runtimeRoot": roots["runtime_root"],
+    }
+
+
 def build_doctor_status(
     install_root: Path,
     *,
@@ -278,10 +341,17 @@ def build_doctor_status(
     probe_cli: bool = True,
 ) -> dict[str, Any]:
     expected = expected_version or _load_suite_version(source_root) or "unknown"
-    classification = _classify_root(install_root, source=_source_key(root_source), expected_version=expected)
+    roots = _doctor_roots(install_root)
+    active_bundle_root = roots["active_bundle_root"]
+    classification = _classify_root(active_bundle_root, source=_source_key(root_source), expected_version=expected)
     marker_version = classification.current_version
     signals: list[dict[str, Any]] = []
     blocked = False
+    legacy_bundle_root = (
+        active_bundle_root == install_root
+        and _has_bundle_root_evidence(install_root)
+        and not (install_root / ".git").exists()
+    )
 
     if classification.kind == "missing_default":
         root_status = "missing"
@@ -307,7 +377,7 @@ def build_doctor_status(
         signals.append({
             "status": "blocked",
             "kind": "invalid_install_root",
-            "message": f"{root_source} points at a file, not an install root directory",
+            "message": f"{root_source} points at a file, not an app home directory",
         })
     elif classification.kind == "unmanaged_directory":
         root_status = "unmanaged"
@@ -327,6 +397,14 @@ def build_doctor_status(
         })
     else:
         root_status = "managed"
+        if legacy_bundle_root:
+            signals.append({
+                "status": "migration_required",
+                "kind": "migration_required",
+                "message": "managed app code is installed at the app-home root instead of under app/",
+                "legacyBundleRoot": str(install_root),
+                "managedAppRoot": str(roots["managed_app_root"]),
+            })
         reason = classification.diagnostic.evidence.get("reason")
         if classification.kind == "managed_stale" and reason == "missing_marker":
             signals.append({
@@ -344,7 +422,8 @@ def build_doctor_status(
             })
         probe = (
             _probe_bundle_cli(
-                install_root,
+                active_bundle_root,
+                app_home=install_root,
                 project=project,
                 expected_commands=expected_commands,
             )
@@ -391,11 +470,20 @@ def build_doctor_status(
         str(install_root),
         "--yes",
     ]
-    status = "blocked" if blocked else "stale" if signals else "fresh"
+    status = "blocked" if blocked else "migration_required" if any(signal["kind"] == "migration_required" for signal in signals) else "stale" if signals else "fresh"
     return {
         "schemaVersion": "agentera.bundleStatus.v1",
         "status": status,
         "expectedVersion": expected,
+        "appHome": str(install_root),
+        "appHomeSource": root_source,
+        "managedAppRoot": str(roots["managed_app_root"]),
+        "userDataRoot": str(install_root),
+        "activeBundleRoot": str(active_bundle_root),
+        "authoritativeRoot": str(roots["managed_app_root"]),
+        "skillRoot": str(roots["skill_root"]),
+        "runtimeRoot": str(roots["runtime_root"]),
+        "sourceRoot": str(source_root),
         "installRoot": str(install_root),
         "installRootSource": root_source,
         "home": str(home),
@@ -408,10 +496,10 @@ def build_doctor_status(
         "retryCommand": _command_text([
             "uv",
             "run",
-            str(install_root / "scripts" / "agentera"),
+            str(active_bundle_root / "scripts" / "agentera"),
             "hej",
         ]),
-        "approval": f"approve bundle refresh for {install_root}",
+        "approval": f"approve app refresh for {install_root}",
     }
 
 
@@ -441,23 +529,49 @@ def _bundle_rel_paths(source_root: Path) -> list[Path]:
     return sorted(paths)
 
 
-def _copy_bundle_file(source_root: Path, install_root: Path, rel_path: Path) -> None:
+def _copy_bundle_file(source_root: Path, bundle_root: Path, rel_path: Path) -> None:
     source = source_root / rel_path
-    target = install_root / rel_path
+    target = bundle_root / rel_path
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source, target)
 
 
+def _remove_empty_parents(path: Path, stop_at: Path) -> None:
+    current = path.parent
+    while current != stop_at and stop_at in current.parents:
+        try:
+            current.rmdir()
+        except OSError:
+            break
+        current = current.parent
+
+
+def _remove_legacy_bundle_files(app_home: Path, rel_paths: list[Path]) -> int:
+    removed = 0
+    for rel_path in sorted(rel_paths, key=lambda path: len(path.parts), reverse=True):
+        target = app_home / rel_path
+        if target.is_file() or target.is_symlink():
+            target.unlink()
+            removed += 1
+            _remove_empty_parents(target, app_home)
+    marker = _bundle_marker_path(app_home)
+    if marker.is_file() or marker.is_symlink():
+        marker.unlink()
+        removed += 1
+    return removed
+
+
 def plan_bundle_phase(source_root: Path, install_root: Path, *, force: bool) -> dict[str, Any]:
-    if source_root == install_root:
+    app_root = _managed_app_root(install_root)
+    if source_root == install_root or source_root == app_root:
         return _phase(
             "bundle",
             [{
                 "status": "noop",
                 "action": "install-bundle",
                 "source": str(source_root),
-                "target": str(install_root),
-                "message": "running from the selected Agentera install root",
+                "target": str(app_root),
+                "message": "running from the selected Agentera app home",
             }],
         )
 
@@ -481,19 +595,20 @@ def plan_bundle_phase(source_root: Path, install_root: Path, *, force: bool) -> 
                 "status": "blocked",
                 "action": "install-bundle",
                 "source": str(source_root),
-                "target": str(install_root),
-                "message": "target exists but is not an Agentera-managed bundle; use --force or --install-root",
+                "target": str(app_root),
+                "message": "app home exists but is not Agentera-managed; use --force or --install-root",
             }],
         )
 
+    rel_paths = _bundle_rel_paths(source_root)
     changed: list[str] = []
-    for rel_path in _bundle_rel_paths(source_root):
+    for rel_path in rel_paths:
         source = source_root / rel_path
-        target = install_root / rel_path
+        target = app_root / rel_path
         if _sha256(source) != _sha256(target):
             changed.append(str(rel_path))
 
-    marker_missing = not _bundle_marker_path(install_root).is_file()
+    marker_missing = not _bundle_marker_path(app_root).is_file()
     if not changed and not marker_missing:
         status = "noop"
         message = "durable Agentera bundle already matches source"
@@ -501,50 +616,79 @@ def plan_bundle_phase(source_root: Path, install_root: Path, *, force: bool) -> 
         status = "pending"
         message = "will install or refresh the durable Agentera bundle"
 
-    return _phase(
-        "bundle",
-        [{
+    items = [{
             "status": status,
             "action": "install-bundle",
             "source": str(source_root),
-            "target": str(install_root),
-            "fileCount": len(_bundle_rel_paths(source_root)),
+            "target": str(app_root),
+            "appHome": str(install_root),
+            "fileCount": len(rel_paths),
             "changedCount": len(changed),
             "changedPreview": changed[:20],
-            "marker": str(_bundle_marker_path(install_root)),
+            "marker": str(_bundle_marker_path(app_root)),
             "message": message,
-        }],
-    )
+        }]
+    if _legacy_app_home_has_bundle(install_root):
+        legacy_files = [str(path) for path in rel_paths if (install_root / path).exists()]
+        legacy_marker = _bundle_marker_path(install_root)
+        legacy_count = len(legacy_files) + (1 if legacy_marker.exists() else 0)
+        items.append({
+            "status": "pending" if legacy_count else "noop",
+            "action": "migrate-app-home",
+            "source": str(install_root),
+            "target": str(app_root),
+            "appHome": str(install_root),
+            "managedAppRoot": str(app_root),
+            "legacyManagedFileCount": legacy_count,
+            "changedPreview": legacy_files[:20],
+            "message": (
+                "will move managed app code under app/ and remove legacy root-managed files"
+                if legacy_count
+                else "legacy root-managed files already removed"
+            ),
+        })
+
+    return _phase("bundle", items)
 
 
 def apply_bundle_phase(phase: dict[str, Any], source_root: Path, install_root: Path, *, force: bool) -> None:
+    app_root = _managed_app_root(install_root)
+    rel_paths = _bundle_rel_paths(source_root)
     for item in phase["items"]:
         if item["status"] != "pending":
             continue
         try:
             if not _bundle_target_is_safe(install_root, expected_version=_load_suite_version(source_root)) and not force:
                 item["status"] = "blocked"
-                item["message"] = "target exists but is not an Agentera-managed bundle"
+                item["message"] = "app home exists but is not Agentera-managed"
                 continue
-            rel_paths = _bundle_rel_paths(source_root)
-            for rel_path in rel_paths:
-                _copy_bundle_file(source_root, install_root, rel_path)
-            marker = {
-                "schemaVersion": "agentera.bundle.v1",
-                "version": _load_suite_version(source_root),
-                "source": str(source_root),
-                "fileCount": len(rel_paths),
-            }
-            _bundle_marker_path(install_root).write_text(
-                json.dumps(marker, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
+            if item["action"] == "install-bundle":
+                for rel_path in rel_paths:
+                    _copy_bundle_file(source_root, app_root, rel_path)
+                marker = {
+                    "schemaVersion": "agentera.bundle.v1",
+                    "version": _load_suite_version(source_root),
+                    "source": str(source_root),
+                    "fileCount": len(rel_paths),
+                }
+                _bundle_marker_path(app_root).write_text(
+                    json.dumps(marker, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+                item["message"] = "durable Agentera app installed under app/"
+            elif item["action"] == "migrate-app-home":
+                if not _valid_install_root(install_root):
+                    item["status"] = "blocked"
+                    item["message"] = "managed app root is not available after install"
+                    continue
+                removed = _remove_legacy_bundle_files(install_root, rel_paths)
+                item["legacyManagedFileCount"] = removed
+                item["message"] = "app-home migration applied"
         except Exception as exc:  # noqa: BLE001
             item["status"] = "failed"
             item["message"] = f"bundle install failed: {exc}"
             continue
         item["status"] = "applied"
-        item["message"] = "durable Agentera bundle installed"
     phase.update(_phase("bundle", phase["items"], message=phase.get("message", "")))
 
 
@@ -887,7 +1031,7 @@ def plan_runtime_phase(
             "runtime": adapter["identity"]["runtime_id"],
             "action": "configure",
             "target": None,
-            "message": _write_label(adapter, "Claude Code plugin installs expose the bundle root without local config writes"),
+            "message": _write_label(adapter, "Claude Code plugin installs expose the app home without local config writes"),
         })
     return _phase("runtime", items)
 
@@ -1083,13 +1227,13 @@ def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
                     "action": "configure",
                     "target": str(install_root),
                     "message": (
-                        "install root is missing or incomplete; include --only bundle, "
-                        "choose a valid --install-root, or run the default upgrade flow"
+                        "app home is missing or incomplete; include --only bundle, "
+                        "choose a valid --install-root app home, or run the default upgrade flow"
                     ),
                 }],
             ))
         else:
-            runtime_source_root = source_root if bundle_selected else install_root
+            runtime_source_root = source_root if bundle_selected else _active_bundle_root(install_root)
             phases.append(plan_runtime_phase(
                 install_root,
                 runtime_source_root,
@@ -1116,6 +1260,9 @@ def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
         "status": status,
         "project": str(project),
         "sourceRoot": str(source_root),
+        "appHome": str(install_root),
+        "managedAppRoot": str(install_root / "app"),
+        "userDataRoot": str(install_root),
         "installRoot": str(install_root),
         "home": str(home),
         "runtimes": sorted(runtimes),
@@ -1173,9 +1320,17 @@ def apply_upgrade_plan(plan: dict[str, Any], args: argparse.Namespace) -> None:
 
 def _public_plan(plan: dict[str, Any]) -> dict[str, Any]:
     public = json.loads(json.dumps(plan, default=str))
+    public.pop("installRoot", None)
     for phase in public["phases"]:
         for item in phase["items"]:
             item.pop("newText", None)
+    return public
+
+
+def public_doctor_status(status: dict[str, Any]) -> dict[str, Any]:
+    public = json.loads(json.dumps(status, default=str))
+    public.pop("installRoot", None)
+    public.pop("installRootSource", None)
     return public
 
 
@@ -1185,7 +1340,9 @@ def render_upgrade(plan: dict[str, Any]) -> str:
         f"mode: {plan['mode']}",
         f"status: {plan['status']}",
         f"project: {plan['project']}",
-        f"install root: {plan['installRoot']}",
+        f"app home: {plan['appHome']}",
+        f"managed app root: {plan['managedAppRoot']}",
+        f"user data root: {plan['userDataRoot']}",
     ]
     for phase in plan["phases"]:
         lines.append(f"{phase['name']}: {phase['status']} {phase['summary']}")
@@ -1233,8 +1390,15 @@ def render_doctor_status(status: dict[str, Any]) -> str:
         "Agentera doctor",
         f"status: {status['status']}",
         f"expected version: {status['expectedVersion']}",
-        f"install root: {status['installRoot']}",
-        f"install root source: {status['installRootSource']}",
+        f"app home: {status['appHome']}",
+        f"app home source: {status['appHomeSource']}",
+        f"managed app root: {status['managedAppRoot']}",
+        f"user data root: {status['userDataRoot']}",
+        f"active bundle root: {status['activeBundleRoot']}",
+        f"authoritative root: {status['authoritativeRoot']}",
+        f"skill root: {status['skillRoot']}",
+        f"runtime root: {status['runtimeRoot']}",
+        f"source root: {status['sourceRoot']}",
         f"root status: {status['rootStatus']}",
         f"marker version: {status.get('markerVersion') or '-'}",
     ]
@@ -1249,7 +1413,7 @@ def render_doctor_status(status: dict[str, Any]) -> str:
         lines.append(f"retry: {status['retryCommand']}")
     else:
         lines.append(
-            "recovery: fix AGENTERA_HOME, choose a managed --install-root, "
+            "recovery: fix AGENTERA_HOME, choose a managed app home, "
             "or rerun upgrade with explicit force guidance"
         )
     return "\n".join(lines)
@@ -1276,7 +1440,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         expected_commands=tuple(args.expect_command or EXPECTED_STATE_COMMANDS),
     )
     if args.json:
-        print(json.dumps(status, indent=2, sort_keys=True))
+        print(json.dumps(public_doctor_status(status), indent=2, sort_keys=True))
     else:
         print(render_doctor_status(status))
     return 0 if status["status"] == "fresh" else 1

@@ -22,7 +22,7 @@ One file in `.agentera/`.
 |----------|---------|-----------|
 | `DESIGN.md` | Visual identity. Colors, typography, spacing, constraints, components, themes. An agent-readable design system. | Created via deep design conversation. |
 
-Use this prose plus `skills/agentera/schemas/artifacts/design.yaml` as the active design artifact specification: `<!-- design:X -->` marker syntax, standard sections, YAML token block format, and naming conventions.
+Use this prose plus `agentera describe --format json` and its `artifact_schemas` entry for `design` as the active design artifact specification; do not search install roots manually. The design schema covers `<!-- design:X -->` marker syntax, standard sections, YAML token block format, and naming conventions.
 
 ### Artifact path resolution
 
@@ -179,7 +179,7 @@ Follow a narrative arc, not a checklist. Adapt, but cover:
 
 ### Step 4: Pre-write self-audit
 
-Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -251,7 +251,7 @@ Brief conversation (2-4 exchanges) to refine proposed changes.
 
 ### Step 3: Pre-write self-audit
 
-Pre-write self-audit: check verbosity overruns (per-artifact budget), abstraction creep (≥1 concrete anchor), and filler accumulation (banned patterns). See `scripts/self_audit.py` (v2 path: `scripts/self_audit.py`).
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
