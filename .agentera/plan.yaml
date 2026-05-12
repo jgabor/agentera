@@ -1,132 +1,60 @@
 header:
-  level: full
+  level: light
   created: 2026-05-12
-  status: active
-  reviewed: 2026-05-12
-  critic_issues: 5 found, 5 addressed, 0 dismissed
-  revised: Kept doctor inside the Decision 48 boundary, split versioning from validation, made decisions read-only context, and tightened discovery and release-check acceptance.
-  title: 2.3.0 app-home and installed-capability reliability
+  status: complete
+  title: 2.3.0 legacy default retirement and v1 artifact confirmation
 what: >
-  Build a focused 2.3.0 reliability release that makes installed Agentera discoverable
-  and inspectable from one durable app-home model. The release migrates live bundle
-  terminology to app terminology, gives agents a first-class lint entrypoint for
-  self-audit, makes installed schemas and helpers discoverable from the active
-  invocation, and closes split-root ambiguity before execution is handed off.
+  Finish the 2.3.0 app-home migration by making the default upgrade path retire
+  the deprecated `~/.agents/agentera` location when the new platform app home is
+  selected, and confirm v1 Markdown project artifacts are already automated.
 why: >
-  The 2.2.3 release-prep plan is complete and the remaining degraded issues share
-  one cause: agents cannot confidently identify which app root, skill root, helper
-  scripts, and schemas are authoritative. Decisions 47, 48, and 50 define 2.3.0
-  as a reliability release anchored on app-home migration and a narrow lint surface.
+  The 2.3.0 release moved the default app home to the platform data directory,
+  but the old default can remain orphaned unless explicitly selected. Release
+  users need the default upgrade path to migrate or remove that location safely.
 constraints: >
-  Keep 2.3.0 focused on reliability. Do not include Profilera corpus parity. Do
-  not broaden script consolidation beyond lint. Keep doctor read-only and scoped
-  to install, app, and runtime diagnostics. Keep upgrade as the migration writer.
-  Preserve CLI-first state access. Use at least one passing and one negative path
-  for each changed command behavior where practical. Do not tag, push, publish,
-  commit, refresh installed bundles, update package-manager installs, edit vision,
-  or edit objective state without explicit approval.
+  Keep this as a narrow 2.3.0 follow-up. Upgrade owns writes; doctor remains
+  read-only. Preview must write nothing. Do not implement Profilera corpus parity
+  or broad CLI namespaces. Commit, retag, and push only after validation.
 scope:
   included:
-    - App-home migration contract and user-facing terminology from Decision 47.
-    - Doctor legacy-root and split-root diagnostics scoped to install, app, and runtime roots.
-    - Upgrade preview/apply migration behavior with idempotent outcomes.
-    - Lint self-audit command surface from Decision 48.
-    - Installed schema and helper discovery through the active app model.
-    - Capability prose, README, UPGRADE, TODO, docs, release metadata, and validation evidence for 2.3.0.
+    - Default upgrade retirement for the old `~/.agents/agentera` location when the platform app home is selected.
+    - Safe migration of legacy app-home user state before managed files are removed.
+    - Regression coverage proving v1 Markdown project artifacts are already included in the artifacts phase.
+    - Docs, progress, and release evidence for the final 2.3.0 follow-up.
   excluded:
-    - Git commit, tag, push, package publication, package-manager update, and installed bundle refresh.
-    - Profilera corpus parity for OpenCode and GitHub Copilot.
-    - Broad script namespaces beyond lint.
-    - Runtime feature expansion unrelated to installed Agentera reliability.
+    - Deleting arbitrary unmanaged directories.
+    - Profilera corpus parity.
+    - Package publication or installed app refresh.
   deferred:
-    - Profilera corpus parity for OpenCode and GitHub Copilot.
-    - validate, verify, smoke, corpus, and usage CLI namespaces beyond lint.
-    - Future standalone runtime work.
-design: >
-  Treat 2.3.0 as one reliability migration. Establish one app-home contract first,
-  make diagnostics explain install and runtime roots without absorbing helper or
-  schema checks, let upgrade own migration writes, then expose lint and discovery
-  through the same active app model. Documentation, TODO targeting, versioning,
-  and validation follow only after the command surfaces prove the model.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-09-2-2-3-release-metadata-sync-and-readiness-gate.yaml
+    - Any cleanup of user-specific unknown files that would require interactive review.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-12-2-3-0-app-home-and-installed-capability-reliability.yaml
 tasks:
   - number: 1
-    name: App-home migration contract
+    name: Implement default legacy retirement
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN Agentera state is described to a user or agent WHEN the durable install location is named THEN it is presented as an app home instead of a live bundle root.
-      - GIVEN profile, usage, history, or corpus data exists WHEN the app-home contract is described THEN user data remains home-root state and managed app code remains separate.
-      - GIVEN release validation inspects user-facing docs and CLI help or output WHEN bundle-root terminology appears for the durable install location THEN validation reports the offending surface and blocks readiness.
+      - GIVEN `AGENTERA_HOME` is unset and the old default app home contains managed Agentera files WHEN upgrade previews the bundle phase THEN the new platform app home is selected and retirement is explicit without writing state.
+      - GIVEN the default upgrade is approved WHEN user state exists in the old default app home THEN known user state is moved to the new app home before managed legacy files are removed.
+      - GIVEN retirement has already run WHEN upgrade runs again THEN it reports a coherent noop without recreating or reusing the old default.
   - number: 2
-    name: Doctor app and runtime root diagnostics
+    name: Confirm v1 Markdown artifact automation
     depends_on:
       - 1
     status: complete
     acceptance:
-      - GIVEN a legacy bundle-root install exists WHEN doctor runs THEN it reports migration_required with exact preview and apply commands.
-      - GIVEN multiple Agentera roots participate in invocation WHEN doctor runs THEN it reports the active app home, managed app root, skill root, and runtime root clearly enough to identify the authoritative root.
-      - GIVEN the app and runtime roots are coherent WHEN doctor runs THEN it reports no split-root or migration-required warning for that home.
+      - GIVEN canonical v1 Markdown artifacts exist WHEN the artifacts phase previews THEN all supported Markdown sources are listed with YAML targets and backups.
+      - GIVEN artifact migration applies WHEN the v1 sources are supported THEN source Markdown files are archived and removed without touching unrelated files.
   - number: 3
-    name: Upgrade-owned migration flow
+    name: Validate and release handoff
     depends_on:
       - 1
       - 2
     status: complete
     acceptance:
-      - GIVEN a legacy install is present WHEN upgrade runs in preview mode THEN no project or home state is changed and the planned app-home changes are explicit.
-      - GIVEN migration is approved WHEN upgrade applies the app-home migration THEN the active app model is coherent and repeated applies do not create duplicate or conflicting roots.
-      - GIVEN migration has completed WHEN doctor runs THEN it no longer reports migration_required for the migrated home.
-  - number: 4
-    name: Lint entrypoint for self-audit
-    depends_on:
-      - 1
-    status: complete
-    acceptance:
-      - GIVEN an agent needs the pre-write self-audit WHEN it asks the CLI for linting THEN self-audit behavior is reachable without knowing a repository-local helper path.
-      - GIVEN a linted artifact has verbosity, abstraction, or filler problems WHEN lint runs THEN the user receives bounded, actionable diagnostics.
-      - GIVEN lint passes WHEN a capability writes an artifact THEN the capability no longer depends on a hidden installed skill-root helper.
-  - number: 5
-    name: Installed schema and helper discovery
-    depends_on:
-      - 2
-      - 4
-    status: complete
-    acceptance:
-      - GIVEN a capability needs its artifact schema WHEN invoked from an installed skill THEN the CLI resolves the schema location from the active app model without requiring manual install-root search.
-      - GIVEN helper or schema surfaces are missing WHEN an installed capability starts THEN the failure points to the same root model that doctor reports.
-      - GIVEN capability prose names schema or helper access WHEN an agent follows it THEN the instructions do not require manual searching across install roots.
-  - number: 6
-    name: Documentation and release state alignment
-    depends_on:
-      - 3
-      - 4
-      - 5
-    status: complete
-    acceptance:
-      - GIVEN a user reads README, UPGRADE, capability prose, TODO, or docs state alongside Decisions 47, 48, and 50 WHEN 2.3.0 scope is described THEN downstream docs reflect those decisions without modifying decision records.
-      - GIVEN open TODOs are inspected WHEN included 2.3.0 reliability tasks close THEN they are resolved or explicitly retargeted with rationale.
-      - GIVEN docs state is queried WHEN the release candidate is ready THEN modified docs and artifact mappings report current status.
-  - number: 7
-    name: 2.3.0 version bump
-    depends_on:
-      - 6
-    status: complete
-    acceptance:
-      - GIVEN the release includes feature and fix work WHEN version-bearing surfaces are inspected THEN the suite reports 2.3.0 consistently.
-      - GIVEN package and runtime manifests are queried WHEN their Agentera version is read THEN no active release surface still declares 2.2.3.
-      - GIVEN historical archive or changelog text mentions older versions WHEN version checks run THEN those historical mentions do not block release readiness.
-  - number: 8
-    name: Final validation, state sync, and handoff
-    depends_on:
-      - 7
-    status: complete
-    acceptance:
-      - GIVEN the release candidate is validated WHEN relevant tests, artifact validation, capability validation, docs query, and whitespace checks run THEN they pass or produce documented blockers.
-      - GIVEN all prior tasks are complete WHEN Agentera state is queried THEN plan, TODO, docs, health-relevant evidence, and progress agree on the 2.3.0 outcome.
-      - GIVEN live or package publication actions require explicit approval WHEN the handoff is produced THEN no tag, push, publication, package-manager update, installed bundle refresh, vision edit, or objective edit has occurred.
+      - GIVEN the follow-up is complete WHEN focused and broad validation run THEN tests, artifact validators, docs query, and whitespace checks pass.
+      - GIVEN release actions are requested WHEN validation passes THEN one follow-up commit is created, `v2.3.0` is retagged, `main` is pushed normally, and only the tag is force-updated.
 overall_acceptance:
-  - GIVEN Agentera is installed or migrated WHEN a user or agent asks where it lives THEN app-home, managed app, user data, skill, and runtime roots are described consistently.
-  - GIVEN an installed capability needs linting, helper access, or schema access WHEN it follows Agentera instructions THEN it can resolve those surfaces through the active app model without manual root searching.
-  - GIVEN 2.3.0 is ready for an explicit release action WHEN state, docs, versions, and validation evidence are inspected THEN reliability TODOs are closed or retargeted, deferred work remains visible, and no unauthorized publication action has occurred.
+  - GIVEN a user upgrades after 2.3.0 changed the default app home WHEN they use the default upgrade flow THEN stale managed files under `~/.agents/agentera` are retired safely and do not remain the active app.
+  - GIVEN a project still has v1 Markdown Agentera artifacts WHEN upgrade runs THEN existing automation migrates them through the artifacts phase.
 surprises: []

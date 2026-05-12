@@ -64,6 +64,42 @@ def _write_v1_progress(project: Path) -> Path:
     return artifact
 
 
+def _write_legacy_default_app_home(root: Path) -> None:
+    (root / "scripts").mkdir(parents=True)
+    (root / "scripts" / "agentera").write_text("#!/usr/bin/env python3\n", encoding="utf-8")
+    (root / "skills" / "agentera").mkdir(parents=True)
+    (root / "skills" / "agentera" / "SKILL.md").write_text(
+        "---\nname: agentera\nversion: '2.2.3'\n---\n",
+        encoding="utf-8",
+    )
+    (root / "registry.json").write_text(
+        json.dumps({"skills": [{"name": "agentera", "version": "2.2.3"}]}),
+        encoding="utf-8",
+    )
+    (root / ".agentera-bundle.json").write_text(
+        json.dumps({"schemaVersion": "agentera.bundle.v1", "version": "2.2.3"}),
+        encoding="utf-8",
+    )
+
+
+def _write_all_canonical_v1_markdown(project: Path) -> list[Path]:
+    agentera = project / ".agentera"
+    agentera.mkdir(parents=True)
+    files = {
+        agentera / "PROGRESS.md": PROGRESS_V1,
+        agentera / "DECISIONS.md": "# Decisions\n\n",
+        agentera / "HEALTH.md": "# Health\n\n",
+        agentera / "SESSION.md": "# Session\n\n",
+        agentera / "PLAN.md": "# Plan: Legacy\n\n## What\nLegacy plan.\n\n## Why\nMigration coverage.\n",
+        agentera / "DOCS.md": "# Docs\n\n",
+        project / "VISION.md": "# Legacy Vision\n\n## North Star\nShip reliable upgrades.\n",
+    }
+    for path, text in files.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    return list(files)
+
+
 def test_upgrade_help_lists_subcommand() -> None:
     result = _run("--help")
     assert result.returncode == 0, result.stderr
@@ -119,6 +155,47 @@ def test_bundle_upgrade_installs_durable_bundle_from_packaged_source(tmp_path: P
     payload = json.loads(second.stdout)
     assert payload["status"] == "noop"
     assert payload["phases"][0]["status"] == "noop"
+
+
+def test_default_upgrade_retires_legacy_agents_default_app_home(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    legacy_default = home / ".agents" / "agentera"
+    platform_home = home / ".local" / "share" / "agentera"
+    _write_legacy_default_app_home(legacy_default)
+    (legacy_default / "PROFILE.md").write_text("# Profile\n", encoding="utf-8")
+
+    env = {
+        "AGENTERA_HOME": "",
+        "XDG_DATA_HOME": str(home / ".local" / "share"),
+        "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
+    }
+    preview = _run("upgrade", "--only", "bundle", "--home", str(home), "--dry-run", "--json", env=env)
+
+    assert preview.returncode == 1, preview.stderr
+    preview_payload = json.loads(preview.stdout)
+    assert preview_payload["appHome"] == str(platform_home)
+    bundle_items = {item["action"]: item for item in preview_payload["phases"][0]["items"]}
+    assert bundle_items["install-bundle"]["target"] == str(platform_home / "app")
+    assert bundle_items["retire-legacy-default-app-home"]["source"] == str(legacy_default)
+    assert bundle_items["retire-legacy-default-app-home"]["target"] == str(platform_home)
+    assert bundle_items["retire-legacy-default-app-home"]["changedPreview"] == ["PROFILE.md"]
+    assert (legacy_default / "scripts" / "agentera").exists()
+    assert not platform_home.exists()
+
+    apply = _run("upgrade", "--only", "bundle", "--home", str(home), "--yes", "--json", env=env)
+
+    assert apply.returncode == 0, apply.stderr
+    payload = json.loads(apply.stdout)
+    assert payload["status"] == "applied"
+    assert (platform_home / "app" / "scripts" / "agentera").is_file()
+    assert (platform_home / "PROFILE.md").read_text(encoding="utf-8") == "# Profile\n"
+    assert not legacy_default.exists()
+
+    second = _run("upgrade", "--only", "bundle", "--home", str(home), "--yes", "--json", env=env)
+
+    assert second.returncode == 0, second.stderr
+    second_payload = json.loads(second.stdout)
+    assert second_payload["status"] == "noop"
 
 
 def test_packaged_runtime_upgrade_wires_durable_bundle_not_uvx_cache(tmp_path: Path) -> None:
@@ -276,6 +353,41 @@ def test_artifact_upgrade_dry_run_json_writes_nothing(tmp_path: Path) -> None:
     assert source.exists()
     assert not (project / ".agentera" / "progress.yaml").exists()
     assert not (project / ".agentera" / "backup-v1" / "PROGRESS.md").exists()
+
+
+def test_artifact_upgrade_applies_all_supported_v1_markdown_sources(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    sources = _write_all_canonical_v1_markdown(project)
+
+    result = _run("upgrade", "--project", str(project), "--only", "artifacts", "--yes", "--json")
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "applied"
+    items = payload["phases"][0]["items"]
+    assert {item["source"] for item in items} == {
+        ".agentera/PROGRESS.md",
+        ".agentera/DECISIONS.md",
+        ".agentera/HEALTH.md",
+        ".agentera/SESSION.md",
+        ".agentera/PLAN.md",
+        ".agentera/DOCS.md",
+        "VISION.md",
+    }
+    assert all(item["status"] == "applied" for item in items)
+    for source in sources:
+        assert not source.exists()
+        assert (project / ".agentera" / "backup-v1" / source.name).is_file()
+    for target in (
+        "progress.yaml",
+        "decisions.yaml",
+        "health.yaml",
+        "session.yaml",
+        "plan.yaml",
+        "docs.yaml",
+        "vision.yaml",
+    ):
+        assert (project / ".agentera" / target).is_file()
 
 
 def test_artifact_upgrade_apply_is_idempotent(tmp_path: Path) -> None:

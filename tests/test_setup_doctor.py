@@ -487,7 +487,8 @@ def test_setup_doctor_smoke_proves_helpers_hooks_and_host_status_without_live_ca
 
     report = doctor.build_report(
         install_root=REPO_ROOT,
-        env={"PATH": path},
+        home=tmp_path,
+        env={"PATH": path, "AGENTERA_HOME": str(REPO_ROOT), "HOME": str(tmp_path)},
         runtimes=("codex", "copilot"),
         run_smoke=True,
     )

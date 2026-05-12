@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -26,6 +27,7 @@ def _run_lint(*args: str, input_text: str | None = None) -> subprocess.Completed
         capture_output=True,
         text=True,
         cwd=REPO_ROOT,
+        env={**os.environ, "AGENTERA_HOME": str(REPO_ROOT)},
     )
 
 
@@ -36,7 +38,7 @@ def _run_lint_with_home(app_home: Path, *args: str, input_text: str | None = Non
         capture_output=True,
         text=True,
         cwd=REPO_ROOT,
-        env={"AGENTERA_HOME": str(app_home)},
+        env={**os.environ, "AGENTERA_HOME": str(app_home)},
     )
 
 
@@ -241,7 +243,7 @@ class TestLintCli:
         r = _run_lint("--artifact", "PROGRESS.md", "--text", text)
         assert r.returncode == 0
         assert r.stdout.count("- ") == 3
-        assert "verbosity drift" in r.stdout
+        assert "verbosity:" in r.stdout
         assert "abstraction creep" in r.stdout
         assert "filler:" in r.stdout
         assert "action:" in r.stdout

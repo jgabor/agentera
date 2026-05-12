@@ -349,6 +349,13 @@ platform data home for Agentera. If it points at a missing, invalid, or
 unmanaged user-owned directory, fix the setting or choose a managed app home
 before applying.
 
+When the default platform app home is selected and the deprecated
+`~/.agents/agentera` location still contains Agentera-managed files, the bundle
+upgrade phase previews a `retire-legacy-default-app-home` action. Apply mode
+moves known user state such as `PROFILE.md` and `USAGE.md` into the selected app
+home, removes managed files from the old default, and removes
+`~/.agents/agentera` when it becomes empty.
+
 <details>
 <summary><strong>Claude Code hooks</strong></summary>
 

@@ -112,6 +112,15 @@ when needed, configures selected runtime surfaces, removes fixable outdated v1
 runtime artifacts, and runs a postflight setup doctor. Re-running it after a
 successful apply should report `noop`.
 
+When `AGENTERA_HOME` is unset, the default app home is the platform data home
+for Agentera. If the old default `~/.agents/agentera` still contains
+Agentera-managed files, the bundle phase previews retirement of that location,
+moves known user state into the selected app home, removes managed legacy files,
+and deletes `~/.agents/agentera` when it becomes empty. The artifacts phase also
+migrates supported v1 Markdown project artifacts such as `.agentera/PROGRESS.md`,
+`.agentera/PLAN.md`, `.agentera/DOCS.md`, and root `VISION.md` into v2 YAML with
+backups under `.agentera/backup-v1/`.
+
 External package updates are deliberately opt-in because they run `npx` and may touch global runtime installs. The package phase removes legacy v1 skill entries and installs the active `/agentera` skill:
 
 ```bash

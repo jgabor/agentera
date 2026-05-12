@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- The default upgrade flow now retires a managed legacy `~/.agents/agentera` app home when the new platform data app home is selected, moving known user state before removing old managed files; artifact migration coverage now proves canonical v1 Markdown files are automated through the upgrade artifacts phase.
 - Installed capability instructions now describe schema and helper discovery through `agentera describe --format json`, `agentera lint`, and the active app-home model instead of manual install-root searches.
 - Public `agentera doctor --json` and `agentera hej --format json` now expose app-home fields without `installRoot` compatibility fields, and release validation blocks stale structured output.
 - Bare text `hej` now has explicit cross-runtime metadata, an OpenCode exact-match `chat.message` router, and legacy `hej` bridge metadata that points only at explicit slash/package upgrade flows.

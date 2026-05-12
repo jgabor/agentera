@@ -34,6 +34,7 @@ BUNDLE_MARKER = ".agentera-bundle.json"
 PHASES = ("bundle", "artifacts", "runtime", "cleanup", "packages")
 STATUSES = ("pending", "applied", "noop", "blocked", "failed", "skipped")
 EXPECTED_STATE_COMMANDS = ("hej",)
+USER_STATE_NAMES = ("PROFILE.md", "USAGE.md", "history", "corpus", "corpus.json")
 
 
 
@@ -175,6 +176,18 @@ def _bundle_marker_path(install_root: Path) -> Path:
 
 def _managed_app_root(app_home: Path) -> Path:
     return app_home / "app"
+
+
+def _legacy_default_app_home(home: Path) -> Path:
+    return (home / ".agents" / "agentera").expanduser().resolve()
+
+
+def _platform_default_app_home(home: Path, env: dict[str, str]) -> Path:
+    default_env = dict(env)
+    default_env.pop("AGENTERA_HOME", None)
+    default_env.pop(DEFAULT_INSTALL_ROOT_ENV, None)
+    root, _source = _install_root_module().resolve_candidate(None, env=default_env, home=home)
+    return root.resolve()
 
 
 def _legacy_app_home_has_bundle(app_home: Path) -> bool:
@@ -561,7 +574,143 @@ def _remove_legacy_bundle_files(app_home: Path, rel_paths: list[Path]) -> int:
     return removed
 
 
-def plan_bundle_phase(source_root: Path, install_root: Path, *, force: bool) -> dict[str, Any]:
+def _legacy_default_has_agentera_evidence(root: Path) -> bool:
+    if not root.exists():
+        return False
+    managed_app = _managed_app_root(root)
+    return any((
+        _has_bundle_root_evidence(root),
+        _managed_app_has_bundle(root),
+        _bundle_marker_path(root).exists(),
+        any((root / name).exists() for name in USER_STATE_NAMES),
+    ))
+
+
+def _managed_app_has_bundle(app_home: Path) -> bool:
+    managed_app = _managed_app_root(app_home)
+    return _has_bundle_root_evidence(managed_app) or _bundle_marker_path(managed_app).exists()
+
+
+def _managed_top_level_names(rel_paths: list[Path]) -> set[str]:
+    names = {rel_path.parts[0] for rel_path in rel_paths if rel_path.parts}
+    names.update({BUNDLE_MARKER, "app"})
+    return names
+
+
+def _legacy_default_user_entries(legacy_root: Path, rel_paths: list[Path]) -> list[Path]:
+    if not legacy_root.is_dir():
+        return []
+    managed_names = _managed_top_level_names(rel_paths)
+    return sorted((entry for entry in legacy_root.iterdir() if entry.name not in managed_names), key=lambda path: path.name)
+
+
+def _same_file(source: Path, target: Path) -> bool:
+    return source.is_file() and target.is_file() and _sha256(source) == _sha256(target)
+
+
+def _legacy_default_conflicts(legacy_root: Path, app_home: Path, rel_paths: list[Path]) -> list[str]:
+    conflicts: list[str] = []
+    for entry in _legacy_default_user_entries(legacy_root, rel_paths):
+        target = app_home / entry.name
+        if target.exists() and not _same_file(entry, target):
+            conflicts.append(entry.name)
+    return conflicts
+
+
+def _legacy_default_managed_count(legacy_root: Path, rel_paths: list[Path]) -> int:
+    count = sum(1 for rel_path in rel_paths if (legacy_root / rel_path).exists())
+    if _bundle_marker_path(legacy_root).exists():
+        count += 1
+    if _managed_app_has_bundle(legacy_root):
+        count += 1
+    return count
+
+
+def _plan_legacy_default_retirement(
+    app_home: Path,
+    home: Path,
+    rel_paths: list[Path],
+    *,
+    force: bool,
+) -> dict[str, Any] | None:
+    legacy_root = _legacy_default_app_home(home)
+    if legacy_root == app_home or not _legacy_default_has_agentera_evidence(legacy_root):
+        return None
+    if not legacy_root.is_dir():
+        return {
+            "status": "blocked",
+            "action": "retire-legacy-default-app-home",
+            "source": str(legacy_root),
+            "target": str(app_home),
+            "message": "legacy default app home exists but is not a directory",
+        }
+
+    conflicts = _legacy_default_conflicts(legacy_root, app_home, rel_paths)
+    user_entries = [entry.name for entry in _legacy_default_user_entries(legacy_root, rel_paths)]
+    managed_count = _legacy_default_managed_count(legacy_root, rel_paths)
+    return {
+        "status": "blocked" if conflicts and not force else "pending",
+        "action": "retire-legacy-default-app-home",
+        "source": str(legacy_root),
+        "target": str(app_home),
+        "appHome": str(app_home),
+        "legacyDefaultAppHome": str(legacy_root),
+        "userStateCount": len(user_entries),
+        "legacyManagedFileCount": managed_count,
+        "changedPreview": user_entries[:20],
+        "conflicts": conflicts,
+        "message": (
+            "legacy default user state conflicts with the selected app home; use --force only after review"
+            if conflicts and not force
+            else "will move legacy default user state and remove managed files from the old default app home"
+        ),
+    }
+
+
+def _move_legacy_default_user_state(legacy_root: Path, app_home: Path, rel_paths: list[Path], *, force: bool) -> int:
+    moved = 0
+    app_home.mkdir(parents=True, exist_ok=True)
+    for entry in _legacy_default_user_entries(legacy_root, rel_paths):
+        target = app_home / entry.name
+        if target.exists():
+            if _same_file(entry, target):
+                entry.unlink()
+                moved += 1
+                continue
+            if not force or entry.is_dir() or target.is_dir():
+                raise RuntimeError(f"legacy user state conflicts with selected app home: {entry.name}")
+            target.unlink()
+        shutil.move(str(entry), str(target))
+        moved += 1
+    return moved
+
+
+def _remove_legacy_default_managed_files(legacy_root: Path, rel_paths: list[Path]) -> int:
+    removed = _remove_legacy_bundle_files(legacy_root, rel_paths)
+    managed_app = _managed_app_root(legacy_root)
+    if managed_app.exists() and _managed_app_has_bundle(legacy_root):
+        shutil.rmtree(managed_app)
+        removed += 1
+    return removed
+
+
+def _remove_empty_legacy_default_root(legacy_root: Path, home: Path) -> bool:
+    removed = False
+    try:
+        legacy_root.rmdir()
+        removed = True
+    except OSError:
+        return False
+    agents_dir = legacy_root.parent
+    if agents_dir != home and agents_dir.parent == home:
+        try:
+            agents_dir.rmdir()
+        except OSError:
+            pass
+    return removed
+
+
+def plan_bundle_phase(source_root: Path, install_root: Path, home: Path, *, force: bool) -> dict[str, Any]:
     app_root = _managed_app_root(install_root)
     if source_root == install_root or source_root == app_root:
         return _phase(
@@ -648,6 +797,10 @@ def plan_bundle_phase(source_root: Path, install_root: Path, *, force: bool) -> 
             ),
         })
 
+    legacy_default = _plan_legacy_default_retirement(install_root, home, rel_paths, force=force)
+    if legacy_default is not None:
+        items.append(legacy_default)
+
     return _phase("bundle", items)
 
 
@@ -684,6 +837,18 @@ def apply_bundle_phase(phase: dict[str, Any], source_root: Path, install_root: P
                 removed = _remove_legacy_bundle_files(install_root, rel_paths)
                 item["legacyManagedFileCount"] = removed
                 item["message"] = "app-home migration applied"
+            elif item["action"] == "retire-legacy-default-app-home":
+                if not _valid_install_root(install_root):
+                    item["status"] = "blocked"
+                    item["message"] = "selected app home is not available after install"
+                    continue
+                legacy_root = Path(item["source"])
+                moved = _move_legacy_default_user_state(legacy_root, install_root, rel_paths, force=force)
+                removed = _remove_legacy_default_managed_files(legacy_root, rel_paths)
+                item["userStateCount"] = moved
+                item["legacyManagedFileCount"] = removed
+                item["removedLegacyDefaultAppHome"] = _remove_empty_legacy_default_root(legacy_root, install_root.parent)
+                item["message"] = "legacy default app home retired"
         except Exception as exc:  # noqa: BLE001
             item["status"] = "failed"
             item["message"] = f"bundle install failed: {exc}"
@@ -1191,30 +1356,34 @@ def resolve_source_root() -> Path:
     return root
 
 
-def resolve_install_root(value: Path | None, source_root: Path, home: Path) -> Path:
+def resolve_install_root(value: Path | None, source_root: Path, home: Path, env: dict[str, str] | None = None) -> Path:
+    env = env or os.environ
     if value is not None:
         return value.expanduser().resolve()
-    default = os.environ.get(DEFAULT_INSTALL_ROOT_ENV)
+    default = env.get(DEFAULT_INSTALL_ROOT_ENV)
     if default:
         return Path(default).expanduser().resolve()
-    return source_root if source_root == ROOT.resolve() else (home / ".agents" / "agentera").resolve()
+    configured = env.get("AGENTERA_HOME")
+    if configured:
+        return Path(configured).expanduser().resolve()
+    return _platform_default_app_home(home, env)
 
 
 def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
     project = args.project.expanduser().resolve()
     home = args.home.expanduser().resolve()
-    source_root = resolve_source_root()
-    install_root = resolve_install_root(args.install_root, source_root, home)
-    runtimes = set(args.runtime or _runtime_ids())
-    only = set(args.only or PHASES)
     env = dict(os.environ)
     if args.opencode_config_dir is not None:
         env["OPENCODE_CONFIG_DIR"] = str(args.opencode_config_dir.expanduser().resolve())
+    source_root = resolve_source_root()
+    install_root = resolve_install_root(args.install_root, source_root, home, env=env)
+    runtimes = set(args.runtime or _runtime_ids())
+    only = set(args.only or PHASES)
 
     phases: list[dict[str, Any]] = []
     bundle_selected = "bundle" in only
     if bundle_selected:
-        phases.append(plan_bundle_phase(source_root, install_root, force=args.force))
+        phases.append(plan_bundle_phase(source_root, install_root, home, force=args.force))
     if "artifacts" in only:
         phases.append(plan_artifact_phase(project, force=args.force))
     if "runtime" in only:

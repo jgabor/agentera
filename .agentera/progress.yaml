@@ -1,4 +1,44 @@
 cycles:
+- number: 394
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Completed the 2.3.0 legacy default retirement follow-up so default upgrade
+    runs move off the deprecated `~/.agents/agentera` location when the platform
+    app home is selected, while confirming v1 Markdown artifact migration is
+    already automated through the artifacts phase.
+  commit: pending
+  inspiration: >
+    After the 2.3.0 tag was created, review found that upgrade migrated a
+    legacy root only when that root was explicitly selected; an unset
+    `AGENTERA_HOME` used the new platform app home but did not retire the old
+    default location globally.
+  discovered: >
+    The v1 Markdown artifact path was already implemented by the artifacts
+    phase, including `.agentera/PROGRESS.md`, `.agentera/PLAN.md`,
+    `.agentera/DOCS.md`, and root `VISION.md`; the missing behavior was default
+    old-home retirement and regression coverage for that path. Full pytest also
+    exposed local-test assumptions that needed explicit checkout app-home
+    pinning for lint and setup-doctor smoke probes.
+  verified: >
+    `uv run pytest tests/test_upgrade_cli.py tests/test_bundle_freshness.py
+    tests/test_app_home_contract.py -q` passed with 34 tests. `uv run
+    scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera`
+    passed. `uv run hooks/validate_artifact.py .agentera/plan.yaml TODO.md
+    CHANGELOG.md` passed. `python3 -m py_compile scripts/agentera_upgrade.py`
+    passed. `uv run pytest -q` passed with 853 tests after pinning local lint and
+    setup-doctor smoke tests to the checkout app home. `git diff --check`
+    passed.
+  next: >
+    Commit this follow-up, retag `v2.3.0`, push `main` normally, and force-update
+    only the `v2.3.0` tag as explicitly requested.
+  context:
+    intent: finalize 2.3.0 legacy default retirement before retagging
+    constraints: no package publication, package-manager update, installed app
+      refresh, vision edit, objective-state edit, or force-push of main
+    scope: upgrade default app-home selection, old default retirement, v1
+      Markdown artifact migration regression, docs and release evidence
 - number: 393
   timestamp: 2026-05-12
   type: fix
