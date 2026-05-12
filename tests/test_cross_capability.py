@@ -32,6 +32,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CAPABILITIES_DIR = REPO_ROOT / "skills" / "agentera" / "capabilities"
 PROTOCOL_PATH = REPO_ROOT / "skills" / "agentera" / "protocol.yaml"
 SKILL_MD_PATH = REPO_ROOT / "skills" / "agentera" / "SKILL.md"
+UPGRADE_MD_PATH = REPO_ROOT / "UPGRADE.md"
 
 CAPABILITY_NAMES = sorted(
     d.name for d in CAPABILITIES_DIR.iterdir() if d.is_dir()
@@ -258,6 +259,9 @@ def test_routine_capability_guidance_uses_top_level_state_commands():
     assert "advanced/custom inspection only" in hej
     assert "Do not preflight app health" in hej
     assert "Do not run separate v1 artifact or PROFILE.md checks" in hej
+    assert "platform app-home recovery preview" in hej
+    assert "agentera upgrade --only bundle --dry-run" in hej
+    assert "target the platform app home" in hej
 
 
 def test_master_skill_documents_route_alias_contract_boundary():
@@ -278,6 +282,7 @@ def test_master_upgrade_check_requires_dry_run_preview():
     assert "The dry-run preview is mandatory" in text
     assert 'agentera upgrade --project "$PWD" --dry-run' in text
     assert "Only the apply step requires confirmation" in text
+    assert "The artifacts phase migrates supported v1 Markdown files to YAML with backups" in text
 
 
 def test_master_bundle_health_gate_is_single_call():
@@ -291,3 +296,17 @@ def test_master_bundle_health_gate_is_single_call():
     assert "If the command exits successfully" in text
     assert "inspect the CLI-provided `bundle.status`" in text
     assert "`bundle.dryRunCommand`" in text
+    assert "do not require a successful stale CLI invocation" in text
+    assert "agentera upgrade --only bundle --dry-run" in text
+    assert "target the platform app home" in text
+
+
+def test_upgrade_guide_documents_app_home_recovery_and_artifact_backups():
+    text = UPGRADE_MD_PATH.read_text(encoding="utf-8")
+
+    assert "npx skills update" in text
+    assert "does not refresh\nthe managed Agentera app" in text
+    assert "do not require a successful\nstale CLI invocation" in text
+    assert "agentera upgrade --only bundle --dry-run" in text
+    assert "without `--install-root`" in text
+    assert "backups under `.agentera/backup-v1/` after preview and confirmation" in text

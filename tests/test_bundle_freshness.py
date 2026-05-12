@@ -68,6 +68,13 @@ def _write_stale_bundle(root: Path, *, body: str | None = None, version: str = "
     )
 
 
+def _write_user_data_only_app_home(root: Path) -> None:
+    (root / ".agentera").mkdir(parents=True)
+    (root / ".agentera" / "progress.yaml").write_text("cycles: []\n", encoding="utf-8")
+    (root / ".agentera" / "docs.yaml").write_text("mapping: []\n", encoding="utf-8")
+    (root / "TODO.md").write_text("# TODO\n", encoding="utf-8")
+
+
 def test_doctor_reports_legacy_bundle_root_migration_required_with_exact_commands(tmp_path: Path) -> None:
     install_root = tmp_path / "home" / ".agents" / "agentera"
     _write_stale_bundle(install_root)
@@ -155,6 +162,8 @@ def test_doctor_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path) -> Non
     assert payload["dryRunCommand"] is None
     assert payload["applyCommand"] is None
     assert payload["signals"][0]["kind"] == "unmanaged_install_root"
+    assert "fix AGENTERA_HOME" in payload["signals"][0]["message"]
+    assert "use --force only after reviewing the target" in payload["signals"][0]["message"]
 
     missing = tmp_path / "missing-agentera"
     result = _run(
@@ -169,7 +178,27 @@ def test_doctor_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path) -> Non
     payload = json.loads(result.stdout)
     assert payload["status"] == "blocked"
     assert payload["signals"][0]["kind"] == "invalid_install_root"
+    assert "fix the setting" in payload["signals"][0]["message"]
+    assert "explicit force guidance" in payload["signals"][0]["message"]
     assert not missing.exists()
+
+    file_root = tmp_path / "file-agentera"
+    file_root.write_text("not a directory\n", encoding="utf-8")
+    result = _run(
+        "doctor",
+        "--json",
+        "--home",
+        str(tmp_path / "home"),
+        env={"AGENTERA_HOME": str(file_root)},
+    )
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "blocked"
+    assert payload["signals"][0]["kind"] == "invalid_install_root"
+    assert "file, not an app home directory" in payload["signals"][0]["message"]
+    assert "fix AGENTERA_HOME" in payload["signals"][0]["message"]
+    assert "use --force only after reviewing the target" in payload["signals"][0]["message"]
 
     invalid = tmp_path / "partial-agentera"
     (invalid / "skills" / "agentera").mkdir(parents=True)
@@ -188,6 +217,8 @@ def test_doctor_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path) -> Non
     assert payload["status"] == "blocked"
     assert payload["rootStatus"] == "invalid"
     assert payload["signals"][0]["kind"] == "invalid_bundle"
+    assert "fix AGENTERA_HOME" in payload["signals"][0]["message"]
+    assert "use --force only after reviewing the target" in payload["signals"][0]["message"]
     assert payload["dryRunCommand"] is None
     assert payload["applyCommand"] is None
     assert sorted(path.relative_to(invalid) for path in invalid.rglob("*")) == before
@@ -210,6 +241,200 @@ def test_doctor_targets_default_root_when_agentera_home_is_unset(tmp_path: Path)
     assert payload["signals"][0]["kind"] == "missing_bundle"
     assert f"--install-root {expected_root}" in payload["dryRunCommand"]
     assert not expected_root.exists()
+
+
+def test_doctor_allows_user_data_only_platform_app_home_without_writes(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    app_home = home / ".local" / "share" / "agentera"
+    _write_user_data_only_app_home(app_home)
+    before = sorted(path.relative_to(app_home) for path in app_home.rglob("*"))
+
+    result = _run("doctor", "--json", "--home", str(home), env={"AGENTERA_HOME": "", "XDG_DATA_HOME": str(home / ".local" / "share")})
+
+    assert result.returncode == 1, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "stale"
+    assert payload["appHome"] == str(app_home)
+    assert payload["signals"][0]["kind"] == "user_data_only_app_home"
+    assert payload["dryRunCommand"] is not None
+    assert payload["applyCommand"] is not None
+    assert sorted(path.relative_to(app_home) for path in app_home.rglob("*")) == before
+
+
+def test_doctor_recovers_runtime_injected_deprecated_default_without_unsetting_env(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    legacy_default = home / ".agents" / "agentera"
+    env = {"AGENTERA_HOME": str(legacy_default)}
+
+    result = _run("doctor", "--json", "--home", str(home), env=env)
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "stale"
+    assert payload["appHome"] == str(legacy_default)
+    assert payload["appHomeSource"] == "AGENTERA_HOME"
+    assert payload["managedAppRoot"] == str(legacy_default / "app")
+    assert not (legacy_default / "app" / "scripts" / "agentera").exists()
+    assert payload["signals"][0]["kind"] == "recoverable_stale_default"
+    assert payload["dryRunCommand"] is not None
+    assert payload["applyCommand"] is not None
+    assert "fix AGENTERA_HOME" not in result.stdout
+    assert not legacy_default.exists()
+
+
+def test_upgrade_previews_bundle_install_into_user_data_only_platform_app_home(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    app_home = home / ".local" / "share" / "agentera"
+    _write_user_data_only_app_home(app_home)
+    before = sorted(path.relative_to(app_home) for path in app_home.rglob("*"))
+
+    preview = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--dry-run",
+        "--json",
+        "--home",
+        str(home),
+        env={"AGENTERA_HOME": "", "XDG_DATA_HOME": str(home / ".local" / "share")},
+    )
+
+    assert preview.returncode == 1, preview.stderr
+    payload = json.loads(preview.stdout)
+    assert payload["appHome"] == str(app_home)
+    assert payload["status"] == "pending"
+    item = payload["phases"][0]["items"][0]
+    assert item["action"] == "install-bundle"
+    assert item["target"] == str(app_home / "app")
+    assert sorted(path.relative_to(app_home) for path in app_home.rglob("*")) == before
+    assert not (app_home / "app").exists()
+
+
+def test_upgrade_blocks_user_data_only_app_home_with_unknown_data(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    app_home = home / ".local" / "share" / "agentera"
+    _write_user_data_only_app_home(app_home)
+    (app_home / "notes.txt").write_text("not recognized Agentera state\n", encoding="utf-8")
+
+    preview = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--dry-run",
+        "--json",
+        "--home",
+        str(home),
+        env={"AGENTERA_HOME": "", "XDG_DATA_HOME": str(home / ".local" / "share")},
+    )
+
+    assert preview.returncode == 1, preview.stderr
+    payload = json.loads(preview.stdout)
+    assert payload["status"] == "blocked"
+    item = payload["phases"][0]["items"][0]
+    assert item["status"] == "blocked"
+    assert item["target"] == str(app_home / "app")
+    assert "not Agentera-managed" in item["message"]
+    assert not (app_home / "app").exists()
+
+
+def test_upgrade_recovers_inherited_deprecated_default_to_platform_home_without_preview_writes(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    legacy_default = home / ".agents" / "agentera"
+    platform_home = home / ".local" / "share" / "agentera"
+    _write_user_data_only_app_home(legacy_default)
+    _write_user_data_only_app_home(platform_home)
+    legacy_before = sorted(path.relative_to(legacy_default) for path in legacy_default.rglob("*"))
+    platform_before = sorted(path.relative_to(platform_home) for path in platform_home.rglob("*"))
+
+    preview = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--dry-run",
+        "--json",
+        "--home",
+        str(home),
+        env={"AGENTERA_HOME": str(legacy_default), "XDG_DATA_HOME": str(home / ".local" / "share")},
+    )
+
+    assert preview.returncode == 1, preview.stderr
+    payload = json.loads(preview.stdout)
+    assert payload["appHome"] == str(platform_home)
+    items = {item["action"]: item for item in payload["phases"][0]["items"]}
+    assert items["install-bundle"]["target"] == str(platform_home / "app")
+    assert items["retire-legacy-default-app-home"]["source"] == str(legacy_default)
+    assert items["retire-legacy-default-app-home"]["target"] == str(platform_home)
+    assert sorted(path.relative_to(legacy_default) for path in legacy_default.rglob("*")) == legacy_before
+    assert sorted(path.relative_to(platform_home) for path in platform_home.rglob("*")) == platform_before
+    assert not (platform_home / "app").exists()
+
+
+def test_upgrade_respects_explicit_deprecated_default_install_root(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    legacy_default = home / ".agents" / "agentera"
+    platform_home = home / ".local" / "share" / "agentera"
+    _write_user_data_only_app_home(legacy_default)
+    _write_user_data_only_app_home(platform_home)
+
+    preview = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--install-root",
+        str(legacy_default),
+        "--dry-run",
+        "--json",
+        "--home",
+        str(home),
+        env={"AGENTERA_HOME": str(legacy_default), "XDG_DATA_HOME": str(home / ".local" / "share")},
+    )
+
+    assert preview.returncode == 1, preview.stderr
+    payload = json.loads(preview.stdout)
+    assert payload["appHome"] == str(legacy_default)
+    assert payload["managedAppRoot"] == str(legacy_default / "app")
+    assert payload["phases"][0]["items"][0]["target"] == str(legacy_default / "app")
+    assert not (legacy_default / "app").exists()
+    assert not (platform_home / "app").exists()
+
+
+def test_doctor_marks_stale_managed_app_under_deprecated_default_as_recoverable(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    legacy_default = home / ".agents" / "agentera"
+    _write_stale_bundle(legacy_default / "app", version="2.0.3")
+
+    result = _run("doctor", "--json", "--home", str(home), env={"AGENTERA_HOME": str(legacy_default)})
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    kinds = [signal["kind"] for signal in payload["signals"]]
+    assert payload["status"] == "stale"
+    assert kinds[0] == "recoverable_stale_default"
+    assert "version_mismatch" in kinds
+    assert payload["dryRunCommand"] is not None
+
+
+def test_doctor_blocks_explicit_or_custom_invalid_paths_without_stale_default_recovery(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    legacy_default = home / ".agents" / "agentera"
+    custom_missing = tmp_path / "custom-missing"
+    explicit_file = tmp_path / "explicit-file"
+    explicit_file.write_text("not a directory\n", encoding="utf-8")
+
+    explicit = _run("doctor", "--json", "--home", str(home), "--install-root", str(legacy_default), env={"AGENTERA_HOME": str(legacy_default)})
+    custom = _run("doctor", "--json", "--home", str(home), env={"AGENTERA_HOME": str(custom_missing)})
+    explicit_file_result = _run("doctor", "--json", "--home", str(home), "--install-root", str(explicit_file), env={"AGENTERA_HOME": str(legacy_default)})
+
+    for result in (explicit, custom, explicit_file_result):
+        assert result.returncode == 1
+        payload = json.loads(result.stdout)
+        assert payload["status"] == "blocked"
+        assert payload["signals"][0]["kind"] == "invalid_install_root"
+        assert payload["dryRunCommand"] is None
+        assert payload["applyCommand"] is None
+        assert "recoverable_stale_default" not in {signal["kind"] for signal in payload["signals"]}
+    assert "choose a valid --install-root" in json.loads(explicit_file_result.stdout)["signals"][0]["message"]
+    assert "use --force only after reviewing the target" in json.loads(explicit_file_result.stdout)["signals"][0]["message"]
 
 
 def test_stale_bundle_refresh_dry_run_then_apply_preserves_install_root(tmp_path: Path) -> None:

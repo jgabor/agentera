@@ -1,4 +1,425 @@
 cycles:
+- number: 404
+  timestamp: 2026-05-12
+  type: fix
+  phase: validate
+  what: >
+    Evaluated Task 6 final validation for the 2.3.1 runtime-injected app-home
+    recovery plan and marked the plan complete after all release-candidate gates
+    passed.
+  commit: pending
+  inspiration: >
+    Task 6 acceptance required conductor confirmation that broad tests,
+    focused runtime/upgrade tests, artifact validation, capability validation,
+    docs query, OpenCode deterministic smoke, generated contract verification,
+    app-home terminology validation, and whitespace checks passed without
+    unauthorized release actions.
+  discovered: >
+    The validation agent found and fixed one stale characterization assertion
+    that still expected managed bundle-root terminology; the corrected assertion
+    now matches the approved managed app-root inventory and all final gates pass.
+  verified: >
+    `uv run pytest -q` passed with 865 tests. `uv run pytest
+    tests/test_runtime_adapters.py tests/test_upgrade_cli.py
+    tests/test_bundle_freshness.py tests/test_app_home_contract.py -q` passed
+    with 119 tests. `uv run hooks/validate_artifact.py .agentera/plan.yaml
+    .agentera/progress.yaml TODO.md CHANGELOG.md .agentera/docs.yaml` passed
+    before this final evaluation entry was added. `uv run
+    scripts/validate_capability.py --self-validate` passed. `uv run
+    scripts/validate_capability.py skills/agentera/capabilities/hej` passed.
+    `AGENTERA_HOME=/home/jgabor/git/agentera uv run scripts/agentera docs`
+    reported 2.3.1 release metadata alignment and current docs. `node
+    scripts/smoke_opencode_bootstrap.mjs` passed with deterministic OpenCode
+    evidence and no live package publication. `uv run
+    scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera`
+    passed. `uv run scripts/generate_js_install_root_contract.py --verify`
+    passed. `git diff --check` passed.
+  next: >
+    Hand off the complete 2.3.1 release-candidate worktree. A human may request
+    commit, tag, push, publication, package-manager update, or installed app
+    refresh as separate explicit release actions.
+  context:
+    intent: Task 6 conductor evaluation and plan completion
+    constraints: no commit, tag, push, publication, package-manager update,
+      installed app refresh, .agentera/vision.yaml edit, or objective-state edit
+    scope: final validation review, plan completion, progress evidence, and
+      release-candidate handoff
+- number: 403
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Executed Task 6 final validation for the 2.3.1 runtime-injected app-home
+    recovery plan and captured handoff evidence while leaving Task 6 pending for
+    conductor evaluation.
+  commit: pending
+  inspiration: >
+    Task 6 acceptance required focused runtime/upgrade tests, full pytest,
+    artifact validation, capability validation, docs query, whitespace checks,
+    deterministic OpenCode injected-env evidence, and proof that no forbidden
+    release action occurred.
+  discovered: >
+    The first full pytest run exposed one stale characterization assertion that
+    still expected canonical-suite-root-vs-managed-bundle-root while the approved
+    inventory, interface model, and generated JS contract now use
+    canonical-suite-root-vs-managed-app-root. The OpenCode bootstrap smoke test
+    passed without live package publication and reported the installed OpenCode
+    skill absent, which is expected for this local deterministic harness.
+  verified: >
+    Initial focused validation passed: `uv run pytest tests/test_runtime_adapters.py
+    tests/test_upgrade_cli.py tests/test_bundle_freshness.py
+    tests/test_app_home_contract.py -q` reported 119 passed; artifact validation
+    of `.agentera/plan.yaml .agentera/progress.yaml TODO.md CHANGELOG.md
+    .agentera/docs.yaml` passed; `uv run scripts/validate_capability.py
+    --self-validate` passed; `uv run scripts/validate_capability.py
+    skills/agentera/capabilities/hej` passed; `AGENTERA_HOME=/home/jgabor/git/agentera
+    uv run scripts/agentera docs` returned current 2.3.1 docs metadata; `node
+    scripts/smoke_opencode_bootstrap.mjs` passed; `uv run
+    scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera`
+    passed; `uv run scripts/generate_js_install_root_contract.py --verify`
+    passed; and `git diff --check` passed. The first `uv run pytest -q` run
+    failed with 1 failed and 864 passed on the stale characterization assertion.
+    After the minimal assertion update, the targeted test passed with 1 passed,
+    `git diff --check` passed, the focused runtime/upgrade suite passed again
+    with 119 passed, and `uv run pytest -q` passed with 865 passed.
+  next: >
+    Hand off to conductor evaluation for Task 6. `.agentera/plan.yaml` remains
+    pending; no commit, tag, push, publication, package-manager update,
+    installed app refresh, `.agentera/vision.yaml` edit, or objective-state edit
+    has been performed.
+  context:
+    intent: Task 6 final validation and handoff evidence
+    constraints: no release mutation, no installed app refresh, no package-manager
+      update, no vision edit, no objective-state edit, and leave plan Task 6
+      pending for conductor evaluation
+    scope: final validation commands, deterministic OpenCode injected-env smoke,
+      stale characterization assertion repair, and progress evidence
+- number: 402
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Evaluated Task 5 for the 2.3.1 runtime-injected app-home recovery plan and
+    marked it complete after confirming active version surfaces, changelog, TODO,
+    docs, and progress state align on 2.3.1 release metadata.
+  commit: pending
+  inspiration: >
+    Task 5 acceptance required package, plugin, OpenCode, lockfile, registry, and
+    skill-frontmatter versions to agree before Task 6 broad final validation.
+  discovered: >
+    Active version-bearing surfaces now report 2.3.1, while remaining 2.3.0 text
+    is bounded to historical changelog entries, resolved TODOs, audit logs,
+    progress evidence, decisions, or archived plans. TODO keeps Profilera corpus
+    parity retargeted beyond 2.3.1.
+  verified: >
+    Reviewed the Task 5 metadata diff and searched for remaining 2.3.0 mentions.
+    `uv run pytest tests/test_package_registry.py tests/test_runtime_adapters.py
+    tests/test_app_home_contract.py tests/test_upgrade_cli.py
+    tests/test_bundle_freshness.py -q` passed with 131 tests. `uv run
+    scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera`
+    passed. `uv run hooks/validate_artifact.py .agentera/docs.yaml
+    .agentera/progress.yaml TODO.md CHANGELOG.md` passed before this evaluation
+    entry was added. `AGENTERA_HOME=/home/jgabor/git/agentera uv run
+    scripts/agentera docs` showed 2.3.1 release metadata alignment.
+    `AGENTERA_HOME=/home/jgabor/git/agentera uv run scripts/agentera todo`
+    showed Profilera parity deferred beyond 2.3.1. `git diff --check` passed.
+  next: >
+    Continue to Task 6 final validation and handoff; no commit, tag, push,
+    publication, package-manager update, installed app refresh, vision edit, or
+    objective-state edit has been performed.
+  context:
+    intent: Task 5 conductor evaluation
+    constraints: no commit, tag, push, publication, package-manager update,
+      installed app refresh, .agentera/vision.yaml edit, objective-state edit, or
+      Task 6 validation during this evaluation step
+    scope: Task 5 acceptance review, focused validation, plan status update, and
+      progress evidence
+- number: 401
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Executed Task 5 for the 2.3.1 runtime-injected app-home recovery plan by
+    aligning active package/plugin/OpenCode/skill version surfaces to 2.3.1 and
+    updating release-state artifacts for the stale old-default recovery scope.
+  commit: pending
+  inspiration: >
+    Task 5 acceptance requires the patch release metadata to agree before final
+    validation, while leaving archived historical evidence intact and keeping
+    Profilera corpus parity outside 2.3.1.
+  discovered: >
+    `.agentera/docs.yaml` version_files and the package registry cover eight
+    package surfaces, while focused package tests also require both active skill
+    frontmatter files to match the registry suite version. Existing changelog and
+    TODO state still described 2.3.0 as the current release boundary and only
+    retargeted Profilera parity beyond 2.3.0.
+  verified: >
+    `uv run pytest tests/test_package_registry.py tests/test_runtime_adapters.py
+    tests/test_app_home_contract.py tests/test_upgrade_cli.py
+    tests/test_bundle_freshness.py -q` reported 131 passed after updating the
+    stale package-registry release assertion to 2.3.1. `uv run
+    scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera`
+    passed. `uv run hooks/validate_artifact.py .agentera/docs.yaml
+    .agentera/progress.yaml TODO.md CHANGELOG.md` passed before this verified
+    field was finalized. `AGENTERA_HOME=/home/jgabor/git/agentera uv run
+    scripts/agentera docs`, `todo`, and `progress --limit 1` returned current
+    2.3.1 release-state metadata with Profilera parity deferred beyond 2.3.1.
+    `git diff --check` passed.
+  next: >
+    Continue to Task 6 final validation and handoff. Leave Task 5 pending in
+    `.agentera/plan.yaml` for conductor evaluation; do not commit, tag, push,
+    publish, update packages, refresh the installed app, or touch
+    vision/objective state without explicit approval.
+  context:
+    intent: Task 5 2.3.1 release metadata
+    constraints: no commit, tag, push, publication, package-manager update,
+      installed app refresh, .agentera/vision.yaml edit, objective-state edit, or
+      Task 5 plan completion mark
+    scope: version-bearing package surfaces, skill frontmatter, changelog, TODO,
+      docs metadata, and progress evidence
+- number: 400
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Evaluated Task 4 for the 2.3.1 runtime-injected app-home recovery plan and
+    marked it complete after confirming the skill, hej, upgrade guide, and
+    focused tests cover stale installed-gate recovery, `npx skills` visible-skill
+    limitations, and v1 Markdown artifact migration wording.
+  commit: pending
+  inspiration: >
+    Orkestrera requires implementation-agent output to be evaluated against the
+    plan before completing the task, especially because Task 4 guidance must work
+    when the installed CLI gate cannot execute.
+  discovered: >
+    The Task 4 diff presents a no-`--install-root` platform app-home dry-run when
+    `AGENTERA_HOME` is exactly `$HOME/.agents/agentera` and the managed CLI is
+    missing, explains that `npx skills update` does not refresh managed app code
+    or retire the old default, and states that the artifacts phase migrates
+    supported v1 Markdown files to YAML with backups after preview and
+    confirmation.
+  verified: >
+    Reviewed the Task 4 guidance diff. `uv run scripts/validate_capability.py
+    skills/agentera/capabilities/hej` passed. `uv run
+    hooks/validate_artifact.py .agentera/progress.yaml` passed before this
+    evaluation entry was added. `uv run pytest tests/test_cross_capability.py
+    tests/test_hej_capability.py tests/test_runtime_adapters.py -q` passed with
+    136 tests. `uv run scripts/validate_app_home_contract.py --root
+    /home/jgabor/git/agentera` passed. `git diff --check` passed.
+  next: >
+    Continue to Task 5 release metadata; do not commit, tag, push, publish,
+    update packages, refresh the installed app, or touch vision/objective state
+    without explicit approval.
+  context:
+    intent: Task 4 conductor evaluation
+    constraints: no commit, tag, push, publication, package-manager update,
+      installed app refresh, .agentera/vision.yaml edit, objective-state edit, or
+      Task 5 work during this evaluation step
+    scope: Task 4 acceptance review, focused validation, plan status update, and
+      progress evidence
+- number: 399
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Executed Task 4 for the 2.3.1 runtime-injected app-home recovery plan by
+    updating skill, hej, and upgrade guidance so an agent can present the
+    platform app-home upgrade dry-run when the installed gate cannot execute from
+    the exact deprecated default.
+  commit: pending
+  inspiration: >
+    Task 4 acceptance required guidance that works after `npx skills` refreshes
+    only the visible skill, without relying on a successful stale CLI invocation
+    and without telling users to unset the exact old default first.
+  discovered: >
+    Existing guidance already recognized recoverable stale defaults, but the
+    primary repair examples still centered on CLI-provided bundle commands or
+    explicit `--install-root` forms that are unavailable or wrong when the gate
+    cannot execute from `$HOME/.agents/agentera/app/scripts/agentera`.
+  verified: >
+    `AGENTERA_HOME=/home/jgabor/git/agentera uv run scripts/agentera progress`
+    passed. `uv run scripts/validate_capability.py
+    skills/agentera/capabilities/hej` passed. `uv run
+    hooks/validate_artifact.py .agentera/progress.yaml` passed before this
+    verification field was finalized. `uv run pytest tests/test_cross_capability.py
+    tests/test_hej_capability.py tests/test_runtime_adapters.py -q` passed with
+    136 tests after adding upgrade-guide assertions. `uv run
+    scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera`
+    passed. `git diff --check` passed.
+  next: >
+    Leave Task 4 pending in `.agentera/plan.yaml` for conductor evaluation; Task
+    5 version/release metadata remains out of scope.
+  context:
+    intent: Task 4 skill and upgrade guidance
+    constraints: no commit, tag, push, publication, package-manager update,
+      installed app refresh, .agentera/vision.yaml edit, objective-state edit, or
+      Task 4 plan completion mark
+    scope: SKILL guidance, hej prose, UPGRADE wording, focused guidance tests,
+      and progress evidence
+- number: 398
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Executed Task 3 for the 2.3.1 runtime-injected app-home recovery plan by
+    repairing the OpenCode runtime adapter and generated contract surfaces to
+    prefer current app-home layouts, with managed app code under `app/`, instead
+    of deprecated root-managed fallbacks.
+  commit: pending
+  inspiration: >
+    Prior grep evidence showed `.opencode/plugins/agentera.js` still resolved
+    `~/.agents/agentera` and stale legacy skills paths before current app-home
+    locations, and package descriptions still described `AGENTERA_HOME` as an
+    install root.
+  discovered: >
+    The OpenCode adapter mixed app-home injection with runnable-root discovery:
+    helper execution needed `$AGENTERA_HOME/app`, while `shell.env` needed to
+    inject the app home itself. The generated JS contract also reflected the old
+    default-durable-root vocabulary from the shared fixture.
+  verified: >
+    `uv run scripts/generate_js_install_root_contract.py --verify` passed.
+    `node scripts/smoke_opencode_bootstrap.mjs` passed. `uv run
+    scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera`
+    passed. `uv run pytest tests/test_runtime_adapters.py
+    tests/test_install_root_interface_model.py tests/test_app_home_contract.py
+    -q` passed with 89 tests. `uv run scripts/validate_lifecycle_adapters.py`
+    reported lifecycle adapter metadata ok. `python3 -m py_compile
+    scripts/generate_js_install_root_contract.py
+    scripts/validate_app_home_contract.py` passed. `git diff --check` passed.
+    Grep found no OpenCode JS fallback to `~/.agents/agentera` or
+    `~/.agents/skills/agentera`, and no JSON package description using stale
+    AGENTERA_HOME install-root wording.
+  next: >
+    Leave Task 3 pending in `.agentera/plan.yaml` for conductor evaluation; Task
+    4 guidance and Task 5 version/release work remain out of scope.
+  context:
+    intent: Task 3 runtime adapter and generated contract repair
+    constraints: no commit, tag, push, publication, package-manager update,
+      installed app refresh, .agentera/vision.yaml edit, objective-state edit, or
+      Task 3 plan completion mark
+    scope: OpenCode runtime adapter, generated JS app-home contract fixture,
+      runtime/package manifest wording validators, focused smoke coverage, and
+      progress evidence
+    boundary: Task 3 implementation output is limited to runtime adapter,
+      generated contract, package-manifest wording, validators, tests, and this
+      progress evidence. Existing `skills/agentera/SKILL.md` and
+      `skills/agentera/capabilities/hej/prose.md` diffs are prior Task 1
+      guidance changes required by Task 1 AC2. Existing `.agentera/plan.yaml`,
+      `TODO.md`, and archived-plan diffs are Planera/Orkestrera state from plan
+      creation/execution, not Task 3 implementation output.
+- number: 397
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Executed Task 2 for the 2.3.1 runtime-injected app-home recovery plan by
+    allowing narrowly recognized user-data-only app homes to receive managed app
+    code under `app/` and by retargeting inherited exact deprecated-default
+    recovery previews to the platform app home.
+  commit: pending
+  inspiration: >
+    Live recovery showed `/home/jgabor/.local/share/agentera` could already exist
+    with Agentera user state but no managed app code, and upgrade still treated it
+    as an unsafe unmanaged directory.
+  discovered: >
+    Bundle target safety only accepted missing, managed `app/`, or legacy
+    root-managed app homes; it did not distinguish recognized Agentera user state
+    from unknown user data, and inherited exact deprecated defaults still selected
+    the old app home during upgrade planning.
+  verified: >
+    `uv run pytest tests/test_bundle_freshness.py
+    tests/test_install_root_characterization.py tests/test_install_root_module.py
+    -q` passed with 27 tests. `python3 -m py_compile
+    scripts/agentera_upgrade.py` passed. `uv run hooks/validate_artifact.py
+    .agentera/progress.yaml` passed. `uv run
+    scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera`
+    passed. `git diff --check` passed.
+  next: >
+    Leave Task 2 pending in `.agentera/plan.yaml` for conductor evaluation; later
+    tasks still own runtime adapter, guidance, and version/release work.
+  context:
+    intent: Task 2 app-home recovery and user-data-only safety
+    constraints: no commit, tag, push, publication, package-manager update,
+      installed app refresh, .agentera/vision.yaml edit, objective-state edit, or
+      Task 2 plan completion mark
+    scope: upgrade bundle safety, inherited deprecated-default retargeting,
+      doctor diagnostics, focused regression tests, and progress evidence
+    boundary: Task 2 touched only app-home recovery/user-data-only safety code,
+      focused tests, and this progress evidence; existing guidance diffs in
+      `skills/agentera/SKILL.md` and `skills/agentera/capabilities/hej/prose.md`
+      belong to prior Task 1 guidance work, not Task 2
+- number: 396
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Retried Task 1 after evaluation found incomplete corrective asks for custom
+    invalid app-home paths, while preserving exact deprecated-default recovery and
+    explicit `--install-root` authority.
+  commit: pending
+  inspiration: >
+    Evaluation confirmed custom roots still blocked but file-valued, unmanaged,
+    and invalid-bundle diagnostics did not consistently ask for explicit
+    correction or force guidance.
+  discovered: >
+    Missing custom paths already included corrective text, but file-valued,
+    unmanaged, and invalid-bundle branches emitted shorter messages that did not
+    name the required correction path or force-review option.
+  verified: >
+    `uv run pytest tests/test_bundle_freshness.py
+    tests/test_install_root_characterization.py tests/test_install_root_module.py
+    -q` passed with 22 tests. `python3 -m py_compile
+    scripts/agentera_upgrade.py` passed. `uv run hooks/validate_artifact.py
+    .agentera/progress.yaml` passed. `git diff --check` passed. `uv run
+    scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera`
+    passed.
+  next: >
+    Leave Task 1 pending in `.agentera/plan.yaml` for conductor evaluation; later
+    tasks still own platform-home retargeting and adapter repair.
+  context:
+    intent: Task 1 retry for custom invalid-root diagnostic guidance
+    constraints: no commit, tag, push, publication, package-manager update,
+      installed app refresh, .agentera/vision.yaml edit, objective-state edit, or
+      Task 1 plan completion mark
+    scope: blocked doctor diagnostics, focused regression assertions, and retry
+      verification evidence
+- number: 395
+  timestamp: 2026-05-12
+  type: fix
+  phase: build
+  what: >
+    Executed Task 1 for the 2.3.1 runtime-injected app-home recovery plan by
+    reproducing the stale deprecated-default `AGENTERA_HOME` case in deterministic
+    tests and adding a read-only recoverable stale-default doctor classification.
+  commit: pending
+  inspiration: >
+    OpenCode inherited `/home/jgabor/.agents/agentera` even though the developer
+    shell pointed elsewhere, and the installed gate then tried to run the missing
+    `$AGENTERA_HOME/app/scripts/agentera` command.
+  discovered: >
+    The CLI already preserved normal blocking semantics for missing custom
+    `AGENTERA_HOME` values, but the exact deprecated default selected through the
+    environment was still treated as a generic invalid override before recovery
+    guidance could be shown.
+  verified: >
+    `uv run pytest tests/test_bundle_freshness.py
+    tests/test_install_root_characterization.py tests/test_install_root_module.py
+    -q` passed with 22 tests. `python3 -m py_compile
+    scripts/agentera_upgrade.py` passed. `uv run hooks/validate_artifact.py
+    .agentera/progress.yaml` passed after this entry was added. `git diff --check`
+    passed. `uv run scripts/validate_app_home_contract.py --root
+    /home/jgabor/git/agentera` passed.
+  next: >
+    Leave Task 1 pending in `.agentera/plan.yaml` for conductor evaluation; later
+    tasks still own platform-home retargeting, adapter repair, version metadata,
+    and final release validation.
+  context:
+    intent: Task 1 stale runtime default reproduction and recovery rules
+    constraints: no commit, tag, push, publication, package-manager update,
+      installed app refresh, .agentera/vision.yaml edit, objective-state edit, or
+      Task 1 plan completion mark
+    scope: doctor classification, installed-gate guidance, deterministic tests,
+      and progress evidence
 - number: 394
   timestamp: 2026-05-12
   type: fix

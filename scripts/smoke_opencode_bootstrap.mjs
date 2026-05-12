@@ -13,6 +13,7 @@ const PLUGIN_PATH = path.join(__dirname, "..", ".opencode", "plugins", "agentera
 
 let tmpdir = null;
 const originalHome = process.env.HOME;
+const originalXdgDataHome = process.env.XDG_DATA_HOME;
 const originalAgenteraHome = process.env.AGENTERA_HOME;
 const originalOpencodeConfigDir = process.env.OPENCODE_CONFIG_DIR;
 const originalProfileDir = process.env.PROFILERA_PROFILE_DIR;
@@ -30,6 +31,7 @@ try {
   tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-smoke-"));
   process.env.OPENCODE_CONFIG_DIR = tmpdir;
   process.env.HOME = tmpdir;
+  process.env.XDG_DATA_HOME = path.join(tmpdir, ".local", "share");
   delete process.env.AGENTERA_HOME;
   delete process.env.PROFILERA_PROFILE_DIR;
 
@@ -48,6 +50,8 @@ try {
     commandBootstrap,
     skillBootstrap,
     hasManagedMarker,
+    resolveAgenteraAppHome,
+    resolveDefaultAgenteraAppHome,
     resolveAgenteraHome,
     resolveOpencodeCommandsDir,
     resolveOpencodeSkillsDir,
@@ -67,16 +71,27 @@ try {
   assert(commandsDir === path.join(tmpdir, "commands"), "resolveOpencodeCommandsDir should honor OPENCODE_CONFIG_DIR");
   assert(skillsDir === path.join(tmpdir, "skills"), "resolveOpencodeSkillsDir should honor OPENCODE_CONFIG_DIR");
 
-  // --- Test 0: Documented manual install root ---
-  const documentedRoot = path.join(tmpdir, ".agents", "agentera");
-  fs.mkdirSync(path.join(documentedRoot, "scripts"), { recursive: true });
+  // --- Test 0: Current app-home layout ---
+  const documentedAppHome = resolveDefaultAgenteraAppHome();
+  const documentedManagedApp = path.join(documentedAppHome, "app");
+  const staleOldDefault = path.join(tmpdir, ".agents", "agentera");
+  const staleLegacySkillSource = path.join(tmpdir, ".agents", "skills", "agentera");
+  fs.mkdirSync(path.join(documentedManagedApp, "scripts"), { recursive: true });
   fs.writeFileSync(
-    path.join(documentedRoot, "scripts", "validate_capability.py"),
+    path.join(documentedManagedApp, "scripts", "validate_capability.py"),
     "#!/usr/bin/env -S uv run --script\n"
   );
+  fs.mkdirSync(path.join(staleOldDefault, "scripts"), { recursive: true });
+  fs.writeFileSync(path.join(staleOldDefault, "scripts", "agentera"), "#!/usr/bin/env bash\n");
+  fs.mkdirSync(path.join(staleLegacySkillSource, "scripts"), { recursive: true });
+  fs.writeFileSync(path.join(staleLegacySkillSource, "scripts", "agentera"), "#!/usr/bin/env bash\n");
   assert(
-    resolveAgenteraHome() === documentedRoot,
-    "resolveAgenteraHome should honor ~/.agents/agentera before legacy skills path"
+    resolveAgenteraAppHome() === documentedAppHome,
+    `resolveAgenteraAppHome should choose the platform app home, got ${resolveAgenteraAppHome()}`
+  );
+  assert(
+    resolveAgenteraHome() === documentedManagedApp,
+    `resolveAgenteraHome should resolve through app/ for current app homes, got ${resolveAgenteraHome()}`
   );
 
   // --- Test 1: Basic bootstrap (call directly, as legacy smoke did) ---
@@ -452,19 +467,19 @@ try {
   delete process.env.AGENTERA_HOME;
 
   // --- Test 11: shell.env injection — discoverable branch ---
-  // Documented install root exists at ~/.agents/agentera (from Test 0).
+  // Current app home exists with managed code under app/ (from Test 0).
   delete process.env.AGENTERA_HOME;
   const hooksDiscoverable = await Agentera({}, {});
   const envOut1 = { env: {} };
   await hooksDiscoverable["shell.env"]({ cwd: tmpdir }, envOut1);
   assert(
-    envOut1.env.AGENTERA_HOME === documentedRoot,
-    `shell.env should inject documented install root, got ${envOut1.env.AGENTERA_HOME}`
+    envOut1.env.AGENTERA_HOME === documentedAppHome,
+    `shell.env should inject the app home, got ${envOut1.env.AGENTERA_HOME}`
   );
 
   // --- Test 12: shell.env injection — not-discoverable branch ---
-  // Move the marker script away so resolveAgenteraHome returns null.
-  const stagedScript = path.join(documentedRoot, "scripts", "validate_capability.py");
+  // Move the marker script away so current app-home discovery returns null.
+  const stagedScript = path.join(documentedManagedApp, "scripts", "validate_capability.py");
   const parkedScript = path.join(tmpdir, "_parked_validate_capability.py");
   fs.renameSync(stagedScript, parkedScript);
   delete process.env.AGENTERA_HOME;
@@ -515,6 +530,8 @@ try {
 } finally {
   if (originalHome === undefined) delete process.env.HOME;
   else process.env.HOME = originalHome;
+  if (originalXdgDataHome === undefined) delete process.env.XDG_DATA_HOME;
+  else process.env.XDG_DATA_HOME = originalXdgDataHome;
   if (originalAgenteraHome === undefined) delete process.env.AGENTERA_HOME;
   else process.env.AGENTERA_HOME = originalAgenteraHome;
   if (originalOpencodeConfigDir === undefined) delete process.env.OPENCODE_CONFIG_DIR;

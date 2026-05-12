@@ -38,11 +38,12 @@ This command installs or refreshes the managed Agentera app under the Agentera
 app home before it wires runtime config. Runtime config should not point at uv's
 disposable tool cache.
 
-`npx skills update` alone refreshes skill files but does not migrate project
-artifacts or runtime config. Agentera v2.0.2 keeps a legacy `/hej` bridge so old
-entry points can hand users to the command above, but the command above is the
-complete upgrade path. With `--update-packages`, it removes package-managed v1
-skill entries and installs `/agentera`.
+`npx skills update` alone refreshes the visible skill files but does not refresh
+the managed Agentera app, migrate project artifacts, retire the old default app
+home, or rewrite runtime config. Agentera v2.0.2 keeps a legacy `/hej` bridge so
+old entry points can hand users to the command above, but the command above is
+the complete upgrade path. With `--update-packages`, it removes package-managed
+v1 skill entries and installs `/agentera`.
 
 ### Managed app refresh
 
@@ -66,6 +67,29 @@ uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle
 `--only bundle` is the current compatibility selector for the managed app refresh
 phase. The durable location is still the app home, and managed app code is still
 installed under `$AGENTERA_HOME/app`.
+
+If the installed app gate cannot execute because `AGENTERA_HOME` is exactly the
+deprecated default `$HOME/.agents/agentera` and
+`$AGENTERA_HOME/app/scripts/agentera` is missing, do not require a successful
+stale CLI invocation and do not first ask the user to unset `AGENTERA_HOME`.
+Preview the platform app-home recovery path without `--install-root` so upgrade
+can classify the exact deprecated default as recoverable, target the platform app
+home, and preview old-default retirement:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --dry-run
+```
+
+Only after explicit approval should it apply the same platform app-home recovery
+path:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --yes
+```
+
+Custom invalid `AGENTERA_HOME` values are different: fix the setting, choose a
+managed `--install-root`, or intentionally use force guidance. Do not describe
+the exact deprecated default as proof of where the environment value came from.
 
 From a current local clone, inspect the same read-only self-check with:
 
@@ -119,7 +143,7 @@ moves known user state into the selected app home, removes managed legacy files,
 and deletes `~/.agents/agentera` when it becomes empty. The artifacts phase also
 migrates supported v1 Markdown project artifacts such as `.agentera/PROGRESS.md`,
 `.agentera/PLAN.md`, `.agentera/DOCS.md`, and root `VISION.md` into v2 YAML with
-backups under `.agentera/backup-v1/`.
+backups under `.agentera/backup-v1/` after preview and confirmation.
 
 External package updates are deliberately opt-in because they run `npx` and may touch global runtime installs. The package phase removes legacy v1 skill entries and installs the active `/agentera` skill:
 

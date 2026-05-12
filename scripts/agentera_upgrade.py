@@ -35,6 +35,15 @@ PHASES = ("bundle", "artifacts", "runtime", "cleanup", "packages")
 STATUSES = ("pending", "applied", "noop", "blocked", "failed", "skipped")
 EXPECTED_STATE_COMMANDS = ("hej",)
 USER_STATE_NAMES = ("PROFILE.md", "USAGE.md", "history", "corpus", "corpus.json")
+ROOT_USER_STATE_NAMES = (*USER_STATE_NAMES, "TODO.md", "CHANGELOG.md", "DESIGN.md")
+AGENTERA_USER_STATE_NAMES = (
+    "progress.yaml",
+    "decisions.yaml",
+    "health.yaml",
+    "plan.yaml",
+    "docs.yaml",
+    "session.yaml",
+)
 
 
 
@@ -182,6 +191,10 @@ def _legacy_default_app_home(home: Path) -> Path:
     return (home / ".agents" / "agentera").expanduser().resolve()
 
 
+def _is_recoverable_stale_default_app_home(app_home: Path, *, root_source: str, home: Path) -> bool:
+    return root_source == "AGENTERA_HOME" and app_home == _legacy_default_app_home(home)
+
+
 def _platform_default_app_home(home: Path, env: dict[str, str]) -> Path:
     default_env = dict(env)
     default_env.pop("AGENTERA_HOME", None)
@@ -194,6 +207,38 @@ def _legacy_app_home_has_bundle(app_home: Path) -> bool:
     return _has_bundle_root_evidence(app_home) and not (app_home / ".git").exists()
 
 
+def _agentera_user_state_dir_is_recognized(path: Path) -> bool:
+    allowed = set(AGENTERA_USER_STATE_NAMES)
+    if not path.is_dir():
+        return False
+    for entry in path.iterdir():
+        if entry.name in allowed and entry.is_file():
+            continue
+        if entry.name == "optimera" and entry.is_dir():
+            continue
+        return False
+    return True
+
+
+def _app_home_is_user_data_only(app_home: Path) -> bool:
+    """Return true only for app homes containing known Agentera user state."""
+    if not app_home.exists():
+        return True
+    if not app_home.is_dir():
+        return False
+    allowed_root_files = set(ROOT_USER_STATE_NAMES)
+    has_user_state = False
+    for entry in app_home.iterdir():
+        if entry.name in allowed_root_files and entry.is_file():
+            has_user_state = True
+            continue
+        if entry.name == ".agentera" and _agentera_user_state_dir_is_recognized(entry):
+            has_user_state = True
+            continue
+        return False
+    return has_user_state
+
+
 def _bundle_target_is_safe(app_home: Path, *, expected_version: str | None = None) -> bool:
     if not app_home.exists():
         return True
@@ -204,7 +249,7 @@ def _bundle_target_is_safe(app_home: Path, *, expected_version: str | None = Non
         return _classify_root(app_root, expected_version=expected_version).managed_status == "managed"
     if _legacy_app_home_has_bundle(app_home):
         return _classify_root(app_home, expected_version=expected_version).managed_status == "managed"
-    return False
+    return _app_home_is_user_data_only(app_home)
 
 
 def _shell_quote(value: str) -> str:
@@ -321,6 +366,32 @@ def _doctor_roots(app_home: Path) -> dict[str, Path]:
     }
 
 
+def _recoverable_stale_default_signal(app_home: Path, roots: dict[str, Path]) -> dict[str, str]:
+    return {
+        "status": "stale",
+        "kind": "recoverable_stale_default",
+        "message": "deprecated default AGENTERA_HOME has no current managed app and can be refreshed without unsetting it",
+        "deprecatedDefaultAppHome": str(app_home),
+        "managedAppRoot": str(roots["managed_app_root"]),
+    }
+
+
+def _user_data_only_signal(app_home: Path, roots: dict[str, Path]) -> dict[str, str]:
+    return {
+        "status": "stale",
+        "kind": "user_data_only_app_home",
+        "message": "app home contains only recognized Agentera user state and can receive managed app code under app/",
+        "appHome": str(app_home),
+        "managedAppRoot": str(roots["managed_app_root"]),
+    }
+
+
+def _blocked_root_recovery_message(root_source: str) -> str:
+    if root_source == "AGENTERA_HOME":
+        return "fix AGENTERA_HOME, choose a managed --install-root, or use --force only after reviewing the target"
+    return "choose a valid --install-root or use --force only after reviewing the target"
+
+
 def resolve_active_app_model(
     value: Path | None = None,
     *,
@@ -360,6 +431,7 @@ def build_doctor_status(
     marker_version = classification.current_version
     signals: list[dict[str, Any]] = []
     blocked = False
+    recoverable_stale_default = _is_recoverable_stale_default_app_home(install_root, root_source=root_source, home=home)
     legacy_bundle_root = (
         active_bundle_root == install_root
         and _has_bundle_root_evidence(install_root)
@@ -373,6 +445,9 @@ def build_doctor_status(
             "kind": "missing_bundle",
             "message": "default durable Agentera bundle is not installed",
         })
+    elif classification.kind == "missing_explicit_or_environment" and recoverable_stale_default:
+        root_status = "missing"
+        signals.append(_recoverable_stale_default_signal(install_root, roots))
     elif classification.kind == "missing_explicit_or_environment":
         root_status = "missing"
         blocked = True
@@ -390,15 +465,21 @@ def build_doctor_status(
         signals.append({
             "status": "blocked",
             "kind": "invalid_install_root",
-            "message": f"{root_source} points at a file, not an app home directory",
+            "message": f"{root_source} points at a file, not an app home directory; {_blocked_root_recovery_message(root_source)}",
         })
+    elif classification.kind in {"invalid_bundle", "unmanaged_directory"} and recoverable_stale_default:
+        root_status = "stale_default"
+        signals.append(_recoverable_stale_default_signal(install_root, roots))
+    elif classification.kind == "unmanaged_directory" and _app_home_is_user_data_only(install_root):
+        root_status = "user_data_only"
+        signals.append(_user_data_only_signal(install_root, roots))
     elif classification.kind == "unmanaged_directory":
         root_status = "unmanaged"
         blocked = True
         signals.append({
             "status": "blocked",
             "kind": "unmanaged_install_root",
-            "message": "target exists but is not an Agentera-managed bundle",
+            "message": f"target exists but is not an Agentera-managed bundle; {_blocked_root_recovery_message(root_source)}",
         })
     elif classification.kind == "invalid_bundle":
         root_status = "invalid"
@@ -406,7 +487,7 @@ def build_doctor_status(
         signals.append({
             "status": "blocked",
             "kind": "invalid_bundle",
-            "message": classification.diagnostic.message,
+            "message": f"{classification.diagnostic.message}; {_blocked_root_recovery_message(root_source)}",
         })
     else:
         root_status = "managed"
@@ -420,12 +501,16 @@ def build_doctor_status(
             })
         reason = classification.diagnostic.evidence.get("reason")
         if classification.kind == "managed_stale" and reason == "missing_marker":
+            if recoverable_stale_default:
+                signals.append(_recoverable_stale_default_signal(install_root, roots))
             signals.append({
                 "status": "stale",
                 "kind": "missing_marker",
                 "message": f"{BUNDLE_MARKER} is missing or unreadable",
             })
         elif classification.kind == "managed_stale" and reason == "version_mismatch":
+            if recoverable_stale_default:
+                signals.append(_recoverable_stale_default_signal(install_root, roots))
             signals.append({
                 "status": "stale",
                 "kind": "version_mismatch",
@@ -582,7 +667,7 @@ def _legacy_default_has_agentera_evidence(root: Path) -> bool:
         _has_bundle_root_evidence(root),
         _managed_app_has_bundle(root),
         _bundle_marker_path(root).exists(),
-        any((root / name).exists() for name in USER_STATE_NAMES),
+        _app_home_is_user_data_only(root) and any(root.iterdir()) if root.is_dir() else False,
     ))
 
 
@@ -1356,6 +1441,17 @@ def resolve_source_root() -> Path:
     return root
 
 
+def _should_recover_stale_default_env(candidate: Path, source_root: Path, home: Path) -> bool:
+    if candidate != _legacy_default_app_home(home):
+        return False
+    active_root = _active_bundle_root(candidate)
+    expected = _load_suite_version(source_root)
+    classification = _classify_root(active_root, source="environment", expected_version=expected)
+    if classification.kind in {"missing_explicit_or_environment", "unmanaged_directory", "invalid_bundle"}:
+        return True
+    return classification.kind == "managed_stale"
+
+
 def resolve_install_root(value: Path | None, source_root: Path, home: Path, env: dict[str, str] | None = None) -> Path:
     env = env or os.environ
     if value is not None:
@@ -1365,7 +1461,10 @@ def resolve_install_root(value: Path | None, source_root: Path, home: Path, env:
         return Path(default).expanduser().resolve()
     configured = env.get("AGENTERA_HOME")
     if configured:
-        return Path(configured).expanduser().resolve()
+        candidate = Path(configured).expanduser().resolve()
+        if _should_recover_stale_default_env(candidate, source_root, home):
+            return _platform_default_app_home(home, env)
+        return candidate
     return _platform_default_app_home(home, env)
 
 

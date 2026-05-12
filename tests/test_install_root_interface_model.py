@@ -94,7 +94,7 @@ def test_default_source_is_explicit_and_lower_precedence() -> None:
 
     assert precedence == {"explicit": 1, "environment": 2, "default": 3}
     assert model["source_precedence"][-1]["source"] == "default"
-    assert "only when explicit and environment roots are absent" in model["source_precedence"][-1]["rule"]
+    assert "only when explicit and environment app homes are absent" in model["source_precedence"][-1]["rule"]
 
 
 def test_model_is_tied_to_inventory_behavior_shapes() -> None:
@@ -103,7 +103,7 @@ def test_model_is_tied_to_inventory_behavior_shapes() -> None:
     shape_map = model["inventory_links"]["behavior_shape_map"]
     inventory_shapes = {entry["shape"] for entry in inventory["behavior_matrix"]}
 
-    assert model["inventory_links"]["canonical-suite-root-vs-managed-bundle-root"] == inventory["standardization"]["name"]
+    assert model["inventory_links"]["canonical-suite-root-vs-managed-app-root"] == inventory["standardization"]["name"]
     assert inventory_shapes <= set(shape_map)
     assert set(shape_map.values()) <= set(model["root_kinds"])
 

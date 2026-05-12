@@ -1,0 +1,60 @@
+header:
+  level: light
+  created: 2026-05-12
+  status: complete
+  title: 2.3.0 legacy default retirement and v1 artifact confirmation
+what: >
+  Finish the 2.3.0 app-home migration by making the default upgrade path retire
+  the deprecated `~/.agents/agentera` location when the new platform app home is
+  selected, and confirm v1 Markdown project artifacts are already automated.
+why: >
+  The 2.3.0 release moved the default app home to the platform data directory,
+  but the old default can remain orphaned unless explicitly selected. Release
+  users need the default upgrade path to migrate or remove that location safely.
+constraints: >
+  Keep this as a narrow 2.3.0 follow-up. Upgrade owns writes; doctor remains
+  read-only. Preview must write nothing. Do not implement Profilera corpus parity
+  or broad CLI namespaces. Commit, retag, and push only after validation.
+scope:
+  included:
+    - Default upgrade retirement for the old `~/.agents/agentera` location when the platform app home is selected.
+    - Safe migration of legacy app-home user state before managed files are removed.
+    - Regression coverage proving v1 Markdown project artifacts are already included in the artifacts phase.
+    - Docs, progress, and release evidence for the final 2.3.0 follow-up.
+  excluded:
+    - Deleting arbitrary unmanaged directories.
+    - Profilera corpus parity.
+    - Package publication or installed app refresh.
+  deferred:
+    - Any cleanup of user-specific unknown files that would require interactive review.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-12-2-3-0-app-home-and-installed-capability-reliability.yaml
+tasks:
+  - number: 1
+    name: Implement default legacy retirement
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN `AGENTERA_HOME` is unset and the old default app home contains managed Agentera files WHEN upgrade previews the bundle phase THEN the new platform app home is selected and retirement is explicit without writing state.
+      - GIVEN the default upgrade is approved WHEN user state exists in the old default app home THEN known user state is moved to the new app home before managed legacy files are removed.
+      - GIVEN retirement has already run WHEN upgrade runs again THEN it reports a coherent noop without recreating or reusing the old default.
+  - number: 2
+    name: Confirm v1 Markdown artifact automation
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - GIVEN canonical v1 Markdown artifacts exist WHEN the artifacts phase previews THEN all supported Markdown sources are listed with YAML targets and backups.
+      - GIVEN artifact migration applies WHEN the v1 sources are supported THEN source Markdown files are archived and removed without touching unrelated files.
+  - number: 3
+    name: Validate and release handoff
+    depends_on:
+      - 1
+      - 2
+    status: complete
+    acceptance:
+      - GIVEN the follow-up is complete WHEN focused and broad validation run THEN tests, artifact validators, docs query, and whitespace checks pass.
+      - GIVEN release actions are requested WHEN validation passes THEN one follow-up commit is created, `v2.3.0` is retagged, `main` is pushed normally, and only the tag is force-updated.
+overall_acceptance:
+  - GIVEN a user upgrades after 2.3.0 changed the default app home WHEN they use the default upgrade flow THEN stale managed files under `~/.agents/agentera` are retired safely and do not remain the active app.
+  - GIVEN a project still has v1 Markdown Agentera artifacts WHEN upgrade runs THEN existing automation migrates them through the artifacts phase.
+surprises: []

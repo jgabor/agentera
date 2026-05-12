@@ -1,6 +1,6 @@
 {
   "name": "agentera",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "Compound agent orchestration suite \u2014 12 capabilities in one bundled skill; exact bare hej belongs to the bundled agentera dashboard path",
   "author": {
     "name": "Jonathan Gabor",
@@ -43,7 +43,7 @@
     "invocationHint": "Use $agentera for explicit invocation. If the complete user message is exactly `hej`, route it through $agentera and the hej dashboard path; $hej is only a legacy explicit bridge.",
     "limitations": [
       "profilera collects bounded Codex session corpus data when present and reports any absent source families in corpus metadata.",
-      "AGENTERA_HOME must be set in ~/.codex/config.toml under [shell_environment_policy].set so SKILL.md helper-script invocations resolve to the install root; see README install instructions."
+      "AGENTERA_HOME must be set in ~/.codex/config.toml under [shell_environment_policy].set as the app home so SKILL.md helper-script invocations resolve through $AGENTERA_HOME/app; see README install instructions."
     ]
   },
   "agentera": {

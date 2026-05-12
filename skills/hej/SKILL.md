@@ -5,7 +5,7 @@ description: >
   /hej installs toward the Agentera v2 /agentera entry point and idempotent
   upgrade CLI. Do not use this skill for bare text `hej`; route that through
   the bundled agentera skill and the agentera hej dashboard path.
-version: "2.3.0"
+version: "2.3.1"
 legacy_bridge: true
 ---
 

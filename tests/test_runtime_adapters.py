@@ -408,14 +408,40 @@ def _validate_opencode_install_root(plugin_text: str, root: Path = REPO_ROOT) ->
     source_labels = {entry["source"]: entry["label"] for entry in model["source_precedence"]}
 
     if "process.env.AGENTERA_HOME" not in plugin_text or source_labels["environment"] not in plugin_text:
-        errors.append("opencode install-root resolver must honor AGENTERA_HOME from the shared contract")
-    if 'path.join(process.env.HOME, ".agents", "agentera")' not in plugin_text:
-        errors.append("opencode validation must resolve documented default durable root")
-    if source_labels["default"] not in plugin_text or "scripts/install_root.py" not in plugin_text:
-        errors.append("opencode install-root resolver must point maintainers at the shared install-root Module")
+        errors.append("opencode app-home resolver must honor AGENTERA_HOME from the shared contract")
+    if 'path.join(process.env.AGENTERA_HOME, "app")' not in plugin_text:
+        errors.append("opencode resolver must use AGENTERA_HOME/app for managed app code")
+    if "resolveDefaultAgenteraAppHome" not in plugin_text or source_labels["default"] not in plugin_text:
+        errors.append("opencode resolver must use the generated default app-home path")
+    if 'path.join(process.env.HOME, ".agents", "agentera")' in plugin_text:
+        errors.append("opencode resolver must not prefer deprecated ~/.agents/agentera as an app-home fallback")
     if 'path.join(process.env.HOME, ".agents", "skills", "agentera")' in plugin_text:
-        if "temporary OpenCode-only" not in plugin_text or "compatibility exception" not in plugin_text:
-            errors.append("opencode legacy skills-root fallback must be documented as an adapter-local exception")
+        errors.append("opencode resolver must not prefer deprecated ~/.agents/skills/agentera as an app-home fallback")
+    if 'path.join(process.env.HOME, ".agents", "skills")' in plugin_text:
+        if "Legacy skill-source detection only" not in plugin_text or "not an app-home fallback" not in plugin_text:
+            errors.append("opencode legacy skills source detection must be explicitly bounded away from app-home fallback")
+    return errors
+
+
+def _validate_app_home_language(root: Path = REPO_ROOT) -> list[str]:
+    errors: list[str] = []
+    surfaces = {
+        "OpenCode plugin": root / ".opencode/plugins/agentera.js",
+        "Copilot root manifest": root / "plugin.json",
+        "Copilot repository manifest": root / ".github/plugin/plugin.json",
+        "Codex manifest": root / ".codex-plugin/plugin.json",
+    }
+    for label, path in surfaces.items():
+        text = path.read_text(encoding="utf-8")
+        if "AGENTERA_HOME" not in text:
+            continue
+        if "$AGENTERA_HOME/app" not in text and "AGENTERA_HOME/app" not in text:
+            errors.append(f"{label} must describe AGENTERA_HOME as an app home with managed code under app/")
+        for stale in ("default durable root", "default-durable-root", "helper-script install root"):
+            if stale in text:
+                errors.append(f"{label} must not use stale {stale!r} wording for AGENTERA_HOME")
+        if re.search(r"AGENTERA_HOME[^.\n]*(?:install root|install-root)", text):
+            errors.append(f"{label} must not describe AGENTERA_HOME as an install root")
     return errors
 
 
@@ -487,7 +513,7 @@ def _validate_install_root_documentation(root: Path = REPO_ROOT) -> list[str]:
             errors.append(f"{label} must point install-root semantics at scripts/install_root.py")
 
     docs_text = "\n".join(path.read_text(encoding="utf-8") for path in surfaces.values())
-    for term in ("AGENTERA_HOME", "default durable root", "managed", "stale", "unmanaged"):
+    for term in ("AGENTERA_HOME", "default app home", "managed", "stale", "unmanaged"):
         if term not in docs_text:
             errors.append(f"install-root docs must preserve shared contract term {term!r}")
     if "references/adapters/runtime-adapter-registry.yaml" not in docs_text:
@@ -565,11 +591,11 @@ def _validate_runtime_adapter_interface_model(root: Path = REPO_ROOT) -> list[st
     else:
         for fact in (
             "AGENTERA_HOME precedence",
-            "default durable root",
+            "default app home",
             "managed classification",
             "stale classification",
             "unmanaged classification",
-            "root diagnostics",
+            "app-home diagnostics",
         ):
             if fact not in install_root.get("facts", []):
                 errors.append(f"RuntimeAdapter must delegate install-root fact {fact}")
@@ -648,7 +674,7 @@ def _validate_package_manifest_interface_model(root: Path = REPO_ROOT) -> list[s
         if not isinstance(install_root, dict) or install_root.get("owner") != "scripts/install_root.py":
             errors.append("PackageManifest install-root facts must stay delegated to scripts/install_root.py")
         else:
-            for fact in ("AGENTERA_HOME precedence", "default durable root", "managed classification"):
+            for fact in ("AGENTERA_HOME precedence", "default app home", "managed classification"):
                 if fact not in install_root.get("forbidden_in_package_manifest", []):
                     errors.append(f"PackageManifest must forbid install-root fact {fact}")
 
@@ -1246,11 +1272,11 @@ class TestLifecycleAdapters:
         assert install_root["owner"] == "scripts/install_root.py"
         assert install_root["facts"] == [
             "AGENTERA_HOME precedence",
-            "default durable root",
+            "default app home",
             "managed classification",
             "stale classification",
             "unmanaged classification",
-            "root diagnostics",
+            "app-home diagnostics",
         ]
 
     @staticmethod
@@ -1546,9 +1572,12 @@ class TestLegacyRuntimeCompatibility:
         stale = f"{text}\nOpenCode discovers all 12 skills from skills/realisera/SKILL.md.\n"
         assert "OpenCode reference must not document v1 multi-skill manual install" in _validate_opencode_reference(stale)
 
-    def test_opencode_package_uses_documented_manual_install_root(self):
+    def test_opencode_package_uses_current_app_home_layout(self):
         plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
         assert _validate_opencode_install_root(plugin_text) == []
+
+    def test_runtime_contract_surfaces_use_app_home_language(self):
+        assert _validate_app_home_language() == []
 
     def test_opencode_package_routes_bare_hej_exactly(self):
         plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
@@ -1564,10 +1593,38 @@ class TestLegacyRuntimeCompatibility:
         assert "opencode bare-hej router must match only exact lowercase hej plus transport newline" in errors
         assert "opencode bare-hej router must not use broad greeting matching" in errors
 
-    def test_opencode_package_fails_on_manual_install_root_mismatch(self):
+    def test_opencode_package_fails_on_deprecated_app_home_fallback(self):
         plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
-        stale = plugin_text.replace('path.join(process.env.HOME, ".agents", "agentera")', "legacyMissingPath")
-        assert "opencode validation must resolve documented default durable root" in _validate_opencode_install_root(stale)
+        stale = plugin_text.replace(
+            'path.join(resolveDefaultAgenteraAppHome(), "app")',
+            'path.join(process.env.HOME, ".agents", "agentera")',
+        )
+        assert "opencode resolver must not prefer deprecated ~/.agents/agentera as an app-home fallback" in (
+            _validate_opencode_install_root(stale)
+        )
+
+    def test_runtime_contract_surfaces_reject_install_root_agenterahome_wording(self, tmp_path):
+        root = tmp_path / "repo"
+        for relative in (".opencode/plugins", ".github/plugin", ".codex-plugin"):
+            (root / relative).mkdir(parents=True, exist_ok=True)
+        (root / ".opencode/plugins/agentera.js").write_text(
+            "process.env.AGENTERA_HOME; AGENTERA_HOME/app\n", encoding="utf-8"
+        )
+        (root / "plugin.json").write_text(
+            json.dumps({"description": "AGENTERA_HOME resolves to the helper-script install root."}),
+            encoding="utf-8",
+        )
+        (root / ".github/plugin/plugin.json").write_text(
+            json.dumps({"description": "AGENTERA_HOME/app contains managed code."}), encoding="utf-8"
+        )
+        (root / ".codex-plugin/plugin.json").write_text(
+            json.dumps({"description": "AGENTERA_HOME/app contains managed code."}), encoding="utf-8"
+        )
+
+        errors = _validate_app_home_language(root)
+
+        assert "Copilot root manifest must not use stale 'helper-script install root' wording for AGENTERA_HOME" in errors
+        assert "Copilot root manifest must not describe AGENTERA_HOME as an install root" in errors
 
     def test_install_root_documentation_points_to_shared_contract(self):
         assert _validate_install_root_documentation() == []
@@ -1581,7 +1638,7 @@ class TestLegacyRuntimeCompatibility:
         ):
             (root / relative).mkdir(parents=True, exist_ok=True)
         text = (
-            "AGENTERA_HOME default durable root managed stale unmanaged "
+            "AGENTERA_HOME default app home managed stale unmanaged "
             "scripts/install_root.py package metadata registry work stays outside\n"
         )
         for relative in (

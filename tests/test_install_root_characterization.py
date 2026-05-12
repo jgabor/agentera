@@ -256,5 +256,5 @@ def test_upgrade_caller_uses_shared_standardized_install_root_classification(
     assert setup_codex.verify_install_root(upgrade_only) == []
 
     inventory = yaml.safe_load(INVENTORY.read_text(encoding="utf-8"))
-    assert inventory["standardization"]["name"] == "canonical-suite-root-vs-managed-bundle-root"
+    assert inventory["standardization"]["name"] == "canonical-suite-root-vs-managed-app-root"
     assert any(entry["decision"].startswith("change") for entry in inventory["behavior_matrix"])

@@ -118,11 +118,11 @@ ownership:
     owner: scripts/install_root.py
     forbidden_in_package_manifest:
       - AGENTERA_HOME precedence
-      - default durable root
+      - default app home
       - managed classification
       - stale classification
       - unmanaged classification
-      - install-root diagnostics
+      - app-home diagnostics
   runtime_adapter_delegated:
     owner: scripts/runtime_adapter_registry.py
     forbidden_in_package_manifest:

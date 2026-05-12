@@ -10,7 +10,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-const AGENTERA_VERSION = "2.3.0";
+const AGENTERA_VERSION = "2.3.1";
 const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode --skill agentera -y";
 const REQUIRED_SKILL_NAMES = ["agentera"];
 const LEGACY_BRIDGE_SKILL_NAMES = new Set(["hej"]);
@@ -115,10 +115,11 @@ function validManagedSkillDir(skillDir, name) {
 function resolveInstalledAgenteraSkillsDir() {
   const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
   const candidates = [
-    process.env.AGENTERA_HOME && path.join(process.env.AGENTERA_HOME, "skills"),
-    path.join(process.env.HOME, ".agents", "agentera", "skills"),
-    path.join(process.env.HOME, ".agents", "skills"),
+    process.env.AGENTERA_HOME && path.join(process.env.AGENTERA_HOME, "app", "skills"),
+    path.join(resolveDefaultAgenteraAppHome(), "app", "skills"),
     path.join(pluginRoot, "skills"),
+    // Legacy skill-source detection only; this is not an app-home fallback.
+    path.join(process.env.HOME, ".agents", "skills"),
   ].filter(Boolean);
 
   for (const candidate of candidates) {
@@ -295,25 +296,49 @@ function findAgenteraRoot(startDir) {
   return startDir;
 }
 
+function resolveDefaultAgenteraAppHome() {
+  if (process.platform === "darwin") {
+    return path.join(process.env.HOME, "Library", "Application Support", "agentera");
+  }
+  if (process.platform === "win32") {
+    return path.join(
+      process.env.APPDATA || path.join(process.env.USERPROFILE || process.env.HOME, "AppData", "Roaming"),
+      "agentera"
+    );
+  }
+  return path.join(process.env.XDG_DATA_HOME || path.join(process.env.HOME, ".local", "share"), "agentera");
+}
+
+function isRunnableAgenteraAppRoot(candidate) {
+  return fs.existsSync(path.join(candidate, "scripts", "agentera"))
+    || fs.existsSync(path.join(candidate, "scripts", "validate_capability.py"));
+}
+
+function resolveAgenteraAppHome() {
+  if (process.env.AGENTERA_HOME && isRunnableAgenteraAppRoot(path.join(process.env.AGENTERA_HOME, "app"))) {
+    return process.env.AGENTERA_HOME;
+  }
+  const defaultAppHome = resolveDefaultAgenteraAppHome();
+  if (isRunnableAgenteraAppRoot(path.join(defaultAppHome, "app"))) {
+    return defaultAppHome;
+  }
+  return null;
+}
+
 function resolveAgenteraHome() {
-  // Keep this adapter-local resolver aligned with the shared install-root
+  // Keep this adapter-local resolver aligned with the shared app-home
   // contract fixture in `.agentera/install_root_interface_model.yaml` and the
-  // Python implementation in `scripts/install_root.py`: AGENTERA_HOME first,
-  // then the default durable root. The legacy
-  // `~/.agents/skills/agentera` fallback below is a temporary OpenCode-only
-  // compatibility exception for older manual skill installs; do not add more
-  // install-root identity rules here.
+  // Python implementation in `scripts/install_root.py`: AGENTERA_HOME names an
+  // app home, with managed app code under app/. Checkout roots remain accepted
+  // only for local development and smoke tests.
   const candidates = [
-    process.env.AGENTERA_HOME,
-    path.join(process.env.HOME, ".agents", "agentera"),
-    path.join(process.env.HOME, ".agents", "skills", "agentera"),
+    process.env.AGENTERA_HOME && path.join(process.env.AGENTERA_HOME, "app"),
+    process.env.AGENTERA_HOME && fs.existsSync(path.join(process.env.AGENTERA_HOME, ".git")) && process.env.AGENTERA_HOME,
+    path.join(resolveDefaultAgenteraAppHome(), "app"),
   ].filter(Boolean);
 
   for (const candidate of candidates) {
-    if (
-      fs.existsSync(path.join(candidate, "scripts", "agentera"))
-      || fs.existsSync(path.join(candidate, "scripts", "validate_capability.py"))
-    ) {
+    if (isRunnableAgenteraAppRoot(candidate)) {
       return candidate;
     }
   }
@@ -490,10 +515,10 @@ export const Agentera = async (input = {}, _options) => {
   bootstrapCommands();
   bootstrapSkills();
 
-  // Resolve install root once at init. Each shell.env invocation re-reads the
+  // Resolve app home once at init. Each shell.env invocation re-reads the
   // user-set AGENTERA_HOME so a value injected after plugin load (e.g. by a
   // wrapping shell) is preserved.
-  const initialAgenteraHome = resolveAgenteraHome();
+  const initialAgenteraAppHome = resolveAgenteraAppHome();
   const projectRoot = findAgenteraRoot(input.worktree || input.directory || process.cwd());
 
   return {
@@ -514,8 +539,8 @@ export const Agentera = async (input = {}, _options) => {
         env.AGENTERA_HOME = process.env.AGENTERA_HOME;
         return;
       }
-      if (!initialAgenteraHome) return;
-      env.AGENTERA_HOME = initialAgenteraHome;
+      if (!initialAgenteraAppHome) return;
+      env.AGENTERA_HOME = initialAgenteraAppHome;
     },
 
     "chat.message": async (_input, output) => {
@@ -551,6 +576,8 @@ Agentera.__test = {
   lifecycle,
   normalizeBareHejTransportText,
   resolveAgenteraHome,
+  resolveAgenteraAppHome,
+  resolveDefaultAgenteraAppHome,
   resolveOpencodeCommandsDir,
   resolveOpencodeSkillsDir,
   routeBareHejMessage,
@@ -561,36 +588,36 @@ Agentera.__test = {
 
 // --- BEGIN GENERATED: INSTALL_ROOT_CONTRACT ---
 const INSTALL_ROOT_CONTRACT = {
-    "title": "Install Root Interface And Safety Model",
+    "title": "App Home Interface And Safety Model",
     "plan": "Deepen Agentera Install Root Module",
     "task": 3,
     "captured": "2026-05-05",
-    "purpose": "Define the read-only install-root classification contract that setup, doctor, upgrade, and runtime callers will share in later tasks. This file is a model fixture only; it does not perform discovery, mutate bundle state, or migrate callers.\n",
+    "purpose": "Define the read-only app-home classification contract that setup, doctor, upgrade, and runtime callers share. AGENTERA_HOME names the durable app home; managed app code lives under AGENTERA_HOME/app. This file is a model fixture only; it does not perform discovery, mutate app state, or migrate callers.\n",
     "source_precedence": [
       {
         "source": "explicit",
         "rank": 1,
         "label": "explicit --install-root",
-        "rule": "Caller-provided roots always win."
+        "rule": "Caller-provided app homes always win."
       },
       {
         "source": "environment",
         "rank": 2,
         "label": "AGENTERA_HOME",
-        "rule": "Environment roots are considered only when no explicit root was provided."
+        "rule": "Environment app homes are considered only when no explicit app home was provided."
       },
       {
         "source": "default",
         "rank": 3,
-        "label": "default durable root",
-        "rule": "Default roots are used only when explicit and environment roots are absent."
+        "label": "default app home",
+        "rule": "Default app homes are used only when explicit and environment app homes are absent."
       }
     ],
     "result_schema": {
       "required_fields": ["source", "kind", "safe_action", "diagnostic", "managed_status", "stale_status", "missing_evidence"],
       "field_contract": {
         "source": "One of explicit, environment, or default, with source_precedence.rank preserved.",
-        "kind": "One root shape from root_kinds; callers must not infer bundle identity from paths.",
+        "kind": "One app-home shape from root_kinds; callers must not infer managed app identity from paths.",
         "safe_action": "One action from safe_actions; classification itself never writes files.",
         "diagnostic": "Structured code, severity, message, and evidence for humans and JSON callers.",
         "managed_status": "managed, unmanaged, missing, invalid, or unknown.",
@@ -612,27 +639,27 @@ const INSTALL_ROOT_CONTRACT = {
     },
     "safe_actions": {
       "use_root": {
-        "description": "Root is fresh and managed; callers may use the root without extra bundle identity checks.",
+        "description": "App home has fresh managed app code; callers may use AGENTERA_HOME/app without extra identity checks.",
         "writes_files": false
       },
       "preview_refresh": {
-        "description": "Root is managed but stale or missing at the default location; callers may present a dry-run refresh preview only.",
+        "description": "App home has stale or missing managed app code at app/; callers may present a dry-run refresh preview only.",
         "writes_files": false
       },
       "require_existing_managed_root": {
-        "description": "Root was explicitly or environmentally selected but missing; callers must ask for a different managed root or explicit install approval.",
+        "description": "App home was explicitly or environmentally selected but missing; callers must ask for a different managed app home or explicit install approval.",
         "writes_files": false
       },
       "reject_file_path": {
-        "description": "Root resolves to a file; callers must reject it and ask for a directory.",
+        "description": "App home resolves to a file; callers must reject it and ask for a directory.",
         "writes_files": false
       },
       "reject_unmanaged_directory": {
-        "description": "Root is a directory but lacks managed bundle evidence; callers must not overwrite it without an explicit force/install path.",
+        "description": "App home is a directory but lacks recognized Agentera state or managed app evidence; callers must not overwrite it without an explicit force/install path.",
         "writes_files": false
       },
       "reject_invalid_bundle": {
-        "description": "Root has partial or malformed bundle evidence; callers must report the invalid evidence and avoid refresh/apply commands.",
+        "description": "App home or its app/ directory has partial or malformed managed app evidence; callers must report the invalid evidence and avoid refresh/apply commands.",
         "writes_files": false
       }
     },
@@ -644,7 +671,7 @@ const INSTALL_ROOT_CONTRACT = {
         "diagnostic": {
           "code": "install_root.managed_fresh",
           "severity": "info",
-          "message": "install root is managed and fresh"
+          "message": "app home has fresh managed app code under app/"
         },
         "missing_evidence": []
       },
@@ -655,7 +682,7 @@ const INSTALL_ROOT_CONTRACT = {
         "diagnostic": {
           "code": "install_root.managed_stale",
           "severity": "warning",
-          "message": "install root is managed but stale"
+          "message": "app home has stale managed app code under app/"
         },
         "missing_evidence": ["current bundle marker/version or required CLI command evidence"]
       },
@@ -666,7 +693,7 @@ const INSTALL_ROOT_CONTRACT = {
         "diagnostic": {
           "code": "install_root.missing_selected_root",
           "severity": "error",
-          "message": "selected install root does not exist"
+          "message": "selected app home does not exist"
         },
         "missing_evidence": ["directory", "managed bundle evidence"]
       },
@@ -677,7 +704,7 @@ const INSTALL_ROOT_CONTRACT = {
         "diagnostic": {
           "code": "install_root.missing_default_root",
           "severity": "warning",
-          "message": "default durable root is missing and may be created only by a confirmed install or refresh"
+          "message": "default app home is missing and may be created only by a confirmed install or refresh"
         },
         "missing_evidence": ["directory", "managed bundle evidence"]
       },
@@ -688,7 +715,7 @@ const INSTALL_ROOT_CONTRACT = {
         "diagnostic": {
           "code": "install_root.file_path",
           "severity": "error",
-          "message": "selected install root is a file, not a directory"
+          "message": "selected app home is a file, not a directory"
         },
         "missing_evidence": ["directory"]
       },
@@ -699,7 +726,7 @@ const INSTALL_ROOT_CONTRACT = {
         "diagnostic": {
           "code": "install_root.unmanaged_directory",
           "severity": "error",
-          "message": "selected directory is not a managed Agentera bundle"
+          "message": "selected directory is not a recognized Agentera app home"
         },
         "missing_evidence": ["managed bundle evidence"]
       },
@@ -710,13 +737,13 @@ const INSTALL_ROOT_CONTRACT = {
         "diagnostic": {
           "code": "install_root.invalid_bundle",
           "severity": "error",
-          "message": "selected directory has incomplete or malformed Agentera bundle evidence"
+          "message": "selected app home has incomplete or malformed managed app evidence"
         },
         "missing_evidence": ["valid bundle marker and complete managed bundle evidence"]
       }
     },
     "inventory_links": {
-      "canonical-suite-root-vs-managed-bundle-root": "canonical-suite-root-vs-managed-bundle-root",
+      "canonical-suite-root-vs-managed-app-root": "canonical-suite-root-vs-managed-app-root",
       "behavior_shape_map": {
         "valid setup root": "managed_fresh",
         "missing explicit setup root": "missing_explicit_or_environment",

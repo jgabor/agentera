@@ -4,10 +4,12 @@
 
 ### Changed
 
+- 2.3.1 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the runtime-injected stale-default recovery scope; Profilera corpus parity remains deferred beyond 2.3.1.
 - 2.3.0 release state now aligns with Decisions 47, 48, and 50: app-home migration, `agentera lint`, installed schema/helper discovery, and app/runtime root diagnostics are the focused reliability scope, while Profilera corpus parity remains deferred beyond 2.3.0.
 
 ### Fixed
 
+- Runtime-injected exact deprecated-default `AGENTERA_HOME` recovery now guides upgrade toward the platform app home when no explicit `--install-root` was supplied, keeps doctor read-only, preserves explicit install-root authority, and allows safe user-data-only app homes to receive managed app code under `app/`.
 - The default upgrade flow now retires a managed legacy `~/.agents/agentera` app home when the new platform data app home is selected, moving known user state before removing old managed files; artifact migration coverage now proves canonical v1 Markdown files are automated through the upgrade artifacts phase.
 - Installed capability instructions now describe schema and helper discovery through `agentera describe --format json`, `agentera lint`, and the active app-home model instead of manual install-root searches.
 - Public `agentera doctor --json` and `agentera hej --format json` now expose app-home fields without `installRoot` compatibility fields, and release validation blocks stale structured output.

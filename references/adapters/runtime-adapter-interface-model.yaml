@@ -2,7 +2,7 @@ interface: RuntimeAdapter
 status: design_contract
 purpose: >-
   Define the runtime-owned facts that a later registry Module may expose without
-  absorbing package metadata, install-root classification, or caller behavior.
+  absorbing package metadata, app-home classification, or caller behavior.
 record:
   required_groups:
     - identity
@@ -116,11 +116,11 @@ ownership:
     owner: scripts/install_root.py
     facts:
       - AGENTERA_HOME precedence
-      - default durable root
+      - default app home
       - managed classification
       - stale classification
       - unmanaged classification
-      - root diagnostics
+      - app-home diagnostics
 consumer_permissions:
   lifecycle_validation:
     allowed_groups:
@@ -176,4 +176,4 @@ consumer_permissions:
 non_goals:
   - Do not introduce an executable RuntimeAdapter registry Module in this task.
   - Do not migrate lifecycle validation, doctor, upgrade, docs, or runtime tests to consume a registry in this task.
-  - Do not change install-root classification, package metadata validation, artifact write validation, or live runtime behavior.
+  - Do not change app-home classification, package metadata validation, artifact write validation, or live runtime behavior.

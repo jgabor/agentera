@@ -1,4 +1,4 @@
-last_audit: 2026-05-12 (2.3.0 legacy default retirement follow-up)
+last_audit: 2026-05-12 (2.3.1 release metadata alignment)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -76,7 +76,7 @@ index:
   status: current
 - document: Python package manifest
   path: pyproject.toml
-  last_updated: '2026-05-09'
+  last_updated: '2026-05-12'
   status: current
 - document: Upgrade guide
   path: UPGRADE.md
@@ -136,11 +136,11 @@ index:
   status: current
 - document: Registry
   path: registry.json
-  last_updated: '2026-05-09'
+  last_updated: '2026-05-12'
   status: current
 - document: Marketplace manifest
   path: .claude-plugin/marketplace.json
-  last_updated: '2026-05-09'
+  last_updated: '2026-05-12'
   status: current
 - document: Codex marketplace manifest
   path: .agents/plugins/marketplace.json
@@ -148,19 +148,19 @@ index:
   status: current
 - document: Copilot plugin manifest
   path: plugin.json
-  last_updated: '2026-05-09'
+  last_updated: '2026-05-12'
   status: current
 - document: Copilot repo plugin manifest
   path: .github/plugin/plugin.json
-  last_updated: '2026-05-09'
+  last_updated: '2026-05-12'
   status: current
 - document: Codex plugin manifest
   path: .codex-plugin/plugin.json
-  last_updated: '2026-05-09'
+  last_updated: '2026-05-12'
   status: current
 - document: OpenCode plugin adapter
   path: .opencode/plugins/agentera.js
-  last_updated: '2026-05-09'
+  last_updated: '2026-05-12'
   status: current
 - document: OpenCode adapter reference
   path: references/adapters/opencode.md
@@ -342,8 +342,34 @@ coverage:
   documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: '2.3.0 legacy default retirement follow-up verification passed locally: uv run pytest tests/test_upgrade_cli.py tests/test_bundle_freshness.py tests/test_app_home_contract.py -q reported 34 passed; uv run scripts/validate_app_home_contract.py --root /home/jgabor/git/agentera passed; uv run hooks/validate_artifact.py .agentera/plan.yaml TODO.md CHANGELOG.md passed; python3 -m py_compile scripts/agentera_upgrade.py passed; uv run pytest -q reported 853 passed; git diff --check passed. This confirms default upgrade retirement for managed ~/.agents/agentera, existing v1 Markdown artifact automation, app-home terminology, and final release readiness before the requested commit/retag/push.'
+  tests: '2.3.1 Task 5 release metadata alignment updated active version-bearing surfaces to 2.3.1 and documented runtime-injected stale old-default AGENTERA_HOME recovery in changelog, TODO, docs, and progress. Focused verification is recorded in the Task 5 progress entry; broad final release validation remains Task 6.'
 audit_log:
+- date: '2026-05-12'
+  label: 2.3.1 release metadata alignment
+  findings:
+  - type: checked
+    description: >
+      Active version-bearing package surfaces now report 2.3.1 across
+      `pyproject.toml`, `uv.lock`, `registry.json`, plugin manifests, the
+      OpenCode `AGENTERA_VERSION` marker, and skill frontmatter.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Release-state artifacts now document runtime-injected exact
+      deprecated-default `AGENTERA_HOME` recovery, safe platform app-home repair,
+      read-only doctor boundaries, explicit `--install-root` authority, and
+      Profilera corpus parity deferred beyond 2.3.1.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Older archived plans and historical progress entries may still mention
+      prior app-home behavior as evidence. They were not rewritten for Task 5 and
+      should not block release readiness checks that are scoped to active
+      version/release metadata.
+    resolution: noted
+    severity: info
 - date: '2026-05-12'
   label: 2.3.0 legacy default retirement follow-up
   findings:

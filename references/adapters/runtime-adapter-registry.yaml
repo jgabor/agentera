@@ -142,7 +142,7 @@ records:
         - OpenCode plugin file is present
         - OpenCode plugin file is not installed at the native plugin path
         - runtime can reach shared Agentera helper scripts
-        - OpenCode cannot see AGENTERA_HOME or a documented default Agentera root
+        - OpenCode cannot see AGENTERA_HOME or a documented default Agentera app home
         - OpenCode managed Agentera commands are current
         - OpenCode managed Agentera commands are missing or stale
         - OpenCode Agentera skill paths resolve to SKILL.md

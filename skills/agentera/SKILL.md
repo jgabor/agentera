@@ -7,7 +7,7 @@ description: >
   incoming requests to the right capability. Use this skill for /agentera,
   Agentera capability requests, and a complete user message exactly `hej`;
   bare `hej` runs the agentera hej dashboard path instead of a generic greeting.
-version: "2.3.0"
+version: "2.3.1"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 ---
 
@@ -75,7 +75,28 @@ installed-app status object. If its value is `fresh`, treat the installed app ga
 for that briefing and render from the output. The object includes
 `expectedVersion`, `expectedVersionSource`, `appHome`, `managedAppRoot`,
 `userDataRoot`, repair commands, and approval text. If the command cannot
-execute, fails before argparse, reports `invalid choice` for `hej`, or reports a
+execute because `AGENTERA_HOME` is exactly the deprecated default
+`$HOME/.agents/agentera` and `$AGENTERA_HOME/app/scripts/agentera` is missing,
+do not require a successful stale CLI invocation and do not first ask the user to
+unset `AGENTERA_HOME`. Tell the user the installed Agentera app is stale and show
+the platform app-home recovery preview:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --dry-run
+```
+
+This preview writes nothing. Because no explicit `--install-root` is supplied,
+upgrade can classify the exact deprecated default as recoverable, target the platform app home,
+and preview old-default retirement. Ask for explicit approval before writes,
+then apply the same platform app-home recovery path:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --yes
+```
+
+After apply, retry the installed command from the platform app home reported by
+the upgrade output, not from the deprecated old default. If the command executes
+but fails before argparse, reports `invalid choice` for `hej`, or reports a
 status of `stale`, `blocked`, missing-command, or refresh-required:
 
 - Tell the user the installed app is stale
@@ -101,10 +122,16 @@ After apply, retry:
 uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej
 ```
 
-If `AGENTERA_HOME` points at a missing path, a file, or an unmanaged directory
-and the single command cannot run, do not overwrite it silently or fall back to a
-local checkout. Ask the user to fix/unset `AGENTERA_HOME`, choose a managed
-`--install-root`, or explicitly request a forced app install.
+If `AGENTERA_HOME` is exactly the deprecated default
+`$HOME/.agents/agentera`, no explicit `--install-root` was supplied, and
+`$AGENTERA_HOME/app/scripts/agentera` is missing or stale, classify this as a
+recoverable stale default. Present the platform app-home dry-run above instead
+of first asking the user to unset `AGENTERA_HOME`; do not claim to prove where
+the environment value came from. If `AGENTERA_HOME` is any other missing path,
+file, or unmanaged directory and the single command cannot run, do not overwrite
+it silently or fall back to a local checkout. Ask the user to fix
+`AGENTERA_HOME`, choose a managed `--install-root`, or explicitly request a
+forced app install.
 
 Only after the installed CLI succeeds, proceed to Step -1 and the routing layers
 below. Do not fall through to a local checkout as a workaround; the uvx commands
@@ -207,10 +234,14 @@ hand-written migration steps, or raw YAML reads. Only the apply step requires co
 
 The upgrade command is idempotent. It installs or refreshes the managed app under
 the Agentera app home when invoked through `uvx`, migrates v1 artifacts, wires
-runtime config to that app home, and removes fixable stale v1
-runtime artifacts. Package refreshes that run `npx skills remove` for v1 skill
-entries and `npx skills add` for `/agentera` remain explicit opt-in via
-`--update-packages`.
+runtime config to that app home, and removes fixable stale v1 runtime artifacts.
+The artifacts phase migrates supported v1 Markdown files to YAML with backups
+after preview and confirmation. Package refreshes that run `npx skills remove`
+for v1 skill entries and `npx skills add` for `/agentera` remain explicit opt-in
+via `--update-packages`. `npx skills update` by itself updates only the visible
+skill; if `/agentera` then finds a stale or missing managed app, run the
+app-home upgrade preview above so upgrade refreshes the managed app and retires
+the exact old default when it is recoverable.
 
 ### Layer 1: Bare `/agentera` or bare `hej` — delegate to hej
 

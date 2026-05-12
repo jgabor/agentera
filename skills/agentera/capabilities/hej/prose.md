@@ -41,10 +41,31 @@ Resolve `RESOLVED_AGENTERA_HOME` with the app-home precedence `AGENTERA_HOME`
 when set, otherwise the platform data home, then run
 the installed command once. Do not preflight app health with `glob`, `grep`,
 `read`, `ls`, `python`, `doctor`, `--help`, `scripts/install_root.py`,
-`registry.json`, or `.agentera-bundle.json`. If the command exits successfully,
-inspect the CLI-provided `bundle.status` installed-app status object. Only
-`fresh` passes the installed Agentera app gate for normal briefing. The object
-also carries `appHome`, `managedAppRoot`, `userDataRoot`,
+`registry.json`, or `.agentera-bundle.json`. If the command cannot execute
+because `AGENTERA_HOME` is exactly the deprecated default
+`$HOME/.agents/agentera` and `$AGENTERA_HOME/app/scripts/agentera` is missing,
+do not require a successful stale CLI invocation and do not first ask the user to
+unset `AGENTERA_HOME`. Use the exact stale-app summary phrase `installed
+Agentera app is stale`, then show this platform app-home recovery preview:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --dry-run
+```
+
+That preview writes nothing. Because no explicit `--install-root` is supplied,
+upgrade can classify the exact deprecated default as recoverable, target the platform app home,
+and preview old-default retirement. Ask for explicit approval before writes,
+then apply the same platform app-home recovery path:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --yes
+```
+
+After apply, retry the installed command from the platform app home reported by
+the upgrade output, not from the deprecated old default. If the command exits
+successfully, inspect the CLI-provided `bundle.status` installed-app status
+object. Only `fresh` passes the installed Agentera app gate for normal briefing.
+The object also carries `appHome`, `managedAppRoot`, `userDataRoot`,
 `expectedVersionSource`, `bundle.dryRunCommand`, `bundle.applyCommand`, and
 approval text. If the installed command cannot execute, is stale,
 missing `hej`, fails before argparse, or reports blocked/refresh-required status,
@@ -61,8 +82,13 @@ Do not run the matching apply command until the user explicitly approves the
 same app home, preferably with `approve app refresh for <resolved-app-home>`.
 After apply, retry `uv run
 "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej`; do not treat local checkout
-fallback as installed-app success. If `AGENTERA_HOME` points at a missing,
-invalid, or non-managed root, ask the user to fix/unset it, choose a managed
+fallback as installed-app success. If `AGENTERA_HOME` is exactly the deprecated
+default `$HOME/.agents/agentera`, no explicit `--install-root` was supplied, and
+`$AGENTERA_HOME/app/scripts/agentera` is missing or stale, classify it as a
+recoverable stale default and show the platform app-home recovery preview above
+instead of first asking the user to unset `AGENTERA_HOME`; do not claim to prove
+where the environment value came from. If `AGENTERA_HOME` points at any other
+missing, invalid, or non-managed root, ask the user to fix it, choose a managed
 app home, or explicitly request forced install guidance.
 
 Use `agentera query <artifact-name> --format json|yaml` only for advanced or
@@ -112,11 +138,18 @@ and next action. Render those fields; do not spend additional tool calls on
 discovery. Treat `v1_migration.dry_run_command` as the CLI-supplied dry-run
 preview. Ask before any upgrade apply command, and only run
 `v1_migration.apply_command` after confirmation.
+The artifacts phase migrates supported v1 Markdown files to YAML with backups
+after preview and confirmation.
 
 If `v1_migration.detected` is false, emit no upgrade notice. Profile status is
 also CLI-owned: render `profile: loaded` without warning, and render
 `profile.suggested_action` or a missing-profile attention item only when
 `agentera hej` supplies one.
+
+If `npx skills update` refreshed only the visible skill and `/agentera` next
+finds a stale or missing managed app, explain that managed app refresh and exact
+old-default retirement happen through app-home upgrade, not through the visible
+skill update alone.
 
 ---
 

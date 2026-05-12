@@ -7,7 +7,7 @@ purpose: >
   introducing a shared install-root Module. Entries marked change are known
   inconsistencies to standardize later; this task only characterizes them.
 standardization:
-  name: canonical-suite-root-vs-managed-bundle-root
+  name: canonical-suite-root-vs-managed-app-root
   intent: >
     Replace caller-local proof rules with one read-only classification that
     separates source, root kind, managed status, stale status, safe action, and
