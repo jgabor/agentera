@@ -46,6 +46,8 @@
 
 ### Added
 
+- Decision 51 startup-overhead analysis now measures raw Agentera artifact access after CLI state calls during capability startup/state gathering, including bare capability names and natural-language handoffs instead of only slash-route startup windows.
+- OpenCode corpus extraction now emits current-schema tool call records from `part.data`, allowing startup analysis to observe real `agentera <state>` calls followed by raw reads/greps/globs.
 - The default live-host smoke harness now runs non-live Profilera corpus parity fixtures for Claude Code, Codex, OpenCode, and GitHub Copilot, reports absent local stores as bounded `store_absent` statuses, and keeps privacy-sensitive fixture transcript text out of smoke output.
 - Profilera corpus tests now prove combined Claude Code, Codex, OpenCode, and GitHub Copilot fixture parity plus bounded missing, locked, sparse, and schema-divergent degradation coverage without transcript leakage.
 - Profilera corpus extraction now reads GitHub Copilot `session-store.db` stores read-only, preserves user-before-assistant tied-turn ordering, emits decision-rich prompts, and reports `/chronicle reindex` as bounded sparse-store remediation without transcript leakage.
@@ -57,6 +59,7 @@
 ### Verified
 
 - Shell-rc removal state is synchronized without a selected release target: TODO, docs, progress, changelog, and plan state record completion, stale-remnant handling, and verification evidence while package, plugin, registry, lockfile, OpenCode marker, and skill version-bearing files remain unchanged at the pre-existing `2.3.3` metadata.
+- Decision 51 state-access measurement replaces an uncommitted route/intro startup-window draft that found zero qualifying windows and would have closed the startup-envelope follow-up; direct OpenCode analysis showed repeated `CLI state -> raw artifact access` behavior, so the CLI startup state-envelope follow-up is reopened as planning work without version-bearing metadata changes.
 - Profilera corpus runtime parity state is synchronized without a selected release target: TODO, docs, progress, changelog, and plan state record completion while package, plugin, registry, lockfile, and skill version-bearing files remain unchanged.
 - 2.3.3 patch release readiness is recorded locally without publication, installed app refresh, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces are aligned.
 
@@ -485,7 +488,7 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 - Normalized filename references to use .md extensions across 9 SKILL.md files
 - Hej glyph replaced: U+1F794 with U+2302 (terminal rendering compatibility)
 - Literal `\n` in YAML frontmatter descriptions for inspektera, visionera, visualisera
-- .gitignore: added defensive credential patterns (.env, *.key,*.pem)
+- .gitignore: added defensive credential patterns (.env, _.key,_.pem)
 
 ## [1.13.0] · 2026-04-13
 

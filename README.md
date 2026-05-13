@@ -483,6 +483,29 @@ Agentera has two eval surfaces:
   Markdown fixtures from `fixtures/semantic/*.md`, checks expected output facts
   and seeded artifact facts, never invokes a model runtime.
 
+Startup-overhead analysis is a local-only measurement surface for Decision 51's
+state-access metric. It replaces an uncommitted route/intro startup-window draft
+that found zero qualifying windows and would have closed the startup-envelope
+follow-up. The retained metric measures how often Agentera CLI state calls are
+followed by raw artifact reads, greps, or globs of the same state family before
+implementation work begins. It does not run live hosts and produces no raw
+transcript output. Its reports also omit full local paths, raw store paths, and
+unredacted session ids:
+
+```bash
+uv run scripts/startup_analysis_contract.py \
+  --corpus-json path/to/local-corpus.json \
+  --output-dir /tmp/agentera-startup-report \
+  --salt "local-analysis-salt"
+```
+
+The command writes a structured `startup-overhead-report.json` and a human-readable
+`startup-overhead-report.md`. Both include the boundary source, runtime coverage,
+state-gathering sequence metrics, raw-after-CLI artifact counts, threshold
+rationale, recommendation, and privacy caveats. Use fixture or explicitly
+prepared local corpus/intermediate inputs; do not use this surface to run live
+host checks.
+
 <details>
 <summary><strong>State artifact reference</strong></summary>
 

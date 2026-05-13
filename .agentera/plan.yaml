@@ -3,100 +3,100 @@ header:
   created: 2026-05-13
   status: complete
   reviewed: 2026-05-13
-  critic_issues: 9 found, 9 addressed, 0 dismissed
-  revised: "[post-audit-flagged] Added explicit ownership rules, exact deprecated-default environment handling, Copilot no-shell behavior, managed-surface preview/apply boundaries, and package-update opt-in boundaries. [task-5-retry-1] Added evidence for refreshing resolving stale Agentera-owned OpenCode skill links to the current durable app home while preserving user-owned skill paths. [task-6-retry-1] Corrected active vocabulary so normal app repair means app plus managed runtime surfaces, while --only bundle is documented as a narrow app-only operation. [task-8] Closed final state sync after Tasks 1-7 passed: TODO, changelog, docs, progress, and plan state record shell-rc removal, stale-remnant handling, verification evidence, and an explicit no-release-target gate with version-bearing files unchanged. Agentera lint remains advisory: full plan exceeds the 100-word PLAN.md entry budget."
-  title: Remove shell rc mutation from runtime setup
+  critic_issues: uncommitted route/intro startup-window draft superseded by Decision 51 state-access metric
+  revised: "[superseded] An uncommitted draft measured only slash-route or assistant-intro startup windows and would have closed the startup-envelope follow-up after finding zero qualifying windows. Direct OpenCode inspection showed real invocations use bare or natural-language capability names and the defect is Agentera CLI state followed by raw artifact read/grep/glob of the same state family before implementation work."
+  title: Measure post-2.3 startup state-access overlap
 what: >-
-  Remove every Agentera production path that writes environment variables to shell startup files, replace shell-rc wiring with runtime-native configuration or per-invocation guidance, and make repair upgrades cover app files plus managed runtime configs, plugins, hooks, commands, cleanup, and package-surface reporting together.
+  Replace the uncommitted route/intro startup-window draft with a direct state-access metric that matches observed OpenCode behavior: capability invocation, Agentera CLI state call, then raw artifact access before implementation work.
 why: >-
-  Shell startup files are user-owned and off-limits. The current behavior created a stale AGENTERA_HOME export that can keep directing runtimes and repair commands to the deprecated default app path after the app moved to the platform data home. Agentera needs one safe app-home model, no shell startup mutation, and repair flows that refresh all managed runtime surfaces instead of only app files.
+  Direct OpenCode inspection showed the draft route/intro startup-window classifier measured the wrong thing and produced a false weak-evidence closure. Decision 51 now requires measuring CLI-state-to-raw-artifact overlap.
 constraints: >-
-  Never write shell startup files such as ~/.bashrc, ~/.zshrc, ~/.profile, or ~/.config/fish/config.fish. Doctor remains read-only. Runtime config, plugin, hook, command, and cleanup writes require Agentera ownership proof; anything else is diagnostic-only. Preserve Decision 47 app-home semantics, explicit custom app-home safety, package-update opt-in, and no push, publication, live paid host, vision, or objective-state changes without explicit approval.
+  Require explicit approval before reading real local runtime stores. Keep the run local-only; do not run live hosts. Do not commit raw transcript text, full local paths, raw store paths, unredacted session IDs, generated salted per-session hashes, generated detailed reports, or private salts. Do not implement a startup envelope or capability behavior changes. Do not commit, push, publish, refresh installed apps, run package updates, bump versions, edit vision, or touch objective state without explicit approval.
 scope:
   included:
-    - Shell-rc write removal from setup, upgrade, repair, smoke, docs, and capability guidance.
-    - Managed runtime surface refresh for Codex config, OpenCode plugin/commands/skills, hooks, app files, stale v1 artifacts, and package-surface reporting.
-    - Exact deprecated-default app-home recovery and stale-remnant diagnostics.
-    - Regression tests, default non-live smoke evidence, docs, changelog, TODO, progress, and version-gate state sync.
+    - Operator approval and allowed runtime/path selection for Claude, Codex, OpenCode, and GitHub Copilot history.
+    - Concrete corpus or intermediate input preparation using existing startup analysis surfaces.
+    - Analyzer execution into an untracked local output directory, defaulting under /tmp/opencode.
+    - Generated report privacy audit, aggregate interpretation, recommendation handoff, and bounded state sync.
   excluded:
-    - Editing shell startup files, including removing legacy Agentera blocks.
-    - Silent overwrite of custom app-home paths or user-owned runtime config.
-    - External package-manager commands unless package update is explicitly requested.
-    - Remote publication, tags, pushes, live paid host runs by default, vision edits, or objective-state edits.
+    - Startup envelope implementation, capability prose changes, live host calls, raw transcript/report archival, version bump, release prep, package updates, commits, or pushes.
   deferred:
-    - Optional interactive user assistance for manually removing stale shell-rc lines.
-    - Any broad new runtime setup namespace beyond the existing upgrade/doctor flow.
+    - A separate implementation plan if the measured report recommends a CLI startup envelope.
+    - A separate targeted guidance plan if the measured report only shows narrow hotspots.
 design: >-
-  Anchor the work in scripts/setup_copilot.py, scripts/agentera_upgrade.py, scripts/install_root.py, scripts/agentera, .opencode/plugins/agentera.js, UPGRADE.md, README.md, and tests/test_upgrade_cli.py. Start by making ownership explicit: managed marker, manifest entry, known generated path, trusted hook target, or exact app marker is required for mutation. Treat shell startup references as user-owned leftovers only. Then remove Copilot shell-rc setup, make exact deprecated-default AGENTERA_HOME non-authoritative only when stale or missing, and make normal repair preview/apply cover app plus managed runtime surfaces while keeping external package updates opt-in.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-13-profilera-corpus-runtime-parity.yaml
+  Treat the generated reports as local evidence and keep them outside the repository unless a later explicit approval changes that boundary. Use an ephemeral salt that is not written to Agentera state. Record only aggregate counts, runtime coverage, recommendation action, confidence caveats, privacy-audit result, and next action in project artifacts. Verify the analyzer input bridge before reading runtime stores, then run the analyzer with explicit approved local inputs only.
+  Task 1 records operator approval for Claude Code, Codex, OpenCode, and GitHub Copilot runtime histories, with no blocked or deferred runtimes at setup time. Approved scan path scope is limited to Codex `~/.codex/sessions`, Claude Code `~/.claude/projects`, OpenCode the single path returned by `opencode db path`, and GitHub Copilot `${COPILOT_HOME:-~/.copilot}`; later tasks must not read, enumerate, glob, inspect, or infer records outside those approved runtime/path scopes without fresh approval. The measurement boundary is tag v2.3.0 at commit b18e3dc7d768d4ad2726880916e7cfe6bd8617d3 and timestamp 2026-05-12T17:50:13+02:00; later tasks may include only records strictly after that timestamp. Detailed generated reports must be written outside this repository by default under /tmp/opencode. Salt is ephemeral per run; private salt values and generated salted per-session hashes must not be committed to Agentera artifacts. Committed artifacts must exclude raw transcript text, full local paths, raw store paths, unredacted session IDs, private salts, generated detailed reports, and generated salted per-session hashes.
+  Task 2 bridge remains `scripts/extract_corpus.py --output "$CORPUS_JSON" --project-root "$PWD" --codex-sessions-dir "$HOME/.codex/sessions" --claude-projects-dir "$HOME/.claude/projects" --opencode-conversations-dir "$OPENCODE_DB" --copilot-conversations-dir "${COPILOT_HOME:-$HOME/.copilot}"`, followed by `scripts/startup_analysis_contract.py --corpus-json "$CORPUS_JSON" --output-dir "$REPORT_DIR" --salt "$SALT"`. The intermediate envelope is now `startup_state_analysis_v1`.
+  Tasks 3-6 now interpret state-gathering sequences, not route/intro startup windows. The measured defect is raw artifact read/grep/glob access after CLI state of the same artifact family before implementation. A bounded live OpenCode DB check over recent sessions read 4167 records, found 51 state-gathering sequences, 15 sequences with raw artifact access after CLI, and 12 sequences with same-family redundant raw access. The rewritten analyzer recommends `plan_cli_startup_envelope`; the discarded draft `close_without_implementation` result came only from finding zero route/intro windows and is not the retained Decision 51 evidence.
+  The current handoff keeps implementation out of this rewrite, reopens CLI startup-envelope planning in TODO, and preserves no-release/no-commit/no-push/no-refresh/no-vision/objective/shell-write boundaries.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-13-startup-overhead-measurement-system.yaml
 tasks:
   - number: 1
-    name: Runtime surface ownership contract
+    name: Confirm consent and measurement parameters
     depends_on: []
-    status: completed
+    status: complete
     acceptance:
-      - GIVEN a stale runtime surface has Agentera ownership proof WHEN repair preview evaluates it THEN the preview identifies the safe action and the ownership reason.
-      - GIVEN a stale runtime surface has no Agentera ownership proof WHEN repair preview evaluates it THEN no write or removal is planned and the surface is reported as user-owned.
-      - GIVEN package-manager actions are available WHEN repair preview runs without package-update approval THEN those actions are listed as skipped and no external package command runs.
+      - GIVEN real local runtime stores may contain private transcripts WHEN measurement setup begins THEN the operator explicitly approves which runtimes and paths may be scanned before any real history is read.
+      - GIVEN approval is absent or narrower than all runtimes WHEN setup runs THEN measurement stops or limits itself to approved inputs and records the blocked/deferred runtimes with bounded labels.
+      - GIVEN parameters are recorded WHEN the run is configured THEN they include the v2.3.0 boundary, allowed runtimes, approved scan path scope, output directory outside the repo, ephemeral salt policy, and privacy exclusions.
   - number: 2
-    name: Shell startup files are diagnostic-only
+    name: Verify corpus input bridge
     depends_on: [1]
-    status: completed
+    status: complete
     acceptance:
-      - GIVEN shell startup files contain Agentera lines WHEN setup, doctor, upgrade preview, upgrade apply, or repair guidance runs THEN those files remain byte-for-byte unchanged.
-      - GIVEN a legacy Agentera shell startup line is detected WHEN diagnostics are rendered THEN the message says Agentera will not edit it and treats cleanup as a user-owned manual boundary.
-      - GIVEN Copilot needs Agentera app context WHEN setup or upgrade runs THEN no persistent shell startup change is made and supported per-invocation or runtime-native guidance is shown instead.
+      - GIVEN approved inputs exist WHEN the bridge is checked THEN the plan identifies the concrete command path that will produce `--corpus-json` or `--intermediate-json` compatible input for `scripts/startup_analysis_contract.py`.
+      - GIVEN the bridge cannot prepare compatible input WHEN checked THEN the run stops with a bounded blocker instead of hand-rolling unplanned extraction logic.
+      - GIVEN compatibility is checked WHEN validation runs THEN existing Section 22 `extract_corpus.py` and `usage_stats.py` behavior remains unchanged.
   - number: 3
-    name: Safe app-home precedence under stale environments
-    depends_on: [1, 2]
-    status: completed
+    name: Prepare post-2.3 local input
+    depends_on: [2]
+    status: complete
     acceptance:
-      - GIVEN the host environment names the exact deprecated default app home and that app is missing or stale WHEN Agentera resolves its app home THEN the platform app home is selected when safe and the diagnostic explains the deprecated value was treated as legacy residue.
-      - GIVEN the host environment names any custom unknown app home WHEN Agentera resolves its app home THEN Agentera blocks silent fallback or overwrite and asks for an explicit safe directory decision.
-      - GIVEN a valid explicit app home is supplied WHEN repair preview or apply runs THEN that explicit value remains authoritative.
+      - GIVEN approved local runtime stores for Claude, Codex, OpenCode, or GitHub Copilot WHEN preparation runs THEN it creates analyzer input filtered to records after `2026-05-12T17:50:13+02:00`.
+      - GIVEN a runtime is missing, locked, sparse, schema-divergent, or not approved WHEN preparation runs THEN bounded status is captured and other approved runtimes continue.
+      - GIVEN preparation writes intermediate files WHEN inspected THEN they are outside committed artifacts and contain only redacted identifiers, canonical labels, runtime names, and counts.
   - number: 4
-    name: Whole-repair preview and apply contract
-    depends_on: [1, 3]
-    status: completed
+    name: Run analyzer and privacy audit reports
+    depends_on: [3]
+    status: complete
     acceptance:
-      - GIVEN app files and managed runtime surfaces are stale WHEN repair preview runs THEN the preview lists app refresh, runtime config/plugin/hook/command refresh, cleanup, skipped package actions, and blocked user-owned conflicts together.
-      - GIVEN repair apply follows a clean preview WHEN it runs THEN only preview-safe managed actions are applied and shell startup files remain unchanged.
-      - GIVEN a managed surface changes between preview and apply WHEN apply rechecks safety THEN the action blocks rather than mutating an unverified surface.
+      - GIVEN prepared corpus or intermediate input WHEN `scripts/startup_analysis_contract.py` runs THEN it writes `startup-overhead-report.json` and `startup-overhead-report.md` under an untracked local output directory.
+      - GIVEN generated reports are audited WHEN forbidden tokens are searched THEN raw transcript text, full local paths, raw store paths, raw artifact YAML paths, unredacted session IDs, and private salt values are absent from both generated reports and committed artifacts.
+      - GIVEN report validation runs WHEN complete THEN JSON parses, required report fields exist, and the Markdown summary agrees with the structured recommendation.
   - number: 5
-    name: Managed runtime surface refresh and cleanup
+    name: Interpret measurement recommendation
     depends_on: [4]
-    status: completed
+    status: complete
     acceptance:
-      - GIVEN managed Codex runtime config or hooks are stale WHEN repair apply runs THEN managed entries are refreshed without overwriting unrelated user config.
-      - GIVEN managed OpenCode plugin, command, or skill surfaces are stale WHEN repair apply runs THEN managed surfaces are refreshed or removed according to their current Agentera ownership proof.
-      - GIVEN obsolete managed Agentera artifacts remain after app-home migration WHEN cleanup runs THEN managed remnants are removed or reported without touching shell startup files.
+      - GIVEN the report has sufficient evidence WHEN interpretation runs THEN it records runtime coverage, state-gathering sequence count, raw-after-CLI artifact triggers, threshold rationale, recommendation action, and confidence caveats using bounded aggregate values only.
+      - GIVEN evidence is insufficient WHEN interpretation runs THEN it records that implementation must not proceed and why the evidence is insufficient.
+      - GIVEN the recommendation selects envelope, targeted guidance, or closure WHEN interpreted THEN the reasoning cites measured aggregate triggers rather than transcript excerpts or local paths.
   - number: 6
-    name: Documentation and capability guidance alignment
-    depends_on: [2, 3, 4, 5]
-    status: completed
+    name: Sync bounded handoff state
+    depends_on: [5]
+    status: complete
     acceptance:
-      - GIVEN users follow README, upgrade, and skill repair guidance WHEN they preview or apply repair THEN the documented flow covers app and managed runtime surfaces without asking Agentera to write shell startup files.
-      - GIVEN stale shell startup references are present WHEN user-facing guidance mentions them THEN it explains that Agentera will not edit those files and names the manual cleanup boundary plainly.
-      - GIVEN runtime-package updates are needed WHEN docs describe repair options THEN package-manager execution remains explicitly opt-in.
+      - GIVEN the recommendation is `plan_cli_startup_envelope` WHEN state sync runs THEN TODO or a new plan captures envelope planning without implementing envelope behavior.
+      - GIVEN the state-access metric supersedes the discarded startup-window draft closure WHEN state sync runs THEN TODO reopens CLI startup state-envelope planning rather than preserving the false weak-evidence close.
+      - GIVEN no release target is selected WHEN sync runs THEN version-bearing files remain unchanged and the release gate is recorded explicitly.
   - number: 7
-    name: Regression and non-live smoke proof
-    depends_on: [2, 3, 4, 5, 6]
-    status: completed
+    name: Validate local-only measurement run
+    depends_on: [4, 5, 6]
+    status: complete
     acceptance:
-      - GIVEN the proportionality target is one positive and one negative proof per changed setup or runtime surface WHEN validation is reviewed THEN shell-rc immutability, stale environment recovery, managed refresh, user-owned conflict blocking, and package opt-in behavior each have pass and fail coverage.
-      - GIVEN default smoke runs WHEN it completes THEN it proves repair and runtime behavior without live paid hosts and without changing real shell startup files.
-      - GIVEN shell startup fixtures contain legacy Agentera blocks WHEN the full repair test path completes THEN every fixture remains byte-for-byte unchanged.
+      - GIVEN the measurement run completes WHEN validation runs THEN CLI reads or raw-artifact fallbacks, YAML parses, report privacy checks, report field checks, and `git diff --check` pass.
+      - GIVEN generated report files exist WHEN git status is checked THEN they are outside the repository or otherwise untracked/ignored and are not staged or committed.
+      - GIVEN protected state is checked WHEN validation completes THEN `.agentera/vision.yaml`, objective state, version-bearing files, and shell startup files are unchanged.
   - number: 8
-    name: State sync and release-target gate
+    name: Final plan closure
     depends_on: [7]
-    status: completed
+    status: complete
     acceptance:
-      - GIVEN the plan completes WHEN state sync runs THEN TODO, changelog, docs, progress, and plan state record shell-rc removal, stale-remnant handling, and verification evidence.
-      - GIVEN the change is release-targeted WHEN version sync runs THEN version-bearing files follow the documented semver policy for the selected target.
-      - GIVEN no release target is selected WHEN final sync runs THEN version-bearing files remain unchanged and the release gate is recorded explicitly.
+      - GIVEN all prior tasks pass WHEN final sync runs THEN progress, docs/TODO as appropriate, and plan state record bounded aggregate evidence, recommendation, privacy result, and next action.
+      - GIVEN a follow-up is selected WHEN this plan closes THEN the follow-up remains planning work only and no startup envelope or capability behavior change is implemented inside this plan.
+      - GIVEN no release target is selected WHEN closure completes THEN version-bearing files remain unchanged and the no-release gate is recorded.
 overall_acceptance:
-  - GIVEN Agentera setup, doctor, upgrade, or repair guidance reaches runtime wiring WHEN it handles environment setup THEN no shell startup file is written.
-  - GIVEN stale managed Agentera runtime surfaces exist WHEN upgrade preview and apply run with normal approval THEN app files, runtime-native configs, managed plugins, hooks, commands, and cleanup are handled together where safe.
-  - GIVEN old shell startup references still exist WHEN Agentera runs or repairs itself THEN those references cannot silently force the deprecated default app path and diagnostics explain the user-owned cleanup boundary.
-  - GIVEN custom user-owned runtime config or app-home paths are present WHEN repair runs THEN Agentera blocks or reports them instead of overwriting them silently.
+  - GIVEN approved local post-2.3 session data exists WHEN this plan completes THEN Agentera measures raw artifact access after CLI state without committing raw transcripts, local paths, private salts, or generated detailed reports.
+  - GIVEN the analyzer recommends a follow-up WHEN this plan completes THEN the follow-up is captured as planning work only, not silently implemented.
+  - GIVEN direct evidence shows CLI-state-to-raw-artifact overlap WHEN this plan completes THEN the startup-envelope TODO is kept as planning work rather than silently implemented.
 surprises: []

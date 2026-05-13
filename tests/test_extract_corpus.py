@@ -88,41 +88,110 @@ def _write_opencode_fixture(db_path: Path, project_root: Path) -> Path:
             """
             CREATE TABLE session (
                 id TEXT PRIMARY KEY,
-                cwd TEXT,
-                time INTEGER
+                project_id TEXT NOT NULL,
+                directory TEXT NOT NULL,
+                time_created INTEGER NOT NULL,
+                time_updated INTEGER NOT NULL
+            );
+            CREATE TABLE project (
+                id TEXT PRIMARY KEY,
+                worktree TEXT NOT NULL
             );
             CREATE TABLE message (
                 id TEXT PRIMARY KEY,
-                sessionID TEXT,
-                role TEXT,
-                time INTEGER
+                session_id TEXT NOT NULL,
+                time_created INTEGER NOT NULL,
+                time_updated INTEGER NOT NULL,
+                data TEXT NOT NULL
             );
             CREATE TABLE part (
                 id TEXT PRIMARY KEY,
-                messageID TEXT,
-                type TEXT,
-                text TEXT
+                message_id TEXT NOT NULL,
+                session_id TEXT NOT NULL,
+                time_created INTEGER NOT NULL,
+                time_updated INTEGER NOT NULL,
+                data TEXT NOT NULL
             );
             """
         )
         conn.execute(
-            "INSERT INTO session (id, cwd, time) VALUES (?, ?, ?)",
-            ("open-1", str(project_root), 1_778_846_400),
+            "INSERT INTO project (id, worktree) VALUES (?, ?)",
+            ("project-1", str(project_root)),
+        )
+        conn.execute(
+            "INSERT INTO session (id, project_id, directory, time_created, time_updated) VALUES (?, ?, ?, ?, ?)",
+            ("open-1", "project-1", str(project_root), 1_778_846_400_000, 1_778_846_520_000),
         )
         conn.executemany(
-            "INSERT INTO message (id, sessionID, role, time) VALUES (?, ?, ?, ?)",
+            "INSERT INTO message (id, session_id, time_created, time_updated, data) VALUES (?, ?, ?, ?, ?)",
             [
-                ("msg-1", "open-1", "assistant", 1_778_846_400),
-                ("msg-2", "open-1", "user", 1_778_846_460),
-                ("msg-3", "open-1", "assistant", 1_778_846_520),
+                (
+                    "msg-1",
+                    "open-1",
+                    1_778_846_400_000,
+                    1_778_846_400_000,
+                    json.dumps({"role": "assistant"}),
+                ),
+                (
+                    "msg-2",
+                    "open-1",
+                    1_778_846_460_000,
+                    1_778_846_460_000,
+                    json.dumps({"role": "user"}),
+                ),
+                (
+                    "msg-3",
+                    "open-1",
+                    1_778_846_520_000,
+                    1_778_846_520_000,
+                    json.dumps({"role": "assistant"}),
+                ),
             ],
         )
         conn.executemany(
-            "INSERT INTO part (id, messageID, type, text) VALUES (?, ?, ?, ?)",
+            "INSERT INTO part (id, message_id, session_id, time_created, time_updated, data) VALUES (?, ?, ?, ?, ?, ?)",
             [
-                ("part-1", "msg-1", "text", "Use the existing runtime contract."),
-                ("part-2", "msg-2", "text", "Should we keep OpenCode local-only?"),
-                ("part-3", "msg-3", "text", "Yes, read opencode.db without external calls."),
+                (
+                    "part-1",
+                    "msg-1",
+                    "open-1",
+                    1_778_846_400_000,
+                    1_778_846_400_000,
+                    json.dumps({"type": "text", "text": "Use the existing runtime contract."}),
+                ),
+                (
+                    "part-2",
+                    "msg-2",
+                    "open-1",
+                    1_778_846_460_000,
+                    1_778_846_460_000,
+                    json.dumps({"type": "text", "text": "Should we keep OpenCode local-only?"}),
+                ),
+                (
+                    "part-3",
+                    "msg-3",
+                    "open-1",
+                    1_778_846_520_000,
+                    1_778_846_520_000,
+                    json.dumps({"type": "text", "text": "Yes, read opencode.db without external calls."}),
+                ),
+                (
+                    "part-4",
+                    "msg-3",
+                    "open-1",
+                    1_778_846_521_000,
+                    1_778_846_521_000,
+                    json.dumps(
+                        {
+                            "type": "tool",
+                            "tool": "bash",
+                            "state": {
+                                "status": "completed",
+                                "input": {"command": "uv run scripts/agentera plan --format json"},
+                            },
+                        }
+                    ),
+                ),
             ],
         )
         conn.commit()
@@ -275,6 +344,8 @@ def test_cli_writes_corpus_and_reports_counts(tmp_path):
             "--codex-sessions-dir",
             str(sessions_dir),
             "--no-claude",
+            "--no-opencode",
+            "--no-copilot",
         ],
         cwd=Path(__file__).resolve().parent.parent,
         text=True,
@@ -450,7 +521,7 @@ def test_opencode_sqlite_store_extracts_ordered_turns_and_history_prompts(
     assert statuses["opencode"]["status"] == "ok"
     assert statuses["opencode"]["reason"] == "records_extracted"
     assert statuses["opencode"]["candidate_count"] == 1
-    assert statuses["opencode"]["record_count"] == 4
+    assert statuses["opencode"]["record_count"] == 5
     opencode_turns = [
         record
         for record in corpus["records"]
@@ -476,6 +547,16 @@ def test_opencode_sqlite_store_extracts_ordered_turns_and_history_prompts(
     assert prompts[0]["data"] == {
         "prompt": "Should we keep OpenCode local-only?",
         "signal_type": "question",
+    }
+    tool_calls = [
+        record
+        for record in corpus["records"]
+        if record["runtime"] == "opencode" and record["source_kind"] == "tool_call"
+    ]
+    assert len(tool_calls) == 1
+    assert tool_calls[0]["data"] == {
+        "tool_name": "bash",
+        "arguments": {"command": "uv run scripts/agentera plan --format json"},
     }
 
 
@@ -599,6 +680,7 @@ def test_cross_runtime_fixtures_emit_expected_normalized_records(
         ("codex", "history_prompt"): 1,
         ("opencode", "conversation_turn"): 3,
         ("opencode", "history_prompt"): 1,
+        ("opencode", "tool_call"): 1,
         ("github-copilot", "conversation_turn"): 4,
         ("github-copilot", "history_prompt"): 1,
     }

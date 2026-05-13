@@ -1,0 +1,132 @@
+contract: startup_state_access_measurement
+version: startup-state-analysis-v1
+status: draft
+purpose: >-
+  Define the local-only, privacy-preserving contract for measuring Agentera
+  capability startup/state-gathering overhead after v2.3.0. The measured defect
+  is raw Agentera artifact access after Agentera CLI state calls before
+  implementation work begins.
+
+boundary:
+  source: git tag evidence
+  tag: v2.3.0
+  commit: b18e3dc7d768d4ad2726880916e7cfe6bd8617d3
+  committed_at: '2026-05-12T17:50:13+02:00'
+  rule: include records with timestamps strictly after committed_at
+
+section_22_compatibility:
+  consumes_adapter_version: agentera-v2-corpus-1
+  required_record_families:
+    - conversation_turn
+    - tool_call
+  optional_record_families:
+    - instruction_document
+    - history_prompt
+    - project_config_signal
+  base_envelope_changes: none
+  output_envelope: startup_state_analysis_v1
+  extension_rule: >-
+    Do not add required fields to the Section 22 corpus envelope. If startup
+    state analysis needs derived fields, write them under a separate versioned
+    startup_state_analysis_v1 output or an optional
+    analysis_extensions.startup_state_v1 object ignored by extract_corpus.py
+    and usage_stats.py.
+
+state_gathering_sequence:
+  start_anchor: first_agentera_cli_state_call_after_capability_related_user_turn
+  capability_invocation_markers:
+    - slash route such as /agentera plan or /agentera build
+    - bare capability name such as planera, resonera, or orkestrera
+    - natural-language capability mention such as run orkestrera
+    - assistant capability intro marker
+  end_anchors:
+    - first_implementation_boundary
+    - next_user_turn
+  measured_defect: >-
+    Raw read, grep, or glob access to an Agentera artifact after a CLI state call
+    that already covered the same artifact family, before implementation work.
+
+counted_event_classes:
+  - class: cli_state_call
+    description: Agentera state CLI reads such as hej, todo, docs, plan, progress, decisions, health, and query.
+  - class: raw_artifact_access
+    description: Direct read, grep, or glob access to Agentera state artifacts after CLI state access.
+  - class: capability_prose_read
+    description: Reads of capability prose, schemas, protocol, or skill dispatcher files.
+  - class: implementation_boundary
+    description: Code edits, write/edit/apply_patch, non-state bash commands, tests, or analysis work after startup state gathering.
+  - class: non_state_context
+    description: Events outside the measured state-gathering sequence and excluded from defect totals.
+
+degradation_reasons:
+  - pre_boundary_record
+  - missing_timestamp
+  - malformed_record
+  - missing_conversation_key
+  - no_agentera_state_sequence
+  - runtime_store_missing
+  - runtime_store_locked
+  - runtime_store_sparse
+  - runtime_schema_divergent
+  - privacy_redaction_required
+
+privacy_boundary:
+  forbidden_raw_outputs:
+    - transcript_text
+    - full_local_path
+    - raw_store_path
+    - unredacted_session_id
+  allowed_replacements:
+    - canonical_artifact_label
+    - canonical_runtime_label
+    - canonical_event_class
+    - salted_non_reconstructable_hash
+  canonical_artifact_labels:
+    TODO.md: TODO.md
+    CHANGELOG.md: CHANGELOG.md
+    DESIGN.md: DESIGN.md
+    PLAN.md: PLAN.md
+    PROGRESS.md: PROGRESS.md
+    DOCS.md: DOCS.md
+    DECISIONS.md: DECISIONS.md
+    HEALTH.md: HEALTH.md
+    SESSION.md: SESSION.md
+    VISION.md: VISION.md
+    OBJECTIVE.md: OBJECTIVE.md
+    EXPERIMENTS.md: EXPERIMENTS.md
+    AGENTS.md: AGENTS.md
+    SKILL.md: SKILL.md
+    AGENTERA_ARTIFACTS: AGENTERA_ARTIFACTS
+  stdout_rule: >-
+    Startup state analysis stdout may include counts, canonical labels, runtime
+    names, boundary metadata, degradation labels, and salted hashes only.
+  fixture_rule: >-
+    Committed fixtures and snapshots must use synthetic text and identifiers or
+    already-redacted labels; never paste raw transcript excerpts, full local
+    paths, raw store paths, or unredacted session ids.
+
+report_fields:
+  required:
+    - contract_version
+    - boundary_source
+    - boundary_commit
+    - boundary_committed_at
+    - generated_at
+    - corpus_adapter_version
+    - runtime_coverage
+    - total_state_sequences
+    - state_sequences_with_raw_after_cli
+    - state_sequences_with_redundant_raw_access
+    - cli_state_command_counts
+    - raw_artifact_access_after_cli_counts
+    - redundant_raw_artifact_access_counts
+    - per_capability_state_counts
+    - degradation_reason_counts
+    - threshold_derivation
+    - startup_recommendation
+    - privacy_redaction_summary
+    - compatibility_note
+  optional:
+    - confidence_caveats
+    - insufficient_evidence_reason
+    - recommendation_gate_input

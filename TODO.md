@@ -2,9 +2,16 @@
 
 ## ⇶ Critical
 
+- [ ] [fix] Decisions are compacted into single lines only containing the question, but not the outcome, losing important context. The outcomes still live in git history, but there is currently no mechanism to retrieve them efficiently.
+- [ ] [fix] Outcomes based on decisions are not tracked, which can lead to a decision being forgotten or lost due to compaction, or if several decisions has been made that puts them outside the typical query range.
+- [ ] Analyze session transcripts to identify instances where linting thresholds unnecessarily compress or rewrite relevant information and determine if the thresholds should be increased.
+
 ## ⇉ Degraded
 
 ## → Normal
+
+- [ ] [fix:2.3.x] Demote `AGENTERA_HOME` to a validated override instead of the normal app-home source of truth. Normal installed execution should resolve directly to the platform app directory (`XDG_DATA_HOME`/macOS Application Support/Windows AppData) unless an explicit valid override is supplied; runtime adapters such as OpenCode must not blindly propagate stale legacy values like `~/.agents/agentera`, and doctor/upgrade/tests should preserve custom-install and hermetic-test support without making stale parent-process environments authoritative.
+- [ ] [feat] Plan a CLI startup state envelope from the Decision 51 state-access metric. Direct OpenCode analysis found Agentera CLI state calls followed by raw artifact reads/greps/globs before implementation work, replacing an uncommitted route/intro startup-window draft that had found zero qualifying windows; follow-up planning should design a capability-ready state envelope or equivalent CLI output that prevents redundant `.agentera/*.yaml` and root artifact reads after `agentera plan/progress/docs/todo/decisions`.
 
 ## ⇢ Annoying
 

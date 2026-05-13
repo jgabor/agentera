@@ -1,0 +1,101 @@
+header:
+  level: full
+  created: 2026-05-13
+  status: complete
+  reviewed: 2026-05-13
+  critic_issues: 9 found, 9 addressed, 0 dismissed
+  revised: "[task-8-complete] Final state sync recorded startup-overhead evidence, the recommendation gate, privacy validation, follow-up TODO handoff, and the explicit no-release-target gate. Recommendation-selected implementation is not implemented in this plan; it is captured as future CLI startup-envelope planning work. Version-bearing files remain unchanged because no release target was selected."
+  title: Quantify post-2.3 capability startup overhead
+what: >-
+  Analyze post-2.3 Agentera session logs to quantify capability startup tool calls and artifact reads before designing any startup-state envelope or capability guidance changes.
+why: >-
+  Decision 51 identified latency and cost from repeated startup reads as the real follow-up to Decision 41. A generic CLI startup envelope may help, but only if real post-2.3 sessions show broad startup overhead rather than isolated capability habits.
+constraints: >-
+  Keep analysis local-only and privacy-preserving. Do not emit raw transcript text, full local paths, raw store paths, unredacted session ids, or reconstructable debug logs in committed artifacts, stdout snapshots, reports, fixtures, or temporary outputs. Do not run live hosts by default. Do not implement a startup-state envelope, refactor capability behavior, run package updates, bump versions, push, publish, refresh installed apps, edit vision state, or touch objective state without explicit approval.
+scope:
+  included:
+    - Post-2.3 corpus/session discovery using the existing Section 22 corpus shape where possible.
+    - Privacy-preserving startup event classification for capability startup windows.
+    - Metrics that separate CLI state calls, raw artifact reads, capability prose reads, and implementation work.
+    - Threshold derivation, recommendation report, tests, non-live validation, and state sync.
+  excluded:
+    - Implementing a CLI startup envelope or changing capability startup behavior.
+    - Uploading transcripts, storing raw transcript excerpts, or committing local path/session identifiers.
+    - Profiling unrelated repositories by default or running live paid hosts.
+    - Version bumps, package-manager updates, publication, pushes, installed app refresh, vision edits, or objective-state edits.
+  deferred:
+    - A follow-up plan for a CLI startup envelope if broad measured overhead is proven.
+    - A follow-up plan for targeted capability guidance fixes if only narrow hotspots are proven.
+design: >-
+  Anchor the work in scripts/extract_corpus.py, scripts/usage_stats.py, tests/test_extract_corpus.py, and tests/test_usage_stats.py. Preserve the existing Section 22 corpus contract unless a versioned extension is explicitly justified. Define post-2.3 from repository release evidence, classify startup windows from user turn or route trigger through capability intro until the first implementation-classified action, next user turn, or bounded event/time cap, and emit canonical labels or salted hashes instead of raw text or full paths.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-13-shell-rc-removal.yaml
+tasks:
+  - number: 1
+    name: Measurement contract and privacy boundary
+    depends_on: []
+    status: completed
+    acceptance:
+      - GIVEN post-2.3 analysis is configured WHEN the contract is read THEN it defines the date/version boundary source, startup-window anchors, counted event classes, degradation reasons, and report fields.
+      - GIVEN records include transcript text, local paths, or session identifiers WHEN analysis emits reports, fixtures, logs, or stdout snapshots THEN output uses canonical labels or non-reconstructable hashes and contains no raw transcript text, full local paths, raw store paths, or unredacted session ids.
+      - GIVEN the existing Section 22 corpus format is consumed WHEN startup analysis is added THEN existing extract_corpus and usage_stats behavior remains compatible or any extension is versioned and documented.
+  - number: 2
+    name: Startup fixture and classifier coverage
+    depends_on: [1]
+    status: completed
+    acceptance:
+      - GIVEN fixture conversations contain route triggers, capability intro markers, CLI state calls, raw artifact reads, capability prose reads, implementation tool calls, and unrelated turns WHEN classification runs THEN startup events are separated from implementation work.
+      - GIVEN fixtures contain no marker, malformed records, implementation-only tool calls, transcript-bearing fields, or insufficient post-2.3 evidence WHEN classification runs THEN each case degrades or is excluded with bounded labels.
+      - GIVEN fixture output is committed WHEN tests fail or snapshots render THEN no raw transcript text or full local path appears in the expected output.
+  - number: 3
+    name: Local session extraction and compatibility
+    depends_on: [1, 2]
+    status: completed
+    acceptance:
+      - GIVEN local post-2.3 session stores are available WHEN extraction runs THEN startup signals can be derived without changing existing corpus records consumed by usage_stats.
+      - GIVEN a runtime store is missing, locked, sparse, or schema-divergent WHEN extraction runs THEN the affected runtime reports a bounded status and other runtimes continue.
+      - GIVEN extraction reads local runtime stores WHEN it writes intermediates THEN outputs contain counts, canonical artifact labels, runtime names, and redacted identifiers only.
+  - number: 4
+    name: Aggregate startup overhead metrics
+    depends_on: [3]
+    status: completed
+    acceptance:
+      - GIVEN startup events are extracted WHEN aggregation runs THEN it reports per-capability startup call counts, CLI-state-call counts, raw artifact-read counts, capability prose-read counts, repeated artifact labels, runtime coverage, and confidence caveats.
+      - GIVEN no sufficient post-2.3 sessions exist WHEN aggregation runs THEN it reports insufficient evidence and does not recommend implementation.
+      - GIVEN repeated startup reads are detected WHEN metrics render THEN the report names canonical artifact labels and counts, not raw transcript snippets or full paths.
+  - number: 5
+    name: Threshold derivation and recommendation gate
+    depends_on: [4]
+    status: completed
+    acceptance:
+      - GIVEN aggregate metrics are available WHEN threshold derivation runs THEN the report records the measured distribution and explains why each action threshold was selected or why no threshold is credible.
+      - GIVEN broad repeated startup reads exceed the derived threshold WHEN recommendation renders THEN it recommends planning a CLI startup envelope and names the measured trigger.
+      - GIVEN only narrow hotspots or weak evidence appear WHEN recommendation renders THEN it recommends targeted capability guidance fixes or closing the follow-up without implementation.
+  - number: 6
+    name: Report surfaces and docs alignment
+    depends_on: [5]
+    status: completed
+    acceptance:
+      - GIVEN analysis completes WHEN human-readable and structured outputs are generated THEN they include boundary source, runtime coverage, metrics, threshold rationale, recommendation, and privacy caveats.
+      - GIVEN docs mention startup-overhead analysis WHEN users follow them THEN they can run the local-only analysis without live hosts or raw transcript output.
+      - GIVEN report artifacts are written WHEN docs state is updated THEN docs link the report surface and preserve Decision 51's measure-first constraint.
+  - number: 7
+    name: Regression and non-live validation
+    depends_on: [2, 3, 4, 5, 6]
+    status: completed
+    acceptance:
+      - GIVEN classifier, extractor, aggregator, threshold, and report units change WHEN focused tests run THEN each unit has at least one positive and one negative proof.
+      - GIVEN default validation runs WHEN complete THEN it uses fixtures or local files only, performs no live host calls, and writes no real shell startup files.
+      - GIVEN privacy validation runs WHEN outputs are inspected THEN raw transcript text, full local paths, raw store paths, and unredacted session ids are absent from committed artifacts and test snapshots.
+  - number: 8
+    name: State sync and release-target gate
+    depends_on: [7]
+    status: completed
+    acceptance:
+      - GIVEN the analysis plan completes WHEN state sync runs THEN progress, docs, TODO/changelog as appropriate, and plan state record the evidence, recommendation, and privacy validation.
+      - GIVEN the recommendation selects follow-up implementation WHEN state sync runs THEN the next work is captured as TODO or a new plan, not silently implemented in this plan.
+      - GIVEN no release target is selected WHEN final sync runs THEN version-bearing files remain unchanged and the gate is recorded explicitly.
+overall_acceptance:
+  - GIVEN post-2.3 Agentera sessions exist WHEN the analysis runs THEN it quantifies capability startup overhead without storing raw transcript content or full local paths.
+  - GIVEN the report is reviewed WHEN a follow-up is chosen THEN the next step is evidence-backed: CLI envelope, targeted capability fixes, or no implementation.
+  - GIVEN validation completes WHEN results are recorded THEN all evidence is local-only, privacy-preserving, and reproducible from fixtures or local session stores.
+surprises: []

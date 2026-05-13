@@ -1,4 +1,4 @@
-last_audit: '2026-05-13 (shell-rc removal Task 8 retry: docs evidence explicit; no release target selected)'
+last_audit: '2026-05-13 (startup state-access metric replaces uncommitted startup-window draft)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -174,6 +174,18 @@ index:
   path: references/cli/agent-ready-state-contract.yaml
   last_updated: '2026-05-08'
   status: current
+- document: Startup measurement contract
+  path: references/analysis/startup-measurement-contract.yaml
+  last_updated: '2026-05-13'
+  status: current
+- document: Startup analysis report generator
+  path: scripts/startup_analysis_contract.py
+  last_updated: '2026-05-13'
+  status: current
+- document: Startup overhead report surface
+  path: startup-overhead-report.md / startup-overhead-report.json (generated under caller-selected output directory)
+  last_updated: '2026-05-13'
+  status: current
 - document: RuntimeAdapter characterization
   path: references/adapters/runtime-adapter-characterization.md
   last_updated: '2026-05-06'
@@ -342,8 +354,102 @@ coverage:
   documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: 'Shell-rc removal state sync records diagnostic-only shell startup boundaries, stale managed-runtime remnant refresh/cleanup handling, and verification evidence: focused setup/upgrade/smoke tests, default non-live smoke, ruff, py_compile, artifact/YAML/JSON parsing, version-surface checks, and git diff --check. No release target was selected, so version-bearing files remain unchanged at the existing 2.3.3 metadata.'
+  tests: 'Startup measurement now documents the Decision 51 state-access metric: raw artifact access after CLI state during capability startup/state gathering. This replaces an uncommitted route/intro startup-window draft that found zero qualifying windows and would have closed the startup-envelope follow-up. The contract records the post-2.3 boundary, natural-language and bare-capability invocation markers, state-gathering sequence boundaries, counted event classes, degradation reasons, report fields, Section 22 compatibility, privacy boundary, local-only report command, structured report, human-readable report, and recommendation gate. Focused contract tests validate redaction helpers, state-sequence classification, raw-after-CLI overlap counts, thresholds, recommendations, and report surfaces; extract_corpus tests now preserve current OpenCode tool-call extraction so the metric can see real OpenCode CLI/read behavior.'
 audit_log:
+- date: '2026-05-13'
+  label: Startup state-access metric replaces startup-window draft
+  findings:
+  - type: checked
+    description: >
+      Decision 51 and the startup measurement contract now use the raw artifact
+      access after CLI state metric. This replaces an uncommitted draft that
+      measured only slash-route or assistant-intro startup windows. State-gathering
+      sequences start from Agentera CLI state calls after capability-related user
+      turns, including bare names such as `planera` and natural-language handoffs
+      such as `run orkestrera`, and stop at implementation work or the next user
+      turn.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      The discarded startup-window draft returned `close_without_implementation`
+      because it found zero qualifying route/intro startup windows. Direct
+      OpenCode analysis found the actual `CLI state -> raw artifact access`
+      pattern, so TODO again carries follow-up planning for a CLI startup state
+      envelope or equivalent capability-ready output.
+    resolution: noted
+    severity: info
+  - type: checked
+    description: >
+      OpenCode corpus extraction now supports the current JSON-in-`data` table
+      shape and emits `tool_call` records, allowing the startup metric to see real
+      CLI state calls and subsequent raw reads/greps/globs.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Privacy validation remains explicit for committed reports and fixtures:
+      canonical labels or salted hashes replace raw transcript text, full local
+      paths, raw store paths, raw artifact YAML paths, and unredacted session
+      identifiers.
+    resolution: noted
+    severity: info
+- date: '2026-05-13'
+  label: Startup measurement Task 6 report surfaces
+  findings:
+  - type: checked
+    description: >
+      Startup-overhead analysis now has a local-only report generator at
+      `scripts/startup_analysis_contract.py`. It writes
+      `startup-overhead-report.json` and `startup-overhead-report.md` under a
+      caller-selected output directory from fixture, local corpus, or existing
+      `startup_state_analysis_v1` inputs; it does not invoke live hosts.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      The structured and human-readable report surfaces include boundary source,
+      runtime coverage, state-gathering sequence metrics, raw artifact access
+      after CLI state counts, threshold rationale, recommendation, and privacy
+      caveats while preserving canonical labels and avoiding raw transcript text,
+      full local paths, raw store paths, and unredacted session ids.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      README and vocabulary docs preserve Decision 51's measure-first constraint:
+      measure raw artifact access after CLI state before planning a CLI startup
+      envelope or targeted capability guidance change.
+    resolution: fixed
+    severity: info
+- date: '2026-05-13'
+  label: Startup measurement Task 1 contract sync
+  findings:
+  - type: checked
+    description: >
+      `references/analysis/startup-measurement-contract.yaml` now anchors
+      post-2.3 analysis to tag `v2.3.0`, commit
+      `b18e3dc7d768d4ad2726880916e7cfe6bd8617d3`, and timestamp
+      `2026-05-12T17:50:13+02:00`; it defines state-gathering sequence anchors,
+      counted event classes, degradation reasons, and required report fields.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      The startup measurement contract requires reports, fixtures, logs, and
+      stdout snapshots to use canonical labels or salted hashes instead of raw
+      transcript text, full local paths, raw store paths, or unredacted session
+      ids.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      The contract preserves the existing Section 22 corpus envelope consumed by
+      `scripts/extract_corpus.py` and `scripts/usage_stats.py`; any future
+      startup-derived data must be written as `startup_state_analysis_v1` or an
+      optional `analysis_extensions.startup_state_v1` object.
+    resolution: fixed
+    severity: info
 - date: '2026-05-13'
   label: Shell-rc removal Task 8 retry evidence sync
   findings:

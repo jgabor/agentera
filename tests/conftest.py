@@ -93,6 +93,15 @@ def measure_token_payload():
 
 
 @pytest.fixture(scope="session")
+def startup_analysis_contract():
+    """Load scripts/startup_analysis_contract.py."""
+    return _load_module(
+        "startup_analysis_contract",
+        REPO_ROOT / "scripts" / "startup_analysis_contract.py",
+    )
+
+
+@pytest.fixture(scope="session")
 def hooks_common():
     """Load hooks/common.py."""
     return _load_module(

@@ -15,8 +15,8 @@ The extractor writes the normalized corpus envelope consumed by
 
 It intentionally treats host storage as adapter input and emits the four
 portable record families from ``references/contract.md``:
-``instruction_document``, ``history_prompt``, ``conversation_turn``, and
-``project_config_signal``.
+``instruction_document``, ``history_prompt``, ``conversation_turn``,
+``tool_call``, and ``project_config_signal``.
 """
 
 from __future__ import annotations
@@ -40,6 +40,7 @@ FAMILIES = (
     "instruction_document",
     "history_prompt",
     "conversation_turn",
+    "tool_call",
     "project_config_signal",
 )
 RUNTIME_STORE_GLOBS = {
@@ -48,7 +49,8 @@ RUNTIME_STORE_GLOBS = {
     "opencode": "opencode.db",
     "github-copilot": "session-store.db",
 }
-MAX_SQLITE_ROWS = 2000
+MAX_SQLITE_ROWS = 100_000
+MAX_SQLITE_SESSIONS = 60
 COPILOT_SPARSE_REMEDIATION = "/chronicle reindex"
 DECISION_RE = re.compile(
     r"\b("
@@ -217,6 +219,52 @@ def record(
     if session_id:
         item["session_id"] = session_id
     return item
+
+
+def _tool_call_record(
+    *,
+    event: dict[str, Any],
+    fallback_timestamp: str,
+    project_path: Path | None,
+    runtime: str,
+    source_path: Path,
+    index: int,
+    session_id: str,
+) -> dict[str, Any] | None:
+    item = _payload_item(event)
+    kind = _event_kind(event)
+    item_type = item.get("type")
+    if kind not in {"tool_call", "function_call"} and item_type not in {
+        "tool_call",
+        "function_call",
+        "tool_use",
+    }:
+        return None
+
+    tool_name = item.get("tool_name") or item.get("name") or item.get("tool")
+    if not isinstance(tool_name, str) or not tool_name:
+        return None
+    arguments = item.get("arguments") or item.get("input") or item.get("args") or {}
+    if isinstance(arguments, str):
+        try:
+            parsed = json.loads(arguments)
+        except json.JSONDecodeError:
+            parsed = {"raw": arguments}
+        arguments = parsed
+    if not isinstance(arguments, dict):
+        arguments = {"value": arguments}
+    return record(
+        source_kind="tool_call",
+        timestamp=event_timestamp(event, fallback_timestamp),
+        project_path=project_path,
+        runtime=runtime,
+        source_parts=(source_path.resolve(), index, "tool", tool_name),
+        session_id=session_id,
+        data={
+            "tool_name": tool_name,
+            "arguments": arguments,
+        },
+    )
 
 
 def iter_jsonl(path: Path, errors: list[str]) -> Iterable[dict[str, Any]]:
@@ -446,6 +494,19 @@ def extract_codex_sessions(sessions_dir: Path | None, errors: list[str]) -> list
                     project_path = Path(cwd)
                 continue
 
+            tool_record = _tool_call_record(
+                event=event,
+                fallback_timestamp=fallback_timestamp,
+                project_path=project_path,
+                runtime="codex",
+                source_path=path,
+                index=index,
+                session_id=session_id,
+            )
+            if tool_record is not None:
+                records.append(tool_record)
+                continue
+
             item = _payload_item(event)
             item_type = item.get("type")
             role = item.get("role") or item.get("actor")
@@ -513,6 +574,19 @@ def extract_claude_project_sessions(projects_dir: Path | None, errors: list[str]
         project_path: Path | None = None
         previous_assistant = ""
         for index, event in enumerate(iter_jsonl(path, errors), start=1):
+            tool_record = _tool_call_record(
+                event=event,
+                fallback_timestamp=fallback_timestamp,
+                project_path=project_path,
+                runtime="claude-code",
+                source_path=path,
+                index=index,
+                session_id=session_id,
+            )
+            if tool_record is not None:
+                records.append(tool_record)
+                continue
+
             role = event.get("role") or event.get("type")
             if role not in {"user", "assistant"}:
                 message = event.get("message")
@@ -623,40 +697,84 @@ def _opencode_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     if not (session_id and message_id and message_session and part_message):
         raise ValueError("missing opencode join columns")
 
+    message_data = _first_column(message_cols, ("data",))
+    part_data = _first_column(part_cols, ("data",))
     role_col = _first_column(message_cols, ("role", "actor", "author"))
-    if role_col is None:
+    if role_col is None and message_data is None:
         raise ValueError("missing opencode message role column")
 
-    message_time = _first_column(message_cols, ("time", "timestamp", "created_at", "createdAt"))
-    part_time = _first_column(part_cols, ("time", "timestamp", "created_at", "createdAt"))
-    session_time = _first_column(session_cols, ("time", "timestamp", "created_at", "createdAt"))
+    message_time = _first_column(
+        message_cols,
+        ("time_created", "time", "timestamp", "created_at", "createdAt"),
+    )
+    part_time = _first_column(part_cols, ("time_created", "time", "timestamp", "created_at", "createdAt"))
+    session_time = _first_column(
+        session_cols,
+        ("time_created", "time", "timestamp", "created_at", "createdAt"),
+    )
+    session_updated = _first_column(
+        session_cols,
+        ("time_updated", "updated_at", "updatedAt", "time_created", "time"),
+    )
     project_col = _first_column(session_cols, ("cwd", "project_path", "projectPath", "directory", "path"))
     message_text = _first_column(message_cols, ("content", "text", "message"))
     part_text = _first_column(part_cols, ("text", "content", "input", "output"))
     part_type = _first_column(part_cols, ("type", "kind"))
     part_id = _first_column(part_cols, ("id", "part_id", "partID"))
 
+    sort_expr = f"COALESCE(m.\"{message_time or message_id}\", p.\"{part_time or part_message}\", s.\"{session_time or session_id}\")"
+    recent_session_expr = f's."{session_updated or session_time or session_id}"'
     query = f"""
+        WITH recent_sessions AS (
+            SELECT s."{session_id}" AS recent_session_id
+            FROM session s
+            ORDER BY {recent_session_expr} DESC,
+                     s."{session_id}" DESC
+            LIMIT ?
+        ),
+        recent AS (
+            SELECT
+                {_qualified('s', session_id, 'session_id')},
+                {_qualified('s', project_col, 'project_path')},
+                {_qualified('m', message_id, 'message_id')},
+                {_qualified('m', role_col, 'role')},
+                {_qualified('m', message_time, 'message_time')},
+                {_qualified('m', message_text, 'message_text')},
+                {_qualified('m', message_data, 'message_data')},
+                {_qualified('p', part_id, 'part_id')},
+                {_qualified('p', part_time, 'part_time')},
+                {_qualified('p', part_type, 'part_type')},
+                {_qualified('p', part_text, 'part_text')},
+                {_qualified('p', part_data, 'part_data')},
+                {sort_expr} AS sort_time
+            FROM message m
+            JOIN session s ON m."{message_session}" = s."{session_id}"
+            JOIN recent_sessions rs ON rs.recent_session_id = s."{session_id}"
+            LEFT JOIN part p ON p."{part_message}" = m."{message_id}"
+            ORDER BY sort_time DESC,
+                     m."{message_id}" DESC,
+                     p."{part_id or part_message}" DESC
+            LIMIT ?
+        )
         SELECT
-            {_qualified('s', session_id, 'session_id')},
-            {_qualified('s', project_col, 'project_path')},
-            {_qualified('m', message_id, 'message_id')},
-            {_qualified('m', role_col, 'role')},
-            {_qualified('m', message_time, 'message_time')},
-            {_qualified('m', message_text, 'message_text')},
-            {_qualified('p', part_id, 'part_id')},
-            {_qualified('p', part_time, 'part_time')},
-            {_qualified('p', part_type, 'part_type')},
-            {_qualified('p', part_text, 'part_text')}
-        FROM message m
-        JOIN session s ON m."{message_session}" = s."{session_id}"
-        LEFT JOIN part p ON p."{part_message}" = m."{message_id}"
-        ORDER BY COALESCE(m."{message_time or message_id}", p."{part_time or part_message}", s."{session_time or session_id}"),
-                 m."{message_id}",
-                 p."{part_id or part_message}"
-        LIMIT ?
+            session_id,
+            project_path,
+            message_id,
+            role,
+            message_time,
+            message_text,
+            message_data,
+            part_id,
+            part_time,
+            part_type,
+            part_text,
+            part_data
+        FROM recent
+        ORDER BY sort_time,
+                 message_id,
+                 part_id
     """
-    return conn.execute(query, (MAX_SQLITE_ROWS,)).fetchall()
+    return conn.execute(query, (MAX_SQLITE_SESSIONS, MAX_SQLITE_ROWS)).fetchall()
 
 
 def _sqlite_timestamp(value: Any, fallback: str) -> str:
@@ -668,6 +786,25 @@ def _sqlite_timestamp(value: Any, fallback: str) -> str:
             numeric /= 1000
         return datetime.fromtimestamp(numeric, timezone.utc).isoformat().replace("+00:00", "Z")
     return fallback
+
+
+def _json_dict(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str) and value:
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+    return {}
+
+
+def _nested_time_created(data: dict[str, Any]) -> Any:
+    time_data = data.get("time")
+    if isinstance(time_data, dict):
+        return time_data.get("created") or time_data.get("start")
+    return data.get("time_created") or data.get("timestamp")
 
 
 def extract_opencode_sessions(store_path: Path | None, errors: list[str]) -> list[dict[str, Any]]:
@@ -696,22 +833,44 @@ def extract_opencode_sessions(store_path: Path | None, errors: list[str]) -> lis
 
         messages: dict[str, dict[str, Any]] = {}
         for row in rows:
+            message_data = _json_dict(row["message_data"])
+            part_data = _json_dict(row["part_data"])
             message_id = str(row["message_id"])
+            role = row["role"] or message_data.get("role")
+            message_time = row["message_time"] or _nested_time_created(message_data)
             item = messages.setdefault(
                 message_id,
                 {
-                    "role": row["role"],
+                    "role": role,
                     "session_id": str(row["session_id"]),
                     "project_path": row["project_path"],
-                    "timestamp": _sqlite_timestamp(row["message_time"], fallback_timestamp),
+                    "timestamp": _sqlite_timestamp(message_time, fallback_timestamp),
                     "parts": [],
+                    "tools": [],
                 },
             )
-            part_text = text_from_content(row["part_text"])
+            part_type = row["part_type"] or part_data.get("type")
+            part_text = text_from_content(row["part_text"] or part_data.get("text"))
             if part_text:
                 item["parts"].append(part_text)
             elif row["message_text"]:
                 item["parts"].append(text_from_content(row["message_text"]))
+            if part_type == "tool" or part_data.get("tool"):
+                state = part_data.get("state") if isinstance(part_data.get("state"), dict) else {}
+                arguments = state.get("input") if isinstance(state.get("input"), dict) else {}
+                tool_name = part_data.get("tool") or part_data.get("name")
+                if isinstance(tool_name, str) and tool_name:
+                    item["tools"].append(
+                        {
+                            "part_id": row["part_id"],
+                            "tool_name": tool_name,
+                            "arguments": arguments,
+                            "timestamp": _sqlite_timestamp(
+                                row["part_time"] or _nested_time_created(part_data),
+                                item["timestamp"],
+                            ),
+                        }
+                    )
 
         previous_assistant = ""
         for index, item in enumerate(messages.values(), start=1):
@@ -719,33 +878,56 @@ def extract_opencode_sessions(store_path: Path | None, errors: list[str]) -> lis
             if role not in {"user", "assistant"}:
                 continue
             content = "\n".join(part for part in item["parts"] if part)
-            if not content:
+            if not content and not item["tools"]:
                 continue
             project_path = Path(item["project_path"]) if item["project_path"] else None
-            data: dict[str, Any] = {
-                "actor": role,
-                "content": content,
-            }
-            if role == "user":
-                if previous_assistant:
-                    data["preceding_context"] = previous_assistant[-2000:]
-                sig = signal_type(content)
-                if sig:
-                    data["signal_type"] = sig
-            else:
-                previous_assistant = content
-            records.append(
-                record(
-                    source_kind="conversation_turn",
-                    timestamp=item["timestamp"],
-                    project_path=project_path,
-                    runtime="opencode",
-                    source_parts=(db_path.resolve(), index, role, content[:80]),
-                    session_id=item["session_id"],
-                    data=data,
+            if content:
+                data: dict[str, Any] = {
+                    "actor": role,
+                    "content": content,
+                }
+                if role == "user":
+                    if previous_assistant:
+                        data["preceding_context"] = previous_assistant[-2000:]
+                    sig = signal_type(content)
+                    if sig:
+                        data["signal_type"] = sig
+                else:
+                    previous_assistant = content
+                records.append(
+                    record(
+                        source_kind="conversation_turn",
+                        timestamp=item["timestamp"],
+                        project_path=project_path,
+                        runtime="opencode",
+                        source_parts=(db_path.resolve(), index, role, content[:80]),
+                        session_id=item["session_id"],
+                        data=data,
+                    )
                 )
-            )
-            if role == "user":
+            for tool_index, tool_item in enumerate(item["tools"], start=1):
+                records.append(
+                    record(
+                        source_kind="tool_call",
+                        timestamp=tool_item["timestamp"],
+                        project_path=project_path,
+                        runtime="opencode",
+                        source_parts=(
+                            db_path.resolve(),
+                            index,
+                            tool_index,
+                            "tool",
+                            tool_item["tool_name"],
+                            tool_item.get("part_id"),
+                        ),
+                        session_id=item["session_id"],
+                        data={
+                            "tool_name": tool_item["tool_name"],
+                            "arguments": tool_item["arguments"],
+                        },
+                    )
+                )
+            if role == "user" and content:
                 sig = signal_type(content)
                 if sig:
                     records.append(

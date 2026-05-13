@@ -324,6 +324,67 @@ decisions:
     ergonomics without turning the CLI into a script dump.
   confidence: firm
   feeds_into: TODO.md, .agentera/plan.yaml, scripts/install_root.py, scripts/agentera_upgrade.py, scripts/agentera, README.md, UPGRADE.md, capability prose, tests
+- number: 51
+  date: '2026-05-13'
+  question: What should Agentera measure before optimizing capability startup state access?
+  context: >-
+    Decision 41 closed the v2.0 token benchmark against the revised -10% target, but follow-up discussion identified a different
+    pain: agents invoke Agentera capabilities, run Agentera CLI state commands for compressed project state, and then still read,
+    grep, or glob raw `.agentera/*.yaml` or root artifact files before implementation work begins. An uncommitted startup-window
+    draft first tried to measure only slash-route or exact intro-marker windows, found zero qualifying windows, and would have
+    closed the startup-envelope follow-up. That draft was too strict because real OpenCode usage usually invokes capabilities
+    through natural language such as `run orkestrera` or bare names such as `planera`.
+  alternatives:
+  - name: Keep the route/intro startup-window metric
+    status: rejected
+    description: It misses the observed OpenCode behavior because most follow-up capability invocations do not use `/agentera` route text.
+  - name: Design a generic startup state envelope immediately
+    status: rejected
+    description: The direct session scan shows redundant state access exists, but the interface should be driven by the retained artifact-overlap metric.
+  - name: Patch individual capability startup habits now
+    status: rejected
+    description: Lower scope, but it would likely fight symptoms while leaving the CLI state surface insufficient for capability startup needs.
+  - name: Measure CLI-state-to-raw-artifact overlap
+    status: chosen
+    description: Count state-gathering sequences where an Agentera CLI state command is followed by raw artifact read/grep/glob of the same state family before implementation work.
+  choice: >-
+    Replace the old startup-window metric with a state-access metric: after a capability-related user turn, anchor on the first
+    Agentera CLI state call, stop at the first implementation boundary or next user turn, and count subsequent raw artifact
+    read/grep/glob access, especially when the raw artifact overlaps the CLI state family already fetched.
+  reasoning: >-
+    Direct OpenCode inspection found the actual pattern: bare `planera`, bare `resonera`, natural-language Orkestrera handoffs, and
+    subagent prompts frequently run `agentera plan`, `agentera progress`, `agentera docs`, or related state commands and then read
+    raw YAML/Markdown artifacts before work begins. The discarded route/intro classifier therefore produced a false weak-evidence
+    `close_without_implementation` result by measuring the wrong anchor. The retained state-access metric measures the product
+    problem directly and can distinguish a broad CLI startup-envelope need from narrower capability guidance fixes.
+  confidence: firm
+  feeds_into: startup state-access analysis, scripts/agentera, scripts/extract_corpus.py, capability prose, tests, TODO.md
+- number: 52
+  date: '2026-05-13'
+  question: How should Agentera run and retain startup state-access benchmark metrics?
+  context: >-
+    Decision 51 made startup state-access overlap an optimization metric. To compare versions, Agentera needs a repeatable
+    manual run for `scripts/startup_analysis_contract.py` that can read local runtime history without committing or shipping
+    generated local evidence.
+  alternatives:
+  - name: Ad hoc analyzer commands
+    status: rejected
+    description: Minimal, but weak for repeatability and trend comparison.
+  - name: Normal CI regression
+    status: rejected
+    description: CI cannot depend on private local runtime histories.
+  - name: Manual Mage benchmark with user-local retention
+    status: chosen
+    description: Mage runs the benchmark manually; aggregate history stays under `${AGENTERA_HOME}/benchmarks/startup-state/`.
+  choice: >-
+    Add a manual Mage benchmark suite starting with the Decision 51 startup state-access metric. Persist aggregate `runs.jsonl`
+    history under the user Agentera data home, not the repository, and retain only the latest redacted detailed report beside it.
+  reasoning: >-
+    Mage gives a clear manual benchmark surface while the Python analyzer remains the metric source of truth. User-local JSONL
+    enables longitudinal optimization targets without polluting git or packages, and latest-only report retention preserves
+    debuggability without accumulating bulky private artifacts.
+  confidence: firm
+  feeds_into: magefile.go, startup state-access benchmark, TODO.md
 archive:
 - 'Decision 40 (2026-05-04): [YAML agent artifacts] — Use YAML, no v1 compatibility, and call sub-modules capabilities.'
 - 'Decision 39 (2026-05-04): [Single bundled v2 skill] — Agentera 2.0 collapsed 12 skills into one `/agentera` entry point with capability schemas and CLI-backed state.'

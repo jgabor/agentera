@@ -1,4 +1,793 @@
 cycles:
+- number: 441
+  timestamp: 2026-05-13
+  type: code
+  phase: build
+  what: >
+    Replaced the uncommitted Decision 51 route/intro startup-window draft with
+    the state-access metric requested after direct OpenCode inspection.
+  commit: pending
+  inspiration: >
+    Real OpenCode sessions usually invoke capabilities through natural language
+    or bare names such as `planera`, not `/agentera` slash routes. The actual
+    friction is Agentera CLI state calls followed by raw artifact reads/greps/globs
+    before implementation work.
+  discovered: >
+    The discarded draft closure found zero startup windows because it anchored on
+    slash-route or assistant-intro markers that recent OpenCode sessions usually
+    do not contain. That `close_without_implementation` result is superseded here:
+    Decision 51, the startup measurement contract, analyzer, and tests now count
+    state-gathering sequences and flag raw artifact access after CLI state of the
+    same artifact family. OpenCode corpus extraction now emits current-schema
+    tool_call records so the metric can see CLI/read behavior.
+  verified: >
+    Focused verification passed: `uv run pytest tests/test_startup_analysis_contract.py
+    tests/test_extract_corpus.py tests/test_usage_stats.py -q` passed with 76
+    tests; focused `uv run ruff check` passed; `python3 -m py_compile` passed.
+    A bounded live OpenCode DB check over recent sessions read 4167 records,
+    found 51 state-gathering sequences, 15 sequences with raw artifact access
+    after CLI, 12 sequences with same-family redundant raw access, and selected
+    `plan_cli_startup_envelope` from the state-access metric.
+  next: >
+    Plan the CLI startup state envelope as follow-up work; do not implement the
+    envelope, commit, push, publish, refresh installed apps, or select a release
+    target in this measurement rewrite.
+  context:
+    intent: Replace uncommitted startup-window draft with Decision 51 state-access metric
+    constraints: no commit, no push, no publication, no installed app refresh, no
+      package-manager update, no release target, no vision/objective edit, no shell
+      startup write
+- number: 440
+  timestamp: 2026-05-13
+  type: docs
+  phase: build
+  what: >
+    Completed Task 8 for the active post-2.3 startup-overhead measurement plan by
+    closing the plan with bounded aggregate evidence, privacy validation, and no
+    follow-up implementation plan.
+  commit: pending
+  inspiration: >
+    The real local measurement contradicted the earlier fixture-gate follow-up:
+    there were no post-boundary startup windows, so closure is the correct bounded
+    outcome.
+  discovered: >
+    The completed plan records the measured runtime coverage, zero startup windows,
+    zero startup calls, no repeated artifact labels, weak-evidence rationale,
+    `close_without_implementation` recommendation, TODO closure, and no-release
+    gate. The detailed generated reports remain outside the repository.
+  verified: >
+    Final validation passed: installed Agentera plan read reported all 8 tasks
+    complete and status complete; YAML parsed for plan, progress, and docs;
+    generated report schema/privacy checks passed; generated report artifacts did
+    not appear in repository status; `git diff --check` passed; protected state and
+    version-bearing file diff checks returned no output.
+  next: >
+    Stop. There is no startup-envelope implementation follow-up from this
+    evidence. Do not commit, push, publish, refresh installed apps, run
+    package-manager updates, bump versions, edit vision, touch objective state, run
+    live host tests, or write shell startup files without explicit approval.
+  context:
+    intent: Final closure for local post-2.3 startup-overhead measurement
+    constraints: no implementation, no follow-up plan, no release target, no
+      version bump, no commit, no push, no publication, no installed app refresh,
+      no package-manager updates, no live host tests, no shell startup writes, no
+      vision edit, no objective-state edit
+    scope: .agentera/plan.yaml, .agentera/progress.yaml, TODO.md, CHANGELOG.md,
+      and .agentera/docs.yaml final state
+- number: 439
+  timestamp: 2026-05-13
+  type: test
+  phase: build
+  what: >
+    Completed Task 7 for the active post-2.3 startup-overhead measurement plan by
+    validating local-only measurement state, generated reports, privacy boundaries,
+    and protected file gates.
+  commit: pending
+  inspiration: >
+    Before plan closure, the run needed explicit proof that the generated evidence
+    stayed local, privacy-preserving, and outside release/version boundaries.
+  discovered: >
+    Generated artifacts are outside the repository output directory and do not
+    appear in repository status. Protected state and version-bearing file diff
+    checks returned no output. The run selected no release target.
+  verified: >
+    Installed Agentera plan read succeeded with 6 tasks complete before closure;
+    YAML parsed for plan, progress, and docs; report field validation passed for
+    output envelope, input envelope, recommendation, threshold derivation, runtime
+    coverage, total startup windows, and privacy summary; privacy scans over the
+    intermediate and both reports found no host-local path tokens, raw store names,
+    raw artifact YAML paths, private fixture tokens, raw session tokens, or private
+    salt values; `git diff --check` passed.
+  next: >
+    Proceed to Task 8 final plan closure. Do not implement a startup envelope,
+    start a new follow-up plan, bump versions, commit, push, publish, refresh
+    installed apps, run package-manager updates, edit vision, touch objective
+    state, run live host tests, or write shell startup files as part of Task 7.
+  context:
+    intent: Local-only measurement validation and protected gate checks
+    constraints: no implementation, no new plan, no release target, no version
+      bump, no commit, no push, no publication, no installed app refresh, no
+      package-manager updates, no live host tests, no shell startup writes, no
+      vision edit, no objective-state edit
+    scope: generated local reports, .agentera plan/progress/docs state, protected
+      state, and version-bearing file gates
+- number: 438
+  timestamp: 2026-05-13
+  type: docs
+  phase: build
+  what: >
+    Completed Task 6 for the active post-2.3 startup-overhead measurement plan by
+    syncing bounded handoff state to close the CLI startup-envelope TODO without
+    implementing envelope behavior or capability guidance changes.
+  commit: pending
+  inspiration: >
+    The measured recommendation was `close_without_implementation`, so the prior
+    follow-up TODO must not remain framed as startup-envelope planning work.
+  discovered: >
+    TODO now moves the startup-envelope follow-up to Resolved with the measured
+    zero-window evidence, CHANGELOG records the privacy-validated closure, and DOCS
+    last-audit state names the close-without-implementation outcome. No release
+    target was selected.
+  verified: >
+    The sync records only bounded aggregate values and recommendation labels: zero
+    startup windows, zero startup calls, no repeated artifact labels, degraded
+    runtime coverage, and `close_without_implementation`. It does not record raw
+    transcript text, full local paths, raw store paths, unredacted session IDs, or
+    private salts.
+  next: >
+    Proceed to Task 7 validation. Do not implement a startup envelope, start a new
+    follow-up plan, bump versions, commit, push, publish, refresh installed apps,
+    run package-manager updates, edit vision, touch objective state, run live host
+    tests, or write shell startup files without explicit approval.
+  context:
+    intent: Bounded TODO/changelog/docs handoff sync for startup-overhead closure
+    constraints: no implementation, no new plan, no release target, no version
+      bump, no commit, no push, no publication, no installed app refresh, no
+      package-manager updates, no live host tests, no shell startup writes, no
+      vision edit, no objective-state edit
+    scope: TODO.md, CHANGELOG.md, .agentera/docs.yaml, .agentera/plan.yaml, and
+      .agentera/progress.yaml Task 6 state
+- number: 437
+  timestamp: 2026-05-13
+  type: docs
+  phase: build
+  what: >
+    Completed Task 5 for the active post-2.3 startup-overhead measurement plan by
+    interpreting the generated startup-overhead report using bounded aggregate
+    values only.
+  commit: pending
+  inspiration: >
+    Decision 51 required real-session evidence before designing a startup envelope;
+    the interpretation must follow the measured aggregate report rather than the
+    previous fixture-gate recommendation.
+  discovered: >
+    The report measured 0 post-boundary startup windows, 0 startup calls, no CLI
+    state-call counts, no raw artifact-read counts, no capability-prose read
+    counts, and no repeated artifact labels. Runtime coverage was incomplete or
+    degraded: Codex ok, Claude Code degraded, OpenCode degraded, and GitHub Copilot
+    degraded. The analyzer selected `close_without_implementation` with
+    `weak_evidence` because no post-boundary startup windows were available for a
+    credible recommendation.
+  verified: >
+    The JSON report and Markdown report agree on `close_without_implementation`,
+    `implementation_recommended: false`, weak-evidence rationale, degraded runtime
+    coverage caveats, and the non-credible startup-envelope threshold due fewer
+    than three startup windows or two measured capabilities.
+  next: >
+    Proceed to Task 6 state sync by closing the startup-envelope TODO rather than
+    advancing implementation planning. Do not implement a startup envelope,
+    capability behavior changes, version bumps, commits, pushes, publication,
+    installed app refresh, package-manager updates, vision edits, objective-state
+    edits, live host tests, or shell startup writes as part of Task 5.
+  context:
+    intent: Aggregate startup-overhead recommendation interpretation
+    constraints: bounded aggregate evidence only, no transcript excerpts, no local
+      paths, no implementation, no final validation, no commit, no push, no
+      publication, no installed app refresh, no package-manager updates, no live
+      host tests, no shell startup writes, no vision edit, no objective-state edit
+    scope: Generated local report interpretation and .agentera plan/progress Task
+      5 state
+- number: 436
+  timestamp: 2026-05-13
+  type: test
+  phase: build
+  what: >
+    Completed Task 4 for the active post-2.3 startup-overhead measurement plan by
+    running the analyzer on the redacted intermediate and auditing the generated
+    reports.
+  commit: pending
+  inspiration: >
+    The plan required local-only reports outside the repository plus proof that the
+    structured and Markdown surfaces agree and do not expose private runtime data.
+  discovered: >
+    `scripts/startup_analysis_contract.py --intermediate-json` wrote
+    `startup-overhead-report.json` and `startup-overhead-report.md` under the
+    outside-repository output directory. The report action is
+    `close_without_implementation`, input envelope is `startup_analysis_v1`, output
+    envelope is `startup_metrics_v1`, and total startup windows are 0.
+  verified: >
+    JSON field validation passed for output envelope, input envelope,
+    startup_recommendation, threshold_derivation, runtime_coverage,
+    total_startup_windows, and privacy_redaction_summary. Markdown mentions the
+    same recommendation action. Privacy scans found no host-local path tokens, raw
+    runtime store names, raw artifact YAML paths, private fixture tokens, raw
+    session tokens, or generated private salt values in either report.
+  next: >
+    Proceed to Task 5 interpretation. Do not commit generated reports, copy them
+    into repository artifacts, implement envelope behavior, bump versions, push,
+    publish, refresh installed apps, run package-manager updates, edit vision,
+    touch objective state, run live host tests, or write shell startup files.
+  context:
+    intent: Analyzer report generation and privacy audit for startup-overhead
+      measurement
+    constraints: local-only reports, reports outside repository, no raw transcript
+      text, no full local paths, no raw store paths, no raw artifact YAML paths, no
+      unredacted session IDs, no private salt recording, no implementation, no
+      release target
+    scope: Generated local reports and .agentera plan/progress Task 4 state
+- number: 435
+  timestamp: 2026-05-13
+  type: test
+  phase: build
+  what: >
+    Completed Task 3 for the active post-2.3 startup-overhead measurement plan by
+    preparing redacted post-2.3 analyzer input from approved local runtime stores.
+  commit: pending
+  inspiration: >
+    Task 3 was the first approved runtime-history read and had to keep preparation
+    output outside committed artifacts while preserving only bounded labels,
+    runtime names, counts, and salted private identifiers.
+  discovered: >
+    The prepared `startup_analysis_v1` intermediate used only approved path scopes
+    and an ephemeral unrecorded salt. Runtime coverage was Codex ok with 42179
+    records, Claude Code degraded with 239231 records and 2 errors, OpenCode
+    degraded with 0 records and 1 error, and GitHub Copilot degraded with 0 records
+    and 1 error. The intermediate contained 0 startup windows; bounded degradation
+    reasons were 281412 pre-boundary records and 1 no-route-or-intro-anchor record.
+  verified: >
+    The preparation output is outside the repository and reports
+    `output_envelope: startup_analysis_v1`. A focused privacy scan of the written
+    intermediate found no host-local path tokens, approved-store path tokens, raw
+    store filenames, transcript-bearing keys, private fixture tokens, or raw
+    session tokens. No generated salt value was recorded in Agentera state.
+  next: >
+    Proceed to Task 4 analyzer report generation and privacy audit. Do not
+    interpret the recommendation, finalize state, implement a startup envelope,
+    commit, push, publish, refresh installed apps, run package-manager updates,
+    edit vision, touch objective state, run live host tests, or write shell startup
+    files as part of Task 3.
+  context:
+    intent: Redacted local analyzer input preparation for startup-overhead
+      measurement
+    constraints: approved runtime/path scopes only, outside-repository output,
+      ephemeral salt, bounded labels only, no committed reports, no interpretation,
+      no final state sync, no implementation, no release target
+    scope: Generated local intermediate and .agentera plan/progress Task 3 state
+- number: 434
+  timestamp: 2026-05-13
+  type: test
+  phase: build
+  what: >
+    Completed Task 2 for the active post-2.3 startup-overhead measurement plan by
+    verifying the existing corpus input bridge for the startup analyzer without
+    reading or enumerating real runtime history.
+  commit: pending
+  inspiration: >
+    The measurement run needs a concrete, already-supported input path before any
+    approved local histories are inspected, so corpus preparation must use existing
+    extractor and analyzer surfaces rather than hand-rolled glue.
+  discovered: >
+    The approved bridge is `scripts/extract_corpus.py --output "$CORPUS_JSON"
+    --project-root "$PWD" --codex-sessions-dir "$HOME/.codex/sessions"
+    --claude-projects-dir "$HOME/.claude/projects" --opencode-conversations-dir
+    "$OPENCODE_DB" --copilot-conversations-dir
+    "${COPILOT_HOME:-$HOME/.copilot}"`, followed by
+    `scripts/startup_analysis_contract.py --corpus-json "$CORPUS_JSON"
+    --output-dir "$REPORT_DIR" --salt "$SALT"`. The analyzer's
+    `--intermediate-json` option can consume an existing startup_analysis_v1 file,
+    but no existing CLI emits that intermediate directly; using ad hoc Python glue
+    would violate the plan's bounded bridge requirement. Task 2 did not resolve
+    OpenCode's concrete DB path, read runtime history files, prepare a corpus, run
+    the analyzer on real data, or write generated reports.
+  verified: >
+    Code inspection confirmed `extract_corpus.build_corpus` emits the Section 22
+    corpus envelope with metadata and records, the extractor CLI writes that corpus,
+    and `startup_analysis_contract.py --corpus-json` derives startup_analysis_v1
+    without mutating Section 22 records consumed by `usage_stats`. Compatibility
+    tests passed: `uv run pytest tests/test_startup_analysis_contract.py
+    tests/test_extract_corpus.py tests/test_usage_stats.py -q` reported 81 passed;
+    focused `uv run ruff check` passed for the bridge scripts and tests; and
+    `python3 -m py_compile scripts/startup_analysis_contract.py
+    scripts/extract_corpus.py scripts/usage_stats.py` passed.
+  next: >
+    Hand off Task 2 for Orkestrera evaluation. Task 3 may prepare post-2.3 local
+    input using only the approved runtime/path scopes and outside-repository
+    intermediate paths; do not interpret measurement results, finalize state,
+    implement a startup envelope, commit, push, publish, refresh installed apps,
+    run package-manager updates, edit vision, touch objective state, run live host
+    tests, or write shell startup files as part of Task 2.
+  context:
+    intent: Corpus input bridge verification for startup-overhead measurement
+    constraints: no real runtime history reads, no real history file enumeration,
+      no corpus prep, no analyzer run on real data, no report generation, no
+      interpretation, no final state sync, no commit, no push, no publication, no
+      installed app refresh, no package-manager updates, no live host tests, no
+      shell startup writes, no vision edit, no objective-state edit
+    scope: .agentera/plan.yaml and .agentera/progress.yaml Task 2 state only
+- number: 433
+  timestamp: 2026-05-13
+  type: docs
+  phase: build
+  what: >
+    Completed Task 1 for the active post-2.3 startup-overhead measurement plan by
+    recording explicit runtime-history consent and bounded measurement parameters
+    before any real local history is read.
+  commit: pending
+  inspiration: >
+    Real local runtime stores may contain private transcripts, so setup needed an
+    explicit approval record and privacy boundary before later tasks inspect any
+    approved histories.
+  discovered: >
+    The operator had already approved Claude Code, Codex, OpenCode, and GitHub
+    Copilot histories and approved the default scan path scope before any real
+    history read: Codex `~/.codex/sessions`, Claude Code `~/.claude/projects`,
+    OpenCode the single path returned by `opencode db path`, and GitHub Copilot
+    `${COPILOT_HOME:-~/.copilot}`. No runtime was blocked or deferred at Task 1
+    setup time, and no real runtime history was read or enumerated during this
+    task.
+  verified: >
+    Plan state was read through raw artifact fallback because installed Agentera
+    CLI reads failed on missing installed artifact schemas and no repair was run.
+    The plan now records the v2.3.0 boundary commit
+    b18e3dc7d768d4ad2726880916e7cfe6bd8617d3, strict-after timestamp
+    2026-05-12T17:50:13+02:00, approved runtimes, approved scan path scope for
+    Codex, Claude Code, OpenCode, and GitHub Copilot, the policy that later tasks
+    must not read, enumerate, glob, inspect, or infer records outside those
+    runtime/path scopes without fresh approval, /tmp/opencode default outside-repo
+    report policy, ephemeral per-run salt policy, no committed private salts or
+    generated salted per-session hashes, and exclusions for raw transcript text,
+    full local paths, raw store paths, unredacted session IDs, generated reports,
+    and generated salted hashes. Final YAML parse, plan CLI read when available,
+    and `git diff --check` results are recorded in the Task 1 return.
+  next: >
+    Hand off Task 1 for Orkestrera evaluation. Task 2 may verify the corpus input
+    bridge after this approval record; do not read real runtime history,
+    enumerate real local history files, prepare corpus input, run the analyzer,
+    interpret results, finalize state, commit, push, publish, refresh installed
+    apps, run package-manager updates, edit vision, touch objective state, run
+    live host tests, or write shell startup files as part of Task 1.
+  context:
+    intent: Consent and measurement parameter recording for startup-overhead
+      measurement
+    constraints: no real runtime history reads, no real history file enumeration,
+      no corpus prep, no analyzer run, no interpretation, no final state sync, no
+      commit, no push, no publication, no installed app refresh, no package-manager
+      updates, no live host tests, no shell startup writes, no vision edit, no
+      objective-state edit
+    scope: .agentera/plan.yaml and .agentera/progress.yaml Task 1 state only
+- number: 432
+  timestamp: 2026-05-13
+  type: docs
+  phase: build
+  what: >
+    Completed Task 8 for post-2.3 startup overhead measurement by synchronizing
+    progress, docs, TODO, changelog, and plan state with the analysis evidence,
+    recommendation gate, privacy validation, and explicit no-release-target gate.
+  commit: pending
+  inspiration: >
+    Tasks 1-7 were evaluator-reviewed PASS. The final task was state sync only:
+    record the measured startup-overhead evidence and recommendation without
+    implementing a startup envelope or capability behavior change, and keep
+    version-bearing files unchanged because no release target was selected.
+  discovered: >
+    The active docs state still described the Task 6 report surfaces rather than
+    the final closure. The recommendation gate can hand off CLI startup-envelope
+    planning as TODO work, while this plan remains limited to local-only,
+    privacy-preserving measurement, report surfaces, validation, and state sync.
+  verified: >
+    Pre-sync `AGENTERA_HOME=/home/jgabor/git/agentera uv run scripts/agentera
+    plan --format json` reported 7 completed tasks and Task 8 pending; docs state
+    parsed as current. `git diff -- pyproject.toml uv.lock plugin.json
+    .github/plugin/plugin.json .codex-plugin/plugin.json
+    .claude-plugin/marketplace.json .opencode/plugins/agentera.js registry.json
+    skills/agentera/SKILL.md` returned no output before state sync, confirming no
+    version-bearing file diff. Task 7 evidence remains the focused non-live proof:
+    81 startup/extractor/usage tests passed, ruff and py_compile passed, report
+    stdout avoided absolute report paths, privacy scans found no synthetic
+    transcript tokens, private root tokens, raw store tokens, raw session tokens,
+    fixture conversation identifiers, host-local absolute paths, or raw artifact
+    YAML paths, and `git diff --check` passed. Final verification is recorded in
+    the Task 8 return and keeps live hosts, real shell startup files, real runtime
+    history inspection, package updates, installed app refresh, commits, pushes,
+    publication, vision edits, and objective-state edits out of scope.
+  next: >
+    Hand off the completed startup-overhead measurement plan for Orkestrera
+    closure. If the CLI startup-envelope recommendation is accepted, start a new
+    plan from the TODO handoff; do not implement that follow-up inside this plan.
+    No release target was selected, so do not bump versions, tag, push, publish,
+    run package-manager updates, refresh installed apps, edit vision state, or
+    touch objective state without explicit approval.
+  context:
+    intent: State sync and release-target gate for startup-overhead measurement
+    constraints: no startup envelope implementation, no capability behavior
+      changes, no live host tests, no real shell startup writes, no real runtime
+      history inspection, no version bump, no commit, no push, no publication, no
+      package-manager updates, no installed app refresh, no vision edit, no
+      objective-state edit
+    scope: TODO.md, CHANGELOG.md, .agentera/docs.yaml, .agentera/plan.yaml, and
+      .agentera/progress.yaml final state evidence
+- number: 431
+  timestamp: 2026-05-13
+  type: test
+  phase: build
+  what: >
+    Completed Task 7 for post-2.3 startup overhead measurement by strengthening
+    focused regression, non-live default validation, and privacy checks without
+    adding startup-envelope behavior or inspecting real runtime history.
+  commit: pending
+  inspiration: >
+    Task 7 required proof that changed classifier, extractor, aggregator,
+    threshold, and report units each have positive and negative coverage, that
+    default validation stays fixture/local-file only with no live host calls or
+    real shell startup writes, and that generated outputs avoid raw transcript
+    text, full local paths, raw store paths, and unredacted session identifiers.
+  discovered: >
+    The focused test file already covered most unit branches, but the report CLI
+    stdout returned absolute report paths. The CLI now reports only canonical
+    report filenames on stdout while still writing reports to the requested local
+    output directory, and added tests prove no shell startup fixture mutation and
+    privacy-clean report output.
+  verified: >
+    `uv run pytest tests/test_startup_analysis_contract.py -q` passed with 22
+    tests. `uv run pytest tests/test_startup_analysis_contract.py
+    tests/test_extract_corpus.py tests/test_usage_stats.py -q` passed with 81
+    tests, preserving Section 22 compatibility. `uv run ruff check
+    scripts/startup_analysis_contract.py tests/test_startup_analysis_contract.py`
+    passed. `python3 -m py_compile scripts/startup_analysis_contract.py` passed.
+    Privacy scans over startup-overhead report artifacts and the measurement
+    contract found no synthetic transcript tokens, private root tokens, raw store
+    tokens, raw session tokens, fixture conversation identifiers, host-local
+    absolute paths, or raw artifact YAML paths. `git diff --check` passed.
+  next: >
+    Hand off Task 7 for Orkestrera evaluation. Task 8 remains pending for final
+    state sync and release-target gating; do not broaden this cycle into final
+    state sync, version bumps, package updates, installed app refresh,
+    publication, push, vision edits, objective-state edits, live host tests, or
+    startup-envelope implementation.
+  context:
+    intent: Regression and non-live validation for startup-overhead analysis
+    constraints: fixture/local-file validation only, no real runtime history
+      inspection, no live host tests, no real shell startup writes, no startup
+      envelope design or implementation, no capability behavior refactor, no
+      final state sync, no commit, no push, no publication, no package-manager
+      updates, no installed app refresh, no vision edit, no objective-state edit
+    scope: startup analysis contract script, focused startup analysis tests,
+      PLAN.md, and PROGRESS.md
+- number: 430
+  timestamp: 2026-05-13
+  type: docs
+  phase: build
+  what: >
+    Completed Task 6 for post-2.3 startup overhead measurement by adding
+    privacy-preserving structured and human-readable report surfaces plus scoped
+    docs alignment.
+  commit: pending
+  inspiration: >
+    Task 6 needed report outputs and documentation, not a startup envelope or
+    capability behavior change. The report surface had to preserve Decision 51's
+    measure-first constraint and keep the analysis local-only with no raw
+    transcript output, full local paths, raw store paths, or unredacted session
+    ids.
+  discovered: >
+    The existing startup_metrics_v1 envelope already carried the needed measured
+    fields. A small renderer and CLI over fixture/local corpus or existing
+    startup_analysis_v1 input was enough to write startup-overhead-report.json
+    and startup-overhead-report.md with boundary source, runtime coverage,
+    metrics, threshold rationale, recommendation, and privacy caveats.
+  verified: >
+    `uv run pytest tests/test_startup_analysis_contract.py -q` passed with 19
+    tests, including report surface and docs-link coverage. `uv run ruff check
+    scripts/startup_analysis_contract.py tests/test_startup_analysis_contract.py`
+    passed. `python3 -m py_compile scripts/startup_analysis_contract.py` passed.
+    A fixture-driven `uv run scripts/startup_analysis_contract.py --corpus-json
+    <temp> --output-dir <temp> --salt fixture-salt` generated both reports and
+    post-checks confirmed required sections plus absence of synthetic transcript,
+    path, raw artifact path, and conversation tokens. YAML parsing for
+    .agentera/docs.yaml, .agentera/plan.yaml, .agentera/progress.yaml, and the
+    startup measurement contract passed. `git diff --check` passed.
+  next: >
+    Hand off Task 6 for Orkestrera evaluation. Task 7 remains pending for
+    regression and non-live validation; do not run live host tests, implement a
+    startup envelope, refactor capability behavior, perform final state sync,
+    update packages, refresh installed apps, publish, push, edit vision, or touch
+    objective state without explicit approval.
+  context:
+    intent: Report surfaces and docs alignment for startup-overhead analysis
+    constraints: local-only fixture/intermediate verification, no real runtime
+      history inspection, no live host tests, no shell startup writes, no startup
+      envelope design or implementation, no capability behavior refactor, no
+      final plan state sync, no commit, no push, no publication, no package-manager
+      updates, no installed app refresh, no vision edit, no objective-state edit
+    scope: scripts/startup_analysis_contract.py, tests/test_startup_analysis_contract.py,
+      references/analysis/startup-measurement-contract.yaml, README.md,
+      docs/vocabulary.md, .agentera/docs.yaml, .agentera/plan.yaml, and
+      .agentera/progress.yaml
+- number: 429
+  timestamp: 2026-05-13
+  type: test
+  phase: build
+  what: >
+    Completed Task 5 for post-2.3 startup overhead measurement by adding
+    threshold derivation and a recommendation gate over aggregate startup
+    metrics.
+  commit: pending
+  inspiration: >
+    Task 5 needed recommendations from measurements only: derive credible action
+    thresholds from aggregate fixture/intermediate metrics, recommend a CLI
+    startup envelope only for broad repeated startup reads, and otherwise point
+    to targeted capability guidance fixes or closure without implementation.
+  discovered: >
+    The gate can remain inside startup_metrics_v1 without changing extraction or
+    final report surfaces. Metrics now record per-window startup-call and
+    raw-artifact-read distributions, repeated artifact breadth by capability,
+    threshold selection rationale, a named measured trigger, and bounded actions
+    that preserve canonical labels only.
+  verified: >
+    `uv run pytest tests/test_startup_analysis_contract.py -q` passed with 17
+    tests, including broad repeated PLAN.md reads recommending
+    plan_cli_startup_envelope, narrow hotspots recommending
+    targeted_capability_guidance_fixes, weak evidence closing without a gate
+    input, and privacy checks excluding synthetic path/session tokens. `uv run
+    pytest tests/test_startup_analysis_contract.py tests/test_usage_stats.py -q`
+    passed with 63 tests, preserving Section 22 usage_stats compatibility. `uv
+    run ruff check scripts/startup_analysis_contract.py
+    tests/test_startup_analysis_contract.py` passed. `python3 -m py_compile
+    scripts/startup_analysis_contract.py` passed. YAML parsing for
+    .agentera/plan.yaml and .agentera/progress.yaml passed. `git diff --check`
+    passed.
+  next: >
+    Hand off Task 5 for Orkestrera evaluation. Task 6 remains pending for report
+    surfaces and docs alignment; do not implement a startup envelope, capability
+    behavior changes, live host tests, package updates, installed app refresh,
+    publication, push, vision edits, or objective-state edits without explicit
+    approval.
+  context:
+    intent: Threshold derivation and recommendation gating for startup-overhead
+      analysis
+    constraints: fixture/intermediate metrics only, no real runtime history
+      inspection, no live host tests, no shell startup writes, no report docs
+      surface, no startup envelope design or implementation, no capability
+      behavior refactor, no commit, no push, no publication, no package-manager
+      updates, no installed app refresh, no vision edit, no objective-state edit
+    scope: scripts/startup_analysis_contract.py, tests/test_startup_analysis_contract.py,
+      .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 428
+  timestamp: 2026-05-13
+  type: test
+  phase: build
+  what: >
+    Completed Task 4 for post-2.3 startup overhead measurement by adding a pure
+    aggregation layer over the redacted startup_analysis_v1 intermediate.
+  commit: pending
+  inspiration: >
+    Task 4 needed metrics only: per-capability startup counts, event-class
+    totals, repeated artifact labels, runtime coverage, confidence caveats, and
+    insufficient-evidence handling. Threshold derivation, recommendation gates,
+    report docs surfaces, and startup envelope design remain Task 5 or later.
+  discovered: >
+    Aggregation can consume the Task 3 intermediate directly without touching
+    Section 22 corpus records. Repeated startup reads are rendered as canonical
+    labels such as PLAN.md or PROGRESS.md with counts, while raw transcript text,
+    full local paths, raw store paths, and unredacted session ids stay outside
+    metrics output. Empty post-2.3 evidence now reports a bounded insufficient
+    evidence reason and implementation_recommended=false.
+  verified: >
+    `uv run pytest tests/test_startup_analysis_contract.py -q` passed with 15
+    tests, including aggregation coverage for per-capability startup calls,
+    CLI-state-call counts, raw artifact-read counts, capability prose-read
+    counts, repeated artifact labels, runtime coverage, confidence caveats,
+    insufficient evidence without recommendation, and label-only repeated-read
+    rendering. `uv run pytest tests/test_extract_corpus.py tests/test_usage_stats.py
+    -q` passed with 59 compatibility tests. `uv run ruff check
+    scripts/startup_analysis_contract.py tests/test_startup_analysis_contract.py`
+    passed. `python3 -m py_compile scripts/startup_analysis_contract.py` passed.
+    `git diff --check` passed.
+  next: >
+    Hand off Task 4 for Orkestrera evaluation. Task 5 remains pending for
+    threshold derivation and recommendation gating; do not implement thresholds,
+    recommendations, report docs surfaces, startup envelopes, live host tests,
+    package updates, installed app refresh, publication, push, vision edits, or
+    objective-state edits without explicit approval.
+  context:
+    intent: Aggregate startup overhead metrics for startup-overhead analysis
+    constraints: metrics only, fixture/temp inputs only, no real runtime history
+      inspection, no live host tests, no shell startup writes, no thresholding,
+      no implementation recommendation, no report docs surface, no startup
+      envelope design, no commit, no push, no publication, no package-manager
+      updates, no installed app refresh, no vision edit, no objective-state edit
+    scope: scripts/startup_analysis_contract.py, tests/test_startup_analysis_contract.py,
+      .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 427
+  timestamp: 2026-05-13
+  type: fix
+  phase: build
+  what: >
+    Completed Task 3 retry 1 for post-2.3 startup overhead measurement by adding
+    an explicit fixture/temp-store local extraction path that derives
+    startup_analysis_v1 from runtime stores instead of only consuming existing
+    corpus JSON and metadata runtime_statuses.
+  commit: pending
+  inspiration: >
+    The evaluator correctly rejected the first Task 3 implementation because it
+    only read existing Section 22 corpus records. The retry needed actual
+    temporary runtime-store inputs while preserving Section 22 corpus compatibility
+    for usage_stats and avoiding real user runtime history.
+  discovered: >
+    scripts/extract_corpus.py could remain the local store reader with a narrow
+    JSONL tool_call record addition for Codex and Claude-shaped fixtures.
+    scripts/startup_analysis_contract.py now exposes an explicit-path-only
+    extract_startup_intermediate_from_runtime_stores helper that builds a normal
+    corpus in memory, emits a separate redacted startup_analysis_v1 intermediate,
+    and never discovers default host history locations.
+  verified: >
+    `uv run pytest tests/test_startup_analysis_contract.py
+    tests/test_extract_corpus.py tests/test_usage_stats.py -q` passed with 71
+    tests. New tests use temporary runtime stores for available Codex startup
+    data, sparse Claude, simulated locked OpenCode, schema-divergent Copilot,
+    continuation when one runtime degrades, redacted intermediate writes, and
+    usage_stats compatibility. `uv run ruff check scripts/extract_corpus.py
+    scripts/startup_analysis_contract.py tests/test_startup_analysis_contract.py`
+    passed. `python3 -m py_compile scripts/extract_corpus.py
+    scripts/startup_analysis_contract.py` passed.
+  next: >
+    Hand off Task 3 retry 1 for Orkestrera evaluation. Task 4 remains pending for
+    aggregation; do not implement aggregation, thresholding, final reports, docs
+    report surfaces, startup envelope design, live host tests, package updates,
+    installed app refresh, publication, push, vision edits, or objective-state
+    edits without explicit approval.
+  context:
+    intent: Local session extraction and compatibility retry 1 for startup-overhead
+      analysis
+    constraints: fixture/temp paths only, no real runtime history inspection, no
+      live host tests, no shell startup writes, no aggregation, no thresholding,
+      no final reports, no docs report surface, no startup envelope design, no
+      commit, no push, no publication, no package-manager updates, no installed
+      app refresh, no vision edit, no objective-state edit
+    scope: scripts/extract_corpus.py, scripts/startup_analysis_contract.py,
+      tests/test_startup_analysis_contract.py, .agentera/plan.yaml, and
+      .agentera/progress.yaml
+- number: 426
+  timestamp: 2026-05-13
+  type: test
+  phase: build
+  what: >
+    Completed Task 3 for post-2.3 startup overhead measurement by adding a
+    startup_analysis_v1 intermediate derived from local corpus/session records
+    without mutating Section 22 corpus records consumed by usage_stats.
+  commit: pending
+  inspiration: >
+    The safest compatibility boundary is a separate versioned intermediate: read
+    existing corpus/session records, classify startup windows, and redact runtime
+    coverage rather than extending required corpus fields or changing legacy
+    extractor/statistics behavior.
+  discovered: >
+    Startup intermediates now include runtime names, bounded runtime statuses,
+    record/window counts, canonical artifact-label counts, salted conversation
+    and record labels, and no raw store paths. Missing, sparse, locked,
+    schema-divergent, and unknown runtime states are bounded while records from
+    other runtimes continue to produce startup windows.
+  verified: >
+    `uv run pytest tests/test_startup_analysis_contract.py -q` passed with 9
+    tests. `uv run pytest tests/test_extract_corpus.py tests/test_usage_stats.py
+    -q` passed with 59 compatibility tests, preserving Section 22 corpus
+    behavior. `uv run ruff check scripts/startup_analysis_contract.py
+    tests/test_startup_analysis_contract.py` passed. `python3 -m py_compile
+    scripts/startup_analysis_contract.py` passed. `git diff --check` passed.
+  next: >
+    Hand off Task 3 for Orkestrera evaluation. Task 4 remains pending for
+    aggregation; do not implement aggregation, thresholding, reports, startup
+    envelopes, live host tests, package updates, installed app refresh,
+    publication, push, vision edits, or objective-state edits without explicit
+    approval.
+  context:
+    intent: Local session extraction and compatibility for startup-overhead
+      analysis
+    constraints: no aggregation, no thresholding, no report generation, no
+      envelope design, no commit, no push, no publication, no package-manager
+      updates, no installed app refresh, no live host tests, no shell startup
+      writes, no vision edit, no objective-state edit
+    scope: scripts/startup_analysis_contract.py, tests/test_startup_analysis_contract.py,
+      .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 425
+  timestamp: 2026-05-13
+  type: test
+  phase: build
+  what: >
+    Completed Task 2 for post-2.3 startup overhead measurement by adding
+    fixture-backed classifier logic and tests that separate startup CLI state
+    calls, raw artifact reads, and capability prose reads from the first
+    implementation boundary.
+  commit: pending
+  inspiration: >
+    Task 2 needed classifier behavior and synthetic fixture coverage only, so
+    local runtime extraction, aggregation, thresholding, report generation, and
+    envelope design stayed out of scope.
+  discovered: >
+    The Task 1 contract and redaction helpers were sufficient to host the
+    classifier. Bounded fixture cases now cover route triggers, intro markers,
+    CLI state calls, raw artifact reads, capability prose reads, implementation
+    calls, unrelated turns, no-marker conversations, malformed records,
+    transcript-bearing fields, implementation-only calls, and pre-boundary
+    records without emitting raw transcript text, full local paths, raw store
+    paths, or unredacted session ids.
+  verified: >
+    `uv run pytest tests/test_startup_analysis_contract.py -q` passed with 6
+    tests. `uv run pytest tests/test_extract_corpus.py tests/test_usage_stats.py
+    -q` passed with 59 compatibility tests, preserving Section 22 corpus
+    behavior. `uv run ruff check scripts/startup_analysis_contract.py
+    tests/test_startup_analysis_contract.py` passed. The installed Agentera app
+    state commands were unavailable because installed artifact schemas are
+    missing; no repair or installed app refresh was run, and raw artifact fallback
+    was used for plan/progress state.
+  next: >
+    Hand off Task 2 for Orkestrera evaluation. Task 3 remains pending for local
+    session extraction; do not implement extraction, aggregation, thresholding,
+    reports, startup envelopes, live host tests, package updates, installed app
+    refresh, publication, push, vision edits, or objective-state edits without
+    explicit approval.
+  context:
+    intent: Fixture-backed classifier coverage for startup-overhead analysis
+    constraints: no local store extraction, no aggregation, no thresholding, no
+      report generation, no envelope design, no commit, no push, no publication,
+      no package-manager updates, no installed app refresh, no live host tests,
+      no shell startup writes, no vision edit, no objective-state edit
+    scope: scripts/startup_analysis_contract.py, tests/test_startup_analysis_contract.py,
+      .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 424
+  timestamp: 2026-05-13
+  type: docs
+  phase: build
+  what: >
+    Completed Task 1 for post-2.3 startup overhead measurement by adding a
+    documented startup-analysis-v1 measurement contract, privacy redaction
+    scaffold, docs metadata entry, and focused contract tests while preserving
+    the existing Section 22 corpus envelope consumed by extract_corpus and
+    usage_stats.
+  commit: pending
+  inspiration: >
+    Decision 51 requires measuring post-2.3 session logs before designing a
+    startup-state envelope or changing capability guidance, so Task 1 needed a
+    clear contract and privacy boundary before any extractor implementation.
+  discovered: >
+    The existing extractor and usage analytics already have a stable Section 22
+    corpus adapter version. Startup analysis can consume that format read-only
+    and write a separate startup_analysis_v1 output or optional
+    analysis_extensions.startup_v1 data instead of changing required corpus
+    fields.
+  verified: >
+    `uv run pytest tests/test_startup_analysis_contract.py -q` passed with 3
+    tests covering boundary/report shape, privacy redaction, docs indexing, and
+    Section 22 extension rules. `uv run pytest tests/test_extract_corpus.py
+    tests/test_usage_stats.py -q` passed with 59 compatibility tests. `uv run
+    ruff check scripts/startup_analysis_contract.py
+    tests/test_startup_analysis_contract.py tests/conftest.py` passed. `python3
+    -m py_compile scripts/startup_analysis_contract.py` passed. `git diff
+    --check` passed.
+  next: >
+    Hand off Task 1 for Orkestrera evaluation. Task 2 remains pending for
+    fixture and classifier coverage; do not implement extraction, aggregation,
+    thresholding, envelope changes, live host tests, package updates, installed
+    app refresh, publication, push, vision edits, or objective-state edits
+    without explicit approval.
+  context:
+    intent: Measurement contract and privacy boundary for post-2.3 startup
+      overhead analysis
+    constraints: no commit, no push, no publication, no package-manager updates,
+      no installed app refresh, no live host tests, no shell startup writes, no
+      extractor implementation, no vision edit, no objective-state edit
+    scope: references/analysis/startup-measurement-contract.yaml,
+      scripts/startup_analysis_contract.py, focused tests, docs metadata, plan
+      and progress state
 - number: 423
   timestamp: 2026-05-13
   type: docs

@@ -401,6 +401,8 @@ CLI-visible upgrade labels to preserve: `Agentera upgrade`, `mode:`,
 | Live-host smoke | Explicit opt-in model-host check against real runtime access. |
 | Semantic eval | Offline fixture evaluation that checks whether captured output means the right thing. |
 | Semantic fixture | Markdown fixture with prompt, seeded project state, captured output, tool trace, and expected facts. |
+| Startup-overhead analysis | Local-only Decision 51 measurement surface for raw Agentera artifact access after CLI state calls during capability startup/state gathering. It replaced an uncommitted route/intro startup-window draft that found zero qualifying windows, and must report the retained `CLI state -> raw artifact access` metric before recommending a startup envelope or guidance fix. |
+| Startup report | Human-readable and structured report pair that includes boundary source, runtime coverage, startup metrics, threshold rationale, recommendation, and privacy caveats without raw transcript text or raw local paths. |
 | Seeded project state | Fixture-provided artifacts used as the source of truth for expected behavior. |
 | Oracle | Artifact-derived expectation, such as the exact plan task hej should route to. |
 | Regression | Required safety check for behavior that must not degrade. |
