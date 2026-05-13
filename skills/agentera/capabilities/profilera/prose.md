@@ -37,7 +37,7 @@ Contract values are inlined where referenced. Confidence scale tiers CS1-CS5 for
 
 Two modes:
 
-- **Full**: Extract all session data, synthesize from scratch, write a fresh PROFILE.md.
+- **Full**: Detect available local runtime history, ask which extractable runtimes to include, synthesize from scratch, write a fresh PROFILE.md.
 - **Validate**: Quick incremental check. Surface the ~6 entries most worth validating, let the user confirm or challenge each one, update metadata in place.
 
 ---
@@ -69,28 +69,53 @@ If the user chooses **Validate**, skip to Validate Mode.
 
 The sharp colleague, here to pay attention to how you decide, not run a classification pipeline. This is someone who's been watching your work, noticing patterns, and reflecting back what they've seen. "Here's what I've noticed about how you work," not "Signal extraction complete."
 
-Step markers: display `── step N/5: verb` before each step.
-Steps: extract, read, categorize, generate, validate.
+Step markers: display `── step N/6: verb` before each step.
+Steps: detect, extract, read, categorize, generate, validate.
 
-### Step 1: Run extraction
+### Step 1: Detect runtime sources
 
-Read `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` if it already exists. If the corpus is absent or stale, run the bundled extractor from the Agentera v2 repository:
+Before asking what to include, run a deterministic local preview that uses the extractor defaults and writes a temporary preview corpus:
+
+```bash
+uv run ${AGENTERA_HOME:-.}/scripts/extract_corpus.py --output <temporary-preview-corpus>
+```
+
+Read only the preview corpus top-level `metadata.runtime_statuses` plus per-runtime record counts. Do not display raw transcript content in the source-selection prompt. Remove the temporary preview after source selection unless it is reused as the final corpus for `All (Recommended)`.
+
+Treat a runtime as selectable only when its status is `ok` and its `record_count` is greater than zero. Treat `missing`, `skipped`, `sparse`, and `degraded` runtimes as unavailable for this run; report them briefly with bounded status/reason labels and remediation labels when present.
+
+Supported runtime sources:
+
+- **Claude Code**: default `~/.claude/projects`, override with `--claude-projects-dir <path>`, disable with `--no-claude`
+- **Codex**: default `~/.codex/sessions`, override with `--codex-sessions-dir <path>`, disable with `--no-codex`
+- **OpenCode**: default `opencode db path` when available, override with `--opencode-conversations-dir <path>`, disable with `--no-opencode`
+- **GitHub Copilot**: default `$COPILOT_HOME` or `~/.copilot`, override with `--copilot-conversations-dir <path>`, disable with `--no-copilot`
+
+Ask which runtime histories to include with a multi-select question. Put `All (Recommended)` first; it means every selectable runtime from the preview and wins over any individual runtime selections. Also offer one option per selectable runtime and a docs/config-only option for cases where the user wants no runtime conversation history. The question controls runtime conversation sources only; instruction documents and project config signals remain included.
+
+If no runtime has extractable records, skip the selection question, say no local runtime history is currently extractable, and continue with instruction documents and project config signals.
+
+### Step 2: Run extraction
+
+Read `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` if it already exists and still matches the selected runtime set. If the corpus is absent, stale, or was produced for a different source selection, run the bundled extractor from the Agentera v2 repository:
 
 ```bash
 uv run ${AGENTERA_HOME:-.}/scripts/extract_corpus.py
 ```
 
-The extractor writes the default `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` envelope and emits the four portable Section 22 families: `instruction_document`, `history_prompt`, `conversation_turn`, and `project_config_signal`. Use `--output <path>`, repeated `--project-root <path>`, `--codex-sessions-dir <path>`, or `--claude-projects-dir <path>` when the host stores data outside the defaults.
+Apply runtime opt-out flags from Step 1. For example, if the user selects Claude Code and OpenCode only, run with `--no-codex --no-copilot`. If the user selects docs/config-only, run with `--no-claude --no-codex --no-opencode --no-copilot`. If the user selects `All (Recommended)`, use no runtime opt-out flags.
+
+The extractor writes the default `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` envelope and emits the four portable Section 22 families: `instruction_document`, `history_prompt`, `conversation_turn`, and `project_config_signal`. Use `--output <path>`, repeated `--project-root <path>`, `--codex-sessions-dir <path>`, `--claude-projects-dir <path>`, `--opencode-conversations-dir <path>`, or `--copilot-conversations-dir <path>` when the host stores data outside the defaults.
 
 Read the corpus file's top-level `metadata` object to confirm counts per source family. Report totals to the user.
 
-**If extraction fails**: common causes include `uv` not found, permission errors, and empty output (no session history). If only some extractors fail, the corpus will contain partial data with per-extractor error notes in `metadata.extractors`; proceed and note missing sources.
+**If extraction fails**: common causes include `uv` not found, permission errors, and empty output (no session history). If only some runtimes fail, the corpus will contain partial data with bounded runtime notes in `metadata.runtime_statuses`; proceed and note missing sources.
 
 ---
 
-### Step 2: Read corpus data
+### Step 3: Read corpus data
 
-Read the corpus.json produced in Step 1. Each record carries a `source_kind` field. Group records by source family for synthesis:
+Read the corpus.json produced in Step 2. Each record carries a `source_kind` field. Group records by source family for synthesis:
 
 1. **instruction_document**: Memory files, CLAUDE.md, AGENTS.md (highest signal: explicit user instructions)
 2. **history_prompt**: Decision-rich prompts from session history
@@ -105,7 +130,7 @@ Read the full corpus before synthesis. If total records exceed 500, prioritize h
 
 ---
 
-### Step 3: Categorize and synthesize
+### Step 4: Categorize and synthesize
 
 Group signals into 12 categories:
 
@@ -170,7 +195,7 @@ Look for cross-category patterns and contradictions: stated principle vs shipped
 
 ---
 
-### Step 4: Generate the profile
+### Step 5: Generate the profile
 
 Output constraint: ≤30 words per signal, ≤15 words per evidence line.
 
@@ -253,7 +278,7 @@ Each entry records a contradiction or divergence found during profile generation
 
 ---
 
-### Step 5: Validate predictions
+### Step 6: Validate predictions
 
 Pick 5 decision-rich prompts NOT used to create profile entries. For each: predict what the profile would recommend, check against what happened. Report accuracy (e.g., "4/5"). Below 3/5: identify categories needing more signal, note in profile header.
 
