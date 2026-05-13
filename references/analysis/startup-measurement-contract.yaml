@@ -32,6 +32,84 @@ section_22_compatibility:
     analysis_extensions.startup_state_v1 object ignored by extract_corpus.py
     and usage_stats.py.
 
+benchmark_execution:
+  rule: manual_only
+  command_surface: mage bench:startupState
+  normal_ci: forbidden
+  live_host_checks: forbidden_by_default
+  runtime_path_approval: >-
+    Before reading any local runtime history, the operator must explicitly approve
+    the exact runtime labels and concrete filesystem paths that the benchmark may
+    inspect. A generic consent flag, default-path inference, or runtime label
+    without its approved path is insufficient.
+  default_run: >-
+    The Mage benchmark target may run without runtime-store inputs only by using a
+    no-runtime mode that reads no local runtime history and records insufficient
+    evidence for local behavior measurement.
+  incremental_rule: >-
+    Runtime-store benchmark runs use retained aggregate history as the only
+    durable watermark source. The first run for a runtime scope analyzes all
+    post-boundary records; later runs for the same runtime_scope analyze only
+    records with timestamps strictly after the previous successful
+    benchmark_watermark_at.
+  metric_source_of_truth: scripts/startup_analysis_contract.py
+  startup_state_envelope_scope: excluded
+
+benchmark_storage:
+  default_directory: ${AGENTERA_HOME}/benchmarks/startup-state/
+  repository_outputs: forbidden
+  durable_outputs:
+    - runs.jsonl
+    - latest-report.json
+    - latest-report.md
+  retention_rule: >-
+    Retained benchmark history consists only of aggregate runs.jsonl plus the
+    fixed latest structured and human-readable report files. Runtime corpus files,
+    analyzer intermediates, per-run detailed reports, and any other generated
+    benchmark artifacts are temporary only and must not be retained in the
+    repository or benchmark history directory.
+  success_rule: >-
+    Successful benchmark runs append one aggregate row to runs.jsonl and replace
+    latest-report.json and latest-report.md after report generation succeeds.
+  failure_rule: >-
+    Failed benchmark runs do not append aggregate history and do not clobber the
+    previous latest report files.
+
+aggregate_history:
+  file: runs.jsonl
+  row_shape:
+    - contract_version
+    - generated_at
+    - agentera_version
+    - git_commit
+    - git_dirty
+    - runtime_scope
+    - benchmark_mode
+    - benchmark_previous_watermark_at
+    - benchmark_window_started_after
+    - benchmark_watermark_at
+    - total_records
+    - total_state_sequences
+    - state_sequences_with_raw_after_cli
+    - state_sequences_with_redundant_raw_access
+    - raw_after_cli_rate
+    - redundant_raw_access_rate
+    - cli_state_command_counts
+    - raw_artifact_access_after_cli_counts
+    - redundant_raw_artifact_access_counts
+    - per_capability_state_counts
+    - degradation_reason_counts
+    - bounded_degradation_counts
+    - startup_recommendation_action
+  forbidden_retained_fields:
+    - raw_transcripts
+    - raw_corpus_files
+    - raw_intermediates
+    - raw_store_paths
+    - raw_session_ids
+    - private_salts
+    - generated_salted_hashes
+
 state_gathering_sequence:
   start_anchor: first_agentera_cli_state_call_after_capability_related_user_turn
   capability_invocation_markers:
@@ -73,9 +151,13 @@ degradation_reasons:
 privacy_boundary:
   forbidden_raw_outputs:
     - transcript_text
+    - raw_corpus_file
+    - raw_intermediate
     - full_local_path
     - raw_store_path
     - unredacted_session_id
+    - private_salt
+    - generated_salted_hash
   allowed_replacements:
     - canonical_artifact_label
     - canonical_runtime_label
@@ -100,6 +182,12 @@ privacy_boundary:
   stdout_rule: >-
     Startup state analysis stdout may include counts, canonical labels, runtime
     names, boundary metadata, degradation labels, and salted hashes only.
+  retained_aggregate_history_rule: >-
+    Retained aggregate benchmark history must exclude raw transcripts, raw corpus
+    files, raw intermediates, raw store paths, raw session IDs, private salts, and
+    generated salted hashes. Store only bounded counts, rates, canonical labels,
+    runtime labels, version metadata, git metadata, degradation counts, and the
+    recommendation action.
   fixture_rule: >-
     Committed fixtures and snapshots must use synthetic text and identifiers or
     already-redacted labels; never paste raw transcript excerpts, full local

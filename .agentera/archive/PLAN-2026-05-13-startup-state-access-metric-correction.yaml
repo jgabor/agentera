@@ -1,0 +1,102 @@
+header:
+  level: full
+  created: 2026-05-13
+  status: complete
+  reviewed: 2026-05-13
+  critic_issues: uncommitted route/intro startup-window draft superseded by Decision 51 state-access metric
+  revised: "[superseded] An uncommitted draft measured only slash-route or assistant-intro startup windows and would have closed the startup-envelope follow-up after finding zero qualifying windows. Direct OpenCode inspection showed real invocations use bare or natural-language capability names and the defect is Agentera CLI state followed by raw artifact read/grep/glob of the same state family before implementation work."
+  title: Measure post-2.3 startup state-access overlap
+what: >-
+  Replace the uncommitted route/intro startup-window draft with a direct state-access metric that matches observed OpenCode behavior: capability invocation, Agentera CLI state call, then raw artifact access before implementation work.
+why: >-
+  Direct OpenCode inspection showed the draft route/intro startup-window classifier measured the wrong thing and produced a false weak-evidence closure. Decision 51 now requires measuring CLI-state-to-raw-artifact overlap.
+constraints: >-
+  Require explicit approval before reading real local runtime stores. Keep the run local-only; do not run live hosts. Do not commit raw transcript text, full local paths, raw store paths, unredacted session IDs, generated salted per-session hashes, generated detailed reports, or private salts. Do not implement a startup envelope or capability behavior changes. Do not commit, push, publish, refresh installed apps, run package updates, bump versions, edit vision, or touch objective state without explicit approval.
+scope:
+  included:
+    - Operator approval and allowed runtime/path selection for Claude, Codex, OpenCode, and GitHub Copilot history.
+    - Concrete corpus or intermediate input preparation using existing startup analysis surfaces.
+    - Analyzer execution into an untracked local output directory, defaulting under /tmp/opencode.
+    - Generated report privacy audit, aggregate interpretation, recommendation handoff, and bounded state sync.
+  excluded:
+    - Startup envelope implementation, capability prose changes, live host calls, raw transcript/report archival, version bump, release prep, package updates, commits, or pushes.
+  deferred:
+    - A separate implementation plan if the measured report recommends a CLI startup envelope.
+    - A separate targeted guidance plan if the measured report only shows narrow hotspots.
+design: >-
+  Treat the generated reports as local evidence and keep them outside the repository unless a later explicit approval changes that boundary. Use an ephemeral salt that is not written to Agentera state. Record only aggregate counts, runtime coverage, recommendation action, confidence caveats, privacy-audit result, and next action in project artifacts. Verify the analyzer input bridge before reading runtime stores, then run the analyzer with explicit approved local inputs only.
+  Task 1 records operator approval for Claude Code, Codex, OpenCode, and GitHub Copilot runtime histories, with no blocked or deferred runtimes at setup time. Approved scan path scope is limited to Codex `~/.codex/sessions`, Claude Code `~/.claude/projects`, OpenCode the single path returned by `opencode db path`, and GitHub Copilot `${COPILOT_HOME:-~/.copilot}`; later tasks must not read, enumerate, glob, inspect, or infer records outside those approved runtime/path scopes without fresh approval. The measurement boundary is tag v2.3.0 at commit b18e3dc7d768d4ad2726880916e7cfe6bd8617d3 and timestamp 2026-05-12T17:50:13+02:00; later tasks may include only records strictly after that timestamp. Detailed generated reports must be written outside this repository by default under /tmp/opencode. Salt is ephemeral per run; private salt values and generated salted per-session hashes must not be committed to Agentera artifacts. Committed artifacts must exclude raw transcript text, full local paths, raw store paths, unredacted session IDs, private salts, generated detailed reports, and generated salted per-session hashes.
+  Task 2 bridge remains `scripts/extract_corpus.py --output "$CORPUS_JSON" --project-root "$PWD" --codex-sessions-dir "$HOME/.codex/sessions" --claude-projects-dir "$HOME/.claude/projects" --opencode-conversations-dir "$OPENCODE_DB" --copilot-conversations-dir "${COPILOT_HOME:-$HOME/.copilot}"`, followed by `scripts/startup_analysis_contract.py --corpus-json "$CORPUS_JSON" --output-dir "$REPORT_DIR" --salt "$SALT"`. The intermediate envelope is now `startup_state_analysis_v1`.
+  Tasks 3-6 now interpret state-gathering sequences, not route/intro startup windows. The measured defect is raw artifact read/grep/glob access after CLI state of the same artifact family before implementation. A bounded live OpenCode DB check over recent sessions read 4167 records, found 51 state-gathering sequences, 15 sequences with raw artifact access after CLI, and 12 sequences with same-family redundant raw access. The rewritten analyzer recommends `plan_cli_startup_envelope`; the discarded draft `close_without_implementation` result came only from finding zero route/intro windows and is not the retained Decision 51 evidence.
+  The current handoff keeps implementation out of this rewrite, reopens CLI startup-envelope planning in TODO, and preserves no-release/no-commit/no-push/no-refresh/no-vision/objective/shell-write boundaries.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-13-startup-overhead-measurement-system.yaml
+tasks:
+  - number: 1
+    name: Confirm consent and measurement parameters
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN real local runtime stores may contain private transcripts WHEN measurement setup begins THEN the operator explicitly approves which runtimes and paths may be scanned before any real history is read.
+      - GIVEN approval is absent or narrower than all runtimes WHEN setup runs THEN measurement stops or limits itself to approved inputs and records the blocked/deferred runtimes with bounded labels.
+      - GIVEN parameters are recorded WHEN the run is configured THEN they include the v2.3.0 boundary, allowed runtimes, approved scan path scope, output directory outside the repo, ephemeral salt policy, and privacy exclusions.
+  - number: 2
+    name: Verify corpus input bridge
+    depends_on: [1]
+    status: complete
+    acceptance:
+      - GIVEN approved inputs exist WHEN the bridge is checked THEN the plan identifies the concrete command path that will produce `--corpus-json` or `--intermediate-json` compatible input for `scripts/startup_analysis_contract.py`.
+      - GIVEN the bridge cannot prepare compatible input WHEN checked THEN the run stops with a bounded blocker instead of hand-rolling unplanned extraction logic.
+      - GIVEN compatibility is checked WHEN validation runs THEN existing Section 22 `extract_corpus.py` and `usage_stats.py` behavior remains unchanged.
+  - number: 3
+    name: Prepare post-2.3 local input
+    depends_on: [2]
+    status: complete
+    acceptance:
+      - GIVEN approved local runtime stores for Claude, Codex, OpenCode, or GitHub Copilot WHEN preparation runs THEN it creates analyzer input filtered to records after `2026-05-12T17:50:13+02:00`.
+      - GIVEN a runtime is missing, locked, sparse, schema-divergent, or not approved WHEN preparation runs THEN bounded status is captured and other approved runtimes continue.
+      - GIVEN preparation writes intermediate files WHEN inspected THEN they are outside committed artifacts and contain only redacted identifiers, canonical labels, runtime names, and counts.
+  - number: 4
+    name: Run analyzer and privacy audit reports
+    depends_on: [3]
+    status: complete
+    acceptance:
+      - GIVEN prepared corpus or intermediate input WHEN `scripts/startup_analysis_contract.py` runs THEN it writes `startup-overhead-report.json` and `startup-overhead-report.md` under an untracked local output directory.
+      - GIVEN generated reports are audited WHEN forbidden tokens are searched THEN raw transcript text, full local paths, raw store paths, raw artifact YAML paths, unredacted session IDs, and private salt values are absent from both generated reports and committed artifacts.
+      - GIVEN report validation runs WHEN complete THEN JSON parses, required report fields exist, and the Markdown summary agrees with the structured recommendation.
+  - number: 5
+    name: Interpret measurement recommendation
+    depends_on: [4]
+    status: complete
+    acceptance:
+      - GIVEN the report has sufficient evidence WHEN interpretation runs THEN it records runtime coverage, state-gathering sequence count, raw-after-CLI artifact triggers, threshold rationale, recommendation action, and confidence caveats using bounded aggregate values only.
+      - GIVEN evidence is insufficient WHEN interpretation runs THEN it records that implementation must not proceed and why the evidence is insufficient.
+      - GIVEN the recommendation selects envelope, targeted guidance, or closure WHEN interpreted THEN the reasoning cites measured aggregate triggers rather than transcript excerpts or local paths.
+  - number: 6
+    name: Sync bounded handoff state
+    depends_on: [5]
+    status: complete
+    acceptance:
+      - GIVEN the recommendation is `plan_cli_startup_envelope` WHEN state sync runs THEN TODO or a new plan captures envelope planning without implementing envelope behavior.
+      - GIVEN the state-access metric supersedes the discarded startup-window draft closure WHEN state sync runs THEN TODO reopens CLI startup state-envelope planning rather than preserving the false weak-evidence close.
+      - GIVEN no release target is selected WHEN sync runs THEN version-bearing files remain unchanged and the release gate is recorded explicitly.
+  - number: 7
+    name: Validate local-only measurement run
+    depends_on: [4, 5, 6]
+    status: complete
+    acceptance:
+      - GIVEN the measurement run completes WHEN validation runs THEN CLI reads or raw-artifact fallbacks, YAML parses, report privacy checks, report field checks, and `git diff --check` pass.
+      - GIVEN generated report files exist WHEN git status is checked THEN they are outside the repository or otherwise untracked/ignored and are not staged or committed.
+      - GIVEN protected state is checked WHEN validation completes THEN `.agentera/vision.yaml`, objective state, version-bearing files, and shell startup files are unchanged.
+  - number: 8
+    name: Final plan closure
+    depends_on: [7]
+    status: complete
+    acceptance:
+      - GIVEN all prior tasks pass WHEN final sync runs THEN progress, docs/TODO as appropriate, and plan state record bounded aggregate evidence, recommendation, privacy result, and next action.
+      - GIVEN a follow-up is selected WHEN this plan closes THEN the follow-up remains planning work only and no startup envelope or capability behavior change is implemented inside this plan.
+      - GIVEN no release target is selected WHEN closure completes THEN version-bearing files remain unchanged and the no-release gate is recorded.
+overall_acceptance:
+  - GIVEN approved local post-2.3 session data exists WHEN this plan completes THEN Agentera has measured real startup state-access overlap without committing raw transcripts, local paths, private salts, or generated detailed reports.
+  - GIVEN the analyzer recommends a follow-up WHEN this plan completes THEN the follow-up is captured as planning work only, not silently implemented.
+  - GIVEN no sufficient data exists WHEN this plan completes THEN the startup-envelope TODO is not advanced to implementation.
+surprises: []

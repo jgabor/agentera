@@ -11,7 +11,11 @@ import hashlib
 import importlib.util
 import json
 import math
+import os
 import re
+import subprocess
+import sys
+import tomllib
 from argparse import ArgumentParser
 from collections import Counter
 from datetime import UTC, datetime
@@ -61,6 +65,9 @@ STARTUP_INTERMEDIATE_ENVELOPE = "startup_state_analysis_v1"
 STARTUP_METRICS_ENVELOPE = "startup_state_metrics_v1"
 STARTUP_REPORT_MARKDOWN = "startup-overhead-report.md"
 STARTUP_REPORT_JSON = "startup-overhead-report.json"
+BENCHMARK_HISTORY_JSONL = "runs.jsonl"
+BENCHMARK_LATEST_REPORT_JSON = "latest-report.json"
+BENCHMARK_LATEST_REPORT_MARKDOWN = "latest-report.md"
 BOUNDED_RUNTIME_STATUSES = frozenset({"ok", "available", "missing", "sparse", "degraded", "skipped"})
 BOUNDED_RUNTIME_REASONS = frozenset(
     {
@@ -68,6 +75,7 @@ BOUNDED_RUNTIME_REASONS = frozenset(
         "disabled",
         "extractor_unimplemented",
         "no_candidate_files",
+        "no_runtime_stores_approved",
         "no_matching_records",
         "records_extracted",
         "schema_divergent",
@@ -77,6 +85,12 @@ BOUNDED_RUNTIME_REASONS = frozenset(
         "store_unreadable",
     }
 )
+RUNTIME_STORE_ARGUMENTS = {
+    "codex": "codex_sessions_dir",
+    "claude-code": "claude_projects_dir",
+    "opencode": "opencode_conversations_dir",
+    "github-copilot": "copilot_conversations_dir",
+}
 STATE_CLI_COMMANDS = frozenset(
     {
         "hej",
@@ -238,6 +252,38 @@ def _parse_timestamp(value: object) -> datetime | None:
         return datetime.fromisoformat(text)
     except ValueError:
         return None
+
+
+def _timestamp_utc(value: object) -> datetime | None:
+    timestamp = _parse_timestamp(value)
+    if timestamp is None:
+        return None
+    if timestamp.tzinfo is None:
+        return timestamp.replace(tzinfo=UTC)
+    return timestamp.astimezone(UTC)
+
+
+def _format_timestamp(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    return value.astimezone(UTC).isoformat(timespec="seconds")
+
+
+def _max_record_timestamp(records: list[Any], *, after: datetime | None = None) -> datetime | None:
+    latest: datetime | None = None
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        timestamp = _timestamp_utc(record.get("timestamp"))
+        if timestamp is None:
+            continue
+        if after is not None and timestamp <= after:
+            continue
+        if latest is None or timestamp > latest:
+            latest = timestamp
+    return latest
 
 
 def _record_label(record: dict[str, Any], *, salt: str) -> str:
@@ -450,7 +496,7 @@ def classify_startup_records(
     """
 
     loaded = contract or load_contract()
-    boundary = _parse_timestamp((loaded.get("boundary") or {}).get("committed_at"))
+    boundary = _timestamp_utc((loaded.get("boundary") or {}).get("committed_at"))
     records = corpus.get("records", []) if isinstance(corpus, dict) else []
     degradations: list[dict[str, Any]] = []
     groups: dict[str, list[dict[str, Any]]] = {}
@@ -461,7 +507,7 @@ def classify_startup_records(
         if _has_transcript_bearing_field(record):
             degradations.append({"record": _record_label(record, salt=salt), "reason": "privacy_redaction_required"})
             continue
-        timestamp = _parse_timestamp(record.get("timestamp"))
+        timestamp = _timestamp_utc(record.get("timestamp"))
         if timestamp is None:
             degradations.append({"record": _record_label(record, salt=salt), "reason": "missing_timestamp"})
             continue
@@ -595,6 +641,44 @@ def _runtime_record_counts(records: list[Any]) -> dict[str, int]:
         if isinstance(record, dict) and isinstance(record.get("runtime"), str):
             counts[record["runtime"]] += 1
     return dict(sorted(counts.items()))
+
+
+def _records_after(records: list[Any], started_after: datetime | None) -> list[Any]:
+    if started_after is None:
+        return records
+    filtered = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        timestamp = _timestamp_utc(record.get("timestamp"))
+        if timestamp is not None and timestamp > started_after:
+            filtered.append(record)
+    return filtered
+
+
+def _corpus_after(corpus: dict[str, Any], started_after: datetime | None) -> tuple[dict[str, Any], datetime | None]:
+    records = corpus.get("records", []) if isinstance(corpus, dict) else []
+    if not isinstance(records, list):
+        records = []
+    filtered_records = _records_after(records, started_after)
+    metadata = dict(corpus.get("metadata") or {}) if isinstance(corpus.get("metadata"), dict) else {}
+    runtime_counts = _runtime_record_counts(filtered_records)
+    statuses = metadata.get("runtime_statuses")
+    if isinstance(statuses, list):
+        updated_statuses = []
+        for status in statuses:
+            if not isinstance(status, dict):
+                continue
+            updated = dict(status)
+            runtime = updated.get("runtime")
+            if isinstance(runtime, str) and "record_count" in updated:
+                updated["record_count"] = runtime_counts.get(runtime, 0)
+            updated_statuses.append(updated)
+        metadata["runtime_statuses"] = updated_statuses
+    filtered_corpus = dict(corpus)
+    filtered_corpus["metadata"] = metadata
+    filtered_corpus["records"] = filtered_records
+    return filtered_corpus, _max_record_timestamp(filtered_records)
 
 
 def _artifact_label_counts(sequences: list[dict[str, Any]]) -> dict[str, int]:
@@ -871,9 +955,15 @@ def aggregate_startup_metrics(intermediate: dict[str, Any]) -> dict[str, Any]:
         "boundary_source": intermediate.get("boundary_source"),
         "boundary_commit": intermediate.get("boundary_commit"),
         "boundary_committed_at": intermediate.get("boundary_committed_at"),
+        "benchmark_mode": intermediate.get("benchmark_mode") or "full_boundary_snapshot",
+        "benchmark_previous_watermark_at": intermediate.get("benchmark_previous_watermark_at"),
+        "benchmark_window_started_after": intermediate.get("benchmark_window_started_after"),
+        "benchmark_watermark_at": intermediate.get("benchmark_watermark_at"),
         "corpus_adapter_version": intermediate.get("corpus_adapter_version"),
         "runtime_coverage": runtime_coverage,
         "runtime_status_counts": _counter_dict(runtime_status_counts),
+        "runtime_record_counts": intermediate.get("runtime_record_counts") or {},
+        "total_records": _safe_int(intermediate.get("total_records_read")),
         "total_state_sequences": total_sequences,
         "state_sequences_with_raw_after_cli": sequences_with_raw,
         "state_sequences_with_redundant_raw_access": sequences_with_redundant,
@@ -938,6 +1028,13 @@ def render_startup_report(metrics: dict[str, Any]) -> str:
         f"- Boundary commit: `{metrics.get('boundary_commit')}`",
         f"- Boundary timestamp: `{metrics.get('boundary_committed_at')}`",
         f"- Corpus adapter version: `{metrics.get('corpus_adapter_version')}`",
+        "",
+        "## Benchmark Window",
+        "",
+        f"- Mode: `{metrics.get('benchmark_mode')}`",
+        f"- Previous watermark: `{metrics.get('benchmark_previous_watermark_at')}`",
+        f"- Window started after: `{metrics.get('benchmark_window_started_after')}`",
+        f"- Watermark: `{metrics.get('benchmark_watermark_at')}`",
         "",
         "## Runtime Coverage",
         "",
@@ -1032,11 +1129,210 @@ def write_startup_reports(metrics: dict[str, Any], output_dir: Path) -> dict[str
     return {"structured": str(json_path), "human_readable": str(markdown_path)}
 
 
+def default_agentera_home() -> Path:
+    """Return the Agentera data home used for local benchmark history."""
+
+    override = os.environ.get("AGENTERA_HOME")
+    if override:
+        return Path(override).expanduser()
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "agentera"
+    if sys.platform == "win32":
+        appdata = os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))
+        return Path(appdata) / "agentera"
+    xdg = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
+    return Path(xdg) / "agentera"
+
+
+def default_startup_benchmark_dir() -> Path:
+    """Return the default user-local startup state benchmark directory."""
+
+    return default_agentera_home() / "benchmarks" / "startup-state"
+
+
+def _agentera_version() -> str:
+    try:
+        data = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return "unknown"
+    project = data.get("project")
+    if isinstance(project, dict) and isinstance(project.get("version"), str):
+        return project["version"]
+    return "unknown"
+
+
+def _git_output(args: list[str]) -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", *args],
+            cwd=REPO_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip()
+
+
+def _git_metadata() -> dict[str, Any]:
+    commit = _git_output(["rev-parse", "HEAD"]) or "unknown"
+    status = _git_output(["status", "--porcelain"])
+    return {"git_commit": commit, "git_dirty": bool(status) if status is not None else None}
+
+
+def _runtime_scope(metrics: dict[str, Any], approved_scope: list[str] | None = None) -> list[str]:
+    if approved_scope:
+        return sorted({str(label) for label in approved_scope if label})
+    labels = set()
+    for item in metrics.get("runtime_coverage") or []:
+        if isinstance(item, dict) and isinstance(item.get("runtime"), str):
+            labels.add(item["runtime"])
+    runtime_counts = metrics.get("runtime_record_counts")
+    if isinstance(runtime_counts, dict):
+        labels.update(str(label) for label in runtime_counts if label)
+    return sorted(labels) or ["unknown"]
+
+
+def _runtime_scope_matches(row: dict[str, Any], runtime_scope: list[str]) -> bool:
+    value = row.get("runtime_scope")
+    if not isinstance(value, list):
+        return False
+    return sorted(str(label) for label in value) == sorted(str(label) for label in runtime_scope)
+
+
+def previous_benchmark_watermark(benchmark_dir: Path, runtime_scope: list[str]) -> datetime | None:
+    """Return the latest retained watermark for the same runtime scope."""
+
+    history_path = benchmark_dir / BENCHMARK_HISTORY_JSONL
+    try:
+        lines = history_path.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return None
+    except OSError:
+        return None
+    watermark: datetime | None = None
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(row, dict) or not _runtime_scope_matches(row, runtime_scope):
+            continue
+        candidate = _timestamp_utc(row.get("benchmark_watermark_at"))
+        if candidate is not None:
+            watermark = candidate
+    return watermark
+
+
+def _safe_int(value: object) -> int:
+    return value if isinstance(value, int) else 0
+
+
+def build_benchmark_history_row(
+    metrics: dict[str, Any],
+    *,
+    runtime_scope: list[str] | None = None,
+) -> dict[str, Any]:
+    """Build the privacy-bounded aggregate benchmark history row."""
+
+    recommendation = metrics.get("startup_recommendation") if isinstance(metrics, dict) else None
+    if not isinstance(recommendation, dict):
+        recommendation = {}
+    row = {
+        "contract_version": metrics.get("contract_version"),
+        "generated_at": metrics.get("generated_at"),
+        "agentera_version": _agentera_version(),
+        **_git_metadata(),
+        "runtime_scope": _runtime_scope(metrics, runtime_scope),
+        "benchmark_mode": metrics.get("benchmark_mode") or "full_boundary_snapshot",
+        "benchmark_previous_watermark_at": metrics.get("benchmark_previous_watermark_at"),
+        "benchmark_window_started_after": metrics.get("benchmark_window_started_after"),
+        "benchmark_watermark_at": metrics.get("benchmark_watermark_at"),
+        "total_records": _safe_int(metrics.get("total_records")),
+        "total_state_sequences": _safe_int(metrics.get("total_state_sequences")),
+        "state_sequences_with_raw_after_cli": _safe_int(metrics.get("state_sequences_with_raw_after_cli")),
+        "state_sequences_with_redundant_raw_access": _safe_int(
+            metrics.get("state_sequences_with_redundant_raw_access")
+        ),
+        "raw_after_cli_rate": metrics.get("raw_after_cli_sequence_rate", 0),
+        "redundant_raw_access_rate": metrics.get("redundant_raw_sequence_rate", 0),
+        "cli_state_command_counts": metrics.get("cli_state_command_counts") or {},
+        "raw_artifact_access_after_cli_counts": metrics.get("raw_artifact_access_after_cli_counts") or {},
+        "redundant_raw_artifact_access_counts": metrics.get("redundant_raw_artifact_access_counts") or {},
+        "per_capability_state_counts": metrics.get("per_capability_state_counts") or {},
+        "degradation_reason_counts": metrics.get("degradation_reason_counts") or {},
+        "bounded_degradation_counts": {
+            "record_or_sequence": metrics.get("degradation_reason_counts") or {},
+            "runtime_status": metrics.get("runtime_status_counts") or {},
+        },
+        "startup_recommendation_action": recommendation.get("action"),
+    }
+    return row
+
+
+def _temporary_peer_path(path: Path) -> Path:
+    timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S%f")
+    return path.with_name(f".{path.name}.{os.getpid()}.{timestamp}.tmp")
+
+
+def persist_startup_benchmark(
+    metrics: dict[str, Any],
+    benchmark_dir: Path,
+    *,
+    runtime_scope: list[str] | None = None,
+) -> dict[str, str]:
+    """Append aggregate benchmark history and replace fixed latest reports."""
+
+    benchmark_dir = benchmark_dir.expanduser()
+    if not benchmark_dir.is_absolute():
+        raise ValueError("benchmark directory must be an absolute path")
+
+    structured_text = json.dumps(metrics, indent=2, sort_keys=True) + "\n"
+    human_text = render_startup_report(metrics)
+    row_text = json.dumps(build_benchmark_history_row(metrics, runtime_scope=runtime_scope), sort_keys=True) + "\n"
+
+    benchmark_dir.mkdir(parents=True, exist_ok=True)
+    history_path = benchmark_dir / BENCHMARK_HISTORY_JSONL
+    json_path = benchmark_dir / BENCHMARK_LATEST_REPORT_JSON
+    markdown_path = benchmark_dir / BENCHMARK_LATEST_REPORT_MARKDOWN
+    json_tmp = _temporary_peer_path(json_path)
+    markdown_tmp = _temporary_peer_path(markdown_path)
+    try:
+        json_tmp.write_text(structured_text, encoding="utf-8")
+        markdown_tmp.write_text(human_text, encoding="utf-8")
+        with history_path.open("a", encoding="utf-8") as history:
+            history.write(row_text)
+        json_tmp.replace(json_path)
+        markdown_tmp.replace(markdown_path)
+    except Exception:
+        for tmp_path in (json_tmp, markdown_tmp):
+            try:
+                tmp_path.unlink()
+            except FileNotFoundError:
+                pass
+        raise
+    return {
+        "history": str(history_path),
+        "structured": str(json_path),
+        "human_readable": str(markdown_path),
+    }
+
+
 def build_startup_intermediate(
     corpus: dict[str, Any],
     *,
     salt: str,
     contract: dict[str, Any] | None = None,
+    benchmark_mode: str | None = None,
+    benchmark_previous_watermark_at: datetime | None = None,
+    benchmark_window_started_after: datetime | None = None,
+    benchmark_watermark_at: datetime | None = None,
 ) -> dict[str, Any]:
     """Derive a redacted state-access intermediate from a Section 22 corpus."""
 
@@ -1050,6 +1346,9 @@ def build_startup_intermediate(
     runtime_statuses = metadata.get("runtime_statuses")
     if not isinstance(runtime_statuses, list):
         runtime_statuses = []
+    boundary = _timestamp_utc((loaded.get("boundary") or {}).get("committed_at"))
+    window_started_after = benchmark_window_started_after or boundary
+    watermark_at = benchmark_watermark_at or _max_record_timestamp(records, after=window_started_after)
 
     classified = classify_startup_records(corpus, salt=salt, contract=loaded)
     sequences = classified["state_gathering_sequences"]
@@ -1063,6 +1362,10 @@ def build_startup_intermediate(
         "boundary_source": (loaded.get("boundary") or {}).get("source"),
         "boundary_commit": (loaded.get("boundary") or {}).get("commit"),
         "boundary_committed_at": (loaded.get("boundary") or {}).get("committed_at"),
+        "benchmark_mode": benchmark_mode or "full_boundary_snapshot",
+        "benchmark_previous_watermark_at": _format_timestamp(benchmark_previous_watermark_at),
+        "benchmark_window_started_after": _format_timestamp(window_started_after),
+        "benchmark_watermark_at": _format_timestamp(watermark_at),
         "corpus_adapter_version": metadata.get("adapter_version"),
         "runtime_coverage": runtime_coverage,
         "runtime_record_counts": _runtime_record_counts(records),
@@ -1072,6 +1375,46 @@ def build_startup_intermediate(
         "state_gathering_sequences": sequences,
         "degradations": degradations,
         "compatibility_note": "Section 22 corpus records are read-only; startup state data is emitted only in startup_state_analysis_v1.",
+    }
+
+
+def build_no_runtime_startup_intermediate(
+    *,
+    contract: dict[str, Any] | None = None,
+    benchmark_mode: str = "since_previous_benchmark",
+    benchmark_previous_watermark_at: datetime | None = None,
+) -> dict[str, Any]:
+    """Build a benchmarkable intermediate without reading runtime history."""
+
+    loaded = contract or load_contract()
+    boundary = _timestamp_utc((loaded.get("boundary") or {}).get("committed_at"))
+    window_started_after = benchmark_previous_watermark_at or boundary
+    return {
+        "output_envelope": STARTUP_INTERMEDIATE_ENVELOPE,
+        "contract_version": loaded.get("version"),
+        "boundary_source": (loaded.get("boundary") or {}).get("source"),
+        "boundary_commit": (loaded.get("boundary") or {}).get("commit"),
+        "boundary_committed_at": (loaded.get("boundary") or {}).get("committed_at"),
+        "benchmark_mode": benchmark_mode,
+        "benchmark_previous_watermark_at": _format_timestamp(benchmark_previous_watermark_at),
+        "benchmark_window_started_after": _format_timestamp(window_started_after),
+        "benchmark_watermark_at": _format_timestamp(benchmark_previous_watermark_at),
+        "corpus_adapter_version": None,
+        "runtime_coverage": [
+            {
+                "runtime": "none",
+                "status": "skipped",
+                "reason": "no_runtime_stores_approved",
+                "record_count": 0,
+            }
+        ],
+        "runtime_record_counts": {},
+        "total_records_read": 0,
+        "total_state_sequences": 0,
+        "artifact_label_counts": {},
+        "state_gathering_sequences": [],
+        "degradations": [],
+        "compatibility_note": "No runtime stores were approved, so no local runtime history was read.",
     }
 
 
@@ -1127,6 +1470,8 @@ def extract_startup_intermediate_from_runtime_stores(
     output_path: Path | None = None,
     contract: dict[str, Any] | None = None,
     extract_corpus_module: Any | None = None,
+    benchmark_mode: str | None = None,
+    benchmark_previous_watermark_at: datetime | None = None,
 ) -> dict[str, Any]:
     """Extract fixture/temp runtime stores into ``startup_state_analysis_v1``."""
 
@@ -1138,7 +1483,19 @@ def extract_startup_intermediate_from_runtime_stores(
         opencode_conversations_dir=opencode_conversations_dir,
         copilot_conversations_dir=copilot_conversations_dir,
     )
-    intermediate = build_startup_intermediate(corpus, salt=salt, contract=contract)
+    window_corpus, watermark_at = _corpus_after(corpus, benchmark_previous_watermark_at)
+    explicit_watermark_at = None
+    if benchmark_previous_watermark_at is not None:
+        explicit_watermark_at = watermark_at or benchmark_previous_watermark_at
+    intermediate = build_startup_intermediate(
+        window_corpus,
+        salt=salt,
+        contract=contract,
+        benchmark_mode=benchmark_mode,
+        benchmark_previous_watermark_at=benchmark_previous_watermark_at,
+        benchmark_window_started_after=benchmark_previous_watermark_at,
+        benchmark_watermark_at=explicit_watermark_at,
+    )
     if output_path is not None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(json.dumps(intermediate, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -1152,6 +1509,20 @@ def _load_json_file(path: Path) -> dict[str, Any]:
     return data
 
 
+def _parse_runtime_store(value: str) -> tuple[str, Path]:
+    runtime, separator, store_path = value.partition("=")
+    if not separator or not runtime or not store_path:
+        valid = ", ".join(sorted(RUNTIME_STORE_ARGUMENTS))
+        raise ValueError(f"runtime store must use RUNTIME=ABSOLUTE_PATH; valid runtimes: {valid}")
+    if runtime not in RUNTIME_STORE_ARGUMENTS:
+        valid = ", ".join(sorted(RUNTIME_STORE_ARGUMENTS))
+        raise ValueError(f"unsupported runtime {runtime!r}; valid runtimes: {valid}")
+    path = Path(store_path)
+    if not path.is_absolute():
+        raise ValueError(f"runtime store for {runtime} must be an absolute path")
+    return runtime, path
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = ArgumentParser(
         description="Generate local-only, privacy-preserving Agentera startup state-access reports."
@@ -1159,18 +1530,106 @@ def main(argv: list[str] | None = None) -> int:
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--corpus-json", type=Path, help="Local Section 22 corpus JSON to analyze.")
     source.add_argument("--intermediate-json", type=Path, help="Existing startup_state_analysis_v1 JSON to aggregate.")
+    source.add_argument(
+        "--runtime-store",
+        action="append",
+        default=[],
+        metavar="RUNTIME=ABSOLUTE_PATH",
+        help="Approved runtime store to inspect; repeatable for codex, claude-code, opencode, github-copilot.",
+    )
+    source.add_argument(
+        "--no-runtime-stores",
+        action="store_true",
+        help="Run without inspecting local runtime history; useful for no-prerequisite benchmark smoke runs.",
+    )
+    parser.add_argument(
+        "--project-root",
+        action="append",
+        type=Path,
+        default=[],
+        help="Project root used for corpus context when --runtime-store is used; repeatable.",
+    )
     parser.add_argument("--output-dir", type=Path, required=True, help="Directory for report artifacts.")
+    parser.add_argument(
+        "--persist-benchmark",
+        action="store_true",
+        help="Persist aggregate benchmark history and fixed latest reports.",
+    )
+    parser.add_argument(
+        "--benchmark-dir",
+        type=Path,
+        help="Durable benchmark directory; defaults to ${AGENTERA_HOME}/benchmarks/startup-state/.",
+    )
+    parser.add_argument(
+        "--since-previous-benchmark",
+        action="store_true",
+        help="When persisting a benchmark, analyze only records after the previous retained watermark for this runtime scope.",
+    )
     parser.add_argument("--salt", required=True, help="Salt for non-reconstructable private labels.")
     args = parser.parse_args(argv)
+    if args.since_previous_benchmark and not (args.persist_benchmark or args.benchmark_dir is not None):
+        parser.error("--since-previous-benchmark requires --persist-benchmark or --benchmark-dir")
+    benchmark_dir = args.benchmark_dir or default_startup_benchmark_dir()
 
+    approved_runtime_scope: list[str] | None = None
     if args.corpus_json is not None:
         intermediate = build_startup_intermediate(_load_json_file(args.corpus_json), salt=args.salt)
-    else:
+    elif args.intermediate_json is not None:
         intermediate = _load_json_file(args.intermediate_json)
+    elif args.no_runtime_stores:
+        approved_runtime_scope = ["none"]
+        previous_watermark = (
+            previous_benchmark_watermark(benchmark_dir, approved_runtime_scope)
+            if args.since_previous_benchmark
+            else None
+        )
+        intermediate = build_no_runtime_startup_intermediate(
+            benchmark_mode="since_previous_benchmark" if args.since_previous_benchmark else "no_runtime",
+            benchmark_previous_watermark_at=previous_watermark,
+        )
+    else:
+        runtime_paths: dict[str, Path] = {}
+        try:
+            for raw_store in args.runtime_store:
+                runtime, store_path = _parse_runtime_store(raw_store)
+                if runtime in runtime_paths:
+                    parser.error(f"duplicate runtime-store approval for {runtime}")
+                runtime_paths[runtime] = store_path
+        except ValueError as error:
+            parser.error(str(error))
+        if not runtime_paths:
+            parser.error("at least one --runtime-store RUNTIME=ABSOLUTE_PATH approval is required")
+        approved_runtime_scope = sorted(runtime_paths)
+        previous_watermark = (
+            previous_benchmark_watermark(benchmark_dir, approved_runtime_scope)
+            if args.since_previous_benchmark
+            else None
+        )
+        project_roots = args.project_root or [Path.cwd()]
+        intermediate = extract_startup_intermediate_from_runtime_stores(
+            project_roots=project_roots,
+            salt=args.salt,
+            benchmark_mode="since_previous_benchmark" if args.since_previous_benchmark else "full_boundary_snapshot",
+            benchmark_previous_watermark_at=previous_watermark,
+            **{field: runtime_paths.get(runtime) for runtime, field in RUNTIME_STORE_ARGUMENTS.items()},
+        )
     metrics = aggregate_startup_metrics(intermediate)
     paths = write_startup_reports(metrics, args.output_dir)
+    benchmark_paths = {}
+    if args.persist_benchmark or args.benchmark_dir is not None:
+        try:
+            benchmark_paths = persist_startup_benchmark(
+                metrics,
+                benchmark_dir,
+                runtime_scope=approved_runtime_scope,
+            )
+        except ValueError as error:
+            parser.error(str(error))
     stdout_reports = {name: Path(path).name for name, path in paths.items()}
-    print(json.dumps({"status": "ok", "reports": stdout_reports}, sort_keys=True))
+    output = {"status": "ok", "reports": stdout_reports}
+    if benchmark_paths:
+        output["benchmark"] = {name: Path(path).name for name, path in benchmark_paths.items()}
+    print(json.dumps(output, sort_keys=True))
     return 0
 
 

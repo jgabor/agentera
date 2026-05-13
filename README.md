@@ -506,6 +506,12 @@ rationale, recommendation, and privacy caveats. Use fixture or explicitly
 prepared local corpus/intermediate inputs; do not use this surface to run live
 host checks.
 
+The manual startup state benchmark tracks the same metric. It can run without
+local runtime history as a pipeline check, and local-history measurement still
+requires explicit runtime/path approval. Its results are privacy-preserving,
+user-local, and not part of normal CI. See `docs/benchmark.md` for the runbook,
+retention policy, and interpretation guide.
+
 <details>
 <summary><strong>State artifact reference</strong></summary>
 

@@ -1,4 +1,4 @@
-last_audit: '2026-05-13 (startup state-access metric replaces uncommitted startup-window draft)'
+last_audit: '2026-05-13 (manual startup benchmark persistence and operator docs)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -72,7 +72,7 @@ mapping:
 index:
 - document: README
   path: README.md
-  last_updated: '2026-05-12'
+  last_updated: '2026-05-13'
   status: current
 - document: Python package manifest
   path: pyproject.toml
@@ -120,6 +120,10 @@ index:
   status: current
 - document: Vocabulary
   path: docs/vocabulary.md
+  last_updated: '2026-05-13'
+  status: current
+- document: Benchmark guide
+  path: docs/benchmark.md
   last_updated: '2026-05-13'
   status: current
 - document: Gap analysis
@@ -184,6 +188,10 @@ index:
   status: current
 - document: Startup overhead report surface
   path: startup-overhead-report.md / startup-overhead-report.json (generated under caller-selected output directory)
+  last_updated: '2026-05-13'
+  status: current
+- document: Startup benchmark durable outputs
+  path: '${AGENTERA_HOME}/benchmarks/startup-state/runs.jsonl / latest-report.json / latest-report.md (user-local generated)'
   last_updated: '2026-05-13'
   status: current
 - document: RuntimeAdapter characterization
@@ -354,8 +362,82 @@ coverage:
   documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: 'Startup measurement now documents the Decision 51 state-access metric: raw artifact access after CLI state during capability startup/state gathering. This replaces an uncommitted route/intro startup-window draft that found zero qualifying windows and would have closed the startup-envelope follow-up. The contract records the post-2.3 boundary, natural-language and bare-capability invocation markers, state-gathering sequence boundaries, counted event classes, degradation reasons, report fields, Section 22 compatibility, privacy boundary, local-only report command, structured report, human-readable report, and recommendation gate. Focused contract tests validate redaction helpers, state-sequence classification, raw-after-CLI overlap counts, thresholds, recommendations, and report surfaces; extract_corpus tests now preserve current OpenCode tool-call extraction so the metric can see real OpenCode CLI/read behavior.'
+  tests: 'Startup measurement now documents the Decision 51 state-access metric and the Decision 52 manual benchmark retention boundary. The metric is raw artifact access after CLI state during capability startup/state gathering, replacing an uncommitted route/intro startup-window draft that found zero qualifying windows and would have closed the startup-envelope follow-up. The contract records the post-2.3 boundary, natural-language and bare-capability invocation markers, state-gathering sequence boundaries, counted event classes, degradation reasons, report fields, Section 22 compatibility, privacy boundary, local-only report command, structured report, human-readable report, recommendation gate, manual-only benchmark rule, exact runtime/path approval requirement, default `${AGENTERA_HOME}/benchmarks/startup-state/` storage, durable `runs.jsonl` plus fixed latest report files, and aggregate-history exclusions for raw transcripts, raw corpus files, raw intermediates, raw store paths, raw session IDs, private salts, and generated salted hashes. Focused contract tests validate redaction helpers, state-sequence classification, raw-after-CLI overlap counts, thresholds, recommendations, report surfaces, and benchmark retention boundaries; extract_corpus tests now preserve current OpenCode tool-call extraction so the metric can see real OpenCode CLI/read behavior.'
 audit_log:
+- date: '2026-05-13'
+  label: Manual startup benchmark persistence and operator docs
+  findings:
+  - type: checked
+    description: >
+      `scripts/startup_analysis_contract.py` now owns benchmark persistence for
+      Decision 52: successful manual runs append aggregate `runs.jsonl` rows and
+      replace fixed `latest-report.json` / `latest-report.md` files after report
+      generation succeeds, while failed report generation leaves prior retained
+      files untouched.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Fixture-backed tests use temporary `AGENTERA_HOME` values and synthetic
+      runtime stores to verify explicit approval refusal, successful fixture
+      measurement, missing-store degradation, aggregate JSONL schema, privacy
+      exclusions, and absence of repository-local benchmark outputs.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      `docs/benchmark.md` now documents `mage bench:startupState` as the simple
+      no-prerequisite command, with optional `AGENTERA_BENCH_RUNTIME_STORES`,
+      `AGENTERA_BENCH_SALT`, absolute-path overrides, user-local durable storage,
+      latest-only retention, and interpretation of `raw_after_cli_rate` plus
+      `redundant_raw_access_rate` as startup state-access optimization signals.
+      `README.md` keeps only the broad benchmark summary and guide link.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      The default benchmark run reads no local runtime history and demonstrates
+      benchmark pipeline/persistence only. Runtime-store runs still require
+      explicit `RUNTIME=/absolute/path` approvals before measuring local behavior.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Runtime-store benchmark runs now use `runs.jsonl` as the previous-run
+      watermark source. The first run for a runtime scope analyzes all
+      post-boundary records; later runs analyze only records with timestamps
+      strictly after the previous successful `benchmark_watermark_at`.
+    resolution: fixed
+    severity: info
+- date: '2026-05-13'
+  label: Startup state benchmark contract and storage boundary
+  findings:
+  - type: checked
+    description: >
+      `references/analysis/startup-measurement-contract.yaml` now documents the
+      Decision 52 manual benchmark boundary: `mage bench:startupState` is
+      manual-only, normal CI is forbidden, and runtime history may only be read
+      after explicit approval of both runtime labels and concrete filesystem
+      paths.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      The benchmark storage contract names
+      `${AGENTERA_HOME}/benchmarks/startup-state/` as the default user-local
+      directory and limits durable retained outputs to aggregate `runs.jsonl`,
+      fixed `latest-report.json`, and fixed `latest-report.md`.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Retained aggregate history excludes raw transcripts, raw corpus files, raw
+      intermediates, raw store paths, raw session IDs, private salts, and generated
+      salted hashes. Task 1 did not add a Mage entrypoint, implement a startup
+      state envelope, read real local runtime history, or create retained
+      benchmark metrics in the repository.
+    resolution: fixed
+    severity: info
 - date: '2026-05-13'
   label: Startup state-access metric replaces startup-window draft
   findings:

@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
 
+import pytest
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONTRACT_PATH = REPO_ROOT / "references" / "analysis" / "startup-measurement-contract.yaml"
 DOCS_PATH = REPO_ROOT / ".agentera" / "docs.yaml"
+BENCHMARK_DOC_PATH = REPO_ROOT / "docs" / "benchmark.md"
 
 
 def _contract() -> dict:
@@ -40,13 +43,26 @@ def _fixture_tool(source_id: str, timestamp: str, tool: str, arguments: dict) ->
     }
 
 
-def _write_codex_state_store(sessions_dir: Path, project_root: Path) -> None:
-    session_path = sessions_dir / "2026" / "05" / "13" / "startup.jsonl"
-    session_path.parent.mkdir(parents=True)
+def _write_codex_state_store(
+    sessions_dir: Path,
+    project_root: Path,
+    *,
+    session_name: str = "startup",
+    session_token: str = "raw-session-id-token",
+    started_at: str = "2026-05-13T10:00:00Z",
+) -> None:
+    session_path = sessions_dir / "2026" / "05" / "13" / f"{session_name}.jsonl"
+    session_path.parent.mkdir(parents=True, exist_ok=True)
+    base = started_at.replace("Z", "+00:00")
+    timestamp = datetime.fromisoformat(base)
+
+    def event_time(offset_seconds: int) -> str:
+        return (timestamp + timedelta(seconds=offset_seconds)).isoformat().replace("+00:00", "Z")
+
     events = [
         {
             "type": "session_meta",
-            "payload": {"id": "raw-session-id-token", "cwd": str(project_root)},
+            "payload": {"id": session_token, "cwd": str(project_root)},
         },
         {
             "type": "response_item",
@@ -54,7 +70,7 @@ def _write_codex_state_store(sessions_dir: Path, project_root: Path) -> None:
                 "type": "message",
                 "role": "user",
                 "content": [{"type": "input_text", "text": "planera PRIVATE_PROMPT_TOKEN"}],
-                "timestamp": "2026-05-13T10:00:00Z",
+                "timestamp": event_time(0),
             },
         },
         {
@@ -63,7 +79,7 @@ def _write_codex_state_store(sessions_dir: Path, project_root: Path) -> None:
                 "type": "function_call",
                 "name": "bash",
                 "arguments": {"command": "uv run scripts/agentera plan --format json"},
-                "timestamp": "2026-05-13T10:00:01Z",
+                "timestamp": event_time(1),
             },
         },
         {
@@ -72,7 +88,7 @@ def _write_codex_state_store(sessions_dir: Path, project_root: Path) -> None:
                 "type": "function_call",
                 "name": "read",
                 "arguments": {"filePath": str(project_root / ".agentera" / "plan.yaml")},
-                "timestamp": "2026-05-13T10:00:02Z",
+                "timestamp": event_time(2),
             },
         },
         {
@@ -81,7 +97,7 @@ def _write_codex_state_store(sessions_dir: Path, project_root: Path) -> None:
                 "type": "function_call",
                 "name": "apply_patch",
                 "arguments": {"patchText": "*** Begin Patch\n*** End Patch"},
-                "timestamp": "2026-05-13T10:00:03Z",
+                "timestamp": event_time(3),
             },
         },
     ]
@@ -126,6 +142,39 @@ def test_contract_defines_state_access_metric_and_report_shape():
         "redundant_raw_artifact_access_counts",
         "per_capability_state_counts",
     } <= set(contract["report_fields"]["required"])
+
+
+def test_contract_defines_manual_benchmark_storage_and_retention_boundary():
+    contract = _contract()
+
+    assert contract["benchmark_execution"]["rule"] == "manual_only"
+    assert contract["benchmark_execution"]["normal_ci"] == "forbidden"
+    assert contract["benchmark_execution"]["command_surface"] == "mage bench:startupState"
+    assert "runtime labels and concrete filesystem paths" in contract["benchmark_execution"][
+        "runtime_path_approval"
+    ]
+    assert "generic consent flag" in contract["benchmark_execution"]["runtime_path_approval"]
+    assert "no-runtime mode" in contract["benchmark_execution"]["default_run"]
+    assert "previous successful" in contract["benchmark_execution"]["incremental_rule"]
+    assert contract["benchmark_storage"]["default_directory"] == (
+        "${AGENTERA_HOME}/benchmarks/startup-state/"
+    )
+    assert contract["benchmark_storage"]["durable_outputs"] == [
+        "runs.jsonl",
+        "latest-report.json",
+        "latest-report.md",
+    ]
+    assert "per-run detailed reports" in contract["benchmark_storage"]["retention_rule"]
+    assert contract["aggregate_history"]["file"] == "runs.jsonl"
+    assert {
+        "raw_transcripts",
+        "raw_corpus_files",
+        "raw_intermediates",
+        "raw_store_paths",
+        "raw_session_ids",
+        "private_salts",
+        "generated_salted_hashes",
+    } <= set(contract["aggregate_history"]["forbidden_retained_fields"])
 
 
 def test_privacy_redaction_removes_transcripts_paths_and_session_ids(startup_analysis_contract):
@@ -720,6 +769,7 @@ def test_report_surfaces_include_required_fields_without_private_output(
     assert "startup_recommendation" in structured
     assert "Privacy Caveats" in human
     assert "Boundary Source" in human
+    assert "Benchmark Window" in human
     assert "Runtime Coverage" in human
     assert "Threshold Rationale" in human
     assert "Recommendation" in human
@@ -727,6 +777,98 @@ def test_report_surfaces_include_required_fields_without_private_output(
     assert "PRIVATE_PROMPT_TOKEN" not in combined
     assert "PRIVATE_ROOT_TOKEN" not in combined
     assert ".agentera/plan.yaml" not in combined
+
+
+def test_benchmark_persistence_appends_aggregate_row_and_latest_reports(
+    startup_analysis_contract,
+    tmp_path,
+):
+    benchmark_dir = tmp_path / "agentera-home" / "benchmarks" / "startup-state"
+    intermediate = startup_analysis_contract.build_startup_intermediate(
+        {
+            "metadata": {
+                "adapter_version": "agentera-v2-corpus-1",
+                "runtime_statuses": [
+                    {"runtime": "opencode", "status": "ok", "reason": "records_extracted", "record_count": 4}
+                ],
+            },
+            "records": [
+                _fixture_turn("turn", "2026-05-13T18:00:00Z", "user", "planera PRIVATE_PROMPT_TOKEN"),
+                _fixture_tool("tool-cli", "2026-05-13T18:00:01Z", "bash", {"command": "uv run scripts/agentera plan"}),
+                _fixture_tool("tool-plan", "2026-05-13T18:00:02Z", "read", {"filePath": "PRIVATE_ROOT_TOKEN/.agentera/plan.yaml"}),
+                _fixture_tool("tool-impl", "2026-05-13T18:00:03Z", "apply_patch", {"patchText": "x"}),
+            ],
+        },
+        salt="fixture-salt",
+    )
+    metrics = startup_analysis_contract.aggregate_startup_metrics(intermediate)
+
+    paths = startup_analysis_contract.persist_startup_benchmark(
+        metrics,
+        benchmark_dir,
+        runtime_scope=["opencode"],
+    )
+    row = json.loads((benchmark_dir / "runs.jsonl").read_text(encoding="utf-8").strip())
+    durable_text = "".join(path.read_text(encoding="utf-8") for path in benchmark_dir.iterdir())
+
+    assert {path.name for path in benchmark_dir.iterdir()} == {
+        "latest-report.json",
+        "latest-report.md",
+        "runs.jsonl",
+    }
+    assert {Path(path).name for path in paths.values()} == {
+        "latest-report.json",
+        "latest-report.md",
+        "runs.jsonl",
+    }
+    assert row["agentera_version"] == "2.3.3"
+    assert set(row) == set(_contract()["aggregate_history"]["row_shape"])
+    assert isinstance(row["git_dirty"], bool)
+    assert row["runtime_scope"] == ["opencode"]
+    assert row["benchmark_mode"] == "full_boundary_snapshot"
+    assert row["benchmark_previous_watermark_at"] is None
+    assert row["benchmark_window_started_after"] == "2026-05-12T15:50:13+00:00"
+    assert row["benchmark_watermark_at"] == "2026-05-13T18:00:03+00:00"
+    assert row["total_records"] == 4
+    assert row["total_state_sequences"] == 1
+    assert row["state_sequences_with_raw_after_cli"] == 1
+    assert row["state_sequences_with_redundant_raw_access"] == 1
+    assert row["raw_after_cli_rate"] == 1
+    assert row["redundant_raw_access_rate"] == 1
+    assert row["startup_recommendation_action"] == "targeted_capability_guidance_fixes"
+    assert row["bounded_degradation_counts"] == {"record_or_sequence": {}, "runtime_status": {"ok": 1}}
+    assert "PRIVATE_PROMPT_TOKEN" not in durable_text
+    assert "PRIVATE_ROOT_TOKEN" not in durable_text
+    assert ".agentera/plan.yaml" not in durable_text
+    assert "session:" not in json.dumps(row, sort_keys=True)
+    assert "path:" not in json.dumps(row, sort_keys=True)
+
+
+def test_benchmark_persistence_failure_does_not_append_or_clobber_latest_reports(
+    startup_analysis_contract,
+    tmp_path,
+    monkeypatch,
+):
+    benchmark_dir = tmp_path / "agentera-home" / "benchmarks" / "startup-state"
+    benchmark_dir.mkdir(parents=True)
+    runs_path = benchmark_dir / "runs.jsonl"
+    json_path = benchmark_dir / "latest-report.json"
+    markdown_path = benchmark_dir / "latest-report.md"
+    runs_path.write_text('{"previous": true}\n', encoding="utf-8")
+    json_path.write_text('{"previous": true}\n', encoding="utf-8")
+    markdown_path.write_text("previous report", encoding="utf-8")
+
+    def fail_render(metrics):
+        raise RuntimeError("fixture render failure")
+
+    monkeypatch.setattr(startup_analysis_contract, "render_startup_report", fail_render)
+
+    with pytest.raises(RuntimeError, match="fixture render failure"):
+        startup_analysis_contract.persist_startup_benchmark({}, benchmark_dir, runtime_scope=["opencode"])
+
+    assert runs_path.read_text(encoding="utf-8") == '{"previous": true}\n'
+    assert json_path.read_text(encoding="utf-8") == '{"previous": true}\n'
+    assert markdown_path.read_text(encoding="utf-8") == "previous report"
 
 
 def test_default_report_cli_uses_local_inputs_and_redacts_stdout_without_shell_writes(
@@ -773,18 +915,316 @@ def test_default_report_cli_uses_local_inputs_and_redacts_stdout_without_shell_w
     assert ".agentera/plan.yaml" not in stdout + rendered_reports
 
 
+def test_benchmark_cli_persists_fixture_runtime_store_under_temp_agentera_home(
+    startup_analysis_contract,
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    agentera_home = tmp_path / "agentera-home"
+    project_root = tmp_path / "project"
+    sessions_dir = tmp_path / "codex-sessions"
+    output_dir = tmp_path / "temporary-reports"
+    project_root.mkdir()
+    _write_codex_state_store(sessions_dir, project_root)
+    monkeypatch.setenv("AGENTERA_HOME", str(agentera_home))
+
+    exit_code = startup_analysis_contract.main(
+        [
+            "--runtime-store",
+            f"codex={sessions_dir}",
+            "--project-root",
+            str(project_root),
+            "--output-dir",
+            str(output_dir),
+            "--salt",
+            "fixture-salt",
+            "--persist-benchmark",
+        ]
+    )
+    stdout = capsys.readouterr().out
+    benchmark_dir = agentera_home / "benchmarks" / "startup-state"
+    row = json.loads((benchmark_dir / "runs.jsonl").read_text(encoding="utf-8").strip())
+    durable_text = "".join(path.read_text(encoding="utf-8") for path in benchmark_dir.iterdir())
+
+    assert exit_code == 0
+    assert {path.name for path in benchmark_dir.iterdir()} == {
+        "latest-report.json",
+        "latest-report.md",
+        "runs.jsonl",
+    }
+    assert row["runtime_scope"] == ["codex"]
+    assert row["total_records"] == 4
+    assert row["total_state_sequences"] == 1
+    assert row["raw_after_cli_rate"] == 1
+    assert "runs.jsonl" in stdout
+    assert "latest-report.json" in stdout
+    assert str(sessions_dir) not in stdout + durable_text
+    assert str(project_root) not in stdout + durable_text
+    assert "PRIVATE_PROMPT_TOKEN" not in stdout + durable_text
+    assert "raw-session-id-token" not in stdout + durable_text
+    assert not (REPO_ROOT / "benchmarks").exists()
+    assert not (REPO_ROOT / "runs.jsonl").exists()
+    assert not (REPO_ROOT / "startup-overhead-report.json").exists()
+    assert not (REPO_ROOT / "startup-overhead-report.md").exists()
+
+
+def test_benchmark_cli_uses_previous_watermark_for_incremental_runs(
+    startup_analysis_contract,
+    tmp_path,
+    monkeypatch,
+):
+    agentera_home = tmp_path / "agentera-home"
+    project_root = tmp_path / "project"
+    sessions_dir = tmp_path / "codex-sessions"
+    output_dir = tmp_path / "temporary-reports"
+    project_root.mkdir()
+    _write_codex_state_store(
+        sessions_dir,
+        project_root,
+        session_name="first",
+        started_at="2026-05-13T10:00:00Z",
+    )
+    monkeypatch.setenv("AGENTERA_HOME", str(agentera_home))
+
+    args = [
+        "--runtime-store",
+        f"codex={sessions_dir}",
+        "--project-root",
+        str(project_root),
+        "--output-dir",
+        str(output_dir),
+        "--salt",
+        "fixture-salt",
+        "--persist-benchmark",
+        "--since-previous-benchmark",
+    ]
+    assert startup_analysis_contract.main(args) == 0
+    benchmark_dir = agentera_home / "benchmarks" / "startup-state"
+    rows = [
+        json.loads(line)
+        for line in (benchmark_dir / "runs.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    first_watermark = rows[-1]["benchmark_watermark_at"]
+
+    _write_codex_state_store(
+        sessions_dir,
+        project_root,
+        session_name="second",
+        session_token="second-raw-session-id-token",
+        started_at="2026-05-13T11:00:00Z",
+    )
+    assert startup_analysis_contract.main(args) == 0
+    assert startup_analysis_contract.main(args) == 0
+    rows = [
+        json.loads(line)
+        for line in (benchmark_dir / "runs.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+
+    assert rows[0]["benchmark_mode"] == "since_previous_benchmark"
+    assert rows[0]["benchmark_previous_watermark_at"] is None
+    assert rows[0]["total_records"] == 4
+    assert rows[0]["total_state_sequences"] == 1
+    assert first_watermark == "2026-05-13T10:00:03+00:00"
+    assert rows[1]["benchmark_previous_watermark_at"] == first_watermark
+    assert rows[1]["benchmark_window_started_after"] == first_watermark
+    assert rows[1]["benchmark_watermark_at"] == "2026-05-13T11:00:03+00:00"
+    assert rows[1]["total_records"] == 4
+    assert rows[1]["total_state_sequences"] == 1
+    assert rows[2]["benchmark_previous_watermark_at"] == rows[1]["benchmark_watermark_at"]
+    assert rows[2]["benchmark_watermark_at"] == rows[1]["benchmark_watermark_at"]
+    assert rows[2]["total_records"] == 0
+    assert rows[2]["total_state_sequences"] == 0
+
+
+def test_benchmark_cli_records_missing_runtime_store_as_bounded_degradation(
+    startup_analysis_contract,
+    tmp_path,
+    monkeypatch,
+):
+    agentera_home = tmp_path / "agentera-home"
+    project_root = tmp_path / "project"
+    output_dir = tmp_path / "temporary-reports"
+    missing_sessions_dir = tmp_path / "missing-codex-sessions"
+    project_root.mkdir()
+    monkeypatch.setenv("AGENTERA_HOME", str(agentera_home))
+
+    exit_code = startup_analysis_contract.main(
+        [
+            "--runtime-store",
+            f"codex={missing_sessions_dir}",
+            "--project-root",
+            str(project_root),
+            "--output-dir",
+            str(output_dir),
+            "--salt",
+            "fixture-salt",
+            "--persist-benchmark",
+        ]
+    )
+    benchmark_dir = agentera_home / "benchmarks" / "startup-state"
+    row = json.loads((benchmark_dir / "runs.jsonl").read_text(encoding="utf-8").strip())
+    latest = json.loads((benchmark_dir / "latest-report.json").read_text(encoding="utf-8"))
+
+    assert exit_code == 0
+    assert row["runtime_scope"] == ["codex"]
+    assert row["total_records"] == 0
+    assert row["total_state_sequences"] == 0
+    assert row["startup_recommendation_action"] == "close_without_implementation"
+    assert row["bounded_degradation_counts"]["runtime_status"]["missing"] == 1
+    assert latest["runtime_coverage"][0] == {
+        "runtime": "codex",
+        "status": "missing",
+        "reason": "store_absent",
+    }
+
+
+def test_benchmark_cli_persists_no_runtime_default_without_history(
+    startup_analysis_contract,
+    tmp_path,
+    monkeypatch,
+):
+    agentera_home = tmp_path / "agentera-home"
+    output_dir = tmp_path / "temporary-reports"
+    monkeypatch.setenv("AGENTERA_HOME", str(agentera_home))
+
+    exit_code = startup_analysis_contract.main(
+        [
+            "--no-runtime-stores",
+            "--output-dir",
+            str(output_dir),
+            "--salt",
+            "fixture-salt",
+            "--persist-benchmark",
+        ]
+    )
+    benchmark_dir = agentera_home / "benchmarks" / "startup-state"
+    row = json.loads((benchmark_dir / "runs.jsonl").read_text(encoding="utf-8").strip())
+    latest = json.loads((benchmark_dir / "latest-report.json").read_text(encoding="utf-8"))
+
+    assert exit_code == 0
+    assert row["runtime_scope"] == ["none"]
+    assert row["total_records"] == 0
+    assert row["total_state_sequences"] == 0
+    assert row["startup_recommendation_action"] == "close_without_implementation"
+    assert row["bounded_degradation_counts"]["runtime_status"] == {"skipped": 1}
+    assert latest["runtime_coverage"] == [
+        {
+            "runtime": "none",
+            "status": "skipped",
+            "reason": "no_runtime_stores_approved",
+            "record_count": 0,
+        }
+    ]
+
+
+def test_runtime_store_cli_requires_explicit_absolute_runtime_path(
+    startup_analysis_contract,
+    tmp_path,
+    monkeypatch,
+):
+    agentera_home = tmp_path / "agentera-home"
+    output_dir = tmp_path / "reports"
+    monkeypatch.setenv("AGENTERA_HOME", str(agentera_home))
+
+    with pytest.raises(SystemExit) as error:
+        startup_analysis_contract.main(
+            [
+                "--runtime-store",
+                "opencode=relative/opencode.db",
+                "--output-dir",
+                str(output_dir),
+                "--salt",
+                "fixture-salt",
+                "--persist-benchmark",
+            ]
+        )
+
+    assert error.value.code == 2
+    assert not output_dir.exists()
+    assert not (agentera_home / "benchmarks").exists()
+
+
+def test_runtime_store_cli_delegates_fixture_extraction_without_private_output(
+    startup_analysis_contract,
+    tmp_path,
+    capsys,
+):
+    project_root = tmp_path / "project"
+    sessions_dir = tmp_path / "codex-sessions"
+    output_dir = tmp_path / "reports"
+    project_root.mkdir()
+    _write_codex_state_store(sessions_dir, project_root)
+
+    exit_code = startup_analysis_contract.main(
+        [
+            "--runtime-store",
+            f"codex={sessions_dir}",
+            "--project-root",
+            str(project_root),
+            "--output-dir",
+            str(output_dir),
+            "--salt",
+            "fixture-salt",
+        ]
+    )
+    stdout = capsys.readouterr().out
+    report_text = "".join(path.read_text(encoding="utf-8") for path in output_dir.iterdir())
+
+    assert exit_code == 0
+    assert "startup-overhead-report.json" in stdout
+    assert "startup-overhead-report.md" in stdout
+    assert "PRIVATE_PROMPT_TOKEN" not in report_text
+    assert str(sessions_dir) not in stdout + report_text
+    assert str(project_root) not in stdout + report_text
+    assert ".agentera/plan.yaml" not in report_text
+    assert "PLAN.md" in report_text
+
+
+def test_mage_startup_state_entrypoint_documents_noninteractive_approval():
+    magefile = (REPO_ROOT / "magefile.go").read_text(encoding="utf-8")
+
+    assert "type Bench mg.Namespace" in magefile
+    assert "func (Bench) StartupState() error" in magefile
+    assert "scripts/startup_analysis_contract.py" in magefile
+    assert "--persist-benchmark" in magefile
+    assert "--no-runtime-stores" in magefile
+    assert "--since-previous-benchmark" in magefile
+    assert "benchmarks/startup-state" in magefile
+    assert "mage bench:startupState" in magefile
+    assert "AGENTERA_BENCH_RUNTIME_STORES=RUNTIME=/absolute/path" in magefile
+    assert "generatedBenchmarkSalt" in magefile
+    assert "AGENTERA_BENCH_SALT" in magefile
+
+
 def test_docs_link_startup_report_surface_and_preserve_correct_metric():
     docs = yaml.safe_load(DOCS_PATH.read_text(encoding="utf-8"))
     indexed_paths = {item["path"] for item in docs["index"]}
     audit_text = yaml.safe_dump(docs, sort_keys=True)
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    benchmark_doc = BENCHMARK_DOC_PATH.read_text(encoding="utf-8")
 
     assert "scripts/startup_analysis_contract.py" in indexed_paths
     assert "references/analysis/startup-measurement-contract.yaml" in indexed_paths
+    assert "docs/benchmark.md" in indexed_paths
     assert "startup-overhead-report.md" in audit_text
     assert "Decision 51" in audit_text
     assert "raw artifact access after CLI state" in audit_text
     assert "--corpus-json" in readme
     assert "--output-dir" in readme
+    assert "docs/benchmark.md" in readme
+    assert "local runtime" in readme
+    assert "mage bench:startupState" in benchmark_doc
+    assert "AGENTERA_BENCH_RUNTIME_STORES" in benchmark_doc
+    assert "Mage generates one" in benchmark_doc
+    assert "no extra setup" in benchmark_doc
+    assert "Every `mage bench:*` target must run with no environment variables" in benchmark_doc
+    assert "benchmark_watermark_at" in benchmark_doc
+    assert "since the previous successful benchmark run" in benchmark_doc
+    assert "runs.jsonl" in benchmark_doc
+    assert "raw_after_cli_rate" in benchmark_doc
+    assert "redundant_raw_access_rate" in benchmark_doc
+    assert "uncommitted, unshipped, and not" in benchmark_doc
     assert "live hosts" in readme
-    assert "raw transcript" in readme
+    assert "transcript output" in readme
+    assert "raw transcripts" in benchmark_doc

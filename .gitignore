@@ -1,6 +1,7 @@
 .claude
 .codex
 docs/*
+!docs/benchmark.md
 !docs/vocabulary.md
 __pycache__/
 *.pyc

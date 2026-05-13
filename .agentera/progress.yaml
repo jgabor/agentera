@@ -1,4 +1,283 @@
 cycles:
+- number: 447
+  timestamp: 2026-05-13
+  type: docs
+  phase: build
+  what: >
+    Completed Task 6 and closed the manual startup state benchmark plan by
+    syncing TODO, changelog, docs, progress, and plan state, then running the
+    final release-gate validation without selecting a release target.
+  commit: pending
+  inspiration: >
+    The benchmark suite is evidence infrastructure, not a release event or the
+    startup state-envelope implementation. Final state needs to record completion
+    while keeping the separate CLI startup state-envelope follow-up open and
+    leaving version-bearing surfaces unchanged.
+  discovered: >
+    TODO now records the manual benchmark suite as resolved and explicitly keeps
+    the CLI startup state-envelope planning item open. CHANGELOG records the
+    benchmark under Unreleased Added/Verified evidence without a version bump.
+    DOCS records the durable user-local output surface and operator documentation.
+    The active plan is now complete with all six tasks closed.
+  verified: >
+    Final validation passed: `uv run pytest
+    tests/test_startup_analysis_contract.py -q` reported 25 passed; `python3 -m
+    py_compile scripts/startup_analysis_contract.py` passed; `mage -l` listed
+    `bench:startupState`; `mage -compile
+    /tmp/opencode/agentera-mage-bench-final` passed; YAML parsing passed for
+    `.agentera/plan.yaml`, `.agentera/progress.yaml`, `.agentera/docs.yaml`, and
+    `references/analysis/startup-measurement-contract.yaml`; `git diff --check`
+    passed. Earlier non-live Mage checks verified refusal without approvals and an
+    approved missing-store run writing only user-local durable outputs under a
+    temporary Agentera home.
+  next: >
+    Stop. The manual startup state benchmark suite is complete. Do not implement
+    startup state envelope behavior, read real local runtime history, commit,
+    push, publish, refresh installed apps, select a release target, bump versions,
+    edit vision, or touch objective-state without explicit approval.
+  context:
+    intent: Final state sync and release gate for manual startup state benchmark
+      suite
+    constraints: no startup state envelope implementation, no real local runtime
+      history reads, no generated benchmark metrics in repo, no commit, no push,
+      no publication, no installed app refresh, no release target, no version bump,
+      no vision edit, no objective-state edit
+    scope: TODO.md, CHANGELOG.md, README.md, .agentera/docs.yaml,
+      .agentera/plan.yaml, .agentera/progress.yaml, magefile.go,
+      scripts/startup_analysis_contract.py, tests/test_startup_analysis_contract.py,
+      references/analysis/startup-measurement-contract.yaml, go.mod, and go.sum
+- number: 446
+  timestamp: 2026-05-13
+  type: docs
+  phase: build
+  what: >
+    Completed Task 5 for the manual startup state benchmark plan by documenting
+    the operator command, approval inputs, user-local retention policy, and
+    benchmark interpretation guidance.
+  commit: pending
+  inspiration: >
+    The benchmark is intentionally manual and privacy-bound, so maintainers need
+    exact run instructions and clear interpretation of which rates gate startup
+    state-access optimization work.
+  discovered: >
+    The README already described the local-only analyzer and storage boundary but
+    did not yet show the `mage bench:startupState` command, required
+    `AGENTERA_BENCH_RUNTIME_STORES` / `AGENTERA_BENCH_SALT` inputs, optional
+    absolute-path overrides, or the aggregate `raw_after_cli_rate` and
+    `redundant_raw_access_rate` fields as the benchmark's optimization target.
+    The docs index now also records the user-local durable output surface.
+  verified: >
+    Non-live verification passed: `uv run pytest
+    tests/test_startup_analysis_contract.py -q` reported 25 passed; `python3 -m
+    py_compile scripts/startup_analysis_contract.py` passed. The focused docs test
+    asserts README coverage for `mage bench:startupState`, approval environment
+    variables, `runs.jsonl`, `raw_after_cli_rate`, `redundant_raw_access_rate`,
+    and the user-local/uncommitted/unshipped/not-normal-CI boundary.
+  next: >
+    Hand off Task 5 for Orkestrera evaluation. Task 6 may sync TODO, progress,
+    changelog, and docs state and run final release-gate validation without
+    selecting a release target, bumping versions, committing, pushing, publishing,
+    refreshing installed apps, editing vision, touching objective state, reading
+    real local runtime history, or implementing startup envelope behavior.
+  context:
+    intent: Operator docs and interpretation guidance for manual startup benchmark
+    constraints: no startup state envelope implementation, no real local runtime
+      history reads, no generated benchmark metrics in repo, no commit, no push,
+      no publication, no installed app refresh, no release target, no version bump,
+      no vision edit, no objective-state edit
+    scope: README.md, .agentera/docs.yaml, tests/test_startup_analysis_contract.py,
+      .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 445
+  timestamp: 2026-05-13
+  type: test
+  phase: build
+  what: >
+    Completed Task 4 for the manual startup state benchmark plan by adding
+    fixture-backed benchmark verification for explicit consent, successful
+    fixture measurement, missing-store degradation, aggregate JSONL schema, and
+    no repository-local generated outputs.
+  commit: pending
+  inspiration: >
+    The benchmark reads private runtime history only after concrete approval, so
+    tests must use synthetic runtime stores and temporary Agentera homes while
+    proving persistence behavior without touching real local history or relying on
+    `.gitignore` as the privacy boundary.
+  discovered: >
+    The Python analyzer can cover the benchmark persistence path with synthetic
+    Codex session fixtures and temporary `AGENTERA_HOME` values. Missing approved
+    stores are bounded as runtime coverage degradation (`missing` /
+    `store_absent`) and still produce privacy-safe aggregate history. The Mage
+    target can be verified non-live by checking refusal without approvals and an
+    approved missing-store run that writes only `runs.jsonl`, `latest-report.json`,
+    and `latest-report.md` under a temporary Agentera home.
+  verified: >
+    Non-live verification passed: `uv run pytest
+    tests/test_startup_analysis_contract.py -q` reported 25 passed; `python3 -m
+    py_compile scripts/startup_analysis_contract.py` passed; `mage
+    bench:startupState` with only a temporary `AGENTERA_HOME` refused before
+    runtime access and printed the required approval inputs; an approved
+    missing-store Mage run with a temporary Agentera home completed and produced
+    durable `runs.jsonl`, `latest-report.json`, and `latest-report.md` there;
+    repository `benchmarks/**`, `startup-overhead-report.*`, and `runs.jsonl`
+    glob checks found no generated files.
+  next: >
+    Hand off Task 4 for Orkestrera evaluation. Task 5 may update operator docs and
+    benchmark interpretation guidance. Do not implement startup state envelope
+    behavior, read real local runtime history, commit, push, publish, refresh
+    installed apps, select a release target, bump versions, edit vision, or touch
+    objective-state.
+  context:
+    intent: Fixture-backed verification for manual startup state-access benchmark
+    constraints: no startup state envelope implementation, no real local runtime
+      history reads, no generated benchmark metrics in repo, no commit, no push,
+      no publication, no installed app refresh, no release target, no version bump,
+      no vision edit, no objective-state edit
+    scope: tests/test_startup_analysis_contract.py, .agentera/plan.yaml, and
+      .agentera/progress.yaml
+- number: 444
+  timestamp: 2026-05-13
+  type: code
+  phase: build
+  what: >
+    Completed Task 3 for the manual startup state benchmark plan by adding
+    analyzer-owned durable benchmark persistence, aggregate `runs.jsonl` rows,
+    and fixed latest redacted report retention.
+  commit: pending
+  inspiration: >
+    Decision 52 requires longitudinal startup state-access evidence without
+    retaining local runtime history. The benchmark needs one bounded aggregate row
+    per successful run and fixed latest reports, while failed runs must leave prior
+    retained evidence untouched.
+  discovered: >
+    Persistence belongs in `scripts/startup_analysis_contract.py`, not the Mage
+    wrapper, so the metric source of truth also owns the aggregate row shape,
+    version/git metadata capture, canonical runtime scope, bounded degradation
+    counts, and latest-report replacement. Mage now uses a temporary analyzer work
+    directory, removes it after the run, and passes `--persist-benchmark` so only
+    `runs.jsonl`, `latest-report.json`, and `latest-report.md` remain durable.
+  verified: >
+    Non-live verification passed: `uv run pytest
+    tests/test_startup_analysis_contract.py -q` reported 23 passed; `python3 -m
+    py_compile scripts/startup_analysis_contract.py` passed; `mage -compile
+    /tmp/opencode/agentera-mage-bench` passed. New tests verify aggregate row
+    fields, fixed latest report filenames, absence of private prompt/path tokens
+    and generated salted hashes in aggregate history, and no append/clobber when
+    report generation fails.
+  next: >
+    Hand off Task 3 for Orkestrera evaluation. Task 4 may add fixture-backed
+    end-to-end benchmark verification for consent refusal, successful fixture
+    measurement, degraded stores, aggregate JSONL schema, and no repository-local
+    benchmark outputs. Do not implement startup state envelope behavior, read real
+    local runtime history, commit, push, publish, refresh installed apps, select a
+    release target, bump versions, edit vision, or touch objective-state.
+  context:
+    intent: Metrics persistence and latest-report retention for manual startup
+      state-access benchmark history
+    constraints: no startup state envelope implementation, no real local runtime
+      history reads, no generated benchmark metrics in repo, no commit, no push,
+      no publication, no installed app refresh, no release target, no version bump,
+      no vision edit, no objective-state edit
+    scope: magefile.go, scripts/startup_analysis_contract.py,
+      tests/test_startup_analysis_contract.py, .agentera/plan.yaml, and
+      .agentera/progress.yaml
+- number: 443
+  timestamp: 2026-05-13
+  type: code
+  phase: build
+  what: >
+    Completed Task 2 for the manual startup state benchmark plan by adding a
+    non-interactive Mage `bench:startupState` entrypoint that refuses without
+    explicit runtime/path approval and delegates approved runs to the existing
+    Python startup analyzer.
+  commit: pending
+  inspiration: >
+    Decision 52 selects Mage as a manual wrapper, while Decision 51 keeps metric
+    extraction in `scripts/startup_analysis_contract.py`. The entrypoint must
+    enforce concrete operator approval before local history access and must not
+    copy the startup state-access metric logic into Go.
+  discovered: >
+    The installed Mage version rejects variadic target arguments and `mage
+    -compile` requires module metadata for `github.com/magefile/mage/mg`, so the
+    target uses explicit environment approvals (`AGENTERA_BENCH_RUNTIME_STORES`
+    and `AGENTERA_BENCH_SALT`) and the repository now includes minimal Go module
+    metadata for Mage compilation. Runtime-store mode was added to the Python
+    analyzer CLI so Mage invokes the analyzer directly with approved absolute
+    paths and temporary/no-persistence output by default.
+  verified: >
+    Non-live verification passed: `uv run pytest
+    tests/test_startup_analysis_contract.py -q` reported 21 passed; `python3 -m
+    py_compile scripts/startup_analysis_contract.py` passed; `mage -l` listed
+    `bench:startupState`; `mage -compile /tmp/opencode/agentera-mage-bench`
+    passed; `mage bench:startupState` refused before runtime access and printed
+    the required `AGENTERA_BENCH_RUNTIME_STORES` and `AGENTERA_BENCH_SALT`
+    inputs; an approved missing-store run with
+    `AGENTERA_BENCH_RUNTIME_STORES=opencode=/tmp/opencode/nonexistent-opencode.db`
+    and `AGENTERA_BENCH_OUTPUT_DIR=/tmp/opencode/agentera-startup-bench-report`
+    completed through the analyzer and emitted only report filenames on stdout.
+  next: >
+    Hand off Task 2 for Orkestrera evaluation. Task 3 may add durable aggregate
+    persistence and latest-report retention later; do not implement persistence,
+    startup state envelope behavior, real local history reads, generated repo
+    outputs, commits, pushes, publication, installed app refreshes, release target
+    selection, version bumps, vision edits, or objective-state edits as part of
+    Task 2.
+  context:
+    intent: Manual Mage benchmark entrypoint for startup state-access metrics
+    constraints: no Task 3 persistence, no startup state envelope implementation,
+      no real local runtime history reads, no generated benchmark metrics in repo,
+      no commit, no push, no publication, no installed app refresh, no release
+      target, no version bump, no vision edit, no objective-state edit
+    scope: magefile.go, go.mod, go.sum, scripts/startup_analysis_contract.py,
+      tests/test_startup_analysis_contract.py, .agentera/plan.yaml, and
+      .agentera/progress.yaml
+- number: 442
+  timestamp: 2026-05-13
+  type: docs
+  phase: build
+  what: >
+    Completed Task 1 for the manual startup state benchmark plan by documenting
+    the benchmark contract, storage boundary, durable output set, and retained
+    aggregate privacy exclusions without adding a Mage entrypoint or startup state
+    envelope behavior.
+  commit: pending
+  inspiration: >
+    Decision 52 needs repeatable longitudinal benchmark evidence, but local
+    runtime histories are private operator data. The benchmark contract must make
+    manual execution, exact runtime/path approval, user-local storage, and
+    latest-only redacted report retention explicit before any implementation can
+    read local history.
+  discovered: >
+    The existing startup measurement contract covered the Decision 51 metric but
+    did not yet name the manual benchmark execution rule, concrete runtime/path
+    approval requirement, default `${AGENTERA_HOME}/benchmarks/startup-state/`
+    location, fixed durable filenames, or aggregate-history exclusions for raw
+    corpus/intermediate data and generated salted hashes. The contract now names
+    `runs.jsonl`, `latest-report.json`, and `latest-report.md` as the only
+    durable benchmark outputs and keeps raw transcripts, raw corpus files, raw
+    intermediates, raw store paths, raw session IDs, private salts, and generated
+    salted hashes out of retained aggregate history.
+  verified: >
+    Non-live verification passed: `uv run pytest
+    tests/test_startup_analysis_contract.py -q` reported 18 passed; YAML parsing
+    succeeded for `references/analysis/startup-measurement-contract.yaml`,
+    `.agentera/plan.yaml`, `.agentera/progress.yaml`, and `.agentera/docs.yaml`;
+    `git diff --check` returned no output.
+  next: >
+    Hand off Task 1 for Orkestrera evaluation. Task 2 may add the manual Mage
+    benchmark entrypoint after this contract boundary; do not implement startup
+    state envelope behavior, read real runtime history, retain generated metrics
+    in the repository, commit, push, publish, refresh installed apps, select a
+    release target, bump versions, edit vision, or touch objective state as part
+    of Task 1.
+  context:
+    intent: Benchmark contract and storage boundary for startup state-access metrics
+    constraints: no Mage entrypoint, no startup state envelope implementation, no
+      real local runtime history reads, no generated benchmark metrics in repo, no
+      commit, no push, no publication, no installed app refresh, no release target,
+      no version bump, no vision edit, no objective-state edit
+    scope: references/analysis/startup-measurement-contract.yaml, README.md,
+      tests/test_startup_analysis_contract.py, .agentera/plan.yaml, and
+      .agentera/progress.yaml
 - number: 441
   timestamp: 2026-05-13
   type: code

@@ -46,6 +46,8 @@
 
 ### Added
 
+- Manual `mage bench:startupState` startup state benchmark support now runs the Decision 51 raw-after-CLI metric only after explicit runtime/path approval, stores aggregate history under the user Agentera home, and retains only `runs.jsonl`, `latest-report.json`, and `latest-report.md`.
+- Manual startup benchmark runs now use `runs.jsonl` watermarks so repeated runtime-store runs measure records since the previous successful benchmark for the same runtime scope, while bare `mage bench:startupState` still runs as a no-history pipeline check.
 - Decision 51 startup-overhead analysis now measures raw Agentera artifact access after CLI state calls during capability startup/state gathering, including bare capability names and natural-language handoffs instead of only slash-route startup windows.
 - OpenCode corpus extraction now emits current-schema tool call records from `part.data`, allowing startup analysis to observe real `agentera <state>` calls followed by raw reads/greps/globs.
 - The default live-host smoke harness now runs non-live Profilera corpus parity fixtures for Claude Code, Codex, OpenCode, and GitHub Copilot, reports absent local stores as bounded `store_absent` statuses, and keeps privacy-sensitive fixture transcript text out of smoke output.
@@ -58,6 +60,8 @@
 
 ### Verified
 
+- Manual startup benchmark state is synchronized without a selected release target: focused fixture tests, Python compile checks, Mage compile/refusal checks, and a temporary-home missing-store Mage run verify persistence, latest-report retention, privacy boundaries, and no repository-local benchmark outputs while the separate CLI startup state-envelope follow-up remains open.
+- Manual startup benchmark incremental semantics are fixture-verified: repeated runtime-store runs append aggregate rows that advance `benchmark_watermark_at`, subsequent runs start after the previous watermark, and no-new-record reruns append zero-record rows without rereporting old sequences.
 - Shell-rc removal state is synchronized without a selected release target: TODO, docs, progress, changelog, and plan state record completion, stale-remnant handling, and verification evidence while package, plugin, registry, lockfile, OpenCode marker, and skill version-bearing files remain unchanged at the pre-existing `2.3.3` metadata.
 - Decision 51 state-access measurement replaces an uncommitted route/intro startup-window draft that found zero qualifying windows and would have closed the startup-envelope follow-up; direct OpenCode analysis showed repeated `CLI state -> raw artifact access` behavior, so the CLI startup state-envelope follow-up is reopened as planning work without version-bearing metadata changes.
 - Profilera corpus runtime parity state is synchronized without a selected release target: TODO, docs, progress, changelog, and plan state record completion while package, plugin, registry, lockfile, and skill version-bearing files remain unchanged.
