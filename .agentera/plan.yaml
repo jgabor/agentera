@@ -63,7 +63,7 @@ overall_acceptance:
   - GIVEN any subset of supported runtime stores exists WHEN Profilera corpus extraction completes THEN available Claude, Codex, OpenCode, and Copilot data normalize consistently and unavailable stores degrade explicitly.
   - GIVEN diagnostics are inspected WHEN extraction, tests, or smoke report state THEN they show counts, statuses, bounded reasons, and remediation labels, not raw transcript content.
 surprises:
-  - Task 1 retry fixed evaluator-discovered callable-shape drift for available OpenCode/GitHub Copilot candidate stores; extraction remains intentionally unimplemented for Tasks 2 and 3.
+  - Task 1 retry fixed the evaluator-discovered callable-shape mismatch for available OpenCode/GitHub Copilot candidate stores; extraction remains intentionally unimplemented for Tasks 2 and 3.
   - Task 2 implements OpenCode `opencode.db` extraction only; GitHub Copilot remains the bounded `extractor_unimplemented` stub for Task 3.
   - Task 3 replaces the GitHub Copilot stub with read-only `session-store.db` extraction and uses `/chronicle reindex` only as bounded sparse-store remediation metadata.
   - Task 4 adds combined Claude, Codex, OpenCode, and GitHub Copilot fixture coverage plus explicit missing, locked, sparse, and schema-divergent degradation assertions without changing extractor behavior.
