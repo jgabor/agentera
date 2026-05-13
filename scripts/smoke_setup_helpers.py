@@ -337,7 +337,7 @@ def main() -> int:
         # Copilot helper cases
         # =====================================================================
 
-        # --- Test 6: bash branch (~/.bashrc, export syntax) ---
+        # --- Test 6: bash branch (~/.bashrc, diagnostic only) ---
         copilot_home_6 = tmpdir / "copilot_case_6"
         copilot_home_6.mkdir()
         bashrc = copilot_home_6 / ".bashrc"
@@ -351,22 +351,13 @@ def main() -> int:
             f"Copilot bash branch should exit 0, got {result.returncode} "
             f"(stderr={result.stderr.strip()})",
         )
+        assert_true(not bashrc.exists(), "Copilot bash branch must not create ~/.bashrc")
         assert_true(
-            bashrc.exists(),
-            "Copilot bash branch should create ~/.bashrc",
-        )
-        bashrc_text = bashrc.read_text(encoding="utf-8")
-        assert_true(
-            "# agentera: AGENTERA_HOME (managed)" in bashrc_text,
-            "Copilot bash branch should write the managed marker comment",
-        )
-        assert_true(
-            f'export AGENTERA_HOME="{REPO_ROOT}"' in bashrc_text,
-            f"Copilot bash branch should write export line, "
-            f"got {bashrc_text!r}",
+            "Agentera will not edit shell startup files" in result.stdout,
+            "Copilot bash branch should print diagnostic-only guidance",
         )
 
-        # --- Test 7: zsh branch (~/.zshrc, export syntax) ---
+        # --- Test 7: zsh branch (~/.zshrc, diagnostic only) ---
         copilot_home_7 = tmpdir / "copilot_case_7"
         copilot_home_7.mkdir()
         zshrc = copilot_home_7 / ".zshrc"
@@ -379,16 +370,7 @@ def main() -> int:
             result.returncode == 0,
             f"Copilot zsh branch should exit 0, got {result.returncode}",
         )
-        assert_true(
-            zshrc.exists(),
-            "Copilot zsh branch should create ~/.zshrc",
-        )
-        zshrc_text = zshrc.read_text(encoding="utf-8")
-        assert_true(
-            "# agentera: AGENTERA_HOME (managed)" in zshrc_text
-            and f'export AGENTERA_HOME="{REPO_ROOT}"' in zshrc_text,
-            "Copilot zsh branch should write managed block with export syntax",
-        )
+        assert_true(not zshrc.exists(), "Copilot zsh branch must not create ~/.zshrc")
         # The bash rc file must NOT be created in this tmp HOME (would
         # mean shell detection misrouted).
         assert_true(
@@ -396,7 +378,7 @@ def main() -> int:
             "Copilot zsh branch must not create ~/.bashrc",
         )
 
-        # --- Test 8: fish branch (~/.config/fish/config.fish, set -x syntax) ---
+        # --- Test 8: fish branch (~/.config/fish/config.fish, diagnostic only) ---
         copilot_home_8 = tmpdir / "copilot_case_8"
         copilot_home_8.mkdir()
         fishrc = copilot_home_8 / ".config" / "fish" / "config.fish"
@@ -411,22 +393,11 @@ def main() -> int:
             f"(stderr={result.stderr.strip()})",
         )
         assert_true(
-            fishrc.exists(),
-            "Copilot fish branch should create ~/.config/fish/config.fish "
-            "(parent dir auto-created)",
-        )
-        fishrc_text = fishrc.read_text(encoding="utf-8")
-        assert_true(
-            "# agentera: AGENTERA_HOME (managed)" in fishrc_text,
-            "Copilot fish branch should write the managed marker comment",
-        )
-        assert_true(
-            f'set -x AGENTERA_HOME "{REPO_ROOT}"' in fishrc_text,
-            f"Copilot fish branch should use 'set -x' syntax, "
-            f"got {fishrc_text!r}",
+            not fishrc.exists(),
+            "Copilot fish branch must not create ~/.config/fish/config.fish",
         )
 
-        # --- Test 9: unsupported-shell branch (csh, exit 2, guidance) ---
+        # --- Test 9: unsupported-shell branch (csh, exit 0, guidance) ---
         copilot_home_9 = tmpdir / "copilot_case_9"
         copilot_home_9.mkdir()
         result = run_helper(
@@ -435,8 +406,8 @@ def main() -> int:
             env=base_env(copilot_home_9, shell="/bin/csh"),
         )
         assert_true(
-            result.returncode == 2,
-            f"Copilot unsupported-shell branch should exit 2, "
+            result.returncode == 0,
+            f"Copilot unsupported-shell branch should exit 0, "
             f"got {result.returncode}",
         )
         assert_true(
@@ -445,9 +416,8 @@ def main() -> int:
             f"got stderr={result.stderr.strip()}",
         )
         assert_true(
-            "--rc-file" in result.stderr,
-            "Copilot unsupported-shell stderr should mention --rc-file "
-            "escape hatch",
+            "Agentera will not edit shell startup files" in result.stderr,
+            "Copilot unsupported-shell stderr should mention diagnostic-only boundary",
         )
 
         # =====================================================================

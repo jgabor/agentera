@@ -39,16 +39,21 @@ dashboard. This bridge is an upgrade handoff.
    uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run
    ```
 
-4. Ask before applying changes. Explain the apply step plainly: it installs the
-   new `/agentera` entry point and converts old Agentera project notes to the new
-   format with backups. After explicit confirmation, use:
+4. Ask before applying changes. Explain the apply step plainly: it installs or
+   repairs Agentera's local app, refreshes managed runtime surfaces, and converts
+   old Agentera project notes to the new format with backups. It will not edit
+   shell startup files. After explicit confirmation, use:
 
    ```bash
-   uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --yes --update-packages
+   uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --yes
    ```
 
-5. If no v1 project state is present, offer the package-only refresh when
-   `/agentera` is not available:
+   Add `--update-packages` only when the user explicitly approves package-manager
+   commands such as `npx skills remove` or `npx skills add`.
+
+5. If no v1 project state is present, offer the package-only refresh only when
+   `/agentera` is not available and the user explicitly approves package-manager
+   commands:
 
    ```bash
    uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only packages --yes --update-packages
@@ -60,6 +65,9 @@ dashboard. This bridge is an upgrade handoff.
 
 - Never mutate project artifacts or runtime installs without explicit
   confirmation from the user.
+- Never ask Agentera to edit shell startup files. Stale Agentera lines in
+  `~/.bashrc`, `~/.zshrc`, `.profile`, or fish config are user-owned manual
+  cleanup.
 - Prefer `uvx --from git+https://github.com/jgabor/agentera` because legacy
   users may not have cloned the repository.
 - If running from a local Agentera checkout with `scripts/agentera`, the local

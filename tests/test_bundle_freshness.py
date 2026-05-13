@@ -358,6 +358,10 @@ def test_upgrade_recovers_inherited_deprecated_default_to_platform_home_without_
     assert preview.returncode == 1, preview.stderr
     payload = json.loads(preview.stdout)
     assert payload["appHome"] == str(platform_home)
+    assert payload["appHomeResolution"]["kind"] == "legacy_default_residue"
+    assert payload["appHomeResolution"]["source"] == "AGENTERA_HOME"
+    assert payload["appHomeResolution"]["deprecatedDefaultAppHome"] == str(legacy_default)
+    assert "treated as legacy residue" in payload["appHomeResolution"]["message"]
     items = {item["action"]: item for item in payload["phases"][0]["items"]}
     assert items["install-bundle"]["target"] == str(platform_home / "app")
     assert items["retire-legacy-default-app-home"]["source"] == str(legacy_default)
@@ -390,6 +394,7 @@ def test_upgrade_respects_explicit_deprecated_default_install_root(tmp_path: Pat
     assert preview.returncode == 1, preview.stderr
     payload = json.loads(preview.stdout)
     assert payload["appHome"] == str(legacy_default)
+    assert payload["appHomeResolution"] is None
     assert payload["managedAppRoot"] == str(legacy_default / "app")
     assert payload["phases"][0]["items"][0]["target"] == str(legacy_default / "app")
     assert not (legacy_default / "app").exists()
@@ -433,6 +438,33 @@ def test_doctor_blocks_explicit_or_custom_invalid_paths_without_stale_default_re
         assert "recoverable_stale_default" not in {signal["kind"] for signal in payload["signals"]}
     assert "choose a different Agentera directory" in json.loads(explicit_file_result.stdout)["signals"][0]["message"]
     assert "use --force only if you checked" in json.loads(explicit_file_result.stdout)["signals"][0]["message"]
+
+
+def test_upgrade_blocks_custom_unknown_environment_app_home_without_fallback(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    custom = tmp_path / "custom-agentera"
+
+    preview = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--dry-run",
+        "--json",
+        "--home",
+        str(home),
+        env={"AGENTERA_HOME": str(custom), "XDG_DATA_HOME": str(home / ".local" / "share")},
+    )
+
+    assert preview.returncode == 1, preview.stderr
+    payload = json.loads(preview.stdout)
+    assert payload["status"] == "blocked"
+    assert payload["appHome"] == str(custom)
+    assert payload["appHomeResolution"] is None
+    item = payload["phases"][0]["items"][0]
+    assert item["status"] == "blocked"
+    assert item["target"] == str(custom / "app")
+    assert "Choose another Agentera directory" in item["message"]
+    assert not custom.exists()
 
 
 def test_stale_bundle_refresh_dry_run_then_apply_preserves_install_root(tmp_path: Path) -> None:

@@ -662,7 +662,6 @@ def _remove_legacy_bundle_files(app_home: Path, rel_paths: list[Path]) -> int:
 def _legacy_default_has_agentera_evidence(root: Path) -> bool:
     if not root.exists():
         return False
-    managed_app = _managed_app_root(root)
     return any((
         _has_bundle_root_evidence(root),
         _managed_app_has_bundle(root),
@@ -1105,12 +1104,17 @@ def _copy_item(runtime: str, source: Path, target: Path, *, force: bool, action:
         }
     src_hash = _sha256(source)
     dst_hash = _sha256(target)
+    ownership = _runtime_surface_ownership(runtime, action, target)
     if src_hash == dst_hash and dst_hash is not None:
         status = "noop"
         message = "target already matches source"
     elif target.exists() and not force:
-        status = "blocked"
-        message = "target exists with different content; use --force to overwrite"
+        status = "pending" if ownership["status"] == "agentera-owned" else "blocked"
+        message = (
+            "will refresh stale Agentera-managed runtime surface"
+            if status == "pending"
+            else "target exists without Agentera ownership proof; treating it as user-owned"
+        )
     else:
         status = "pending"
         message = "will copy current Agentera file"
@@ -1120,13 +1124,123 @@ def _copy_item(runtime: str, source: Path, target: Path, *, force: bool, action:
         "action": action,
         "source": str(source),
         "target": str(target),
+        "ownership": ownership,
         "message": message,
     }
+
+
+def _opencode_command_copy_item(source: Path, commands_dir: Path, *, force: bool) -> dict[str, Any]:
+    return _copy_item(
+        "opencode",
+        source,
+        commands_dir / source.name,
+        force=force,
+        action="copy-command",
+    )
+
+
+def _opencode_skill_item(
+    name: str,
+    source: Path,
+    target: Path,
+    *,
+    force: bool,
+    source_available: bool | None = None,
+) -> dict[str, Any]:
+    ownership = _runtime_surface_ownership("opencode", "link-skill", target)
+    if source_available is None:
+        source_available = (source / "SKILL.md").is_file()
+    if not source_available:
+        status = "blocked"
+        message = "source skill is missing"
+    elif (target / "SKILL.md").is_file():
+        if ownership["status"] == "agentera-owned" and target.resolve() != source.resolve():
+            status = "pending"
+            message = "will refresh stale Agentera-managed OpenCode skill link"
+        else:
+            status = "noop"
+            message = "target skill already resolves to SKILL.md"
+    elif target.exists() or target.is_symlink():
+        status = "pending" if force or ownership["status"] == "agentera-owned" else "blocked"
+        message = (
+            "will refresh stale Agentera-managed OpenCode skill link"
+            if status == "pending"
+            else "target exists without Agentera ownership proof; treating it as user-owned"
+        )
+    else:
+        status = "pending"
+        message = "will create OpenCode skill link"
+    return {
+        "status": status,
+        "runtime": "opencode",
+        "action": "link-skill",
+        "skill": name,
+        "source": str(source),
+        "target": str(target),
+        "ownership": ownership,
+        "message": message,
+    }
+
+
+def _text_has_agentera_managed_marker(text: str) -> bool:
+    lines = text.split("\n")
+    if not lines or lines[0] != "---":
+        return False
+    try:
+        closing = lines.index("---", 1)
+    except ValueError:
+        return False
+    return any(line.strip() == "agentera_managed: true" for line in lines[1:closing])
+
+
+def _runtime_surface_ownership(runtime: str, action: str, target: Path) -> dict[str, str]:
+    if not target.exists():
+        if target.is_symlink():
+            if runtime == "opencode" and action == "link-skill" and _is_managed_opencode_skill_link(target):
+                return {"status": "agentera-owned", "reason": "OpenCode skill symlink target contains Agentera identity"}
+            return {"status": "user-owned", "reason": "broken target has no Agentera ownership proof"}
+        return {
+            "status": "agentera-owned",
+            "reason": "target is absent and path is a known Agentera-generated runtime surface",
+        }
+    if runtime == "opencode" and action == "link-skill":
+        if _is_managed_opencode_skill_link(target):
+            return {"status": "agentera-owned", "reason": "OpenCode skill symlink target contains Agentera identity"}
+        return {"status": "user-owned", "reason": "OpenCode skill path is not an Agentera-managed symlink"}
+    if not target.is_file():
+        return {"status": "user-owned", "reason": "target exists but is not a regular Agentera-managed file"}
+    try:
+        text = target.read_text(encoding="utf-8")
+    except OSError as exc:
+        return {"status": "user-owned", "reason": f"cannot read target to prove Agentera ownership: {exc}"}
+
+    if runtime == "opencode" and action == "copy-plugin":
+        if "Agentera plugin for OpenCode" in text and "AGENTERA_VERSION" in text:
+            return {"status": "agentera-owned", "reason": "OpenCode plugin contains the Agentera plugin identity"}
+    if runtime == "codex" and action == "copy-hooks":
+        if "agentera v2 Codex hooks" in text or "${AGENTERA_HOME}/hooks/validate_artifact.py" in text:
+            return {"status": "agentera-owned", "reason": "Codex hooks contain Agentera hook identity"}
+    if _text_has_agentera_managed_marker(text):
+        return {"status": "agentera-owned", "reason": "file frontmatter contains agentera_managed: true"}
+    return {"status": "user-owned", "reason": "no Agentera ownership marker or runtime identity was found"}
+
+
+def _is_managed_opencode_skill_link(target: Path) -> bool:
+    try:
+        link_target = os.readlink(target)
+    except OSError:
+        return False
+    normalized = link_target.lower()
+    return "agentera" in normalized or Path(link_target).name == target.name
 
 
 def _opencode_config_dir(home: Path, env: dict[str, str]) -> Path:
     value = env.get("OPENCODE_CONFIG_DIR")
     return Path(value).expanduser().resolve() if value else home / ".config" / "opencode"
+
+
+def _opencode_runtime_skill_source_root(install_root: Path) -> Path:
+    return _active_bundle_root(install_root) if _valid_install_root(install_root) else _managed_app_root(install_root)
 
 
 def _home_target(home: Path, target: str) -> Path:
@@ -1177,11 +1291,23 @@ def _plan_codex_config(
             "message": f"cannot safely plan Codex config change: {exc}",
         }
     status = "noop" if outcome.action == "noop" else "blocked" if outcome.action == "conflict" else "pending"
+    ownership = (
+        {"status": "agentera-owned", "reason": "Codex config is absent and can receive Agentera shell_environment_policy"}
+        if current is None
+        else {"status": "agentera-owned", "reason": "Codex config has Agentera-owned shell_environment_policy.AGENTERA_HOME"}
+        if "AGENTERA_HOME" in current
+        else {"status": "agentera-owned", "reason": "Codex config can be extended without overwriting existing user keys"}
+        if status == "pending"
+        else {"status": "user-owned", "reason": "existing Codex config needs explicit force before merging Agentera state"}
+        if status == "blocked"
+        else {"status": "agentera-owned", "reason": "Codex config already has the requested Agentera state"}
+    )
     return {
         "status": status,
         "runtime": runtime_id,
         "action": _write_label(adapter, "configure"),
         "target": str(target),
+        "ownership": ownership,
         "message": outcome.message,
         "newText": outcome.new_text,
     }
@@ -1194,45 +1320,39 @@ def _plan_copilot_config(
     env: dict[str, str],
     rc_file: Path | None,
 ) -> dict[str, Any]:
-    setup_copilot = _setup_copilot_module()
     runtime_id = adapter["identity"]["runtime_id"]
     action = _write_label(adapter, "configure")
+    shell_name = Path(env.get("SHELL", "")).name if env.get("SHELL") else ""
     if rc_file is not None:
-        shell_target = setup_copilot.resolve_rc_target(rc_file)
-        target, syntax = shell_target.rc_path, shell_target.syntax
+        target = rc_file
+    elif shell_name == "bash":
+        target = home / ".bashrc"
+    elif shell_name == "zsh":
+        target = home / ".zshrc"
+    elif shell_name == "fish":
+        target = home / ".config" / "fish" / "config.fish"
     else:
-        shell_name = Path(env.get("SHELL", "")).name if env.get("SHELL") else ""
-        if shell_name == "bash":
-            target, syntax = home / ".bashrc", "export"
-        elif shell_name == "zsh":
-            target, syntax = home / ".zshrc", "export"
-        elif shell_name == "fish":
-            target, syntax = home / ".config" / "fish" / "config.fish", "fish"
-        else:
-            return {
-                "status": "blocked",
-                "runtime": runtime_id,
-                "action": action,
-                "target": None,
-                "message": f"unsupported shell for Copilot rc automation: {shell_name or '(unset $SHELL)'}",
-            }
-    try:
-        outcome = setup_copilot.plan_change(_read_text_or_none(target), install_root, syntax)
-    except Exception as exc:  # noqa: BLE001
-        return {
-            "status": "blocked",
-            "runtime": runtime_id,
-            "action": action,
-            "target": str(target),
-            "message": f"cannot safely plan Copilot rc change: {exc}",
-        }
+        target = None
+    prefix = ""
+    if target is not None:
+        try:
+            current = _read_text_or_none(target)
+        except OSError:
+            current = None
+        if current and "AGENTERA_HOME" in current:
+            prefix = "Legacy Agentera shell startup line detected. "
     return {
-        "status": "noop" if outcome.action == "noop" else "pending",
+        "status": "blocked",
         "runtime": runtime_id,
         "action": action,
-        "target": str(target),
-        "message": outcome.message,
-        "newText": outcome.new_text,
+        "target": str(target) if target is not None else None,
+        "ownership": {"status": "user-owned", "reason": "shell startup files are user-owned and off-limits"},
+        "message": (
+            f"{prefix}Agentera will not edit shell startup files; cleanup is a "
+            "user-owned manual boundary. For Copilot app context, pass "
+            "AGENTERA_HOME for a single invocation or use runtime-native "
+            "environment support when available."
+        ),
     }
 
 
@@ -1271,14 +1391,32 @@ def plan_runtime_phase(
         items.append(_plan_copilot_config(adapters["copilot"], install_root, home, env, copilot_rc_file))
     if "opencode" in runtimes:
         adapter = adapters["opencode"]
+        opencode_config_dir = _opencode_config_dir(home, env)
         plugin_source = _first_target(adapter, "config_targets", "plugin_targets")
         items.append(_copy_item(
             adapter["identity"]["runtime_id"],
             runtime_source_root / plugin_source,
-            _opencode_config_dir(home, env) / "plugins" / "agentera.js",
+            opencode_config_dir / "plugins" / "agentera.js",
             force=force,
             action=_write_label(adapter, "copy-plugin"),
         ))
+        commands_dir = opencode_config_dir / "commands"
+        for command_source in sorted((runtime_source_root / ".opencode" / "commands").glob("*.md")):
+            items.append(_opencode_command_copy_item(command_source, commands_dir, force=force))
+        skills_dir = opencode_config_dir / "skills"
+        skill_source_root = _opencode_runtime_skill_source_root(install_root)
+        for name in ("agentera", "hej"):
+            source_available = (
+                (skill_source_root / "skills" / name / "SKILL.md").is_file()
+                or (runtime_source_root / "skills" / name / "SKILL.md").is_file()
+            )
+            items.append(_opencode_skill_item(
+                name,
+                skill_source_root / "skills" / name,
+                skills_dir / name,
+                force=force,
+                source_available=source_available,
+            ))
     if "claude" in runtimes:
         adapter = adapters["claude"]
         items.append({
@@ -1291,15 +1429,65 @@ def plan_runtime_phase(
     return _phase("runtime", items)
 
 
-def apply_runtime_phase(phase: dict[str, Any]) -> None:
+def _replan_codex_config_item(item: dict[str, Any], install_root: Path, *, force: bool) -> dict[str, Any]:
+    setup_codex = _setup_codex_module()
+    target = Path(item["target"])
+    hooks_path = None
+    for candidate in item.get("phaseItems", []):
+        if candidate.get("runtime") == "codex" and candidate.get("action") == "copy-hooks":
+            hooks_path = Path(candidate["target"])
+            break
+    try:
+        current = _read_text_or_none(target)
+        if current is not None and current.strip():
+            setup_codex.tomllib.loads(current)
+        outcome = setup_codex.plan_change(current, install_root, force=force, hooks_path=hooks_path)
+    except Exception as exc:  # noqa: BLE001
+        return {**item, "status": "blocked", "message": f"runtime safety recheck blocked Codex config change: {exc}"}
+    if outcome.action == "conflict":
+        return {**item, "status": "blocked", "message": f"runtime safety recheck blocked Codex config change: {outcome.message}"}
+    if outcome.action == "noop":
+        return {**item, "status": "noop", "message": "target already matches source"}
+    return {**item, "status": "pending", "message": outcome.message, "newText": outcome.new_text}
+
+
+def _runtime_write_still_safe(item: dict[str, Any], install_root: Path, *, force: bool) -> dict[str, Any]:
+    if item["action"] in ("copy-hooks", "copy-plugin", "copy-command"):
+        return _copy_item(
+            item["runtime"],
+            Path(item["source"]),
+            Path(item["target"]),
+            force=force,
+            action=item["action"],
+        )
+    if item["runtime"] == "opencode" and item["action"] == "link-skill":
+        return _opencode_skill_item(item["skill"], Path(item["source"]), Path(item["target"]), force=force)
+    if item["runtime"] == "codex" and item["action"] == "configure":
+        return _replan_codex_config_item(item, install_root, force=force)
+    return item
+
+
+def apply_runtime_phase(phase: dict[str, Any], install_root: Path, *, force: bool) -> None:
     for item in phase["items"]:
         if item["status"] != "pending":
             continue
+        rechecked = _runtime_write_still_safe({**item, "phaseItems": phase["items"]}, install_root, force=force)
+        rechecked.pop("phaseItems", None)
+        if rechecked["status"] != "pending":
+            item.update(rechecked)
+            continue
+        item.update(rechecked)
         try:
             target = Path(item["target"])
             target.parent.mkdir(parents=True, exist_ok=True)
-            if item["action"] in ("copy-hooks", "copy-plugin"):
+            if item["action"] in ("copy-hooks", "copy-plugin", "copy-command"):
                 shutil.copy2(Path(item["source"]), target)
+            elif item["action"] == "link-skill":
+                if target.is_symlink() or target.is_file():
+                    target.unlink()
+                elif target.exists():
+                    shutil.rmtree(target)
+                target.symlink_to(Path(item["source"]), target_is_directory=True)
             else:
                 target.write_text(item["newText"], encoding="utf-8")
         except Exception as exc:  # noqa: BLE001
@@ -1324,11 +1512,12 @@ def plan_cleanup_phase(home: Path, env: dict[str, str]) -> dict[str, Any]:
     findings = detect.run_detection(home=home, env=env)
     items = []
     for finding in findings:
-        status = "blocked" if finding.kind == "stale_agent" else "pending"
+        ownership = _cleanup_finding_ownership(finding)
+        status = "pending" if ownership["status"] == "agentera-owned" and finding.kind != "stale_agent" else "blocked"
         message = (
-            "Codex stale agent entries require Codex config rewrite with --force"
-            if finding.kind == "stale_agent"
-            else "will remove stale v1 runtime artifact"
+            "will remove stale Agentera-owned runtime artifact"
+            if status == "pending"
+            else "stale runtime surface has no safe removal plan because it is user-owned"
         )
         items.append({
             "status": status,
@@ -1336,9 +1525,27 @@ def plan_cleanup_phase(home: Path, env: dict[str, str]) -> dict[str, Any]:
             "kind": finding.kind,
             "path": finding.path,
             "detail": finding.detail,
+            "ownership": ownership,
             "message": message,
         })
     return _phase("cleanup", items, message="no stale v1 runtime artifacts found" if not items else "")
+
+
+def _cleanup_finding_ownership(finding: Any) -> dict[str, str]:
+    path = Path(finding.path)
+    if finding.kind == "dead_symlink":
+        return {"status": "agentera-owned", "reason": "path is a known v1 Agentera skill symlink name"}
+    if finding.kind == "stale_command":
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            return {"status": "user-owned", "reason": f"cannot read command file to prove Agentera ownership: {exc}"}
+        if _text_has_agentera_managed_marker(text):
+            return {"status": "agentera-owned", "reason": "OpenCode command frontmatter contains agentera_managed: true"}
+        return {"status": "user-owned", "reason": "OpenCode command lacks agentera_managed: true frontmatter"}
+    if finding.kind == "stale_agent":
+        return {"status": "user-owned", "reason": "Codex config may contain unrelated user agents and is not removed by cleanup"}
+    return {"status": "user-owned", "reason": "no Agentera ownership proof is defined for this stale surface"}
 
 
 def _cleanup_item(finding: Any, status: str, message: str) -> dict[str, Any]:
@@ -1348,13 +1555,21 @@ def _cleanup_item(finding: Any, status: str, message: str) -> dict[str, Any]:
         "kind": finding.kind,
         "path": finding.path,
         "detail": finding.detail,
+        "ownership": _cleanup_finding_ownership(finding),
         "message": message,
     }
 
 
 def apply_cleanup_phase(phase: dict[str, Any], home: Path, env: dict[str, str]) -> None:
     detect = _detect_module()
-    findings = [f for f in detect.run_detection(home=home, env=env) if f.kind != "stale_agent"]
+    pending_paths = {item["path"] for item in phase["items"] if item["status"] == "pending"}
+    findings = []
+    for finding in detect.run_detection(home=home, env=env):
+        if finding.path not in pending_paths:
+            continue
+        ownership = _cleanup_finding_ownership(finding)
+        if ownership["status"] == "agentera-owned" and finding.kind != "stale_agent":
+            findings.append(finding)
     results = detect.fix_findings(findings)
     items: list[dict[str, Any]] = []
     for finding, result in results:
@@ -1366,11 +1581,14 @@ def apply_cleanup_phase(phase: dict[str, Any], home: Path, env: dict[str, str]) 
     for finding in remaining:
         if finding.path in removed_paths and finding.kind != "stale_agent":
             continue
-        status = "blocked" if finding.kind == "stale_agent" else "pending"
+        ownership = _cleanup_finding_ownership(finding)
+        status = "pending" if ownership["status"] == "agentera-owned" and finding.kind != "stale_agent" else "blocked"
         message = (
             "Codex stale agent entries require manual removal or a runtime-specific config rewrite"
             if finding.kind == "stale_agent"
             else "still present after cleanup"
+            if status == "pending"
+            else "stale runtime surface has no safe removal plan because it is user-owned"
         )
         items.append(_cleanup_item(finding, status, message))
 
@@ -1457,20 +1675,97 @@ def _should_recover_stale_default_env(candidate: Path, source_root: Path, home: 
     return classification.kind == "managed_stale"
 
 
+def _legacy_default_residue_signal(
+    *,
+    selected_app_home: Path,
+    source_name: str,
+    source_value: Path,
+) -> dict[str, str]:
+    return {
+        "kind": "legacy_default_residue",
+        "source": source_name,
+        "deprecatedDefaultAppHome": str(source_value),
+        "selectedAppHome": str(selected_app_home),
+        "message": (
+            "The deprecated default app home was treated as legacy residue, "
+            "so Agentera selected the normal platform app directory instead."
+        ),
+    }
+
+
 def resolve_install_root(value: Path | None, source_root: Path, home: Path, env: dict[str, str] | None = None) -> Path:
     env = env or os.environ
     if value is not None:
         return value.expanduser().resolve()
-    default = env.get(DEFAULT_INSTALL_ROOT_ENV)
-    if default:
-        return Path(default).expanduser().resolve()
     configured = env.get("AGENTERA_HOME")
     if configured:
         candidate = Path(configured).expanduser().resolve()
         if _should_recover_stale_default_env(candidate, source_root, home):
             return _platform_default_app_home(home, env)
         return candidate
+    default = env.get(DEFAULT_INSTALL_ROOT_ENV)
+    if default:
+        candidate = Path(default).expanduser().resolve()
+        if _should_recover_stale_default_env(candidate, source_root, home):
+            return _platform_default_app_home(home, env)
+        return candidate
     return _platform_default_app_home(home, env)
+
+
+def _app_home_resolution_signal(
+    value: Path | None,
+    source_root: Path,
+    home: Path,
+    env: dict[str, str],
+    selected_app_home: Path,
+) -> dict[str, str] | None:
+    if value is not None:
+        return None
+    for source_name in ("AGENTERA_HOME", DEFAULT_INSTALL_ROOT_ENV):
+        configured = env.get(source_name)
+        if not configured:
+            continue
+        candidate = Path(configured).expanduser().resolve()
+        if candidate == selected_app_home:
+            return None
+        if _should_recover_stale_default_env(candidate, source_root, home):
+            return _legacy_default_residue_signal(
+                selected_app_home=selected_app_home,
+                source_name=source_name,
+                source_value=candidate,
+            )
+        return None
+    return None
+
+
+def _custom_environment_app_home_requires_decision(value: Path | None, home: Path, env: dict[str, str], selected_app_home: Path) -> bool:
+    if value is not None:
+        return False
+    configured = env.get("AGENTERA_HOME")
+    if not configured:
+        return False
+    candidate = Path(configured).expanduser().resolve()
+    if candidate != selected_app_home or candidate == _legacy_default_app_home(home):
+        return False
+    return not candidate.exists() or not _bundle_target_is_safe(candidate)
+
+
+def _custom_environment_app_home_block(app_home: Path, source_root: Path) -> dict[str, Any]:
+    return _phase(
+        "bundle",
+        [{
+            "status": "blocked",
+            "action": "install-bundle",
+            "source": str(source_root),
+            "target": str(_managed_app_root(app_home)),
+            "appHome": str(app_home),
+            "message": (
+                "Agentera was told to use a directory it cannot safely use. "
+                "Choose another Agentera directory, or rerun with an explicit --install-root "
+                "after checking the directory is safe."
+            ),
+        }],
+    )
 
 
 def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
@@ -1481,13 +1776,17 @@ def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
         env["OPENCODE_CONFIG_DIR"] = str(args.opencode_config_dir.expanduser().resolve())
     source_root = resolve_source_root()
     install_root = resolve_install_root(args.install_root, source_root, home, env=env)
+    app_home_resolution = _app_home_resolution_signal(args.install_root, source_root, home, env, install_root)
     runtimes = set(args.runtime or _runtime_ids())
     only = set(args.only or PHASES)
 
     phases: list[dict[str, Any]] = []
     bundle_selected = "bundle" in only
     if bundle_selected:
-        phases.append(plan_bundle_phase(source_root, install_root, home, force=args.force))
+        if not args.force and _custom_environment_app_home_requires_decision(args.install_root, home, env, install_root):
+            phases.append(_custom_environment_app_home_block(install_root, source_root))
+        else:
+            phases.append(plan_bundle_phase(source_root, install_root, home, force=args.force))
     if "artifacts" in only:
         phases.append(plan_artifact_phase(project, force=args.force))
     if "runtime" in only:
@@ -1537,6 +1836,7 @@ def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
         "managedAppRoot": str(install_root / "app"),
         "userDataRoot": str(install_root),
         "installRoot": str(install_root),
+        "appHomeResolution": app_home_resolution,
         "home": str(home),
         "runtimes": sorted(runtimes),
         "force": args.force,
@@ -1565,7 +1865,7 @@ def apply_upgrade_plan(plan: dict[str, Any], args: argparse.Namespace) -> None:
             if not _valid_install_root(install_root):
                 block_runtime_phase(phase, "Agentera app files are not available after the app repair step")
             else:
-                apply_runtime_phase(phase)
+                apply_runtime_phase(phase, install_root, force=args.force)
         elif phase["name"] == "cleanup":
             apply_cleanup_phase(phase, home, env)
         elif phase["name"] == "packages":
@@ -1670,6 +1970,8 @@ def render_upgrade(plan: dict[str, Any]) -> str:
         f"App files directory: {plan['managedAppRoot']}",
         f"Your Agentera data directory: {plan['userDataRoot']}",
     ]
+    if plan.get("appHomeResolution"):
+        lines.append(plan["appHomeResolution"]["message"])
     for phase in plan["phases"]:
         lines.append("")
         lines.append(f"{PHASE_LABELS.get(phase['name'], phase['name'])}:")

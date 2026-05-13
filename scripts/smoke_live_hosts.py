@@ -678,6 +678,176 @@ def run_setup_helpers_smoke() -> None:
     )
 
 
+def _write_legacy_shell_startup_fixtures(home: Path) -> dict[Path, bytes]:
+    fixtures = {
+        home / ".bashrc": (
+            "# user bash setup\n"
+            "# agentera: AGENTERA_HOME (managed)\n"
+            "export AGENTERA_HOME=\"/legacy/bash/agentera\"\n"
+        ),
+        home / ".zshrc": (
+            "# user zsh setup\n"
+            "export AGENTERA_HOME=\"/legacy/zsh/agentera\"\n"
+        ),
+        home / ".config" / "fish" / "config.fish": (
+            "# user fish setup\n"
+            "set -x AGENTERA_HOME /legacy/fish/agentera\n"
+        ),
+    }
+    before: dict[Path, bytes] = {}
+    for path, text in fixtures.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+        before[path] = path.read_bytes()
+    return before
+
+
+def _assert_shell_startup_fixtures_unchanged(before: dict[Path, bytes]) -> None:
+    for path, original in before.items():
+        assert_true(
+            path.read_bytes() == original,
+            f"shell startup fixture changed during repair smoke: {path}",
+        )
+
+
+def _run_upgrade_repair(args: list[str], home: Path) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env.update(
+        {
+            "HOME": str(home),
+            "SHELL": "/bin/bash",
+            "AGENTERA_HOME": "",
+            "XDG_DATA_HOME": str(home / ".local" / "share"),
+            "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
+        }
+    )
+    return subprocess.run(
+        ["uv", "run", str(AGENTERA_CLI), "upgrade", *args],
+        cwd=REPO_ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def _load_upgrade_payload(result: subprocess.CompletedProcess[str], label: str) -> dict[str, object]:
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        fail(f"{label} did not emit JSON: {exc}; stdout={result.stdout!r} stderr={result.stderr!r}")
+    assert_true(isinstance(payload, dict), f"{label} JSON payload was not an object")
+    return payload
+
+
+def run_upgrade_repair_smoke() -> None:
+    """Exercise whole-repair planning/apply offline in disposable homes."""
+    info("--- offline upgrade repair smoke ---")
+    with tempfile.TemporaryDirectory(prefix="agentera-repair-smoke-") as tmp:
+        sandbox = Path(tmp)
+
+        blocked_home = sandbox / "blocked-home"
+        blocked_project = sandbox / "blocked-project"
+        blocked_opencode = blocked_home / ".config" / "opencode"
+        blocked_project.mkdir(parents=True)
+        blocked_before = _write_legacy_shell_startup_fixtures(blocked_home)
+        blocked_command = blocked_opencode / "commands" / "planera.md"
+        blocked_command.parent.mkdir(parents=True)
+        blocked_command.write_text("Load skill from skills/planera/SKILL.md\n", encoding="utf-8")
+
+        blocked = _run_upgrade_repair(
+            [
+                "--runtime",
+                "codex",
+                "--runtime",
+                "opencode",
+                "--home",
+                str(blocked_home),
+                "--project",
+                str(blocked_project),
+                "--opencode-config-dir",
+                str(blocked_opencode),
+                "--json",
+            ],
+            blocked_home,
+        )
+        assert_true(blocked.returncode == 1, f"blocked repair preview should exit 1, got {blocked.returncode}")
+        blocked_payload = _load_upgrade_payload(blocked, "blocked repair preview")
+        blocked_phases = {phase["name"]: phase for phase in blocked_payload["phases"]}  # type: ignore[index]
+        blocked_cleanup = blocked_phases["cleanup"]
+        blocked_items = {Path(item["path"]).name: item for item in blocked_cleanup["items"]}  # type: ignore[index]
+        assert_true(blocked_items["planera.md"]["status"] == "blocked", "user-owned stale command was not blocked")
+        assert_true(
+            blocked_items["planera.md"]["ownership"]["status"] == "user-owned",
+            "blocked stale command did not report user-owned ownership",
+        )
+        assert_true(
+            blocked_phases["packages"]["status"] == "skipped",  # type: ignore[index]
+            "package updates should remain opt-in during default smoke",
+        )
+        _assert_shell_startup_fixtures_unchanged(blocked_before)
+
+        apply_home = sandbox / "apply-home"
+        apply_project = sandbox / "apply-project"
+        apply_opencode = apply_home / ".config" / "opencode"
+        apply_project.mkdir(parents=True)
+        apply_before = _write_legacy_shell_startup_fixtures(apply_home)
+        stale_plugin = apply_opencode / "plugins" / "agentera.js"
+        stale_plugin.parent.mkdir(parents=True)
+        stale_plugin.write_text(
+            "// Agentera plugin for OpenCode\nconst AGENTERA_VERSION = '0.0.1';\n",
+            encoding="utf-8",
+        )
+        managed_command = apply_opencode / "commands" / "hej.md"
+        managed_command.parent.mkdir(parents=True)
+        managed_command.write_text(
+            "---\nagentera_managed: true\n---\nLoad skill from skills/hej/SKILL.md\n",
+            encoding="utf-8",
+        )
+
+        common_args = [
+            "--runtime",
+            "codex",
+            "--runtime",
+            "opencode",
+            "--home",
+            str(apply_home),
+            "--project",
+            str(apply_project),
+            "--opencode-config-dir",
+            str(apply_opencode),
+            "--json",
+        ]
+        preview = _run_upgrade_repair(common_args, apply_home)
+        assert_true(preview.returncode == 1, f"clean repair preview should exit 1, got {preview.returncode}")
+        preview_payload = _load_upgrade_payload(preview, "clean repair preview")
+        assert_true(preview_payload["summary"]["blocked"] == 0, "clean repair preview unexpectedly blocked")  # type: ignore[index]
+        _assert_shell_startup_fixtures_unchanged(apply_before)
+
+        applied = _run_upgrade_repair([*common_args, "--yes"], apply_home)
+        assert_true(applied.returncode == 0, f"clean repair apply should exit 0, got {applied.returncode}: {applied.stderr}")
+        applied_payload = _load_upgrade_payload(applied, "clean repair apply")
+        applied_phases = {phase["name"]: phase for phase in applied_payload["phases"]}  # type: ignore[index]
+        app_home = apply_home / ".local" / "share" / "agentera"
+        assert_true((app_home / "app" / "scripts" / "agentera").is_file(), "repair did not install app bundle")
+        assert_true(
+            f'AGENTERA_HOME = "{app_home}"' in (apply_home / ".codex" / "config.toml").read_text(encoding="utf-8"),
+            "repair did not wire Codex to the managed app home",
+        )
+        assert_true(
+            stale_plugin.read_text(encoding="utf-8") == (REPO_ROOT / ".opencode" / "plugins" / "agentera.js").read_text(encoding="utf-8"),
+            "repair did not refresh the stale Agentera-owned OpenCode plugin",
+        )
+        assert_true(not managed_command.exists(), "repair did not remove stale managed v1 OpenCode command")
+        assert_true(
+            applied_phases["packages"]["status"] == "skipped",  # type: ignore[index]
+            "repair apply should not run package manager updates without --update-packages",
+        )
+        _assert_shell_startup_fixtures_unchanged(apply_before)
+
+    info("PASS: offline upgrade repair smoke")
+
+
 # ---------------------------------------------------------------------------
 # Live mode: cost gate + per-runtime probes
 # ---------------------------------------------------------------------------
@@ -2685,19 +2855,19 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     snapshots = SnapshotRegistry()
     skips: list[tuple[str, str]] = []
-    # Task 3 AC5: detect orphan snapshots from a prior crashed run and
-    # restore them automatically so a half-finished prior invocation
-    # cannot strand the user's real config files. Runs once at startup
-    # before anything else touches the tmp surface.
-    recover_orphan_snapshots()
     try:
         # Default-mode sections always run (also under --live), so a
         # live-mode invocation gets the offline gates as a precondition.
         run_fixture_corpus_parity_audit()
         run_unavailable_store_degradation_audit()
         run_setup_helpers_smoke()
+        run_upgrade_repair_smoke()
 
         if args.live:
+            # Task 3 AC5 applies only to explicit live mode. Default smoke must
+            # stay read-only with respect to real user paths, including stale
+            # sidecars left under /tmp by an earlier crashed live run.
+            recover_orphan_snapshots()
             info("--- live mode: cost gate ---")
             if not cost_gate(auto_consent=args.yes):
                 info("aborted: consent declined; no live CLI invoked")

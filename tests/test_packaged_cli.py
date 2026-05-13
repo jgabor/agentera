@@ -12,13 +12,16 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
-def test_packaged_launcher_runs_upgrade_with_durable_default(tmp_path: Path) -> None:
+def test_packaged_launcher_recovers_deprecated_default_env_to_platform_home(tmp_path: Path) -> None:
     home = tmp_path / "home"
-    install_root = home / ".agents" / "agentera"
+    deprecated_default = home / ".agents" / "agentera"
+    platform_home = home / ".local" / "share" / "agentera"
     env = dict(os.environ)
     env["PYTHONPATH"] = str(REPO_ROOT / "src")
     env["HOME"] = str(home)
-    env["AGENTERA_DEFAULT_INSTALL_ROOT"] = str(install_root)
+    env["XDG_DATA_HOME"] = str(home / ".local" / "share")
+    env["AGENTERA_HOME"] = ""
+    env["AGENTERA_DEFAULT_INSTALL_ROOT"] = str(deprecated_default)
 
     result = subprocess.run(
         [
@@ -42,7 +45,10 @@ def test_packaged_launcher_runs_upgrade_with_durable_default(tmp_path: Path) -> 
 
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["appHome"] == str(install_root)
+    assert payload["appHome"] == str(platform_home)
+    assert payload["appHomeResolution"]["kind"] == "legacy_default_residue"
+    assert payload["appHomeResolution"]["source"] == "AGENTERA_DEFAULT_INSTALL_ROOT"
     assert "installRoot" not in payload
     assert payload["sourceRoot"] == str(REPO_ROOT)
-    assert (install_root / "app" / ".agentera-bundle.json").is_file()
+    assert (platform_home / "app" / ".agentera-bundle.json").is_file()
+    assert not deprecated_default.exists()

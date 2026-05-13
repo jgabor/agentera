@@ -647,11 +647,15 @@ def test_setup_installer_dry_run_shows_target_runtime_file_and_reason_per_writab
             check=False,
         )
 
-        assert result.returncode == 0
+        expected_returncode = 1 if runtime == "copilot" else 0
+        assert result.returncode == expected_returncode
         assert not target.exists()
-        assert f"{runtime}: pending" in result.stdout
+        expected_status = "blocked" if runtime == "copilot" else "pending"
+        assert f"{runtime}: {expected_status}" in result.stdout
         assert f"target: {target}" in result.stdout
         assert "reason:" in result.stdout
+        if runtime == "copilot":
+            assert "Agentera will not edit shell startup files" in result.stdout
 
 
 def test_setup_installer_without_confirmation_does_not_write_per_writable_runtime(
@@ -674,7 +678,43 @@ def test_setup_installer_without_confirmation_does_not_write_per_writable_runtim
 
         assert result.returncode == 1
         assert not target.exists()
-        assert "confirmation required" in result.stdout
+        if runtime == "copilot":
+            assert "cleanup is a user-owned manual boundary" in result.stdout
+        else:
+            assert "confirmation required" in result.stdout
+
+
+def test_setup_doctor_copilot_legacy_shell_line_is_diagnostic_only(tmp_path: Path) -> None:
+    doctor = _load_doctor()
+    root = tmp_path / "agentera"
+    home = tmp_path / "home"
+    _write_install_root(root, doctor)
+    target = home / ".bashrc"
+    target.parent.mkdir(parents=True)
+    target.write_text(
+        "# agentera: AGENTERA_HOME (managed)\nexport AGENTERA_HOME=\"/old/agentera\"\n",
+        encoding="utf-8",
+    )
+    before = target.read_bytes()
+
+    result = subprocess.run(
+        _installer_command(doctor, root, home, "copilot", "--yes", "--json"),
+        env=_installer_env(tmp_path, doctor, "copilot"),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    payload = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert target.read_bytes() == before
+    home_check = next(
+        check
+        for check in payload["doctor"]["runtimes"]["copilot"]["checks"]
+        if check["name"] == "AGENTERA_HOME"
+    )
+    assert "Agentera will not edit shell startup files" in home_check["message"]
+    assert "user-owned manual boundary" in payload["installer"]["changes"][0]["message"]
 
 
 def test_setup_installer_confirmed_write_fixes_each_writable_runtime(
@@ -698,10 +738,16 @@ def test_setup_installer_confirmed_write_fixes_each_writable_runtime(
         installer = payload["installer"]
         after = installer["afterDoctor"]["runtimes"][runtime]
 
-        assert result.returncode == 0
-        assert target.is_file()
-        assert installer["summary"]["applied"] == 1
-        assert after["status"] == "pass"
+        if runtime == "copilot":
+            assert result.returncode == 1
+            assert not target.exists()
+            assert installer["summary"]["blocked"] == 1
+            assert installer["afterDoctor"]["runtimes"][runtime]["status"] == "warn"
+        else:
+            assert result.returncode == 0
+            assert target.is_file()
+            assert installer["summary"]["applied"] == 1
+            assert after["status"] == "pass"
 
 
 def test_setup_installer_idempotent_rerun_writes_nothing_per_writable_runtime(
@@ -722,6 +768,21 @@ def test_setup_installer_idempotent_rerun_writes_nothing_per_writable_runtime(
             text=True,
             check=False,
         )
+        if runtime == "copilot":
+            second = subprocess.run(
+                _installer_command(doctor, root, home, runtime, "--yes", "--json"),
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            payload = json.loads(second.stdout)
+
+            assert first.returncode == 1
+            assert second.returncode == 1
+            assert not target.exists()
+            assert payload["installer"]["summary"]["blocked"] == 1
+            continue
         before = target.read_text(encoding="utf-8")
         second = subprocess.run(
             _installer_command(doctor, root, home, runtime, "--yes", "--json"),

@@ -359,7 +359,8 @@ not add precision:
 | Missing normal directory | Previewable. Agentera can show a no-write repair preview. |
 | Missing chosen directory | Needs a user decision when provided through `AGENTERA_HOME` or explicit `--install-root`. |
 | Package refresh | Package-manager or marketplace update. It does not prove Agentera's app files are current. |
-| App repair | Same-directory `agentera upgrade --only bundle` flow that updates Agentera app files. |
+| App repair | Normal repair flow that previews or applies Agentera app files plus managed runtime config, plugins, hooks, commands, and safe cleanup together. It must not edit shell startup files, and package-manager commands remain opt-in through `--update-packages`. |
+| `--only bundle` | Narrow app-only operation for bundle/app-file work. Do not present it as the normal repair recommendation when managed runtime surfaces may also need repair. |
 | Preview | No-write mode. Required before upgrade or app repair writes; the underlying command flag is `--dry-run`. |
 | `--yes` | Explicit apply flag after preview and approval. |
 | Final check | Setup validation after upgrade apply. Internal code may still call this postflight doctor. |

@@ -3,17 +3,16 @@
 # requires-python = ">=3.11"
 # dependencies = []
 # ///
-"""Idempotently inject ``AGENTERA_HOME`` into the user's shell rc file.
+"""Diagnose Copilot app-context setup without editing shell startup files.
 
-Copilot CLI inherits its environment from the surrounding shell, so the
-documented mechanism for wiring ``AGENTERA_HOME`` is an ``export`` line
-in the user's per-shell rc (``~/.bashrc``, ``~/.zshrc``,
-``~/.config/fish/config.fish``). This helper writes (or re-points) that
-single managed line so users do not have to hand-edit shell configs on
-every install root change.
+Copilot CLI inherits its environment from the surrounding shell, but shell
+startup files (``~/.bashrc``, ``~/.zshrc``, ``~/.profile``,
+``~/.config/fish/config.fish``, and similar files) are user-owned. This helper
+therefore never creates, rewrites, or removes rc files. It reports any legacy
+Agentera ``AGENTERA_HOME`` line it sees and prints per-invocation guidance
+instead.
 
-Three shell branches drive the write logic; each maps to a rc target
-and an export syntax:
+Three shell branches identify the diagnostic target only:
 
 1. **bash** (``$SHELL`` ends in ``/bash``) → ``~/.bashrc``,
    ``export AGENTERA_HOME=...`` syntax.
@@ -21,29 +20,17 @@ and an export syntax:
    ``export AGENTERA_HOME=...`` syntax.
 3. **fish** (``$SHELL`` ends in ``/fish``) → ``~/.config/fish/config.fish``,
    ``set -x AGENTERA_HOME ...`` syntax.
-4. **anything else** → exit non-zero with a printable bash one-liner the
-   user can adapt for their shell.
+4. **anything else** → print per-invocation guidance without selecting an rc
+   file.
 
-Idempotency anchors on a marker comment line
-(``# agentera: AGENTERA_HOME (managed)``) followed by the export line.
-Three rc states are handled:
-
-- **No marker present**: append a fresh marker block at EOF.
-  - Special case: if the rc contains a *bare* ``export AGENTERA_HOME=...``
-    line that the user wrote by hand (no marker), the helper still
-    appends its own managed block but prints a notice that the bare
-    line was left untouched (the user owns it).
-- **Marker present at desired value**: exit 0 no-op, file byte-identical.
-- **Marker present at different value**: rewrite the line *immediately
-  after* the marker comment in place; every other line in the rc is
-  preserved byte-identically.
+Legacy marker and bare ``AGENTERA_HOME`` rc states are diagnostic-only. Agentera
+will not edit those lines; cleanup is a user-owned manual boundary.
 
 The install root is verified against four canonical sibling entries
 (``scripts/validate_capability.py``, ``hooks/``, ``skills/``, ``skills/agentera/SKILL.md``)
-before any write. Auto-detection walks up from this script's location.
+before any diagnostic output. Auto-detection walks up from this script's location.
 ``--install-root PATH`` overrides detection; ``--rc-file PATH``
-overrides the rc target (tests use this to avoid touching the real
-shell rc) and forces syntax based on file extension (``.fish`` → fish,
+overrides the diagnostic rc target (tests use fixtures only) and forces syntax based on file extension (``.fish`` → fish,
 otherwise export).
 
 Usage::
@@ -55,16 +42,13 @@ Usage::
 
 Exit codes:
 
-    0  no change needed (idempotent re-run) or change applied
-    1  --dry-run detected a pending change (mirrors validate_capability.py)
-    2  error: bad install root, unsupported shell without --rc-file,
-       missing rc target directory the helper cannot create, etc.
+    0  diagnostic completed; no shell startup file was changed
+    2  error: bad install root, unreadable diagnostic target, etc.
 """
 
 from __future__ import annotations
 
 import argparse
-import difflib
 import os
 import sys
 from pathlib import Path
@@ -257,7 +241,7 @@ def detect_shell(env: dict[str, str] | None = None) -> ShellTarget:
 def resolve_rc_target(
     explicit_rc: Path | None, env: dict[str, str] | None = None
 ) -> ShellTarget:
-    """Return the (rc_path, syntax) pair to write to.
+    """Return the (rc_path, syntax) pair to inspect.
 
     ``--rc-file PATH`` bypasses ``$SHELL`` detection entirely. Syntax is
     inferred from the file path: ``.fish`` extension → fish syntax,
@@ -465,14 +449,11 @@ class Outcome(NamedTuple):
     """Result of the planning pass before any I/O.
 
     Attributes:
-        action: One of "noop", "fresh", "rewrite". The CLI dispatches
-            on this.
-        new_text: The full file text after the would-be change. Same as
-            ``current_text`` for "noop".
+        action: Always "noop". Shell startup files are diagnostic-only.
+        new_text: The unchanged current text.
         message: Human-facing summary line printed to stdout/stderr.
-        diff: Unified diff (current vs new_text). Empty for "noop".
-        notice: Optional secondary message (e.g. the "bare export line
-            was left untouched" warning); empty when not applicable.
+        diff: Always empty. Kept for installer payload compatibility.
+        notice: Optional secondary message about legacy lines or manual setup.
     """
 
     action: str
@@ -487,92 +468,44 @@ def plan_change(
     install_root: Path,
     syntax: str,
 ) -> Outcome:
-    """Inspect ``current_text`` and decide which write path applies.
+    """Inspect ``current_text`` and return diagnostic-only guidance.
 
     ``current_text`` is None when the rc file does not exist; the empty
     string is treated identically (an empty rc is legal).
 
-    Returns an ``Outcome`` describing what would happen. No I/O is
-    performed.
+    Returns an ``Outcome`` describing the user-owned shell startup boundary. No
+    I/O is performed and ``new_text`` is always the original text.
     """
-    desired_export = emit_export_line(install_root, syntax)
+    unchanged = current_text or ""
+    guidance = (
+        "Copilot app context is diagnostic-only: Agentera will not edit shell "
+        "startup files. For a single command, run "
+        f"{MANAGED_KEY}={_quote_for_shell(str(install_root), syntax)} copilot ..."
+    )
 
     if current_text is None or current_text == "":
-        new_text = render_marker_block(install_root, syntax)
-        diff = _unified_diff("", new_text)
         return Outcome(
-            action="fresh",
-            new_text=new_text,
-            message=(
-                f"would create rc with marker block "
-                f"({MANAGED_KEY}={install_root})"
-            ),
-            diff=diff,
-            notice="",
+            action="noop",
+            new_text=unchanged,
+            message=guidance,
+            diff="",
+            notice="No shell startup file was found or needed; no persistent shell startup change was made.",
         )
 
     state = classify_rc(current_text)
-
-    if state.marker_present:
-        if state.export_after_marker == desired_export:
-            return Outcome(
-                action="noop",
-                new_text=current_text,
-                message=(
-                    f"{MANAGED_KEY} marker block already at {install_root}; "
-                    "nothing to do"
-                ),
-                diff="",
-                notice="",
-            )
-        new_text = rewrite_export_line(
-            current_text, state.marker_idx, install_root, syntax
-        )
-        diff = _unified_diff(current_text, new_text)
-        return Outcome(
-            action="rewrite",
-            new_text=new_text,
-            message=(
-                f"would update marker block's export line to "
-                f"{MANAGED_KEY}={install_root}"
-            ),
-            diff=diff,
-            notice="",
-        )
-
-    # Marker absent → append a fresh block. If a bare export was found
-    # (user-written), append the warning so the user knows we did not
-    # touch their line.
-    new_text = append_marker_block(current_text, install_root, syntax)
-    diff = _unified_diff(current_text, new_text)
-    notice = ""
-    if state.bare_export_present:
+    notice = "No Agentera shell startup line was detected; no persistent shell startup change was made."
+    if state.marker_present or state.bare_export_present:
         notice = (
-            f"notice: an existing {MANAGED_KEY} mention was left untouched "
-            "(no managed marker comment); your hand-written line is "
-            "preserved and the new managed block was appended below it."
+            "Legacy Agentera shell startup line detected. Agentera will not edit it; "
+            "cleanup is a user-owned manual boundary."
         )
     return Outcome(
-        action="fresh",
-        new_text=new_text,
-        message=(
-            f"would append marker block ({MANAGED_KEY}={install_root})"
-        ),
-        diff=diff,
+        action="noop",
+        new_text=unchanged,
+        message=guidance,
+        diff="",
         notice=notice,
     )
-
-
-def _unified_diff(before: str, after: str) -> str:
-    """Pretty unified diff between two text blobs."""
-    diff_lines = difflib.unified_diff(
-        before.splitlines(keepends=True),
-        after.splitlines(keepends=True),
-        fromfile="rc (current)",
-        tofile="rc (proposed)",
-        n=3,
-    )
-    return "".join(diff_lines)
 
 
 # ---------------------------------------------------------------------------
@@ -588,23 +521,21 @@ def _read_text_or_none(path: Path) -> str | None:
 
 
 def _print_unsupported_guidance(shell_name: str) -> None:
-    """Tell the user what to paste manually for an unsupported shell."""
+    """Tell the user how to pass app context without rc edits."""
     print(
         f"unsupported shell: {shell_name}",
         file=sys.stderr,
     )
     print(
-        "Adapt this bash one-liner for your shell's rc file:",
+        "Agentera will not edit shell startup files. Pass app context per invocation instead:",
         file=sys.stderr,
     )
     print(
-        f'  echo \'{MARKER_COMMENT}\' >> ~/.your_shell_rc && '
-        f'echo \'export {MANAGED_KEY}=<install-root>\' >> ~/.your_shell_rc',
+        f"  {MANAGED_KEY}=<agentera-directory> copilot ...",
         file=sys.stderr,
     )
     print(
-        "Or pass --rc-file PATH to write to a specific file regardless "
-        "of $SHELL detection.",
+        "If you choose to clean up an old rc line, that edit is manual and user-owned.",
         file=sys.stderr,
     )
 
@@ -613,10 +544,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="setup_copilot",
         description=(
-            f"Idempotently set {MANAGED_KEY} in the user's shell rc file "
-            "(~/.bashrc, ~/.zshrc, or ~/.config/fish/config.fish) so "
-            "Copilot CLI inherits AGENTERA_HOME from the surrounding "
-            "shell. Safe to re-run; preserves all unrelated lines."
+            f"Diagnose {MANAGED_KEY} context for Copilot without editing shell "
+            "startup files. Prints per-invocation guidance and leaves rc files "
+            "byte-for-byte unchanged."
         ),
     )
     parser.add_argument(
@@ -635,7 +565,7 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=None,
         help=(
-            "Path to a specific rc file to modify. Bypasses $SHELL "
+            "Path to a specific rc file to inspect. Bypasses $SHELL "
             "detection. Syntax is inferred from the path: ``.fish`` "
             "extension or a path containing ``fish/`` → fish syntax; "
             "anything else → export syntax."
@@ -645,8 +575,7 @@ def main(argv: list[str] | None = None) -> int:
         "--dry-run",
         action="store_true",
         help=(
-            "Print the would-be diff without writing. Exits 1 when a "
-            "change would occur, 0 when no change is needed."
+            "Compatibility flag; prints the same diagnostic guidance and never writes."
         ),
     )
     args = parser.parse_args(argv)
@@ -663,7 +592,7 @@ def main(argv: list[str] | None = None) -> int:
         target = resolve_rc_target(args.rc_file)
     except UnsupportedShellError as err:
         _print_unsupported_guidance(err.shell_name)
-        return 2
+        return 0
 
     # Plan tightening from critic review: print the resolved rc target
     # *before* any write so users can Ctrl-C if it points somewhere
@@ -682,31 +611,8 @@ def main(argv: list[str] | None = None) -> int:
     # Step 4: plan the change.
     outcome = plan_change(current_text, install_root, target.syntax)
 
-    # Step 5: dispatch on the outcome.
-    if outcome.action == "noop":
-        print(outcome.message)
-        return 0
-
-    if args.dry_run:
-        print(outcome.message)
-        if outcome.diff:
-            sys.stdout.write(outcome.diff)
-            if not outcome.diff.endswith("\n"):
-                print()
-        if outcome.notice:
-            print(outcome.notice)
-        return 1
-
-    # Real write path. Ensure parent directory exists (fish's
-    # ~/.config/fish/ is the common case).
-    try:
-        target.rc_path.parent.mkdir(parents=True, exist_ok=True)
-        target.rc_path.write_text(outcome.new_text, encoding="utf-8")
-    except OSError as err:
-        print(f"error writing {target.rc_path}: {err}", file=sys.stderr)
-        return 2
-
-    print(f"wrote {target.rc_path}: {outcome.message.replace('would ', '')}")
+    # Step 5: print diagnostics only. Shell startup files are user-owned.
+    print(outcome.message)
     if outcome.notice:
         print(outcome.notice)
     return 0

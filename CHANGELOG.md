@@ -11,6 +11,30 @@
 
 ### Fixed
 
+- Shell startup file mutation has been removed from setup, doctor, upgrade, and repair paths; stale Agentera shell lines are reported as user-owned manual cleanup, exact deprecated-default `AGENTERA_HOME` residue can recover to the platform app directory when safe, managed runtime remnants refresh or clean up only with Agentera ownership proof, and package-manager updates remain opt-in.
+- README, upgrade, skill repair, and Copilot manifest guidance now describe
+  repair as app plus managed runtime surface repair, state that Agentera will not
+  edit shell startup files, name stale shell lines as user-owned manual cleanup,
+  and keep package-manager commands opt-in through `--update-packages`.
+- Repair apply now refreshes managed OpenCode command files and stale skill
+  links, including resolving Agentera-owned links that still point at an old
+  existing Agentera skill, while preserving user-owned OpenCode commands, skill
+  paths, and Codex config keys when managed runtime surfaces are stale.
+- Whole-repair apply now rechecks pending managed runtime and cleanup surfaces
+  before mutation, so preview-safe actions still apply while changed unverified
+  user-owned surfaces block instead of being overwritten or removed.
+- Repair preview now reports runtime surface ownership reasons, refreshes only
+  stale Agentera-owned plugin/hook surfaces, blocks unproven stale runtime
+  surfaces as user-owned, treats Copilot shell startup files as off-limits, and
+  keeps package-manager actions skipped unless `--update-packages` is approved.
+- Copilot setup, setup-doctor installer, and upgrade runtime repair paths now
+  leave shell startup files byte-for-byte unchanged, report legacy Agentera rc
+  lines as user-owned manual cleanup boundaries, and show per-invocation app
+  context guidance instead of planning persistent shell edits.
+- Packaged upgrade now treats stale or missing exact deprecated-default app-home
+  environment values as legacy residue, selects the platform app directory when
+  safe, blocks custom unknown app-home fallback, and preserves explicit
+  `--install-root` authority through preview and apply.
 - Profilera corpus extraction now reports available OpenCode and GitHub Copilot candidate stores as bounded `extractor_unimplemented` degradations instead of crashing while those runtime extractors remain deferred.
 - Recovery and troubleshooting messaging now explains app repair in plain language, recommends the safe action first, uses `directory` terminology, and blocks jargon-heavy phrases from release validation.
 - Runtime-injected exact deprecated-default `AGENTERA_HOME` recovery now guides upgrade toward the platform app home when no explicit `--install-root` was supplied, keeps doctor read-only, preserves explicit install-root authority, and allows safe user-data-only app homes to receive managed app code under `app/`.
@@ -32,6 +56,7 @@
 
 ### Verified
 
+- Shell-rc removal state is synchronized without a selected release target: TODO, docs, progress, changelog, and plan state record completion, stale-remnant handling, and verification evidence while package, plugin, registry, lockfile, OpenCode marker, and skill version-bearing files remain unchanged at the pre-existing `2.3.3` metadata.
 - Profilera corpus runtime parity state is synchronized without a selected release target: TODO, docs, progress, changelog, and plan state record completion while package, plugin, registry, lockfile, and skill version-bearing files remain unchanged.
 - 2.3.3 patch release readiness is recorded locally without publication, installed app refresh, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces are aligned.
 
@@ -306,12 +331,12 @@ Cross-runtime portability release. Standardizes AGENTERA_HOME across Claude Code
 
 ### Added
 
-- **AGENTERA_HOME contract** (SPEC.md Section 7): standardizes the env var that names the agentera install root, with a per-runtime mechanism table covering Claude Code (bash fallback to `CLAUDE_PLUGIN_ROOT`), OpenCode (`shell.env` plugin hook), Codex (`[shell_environment_policy].set` in `~/.codex/config.toml`), and Copilot (shell rc export).
+- **AGENTERA_HOME contract** (SPEC.md Section 7): standardized the env var that names the agentera install root, with a historical per-runtime mechanism table covering Claude Code (bash fallback to `CLAUDE_PLUGIN_ROOT`), OpenCode (`shell.env` plugin hook), Codex (`[shell_environment_policy].set` in `~/.codex/config.toml`), and Copilot shell startup guidance. Current Agentera repair guidance does not edit shell startup files; stale shell lines are user-owned manual cleanup.
 - **OpenCode plugin** bootstraps 12 slash commands at plugin init (was previously wired to a phantom hook that never fired) and injects AGENTERA_HOME into every shell-tool subprocess via the `@opencode-ai/plugin` `shell.env` hook.
 - **`scripts/setup_codex.py`**: idempotent Codex setup helper that writes `[shell_environment_policy].set.AGENTERA_HOME` to `~/.codex/config.toml`. Stdlib-only; auto-detects install root; supports `--install-root`, `--config-file`, `--dry-run`, `--force`; refuses to overwrite conflicting sibling keys without `--force`.
-- **`scripts/setup_copilot.py`**: idempotent Copilot setup helper that writes a marker-commented `AGENTERA_HOME` export block to the user's shell rc. Stdlib-only; supports bash, zsh, and fish; auto-detects shell from `$SHELL`; supports `--rc-file` and `--dry-run`; preserves user-owned bare lines.
+- **`scripts/setup_copilot.py`**: historically shipped an idempotent Copilot setup helper for shell startup files. Current Agentera setup and repair guidance treats shell startup files as diagnostic-only and will not edit them; stale Agentera lines are user-owned manual cleanup.
 - **`scripts/smoke_setup_helpers.py`**: stdlib black-box smoke harness exercising both setup helpers across 11 sequential cases (5 Codex + 4 Copilot + 2 cross-cutting), no live CLI required.
-- **`scripts/smoke_live_hosts.py`**: live-host AGENTERA_HOME inheritance and SKILL.md compaction smoke harness for Codex and Copilot. Default mode runs the profilera Codex collection audit and delegates to `scripts/smoke_setup_helpers.py` (no live CLI invocations, no cost). `--live` mode prints a one-line cost estimate and consent prompt, then issues exactly one `codex exec` and one `bash -c '...copilot -p ... --allow-all-tools'` invocation per runtime, each carrying a combined prompt that exercises both AGENTERA_HOME echo and `compact_artifact.py` execution, with snapshot + SHA256 round-trip on `~/.codex/config.toml` and shell rc files plus orphan-snapshot auto-recovery on the next run.
+- **`scripts/smoke_live_hosts.py`**: live-host AGENTERA_HOME inheritance and SKILL.md compaction smoke harness for Codex and Copilot. Default mode runs the profilera Codex collection audit and delegates to `scripts/smoke_setup_helpers.py` (no live CLI invocations, no cost). `--live` mode prints a one-line cost estimate and consent prompt, then issues exactly one `codex exec` and one `bash -c '...copilot -p ... --allow-all-tools'` invocation per runtime, each carrying a combined prompt that exercises both AGENTERA_HOME echo and `compact_artifact.py` execution. Current repair behavior must not edit shell startup files; any shell startup references are snapshot-only or manual-cleanup boundaries.
 - **Codex `apply_patch` hook config** (`hooks/codex-hooks.json`): PreToolUse + PostToolUse `apply_patch` matchers wire `validate_artifact.py` for real-time artifact validation, parity with Claude Code PostToolUse and OpenCode `tool.execute.after`.
 - **`.agents/plugins/marketplace.json`**: Codex marketplace manifest enables `codex plugin marketplace add jgabor/agentera` plus interactive `/plugins` installation of the aggregate Agentera plugin.
 - **Historical v1.x Codex agent stubs**: 12 per-skill `agents/<name>.toml` stubs existed before the v2 single-bundle cutover; v2 removes this shape in favor of `skills/agentera`.

@@ -1019,6 +1019,16 @@ def _extract_copilot_marker_root(text: str) -> str | None:
     return None
 
 
+def _copilot_shell_manual_boundary_message(prefix: str = "") -> str:
+    lead = f"{prefix} " if prefix else ""
+    return (
+        f"{lead}Agentera will not edit shell startup files; cleanup is a "
+        "user-owned manual boundary. For Copilot app context, pass "
+        "AGENTERA_HOME for a single invocation or use runtime-native "
+        "environment support when available."
+    )
+
+
 def diagnose_copilot(install_root: Path, home: Path, env: Mapping[str, str]) -> dict[str, Any]:
     value = env.get("AGENTERA_HOME")
     if value:
@@ -1036,8 +1046,26 @@ def diagnose_copilot(install_root: Path, home: Path, env: Mapping[str, str]) -> 
     for rc_path in _copilot_rc_paths(home):
         if not rc_path.is_file():
             continue
-        marker_root = _extract_copilot_marker_root(rc_path.read_text(encoding="utf-8"))
+        rc_text = rc_path.read_text(encoding="utf-8")
+        marker_root = _extract_copilot_marker_root(rc_text)
         if marker_root is None:
+            if "AGENTERA_HOME" in rc_text:
+                return _runtime_result(
+                    "copilot",
+                    env,
+                    [
+                        _check(
+                            COPILOT_HOME_CHECK,
+                            COPILOT_WARN_STATUS,
+                            _copilot_shell_manual_boundary_message(
+                                "Legacy Agentera shell startup line detected."
+                            ),
+                            path=rc_path,
+                            source=str(rc_path),
+                            gap=COPILOT_RUNTIME_CONFIG_GAP,
+                        )
+                    ],
+                )
             continue
         check = _configured_root_check(
             "copilot",
@@ -1050,6 +1078,7 @@ def diagnose_copilot(install_root: Path, home: Path, env: Mapping[str, str]) -> 
             check["message"] = (
                 COPILOT_RC_CONFIGURED_MESSAGE
             )
+        check["message"] = _copilot_shell_manual_boundary_message(check["message"])
         return _runtime_result("copilot", env, [check])
 
     checks = [
@@ -1262,24 +1291,23 @@ def _plan_copilot_installer_change(
     if reason is None:
         return None
 
-    target, syntax, shell_name = _copilot_target(home, env)
-    if target is None or syntax is None:
+    target, _syntax, shell_name = _copilot_target(home, env)
+    if target is None:
         return _installer_change(
             runtime="copilot",
             target=None,
             reason=reason,
             status="blocked",
-            action="unsupported-shell",
+            action="manual-boundary",
             message=(
-                f"Copilot installer supports bash, zsh, and fish rc files; "
-                f"detected {shell_name}"
+                f"detected {shell_name}. Agentera will not edit shell startup files; "
+                "cleanup is a user-owned manual boundary. For Copilot app context, "
+                "run AGENTERA_HOME=<agentera-directory> copilot ... for a single invocation."
             ),
         )
 
-    helper = _load_setup_helper("setup_copilot")
     try:
         current_text = _read_text_or_none(target)
-        outcome = helper.plan_change(current_text, install_root, syntax)
     except OSError as exc:
         return _installer_change(
             runtime="copilot",
@@ -1289,25 +1317,16 @@ def _plan_copilot_installer_change(
             action="blocked",
             message=f"cannot safely plan Copilot rc change: {exc}",
         )
-
-    if outcome.action == "noop":
-        return _installer_change(
-            runtime="copilot",
-            target=target,
-            reason=reason,
-            status="noop",
-            action=outcome.action,
-            message=outcome.message,
-        )
+    prefix = ""
+    if current_text and "AGENTERA_HOME" in current_text:
+        prefix = "Legacy Agentera shell startup line detected."
     return _installer_change(
         runtime="copilot",
         target=target,
         reason=reason,
-        status="pending",
-        action=outcome.action,
-        message=outcome.message,
-        new_text=outcome.new_text,
-        diff=outcome.diff,
+        status="blocked",
+        action="manual-boundary",
+        message=_copilot_shell_manual_boundary_message(prefix),
     )
 
 

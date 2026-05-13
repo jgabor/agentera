@@ -1,71 +1,102 @@
 header:
   level: full
-  created: 2026-05-12
+  created: 2026-05-13
   status: complete
   reviewed: 2026-05-13
-  critic_issues: 8 found, 8 addressed, 0 dismissed
-  revised: "[post-audit-flagged] Split smoke from state sync, added discovery/contract boundary, bounded lock handling, and gated version changes on explicit release-target selection. Agentera lint still reports advisory verbosity: 535 words exceeds the 500-word plan budget."
-  title: Profilera corpus runtime parity
-what: Add OpenCode and GitHub Copilot corpus parity in scripts/extract_corpus.py while preserving local-only, read-only, private extraction.
-why: tests/test_extract_corpus.py currently proves Claude/Codex-shaped corpus paths only. The remaining TODO requires all-runtime Profilera parity, deferred by Decision 50 beyond the 2.3.1 reliability lane.
-constraints: Reuse existing decision-signal classification. Preserve Decision 47 app-home semantics and Decision 48 namespace boundaries. Do not log raw transcripts, call external services, bump versions, tag, push, publish, refresh installed apps, edit vision, or touch objective state without explicit approval.
+  critic_issues: 9 found, 9 addressed, 0 dismissed
+  revised: "[post-audit-flagged] Added explicit ownership rules, exact deprecated-default environment handling, Copilot no-shell behavior, managed-surface preview/apply boundaries, and package-update opt-in boundaries. [task-5-retry-1] Added evidence for refreshing resolving stale Agentera-owned OpenCode skill links to the current durable app home while preserving user-owned skill paths. [task-6-retry-1] Corrected active vocabulary so normal app repair means app plus managed runtime surfaces, while --only bundle is documented as a narrow app-only operation. [task-8] Closed final state sync after Tasks 1-7 passed: TODO, changelog, docs, progress, and plan state record shell-rc removal, stale-remnant handling, verification evidence, and an explicit no-release-target gate with version-bearing files unchanged. Agentera lint remains advisory: full plan exceeds the 100-word PLAN.md entry budget."
+  title: Remove shell rc mutation from runtime setup
+what: >-
+  Remove every Agentera production path that writes environment variables to shell startup files, replace shell-rc wiring with runtime-native configuration or per-invocation guidance, and make repair upgrades cover app files plus managed runtime configs, plugins, hooks, commands, cleanup, and package-surface reporting together.
+why: >-
+  Shell startup files are user-owned and off-limits. The current behavior created a stale AGENTERA_HOME export that can keep directing runtimes and repair commands to the deprecated default app path after the app moved to the platform data home. Agentera needs one safe app-home model, no shell startup mutation, and repair flows that refresh all managed runtime surfaces instead of only app files.
+constraints: >-
+  Never write shell startup files such as ~/.bashrc, ~/.zshrc, ~/.profile, or ~/.config/fish/config.fish. Doctor remains read-only. Runtime config, plugin, hook, command, and cleanup writes require Agentera ownership proof; anything else is diagnostic-only. Preserve Decision 47 app-home semantics, explicit custom app-home safety, package-update opt-in, and no push, publication, live paid host, vision, or objective-state changes without explicit approval.
 scope:
   included:
-    - OpenCode and Copilot discovery, extraction, degradation metadata, fixtures, and non-live smoke parity.
+    - Shell-rc write removal from setup, upgrade, repair, smoke, docs, and capability guidance.
+    - Managed runtime surface refresh for Codex config, OpenCode plugin/commands/skills, hooks, app files, stale v1 artifacts, and package-surface reporting.
+    - Exact deprecated-default app-home recovery and stale-remnant diagnostics.
+    - Regression tests, default non-live smoke evidence, docs, changelog, TODO, progress, and version-gate state sync.
   excluded:
-    - Live paid host invocations, profile scoring changes, external APIs, new agentera corpus namespace, destructive store repair, publication.
+    - Editing shell startup files, including removing legacy Agentera blocks.
+    - Silent overwrite of custom app-home paths or user-owned runtime config.
+    - External package-manager commands unless package update is explicitly requested.
+    - Remote publication, tags, pushes, live paid host runs by default, vision edits, or objective-state edits.
   deferred:
-    - Broad corpus namespace promotion, live authenticated harvest validation, profile-model tuning.
-design: Keep scripts/extract_corpus.py as the single normalization surface; define observable runtime status and privacy behavior first, add each runtime independently, then prove fixture-backed parity in tests and scripts/smoke_live_hosts.py.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-12-2-3-1-runtime-injected-app-home-recovery.yaml
+    - Optional interactive user assistance for manually removing stale shell-rc lines.
+    - Any broad new runtime setup namespace beyond the existing upgrade/doctor flow.
+design: >-
+  Anchor the work in scripts/setup_copilot.py, scripts/agentera_upgrade.py, scripts/install_root.py, scripts/agentera, .opencode/plugins/agentera.js, UPGRADE.md, README.md, and tests/test_upgrade_cli.py. Start by making ownership explicit: managed marker, manifest entry, known generated path, trusted hook target, or exact app marker is required for mutation. Treat shell startup references as user-owned leftovers only. Then remove Copilot shell-rc setup, make exact deprecated-default AGENTERA_HOME non-authoritative only when stale or missing, and make normal repair preview/apply cover app plus managed runtime surfaces while keeping external package updates opt-in.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-13-profilera-corpus-runtime-parity.yaml
 tasks:
   - number: 1
-    name: Discovery contract and safety boundary
+    name: Runtime surface ownership contract
     depends_on: []
     status: completed
     acceptance:
-      - GIVEN runtime stores are available, absent, locked, sparse, or schema-divergent WHEN extraction runs THEN output reports bounded status/reason without blocking unrelated runtimes or leaking transcript text.
-      - GIVEN supported OS/runtime homes are tested WHEN discovery resolves inputs THEN Agentera app-home precedence is unchanged.
+      - GIVEN a stale runtime surface has Agentera ownership proof WHEN repair preview evaluates it THEN the preview identifies the safe action and the ownership reason.
+      - GIVEN a stale runtime surface has no Agentera ownership proof WHEN repair preview evaluates it THEN no write or removal is planned and the surface is reported as user-owned.
+      - GIVEN package-manager actions are available WHEN repair preview runs without package-update approval THEN those actions are listed as skipped and no external package command runs.
   - number: 2
-    name: OpenCode corpus parity
+    name: Shell startup files are diagnostic-only
     depends_on: [1]
     status: completed
     acceptance:
-      - GIVEN OpenCode local conversations exist WHEN extraction runs THEN ordered turns and decision-rich prompts normalize like existing runtimes.
-      - GIVEN OpenCode storage is unavailable WHEN extraction runs THEN OpenCode degrades explicitly and other runtimes continue.
+      - GIVEN shell startup files contain Agentera lines WHEN setup, doctor, upgrade preview, upgrade apply, or repair guidance runs THEN those files remain byte-for-byte unchanged.
+      - GIVEN a legacy Agentera shell startup line is detected WHEN diagnostics are rendered THEN the message says Agentera will not edit it and treats cleanup as a user-owned manual boundary.
+      - GIVEN Copilot needs Agentera app context WHEN setup or upgrade runs THEN no persistent shell startup change is made and supported per-invocation or runtime-native guidance is shown instead.
   - number: 3
-    name: GitHub Copilot corpus parity
-    depends_on: [1]
+    name: Safe app-home precedence under stale environments
+    depends_on: [1, 2]
     status: completed
     acceptance:
-      - GIVEN Copilot local conversations exist WHEN extraction runs THEN user-before-assistant turns and decision-rich prompts normalize like existing runtimes.
-      - GIVEN Copilot storage is sparse or unavailable WHEN extraction runs THEN diagnostics show bounded remediation labels without transcript leakage.
+      - GIVEN the host environment names the exact deprecated default app home and that app is missing or stale WHEN Agentera resolves its app home THEN the platform app home is selected when safe and the diagnostic explains the deprecated value was treated as legacy residue.
+      - GIVEN the host environment names any custom unknown app home WHEN Agentera resolves its app home THEN Agentera blocks silent fallback or overwrite and asks for an explicit safe directory decision.
+      - GIVEN a valid explicit app home is supplied WHEN repair preview or apply runs THEN that explicit value remains authoritative.
   - number: 4
-    name: Cross-runtime fixture coverage
-    depends_on: [2, 3]
+    name: Whole-repair preview and apply contract
+    depends_on: [1, 3]
     status: completed
     acceptance:
-      - GIVEN Claude, Codex, OpenCode, and Copilot fixtures WHEN focused tests run THEN each runtime proves normalized families, ordering, degradation, and bounded lock handling.
+      - GIVEN app files and managed runtime surfaces are stale WHEN repair preview runs THEN the preview lists app refresh, runtime config/plugin/hook/command refresh, cleanup, skipped package actions, and blocked user-owned conflicts together.
+      - GIVEN repair apply follows a clean preview WHEN it runs THEN only preview-safe managed actions are applied and shell startup files remain unchanged.
+      - GIVEN a managed surface changes between preview and apply WHEN apply rechecks safety THEN the action blocks rather than mutating an unverified surface.
   - number: 5
-    name: Non-live smoke validation
+    name: Managed runtime surface refresh and cleanup
     depends_on: [4]
     status: completed
     acceptance:
-      - GIVEN default smoke runs without live paid hosts WHEN it completes THEN fixture-backed parity is proven separately from local environment availability.
+      - GIVEN managed Codex runtime config or hooks are stale WHEN repair apply runs THEN managed entries are refreshed without overwriting unrelated user config.
+      - GIVEN managed OpenCode plugin, command, or skill surfaces are stale WHEN repair apply runs THEN managed surfaces are refreshed or removed according to their current Agentera ownership proof.
+      - GIVEN obsolete managed Agentera artifacts remain after app-home migration WHEN cleanup runs THEN managed remnants are removed or reported without touching shell startup files.
   - number: 6
-    name: State sync and release-target gate
-    depends_on: [5]
+    name: Documentation and capability guidance alignment
+    depends_on: [2, 3, 4, 5]
     status: completed
     acceptance:
-      - GIVEN no release target is selected WHEN state sync runs THEN TODO/docs/progress record evidence without version changes.
-      - GIVEN a release target is selected WHEN sync runs THEN version, changelog, TODO, docs, and progress follow semver policy.
+      - GIVEN users follow README, upgrade, and skill repair guidance WHEN they preview or apply repair THEN the documented flow covers app and managed runtime surfaces without asking Agentera to write shell startup files.
+      - GIVEN stale shell startup references are present WHEN user-facing guidance mentions them THEN it explains that Agentera will not edit those files and names the manual cleanup boundary plainly.
+      - GIVEN runtime-package updates are needed WHEN docs describe repair options THEN package-manager execution remains explicitly opt-in.
+  - number: 7
+    name: Regression and non-live smoke proof
+    depends_on: [2, 3, 4, 5, 6]
+    status: completed
+    acceptance:
+      - GIVEN the proportionality target is one positive and one negative proof per changed setup or runtime surface WHEN validation is reviewed THEN shell-rc immutability, stale environment recovery, managed refresh, user-owned conflict blocking, and package opt-in behavior each have pass and fail coverage.
+      - GIVEN default smoke runs WHEN it completes THEN it proves repair and runtime behavior without live paid hosts and without changing real shell startup files.
+      - GIVEN shell startup fixtures contain legacy Agentera blocks WHEN the full repair test path completes THEN every fixture remains byte-for-byte unchanged.
+  - number: 8
+    name: State sync and release-target gate
+    depends_on: [7]
+    status: completed
+    acceptance:
+      - GIVEN the plan completes WHEN state sync runs THEN TODO, changelog, docs, progress, and plan state record shell-rc removal, stale-remnant handling, and verification evidence.
+      - GIVEN the change is release-targeted WHEN version sync runs THEN version-bearing files follow the documented semver policy for the selected target.
+      - GIVEN no release target is selected WHEN final sync runs THEN version-bearing files remain unchanged and the release gate is recorded explicitly.
 overall_acceptance:
-  - GIVEN any subset of supported runtime stores exists WHEN Profilera corpus extraction completes THEN available Claude, Codex, OpenCode, and Copilot data normalize consistently and unavailable stores degrade explicitly.
-  - GIVEN diagnostics are inspected WHEN extraction, tests, or smoke report state THEN they show counts, statuses, bounded reasons, and remediation labels, not raw transcript content.
-surprises:
-  - Task 1 retry fixed the evaluator-discovered callable-shape mismatch for available OpenCode/GitHub Copilot candidate stores; extraction remains intentionally unimplemented for Tasks 2 and 3.
-  - Task 2 implements OpenCode `opencode.db` extraction only; GitHub Copilot remains the bounded `extractor_unimplemented` stub for Task 3.
-  - Task 3 replaces the GitHub Copilot stub with read-only `session-store.db` extraction and uses `/chronicle reindex` only as bounded sparse-store remediation metadata.
-  - Task 4 adds combined Claude, Codex, OpenCode, and GitHub Copilot fixture coverage plus explicit missing, locked, sparse, and schema-divergent degradation assertions without changing extractor behavior.
-  - Task 5 upgrades the default smoke harness to use explicit offline Claude Code, Codex, OpenCode, and GitHub Copilot fixtures plus an explicit missing-store degradation audit, so default smoke output stays non-live and count/status-only.
-  - Task 6 closed the completed feature scope without selecting a release target, so TODO, docs, changelog, progress, and plan state were synchronized without version-bearing file changes.
+  - GIVEN Agentera setup, doctor, upgrade, or repair guidance reaches runtime wiring WHEN it handles environment setup THEN no shell startup file is written.
+  - GIVEN stale managed Agentera runtime surfaces exist WHEN upgrade preview and apply run with normal approval THEN app files, runtime-native configs, managed plugins, hooks, commands, and cleanup are handled together where safe.
+  - GIVEN old shell startup references still exist WHEN Agentera runs or repairs itself THEN those references cannot silently force the deprecated default app path and diagnostics explain the user-owned cleanup boundary.
+  - GIVEN custom user-owned runtime config or app-home paths are present WHEN repair runs THEN Agentera blocks or reports them instead of overwriting them silently.
+surprises: []

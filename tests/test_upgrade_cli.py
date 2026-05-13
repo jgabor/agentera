@@ -108,7 +108,8 @@ def test_upgrade_help_lists_subcommand() -> None:
 
 def test_bundle_upgrade_installs_durable_bundle_from_packaged_source(tmp_path: Path) -> None:
     home = tmp_path / "home"
-    install_root = home / ".agents" / "agentera"
+    deprecated_default = home / ".agents" / "agentera"
+    app_home = home / ".local" / "share" / "agentera"
 
     first = _run(
         "upgrade",
@@ -119,8 +120,10 @@ def test_bundle_upgrade_installs_durable_bundle_from_packaged_source(tmp_path: P
         "--yes",
         "--json",
         env={
+            "AGENTERA_HOME": "",
+            "XDG_DATA_HOME": str(home / ".local" / "share"),
             "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
-            "AGENTERA_DEFAULT_INSTALL_ROOT": str(install_root),
+            "AGENTERA_DEFAULT_INSTALL_ROOT": str(deprecated_default),
         },
     )
 
@@ -128,14 +131,14 @@ def test_bundle_upgrade_installs_durable_bundle_from_packaged_source(tmp_path: P
     payload = json.loads(first.stdout)
     assert payload["status"] == "applied"
     assert payload["sourceRoot"] == str(REPO_ROOT)
-    assert payload["appHome"] == str(install_root)
-    assert payload["managedAppRoot"] == str(install_root / "app")
-    assert payload["userDataRoot"] == str(install_root)
+    assert payload["appHome"] == str(app_home)
+    assert payload["managedAppRoot"] == str(app_home / "app")
+    assert payload["userDataRoot"] == str(app_home)
     assert "installRoot" not in payload
-    assert (install_root / "app" / ".agentera-bundle.json").is_file()
-    assert (install_root / "app" / "scripts" / "agentera").is_file()
-    assert (install_root / "app" / "skills" / "agentera" / "SKILL.md").is_file()
-    assert (install_root / "app" / ".opencode" / "commands" / "agentera.md").is_file()
+    assert (app_home / "app" / ".agentera-bundle.json").is_file()
+    assert (app_home / "app" / "scripts" / "agentera").is_file()
+    assert (app_home / "app" / "skills" / "agentera" / "SKILL.md").is_file()
+    assert (app_home / "app" / ".opencode" / "commands" / "agentera.md").is_file()
 
     second = _run(
         "upgrade",
@@ -146,8 +149,10 @@ def test_bundle_upgrade_installs_durable_bundle_from_packaged_source(tmp_path: P
         "--yes",
         "--json",
         env={
+            "AGENTERA_HOME": "",
+            "XDG_DATA_HOME": str(home / ".local" / "share"),
             "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
-            "AGENTERA_DEFAULT_INSTALL_ROOT": str(install_root),
+            "AGENTERA_DEFAULT_INSTALL_ROOT": str(deprecated_default),
         },
     )
 
@@ -200,7 +205,8 @@ def test_default_upgrade_retires_legacy_agents_default_app_home(tmp_path: Path) 
 
 def test_packaged_runtime_upgrade_wires_durable_bundle_not_uvx_cache(tmp_path: Path) -> None:
     home = tmp_path / "home"
-    install_root = home / ".agents" / "agentera"
+    deprecated_default = home / ".agents" / "agentera"
+    app_home = home / ".local" / "share" / "agentera"
 
     result = _run(
         "upgrade",
@@ -215,8 +221,10 @@ def test_packaged_runtime_upgrade_wires_durable_bundle_not_uvx_cache(tmp_path: P
         "--yes",
         "--json",
         env={
+            "AGENTERA_HOME": "",
+            "XDG_DATA_HOME": str(home / ".local" / "share"),
             "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
-            "AGENTERA_DEFAULT_INSTALL_ROOT": str(install_root),
+            "AGENTERA_DEFAULT_INSTALL_ROOT": str(deprecated_default),
         },
     )
 
@@ -224,14 +232,14 @@ def test_packaged_runtime_upgrade_wires_durable_bundle_not_uvx_cache(tmp_path: P
     payload = json.loads(result.stdout)
     assert payload["summary"]["applied"] == 3
     config = (home / ".codex" / "config.toml").read_text(encoding="utf-8")
-    assert f'AGENTERA_HOME = "{install_root}"' in config
+    assert f'AGENTERA_HOME = "{app_home}"' in config
     assert f'AGENTERA_HOME = "{REPO_ROOT}"' not in config
     assert (home / ".codex" / "hooks.json").is_file()
 
 
 def test_packaged_runtime_upgrade_blocks_without_bundle_phase(tmp_path: Path) -> None:
     home = tmp_path / "home"
-    install_root = home / ".agents" / "agentera"
+    deprecated_default = home / ".agents" / "agentera"
 
     result = _run(
         "upgrade",
@@ -244,8 +252,10 @@ def test_packaged_runtime_upgrade_blocks_without_bundle_phase(tmp_path: Path) ->
         "--yes",
         "--json",
         env={
+            "AGENTERA_HOME": "",
+            "XDG_DATA_HOME": str(home / ".local" / "share"),
             "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
-            "AGENTERA_DEFAULT_INSTALL_ROOT": str(install_root),
+            "AGENTERA_DEFAULT_INSTALL_ROOT": str(deprecated_default),
         },
     )
 
@@ -257,7 +267,8 @@ def test_packaged_runtime_upgrade_blocks_without_bundle_phase(tmp_path: Path) ->
 
 def test_runtime_upgrade_accepts_coherent_app_home_without_bundle_phase(tmp_path: Path) -> None:
     home = tmp_path / "home"
-    install_root = home / ".agents" / "agentera"
+    deprecated_default = home / ".agents" / "agentera"
+    app_home = home / ".local" / "share" / "agentera"
 
     installed = _run(
         "upgrade",
@@ -268,8 +279,10 @@ def test_runtime_upgrade_accepts_coherent_app_home_without_bundle_phase(tmp_path
         "--yes",
         "--json",
         env={
+            "AGENTERA_HOME": "",
+            "XDG_DATA_HOME": str(home / ".local" / "share"),
             "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
-            "AGENTERA_DEFAULT_INSTALL_ROOT": str(install_root),
+            "AGENTERA_DEFAULT_INSTALL_ROOT": str(deprecated_default),
         },
     )
     assert installed.returncode == 0, installed.stderr
@@ -285,19 +298,21 @@ def test_runtime_upgrade_accepts_coherent_app_home_without_bundle_phase(tmp_path
         "--yes",
         "--json",
         env={
+            "AGENTERA_HOME": "",
+            "XDG_DATA_HOME": str(home / ".local" / "share"),
             "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
-            "AGENTERA_DEFAULT_INSTALL_ROOT": str(install_root),
+            "AGENTERA_DEFAULT_INSTALL_ROOT": str(deprecated_default),
         },
     )
 
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
     assert payload["summary"]["blocked"] == 0
-    assert f'AGENTERA_HOME = "{install_root}"' in (home / ".codex" / "config.toml").read_text(
+    assert f'AGENTERA_HOME = "{app_home}"' in (home / ".codex" / "config.toml").read_text(
         encoding="utf-8"
     )
     assert (home / ".codex" / "hooks.json").read_text(encoding="utf-8") == (
-        install_root / "app" / "hooks" / "codex-hooks.json"
+        app_home / "app" / "hooks" / "codex-hooks.json"
     ).read_text(encoding="utf-8")
 
 
@@ -487,8 +502,56 @@ def test_runtime_upgrade_configures_codex_without_v1_agent_blocks(tmp_path: Path
     assert payload["phases"][0]["summary"]["noop"] == 2
 
 
+def test_runtime_upgrade_refreshes_codex_managed_entries_preserving_user_config(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    app_home = home / ".local" / "share" / "agentera"
+    codex_config = home / ".codex" / "config.toml"
+    stale_hooks = home / ".codex" / "hooks.json"
+    codex_config.parent.mkdir(parents=True)
+    codex_config.write_text(
+        '[profiles.default]\nmodel = "gpt-5.5"\n\n'
+        '[shell_environment_policy]\n'
+        'set = { AGENTERA_HOME = "/stale/agentera" }\n',
+        encoding="utf-8",
+    )
+    stale_hooks.write_text('{"note": "agentera v2 Codex hooks stale"}\n', encoding="utf-8")
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--only",
+        "runtime",
+        "--runtime",
+        "codex",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+        env={"AGENTERA_HOME": "", "XDG_DATA_HOME": str(home / ".local" / "share")},
+    )
+
+    assert result.returncode == 0, result.stderr
+    config = codex_config.read_text(encoding="utf-8")
+    assert '[profiles.default]\nmodel = "gpt-5.5"' in config
+    assert f'AGENTERA_HOME = "{app_home}"' in config
+    assert "/stale/agentera" not in config
+    assert stale_hooks.read_text(encoding="utf-8") == (app_home / "app" / "hooks" / "codex-hooks.json").read_text(
+        encoding="utf-8"
+    )
+
+
 def test_runtime_upgrade_plan_characterizes_runtime_and_package_items(tmp_path: Path) -> None:
     home = tmp_path / "home"
+    shell_rc = home / ".bashrc"
+    shell_rc.parent.mkdir(parents=True)
+    legacy_rc = (
+        "# user setup\n"
+        "# agentera: AGENTERA_HOME (managed)\n"
+        "export AGENTERA_HOME=\"/old/agentera\"\n"
+    )
+    shell_rc.write_text(legacy_rc, encoding="utf-8")
+    before_rc = shell_rc.read_bytes()
     result = _run(
         "upgrade",
         "--only",
@@ -516,12 +579,20 @@ def test_runtime_upgrade_plan_characterizes_runtime_and_package_items(tmp_path: 
     package_items = {(item["runtime"], item["action"]): item for item in package_phase["items"]}
 
     assert payload["mode"] == "plan"
-    assert runtime_phase["status"] == "pending"
+    assert runtime_phase["status"] == "blocked"
     assert runtime_items[("codex", "configure")]["target"] == str(home / ".codex/config.toml")
     assert runtime_items[("codex", "configure")]["status"] == "pending"
     assert runtime_items[("codex", "copy-hooks")]["target"] == str(home / ".codex/hooks.json")
     assert runtime_items[("codex", "copy-hooks")]["message"] == "will copy current Agentera file"
     assert runtime_items[("copilot", "configure")]["target"] == str(home / ".bashrc")
+    assert runtime_items[("copilot", "configure")]["status"] == "blocked"
+    assert runtime_items[("copilot", "configure")]["ownership"] == {
+        "status": "user-owned",
+        "reason": "shell startup files are user-owned and off-limits",
+    }
+    assert "Legacy Agentera shell startup line detected" in runtime_items[("copilot", "configure")]["message"]
+    assert "Agentera will not edit shell startup files" in runtime_items[("copilot", "configure")]["message"]
+    assert "cleanup is a user-owned manual boundary" in runtime_items[("copilot", "configure")]["message"]
     assert runtime_items[("opencode", "copy-plugin")]["target"] == str(home / ".config/opencode/plugins/agentera.js")
     assert runtime_items[("claude", "configure")] == {
         "status": "noop",
@@ -531,6 +602,7 @@ def test_runtime_upgrade_plan_characterizes_runtime_and_package_items(tmp_path: 
         "message": "Claude Code plugin installs expose the app home without local config writes",
     }
     assert all("newText" not in item for item in runtime_phase["items"])
+    assert shell_rc.read_bytes() == before_rc
     assert not (home / ".codex/config.toml").exists()
     assert not (home / ".codex/hooks.json").exists()
     assert package_phase["status"] == "skipped"
@@ -539,6 +611,41 @@ def test_runtime_upgrade_plan_characterizes_runtime_and_package_items(tmp_path: 
         "external package update skipped; pass --update-packages to run"
     )
     assert package_items[("opencode", "install-agentera-skill")]["status"] == "skipped"
+
+
+def test_runtime_upgrade_apply_leaves_copilot_shell_startup_byte_identical(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    shell_rc = home / ".bashrc"
+    shell_rc.parent.mkdir(parents=True)
+    legacy_rc = (
+        "# user setup\n"
+        "export AGENTERA_HOME=\"/manual/agentera\"\n"
+        "alias ll=\"ls -la\"\n"
+    )
+    shell_rc.write_text(legacy_rc, encoding="utf-8")
+    before_rc = shell_rc.read_bytes()
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "runtime",
+        "--runtime",
+        "copilot",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+    )
+
+    assert result.returncode == 1, result.stderr
+    payload = json.loads(result.stdout)
+    runtime_phase = next(phase for phase in payload["phases"] if phase["name"] == "runtime")
+    copilot_item = runtime_phase["items"][0]
+    assert copilot_item["status"] == "blocked"
+    assert "Legacy Agentera shell startup line detected" in copilot_item["message"]
+    assert "user-owned manual boundary" in copilot_item["message"]
+    assert "newText" not in copilot_item
+    assert shell_rc.read_bytes() == before_rc
 
 
 def test_runtime_upgrade_planning_reads_runtime_targets_from_registry_fixture(tmp_path: Path, monkeypatch) -> None:
@@ -607,6 +714,149 @@ def test_runtime_upgrade_apply_characterizes_write_and_package_apply_messages(tm
     assert package_phase["status"] == "applied"
     assert {item["message"] for item in package_phase["items"]} == {"package update completed"}
     assert {item["status"] for item in package_phase["items"]} == {"applied"}
+
+
+def test_whole_repair_preview_lists_managed_actions_skips_and_blocks(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    app_home = home / ".local" / "share" / "agentera"
+    opencode_dir = home / ".config" / "opencode"
+    shell_rc = home / ".bashrc"
+    shell_rc.parent.mkdir(parents=True)
+    shell_rc.write_text('export AGENTERA_HOME="/old/agentera"\n', encoding="utf-8")
+    before_rc = shell_rc.read_bytes()
+    _write_legacy_default_app_home(app_home / "app")
+
+    plugin = opencode_dir / "plugins" / "agentera.js"
+    plugin.parent.mkdir(parents=True)
+    plugin.write_text("// Agentera plugin for OpenCode\nconst AGENTERA_VERSION = '0.0.1';\n", encoding="utf-8")
+    commands = opencode_dir / "commands"
+    commands.mkdir(parents=True)
+    (commands / "hej.md").write_text(
+        "---\nagentera_managed: true\n---\nLoad skill from skills/hej/SKILL.md\n",
+        encoding="utf-8",
+    )
+    user_command = commands / "planera.md"
+    user_command.write_text("Load skill from skills/planera/SKILL.md\n", encoding="utf-8")
+
+    result = _run(
+        "upgrade",
+        "--home",
+        str(home),
+        "--opencode-config-dir",
+        str(opencode_dir),
+        "--json",
+        env={"AGENTERA_HOME": "", "XDG_DATA_HOME": str(home / ".local" / "share")},
+    )
+
+    assert result.returncode == 1, result.stderr
+    payload = json.loads(result.stdout)
+    phases = {phase["name"]: phase for phase in payload["phases"]}
+    assert set(phases) == {"bundle", "artifacts", "runtime", "cleanup", "packages"}
+    assert phases["bundle"]["items"][0]["action"] == "install-bundle"
+    assert phases["bundle"]["items"][0]["status"] == "pending"
+    runtime_items = {(item["runtime"], item["action"]): item for item in phases["runtime"]["items"]}
+    assert runtime_items[("codex", "configure")]["status"] == "pending"
+    assert runtime_items[("codex", "copy-hooks")]["status"] == "pending"
+    assert runtime_items[("opencode", "copy-plugin")]["status"] == "pending"
+    assert runtime_items[("copilot", "configure")]["status"] == "blocked"
+    assert "Agentera will not edit shell startup files" in runtime_items[("copilot", "configure")]["message"]
+    cleanup_by_path = {Path(item["path"]).name: item for item in phases["cleanup"]["items"]}
+    assert cleanup_by_path["hej.md"]["status"] == "pending"
+    assert cleanup_by_path["planera.md"]["status"] == "blocked"
+    assert cleanup_by_path["planera.md"]["ownership"]["status"] == "user-owned"
+    assert phases["packages"]["status"] == "skipped"
+    assert all(item["status"] == "skipped" for item in phases["packages"]["items"])
+    assert shell_rc.read_bytes() == before_rc
+    assert user_command.read_text(encoding="utf-8") == "Load skill from skills/planera/SKILL.md\n"
+
+
+def test_whole_repair_apply_after_clean_preview_applies_safe_actions_only(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    app_home = home / ".local" / "share" / "agentera"
+    opencode_dir = home / ".config" / "opencode"
+    shell_rc = home / ".bashrc"
+    shell_rc.parent.mkdir(parents=True)
+    shell_rc.write_text("# user shell startup\n", encoding="utf-8")
+    before_rc = shell_rc.read_bytes()
+    _write_legacy_default_app_home(app_home / "app")
+
+    plugin = opencode_dir / "plugins" / "agentera.js"
+    plugin.parent.mkdir(parents=True)
+    plugin.write_text("// Agentera plugin for OpenCode\nconst AGENTERA_VERSION = '0.0.1';\n", encoding="utf-8")
+    command = opencode_dir / "commands" / "hej.md"
+    command.parent.mkdir(parents=True)
+    command.write_text(
+        "---\nagentera_managed: true\n---\nLoad skill from skills/hej/SKILL.md\n",
+        encoding="utf-8",
+    )
+    args = [
+        "upgrade",
+        "--runtime",
+        "codex",
+        "--runtime",
+        "opencode",
+        "--home",
+        str(home),
+        "--opencode-config-dir",
+        str(opencode_dir),
+        "--json",
+    ]
+    env = {"AGENTERA_HOME": "", "XDG_DATA_HOME": str(home / ".local" / "share")}
+    preview = _run(*args, env=env)
+
+    assert preview.returncode == 1, preview.stderr
+    preview_payload = json.loads(preview.stdout)
+    assert preview_payload["summary"]["blocked"] == 0
+    assert preview_payload["summary"]["pending"] > 0
+    assert shell_rc.read_bytes() == before_rc
+    assert command.exists()
+
+    apply = _run(*args, "--yes", env=env)
+
+    assert apply.returncode == 0, apply.stderr
+    payload = json.loads(apply.stdout)
+    phases = {phase["name"]: phase for phase in payload["phases"]}
+    assert payload["summary"]["blocked"] == 0
+    assert phases["packages"]["status"] == "skipped"
+    assert (app_home / "app" / "scripts" / "agentera").is_file()
+    assert f'AGENTERA_HOME = "{app_home}"' in (home / ".codex" / "config.toml").read_text(encoding="utf-8")
+    assert (home / ".codex" / "hooks.json").is_file()
+    assert plugin.read_text(encoding="utf-8") == (REPO_ROOT / ".opencode" / "plugins" / "agentera.js").read_text(
+        encoding="utf-8"
+    )
+    assert not command.exists()
+    assert shell_rc.read_bytes() == before_rc
+
+
+def test_runtime_apply_rechecks_stale_managed_surface_before_mutating(tmp_path: Path) -> None:
+    upgrade = _load_upgrade_module()
+    home = tmp_path / "home"
+    opencode_dir = home / ".config" / "opencode"
+    plugin = opencode_dir / "plugins" / "agentera.js"
+    plugin.parent.mkdir(parents=True)
+    plugin.write_text("// Agentera plugin for OpenCode\nconst AGENTERA_VERSION = '0.0.1';\n", encoding="utf-8")
+
+    phase = upgrade.plan_runtime_phase(
+        REPO_ROOT,
+        REPO_ROOT,
+        home,
+        {"SHELL": "/bin/bash", "OPENCODE_CONFIG_DIR": str(opencode_dir)},
+        {"opencode"},
+        force=False,
+        copilot_rc_file=None,
+    )
+    assert phase["items"][0]["status"] == "pending"
+
+    plugin.write_text("// custom user plugin\n", encoding="utf-8")
+    upgrade.apply_runtime_phase(phase, REPO_ROOT, force=False)
+
+    item = phase["items"][0]
+    assert item["status"] == "blocked"
+    assert item["ownership"] == {
+        "status": "user-owned",
+        "reason": "no Agentera ownership marker or runtime identity was found",
+    }
+    assert plugin.read_text(encoding="utf-8") == "// custom user plugin\n"
 
 
 def test_package_phase_characterizes_skip_dry_run_and_mocked_apply(monkeypatch) -> None:
@@ -693,12 +943,174 @@ def test_runtime_upgrade_applies_safe_items_even_when_one_item_is_blocked(tmp_pa
 
     assert result.returncode == 1, result.stdout
     payload = json.loads(result.stdout)
-    assert payload["summary"]["applied"] == 2
+    assert payload["summary"]["applied"] == 6
     assert payload["summary"]["blocked"] == 1
     assert f'AGENTERA_HOME = "{REPO_ROOT}"' in (home / ".codex" / "config.toml").read_text(
         encoding="utf-8"
     )
     assert plugin.read_text(encoding="utf-8") == "// user-owned plugin\n"
+    assert (opencode_dir / "commands" / "agentera.md").is_file()
+    assert (opencode_dir / "skills" / "agentera" / "SKILL.md").is_file()
+
+
+def test_runtime_preview_refreshes_stale_surface_with_agentera_ownership_reason(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    opencode_dir = home / ".config" / "opencode"
+    plugin = opencode_dir / "plugins" / "agentera.js"
+    plugin.parent.mkdir(parents=True)
+    plugin.write_text("// Agentera plugin for OpenCode\nconst AGENTERA_VERSION = '0.0.1';\n", encoding="utf-8")
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "runtime",
+        "--runtime",
+        "opencode",
+        "--home",
+        str(home),
+        "--opencode-config-dir",
+        str(opencode_dir),
+        "--json",
+    )
+
+    assert result.returncode == 1, result.stderr
+    payload = json.loads(result.stdout)
+    item = payload["phases"][0]["items"][0]
+    assert item["status"] == "pending"
+    assert item["action"] == "copy-plugin"
+    assert item["message"] == "will refresh stale Agentera-managed runtime surface"
+    assert item["ownership"] == {
+        "status": "agentera-owned",
+        "reason": "OpenCode plugin contains the Agentera plugin identity",
+    }
+    assert plugin.read_text(encoding="utf-8") == "// Agentera plugin for OpenCode\nconst AGENTERA_VERSION = '0.0.1';\n"
+
+
+def test_runtime_preview_blocks_stale_surface_without_agentera_ownership_proof(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    opencode_dir = home / ".config" / "opencode"
+    plugin = opencode_dir / "plugins" / "agentera.js"
+    plugin.parent.mkdir(parents=True)
+    plugin.write_text("// custom user plugin\n", encoding="utf-8")
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "runtime",
+        "--runtime",
+        "opencode",
+        "--home",
+        str(home),
+        "--opencode-config-dir",
+        str(opencode_dir),
+        "--json",
+    )
+
+    assert result.returncode == 1, result.stderr
+    payload = json.loads(result.stdout)
+    item = payload["phases"][0]["items"][0]
+    assert item["status"] == "blocked"
+    assert item["message"] == "target exists without Agentera ownership proof; treating it as user-owned"
+    assert item["ownership"] == {
+        "status": "user-owned",
+        "reason": "no Agentera ownership marker or runtime identity was found",
+    }
+    assert plugin.read_text(encoding="utf-8") == "// custom user plugin\n"
+
+
+def test_runtime_apply_refreshes_opencode_managed_commands_and_skill_links(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    app_home = home / ".local" / "share" / "agentera"
+    opencode_dir = home / ".config" / "opencode"
+    commands = opencode_dir / "commands"
+    skills = opencode_dir / "skills"
+    commands.mkdir(parents=True)
+    skills.mkdir(parents=True)
+
+    stale_command = commands / "agentera.md"
+    stale_command.write_text(
+        "---\nagentera_managed: true\n---\nLoad skill from old agentera path\n",
+        encoding="utf-8",
+    )
+    user_command = commands / "hej.md"
+    user_command.write_text("custom /hej command\n", encoding="utf-8")
+    broken_target = home / "old" / "agentera" / "skills" / "agentera"
+    (skills / "agentera").symlink_to(broken_target, target_is_directory=True)
+    user_skill = skills / "hej"
+    user_skill.mkdir()
+    (user_skill / "SKILL.md").write_text("# custom hej\n", encoding="utf-8")
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--only",
+        "runtime",
+        "--runtime",
+        "opencode",
+        "--home",
+        str(home),
+        "--opencode-config-dir",
+        str(opencode_dir),
+        "--yes",
+        "--json",
+        env={"AGENTERA_HOME": "", "XDG_DATA_HOME": str(home / ".local" / "share")},
+    )
+
+    assert result.returncode == 1, result.stdout
+    payload = json.loads(result.stdout)
+    runtime_items = {(item["action"], item.get("target")): item for item in payload["phases"][1]["items"]}
+    assert runtime_items[("copy-command", str(stale_command))]["status"] == "applied"
+    assert runtime_items[("copy-command", str(user_command))]["status"] == "blocked"
+    assert runtime_items[("link-skill", str(skills / "agentera"))]["status"] == "applied"
+    assert runtime_items[("link-skill", str(user_skill))]["status"] == "noop"
+    assert stale_command.read_text(encoding="utf-8") == (app_home / "app" / ".opencode" / "commands" / "agentera.md").read_text(
+        encoding="utf-8"
+    )
+    assert user_command.read_text(encoding="utf-8") == "custom /hej command\n"
+    assert (skills / "agentera").resolve() == app_home / "app" / "skills" / "agentera"
+    assert (user_skill / "SKILL.md").read_text(encoding="utf-8") == "# custom hej\n"
+
+
+def test_runtime_apply_refreshes_resolving_stale_opencode_managed_skill_link(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    app_home = home / ".local" / "share" / "agentera"
+    opencode_dir = home / ".config" / "opencode"
+    skills = opencode_dir / "skills"
+    skills.mkdir(parents=True)
+
+    old_skill = home / "old" / "agentera" / "skills" / "agentera"
+    old_skill.mkdir(parents=True)
+    (old_skill / "SKILL.md").write_text("# old agentera\n", encoding="utf-8")
+    skill_link = skills / "agentera"
+    skill_link.symlink_to(old_skill, target_is_directory=True)
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--only",
+        "runtime",
+        "--runtime",
+        "opencode",
+        "--home",
+        str(home),
+        "--opencode-config-dir",
+        str(opencode_dir),
+        "--yes",
+        "--json",
+        env={"AGENTERA_HOME": "", "XDG_DATA_HOME": str(home / ".local" / "share")},
+    )
+
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(result.stdout)
+    runtime_items = {(item["action"], item.get("target")): item for item in payload["phases"][1]["items"]}
+    assert runtime_items[("link-skill", str(skill_link))]["status"] == "applied"
+    assert runtime_items[("link-skill", str(skill_link))]["ownership"] == {
+        "status": "agentera-owned",
+        "reason": "OpenCode skill symlink target contains Agentera identity",
+    }
+    assert skill_link.resolve() == app_home / "app" / "skills" / "agentera"
 
 
 def test_bundle_rel_paths_reads_directories_from_package_registry(monkeypatch) -> None:
@@ -786,7 +1198,7 @@ def test_cleanup_upgrade_removes_fixable_v1_artifacts_and_reports_codex(tmp_path
     commands = opencode_dir / "commands"
     commands.mkdir(parents=True)
     command = commands / "hej.md"
-    command.write_text("Load skill from skills/hej/SKILL.md\n", encoding="utf-8")
+    command.write_text("---\nagentera_managed: true\n---\nLoad skill from skills/hej/SKILL.md\n", encoding="utf-8")
 
     codex_config = home / ".codex" / "config.toml"
     codex_config.parent.mkdir(parents=True)
@@ -816,3 +1228,34 @@ def test_cleanup_upgrade_removes_fixable_v1_artifacts_and_reports_codex(tmp_path
     assert not (skills / "hej").exists()
     assert not command.exists()
     assert "[agents.hej]" in codex_config.read_text(encoding="utf-8")
+
+
+def test_cleanup_preview_reports_unproven_stale_command_as_user_owned(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    opencode_dir = home / ".config" / "opencode"
+    commands = opencode_dir / "commands"
+    commands.mkdir(parents=True)
+    command = commands / "hej.md"
+    command.write_text("Load skill from skills/hej/SKILL.md\n", encoding="utf-8")
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "cleanup",
+        "--home",
+        str(home),
+        "--opencode-config-dir",
+        str(opencode_dir),
+        "--json",
+    )
+
+    assert result.returncode == 1, result.stderr
+    payload = json.loads(result.stdout)
+    item = payload["phases"][0]["items"][0]
+    assert item["status"] == "blocked"
+    assert item["ownership"] == {
+        "status": "user-owned",
+        "reason": "OpenCode command lacks agentera_managed: true frontmatter",
+    }
+    assert "user-owned" in item["message"]
+    assert command.read_text(encoding="utf-8") == "Load skill from skills/hej/SKILL.md\n"

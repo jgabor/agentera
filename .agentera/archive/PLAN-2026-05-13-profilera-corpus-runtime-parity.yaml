@@ -1,0 +1,71 @@
+header:
+  level: full
+  created: 2026-05-12
+  status: complete
+  reviewed: 2026-05-13
+  critic_issues: 8 found, 8 addressed, 0 dismissed
+  revised: "[post-audit-flagged] Split smoke from state sync, added discovery/contract boundary, bounded lock handling, and gated version changes on explicit release-target selection. Agentera lint still reports advisory verbosity: 535 words exceeds the 500-word plan budget."
+  title: Profilera corpus runtime parity
+what: Add OpenCode and GitHub Copilot corpus parity in scripts/extract_corpus.py while preserving local-only, read-only, private extraction.
+why: tests/test_extract_corpus.py currently proves Claude/Codex-shaped corpus paths only. The remaining TODO requires all-runtime Profilera parity, deferred by Decision 50 beyond the 2.3.1 reliability lane.
+constraints: Reuse existing decision-signal classification. Preserve Decision 47 app-home semantics and Decision 48 namespace boundaries. Do not log raw transcripts, call external services, bump versions, tag, push, publish, refresh installed apps, edit vision, or touch objective state without explicit approval.
+scope:
+  included:
+    - OpenCode and Copilot discovery, extraction, degradation metadata, fixtures, and non-live smoke parity.
+  excluded:
+    - Live paid host invocations, profile scoring changes, external APIs, new agentera corpus namespace, destructive store repair, publication.
+  deferred:
+    - Broad corpus namespace promotion, live authenticated harvest validation, profile-model tuning.
+design: Keep scripts/extract_corpus.py as the single normalization surface; define observable runtime status and privacy behavior first, add each runtime independently, then prove fixture-backed parity in tests and scripts/smoke_live_hosts.py.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-12-2-3-1-runtime-injected-app-home-recovery.yaml
+tasks:
+  - number: 1
+    name: Discovery contract and safety boundary
+    depends_on: []
+    status: completed
+    acceptance:
+      - GIVEN runtime stores are available, absent, locked, sparse, or schema-divergent WHEN extraction runs THEN output reports bounded status/reason without blocking unrelated runtimes or leaking transcript text.
+      - GIVEN supported OS/runtime homes are tested WHEN discovery resolves inputs THEN Agentera app-home precedence is unchanged.
+  - number: 2
+    name: OpenCode corpus parity
+    depends_on: [1]
+    status: completed
+    acceptance:
+      - GIVEN OpenCode local conversations exist WHEN extraction runs THEN ordered turns and decision-rich prompts normalize like existing runtimes.
+      - GIVEN OpenCode storage is unavailable WHEN extraction runs THEN OpenCode degrades explicitly and other runtimes continue.
+  - number: 3
+    name: GitHub Copilot corpus parity
+    depends_on: [1]
+    status: completed
+    acceptance:
+      - GIVEN Copilot local conversations exist WHEN extraction runs THEN user-before-assistant turns and decision-rich prompts normalize like existing runtimes.
+      - GIVEN Copilot storage is sparse or unavailable WHEN extraction runs THEN diagnostics show bounded remediation labels without transcript leakage.
+  - number: 4
+    name: Cross-runtime fixture coverage
+    depends_on: [2, 3]
+    status: completed
+    acceptance:
+      - GIVEN Claude, Codex, OpenCode, and Copilot fixtures WHEN focused tests run THEN each runtime proves normalized families, ordering, degradation, and bounded lock handling.
+  - number: 5
+    name: Non-live smoke validation
+    depends_on: [4]
+    status: completed
+    acceptance:
+      - GIVEN default smoke runs without live paid hosts WHEN it completes THEN fixture-backed parity is proven separately from local environment availability.
+  - number: 6
+    name: State sync and release-target gate
+    depends_on: [5]
+    status: completed
+    acceptance:
+      - GIVEN no release target is selected WHEN state sync runs THEN TODO/docs/progress record evidence without version changes.
+      - GIVEN a release target is selected WHEN sync runs THEN version, changelog, TODO, docs, and progress follow semver policy.
+overall_acceptance:
+  - GIVEN any subset of supported runtime stores exists WHEN Profilera corpus extraction completes THEN available Claude, Codex, OpenCode, and Copilot data normalize consistently and unavailable stores degrade explicitly.
+  - GIVEN diagnostics are inspected WHEN extraction, tests, or smoke report state THEN they show counts, statuses, bounded reasons, and remediation labels, not raw transcript content.
+surprises:
+  - Task 1 retry fixed the evaluator-discovered callable-shape mismatch for available OpenCode/GitHub Copilot candidate stores; extraction remains intentionally unimplemented for Tasks 2 and 3.
+  - Task 2 implements OpenCode `opencode.db` extraction only; GitHub Copilot remains the bounded `extractor_unimplemented` stub for Task 3.
+  - Task 3 replaces the GitHub Copilot stub with read-only `session-store.db` extraction and uses `/chronicle reindex` only as bounded sparse-store remediation metadata.
+  - Task 4 adds combined Claude, Codex, OpenCode, and GitHub Copilot fixture coverage plus explicit missing, locked, sparse, and schema-divergent degradation assertions without changing extractor behavior.
+  - Task 5 upgrades the default smoke harness to use explicit offline Claude Code, Codex, OpenCode, and GitHub Copilot fixtures plus an explicit missing-store degradation audit, so default smoke output stays non-live and count/status-only.
+  - Task 6 closed the completed feature scope without selecting a release target, so TODO, docs, changelog, progress, and plan state were synchronized without version-bearing file changes.

@@ -87,7 +87,7 @@ User-facing copy must answer four questions in this order:
 1. What happened: `Agentera found an old or broken local copy of itself.`
 2. What the preview did: `Nothing was changed.`
 3. What the recommended fix will do: `Install a fresh Agentera app copy in the normal Agentera directory.`
-4. What it will not do: `It will not edit your project files or delete unknown directories.`
+4. What it will not do: `It will not edit your project files, shell startup files, or unknown directories.`
 
 Use recommendation-first choices only when a choice is unavoidable. Put the safe
 default first and name it as the recommendation. Good labels: `Use the safe fix
@@ -104,17 +104,18 @@ of itself. The safe fix is to install a fresh copy in the normal Agentera direct
 Then show this preview command and say it changes nothing:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --dry-run
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --dry-run
 ```
 
 This preview writes nothing. Because no explicit `--install-root` is supplied,
-upgrade can choose the normal platform app directory and preview cleanup of the old
-directory. Ask for explicit approval before writes, using plain wording such as
+upgrade can choose the normal platform app directory and preview repair for app
+files, managed runtime surfaces, and cleanup of the old directory. Ask for
+explicit approval before writes, using plain wording such as
 `Approve the safe Agentera repair at <directory>`. After approval, apply the same
 safe repair path:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --yes
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --yes
 ```
 
 After apply, retry the installed command from the platform app home reported by
@@ -128,7 +129,7 @@ fails before argparse, reports `invalid choice` for `hej`, or reports a status o
 - Show the clone-free preview command from `bundle.dryRunCommand` when present:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
 ```
 
 Ask for explicit approval before writes. A normal affirmative response is
@@ -136,7 +137,7 @@ acceptable only when it clearly authorizes the same Agentera repair and director
 If approved, apply:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --yes
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --install-root "$RESOLVED_AGENTERA_HOME" --yes
 ```
 
 After apply, retry:
@@ -155,6 +156,11 @@ run, do not overwrite it silently or fall back to a local checkout. Say:
 `Agentera was told to use a directory it cannot safely use. Choose a different
 Agentera directory, or approve --force only after checking that directory is safe to
 replace.`
+
+If stale Agentera lines are found in shell startup files such as `~/.bashrc`,
+`~/.zshrc`, `.profile`, or fish config, say plainly that Agentera will not edit
+those files. Cleanup of those lines is user-owned manual cleanup, not a repair
+write.
 
 Only after the installed CLI succeeds, proceed to Step -1 and the routing layers
 below. Do not fall through to a local checkout as a workaround; the uvx commands

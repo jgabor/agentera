@@ -145,3 +145,54 @@ def test_unavailable_store_smoke_reports_bounded_missing_statuses(capsys) -> Non
     assert "runtime: codex status=missing reason=store_absent" in output
     assert "runtime: opencode status=missing reason=store_absent" in output
     assert "runtime: github-copilot status=missing reason=store_absent" in output
+
+
+def test_default_smoke_does_not_recover_orphan_live_snapshots(
+    tmp_path: Path, monkeypatch
+) -> None:
+    smoke = _load_smoke_live_hosts()
+    original = tmp_path / "bashrc"
+    backup = tmp_path / "agentera-smoke-live-bashrc.bak"
+    original.write_text("user shell rc\n", encoding="utf-8")
+    backup.write_text("prior live snapshot\n", encoding="utf-8")
+    backup.with_suffix(backup.suffix + smoke.SNAPSHOT_META_SUFFIX).write_text(
+        str(original) + "\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(smoke, "SNAPSHOT_TMP_GLOB", str(tmp_path / "*.bak"))
+    monkeypatch.setattr(smoke, "run_fixture_corpus_parity_audit", lambda: None)
+    monkeypatch.setattr(smoke, "run_unavailable_store_degradation_audit", lambda: None)
+    monkeypatch.setattr(smoke, "run_setup_helpers_smoke", lambda: None)
+    monkeypatch.setattr(smoke, "run_upgrade_repair_smoke", lambda: None)
+
+    assert smoke.main([]) == 0
+
+    assert original.read_text(encoding="utf-8") == "user shell rc\n"
+    assert backup.exists()
+
+
+def test_live_smoke_recovers_orphan_live_snapshots_when_explicit(
+    tmp_path: Path, monkeypatch
+) -> None:
+    smoke = _load_smoke_live_hosts()
+    original = tmp_path / "bashrc"
+    backup = tmp_path / "agentera-smoke-live-bashrc.bak"
+    original.write_text("user shell rc\n", encoding="utf-8")
+    backup.write_text("prior live snapshot\n", encoding="utf-8")
+    meta = backup.with_suffix(backup.suffix + smoke.SNAPSHOT_META_SUFFIX)
+    meta.write_text(str(original) + "\n", encoding="utf-8")
+    monkeypatch.setattr(smoke, "SNAPSHOT_TMP_GLOB", str(tmp_path / "*.bak"))
+    monkeypatch.setattr(smoke, "run_fixture_corpus_parity_audit", lambda: None)
+    monkeypatch.setattr(smoke, "run_unavailable_store_degradation_audit", lambda: None)
+    monkeypatch.setattr(smoke, "run_setup_helpers_smoke", lambda: None)
+    monkeypatch.setattr(smoke, "run_upgrade_repair_smoke", lambda: None)
+    monkeypatch.setattr(smoke, "run_claude_live_section", lambda snapshots, skips: None)
+    monkeypatch.setattr(smoke, "run_codex_live_section", lambda snapshots, skips: None)
+    monkeypatch.setattr(smoke, "run_codex_hook_section", lambda snapshots, skips: None)
+    monkeypatch.setattr(smoke, "run_copilot_live_section", lambda snapshots, skips: None)
+    monkeypatch.setattr(smoke, "run_opencode_live_section", lambda snapshots, skips: None)
+
+    assert smoke.main(["--live", "--yes"]) == 0
+
+    assert original.read_text(encoding="utf-8") == "prior live snapshot\n"
+    assert not backup.exists()
+    assert not meta.exists()

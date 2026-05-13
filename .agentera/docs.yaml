@@ -1,4 +1,4 @@
-last_audit: 2026-05-13 (2.3.3 patch release metadata sync)
+last_audit: '2026-05-13 (shell-rc removal Task 8 retry: docs evidence explicit; no release target selected)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -120,7 +120,7 @@ index:
   status: current
 - document: Vocabulary
   path: docs/vocabulary.md
-  last_updated: '2026-05-12'
+  last_updated: '2026-05-13'
   status: current
 - document: Gap analysis
   path: .agentera/gap-analysis-2026-05-05.md
@@ -342,8 +342,44 @@ coverage:
   documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: '2.3.1 Task 5 release metadata alignment updated active version-bearing surfaces to 2.3.1 and documented runtime-injected stale old-default AGENTERA_HOME recovery in changelog, TODO, docs, and progress. Focused verification is recorded in the Task 5 progress entry; broad final release validation remains Task 6.'
+  tests: 'Shell-rc removal state sync records diagnostic-only shell startup boundaries, stale managed-runtime remnant refresh/cleanup handling, and verification evidence: focused setup/upgrade/smoke tests, default non-live smoke, ruff, py_compile, artifact/YAML/JSON parsing, version-surface checks, and git diff --check. No release target was selected, so version-bearing files remain unchanged at the existing 2.3.3 metadata.'
 audit_log:
+- date: '2026-05-13'
+  label: Shell-rc removal Task 8 retry evidence sync
+  findings:
+  - type: checked
+    description: >
+      Setup, doctor, upgrade preview/apply, repair guidance, and runtime setup now
+      treat shell startup mutation as diagnostic-only: Agentera reports legacy
+      shell-rc lines as user-owned manual cleanup and does not write shell startup
+      files.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Stale managed runtime surfaces and cleanup are handled through Agentera
+      ownership proof: managed Codex/OpenCode/plugin/hook/command/skill remnants
+      refresh or clean up when proven managed, while unproven or user-owned
+      surfaces block or report without mutation.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Plan evidence includes focused setup/upgrade regression tests, default
+      non-live `uv run scripts/smoke_live_hosts.py`, ruff, py_compile,
+      capability/self validation where in scope, artifact lint, YAML/JSON parsing,
+      version-surface reads, and `git diff --check`. This retry only updates docs
+      and progress evidence, so no new full pytest run was required.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      No release target was selected for this closure. Version-bearing files named
+      by docs policy and the package registry remain unchanged at the existing
+      2.3.3 metadata; no commit, tag, push, publication, package update,
+      installed app refresh, vision edit, or objective-state edit was performed.
+    resolution: noted
+    severity: info
 - date: '2026-05-12'
   label: 2.3.1 release metadata alignment
   findings:

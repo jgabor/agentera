@@ -1,4 +1,516 @@
 cycles:
+- number: 423
+  timestamp: 2026-05-13
+  type: docs
+  phase: build
+  what: >
+    Completed Task 8 retry 1 by making `.agentera/docs.yaml` explicitly record
+    shell startup mutation removal, diagnostic-only shell-rc boundaries,
+    stale-remnant handling for managed runtime refresh/cleanup, verification
+    evidence, and the no-release-target/version-unchanged gate.
+  commit: pending
+  inspiration: >
+    The evaluator failed Task 8 because TODO, changelog, progress, and plan state
+    already had the required evidence, but docs state only had a generic audit
+    marker and did not explicitly name stale-remnant handling or verification
+    evidence.
+  discovered: >
+    `.agentera/docs.yaml` needed an audit-log entry and coverage text, not a plan
+    state change. Task 8 can remain completed because the acceptance gap is now
+    closed in the docs artifact itself.
+  verified: >
+    The installed Agentera CLI state commands were unavailable because the local
+    installed app is missing artifact schemas; no repair or installed app refresh
+    was run. Raw artifact fallback was used. Final verification parsed
+    `.agentera/docs.yaml`, `.agentera/progress.yaml`, and `.agentera/plan.yaml` as
+    YAML, and final reads confirmed docs has explicit shell-rc, stale-remnant,
+    verification, and no-release-target evidence while plan remains complete.
+  next: >
+    Hand off Task 8 retry 1 for Orkestrera evaluation. Do not commit, push,
+    publish, refresh installed apps, edit vision state, touch objective state,
+    write shell startup files, or bump versions without explicit approval.
+  context:
+    intent: Task 8 retry 1 docs evidence correction
+    constraints: no commit, no push, no publication, no installed app refresh, no
+      shell startup writes, no version bump, no vision edit, no objective-state
+      edit
+    scope: .agentera/docs.yaml and .agentera/progress.yaml retry evidence only
+- number: 422
+  timestamp: 2026-05-13
+  type: docs
+  phase: build
+  what: >
+    Completed Task 8 for the shell-rc removal plan by synchronizing TODO,
+    changelog, docs, progress, and plan state with shell startup mutation
+    removal, stale-remnant handling, managed runtime refresh evidence, and an
+    explicit no-release-target gate.
+  commit: pending
+  inspiration: >
+    Tasks 1-7 had passed under Orkestrera supervision, leaving only the final
+    state sync and release-target decision. The operator did not select a release
+    target, commit, push, publication, installed app refresh, package update,
+    vision edit, or objective-state change.
+  discovered: >
+    `.agentera/docs.yaml` documents semver policy and version-bearing files, but
+    neither the active plan nor artifact state selected a new release target.
+    Current version-bearing surfaces already report 2.3.3 from prior release
+    metadata sync, so this closure records completion without touching package,
+    plugin, registry, lockfile, OpenCode marker, or skill frontmatter versions.
+  verified: >
+    Pre-sync CLI reads with `AGENTERA_HOME=/home/jgabor/git/agentera` showed Task
+    8 as the only pending task, docs current, and the artifact mapping available.
+    Final `agentera plan` reported `status=complete` and completed=8. Final
+    `agentera progress --limit 1`, `agentera todo`, and `agentera docs` parsed the
+    synced state. Artifact lint ran for PLAN.md, PROGRESS.md, TODO.md, DOCS.md,
+    and CHANGELOG.md and returned only advisory verbosity/filler findings already
+    characteristic of the existing artifacts. YAML parse checks passed for plan,
+    progress, and docs. JSON manifest validation passed. Focused version-surface
+    reads showed pyproject, uv.lock, registry, plugin manifests, OpenCode marker,
+    and skill frontmatter all unchanged at 2.3.3. `git diff --check` passed.
+  next: >
+    Hand off the complete shell-rc removal plan for final Orkestrera closure. No
+    release target was selected, so no version bump occurred; do not commit, tag,
+    push, publish, run package-manager updates, refresh installed apps, edit
+    vision state, or touch objective state without explicit approval.
+  context:
+    intent: State sync and release-target gate for shell-rc removal
+    constraints: no release target selected, no version-bearing file changes, no
+      shell startup writes, no package-manager updates, no commit, no push, no
+      publication, no installed app refresh, no vision edit, no objective-state
+      edit
+    scope: TODO.md, CHANGELOG.md, .agentera/docs.yaml, .agentera/plan.yaml, and
+      .agentera/progress.yaml final state evidence
+- number: 421
+  timestamp: 2026-05-13
+  type: fix
+  phase: build
+  what: >
+    Tightened Task 7 after evaluator PASS by making orphan live snapshot recovery
+    explicit-live-only, so default non-live smoke mode cannot restore stale
+    /tmp/agentera-smoke-live-*.bak sidecars into real user paths or shell startup
+    files.
+  commit: pending
+  inspiration: >
+    The evaluator found a residual safety risk: `scripts/smoke_live_hosts.py`
+    called `recover_orphan_snapshots()` before offline checks, which meant a
+    default no-live smoke run could mutate the original paths named by stale
+    live-run sidecars from an earlier crash.
+  discovered: >
+    The recovery behavior belonged to Task 3 live snapshot safety, but `main()`
+    invoked it before the `--live` branch. Default mode now runs only fixture
+    parity, unavailable-store degradation, delegated setup helpers, and offline
+    upgrade repair smoke. Explicit `--live` still performs orphan recovery before
+    live host sections, preserving the crash-recovery behavior where live mode is
+    intentionally selected.
+  verified: >
+    `uv run pytest tests/test_smoke_live_hosts.py -q` passed with 8 tests,
+    including a focused regression proving default `main([])` leaves a temporary
+    original shell-rc fixture and orphan backup/sidecar untouched, plus a paired
+    explicit `--live --yes` proof that recovery still restores and cleans the
+    orphan snapshot. `uv run ruff check scripts/smoke_live_hosts.py
+    tests/test_smoke_live_hosts.py` passed. `python3 -m py_compile
+    scripts/smoke_live_hosts.py` passed. `uv run scripts/smoke_live_hosts.py`
+    passed in default non-live mode with fixture corpus parity PASS, unavailable
+    store degradation PASS, delegated setup helpers PASS, offline upgrade repair
+    smoke PASS, and final PASS. No live host tests were run and all new mutation
+    proof used temporary paths.
+  next: >
+    Task 7 remains complete under Orkestrera supervision. Task 8 remains pending
+    for state sync and release-target gating; do not broaden this tightening into
+    version sync, package updates, installed app refresh, publication, push,
+    vision edits, or objective-state edits.
+  context:
+    intent: Regression and non-live smoke proof safety tightening
+    constraints: default smoke is read-only for real user paths and shell startup
+      files, live paid host tests are not run by default, focused tests use
+      temporary paths, no commit, no push, no publication, no installed app
+      refresh, no vision edit, no objective-state edit
+    scope: scripts/smoke_live_hosts.py, smoke harness regression tests, and
+      progress evidence
+- number: 420
+  timestamp: 2026-05-13
+  type: fix
+  phase: build
+  what: >
+    Completed Task 7 by extending the default non-live smoke harness with an
+    offline whole-repair preview/apply proof and by running focused regression
+    coverage for shell-rc immutability, stale environment recovery, managed
+    refresh, user-owned conflict blocking, and package opt-in behavior.
+  commit: pending
+  inspiration: >
+    Task 7 required explicit regression and non-live smoke proof after Tasks 1-6
+    passed, with no live paid hosts, no writes to real shell startup files, and
+    byte-identical preservation of legacy Agentera shell startup fixtures during
+    the full repair test path.
+  discovered: >
+    Existing pytest coverage already had pass/fail branches for the changed
+    setup/runtime surfaces, but the default smoke harness only covered offline
+    corpus/runtime degradation and delegated setup helpers. It did not yet prove
+    whole-repair behavior in the default no-live path, so the smoke harness now
+    runs repair preview/apply inside temporary homes and projects, checks package
+    actions remain skipped without --update-packages, blocks an unowned stale
+    OpenCode command, refreshes managed Codex/OpenCode surfaces, and verifies
+    .bashrc, .zshrc, and fish config fixtures with legacy Agentera lines remain
+    byte-for-byte unchanged.
+  verified: >
+    `uv run scripts/smoke_live_hosts.py` passed in default mode without --live;
+    output showed fixture corpus parity PASS, unavailable store degradation PASS,
+    delegated setup helpers PASS, offline upgrade repair smoke PASS, and final
+    PASS, with all repair work confined to temporary homes/directories. `uv run
+    pytest tests/test_setup_copilot.py
+    tests/test_upgrade_cli.py::test_runtime_upgrade_refreshes_codex_managed_entries_preserving_user_config
+    tests/test_upgrade_cli.py::test_runtime_upgrade_plan_characterizes_runtime_and_package_items
+    tests/test_upgrade_cli.py::test_runtime_upgrade_apply_leaves_copilot_shell_startup_byte_identical
+    tests/test_upgrade_cli.py::test_runtime_upgrade_apply_characterizes_write_and_package_apply_messages
+    tests/test_upgrade_cli.py::test_whole_repair_preview_lists_managed_actions_skips_and_blocks
+    tests/test_upgrade_cli.py::test_whole_repair_apply_after_clean_preview_applies_safe_actions_only
+    tests/test_upgrade_cli.py::test_runtime_apply_rechecks_stale_managed_surface_before_mutating
+    tests/test_upgrade_cli.py::test_package_phase_characterizes_skip_dry_run_and_mocked_apply
+    tests/test_upgrade_cli.py::test_runtime_preview_refreshes_stale_surface_with_agentera_ownership_reason
+    tests/test_upgrade_cli.py::test_runtime_preview_blocks_stale_surface_without_agentera_ownership_proof
+    tests/test_upgrade_cli.py::test_runtime_apply_refreshes_opencode_managed_commands_and_skill_links
+    tests/test_upgrade_cli.py::test_runtime_apply_refreshes_resolving_stale_opencode_managed_skill_link
+    tests/test_upgrade_cli.py::test_cleanup_preview_reports_unproven_stale_command_as_user_owned
+    -q` passed with 21 tests. `uv run ruff check scripts/smoke_live_hosts.py`
+    passed. `python3 -m py_compile scripts/smoke_live_hosts.py` passed.
+  next: >
+    Hand off Task 7 for Orkestrera evaluation. Task 8 remains pending for state
+    sync and release-target gating; do not broaden this cycle into version sync,
+    package updates, installed app refresh, publication, push, vision edits, or
+    objective-state edits.
+  context:
+    intent: Regression and non-live smoke proof
+    constraints: no live paid hosts by default, no real shell startup writes, use
+      temporary homes/directories, package-manager execution remains opt-in, no
+      commit, no push, no publication, no installed app refresh, no vision edit,
+      no objective-state edit
+    scope: scripts/smoke_live_hosts.py, focused regression verification, plan,
+      and progress evidence
+- number: 419
+  timestamp: 2026-05-13
+  type: fix
+  phase: build
+  what: >
+    Completed Task 6 retry 1 by correcting active repair vocabulary so app repair
+    no longer presents `agentera upgrade --only bundle` as the normal repair
+    recommendation.
+  commit: pending
+  inspiration: >
+    The evaluator failed Task 6 because docs/vocabulary.md still defined app
+    repair as the same-directory `agentera upgrade --only bundle` flow,
+    contradicting the required app plus managed runtime repair guidance.
+  discovered: >
+    Active vocabulary was the remaining contradiction: README, UPGRADE, and repo
+    skill guidance already described repair as app files plus managed runtime
+    config, plugins, hooks, commands, cleanup, no shell startup writes, and
+    package-manager opt-in. `--only bundle` now remains documented only as a
+    narrow app-only operation, not the normal repair recommendation.
+  verified: >
+    Installed and local CLI artifact reads were blocked by the stale
+    AGENTERA_HOME-installed app schema gap, and the task constraints prohibited
+    refreshing installed apps. Raw artifact fallback was used for plan/progress
+    evidence. Focused searches found no old App repair/normal repair vocabulary
+    tying repair to `--only bundle`, no repo skill guidance containing `--only
+    bundle`, and only historical changelog/gap-analysis command references
+    outside docs/vocabulary.md. `uv run scripts/validate_capability.py
+    skills/agentera/capabilities/hej` passed. `AGENTERA_HOME=/home/jgabor/git/agentera
+    uv run scripts/agentera docs`, `AGENTERA_HOME=/home/jgabor/git/agentera uv
+    run scripts/agentera plan`, and `AGENTERA_HOME=/home/jgabor/git/agentera uv
+    run scripts/agentera progress --limit 1` all parsed current state.
+  next: >
+    Hand off Task 6 retry 1 for Orkestrera evaluation. Task 7 remains pending for
+    regression and non-live smoke proof; do not broaden this retry into installed
+    app refresh, package updates, publication, push, vision edits, or objective
+    state changes.
+  context:
+    intent: Documentation and capability guidance alignment retry 1
+    constraints: no shell startup writes, package-manager actions remain opt-in,
+      no implementation changes, no commit, no push, no publication, no installed
+      app refresh, no vision edit, no objective-state edit
+    scope: docs/vocabulary.md, docs metadata, plan, and progress evidence
+- number: 418
+  timestamp: 2026-05-13
+  type: fix
+  phase: build
+  what: >
+    Completed Task 6 for the shell-rc removal plan by aligning README, upgrade,
+    bundled skill repair guidance, the legacy hej bridge, Copilot package
+    descriptions, and adapter characterization docs with app plus managed
+    runtime repair, no shell startup writes, manual cleanup boundaries, and
+    explicit package-manager opt-in.
+  commit: pending
+  inspiration: >
+    Task 6 required users following README, upgrade, and skill repair guidance to
+    preview or apply repair across app and managed runtime surfaces without
+    asking Agentera to write shell startup files; stale shell startup references
+    had to state that Agentera will not edit those files; and package-manager
+    execution had to remain opt-in through --update-packages.
+  discovered: >
+    User-facing guidance still described app-only repair with --only bundle,
+    recommended package-updating upgrade commands in primary handoffs, described
+    Copilot shell startup persistence, and had Copilot manifests requiring
+    AGENTERA_HOME to be exported. Historical changelog text also mentioned shell
+    startup behavior without naming the current no-edit/manual-cleanup boundary.
+  verified: >
+    Focused searches found no remaining active README, UPGRADE, skill, or plugin
+    manifest guidance telling Agentera to write shell startup files, use shell rc
+    exports as the normal install path, or use --only bundle for repair. `uv run
+    scripts/validate_capability.py skills/agentera/capabilities/hej` passed.
+    `uv run scripts/validate_capability.py --self-validate` passed. `python3 -m
+    json.tool plugin.json` and `python3 -m json.tool .github/plugin/plugin.json`
+    both passed. `uv run scripts/validate_lifecycle_adapters.py
+    --check-uv-runtime` passed. `AGENTERA_HOME=/home/jgabor/git/agentera uv run
+    scripts/agentera docs` reported docs status current.
+  next: >
+    Hand off Task 6 for Orkestrera evaluation. Task 7 owns regression and
+    non-live smoke proof; do not broaden this cycle into tests beyond focused
+    documentation validation, final release state sync, package updates,
+    installed app refresh, publication, push, vision edits, or objective-state
+    changes.
+  context:
+    intent: Documentation and capability guidance alignment
+    constraints: no shell startup writes, package-manager actions remain opt-in,
+      no implementation changes, no commit, no push, no publication, no installed
+      app refresh, no vision edit, no objective-state edit
+    scope: README, UPGRADE, skill repair prose, legacy hej bridge, Copilot
+      manifests, adapter characterization, changelog, plan, and progress
+- number: 417
+  timestamp: 2026-05-13
+  type: fix
+  phase: build
+  what: >
+    Completed Task 5 for the shell-rc removal plan by extending managed runtime
+    repair to refresh OpenCode command files and stale OpenCode skill links,
+    including resolving Agentera-owned symlinks that point at an old existing
+    Agentera skill instead of the current durable app home, alongside Codex
+    config/hooks and the OpenCode plugin while preserving user-owned runtime
+    config and cleanup boundaries.
+  commit: pending
+  inspiration: >
+    Task 5 required repair apply to refresh stale managed Codex runtime config or
+    hooks without overwriting unrelated user config, refresh or remove managed
+    OpenCode plugin, command, and skill surfaces according to current ownership
+    proof, and handle obsolete managed remnants without touching shell startup
+    files.
+  discovered: >
+    The runtime phase already refreshed Codex config/hooks and the OpenCode
+    plugin, and cleanup already removed stale managed OpenCode commands, but
+    `upgrade --only runtime` did not repair OpenCode command files or managed
+    OpenCode skill links. Retry 1 found that a managed OpenCode skill symlink
+    could still be stale when it resolved to an old existing Agentera skill;
+    `_opencode_skill_item` returned `noop` before checking whether the resolved
+    target matched the current durable app-home source. Preview also needed to
+    account for durable app-home skill links before the bundle phase has copied
+    fresh app files.
+  verified: >
+    Retry 1 verification: `uv run pytest tests/test_upgrade_cli.py -q -k
+    'opencode_managed_skill_link or
+    refreshes_opencode_managed_commands_and_skill_links'` passed with 2 tests,
+    proving both the existing broken stale symlink repair and the new resolving
+    stale symlink regression. `uv run pytest
+    tests/test_upgrade_cli.py::test_runtime_apply_refreshes_resolving_stale_opencode_managed_skill_link
+    -q` passed. `uv run pytest tests/test_upgrade_cli.py -q` passed with 30
+    tests. Earlier Task 5 verification also passed `uv run pytest
+    tests/test_upgrade_cli.py tests/test_setup_doctor.py tests/test_setup_codex.py
+    tests/test_detect_stale_v1.py tests/test_bundle_freshness.py -q` with 102
+    tests, `uv run ruff check scripts/agentera_upgrade.py tests/test_upgrade_cli.py`,
+    and `python3 -m py_compile scripts/agentera_upgrade.py`.
+  next: >
+    Hand off Task 5 for Orkestrera evaluation. Task 6 owns documentation and
+    capability guidance alignment; do not broaden this cycle into docs-only
+    alignment, final smoke/state sync, package updates, installed app refresh,
+    publication, push, vision edits, or objective-state changes.
+  context:
+    intent: Managed runtime surface refresh and cleanup
+    constraints: no shell startup writes, package commands remain opt-in, apply
+      mutates only Agentera-owned runtime surfaces, no commit, push,
+      publication, installed app refresh, vision edit, or objective-state edit
+    scope: scripts/agentera_upgrade.py, focused upgrade/runtime repair tests,
+      changelog, plan, and progress evidence
+- number: 416
+  timestamp: 2026-05-13
+  type: fix
+  phase: build
+  what: >
+    Completed Task 4 for the shell-rc removal plan by making whole-repair
+    preview cover app files, runtime config, hooks, plugins, cleanup, skipped
+    package actions, and user-owned blocks together, while apply rechecks
+    pending managed runtime and cleanup surfaces before mutating them.
+  commit: pending
+  inspiration: >
+    Task 4 required repair preview/apply to behave as a single contract: preview
+    must show all safe, skipped, and blocked work together; apply after a clean
+    preview must mutate only preview-safe managed surfaces; and apply must block
+    if a previously managed surface becomes unverified before mutation.
+  discovered: >
+    Runtime apply trusted the pending plan item instead of re-reading the target
+    at mutation time, and cleanup apply passed all currently detected pending
+    paths to the fixer without first rechecking current ownership. Whole-repair
+    preview already assembled the phases, but lacked focused proof that the
+    combined contract included app refresh, runtime config/plugin/hook work,
+    cleanup, package skips, shell-rc immutability, and user-owned blocks.
+  verified: >
+    `uv run pytest tests/test_upgrade_cli.py` passed with 27 tests, including
+    temporary-home whole-repair preview coverage for stale app files, Codex
+    config and hook refresh, OpenCode plugin refresh, managed cleanup, skipped
+    package actions, blocked Copilot shell startup handling, and blocked
+    user-owned stale command cleanup. The clean-preview/apply test used a
+    temporary home and proved only managed app/runtime/cleanup actions applied,
+    package actions stayed skipped without `--update-packages`, and `.bashrc`
+    remained byte-for-byte unchanged. The runtime recheck test changed a stale
+    managed OpenCode plugin into unverified user content between planning and
+    apply; apply blocked it and left the user content unchanged. `uv run ruff
+    check scripts/agentera_upgrade.py tests/test_upgrade_cli.py` passed.
+    `python3 -m py_compile scripts/agentera_upgrade.py` passed.
+  next: >
+    Hand off Task 4 for Orkestrera evaluation. Task 5 owns broader managed
+    runtime surface refresh and cleanup behavior; do not broaden this cycle into
+    runtime-specific expansion, documentation alignment, final smoke/state sync,
+    package updates, installed app refresh, publication, push, vision edits, or
+    objective-state changes.
+  context:
+    intent: Whole-repair preview and apply contract
+    constraints: no shell startup writes, package commands remain opt-in, apply
+      rechecks managed ownership at mutation time, no commit, push, publication,
+      installed app refresh, vision edit, or objective-state edit
+    scope: scripts/agentera_upgrade.py, focused whole-repair upgrade tests,
+      changelog, plan, and progress evidence
+- number: 415
+  timestamp: 2026-05-13
+  type: fix
+  phase: build
+  what: >
+    Completed Task 3 for the shell-rc removal plan by making packaged upgrade
+    and repair app-home resolution recover exact stale deprecated-default
+    environment residue to the platform app directory while blocking custom
+    unknown app homes and preserving explicit app-home authority.
+  commit: pending
+  inspiration: >
+    Task 3 required exact deprecated-default app-home values to be recoverable
+    only when missing or stale, arbitrary custom app homes to stop instead of
+    falling back or overwriting, and explicit `--install-root` choices to remain
+    authoritative in preview and apply.
+  discovered: >
+    The packaged launcher still injected `~/.agents/agentera` as
+    `AGENTERA_DEFAULT_INSTALL_ROOT`, and upgrade resolution checked that default
+    before `AGENTERA_HOME`. This kept stale legacy values authoritative and hid
+    the documented app-home precedence. Upgrade preview also needed an explicit
+    resolution diagnostic for legacy residue and a custom-environment block
+    before installing into unknown paths.
+  verified: >
+    `uv run pytest tests/test_bundle_freshness.py tests/test_packaged_cli.py
+    tests/test_install_root_module.py tests/test_upgrade_cli.py` passed with 47
+    tests. `uv run scripts/validate_app_home_contract.py` passed. Temporary-home
+    preview with `AGENTERA_HOME=$home/.agents/agentera` selected
+    `$XDG_DATA_HOME/agentera` and emitted `legacy_default_residue` with the
+    message that the deprecated default app home was treated as legacy residue.
+    Temporary-home preview with custom `AGENTERA_HOME=$tmp/custom-agentera`
+    returned a blocked bundle phase asking for an explicit safe directory
+    decision. Temporary-home preview and apply with explicit `--install-root
+    $tmp/explicit-agentera` both kept `appHome` at the explicit directory and
+    left `appHomeResolution` null.
+  next: >
+    Hand off Task 3 for Orkestrera evaluation. Task 4 owns the whole-repair
+    preview/apply contract; do not broaden this cycle into managed runtime
+    refresh, package updates, installed app refresh, publication, push, vision
+    edits, or objective-state changes.
+  context:
+    intent: Safe app-home precedence under stale environments
+    constraints: exact deprecated default recovery only when missing or stale;
+      custom unknown app homes block; explicit app homes remain authoritative; no
+      shell startup writes, commit, push, publication, installed app refresh,
+      vision edit, or objective-state edit
+    scope: src/agentera_cli/__init__.py, scripts/agentera_upgrade.py, focused
+      packaged/upgrade/bundle/install-root tests, changelog, plan, and progress
+      evidence
+- number: 414
+  timestamp: 2026-05-13
+  type: fix
+  phase: build
+  what: >
+    Completed Task 2 for the shell-rc removal plan by converting Copilot setup,
+    setup-doctor installer, and upgrade runtime repair behavior to
+    diagnostic-only shell startup handling.
+  commit: pending
+  inspiration: >
+    Task 2 required shell startup files to remain byte-for-byte unchanged during
+    setup, doctor, upgrade preview, upgrade apply, and repair guidance, while
+    legacy Agentera shell startup lines are treated as user-owned manual cleanup
+    boundaries.
+  discovered: >
+    The direct Copilot helper and setup doctor installer still had production rc
+    write paths. Upgrade planning had already blocked Copilot rc writes, but its
+    diagnostic message did not yet explicitly name legacy-line detection,
+    Agentera's no-edit boundary, and per-invocation Copilot app-context
+    guidance.
+  verified: >
+    `uv run pytest tests/test_setup_copilot.py` passed with 8 tests proving bash,
+    zsh, fish, explicit rc-file, unsupported-shell, legacy marker, bare export,
+    dry-run, and invalid-root behavior never writes shell startup fixtures. `uv
+    run pytest tests/test_setup_doctor.py` passed with 19 tests including
+    setup-doctor dry-run/apply blocked Copilot shell handling and legacy rc
+    byte-identity. `uv run pytest tests/test_upgrade_cli.py` passed with 24 tests
+    including Copilot runtime preview/apply byte-identity and manual-boundary
+    diagnostics. `uv run scripts/smoke_setup_helpers.py` passed. A temporary HOME
+    fixture ran `setup_copilot.py`, `setup_doctor.py --install --dry-run`,
+    `setup_doctor.py --install --yes --json`, `scripts/agentera upgrade --only
+    runtime --runtime copilot --dry-run --json`, and the same upgrade with
+    `--yes --json`; the `.bashrc` SHA256 stayed unchanged and setup, doctor, and
+    upgrade outputs all contained `Agentera will not edit shell startup files`.
+    `python3 -m py_compile scripts/setup_copilot.py scripts/setup_doctor.py
+    scripts/agentera_upgrade.py` passed.
+  next: >
+    Hand off Task 2 for Orkestrera evaluation. Task 3 owns safe app-home
+    precedence under stale environments; do not broaden this cycle into whole
+    repair apply semantics, package updates, installed app refresh, publication,
+    push, vision edits, or objective-state changes.
+  context:
+    intent: Shell startup files are diagnostic-only
+    constraints: no shell startup writes, no commit, no push, no publication, no
+      installed app refresh, no vision edit, and no objective-state edit
+    scope: scripts/setup_copilot.py, scripts/setup_doctor.py,
+      scripts/agentera_upgrade.py, focused setup/doctor/upgrade tests, smoke
+      expectations, changelog, plan, and progress evidence
+- number: 413
+  timestamp: 2026-05-13
+  type: fix
+  phase: build
+  what: >
+    Completed Task 1 for the shell-rc removal plan by adding ownership-aware
+    runtime repair previews for stale managed surfaces, user-owned runtime
+    conflicts, Copilot shell startup boundaries, cleanup removals, and skipped
+    package-manager actions.
+  commit: pending
+  inspiration: >
+    Task 1 required repair preview to explain why Agentera can safely refresh or
+    remove a stale runtime surface, refuse unproven user-owned surfaces, and keep
+    external package commands opt-in.
+  discovered: >
+    Upgrade preview previously planned Copilot shell startup writes and stale
+    OpenCode command removal without a shared ownership contract. Runtime copy
+    and cleanup plans now expose ownership status/reason fields and block
+    unproven surfaces instead of planning writes or removals.
+  verified: >
+    `uv run pytest tests/test_upgrade_cli.py` passed with 23 tests, including
+    managed stale OpenCode plugin preview with an Agentera ownership reason,
+    user-owned stale plugin blocking with no write planned, unproven stale
+    OpenCode command cleanup blocking as user-owned, and package preview skip
+    coverage that monkeypatches subprocess execution. `AGENTERA_HOME="/home/jgabor/git/agentera"
+    uv run scripts/agentera upgrade --only packages --runtime claude --runtime
+    opencode --home /tmp/agentera-task1-package-preview --json` returned a
+    skipped packages phase with 3 skipped items and no pending commands. `uv run
+    ruff check scripts/agentera_upgrade.py tests/test_upgrade_cli.py` passed.
+  next: >
+    Hand off Task 1 for Orkestrera evaluation. Task 2 owns full shell startup
+    diagnostic-only behavior; do not commit, push, publish, refresh installed
+    apps, edit vision, or touch objective state without explicit approval.
+  context:
+    intent: Runtime surface ownership contract for repair preview
+    constraints: no shell startup writes, package commands opt-in only, no commit,
+      push, publication, installed app refresh, vision edit, or objective-state
+      edit
+    scope: scripts/agentera_upgrade.py, focused upgrade tests, changelog, plan,
+      and progress evidence
 - number: 412
   timestamp: 2026-05-13
   type: fix

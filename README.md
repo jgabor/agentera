@@ -45,14 +45,22 @@ What's new:
 
 ### Upgrading from v1
 
-Run the v2 upgrade:
+Run the v2 upgrade preview first:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --yes --update-packages
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run
 ```
 
-Then start `/agentera`. See [UPGRADE.md](./UPGRADE.md) for the full migration
-guide and dry-run form.
+After reviewing the preview, apply the same upgrade without package-manager
+changes:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --yes
+```
+
+Add `--update-packages` only when you explicitly want Agentera to run package
+manager commands such as `npx skills ...`. Then start `/agentera`. See
+[UPGRADE.md](./UPGRADE.md) for the full migration guide.
 
 ## Why Agentera?
 
@@ -316,27 +324,31 @@ no-write diagnostics are owned by `scripts/install_root.py`.
 `agentera doctor` reports the active Agentera directory, app files directory, skill
 root, runtime root, and source root. If it finds old app files directly in
 `AGENTERA_HOME`, it reports `migration_required` and prints exact preview and
-apply upgrade commands; doctor remains read-only. The current compatibility
-selector for refreshing Agentera's app files is still `--only bundle`, but
-user-facing docs and diagnostics describe that flow as an app repair. Human
-output says `needs repair` when a no-write preview is the next safe step.
+apply upgrade commands; doctor remains read-only. Human output says `needs
+repair` when a no-write preview is the next safe step.
 
 ### Keep Agentera's app files current
 
 Package and marketplace updates refresh what the host sees, but they may not
-update the local app copy that actually runs Agentera. If `/agentera` reports
-that Agentera is out of date or `agentera hej` is unavailable, preview the repair
-first. The preview changes nothing:
+update the local app copy or managed runtime surfaces that actually run Agentera.
+If `/agentera` reports that Agentera is out of date or `agentera hej` is
+unavailable, preview the repair first. The preview covers app files, managed
+runtime config, plugins, hooks, commands, and safe cleanup together. It changes
+nothing:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --dry-run
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --install-root "$AGENTERA_HOME" --dry-run
 ```
 
 After confirming the preview, apply the same Agentera directory:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --yes
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --install-root "$AGENTERA_HOME" --yes
 ```
+
+Repair does not run package-manager commands unless you add
+`--update-packages`. Keep that opt-in for cases where you intentionally want
+Agentera to run commands such as `npx skills add` or `npx skills remove`.
 
 Then retry Agentera:
 
@@ -354,7 +366,9 @@ When the normal platform directory is selected and the old `~/.agents/agentera`
 directory still contains Agentera files, the preview says it will clean up the old
 directory. Apply mode moves known user data such as `PROFILE.md` and `USAGE.md`
 into the selected Agentera directory, removes old app files, and removes
-`~/.agents/agentera` when it becomes empty.
+`~/.agents/agentera` when it becomes empty. Agentera will not edit shell startup
+files such as `~/.bashrc`, `~/.zshrc`, or fish config. If those files still
+contain old Agentera lines, they are user-owned manual cleanup.
 
 <details>
 <summary><strong>Claude Code hooks</strong></summary>
@@ -395,10 +409,10 @@ copilot plugin marketplace add jgabor/agentera
 copilot plugin install jgabor/agentera
 ```
 
-The plugin includes Copilot hook definitions. The Agentera upgrade flow can also
-persist helper-script access for Copilot shells.
-
-Restart your shell after applying config changes.
+The plugin includes Copilot hook definitions. Agentera does not edit shell
+startup files for Copilot. If a shell startup file still contains an old
+Agentera `AGENTERA_HOME` line, remove it manually only after checking that it is
+no longer needed.
 
 </details>
 

@@ -46,7 +46,8 @@ the installed command once. Do not preflight app health with `glob`, `grep`,
 Recovery copy must be plain-language and recommendation-first. Never ask users
 to choose between technical install concepts, internal directory states,
 command-mode flags, or package-layout terms. Say what happened, what changed,
-what the safe fix does, and what it will not touch. Good recovery labels are `Use the safe fix
+what the safe fix does, and what it will not touch. The safe fix must say it will
+not edit project files, shell startup files, or unknown directories. Good recovery labels are `Use the safe fix
 (Recommended)`, `Choose a different directory`, and `Stop`.
 
 If the command cannot execute because `AGENTERA_HOME` names the old default
@@ -57,16 +58,17 @@ itself. The safe fix is to install a fresh copy in the normal Agentera directory
 Then show this preview command and say it changes nothing:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --dry-run
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --dry-run
 ```
 
 That preview writes nothing. Because no explicit `--install-root` is supplied,
-upgrade can choose the normal platform app directory and preview cleanup of the old
-directory. Ask for explicit approval before writes, using plain wording such as
+upgrade can choose the normal platform app directory and preview repair for app
+files, managed runtime surfaces, and cleanup of the old directory. Ask for
+explicit approval before writes, using plain wording such as
 `Approve the safe Agentera repair at <directory>`. Then apply the same safe repair path:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --yes
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --yes
 ```
 
 After apply, retry the installed command from the platform app home reported by
@@ -81,7 +83,7 @@ the user `Agentera found an old or broken local copy of itself.` Then preview th
 repair with the CLI-provided command when present:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
 ```
 
 Do not run the matching apply command until the user explicitly approves the
@@ -97,6 +99,11 @@ Agentera directory preview above instead of first asking the user to unset
 files, say: `Agentera was told to use a directory it cannot safely use. Choose a
 different Agentera directory, or approve --force only after checking that directory is
 safe to replace.`
+
+If stale Agentera lines are found in shell startup files such as `~/.bashrc`,
+`~/.zshrc`, `.profile`, or fish config, say plainly that Agentera will not edit
+those files. Cleanup of those lines is user-owned manual cleanup, not a repair
+write.
 
 Use `agentera query <artifact-name> --format json|yaml` only for advanced or
 custom artifact inspection when no top-level command serves the needed state.
@@ -156,7 +163,8 @@ also CLI-owned: render `profile: loaded` without warning, and render
 If `npx skills update` refreshed only the visible skill and `/agentera` next
 finds missing or out-of-date app files, explain in plain language that Agentera
 also needs to repair its local app copy; the visible skill update alone is not
-enough.
+enough. Package-manager repair commands remain opt-in through
+`--update-packages`.
 
 ---
 

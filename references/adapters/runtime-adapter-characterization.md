@@ -36,7 +36,7 @@ Characterized runtime actions:
 | Claude Code | `configure` | none | `noop` | no local config write |
 | Codex CLI | `configure` | `~/.codex/config.toml` | `pending` | writes config, then reports `runtime update applied` |
 | Codex CLI | `copy-hooks` | `~/.codex/hooks.json` | `pending` | copies hooks, then reports `runtime update applied` |
-| Copilot CLI | `configure` | shell rc file | `pending` | writes rc configuration, then reports `runtime update applied` |
+| Copilot CLI | `configure` | shell startup diagnostics | `blocked` or `noop` | reports that Agentera will not edit shell startup files |
 | OpenCode | `copy-plugin` | `~/.config/opencode/plugins/agentera.js` | `pending` | copies plugin, then reports `runtime update applied` |
 
 Package-phase items currently expose `runtime`, `action`, `command`, `status`,

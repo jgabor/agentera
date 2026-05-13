@@ -22,13 +22,26 @@ def _bundle_root() -> Path:
     return _repo_fallback_bundle()
 
 
+def _platform_default_app_home() -> Path:
+    home = Path.home()
+    if sys.platform == "darwin":
+        return home / "Library" / "Application Support" / "agentera"
+    if os.name == "nt":
+        appdata = os.environ.get("APPDATA")
+        base = Path(appdata).expanduser() if appdata else home / "AppData" / "Roaming"
+        return base / "agentera"
+    xdg = os.environ.get("XDG_DATA_HOME")
+    base = Path(xdg).expanduser() if xdg else home / ".local" / "share"
+    return base / "agentera"
+
+
 def main() -> int:
     bundle = _bundle_root()
     scripts = bundle / "scripts"
     os.environ.setdefault("AGENTERA_BOOTSTRAP_SOURCE_ROOT", str(bundle))
     os.environ.setdefault(
         "AGENTERA_DEFAULT_INSTALL_ROOT",
-        str(Path.home() / ".agents" / "agentera"),
+        str(_platform_default_app_home()),
     )
     sys.path.insert(0, str(scripts))
     original_argv0 = sys.argv[0]

@@ -21,7 +21,14 @@ Preview first. This writes nothing and exits non-zero when pending work exists:
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /path/to/project --dry-run
 ```
 
-Apply local, idempotent upgrade actions:
+Apply local, idempotent upgrade actions without package-manager changes:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /path/to/project --yes
+```
+
+Add `--update-packages` only when you explicitly want Agentera to run external
+package-manager commands such as `npx skills remove` and `npx skills add`:
 
 ```bash
 uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /path/to/project --yes --update-packages
@@ -31,7 +38,7 @@ When the Python package is published, the shorter command is equivalent:
 
 ```bash
 uvx agentera upgrade --project /path/to/project --dry-run
-uvx agentera upgrade --project /path/to/project --yes --update-packages
+uvx agentera upgrade --project /path/to/project --yes
 ```
 
 This command installs or refreshes the managed Agentera app under the Agentera
@@ -42,27 +49,28 @@ disposable tool cache.
 Agentera's local app files, migrate project artifacts, clean up the old Agentera
 directory, or rewrite runtime config. Agentera v2.0.2 keeps a legacy `/hej` bridge so
 old entry points can hand users to the command above, but the command above is
-the complete upgrade path. With `--update-packages`, it removes package-managed
-v1 skill entries and installs `/agentera`.
+the complete upgrade path. With explicit `--update-packages`, it removes
+package-managed v1 skill entries and installs `/agentera`.
 
-### App repair
+### App and runtime repair
 
 `codex plugin marketplace upgrade`, `copilot plugin marketplace upgrade`, and
 `npx skills update -g -y` refresh package-managed surfaces. They do not
-guarantee that the app files under `AGENTERA_HOME/app` have the latest
-`scripts/agentera` CLI. Directory selection and read-only repair checks are
-centralized in `scripts/install_root.py`.
+guarantee that the app files under `AGENTERA_HOME/app` or managed runtime
+surfaces have the latest Agentera wiring. Directory selection and read-only
+repair checks are centralized in `scripts/install_root.py`.
 
 Bare `/agentera` owns this recovery path. When the installed CLI is missing
 `hej`, fails before command discovery, has an outdated `.agentera-bundle.json`
 version, or otherwise fails the install status contract, it should show the
-app repair preview for the resolved Agentera directory. The preview changes nothing:
+repair preview for the resolved Agentera directory. The preview covers app files,
+managed runtime config, plugins, hooks, commands, and safe cleanup together. It
+changes nothing:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --dry-run
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --install-root "$AGENTERA_HOME" --dry-run
 ```
 
-`--only bundle` is the current compatibility selector for the app repair phase.
 The durable location is still the Agentera directory, and app files are still
 installed under `$AGENTERA_HOME/app`.
 
@@ -74,13 +82,13 @@ without `--install-root` so upgrade can choose the normal platform directory and
 preview cleanup of the old directory:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --dry-run
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --dry-run
 ```
 
 Only after explicit approval should it apply the same safe repair path:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --yes
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --yes
 ```
 
 Custom invalid `AGENTERA_HOME` values are different: choose a different Agentera
@@ -97,11 +105,12 @@ uv run scripts/agentera doctor --install-root "$AGENTERA_HOME" --json
 Only after explicit approval for that same app home should it apply:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only bundle --install-root "$AGENTERA_HOME" --yes
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --install-root "$AGENTERA_HOME" --yes
 ```
 
-The apply command refreshes the managed app only. It does not run package
-updates, artifact migration, runtime config rewrites, or cleanup phases.
+The apply command refreshes the managed app and managed runtime surfaces that the
+preview proved Agentera owns. It does not run package updates unless
+`--update-packages` is explicitly present.
 Afterward, retry:
 
 ```bash
@@ -173,7 +182,10 @@ uv run scripts/agentera upgrade --runtime codex --yes
 
 ### Copilot CLI
 
-The upgrade command updates the managed `AGENTERA_HOME` shell rc block used by Copilot. Use `--copilot-rc-file PATH` to preview or target a specific rc file.
+The upgrade command does not edit Copilot shell startup files. If it detects old
+Agentera lines in `~/.bashrc`, `~/.zshrc`, `.profile`, or fish config, it reports
+that Agentera will not edit those files and treats removal as user-owned manual
+cleanup.
 
 ```bash
 uv run scripts/agentera upgrade --runtime copilot --yes
