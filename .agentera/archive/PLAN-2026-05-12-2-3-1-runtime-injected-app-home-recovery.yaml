@@ -1,0 +1,115 @@
+header:
+  level: full
+  created: 2026-05-12
+  status: complete
+  reviewed: 2026-05-12
+  critic_issues: 7 found, 7 addressed, 0 dismissed
+  revised: Removed unknowable env-provenance claims, made exact old-default recovery deterministic, bounded user-data-only app homes, scoped adapter repair to current generated/runtime surfaces, and kept v1 Markdown migration verification-only unless regressions appear.
+  title: 2.3.1 runtime-injected app-home recovery
+what: >
+  Ship a 2.3.1 patch release that recovers when a runtime or plugin injects the
+  deprecated old default `AGENTERA_HOME`, without requiring users to unset env
+  vars manually. The release makes stale default recovery deterministic, repairs
+  adapter/default guidance, accepts safe user-data-only app homes, and keeps v1
+  Markdown migration verified through the existing artifacts phase.
+why: >
+  After 2.3.0, OpenCode loaded an updated visible skill but the process still
+  inherited `AGENTERA_HOME=/home/jgabor/.agents/agentera`; the managed CLI at
+  `$AGENTERA_HOME/app/scripts/agentera` did not exist. The user's shell config
+  pointed elsewhere, so the bad value likely came from Agentera runtime
+  injection or persisted runtime config. Users should not have to know to unset a
+  stale injected value before `/agentera` can recover.
+constraints: >
+  Keep this as a 2.3.1 patch. Doctor remains read-only and upgrade owns writes.
+  `--install-root` stays authoritative. An inherited exact deprecated default is
+  recoverable only when no explicit `--install-root` was supplied and the managed
+  app is missing or stale. Preview must write nothing and apply requires
+  approval. Do not delete arbitrary unmanaged data, redesign install-root
+  discovery beyond this recovery path, implement Profilera corpus parity, or
+  change v1 Markdown migration unless verification exposes a regression.
+scope:
+  included:
+    - Deterministic reproduction of runtime-injected old default `AGENTERA_HOME`.
+    - CLI and guidance recovery for the exact deprecated default without user unsetting.
+    - Safe user-data-only platform app-home classification for install/refresh previews.
+    - OpenCode adapter/default resolver and generated contract repair for current app-home layout.
+    - AGENTERA_HOME wording in package/plugin/runtime surfaces touched by 2.3.1.
+    - Verification that v1 Markdown migration remains automated through the artifacts phase.
+    - 2.3.1 version, changelog, TODO, docs, progress, and release validation evidence.
+  excluded:
+    - Profilera corpus parity for OpenCode and GitHub Copilot.
+    - Arbitrary cleanup of unknown user-owned directories or files.
+    - Broad `agentera validate`, `verify`, `smoke`, `corpus`, or `usage` namespaces.
+    - Live package publication or installed app refresh without explicit approval.
+  deferred:
+    - Profilera corpus parity.
+    - User-specific cleanup of unknown data that requires review.
+design: >
+  Treat the old default path as a known migration shape, not as proof of env
+  authorship. Adapters should stop injecting `~/.agents/agentera`; the CLI should
+  recover from the exact inherited old default only when no explicit override was
+  supplied and the managed app is absent or stale. Safe platform app homes may
+  contain recognized Agentera user state while managed code remains confined to
+  `app/`. Skill guidance must work even when the installed CLI gate cannot run.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-12-2-3-0-legacy-default-retirement-and-v1-artifact-confirmation.yaml
+tasks:
+  - number: 1
+    name: Reproduce stale runtime default and define recovery rules
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN tests simulate OpenCode or runtime shell env injecting `~/.agents/agentera` independent of the developer shell WHEN the installed gate resolves app home THEN the missing `$AGENTERA_HOME/app/scripts/agentera` failure is reproduced deterministically.
+      - GIVEN `AGENTERA_HOME` is the exact deprecated default and no `--install-root` was supplied WHEN the managed app is missing or stale THEN CLI and guidance classify it as recoverable stale default, not as first requiring the user to unset `AGENTERA_HOME`.
+      - GIVEN `AGENTERA_HOME` is any non-default custom path WHEN it is invalid or unmanaged THEN diagnostics preserve normal environment override semantics and ask for explicit correction or force.
+  - number: 2
+    name: App-home recovery and user-data-only safety
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - GIVEN the platform app home exists with only recognized Agentera user-state files and no managed app WHEN doctor or upgrade inspect it THEN doctor remains read-only and upgrade may preview installing managed app code under `app/` without deleting or overwriting user data.
+      - GIVEN the exact deprecated default is inherited through `AGENTERA_HOME` and no explicit `--install-root` was supplied WHEN upgrade previews recovery THEN it targets the platform app home, includes old-default retirement, and leaves both app homes unchanged.
+      - GIVEN `--install-root` explicitly points at the old default WHEN upgrade runs THEN the command respects that explicit override and does not silently retarget to the platform app home.
+  - number: 3
+    name: Runtime adapter and generated contract repair
+    depends_on:
+      - 1
+      - 2
+    status: complete
+    acceptance:
+      - GIVEN OpenCode bootstrap resolves Agentera home and installed skills WHEN `AGENTERA_HOME` is absent THEN it does not prefer `~/.agents/agentera` or `~/.agents/skills/agentera` as app-home fallbacks except in explicitly named legacy skill-source detection tests.
+      - GIVEN `resolveAgenteraHome` or `resolveInstalledAgenteraSkillsDir` runs with a current app-home layout WHEN it chooses paths THEN it resolves through `$AGENTERA_HOME/app` or the generated managed app path, not the old root layout.
+      - GIVEN generated JS contracts, runtime registries, package manifests, or plugin descriptions mention `AGENTERA_HOME` WHEN validators run THEN they describe app-home semantics and avoid install-root or default-durable-root wording outside bounded historical fixtures.
+  - number: 4
+    name: Skill and upgrade guidance
+    depends_on:
+      - 2
+      - 3
+    status: complete
+    acceptance:
+      - GIVEN the installed app gate cannot execute because `AGENTERA_HOME` names the exact old default and `$AGENTERA_HOME/app/scripts/agentera` is missing WHEN Agentera guidance is read THEN it presents the platform app-home upgrade dry-run path without requiring a successful stale CLI invocation.
+      - GIVEN `npx skills` updates only the visible skill WHEN `/agentera` next runs THEN SKILL and hej guidance explain managed app refresh and old-default retirement through app-home upgrade.
+      - GIVEN supported v1 Markdown files exist WHEN docs or guidance describe upgrade THEN they say the artifacts phase migrates them to YAML with backups after preview and confirmation.
+  - number: 5
+    name: 2.3.1 release metadata
+    depends_on:
+      - 4
+    status: complete
+    acceptance:
+      - GIVEN this is a patch release WHEN active version-bearing surfaces are inspected THEN pyproject, lockfile, registry, plugin manifests, OpenCode marker, and skill frontmatter consistently report 2.3.1.
+      - GIVEN changelog, TODO, docs, and progress are queried WHEN 2.3.1 state is inspected THEN they document runtime-injected stale env recovery and keep Profilera parity retargeted beyond 2.3.1.
+      - GIVEN historical archive or progress entries mention older app-home behavior WHEN version and wording checks run THEN historical evidence does not block release readiness.
+  - number: 6
+    name: Final validation and handoff
+    depends_on:
+      - 5
+    status: complete
+    acceptance:
+      - GIVEN the release candidate is validated WHEN focused runtime/upgrade tests, full pytest, artifact validation, capability validation, docs query, and whitespace checks run THEN they pass or blockers are documented.
+      - GIVEN the live issue involved OpenCode and `npx skills` WHEN deterministic adapter tests or feasible smoke checks run THEN evidence covers the injected-env scenario without requiring live package publication.
+      - GIVEN release actions require approval WHEN handoff is produced THEN no commit, tag, push, publication, package-manager update, installed app refresh, vision edit, or objective-state edit has occurred unless explicitly requested.
+overall_acceptance:
+  - GIVEN a runtime injects the deprecated old default as `AGENTERA_HOME` WHEN `/agentera` or upgrade recovery runs THEN the user is guided to a safe app-home recovery path without manually unsetting environment variables.
+  - GIVEN the platform app home already contains Agentera user state WHEN managed code is missing THEN upgrade can preview a safe install under `app/` without treating the directory as arbitrary unmanaged code.
+  - GIVEN 2.3.1 is ready WHEN release state is inspected THEN versions, docs, TODO, progress, tests, and skill guidance agree on the runtime-injected stale-env fix and v1 Markdown migration remains verified.
+surprises: []

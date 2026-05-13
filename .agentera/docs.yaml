@@ -1,4 +1,4 @@
-last_audit: 2026-05-12 (2.3.1 release metadata alignment)
+last_audit: 2026-05-13 (2.3.3 patch release metadata sync)
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -96,15 +96,15 @@ index:
   status: current
 - document: Progress
   path: .agentera/progress.yaml
-  last_updated: '2026-05-12'
+  last_updated: '2026-05-13'
   status: current
 - document: TODO
   path: TODO.md
-  last_updated: '2026-05-12'
+  last_updated: '2026-05-13'
   status: current
 - document: Changelog
   path: CHANGELOG.md
-  last_updated: '2026-05-12'
+  last_updated: '2026-05-13'
   status: current
 - document: Health
   path: .agentera/health.yaml
@@ -112,11 +112,11 @@ index:
   status: current
 - document: Plan
   path: .agentera/plan.yaml
-  last_updated: '2026-05-12'
+  last_updated: '2026-05-13'
   status: current
 - document: DOCS
   path: .agentera/docs.yaml
-  last_updated: '2026-05-12'
+  last_updated: '2026-05-13'
   status: current
 - document: Vocabulary
   path: docs/vocabulary.md

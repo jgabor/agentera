@@ -1,4 +1,316 @@
 cycles:
+- number: 412
+  timestamp: 2026-05-13
+  type: fix
+  phase: release
+  what: >
+    Prepared the 2.3.3 patch release for the completed Profilera corpus runtime
+    parity work by aligning version-bearing package, plugin, registry, lockfile,
+    OpenCode marker, skill frontmatter, changelog, and docs metadata surfaces.
+  commit: pending
+  inspiration: >
+    The operator selected a patch release after the plan completion gate, so the
+    previously withheld release-target step became explicit while publication and
+    installed app refresh remained out of scope.
+  discovered: >
+    Package-registry tests intentionally pin the suite version. After bumping the
+    version surfaces to 2.3.3, the focused release test exposed the stale 2.3.2
+    expectation in tests/test_package_registry.py, which was updated with the
+    release metadata.
+  verified: >
+    `uv run pytest tests/test_extract_corpus.py tests/test_smoke_live_hosts.py
+    tests/test_package_registry.py
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_agentera_version_reader_extracts_current_literal
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_version_bearing_package_surfaces_align`
+    passed with 33 tests after the version assertion update. `uv run
+    scripts/smoke_live_hosts.py`, `uv run ruff check scripts/extract_corpus.py
+    scripts/smoke_live_hosts.py tests/test_extract_corpus.py
+    tests/test_smoke_live_hosts.py`, artifact validation, and `git diff --check`
+    passed.
+  next: >
+    Commit the 2.3.3 patch release locally. Do not push, publish, refresh the
+    installed app, or edit vision/objective state without explicit approval.
+  context:
+    intent: 2.3.3 patch release metadata sync
+    constraints: no push, publication, installed app refresh, live paid host call,
+      vision edit, or objective-state edit
+    scope: version files, package registry, plugin manifests, OpenCode marker,
+      skill frontmatter, changelog, docs metadata, package-registry test, and
+      progress evidence
+- number: 411
+  timestamp: 2026-05-13
+  type: docs
+  phase: build
+  what: >
+    Completed Task 6 for the Profilera corpus runtime parity plan by
+    synchronizing TODO, docs, changelog, progress, and plan state with the
+    completed feature scope while leaving version-bearing files unchanged because
+    no release target was selected.
+  commit: pending
+  inspiration: >
+    Task 6 acceptance required final state evidence for the completed corpus
+    parity feature and an explicit gate that semver/version updates occur only
+    after operator release-target selection.
+  discovered: >
+    The active plan had Tasks 1-5 completed and only state sync pending. No
+    release target was selected, so the correct closure path was artifact
+    synchronization, TODO resolution, and final validation without package,
+    plugin, registry, lockfile, or skill version changes.
+  verified: >
+    `uv run pytest tests/test_extract_corpus.py tests/test_smoke_live_hosts.py`
+    passed with 19 tests. `uv run scripts/smoke_live_hosts.py` passed in default
+    non-live mode, reporting Claude Code, Codex, OpenCode, and GitHub Copilot
+    fixture parity plus missing-store `store_absent` degradation. `uv run ruff
+    check scripts/extract_corpus.py scripts/smoke_live_hosts.py
+    tests/test_extract_corpus.py tests/test_smoke_live_hosts.py` passed.
+  next: >
+    Hand off the complete Profilera corpus runtime parity plan for final
+    Orkestrera/Inspektera evaluation. Future release metadata remains pending
+    explicit release-target selection; no commit, tag, push, publication,
+    installed app refresh, vision edit, objective-state edit, external service
+    call, live paid host command, or version bump occurred in this cycle.
+  context:
+    intent: State sync and release-target gate for Profilera corpus runtime
+      parity
+    constraints: no release target selected, no version-bearing file changes, no
+      live paid host calls, no broad CLI namespace, no raw transcript logging, no
+      commit, tag, push, publication, installed app refresh, vision edit, or
+      objective-state edit
+    scope: TODO.md, CHANGELOG.md, .agentera/docs.yaml, .agentera/plan.yaml, and
+      .agentera/progress.yaml final state evidence
+- number: 410
+  timestamp: 2026-05-13
+  type: test
+  phase: build
+  what: >
+    Completed Task 5 for the Profilera corpus runtime parity plan by upgrading
+    the default smoke harness to prove non-live corpus parity across Claude Code,
+    Codex, OpenCode, and GitHub Copilot fixtures plus absent-store degradation.
+  commit: pending
+  inspiration: >
+    Task 5 required the operator-facing smoke path to run without paid or live
+    host invocations, separate fixture-backed parity from local runtime-store
+    availability, and keep privacy-sensitive fixture transcript text out of
+    smoke output.
+  discovered: >
+    The previous default smoke audit proved only a Codex-shaped fixture and left
+    default OpenCode/Copilot discovery dependent on local environment state. The
+    smoke harness needed explicit per-runtime fixture paths and an explicit
+    missing-store audit to make default output deterministic and non-live.
+  verified: >
+    `uv run pytest tests/test_smoke_live_hosts.py tests/test_extract_corpus.py`
+    passed with 19 tests. `uv run ruff check scripts/smoke_live_hosts.py
+    scripts/extract_corpus.py tests/test_smoke_live_hosts.py
+    tests/test_extract_corpus.py` passed. `uv run scripts/smoke_live_hosts.py`
+    passed in default mode, reporting fixture records for Claude Code, Codex,
+    OpenCode, and GitHub Copilot plus missing-store `store_absent` statuses
+    without transcript payloads.
+  next: >
+    Hand off Task 5 to Orkestrera evaluation. Task 6 owns state sync and any
+    release-target gate; do not bump versions, refresh installed apps, publish,
+    tag, push, edit vision, or touch objective state without explicit approval.
+  context:
+    intent: Non-live smoke validation for Profilera corpus runtime parity
+    constraints: no live paid host calls, no broad CLI namespace, no external
+      services, no raw transcript logging, no commit, tag, push, publication,
+      installed app refresh, vision edit, or objective-state edit
+    scope: scripts/smoke_live_hosts.py default fixture smoke, focused smoke
+      tests, and plan/progress/changelog evidence
+- number: 409
+  timestamp: 2026-05-13
+  type: test
+  phase: build
+  what: >
+    Completed Task 4 for the Profilera corpus runtime parity plan by adding
+    cross-runtime fixture coverage for Claude Code, Codex, OpenCode, and GitHub
+    Copilot normalized corpus output plus combined degradation cases.
+  commit: pending
+  inspiration: >
+    The plan required fixture stores for every runtime family to contribute
+    expected normalized records, while missing, locked, sparse, and
+    schema-divergent cases degrade explicitly and continue where safe.
+  discovered: >
+    The existing extraction code already satisfied the runtime behavior; the gap
+    was fixture coverage that proved all four runtimes together, bounded
+    runtime/family assertion messages, and no raw transcript text in metadata.
+  verified: >
+    `uv run pytest tests/test_extract_corpus.py` passed with 13 tests, including
+    the new combined Claude Code, Codex, OpenCode, and GitHub Copilot fixture
+    coverage plus missing, locked, sparse, and schema-divergent degradation
+    coverage. `uv run ruff check scripts/extract_corpus.py
+    tests/test_extract_corpus.py` passed.
+  next: >
+    Hand off Task 4 to Orkestrera evaluation. Task 5 owns non-live smoke harness
+    validation; do not broaden CLI namespaces, change decision-signal
+    classification, refresh installed apps, or touch objective state.
+  context:
+    intent: Cross-runtime fixture coverage for Profilera corpus parity
+    constraints: local-only read-only extraction, no raw transcript logging, no
+      profile scoring changes, no broad corpus CLI namespace, no commit, tag,
+      push, publication, installed app refresh, vision edit, or objective-state
+      edit
+    scope: tests/test_extract_corpus.py fixture coverage and plan/progress/changelog
+      evidence
+- number: 408
+  timestamp: 2026-05-13
+  type: feat
+  phase: build
+  what: >
+    Completed Task 3 for the Profilera corpus runtime parity plan by adding
+    read-only GitHub Copilot `session-store.db` extraction into normalized
+    conversation turns and decision-rich history prompts.
+  commit: pending
+  inspiration: >
+    The plan required Copilot local conversations to normalize like existing
+    runtimes while sparse or unavailable storage reports bounded remediation
+    labels without leaking transcript content.
+  discovered: >
+    Copilot extraction needed SQLite-backed `sessions`/`turns` handling, default
+    discovery through `COPILOT_HOME` or `~/.copilot`, and a stable final sort so
+    tied timestamps preserve user-before-assistant turn order.
+  verified: >
+    `uv run pytest tests/test_extract_corpus.py` passed with 11 tests, including
+    Copilot SQLite fixture coverage for user-before-assistant tied-turn ordering,
+    decision-rich `history_prompt` output, `COPILOT_HOME`/`~/.copilot` discovery,
+    and sparse-store diagnostics with `/chronicle reindex` remediation labels and
+    no raw transcript text in metadata. `uv run ruff check scripts/extract_corpus.py
+    tests/test_extract_corpus.py` passed. `git diff --check -- scripts/extract_corpus.py
+    tests/test_extract_corpus.py` passed.
+  next: >
+    Hand off Task 3 to Orkestrera evaluation. Task 4 owns cross-runtime fixture
+    coverage; do not broaden OpenCode, add corpus CLI namespaces, change profile
+    scoring, or refresh installed apps.
+  context:
+    intent: GitHub Copilot corpus parity for planned Profilera runtime work
+    constraints: local-only read-only extraction, no raw transcript logging, no
+      profile scoring changes, no OpenCode broadening, no broad corpus CLI
+      namespace, no commit, tag, push, publication, installed app refresh, vision
+      edit, or objective-state edit
+    scope: scripts/extract_corpus.py Copilot SQLite extraction, focused tests,
+      and plan/progress/changelog evidence
+- number: 407
+  timestamp: 2026-05-13
+  type: feat
+  phase: build
+  what: >
+    Completed Task 2 for the Profilera corpus runtime parity plan by adding
+    read-only OpenCode `opencode.db` extraction into normalized conversation
+    turns and decision-rich history prompts.
+  commit: pending
+  inspiration: >
+    The plan required OpenCode local conversations to normalize like existing
+    runtimes while unavailable OpenCode storage degrades explicitly and unrelated
+    runtimes continue.
+  discovered: >
+    OpenCode extraction needed SQLite-backed `session`/`message`/`part` handling
+    rather than the Task 1 JSONL candidate stub. GitHub Copilot remains a bounded
+    unimplemented extractor for Task 3.
+  verified: >
+    `uv run pytest tests/test_extract_corpus.py` passed with 9 tests, including
+    OpenCode SQLite fixture coverage for ordered assistant/user/assistant turns,
+    decision-rich `history_prompt` output, bounded missing-store degradation, and
+    Codex continuation when OpenCode is unavailable. `uv run ruff check
+    scripts/extract_corpus.py tests/test_extract_corpus.py` passed. CLI smoke
+    passed with a temporary `opencode.db`: `uv run scripts/extract_corpus.py
+    --output <tmp>/corpus.json --project-root <tmp>/project --no-codex
+    --no-claude --opencode-conversations-dir <tmp>/opencode.db --no-copilot`
+    wrote 4 records with OpenCode `status=ok`, two conversation turns, one
+    history prompt, and no raw prompt text in metadata.
+  next: >
+    Hand off Task 2 to Orkestrera evaluation. Task 3 owns GitHub Copilot
+    extraction; do not broaden CLI namespaces or change profile scoring.
+  context:
+    intent: OpenCode corpus parity for planned Profilera runtime work
+    constraints: local-only read-only extraction, no raw transcript logging, no
+      profile scoring changes, no GitHub Copilot extraction, no broad corpus CLI
+      namespace, no commit, tag, push, publication, installed app refresh, vision
+      edit, or objective-state edit
+    scope: scripts/extract_corpus.py OpenCode SQLite extraction, focused tests,
+      CLI smoke, and plan/progress/changelog evidence
+- number: 406
+  timestamp: 2026-05-13
+  type: fix
+  phase: build
+  what: >
+    Retried Task 1 for the Profilera corpus runtime parity plan by fixing
+    available OpenCode and GitHub Copilot candidate stores to degrade through
+    bounded metadata instead of crashing the extraction run.
+  commit: pending
+  inspiration: >
+    Orkestrera evaluation found that the unimplemented OpenCode/Copilot
+    extractor accepted `(runtime, store_path, errors)` while the dispatcher calls
+    every extractor as `(store_path, errors)`, causing available candidate stores
+    to raise TypeError and block unrelated runtimes.
+  discovered: >
+    The existing tests covered absent, skipped, sparse, locked, and
+    schema-divergent discovery paths, but not available candidate files for the
+    unimplemented runtimes. OpenCode and GitHub Copilot extraction remains
+    intentionally deferred to later plan tasks.
+  verified: >
+    `uv run pytest tests/test_extract_corpus.py` passed with 7 tests, including
+    the new available OpenCode/GitHub Copilot regression proving no crash,
+    `degraded` runtime metadata with reason `extractor_unimplemented`, bounded
+    candidate/record/error counts, unrelated Codex/Claude skipped statuses, and
+    no transcript leakage. `uv run ruff check scripts/extract_corpus.py
+    tests/test_extract_corpus.py` passed. CLI smoke passed with temporary
+    OpenCode and GitHub Copilot `.jsonl` candidates: `uv run
+    scripts/extract_corpus.py --output <tmp>/corpus.json --project-root
+    <tmp>/project --no-codex --no-claude --opencode-conversations-dir
+    <tmp>/opencode --copilot-conversations-dir <tmp>/copilot`, followed by JSON
+    assertions for `extractor_unimplemented` statuses, candidate_count=1, and no
+    private transcript strings in metadata.
+  next: >
+    Hand off Task 1 retry to Orkestrera. Continue with Task 2 only after this
+    retry is accepted; full OpenCode/Copilot conversation extraction remains out
+    of scope for Task 1.
+  context:
+    intent: Task 1 retry after Orkestrera bounded-degradation failure
+    constraints: no full OpenCode/Copilot extraction, no raw transcript logging,
+      no commit, tag, push, publication, installed app refresh, vision edit, or
+      objective-state edit
+    scope: unimplemented runtime dispatch, focused regression tests, CLI smoke,
+      and state artifacts
+- number: 405
+  timestamp: 2026-05-13
+  type: feat
+  phase: build
+  what: >
+    Completed Task 1 for the Profilera corpus runtime parity plan by defining the
+    extractor's runtime discovery contract and safety boundary.
+  commit: pending
+  inspiration: >
+    Task 1 acceptance required extraction to report bounded status and reasons
+    for available, absent, locked, sparse, and schema-divergent runtime stores
+    while preserving Decision 47 app-home precedence and Decision 48 namespace
+    boundaries.
+  discovered: >
+    The prior extractor silently returned no records for missing runtime stores
+    and had no per-runtime metadata surface. OpenCode and GitHub Copilot remain
+    contract-only hooks for later tasks; no conversation extraction for those
+    runtimes was implemented in this cycle.
+  verified: >
+    `uv run pytest tests/test_extract_corpus.py` passed with 6 tests, covering
+    portable family output, available/skipped runtime status, absent/sparse/
+    schema-divergent stores without transcript leakage, locked store handling,
+    and AGENTERA_HOME/platform profile-home precedence. `uv run
+    scripts/extract_corpus.py --output /tmp/agentera-task1-corpus.json
+    --project-root . --no-codex --no-claude --no-opencode --no-copilot` wrote 3
+    records and reported all four runtime stores as skipped with bounded
+    disabled reasons.
+    `uv run ruff check scripts/extract_corpus.py tests/test_extract_corpus.py`
+    passed. `uv run hooks/validate_artifact.py .agentera/plan.yaml
+    .agentera/progress.yaml CHANGELOG.md` passed. `git diff --check` passed.
+  next: >
+    Hand off to Orkestrera for Task 1 evaluation. Next implementation work can
+    add OpenCode extraction against the established runtime_statuses contract
+    without broadening CLI namespaces or changing app-home semantics.
+  context:
+    intent: Profilera corpus runtime discovery contract for planned parity work
+    constraints: no OpenCode/Copilot extraction beyond stubs, no external
+      services, no raw transcript logging, no broad corpus namespace, no commit,
+      no publication, no installed app refresh, no vision edit, and no objective
+      state edit
+    scope: scripts/extract_corpus.py contract helpers and focused extractor tests
 - number: 404
   timestamp: 2026-05-12
   type: fix

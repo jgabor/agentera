@@ -4,12 +4,14 @@
 
 ### Changed
 
+- 2.3.3 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the Profilera corpus runtime parity scope.
 - 2.3.2 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the plain-language recovery messaging scope.
 - 2.3.1 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the runtime-injected stale-default recovery scope; Profilera corpus parity remains deferred beyond 2.3.1.
 - 2.3.0 release state now aligns with Decisions 47, 48, and 50: app-home migration, `agentera lint`, installed schema/helper discovery, and app/runtime root diagnostics are the focused reliability scope, while Profilera corpus parity remains deferred beyond 2.3.0.
 
 ### Fixed
 
+- Profilera corpus extraction now reports available OpenCode and GitHub Copilot candidate stores as bounded `extractor_unimplemented` degradations instead of crashing while those runtime extractors remain deferred.
 - Recovery and troubleshooting messaging now explains app repair in plain language, recommends the safe action first, uses `directory` terminology, and blocks jargon-heavy phrases from release validation.
 - Runtime-injected exact deprecated-default `AGENTERA_HOME` recovery now guides upgrade toward the platform app home when no explicit `--install-root` was supplied, keeps doctor read-only, preserves explicit install-root authority, and allows safe user-data-only app homes to receive managed app code under `app/`.
 - The default upgrade flow now retires a managed legacy `~/.agents/agentera` app home when the new platform data app home is selected, moving known user state before removing old managed files; artifact migration coverage now proves canonical v1 Markdown files are automated through the upgrade artifacts phase.
@@ -20,8 +22,18 @@
 
 ### Added
 
+- The default live-host smoke harness now runs non-live Profilera corpus parity fixtures for Claude Code, Codex, OpenCode, and GitHub Copilot, reports absent local stores as bounded `store_absent` statuses, and keeps privacy-sensitive fixture transcript text out of smoke output.
+- Profilera corpus tests now prove combined Claude Code, Codex, OpenCode, and GitHub Copilot fixture parity plus bounded missing, locked, sparse, and schema-divergent degradation coverage without transcript leakage.
+- Profilera corpus extraction now reads GitHub Copilot `session-store.db` stores read-only, preserves user-before-assistant tied-turn ordering, emits decision-rich prompts, and reports `/chronicle reindex` as bounded sparse-store remediation without transcript leakage.
+- Profilera corpus extraction now reads OpenCode `opencode.db` stores read-only and normalizes ordered turns plus decision-rich prompts while unavailable OpenCode storage degrades explicitly.
+- Profilera corpus extraction now reports bounded per-runtime discovery status/reason metadata for available, absent, locked, sparse, skipped, and schema-divergent stores without adding a broad `agentera corpus` namespace.
 - `agentera lint --artifact <ARTIFACT>` exposes the pre-write self-audit checks through the CLI with stdin/file/text input, bounded text diagnostics, JSON output, and optional `--strict` failures.
 - Added an empty-project semantic fixture proving bare `hej` still uses exactly one `agentera hej` dashboard source call and does not fall back to a generic greeting.
+
+### Verified
+
+- Profilera corpus runtime parity state is synchronized without a selected release target: TODO, docs, progress, changelog, and plan state record completion while package, plugin, registry, lockfile, and skill version-bearing files remain unchanged.
+- 2.3.3 patch release readiness is recorded locally without publication, installed app refresh, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces are aligned.
 
 ## [2.2.3] · 2026-05-09
 

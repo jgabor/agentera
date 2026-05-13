@@ -11,11 +11,12 @@ errors, exit 0 / exit 1, snapshot-restore for any user file the harness
 might mutate. The two top-level modes:
 
     Default mode (no flags)
-        Runs an offline profilera corpus-collection fixture through the
-        bundled extractor, then delegates to ``scripts/smoke_setup_helpers.py``
-        as a subprocess so the existing helper smoke continues to gate this
-        harness. No live CLI is invoked. Exits 0 with
-        ``PASS: all smoke checks passed``.
+        Runs offline profilera corpus fixtures for Claude Code, Codex,
+        OpenCode, and GitHub Copilot through the bundled extractor,
+        verifies missing local runtime stores are bounded degradation, then
+        delegates to ``scripts/smoke_setup_helpers.py`` as a subprocess so
+        the existing helper smoke continues to gate this harness. No live CLI
+        is invoked. Exits 0 with ``PASS: all smoke checks passed``.
 
     Live mode (--live)
         Probes the ``claude``, ``codex``, ``copilot``, and ``opencode``
@@ -73,6 +74,7 @@ import hashlib
 import json
 import os
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -316,20 +318,192 @@ def _sha256(path: Path) -> str:
 # ---------------------------------------------------------------------------
 
 
-def run_codex_collection_audit() -> None:
-    """Prove the bundled corpus extractor can collect Codex-shaped turns."""
-    info("--- profilera Codex collection audit ---")
+PRIVATE_FIXTURE_TEXT = (
+    "SMOKE_PRIVATE_CLAUDE_TEXT",
+    "SMOKE_PRIVATE_CODEX_TEXT",
+    "SMOKE_PRIVATE_OPENCODE_TEXT",
+    "SMOKE_PRIVATE_COPILOT_TEXT",
+)
+
+
+def _write_codex_corpus_fixture(sessions_dir: Path, project_root: Path) -> None:
+    session_path = sessions_dir / "2026" / "05" / "05" / "session.jsonl"
+    session_path.parent.mkdir(parents=True)
+    events = [
+        {
+            "type": "session_meta",
+            "payload": {"id": "smoke-codex", "cwd": str(project_root)},
+        },
+        {
+            "type": "response_item",
+            "payload": {
+                "type": "message",
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": "Should Codex stay fixture-only? SMOKE_PRIVATE_CODEX_TEXT",
+                    }
+                ],
+                "timestamp": "2026-05-05T10:00:00Z",
+            },
+        },
+        {
+            "type": "response_item",
+            "payload": {
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "output_text", "text": "Yes, keep smoke non-live."}],
+                "timestamp": "2026-05-05T10:01:00Z",
+            },
+        },
+    ]
+    session_path.write_text(
+        "\n".join(json.dumps(event) for event in events) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _write_claude_corpus_fixture(projects_dir: Path, project_root: Path) -> None:
+    session_path = projects_dir / "agentera" / "claude-session.jsonl"
+    session_path.parent.mkdir(parents=True)
+    events = [
+        {
+            "role": "assistant",
+            "cwd": str(project_root),
+            "content": "Use fixture corpus only.",
+            "timestamp": "2026-05-05T09:00:00Z",
+        },
+        {
+            "role": "user",
+            "cwd": str(project_root),
+            "content": "Should Claude stay non-live? SMOKE_PRIVATE_CLAUDE_TEXT",
+            "timestamp": "2026-05-05T09:01:00Z",
+        },
+    ]
+    session_path.write_text(
+        "\n".join(json.dumps(event) for event in events) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _write_opencode_corpus_fixture(db_path: Path, project_root: Path) -> None:
+    db_path.parent.mkdir(parents=True)
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.executescript(
+            """
+            CREATE TABLE session (id TEXT PRIMARY KEY, cwd TEXT, time INTEGER);
+            CREATE TABLE message (id TEXT PRIMARY KEY, sessionID TEXT, role TEXT, time INTEGER);
+            CREATE TABLE part (id TEXT PRIMARY KEY, messageID TEXT, type TEXT, text TEXT);
+            """
+        )
+        conn.execute(
+            "INSERT INTO session (id, cwd, time) VALUES (?, ?, ?)",
+            ("smoke-opencode", str(project_root), 1_778_846_400),
+        )
+        conn.executemany(
+            "INSERT INTO message (id, sessionID, role, time) VALUES (?, ?, ?, ?)",
+            [
+                ("open-msg-1", "smoke-opencode", "assistant", 1_778_846_400),
+                ("open-msg-2", "smoke-opencode", "user", 1_778_846_460),
+            ],
+        )
+        conn.executemany(
+            "INSERT INTO part (id, messageID, type, text) VALUES (?, ?, ?, ?)",
+            [
+                ("open-part-1", "open-msg-1", "text", "Read opencode.db locally."),
+                (
+                    "open-part-2",
+                    "open-msg-2",
+                    "text",
+                    "Should OpenCode stay local-only? SMOKE_PRIVATE_OPENCODE_TEXT",
+                ),
+            ],
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _write_copilot_corpus_fixture(db_path: Path, project_root: Path) -> None:
+    db_path.parent.mkdir(parents=True)
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.executescript(
+            """
+            CREATE TABLE sessions (id TEXT PRIMARY KEY, cwd TEXT, created_at INTEGER);
+            CREATE TABLE turns (
+                id TEXT PRIMARY KEY,
+                session_id TEXT,
+                role TEXT,
+                turn_index INTEGER,
+                content TEXT,
+                created_at INTEGER
+            );
+            """
+        )
+        conn.execute(
+            "INSERT INTO sessions (id, cwd, created_at) VALUES (?, ?, ?)",
+            ("smoke-copilot", str(project_root), 1_778_850_000),
+        )
+        conn.executemany(
+            """
+            INSERT INTO turns (id, session_id, role, turn_index, content, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            [
+                ("copilot-turn-1", "smoke-copilot", "assistant", 1, "Use local storage.", 1_778_850_000),
+                (
+                    "copilot-turn-2",
+                    "smoke-copilot",
+                    "user",
+                    2,
+                    "Should Copilot stay local-only? SMOKE_PRIVATE_COPILOT_TEXT",
+                    1_778_850_060,
+                ),
+            ],
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _runtime_status_by_name(corpus: dict[str, object]) -> dict[str, dict[str, object]]:
+    metadata = corpus.get("metadata", {})
+    assert_true(isinstance(metadata, dict), "corpus metadata missing")
+    statuses = metadata.get("runtime_statuses", [])
+    assert_true(isinstance(statuses, list), "corpus runtime statuses missing")
+    return {
+        str(item.get("runtime")): item
+        for item in statuses
+        if isinstance(item, dict) and item.get("runtime")
+    }
+
+
+def _assert_no_private_fixture_text(output: str) -> None:
+    leaked = [text for text in PRIVATE_FIXTURE_TEXT if text in output]
+    assert_true(
+        not leaked,
+        "profilera corpus smoke output leaked private fixture text",
+    )
+
+
+def run_fixture_corpus_parity_audit() -> None:
+    """Prove all supported runtime families through explicit offline fixtures."""
+    info("--- profilera fixture corpus parity audit ---")
     if not EXTRACT_CORPUS.exists():
         fail(f"profilera corpus extractor missing: {EXTRACT_CORPUS}")
     with tempfile.TemporaryDirectory(prefix="agentera-corpus-smoke-") as tmp_str:
         tmp = Path(tmp_str)
         project_root = tmp / "project"
-        sessions_dir = tmp / "codex" / "sessions"
-        session_path = sessions_dir / "2026" / "05" / "05" / "session.jsonl"
+        codex_dir = tmp / "codex" / "sessions"
+        claude_dir = tmp / "claude" / "projects"
+        opencode_db = tmp / "opencode" / "opencode.db"
+        copilot_db = tmp / "copilot" / "session-store.db"
         output = tmp / "corpus.json"
 
         project_root.mkdir(parents=True)
-        session_path.parent.mkdir(parents=True)
         (project_root / "AGENTS.md").write_text(
             "Prefer evidence-first execution.\n",
             encoding="utf-8",
@@ -338,34 +512,10 @@ def run_codex_collection_audit() -> None:
             json.dumps({"name": "agentera-smoke", "scripts": {"test": "pytest"}}),
             encoding="utf-8",
         )
-        session_events = [
-            {
-                "type": "session_meta",
-                "payload": {"id": "smoke-session", "cwd": str(project_root)},
-            },
-            {
-                "type": "response_item",
-                "payload": {
-                    "type": "message",
-                    "role": "user",
-                    "content": [{"type": "input_text", "text": "Should we keep flags explicit?"}],
-                    "timestamp": "2026-05-05T10:00:00Z",
-                },
-            },
-            {
-                "type": "response_item",
-                "payload": {
-                    "type": "message",
-                    "role": "assistant",
-                    "content": [{"type": "output_text", "text": "Yes. Explicit flags stay authoritative."}],
-                    "timestamp": "2026-05-05T10:01:00Z",
-                },
-            },
-        ]
-        session_path.write_text(
-            "\n".join(json.dumps(event) for event in session_events) + "\n",
-            encoding="utf-8",
-        )
+        _write_codex_corpus_fixture(codex_dir, project_root)
+        _write_claude_corpus_fixture(claude_dir, project_root)
+        _write_opencode_corpus_fixture(opencode_db, project_root)
+        _write_copilot_corpus_fixture(copilot_db, project_root)
 
         result = subprocess.run(
             [
@@ -376,8 +526,13 @@ def run_codex_collection_audit() -> None:
                 "--project-root",
                 str(project_root),
                 "--codex-sessions-dir",
-                str(sessions_dir),
-                "--no-claude",
+                str(codex_dir),
+                "--claude-projects-dir",
+                str(claude_dir),
+                "--opencode-conversations-dir",
+                str(opencode_db),
+                "--copilot-conversations-dir",
+                str(copilot_db),
             ],
             capture_output=True,
             text=True,
@@ -392,13 +547,27 @@ def run_codex_collection_audit() -> None:
         assert_true(result.returncode == 0, "profilera corpus extractor failed")
         assert_true(output.exists(), "profilera corpus extractor did not write corpus.json")
         corpus = json.loads(output.read_text(encoding="utf-8"))
+        statuses = _runtime_status_by_name(corpus)
+        for runtime in ("claude-code", "codex", "opencode", "github-copilot"):
+            status = statuses.get(runtime)
+            assert_true(status is not None, f"missing runtime status: {runtime}")
+            assert_true(status.get("status") == "ok", f"runtime did not extract records: {runtime}")
+            info(
+                "  runtime: %s status=%s reason=%s records=%s"
+                % (
+                    runtime,
+                    status.get("status"),
+                    status.get("reason"),
+                    status.get("record_count"),
+                )
+            )
         families = corpus.get("metadata", {}).get("families", {})
         assert_true(
-            families.get("conversation_turn", {}).get("count") == 2,
-            "profilera corpus extractor did not collect Codex conversation turns",
+            families.get("conversation_turn", {}).get("count") >= 8,
+            "profilera corpus extractor did not collect all fixture conversation turns",
         )
         assert_true(
-            families.get("history_prompt", {}).get("count") == 1,
+            families.get("history_prompt", {}).get("count") >= 4,
             "profilera corpus extractor did not classify decision-rich user prompts",
         )
         assert_true(
@@ -409,7 +578,69 @@ def run_codex_collection_audit() -> None:
             families.get("project_config_signal", {}).get("count") == 1,
             "profilera corpus extractor did not collect project config signals",
         )
-    info("PASS: profilera Codex collection audit")
+        _assert_no_private_fixture_text(result.stdout + result.stderr)
+    info("PASS: profilera fixture corpus parity audit")
+
+
+def run_unavailable_store_degradation_audit() -> None:
+    """Prove absent runtime stores are bounded degradation, not failures."""
+    info("--- profilera unavailable store degradation audit ---")
+    with tempfile.TemporaryDirectory(prefix="agentera-corpus-smoke-missing-") as tmp_str:
+        tmp = Path(tmp_str)
+        project_root = tmp / "project"
+        output = tmp / "corpus.json"
+        project_root.mkdir(parents=True)
+        (project_root / "AGENTS.md").write_text("Smoke missing stores.\n", encoding="utf-8")
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(EXTRACT_CORPUS),
+                "--output",
+                str(output),
+                "--project-root",
+                str(project_root),
+                "--codex-sessions-dir",
+                str(tmp / "missing-codex"),
+                "--claude-projects-dir",
+                str(tmp / "missing-claude"),
+                "--opencode-conversations-dir",
+                str(tmp / "missing-opencode"),
+                "--copilot-conversations-dir",
+                str(tmp / "missing-copilot"),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.stdout:
+            for line in result.stdout.rstrip("\n").splitlines():
+                info(f"  {line}")
+        if result.stderr:
+            for line in result.stderr.rstrip("\n").splitlines():
+                info(f"  stderr: {line}")
+        assert_true(result.returncode == 0, "profilera missing-store smoke failed")
+        corpus = json.loads(output.read_text(encoding="utf-8"))
+        statuses = _runtime_status_by_name(corpus)
+        for runtime in ("claude-code", "codex", "opencode", "github-copilot"):
+            status = statuses.get(runtime)
+            assert_true(status is not None, f"missing unavailable-store status: {runtime}")
+            assert_true(
+                status.get("status") == "missing",
+                f"unavailable store was not bounded missing status: {runtime}",
+            )
+            info(
+                "  runtime: %s status=%s reason=%s candidates=%s records=%s"
+                % (
+                    runtime,
+                    status.get("status"),
+                    status.get("reason"),
+                    status.get("candidate_count"),
+                    status.get("record_count"),
+                )
+            )
+        _assert_no_private_fixture_text(result.stdout + result.stderr)
+    info("PASS: profilera unavailable store degradation audit")
 
 
 def run_setup_helpers_smoke() -> None:
@@ -699,7 +930,7 @@ def run_codex_live_section(
         real_auth = Path.home() / ".codex" / "auth.json"
         if real_auth.exists():
             shutil.copy2(real_auth, tmp_codex_home / "auth.json")
-            info(f"codex: copied auth.json into tmp CODEX_HOME (authed)")
+            info("codex: copied auth.json into tmp CODEX_HOME (authed)")
         else:
             skip(
                 "codex",
@@ -2431,7 +2662,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=(
             "Enable live CLI invocations for Claude Code, Codex, Copilot, "
             "and OpenCode (gated behind cost prompt + consent). Without "
-            "this flag the harness runs the offline audit and delegated "
+            "this flag the harness runs offline fixture parity, bounded "
+            "missing-store degradation, and delegated "
             "setup helpers smoke only."
         ),
     )
@@ -2461,7 +2693,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         # Default-mode sections always run (also under --live), so a
         # live-mode invocation gets the offline gates as a precondition.
-        run_codex_collection_audit()
+        run_fixture_corpus_parity_audit()
+        run_unavailable_store_degradation_audit()
         run_setup_helpers_smoke()
 
         if args.live:

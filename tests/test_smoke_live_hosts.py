@@ -117,3 +117,31 @@ def test_codex_hook_trust_config_enables_temp_user_hooks(tmp_path: Path) -> None
     assert f"{hooks_config}:post_tool_use:0:0" in text
     assert "trusted_hash = \"sha256:" in text
     assert "enabled = true" in text
+
+
+def test_default_fixture_parity_smoke_reports_counts_without_transcripts(capsys) -> None:
+    smoke = _load_smoke_live_hosts()
+
+    smoke.run_fixture_corpus_parity_audit()
+
+    output = capsys.readouterr().out
+    assert "PASS: profilera fixture corpus parity audit" in output
+    assert "runtime: claude-code status=ok" in output
+    assert "runtime: codex status=ok" in output
+    assert "runtime: opencode status=ok" in output
+    assert "runtime: github-copilot status=ok" in output
+    for private_text in smoke.PRIVATE_FIXTURE_TEXT:
+        assert private_text not in output
+
+
+def test_unavailable_store_smoke_reports_bounded_missing_statuses(capsys) -> None:
+    smoke = _load_smoke_live_hosts()
+
+    smoke.run_unavailable_store_degradation_audit()
+
+    output = capsys.readouterr().out
+    assert "PASS: profilera unavailable store degradation audit" in output
+    assert "runtime: claude-code status=missing reason=store_absent" in output
+    assert "runtime: codex status=missing reason=store_absent" in output
+    assert "runtime: opencode status=missing reason=store_absent" in output
+    assert "runtime: github-copilot status=missing reason=store_absent" in output

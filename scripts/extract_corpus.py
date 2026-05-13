@@ -26,11 +26,14 @@ import hashlib
 import json
 import os
 import re
+import sqlite3
+import subprocess
 import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
+from urllib.parse import quote
 
 ADAPTER_VERSION = "agentera-v2-corpus-1"
 FAMILIES = (
@@ -39,6 +42,14 @@ FAMILIES = (
     "conversation_turn",
     "project_config_signal",
 )
+RUNTIME_STORE_GLOBS = {
+    "codex": "*.jsonl",
+    "claude-code": "*.jsonl",
+    "opencode": "opencode.db",
+    "github-copilot": "session-store.db",
+}
+MAX_SQLITE_ROWS = 2000
+COPILOT_SPARSE_REMEDIATION = "/chronicle reindex"
 DECISION_RE = re.compile(
     r"\b("
     r"decide|decision|prefer|preference|instead|avoid|don't|do not|"
@@ -84,6 +95,13 @@ def default_profile_dir() -> Path:
     override = os.environ.get("PROFILERA_PROFILE_DIR")
     if override:
         return Path(override)
+    return default_agentera_home()
+
+
+def default_agentera_home() -> Path:
+    override = os.environ.get("AGENTERA_HOME")
+    if override:
+        return Path(override)
     if sys.platform == "darwin":
         return Path.home() / "Library" / "Application Support" / "agentera"
     if sys.platform == "win32":
@@ -95,6 +113,84 @@ def default_profile_dir() -> Path:
 
 def default_output_path() -> Path:
     return default_profile_dir() / "intermediate" / "corpus.json"
+
+
+def runtime_status(
+    runtime: str,
+    *,
+    status: str,
+    reason: str,
+    store_path: Path | None,
+    candidate_count: int | None = None,
+    record_count: int | None = None,
+    error_count: int | None = None,
+    remediation_labels: list[str] | None = None,
+) -> dict[str, Any]:
+    item: dict[str, Any] = {
+        "runtime": runtime,
+        "status": status,
+        "reason": reason,
+    }
+    if store_path is not None:
+        item["store_path"] = str(store_path)
+    if candidate_count is not None:
+        item["candidate_count"] = candidate_count
+    if record_count is not None:
+        item["record_count"] = record_count
+    if error_count is not None:
+        item["error_count"] = error_count
+    if remediation_labels:
+        item["remediation_labels"] = remediation_labels
+    return item
+
+
+def discover_runtime_store(runtime: str, store_path: Path | None) -> dict[str, Any]:
+    if store_path is None:
+        return runtime_status(runtime, status="skipped", reason="disabled", store_path=None)
+    if not store_path.exists():
+        return runtime_status(
+            runtime,
+            status="missing",
+            reason="store_absent",
+            store_path=store_path,
+            remediation_labels=(
+                [COPILOT_SPARSE_REMEDIATION] if runtime == "github-copilot" else None
+            ),
+        )
+    if runtime in {"opencode", "github-copilot"} and store_path.is_file():
+        return runtime_status(
+            runtime,
+            status="available",
+            reason="candidate_files_found",
+            store_path=store_path,
+            candidate_count=1,
+        )
+    if not store_path.is_dir():
+        return runtime_status(runtime, status="degraded", reason="store_not_directory", store_path=store_path)
+    try:
+        candidates = list(store_path.rglob(RUNTIME_STORE_GLOBS[runtime]))
+    except PermissionError:
+        return runtime_status(runtime, status="degraded", reason="store_locked", store_path=store_path)
+    except OSError:
+        return runtime_status(runtime, status="degraded", reason="store_unreadable", store_path=store_path)
+    if not candidates:
+        return runtime_status(
+            runtime,
+            status="sparse",
+            reason="no_candidate_files",
+            store_path=store_path,
+            candidate_count=0,
+            remediation_labels=(
+                [COPILOT_SPARSE_REMEDIATION] if runtime == "github-copilot" else None
+            ),
+        )
+    return runtime_status(
+        runtime,
+        status="available",
+        reason="candidate_files_found",
+        store_path=store_path,
+        candidate_count=len(candidates),
+    )
 
 
 def record(
@@ -478,21 +574,465 @@ def extract_claude_project_sessions(projects_dir: Path | None, errors: list[str]
     return records
 
 
+def _opencode_db_candidates(store_path: Path) -> list[Path]:
+    if store_path.is_file():
+        return [store_path]
+    return sorted(store_path.rglob("opencode.db"))
+
+
+def _sqlite_uri(path: Path) -> str:
+    return f"file:{quote(str(path.resolve()), safe='/:')}?mode=ro&immutable=1"
+
+
+def _table_columns(conn: sqlite3.Connection, table: str) -> set[str]:
+    rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+    return {str(row[1]) for row in rows}
+
+
+def _first_column(columns: set[str], candidates: tuple[str, ...]) -> str | None:
+    for candidate in candidates:
+        if candidate in columns:
+            return candidate
+    return None
+
+
+def _qualified(alias: str, column: str | None, label: str) -> str:
+    if column is None:
+        return f"NULL AS {label}"
+    escaped = column.replace('"', '""')
+    return f'{alias}."{escaped}" AS {label}'
+
+
+def _opencode_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    tables = {
+        str(row[0])
+        for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()
+    }
+    required = {"session", "message", "part"}
+    if not required.issubset(tables):
+        missing = ",".join(sorted(required - tables))
+        raise ValueError(f"missing opencode tables: {missing}")
+
+    session_cols = _table_columns(conn, "session")
+    message_cols = _table_columns(conn, "message")
+    part_cols = _table_columns(conn, "part")
+    session_id = _first_column(session_cols, ("id", "session_id", "sessionID"))
+    message_id = _first_column(message_cols, ("id", "message_id", "messageID"))
+    message_session = _first_column(message_cols, ("sessionID", "session_id", "session", "sessionId"))
+    part_message = _first_column(part_cols, ("messageID", "message_id", "message", "messageId"))
+    if not (session_id and message_id and message_session and part_message):
+        raise ValueError("missing opencode join columns")
+
+    role_col = _first_column(message_cols, ("role", "actor", "author"))
+    if role_col is None:
+        raise ValueError("missing opencode message role column")
+
+    message_time = _first_column(message_cols, ("time", "timestamp", "created_at", "createdAt"))
+    part_time = _first_column(part_cols, ("time", "timestamp", "created_at", "createdAt"))
+    session_time = _first_column(session_cols, ("time", "timestamp", "created_at", "createdAt"))
+    project_col = _first_column(session_cols, ("cwd", "project_path", "projectPath", "directory", "path"))
+    message_text = _first_column(message_cols, ("content", "text", "message"))
+    part_text = _first_column(part_cols, ("text", "content", "input", "output"))
+    part_type = _first_column(part_cols, ("type", "kind"))
+    part_id = _first_column(part_cols, ("id", "part_id", "partID"))
+
+    query = f"""
+        SELECT
+            {_qualified('s', session_id, 'session_id')},
+            {_qualified('s', project_col, 'project_path')},
+            {_qualified('m', message_id, 'message_id')},
+            {_qualified('m', role_col, 'role')},
+            {_qualified('m', message_time, 'message_time')},
+            {_qualified('m', message_text, 'message_text')},
+            {_qualified('p', part_id, 'part_id')},
+            {_qualified('p', part_time, 'part_time')},
+            {_qualified('p', part_type, 'part_type')},
+            {_qualified('p', part_text, 'part_text')}
+        FROM message m
+        JOIN session s ON m."{message_session}" = s."{session_id}"
+        LEFT JOIN part p ON p."{part_message}" = m."{message_id}"
+        ORDER BY COALESCE(m."{message_time or message_id}", p."{part_time or part_message}", s."{session_time or session_id}"),
+                 m."{message_id}",
+                 p."{part_id or part_message}"
+        LIMIT ?
+    """
+    return conn.execute(query, (MAX_SQLITE_ROWS,)).fetchall()
+
+
+def _sqlite_timestamp(value: Any, fallback: str) -> str:
+    if isinstance(value, str) and value:
+        return value
+    if isinstance(value, (int, float)):
+        numeric = float(value)
+        if numeric > 10_000_000_000:
+            numeric /= 1000
+        return datetime.fromtimestamp(numeric, timezone.utc).isoformat().replace("+00:00", "Z")
+    return fallback
+
+
+def extract_opencode_sessions(store_path: Path | None, errors: list[str]) -> list[dict[str, Any]]:
+    if store_path is None or not store_path.exists():
+        return []
+    records: list[dict[str, Any]] = []
+    for db_path in _opencode_db_candidates(store_path)[:1]:
+        fallback_timestamp = iso_from_mtime(db_path)
+        try:
+            conn = sqlite3.connect(_sqlite_uri(db_path), uri=True)
+            conn.row_factory = sqlite3.Row
+            rows = _opencode_rows(conn)
+        except sqlite3.OperationalError as exc:
+            if "lock" in str(exc).lower() or "busy" in str(exc).lower():
+                raise PermissionError from exc
+            errors.append(f"{db_path}: opencode sqlite read failed: {exc.__class__.__name__}")
+            continue
+        except (sqlite3.DatabaseError, ValueError) as exc:
+            errors.append(f"{db_path}: opencode schema divergent: {exc}")
+            continue
+        finally:
+            try:
+                conn.close()
+            except UnboundLocalError:
+                pass
+
+        messages: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            message_id = str(row["message_id"])
+            item = messages.setdefault(
+                message_id,
+                {
+                    "role": row["role"],
+                    "session_id": str(row["session_id"]),
+                    "project_path": row["project_path"],
+                    "timestamp": _sqlite_timestamp(row["message_time"], fallback_timestamp),
+                    "parts": [],
+                },
+            )
+            part_text = text_from_content(row["part_text"])
+            if part_text:
+                item["parts"].append(part_text)
+            elif row["message_text"]:
+                item["parts"].append(text_from_content(row["message_text"]))
+
+        previous_assistant = ""
+        for index, item in enumerate(messages.values(), start=1):
+            role = str(item["role"]).lower()
+            if role not in {"user", "assistant"}:
+                continue
+            content = "\n".join(part for part in item["parts"] if part)
+            if not content:
+                continue
+            project_path = Path(item["project_path"]) if item["project_path"] else None
+            data: dict[str, Any] = {
+                "actor": role,
+                "content": content,
+            }
+            if role == "user":
+                if previous_assistant:
+                    data["preceding_context"] = previous_assistant[-2000:]
+                sig = signal_type(content)
+                if sig:
+                    data["signal_type"] = sig
+            else:
+                previous_assistant = content
+            records.append(
+                record(
+                    source_kind="conversation_turn",
+                    timestamp=item["timestamp"],
+                    project_path=project_path,
+                    runtime="opencode",
+                    source_parts=(db_path.resolve(), index, role, content[:80]),
+                    session_id=item["session_id"],
+                    data=data,
+                )
+            )
+            if role == "user":
+                sig = signal_type(content)
+                if sig:
+                    records.append(
+                        record(
+                            source_kind="history_prompt",
+                            timestamp=item["timestamp"],
+                            project_path=project_path,
+                            runtime="opencode",
+                            source_parts=(db_path.resolve(), index, "history", content[:120]),
+                            session_id=item["session_id"],
+                            data={
+                                "prompt": content,
+                                "signal_type": sig,
+                            },
+                        )
+                    )
+    return records
+
+
+def _copilot_db_candidates(store_path: Path) -> list[Path]:
+    if store_path.is_file():
+        return [store_path]
+    return sorted(store_path.rglob("session-store.db"))
+
+
+def _copilot_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    tables = {
+        str(row[0])
+        for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()
+    }
+    required = {"sessions", "turns"}
+    if not required.issubset(tables):
+        missing = ",".join(sorted(required - tables))
+        raise ValueError(f"missing copilot tables: {missing}")
+
+    session_cols = _table_columns(conn, "sessions")
+    turn_cols = _table_columns(conn, "turns")
+    session_id = _first_column(session_cols, ("id", "session_id", "sessionID"))
+    turn_id = _first_column(turn_cols, ("id", "turn_id", "turnID"))
+    turn_session = _first_column(turn_cols, ("session_id", "sessionID", "session", "sessionId"))
+    if not (session_id and turn_session):
+        raise ValueError("missing copilot join columns")
+
+    role_col = _first_column(turn_cols, ("role", "actor", "author"))
+    text_col = _first_column(turn_cols, ("content", "text", "message", "prompt", "response"))
+    if role_col is None:
+        raise ValueError("missing copilot turn role column")
+    if text_col is None:
+        raise ValueError("missing copilot turn text column")
+
+    session_time = _first_column(session_cols, ("time", "timestamp", "created_at", "createdAt"))
+    turn_time = _first_column(turn_cols, ("time", "timestamp", "created_at", "createdAt"))
+    turn_order = _first_column(turn_cols, ("turn_index", "turnIndex", "idx", "position", "sequence"))
+    project_col = _first_column(session_cols, ("cwd", "project_path", "projectPath", "directory", "path"))
+
+    order_expr = f't."{turn_order}"' if turn_order else f't."{turn_time or turn_session}"'
+    id_expr = f't."{turn_id}"' if turn_id else "t.rowid"
+    query = f"""
+        SELECT
+            {_qualified('s', session_id, 'session_id')},
+            {_qualified('s', project_col, 'project_path')},
+            {_qualified('t', turn_id, 'turn_id')},
+            {_qualified('t', role_col, 'role')},
+            {_qualified('t', turn_time, 'turn_time')},
+            {_qualified('s', session_time, 'session_time')},
+            {_qualified('t', text_col, 'turn_text')}
+        FROM turns t
+        JOIN sessions s ON t."{turn_session}" = s."{session_id}"
+        ORDER BY COALESCE({order_expr}, t."{turn_session}"),
+                 CASE LOWER(t."{role_col}") WHEN 'user' THEN 0 WHEN 'assistant' THEN 1 ELSE 2 END,
+                 {id_expr}
+        LIMIT ?
+    """
+    return conn.execute(query, (MAX_SQLITE_ROWS,)).fetchall()
+
+
+def extract_copilot_sessions(store_path: Path | None, errors: list[str]) -> list[dict[str, Any]]:
+    if store_path is None or not store_path.exists():
+        return []
+    records: list[dict[str, Any]] = []
+    for db_path in _copilot_db_candidates(store_path)[:1]:
+        fallback_timestamp = iso_from_mtime(db_path)
+        try:
+            conn = sqlite3.connect(_sqlite_uri(db_path), uri=True)
+            conn.row_factory = sqlite3.Row
+            rows = _copilot_rows(conn)
+        except sqlite3.OperationalError as exc:
+            if "lock" in str(exc).lower() or "busy" in str(exc).lower():
+                raise PermissionError from exc
+            errors.append(f"{db_path}: copilot sqlite read failed: {exc.__class__.__name__}")
+            continue
+        except (sqlite3.DatabaseError, ValueError) as exc:
+            errors.append(f"{db_path}: copilot schema divergent: {exc}")
+            continue
+        finally:
+            try:
+                conn.close()
+            except UnboundLocalError:
+                pass
+
+        previous_assistant = ""
+        for index, row in enumerate(rows, start=1):
+            role = str(row["role"]).lower()
+            if role not in {"user", "assistant"}:
+                continue
+            content = text_from_content(row["turn_text"])
+            if not content:
+                continue
+            project_path = Path(row["project_path"]) if row["project_path"] else None
+            timestamp = _sqlite_timestamp(
+                row["turn_time"] or row["session_time"],
+                fallback_timestamp,
+            )
+            data: dict[str, Any] = {
+                "actor": role,
+                "content": content,
+            }
+            if role == "user":
+                if previous_assistant:
+                    data["preceding_context"] = previous_assistant[-2000:]
+                sig = signal_type(content)
+                if sig:
+                    data["signal_type"] = sig
+            else:
+                previous_assistant = content
+            records.append(
+                record(
+                    source_kind="conversation_turn",
+                    timestamp=timestamp,
+                    project_path=project_path,
+                    runtime="github-copilot",
+                    source_parts=(db_path.resolve(), index, role, content[:80]),
+                    session_id=str(row["session_id"]),
+                    data=data,
+                )
+            )
+            if role == "user":
+                sig = signal_type(content)
+                if sig:
+                    records.append(
+                        record(
+                            source_kind="history_prompt",
+                            timestamp=timestamp,
+                            project_path=project_path,
+                            runtime="github-copilot",
+                            source_parts=(db_path.resolve(), index, "history", content[:120]),
+                            session_id=str(row["session_id"]),
+                            data={
+                                "prompt": content,
+                                "signal_type": sig,
+                            },
+                        )
+                    )
+    return records
+
+
+class ExtractionNotImplementedError(Exception):
+    """Raised when discovery is supported but runtime extraction is deferred."""
+
+
+def extract_unimplemented_runtime(store_path: Path | None, errors: list[str]) -> list[dict[str, Any]]:
+    del store_path, errors
+    raise ExtractionNotImplementedError
+
+
+def resolve_opencode_db_path() -> Path | None:
+    try:
+        result = subprocess.run(
+            ["opencode", "db", "path"],
+            text=True,
+            capture_output=True,
+            timeout=2,
+            check=False,
+        )
+    except (FileNotFoundError, subprocess.SubprocessError, OSError):
+        return None
+    if result.returncode != 0:
+        return None
+    candidate = result.stdout.strip().splitlines()[0] if result.stdout.strip() else ""
+    return Path(candidate).expanduser() if candidate else None
+
+
+def resolve_copilot_store_path() -> Path:
+    return Path(os.environ.get("COPILOT_HOME", str(Path.home() / ".copilot"))).expanduser()
+
+
+def extract_runtime_store(
+    *,
+    runtime: str,
+    store_path: Path | None,
+    errors: list[str],
+    extractor: Any,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    discovery = discover_runtime_store(runtime, store_path)
+    if discovery["status"] != "available":
+        return [], discovery
+
+    error_start = len(errors)
+    try:
+        records = extractor(store_path, errors)
+    except ExtractionNotImplementedError:
+        return [], runtime_status(
+            runtime,
+            status="degraded",
+            reason="extractor_unimplemented",
+            store_path=store_path,
+            candidate_count=discovery.get("candidate_count"),
+            record_count=0,
+            error_count=0,
+        )
+    except PermissionError:
+        return [], runtime_status(
+            runtime,
+            status="degraded",
+            reason="store_locked",
+            store_path=store_path,
+            candidate_count=discovery.get("candidate_count"),
+        )
+    except OSError:
+        return [], runtime_status(
+            runtime,
+            status="degraded",
+            reason="store_unreadable",
+            store_path=store_path,
+            candidate_count=discovery.get("candidate_count"),
+        )
+
+    error_count = len(errors) - error_start
+    if error_count:
+        return records, runtime_status(
+            runtime,
+            status="degraded",
+            reason="schema_divergent",
+            store_path=store_path,
+            candidate_count=discovery.get("candidate_count"),
+            record_count=len(records),
+            error_count=error_count,
+        )
+    if not records:
+        return records, runtime_status(
+            runtime,
+            status="sparse",
+            reason="no_matching_records",
+            store_path=store_path,
+            candidate_count=discovery.get("candidate_count"),
+            record_count=0,
+            remediation_labels=(
+                [COPILOT_SPARSE_REMEDIATION] if runtime == "github-copilot" else None
+            ),
+        )
+    return records, runtime_status(
+        runtime,
+        status="ok",
+        reason="records_extracted",
+        store_path=store_path,
+        candidate_count=discovery.get("candidate_count"),
+        record_count=len(records),
+        error_count=0,
+    )
+
+
 def dedupe_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     by_id: dict[str, dict[str, Any]] = {}
     for item in records:
         by_id[item["source_id"]] = item
-    return sorted(
-        by_id.values(),
-        key=lambda item: (
+
+    def sort_key(item: dict[str, Any]) -> tuple[str, str, int, str]:
+        actor = item.get("data", {}).get("actor") if isinstance(item.get("data"), dict) else None
+        actor_order = {"user": 0, "assistant": 1}.get(str(actor), 2)
+        return (
             item.get("timestamp", ""),
             item.get("source_kind", ""),
+            actor_order,
             item.get("source_id", ""),
-        ),
+        )
+
+    return sorted(
+        by_id.values(),
+        key=sort_key,
     )
 
 
-def build_metadata(records: list[dict[str, Any]], errors: list[str]) -> dict[str, Any]:
+def build_metadata(
+    records: list[dict[str, Any]],
+    errors: list[str],
+    runtime_statuses: list[dict[str, Any]],
+) -> dict[str, Any]:
     counts = Counter(
         item.get("source_kind") for item in records if item.get("source_kind") in FAMILIES
     )
@@ -513,6 +1053,7 @@ def build_metadata(records: list[dict[str, Any]], errors: list[str]) -> dict[str
         "runtimes": runtimes,
         "adapter_version": ADAPTER_VERSION,
         "families": families,
+        "runtime_statuses": runtime_statuses,
         "total_records": len(records),
         "errors": errors,
     }
@@ -524,6 +1065,8 @@ def build_corpus(
     project_roots: list[Path],
     codex_sessions_dir: Path | None,
     claude_projects_dir: Path | None,
+    opencode_conversations_dir: Path | None = None,
+    copilot_conversations_dir: Path | None = None,
 ) -> dict[str, Any]:
     errors: list[str] = []
     normalized_roots = [root.resolve() for root in project_roots if root.exists()]
@@ -534,11 +1077,24 @@ def build_corpus(
     records: list[dict[str, Any]] = []
     records.extend(extract_instruction_documents(normalized_roots, errors))
     records.extend(extract_project_config_signals(normalized_roots, errors))
-    records.extend(extract_codex_sessions(codex_sessions_dir, errors))
-    records.extend(extract_claude_project_sessions(claude_projects_dir, errors))
+    runtime_statuses: list[dict[str, Any]] = []
+    for runtime, store_path, extractor in (
+        ("codex", codex_sessions_dir, extract_codex_sessions),
+        ("claude-code", claude_projects_dir, extract_claude_project_sessions),
+        ("opencode", opencode_conversations_dir, extract_opencode_sessions),
+        ("github-copilot", copilot_conversations_dir, extract_copilot_sessions),
+    ):
+        runtime_records, status = extract_runtime_store(
+            runtime=runtime,
+            store_path=store_path,
+            errors=errors,
+            extractor=extractor,
+        )
+        records.extend(runtime_records)
+        runtime_statuses.append(status)
     records = dedupe_records(records)
     return {
-        "metadata": build_metadata(records, errors),
+        "metadata": build_metadata(records, errors, runtime_statuses),
         "records": records,
     }
 
@@ -573,6 +1129,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Claude Code project JSONL directory to scan (default: ~/.claude/projects)",
     )
     parser.add_argument(
+        "--opencode-conversations-dir",
+        type=Path,
+        default=None,
+        help="OpenCode opencode.db file or directory (default: opencode db path when available)",
+    )
+    parser.add_argument(
+        "--copilot-conversations-dir",
+        type=Path,
+        default=None,
+        help="GitHub Copilot session-store.db file or directory (default: COPILOT_HOME or ~/.copilot)",
+    )
+    parser.add_argument(
         "--no-codex",
         action="store_true",
         help="skip Codex session extraction",
@@ -581,6 +1149,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--no-claude",
         action="store_true",
         help="skip Claude Code session extraction",
+    )
+    parser.add_argument(
+        "--no-opencode",
+        action="store_true",
+        help="skip OpenCode runtime discovery",
+    )
+    parser.add_argument(
+        "--no-copilot",
+        action="store_true",
+        help="skip GitHub Copilot runtime discovery",
     )
     return parser.parse_args(argv)
 
@@ -592,6 +1170,14 @@ def main(argv: list[str] | None = None) -> int:
         project_roots=project_roots,
         codex_sessions_dir=None if args.no_codex else args.codex_sessions_dir,
         claude_projects_dir=None if args.no_claude else args.claude_projects_dir,
+        opencode_conversations_dir=(
+            None
+            if args.no_opencode
+            else args.opencode_conversations_dir or resolve_opencode_db_path()
+        ),
+        copilot_conversations_dir=(
+            None if args.no_copilot else args.copilot_conversations_dir or resolve_copilot_store_path()
+        ),
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(corpus, indent=2, sort_keys=False) + "\n", encoding="utf-8")
