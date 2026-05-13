@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["pyyaml"]
+# ///
 """Contract, extraction, and reporting for Agentera startup state-access analysis.
 
 The measurement target is deliberately narrow: after a capability-related user
