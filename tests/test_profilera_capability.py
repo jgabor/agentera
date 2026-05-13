@@ -128,11 +128,12 @@ def test_profilera_prose_exists_and_contains_workflow():
     content = prose_path.read_text()
     for required in [
         "Step 0: Detect mode",
-        "Step 1: Run extraction",
-        "Step 2: Read corpus data",
-        "Step 3: Categorize and synthesize",
-        "Step 4: Generate the profile",
-        "Step 5: Validate predictions",
+        "Step 1: Detect runtime sources",
+        "Step 2: Run extraction",
+        "Step 3: Read corpus data",
+        "Step 4: Categorize and synthesize",
+        "Step 5: Generate the profile",
+        "Step 6: Validate predictions",
         "Validate Mode",
         "Safety rails",
         "Exit signals",
