@@ -15,6 +15,8 @@
 
 ## ⇢ Annoying
 
+- [ ] [fix] Investigate, review, and improve `agentera doctor` output so a ready/healthy status does not always show a `Next:` section that can be interpreted as required action; distinguish optional repair/upgrade guidance from actual required follow-up, and fix command formatting issues such as missing whitespace before `--dry-run`.
+
 ## Resolved
 
 - [x] ~~[test] Add a manual startup state benchmark suite for Decision 52.~~ · resolved by the manual `mage bench:startupState` benchmark suite: explicit runtime/path approval is required before local history access, fixture-backed tests cover consent refusal, successful synthetic measurement, missing-store degradation, aggregate JSONL schema, privacy exclusions, and no repository-local generated outputs, and durable retained evidence is limited to user-local `runs.jsonl`, `latest-report.json`, and `latest-report.md`; the separate CLI startup state-envelope follow-up remains open.
