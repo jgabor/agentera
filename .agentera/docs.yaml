@@ -389,16 +389,17 @@ audit_log:
       `docs/benchmark.md` now documents `mage bench:startupState` as the simple
       no-prerequisite command, with optional `AGENTERA_BENCH_RUNTIME_STORES`,
       `AGENTERA_BENCH_SALT`, absolute-path overrides, user-local durable storage,
-      latest-only retention, and interpretation of `raw_after_cli_rate` plus
-      `redundant_raw_access_rate` as startup state-access optimization signals.
-      `README.md` keeps only the broad benchmark summary and guide link.
+      latest-only retention, result discovery through `benchmark.directory`, and
+      interpretation of `raw_after_cli_rate` plus `redundant_raw_access_rate` as
+      startup state-access optimization signals. `README.md` keeps only the broad
+      benchmark summary and guide link.
     resolution: fixed
     severity: info
   - type: checked
     description: >
-      The default benchmark run reads no local runtime history and demonstrates
-      benchmark pipeline/persistence only. Runtime-store runs still require
-      explicit `RUNTIME=/absolute/path` approvals before measuring local behavior.
+      The default benchmark run uses documented runtime-store defaults and reports
+      unavailable stores as bounded degradation evidence. Custom runtime-store
+      overrides still require explicit `RUNTIME=/absolute/path` values.
     resolution: fixed
     severity: info
   - type: checked

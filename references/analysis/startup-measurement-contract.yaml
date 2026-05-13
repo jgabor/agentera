@@ -38,14 +38,16 @@ benchmark_execution:
   normal_ci: forbidden
   live_host_checks: forbidden_by_default
   runtime_path_approval: >-
-    Before reading any local runtime history, the operator must explicitly approve
-    the exact runtime labels and concrete filesystem paths that the benchmark may
-    inspect. A generic consent flag, default-path inference, or runtime label
-    without its approved path is insufficient.
+    Running mage bench:startupState authorizes inspection of the documented
+    default runtime stores for codex, claude-code, opencode, and github-copilot.
+    Custom runtime history sources must be supplied as exact runtime labels and
+    concrete filesystem paths. A generic consent flag or runtime label without
+    its concrete path is insufficient for custom sources.
   default_run: >-
-    The Mage benchmark target may run without runtime-store inputs only by using a
-    no-runtime mode that reads no local runtime history and records insufficient
-    evidence for local behavior measurement.
+    The Mage benchmark target runs without environment variables by inspecting
+    documented runtime-store defaults, writing aggregate history under the default
+    Agentera benchmark directory, and reporting missing or unavailable stores as
+    bounded degradation evidence.
   incremental_rule: >-
     Runtime-store benchmark runs use retained aggregate history as the only
     durable watermark source. The first run for a runtime scope analyzes all

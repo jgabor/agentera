@@ -34,13 +34,12 @@ Run the benchmark with no extra setup:
 mage bench:startupState
 ```
 
-The default run reads no local runtime history. It verifies that the benchmark
-command, analyzer, persistence, and report rendering work, then writes an
-aggregate row with no runtime evidence. Use it as a pipeline check, not as proof
-of local Agentera behavior.
+The default run uses documented runtime-store defaults, writes retained results
+under the default Agentera benchmark directory, and records unavailable stores as
+bounded degradation evidence. No environment variables are required.
 
-To measure real local runtime history, approve each runtime label and its
-concrete store path:
+To use different runtime history sources, set each runtime label and concrete
+store path explicitly:
 
 ```bash
 AGENTERA_BENCH_RUNTIME_STORES="opencode=/absolute/path/to/opencode.db" mage bench:startupState
@@ -60,7 +59,7 @@ Inputs:
 
 | Input | Meaning |
 | --- | --- |
-| `AGENTERA_BENCH_RUNTIME_STORES` | Optional. Comma-separated `runtime=/absolute/path` approvals. Set this to measure real runtime history. A runtime label without its path is not enough. |
+| `AGENTERA_BENCH_RUNTIME_STORES` | Optional. Comma-separated `runtime=/absolute/path` overrides. Use this when the documented runtime-store defaults are not the stores you want measured. A runtime label without its path is not enough. |
 | `AGENTERA_BENCH_SALT` | Optional. Local redaction salt for transient `latest-report.*` pseudonyms. If omitted, Mage generates one. `runs.jsonl` does not retain salts or generated salted hashes, so aggregate history does not require a stable or shared salt. |
 | `AGENTERA_BENCH_PROJECT_ROOTS` | Optional. Absolute project roots for corpus extraction. Use this when the current directory is not the project root you want measured. |
 | `AGENTERA_BENCH_OUTPUT_DIR` | Optional. Absolute override for the durable benchmark directory. Use only when the default user-local directory is not desired. |
@@ -99,7 +98,8 @@ intermediates, raw store paths, raw session ids, private salts, or generated
 salted hashes. Benchmark metrics are user-local, uncommitted, unshipped, and not
 part of normal CI.
 
-Review the latest result:
+The command prints the retained benchmark directory in `benchmark.directory`.
+Review the latest result from that directory, or from the default location:
 
 ```bash
 BENCH_DIR="${AGENTERA_HOME:-$HOME/.local/share/agentera}/benchmarks/startup-state"
@@ -116,10 +116,10 @@ The `BENCH_DIR` example uses the Linux default when `AGENTERA_HOME` is unset.
 Interpret the benchmark as a startup state-access optimization signal, not as a
 general runtime performance benchmark.
 
-Default no-runtime runs demonstrate that the benchmark pipeline works and that
-results can be aggregated. Runtime-store runs demonstrate whether new local
-Agentera startup/state-gathering behavior since the previous successful run
-repeatedly falls back from CLI state reads to raw artifact access.
+Default runs demonstrate whether new local Agentera startup/state-gathering
+behavior since the previous successful run repeatedly falls back from CLI state
+reads to raw artifact access. Stores that do not exist or cannot be read are
+bounded degradation evidence, not successful behavior evidence.
 
 Watermark fields:
 
@@ -152,7 +152,7 @@ New Agentera benchmarks should follow the same shape:
 | Requirement | Rule |
 | --- | --- |
 | Contract first | Define metric, privacy boundary, storage, retained fields, and failure behavior before implementation. |
-| No-prerequisite target | Every `mage bench:*` target must run with no environment variables. The default mode must avoid private/local resources unless they are explicitly configured. |
+| No-prerequisite target | Every `mage bench:*` target must run with no environment variables. The default mode should use documented local defaults and report unavailable inputs as bounded degradation evidence. |
 | Manual unless proven safe | Do not add runtime-history or environment-sensitive benchmarks to normal CI. |
 | Explicit local approval | Require concrete paths or resources, not broad consent flags. |
 | User-local outputs | Keep generated benchmark history outside the repository by default. |

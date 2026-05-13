@@ -47,7 +47,7 @@
 ### Added
 
 - Manual `mage bench:startupState` startup state benchmark support now runs the Decision 51 raw-after-CLI metric only after explicit runtime/path approval, stores aggregate history under the user Agentera home, and retains only `runs.jsonl`, `latest-report.json`, and `latest-report.md`.
-- Manual startup benchmark runs now use `runs.jsonl` watermarks so repeated runtime-store runs measure records since the previous successful benchmark for the same runtime scope, while bare `mage bench:startupState` still runs as a no-history pipeline check.
+- Manual startup benchmark runs now use documented runtime-store defaults and `runs.jsonl` watermarks so bare `mage bench:startupState` measures records since the previous successful benchmark for the same runtime scope, while custom stores remain optional overrides.
 - Decision 51 startup-overhead analysis now measures raw Agentera artifact access after CLI state calls during capability startup/state gathering, including bare capability names and natural-language handoffs instead of only slash-route startup windows.
 - OpenCode corpus extraction now emits current-schema tool call records from `part.data`, allowing startup analysis to observe real `agentera <state>` calls followed by raw reads/greps/globs.
 - The default live-host smoke harness now runs non-live Profilera corpus parity fixtures for Claude Code, Codex, OpenCode, and GitHub Copilot, reports absent local stores as bounded `store_absent` statuses, and keeps privacy-sensitive fixture transcript text out of smoke output.

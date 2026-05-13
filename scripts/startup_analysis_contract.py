@@ -1459,6 +1459,18 @@ def _load_extract_corpus_module() -> Any:
     return module
 
 
+def default_runtime_store_paths(extract_corpus_module: Any | None = None) -> dict[str, Path | None]:
+    """Return documented default runtime stores for benchmark runs."""
+
+    extract_corpus = extract_corpus_module or _load_extract_corpus_module()
+    return {
+        "codex": Path.home() / ".codex" / "sessions",
+        "claude-code": Path.home() / ".claude" / "projects",
+        "opencode": extract_corpus.resolve_opencode_db_path(),
+        "github-copilot": extract_corpus.resolve_copilot_store_path(),
+    }
+
+
 def extract_startup_intermediate_from_runtime_stores(
     *,
     project_roots: list[Path],
@@ -1538,6 +1550,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Approved runtime store to inspect; repeatable for codex, claude-code, opencode, github-copilot.",
     )
     source.add_argument(
+        "--default-runtime-stores",
+        action="store_true",
+        help="Inspect documented default runtime stores for codex, claude-code, opencode, and github-copilot.",
+    )
+    source.add_argument(
         "--no-runtime-stores",
         action="store_true",
         help="Run without inspecting local runtime history; useful for no-prerequisite benchmark smoke runs.",
@@ -1587,6 +1604,22 @@ def main(argv: list[str] | None = None) -> int:
             benchmark_mode="since_previous_benchmark" if args.since_previous_benchmark else "no_runtime",
             benchmark_previous_watermark_at=previous_watermark,
         )
+    elif args.default_runtime_stores:
+        runtime_paths = default_runtime_store_paths()
+        approved_runtime_scope = sorted(RUNTIME_STORE_ARGUMENTS)
+        previous_watermark = (
+            previous_benchmark_watermark(benchmark_dir, approved_runtime_scope)
+            if args.since_previous_benchmark
+            else None
+        )
+        project_roots = args.project_root or [Path.cwd()]
+        intermediate = extract_startup_intermediate_from_runtime_stores(
+            project_roots=project_roots,
+            salt=args.salt,
+            benchmark_mode="since_previous_benchmark" if args.since_previous_benchmark else "full_boundary_snapshot",
+            benchmark_previous_watermark_at=previous_watermark,
+            **{field: runtime_paths.get(runtime) for runtime, field in RUNTIME_STORE_ARGUMENTS.items()},
+        )
     else:
         runtime_paths: dict[str, Path] = {}
         try:
@@ -1628,7 +1661,10 @@ def main(argv: list[str] | None = None) -> int:
     stdout_reports = {name: Path(path).name for name, path in paths.items()}
     output = {"status": "ok", "reports": stdout_reports}
     if benchmark_paths:
-        output["benchmark"] = {name: Path(path).name for name, path in benchmark_paths.items()}
+        output["benchmark"] = {
+            "directory": str(benchmark_dir),
+            **{name: Path(path).name for name, path in benchmark_paths.items()},
+        }
     print(json.dumps(output, sort_keys=True))
     return 0
 

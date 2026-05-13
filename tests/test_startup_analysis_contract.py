@@ -154,7 +154,8 @@ def test_contract_defines_manual_benchmark_storage_and_retention_boundary():
         "runtime_path_approval"
     ]
     assert "generic consent flag" in contract["benchmark_execution"]["runtime_path_approval"]
-    assert "no-runtime mode" in contract["benchmark_execution"]["default_run"]
+    assert "without environment variables" in contract["benchmark_execution"]["default_run"]
+    assert "documented runtime-store defaults" in contract["benchmark_execution"]["default_run"]
     assert "previous successful" in contract["benchmark_execution"]["incremental_rule"]
     assert contract["benchmark_storage"]["default_directory"] == (
         "${AGENTERA_HOME}/benchmarks/startup-state/"
@@ -1037,6 +1038,56 @@ def test_benchmark_cli_uses_previous_watermark_for_incremental_runs(
     assert rows[2]["total_state_sequences"] == 0
 
 
+def test_benchmark_cli_default_runtime_stores_use_known_defaults(
+    startup_analysis_contract,
+    tmp_path,
+    monkeypatch,
+):
+    home = tmp_path / "home"
+    agentera_home = tmp_path / "agentera-home"
+    project_root = tmp_path / "project"
+    sessions_dir = home / ".codex" / "sessions"
+    output_dir = tmp_path / "temporary-reports"
+    project_root.mkdir()
+    _write_codex_state_store(sessions_dir, project_root)
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("AGENTERA_HOME", str(agentera_home))
+    monkeypatch.setenv("COPILOT_HOME", str(home / ".copilot"))
+    monkeypatch.setenv("PATH", "")
+
+    exit_code = startup_analysis_contract.main(
+        [
+            "--default-runtime-stores",
+            "--project-root",
+            str(project_root),
+            "--output-dir",
+            str(output_dir),
+            "--salt",
+            "fixture-salt",
+            "--persist-benchmark",
+            "--since-previous-benchmark",
+        ]
+    )
+    benchmark_dir = agentera_home / "benchmarks" / "startup-state"
+    row = json.loads((benchmark_dir / "runs.jsonl").read_text(encoding="utf-8").strip())
+    latest = json.loads((benchmark_dir / "latest-report.json").read_text(encoding="utf-8"))
+    coverage = {item["runtime"]: item for item in latest["runtime_coverage"]}
+
+    assert exit_code == 0
+    assert row["runtime_scope"] == ["claude-code", "codex", "github-copilot", "opencode"]
+    assert row["benchmark_mode"] == "since_previous_benchmark"
+    assert row["total_records"] == 4
+    assert row["total_state_sequences"] == 1
+    assert coverage["codex"]["status"] == "ok"
+    assert coverage["claude-code"]["status"] == "missing"
+    assert coverage["github-copilot"]["status"] == "missing"
+    assert coverage["opencode"] == {
+        "runtime": "opencode",
+        "status": "skipped",
+        "reason": "disabled",
+    }
+
+
 def test_benchmark_cli_records_missing_runtime_store_as_bounded_degradation(
     startup_analysis_contract,
     tmp_path,
@@ -1188,7 +1239,7 @@ def test_mage_startup_state_entrypoint_documents_noninteractive_approval():
     assert "func (Bench) StartupState() error" in magefile
     assert "scripts/startup_analysis_contract.py" in magefile
     assert "--persist-benchmark" in magefile
-    assert "--no-runtime-stores" in magefile
+    assert "--default-runtime-stores" in magefile
     assert "--since-previous-benchmark" in magefile
     assert "benchmarks/startup-state" in magefile
     assert "mage bench:startupState" in magefile
@@ -1213,12 +1264,13 @@ def test_docs_link_startup_report_surface_and_preserve_correct_metric():
     assert "--corpus-json" in readme
     assert "--output-dir" in readme
     assert "docs/benchmark.md" in readme
-    assert "local runtime" in readme
+    assert "runtime-store" in readme
     assert "mage bench:startupState" in benchmark_doc
     assert "AGENTERA_BENCH_RUNTIME_STORES" in benchmark_doc
     assert "Mage generates one" in benchmark_doc
     assert "no extra setup" in benchmark_doc
     assert "Every `mage bench:*` target must run with no environment variables" in benchmark_doc
+    assert "benchmark.directory" in benchmark_doc
     assert "benchmark_watermark_at" in benchmark_doc
     assert "since the previous successful benchmark run" in benchmark_doc
     assert "runs.jsonl" in benchmark_doc
