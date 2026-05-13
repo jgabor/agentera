@@ -171,7 +171,8 @@ def test_bundle_status_check_is_cli_owned():
     assert "bundle.dryRunCommand" in content, "hej must use the CLI-provided bundle repair preview"
     assert "bundle.applyCommand" in content, "hej must use the CLI-provided bundle apply command after approval"
     assert "do not require a successful failed CLI invocation" in content
-    assert "agentera upgrade --only bundle --dry-run" in content
+    assert "agentera upgrade --dry-run" in content
+    assert "managed runtime surfaces" in content
     assert "normal Agentera directory" in content
 
 

@@ -1508,7 +1508,8 @@ class TestLegacyRuntimeCompatibility:
         assert "Do not use this skill for bare text `hej`" in text
         assert "Do not run the old HEJ orientation workflow" in text
         assert "agentera upgrade --project \"$PWD\" --dry-run" in text
-        assert "agentera upgrade --project \"$PWD\" --yes --update-packages" in text
+        assert "agentera upgrade --project \"$PWD\" --yes" in text
+        assert "Add `--update-packages` only" in text
         assert "/agentera" in text
 
     def test_registry_structure_fails_on_wrong_skill_count(self, tmp_path):

@@ -331,8 +331,8 @@ repair` when a no-write preview is the next safe step.
 
 Package and marketplace updates refresh what the host sees, but they may not
 update the local app copy or managed runtime surfaces that actually run Agentera.
-If `/agentera` reports that Agentera is out of date or `agentera hej` is
-unavailable, preview the repair first. The preview covers app files, managed
+If `/agentera` reports that Agentera is out of date, needs repair, or
+`agentera hej` is unavailable, preview the repair first. The preview covers app files, managed
 runtime config, plugins, hooks, commands, and safe cleanup together. It changes
 nothing:
 

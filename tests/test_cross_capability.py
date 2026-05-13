@@ -260,7 +260,8 @@ def test_routine_capability_guidance_uses_top_level_state_commands():
     assert "Do not preflight app health" in hej
     assert "Do not run separate v1 artifact or PROFILE.md checks" in hej
     assert "Use the safe fix" in hej
-    assert "agentera upgrade --only bundle --dry-run" in hej
+    assert "agentera upgrade --dry-run" in hej
+    assert "managed runtime surfaces" in hej
     assert "normal Agentera directory" in hej
 
 
@@ -297,7 +298,8 @@ def test_master_bundle_health_gate_is_single_call():
     assert "inspect the CLI-provided `bundle.status`" in text
     assert "`bundle.dryRunCommand`" in text
     assert "do not require a successful failed CLI invocation" in text
-    assert "agentera upgrade --only bundle --dry-run" in text
+    assert "agentera upgrade --dry-run" in text
+    assert "managed runtime surfaces" in text
     assert "normal platform app directory" in text
 
 
@@ -307,6 +309,7 @@ def test_upgrade_guide_documents_app_home_recovery_and_artifact_backups():
     assert "npx skills update" in text
     assert "does not refresh\nAgentera's local app files" in text
     assert "do not require a successful failed CLI invocation" in text
-    assert "agentera upgrade --only bundle --dry-run" in text
+    assert "agentera upgrade --dry-run" in text
+    assert "managed runtime config, plugins, hooks, commands" in text
     assert "without `--install-root`" in text
     assert "backups under `.agentera/backup-v1/` after preview and confirmation" in text
