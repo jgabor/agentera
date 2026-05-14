@@ -10,7 +10,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-const AGENTERA_VERSION = "2.3.4";
+const AGENTERA_VERSION = "2.3.5";
 const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode --skill agentera -y";
 const REQUIRED_SKILL_NAMES = ["agentera"];
 const LEGACY_BRIDGE_SKILL_NAMES = new Set(["hej"]);
@@ -515,9 +515,8 @@ export const Agentera = async (input = {}, _options) => {
   bootstrapCommands();
   bootstrapSkills();
 
-  // Resolve app home once at init. Each shell.env invocation re-reads the
-  // user-set AGENTERA_HOME so a value injected after plugin load (e.g. by a
-  // wrapping shell) is preserved.
+  // Resolve app home once at init. shell.env must propagate the validated app
+  // home, not stale parent-process residue inherited by the runtime.
   const initialAgenteraAppHome = resolveAgenteraAppHome();
   const projectRoot = findAgenteraRoot(input.worktree || input.directory || process.cwd());
 
@@ -533,12 +532,6 @@ export const Agentera = async (input = {}, _options) => {
     "shell.env": async (_input, output) => {
       const env = output && output.env;
       if (!env || typeof env !== "object") return;
-      // Honor already-merged shell env, otherwise propagate caller-selected env.
-      if (env.AGENTERA_HOME) return;
-      if (process.env.AGENTERA_HOME) {
-        env.AGENTERA_HOME = process.env.AGENTERA_HOME;
-        return;
-      }
       if (!initialAgenteraAppHome) return;
       env.AGENTERA_HOME = initialAgenteraAppHome;
     },

@@ -122,6 +122,23 @@ If schemas are missing:
 
 def _active_app_model() -> dict[str, Path | str]:
     source_root = Path(__file__).resolve().parent.parent
+    if _is_installed_managed_app(source_root):
+        if os.environ.get("AGENTERA_HOME") or os.environ.get("AGENTERA_DEFAULT_INSTALL_ROOT"):
+            selected = resolve_active_app_model(home=Path.home().expanduser().resolve())
+            if _model_path(selected, "appHome") != source_root.parent:
+                return selected
+            selected["runtimeRoot"] = source_root
+            return selected
+        app_home = source_root.parent
+        return {
+            "appHome": app_home,
+            "appHomeSource": "installed app",
+            "managedAppRoot": source_root,
+            "activeBundleRoot": source_root,
+            "authoritativeRoot": source_root,
+            "skillRoot": source_root / "skills" / "agentera",
+            "runtimeRoot": source_root,
+        }
     if not os.environ.get("AGENTERA_HOME") and not os.environ.get("AGENTERA_DEFAULT_INSTALL_ROOT") and _is_local_agentera_checkout(source_root):
         return {
             "appHome": source_root,
@@ -399,6 +416,10 @@ def _is_local_agentera_checkout(root: Path) -> bool:
     )
 
 
+def _is_installed_managed_app(root: Path) -> bool:
+    return root.name == "app" and (root / ".agentera-bundle.json").is_file() and _is_local_agentera_checkout(root)
+
+
 def _v1_migration_summary(v1_artifacts: list[str]) -> dict[str, Any]:
     dry_run = 'uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run'
     apply = 'uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --yes'
@@ -482,11 +503,12 @@ def _hej_expected_version(args: argparse.Namespace, source_root: Path, home: Pat
 
 def _hej_bundle_status(args: argparse.Namespace) -> dict[str, Any]:
     home = getattr(args, "home", Path.home()).expanduser().resolve()
+    source_root = resolve_source_root()
     install_root, root_source = resolve_doctor_install_root(
         getattr(args, "install_root", None),
         home=home,
+        source_root=source_root,
     )
-    source_root = resolve_source_root()
     expected, expected_source = _hej_expected_version(args, source_root, home)
     status = build_doctor_status(
         install_root,
@@ -714,6 +736,17 @@ STARTUP_COMPLETENESS_AVAILABLE_STATE = [
 ]
 
 STARTUP_COMPLETENESS_MISSING_STATE: list[str] = []
+
+
+def _app_status_attention(bundle: dict[str, Any]) -> str:
+    if bundle["status"] == "update_needed":
+        return f"normal: app update needed; preview `{bundle['dryRunCommand']}`; app_home={bundle['appHome']}"
+    if bundle.get("dryRunCommand"):
+        return f"degraded: app {bundle['status']}; preview `{bundle['dryRunCommand']}`; app_home={bundle['appHome']}"
+    return (
+        f"critical: app {bundle['status']}; fix AGENTERA_HOME or choose a managed app home; "
+        f"app_home={bundle['appHome']}"
+    )
 
 STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS = [
     "representative benchmark evidence exists, but claude-code and github-copilot coverage is degraded by schema divergence",
@@ -2343,16 +2376,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     next_action = _select_hej_next_action(plan, health, objective, todo_items, decision, saved_context)
     attention = []
     if bundle["status"] != "fresh":
-        dry_run = bundle.get("dryRunCommand")
-        if dry_run:
-            attention.append(
-                f"degraded: app {bundle['status']}; preview `{dry_run}`; app_home={bundle['appHome']}"
-            )
-        else:
-            attention.append(
-                f"critical: app {bundle['status']}; fix AGENTERA_HOME or choose a managed app home; "
-                f"app_home={bundle['appHome']}"
-            )
+        attention.append(_app_status_attention(bundle))
     if v1_migration["detected"]:
         command = v1_migration["dry_run_command"]
         attention.append(

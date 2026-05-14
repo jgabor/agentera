@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from datetime import date, timedelta
@@ -64,6 +65,46 @@ def _install_schema_surface(app_home: Path) -> Path:
     for schema_file in SCHEMAS_SRC.glob("*.yaml"):
         (schemas_dir / schema_file.name).write_text(schema_file.read_text(encoding="utf-8"), encoding="utf-8")
     return schemas_dir
+
+
+def _install_runtime_surface(app_home: Path) -> Path:
+    app_root = app_home / "app"
+    for directory in (
+        "scripts",
+        "skills",
+        "references",
+        "hooks",
+        "agents",
+        ".agents/plugins",
+        ".codex-plugin",
+        ".claude-plugin",
+        ".github/hooks",
+        ".github/plugin",
+        ".opencode/commands",
+        ".opencode/plugins",
+    ):
+        source = REPO_ROOT / directory
+        if source.exists():
+            shutil.copytree(source, app_root / directory)
+    for filename in (
+        "README.md",
+        "UPGRADE.md",
+        "CHANGELOG.md",
+        "DESIGN.md",
+        "LICENSE",
+        "pyproject.toml",
+        "uv.lock",
+        "registry.json",
+        "plugin.json",
+        ".opencode/package.json",
+    ):
+        source = REPO_ROOT / filename
+        if source.exists():
+            target = app_root / filename
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+    (app_root / ".agentera-bundle.json").write_text(json.dumps({"version": "2.3.5"}), encoding="utf-8")
+    return app_root / "scripts" / "agentera"
 
 
 @pytest.fixture()
@@ -444,6 +485,63 @@ class TestGenericQuery:
         assert "Installed schema discovery works" in r.stdout
         assert not (project / "skills" / "agentera" / "schemas" / "artifacts").exists()
 
+    def test_installed_describe_reports_platform_home_despite_legacy_env(self, tmp_path):
+        home = tmp_path / "home"
+        app_home = home / ".local" / "share" / "agentera"
+        cli = _install_runtime_surface(app_home)
+        project = tmp_path / "project"
+        project.mkdir()
+        legacy_default = home / ".agents" / "agentera"
+
+        r = subprocess.run(
+            [sys.executable, str(cli), "describe", "--format", "json"],
+            capture_output=True,
+            text=True,
+            cwd=project,
+            env={
+                **os.environ,
+                "HOME": str(home),
+                "AGENTERA_HOME": str(legacy_default),
+                "XDG_DATA_HOME": str(home / ".local" / "share"),
+                "PROFILERA_PROFILE_DIR": str(project / ".xdg" / "agentera"),
+            },
+        )
+
+        assert r.returncode == 0, r.stderr
+        app_model = json.loads(r.stdout)["source"]["app_model"]
+        assert app_model["appHome"] == str(app_home)
+        assert app_model["appHomeSource"] == "default app home"
+        assert app_model["managedAppRoot"] == str(app_home / "app")
+        assert app_model["skillRoot"] == str(app_home / "app" / "skills" / "agentera")
+
+    def test_installed_describe_without_env_uses_custom_app_home(self, tmp_path):
+        app_home = tmp_path / "custom-agentera"
+        cli = _install_runtime_surface(app_home)
+        project = tmp_path / "project"
+        project.mkdir()
+        home = tmp_path / "home"
+
+        r = subprocess.run(
+            [sys.executable, str(cli), "describe", "--format", "json"],
+            capture_output=True,
+            text=True,
+            cwd=project,
+            env={
+                **os.environ,
+                "HOME": str(home),
+                "AGENTERA_HOME": "",
+                "AGENTERA_DEFAULT_INSTALL_ROOT": "",
+                "XDG_DATA_HOME": str(home / ".local" / "share"),
+                "PROFILERA_PROFILE_DIR": str(project / ".xdg" / "agentera"),
+            },
+        )
+
+        assert r.returncode == 0, r.stderr
+        app_model = json.loads(r.stdout)["source"]["app_model"]
+        assert app_model["appHome"] == str(app_home)
+        assert app_model["appHomeSource"] == "installed app"
+        assert app_model["managedAppRoot"] == str(app_home / "app")
+
     def test_new_schema_auto_supported(self, project):
         self._write_custom_schema_and_artifact(project)
         r = _run("query", "custom_thing", cwd=project)
@@ -738,6 +836,37 @@ class TestHej:
             "user_data_root": str(install_root),
         }
 
+    def test_version_drift_reports_update_needed_not_repair(self, project):
+        app_home = project / "app-home"
+        self._write_bundle_root(app_home / "app", marker_version="1.0.0")
+
+        r = _run("hej", "--install-root", str(app_home), "--expected-version", "2.0.0", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["bundle"]["status"] == "update_needed"
+        assert data["app_home"]["status"] == "update_needed"
+        assert data["bundle"]["signals"] == [{
+            "status": "update_needed",
+            "kind": "version_mismatch",
+            "expected": "2.0.0",
+            "actual": "1.0.0",
+            "message": "Agentera app files are valid but need an update to the expected version",
+        }]
+        assert any("app update needed" in item for item in data["attention"])
+        assert all("repair" not in item for item in data["attention"])
+
+    def test_version_drift_text_guidance_uses_update_wording(self, project):
+        app_home = project / "app-home"
+        self._write_bundle_root(app_home / "app", marker_version="1.0.0")
+
+        r = _run("hej", "--install-root", str(app_home), "--expected-version", "2.0.0", cwd=project)
+
+        assert r.returncode == 0
+        assert "app_home: status=update_needed" in r.stdout
+        assert "normal: app update needed" in r.stdout
+        assert "repair" not in r.stdout
+
     def test_visible_skill_version_can_mark_bundle_stale_without_preflight(self, project):
         install_root = self._write_bundle_root(project / "bundle", marker_version="1.0.0")
         visible = project / "visible-skill"
@@ -764,6 +893,91 @@ class TestHej:
         assert data["bundle"]["status"] == "migration_required"
         assert data["bundle"]["expectedVersion"] == "9.0.0"
         assert data["bundle"]["expectedVersionSource"] == str(visible)
+
+    def test_runtime_injected_legacy_default_does_not_outrank_platform_home(self, project):
+        home = project / "home"
+        legacy_default = home / ".agents" / "agentera"
+        platform_home = home / ".local" / "share" / "agentera"
+        env = {
+            **os.environ,
+            "AGENTERA_HOME": str(legacy_default),
+            "XDG_DATA_HOME": str(home / ".local" / "share"),
+            "PROFILERA_PROFILE_DIR": str(project / ".xdg" / "agentera"),
+        }
+
+        r = subprocess.run(
+            [sys.executable, CLI, "hej", "--home", str(home), "--format", "json"],
+            capture_output=True,
+            text=True,
+            cwd=project,
+            env=env,
+        )
+
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert data["app_home"]["home"] == str(platform_home)
+        assert data["app_home"]["source"] == "default app home"
+        assert data["bundle"]["status"] == "stale"
+        assert data["bundle"]["signals"][0]["kind"] == "missing_bundle"
+        assert not legacy_default.exists()
+
+    def test_valid_custom_environment_home_remains_authoritative(self, project):
+        home = project / "home"
+        custom = project / "custom-agentera"
+        self._write_bundle_root(custom / "app", marker_version="2.0.0")
+        env = {
+            **os.environ,
+            "AGENTERA_HOME": str(custom),
+            "XDG_DATA_HOME": str(home / ".local" / "share"),
+            "PROFILERA_PROFILE_DIR": str(project / ".xdg" / "agentera"),
+        }
+
+        r = subprocess.run(
+            [sys.executable, CLI, "hej", "--home", str(home), "--expected-version", "2.0.0", "--format", "json"],
+            capture_output=True,
+            text=True,
+            cwd=project,
+            env=env,
+        )
+
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert data["app_home"] == {
+            "status": "fresh",
+            "home": str(custom),
+            "source": "AGENTERA_HOME",
+            "managed_app_root": str(custom / "app"),
+            "user_data_root": str(custom),
+        }
+
+    def test_missing_custom_environment_home_blocks_without_fallback(self, project):
+        home = project / "home"
+        custom = project / "missing-custom-agentera"
+        platform_home = home / ".local" / "share" / "agentera"
+        env = {
+            **os.environ,
+            "AGENTERA_HOME": str(custom),
+            "XDG_DATA_HOME": str(home / ".local" / "share"),
+            "PROFILERA_PROFILE_DIR": str(project / ".xdg" / "agentera"),
+        }
+
+        r = subprocess.run(
+            [sys.executable, CLI, "hej", "--home", str(home), "--format", "json"],
+            capture_output=True,
+            text=True,
+            cwd=project,
+            env=env,
+        )
+
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert data["app_home"]["status"] == "blocked"
+        assert data["app_home"]["home"] == str(custom)
+        assert data["app_home"]["source"] == "AGENTERA_HOME"
+        assert data["bundle"]["dryRunCommand"] is None
+        assert data["bundle"]["applyCommand"] is None
+        assert not custom.exists()
+        assert not platform_home.exists()
 
     def test_saved_context_without_vision_routes_to_resonera(self, project):
         _write_artifact(project, ".agentera/session.yaml", {

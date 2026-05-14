@@ -36,6 +36,8 @@ STATUSES = ("pending", "applied", "noop", "blocked", "failed", "skipped")
 EXPECTED_STATE_COMMANDS = ("hej",)
 USER_STATE_NAMES = ("PROFILE.md", "USAGE.md", "history", "corpus", "corpus.json")
 ROOT_USER_STATE_NAMES = (*USER_STATE_NAMES, "TODO.md", "CHANGELOG.md", "DESIGN.md")
+ROOT_USER_STATE_FILE_NAMES = ("PROFILE.md", "USAGE.md", "corpus.json", "TODO.md", "CHANGELOG.md", "DESIGN.md")
+ROOT_USER_STATE_DIR_NAMES = ("history", "corpus")
 AGENTERA_USER_STATE_NAMES = (
     "progress.yaml",
     "decisions.yaml",
@@ -226,10 +228,14 @@ def _app_home_is_user_data_only(app_home: Path) -> bool:
         return True
     if not app_home.is_dir():
         return False
-    allowed_root_files = set(ROOT_USER_STATE_NAMES)
+    allowed_root_files = set(ROOT_USER_STATE_FILE_NAMES)
+    allowed_root_dirs = set(ROOT_USER_STATE_DIR_NAMES)
     has_user_state = False
     for entry in app_home.iterdir():
         if entry.name in allowed_root_files and entry.is_file():
+            has_user_state = True
+            continue
+        if entry.name in allowed_root_dirs and entry.is_dir():
             has_user_state = True
             continue
         if entry.name == ".agentera" and _agentera_user_state_dir_is_recognized(entry):
@@ -267,8 +273,15 @@ def resolve_doctor_install_root(
     *,
     home: Path,
     env: dict[str, str] | None = None,
+    source_root: Path | None = None,
 ) -> tuple[Path, str]:
     env = env or os.environ
+    if source_root is not None:
+        root = resolve_install_root(value, source_root, home, env=env)
+        raw_root, raw_source = _install_root_module().resolve_candidate(value, env=env, home=home)
+        if root != raw_root:
+            return root, _install_root_module().SOURCE_LABELS["default"]
+        return root, _install_root_module().SOURCE_LABELS.get(raw_source, raw_source)
     root, source = _install_root_module().resolve_candidate(value, env=env, home=home)
     return root, _install_root_module().SOURCE_LABELS.get(source, source)
 
@@ -400,7 +413,7 @@ def resolve_active_app_model(
 ) -> dict[str, Path | str]:
     """Return the active app roots used by doctor without running diagnostics."""
     resolved_home = home or Path.home()
-    app_home, app_home_source = resolve_doctor_install_root(value, home=resolved_home, env=env)
+    app_home, app_home_source = resolve_doctor_install_root(value, home=resolved_home, env=env, source_root=ROOT)
     roots = _doctor_roots(app_home)
     return {
         "appHome": roots["app_home"],
@@ -512,11 +525,11 @@ def build_doctor_status(
             if recoverable_stale_default:
                 signals.append(_recoverable_stale_default_signal(install_root, roots))
             signals.append({
-                "status": "stale",
+                "status": "update_needed",
                 "kind": "version_mismatch",
                 "expected": expected,
                 "actual": marker_version,
-                "message": "Agentera app files are from a different version and should be refreshed",
+                "message": "Agentera app files are valid but need an update to the expected version",
             })
         probe = (
             _probe_bundle_cli(
@@ -568,7 +581,17 @@ def build_doctor_status(
         str(install_root),
         "--yes",
     ]
-    status = "blocked" if blocked else "migration_required" if any(signal["kind"] == "migration_required" for signal in signals) else "stale" if signals else "fresh"
+    status = (
+        "blocked"
+        if blocked
+        else "migration_required"
+        if any(signal["kind"] == "migration_required" for signal in signals)
+        else "stale"
+        if any(signal["status"] == "stale" for signal in signals)
+        else "update_needed"
+        if any(signal["status"] == "update_needed" for signal in signals)
+        else "fresh"
+    )
     return {
         "schemaVersion": "agentera.bundleStatus.v1",
         "status": status,
@@ -1916,6 +1939,7 @@ PLAIN_STATUS = {
     "skipped": "skipped",
     "fresh": "ready",
     "stale": "needs repair",
+    "update_needed": "needs update",
     "migration_required": "needs repair",
 }
 
@@ -1941,6 +1965,10 @@ ACTION_LABELS = {
 
 def _plain_status(value: str) -> str:
     return PLAIN_STATUS.get(value, value.replace("_", " ").replace("-", " "))
+
+
+def _doctor_action_noun(status: dict[str, Any]) -> str:
+    return "update" if status["status"] == "update_needed" else "repair"
 
 
 def _plain_action(item: dict[str, Any]) -> str:
@@ -2028,6 +2056,7 @@ def cmd_upgrade(args: argparse.Namespace) -> int:
 
 
 def render_doctor_status(status: dict[str, Any]) -> str:
+    action_noun = _doctor_action_noun(status)
     lines = [
         "Agentera doctor",
         f"status: {_plain_status(status['status'])}",
@@ -2046,8 +2075,8 @@ def render_doctor_status(status: dict[str, Any]) -> str:
     if status["dryRunCommand"]:
         lines.append("")
         lines.append("Next:")
-        lines.append(f"  1. Preview the repair: {status['dryRunCommand']}")
-        lines.append(f"  2. If the preview looks right, apply it: {status['applyCommand']}")
+        lines.append(f"  1. Preview the {action_noun}: {status['dryRunCommand']}")
+        lines.append(f"  2. If the preview looks right, apply the {action_noun}: {status['applyCommand']}")
         lines.append(f"  3. Then retry Agentera: {status['retryCommand']}")
     else:
         lines.append("")
@@ -2068,6 +2097,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     install_root, root_source = resolve_doctor_install_root(
         args.install_root,
         home=home,
+        source_root=source_root,
     )
     status = build_doctor_status(
         install_root,

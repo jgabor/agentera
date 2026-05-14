@@ -179,11 +179,13 @@ def test_upgrade_characterizes_doctor_root_shapes(
     fresh = tmp_path / "fresh"
     stale_missing_marker = tmp_path / "stale-missing-marker"
     stale_version = tmp_path / "stale-version"
+    update_home = tmp_path / "update-home"
     file_root.write_text("not a directory\n", encoding="utf-8")
     unmanaged.mkdir()
     _write_upgrade_root(fresh)
     _write_upgrade_root(stale_missing_marker, marker_version=None)
     _write_upgrade_root(stale_version, marker_version="old")
+    _write_upgrade_root(update_home / "app", marker_version="old")
 
     monkeypatch.setattr(
         upgrade,
@@ -203,6 +205,7 @@ def test_upgrade_characterizes_doctor_root_shapes(
         (fresh, "explicit --install-root", "migration_required", "managed", ["migration_required"]),
         (stale_missing_marker, "explicit --install-root", "migration_required", "managed", ["migration_required", "missing_marker"]),
         (stale_version, "explicit --install-root", "migration_required", "managed", ["migration_required", "version_mismatch"]),
+        (update_home, "explicit --install-root", "update_needed", "managed", ["version_mismatch"]),
         (tmp_path / "missing-explicit", "explicit --install-root", "blocked", "missing", ["invalid_install_root"]),
         (tmp_path / "missing-env", "AGENTERA_HOME", "blocked", "missing", ["invalid_install_root"]),
         (tmp_path / "missing-default", "default app home", "stale", "missing", ["missing_bundle"]),
@@ -225,9 +228,45 @@ def test_upgrade_characterizes_doctor_root_shapes(
         if expected_status == "blocked":
             assert status["dryRunCommand"] is None
             assert status["applyCommand"] is None
-        elif expected_status == "stale":
+        elif expected_status in {"stale", "update_needed"}:
             assert status["dryRunCommand"] is not None
             assert status["applyCommand"] is not None
+        if expected_status == "update_needed":
+            rendered = upgrade.render_doctor_status(status)
+            assert "status: needs update" in rendered
+            assert "Preview the update" in rendered
+            assert "Preview the repair" not in rendered
+
+
+def test_version_drift_plus_missing_required_command_remains_repair(
+    upgrade: ModuleType,
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source"
+    home = tmp_path / "home"
+    project = tmp_path / "project"
+    app_home = tmp_path / "app-home"
+    project.mkdir()
+    _write_upgrade_root(app_home / "app", marker_version="1.0.0", commands=("doctor",))
+
+    status = upgrade.build_doctor_status(
+        app_home,
+        root_source="explicit --install-root",
+        source_root=source,
+        home=home,
+        project=project,
+        expected_version="2.0.0",
+        expected_commands=("hej",),
+    )
+
+    assert status["status"] == "stale"
+    assert [signal["kind"] for signal in status["signals"]] == ["version_mismatch", "missing_command"]
+    assert status["dryRunCommand"] is not None
+    assert status["applyCommand"] is not None
+    rendered = upgrade.render_doctor_status(status)
+    assert "status: needs repair" in rendered
+    assert "Preview the repair" in rendered
+    assert "Preview the update" not in rendered
 
 
 def test_upgrade_caller_uses_shared_standardized_install_root_classification(

@@ -423,6 +423,54 @@ def _validate_opencode_install_root(plugin_text: str, root: Path = REPO_ROOT) ->
     return errors
 
 
+def _run_opencode_shell_env(
+    tmp_path: Path,
+    *,
+    inherited_home: Path | None,
+    default_home: Path | None = None,
+    inherited_home_valid: bool = False,
+) -> dict[str, str]:
+    home = tmp_path / "home"
+    xdg_data_home = home / ".local" / "share"
+    home.mkdir(parents=True)
+    for app_home in (default_home, inherited_home if inherited_home_valid else None):
+        if app_home is not None:
+            (app_home / "app" / "scripts").mkdir(parents=True, exist_ok=True)
+            (app_home / "app" / "scripts" / "agentera").write_text("#!/bin/sh\n", encoding="utf-8")
+
+    script = f"""
+        process.env.HOME = {json.dumps(str(home))};
+        process.env.XDG_DATA_HOME = {json.dumps(str(xdg_data_home))};
+        process.env.OPENCODE_CONFIG_DIR = {json.dumps(str(home / '.config' / 'opencode'))};
+        {f'process.env.AGENTERA_HOME = {json.dumps(str(inherited_home))};' if inherited_home is not None else 'delete process.env.AGENTERA_HOME;'}
+        const mod = await import({json.dumps((REPO_ROOT / '.opencode/plugins/agentera.js').as_uri())});
+        const plugin = await mod.Agentera({{worktree: {json.dumps(str(REPO_ROOT))}}});
+        const output = {{env: {{}}}};
+        if (process.env.AGENTERA_HOME) output.env.AGENTERA_HOME = process.env.AGENTERA_HOME;
+        await plugin["shell.env"]({{}}, output);
+        console.log(JSON.stringify(output.env));
+    """
+    env = {
+        **os.environ,
+        "HOME": str(home),
+        "XDG_DATA_HOME": str(xdg_data_home),
+        "OPENCODE_CONFIG_DIR": str(home / ".config" / "opencode"),
+    }
+    if inherited_home is None:
+        env.pop("AGENTERA_HOME", None)
+    else:
+        env["AGENTERA_HOME"] = str(inherited_home)
+    result = subprocess.run(
+        ["node", "--input-type=module", "-e", script],
+        cwd=REPO_ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    return json.loads(result.stdout)
+
+
 def _validate_app_home_language(root: Path = REPO_ROOT) -> list[str]:
     errors: list[str] = []
     surfaces = {
@@ -1576,6 +1624,35 @@ class TestLegacyRuntimeCompatibility:
     def test_opencode_package_uses_current_app_home_layout(self):
         plugin_text = (REPO_ROOT / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
         assert _validate_opencode_install_root(plugin_text) == []
+
+    def test_opencode_shell_env_replaces_stale_inherited_agenterahome_with_valid_default(self, tmp_path):
+        stale = tmp_path / "home" / ".agents" / "agentera"
+        default_home = tmp_path / "home" / ".local" / "share" / "agentera"
+
+        env = _run_opencode_shell_env(tmp_path, inherited_home=stale, default_home=default_home)
+
+        assert env["AGENTERA_HOME"] == str(default_home)
+        assert env["AGENTERA_HOME"] != str(stale)
+
+    def test_opencode_shell_env_discovers_fresh_default_app_home(self, tmp_path):
+        default_home = tmp_path / "home" / ".local" / "share" / "agentera"
+
+        env = _run_opencode_shell_env(tmp_path, inherited_home=None, default_home=default_home)
+
+        assert env["AGENTERA_HOME"] == str(default_home)
+
+    def test_opencode_shell_env_preserves_valid_custom_agenterahome(self, tmp_path):
+        custom = tmp_path / "custom-agentera"
+        default_home = tmp_path / "home" / ".local" / "share" / "agentera"
+
+        env = _run_opencode_shell_env(
+            tmp_path,
+            inherited_home=custom,
+            default_home=default_home,
+            inherited_home_valid=True,
+        )
+
+        assert env["AGENTERA_HOME"] == str(custom)
 
     def test_runtime_contract_surfaces_use_app_home_language(self):
         assert _validate_app_home_language() == []

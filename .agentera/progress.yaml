@@ -1,4 +1,253 @@
 cycles:
+- number: 468
+  timestamp: 2026-05-14 16:12
+  type: release
+  phase: verify
+  what: >
+    Synchronized PLAN Task 6 closeout metadata for the active 2.3.5
+    install-state reliability patch without changing PLAN status.
+  commit: pending
+  inspiration: >
+    Orkestrera scoped this cycle to state and release metadata only after Tasks
+    1-5 passed: record both completed 2.3.5 fixes, keep the 2.3.6+ deferred
+    source-contract train visible, and align version-bearing files according to
+    the docs semver policy where `fix` maps to a patch bump.
+  discovered: >
+    `.agentera/docs.yaml` names pyproject.toml, uv.lock, plugin.json,
+    .github/plugin/plugin.json, .codex-plugin/plugin.json,
+    .claude-plugin/marketplace.json, .opencode/plugins/agentera.js, and
+    registry.json as version-bearing files. Existing release metadata also keeps
+    bundled and legacy skill frontmatter versions aligned with the package
+    manifests, so both SKILL.md frontmatter versions were synchronized to 2.3.5.
+  verified: >
+    `uv run hooks/validate_artifact.py --artifact TODO.md --file TODO.md`, `uv
+    run hooks/validate_artifact.py --artifact CHANGELOG.md --file CHANGELOG.md`,
+    `uv run hooks/validate_artifact.py --artifact DOCS.md --file
+    .agentera/docs.yaml`, and `uv run hooks/validate_artifact.py --artifact
+    PROGRESS.md --file .agentera/progress.yaml` passed with no output. `uv run
+    pytest tests/test_package_registry.py::test_manifest_projection_versions_align_through_registry
+    tests/test_package_registry.py::test_active_version_files_and_skill_frontmatter_report_current_suite_version
+    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_version_bearing_package_surfaces_align
+    -q` passed with 3 tests. `uv run pytest tests/test_install_root_module.py
+    tests/test_bundle_freshness.py tests/test_query_cli.py::TestGenericQuery
+    tests/test_query_cli.py::TestHej tests/test_upgrade_cli.py
+    tests/test_packaged_cli.py tests/test_runtime_adapters.py
+    tests/test_install_root_characterization.py -q` passed with 178 tests.
+  next: >
+    Hand Task 6 to Orkestrera evaluation after validation. Leave PLAN task status
+    unchanged; do not publish, tag, push, refresh installed apps, edit vision, or
+    touch objective state without explicit approval.
+  context:
+    intent: PLAN Task 6 state and release metadata sync
+    constraints: execute only Task 6; no commit; no push; no publish; no tag; no installed app refresh; no plan-status edit; no vision edit; no objective-state edit; preserve Decision 47, read-only doctor behavior, upgrade-as-repair-writer semantics, dry-run-before-write, valid custom app homes, hermetic tests, and no shell-startup mutation
+    scope: TODO.md, CHANGELOG.md, .agentera/docs.yaml, .agentera/progress.yaml,
+      version-bearing package/plugin/registry/lockfile/OpenCode marker files, and
+      skill frontmatter version alignment
+- number: 467
+  timestamp: 2026-05-14 16:06
+  type: validation
+  phase: verify
+  what: >
+    Executed PLAN Task 5 focused regression validation for the active 2.3.5
+    install-state reliability patch without changing PLAN status.
+  commit: pending
+  inspiration: >
+    Orkestrera scoped this cycle to validation only after Tasks 1-4 passed:
+    prove the focused install-state, CLI status, upgrade, packaged CLI, runtime
+    adapter, and characterization regressions cover normal defaults, stale legacy
+    residue, valid custom overrides, unsafe selected directories, dry-run before
+    write, approval text, retry commands, read-only doctor behavior, and adapter
+    custom-home preservation.
+  discovered: >
+    Existing targeted test groups already cover the modified 2.3.5 seams. No
+    additional code or test changes were needed for Task 5.
+  verified: >
+    `uv run pytest tests/test_install_root_module.py tests/test_bundle_freshness.py
+    tests/test_query_cli.py::TestGenericQuery tests/test_query_cli.py::TestHej
+    tests/test_upgrade_cli.py tests/test_packaged_cli.py tests/test_runtime_adapters.py
+    tests/test_install_root_characterization.py -q` passed with 178 tests. `git
+    diff --check` passed with no output. `uv run hooks/validate_artifact.py
+    --artifact PROGRESS.md --file .agentera/progress.yaml` passed with no output.
+  next: >
+    Hand Task 5 to Orkestrera evaluation. Leave PLAN task status unchanged; do not
+    continue into Task 6 without explicit orchestration.
+  context:
+    intent: PLAN Task 5 focused regression validation
+    constraints: execute only Task 5; no commit; no push; no publish; no tag; no installed app refresh; no plan-status edit; no vision edit; no objective-state edit; preserve Decision 47, read-only doctor behavior, upgrade-as-repair-writer semantics, dry-run-before-write, and no shell-startup mutation
+    scope: focused regression execution plus this progress entry
+- number: 466
+  timestamp: 2026-05-14 16:05
+  type: fix
+  phase: build
+  what: >
+    Retried PLAN Task 4 upgrade-versus-repair semantics for the 2.3.5
+    install-state reliability patch by fixing only the mixed version-drift plus
+    missing-command failure.
+  commit: pending
+  inspiration: >
+    The evaluator found that pure version drift correctly rendered as an update,
+    but a stale or missing required CLI behavior signal was being hidden by the
+    top-level `update_needed` status when both signals were present.
+  discovered: >
+    `scripts/agentera_upgrade.py` appended both `version_mismatch` and
+    `missing_command` signals, but top-level status precedence checked for any
+    `update_needed` signal before stale probe failures. That made structured
+    consumers and doctor wording treat a broken mixed state as update-only.
+  verified: >
+    `uv run pytest tests/test_install_root_characterization.py::test_version_drift_plus_missing_required_command_remains_repair
+    tests/test_install_root_characterization.py::test_upgrade_characterizes_doctor_root_shapes
+    -q` passed with 2 tests. `uv run pytest
+    tests/test_query_cli.py::TestHej::test_version_drift_reports_update_needed_not_repair
+    tests/test_query_cli.py::TestHej::test_version_drift_text_guidance_uses_update_wording
+    tests/test_install_root_characterization.py -q` passed with 9 tests. `uv run
+    hooks/validate_artifact.py --artifact PROGRESS.md --file
+    .agentera/progress.yaml` passed with no output. `git diff --check` passed
+    with no output.
+  next: >
+    Hand Task 4 retry back to Orkestrera evaluation. Leave PLAN task status
+    unchanged; do not continue into Tasks 5-6.
+  context:
+    intent: PLAN Task 4 retry for upgrade versus repair semantics
+    constraints: execute only Task 4 retry; fix only identified failure; no commit; no push; no plan-status edit; no vision edit; no objective-state edit; preserve dry-run/apply/retry commands and approval text
+    scope: scripts/agentera_upgrade.py, tests/test_install_root_characterization.py,
+      and this progress entry
+- number: 465
+  timestamp: 2026-05-14 15:50
+  type: fix
+  phase: build
+  what: >
+    Implemented PLAN Task 4 upgrade-versus-repair semantics for the 2.3.5
+    install-state reliability patch.
+  commit: pending
+  inspiration: >
+    Orkestrera scoped this cycle to Task 4 only: valid Agentera app files with
+    version drift must render as an update path, while missing behavior,
+    malformed app files, incomplete app files, and unsafe selected homes must
+    retain repair or blocked-state guidance.
+  discovered: >
+    The status builder used the same stale/repair channel for a proven managed
+    version mismatch and for unverifiable cases such as missing bundle markers or
+    missing required commands. Hej attention text and doctor recovery steps then
+    inherited repair wording even when the only problem was that valid app files
+    were behind the expected version.
+  verified: >
+    Initial focused run `uv run pytest tests/test_query_cli.py::TestHej
+    tests/test_install_root_characterization.py::test_upgrade_characterizes_doctor_root_shapes`
+    failed with 3 expected red tests before the status semantics fix. Final run
+    of the same command passed with 31 tests. `uv run hooks/validate_artifact.py
+    --artifact PROGRESS.md --file .agentera/progress.yaml` passed with no output.
+    `git diff --check` passed with no output.
+  next: >
+    Hand Task 4 to Orkestrera evaluation. Leave PLAN task status unchanged; do not
+    continue into Tasks 5-6 without explicit orchestration.
+  context:
+    intent: PLAN Task 4 upgrade versus repair semantics
+    constraints: execute only Task 4; no commit; no push; no plan-status edit; no vision edit; no objective-state edit; preserve dry-run-before-write, approval text, retry commands, and read-only doctor behavior
+    scope: scripts/agentera, scripts/agentera_upgrade.py, tests/test_query_cli.py,
+      tests/test_install_root_characterization.py, and this progress entry
+- number: 464
+  timestamp: 2026-05-14 15:38
+  type: fix
+  phase: build
+  what: >
+    Implemented PLAN Task 3 runtime adapter propagation for the 2.3.5
+    install-state reliability patch.
+  commit: pending
+  inspiration: >
+    Orkestrera scoped this cycle to Task 3 only: runtime adapters that prepare
+    shell-tool execution must not treat inherited stale AGENTERA_HOME residue as
+    authoritative, must propagate a validated normal app home when discoverable,
+    and must preserve deliberate valid custom app homes.
+  discovered: >
+    The OpenCode adapter already had a resolver that accepted AGENTERA_HOME only
+    when AGENTERA_HOME/app contained runnable Agentera app files and otherwise
+    discovered the normal platform app home. Its shell.env hook bypassed that
+    resolver by returning early for already-merged shell env values and blindly
+    copying process.env.AGENTERA_HOME before using the validated initial result.
+  verified: >
+    `uv run pytest tests/test_runtime_adapters.py -k 'opencode_shell_env or
+    opencode_package_uses_current_app_home_layout'` passed with 4 tests selected
+    and 76 deselected. `uv run pytest tests/test_runtime_adapters.py` passed with
+    80 tests. `uv run hooks/validate_artifact.py --artifact PROGRESS.md --file
+    .agentera/progress.yaml` passed with no output. `git diff --check` passed
+    with no output.
+  next: >
+    Hand Task 3 to Orkestrera evaluation. Leave PLAN task status unchanged; do not
+    continue into Tasks 4-6 without explicit orchestration.
+  context:
+    intent: PLAN Task 3 runtime adapter propagation
+    constraints: execute only Task 3; no commit; no push; no plan-status edit; no vision edit; no objective-state edit; do not mutate shell startup files
+    scope: .opencode/plugins/agentera.js, tests/test_runtime_adapters.py, and this progress entry
+- number: 463
+  timestamp: 2026-05-14 15:29
+  type: fix
+  phase: build
+  what: >
+    Implemented PLAN Task 2 installed CLI resolution behavior for the 2.3.5
+    install-state reliability patch.
+  commit: pending
+  inspiration: >
+    Orkestrera scoped this cycle to Task 2 only: installed CLI startup must report
+    the selected user-data home instead of confusing it with managed app files,
+    valid custom or hermetic homes must remain usable, and upgrade preview must
+    distinguish recognized user data from unknown app-file conflicts.
+  discovered: >
+    A copied installed app still matched the local-checkout heuristic because it
+    has scripts, skills, and registry surfaces under `app/`. That made describe
+    introspection capable of reporting the managed app directory as the app home.
+    The recognized user-state constants also listed `history` and `corpus`, but
+    the safety check only accepted root entries when they were files.
+  verified: >
+    `uv run pytest tests/test_query_cli.py::TestGenericQuery::test_installed_describe_reports_platform_home_despite_legacy_env
+    tests/test_query_cli.py::TestGenericQuery::test_installed_describe_without_env_uses_custom_app_home
+    tests/test_bundle_freshness.py::test_upgrade_previews_bundle_install_with_only_recognized_user_state
+    -q` passed with 3 tests. `uv run pytest tests/test_query_cli.py::TestGenericQuery
+    tests/test_query_cli.py::TestHej tests/test_bundle_freshness.py -q` passed
+    with 53 tests. `uv run pytest tests/test_install_root_module.py
+    tests/test_upgrade_cli.py tests/test_packaged_cli.py -q` passed with 36 tests.
+  next: >
+    Hand Task 2 to Orkestrera evaluation. Leave PLAN task status unchanged; do not
+    continue into Tasks 3-6 without explicit orchestration.
+  context:
+    intent: PLAN Task 2 installed CLI resolution behavior
+    constraints: execute only Task 2; no commit; no push; no plan-status edit; no vision edit; no objective-state edit
+    scope: scripts/agentera, scripts/agentera_upgrade.py, tests/test_query_cli.py,
+      tests/test_bundle_freshness.py, and this progress entry
+- number: 462
+  timestamp: 2026-05-14 15:14
+  type: fix
+  phase: build
+  what: >
+    Implemented the PLAN Task 1 app-home override contract for normal installed
+    execution.
+  commit: pending
+  inspiration: >
+    Orkestrera selected the 2.3.5 app-home reliability patch and constrained this
+    cycle to the override contract only: stale legacy environment residue must not
+    outrank the normal platform directory, while deliberate valid custom homes
+    remain authoritative.
+  discovered: >
+    Upgrade already recovered deprecated default residue, but normal hej and
+    doctor resolution still read the raw AGENTERA_HOME candidate before selecting
+    the active app model. That let missing or stale $HOME/.agents/agentera residue
+    shadow the platform app home during ordinary installed state access.
+  verified: >
+    `uv run pytest tests/test_bundle_freshness.py tests/test_query_cli.py::TestHej
+    tests/test_install_root_module.py tests/test_upgrade_cli.py tests/test_packaged_cli.py
+    tests/test_install_root_characterization.py -q` passed with 87 tests. Earlier
+    focused checks passed: `uv run pytest tests/test_bundle_freshness.py
+    tests/test_query_cli.py::TestHej tests/test_install_root_module.py -q` reported
+    50 passed, `uv run pytest tests/test_upgrade_cli.py tests/test_packaged_cli.py
+    tests/test_install_root_characterization.py -q` reported 37 passed, and
+    `git diff --check` passed.
+  next: >
+    Hand Task 1 to Orkestrera evaluation. Leave PLAN task status unchanged; do not
+    continue into Tasks 2-6 without explicit orchestration.
+  context:
+    intent: PLAN Task 1 app-home override contract
+    constraints: execute only Task 1; no commit; no push; no plan-status edit; no vision edit; no objective-state edit
+    scope: scripts/agentera, scripts/agentera_upgrade.py, tests/test_query_cli.py,
+      tests/test_bundle_freshness.py, and this progress entry
 - number: 461
   timestamp: 2026-05-14 11:50
   type: fix

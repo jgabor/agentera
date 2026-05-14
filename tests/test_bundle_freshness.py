@@ -262,18 +262,18 @@ def test_doctor_allows_user_data_only_platform_app_home_without_writes(tmp_path:
 def test_doctor_recovers_runtime_injected_deprecated_default_without_unsetting_env(tmp_path: Path) -> None:
     home = tmp_path / "home"
     legacy_default = home / ".agents" / "agentera"
-    env = {"AGENTERA_HOME": str(legacy_default)}
+    platform_home = home / ".local" / "share" / "agentera"
+    env = {"AGENTERA_HOME": str(legacy_default), "XDG_DATA_HOME": str(home / ".local" / "share")}
 
     result = _run("doctor", "--json", "--home", str(home), env=env)
 
     assert result.returncode == 1
     payload = json.loads(result.stdout)
     assert payload["status"] == "stale"
-    assert payload["appHome"] == str(legacy_default)
-    assert payload["appHomeSource"] == "AGENTERA_HOME"
-    assert payload["managedAppRoot"] == str(legacy_default / "app")
-    assert not (legacy_default / "app" / "scripts" / "agentera").exists()
-    assert payload["signals"][0]["kind"] == "recoverable_stale_default"
+    assert payload["appHome"] == str(platform_home)
+    assert payload["appHomeSource"] == "default app home"
+    assert payload["managedAppRoot"] == str(platform_home / "app")
+    assert payload["signals"][0]["kind"] == "missing_bundle"
     assert payload["dryRunCommand"] is not None
     assert payload["applyCommand"] is not None
     assert "fix AGENTERA_HOME" not in result.stdout
@@ -304,6 +304,40 @@ def test_upgrade_previews_bundle_install_into_user_data_only_platform_app_home(t
     item = payload["phases"][0]["items"][0]
     assert item["action"] == "install-bundle"
     assert item["target"] == str(app_home / "app")
+    assert sorted(path.relative_to(app_home) for path in app_home.rglob("*")) == before
+    assert not (app_home / "app").exists()
+
+
+def test_upgrade_previews_bundle_install_with_only_recognized_user_state(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    app_home = home / ".local" / "share" / "agentera"
+    _write_user_data_only_app_home(app_home)
+    (app_home / "PROFILE.md").write_text("# Profile\n", encoding="utf-8")
+    (app_home / "USAGE.md").write_text("# Usage\n", encoding="utf-8")
+    (app_home / "history").mkdir()
+    (app_home / "corpus").mkdir()
+    (app_home / "corpus.json").write_text("[]\n", encoding="utf-8")
+    (app_home / ".agentera" / "optimera").mkdir()
+    before = sorted(path.relative_to(app_home) for path in app_home.rglob("*"))
+
+    preview = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--dry-run",
+        "--json",
+        "--home",
+        str(home),
+        env={"AGENTERA_HOME": "", "XDG_DATA_HOME": str(home / ".local" / "share")},
+    )
+
+    assert preview.returncode == 1, preview.stderr
+    payload = json.loads(preview.stdout)
+    assert payload["status"] == "pending"
+    item = payload["phases"][0]["items"][0]
+    assert item["action"] == "install-bundle"
+    assert item["target"] == str(app_home / "app")
+    assert "files Agentera does not recognize" not in item["message"]
     assert sorted(path.relative_to(app_home) for path in app_home.rglob("*")) == before
     assert not (app_home / "app").exists()
 
@@ -404,16 +438,24 @@ def test_upgrade_respects_explicit_deprecated_default_install_root(tmp_path: Pat
 def test_doctor_marks_stale_managed_app_under_deprecated_default_as_recoverable(tmp_path: Path) -> None:
     home = tmp_path / "home"
     legacy_default = home / ".agents" / "agentera"
+    platform_home = home / ".local" / "share" / "agentera"
     _write_stale_bundle(legacy_default / "app", version="2.0.3")
 
-    result = _run("doctor", "--json", "--home", str(home), env={"AGENTERA_HOME": str(legacy_default)})
+    result = _run(
+        "doctor",
+        "--json",
+        "--home",
+        str(home),
+        env={"AGENTERA_HOME": str(legacy_default), "XDG_DATA_HOME": str(home / ".local" / "share")},
+    )
 
     assert result.returncode == 1
     payload = json.loads(result.stdout)
     kinds = [signal["kind"] for signal in payload["signals"]]
     assert payload["status"] == "stale"
-    assert kinds[0] == "recoverable_stale_default"
-    assert "version_mismatch" in kinds
+    assert payload["appHome"] == str(platform_home)
+    assert payload["appHomeSource"] == "default app home"
+    assert kinds == ["missing_bundle"]
     assert payload["dryRunCommand"] is not None
 
 

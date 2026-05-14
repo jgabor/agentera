@@ -1,4 +1,4 @@
-last_audit: '2026-05-14 (2.3.4 patch release metadata sync)'
+last_audit: '2026-05-14 (2.3.5 install-state reliability patch metadata sync)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
