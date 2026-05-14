@@ -224,7 +224,9 @@ def test_master_skill_requires_cli_first_state_access():
     assert "query --list-artifacts" in text
     assert "query <artifact-name> --format json|yaml" in text
     assert "Do not silently bypass the CLI" in text
-    assert "reads only as a fallback" in text
+    assert "raw artifact reads only as a" in text
+    assert "complete startup coverage" in text
+    assert "try the CLI-provided fallback commands first" in text
     assert "Do not run individual `plan`, `progress`, `health`" in text
     assert "Do not run `glob`, `grep`, `read`" in text
 
@@ -272,6 +274,8 @@ def test_master_skill_documents_route_alias_contract_boundary():
     assert "`/agentera build`" in text
     assert "`/agentera plan` routes to planera" in text
     assert "`agentera plan` reads plan state" in text
+    assert "agentera hej --format json --capability-context <capability>" in text
+    assert "missing_state_families" in text
     assert "ROUTE_ALIASES.primary_aliases" in text
     assert "Canonical Swedish names remain the" in text
     assert "Secondary user wording stays in" in text

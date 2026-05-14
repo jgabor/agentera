@@ -1,4 +1,4 @@
-last_audit: '2026-05-13 (manual startup benchmark persistence and operator docs)'
+last_audit: '2026-05-14 (PLAN artifact source contract closeout)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -96,15 +96,15 @@ index:
   status: current
 - document: Progress
   path: .agentera/progress.yaml
-  last_updated: '2026-05-13'
+  last_updated: '2026-05-14'
   status: current
 - document: TODO
   path: TODO.md
-  last_updated: '2026-05-13'
+  last_updated: '2026-05-14'
   status: current
 - document: Changelog
   path: CHANGELOG.md
-  last_updated: '2026-05-13'
+  last_updated: '2026-05-14'
   status: current
 - document: Health
   path: .agentera/health.yaml
@@ -112,11 +112,11 @@ index:
   status: current
 - document: Plan
   path: .agentera/plan.yaml
-  last_updated: '2026-05-13'
+  last_updated: '2026-05-14'
   status: current
 - document: DOCS
   path: .agentera/docs.yaml
-  last_updated: '2026-05-13'
+  last_updated: '2026-05-14'
   status: current
 - document: Vocabulary
   path: docs/vocabulary.md
@@ -362,8 +362,115 @@ coverage:
   documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
   undocumented: 0 skills lack documentation
   stale: none
-  tests: 'Startup measurement now documents the Decision 51 state-access metric and the Decision 52 manual benchmark retention boundary. The metric is raw artifact access after CLI state during capability startup/state gathering, replacing an uncommitted route/intro startup-window draft that found zero qualifying windows and would have closed the startup-envelope follow-up. The contract records the post-2.3 boundary, natural-language and bare-capability invocation markers, state-gathering sequence boundaries, counted event classes, degradation reasons, report fields, Section 22 compatibility, privacy boundary, local-only report command, structured report, human-readable report, recommendation gate, manual-only benchmark rule, exact runtime/path approval requirement, default `${AGENTERA_HOME}/benchmarks/startup-state/` storage, durable `runs.jsonl` plus fixed latest report files, and aggregate-history exclusions for raw transcripts, raw corpus files, raw intermediates, raw store paths, raw session IDs, private salts, and generated salted hashes. Focused contract tests validate redaction helpers, state-sequence classification, raw-after-CLI overlap counts, thresholds, recommendations, report surfaces, and benchmark retention boundaries; extract_corpus tests now preserve current OpenCode tool-call extraction so the metric can see real OpenCode CLI/read behavior.'
+  tests: 'Startup measurement now documents the Decision 51 state-access metric and the Decision 52 manual benchmark retention boundary. The metric is raw artifact access after CLI state during capability startup/state gathering, replacing an uncommitted route/intro startup-window draft that found zero qualifying windows and would have closed the startup-envelope follow-up. The contract records the post-2.3 boundary, natural-language and bare-capability invocation markers, state-gathering sequence boundaries, counted event classes, degradation reasons, report fields, Section 22 compatibility, privacy boundary, local-only report command, structured report, human-readable report, recommendation gate, manual-only benchmark rule, exact runtime/path approval requirement, default `${AGENTERA_HOME}/benchmarks/startup-state/` storage, durable `runs.jsonl` plus fixed latest report files, and aggregate-history exclusions for raw transcripts, raw corpus files, raw intermediates, raw store paths, raw session IDs, private salts, and generated salted hashes. Focused contract tests validate redaction helpers, state-sequence classification, raw-after-CLI overlap counts, thresholds, recommendations, report surfaces, benchmark retention boundaries, supported Claude Code and GitHub Copilot fixture extraction, aggregate token fields, comparable-row savings/null reasons, and privacy exclusions. Task 7 closeout records durable benchmark evidence with estimator `approx_bytes_div_4_v1`, raw-after-CLI estimated tokens `621`, redundant raw estimated tokens `533`, null reason `previous_missing_token_estimates`, CLI behavior rates `0.4444`, 18 total state sequences, retained recommendation `plan_cli_startup_envelope`, and live-runtime `schema_divergent` caveats for current local Claude Code and GitHub Copilot stores. No release target was selected, so version-bearing files remain unchanged and future version changes stay governed by `.agentera/docs.yaml` `semver_policy`.'
 audit_log:
+- date: '2026-05-14'
+  label: PLAN artifact source contract closeout
+  findings:
+  - type: checked
+    description: >
+      `agentera plan --format json` now exposes full plan metadata through
+      `summary`, task dependencies/acceptance/evidence through `entries`, and a
+      selectable `source_contract` that marks the output complete for normal
+      `PLAN.md` startup and evaluation context.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Focused CLI contract tests passed with 88 selected tests, the mixed-window
+      benchmark recorded `245` estimated redundant tokens saved versus the
+      previous row, and a clean post-fix probe produced zero raw/redundant
+      artifact reads in a tiny weak-evidence window.
+    resolution: fixed
+    severity: info
+  - type: version-policy
+    description: >
+      No release target was selected. Version-bearing files remain unchanged; any
+      future release target must apply this document's `semver_policy` before a
+      version bump.
+    resolution: noted
+    severity: info
+- date: '2026-05-14'
+  label: Runtime schema coverage and token savings closeout
+  findings:
+  - type: checked
+    description: >
+      Supported Claude Code and GitHub Copilot synthetic fixtures now extract as
+      `ok / records_extracted`; intentionally malformed unsupported fixture
+      classes remain bounded `schema_divergent` negative cases without raw
+      payload output.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Durable benchmark outputs now include token estimator
+      `approx_bytes_div_4_v1`, estimated raw-after-CLI tokens `621`, estimated
+      redundant raw tokens `533`, comparable-row null reason
+      `previous_missing_token_estimates`, CLI behavior rates `0.4444`, and 18
+      total state sequences.
+    resolution: fixed
+    severity: info
+  - type: blocker
+    description: >
+      The benchmark recommendation remains `plan_cli_startup_envelope`; TODO
+      continues to track the narrower remaining `PLAN.md` redundant raw-read
+      follow-up.
+    resolution: open
+    severity: normal
+  - type: caveat
+    description: >
+      Runtime caveats remain separate from product behavior: live local
+      `claude-code` and `github-copilot` stores still report `schema_divergent`
+      for unsupported/current local schemas while supported fixtures are ok.
+    resolution: noted
+    severity: info
+  - type: version-policy
+    description: >
+      No release target was selected. Version-bearing files listed in this
+      document remain unchanged; no release publication, push, tag, installed app
+      refresh, vision edit, or objective-state edit occurred. Any future release
+      target must apply this document's `semver_policy` before bumping versions.
+    resolution: noted
+    severity: info
+- date: '2026-05-14'
+  label: CLI startup state envelope closeout and version gate
+  findings:
+  - type: checked
+    description: >
+      Startup completeness/source contract behavior, full `hej` startup coverage,
+      docs mapping/source metadata, progress verification metadata, and
+      `--capability-context` fallback policy are now recorded as the completed
+      product scope for the Reduce Post-CLI Startup Artifact Reads plan.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Task 6 benchmark comparison improved raw-after-CLI and redundant-raw
+      sequence rates from 1.0 to 0.2222, reduced raw accesses from 11 to 2, and
+      reduced redundant raw accesses from 8 to 2.
+    resolution: fixed
+    severity: info
+  - type: blocker
+    description: >
+      Remaining redundant raw access is `PLAN.md` across 2 sequences, so TODO now
+      tracks that narrower follow-up and the benchmark recommendation remains
+      `plan_cli_startup_envelope`.
+    resolution: open
+    severity: normal
+  - type: caveat
+    description: >
+      Runtime coverage caveats remain separate from product behavior:
+      `claude-code` and `github-copilot` are degraded by `schema_divergent`, while
+      `codex` and `opencode` are ok.
+    resolution: noted
+    severity: info
+  - type: version-policy
+    description: >
+      No release target was selected. Per docs semver policy, version-bearing
+      files remain unchanged and no publication, tag, push, installed app refresh,
+      vision edit, or objective-state edit was performed.
+    resolution: noted
+    severity: info
 - date: '2026-05-13'
   label: Manual startup benchmark persistence and operator docs
   findings:

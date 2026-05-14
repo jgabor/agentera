@@ -57,6 +57,194 @@ benchmark_execution:
   metric_source_of_truth: scripts/startup_analysis_contract.py
   startup_state_envelope_scope: excluded
 
+runtime_extraction_contract:
+  supported_runtime_order:
+    - codex
+    - claude-code
+    - opencode
+    - github-copilot
+  normalized_record_fields:
+    required:
+      - source_id
+      - timestamp
+      - project_id
+      - source_kind
+      - runtime
+      - adapter_version
+      - data
+    optional:
+      - project_path
+      - session_id
+    startup_required_semantics:
+      - runtime label
+      - timestamp
+      - conversation key from conversation_key, session_id, data.session_id, or source_id
+      - conversation_turn records with data.actor and data.content
+      - tool_call records with data.tool_name and data.arguments
+  runtime_status_outcomes:
+    schema_divergent:
+      status: degraded
+      reason: schema_divergent
+      rule: >-
+        One or more candidate runtime files or databases were found, but adapter
+        parsing encountered schema errors. This is extraction failure evidence,
+        not a successful zero-record benchmark window.
+      required_counts:
+        - candidate_count when discovery can count candidates
+        - record_count, which may be zero or partial
+        - error_count greater than zero
+      current_examples:
+        - runtime: claude-code
+          candidate_count: 4836
+          record_count: 0
+          error_count: 2
+        - runtime: github-copilot
+          candidate_count: 1
+          record_count: 0
+          error_count: 1
+    no_matching_records:
+      status: sparse
+      reason: no_matching_records
+      rule: >-
+        Candidate runtime storage was readable and matched an accepted store
+        shape, but no supported message or tool records were extracted. This is
+        sparse coverage evidence and remains distinct from schema divergence.
+      required_counts:
+        - candidate_count when discovery can count candidates
+        - "record_count: 0"
+        - no error_count greater than zero
+    successful_zero_record_window:
+      status: ok
+      reason: records_extracted
+      rule: >-
+        Adapter extraction succeeded for the runtime scope, but the benchmark
+        incremental window contains zero records after the previous successful
+        watermark. This is compatible successful behavior, not degradation.
+      required_counts:
+        - "record_count: 0"
+        - "error_count: 0"
+      current_examples:
+        - runtime: codex
+          record_count: 0
+          error_count: 0
+  supported_runtimes:
+    codex:
+      accepted_input_schema_classes:
+        - JSONL session files containing session_meta or turn_context records
+        - JSONL response_item or user_msg message records
+        - JSONL tool_call or function_call records with payload item, name, and arguments variants
+      normalized_record_fields:
+        conversation_turn: [runtime, timestamp, session_id, project_id, data.actor, data.content]
+        tool_call: [runtime, timestamp, session_id, project_id, data.tool_name, data.arguments]
+      status_mapping:
+        records extracted without adapter errors: ok / records_extracted
+        readable candidates but no supported records: sparse / no_matching_records
+        unreadable or locked store: degraded / store_unreadable or store_locked
+        parser/schema errors: degraded / schema_divergent
+      redaction_rules:
+        - Do not retain transcript content from content, text, message, prompt, input_text, or output_text.
+        - Do not retain cwd, project_path, store_path, file_path, raw session ids, or generated salted hashes.
+        - Retain only canonical runtime labels, canonical artifact labels, bounded counts, and aggregate status fields.
+    claude-code:
+      accepted_input_schema_classes:
+        - JSONL project session files with top-level role or type user/assistant events
+        - JSONL message objects with nested message.role plus content/text/message content variants
+        - JSONL tool_call, function_call, or tool_use records with argument/input variants
+      normalized_record_fields:
+        conversation_turn: [runtime, timestamp, session_id, project_id, data.actor, data.content]
+        tool_call: [runtime, timestamp, session_id, project_id, data.tool_name, data.arguments]
+      status_mapping:
+        records extracted without adapter errors: ok / records_extracted
+        readable candidates but no supported records: sparse / no_matching_records
+        unreadable or locked store: degraded / store_unreadable or store_locked
+        parser/schema errors: degraded / schema_divergent
+      redaction_rules:
+        - Do not retain raw project directories encoded in Claude project filenames or cwd fields.
+        - Do not retain transcript content, raw session ids, raw store paths, or generated salted hashes.
+        - Retain only canonical runtime labels, canonical artifact labels, bounded counts, and aggregate status fields.
+    opencode:
+      accepted_input_schema_classes:
+        - SQLite opencode.db with session, message, and part tables
+        - session id columns id, session_id, or sessionID
+        - message/part join, role, timestamp, text/content, and JSON data column variants
+        - tool parts encoded as part type tool or JSON data.tool with state.input arguments
+      normalized_record_fields:
+        conversation_turn: [runtime, timestamp, session_id, project_id, data.actor, data.content]
+        tool_call: [runtime, timestamp, session_id, project_id, data.tool_name, data.arguments]
+      status_mapping:
+        records extracted without adapter errors: ok / records_extracted
+        readable candidates but no supported records: sparse / no_matching_records
+        missing required tables or join columns: degraded / schema_divergent
+        unreadable or locked store: degraded / store_unreadable or store_locked
+      redaction_rules:
+        - Do not retain SQLite file paths, project paths, transcript text, raw session ids, or generated salted hashes.
+        - Retain only canonical runtime labels, canonical artifact labels, bounded counts, and aggregate status fields.
+    github-copilot:
+      accepted_input_schema_classes:
+        - SQLite session-store.db with sessions and turns tables
+        - session id columns id, session_id, or sessionID
+        - turns columns for session linkage, role, text/content/message/prompt/response, timestamp, and ordering variants
+        - turns JSON payload or tool columns containing tool_name/name/tool plus arguments/input/command variants
+      normalized_record_fields:
+        conversation_turn: [runtime, timestamp, session_id, project_id, data.actor, data.content]
+        tool_call: [runtime, timestamp, session_id, project_id, data.tool_name, data.arguments]
+      status_mapping:
+        records extracted without adapter errors: ok / records_extracted
+        readable candidates but no supported records: sparse / no_matching_records
+        missing required tables, join columns, role, or text columns: degraded / schema_divergent
+        unreadable or locked store: degraded / store_unreadable or store_locked
+      redaction_rules:
+        - Do not retain session-store paths, project paths, transcript text, raw session ids, or generated salted hashes.
+        - Retain remediation labels such as /chronicle reindex only when they are static product guidance, not local data.
+        - Retain only canonical runtime labels, canonical artifact labels, bounded counts, and aggregate status fields.
+
+token_impact_contract:
+  estimator_version: approx_bytes_div_4_v1
+  estimator_rule: >-
+    Estimate tokens as ceil(observed UTF-8 content bytes divided by 4). The
+    estimate is an aggregate benchmark signal, not model-tokenizer output.
+  transient_inputs:
+    - observed transcript or tool-argument content byte counts during analysis
+    - canonical artifact label associated with each raw artifact access event
+    - sequence classification for raw-after-CLI and redundant raw access
+  retained_output_rule: >-
+    Retained reports and history may store only aggregate estimated token counts
+    grouped by canonical artifact label and benchmark scope. They must not store
+    raw paths, transcript text, raw tool arguments, salts, or generated hashes.
+  aggregate_fields:
+    latest_report:
+      - token_estimator_version
+      - estimated_raw_after_cli_tokens
+      - estimated_redundant_raw_tokens
+      - estimated_raw_after_cli_tokens_by_artifact
+      - estimated_redundant_raw_tokens_by_artifact
+      - estimated_tokens_saved_vs_previous
+      - estimated_tokens_saved_vs_previous_null_reason
+    aggregate_history:
+      - token_estimator_version
+      - estimated_raw_after_cli_tokens
+      - estimated_redundant_raw_tokens
+      - estimated_raw_after_cli_tokens_by_artifact
+      - estimated_redundant_raw_tokens_by_artifact
+      - estimated_tokens_saved_vs_previous
+      - estimated_tokens_saved_vs_previous_null_reason
+  comparable_row_rules:
+    comparable_when_all_match:
+      - contract_version
+      - benchmark_mode
+      - runtime_scope
+      - token_estimator_version
+      - token aggregate fields present in both rows
+    saved_value: previous estimated_redundant_raw_tokens minus current estimated_redundant_raw_tokens
+    null_when_not_comparable: true
+  null_reasons:
+    - previous_row_missing
+    - previous_missing_token_estimates
+    - estimator_version_mismatch
+    - runtime_scope_mismatch
+    - benchmark_mode_mismatch
+    - contract_version_mismatch
+
 benchmark_storage:
   default_directory: ${AGENTERA_HOME}/benchmarks/startup-state/
   repository_outputs: forbidden
@@ -103,6 +291,13 @@ aggregate_history:
     - degradation_reason_counts
     - bounded_degradation_counts
     - startup_recommendation_action
+    - token_estimator_version
+    - estimated_raw_after_cli_tokens
+    - estimated_redundant_raw_tokens
+    - estimated_raw_after_cli_tokens_by_artifact
+    - estimated_redundant_raw_tokens_by_artifact
+    - estimated_tokens_saved_vs_previous
+    - estimated_tokens_saved_vs_previous_null_reason
   forbidden_retained_fields:
     - raw_transcripts
     - raw_corpus_files
@@ -111,6 +306,7 @@ aggregate_history:
     - raw_session_ids
     - private_salts
     - generated_salted_hashes
+    - raw_tool_arguments
 
 state_gathering_sequence:
   start_anchor: first_agentera_cli_state_call_after_capability_related_user_turn
@@ -188,8 +384,8 @@ privacy_boundary:
     Retained aggregate benchmark history must exclude raw transcripts, raw corpus
     files, raw intermediates, raw store paths, raw session IDs, private salts, and
     generated salted hashes. Store only bounded counts, rates, canonical labels,
-    runtime labels, version metadata, git metadata, degradation counts, and the
-    recommendation action.
+    runtime labels, version metadata, git metadata, degradation counts, token
+    estimate aggregates, and the recommendation action.
   fixture_rule: >-
     Committed fixtures and snapshots must use synthetic text and identifiers or
     already-redacted labels; never paste raw transcript excerpts, full local
@@ -216,7 +412,14 @@ report_fields:
     - startup_recommendation
     - privacy_redaction_summary
     - compatibility_note
+    - token_estimator_version
+    - estimated_raw_after_cli_tokens
+    - estimated_redundant_raw_tokens
+    - estimated_raw_after_cli_tokens_by_artifact
+    - estimated_redundant_raw_tokens_by_artifact
   optional:
     - confidence_caveats
     - insufficient_evidence_reason
     - recommendation_gate_input
+    - estimated_tokens_saved_vs_previous
+    - estimated_tokens_saved_vs_previous_null_reason

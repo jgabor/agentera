@@ -11,6 +11,10 @@
 
 ### Fixed
 
+- `agentera plan --format json` now declares itself complete for normal `PLAN.md`
+  startup/evaluation context through a selectable `source_contract`, exposes full
+  plan metadata in `summary`, and tells agents not to read `.agentera/plan.yaml`
+  defensively when `complete_for_plan_artifact=true`.
 - Shell startup file mutation has been removed from setup, doctor, upgrade, and repair paths; stale Agentera shell lines are reported as user-owned manual cleanup, exact deprecated-default `AGENTERA_HOME` residue can recover to the platform app directory when safe, managed runtime remnants refresh or clean up only with Agentera ownership proof, and package-manager updates remain opt-in.
 - README, upgrade, skill repair, and Copilot manifest guidance now describe
   repair as app plus managed runtime surface repair, state that Agentera will not
@@ -46,6 +50,7 @@
 
 ### Added
 
+- `agentera hej` startup state now carries completeness/source contract behavior, full startup state coverage for plan/docs/progress/TODO/health, docs mapping and source metadata, progress verification metadata, and `--capability-context` fallback policy so capability startup can prefer CLI state before raw artifact access.
 - Manual `mage bench:startupState` startup state benchmark support now runs the Decision 51 raw-after-CLI metric only after explicit runtime/path approval, stores aggregate history under the user Agentera home, and retains only `runs.jsonl`, `latest-report.json`, and `latest-report.md`.
 - Manual startup benchmark runs now use documented runtime-store defaults and `runs.jsonl` watermarks so bare `mage bench:startupState` measures records since the previous successful benchmark for the same runtime scope, while custom stores remain optional overrides.
 - Decision 51 startup-overhead analysis now measures raw Agentera artifact access after CLI state calls during capability startup/state gathering, including bare capability names and natural-language handoffs instead of only slash-route startup windows.
@@ -60,6 +65,15 @@
 
 ### Verified
 
+- PLAN artifact fallback closeout is synchronized without a selected release target:
+  focused CLI/contract tests passed with 88 selected tests, `agentera plan
+  --format json --fields source_contract` reports
+  `complete_for_plan_artifact=true` and `raw_artifact_reads_required=false`, the
+  mixed-window benchmark recorded `245` estimated redundant tokens saved versus
+  the previous row, and a clean post-fix probe produced zero raw/redundant
+  artifact reads in a tiny weak-evidence window.
+- Runtime schema coverage and token-impact closeout is synchronized without a selected release target: supported Claude Code and GitHub Copilot fixtures now extract as `ok / records_extracted`, live local `claude-code` and `github-copilot` stores remain separate `schema_divergent` caveats for unsupported/current schemas, durable benchmark outputs record estimator `approx_bytes_div_4_v1`, raw-after-CLI estimated tokens `621`, redundant raw estimated tokens `533`, savings null reason `previous_missing_token_estimates`, CLI behavior rates `0.4444`, 18 total state sequences, and retained recommendation `plan_cli_startup_envelope`; version-bearing files remain unchanged because no release target was selected, and any future bump remains governed by `.agentera/docs.yaml` semver policy.
+- CLI startup state envelope closeout is synchronized without a selected release target: TODO, docs, progress, changelog, and plan state record that raw-after-CLI and redundant-raw sequence rates improved from `1.0` to `0.2222`, raw accesses fell from `11` to `2`, redundant raw accesses fell from `8` to `2`, remaining redundant raw access is `PLAN.md` across 2 sequences, `claude-code` and `github-copilot` remain degraded by schema divergence, `codex` and `opencode` are ok, and version-bearing files remain unchanged because no release target was selected.
 - Manual startup benchmark state is synchronized without a selected release target: focused fixture tests, Python compile checks, Mage compile/refusal checks, and a temporary-home missing-store Mage run verify persistence, latest-report retention, privacy boundaries, and no repository-local benchmark outputs while the separate CLI startup state-envelope follow-up remains open.
 - Manual startup benchmark incremental semantics are fixture-verified: repeated runtime-store runs append aggregate rows that advance `benchmark_watermark_at`, subsequent runs start after the previous watermark, and no-new-record reruns append zero-record rows without rereporting old sequences.
 - Shell-rc removal state is synchronized without a selected release target: TODO, docs, progress, changelog, and plan state record completion, stale-remnant handling, and verification evidence while package, plugin, registry, lockfile, OpenCode marker, and skill version-bearing files remain unchanged at the pre-existing `2.3.3` metadata.

@@ -67,6 +67,29 @@ Inputs:
 Supported runtime labels are owned by the analyzer and Mage wrapper. Invalid
 labels or relative paths fail before runtime history is read.
 
+### Runtime Extraction Contract
+
+The extraction matrix is defined in
+`references/analysis/startup-measurement-contract.yaml` under
+`runtime_extraction_contract`. It lists, for each supported runtime, the accepted
+input schema classes, normalized record fields, status mapping, and redaction
+rules.
+
+Status interpretation is intentionally split:
+
+| Outcome | Status / reason | Meaning |
+| --- | --- | --- |
+| Schema divergence | `degraded` / `schema_divergent` | Candidate runtime storage was found, but the adapter hit schema errors. Treat this as extraction failure evidence. |
+| No matching records | `sparse` / `no_matching_records` | Candidate storage was readable and schema-compatible, but no supported records were extracted. Treat this as sparse coverage evidence. |
+| Successful zero-record window | `ok` / `records_extracted` with `record_count: 0` and `error_count: 0` | Extraction succeeded, but the incremental benchmark window has no records after the previous watermark. Treat this as compatible successful behavior. |
+
+Current known runtime caveats are extraction caveats, not CLI behavior evidence:
+`claude-code` is degraded by `schema_divergent` with 4836 candidates, 0 records,
+and 2 errors; `github-copilot` is degraded by `schema_divergent` with 1
+candidate, 0 records, and 1 error; `opencode` currently contributes records;
+`codex` can validly report `ok` with zero records and zero errors for an empty
+incremental window.
+
 Runtime-store runs are incremental by default. The first run for a runtime scope
 measures all records after the v2.3.0 boundary. Later runs for the same
 `runtime_scope` read the previous `benchmark_watermark_at` from `runs.jsonl` and
@@ -76,6 +99,82 @@ new aggregate rows focused on work since the previous successful benchmark run.
 To start a fresh series, use a different `AGENTERA_BENCH_OUTPUT_DIR` or archive
 the existing `runs.jsonl`. Late-arriving records with timestamps at or before the
 stored watermark are treated as already covered.
+
+## How To Reduce Raw Startup Reads
+
+Use the startup benchmark as a CLI completeness profiler. The benchmark does not
+measure wall-clock startup speed. It answers whether agents fetch Agentera state
+through the CLI and then still fall back to raw artifact reads, greps, or globs
+during startup/state gathering.
+
+Follow this loop:
+
+1. Run `mage bench:startupState` and open the retained latest report from the
+   `benchmark.directory` path printed on stdout.
+2. Check evidence quality before planning product changes. `total_state_sequences`
+   must be non-zero, important runtime rows should not be degraded, and
+   `confidence_caveats` plus `degradation_reason_counts` must be understood. If
+   the report has zero state-gathering sequences, treat it as no evidence rather
+   than evidence that the CLI is complete.
+3. Rank the post-CLI raw artifact reads. The best next CLI field is usually the
+   highest repeated artifact in `redundant_raw_artifact_access_counts`, followed
+   by `raw_artifact_access_after_cli_counts` when the read is not redundant yet
+   but still happens after a successful CLI state call.
+4. Map each repeated raw read to the CLI state owner. Prefer enriching existing
+   routine commands or the `hej` composite startup result. Do not add Decision 43
+   slash-route aliases as CLI commands.
+5. Make CLI completeness explicit. A startup-capable response should say whether
+   it is complete for the requested capability, whether raw artifact reads are
+   required, what state families are included, what is missing, and which CLI
+   fallback command should be tried before raw file access.
+6. Update guidance and tests so agents trust complete CLI output and use raw
+   reads only as a fallback. Rerun the benchmark on representative sessions and
+   compare the new rates with prior `runs.jsonl` rows.
+
+Use these fields to decide what to change:
+
+| Field | How to use it |
+| --- | --- |
+| `runtime_coverage` | Verify which runtime stores contributed records, which were degraded, and why. Fix extraction or gather more evidence before product work when key stores are degraded. |
+| `total_state_sequences` | Confirm the run actually observed startup/state-gathering sequences. A zero value blocks CLI-completeness conclusions. |
+| `cli_state_command_counts` | Shows which Agentera state commands anchored the measured sequences. These commands are the first candidates for richer structured output. |
+| `raw_artifact_access_after_cli_counts` | Shows which canonical artifacts agents still read after CLI state. These are candidate missing CLI fields or summaries. |
+| `redundant_raw_artifact_access_counts` | Shows post-CLI raw reads that overlap state already covered by the CLI. These are the highest-priority avoidable reads. |
+| `per_capability_state_counts` | Shows whether the gap is broad startup behavior or narrow capability-specific startup context. |
+| `capability_prose_read_counts` | Shows capability prose reads during startup. Use this to decide whether routing/context guidance, not artifact state, is the repeated lookup. |
+| `startup_recommendation` | Records whether the measured evidence supports closing, targeted guidance, or a broader startup state envelope. |
+
+### Token Impact Estimates
+
+Token-impact fields are approximate, privacy-safe aggregate estimates. The
+contract-owned estimator version is `approx_bytes_div_4_v1`: the analyzer may
+observe content byte counts transiently, group them by canonical artifact label,
+and estimate tokens as bytes divided by 4. Retained outputs must not include raw
+paths, transcript text, raw tool arguments, private salts, or generated salted
+hashes.
+
+Retained latest reports and new history rows may include:
+
+| Field | Meaning |
+| --- | --- |
+| `token_estimator_version` | Estimator identity, currently `approx_bytes_div_4_v1`. |
+| `estimated_raw_after_cli_tokens` | Aggregate estimated tokens for raw artifact reads after CLI state calls. |
+| `estimated_redundant_raw_tokens` | Aggregate estimated tokens for raw artifact reads that overlap CLI-covered state. |
+| `estimated_raw_after_cli_tokens_by_artifact` | Canonical-label breakdown such as `PLAN.md`; never raw paths. |
+| `estimated_redundant_raw_tokens_by_artifact` | Canonical-label breakdown for redundant raw reads. |
+| `estimated_tokens_saved_vs_previous` | Previous comparable row's redundant-token estimate minus the current row's estimate, or `null`. |
+| `estimated_tokens_saved_vs_previous_null_reason` | Concrete reason when savings are `null`, such as `previous_missing_token_estimates`. |
+
+Rows are comparable only when contract version, benchmark mode, runtime scope,
+estimator version, and token-field availability match. Otherwise savings stay
+`null` with a contract-listed reason.
+
+Stop conditions are as important as action triggers. If a run has zero
+state-gathering sequences, sparse records, or degraded schema extraction, improve
+benchmark coverage first. If only one capability repeatedly reads one artifact,
+prefer targeted CLI output or guidance over a broad startup envelope. If multiple
+capabilities repeatedly read several redundant artifacts after CLI state, plan a
+capability-ready startup state envelope or equivalent composite output.
 
 ## Retention Policy
 
@@ -110,6 +209,9 @@ tail -n 5 "$BENCH_DIR/runs.jsonl"
 ```
 
 The `BENCH_DIR` example uses the Linux default when `AGENTERA_HOME` is unset.
+The stdout `reports` filenames are analyzer report names from Mage's temporary
+work directory. The durable operator-facing files are the `benchmark` paths:
+`runs.jsonl`, `latest-report.json`, and `latest-report.md`.
 
 ## Interpretation
 
@@ -132,10 +234,10 @@ Watermark fields:
 
 Primary rates:
 
-| Rate | Meaning |
-| --- | --- |
-| `raw_after_cli_rate` | Share of startup state-gathering sequences where any raw Agentera artifact access follows CLI state. |
-| `redundant_raw_access_rate` | Share of startup state-gathering sequences where raw access overlaps state already covered by the CLI. |
+| Latest report field | History row field | Meaning |
+| --- | --- | --- |
+| `raw_after_cli_sequence_rate` | `raw_after_cli_rate` | Share of startup state-gathering sequences where any raw Agentera artifact access follows CLI state. |
+| `redundant_raw_sequence_rate` | `redundant_raw_access_rate` | Share of startup state-gathering sequences where raw access overlaps state already covered by the CLI. |
 
 High rates support follow-up work such as a CLI startup state envelope. Low or
 zero rates can close the measurement loop without implementation if the corpus is

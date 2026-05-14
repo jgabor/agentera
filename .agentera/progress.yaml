@@ -1,4 +1,611 @@
 cycles:
+- number: 460
+  timestamp: 2026-05-14 09:10
+  type: fix
+  phase: build
+  what: >
+    Closed the narrower PLAN.md redundant raw startup-read follow-up by making
+    `agentera plan --format json` self-describe complete plan-artifact coverage.
+  commit: pending
+  inspiration: >
+    The remaining benchmark recommendation was driven by agents reading
+    `.agentera/plan.yaml` after `agentera plan`. The CLI already returned task
+    entries, but it did not explicitly declare the output complete for normal
+    PLAN.md startup/evaluation context or expose a selectable source contract.
+  discovered: >
+    `agentera plan --format json` now includes full plan metadata in `summary`,
+    task dependencies/acceptance/evidence in `entries`, and a top-level
+    `source_contract` with `complete_for_plan_artifact=true`,
+    `raw_artifact_reads_required=false`, no missing state, and no fallback when
+    the plan artifact exists.
+  verified: >
+    Focused validation passed: `uv run pytest
+    tests/test_query_cli.py::TestArtifactSpecificSummaries::test_plan_json_declares_complete_plan_artifact_contract
+    tests/test_query_cli.py::TestRoutineStructuredOutput
+    tests/test_decision45_cli_contract.py
+    tests/test_cross_capability.py::test_master_skill_requires_cli_first_state_access
+    tests/test_startup_analysis_contract.py -q` reported 88 passed.
+    `agentera plan --format json --fields source_contract` returns
+    `complete_for_plan_artifact=true` and `raw_artifact_reads_required=false`.
+    `mage bench:startupState` first recorded a mixed-window row with `245`
+    estimated redundant tokens saved versus the previous row, then a clean
+    post-fix probe window with zero raw/redundant artifact reads and
+    `estimated_tokens_saved_vs_previous: 288`; that second window is weak
+    evidence because it had zero qualifying state-gathering sequences.
+  next: >
+    Stop. The PLAN.md fallback follow-up is closed for the CLI contract path. Do
+    not commit, push, bump versions, publish, refresh installed apps, edit vision,
+    or touch objective state without explicit approval.
+  context:
+    intent: PLAN.md redundant raw startup-read closeout
+    constraints: no commit, no push, no version bump, no release publication, no installed app refresh, no vision edit, no objective-state edit
+    scope: scripts/agentera, references/cli/agent-ready-state-contract.yaml, skills/agentera/SKILL.md, tests/test_query_cli.py, tests/test_decision45_cli_contract.py, TODO.md, CHANGELOG.md, .agentera/docs.yaml, and .agentera/progress.yaml
+- number: 459
+  timestamp: 2026-05-14
+  type: docs
+  phase: audit
+  what: >
+    Completed Task 7 for the Repair Runtime Schema Coverage And Token Savings
+    Estimates plan by synchronizing closeout state and enforcing the no-release
+    version gate.
+  commit: pending
+  inspiration: >
+    Orkestrera needed TODO, progress, docs, changelog, and plan state to agree on
+    schema coverage, token-impact evidence, remaining runtime caveats, benchmark
+    results, and the explicit boundary that no selected release target means no
+    version-bearing file changes or publication actions.
+  discovered: >
+    Tasks 3-4 repaired supported Claude Code and GitHub Copilot fixture
+    extraction, but live local `claude-code` and `github-copilot` runtime stores
+    still report `schema_divergent` caveats for unsupported/current local schemas.
+    Task 5 added estimator `approx_bytes_div_4_v1` and aggregate token fields,
+    and Task 6 durable benchmark outputs include `estimated_raw_after_cli_tokens:
+    621`, `estimated_redundant_raw_tokens: 533`, savings null reason
+    `previous_missing_token_estimates`, CLI behavior rates `0.4444`, 18 total
+    state sequences, and retained recommendation `plan_cli_startup_envelope`.
+  verified: >
+    Task 7 acceptance passed. TODO, progress, docs, changelog, and plan now
+    record supported-fixture schema coverage, live runtime `schema_divergent`
+    caveats, token-impact evidence, remaining blockers, and the latest durable
+    benchmark results. No release target was selected, so `.agentera/docs.yaml`
+    `version_files` stayed out of scope and no version-bearing file was edited;
+    no publication, push, tag, installed app refresh, vision edit, or
+    objective-state edit occurred. Future release bumps remain controlled by
+    `.agentera/docs.yaml` `semver_policy`, where `feat` maps to minor, `fix` maps
+    to patch, and `docs/chore/test` maps to no bump. Retry repair corrected the
+    active-plan Task 6 progress enum values in cycle 458 from
+    `validation`/`validate` to `test`/`audit`.
+  next: >
+    Hand off the completed plan for Orkestrera evaluation. Remaining blocker:
+    evaluate the `plan_cli_startup_envelope` recommendation and the narrower
+    `PLAN.md` redundant raw-read follow-up while keeping live runtime schema
+    caveats separate from supported fixture behavior.
+  context:
+    intent: State sync and version gate for Task 7
+    constraints: no commit, no push, no version bump, no release publication, no
+      installed app refresh, no vision edit, no objective-state edit, no raw
+      private runtime data retention
+    scope: TODO.md, CHANGELOG.md, .agentera/plan.yaml, .agentera/progress.yaml,
+      and .agentera/docs.yaml
+- number: 458
+  timestamp: 2026-05-14
+  type: test
+  phase: audit
+  what: >
+    Completed Task 6 for the Repair Runtime Schema Coverage And Token Savings
+    Estimates plan by running focused startup validation and rerunning the manual
+    startup-state benchmark.
+  commit: pending
+  inspiration: >
+    Orkestrera needed evidence that adapter repairs, token-impact fields,
+    persistence, documentation contracts, and privacy boundaries hold before any
+    final state sync or version gate work.
+  discovered: >
+    The latest pre-Task-6 durable benchmark row was generated at
+    `2026-05-14T06:09:39+00:00` and still lacked token fields. The rerun added
+    token estimates to durable latest reports and the new history row, while live
+    local Claude Code and GitHub Copilot stores still report `schema_divergent` as
+    runtime extraction caveats distinct from fixture-supported behavior.
+  verified: >
+    Task 6 acceptance passed. `uv run pytest tests/test_startup_analysis_contract.py`
+    passed with 39 tests covering runtime extraction fixtures, analyzer metrics,
+    report rendering, persistence append behavior, benchmark CLI behavior,
+    documentation contract references, token fields, and privacy exclusions.
+    Supported Claude Code and GitHub Copilot fixtures report `ok /
+    records_extracted`; malformed unsupported schema fixtures remain bounded
+    degraded negative cases without raw payload output. `mage bench:startupState`
+    completed with status `ok` and updated
+    `/home/jgabor/.local/share/agentera/benchmarks/startup-state/latest-report.json`,
+    `latest-report.md`, and `runs.jsonl` row 11. Compared with the pre-Task-6 row,
+    durable outputs now include `token_estimator_version: approx_bytes_div_4_v1`,
+    `estimated_raw_after_cli_tokens: 621`, `estimated_redundant_raw_tokens: 533`,
+    canonical artifact token breakdowns, and
+    `estimated_tokens_saved_vs_previous_null_reason:
+    previous_missing_token_estimates`. CLI behavior metrics for the rerun were 18
+    state sequences, 8 raw-after-CLI sequences, 8 redundant raw sequences,
+    raw/redundant rates of 0.4444, and a retained
+    `plan_cli_startup_envelope` recommendation. Live runtime caveats are separate:
+    Claude Code stayed degraded with 4836 candidates, 0 records, 2 errors, and
+    Copilot stayed degraded with 1 candidate, 0 records, 1 error.
+  next: >
+    Hand off Task 6 for Orkestrera evaluation. Do not execute Task 7, commit,
+    push, bump versions, refresh installed apps, edit vision, or touch objective
+    state without explicit approval.
+  context:
+    intent: Focused validation and benchmark rerun for Task 6
+    constraints: no Task 7, no commit, no push, no version bump, no installed app
+      refresh, no vision edit, no objective-state edit, no old history rewrite,
+      no raw private runtime data retention
+    scope: .agentera/plan.yaml, .agentera/progress.yaml, focused startup tests,
+      and user-local benchmark outputs under
+      /home/jgabor/.local/share/agentera/benchmarks/startup-state/
+- number: 457
+  timestamp: 2026-05-14
+  type: fix
+  phase: build
+  what: >
+    Completed Task 5 for the Repair Runtime Schema Coverage And Token Savings
+    Estimates plan by adding privacy-safe estimated token-impact aggregation,
+    report fields, history fields, and focused tests.
+  commit: pending
+  inspiration: >
+    Orkestrera needed token-impact reporting for the remaining `PLAN.md`
+    redundant raw startup-read pattern without advancing the benchmark rerun,
+    final state sync, version bumps, commits, pushes, installed app refreshes,
+    vision edits, or objective-state edits.
+  discovered: >
+    The startup token contract already defined estimator `approx_bytes_div_4_v1`
+    and the retained fields, but `scripts/startup_analysis_contract.py` did not
+    yet compute token estimates, render them in Markdown, persist them to
+    `runs.jsonl`, or compare new rows against comparable previous rows.
+  verified: >
+    Task 5 acceptance passed. Startup aggregation now derives transient
+    tool-argument byte counts for raw artifact access events, estimates tokens
+    as ceil(bytes/4), and retains only aggregate canonical-label breakdowns.
+    Latest JSON and Markdown expose estimator metadata, raw-after-CLI estimates,
+    redundant raw estimates, `PLAN.md` breakdowns, and previous-row savings or a
+    concrete null reason. Persistence appends new aggregate rows without
+    rewriting old history and emits `previous_missing_token_estimates` for old
+    rows lacking token fields. Privacy tests verify retained reports and history
+    exclude raw paths, transcript tokens, private salts, generated salted-hash
+    labels, and raw `.agentera/plan.yaml` paths. Verification command: `uv run
+    pytest tests/test_startup_analysis_contract.py -q` passed with 39 tests.
+  next: >
+    Hand off Task 5 for Orkestrera evaluation. Do not execute Tasks 6-7, commit,
+    push, bump versions, refresh installed apps, edit vision, or touch objective
+    state without explicit approval.
+  context:
+    intent: Estimated token impact fields for Task 5
+    constraints: no Tasks 6-7, no commit, no push, no version bump, no installed
+      app refresh, no vision edit, no objective-state edit, no raw private
+      runtime data retention
+    scope: scripts/startup_analysis_contract.py, tests/test_startup_analysis_contract.py,
+      .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 456
+  timestamp: 2026-05-14
+  type: fix
+  phase: build
+  what: >
+    Completed Task 4 for the Repair Runtime Schema Coverage And Token Savings
+    Estimates plan by repairing only the GitHub Copilot startup extraction
+    adapter and focused tests.
+  commit: pending
+  inspiration: >
+    Orkestrera needed Copilot runtime histories to contribute normalized
+    startup-analysis records without advancing token-impact aggregation,
+    benchmark rerun, final state sync, version bumps, commits, pushes, installed
+    app refreshes, vision edits, or objective-state edits.
+  discovered: >
+    The Copilot adapter already recognized `sessions` and `turns` tables for
+    conversation turns, but it did not normalize tool or command payloads. As a
+    result, supported Copilot records could contain capability startup context
+    while still producing no analyzer-visible CLI state calls or raw artifact
+    access events.
+  verified: >
+    Task 4 acceptance passed. `scripts/extract_corpus.py` now extracts Copilot
+    tool calls from JSON turn data/content and explicit tool columns, maps
+    session IDs to `conversation_key`, and preserves runtime labels,
+    timestamps, tool names, and arguments. Focused tests assert supported
+    Copilot fixtures produce startup state sequences; malformed Copilot tool
+    JSON remains bounded as degraded `schema_divergent` with `candidate_count`,
+    `record_count`, and `error_count` only and no raw payloads; and Copilot
+    records outside the benchmark window remain `ok / records_extracted` with
+    `record_count: 0`, distinct from `schema_divergent`. Verification commands:
+    `uv run pytest tests/test_startup_analysis_contract.py -k "copilot or
+    schema_divergent or zero_window"` passed with 6 selected tests; `uv run
+    pytest tests/test_extract_corpus.py -k "copilot or cross_runtime"` passed
+    with 5 selected tests; and `uv run pytest
+    tests/test_startup_analysis_contract.py::test_contract_defines_runtime_matrix_and_token_estimate_contract`
+    passed.
+  next: >
+    Hand off Task 4 for Orkestrera evaluation. Do not execute Tasks 5-7, commit,
+    push, bump versions, refresh installed apps, edit vision, or touch objective
+    state without explicit approval.
+  context:
+    intent: GitHub Copilot adapter repair for Task 4
+    constraints: no Tasks 5-7, no token aggregation, no commit, no push, no
+      version bump, no installed app refresh, no vision edit, no objective-state
+      edit, no raw private runtime data retention
+    scope: scripts/extract_corpus.py, references/analysis/startup-measurement-contract.yaml,
+      tests/test_startup_analysis_contract.py, .agentera/plan.yaml, and
+      .agentera/progress.yaml
+- number: 455
+  timestamp: 2026-05-14
+  type: fix
+  phase: build
+  what: >
+    Completed Task 3 for the Repair Runtime Schema Coverage And Token Savings
+    Estimates plan by repairing only the Claude Code startup extraction adapter
+    and focused tests.
+  commit: pending
+  inspiration: >
+    Orkestrera needed Claude Code runtime histories to contribute normalized
+    startup-analysis records without advancing the later Copilot repair, token
+    aggregation, benchmark rerun, or release-state tasks.
+  discovered: >
+    Claude Code fixtures can encode startup-relevant tools as nested
+    `message.content[].tool_use` records with capitalized tool names such as
+    `Bash` and `Read`. The previous adapter handled top-level tool/function
+    records but missed these nested Claude events, so supported Claude schemas
+    could fail to produce analyzer-visible CLI and raw artifact access events.
+  verified: >
+    Task 3 acceptance passed. `scripts/extract_corpus.py` now extracts nested
+    Claude Code `tool_use` items, maps session IDs to `conversation_key`, and
+    preserves runtime labels, timestamps, tool names, and arguments. Focused
+    tests assert supported Claude fixtures produce startup state sequences;
+    malformed Claude JSONL remains bounded as degraded `schema_divergent` with
+    `candidate_count`, `record_count`, and `error_count` only and no raw payloads;
+    and Claude records outside the benchmark window remain `ok / records_extracted`
+    with `record_count: 0`, distinct from `schema_divergent`. Verification command:
+    `uv run pytest tests/test_startup_analysis_contract.py -k "claude or
+    schema_divergent or zero_window"` passed with 5 selected tests. YAML parse
+    check passed for `.agentera/plan.yaml`, `.agentera/progress.yaml`,
+    `.agentera/docs.yaml`, and
+    `references/analysis/startup-measurement-contract.yaml`.
+  next: >
+    Hand off Task 3 for Orkestrera evaluation. Do not execute Tasks 4-7, commit,
+    push, bump versions, refresh installed apps, edit vision, or touch objective
+    state without explicit approval.
+  context:
+    intent: Claude Code adapter repair for Task 3
+    constraints: no Tasks 4-7, no Copilot repair, no token aggregation, no commit,
+      no push, no version bump, no installed app refresh, no vision edit, no
+      objective-state edit, no raw private runtime data retention
+    scope: scripts/extract_corpus.py, scripts/startup_analysis_contract.py,
+      tests/test_startup_analysis_contract.py, .agentera/plan.yaml, and
+      .agentera/progress.yaml
+- number: 454
+  timestamp: 2026-05-14
+  type: test
+  phase: build
+  what: >
+    Completed Task 2 for the Repair Runtime Schema Coverage And Token Savings
+    Estimates plan by adding synthetic startup runtime schema fixtures and tests
+    only, without repairing Claude Code or GitHub Copilot adapters.
+  commit: pending
+  inspiration: >
+    Orkestrera needed privacy-safe fixture coverage that makes current unsupported
+    runtime schema classes reproducible and bounded before later tasks change the
+    adapters or add token aggregation.
+  discovered: >
+    The startup intermediate already bounds runtime coverage output by omitting
+    raw store paths and detailed extraction errors. Synthetic malformed Claude
+    JSONL and divergent Copilot SQLite stores can therefore document
+    `schema_divergent` behavior without retaining private transcript text, raw
+    paths, or unredacted session IDs. The existing Codex extraction path preserves
+    a successful runtime as `ok` when benchmark windowing filters all records.
+  verified: >
+    Task 2 acceptance passed. New synthetic fixtures in
+    `tests/test_startup_analysis_contract.py` use redacted session labels and no
+    raw private transcript text or raw store paths. The focused test
+    `test_synthetic_schema_divergent_fixtures_emit_bounded_runtime_statuses`
+    asserts Claude Code and GitHub Copilot unsupported schema classes emit
+    bounded degraded `schema_divergent` statuses with `candidate_count`,
+    `record_count`, and `error_count`, while retained intermediate output omits
+    fixture paths, session labels, and schema-error payloads. The focused test
+    `test_successful_runtime_with_zero_window_records_remains_ok` asserts the
+    Codex successful zero-record benchmark-window path remains `ok` with
+    `record_count: 0` and `error_count: 0`. Verification command: `uv run pytest
+    tests/test_startup_analysis_contract.py::test_synthetic_schema_divergent_fixtures_emit_bounded_runtime_statuses
+    tests/test_startup_analysis_contract.py::test_successful_runtime_with_zero_window_records_remains_ok
+    tests/test_startup_analysis_contract.py::test_runtime_store_extraction_derives_state_sequences_without_usage_stats_mutation`.
+  next: >
+    Hand off Task 2 for Orkestrera evaluation. Do not execute Tasks 3-7, commit,
+    push, bump versions, refresh installed apps, edit vision, or touch objective
+    state without explicit approval.
+  context:
+    intent: Synthetic schema fixtures for Task 2
+    constraints: no Tasks 3-7, no adapter repair, no token aggregation, no commit,
+      no push, no version bump, no installed app refresh, no vision edit, no
+      objective-state edit, no raw private runtime data retention
+    scope: tests/test_startup_analysis_contract.py, .agentera/plan.yaml, and
+      .agentera/progress.yaml
+- number: 453
+  timestamp: 2026-05-14
+  type: docs
+  phase: build
+  what: >
+    Completed Task 1 for the Repair Runtime Schema Coverage And Token Savings
+    Estimates plan by documenting the extraction/status matrix and token-impact
+    retention contract before adapter or token implementation work.
+  commit: pending
+  inspiration: >
+    Orkestrera needed a stable contract surface so later fixture, adapter, and
+    token tasks can test the intended behavior without rewriting old benchmark
+    history or retaining private runtime data.
+  discovered: >
+    The analyzer already has bounded status reasons for `schema_divergent` and
+    `no_matching_records`, but the maintained contract did not distinguish those
+    outcomes from successful zero-record benchmark windows or define per-runtime
+    schema classes and token aggregate retention fields.
+  verified: >
+    Task 1 acceptance passed. The contract now separately defines
+    `schema_divergent` as degraded extraction failure, `no_matching_records` as
+    sparse compatible storage with no supported records, and successful
+    zero-record windows as `ok` with `record_count: 0` and `error_count: 0`. The
+    runtime matrix lists accepted input schema classes, normalized record fields,
+    status mappings, and redaction rules for codex, claude-code, opencode, and
+    github-copilot. The token contract defines transient byte-count inputs,
+    estimator version `approx_bytes_div_4_v1`, aggregate retained fields,
+    comparable-row rules, and null reasons without raw paths or transcript text.
+  next: >
+    Hand off Task 1 for Orkestrera evaluation. Do not execute Tasks 2-7, commit,
+    push, bump versions, refresh installed apps, edit vision, or touch objective
+    state without explicit approval.
+  context:
+    intent: Extraction and token contract matrix for Task 1
+    constraints: no Tasks 2-7, no code adapter implementation, no commit, no push,
+      no version bump, no installed app refresh, no vision edit, no objective-state
+      edit, no raw private runtime data retention
+    scope: references/analysis/startup-measurement-contract.yaml,
+      docs/benchmark.md, tests/test_startup_analysis_contract.py,
+      .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 452
+  timestamp: 2026-05-14
+  type: docs
+  phase: build
+  what: >
+    Completed Task 7 for the Reduce Post-CLI Startup Artifact Reads plan by
+    synchronizing TODO, progress, docs, changelog, and plan closeout state while
+    applying the no-release version gate.
+  commit: pending
+  inspiration: >
+    Task 7 needed closeout evidence to preserve the product work from Tasks 3-6,
+    record the benchmark improvement and remaining caveats for Orkestrera, and
+    prevent accidental version-bearing metadata changes without an explicit
+    release target.
+  discovered: >
+    Product work added startup completeness/source contract behavior, full `hej`
+    startup coverage, docs mapping/source metadata, progress verification
+    metadata, and `--capability-context` fallback policy. The Task 6 benchmark
+    rerun improved raw-after-CLI and redundant-raw sequence rates from 1.0 to
+    0.2222, reduced raw accesses from 11 to 2, and reduced redundant raw accesses
+    from 8 to 2. The remaining redundant raw access is `PLAN.md` across 2
+    sequences, so TODO now tracks that narrower caveat while the benchmark
+    recommendation remains `plan_cli_startup_envelope`.
+  verified: >
+    Task 7 acceptance passed. TODO, progress, docs, changelog, and plan state now
+    record closeout evidence, remaining blockers, and runtime caveats:
+    `claude-code` and `github-copilot` remain degraded by `schema_divergent`,
+    while `codex` and `opencode` are ok. No release target was selected, so the
+    documented semver policy does not authorize a version bump and version-bearing
+    files remain unchanged. Focused validation passed: YAML parsing for
+    `.agentera/plan.yaml`, `.agentera/progress.yaml`, and `.agentera/docs.yaml`;
+    `uv run scripts/agentera plan`; `uv run scripts/agentera progress`; `uv run
+    scripts/agentera docs`; artifact hook validation for `TODO.md`,
+    `CHANGELOG.md`, and `.agentera/docs.yaml`; `git diff --check` for changed
+    state artifacts; and a version-bearing file diff check with no output.
+  next: >
+    Hand off the completed plan for Orkestrera evaluation. Remaining blocker: the
+    benchmark still reports redundant `PLAN.md` raw access across 2 sequences and
+    recommends `plan_cli_startup_envelope`. Do not commit, push, publish, bump
+    versions, refresh installed apps, edit vision, or touch objective state
+    without explicit approval.
+  context:
+    intent: State sync and version gate for Task 7
+    constraints: no release target selected, no version bump, no commit, no push,
+      no publication, no installed app refresh, no vision edit, no objective-state
+      edit
+    scope: TODO.md, CHANGELOG.md, .agentera/plan.yaml, .agentera/progress.yaml,
+      and .agentera/docs.yaml
+- number: 451
+  timestamp: 2026-05-14 06:10
+  type: validation
+  phase: build
+  what: >
+    Completed Task 6 for the Reduce Post-CLI Startup Artifact Reads plan by
+    validating changed startup behavior and comparing a rerun startup-state
+    benchmark against the pre-implementation baseline.
+  commit: pending
+  inspiration: >
+    Task 6 needed representative evidence that complete CLI startup output and
+    fallback guidance reduce defensive raw artifact reads, while keeping degraded
+    runtime extraction separate from product behavior conclusions.
+  discovered: >
+    Focused validation covered structured CLI output, capability startup
+    completeness, Orkestrera capability-context missing-state fallback behavior,
+    fresh absent-state behavior, privacy redaction, and bounded degradation
+    handling. The rerun benchmark improved raw-after-CLI and redundant-raw
+    sequence rates from 1.0 to 0.2222 and reduced raw-after-CLI accesses from 11
+    to 2 and redundant raw accesses from 8 to 2.
+  verified: >
+    Task 6 acceptance passed. `uv run pytest
+    tests/test_query_cli.py::TestHej::test_returning_v2_composite_briefing
+    tests/test_query_cli.py::TestHej::test_hej_capability_context_names_included_and_missing_state_families
+    tests/test_query_cli.py::TestHej::test_fresh_hej_structured_output_explains_absent_state
+    tests/test_query_cli.py::TestRoutineStructuredOutput::test_json_output_has_agent_ready_envelope
+    tests/test_decision45_cli_contract.py::test_startup_completeness_contract_preserves_cli_vocabulary
+    tests/test_cross_capability.py::test_master_skill_requires_cli_first_state_access
+    tests/test_cross_capability.py::test_master_skill_documents_route_alias_contract_boundary
+    tests/test_startup_analysis_contract.py::test_privacy_redaction_removes_transcripts_paths_and_session_ids
+    tests/test_startup_analysis_contract.py::test_classifier_uses_bare_capability_invocation_and_counts_raw_after_cli
+    tests/test_startup_analysis_contract.py::test_classifier_degrades_bounded_records_and_ignores_raw_before_cli
+    -q` reported 18 passed. `uv run scripts/agentera hej --format json
+    --capability-context orkestrera --fields source_contract` returned complete
+    startup state, `raw_artifact_reads_required=false`, missing families
+    `decisions`, `vision`, and `profile`, and fallback `agentera decisions
+    --format json`. `mage bench:startupState` wrote
+    `/home/jgabor/.local/share/agentera/benchmarks/startup-state/latest-report.json`
+    with watermark `2026-05-14T06:08:15+00:00`, 9 state sequences,
+    raw-after-CLI sequence rate 0.2222, redundant-raw sequence rate 0.2222, 2
+    raw-after-CLI accesses, and 2 redundant raw accesses. Runtime caveats remain
+    separate: `claude-code` and `github-copilot` are degraded by schema
+    divergence; `codex` and `opencode` are ok.
+  next: >
+    Hand off Task 6 for Orkestrera evaluation. Do not execute Task 7, commit,
+    push, bump versions, refresh installed apps, edit vision, or touch objective
+    state without explicit approval.
+  context:
+    intent: Representative validation and benchmark comparison for Task 6
+    constraints: no Task 7 execution, no commit, no push, no version bump, no
+      installed app refresh, no vision edit, no objective-state edit, and no
+      state-sync artifacts beyond Task 6 plan/progress evidence
+    scope: .agentera/plan.yaml and .agentera/progress.yaml
+- number: 450
+  timestamp: 2026-05-14 08:00
+  type: feat
+  phase: build
+  what: >
+    Completed Task 5 for the Reduce Post-CLI Startup Artifact Reads plan by
+    adding capability-specific startup context to the existing `agentera hej`
+    state seam and updating Agentera guidance so raw artifact reads remain a
+    fallback path only.
+  commit: pending
+  inspiration: >
+    Task 5 needed capability state needs to be visible from CLI output without
+    adding unsupported capability-name commands or blurring Decision 43
+    slash-route aliases with routine state commands.
+  discovered: >
+    `agentera hej --format json --capability-context <capability>` now reads the
+    capability artifact schema and returns declared state needs, included startup
+    state families, missing state families, CLI fallback commands for missing
+    routine state, and the raw-file fallback policy under
+    `source_contract.capability_context`. The Agentera master guidance now says
+    complete CLI startup coverage requires no defensive raw artifact reads for
+    normal startup, and unavailable or incomplete CLI state should use the
+    CLI-provided fallback before raw file access.
+  verified: >
+    Task 5 acceptance passed. `uv run pytest tests/test_query_cli.py::TestHej
+    tests/test_query_cli.py::TestRoutineStructuredOutput
+    tests/test_decision45_cli_contract.py tests/test_cross_capability.py` reported
+    118 passed. `uv run scripts/agentera hej --format json --capability-context
+    orkestrera --fields source_contract` returned Orkestrera declared needs
+    `plan`, `progress`, `health`, `todo`, `decisions`, `vision`, `profile`, and
+    `docs`; included startup families `plan`, `progress`, `health`, `todo`, and
+    `docs`; missing families `decisions`, `vision`, and `profile`; and CLI
+    fallback `agentera decisions --format json`, with complete startup state and
+    `raw_artifact_reads_required=false`.
+  next: >
+    Hand off Task 5 for Orkestrera evaluation. Do not execute Tasks 6-7, commit,
+    push, bump versions, refresh installed apps, edit vision, or touch objective
+    state without explicit approval.
+  context:
+    intent: Capability context and fallback guidance for Task 5
+    constraints: no Task 6-7 execution, no new CLI command vocabulary, no
+      unsupported capability-name CLI commands, no commit, no push, no installed
+      app refresh, no version bump, no vision edit, no objective-state edit
+    scope: scripts/agentera, tests/test_query_cli.py,
+      tests/test_decision45_cli_contract.py, tests/test_cross_capability.py,
+      references/cli/agent-ready-state-contract.yaml, skills/agentera/SKILL.md,
+      .agentera/plan.yaml, and .agentera/progress.yaml
+- number: 449
+  timestamp: 2026-05-14 12:00
+  type: feat
+  phase: build
+  what: >
+    Completed Task 4 for the Reduce Post-CLI Startup Artifact Reads plan by
+    expanding the existing `agentera hej` composite startup result and routine
+    `agentera docs` structured output so prioritized PLAN.md, DOCS.md, and
+    PROGRESS.md startup reads are covered by CLI state.
+  commit: pending
+  inspiration: >
+    Task 2 identified the broad startup state envelope as the top gap, with
+    repeated post-CLI reads of PLAN.md, DOCS.md, and PROGRESS.md across optimera,
+    orkestrera, planera, and inspektera. Task 4 needed the existing CLI state seam
+    to carry that state without new slash-route aliases or new routine commands.
+  discovered: >
+    `agentera hej` now includes plan, docs, progress, and state_presence in the
+    composite startup result; the startup source contract is complete with
+    missing_state empty and raw_artifact_reads_required false. `agentera docs
+    --format json` now includes artifact mapping entries and source-contract
+    completeness metadata in summary. Fresh startup output names absent
+    plan/docs/progress state explicitly, while stale app repair guidance and v1
+    migration dry-run/apply guidance remain carried by the hej result.
+  verified: >
+    Task 4 acceptance passed. `uv run pytest
+    tests/test_query_cli.py::TestHej tests/test_query_cli.py::TestRoutineStructuredOutput
+    tests/test_decision45_cli_contract.py` reported 70 passed. The focused tests
+    verify full plan task dependencies, acceptance criteria, and evidence in hej;
+    docs artifact mapping and source-contract completeness metadata in docs/hej;
+    latest progress verification metadata in hej; explicit fresh-state absence
+    reasons; and stale bundle plus v1 migration guidance carried by the existing
+    hej result. YAML parsing also passed for `.agentera/plan.yaml`,
+    `.agentera/progress.yaml`, and
+    `references/cli/agent-ready-state-contract.yaml`.
+  next: >
+    Hand off Task 4 for Orkestrera evaluation. Do not execute Tasks 5-7, commit,
+    push, bump versions, refresh installed apps, edit vision, or touch objective
+    state without explicit approval.
+  context:
+    intent: Routine and composite startup state coverage for Task 4
+    constraints: no Task 5-7 execution, no new CLI command vocabulary, no
+      slash-route aliases added to CLI commands, no commit, no push, no installed
+      app refresh, no version bump, no vision edit, no objective-state edit
+    scope: scripts/agentera, tests/test_query_cli.py,
+      tests/test_decision45_cli_contract.py,
+      references/cli/agent-ready-state-contract.yaml, .agentera/plan.yaml, and
+      .agentera/progress.yaml
+    scope_note: docs/benchmark.md was pre-existing unrelated benchmark
+      documentation work and was not modified for Task 4.
+- number: 448
+  timestamp: 2026-05-14
+  type: code
+  phase: build
+  what: >
+    Completed Task 3 for the Reduce Post-CLI Startup Artifact Reads plan by
+    adding the startup completeness contract to the existing `agentera hej`
+    source contract and recording the Task 3 verification evidence after
+    Orkestrera flagged stale progress state.
+  commit: pending
+  inspiration: >
+    Agents need a CLI-owned startup contract that says whether startup state is
+    complete, whether raw artifact reads are required, and what to do when the
+    state is incomplete, without adding slash-route aliases to the CLI surface.
+  discovered: >
+    The existing `agentera hej` structured source contract was the smallest
+    correct surface. The current contract is explicit that capability startup is
+    incomplete, raw artifact reads are not required by the response, missing state
+    is named, degraded runtime confidence caveats are named, and fallback remains
+    existing routine state commands: `agentera plan --format json`, `agentera docs
+    --format json`, and `agentera progress --format json`.
+  verified: >
+    Task 3 acceptance evidence passed. `uv run scripts/agentera hej --format json
+    --fields source_contract` emitted
+    `source_contract.capability_startup.complete_for_capability_startup=false`,
+    `raw_artifact_reads_required=false`, explicit `missing_state` for plan
+    details, docs mapping/completeness metadata, and latest progress verification
+    metadata, explicit `confidence_caveats` for degraded claude-code and
+    github-copilot benchmark coverage plus the Task 4 coverage boundary, and
+    `cli_fallback` limited to existing routine commands. `uv run pytest
+    tests/test_query_cli.py::TestRoutineStructuredOutput
+    tests/test_query_cli.py::TestHej::test_returning_v2_composite_briefing
+    tests/test_decision45_cli_contract.py` reported 47 passed, covering structured
+    CLI output, incomplete-state fields, and preservation of routine state command
+    vocabulary with Decision 43 slash-route aliases outside the CLI command
+    surface.
+  next: >
+    Hand off Task 3 retry for Orkestrera evaluation. Do not execute Tasks 4-7,
+    commit, push, bump versions, refresh installed apps, edit vision, or touch
+    objective state without explicit approval.
+  context:
+    intent: Startup completeness contract for Task 3
+    constraints: no Task 4-7 execution, no new CLI command vocabulary, no slash-route
+      aliases added to CLI commands, no commit, no push, no installed app refresh,
+      no version bump, no vision edit, no objective-state edit
+    scope: .agentera/progress.yaml, with existing Task 3 product and contract
+      evidence in scripts/agentera, references/cli/agent-ready-state-contract.yaml,
+      tests/test_query_cli.py, tests/test_decision45_cli_contract.py, and
+      .agentera/plan.yaml
 - number: 447
   timestamp: 2026-05-13
   type: docs

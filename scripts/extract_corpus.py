@@ -218,6 +218,7 @@ def record(
         item["project_path"] = str(project_path)
     if session_id:
         item["session_id"] = session_id
+        item["conversation_key"] = session_id
     return item
 
 
@@ -232,6 +233,29 @@ def _tool_call_record(
     session_id: str,
 ) -> dict[str, Any] | None:
     item = _payload_item(event)
+    return _tool_call_record_from_item(
+        item=item,
+        event=event,
+        fallback_timestamp=fallback_timestamp,
+        project_path=project_path,
+        runtime=runtime,
+        source_path=source_path,
+        index=index,
+        session_id=session_id,
+    )
+
+
+def _tool_call_record_from_item(
+    *,
+    item: dict[str, Any],
+    event: dict[str, Any],
+    fallback_timestamp: str,
+    project_path: Path | None,
+    runtime: str,
+    source_path: Path,
+    index: int,
+    session_id: str,
+) -> dict[str, Any] | None:
     kind = _event_kind(event)
     item_type = item.get("type")
     if kind not in {"tool_call", "function_call"} and item_type not in {
@@ -265,6 +289,19 @@ def _tool_call_record(
             "arguments": arguments,
         },
     )
+
+
+def _claude_content_items(event: dict[str, Any]) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for source in (event, event.get("message") if isinstance(event.get("message"), dict) else None):
+        if not isinstance(source, dict):
+            continue
+        content = source.get("content")
+        if isinstance(content, list):
+            items.extend(item for item in content if isinstance(item, dict))
+        elif isinstance(content, dict):
+            items.append(content)
+    return items
 
 
 def iter_jsonl(path: Path, errors: list[str]) -> Iterable[dict[str, Any]]:
@@ -574,6 +611,13 @@ def extract_claude_project_sessions(projects_dir: Path | None, errors: list[str]
         project_path: Path | None = None
         previous_assistant = ""
         for index, event in enumerate(iter_jsonl(path, errors), start=1):
+            sid = event.get("sessionId") or event.get("session_id") or event.get("sessionID")
+            if isinstance(sid, str) and sid:
+                session_id = sid
+            cwd = event.get("cwd") or event.get("workingDirectory") or event.get("working_directory")
+            if isinstance(cwd, str) and cwd:
+                project_path = Path(cwd)
+
             tool_record = _tool_call_record(
                 event=event,
                 fallback_timestamp=fallback_timestamp,
@@ -587,6 +631,20 @@ def extract_claude_project_sessions(projects_dir: Path | None, errors: list[str]
                 records.append(tool_record)
                 continue
 
+            for content_index, item in enumerate(_claude_content_items(event), start=1):
+                tool_record = _tool_call_record_from_item(
+                    item=item,
+                    event=event,
+                    fallback_timestamp=fallback_timestamp,
+                    project_path=project_path,
+                    runtime="claude-code",
+                    source_path=path,
+                    index=(index * 1000) + content_index,
+                    session_id=session_id,
+                )
+                if tool_record is not None:
+                    records.append(tool_record)
+
             role = event.get("role") or event.get("type")
             if role not in {"user", "assistant"}:
                 message = event.get("message")
@@ -594,9 +652,6 @@ def extract_claude_project_sessions(projects_dir: Path | None, errors: list[str]
                     role = message.get("role")
             if role not in {"user", "assistant"}:
                 continue
-            cwd = event.get("cwd")
-            if isinstance(cwd, str) and cwd:
-                project_path = Path(cwd)
             content = text_from_content(
                 event.get("content")
                 or event.get("text")
@@ -982,6 +1037,13 @@ def _copilot_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     turn_time = _first_column(turn_cols, ("time", "timestamp", "created_at", "createdAt"))
     turn_order = _first_column(turn_cols, ("turn_index", "turnIndex", "idx", "position", "sequence"))
     project_col = _first_column(session_cols, ("cwd", "project_path", "projectPath", "directory", "path"))
+    turn_data = _first_column(turn_cols, ("data", "payload", "json"))
+    turn_type = _first_column(turn_cols, ("type", "kind"))
+    tool_name = _first_column(turn_cols, ("tool_name", "toolName", "tool", "name", "command_name", "commandName"))
+    tool_args = _first_column(
+        turn_cols,
+        ("arguments", "args", "input", "tool_input", "toolInput", "command", "command_line", "commandLine"),
+    )
 
     order_expr = f't."{turn_order}"' if turn_order else f't."{turn_time or turn_session}"'
     id_expr = f't."{turn_id}"' if turn_id else "t.rowid"
@@ -993,7 +1055,11 @@ def _copilot_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
             {_qualified('t', role_col, 'role')},
             {_qualified('t', turn_time, 'turn_time')},
             {_qualified('s', session_time, 'session_time')},
-            {_qualified('t', text_col, 'turn_text')}
+            {_qualified('t', text_col, 'turn_text')},
+            {_qualified('t', turn_data, 'turn_data')},
+            {_qualified('t', turn_type, 'turn_type')},
+            {_qualified('t', tool_name, 'tool_name')},
+            {_qualified('t', tool_args, 'tool_args')}
         FROM turns t
         JOIN sessions s ON t."{turn_session}" = s."{session_id}"
         ORDER BY COALESCE({order_expr}, t."{turn_session}"),
@@ -1002,6 +1068,77 @@ def _copilot_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
         LIMIT ?
     """
     return conn.execute(query, (MAX_SQLITE_ROWS,)).fetchall()
+
+
+def _copilot_argument_dict(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        state_input = value.get("input")
+        if isinstance(state_input, dict) and "command" not in value:
+            return state_input
+        return value
+    if isinstance(value, str) and value:
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return {"command": value}
+        return parsed if isinstance(parsed, dict) else {"value": parsed}
+    return {}
+
+
+def _copilot_json_tools(value: Any, errors: list[str] | None = None, malformed_label: str | None = None) -> list[dict[str, Any]]:
+    if isinstance(value, str) and value:
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            if errors is not None and malformed_label and value.lstrip().startswith(("{", "[")):
+                errors.append(malformed_label)
+            return []
+    if isinstance(value, list):
+        tools: list[dict[str, Any]] = []
+        for item in value:
+            tools.extend(_copilot_json_tools(item, errors, malformed_label))
+        return tools
+    if not isinstance(value, dict):
+        return []
+
+    tool_name = value.get("tool_name") or value.get("toolName") or value.get("tool") or value.get("name")
+    value_type = str(value.get("type") or value.get("kind") or "").lower()
+    if isinstance(tool_name, str) and tool_name and value_type in {"", "tool", "tool_call", "function_call", "tool_use", "command"}:
+        return [
+            {
+                "tool_name": tool_name,
+                "arguments": _copilot_argument_dict(
+                    value.get("arguments") or value.get("args") or value.get("input") or value.get("state", {})
+                ),
+            }
+        ]
+
+    tools = []
+    for key in ("tool_calls", "toolCalls", "tools", "content", "parts", "items"):
+        nested = value.get(key)
+        if isinstance(nested, (dict, list)):
+            tools.extend(_copilot_json_tools(nested, errors, malformed_label))
+    return tools
+
+
+def _copilot_row_tools(row: sqlite3.Row, errors: list[str]) -> list[dict[str, Any]]:
+    tools = _copilot_json_tools(row["turn_data"], errors, "copilot malformed json tool payload")
+    tools.extend(_copilot_json_tools(row["turn_text"]))
+
+    tool_name = row["tool_name"]
+    if isinstance(tool_name, str) and tool_name:
+        tools.append(
+            {
+                "tool_name": tool_name,
+                "arguments": _copilot_argument_dict(row["tool_args"]),
+            }
+        )
+    elif str(row["turn_type"] or "").lower() == "command":
+        command = row["tool_args"] or row["turn_text"]
+        if isinstance(command, str) and command:
+            tools.append({"tool_name": "bash", "arguments": {"command": command}})
+
+    return [tool for tool in tools if isinstance(tool.get("tool_name"), str) and tool.get("tool_name")]
 
 
 def extract_copilot_sessions(store_path: Path | None, errors: list[str]) -> list[dict[str, Any]]:
@@ -1034,36 +1171,60 @@ def extract_copilot_sessions(store_path: Path | None, errors: list[str]) -> list
             if role not in {"user", "assistant"}:
                 continue
             content = text_from_content(row["turn_text"])
-            if not content:
+            tool_items = _copilot_row_tools(row, errors)
+            if not content and not tool_items:
                 continue
             project_path = Path(row["project_path"]) if row["project_path"] else None
             timestamp = _sqlite_timestamp(
                 row["turn_time"] or row["session_time"],
                 fallback_timestamp,
             )
-            data: dict[str, Any] = {
-                "actor": role,
-                "content": content,
-            }
-            if role == "user":
-                if previous_assistant:
-                    data["preceding_context"] = previous_assistant[-2000:]
-                sig = signal_type(content)
-                if sig:
-                    data["signal_type"] = sig
-            else:
-                previous_assistant = content
-            records.append(
-                record(
-                    source_kind="conversation_turn",
-                    timestamp=timestamp,
-                    project_path=project_path,
-                    runtime="github-copilot",
-                    source_parts=(db_path.resolve(), index, role, content[:80]),
-                    session_id=str(row["session_id"]),
-                    data=data,
+            if content:
+                data: dict[str, Any] = {
+                    "actor": role,
+                    "content": content,
+                }
+                if role == "user":
+                    if previous_assistant:
+                        data["preceding_context"] = previous_assistant[-2000:]
+                    sig = signal_type(content)
+                    if sig:
+                        data["signal_type"] = sig
+                else:
+                    previous_assistant = content
+                records.append(
+                    record(
+                        source_kind="conversation_turn",
+                        timestamp=timestamp,
+                        project_path=project_path,
+                        runtime="github-copilot",
+                        source_parts=(db_path.resolve(), index, role, content[:80]),
+                        session_id=str(row["session_id"]),
+                        data=data,
+                    )
                 )
-            )
+            for tool_index, tool_item in enumerate(tool_items, start=1):
+                records.append(
+                    record(
+                        source_kind="tool_call",
+                        timestamp=timestamp,
+                        project_path=project_path,
+                        runtime="github-copilot",
+                        source_parts=(
+                            db_path.resolve(),
+                            index,
+                            tool_index,
+                            "tool",
+                            tool_item["tool_name"],
+                            row["turn_id"],
+                        ),
+                        session_id=str(row["session_id"]),
+                        data={
+                            "tool_name": str(tool_item["tool_name"]),
+                            "arguments": tool_item.get("arguments") or {},
+                        },
+                    )
+                )
             if role == "user":
                 sig = signal_type(content)
                 if sig:

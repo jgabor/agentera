@@ -71,6 +71,7 @@ def test_decision_45_contract_classifies_later_task_boundaries():
         "source",
         "filters",
         "summary",
+        "source_contract",
     ]
     field_selection = contract["field_selection"]
     assert field_selection["status"] == "implemented_sparse_response_layer"
@@ -81,3 +82,46 @@ def test_decision_45_contract_classifies_later_task_boundaries():
     assert contract["input_hardening"]["status"] == "implemented_boundary_validation"
     assert "Do not add describe behavior." in contract["non_goals_for_task_1"]
     assert "Do not harden executable inputs." in contract["non_goals_for_task_1"]
+
+
+def test_startup_completeness_contract_preserves_cli_vocabulary():
+    contract = _contract()
+    startup = contract["startup_completeness"]
+    hej_contract = contract["structured_output"]["envelope"]["hej"]["source_contract"]["capability_startup"]
+
+    assert startup["status"] == "implemented_complete_startup_envelope"
+    assert startup["owning_command"] == "hej"
+    assert startup["preserves_routine_state_commands"] is True
+    assert startup["slash_route_alias_cli_commands_added"] is False
+    assert startup["complete_output_requires"] == {
+        "complete_for_capability_startup": True,
+        "raw_artifact_reads_required": False,
+    }
+    assert startup["incomplete_output_requires"] == ["missing_state", "confidence_caveats", "cli_fallback"]
+    assert startup["current_cli_fallback"] == [
+        "agentera plan --format json",
+        "agentera docs --format json",
+        "agentera progress --format json",
+    ]
+    assert "capability_context" in hej_contract["fields"]
+    assert "--capability-context <capability>" in hej_contract["capability_context_semantics"]
+    assert hej_contract["current_status"] == "complete"
+    assert hej_contract["current_missing_state"] == []
+    assert startup["state_families_added"] == [
+        "plan task details, dependencies, acceptance criteria, and evidence summaries",
+        "docs artifact mapping and source-contract completeness metadata",
+        "latest progress verification metadata needed for Orkestrera evaluation",
+    ]
+    assert "absence metadata" in startup["empty_state_behavior"]
+    assert "v1_migration" in startup["repair_guidance_behavior"]
+    assert "Do not add Decision 43 slash-route aliases" in startup["non_goals"][0]
+
+
+def test_plan_source_contract_closes_plan_artifact_fallback():
+    contract = _contract()
+    plan_contract = contract["structured_output"]["envelope"]["routine_state_commands"]["source_contract"]["plan"]
+
+    assert plan_contract["status"] == "implemented_complete_plan_artifact_envelope"
+    assert "complete_for_plan_artifact" in plan_contract["fields"]
+    assert "raw_artifact_reads_required" in plan_contract["fields"]
+    assert "agents should not read `.agentera/plan.yaml` defensively" in plan_contract["complete_semantics"]

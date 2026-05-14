@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -41,6 +42,36 @@ def _fixture_tool(source_id: str, timestamp: str, tool: str, arguments: dict) ->
         "project_id": "agentera",
         "data": {"tool_name": tool, "arguments": arguments},
     }
+
+
+def _plan_read_metrics(startup_analysis_contract, *, read_count: int = 1) -> dict:
+    records = [
+        _fixture_turn("turn", "2026-05-13T18:00:00Z", "user", "planera PRIVATE_PROMPT_TOKEN"),
+        _fixture_tool("tool-cli", "2026-05-13T18:00:01Z", "bash", {"command": "uv run scripts/agentera plan"}),
+    ]
+    for index in range(read_count):
+        records.append(
+            _fixture_tool(
+                f"tool-plan-{index}",
+                f"2026-05-13T18:00:0{index + 2}Z",
+                "read",
+                {"filePath": "PRIVATE_ROOT_TOKEN/.agentera/plan.yaml"},
+            )
+        )
+    records.append(_fixture_tool("tool-impl", "2026-05-13T18:00:09Z", "apply_patch", {"patchText": "x"}))
+    intermediate = startup_analysis_contract.build_startup_intermediate(
+        {
+            "metadata": {
+                "adapter_version": "agentera-v2-corpus-1",
+                "runtime_statuses": [
+                    {"runtime": "opencode", "status": "ok", "reason": "records_extracted", "record_count": len(records)}
+                ],
+            },
+            "records": records,
+        },
+        salt="fixture-salt",
+    )
+    return startup_analysis_contract.aggregate_startup_metrics(intermediate)
 
 
 def _write_codex_state_store(
@@ -104,6 +135,207 @@ def _write_codex_state_store(
     session_path.write_text("\n".join(json.dumps(event) for event in events) + "\n", encoding="utf-8")
 
 
+def _write_claude_code_schema_divergent_store(projects_dir: Path) -> None:
+    session_path = projects_dir / "synthetic-project" / "session-redacted-claude.jsonl"
+    session_path.parent.mkdir(parents=True, exist_ok=True)
+    session_path.write_text(
+        "{not valid json but synthetic only}\n",
+        encoding="utf-8",
+    )
+
+
+def _write_supported_claude_code_store(
+    projects_dir: Path,
+    project_root: Path,
+    *,
+    include_malformed: bool = False,
+    started_at: str = "2026-05-13T10:00:00Z",
+) -> None:
+    session_path = projects_dir / "synthetic-project" / "session-redacted-claude.jsonl"
+    session_path.parent.mkdir(parents=True, exist_ok=True)
+    base = started_at.replace("Z", "+00:00")
+    timestamp = datetime.fromisoformat(base)
+
+    def event_time(offset_seconds: int) -> str:
+        return (timestamp + timedelta(seconds=offset_seconds)).isoformat().replace("+00:00", "Z")
+
+    events = [
+        {
+            "type": "user",
+            "sessionId": "session-redacted-claude",
+            "cwd": str(project_root),
+            "timestamp": event_time(0),
+            "message": {"role": "user", "content": "plan orkestrera PRIVATE_CLAUDE_PROMPT_TOKEN"},
+        },
+        {
+            "type": "assistant",
+            "sessionId": "session-redacted-claude",
+            "cwd": str(project_root),
+            "timestamp": event_time(1),
+            "message": {
+                "role": "assistant",
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "name": "Bash",
+                        "input": {"command": "uv run scripts/agentera plan --format json"},
+                    }
+                ],
+            },
+        },
+        {
+            "type": "assistant",
+            "sessionId": "session-redacted-claude",
+            "cwd": str(project_root),
+            "timestamp": event_time(2),
+            "message": {
+                "role": "assistant",
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "name": "Read",
+                        "input": {"file_path": str(project_root / ".agentera" / "plan.yaml")},
+                    }
+                ],
+            },
+        },
+    ]
+    lines = [json.dumps(event) for event in events]
+    if include_malformed:
+        lines.append("{malformed claude payload token}")
+    session_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_copilot_schema_divergent_store(store_dir: Path) -> Path:
+    store_dir.mkdir(parents=True, exist_ok=True)
+    db_path = store_dir / "session-store.db"
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.execute("CREATE TABLE sessions (id TEXT PRIMARY KEY, created_at TEXT)")
+        conn.execute("CREATE TABLE turns (id TEXT PRIMARY KEY, session_id TEXT, created_at TEXT)")
+        conn.execute(
+            "INSERT INTO sessions (id, created_at) VALUES (?, ?)",
+            ("session-redacted-copilot", "2026-05-13T10:00:00Z"),
+        )
+        conn.execute(
+            "INSERT INTO turns (id, session_id, created_at) VALUES (?, ?, ?)",
+            ("turn-redacted-copilot", "session-redacted-copilot", "2026-05-13T10:00:01Z"),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    return db_path
+
+
+def _write_supported_copilot_store(
+    store_dir: Path,
+    project_root: Path,
+    *,
+    include_malformed: bool = False,
+    started_at: str = "2026-05-13T10:00:00Z",
+) -> Path:
+    store_dir.mkdir(parents=True, exist_ok=True)
+    db_path = store_dir / "session-store.db"
+    base = started_at.replace("Z", "+00:00")
+    timestamp = datetime.fromisoformat(base)
+
+    def event_time(offset_seconds: int) -> str:
+        return (timestamp + timedelta(seconds=offset_seconds)).isoformat().replace("+00:00", "Z")
+
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.executescript(
+            """
+            CREATE TABLE sessions (
+                id TEXT PRIMARY KEY,
+                cwd TEXT,
+                created_at TEXT
+            );
+            CREATE TABLE turns (
+                id TEXT PRIMARY KEY,
+                session_id TEXT,
+                role TEXT,
+                turn_index INTEGER,
+                content TEXT,
+                data TEXT,
+                created_at TEXT
+            );
+            """
+        )
+        conn.execute(
+            "INSERT INTO sessions (id, cwd, created_at) VALUES (?, ?, ?)",
+            ("session-redacted-copilot", str(project_root), event_time(0)),
+        )
+        rows = [
+            (
+                "turn-1",
+                "session-redacted-copilot",
+                "user",
+                1,
+                "plan orkestrera PRIVATE_COPILOT_PROMPT_TOKEN",
+                None,
+                event_time(0),
+            ),
+            (
+                "turn-2",
+                "session-redacted-copilot",
+                "assistant",
+                2,
+                "I will inspect plan state.",
+                json.dumps(
+                    {
+                        "type": "tool_use",
+                        "name": "bash",
+                        "input": {"command": "uv run scripts/agentera plan --format json"},
+                    }
+                ),
+                event_time(1),
+            ),
+            (
+                "turn-3",
+                "session-redacted-copilot",
+                "assistant",
+                3,
+                "I will inspect the raw plan artifact.",
+                json.dumps(
+                    {
+                        "tool_calls": [
+                            {
+                                "type": "tool_call",
+                                "tool_name": "read",
+                                "arguments": {"filePath": str(project_root / ".agentera" / "plan.yaml")},
+                            }
+                        ]
+                    }
+                ),
+                event_time(2),
+            ),
+        ]
+        if include_malformed:
+            rows.append(
+                (
+                    "turn-4",
+                    "session-redacted-copilot",
+                    "assistant",
+                    4,
+                    "Malformed tool payload is ignored safely.",
+                    "{malformed copilot tool payload token",
+                    event_time(3),
+                )
+            )
+        conn.executemany(
+            """
+            INSERT INTO turns (id, session_id, role, turn_index, content, data, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            rows,
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    return db_path
+
+
 def test_contract_defines_state_access_metric_and_report_shape():
     contract = _contract()
 
@@ -141,7 +373,60 @@ def test_contract_defines_state_access_metric_and_report_shape():
         "raw_artifact_access_after_cli_counts",
         "redundant_raw_artifact_access_counts",
         "per_capability_state_counts",
+        "token_estimator_version",
+        "estimated_raw_after_cli_tokens",
+        "estimated_redundant_raw_tokens",
+        "estimated_raw_after_cli_tokens_by_artifact",
+        "estimated_redundant_raw_tokens_by_artifact",
     } <= set(contract["report_fields"]["required"])
+
+
+def test_contract_defines_runtime_matrix_and_token_estimate_contract():
+    contract = _contract()
+    extraction = contract["runtime_extraction_contract"]
+    outcomes = extraction["runtime_status_outcomes"]
+    token_contract = contract["token_impact_contract"]
+
+    assert extraction["supported_runtime_order"] == [
+        "codex",
+        "claude-code",
+        "opencode",
+        "github-copilot",
+    ]
+    assert outcomes["schema_divergent"]["status"] == "degraded"
+    assert outcomes["schema_divergent"]["reason"] == "schema_divergent"
+    assert "error_count greater than zero" in outcomes["schema_divergent"]["required_counts"]
+    assert outcomes["no_matching_records"]["status"] == "sparse"
+    assert outcomes["no_matching_records"]["reason"] == "no_matching_records"
+    assert outcomes["successful_zero_record_window"]["status"] == "ok"
+    assert outcomes["successful_zero_record_window"]["required_counts"] == [
+        "record_count: 0",
+        "error_count: 0",
+    ]
+
+    for runtime in extraction["supported_runtime_order"]:
+        matrix = extraction["supported_runtimes"][runtime]
+        assert matrix["accepted_input_schema_classes"]
+        assert matrix["normalized_record_fields"]
+        assert matrix["status_mapping"]
+        assert matrix["redaction_rules"]
+
+    assert token_contract["estimator_version"] == "approx_bytes_div_4_v1"
+    assert "observed transcript or tool-argument content byte counts during analysis" in token_contract[
+        "transient_inputs"
+    ]
+    assert {
+        "token_estimator_version",
+        "estimated_raw_after_cli_tokens",
+        "estimated_redundant_raw_tokens",
+        "estimated_raw_after_cli_tokens_by_artifact",
+        "estimated_redundant_raw_tokens_by_artifact",
+        "estimated_tokens_saved_vs_previous",
+        "estimated_tokens_saved_vs_previous_null_reason",
+    } <= set(token_contract["aggregate_fields"]["latest_report"])
+    assert "raw paths" in token_contract["retained_output_rule"]
+    assert "transcript text" in token_contract["retained_output_rule"]
+    assert "previous_missing_token_estimates" in token_contract["null_reasons"]
 
 
 def test_contract_defines_manual_benchmark_storage_and_retention_boundary():
@@ -458,6 +743,353 @@ def test_runtime_store_extraction_derives_state_sequences_without_usage_stats_mu
     assert str(project_root) not in rendered
 
 
+def test_synthetic_schema_divergent_fixtures_emit_bounded_runtime_statuses(
+    startup_analysis_contract,
+    extract_corpus,
+    tmp_path,
+):
+    project_root = tmp_path / "agentera"
+    claude_store = tmp_path / "claude-projects"
+    copilot_store = tmp_path / "copilot-store"
+    project_root.mkdir()
+    _write_claude_code_schema_divergent_store(claude_store)
+    _write_copilot_schema_divergent_store(copilot_store)
+
+    intermediate = startup_analysis_contract.extract_startup_intermediate_from_runtime_stores(
+        project_roots=[project_root],
+        codex_sessions_dir=None,
+        claude_projects_dir=claude_store,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=copilot_store,
+        salt="fixture-salt",
+        extract_corpus_module=extract_corpus,
+    )
+    coverage = {item["runtime"]: item for item in intermediate["runtime_coverage"]}
+    rendered = json.dumps(intermediate, sort_keys=True)
+
+    assert coverage["claude-code"] == {
+        "runtime": "claude-code",
+        "status": "degraded",
+        "reason": "schema_divergent",
+        "candidate_count": 1,
+        "record_count": 0,
+        "error_count": 1,
+    }
+    assert coverage["github-copilot"] == {
+        "runtime": "github-copilot",
+        "status": "degraded",
+        "reason": "schema_divergent",
+        "candidate_count": 1,
+        "record_count": 0,
+        "error_count": 1,
+    }
+    assert coverage["codex"] == {"runtime": "codex", "status": "skipped", "reason": "disabled"}
+    assert coverage["opencode"] == {"runtime": "opencode", "status": "skipped", "reason": "disabled"}
+    assert intermediate["runtime_record_counts"] == {}
+    assert str(claude_store) not in rendered
+    assert str(copilot_store) not in rendered
+    assert str(project_root) not in rendered
+    assert "session-redacted-claude" not in rendered
+    assert "session-redacted-copilot" not in rendered
+    assert "turn-redacted-copilot" not in rendered
+    assert "not valid json" not in rendered
+    assert "missing copilot turn role column" not in rendered
+
+
+def test_supported_claude_code_schema_extracts_startup_records(
+    startup_analysis_contract,
+    extract_corpus,
+    tmp_path,
+):
+    project_root = tmp_path / "agentera"
+    claude_store = tmp_path / "claude-projects"
+    project_root.mkdir()
+    _write_supported_claude_code_store(claude_store, project_root)
+
+    corpus = extract_corpus.build_corpus(
+        project_roots=[project_root],
+        codex_sessions_dir=None,
+        claude_projects_dir=claude_store,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=None,
+    )
+    claude_records = [item for item in corpus["records"] if item.get("runtime") == "claude-code"]
+    intermediate = startup_analysis_contract.extract_startup_intermediate_from_runtime_stores(
+        project_roots=[project_root],
+        codex_sessions_dir=None,
+        claude_projects_dir=claude_store,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=None,
+        salt="fixture-salt",
+        extract_corpus_module=extract_corpus,
+    )
+    coverage = {item["runtime"]: item for item in intermediate["runtime_coverage"]}
+    rendered = json.dumps(intermediate, sort_keys=True)
+
+    assert coverage["claude-code"] == {
+        "runtime": "claude-code",
+        "status": "ok",
+        "reason": "records_extracted",
+        "candidate_count": 1,
+        "record_count": 4,
+        "error_count": 0,
+    }
+    assert {item["source_kind"] for item in claude_records} == {"conversation_turn", "history_prompt", "tool_call"}
+    assert all(item["conversation_key"] == "session-redacted-claude" for item in claude_records)
+    assert all(item["runtime"] == "claude-code" for item in claude_records)
+    assert all(item.get("timestamp") for item in claude_records)
+    assert intermediate["runtime_record_counts"] == {"claude-code": 4}
+    assert intermediate["total_state_sequences"] == 1
+    sequence = intermediate["state_gathering_sequences"][0]
+    assert sequence["capability"] == "orkestrera"
+    assert sequence["counts"]["cli_state_call"] == 1
+    assert sequence["raw_artifact_labels_after_cli"] == ["PLAN.md"]
+    assert sequence["redundant_raw_artifact_labels"] == ["PLAN.md"]
+    assert "PRIVATE_CLAUDE_PROMPT_TOKEN" not in rendered
+    assert "session-redacted-claude" not in rendered
+    assert str(claude_store) not in rendered
+    assert str(project_root) not in rendered
+
+
+def test_malformed_claude_code_items_are_bounded_without_raw_payloads(
+    startup_analysis_contract,
+    extract_corpus,
+    tmp_path,
+):
+    project_root = tmp_path / "agentera"
+    claude_store = tmp_path / "claude-projects"
+    project_root.mkdir()
+    _write_supported_claude_code_store(claude_store, project_root, include_malformed=True)
+
+    intermediate = startup_analysis_contract.extract_startup_intermediate_from_runtime_stores(
+        project_roots=[project_root],
+        codex_sessions_dir=None,
+        claude_projects_dir=claude_store,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=None,
+        salt="fixture-salt",
+        extract_corpus_module=extract_corpus,
+    )
+    coverage = {item["runtime"]: item for item in intermediate["runtime_coverage"]}
+    rendered = json.dumps(intermediate, sort_keys=True)
+
+    assert coverage["claude-code"] == {
+        "runtime": "claude-code",
+        "status": "degraded",
+        "reason": "schema_divergent",
+        "candidate_count": 1,
+        "record_count": 4,
+        "error_count": 1,
+    }
+    assert intermediate["runtime_record_counts"] == {"claude-code": 4}
+    assert "malformed claude payload token" not in rendered
+    assert "PRIVATE_CLAUDE_PROMPT_TOKEN" not in rendered
+    assert str(claude_store) not in rendered
+
+
+def test_successful_claude_code_zero_window_records_remains_ok(
+    startup_analysis_contract,
+    extract_corpus,
+    tmp_path,
+):
+    project_root = tmp_path / "agentera"
+    claude_store = tmp_path / "claude-projects"
+    project_root.mkdir()
+    _write_supported_claude_code_store(claude_store, project_root)
+
+    intermediate = startup_analysis_contract.extract_startup_intermediate_from_runtime_stores(
+        project_roots=[project_root],
+        codex_sessions_dir=None,
+        claude_projects_dir=claude_store,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=None,
+        salt="fixture-salt",
+        extract_corpus_module=extract_corpus,
+        benchmark_mode="since_previous_benchmark",
+        benchmark_previous_watermark_at=datetime.fromisoformat("2026-05-13T10:01:00+00:00"),
+    )
+    coverage = {item["runtime"]: item for item in intermediate["runtime_coverage"]}
+
+    assert coverage["claude-code"] == {
+        "runtime": "claude-code",
+        "status": "ok",
+        "reason": "records_extracted",
+        "candidate_count": 1,
+        "record_count": 0,
+        "error_count": 0,
+    }
+    assert intermediate["runtime_record_counts"] == {}
+    assert intermediate["total_records_read"] == 0
+    assert intermediate["total_state_sequences"] == 0
+
+
+def test_supported_copilot_schema_extracts_startup_records(
+    startup_analysis_contract,
+    extract_corpus,
+    tmp_path,
+):
+    project_root = tmp_path / "agentera"
+    copilot_store = tmp_path / "copilot-store"
+    project_root.mkdir()
+    _write_supported_copilot_store(copilot_store, project_root)
+
+    corpus = extract_corpus.build_corpus(
+        project_roots=[project_root],
+        codex_sessions_dir=None,
+        claude_projects_dir=None,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=copilot_store,
+    )
+    copilot_records = [item for item in corpus["records"] if item.get("runtime") == "github-copilot"]
+    intermediate = startup_analysis_contract.extract_startup_intermediate_from_runtime_stores(
+        project_roots=[project_root],
+        codex_sessions_dir=None,
+        claude_projects_dir=None,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=copilot_store,
+        salt="fixture-salt",
+        extract_corpus_module=extract_corpus,
+    )
+    coverage = {item["runtime"]: item for item in intermediate["runtime_coverage"]}
+    rendered = json.dumps(intermediate, sort_keys=True)
+
+    assert coverage["github-copilot"] == {
+        "runtime": "github-copilot",
+        "status": "ok",
+        "reason": "records_extracted",
+        "candidate_count": 1,
+        "record_count": 6,
+        "error_count": 0,
+    }
+    assert {item["source_kind"] for item in copilot_records} == {"conversation_turn", "history_prompt", "tool_call"}
+    assert all(item["conversation_key"] == "session-redacted-copilot" for item in copilot_records)
+    assert all(item["runtime"] == "github-copilot" for item in copilot_records)
+    assert all(item.get("timestamp") for item in copilot_records)
+    assert intermediate["runtime_record_counts"] == {"github-copilot": 6}
+    assert intermediate["total_state_sequences"] == 1
+    sequence = intermediate["state_gathering_sequences"][0]
+    assert sequence["capability"] == "orkestrera"
+    assert sequence["counts"]["cli_state_call"] == 1
+    assert sequence["raw_artifact_labels_after_cli"] == ["PLAN.md"]
+    assert sequence["redundant_raw_artifact_labels"] == ["PLAN.md"]
+    assert "PRIVATE_COPILOT_PROMPT_TOKEN" not in rendered
+    assert "session-redacted-copilot" not in rendered
+    assert str(copilot_store) not in rendered
+    assert str(project_root) not in rendered
+
+
+def test_malformed_copilot_items_are_bounded_without_raw_payloads(
+    startup_analysis_contract,
+    extract_corpus,
+    tmp_path,
+):
+    project_root = tmp_path / "agentera"
+    copilot_store = tmp_path / "copilot-store"
+    project_root.mkdir()
+    _write_supported_copilot_store(copilot_store, project_root, include_malformed=True)
+
+    intermediate = startup_analysis_contract.extract_startup_intermediate_from_runtime_stores(
+        project_roots=[project_root],
+        codex_sessions_dir=None,
+        claude_projects_dir=None,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=copilot_store,
+        salt="fixture-salt",
+        extract_corpus_module=extract_corpus,
+    )
+    coverage = {item["runtime"]: item for item in intermediate["runtime_coverage"]}
+    rendered = json.dumps(intermediate, sort_keys=True)
+
+    assert coverage["github-copilot"] == {
+        "runtime": "github-copilot",
+        "status": "degraded",
+        "reason": "schema_divergent",
+        "candidate_count": 1,
+        "record_count": 7,
+        "error_count": 1,
+    }
+    assert intermediate["runtime_record_counts"] == {"github-copilot": 7}
+    assert "malformed copilot tool payload token" not in rendered
+    assert "PRIVATE_COPILOT_PROMPT_TOKEN" not in rendered
+    assert str(copilot_store) not in rendered
+
+
+def test_successful_copilot_zero_window_records_remains_ok(
+    startup_analysis_contract,
+    extract_corpus,
+    tmp_path,
+):
+    project_root = tmp_path / "agentera"
+    copilot_store = tmp_path / "copilot-store"
+    project_root.mkdir()
+    _write_supported_copilot_store(copilot_store, project_root)
+
+    intermediate = startup_analysis_contract.extract_startup_intermediate_from_runtime_stores(
+        project_roots=[project_root],
+        codex_sessions_dir=None,
+        claude_projects_dir=None,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=copilot_store,
+        salt="fixture-salt",
+        extract_corpus_module=extract_corpus,
+        benchmark_mode="since_previous_benchmark",
+        benchmark_previous_watermark_at=datetime.fromisoformat("2026-05-13T10:01:00+00:00"),
+    )
+    coverage = {item["runtime"]: item for item in intermediate["runtime_coverage"]}
+
+    assert coverage["github-copilot"] == {
+        "runtime": "github-copilot",
+        "status": "ok",
+        "reason": "records_extracted",
+        "candidate_count": 1,
+        "record_count": 0,
+        "error_count": 0,
+    }
+    assert intermediate["runtime_record_counts"] == {}
+    assert intermediate["total_records_read"] == 0
+    assert intermediate["total_state_sequences"] == 0
+
+
+def test_successful_runtime_with_zero_window_records_remains_ok(startup_analysis_contract, extract_corpus, tmp_path):
+    project_root = tmp_path / "agentera"
+    codex_store = tmp_path / "codex" / "sessions"
+    project_root.mkdir()
+    _write_codex_state_store(
+        codex_store,
+        project_root,
+        session_token="session-redacted-codex",
+        started_at="2026-05-13T10:00:00Z",
+    )
+
+    intermediate = startup_analysis_contract.extract_startup_intermediate_from_runtime_stores(
+        project_roots=[project_root],
+        codex_sessions_dir=codex_store,
+        claude_projects_dir=None,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=None,
+        salt="fixture-salt",
+        extract_corpus_module=extract_corpus,
+        benchmark_mode="since_previous_benchmark",
+        benchmark_previous_watermark_at=datetime.fromisoformat("2026-05-13T10:01:00+00:00"),
+    )
+    rendered = json.dumps(intermediate, sort_keys=True)
+
+    assert intermediate["runtime_coverage"][0] == {
+        "runtime": "codex",
+        "status": "ok",
+        "reason": "records_extracted",
+        "candidate_count": 1,
+        "record_count": 0,
+        "error_count": 0,
+    }
+    assert intermediate["runtime_record_counts"] == {}
+    assert intermediate["total_records_read"] == 0
+    assert intermediate["total_state_sequences"] == 0
+    assert "session-redacted-codex" not in rendered
+    assert str(codex_store) not in rendered
+    assert str(project_root) not in rendered
+
+
 def test_metrics_aggregate_state_sequences_and_redundant_artifacts(startup_analysis_contract):
     intermediate = startup_analysis_contract.build_startup_intermediate(
         {
@@ -768,6 +1400,14 @@ def test_report_surfaces_include_required_fields_without_private_output(
     assert "per_capability_state_counts" in structured
     assert "threshold_derivation" in structured
     assert "startup_recommendation" in structured
+    assert structured["token_estimator_version"] == "approx_bytes_div_4_v1"
+    assert structured["estimated_raw_after_cli_tokens"] > 0
+    assert structured["estimated_redundant_raw_tokens"] > 0
+    assert set(structured["estimated_raw_after_cli_tokens_by_artifact"]) == {"PLAN.md"}
+    assert set(structured["estimated_redundant_raw_tokens_by_artifact"]) == {"PLAN.md"}
+    assert structured["estimated_tokens_saved_vs_previous"] is None
+    assert structured["estimated_tokens_saved_vs_previous_null_reason"] == "previous_row_missing"
+    assert "Estimated Token Impact" in human
     assert "Privacy Caveats" in human
     assert "Boundary Source" in human
     assert "Benchmark Window" in human
@@ -777,6 +1417,10 @@ def test_report_surfaces_include_required_fields_without_private_output(
     assert "PLAN.md" in combined
     assert "PRIVATE_PROMPT_TOKEN" not in combined
     assert "PRIVATE_ROOT_TOKEN" not in combined
+    assert "fixture-salt" not in combined
+    assert "session:" not in combined
+    assert "record:" not in combined
+    assert "path:" not in combined
     assert ".agentera/plan.yaml" not in combined
 
 
@@ -836,13 +1480,80 @@ def test_benchmark_persistence_appends_aggregate_row_and_latest_reports(
     assert row["state_sequences_with_redundant_raw_access"] == 1
     assert row["raw_after_cli_rate"] == 1
     assert row["redundant_raw_access_rate"] == 1
+    assert row["token_estimator_version"] == "approx_bytes_div_4_v1"
+    assert row["estimated_raw_after_cli_tokens"] > 0
+    assert row["estimated_redundant_raw_tokens"] > 0
+    assert row["estimated_raw_after_cli_tokens_by_artifact"] == {"PLAN.md": row["estimated_raw_after_cli_tokens"]}
+    assert row["estimated_redundant_raw_tokens_by_artifact"] == {"PLAN.md": row["estimated_redundant_raw_tokens"]}
+    assert row["estimated_tokens_saved_vs_previous"] is None
+    assert row["estimated_tokens_saved_vs_previous_null_reason"] == "previous_row_missing"
     assert row["startup_recommendation_action"] == "targeted_capability_guidance_fixes"
     assert row["bounded_degradation_counts"] == {"record_or_sequence": {}, "runtime_status": {"ok": 1}}
     assert "PRIVATE_PROMPT_TOKEN" not in durable_text
     assert "PRIVATE_ROOT_TOKEN" not in durable_text
     assert ".agentera/plan.yaml" not in durable_text
     assert "session:" not in json.dumps(row, sort_keys=True)
+    assert "record:" not in json.dumps(row, sort_keys=True)
     assert "path:" not in json.dumps(row, sort_keys=True)
+
+
+def test_benchmark_persistence_emits_estimated_tokens_saved_against_previous_row(
+    startup_analysis_contract,
+    tmp_path,
+):
+    benchmark_dir = tmp_path / "agentera-home" / "benchmarks" / "startup-state"
+    first_metrics = _plan_read_metrics(startup_analysis_contract, read_count=2)
+    second_metrics = _plan_read_metrics(startup_analysis_contract, read_count=1)
+
+    startup_analysis_contract.persist_startup_benchmark(first_metrics, benchmark_dir, runtime_scope=["opencode"])
+    startup_analysis_contract.persist_startup_benchmark(second_metrics, benchmark_dir, runtime_scope=["opencode"])
+
+    rows = [
+        json.loads(line)
+        for line in (benchmark_dir / "runs.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    latest = json.loads((benchmark_dir / "latest-report.json").read_text(encoding="utf-8"))
+    markdown = (benchmark_dir / "latest-report.md").read_text(encoding="utf-8")
+
+    expected_saved = rows[0]["estimated_redundant_raw_tokens"] - rows[1]["estimated_redundant_raw_tokens"]
+    assert expected_saved > 0
+    assert rows[1]["estimated_tokens_saved_vs_previous"] == expected_saved
+    assert rows[1]["estimated_tokens_saved_vs_previous_null_reason"] is None
+    assert latest["estimated_tokens_saved_vs_previous"] == expected_saved
+    assert latest["estimated_tokens_saved_vs_previous_null_reason"] is None
+    assert "Estimated tokens saved vs previous" in markdown
+    assert "PLAN.md" in latest["estimated_redundant_raw_tokens_by_artifact"]
+
+
+def test_benchmark_persistence_explains_missing_previous_token_estimates(
+    startup_analysis_contract,
+    tmp_path,
+):
+    benchmark_dir = tmp_path / "agentera-home" / "benchmarks" / "startup-state"
+    benchmark_dir.mkdir(parents=True)
+    (benchmark_dir / "runs.jsonl").write_text(
+        json.dumps(
+            {
+                "contract_version": "startup-state-analysis-v1",
+                "runtime_scope": ["opencode"],
+                "benchmark_mode": "full_boundary_snapshot",
+                "benchmark_watermark_at": "2026-05-13T17:00:00+00:00",
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    metrics = _plan_read_metrics(startup_analysis_contract, read_count=1)
+    startup_analysis_contract.persist_startup_benchmark(metrics, benchmark_dir, runtime_scope=["opencode"])
+    row = json.loads((benchmark_dir / "runs.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+    latest = json.loads((benchmark_dir / "latest-report.json").read_text(encoding="utf-8"))
+
+    assert row["estimated_tokens_saved_vs_previous"] is None
+    assert row["estimated_tokens_saved_vs_previous_null_reason"] == "previous_missing_token_estimates"
+    assert latest["estimated_tokens_saved_vs_previous"] is None
+    assert latest["estimated_tokens_saved_vs_previous_null_reason"] == "previous_missing_token_estimates"
 
 
 def test_benchmark_persistence_failure_does_not_append_or_clobber_latest_reports(

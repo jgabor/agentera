@@ -183,8 +183,15 @@ inspection remain available through `query --list-artifacts` and
 `query <artifact-name> --format json|yaml`.
 
 Do not silently bypass the CLI and read raw `.agentera/*.yaml` files first. If
-all CLI paths fail, report that the CLI was unavailable, then use raw artifact
-reads only as a fallback.
+CLI state declares complete startup coverage, do not perform defensive raw
+artifact reads for normal startup. If CLI state is unavailable or incomplete,
+try the CLI-provided fallback commands first; use raw artifact reads only as a
+last-resort fallback after those paths fail or still declare incomplete state.
+When `agentera plan --format json` returns
+`source_contract.complete_for_plan_artifact=true`, treat its `summary`,
+`entries`, and `source_contract` as complete for normal `PLAN.md` startup and
+evaluation context; do not read `.agentera/plan.yaml` merely to re-check task
+dependencies, acceptance criteria, evidence, or plan metadata.
 
 For bare `/agentera` or a bare user message exactly `hej`, run `agentera hej`
 first and render the README-style hej dashboard from that single composite
@@ -222,7 +229,12 @@ unsupported capability-name command `agentera resonera`. Never run unsupported
 capability-name commands such as `agentera resonera`, `agentera planera`, or
 `agentera realisera` as a bootstrap step. Shared words stay split by interface:
 `/agentera plan` routes to planera, while `agentera plan` reads plan state from
-the CLI.
+the CLI. When a capability-specific startup bundle is needed, request it through
+the existing state seam with
+`agentera hej --format json --capability-context <capability>`. Use returned
+`capability_context.included_state_families` directly, and for
+`missing_state_families`, run the listed `cli_fallback` commands before raw file
+access.
 Reading a capability's `prose.md` file is not itself a capability invocation;
 invocation means routing to the capability, following its prose, and using the
 CLI state layer first for artifact-backed state.

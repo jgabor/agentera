@@ -659,6 +659,7 @@ ROUTINE_STRUCTURED_FIELDS = [
     "source",
     "filters",
     "summary",
+    "source_contract",
 ]
 
 HEJ_STRUCTURED_FIELDS = [
@@ -672,7 +673,10 @@ HEJ_STRUCTURED_FIELDS = [
     "health",
     "issues",
     "plan",
+    "docs",
+    "progress",
     "objective",
+    "state_presence",
     "attention",
     "next_action",
     "source",
@@ -692,6 +696,55 @@ ROUTINE_STATE_COMMANDS = [
     "objective",
     "experiments",
 ]
+
+STARTUP_COMPLETENESS_AVAILABLE_STATE = [
+    "app_home",
+    "mode",
+    "profile",
+    "v1_migration",
+    "health",
+    "issues",
+    "plan",
+    "docs",
+    "progress",
+    "objective",
+    "state_presence",
+    "attention",
+    "next_action",
+]
+
+STARTUP_COMPLETENESS_MISSING_STATE: list[str] = []
+
+STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS = [
+    "representative benchmark evidence exists, but claude-code and github-copilot coverage is degraded by schema divergence",
+    "Task 4 expands the startup envelope using existing hej, plan, docs, and progress state outputs",
+]
+
+STARTUP_COMPLETENESS_CLI_FALLBACK = [
+    "agentera plan --format json",
+    "agentera docs --format json",
+    "agentera progress --format json",
+]
+
+STATE_FAMILY_FALLBACK_COMMANDS = {
+    "plan": "agentera plan --format json",
+    "docs": "agentera docs --format json",
+    "progress": "agentera progress --format json",
+    "health": "agentera health --format json",
+    "todo": "agentera todo --format json",
+    "decisions": "agentera decisions --format json",
+    "objective": "agentera objective --format json",
+    "experiments": "agentera experiments --format json",
+}
+
+STARTUP_ENVELOPE_STATE_FAMILIES = {
+    "plan",
+    "docs",
+    "progress",
+    "health",
+    "todo",
+    "objective",
+}
 
 COMMAND_FILTERS = {
     "hej": [],
@@ -807,8 +860,9 @@ def _structured_state(
     *,
     filters: dict[str, Any] | None = None,
     summary: dict[str, Any] | None = None,
+    source_contract: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    return {
+    payload = {
         "command": command,
         "status": "ok" if entries or source.get("exists") else "empty",
         "entries": entries,
@@ -819,6 +873,121 @@ def _structured_state(
         "source": source,
         "filters": {k: v for k, v in (filters or {}).items() if v is not None},
         "summary": summary or {},
+    }
+    if source_contract is not None:
+        payload["source_contract"] = source_contract
+    return payload
+
+
+def _plan_artifact_summary(data: dict[str, Any], header: dict[str, Any]) -> dict[str, Any]:
+    summary = {
+        "header": header,
+        "title": _first_present(header, ["title"], data.get("title", "")),
+        "status": _first_present(header, ["status"], data.get("status", "")),
+        "created": _first_present(header, ["created"], data.get("created", "")),
+        "what": data.get("what"),
+        "why": data.get("why"),
+        "constraints": data.get("constraints"),
+        "scope": data.get("scope"),
+        "design": data.get("design"),
+        "overall_acceptance": data.get("overall_acceptance"),
+        "surprises": data.get("surprises"),
+        "previous_plan_archived": data.get("previous_plan_archived"),
+    }
+    return {key: value for key, value in summary.items() if value not in (None, "")}
+
+
+def _plan_source_contract(source: dict[str, Any], summary: dict[str, Any]) -> dict[str, Any]:
+    complete = bool(source.get("exists"))
+    return {
+        "artifact": "PLAN.md",
+        "complete_for_plan_artifact": complete,
+        "raw_artifact_reads_required": False,
+        "raw_artifact_read_policy": (
+            "Use `agentera plan --format json` entries, summary, source, and source_contract before raw PLAN.md access. "
+            "When complete_for_plan_artifact is true, do not read `.agentera/plan.yaml` for normal plan startup/evaluation context."
+        ),
+        "included_state": [
+            "header",
+            "what",
+            "why",
+            "constraints",
+            "scope",
+            "design",
+            "tasks",
+            "task dependencies",
+            "task acceptance criteria",
+            "task evidence",
+            "overall_acceptance",
+            "surprises",
+            "previous_plan_archived",
+        ],
+        "missing_state": [] if complete else ["PLAN.md artifact"],
+        "fallback": [] if complete else ["agentera docs --format json"],
+        "summary_fields": sorted(summary),
+        "entry_fields": ["number", "name", "depends_on", "status", "acceptance", "evidence", "blocked_reason"],
+    }
+
+
+def _startup_completeness_contract() -> dict[str, Any]:
+    complete = not STARTUP_COMPLETENESS_MISSING_STATE
+    return {
+        "complete_for_capability_startup": complete,
+        "raw_artifact_reads_required": False,
+        "raw_artifact_read_policy": (
+            "Do not read raw artifacts when complete_for_capability_startup is true. "
+            "When incomplete, try cli_fallback first; raw artifact reads are only a last-resort fallback."
+        ),
+        "available_state": STARTUP_COMPLETENESS_AVAILABLE_STATE,
+        "missing_state": STARTUP_COMPLETENESS_MISSING_STATE,
+        "confidence_caveats": STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS,
+        "cli_fallback": STARTUP_COMPLETENESS_CLI_FALLBACK,
+    }
+
+
+def _capability_artifact_needs(capability: str) -> tuple[list[str], str | None]:
+    capability_dir = _model_path(_active_app_model(), "skillRoot") / "capabilities" / capability
+    path = capability_dir / "schemas" / "artifacts.yaml"
+    if not path.is_file():
+        return [], f"No capability artifact schema found for {capability}."
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return [], f"Capability artifact schema for {capability} could not be read: {exc}"
+    artifacts = data.get("ARTIFACTS") if isinstance(data, dict) else None
+    if not isinstance(artifacts, dict):
+        return [], f"Capability artifact schema for {capability} has no ARTIFACTS mapping."
+    needs: list[str] = []
+    for entry in artifacts.values():
+        if not isinstance(entry, dict):
+            continue
+        artifact_id = str(entry.get("artifact_id", "")).strip()
+        if artifact_id and artifact_id not in needs:
+            needs.append(artifact_id)
+    return needs, None
+
+
+def _capability_context(capability: str | None) -> dict[str, Any] | None:
+    if not capability:
+        return None
+    needs, error = _capability_artifact_needs(capability)
+    missing = [name for name in needs if name not in STARTUP_ENVELOPE_STATE_FAMILIES]
+    cli_fallback = [
+        STATE_FAMILY_FALLBACK_COMMANDS[name]
+        for name in missing
+        if name in STATE_FAMILY_FALLBACK_COMMANDS
+    ]
+    return {
+        "capability": capability,
+        "declared_state_needs": needs,
+        "included_state_families": [name for name in needs if name in STARTUP_ENVELOPE_STATE_FAMILIES],
+        "missing_state_families": missing,
+        "cli_fallback": cli_fallback,
+        "raw_artifact_read_policy": (
+            "Use the included state families from this hej response first. "
+            "If needed families are missing or CLI state is incomplete, run the CLI fallback commands before raw file access."
+        ),
+        "schema_error": error,
     }
 
 
@@ -1356,9 +1525,18 @@ def _query_plan(args: argparse.Namespace, schemas: dict) -> int:
     data = _load_artifact(path)
     if not isinstance(data, dict):
         if _output_format(args) != "text":
+            source = _source_metadata("plan", path)
+            summary = {"absence_reason": "No plan artifact is available from agentera plan."}
             return _emit_state_structured(
                 "plan",
-                _structured_state("plan", [], _source_metadata("plan", path), filters={"status": getattr(args, "status", None)}),
+                _structured_state(
+                    "plan",
+                    [],
+                    source,
+                    filters={"status": getattr(args, "status", None)},
+                    summary=summary,
+                    source_contract=_plan_source_contract(source, summary),
+                ),
                 args,
             )
         return 0
@@ -1367,10 +1545,19 @@ def _query_plan(args: argparse.Namespace, schemas: dict) -> int:
         status_filter = getattr(args, "status", None)
         if status_filter:
             legacy_entries = _filter_by_field_value(legacy_entries, "status", status_filter)
+        source = _source_metadata("plan", path)
+        summary = {"legacy_entries": True}
         if _output_format(args) != "text":
             return _emit_state_structured(
                 "plan",
-                _structured_state("plan", legacy_entries, _source_metadata("plan", path), filters={"status": status_filter}),
+                _structured_state(
+                    "plan",
+                    legacy_entries,
+                    source,
+                    filters={"status": status_filter},
+                    summary=summary,
+                    source_contract=_plan_source_contract(source, summary),
+                ),
                 args,
             )
         for entry in legacy_entries:
@@ -1379,22 +1566,25 @@ def _query_plan(args: argparse.Namespace, schemas: dict) -> int:
                 print(line)
         return 0
     header = data.get("header") if isinstance(data.get("header"), dict) else {}
-    title = _first_present(header, ["title"], data.get("title", ""))
-    status = _first_present(header, ["status"], data.get("status", ""))
-    created = _first_present(header, ["created"], data.get("created", ""))
+    summary = _plan_artifact_summary(data, header)
+    title = summary.get("title", "")
+    status = summary.get("status", "")
+    created = summary.get("created", "")
     tasks = _as_list(data.get("tasks"))
     status_filter = getattr(args, "status", None)
     if status_filter:
         tasks = _filter_by_field_value(tasks, "status", status_filter)
+    source = _source_metadata("plan", path)
     if _output_format(args) != "text":
         return _emit_state_structured(
             "plan",
             _structured_state(
                 "plan",
                 tasks,
-                _source_metadata("plan", path),
+                source,
                 filters={"status": status_filter},
-                summary={"title": title, "status": status, "created": created, "what": data.get("what"), "why": data.get("why")},
+                summary=summary,
+                source_contract=_plan_source_contract(source, summary),
             ),
             args,
         )
@@ -1503,7 +1693,16 @@ def _query_docs(args: argparse.Namespace, schemas: dict) -> int:
                 index,
                 _source_metadata("docs", path),
                 filters={"topic": topic, "status": status_filter},
-                summary={"last_audit": data.get("last_audit"), "mapping_entries": len(mapping), "coverage": coverage},
+                summary={
+                    "last_audit": data.get("last_audit"),
+                    "mapping": mapping,
+                    "mapping_entries": len(mapping),
+                    "coverage": coverage,
+                    "source_contract": {
+                        "capability_startup_complete": not STARTUP_COMPLETENESS_MISSING_STATE,
+                        "raw_artifact_reads_required": False,
+                    },
+                },
             ),
             args,
         )
@@ -1821,7 +2020,14 @@ def _issue_counts(todo_items: list[dict[str, str]]) -> dict[str, int]:
 def _plan_summary(schemas: dict) -> dict[str, Any]:
     data = _load_named_artifact(schemas, "plan")
     if not isinstance(data, dict):
-        return {"exists": False, "tasks": [], "status": "", "title": ""}
+        return {
+            "exists": False,
+            "active": False,
+            "tasks": [],
+            "status": "absent",
+            "title": "",
+            "absence_reason": "No active plan artifact is available from agentera plan.",
+        }
     legacy_entries = _as_list(data.get("entries"))
     if legacy_entries:
         tasks = legacy_entries
@@ -1853,6 +2059,56 @@ def _plan_summary(schemas: dict) -> dict[str, Any]:
         "active": not complete_plan,
         "complete_plan": complete_plan,
         "first_pending": first_pending,
+    }
+
+
+def _docs_summary(schemas: dict) -> dict[str, Any]:
+    data = _load_named_artifact(schemas, "docs")
+    if not isinstance(data, dict):
+        return {
+            "exists": False,
+            "status": "absent",
+            "absence_reason": "No docs mapping artifact is available from agentera docs.",
+        }
+    mapping = _as_list(data.get("mapping"))
+    index = _as_list(data.get("index"))
+    coverage = data.get("coverage") if isinstance(data.get("coverage"), dict) else {}
+    return {
+        "exists": True,
+        "status": "available",
+        "last_audit": data.get("last_audit"),
+        "mapping": mapping,
+        "mapping_entries": len(mapping),
+        "coverage": coverage,
+        "source_contract": {
+            "capability_startup_complete": not STARTUP_COMPLETENESS_MISSING_STATE,
+            "raw_artifact_reads_required": False,
+            "state_families": [
+                "plan task details, dependencies, acceptance criteria, and evidence summaries",
+                "docs artifact mapping and source-contract completeness metadata",
+                "latest progress verification metadata needed for Orkestrera evaluation",
+            ],
+        },
+        "indexed_documents": len(index),
+    }
+
+
+def _progress_summary(schemas: dict) -> dict[str, Any]:
+    data = _load_named_artifact(schemas, "progress")
+    entries = _extract_entries(data)
+    if not entries:
+        return {
+            "exists": False,
+            "status": "absent",
+            "absence_reason": "No progress cycles are available from agentera progress.",
+        }
+    latest = _recent_cycles(entries, 1)[0]
+    return {
+        "exists": True,
+        "status": "available",
+        "latest": latest,
+        "latest_verification": latest.get("verified"),
+        "cycle_count": len(entries),
     }
 
 
@@ -1928,6 +2184,32 @@ def _active_objective_summary() -> dict[str, Any]:
         "status": status or "active",
         "metric": str(metric),
         "target": str(target),
+    }
+
+
+def _state_presence(plan: dict[str, Any], docs: dict[str, Any], progress: dict[str, Any], health: dict[str, Any], objective: dict[str, Any]) -> dict[str, Any]:
+    active = {
+        "plan": bool(plan.get("active")),
+        "objective": bool(objective.get("active")),
+    }
+    available = {
+        "plan": bool(plan.get("exists")),
+        "docs": bool(docs.get("exists")),
+        "progress": bool(progress.get("exists")),
+        "health": bool(health.get("exists")),
+        "objective": bool(objective.get("exists")),
+    }
+    absence = {
+        name: summary.get("absence_reason")
+        for name, summary in (("plan", plan), ("docs", docs), ("progress", progress))
+        if not summary.get("exists") and summary.get("absence_reason")
+    }
+    return {
+        "active": active,
+        "available": available,
+        "any_active": any(active.values()),
+        "absence_explained": bool(absence) or any(active.values()),
+        "absence": absence,
     }
 
 
@@ -2050,8 +2332,11 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     v1_artifacts = _detect_v1_artifacts()
     v1_migration = _v1_migration_summary(v1_artifacts)
     plan = _plan_summary(schemas)
+    docs = _docs_summary(schemas)
+    progress = _progress_summary(schemas)
     health = _health_summary(schemas)
     objective = _active_objective_summary()
+    state_presence = _state_presence(plan, docs, progress, health, objective)
     todo_items = _load_todo_items(schemas)
     counts = _issue_counts(todo_items)
     decision = _decision_follow_up(schemas)
@@ -2120,7 +2405,10 @@ def cmd_hej(_args: argparse.Namespace) -> int:
                 "health": health,
                 "issues": counts,
                 "plan": plan,
+                "docs": docs,
+                "progress": progress,
                 "objective": objective,
+                "state_presence": state_presence,
                 "attention": attention[:6],
                 "next_action": next_action,
                 "source": {
@@ -2129,10 +2417,12 @@ def cmd_hej(_args: argparse.Namespace) -> int:
                     "artifacts_present": mode == "returning",
                 },
                 "source_contract": {
-                    "fields": ["app_home", "mode", "profile", "v1_migration", "health", "issues", "plan", "objective", "attention", "next_action"],
+                    "fields": STARTUP_COMPLETENESS_AVAILABLE_STATE,
                     "render": "caller-owned README-style hej dashboard",
                     "access": "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal hej",
                     "empty_state": "fresh mode with missing artifact summaries and zero issue counts",
+                    "capability_startup": _startup_completeness_contract(),
+                    "capability_context": _capability_context(getattr(_args, "capability_context", None)),
                 },
             },
             _args,
@@ -2159,6 +2449,9 @@ def cmd_hej(_args: argparse.Namespace) -> int:
         f"critical={counts['critical']} | degraded={counts['degraded']} | "
         f"normal={counts['normal']} | annoying={counts['annoying']}"
     )
+    if not state_presence["any_active"]:
+        missing = ", ".join(sorted(state_presence["absence"])) or "none"
+        print(f"state: no active plan or objective | missing={missing}")
     if plan.get("exists") and not plan.get("complete_plan"):
         print(
             f"plan: status={plan.get('status') or 'unknown'} | "
@@ -2182,9 +2475,23 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     print("next_action:")
     print(f"- {_format_next_action(next_action)}")
     print("source_contract:")
-    print("- fields=app_home,mode,profile,v1_migration,health,issues,plan,objective,attention,next_action")
+    print("- fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action")
     print("- render=caller-owned README-style hej dashboard")
     print("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls")
+    startup_contract = _startup_completeness_contract()
+    print(f"- capability_startup_complete={str(startup_contract['complete_for_capability_startup']).lower()}")
+    print(f"- raw_artifact_reads_required={str(startup_contract['raw_artifact_reads_required']).lower()}; policy={startup_contract['raw_artifact_read_policy']}")
+    missing_state = "; ".join(startup_contract["missing_state"]) or "none"
+    print(f"- missing_state={missing_state}")
+    print(f"- confidence_caveats={'; '.join(startup_contract['confidence_caveats'])}")
+    print(f"- cli_fallback={'; '.join(startup_contract['cli_fallback'])}")
+    context = _capability_context(getattr(_args, "capability_context", None))
+    if context:
+        print("- capability_context="
+              f"capability={context['capability']} | "
+              f"included={', '.join(context['included_state_families']) or 'none'} | "
+              f"missing={', '.join(context['missing_state_families']) or 'none'} | "
+              f"cli_fallback={'; '.join(context['cli_fallback']) or 'none'}")
     return 0
 
 
@@ -2341,6 +2648,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=_agent_version,
         default=None,
         help="Expected suite version for app status (default: AGENTERA_EXPECTED_VERSION, then registry.json in this source)",
+    )
+    hej.add_argument(
+        "--capability-context",
+        type=_agent_command,
+        help="Include capability-specific startup state needs in structured source_contract output",
     )
     add_structured_args(hej)
 

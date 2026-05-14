@@ -126,6 +126,7 @@ structured_output:
         - source
         - filters
         - summary
+        - source_contract
       status_values:
         - ok
         - empty
@@ -134,6 +135,23 @@ structured_output:
         - path
         - exists
         - kind
+      source_contract:
+        plan:
+          status: implemented_complete_plan_artifact_envelope
+          fields:
+            - complete_for_plan_artifact
+            - raw_artifact_reads_required
+            - raw_artifact_read_policy
+            - included_state
+            - missing_state
+            - fallback
+            - summary_fields
+            - entry_fields
+          complete_semantics: >-
+            When `complete_for_plan_artifact` is true, `agentera plan --format
+            json` includes plan summary metadata, task dependencies, acceptance
+            criteria, and evidence needed for normal startup/evaluation context;
+            agents should not read `.agentera/plan.yaml` defensively.
       empty_state: >-
         Missing or empty artifacts emit status=empty, entries=[], counts.entries=0,
         and source.exists=false when the source file is absent.
@@ -148,19 +166,84 @@ structured_output:
         - health
         - issues
         - plan
+        - docs
+        - progress
         - objective
+        - state_presence
         - attention
         - next_action
         - source
         - source_contract
+      source_contract:
+        capability_startup:
+          status: implemented_complete_startup_envelope
+          fields:
+            - complete_for_capability_startup
+            - raw_artifact_reads_required
+            - raw_artifact_read_policy
+            - available_state
+            - missing_state
+            - confidence_caveats
+            - cli_fallback
+            - capability_context
+          complete_semantics: >-
+            When complete_for_capability_startup is true, raw_artifact_reads_required
+            must be false and agents should not perform defensive raw artifact reads
+            for normal capability startup.
+          incomplete_semantics: >-
+            When startup state is incomplete, missing_state, confidence_caveats,
+            and cli_fallback must be explicit. Agents should try the named CLI
+            fallback commands before any last-resort raw artifact read.
+          capability_context_semantics: >-
+            `agentera hej --format json --capability-context <capability>` keeps
+            capability routing separate from CLI command vocabulary while returning
+            declared state needs, included startup state families, missing families,
+            and CLI fallback commands for missing routine state.
+          current_status: complete
+          current_missing_state: []
       empty_state: >-
-        Fresh projects emit mode=fresh with missing artifact summaries, zero issue
-        counts, source.artifacts_present=false, and a caller-owned dashboard
-        source_contract.
+        Fresh projects emit mode=fresh with explicit plan/docs/progress absence
+        reasons, zero issue counts, source.artifacts_present=false, state_presence
+        absence metadata, and a caller-owned dashboard source_contract.
   rationale: >-
     The playbook calls for machine-readable output as a first-class path. Task 3
     should add parseable routine output while keeping current command names and
     useful human text output stable.
+startup_completeness:
+  status: implemented_complete_startup_envelope
+  owning_command: hej
+  preserves_routine_state_commands: true
+  slash_route_alias_cli_commands_added: false
+  complete_output_requires:
+    complete_for_capability_startup: true
+    raw_artifact_reads_required: false
+  incomplete_output_requires:
+    - missing_state
+    - confidence_caveats
+    - cli_fallback
+  fallback_policy: >-
+    Incomplete startup state must point agents to existing routine state commands
+    before any raw artifact read. Complete startup state must never require raw
+    artifact reads for normal capability startup.
+  current_cli_fallback:
+    - agentera plan --format json
+    - agentera docs --format json
+    - agentera progress --format json
+  state_families_added:
+    - plan task details, dependencies, acceptance criteria, and evidence summaries
+    - docs artifact mapping and source-contract completeness metadata
+    - latest progress verification metadata needed for Orkestrera evaluation
+  empty_state_behavior: >-
+    agentera hej reports absent plan, docs, and progress state explicitly through
+    structured summaries and state_presence absence metadata instead of forcing
+    artifact discovery.
+  repair_guidance_behavior: >-
+    agentera hej carries stale app repair commands through bundle/app_home output and
+    v1 migration preview/apply commands through v1_migration output.
+  non_goals:
+    - Do not add Decision 43 slash-route aliases to the CLI command surface.
+    - Do not remove or rename routine state commands.
+    - Do not implement Task 6 benchmark comparison.
 field_selection:
   status: implemented_sparse_response_layer
   applies_after: structured_output
@@ -185,6 +268,7 @@ field_selection:
         - source
         - filters
         - summary
+        - source_contract
     hej:
       fields:
         - command
@@ -196,7 +280,10 @@ field_selection:
         - health
         - issues
         - plan
+        - docs
+        - progress
         - objective
+        - state_presence
         - attention
         - next_action
         - source

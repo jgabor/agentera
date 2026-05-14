@@ -1,0 +1,382 @@
+header:
+  level: full
+  created: 2026-05-14
+  status: complete
+  reviewed: 2026-05-14
+  critic_issues: 7 found, 7 addressed, 0 dismissed
+  revised: >-
+    [post-audit-flagged] Adversarial review retitled the plan around post-CLI artifact reads, made product work contingent on benchmark evidence, added explicit local-only aggregate-history acceptance, preserved Decision 45 and Decision 43 boundaries, separated validation from final state sync, and tightened weak-evidence stop conditions. Agentera lint remains advisory because full plans exceed the compact PLAN.md entry budget.
+  title: Reduce Post-CLI Startup Artifact Reads
+what: >-
+  Plan the prioritized work that turns `mage bench:startupState` telemetry and `latest-report.json` fields into a CLI completeness contract, so Agentera capability startup can rely on CLI-provided state and avoid defensive raw artifact reads, greps, or globs after successful CLI state access.
+why: >-
+  Decisions 51 and 52 make post-CLI raw artifact access the optimization signal. The latest benchmark run is weak evidence because it found no qualifying state-gathering sequences and reported degraded runtime coverage, so the first priority is measurement confidence before product behavior changes. Once representative evidence exists, repeated post-CLI raw reads identify missing CLI output.
+constraints: >-
+  Preserve routine state command names and Decision 43 slash-route separation. Preserve the existing manual-only benchmark boundary and local-only aggregate retention. Do not make runtime history part of normal CI. Do not retain private raw runtime data. Do not require raw artifact reads for normal Agentera startup once CLI output declares itself complete. Do not push, publish, bump versions without an explicit release target, refresh installed apps, modify vision state, or modify objective state in this plan.
+scope:
+  included:
+    - Benchmark confidence review and extraction/coverage repair when evidence is weak.
+    - Prioritized post-CLI raw artifact gap report from benchmark fields.
+    - CLI startup completeness contract for existing routine and composite state output.
+    - State coverage for the highest-ranked redundant or repeated post-CLI raw artifact reads.
+    - Capability context and agent guidance that make raw artifact access a fallback path.
+    - Representative validation, benchmark comparison, state sync, and version-policy check.
+  excluded:
+    - Runtime-history benchmarks in normal CI.
+    - New CLI commands that duplicate slash-route aliases.
+    - Broad non-startup performance benchmarking.
+    - Removing existing routine state commands.
+    - Release publication or installed app refresh.
+  deferred:
+    - Trend visualization over benchmark history.
+    - Additional benchmark surfaces outside startup/state gathering.
+    - Release metadata work until a release target is selected.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-14-add-manual-startup-state-benchmark-suite.yaml
+design: >-
+  Treat `mage bench:startupState`, `${AGENTERA_HOME}/benchmarks/startup-state/latest-report.json`, and `references/cli/agent-ready-state-contract.yaml` as the concrete planning anchors, but gate product work on evidence quality. First make the measurement trustworthy enough to rank post-CLI raw artifact reads by command, artifact, redundancy, and capability. Then define a CLI source contract that tells agents whether returned state is complete for startup, what state families are included, what is missing, and which CLI fallback to try before raw access. Prefer enriching existing routine state output and the existing composite startup result over adding new command vocabulary. Use capability artifact needs to shape narrower context bundles when the gap is capability-specific. Verify with representative startup sessions and by comparing benchmark rates before and after the CLI changes.
+tasks:
+  - number: 1
+    name: Benchmark confidence and coverage gate
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN a benchmark report has zero state-gathering sequences WHEN follow-up is selected THEN product CLI work is blocked and the missing evidence reason is recorded.
+      - GIVEN runtime coverage is degraded WHEN follow-up is selected THEN each affected runtime, reason, candidate count, record count, and error count is recorded before product work proceeds.
+      - GIVEN retained benchmark history is inspected WHEN privacy is reviewed THEN it remains local aggregate evidence and excludes private raw runtime content.
+    evidence:
+      benchmark_report: /home/jgabor/.local/share/agentera/benchmarks/startup-state/latest-report.json
+      benchmark_history: /home/jgabor/.local/share/agentera/benchmarks/startup-state/runs.jsonl
+      benchmark_watermark_at: "2026-05-14T05:14:25+00:00"
+      total_state_sequences: 5
+      insufficient_evidence_reason: null
+      startup_recommendation_action: plan_cli_startup_envelope
+      implementation_recommended: true
+      product_cli_work_blocked: false
+      unblocked_reason: >-
+        The rerun benchmark now has five state-gathering sequences and recommends planning a CLI startup envelope, so downstream product work may proceed with degraded runtime coverage named separately.
+      degraded_runtime_coverage:
+        - runtime: claude-code
+          reason: schema_divergent
+          candidate_count: 4836
+          record_count: 0
+          error_count: 2
+        - runtime: github-copilot
+          reason: schema_divergent
+          candidate_count: 1
+          record_count: 0
+          error_count: 1
+      privacy_review:
+        retained_history_scope: user-local aggregate evidence only
+        excludes:
+          - raw transcript text
+          - full local paths
+          - raw store paths
+          - raw session ids
+  - number: 2
+    name: Post-CLI state gap prioritization
+    depends_on: [1]
+    status: complete
+    acceptance:
+      - GIVEN representative state-gathering sequences exist WHEN the gap report is prepared THEN it ranks CLI state anchors, post-CLI raw artifacts, redundant raw artifacts, and affected capabilities.
+      - GIVEN evidence remains weak WHEN the gap report is prepared THEN downstream product tasks are left blocked or deferred with the confidence caveat named.
+      - GIVEN a gap is selected WHEN it is prioritized THEN the owning existing state output and expected state family are named without adding slash-route aliases as CLI commands.
+    evidence:
+      benchmark_report: /home/jgabor/.local/share/agentera/benchmarks/startup-state/latest-report.json
+      benchmark_history: /home/jgabor/.local/share/agentera/benchmarks/startup-state/runs.jsonl
+      evidence_gate: representative_with_degraded_runtime_caveats
+      confidence_caveats:
+        - runtime_coverage_incomplete_or_degraded
+        - some_records_or_sequences_degraded
+      benchmark_watermark_at: "2026-05-14T05:14:25+00:00"
+      total_state_sequences: 5
+      total_cli_state_calls: 25
+      raw_after_cli_sequence_rate: 1.0
+      redundant_raw_sequence_rate: 1.0
+      raw_artifact_access_after_cli_counts:
+        DOCS.md: 4
+        PLAN.md: 6
+        PROGRESS.md: 1
+      redundant_raw_artifact_access_counts:
+        DOCS.md: 2
+        PLAN.md: 6
+      cli_state_command_counts:
+        decisions: 4
+        docs: 3
+        health: 2
+        plan: 5
+        progress: 3
+        query: 5
+        todo: 3
+      per_capability_state_counts:
+        inspektera:
+          state_sequences: 1
+          cli_state_call: 1
+          raw_artifact_access_after_cli: 2
+          redundant_raw_artifact_access: 1
+        optimera:
+          state_sequences: 2
+          cli_state_call: 9
+          raw_artifact_access_after_cli: 5
+          redundant_raw_artifact_access: 3
+        orkestrera:
+          state_sequences: 1
+          cli_state_call: 6
+          raw_artifact_access_after_cli: 2
+          redundant_raw_artifact_access: 2
+        planera:
+          state_sequences: 1
+          cli_state_call: 9
+          raw_artifact_access_after_cli: 2
+          redundant_raw_artifact_access: 2
+      degraded_runtime_coverage:
+        - runtime: claude-code
+          reason: schema_divergent
+          candidate_count: 4836
+          record_count: 0
+          error_count: 2
+        - runtime: github-copilot
+          reason: schema_divergent
+          candidate_count: 1
+          record_count: 0
+          error_count: 1
+      gap_prioritization:
+        selected_gap: broad_startup_state_envelope
+        ranked_cli_state_anchors:
+          - plan: 5
+          - query: 5
+          - decisions: 4
+          - docs: 3
+          - progress: 3
+          - todo: 3
+          - health: 2
+        ranked_post_cli_raw_artifacts:
+          - PLAN.md: 6
+          - DOCS.md: 4
+          - PROGRESS.md: 1
+        ranked_redundant_raw_artifacts:
+          - PLAN.md: 6
+          - DOCS.md: 2
+        affected_capabilities:
+          - optimera
+          - orkestrera
+          - planera
+          - inspektera
+        owning_existing_state_output: agentera hej composite startup result plus existing routine state outputs
+        expected_state_family:
+          - plan task details, dependencies, acceptance criteria, and evidence summaries
+          - docs artifact mapping and source-contract completeness metadata
+          - latest progress verification metadata needed for Orkestrera evaluation
+        slash_route_alias_cli_commands_added: false
+        disposition: >-
+          Product CLI work is now justified because the rerun benchmark observed five state-gathering sequences, raw-after-CLI and redundant-raw sequence rates of 1.0, and a `plan_cli_startup_envelope` recommendation.
+      downstream_product_tasks:
+        unblocked_tasks: [3, 4, 5, 6]
+        unblocked_reason: >-
+          Representative post-CLI raw-artifact evidence now identifies PLAN.md and DOCS.md as repeated redundant reads across multiple capabilities.
+  - number: 3
+    name: Startup completeness contract
+    depends_on: [2]
+    status: complete
+    acceptance:
+      - GIVEN an agent requests startup state WHEN the CLI responds THEN the response states whether it is complete for capability startup and whether raw artifact reads are required.
+      - GIVEN startup state is incomplete WHEN the response is reviewed THEN missing state, confidence caveats, and CLI fallback are explicit.
+      - GIVEN maintainers review the contract WHEN command vocabulary is checked THEN routine state command names stay stable and slash-route aliases remain outside the CLI command surface.
+    evidence:
+      contract_surface: agentera hej source_contract.capability_startup
+      complete_for_capability_startup: false
+      raw_artifact_reads_required: false
+      missing_state:
+        - plan task dependencies, acceptance criteria, and evidence details
+        - docs artifact mapping and source-contract completeness metadata
+        - latest progress verification metadata needed for Orkestrera evaluation
+      cli_fallback:
+        - agentera plan --format json
+        - agentera docs --format json
+        - agentera progress --format json
+      confidence_caveats:
+        - representative benchmark evidence exists, but claude-code and github-copilot coverage is degraded by schema divergence
+        - Task 3 defines the completeness contract only; Task 4 owns expanded state coverage
+      command_vocabulary:
+        routine_state_commands_preserved: true
+        slash_route_alias_cli_commands_added: false
+      task_file_scope:
+        included:
+          - scripts/agentera
+          - tests/test_query_cli.py
+          - tests/test_decision45_cli_contract.py
+          - references/cli/agent-ready-state-contract.yaml
+          - .agentera/plan.yaml
+          - .agentera/progress.yaml
+        excluded_pre_existing_unrelated:
+          - docs/benchmark.md
+      verification:
+        - uv run pytest tests/test_query_cli.py::TestRoutineStructuredOutput tests/test_query_cli.py::TestHej::test_returning_v2_composite_briefing tests/test_decision45_cli_contract.py
+  - number: 4
+    name: Routine and composite state coverage
+    depends_on: [2, 3]
+    status: complete
+    acceptance:
+      - GIVEN a prioritized redundant raw read exists WHEN the owning CLI state output is used THEN the needed state is available without a raw artifact read.
+      - GIVEN no active state exists WHEN the startup result is requested THEN the response explains absence explicitly instead of forcing artifact discovery.
+      - GIVEN stale app or v1 migration conditions exist WHEN startup state is requested THEN repair or migration guidance is carried by the CLI result.
+    evidence:
+      state_coverage_added:
+        - agentera hej now includes plan, docs, progress, and state_presence in the composite startup result.
+        - agentera hej source_contract.capability_startup now reports complete_for_capability_startup=true, raw_artifact_reads_required=false, and missing_state=[].
+        - agentera docs --format json summary now carries artifact mapping entries and startup source-contract completeness metadata.
+        - agentera progress --format json already carries latest cycle verified metadata; hej now surfaces latest_verification in progress.
+        - Fresh hej structured output reports absent plan/docs/progress state explicitly through absence_reason and state_presence absence metadata.
+        - Existing bundle/app_home repair data and v1_migration dry-run/apply commands remain in hej structured output.
+      command_vocabulary:
+        routine_state_commands_preserved: true
+        slash_route_alias_cli_commands_added: false
+      verification:
+        - uv run pytest tests/test_query_cli.py::TestHej tests/test_query_cli.py::TestRoutineStructuredOutput tests/test_decision45_cli_contract.py
+        - python3 YAML parse check for .agentera/plan.yaml, .agentera/progress.yaml, and references/cli/agent-ready-state-contract.yaml
+  - number: 5
+    name: Capability context and fallback guidance
+    depends_on: [3, 4]
+    status: complete
+    acceptance:
+      - GIVEN a capability declares state needs WHEN context is requested for that capability THEN the CLI result contains the relevant state families or names the missing families.
+      - GIVEN CLI state declares itself complete WHEN Agentera guidance is followed THEN agents do not perform defensive raw artifact reads for normal startup.
+      - GIVEN CLI state is unavailable or incomplete WHEN Agentera guidance is followed THEN agents try the CLI-provided fallback before raw file access.
+    evidence:
+      capability_context_behavior:
+        - >-
+          `agentera hej --format json --capability-context <capability>` now returns
+          `source_contract.capability_context` with declared state needs from the
+          capability artifact schema, included startup state families, missing state
+          families, CLI fallback commands for missing routine state, and raw-file
+          fallback policy.
+        - >-
+          `uv run scripts/agentera hej --format json --capability-context orkestrera
+          --fields source_contract` returned Orkestrera declared needs `plan`,
+          `progress`, `health`, `todo`, `decisions`, `vision`, `profile`, and
+          `docs`; included startup families `plan`, `progress`, `health`, `todo`,
+          and `docs`; missing families `decisions`, `vision`, and `profile`; and
+          CLI fallback `agentera decisions --format json`.
+      guidance_behavior:
+        - >-
+          `skills/agentera/SKILL.md` now states that complete CLI startup coverage
+          means no defensive raw artifact reads for normal startup.
+        - >-
+          If CLI state is unavailable or incomplete, the guidance tells agents to
+          try CLI-provided fallback commands before raw file access.
+        - >-
+          Capability-specific startup context is requested through the existing
+          `agentera hej` state seam, preserving routine state command names and
+          Decision 43 slash-route separation.
+      verification:
+        - uv run pytest tests/test_query_cli.py::TestHej tests/test_query_cli.py::TestRoutineStructuredOutput tests/test_decision45_cli_contract.py tests/test_cross_capability.py
+        - uv run scripts/agentera hej --format json --capability-context orkestrera --fields source_contract
+  - number: 6
+    name: Representative validation and benchmark comparison
+    depends_on: [4, 5]
+    status: complete
+    acceptance:
+      - GIVEN changed startup behavior is validated WHEN checks run THEN structured CLI output, capability startup behavior, privacy boundaries, and fallback behavior are covered with a proportionality target of one passing and one failing expectation per testable behavior.
+      - GIVEN representative startup sessions are replayed WHEN the benchmark is rerun THEN raw-after-CLI and redundant-raw sequence rates decrease or blockers are documented.
+      - GIVEN benchmark comparison is reviewed WHEN evidence is summarized THEN degraded or missing runtimes are named separately from product behavior.
+    evidence:
+      validation:
+        focused_tests: 18 passed
+        coverage: >-
+          Structured CLI output, hej startup completeness, capability-context
+          missing-state fallback behavior, fresh absent-state behavior, startup
+          privacy redaction, and bounded degradation paths were validated with
+          positive and negative expectations where feasible.
+        context_probe: >-
+          `agentera hej --format json --capability-context orkestrera --fields
+          source_contract` returned complete startup state,
+          `raw_artifact_reads_required=false`, missing families `decisions`,
+          `vision`, and `profile`, and fallback `agentera decisions --format
+          json` before raw artifact access.
+      benchmark_comparison:
+        before:
+          benchmark_watermark_at: '2026-05-14T05:14:25+00:00'
+          total_state_sequences: 5
+          raw_after_cli_sequence_rate: 1.0
+          redundant_raw_sequence_rate: 1.0
+          total_raw_artifact_access_after_cli: 11
+          total_redundant_raw_artifact_accesses: 8
+        after:
+          benchmark_watermark_at: '2026-05-14T06:08:15+00:00'
+          total_state_sequences: 9
+          raw_after_cli_sequence_rate: 0.2222
+          redundant_raw_sequence_rate: 0.2222
+          total_raw_artifact_access_after_cli: 2
+          total_redundant_raw_artifact_accesses: 2
+        result: >-
+          Raw-after-CLI and redundant-raw sequence rates decreased from 1.0 to
+          0.2222; raw-after-CLI accesses decreased from 11 to 2; redundant raw
+          accesses decreased from 8 to 2.
+      runtime_caveats: >-
+        Product behavior improved in the benchmarked opencode-derived records.
+        Runtime coverage remains separate: `claude-code` and `github-copilot`
+        are degraded by schema divergence; `codex` and `opencode` reported ok.
+    verification:
+      - uv run pytest tests/test_query_cli.py::TestHej::test_returning_v2_composite_briefing tests/test_query_cli.py::TestHej::test_hej_capability_context_names_included_and_missing_state_families tests/test_query_cli.py::TestHej::test_fresh_hej_structured_output_explains_absent_state tests/test_query_cli.py::TestRoutineStructuredOutput::test_json_output_has_agent_ready_envelope tests/test_decision45_cli_contract.py::test_startup_completeness_contract_preserves_cli_vocabulary tests/test_cross_capability.py::test_master_skill_requires_cli_first_state_access tests/test_cross_capability.py::test_master_skill_documents_route_alias_contract_boundary tests/test_startup_analysis_contract.py::test_privacy_redaction_removes_transcripts_paths_and_session_ids tests/test_startup_analysis_contract.py::test_classifier_uses_bare_capability_invocation_and_counts_raw_after_cli tests/test_startup_analysis_contract.py::test_classifier_degrades_bounded_records_and_ignores_raw_before_cli -q
+      - uv run scripts/agentera hej --format json --capability-context orkestrera --fields source_contract
+      - mage bench:startupState
+  - number: 7
+    name: State sync and version gate
+    depends_on: [1, 2, 3, 4, 5, 6]
+    status: complete
+    acceptance:
+      - GIVEN the plan reaches closeout WHEN state is synchronized THEN TODO, progress, docs, and changelog record the evidence and any remaining blockers.
+      - GIVEN a release target is selected WHEN version policy is applied THEN version-bearing files follow the documented semver policy.
+      - GIVEN no release target is selected WHEN closeout runs THEN version-bearing files remain unchanged and the no-release boundary is recorded.
+    evidence:
+      state_synchronized:
+        todo: >-
+          The broad CLI startup state envelope follow-up was revised to the remaining
+          `PLAN.md` redundant raw startup-read caveat. It records the Task 6 metric
+          improvement and keeps the remaining benchmark recommendation open.
+        progress: >-
+          Cycle 452 records Task 7 acceptance evidence, verification commands, the
+          remaining benchmark caveats, and the no-release/no-version-bump boundary.
+        docs: >-
+          `.agentera/docs.yaml` audit metadata records the closeout evidence,
+          remaining `PLAN.md` blocker, runtime caveats, and version gate outcome.
+        changelog: >-
+          `CHANGELOG.md` records the startup completeness/source contract behavior,
+          benchmark comparison, remaining caveats, and no release-publication claim
+          under Unreleased.
+      benchmark_closeout:
+        baseline_raw_after_cli_sequence_rate: 1.0
+        baseline_redundant_raw_sequence_rate: 1.0
+        rerun_raw_after_cli_sequence_rate: 0.2222
+        rerun_redundant_raw_sequence_rate: 0.2222
+        raw_accesses_before: 11
+        raw_accesses_after: 2
+        redundant_raw_accesses_before: 8
+        redundant_raw_accesses_after: 2
+        remaining_redundant_raw_access: PLAN.md across 2 sequences
+        remaining_recommendation: plan_cli_startup_envelope
+        runtime_caveats:
+          - claude-code degraded by schema_divergent
+          - github-copilot degraded by schema_divergent
+          - codex ok
+          - opencode ok
+      version_gate:
+        release_target_selected: false
+        policy_source: .agentera/docs.yaml conventions.semver_policy
+        version_bearing_files_unchanged: true
+        boundary: >-
+          No release target was selected, so no package, lockfile, plugin,
+          registry, OpenCode marker, skill frontmatter, tag, publication, push, or
+          installed app refresh was performed.
+      verification:
+        - python3 YAML parse check for .agentera/plan.yaml, .agentera/progress.yaml, and .agentera/docs.yaml
+        - uv run scripts/agentera plan
+        - uv run scripts/agentera progress
+        - uv run scripts/agentera docs
+        - hooks/validate_artifact.py validation for TODO.md, CHANGELOG.md, and .agentera/docs.yaml
+        - git diff --check -- TODO.md CHANGELOG.md .agentera/plan.yaml .agentera/progress.yaml .agentera/docs.yaml
+        - git diff --name-only -- pyproject.toml uv.lock plugin.json .github/plugin/plugin.json .codex-plugin/plugin.json .claude-plugin/marketplace.json .opencode/plugins/agentera.js registry.json
+overall_acceptance:
+  - GIVEN representative startup sessions exist WHEN an Agentera capability starts THEN required startup state can be obtained from CLI output without routine post-CLI raw artifact reads.
+  - GIVEN benchmark history is reviewed WHEN CLI completeness improves THEN raw-after-CLI and redundant-raw rates trend down with degraded runtime evidence reported separately.
+  - GIVEN this plan completes WHEN scope is audited THEN no runtime-history CI benchmark, slash-alias CLI command, release publication, installed app refresh, vision edit, or objective edit occurred.
+surprises: []

@@ -73,6 +73,26 @@ STARTUP_REPORT_JSON = "startup-overhead-report.json"
 BENCHMARK_HISTORY_JSONL = "runs.jsonl"
 BENCHMARK_LATEST_REPORT_JSON = "latest-report.json"
 BENCHMARK_LATEST_REPORT_MARKDOWN = "latest-report.md"
+TOKEN_ESTIMATOR_VERSION = "approx_bytes_div_4_v1"
+TOKEN_SAVED_NULL_REASONS = frozenset(
+    {
+        "previous_row_missing",
+        "previous_missing_token_estimates",
+        "estimator_version_mismatch",
+        "runtime_scope_mismatch",
+        "benchmark_mode_mismatch",
+        "contract_version_mismatch",
+    }
+)
+TOKEN_AGGREGATE_FIELDS = frozenset(
+    {
+        "token_estimator_version",
+        "estimated_raw_after_cli_tokens",
+        "estimated_redundant_raw_tokens",
+        "estimated_raw_after_cli_tokens_by_artifact",
+        "estimated_redundant_raw_tokens_by_artifact",
+    }
+)
 BOUNDED_RUNTIME_STATUSES = frozenset({"ok", "available", "missing", "sparse", "degraded", "skipped"})
 BOUNDED_RUNTIME_REASONS = frozenset(
     {
@@ -393,6 +413,10 @@ def _arguments_text(record: dict[str, Any]) -> str:
         return str(_tool_arguments(record))
 
 
+def _estimated_tool_argument_tokens(record: dict[str, Any]) -> int:
+    return math.ceil(len(_arguments_text(record).encode("utf-8")) / 4)
+
+
 def _state_cli_command(command: str) -> str | None:
     if not command:
         return None
@@ -421,7 +445,7 @@ def classify_startup_event(record: dict[str, Any]) -> tuple[str, str | None, str
 
     if not isinstance(record, dict) or record.get("source_kind") != "tool_call":
         return "non_state_context", None, None, set()
-    tool = _tool_name(record)
+    tool = _tool_name(record).lower()
     command = _tool_argument(record, "command")
     if tool == "bash":
         state_command = _state_cli_command(command)
@@ -483,6 +507,8 @@ def _new_sequence(conversation_key: str, capability: str | None, salt: str) -> d
         "cli_artifact_labels": [],
         "raw_artifact_labels_after_cli": [],
         "redundant_raw_artifact_labels": [],
+        "estimated_raw_after_cli_tokens_by_artifact": {},
+        "estimated_redundant_raw_tokens_by_artifact": {},
         "degradation_reasons": [],
     }
 
@@ -598,8 +624,13 @@ def classify_startup_records(
             )
             if event_class == "raw_artifact_access" and artifact_label:
                 active["raw_artifact_labels_after_cli"].append(artifact_label)
+                estimated_tokens = _estimated_tool_argument_tokens(record)
+                raw_estimates = active["estimated_raw_after_cli_tokens_by_artifact"]
+                raw_estimates[artifact_label] = raw_estimates.get(artifact_label, 0) + estimated_tokens
                 if redundant:
                     active["redundant_raw_artifact_labels"].append(artifact_label)
+                    redundant_estimates = active["estimated_redundant_raw_tokens_by_artifact"]
+                    redundant_estimates[artifact_label] = redundant_estimates.get(artifact_label, 0) + estimated_tokens
             if event_class == "implementation_boundary":
                 close_active()
                 segment_open = False
@@ -697,6 +728,14 @@ def _artifact_label_counts(sequences: list[dict[str, Any]]) -> dict[str, int]:
 
 def _counter_dict(counter: Counter[str]) -> dict[str, int]:
     return dict(sorted(counter.items()))
+
+
+def _merge_token_estimates(counter: Counter[str], value: object) -> None:
+    if not isinstance(value, dict):
+        return
+    for label, estimate in value.items():
+        if isinstance(label, str) and isinstance(estimate, int):
+            counter[label] += estimate
 
 
 def _sequence_count(sequence: dict[str, Any], event_class: str) -> int:
@@ -859,6 +898,8 @@ def aggregate_startup_metrics(intermediate: dict[str, Any]) -> dict[str, Any]:
     cli_command_counts: Counter[str] = Counter()
     raw_after_cli_counts: Counter[str] = Counter()
     redundant_raw_counts: Counter[str] = Counter()
+    raw_after_cli_token_estimates: Counter[str] = Counter()
+    redundant_raw_token_estimates: Counter[str] = Counter()
     prose_counts: Counter[str] = Counter()
     implementation_counts: Counter[str] = Counter()
     degradation_counts: Counter[str] = Counter()
@@ -902,6 +943,14 @@ def aggregate_startup_metrics(intermediate: dict[str, Any]) -> dict[str, Any]:
         implementation_counts[capability] += impl_count
         raw_after_cli_per_sequence.append(raw_count)
         redundant_raw_per_sequence.append(redundant_count)
+        _merge_token_estimates(
+            raw_after_cli_token_estimates,
+            sequence.get("estimated_raw_after_cli_tokens_by_artifact"),
+        )
+        _merge_token_estimates(
+            redundant_raw_token_estimates,
+            sequence.get("estimated_redundant_raw_tokens_by_artifact"),
+        )
 
         for event in sequence.get("events", []):
             if not isinstance(event, dict):
@@ -981,6 +1030,13 @@ def aggregate_startup_metrics(intermediate: dict[str, Any]) -> dict[str, Any]:
         "cli_state_command_counts": _counter_dict(cli_command_counts),
         "raw_artifact_access_after_cli_counts": _counter_dict(raw_after_cli_counts),
         "redundant_raw_artifact_access_counts": _counter_dict(redundant_raw_counts),
+        "token_estimator_version": TOKEN_ESTIMATOR_VERSION,
+        "estimated_raw_after_cli_tokens": sum(raw_after_cli_token_estimates.values()),
+        "estimated_redundant_raw_tokens": sum(redundant_raw_token_estimates.values()),
+        "estimated_raw_after_cli_tokens_by_artifact": _counter_dict(raw_after_cli_token_estimates),
+        "estimated_redundant_raw_tokens_by_artifact": _counter_dict(redundant_raw_token_estimates),
+        "estimated_tokens_saved_vs_previous": None,
+        "estimated_tokens_saved_vs_previous_null_reason": "previous_row_missing",
         "capability_prose_read_counts": _counter_dict(prose_counts),
         "implementation_boundary_counts": _counter_dict(implementation_counts),
         "degradation_reason_counts": _counter_dict(degradation_counts),
@@ -1071,6 +1127,16 @@ def render_startup_report(metrics: dict[str, Any]) -> str:
             f"- CLI state command counts: `{json.dumps(metrics.get('cli_state_command_counts') or {}, sort_keys=True)}`",
             f"- Raw artifact access after CLI counts: `{json.dumps(metrics.get('raw_artifact_access_after_cli_counts') or {}, sort_keys=True)}`",
             f"- Redundant raw artifact access counts: `{json.dumps(metrics.get('redundant_raw_artifact_access_counts') or {}, sort_keys=True)}`",
+            "",
+            "## Estimated Token Impact",
+            "",
+            f"- Token estimator version: `{metrics.get('token_estimator_version')}`",
+            f"- Estimated raw-after-CLI tokens: `{metrics.get('estimated_raw_after_cli_tokens')}`",
+            f"- Estimated redundant raw tokens: `{metrics.get('estimated_redundant_raw_tokens')}`",
+            f"- Estimated raw-after-CLI tokens by artifact: `{json.dumps(metrics.get('estimated_raw_after_cli_tokens_by_artifact') or {}, sort_keys=True)}`",
+            f"- Estimated redundant raw tokens by artifact: `{json.dumps(metrics.get('estimated_redundant_raw_tokens_by_artifact') or {}, sort_keys=True)}`",
+            f"- Estimated tokens saved vs previous: `{metrics.get('estimated_tokens_saved_vs_previous')}`",
+            f"- Estimated tokens saved null reason: `{metrics.get('estimated_tokens_saved_vs_previous_null_reason')}`",
             "",
         ]
     )
@@ -1235,6 +1301,58 @@ def previous_benchmark_watermark(benchmark_dir: Path, runtime_scope: list[str]) 
     return watermark
 
 
+def _previous_benchmark_row(benchmark_dir: Path, runtime_scope: list[str]) -> dict[str, Any] | None:
+    history_path = benchmark_dir / BENCHMARK_HISTORY_JSONL
+    try:
+        lines = history_path.read_text(encoding="utf-8").splitlines()
+    except (FileNotFoundError, OSError):
+        return None
+    previous: dict[str, Any] | None = None
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(row, dict) and _runtime_scope_matches(row, runtime_scope):
+            previous = row
+    return previous
+
+
+def _with_estimated_tokens_saved(
+    metrics: dict[str, Any],
+    *,
+    benchmark_dir: Path,
+    runtime_scope: list[str],
+) -> dict[str, Any]:
+    enriched = dict(metrics)
+    previous = _previous_benchmark_row(benchmark_dir, runtime_scope)
+    current_version = enriched.get("token_estimator_version")
+    current_redundant = enriched.get("estimated_redundant_raw_tokens")
+    reason = None
+    saved = None
+    if previous is None:
+        reason = "previous_row_missing"
+    elif not TOKEN_AGGREGATE_FIELDS <= set(previous):
+        reason = "previous_missing_token_estimates"
+    elif previous.get("contract_version") != enriched.get("contract_version"):
+        reason = "contract_version_mismatch"
+    elif previous.get("benchmark_mode") != (enriched.get("benchmark_mode") or "full_boundary_snapshot"):
+        reason = "benchmark_mode_mismatch"
+    elif not _runtime_scope_matches(previous, runtime_scope):
+        reason = "runtime_scope_mismatch"
+    elif previous.get("token_estimator_version") != current_version:
+        reason = "estimator_version_mismatch"
+    elif not isinstance(previous.get("estimated_redundant_raw_tokens"), int) or not isinstance(current_redundant, int):
+        reason = "previous_missing_token_estimates"
+    else:
+        saved = previous["estimated_redundant_raw_tokens"] - current_redundant
+    enriched["estimated_tokens_saved_vs_previous"] = saved
+    enriched["estimated_tokens_saved_vs_previous_null_reason"] = reason
+    return enriched
+
+
 def _safe_int(value: object) -> int:
     return value if isinstance(value, int) else 0
 
@@ -1270,6 +1388,13 @@ def build_benchmark_history_row(
         "cli_state_command_counts": metrics.get("cli_state_command_counts") or {},
         "raw_artifact_access_after_cli_counts": metrics.get("raw_artifact_access_after_cli_counts") or {},
         "redundant_raw_artifact_access_counts": metrics.get("redundant_raw_artifact_access_counts") or {},
+        "token_estimator_version": metrics.get("token_estimator_version"),
+        "estimated_raw_after_cli_tokens": _safe_int(metrics.get("estimated_raw_after_cli_tokens")),
+        "estimated_redundant_raw_tokens": _safe_int(metrics.get("estimated_redundant_raw_tokens")),
+        "estimated_raw_after_cli_tokens_by_artifact": metrics.get("estimated_raw_after_cli_tokens_by_artifact") or {},
+        "estimated_redundant_raw_tokens_by_artifact": metrics.get("estimated_redundant_raw_tokens_by_artifact") or {},
+        "estimated_tokens_saved_vs_previous": metrics.get("estimated_tokens_saved_vs_previous"),
+        "estimated_tokens_saved_vs_previous_null_reason": metrics.get("estimated_tokens_saved_vs_previous_null_reason"),
         "per_capability_state_counts": metrics.get("per_capability_state_counts") or {},
         "degradation_reason_counts": metrics.get("degradation_reason_counts") or {},
         "bounded_degradation_counts": {
@@ -1298,9 +1423,18 @@ def persist_startup_benchmark(
     if not benchmark_dir.is_absolute():
         raise ValueError("benchmark directory must be an absolute path")
 
+    resolved_runtime_scope = _runtime_scope(metrics, runtime_scope)
+    metrics = _with_estimated_tokens_saved(
+        metrics,
+        benchmark_dir=benchmark_dir,
+        runtime_scope=resolved_runtime_scope,
+    )
     structured_text = json.dumps(metrics, indent=2, sort_keys=True) + "\n"
     human_text = render_startup_report(metrics)
-    row_text = json.dumps(build_benchmark_history_row(metrics, runtime_scope=runtime_scope), sort_keys=True) + "\n"
+    row_text = json.dumps(
+        build_benchmark_history_row(metrics, runtime_scope=resolved_runtime_scope),
+        sort_keys=True,
+    ) + "\n"
 
     benchmark_dir.mkdir(parents=True, exist_ok=True)
     history_path = benchmark_dir / BENCHMARK_HISTORY_JSONL

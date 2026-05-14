@@ -1,0 +1,87 @@
+header:
+  level: full
+  created: 2026-05-13
+  status: complete
+  reviewed: 2026-05-13
+  critic_issues: 8 found, 8 addressed, 0 dismissed
+  revised: "[post-audit-flagged] Adversarial review tightened explicit runtime/path consent, temp intermediate handling, latest-report retention, Mage bootstrap validation, no-repo-output tests, and no-release boundaries. Agentera lint remains advisory because full plans exceed the compact PLAN.md word budget."
+  title: Add manual startup state benchmark suite
+what: >-
+  Add a manual Mage benchmark surface that runs the Decision 51 startup state-access metric against explicitly approved local runtime history, stores aggregate benchmark history in the user Agentera data home, and preserves only the latest redacted detailed report for inspection.
+why: >-
+  Decision 52 turns startup state-access overlap into an optimization target. A manual benchmark suite gives repeatable longitudinal evidence across Agentera versions without making local runtime history part of CI, git, or shipped packages.
+constraints: >-
+  Manual-only benchmark execution. Require explicit runtime and path approval before reading local history. Do not run the benchmark in normal CI. Do not commit or ship generated metrics, raw transcripts, raw corpus files, raw intermediates, raw store paths, raw session IDs, private salts, or generated salted hashes in retained aggregate history. Do not implement a startup state envelope, refresh installed apps, select a release target, bump versions, push, or publish in this plan.
+scope:
+  included:
+    - Manual Mage benchmark entrypoint for startup state-access measurement.
+    - User-local benchmark storage contract under the Agentera data home.
+    - Aggregate JSONL history and fixed latest redacted report retention.
+    - Fixture-backed tests for consent, output location, persistence, degraded stores, and Mage validation.
+    - Operator documentation and bounded state sync.
+  excluded:
+    - Startup state envelope implementation.
+    - Automatic CI benchmark runs against local runtime history.
+    - Committed benchmark outputs or shipped generated metrics.
+    - Retaining all detailed per-run reports.
+    - Additional benchmark cases beyond startup state-access overlap.
+  deferred:
+    - Additional manual benchmark targets.
+    - Trend visualization beyond aggregate history inspection.
+    - Startup state envelope implementation after benchmark and planning evidence.
+design: >-
+  Treat Mage as a manual orchestration wrapper and keep `scripts/startup_analysis_contract.py` as the source of metric truth. The benchmark must require explicit approval for the concrete runtime stores it will read; a generic consent flag is not enough if default host history paths will be used. Runtime corpus or intermediate files are temporary working files and must not be retained in the repository or benchmark history. Durable output lives under `${AGENTERA_HOME}/benchmarks/startup-state/` by default: append-only aggregate `runs.jsonl`, fixed latest structured report, and fixed latest human-readable report. Successful runs replace latest reports and append one aggregate row; failed runs do not append and do not clobber prior latest reports. Aggregate history records version, commit, dirty state, runtime scope, total records, state sequence counts, raw-after-CLI rates, redundant counts, recommendation action, and bounded degradation counts without raw paths, raw transcripts, private salts, or generated salted hashes. Fixture tests use temporary `AGENTERA_HOME` values and assert no benchmark artifacts are written under the repository. Documentation must make the manual-only, user-local retention, and privacy boundaries explicit.
+tasks:
+  - number: 1
+    name: Benchmark contract and storage boundary
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN the benchmark contract is documented WHEN an operator reviews it THEN it names the manual-only execution rule, the exact runtime/path approval requirement, and the default `${AGENTERA_HOME}/benchmarks/startup-state/` storage location.
+      - GIVEN benchmark output is specified WHEN retained history is inspected THEN aggregate `runs.jsonl` and fixed latest report files are the only durable outputs.
+      - GIVEN privacy boundaries are specified WHEN the contract is reviewed THEN raw transcripts, raw corpus files, raw intermediates, raw store paths, raw session IDs, private salts, and generated salted hashes are excluded from retained aggregate history.
+  - number: 2
+    name: Manual Mage benchmark entrypoint
+    depends_on: [1]
+    status: complete
+    acceptance:
+      - GIVEN `mage bench:startupState` is invoked without explicit runtime/path approval WHEN it starts THEN it refuses to read local history and explains the required non-interactive approval inputs.
+      - GIVEN approved runtime paths are supplied WHEN the Mage benchmark runs THEN it delegates metric extraction to the existing Python analyzer path instead of reimplementing Decision 51 metric logic.
+      - GIVEN Mage support is added WHEN validation runs THEN the benchmark target is discoverable and syntactically valid through a non-interactive Mage list or compile check.
+  - number: 3
+    name: Metrics persistence and latest-report retention
+    depends_on: [2]
+    status: complete
+    acceptance:
+      - GIVEN a benchmark run succeeds WHEN persistence completes THEN one aggregate row is appended to user-local `runs.jsonl` with version, commit, dirty state, runtime scope, counts, rates, bounded degradation counts, and recommendation action.
+      - GIVEN a benchmark run succeeds WHEN latest reports are written THEN fixed latest structured and human-readable report files are replaced only after successful report generation.
+      - GIVEN a benchmark run fails WHEN persistence is inspected THEN no aggregate row is appended and the previous latest report files remain intact.
+  - number: 4
+    name: Fixture-backed benchmark verification
+    depends_on: [2, 3]
+    status: complete
+    acceptance:
+      - GIVEN fixture runtime stores and temporary `AGENTERA_HOME` are used WHEN benchmark tests run THEN consent refusal, successful fixture measurement, degraded or missing runtime handling, and aggregate JSONL schema are verified without reading real history.
+      - GIVEN benchmark tests run from the repository root WHEN outputs are inspected THEN no `benchmarks/`, corpus, intermediate, report, or metrics file is created under the repository, and `.gitignore` is not relied on as the privacy boundary.
+      - GIVEN existing startup analyzer tests run WHEN the benchmark wrapper is added THEN Decision 51 metric behavior remains covered by the focused analyzer suite.
+  - number: 5
+    name: Operator docs and benchmark interpretation
+    depends_on: [3, 4]
+    status: complete
+    acceptance:
+      - GIVEN README or docs are read WHEN an operator wants to run the benchmark THEN they show the manual Mage command, required approval inputs, user-local storage location, and generated-output retention policy.
+      - GIVEN benchmark results are documented WHEN an operator reviews them THEN raw-after-CLI rate and redundant raw-access rate are named as the optimization target for startup state-access work.
+      - GIVEN docs mention generated metrics WHEN reviewed THEN they state metrics are user-local, uncommitted, unshipped, and not part of normal CI.
+  - number: 6
+    name: State sync and release gate
+    depends_on: [4, 5]
+    status: complete
+    acceptance:
+      - GIVEN the benchmark suite is complete WHEN state sync runs THEN TODO, progress, changelog, and docs record benchmark evidence and preserve the separate startup state-envelope follow-up.
+      - GIVEN no release target is selected WHEN state sync runs THEN version-bearing files remain unchanged and changelog wording stays unreleased-state evidence, not release preparation.
+      - GIVEN final validation runs WHEN the plan closes THEN focused tests, Mage target validation, ruff or compile checks, YAML parsing, and `git diff --check` pass or blockers are documented.
+overall_acceptance:
+  - GIVEN an operator explicitly approves concrete local runtime inputs WHEN the manual benchmark runs THEN Agentera records aggregate startup state-access metrics under the user Agentera data home without committing or shipping generated local evidence.
+  - GIVEN benchmark history accumulates across versions WHEN results are inspected THEN aggregate rows support comparison of raw-after-CLI and redundant raw-access rates over time.
+  - GIVEN this plan completes WHEN scope is reviewed THEN no startup state envelope behavior, automatic CI benchmark, release target, version bump, push, publication, installed app refresh, vision edit, or objective edit occurred.
+surprises: []

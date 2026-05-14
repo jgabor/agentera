@@ -496,6 +496,60 @@ class TestArtifactSpecificSummaries:
         assert "complete=1" in r.stdout
         assert "pending=1" in r.stdout
 
+    def test_plan_json_declares_complete_plan_artifact_contract(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {
+                "title": "No raw plan read",
+                "status": "active",
+                "created": "2026-05-14",
+                "critic_issues": "1 found, 1 addressed, 0 dismissed",
+            },
+            "what": "Expose enough plan state through the CLI.",
+            "why": "Avoid redundant PLAN.md reads after agentera plan.",
+            "constraints": "No raw artifact fallback for normal startup.",
+            "scope": {"included": ["plan summary"], "excluded": ["new CLI commands"]},
+            "design": "Use source_contract metadata on the existing plan command.",
+            "previous_plan_archived": ".agentera/archive/PLAN-old.yaml",
+            "tasks": [
+                {
+                    "number": 1,
+                    "name": "Contract",
+                    "depends_on": [],
+                    "status": "pending",
+                    "acceptance": ["GIVEN plan output WHEN read THEN raw plan is unnecessary"],
+                    "evidence": {"artifact": "PLAN.md"},
+                },
+            ],
+            "overall_acceptance": ["No redundant plan artifact read is needed."],
+            "surprises": [],
+        })
+
+        r = _run("plan", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["summary"]["constraints"] == "No raw artifact fallback for normal startup."
+        assert data["summary"]["scope"]["included"] == ["plan summary"]
+        assert data["summary"]["design"] == "Use source_contract metadata on the existing plan command."
+        assert data["summary"]["overall_acceptance"] == ["No redundant plan artifact read is needed."]
+        assert data["entries"][0]["acceptance"] == ["GIVEN plan output WHEN read THEN raw plan is unnecessary"]
+        assert data["entries"][0]["evidence"] == {"artifact": "PLAN.md"}
+        contract = data["source_contract"]
+        assert contract["artifact"] == "PLAN.md"
+        assert contract["complete_for_plan_artifact"] is True
+        assert contract["raw_artifact_reads_required"] is False
+        assert contract["missing_state"] == []
+        assert "task evidence" in contract["included_state"]
+        assert "constraints" in contract["summary_fields"]
+
+        sparse = _run("plan", "--format", "json", "--fields", "source_contract", cwd=project)
+        assert sparse.returncode == 0
+        sparse_data = json.loads(sparse.stdout)
+        assert sparse_data["command"] == "plan"
+        assert sparse_data["status"] == "ok"
+        assert sparse_data["source_contract"]["complete_for_plan_artifact"] is True
+        assert "entries" not in sparse_data
+
     def test_progress_summary_surfaces_verification_and_next(self, project):
         _write_artifact(project, ".agentera/progress.yaml", {
             "cycles": [
@@ -544,7 +598,9 @@ class TestArtifactSpecificSummaries:
     def test_docs_summary_filters_status(self, project):
         _write_artifact(project, ".agentera/docs.yaml", {
             "last_audit": "2026-05-05 (test)",
-            "mapping": [],
+            "mapping": [
+                {"artifact": "PLAN.md", "path": ".agentera/plan.yaml", "producers": ["planera"]},
+            ],
             "index": [
                 {
                     "document": "README",
@@ -565,6 +621,15 @@ class TestArtifactSpecificSummaries:
         assert "Docs: last_audit=2026-05-05 (test)" in r.stdout
         assert "document=Old notes" in r.stdout
         assert "README" not in r.stdout
+
+        structured = _run("docs", "--format", "json", cwd=project)
+        assert structured.returncode == 0
+        data = json.loads(structured.stdout)
+        assert data["summary"]["mapping"] == [
+            {"artifact": "PLAN.md", "path": ".agentera/plan.yaml", "producers": ["planera"]},
+        ]
+        assert data["summary"]["source_contract"]["capability_startup_complete"] is True
+        assert data["summary"]["source_contract"]["raw_artifact_reads_required"] is False
 
     def test_objective_and_experiments_use_active_objective(self, project):
         objective_dir = project / ".agentera" / "optimera" / "token-budget"
@@ -732,8 +797,19 @@ class TestHej:
         _write_artifact(project, ".agentera/plan.yaml", {
             "header": {"title": "CLI shape", "status": "active"},
             "tasks": [
-                {"number": 1, "name": "Parser", "status": "complete"},
-                {"number": 2, "name": "Composite hej", "status": "pending"},
+                {"number": 1, "name": "Parser", "status": "complete", "acceptance": ["parsed"]},
+                {"number": 2, "name": "Composite hej", "status": "pending", "depends_on": [1], "acceptance": ["briefed"], "evidence": {"gap": "startup"}},
+            ],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "last_audit": "2026-05-05 (test)",
+            "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
+            "coverage": {"stale": "none"},
+            "index": [],
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [
+                {"number": 3, "timestamp": "2026-05-05", "type": "test", "phase": "build", "verified": "pytest passed"},
             ],
         })
         _write_artifact(project, ".agentera/health.yaml", {
@@ -769,11 +845,77 @@ class TestHej:
         assert "capability=orkestrera" in r.stdout
         assert "app_home: status=fresh" in r.stdout
         assert "source_contract:" in r.stdout
-        assert "fields=app_home,mode,profile,v1_migration,health,issues,plan,objective,attention,next_action" in r.stdout
+        assert "fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action" in r.stdout
         assert "render=caller-owned README-style hej dashboard" in r.stdout
         assert "access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls" in r.stdout
+        assert "capability_startup_complete=true" in r.stdout
+        assert "raw_artifact_reads_required=false" in r.stdout
+        assert "missing_state=none" in r.stdout
+        assert "confidence_caveats=representative benchmark evidence exists" in r.stdout
+        assert "cli_fallback=agentera plan --format json; agentera docs --format json; agentera progress --format json" in r.stdout
         assert "┌─┐┌─┐┌─┐" not in r.stdout
         assert "render=hej dashboard | status=complete" not in r.stdout
+
+        structured = _run("hej", "--format", "json", cwd=project)
+        assert structured.returncode == 0
+        data = json.loads(structured.stdout)
+        assert data["source_contract"]["capability_startup"]["complete_for_capability_startup"] is True
+        assert data["source_contract"]["capability_startup"]["missing_state"] == []
+        assert data["plan"]["tasks"][1]["depends_on"] == [1]
+        assert data["plan"]["tasks"][1]["acceptance"] == ["briefed"]
+        assert data["plan"]["tasks"][1]["evidence"] == {"gap": "startup"}
+        assert data["docs"]["mapping"] == [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}]
+        assert data["docs"]["source_contract"]["capability_startup_complete"] is True
+        assert data["progress"]["latest_verification"] == "pytest passed"
+
+    def test_hej_capability_context_names_included_and_missing_state_families(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Capability context", "status": "active"},
+            "tasks": [{"number": 1, "name": "Build", "status": "pending"}],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 1, "timestamp": "2026-05-14", "verified": "seeded"}],
+        })
+
+        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        context = data["source_contract"]["capability_context"]
+        assert context["capability"] == "orkestrera"
+        assert context["declared_state_needs"] == [
+            "plan",
+            "progress",
+            "health",
+            "todo",
+            "decisions",
+            "vision",
+            "profile",
+            "docs",
+        ]
+        assert {"plan", "progress", "health", "todo", "docs"}.issubset(context["included_state_families"])
+        assert context["missing_state_families"] == ["decisions", "vision", "profile"]
+        assert context["cli_fallback"] == ["agentera decisions --format json"]
+        assert "before raw file access" in context["raw_artifact_read_policy"]
+
+    def test_fresh_hej_structured_output_explains_absent_state(self, project):
+        r = _run("hej", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["mode"] == "fresh"
+        assert data["plan"]["status"] == "absent"
+        assert data["docs"]["status"] == "absent"
+        assert data["progress"]["status"] == "absent"
+        assert data["state_presence"]["any_active"] is False
+        assert data["state_presence"]["absence"] == {
+            "plan": "No active plan artifact is available from agentera plan.",
+            "docs": "No docs mapping artifact is available from agentera docs.",
+            "progress": "No progress cycles are available from agentera progress.",
+        }
 
     def test_completed_plan_routes_to_open_todo_before_vision(self, project):
         _write_artifact(project, ".agentera/plan.yaml", {
@@ -1261,6 +1403,17 @@ class TestRoutineStructuredOutput:
             assert data["source_contract"]["access"] == (
                 "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal hej"
             )
+            startup = data["source_contract"]["capability_startup"]
+            assert startup["complete_for_capability_startup"] is True
+            assert startup["raw_artifact_reads_required"] is False
+            assert startup["missing_state"] == []
+            assert startup["confidence_caveats"]
+            assert startup["cli_fallback"] == [
+                "agentera plan --format json",
+                "agentera docs --format json",
+                "agentera progress --format json",
+            ]
+            assert "capability_context" in data["source_contract"]
         else:
             assert isinstance(data["entries"], list)
             assert isinstance(data["counts"]["entries"], int)
@@ -1456,6 +1609,7 @@ class TestDescribeIntrospection:
             "source",
             "filters",
             "summary",
+            "source_contract",
         ]
         assert data["field_selection"]["syntax"] == "--fields FIELD[,FIELD...]"
         schemas = {entry["name"]: entry for entry in data["artifact_schemas"]}
