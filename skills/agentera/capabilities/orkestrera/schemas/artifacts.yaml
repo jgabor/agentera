@@ -4,54 +4,61 @@ ARTIFACTS:
     artifact_id: plan
     local_role: produces_and_consumes
     description: >-
-      Orkestrera reads task statuses, picks work, and updates status
-      (pending -> complete/blocked).
+      Orkestrera consumes plan task queue state through
+      `agentera hej --format json --capability-context orkestrera` before raw
+      artifact access, then updates status (pending -> complete/blocked) only
+      when resolving a task.
   2:
     id: A2
     artifact_id: progress
     local_role: consumes
     description: >-
-      Orkestrera reads recent cross-cycle entries for the
-      presence check in Step 3 evaluation.
+      Orkestrera consumes progress verification state from the returned
+      orchestration context first, then routine CLI fallback output before any
+      last-resort raw artifact read for the Step 3 presence check.
   3:
     id: A3
     artifact_id: health
     local_role: consumes
     description: >-
-      Orkestrera reads this after plan completion to decide whether to
-      start a new plan cycle.
+      Orkestrera consumes returned health state first after plan completion to
+      decide whether to start a new plan cycle; raw reads are last-resort after
+      listed CLI fallbacks.
   4:
     id: A4
     artifact_id: todo
     local_role: produces
     description: >-
-      Orkestrera writes blocked task logging when a task exhausts its retry
-      budget.
+      Orkestrera consumes TODO caveats from CLI startup context and writes
+      blocked task logging only when a task exhausts its retry budget.
   5:
     id: A5
     artifact_id: decisions
     local_role: consumes
     description: >-
-      Orkestrera reads this during task selection to identify firm constraints
-      and exploratory uncertainties that affect dispatch context.
+      Orkestrera consumes included decision context or the listed
+      `agentera decisions --format json` fallback before raw access, preserving
+      firm constraints, exploratory uncertainties, and compacted-entry caveats.
   6:
     id: A6
     artifact_id: vision
     local_role: consumes
     description: >-
-      Orkestrera reads this during bootstrap when chaining inspirera
-      for vision-gap analysis.
+      Orkestrera consumes returned vision state or missing-state caveats during
+      bootstrap when chaining inspirera for vision-gap analysis.
   7:
     id: A7
     artifact_id: profile
     local_role: consumes
     description: >-
-      Orkestrera reads this for persona context when calibrating dispatch
-      decisions. If missing, proceed without persona grounding.
+      Orkestrera consumes returned profile status and caveats first for persona
+      context. If missing or stale, it proceeds without refreshing profile
+      state and preserves the caveat.
   8:
     id: A8
     artifact_id: docs
     local_role: consumes
     description: >-
-      Orkestrera reads this first to resolve project-local artifact mappings
-      before reading or writing other artifacts.
+      Orkestrera uses docs mapping from CLI startup context first to resolve
+      project-local artifact mappings before any last-resort raw artifact read
+      or artifact write.

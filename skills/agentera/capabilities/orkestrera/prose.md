@@ -18,21 +18,54 @@ Glyph: **⎈** (protocol ref: SG12). Used in the mandatory exit marker.
 
 ## State artifacts
 
-Orkestrera produces no new artifact files. It reads and updates existing artifacts maintained by other capabilities.
+Orkestrera produces no new artifact files. It reads and updates existing artifacts maintained by other capabilities, but normal startup begins from the supported CLI state seam:
+
+```bash
+agentera hej --format json --capability-context orkestrera
+```
+
+Use the returned `orchestration_context` before raw plan, progress, health, TODO, or decisions artifacts. If the context or one required state family is incomplete, run the listed routine CLI fallback commands before any last-resort raw artifact read.
 
 | Artifact | Access | Purpose |
 |----------|--------|---------|
-| `PLAN.md` | Read + Update | Task queue. Read task statuses, pick work, update status (pending → complete/blocked) |
-| `PROGRESS.md` | Read | Cross-cycle context. Read recent entries; dispatched capabilities write their own entries |
-| `HEALTH.md` | Read | Health context. Read after plan completion to decide whether to start a new plan |
-| `TODO.md` | Update | Blocked task logging. Write when a task exhausts its retry budget |
-| `DECISIONS.md` | Read | Decision context. Firm entries are hard constraints for task dispatch |
-| `VISION.md` | Read | Direction context. Read when bootstrapping a plan via inspirera |
-| `PROFILE.md` | Read | Persona context for calibrating dispatch decisions |
+| `PLAN.md` | CLI context first; update only when resolving | Task queue. Use `orchestration_context.task_queue` and `selected_next_task`; update status (pending -> complete/blocked) only after evaluation. |
+| `PROGRESS.md` | CLI context first | Cross-cycle context. Use `orchestration_context.progress_verification`; dispatched capabilities write their own entries. |
+| `HEALTH.md` | CLI context first | Health context. Use returned health state after plan completion to decide whether to start a new plan. |
+| `TODO.md` | CLI context first; update only for blocked logging | Blocked task logging. Write when a task exhausts its retry budget. |
+| `DECISIONS.md` | CLI fallback before raw read | Decision context. Use included decision caveats or `agentera decisions --format json`; compacted decision caveats must stay visible. |
+| `VISION.md` | CLI/context caveat first | Direction context for bootstrap. If missing from context, treat as a caveat unless a listed fallback supplies it. |
+| `PROFILE.md` | Context caveat first | Persona context. Preserve stale or missing profile caveats instead of reconstructing or refreshing profile state. |
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/plan.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`.
+Before a last-resort raw artifact read or any artifact write, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/plan.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`.
+
+### Orchestration context source contract
+
+At session start, request `agentera hej --format json --capability-context orkestrera`. Do not run an unsupported capability-name command such as `agentera orkestrera`.
+
+Use these fields as the normal conductor source:
+
+- `orchestration_context.task_queue.dependency_ready_tasks`
+- `orchestration_context.task_queue.blocked_tasks`
+- `orchestration_context.selected_next_task`
+- `orchestration_context.progress_verification`
+- `orchestration_context.retry_state`
+- `orchestration_context.evaluator_handoff`
+- `orchestration_context.state_family_caveats`
+- `orchestration_context.fallback_commands`
+- `orchestration_context.source_contract`
+
+If `source_contract.complete_for_orchestration_context` is true, do not read raw plan, progress, health, TODO, or decisions artifacts for task selection or evaluator handoff. The context is authoritative for normal startup.
+
+If completeness is false or caveated:
+
+1. Preserve every caveat already returned, including compacted decisions, stale health/profile/app state, missing state families, and `retry_state.status: not_recorded` or `unavailable`.
+2. Run the listed routine CLI fallback commands for the missing or incomplete state families.
+3. Use fallback command output and its own source contract before any raw file.
+4. Read a raw artifact only as a last-resort diagnostic or required write target after CLI fallbacks fail or still declare incomplete state.
+
+Never hide or reconstruct caveats before handing work to inspektera. Pass them through as audit context.
 
 ### Contract values
 
@@ -54,18 +87,18 @@ The conductor follows a deterministic state machine. It does not reason creative
 
 ### Step 0: Assess
 
-Check for PLAN.md (respecting path resolution).
+Start from `agentera hej --format json --capability-context orkestrera`. Check `orchestration_context.source_contract`, the returned plan summary, and `state_presence` before considering raw artifacts.
 
-- **No PLAN.md**: bootstrap mode. Dispatch inspirera for vision-gap analysis, then planera for plan creation. If VISION.md is also absent, suggest ⛥ visionera first and wait for user confirmation.
-- **PLAN.md exists, `header.status: complete`, and all tasks complete**: completed-plan closure. Run the plan-completion sweep and staleness check, archive PLAN.md before removing active state, then dispatch inspektera for a health check. If clean, chain inspirera then planera for the next plan. Include lineage, staleness findings, and any health issues as context for the next plan.
-- **PLAN.md exists, but blocked or incomplete tasks remain**: do not archive it as a successful completed plan. Route to the conductor loop or replanning so incomplete evidence stays visible.
-- **PLAN.md exists, tasks pending**: proceed to the conductor loop.
+- **No plan in returned state**: bootstrap mode. Dispatch inspirera for vision-gap analysis, then planera for plan creation. If VISION.md is also absent or caveated, suggest ⛥ visionera first and wait for user confirmation.
+- **Plan exists, `header.status: complete`, and all tasks complete**: completed-plan closure. Run the plan-completion sweep and staleness check, archive PLAN.md before removing active state, then dispatch inspektera for a health check. If clean, chain inspirera then planera for the next plan. Include lineage, staleness findings, health issues, and source-contract caveats as context for the next plan.
+- **Plan exists, but blocked or incomplete tasks remain**: do not archive it as a successful completed plan. Route to the conductor loop or replanning so incomplete evidence stays visible.
+- **Plan exists, tasks pending**: proceed to the conductor loop using `orchestration_context` task selection.
 
 #### Staleness check (plan completion)
 
 When `header.status: complete` and all tasks are complete, check whether dispatched capabilities updated their expected artifacts. This runs before the inspektera health check and before active PLAN.md is removed.
 
-1. **Identify dispatched capabilities**: review which capabilities were dispatched during this plan by reading PLAN.md task history and PROGRESS.md cycle entries.
+1. **Identify dispatched capabilities**: start with plan task history and progress summary from the returned CLI context. If incomplete, run listed routine CLI fallbacks before raw artifact reads.
 2. **Look up expected artifacts**: for each dispatched capability, consult the capability-to-expected-artifact mapping in contract (staleness detection section). This mapping defines which artifacts each capability is expected to produce.
 3. **Compare modification dates**: for each expected artifact, check its last modification date (`git log -1 --format=%aI -- <path>`). Compare against the plan's `Created` date from PLAN.md's HTML comment metadata.
 4. **Flag stale artifacts**: an artifact is stale if it was not modified since the plan's creation date and the capability expected to update it was dispatched at least once during the plan. Skip artifacts owned by capabilities that were never dispatched (those are legitimately untouched).
@@ -80,17 +113,17 @@ Narration voice (riff, don't script):
 
 ---
 
-Step markers: display `── task N · step M/5: verb` before each step in the conductor loop. N is the task number from PLAN.md.
+Step markers: display `── task N · step M/5: verb` before each step in the conductor loop. N is the task number from the selected orchestration context task.
 
 Steps: select, dispatch, evaluate, resolve, log.
 
 ### Step 1: Select task
 
-Read PLAN.md. Find tasks with `□ pending` (VT3) status whose dependencies (`**Depends on**` field) are all `■ complete` (VT1). Pick the first eligible task.
+Use `orchestration_context.selected_next_task` when present. Otherwise, use `orchestration_context.task_queue.dependency_ready_tasks`: pick the first task whose dependencies are complete. Treat `orchestration_context.task_queue.blocked_tasks[*].blocked_reasons` as the dependency explanation.
 
 If no tasks are eligible (all remaining tasks are blocked by incomplete dependencies), report `stuck` with the dependency chain.
 
-Read DECISIONS.md if it exists. Note any `exploratory` (DL3) entries that relate to the selected task's domain. If found, include the uncertainty in the dispatch context.
+Use decision state or caveats from the returned context first. If decisions are missing or incomplete, run the listed fallback command such as `agentera decisions --format json` before any raw DECISIONS.md read. Note firm constraints and any `exploratory` (DL3) entries that relate to the selected task's domain. Preserve compacted-entry caveats and include uncertainty in the dispatch context instead of filling gaps by reconstruction.
 
 ### Step 2: Dispatch
 
@@ -114,14 +147,15 @@ Spawn the target capability as a background subagent. Substrate per runtime is r
 You are executing a planned task for [project].
 
 ## Task
-[Task title and description from PLAN.md]
+[Task title and description from selected_next_task]
 
 ## Acceptance criteria
-[The task's Given/When/Then criteria from PLAN.md]
+[The task's Given/When/Then criteria from selected_next_task or evaluator_handoff]
 
 ## Context
-[Any relevant context: related DECISIONS.md entries, HEALTH.md findings,
-prior task results. Keep brief.]
+[Any relevant context from orchestration_context: related decision entries or caveats,
+HEALTH/TODO findings, prior task results, stale app/profile caveats, retry-state
+provenance. Keep brief.]
 
 ## Constraints
 - Execute ONLY this task. No scope creep.
@@ -140,18 +174,19 @@ Narration voice (riff, don't script):
 
 ### Step 3: Evaluate
 
-Evaluation has two surfaces in sequence: a conductor-side presence check that reads the latest PROGRESS.md cycle entry, then an inspektera dispatch whose prompt is extended with an evidence-format audit. Both surfaces must run before the task can be resolved.
+Evaluation has two surfaces in sequence: a conductor-side presence check using latest progress verification, then an inspektera dispatch whose prompt is extended with an evidence-format audit. Both surfaces must run before the task can be resolved.
 
-**Surface 1: Presence check on PROGRESS.md**
+**Surface 1: Presence check from progress verification**
 
-When the dispatched capability was realisera (or any capability that produces PROGRESS.md cycle entries), perform a cheap artifact read before dispatching inspektera:
+When the dispatched capability was realisera (or any capability that produces progress cycle entries), perform a cheap evidence presence check before dispatching inspektera:
 
-1. Read the latest entry in PROGRESS.md (respecting DOCS.md path resolution).
-2. Look for the `verified` field in that entry.
-3. **Present and non-empty**: proceed to Surface 2 (the inspektera dispatch).
-4. **Missing or empty**: treat the task as a failed evaluation. Go straight into Step 4's FAIL branch (retry path) with "missing or empty `verified` field in PROGRESS.md Cycle N" as the failure reason in the retry dispatch prompt. Do not dispatch inspektera for this surface; the presence check is itself the evaluation signal.
+1. Start with `orchestration_context.progress_verification` and its `latest_progress_verification_pointer`.
+2. If that state is unavailable or incomplete, run the listed progress fallback command, commonly `agentera progress --format json`, before any raw PROGRESS.md read.
+3. Look for a non-empty `verified` field in the latest relevant progress entry.
+4. **Present and non-empty**: proceed to Surface 2 (the inspektera dispatch).
+5. **Missing or empty**: treat the task as a failed evaluation. Go straight into Step 4's FAIL branch (retry path) with "missing or empty `verified` field in PROGRESS.md Cycle N" as the failure reason in the retry dispatch prompt. Do not dispatch inspektera for this surface; the presence check is itself the evaluation signal.
 
-This is an artifact read, not a source code read. Reading `.agentera/progress.yaml` is consistent with the conductor's existing artifact-read patterns (plan.yaml, health.yaml, decisions.yaml). The "NEVER read implementation source code" safety rail is unaffected: progress.yaml is a cycle log, not source.
+This is state access, not source code review. Raw `.agentera/progress.yaml` is still a cycle log rather than implementation source, but it is last-resort after CLI context and fallback commands.
 
 **Surface 2: Inspektera dispatch with evidence audit**
 
@@ -161,10 +196,10 @@ Once the presence check passes, spawn inspektera as a subagent to verify the wor
 You are evaluating a completed task for [project].
 
 ## Task that was completed
-[Task title and description]
+[Task title and description from evaluator_handoff]
 
 ## Acceptance criteria to verify
-[The task's Given/When/Then criteria from PLAN.md]
+[The task's Given/When/Then criteria from evaluator_handoff]
 
 ## What to check
 - Verify each acceptance criterion against the current codebase state.
@@ -172,12 +207,16 @@ You are evaluating a completed task for [project].
 - Verify the project's test/build suite still passes.
 
 ## Verification evidence audit
-- Read the `verified` field value from the latest PROGRESS.md cycle entry for this task.
+- Use the latest progress verification pointer and `verified` evidence supplied by the orchestration context or progress CLI fallback.
 - Compare the recorded evidence to the task's acceptance criteria above.
 - Report whether the evidence substantiates the criteria or is merely trivially populated (e.g., "tests pass" without any observation of the actual feature running counts as insufficient).
 - If the field is `N/A: <tag>`, confirm the tag is drawn from the allowlist (`docs-only`, `refactor-no-behavior-change`, `chore-dep-bump`, `chore-build-config`, `test-only`) AND that the tag actually fits the nature of the work.
 - If the field is a free-form N/A rationale, confirm it is at least 8 words long AND actually explains why the change has no observable behavior.
 - Flag the task as FAIL on the evidence audit if the recorded `verified` content does not substantiate the acceptance criteria.
+
+## Source-contract caveats to preserve
+- Include compacted decision caveats, stale health/profile/app caveats, missing state-family caveats, and retry-state provenance exactly as supplied.
+- Do not treat missing retry attempts as an attempt count. If status is `not_recorded` or `unavailable`, keep that status in the evaluation report.
 
 ## Output format
 For each acceptance criterion, report:
@@ -227,6 +266,8 @@ Narration voice (riff, don't script):
 
 Artifact writing follows contract artifact writing conventions: banned verbosity patterns, 25-word sentence cap, preferred vocabulary, and lead-with-conclusion structure.
 
+When writing PLAN.md or TODO.md, use the task identity and caveats from `orchestration_context`. Apply artifact path resolution for the write target. Do not refresh installed app/profile state, edit VISION.md, or invent retry attempt counts while resolving.
+
 ### Step 5: Log and loop
 
 Check the plan state:
@@ -245,14 +286,14 @@ The conductor's context window must stay lean. Every expensive operation happens
 
 | The conductor does | The conductor does NOT do |
 |-------------------|--------------------------|
-| Read artifact files (PLAN.md, HEALTH.md, PROGRESS.md, etc.) | Read implementation source code |
+| Read CLI orchestration context and last-resort artifact files | Read implementation source code |
 | Dispatch capabilities as subagents | Implement features or fixes |
 | Receive task-notification summaries | Run tests, linters, or builds |
 | Update PLAN.md task statuses | Write to PROGRESS.md or CHANGELOG.md |
 | Log blocked tasks to TODO.md | Research external patterns or libraries |
 | Infer capability routing from task descriptions | Make design or architecture decisions |
 
-If the conductor finds itself reading source code, running commands, or making implementation decisions, something has gone wrong. Delegate to the appropriate capability.
+If the conductor finds itself reading source code, running implementation commands, or making implementation decisions, something has gone wrong. Delegate to the appropriate capability. Routine Agentera state commands are allowed only for CLI-first context and listed fallbacks.
 
 ---
 
@@ -260,8 +301,8 @@ If the conductor finds itself reading source code, running commands, or making i
 
 <critical>
 
-- NEVER read implementation source code. The conductor dispatches; it does not implement. Note: artifact files (PLAN.md, HEALTH.md, DECISIONS.md, PROGRESS.md, etc.) are not source code; they are cycle logs and state records. Reading artifacts is expected and required, including the PROGRESS.md presence check in Step 3. The rail specifically forbids reading implementation files (the code under `.go`, `.py`, `.ts`, etc.).
-- NEVER run tests, builds, linters, or any project commands directly. Dispatched capabilities handle all verification.
+- NEVER read implementation source code. The conductor dispatches; it does not implement. Note: artifact files (PLAN.md, HEALTH.md, DECISIONS.md, PROGRESS.md, etc.) are not source code; they are cycle logs and state records. Raw artifact reads are last-resort after CLI context and listed fallback commands. The rail specifically forbids reading implementation files (the code under `.go`, `.py`, `.ts`, etc.).
+- NEVER run tests, builds, linters, or implementation project commands directly. Dispatched capabilities handle all verification. Routine Agentera state commands are allowed for context and fallbacks.
 - NEVER modify VISION.md. The conductor reads direction; it does not set it.
 - NEVER dispatch a capability without an active PLAN.md task justifying it (except during bootstrap in Step 0).
 - NEVER push to any remote. Local operations only.
@@ -341,15 +382,15 @@ When no plan exists or the current plan is complete, orkestrera invokes planera 
 
 ### Orkestrera reads ❈ resonera output
 
-DECISIONS.md provides firm constraints that orkestrera reads during task selection. If a task relates to an exploratory decision, orkestrera notes the uncertainty in the dispatch context.
+Decision state provides firm constraints during task selection. Use the orchestration context first, then `agentera decisions --format json` if listed as a fallback. If a task relates to an exploratory decision, orkestrera notes the uncertainty in the dispatch context and preserves compacted-decision caveats.
 
 ### Orkestrera reads ⛥ visionera output
 
-VISION.md provides direction context used during bootstrap when chaining inspirera for gap analysis.
+VISION.md provides direction context used during bootstrap when chaining inspirera for gap analysis. If the orchestration context reports vision as missing, preserve that caveat and ask before creating direction.
 
 ### Orkestrera reads ♾ profilera output
 
-The decision profile provides persona context for calibrating dispatch decisions. Read `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) directly per contract profile consumption conventions. If missing, proceed without persona grounding.
+The decision profile provides persona context for calibrating dispatch decisions. Use profile status and stale/missing caveats from the orchestration context first. Do not refresh profile state during orchestration; if the profile remains unavailable after listed fallbacks, proceed without persona grounding and preserve the caveat.
 
 ---
 

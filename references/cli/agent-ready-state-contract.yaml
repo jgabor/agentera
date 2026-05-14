@@ -172,6 +172,7 @@ structured_output:
         - state_presence
         - attention
         - next_action
+        - orchestration_context
         - source
         - source_contract
       source_contract:
@@ -199,6 +200,12 @@ structured_output:
             capability routing separate from CLI command vocabulary while returning
             declared state needs, included startup state families, missing families,
             and CLI fallback commands for missing routine state.
+          orchestration_context_semantics: >-
+            `agentera hej --format json --capability-context orkestrera` may include
+            orchestration_context with dependency-ready tasks, blocked task reasons,
+            selected next task, task acceptance/evidence summaries, caveats, fallback
+            commands, and a source contract. It must not introduce `agentera
+            orkestrera` or other capability-name CLI commands.
           current_status: complete
           current_missing_state: []
       empty_state: >-
@@ -286,6 +293,7 @@ field_selection:
         - state_presence
         - attention
         - next_action
+        - orchestration_context
         - source
         - source_contract
   retained_context:

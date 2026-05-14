@@ -1,157 +1,232 @@
 header:
   level: full
   created: 2026-05-14
-  status: active
+  status: complete
   reviewed: 2026-05-14
-  critic_issues: 7 found, 7 addressed, 0 dismissed
+  critic_issues: 9 found, 9 addressed, 0 dismissed
   revised: >-
-    Adversarial review tightened the decision-context contract by making
-    downstream consequences non-inferential, defining top-level and per-decision
-    JSON completeness fields, adding the 2.3.6 archive transition, replacing
-    vague archive wording with compacted-decision wording, requiring version
-    policy reconciliation before metadata edits, and narrowing schema/prose
-    changes to the decision artifact and Resonera guidance.
-  title: 2.3.7 Decision Context Source Contract
+    Adversarial review tightened the orchestration context plan by defining the
+    required completeness predicate, making retry state provenance explicit,
+    adding installed-app staleness as a validation caveat instead of a repair
+    action, binding the 2.3.7 archive transition to acceptance criteria,
+    clarifying the selected 2.3.8 patch-train version target, softening field
+    shape details into observable outcomes, and making unsupported capability CLI
+    commands testably forbidden.
+  title: 2.3.8 Orchestration Context Source Contract
 what: >-
-  Add a decision-context source contract to the `agentera decisions --format json`
-  surface so Resonera and downstream capabilities can deliberate from CLI state
-  instead of reading `.agentera/decisions.yaml` or falling back to git history.
-  The contract makes full-detail decision context explicit, reports compacted
-  historical decision limitations honestly, and exposes structured fields for
-  decision outcome, reasoning, alternatives, confidence, feeds-into, and
-  downstream consequence references where the data exists.
+  Add an Orkestrera orchestration-context source contract to the supported
+  `agentera hej --format json --capability-context orkestrera` startup seam. The
+  context should combine dependency-ready plan tasks, blocked task reasons,
+  latest progress verification, health/TODO/decision caveats, retry state when
+  recorded, and evaluator handoff requirements so task selection and Inspektera
+  handoff can proceed from CLI state during normal startup and evaluation.
 why: >-
   Decision 51 showed that capability startup and state gathering still over-read
-  raw artifacts after CLI state access. Decisions are especially sensitive:
-  compaction can turn older decisions into summaries, and agents currently
-  compensate by reading raw YAML or considering git history. A source contract
-  makes the CLI the first trusted state seam, including completeness and caveats,
-  so agents know when the CLI output is sufficient and when compacted historical
-  data is inherently incomplete.
+  raw artifacts after CLI state access, and Orkestrera is the highest-friction
+  example because it coordinates plan, progress, health, TODO, decision, retry,
+  and evaluator state. The 2.3.7 decision-context source contract proved the
+  right pattern: carry completeness and caveats through the CLI state seam rather
+  than forcing agents to read raw YAML after already asking the CLI for state.
 constraints: >-
-  Preserve Decision 45 structured CLI boundaries and Decision 44 plain vocabulary.
-  Keep `agentera decisions` a routine state command, not a slash-route alias or
-  direct capability invocation. Preserve docs.yaml artifact path resolution and
-  compaction gate behavior. Derive downstream consequence references only from
-  existing structured references such as `feeds_into`, TODO identifiers, plan or
-  progress references, or explicit artifact mentions; otherwise emit null or
-  missing with a caveat. Do not fabricate missing historical reasoning or
-  alternatives from compacted decisions, do not require git-history fallback, and
-  do not require raw `.agentera/decisions.yaml` reads for normal deliberation.
-  Limit schema/prose changes to the decision artifact, decision compaction, CLI
-  decision output, and Resonera guidance. Do not implement the separate
-  Orkestrera, Dokumentera, Inspektera, Optimera, or Realisera source-contract
-  TODOs. Do not tag, push, publish, refresh installed apps, edit vision, or edit
+  Preserve Decision 45 structured CLI boundaries and Decision 44 plain
+  vocabulary. Do not add `agentera orkestrera` or any capability-name CLI command;
+  Orkestrera startup context belongs on `agentera hej --format json
+  --capability-context orkestrera` plus routine fallback commands. Preserve the
+  existing `agentera plan --format json` source contract and docs.yaml artifact
+  path resolution. Do not fabricate progress verification, retry attempts,
+  decision consequences, health state, or evaluator evidence. Retry state must be
+  `known`, `not_recorded`, or `unavailable` with source provenance before any
+  attempt count is exposed. Installed app staleness is a caveat for this local
+  checkout plan, not approval to run upgrade or repair. Do not implement the
+  separate Dokumentera, Inspektera, Optimera, or Realisera source-contract TODOs.
+  The selected target for this source-contract patch train is 2.3.8 despite the
+  `[feat:2.3.8]` TODO label; Task 6 must record that resolution before metadata
+  edits. Do not tag, push, publish, refresh installed apps, edit vision, or edit
   objective state without explicit approval.
 scope:
   included:
-    - Source-contract metadata for `agentera decisions --format json` and existing filtered decisions output.
-    - "Structured decision context fields for full-detail decisions: outcome or choice, reasoning, alternatives, confidence, feeds-into, and non-inferential downstream consequence references."
-    - Honest compacted-decision completeness reporting so older compacted entries do not trigger raw artifact or git-history fallback expectations.
-    - Minimal decision schema, compaction, Resonera guidance, and test updates needed for future decision compaction to preserve the context promised by the CLI.
-    - Focused startup-state evidence showing Resonera-style deliberation can use CLI decision context without defensive raw artifact reads.
-    - TODO, docs, changelog, progress, and 2.3.7 version metadata sync.
+    - Orkestrera capability-context output on `agentera hej --format json --capability-context orkestrera`.
+    - Source-contract metadata that declares included state families, completeness, caveats, fallback commands, and raw-read policy.
+    - Dependency-ready task queue, blocked task reasons, selected next task, and task acceptance/evidence summaries from existing plan state.
+    - Latest progress verification summary, evaluator handoff requirements, and retry state only where a recorded source exists.
+    - Health, TODO, and decision caveats needed for safe Orkestrera task selection and Inspektera handoff.
+    - Orkestrera prose/schema guidance, focused startup-state validation, and 2.3.8 TODO/docs/changelog/progress/version metadata sync.
   excluded:
-    - A full dependency graph of every downstream artifact affected by every decision.
-    - Broad source-contract work for Orkestrera, Dokumentera, Inspektera, Optimera, or Realisera.
-    - Reconstructing historical compacted decision details from git history.
+    - Unsupported `agentera orkestrera` or capability-name CLI commands.
+    - Broad Orkestrera runtime rewrite or implementation subagent behavior changes beyond startup/evaluation context.
+    - Source contracts for Dokumentera, Inspektera, Optimera, or Realisera.
+    - Git-history reconstruction or raw artifact fallback as normal behavior.
     - Publication, tag, push, installed app refresh, vision edit, or objective-state edit.
   deferred:
-    - Deeper decision outcome lifecycle tracking across TODO, progress, and plan state unless needed to expose the current CLI contract honestly.
-    - Cross-artifact impact graph or provenance indexing beyond existing `feeds_into` and explicit artifact references.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-14-2-3-6-artifact-compaction-enforcement-patch.yaml
+    - Separate 2.3.9+ source-contract TODOs.
+    - Rich retry persistence if current artifacts do not record retry attempts.
+    - Cross-capability orchestration dashboards beyond the Orkestrera startup envelope.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-14-2-3-7-decision-context-source-contract.yaml
 design: >-
-  Treat decision context as a CLI-owned state envelope. The command emits one
-  top-level `source_contract` for the result set and per-decision completeness
-  fields such as `context_complete`, `missing_fields`, `compacted`, and `caveats`.
-  Full-detail decision entries are projected into stable JSON with explicit
-  included fields and raw-read policy. Compacted decision entries, and any
-  existing decision archive entries if discovered, remain available as bounded
-  summaries with `context_complete=false` and explicit missing fields rather than
-  pretending raw reads or git history can restore data. If the existing decision
-  archive or compaction contract cannot preserve required future context, update
-  it minimally and test both current historical limitations and future compaction
-  behavior.
+  Expose a composite Orkestrera startup context through the existing hej
+  capability-context seam. The contract is complete only when task queue,
+  dependency readiness, blocked reasons, selected task, latest progress summary or
+  caveat, health/TODO/decision caveats, evaluator handoff inputs, fallback
+  commands, retry-state provenance, and raw-read policy are each present or
+  explicitly marked unavailable with a reason. Field names should follow existing
+  Agentera JSON conventions; exact nesting may be adjusted during implementation
+  as long as the observable completeness and caveat contract is preserved.
 tasks:
   - number: 1
-    name: Decision context inventory and archive boundary
+    name: Orchestration context inventory and archive boundary
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN decisions, schemas, CLI output, and Resonera usage are inspected WHEN the inventory completes THEN implementation evidence records which required decision-context fields are already available, which are missing, and which are incomplete for compacted decision entries.
-      - GIVEN 2.3.6 is complete but was still active WHEN 2.3.7 becomes active THEN the completed 2.3.6 plan is archived with complete status and the new active plan references that archive path.
-      - GIVEN compacted decision entries or existing archive entries are present WHEN the boundary is recorded THEN full-detail completeness is distinguished from compacted historical limitations without recommending raw artifact or git-history fallback.
+      - GIVEN current hej, plan, progress, health, TODO, decisions output, and Orkestrera guidance are inspected WHEN inventory completes THEN implementation evidence records available fields, missing fields, and the minimum completeness predicate for orchestration context.
+      - "GIVEN 2.3.7 is complete but still active WHEN 2.3.8 becomes active THEN `.agentera/archive/PLAN-2026-05-14-2-3-7-decision-context-source-contract.yaml` contains the completed 2.3.7 plan with `header.status: complete`, and the active 2.3.8 plan references that archive path."
+      - GIVEN installed app status is stale or update-needed WHEN planning and validation proceed THEN the stale app is recorded as a caveat and no upgrade, repair, or installed app refresh is run.
     evidence:
-      - cycle: 477
+      - cycle: 483
         note: >-
-          Task 1 inventory inspected `uv run scripts/agentera decisions --format json`,
-          `uv run scripts/agentera decisions --topic source-contract --format json`,
-          `.agentera/decisions.yaml`, `skills/agentera/schemas/artifacts/decisions.yaml`,
-          `hooks/compaction.py`, and Resonera guidance. Full-detail active decisions
-          already retain and the current CLI already emits `number`, `date`, `question`,
-          `context`, `alternatives`, `choice`, `reasoning`, `confidence`, and
-          `feeds_into` for the 10 retained full entries. Missing from the current
-          decision-context source contract are top-level `source_contract`, per-decision
-          `context_complete` or equivalent completeness flags, `missing_fields`,
-          `compacted`, caveats, an explicit raw-read policy, an `outcome` alias separate
-          from `choice`, and non-inferential downstream consequence references beyond
-          the raw `feeds_into` text. Compacted historical decision entries are present
-          as 40 archive entries; schema DR1 and the current compaction formatter preserve
-          only decision number, date, and chosen choice/summary, with existing archive
-          entries mixed between structured `{summary: ...}` maps and legacy strings.
-          Therefore compacted entries are inherently incomplete for question, context,
-          alternatives, full reasoning, confidence, structured feeds-into, and downstream
-          consequence references, and the boundary is to report those limitations as
-          missing/caveated data rather than recommending raw `.agentera/decisions.yaml`
-          reads or git-history fallback. `uv run scripts/agentera gate --format json`
-          and `uv run scripts/agentera compact --mode check --format json` both passed
-          before evidence edits with DECISIONS.md active_count=10, archive_count=40,
-          total_count=50, over_limit_count=0. Archive reconciliation confirmed 2.3.6
-          is archived at `.agentera/archive/PLAN-2026-05-14-2-3-6-artifact-compaction-enforcement-patch.yaml`
-          with `header.status: complete`, and this active 2.3.7 plan already references
-          that path via `previous_plan_archived`.
+          Task 1 inventory inspected `uv run /home/jgabor/.local/share/agentera/app/scripts/agentera hej --format json --capability-context orkestrera`,
+          `uv run scripts/agentera plan --format json`, `uv run scripts/agentera progress --format json`,
+          `uv run scripts/agentera health --format json`, `uv run scripts/agentera todo --format json`,
+          `uv run scripts/agentera decisions --format json`, `uv run scripts/agentera docs --format json`,
+          Orkestrera prose, Orkestrera artifact/validation schemas, the active plan artifact, and the archived 2.3.7 plan artifact. Current hej startup exposes app_home,
+          mode, profile, v1_migration, health, issues, plan, docs, progress, objective,
+          state_presence, attention, next_action, source, and source_contract. The Orkestrera
+          capability context declares state needs for plan, progress, health, todo,
+          decisions, vision, profile, and docs; included state families are plan,
+          progress, health, todo, and docs; missing state families are decisions, vision,
+          and profile; CLI fallback is `agentera decisions --format json`; raw artifact
+          policy says to use included state families first, then CLI fallbacks, with raw
+          files only as last resort. Plan output is complete for the plan artifact and
+          includes header, constraints, scope, design, tasks, dependencies, acceptance,
+          overall acceptance, and `previous_plan_archived`. Progress output exposes the
+          latest verification field and recent cycles but not retry-state records for
+          the selected orchestration task. Health output exposes Audit 11 grade B,
+          issue counts, trajectory, dimensions, and findings. TODO output exposes ten
+          open entries, including the active `[feat:2.3.8]` orchestration-context item
+          and deferred 2.3.9+ source-contract items. Decisions output exposes 50 entries,
+          10 full-detail and 40 compacted, with source_contract caveats, missing_fields
+          for compacted entries, and `raw_artifact_reads_required: false`; it is not
+          complete full decision context because compacted entries remain incomplete.
+          Docs output exposes artifact mapping, including PLAN.md -> `.agentera/plan.yaml`,
+          PROGRESS.md -> `.agentera/progress.yaml`, HEALTH.md -> `.agentera/health.yaml`,
+          DECISIONS.md -> `.agentera/decisions.yaml`, TODO.md -> `TODO.md`, DOCS.md ->
+          `.agentera/docs.yaml`, VISION.md -> `.agentera/vision.yaml`, and PROFILE.md ->
+          the profilera data-home path. Orkestrera guidance currently still instructs the
+          conductor to read raw artifacts for PLAN.md, PROGRESS.md, DECISIONS.md, HEALTH.md,
+          TODO.md, VISION.md, and PROFILE.md during normal selection/evaluation; Task 4 owns
+          changing that guidance. The minimum completeness predicate for the future
+          orchestration context is: report complete only when the context contains a task
+          queue, dependency readiness or blocked reasons, selected next task, task
+          acceptance/evidence summaries, latest progress verification summary or explicit
+          caveat, health/TODO/decision caveats, evaluator handoff inputs, retry_state with
+          status `known`, `not_recorded`, or `unavailable` plus source provenance, fallback
+          commands for missing/incomplete state families, installed-app/profile caveats,
+          and raw-read policy; otherwise completeness must be false or caveated. Archive
+          validation confirmed `.agentera/archive/PLAN-2026-05-14-2-3-7-decision-context-source-contract.yaml`
+          exists, contains `header.status: complete`, contains all six 2.3.7 tasks marked
+          complete, and the active 2.3.8 plan references that exact archive path via
+          `previous_plan_archived`. The installed app caveat is recorded from hej as
+          status `stale`, markerVersion `2.3.4`, expectedVersion `2.3.5`, source
+          `AGENTERA_HOME`, and no upgrade, repair, or installed app refresh command was run.
   - number: 2
-    name: Decisions CLI source-contract output
+    name: Orchestration context output contract
     depends_on: [1]
     status: complete
     acceptance:
-      - GIVEN `agentera decisions --format json` runs WHEN full-detail decisions are returned THEN each decision exposes outcome or choice, reasoning, alternatives, confidence, feeds-into, and downstream consequence references through stable structured fields.
-      - GIVEN the decisions command emits source metadata WHEN agents consume it THEN top-level `source_contract` declares completeness, included fields, raw-read policy, caveats, and fallback behavior truthfully.
-      - GIVEN existing topic or filtered decisions output is used WHEN the output is formatted as JSON THEN the same source-contract and per-decision completeness guarantees apply to the filtered result.
+      - GIVEN `agentera hej --format json --capability-context orkestrera` runs WHEN plan state is available THEN the output includes dependency-ready tasks, blocked tasks with reasons, selected next task, task acceptance/evidence summaries, and a truthful `source_contract` for orchestration context.
+      - GIVEN one required state family is unavailable or incomplete WHEN orchestration context is built THEN completeness is false or caveated, fallback commands are listed, and raw artifact reads remain last-resort rather than normal startup behavior.
+      - GIVEN command guidance and tests are scanned WHEN this task completes THEN no new `agentera orkestrera` or other unsupported capability-name CLI command is introduced.
   - number: 3
-    name: Compacted decision completeness and future preservation
-    depends_on: [1, 2]
+    name: Progress verification and evaluator handoff contract
+    depends_on: [2]
     status: complete
     acceptance:
-      - GIVEN compacted historical decision entries are included WHEN JSON is rendered THEN unavailable fields are explicitly marked missing rather than causing agents to read raw YAML or git history.
-      - GIVEN future decision compaction runs WHEN a full decision moves to compact form THEN the retained summary preserves the contract-required outcome information allowed by the decision schema.
-      - GIVEN compacted decision behavior changes WHEN validation runs THEN decision schema, decision compaction, and CLI tests agree on the retained fields and no unrelated artifact families are changed.
+      - GIVEN latest progress evidence exists WHEN orchestration context is returned THEN it includes a verification summary, non-empty verified detection, relevant cycle metadata, and caveats without inventing missing evidence.
+      - GIVEN retry or evaluation state is needed WHEN the data is not recorded in CLI/artifact state THEN `retry_state.status` is `not_recorded` or `unavailable` with source provenance rather than a synthetic attempt count.
+      - GIVEN Inspektera handoff is prepared WHEN a task is selected THEN the context includes the task acceptance criteria, evidence requirements, latest progress verification pointer, and evaluation caveats needed for audit without raw plan/progress reads.
   - number: 4
-    name: Resonera startup and deliberation integration
+    name: Orkestrera guidance integration
     depends_on: [2, 3]
     status: complete
     acceptance:
-      - GIVEN Resonera needs decision context WHEN capability startup state is requested THEN CLI fallback and source-contract guidance point to `agentera decisions --format json` as sufficient for normal deliberation.
-      - GIVEN a deliberation references previous decisions WHEN the available decision context is complete THEN capability guidance avoids defensive raw `.agentera/decisions.yaml` reads.
-      - GIVEN compacted historical context is incomplete WHEN Resonera guidance encounters it THEN the limitation is surfaced as a decision caveat instead of a raw-read or git-history instruction.
+      - GIVEN Orkestrera starts from a complete orchestration context WHEN selecting and evaluating a task THEN capability prose directs the conductor to use the returned context before raw plan, progress, health, TODO, or decisions artifacts.
+      - GIVEN orchestration context is incomplete WHEN guidance continues THEN it instructs agents to run listed routine CLI fallbacks before any last-resort raw artifact read.
+      - GIVEN compacted decision caveats, stale health/profile/app caveats, or missing retry state are present WHEN Orkestrera hands off to Inspektera THEN those caveats are preserved rather than hidden or reconstructed.
+    evidence:
+      - cycle: 486
+        note: >-
+          Task 4 updated Orkestrera prose and schemas so normal startup uses
+          `agentera hej --format json --capability-context orkestrera` and the
+          returned `orchestration_context` before raw plan, progress, health,
+          TODO, or decisions artifacts. The guidance now treats complete source
+          contracts as authoritative for normal task selection and evaluation,
+          requires listed routine CLI fallbacks before last-resort raw reads
+          when context is incomplete, and preserves compacted decision caveats,
+          stale health/profile/app caveats, missing state families, and
+          `retry_state.status: not_recorded` or `unavailable` for Inspektera
+          handoff. Orkestrera artifact and validation schemas now encode the
+          context-first and fallback-before-raw-read contract. Focused validation
+          passed with Orkestrera capability validation, schema self-validation,
+          40 hej/Decision45 tests, live Orkestrera context, gate, compaction
+          check, and diff whitespace check. Inspektera evaluation returned PASS
+          with no blocking findings and noted only that new validation rules are
+          string-presence checks rather than behavioral fixture tests.
   - number: 5
-    name: Focused regression and startup-state validation
+    name: Focused startup-state and orchestration validation
     depends_on: [2, 3, 4]
     status: complete
     acceptance:
-      - GIVEN focused CLI tests run WHEN decisions are full-detail, filtered, or compacted THEN pass and fail paths cover source-contract completeness, missing-field caveats, and path-resolution behavior.
-      - GIVEN startup state-access tests run WHEN Resonera-style decision context is available through the CLI THEN no new raw-after-CLI artifact read requirement is introduced.
-      - GIVEN repository gates run WHEN the implementation is complete THEN compaction and artifact validation gates remain passing.
+      - GIVEN focused tests run WHEN orchestration context is complete, missing state, dependency-blocked, or compacted-decision-caveated THEN pass and fail paths cover task selection, fallback commands, retry provenance, evaluator handoff fields, and raw-read policy.
+      - GIVEN startup-analysis fixtures run WHEN a complete Orkestrera context is available through CLI state THEN normal startup/evaluation guidance introduces no raw-after-CLI artifact read requirement for plan, progress, health, TODO, decisions, or docs.
+      - GIVEN repository gates and validators run WHEN validation completes THEN compaction check, artifact validation, capability validation, and diff checks pass without installed app refresh.
+    evidence:
+      - cycle: 487
+        note: >-
+          Task 5 added focused regression coverage for the Orkestrera startup
+          and evaluation source contract. `tests/test_query_cli.py` now covers a
+          complete Orkestrera context fixture with no caveats or fallback
+          commands, the existing ready/blocked selected-task path, compacted
+          decision fallback caveats, missing progress caveats, retry provenance
+          without `attempt_count`, evaluator handoff fields, and raw-read policy.
+          `tests/test_orkestrera_capability.py` now guards the Orkestrera prose
+          against reverting to raw PLAN/DECISIONS/PROGRESS/PROFILE reads and
+          checks the V6-V8 context-first validation rules. Startup-analysis tests
+          ran alongside the Orkestrera/Decision45 slices to verify the raw-after-
+          CLI classifier remains clean for normal guidance. Validation passed
+          with 89 focused tests, Orkestrera capability validation, schema
+          self-validation, live Orkestrera context, PLAN/PROGRESS artifact
+          validators, gate, compaction check, and diff whitespace check.
+          Inspektera evaluation returned PASS with no blocking findings. The
+          live installed app still reported update-needed marker 2.3.4 expected
+          2.3.7 and stale profile state; no installed app or profile refresh was
+          run.
   - number: 6
-    name: 2.3.7 state and release metadata sync
+    name: 2.3.8 state and release metadata sync
     depends_on: [1, 2, 3, 4, 5]
     status: complete
     acceptance:
-      - GIVEN decision-context validation passes WHEN closeout runs THEN TODO, progress, docs, and changelog record the completed 2.3.7 source-contract patch and the remaining deferred source-contract train.
-      - GIVEN version-bearing files are inspected WHEN metadata is synchronized THEN the target version follows the existing docs.yaml semver policy and release train; any mismatch with the 2.3.7 TODO label is resolved explicitly before edits.
-      - GIVEN release metadata sync completes WHEN scope is audited THEN no publication, tag, remote push, installed app refresh, vision edit, or objective-state edit occurred without explicit approval.
+      - GIVEN orchestration-context validation passes WHEN closeout runs THEN TODO, progress, docs, and changelog record the completed 2.3.8 source-contract patch and the remaining deferred source-contract train.
+      - GIVEN version-bearing files are inspected WHEN metadata is synchronized THEN the selected 2.3.8 patch-train target is recorded explicitly despite the `[feat:2.3.8]` label, and future unselected feature targets remain governed by docs.yaml semver policy.
+      - GIVEN release metadata sync completes WHEN scope is audited THEN no publication, tag, remote push, installed app refresh, vision edit, objective-state edit, or unsupported capability CLI command occurred without explicit approval.
+    evidence:
+      - cycle: 488
+        note: >-
+          Task 6 synchronized the local 2.3.8 release metadata for the completed
+          Orkestrera orchestration-context source-contract patch. TODO now resolves
+          the `[feat:2.3.8]` item while keeping 2.3.9+ source-contract work open;
+          progress, docs, and changelog record the completed patch, deferred train,
+          selected 2.3.8 patch-train target, semver-policy caveat, and local-only
+          no-release/no-refresh boundary. Version-bearing surfaces now target 2.3.8
+          across package, plugin, registry, lockfile, OpenCode marker, and skill
+          frontmatter files. Validation passed with 15 release metadata tests, 89
+          focused source-contract tests, Orkestrera capability validation, schema
+          self-validation, TODO/DOCS/CHANGELOG/PLAN/PROGRESS artifact validators,
+          live Orkestrera context, gate, compaction check, and diff whitespace check.
+          Safe compaction ran for TODO resolved and PROGRESS after metadata additions.
+          Inspektera evaluation returned PASS with no blocking findings. No
+          publication, tag, remote push, installed app refresh, vision edit,
+          objective-state edit, or unsupported capability CLI command occurred.
 overall_acceptance:
-  - GIVEN `agentera decisions --format json` is used during deliberation WHEN full-detail decisions are available THEN agents receive outcome, reasoning, alternatives, confidence, feeds-into, downstream consequence references, and a source contract without raw artifact reads.
-  - GIVEN compacted historical decision entries are encountered WHEN their full context is no longer retained THEN the CLI reports honest completeness caveats and does not imply raw YAML or git history must be read.
-  - GIVEN 2.3.7 closes WHEN validation and state sync finish THEN deferred 2.3.8+ source-contract TODOs remain visible and no prohibited release or protected-state action occurred.
+  - GIVEN `agentera hej --format json --capability-context orkestrera` is used for startup WHEN plan and progress state are available THEN Orkestrera receives selected task, dependency readiness, latest verification, state caveats, and evaluator handoff requirements without normal raw artifact reads.
+  - GIVEN required orchestration context state is missing or caveated WHEN Orkestrera proceeds THEN the source contract names missing state, fallback commands, and last-resort raw-read policy honestly.
+  - GIVEN 2.3.8 closes WHEN validation and state sync finish THEN deferred 2.3.9+ source-contract TODOs remain visible and no prohibited release, installed-app, unsupported CLI, or protected-state action occurred.
 surprises: []

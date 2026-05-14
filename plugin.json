@@ -1,6 +1,6 @@
 {
   "name": "agentera",
-  "version": "2.3.7",
+  "version": "2.3.8",
   "description": "agentera: exact bare hej routing, entry-point routing, vision, deliberation, planning, autonomous development, optimization, auditing, documentation, visual identity, research, decision-profile mining, and orchestration. A complete user message exactly `hej` belongs to the bundled agentera skill and its agentera hej dashboard path, not the legacy hej bridge. profilera uses bounded Copilot corpus metadata when present; missing source families degrade in local metadata and do not imply live host behavior. Requires AGENTERA_HOME from runtime config or invocation environment as the app home so SKILL.md helper-script invocations resolve through $AGENTERA_HOME/app; see README install instructions.",
   "skills": "skills",
   "hooks": ".github/hooks",

@@ -763,6 +763,7 @@ HEJ_STRUCTURED_FIELDS = [
     "state_presence",
     "attention",
     "next_action",
+    "orchestration_context",
     "source",
     "source_contract",
 ]
@@ -795,6 +796,7 @@ STARTUP_COMPLETENESS_AVAILABLE_STATE = [
     "state_presence",
     "attention",
     "next_action",
+    "orchestration_context",
 ]
 
 STARTUP_COMPLETENESS_MISSING_STATE: list[str] = []
@@ -1203,6 +1205,238 @@ def _capability_context(capability: str | None) -> dict[str, Any] | None:
             "If needed families are missing or CLI state is incomplete, run the CLI fallback commands before raw file access."
         ),
         "schema_error": error,
+    }
+
+
+def _task_ref(task: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "number": task.get("number"),
+        "name": _first_present(task, ["name", "title"], ""),
+        "status": _entry_status(task, "pending"),
+    }
+
+
+def _orchestration_task_summary(task: dict[str, Any]) -> dict[str, Any]:
+    evidence = task.get("evidence")
+    evidence_items = evidence if isinstance(evidence, list) else ([] if evidence in (None, "") else [evidence])
+    return {
+        **_task_ref(task),
+        "depends_on": _as_list(task.get("depends_on")),
+        "acceptance_summary": {
+            "count": len(_as_list(task.get("acceptance"))),
+            "items": _as_list(task.get("acceptance")),
+        },
+        "evidence_summary": {
+            "count": len(evidence_items),
+            "items": evidence_items,
+        },
+    }
+
+
+def _has_recorded_value(value: Any) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, dict)):
+        return bool(value)
+    return True
+
+
+def _progress_verification_summary(progress: dict[str, Any]) -> dict[str, Any]:
+    source = {
+        "source_family": "progress",
+        "command": "agentera progress --format json",
+    }
+    if not progress.get("exists"):
+        return {
+            "status": "unavailable",
+            "source_provenance": source,
+            "cycle": None,
+            "verified_present": False,
+            "verified": None,
+            "verification_summary": None,
+            "latest_progress_verification_pointer": None,
+            "caveats": ["No progress cycles are recorded in CLI progress state."],
+        }
+
+    latest = progress.get("latest") if isinstance(progress.get("latest"), dict) else {}
+    verified = latest.get("verified")
+    verified_present = _has_recorded_value(verified)
+    cycle = {
+        key: latest.get(key)
+        for key in ("number", "timestamp", "type", "phase")
+        if latest.get(key) not in (None, "")
+    }
+    pointer = {
+        **source,
+        "cycle_number": latest.get("number"),
+        "field": "verified",
+    }
+    caveats = [] if verified_present else ["Latest progress cycle has no non-empty verified evidence."]
+    return {
+        "status": "available",
+        "source_provenance": source,
+        "cycle": cycle,
+        "verified_present": verified_present,
+        "verified": verified if verified_present else None,
+        "verification_summary": verified if verified_present else None,
+        "latest_progress_verification_pointer": pointer,
+        "caveats": caveats,
+    }
+
+
+def _retry_state() -> dict[str, Any]:
+    return {
+        "status": "not_recorded",
+        "source_provenance": {
+            "source_family": "progress",
+            "command": "agentera progress --format json",
+            "reason": "Current CLI/artifact state records progress cycles but no retry attempt state for orchestration tasks.",
+        },
+        "caveats": ["Retry attempt state is not recorded; no attempt count is exposed."],
+    }
+
+
+def _evaluator_handoff(
+    selected: dict[str, Any] | None,
+    progress_verification: dict[str, Any],
+    retry_state: dict[str, Any],
+    state_caveats: list[str],
+) -> dict[str, Any]:
+    caveats = [*state_caveats, *progress_verification.get("caveats", []), *retry_state.get("caveats", [])]
+    if selected is None:
+        caveats.append("No dependency-ready task is selected for evaluator handoff.")
+        return {
+            "status": "unavailable",
+            "task": None,
+            "acceptance_criteria": [],
+            "evidence_requirements": [],
+            "latest_progress_verification_pointer": progress_verification.get("latest_progress_verification_pointer"),
+            "evaluation_caveats": caveats,
+        }
+
+    evidence_requirements = selected.get("evidence_summary", {}).get("items", [])
+    if not evidence_requirements:
+        caveats.append("Selected task has no explicit evidence requirements recorded in plan state.")
+    return {
+        "status": "ready",
+        "task": _task_ref(selected),
+        "acceptance_criteria": selected.get("acceptance_summary", {}).get("items", []),
+        "evidence_requirements": evidence_requirements,
+        "latest_progress_verification_pointer": progress_verification.get("latest_progress_verification_pointer"),
+        "evaluation_caveats": caveats,
+    }
+
+
+def _orchestration_context(
+    capability: str | None,
+    plan: dict[str, Any],
+    progress: dict[str, Any],
+    health: dict[str, Any],
+    todo_items: list[dict[str, str]],
+    docs: dict[str, Any],
+    profile: dict[str, Any],
+    next_action: dict[str, str],
+) -> dict[str, Any] | None:
+    if capability != "orkestrera":
+        return None
+
+    tasks = [task for task in _as_list(plan.get("tasks")) if isinstance(task, dict)]
+    task_by_number = {task.get("number"): task for task in tasks if task.get("number") is not None}
+    dependency_ready: list[dict[str, Any]] = []
+    blocked: list[dict[str, Any]] = []
+
+    for task in tasks:
+        status = _entry_status(task, "pending")
+        if status in DONE_STATUSES:
+            continue
+        reasons: list[str] = []
+        if status in BLOCKED_STATUSES:
+            reasons.append(f"task status is {status}")
+        for dep in _as_list(task.get("depends_on")):
+            dependency = task_by_number.get(dep)
+            if dependency is None:
+                reasons.append(f"dependency {dep} is not present in plan tasks")
+            elif _entry_status(dependency, "pending") not in DONE_STATUSES:
+                reasons.append(f"dependency {dep} is {_entry_status(dependency, 'pending')}")
+        if reasons:
+            blocked.append({**_orchestration_task_summary(task), "blocked_reasons": reasons})
+        else:
+            dependency_ready.append(_orchestration_task_summary(task))
+
+    selected = dependency_ready[0] if dependency_ready else None
+    state_caveats: list[str] = []
+    fallback_commands: list[str] = []
+    capability_contract = _capability_context(capability) or {}
+    for family in capability_contract.get("missing_state_families", []):
+        state_caveats.append(f"{family} state is not included in hej startup context.")
+    fallback_commands.extend(capability_contract.get("cli_fallback", []))
+
+    if not plan.get("exists"):
+        state_caveats.append("plan state is unavailable; task queue cannot be complete.")
+        fallback_commands.append("agentera plan --format json")
+    if not progress.get("exists"):
+        state_caveats.append("progress state is unavailable; latest verification is not summarized here.")
+        fallback_commands.append("agentera progress --format json")
+    if not health.get("exists"):
+        state_caveats.append("health state is unavailable or incomplete.")
+        fallback_commands.append("agentera health --format json")
+    if not docs.get("exists"):
+        state_caveats.append("docs mapping state is unavailable or incomplete.")
+        fallback_commands.append("agentera docs --format json")
+    if not todo_items:
+        state_caveats.append("todo state has no open entries in hej context; absence may mean none open or unavailable.")
+        fallback_commands.append("agentera todo --format json")
+    if profile.get("status") != "loaded":
+        state_caveats.append("profile-derived state is unavailable in hej context.")
+    elif profile.get("stale") is True:
+        state_caveats.append("profile-derived state is stale; this is a caveat, not approval to refresh installed apps or profile state.")
+
+    fallback_commands = list(dict.fromkeys(fallback_commands))
+    progress_verification = _progress_verification_summary(progress)
+    retry_state = _retry_state()
+    evaluator_handoff = _evaluator_handoff(selected, progress_verification, retry_state, state_caveats)
+    complete = bool(plan.get("exists")) and bool(tasks) and not state_caveats
+    return {
+        "capability": "orkestrera",
+        "task_queue": {
+            "total": len(tasks),
+            "dependency_ready_tasks": dependency_ready,
+            "blocked_tasks": blocked,
+        },
+        "selected_next_task": selected,
+        "selected_next_action": next_action,
+        "progress_verification": progress_verification,
+        "retry_state": retry_state,
+        "evaluator_handoff": evaluator_handoff,
+        "task_summaries": [_orchestration_task_summary(task) for task in tasks],
+        "state_family_caveats": state_caveats,
+        "fallback_commands": fallback_commands,
+        "source_contract": {
+            "complete_for_orchestration_context": complete,
+            "raw_artifact_reads_required": False,
+            "raw_artifact_read_policy": (
+                "Use this orchestration_context and included hej state first. Run listed routine CLI fallback commands "
+                "for missing or incomplete state families; raw artifact reads are last-resort diagnostics, not normal startup behavior."
+            ),
+            "included_state_families": capability_contract.get("included_state_families", []),
+            "missing_state_families": capability_contract.get("missing_state_families", []),
+            "fallback_commands": fallback_commands,
+            "caveats": state_caveats,
+            "owns": [
+                "dependency-ready task queue",
+                "blocked task reasons",
+                "selected next task",
+                "task acceptance summaries",
+                "task evidence summaries",
+                "latest progress verification summary",
+                "retry_state provenance",
+                "evaluator handoff inputs",
+                "state-family caveats",
+            ],
+            "deferred": [],
+        },
     }
 
 
@@ -2757,6 +2991,16 @@ def cmd_hej(_args: argparse.Namespace) -> int:
                 "state_presence": state_presence,
                 "attention": attention[:6],
                 "next_action": next_action,
+                "orchestration_context": _orchestration_context(
+                    getattr(_args, "capability_context", None),
+                    plan,
+                    progress,
+                    health,
+                    todo_items,
+                    docs,
+                    profile_dict,
+                    next_action,
+                ),
                 "source": {
                     "schemas_dir": str(schemas_dir),
                     "project": str(Path.cwd()),
@@ -2821,7 +3065,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     print("next_action:")
     print(f"- {_format_next_action(next_action)}")
     print("source_contract:")
-    print("- fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action")
+    print("- fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context")
     print("- render=caller-owned README-style hej dashboard")
     print("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls")
     startup_contract = _startup_completeness_contract()

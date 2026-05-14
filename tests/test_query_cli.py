@@ -1254,7 +1254,7 @@ class TestHej:
         assert "capability=orkestrera" in r.stdout
         assert "app_home: status=fresh" in r.stdout
         assert "source_contract:" in r.stdout
-        assert "fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action" in r.stdout
+        assert "fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context" in r.stdout
         assert "render=caller-owned README-style hej dashboard" in r.stdout
         assert "access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls" in r.stdout
         assert "capability_startup_complete=true" in r.stdout
@@ -1309,6 +1309,248 @@ class TestHej:
         assert context["missing_state_families"] == ["decisions", "vision", "profile"]
         assert context["cli_fallback"] == ["agentera decisions --format json"]
         assert "before raw file access" in context["raw_artifact_read_policy"]
+
+    def test_hej_orkestrera_context_reports_ready_blocked_and_selected_tasks(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Orchestration", "status": "active"},
+            "tasks": [
+                {"number": 1, "name": "Done", "status": "complete"},
+                {
+                    "number": 2,
+                    "name": "Ready",
+                    "status": "pending",
+                    "depends_on": [1],
+                    "acceptance": ["ready accepted"],
+                    "evidence": [{"cycle": 7, "note": "ready evidence"}],
+                },
+                {
+                    "number": 3,
+                    "name": "Blocked",
+                    "status": "pending",
+                    "depends_on": [2],
+                    "acceptance": ["blocked accepted"],
+                },
+            ],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 7, "timestamp": "2026-05-14", "verified": "focused tests passed"}],
+        })
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [{"number": 2, "trajectory": "stable", "grades": {"architecture_alignment": "B"}}],
+        })
+        _write_artifact(project, "TODO.md", {
+            "entries": [{"severity": "normal", "status": "open", "description": "Track orchestration"}],
+        })
+
+        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
+
+        assert r.returncode == 0
+        assert "agentera orkestrera" not in r.stdout
+        data = json.loads(r.stdout)
+        context = data["orchestration_context"]
+        assert context["capability"] == "orkestrera"
+        assert context["task_queue"]["dependency_ready_tasks"][0]["number"] == 2
+        assert context["task_queue"]["dependency_ready_tasks"][0]["acceptance_summary"] == {
+            "count": 1,
+            "items": ["ready accepted"],
+        }
+        assert context["task_queue"]["dependency_ready_tasks"][0]["evidence_summary"] == {
+            "count": 1,
+            "items": [{"cycle": 7, "note": "ready evidence"}],
+        }
+        assert context["task_queue"]["blocked_tasks"][0]["number"] == 3
+        assert context["task_queue"]["blocked_tasks"][0]["blocked_reasons"] == ["dependency 2 is pending"]
+        assert context["selected_next_task"]["number"] == 2
+        assert context["selected_next_action"]["capability"] == "orkestrera"
+        verification = context["progress_verification"]
+        assert verification["status"] == "available"
+        assert verification["cycle"] == {"number": 7, "timestamp": "2026-05-14"}
+        assert verification["verified_present"] is True
+        assert verification["verification_summary"] == "focused tests passed"
+        assert verification["latest_progress_verification_pointer"] == {
+            "source_family": "progress",
+            "command": "agentera progress --format json",
+            "cycle_number": 7,
+            "field": "verified",
+        }
+        assert verification["caveats"] == []
+        retry_state = context["retry_state"]
+        assert retry_state["status"] == "not_recorded"
+        assert retry_state["source_provenance"]["source_family"] == "progress"
+        assert retry_state["source_provenance"]["command"] == "agentera progress --format json"
+        assert "attempt_count" not in retry_state
+        handoff = context["evaluator_handoff"]
+        assert handoff["status"] == "ready"
+        assert handoff["task"] == {"number": 2, "name": "Ready", "status": "pending"}
+        assert handoff["acceptance_criteria"] == ["ready accepted"]
+        assert handoff["evidence_requirements"] == [{"cycle": 7, "note": "ready evidence"}]
+        assert handoff["latest_progress_verification_pointer"] == verification["latest_progress_verification_pointer"]
+        assert "Retry attempt state is not recorded; no attempt count is exposed." in handoff["evaluation_caveats"]
+        contract = context["source_contract"]
+        assert contract["complete_for_orchestration_context"] is False
+        assert contract["raw_artifact_reads_required"] is False
+        assert "last-resort diagnostics" in contract["raw_artifact_read_policy"]
+        assert contract["missing_state_families"] == ["decisions", "vision", "profile"]
+        assert contract["fallback_commands"] == ["agentera decisions --format json"]
+        assert "profile-derived state is unavailable in hej context." in contract["caveats"]
+        assert "latest progress verification summary" in contract["owns"]
+        assert "retry_state provenance" in contract["owns"]
+        assert "evaluator handoff inputs" in contract["owns"]
+        assert contract["deferred"] == []
+
+    def test_hej_orkestrera_context_can_be_complete_when_declared_needs_are_in_startup_envelope(self, project):
+        app_home = project / "app-home"
+        _install_runtime_surface(app_home)
+        artifacts_path = app_home / "app" / "skills" / "agentera" / "capabilities" / "orkestrera" / "schemas" / "artifacts.yaml"
+        artifacts = yaml.safe_load(artifacts_path.read_text(encoding="utf-8"))
+        artifacts["ARTIFACTS"] = {
+            key: value
+            for key, value in artifacts["ARTIFACTS"].items()
+            if value.get("artifact_id") in {"plan", "progress", "health", "todo", "docs"}
+        }
+        artifacts_path.write_text(yaml.dump(artifacts, default_flow_style=False), encoding="utf-8")
+        profile = project / ".xdg" / "agentera" / "PROFILE.md"
+        profile.parent.mkdir(parents=True)
+        profile.write_text("# Fresh profile\n", encoding="utf-8")
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Complete context", "status": "active"},
+            "tasks": [
+                {"number": 1, "name": "Ready", "status": "pending", "acceptance": ["selected"], "evidence": ["observable"]},
+            ],
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 1, "timestamp": "2026-05-14", "verified": "complete path verified"}],
+        })
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [{"number": 1, "trajectory": "stable", "grades": {"architecture_alignment": "B"}}],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
+        })
+        _write_artifact(project, "TODO.md", {
+            "entries": [{"severity": "normal", "status": "open", "description": "Track validation"}],
+        })
+
+        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["orchestration_context"]
+        contract = context["source_contract"]
+        assert context["selected_next_task"]["number"] == 1
+        assert context["task_queue"]["blocked_tasks"] == []
+        assert context["progress_verification"]["verified_present"] is True
+        assert context["retry_state"]["status"] == "not_recorded"
+        assert "attempt_count" not in context["retry_state"]
+        assert context["evaluator_handoff"]["status"] == "ready"
+        assert context["state_family_caveats"] == []
+        assert context["fallback_commands"] == []
+        assert contract["complete_for_orchestration_context"] is True
+        assert contract["raw_artifact_reads_required"] is False
+        assert "raw artifact reads are last-resort diagnostics" in contract["raw_artifact_read_policy"]
+        assert "agentera orkestrera" not in json.dumps(context)
+
+    def test_hej_orkestrera_context_preserves_compacted_decision_fallback_caveat(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Decision caveat", "status": "active"},
+            "tasks": [{"number": 1, "name": "Ready", "status": "pending", "acceptance": ["selected"]}],
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 1, "timestamp": "2026-05-14", "verified": "selected"}],
+        })
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [],
+            "archive": [{"summary": "Decision 9 (2026-05-14): compacted orchestration caveat"}],
+        })
+
+        context_result = _run("hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
+        decisions_result = _run("decisions", "--format", "json", cwd=project)
+
+        assert context_result.returncode == 0
+        context = json.loads(context_result.stdout)["orchestration_context"]
+        assert "agentera decisions --format json" in context["fallback_commands"]
+        assert "decisions state is not included in hej startup context." in context["evaluator_handoff"]["evaluation_caveats"]
+        assert context["source_contract"]["complete_for_orchestration_context"] is False
+        assert context["source_contract"]["raw_artifact_reads_required"] is False
+        assert decisions_result.returncode == 0
+        decisions = json.loads(decisions_result.stdout)
+        assert decisions["entries"][0]["compacted"] is True
+        assert decisions["entries"][0]["context_complete"] is False
+        assert decisions["source_contract"]["complete_for_returned_decisions"] is False
+        assert decisions["source_contract"]["completeness"]["compacted_entries"] == 1
+
+    def test_hej_orkestrera_context_caveats_latest_progress_without_verified(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Progress caveat", "status": "active"},
+            "tasks": [
+                {"number": 1, "name": "Done", "status": "complete"},
+                {"number": 2, "name": "Ready", "status": "pending", "depends_on": [1], "acceptance": ["audit ready"]},
+            ],
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 8, "timestamp": "2026-05-14", "type": "fix", "phase": "build"}],
+        })
+
+        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
+
+        assert r.returncode == 0
+        context = json.loads(r.stdout)["orchestration_context"]
+        verification = context["progress_verification"]
+        assert verification["status"] == "available"
+        assert verification["cycle"] == {"number": 8, "timestamp": "2026-05-14", "type": "fix", "phase": "build"}
+        assert verification["verified_present"] is False
+        assert verification["verified"] is None
+        assert verification["verification_summary"] is None
+        assert verification["caveats"] == ["Latest progress cycle has no non-empty verified evidence."]
+        assert "Latest progress cycle has no non-empty verified evidence." in context["evaluator_handoff"]["evaluation_caveats"]
+
+    def test_hej_orkestrera_context_caveats_missing_progress(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Missing progress", "status": "active"},
+            "tasks": [{"number": 1, "name": "Ready", "status": "pending", "acceptance": ["selected"]}],
+        })
+
+        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
+
+        assert r.returncode == 0
+        context = json.loads(r.stdout)["orchestration_context"]
+        verification = context["progress_verification"]
+        assert verification["status"] == "unavailable"
+        assert verification["source_provenance"] == {
+            "source_family": "progress",
+            "command": "agentera progress --format json",
+        }
+        assert verification["cycle"] is None
+        assert verification["verified_present"] is False
+        assert verification["latest_progress_verification_pointer"] is None
+        assert verification["caveats"] == ["No progress cycles are recorded in CLI progress state."]
+        assert "agentera progress --format json" in context["fallback_commands"]
+        assert "No progress cycles are recorded in CLI progress state." in context["evaluator_handoff"]["evaluation_caveats"]
+
+    def test_hej_orkestrera_context_lists_fallbacks_when_state_is_incomplete(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Incomplete", "status": "active"},
+            "tasks": [{"number": 1, "name": "Ready", "status": "pending"}],
+        })
+
+        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        context = data["orchestration_context"]
+        assert context["selected_next_task"]["number"] == 1
+        assert context["source_contract"]["complete_for_orchestration_context"] is False
+        assert context["fallback_commands"] == [
+            "agentera decisions --format json",
+            "agentera progress --format json",
+            "agentera health --format json",
+            "agentera docs --format json",
+            "agentera todo --format json",
+        ]
+        assert "raw artifact reads are last-resort diagnostics" in context["source_contract"]["raw_artifact_read_policy"]
+        assert "agentera orkestrera" not in json.dumps(context)
 
     def test_fresh_hej_structured_output_explains_absent_state(self, project):
         r = _run("hej", "--format", "json", cwd=project)

@@ -152,3 +152,46 @@ def test_orkestrera_prose_closes_only_successfully_completed_plans():
         "agentera hej",
     ]:
         assert required in content
+
+
+def test_orkestrera_prose_uses_orchestration_context_before_raw_artifacts():
+    content = (ORK_CAP_DIR / "prose.md").read_text()
+    normalized = " ".join(content.split())
+
+    for required in [
+        "agentera hej --format json --capability-context orkestrera",
+        "Use the returned `orchestration_context` before raw plan, progress, health, TODO, or decisions artifacts",
+        "If `source_contract.complete_for_orchestration_context` is true, do not read raw plan, progress, health, TODO, or decisions artifacts",
+        "run the listed routine CLI fallback commands",
+        "Read a raw artifact only as a last-resort diagnostic",
+        "compacted decision caveats",
+        "stale health/profile/app caveats",
+        "retry-state provenance",
+    ]:
+        assert required in content
+
+    for forbidden in [
+        "Read PLAN.md. Find tasks",
+        "Read DECISIONS.md if it exists",
+        "Read the latest entry in PROGRESS.md",
+        "Reading `.agentera/progress.yaml` is consistent",
+        "Read `$PROFILERA_PROFILE_DIR/PROFILE.md`",
+    ]:
+        assert forbidden not in content
+    assert "Do not run an unsupported capability-name command such as `agentera orkestrera`" in content
+    assert "agentera orkestrera" not in normalized.replace(
+        "Do not run an unsupported capability-name command such as `agentera orkestrera`.",
+        "",
+    )
+
+
+def test_orkestrera_validation_schema_guards_context_first_contract():
+    schema = yaml.safe_load((ORK_CAP_DIR / "schemas" / "validation.yaml").read_text())
+    rules = {entry["id"]: entry for entry in schema["VALIDATION"].values()}
+
+    assert rules["V6"]["rule"] == "orchestration_context_first"
+    assert rules["V7"]["rule"] == "cli_fallback_before_raw_read"
+    assert rules["V8"]["rule"] == "caveats_preserved_for_evaluation"
+    assert rules["V6"]["severity"] == "critical"
+    assert rules["V7"]["severity"] == "critical"
+    assert rules["V8"]["severity"] == "critical"

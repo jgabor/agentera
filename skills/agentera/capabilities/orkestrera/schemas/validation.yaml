@@ -56,3 +56,38 @@ VALIDATION:
       - "HEALTH.md is consumes only (not produces)"
       - "DECISIONS.md is consumes only (not produces)"
       - "VISION.md is consumes only (not produces)"
+  6:
+    id: V6
+    rule: orchestration_context_first
+    description: >-
+      Orkestrera startup and evaluation MUST use
+      `agentera hej --format json --capability-context orkestrera` and the
+      returned orchestration context before raw plan, progress, health, TODO,
+      or decisions artifact reads.
+    severity: critical
+    checks:
+      - "prose.md contains agentera hej --format json --capability-context orkestrera"
+      - "prose.md contains Use the returned `orchestration_context` before raw plan, progress, health, TODO, or decisions artifacts"
+      - "prose.md contains If `source_contract.complete_for_orchestration_context` is true, do not read raw plan, progress, health, TODO, or decisions artifacts"
+  7:
+    id: V7
+    rule: cli_fallback_before_raw_read
+    description: >-
+      When orchestration context is incomplete, Orkestrera MUST run listed
+      routine CLI fallback commands before any last-resort raw artifact read.
+    severity: critical
+    checks:
+      - "prose.md contains run the listed routine CLI fallback commands"
+      - "prose.md contains Read a raw artifact only as a last-resort diagnostic"
+  8:
+    id: V8
+    rule: caveats_preserved_for_evaluation
+    description: >-
+      Orkestrera MUST preserve compacted-decision, stale health/profile/app,
+      missing-state, and retry-state provenance caveats when handing a task to
+      inspektera.
+    severity: critical
+    checks:
+      - "prose.md contains compacted decision caveats"
+      - "prose.md contains stale health/profile/app caveats"
+      - "prose.md contains retry-state provenance"
