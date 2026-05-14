@@ -238,7 +238,7 @@ def test_upgrade_characterizes_doctor_root_shapes(
             assert "Preview the repair" not in rendered
 
 
-def test_version_drift_plus_missing_required_command_remains_repair(
+def test_version_mismatch_plus_missing_required_command_remains_repair(
     upgrade: ModuleType,
     tmp_path: Path,
 ) -> None:

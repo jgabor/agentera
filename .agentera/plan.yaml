@@ -20,7 +20,7 @@ what: >-
 why: >-
   The app-home migration created the durable `AGENTERA_HOME` and app-files model,
   but runtime-injected legacy values can still steer agents to old roots, and
-  ordinary version drift is still worded like stale or broken repair. That
+  ordinary version mismatch is still worded like stale or broken repair. That
   undermines the one-install, one-entry-point recovery flow and makes normal
   upgrades look scarier than they are.
 constraints: >-
@@ -55,7 +55,7 @@ design: >-
   with explicit flags and hermetic test channels preserved. Keep update-needed,
   repairable broken state, blocked unsafe state, and fresh state separate in
   structured status so user-facing copy can choose upgrade wording for version
-  drift and safe-repair wording only for broken or unverifiable app files. Runtime
+  mismatch and safe-repair wording only for broken or unverifiable app files. Runtime
   adapters that propagate `AGENTERA_HOME` should pass a validated app home, not
   blindly mirror inherited legacy values. Test proportionality target: one
   positive and one negative regression per changed boundary.
@@ -91,7 +91,7 @@ tasks:
     acceptance:
       - GIVEN Agentera app files are valid but older than the expected version WHEN status or recovery guidance is rendered THEN the user-facing wording presents this as an upgrade or update path, not as an old or broken local copy.
       - GIVEN app files are missing required behavior, malformed, incomplete, or unsafe WHEN status or recovery guidance is rendered THEN safe-repair and blocked-state language remains available.
-      - GIVEN structured status is consumed by hej or doctor WHEN version drift is present THEN machine-readable output distinguishes update-needed from broken or unverifiable state.
+      - GIVEN structured status is consumed by hej or doctor WHEN version mismatch is present THEN machine-readable output distinguishes update-needed from broken or unverifiable state.
   - number: 5
     name: Focused regression validation
     depends_on: [2, 3, 4]

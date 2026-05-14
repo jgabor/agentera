@@ -836,7 +836,7 @@ class TestHej:
             "user_data_root": str(install_root),
         }
 
-    def test_version_drift_reports_update_needed_not_repair(self, project):
+    def test_version_mismatch_reports_update_needed_not_repair(self, project):
         app_home = project / "app-home"
         self._write_bundle_root(app_home / "app", marker_version="1.0.0")
 
@@ -856,7 +856,7 @@ class TestHej:
         assert any("app update needed" in item for item in data["attention"])
         assert all("repair" not in item for item in data["attention"])
 
-    def test_version_drift_text_guidance_uses_update_wording(self, project):
+    def test_version_mismatch_text_guidance_uses_update_wording(self, project):
         app_home = project / "app-home"
         self._write_bundle_root(app_home / "app", marker_version="1.0.0")
 
