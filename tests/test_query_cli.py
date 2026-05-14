@@ -256,6 +256,201 @@ class TestDecisions:
         assert r.returncode == 0
         assert r.stdout.strip() == ""
 
+    def test_json_decisions_include_source_contract_and_context_fields(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": 1,
+                    "date": "2026-05-14",
+                    "question": "Expose decision context?",
+                    "context": "Agents need structured deliberation state.",
+                    "alternatives": [{"name": "CLI", "status": "chosen"}],
+                    "choice": "Expose structured context through the decisions command.",
+                    "reasoning": "Routine state commands should avoid raw artifact reads.",
+                    "confidence": "firm",
+                    "feeds_into": "PLAN.md, TODO.md#DEC-1",
+                },
+            ],
+        })
+
+        r = _run("decisions", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        entry = data["entries"][0]
+        assert entry["outcome"] == entry["choice"]
+        assert entry["reasoning"] == "Routine state commands should avoid raw artifact reads."
+        assert entry["alternatives"] == [{"name": "CLI", "status": "chosen"}]
+        assert entry["confidence"] == "firm"
+        assert entry["feeds_into"] == "PLAN.md, TODO.md#DEC-1"
+        assert entry["downstream_consequence_references"] == [
+            {"source_field": "feeds_into", "reference": "PLAN.md"},
+            {"source_field": "feeds_into", "reference": "TODO.md#DEC-1"},
+        ]
+        assert entry["context_complete"] is True
+        assert entry["missing_fields"] == []
+        assert entry["compacted"] is False
+        assert entry["caveats"] == []
+
+        contract = data["source_contract"]
+        assert contract["artifact"] == "DECISIONS.md"
+        assert contract["complete_for_returned_decisions"] is True
+        assert contract["raw_artifact_reads_required"] is False
+        assert "raw_artifact_read_policy" in contract
+        assert "fallback_behavior" in contract
+        assert "outcome" in contract["included_fields"]
+        assert "downstream_consequence_references" in contract["included_fields"]
+        assert contract["completeness"]["entries_with_missing_fields"] == 0
+
+    def test_filtered_json_decisions_keep_source_contract_and_guarantees(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": 1,
+                    "date": "2026-05-14",
+                    "question": "Runtime source contract?",
+                    "context": "Runtime agents need filtered decisions.",
+                    "alternatives": [{"name": "JSON", "status": "chosen"}],
+                    "choice": "Use JSON source contract.",
+                    "reasoning": "Filtered results need the same guarantees.",
+                    "confidence": "firm",
+                    "feeds_into": ["scripts/agentera"],
+                },
+                {
+                    "number": 2,
+                    "date": "2026-05-14",
+                    "question": "Unrelated color?",
+                    "context": "Design only.",
+                    "alternatives": [{"name": "Blue", "status": "chosen"}],
+                    "choice": "Blue",
+                    "reasoning": "Readable.",
+                    "confidence": "firm",
+                    "feeds_into": ["DESIGN.md"],
+                },
+            ],
+        })
+
+        r = _run("decisions", "--topic", "runtime", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["filters"] == {"topic": "runtime"}
+        assert [entry["number"] for entry in data["entries"]] == [1]
+        assert data["entries"][0]["context_complete"] is True
+        assert data["source_contract"]["filters"] == {"topic": "runtime"}
+        assert data["source_contract"]["complete_for_returned_decisions"] is True
+
+    def test_json_decisions_do_not_fabricate_downstream_references(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": 1,
+                    "date": "2026-05-14",
+                    "question": "Missing downstream?",
+                    "context": "No explicit structured references.",
+                    "alternatives": [{"name": "None", "status": "chosen"}],
+                    "choice": "Do not infer.",
+                    "reasoning": "Fabricated references are worse than null.",
+                    "confidence": "firm",
+                },
+            ],
+        })
+
+        r = _run("decisions", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        entry = data["entries"][0]
+        assert entry["downstream_consequence_references"] is None
+        assert entry["context_complete"] is False
+        assert "feeds_into" in entry["missing_fields"]
+        assert "No explicit downstream consequence references were present" in entry["caveats"][-1]
+        assert data["source_contract"]["completeness"]["entries_without_downstream_references"] == 1
+
+    def test_json_compacted_decision_is_marked_incomplete(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [],
+            "archive": [
+                {"summary": "Decision 1 (2026-05-14): summary-only compacted decision"},
+            ],
+        })
+
+        r = _run("decisions", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        entry = data["entries"][0]
+        assert entry["number"] == 1
+        assert entry["date"] == "2026-05-14"
+        assert entry["compacted"] is True
+        assert entry["context_complete"] is False
+        assert "question" in entry["missing_fields"]
+        assert "reasoning" in entry["missing_fields"]
+        assert "outcome" in entry["missing_fields"]
+        assert entry["downstream_consequence_references"] is None
+        assert data["source_contract"]["complete_for_returned_decisions"] is False
+        assert data["source_contract"]["completeness"]["compacted_entries"] == 1
+        assert "missing_fields" in data["source_contract"]["raw_artifact_read_policy"]
+        assert "unavailable" in data["source_contract"]["fallback_behavior"]["compacted_history"]
+        assert "git history" not in data["source_contract"]["fallback_behavior"]["compacted_history"]
+
+    def test_json_compacted_decision_keeps_retained_outcome_fields(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [],
+            "archive": [
+                {
+                    "summary": "Decision 2 (2026-05-14): Keep structured compact outcome",
+                    "number": 2,
+                    "date": "2026-05-14",
+                    "choice": "Keep structured compact outcome",
+                    "outcome": "Keep structured compact outcome",
+                    "feeds_into": "scripts/agentera",
+                },
+            ],
+        })
+
+        r = _run("decisions", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        entry = data["entries"][0]
+        assert entry["compacted"] is True
+        assert entry["outcome"] == "Keep structured compact outcome"
+        assert "outcome" not in entry["missing_fields"]
+        assert entry["downstream_consequence_references"] == [
+            {"source_field": "feeds_into", "reference": "scripts/agentera"},
+        ]
+        assert entry["context_complete"] is False
+        assert "reasoning" in entry["missing_fields"]
+
+    def test_filtered_json_decisions_can_match_compacted_summary(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [],
+            "archive": [
+                {"summary": "Decision 3 (2026-05-14): Historical routing contract"},
+            ],
+        })
+
+        r = _run("decisions", "--topic", "routing", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert [entry["number"] for entry in data["entries"]] == [3]
+        assert data["entries"][0]["compacted"] is True
+        assert data["source_contract"]["filters"] == {"topic": "routing"}
+
+    def test_decision_compact_fields_agree_with_schema_and_cli_contract(self):
+        schema = yaml.safe_load((SCHEMAS_SRC / "decisions.yaml").read_text(encoding="utf-8"))
+        archive_fields = {
+            entry["field"]
+            for entry in schema["ARCHIVE"].values()
+            if isinstance(entry, dict) and "field" in entry
+        }
+
+        assert {"summary", "number", "date", "choice", "outcome", "feeds_into"}.issubset(archive_fields)
+        assert "outcome" in archive_fields
+        assert "feeds_into" in archive_fields
+
 
 # ---------------------------------------------------------------------------
 # health

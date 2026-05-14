@@ -5,6 +5,7 @@
 ### Changed
 
 - 2.3.6 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the artifact compaction enforcement patch; the 2.3.7+ source-contract train remains deferred.
+- 2.3.7 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the decision-context source-contract patch; the 2.3.8+ source-contract train remains deferred.
 - 2.3.5 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the install-state reliability patch; the 2.3.6+ source-contract train remains deferred.
 - 2.3.4 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the startup state completeness and PLAN artifact source-contract scope.
 - 2.3.3 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the Profilera corpus runtime parity scope.
@@ -15,6 +16,7 @@
 ### Fixed
 
 - Artifact compaction is now enforced as a repo-level invariant through shared check/fix compaction, explicit `agentera compact` and `agentera gate` CLI surfaces, runtime hook convergence, current artifact remediation, Lefthook/CI gate wiring, and focused regressions while preserving `.agentera/docs.yaml` path resolution, CHANGELOG exemption, and session-stop bookmark compaction.
+- Decision-context JSON output now exposes a source contract, outcome alias, reasoning, alternatives, confidence, explicit feeds-into references, downstream consequence references, per-entry completeness fields, compacted-entry missing-field caveats, and Resonera startup guidance without requiring raw `.agentera/decisions.yaml` reads or git-history fallback for normal deliberation.
 - Normal installed execution now treats stale inherited deprecated-default `AGENTERA_HOME` values as non-authoritative residue while preserving explicit valid custom app homes and hermetic tests.
 - Valid older Agentera app files now render update-needed guidance, while missing, malformed, incomplete, or unsafe app states keep repair or blocked-state semantics in structured hej/doctor output.
 - `agentera plan --format json` now declares itself complete for normal `PLAN.md`
@@ -72,6 +74,7 @@
 ### Verified
 
 - 2.3.6 artifact compaction enforcement patch closeout is synchronized locally without publication, installed app refresh, tag, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.3.6, while the 2.3.7+ source-contract train remains open.
+- 2.3.7 decision-context source-contract patch closeout is synchronized locally without publication, installed app refresh, tag, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.3.7, while the 2.3.8+ source-contract train remains open.
 - 2.3.5 install-state reliability patch closeout is synchronized locally without publication, installed app refresh, tag, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.3.5, while the 2.3.6+ source-contract train remains open.
 - 2.3.4 patch release readiness is recorded locally without publication, installed app refresh, tag, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces are aligned.
 - PLAN artifact fallback closeout is synchronized without a selected release target:

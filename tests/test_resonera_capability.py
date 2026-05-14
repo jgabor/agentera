@@ -133,3 +133,25 @@ def test_resonera_requires_native_question_tool_after_routing():
     assert "overrides the master dispatcher's generic hej/handoff question-tool gate" in normalized
     assert "first user-facing action after the reflection" in normalized
     assert "provide a provisional recommendation in the question text" in normalized
+
+
+def test_resonera_startup_uses_decisions_cli_source_contract():
+    content = (RESONERA_CAP_DIR / "prose.md").read_text(encoding="utf-8")
+    normalized = " ".join(content.split())
+
+    assert "Run `agentera decisions --format json` for prior decision context" in normalized
+    assert "Use the returned `entries` and `source_contract` as sufficient for normal deliberation" in normalized
+    assert "capability startup fallback" in normalized
+    assert "When `source_contract.complete_for_returned_decisions` is true" in normalized
+    assert "without defensively reading raw `.agentera/decisions.yaml`" in normalized
+
+
+def test_resonera_treats_compacted_decisions_as_caveats_not_raw_read_fallback():
+    content = (RESONERA_CAP_DIR / "prose.md").read_text(encoding="utf-8")
+    normalized = " ".join(content.split())
+
+    assert "When a returned decision is compacted or incomplete" in normalized
+    assert "surface the missing context as a decision caveat" in normalized
+    assert "continue with only the structured fields present" in normalized
+    assert "Do not reconstruct absent historical reasoning" in normalized
+    assert "git history" not in normalized

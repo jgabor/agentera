@@ -484,7 +484,14 @@ def _yaml_archive_entry(spec_name: str, entry: object) -> dict[str, object]:
         date = str(entry.get("date", ""))
         date_part = f" ({date})" if date else ""
         choice = _yaml_summary_text(entry, "choice", "question")
-        return {"summary": f"Decision {number}{date_part}: {choice}"}
+        archive_entry: dict[str, object] = {"summary": f"Decision {number}{date_part}: {choice}"}
+        for field in ("number", "date", "choice", "outcome", "feeds_into"):
+            value = entry.get(field)
+            if value not in (None, "", [], {}):
+                archive_entry[field] = value
+        if "outcome" not in archive_entry and archive_entry.get("choice") not in (None, ""):
+            archive_entry["outcome"] = archive_entry["choice"]
+        return archive_entry
 
     if spec_name == "health":
         number = entry.get("number", "?")

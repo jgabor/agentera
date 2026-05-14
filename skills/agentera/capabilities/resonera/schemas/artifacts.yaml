@@ -5,9 +5,11 @@ ARTIFACTS:
     local_role: produces_and_consumes
     description: >-
       Reasoning trail with confidence labels. Resonera reads existing decisions
-      to avoid re-deliberation and writes new decision entries with confidence
-      (DL1 firm, DL2 provisional, DL3 exploratory). Compact older entries by
-      applying schema COMPACTION rules.
+      through `agentera decisions --format json` and its source_contract to avoid
+      re-deliberation, and writes new decision entries with confidence (DL1
+      firm, DL2 provisional, DL3 exploratory). Compact older entries by applying
+      schema COMPACTION rules; incomplete compacted entries are caveated context,
+      not a reason for historical reconstruction during normal deliberation.
   2:
     id: A2
     artifact_id: vision

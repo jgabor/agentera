@@ -88,9 +88,11 @@ COMPACTION:
       format: "Decision N (YYYY-MM-DD): [Choice] — <=15-word summary"
       fields: [number, date, choice, summary]
     description: >-
-      Decisions 11 through 50 are collapsed to one-line format under the
-      archive section. One-line summaries preserve decision number, date,
-      and the chosen alternative.
+      Decisions 11 through 50 are collapsed to compact archive entries under
+      the archive section. Compact summaries preserve decision number, date,
+      and chosen alternative; structured compact fields preserve outcome and
+      explicit feeds_into references when present so CLI downstream references
+      remain non-inferential.
   4:
     id: DX4
     dropped:
@@ -254,7 +256,7 @@ ARCHIVE:
     type: string
     required: true
     description: >-
-      One-line archive entry for a compacted decision. Format:
+      Summary for a compacted decision. Format:
       'Decision N (YYYY-MM-DD): [Choice] — <=15-word summary'.
       Preserves decision number, date, and chosen alternative.
     validation:
@@ -262,6 +264,48 @@ ARCHIVE:
       - "Must include date in YYYY-MM-DD format"
       - "Must include chosen alternative"
       - "Summary portion must be <=15 words"
+  2:
+    id: DR2
+    field: number
+    type: integer
+    required: false
+    description: >-
+      Decision number retained when a full decision is compacted. Legacy
+      compacted entries may expose the number only inside summary.
+  3:
+    id: DR3
+    field: date
+    type: string
+    format: "YYYY-MM-DD"
+    required: false
+    description: >-
+      Decision date retained when a full decision is compacted. Legacy
+      compacted entries may expose the date only inside summary.
+  4:
+    id: DR4
+    field: choice
+    type: string
+    required: false
+    description: >-
+      Chosen alternative retained when a full decision is compacted. This is
+      the source for compacted CLI outcome when present.
+  5:
+    id: DR5
+    field: outcome
+    type: string
+    required: false
+    description: >-
+      Outcome retained for structured consumers of compacted decisions. When
+      omitted by legacy entries, CLI output marks outcome missing instead of
+      requiring raw artifact or git-history fallback.
+  6:
+    id: DR6
+    field: feeds_into
+    type: string
+    required: false
+    description: >-
+      Explicit downstream references retained from the full decision when
+      present. Consumers must not infer downstream consequences when absent.
 
 VALIDATION:
   1:

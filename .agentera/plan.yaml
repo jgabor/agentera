@@ -3,145 +3,155 @@ header:
   created: 2026-05-14
   status: active
   reviewed: 2026-05-14
-  critic_issues: 12 found, 12 addressed, 0 dismissed
+  critic_issues: 7 found, 7 addressed, 0 dismissed
   revised: >-
-    Adversarial review split the command, validator, remediation, and gate work
-    into separate cycles; made the compactable artifact set explicit; excluded
-    objective-state mutation without approval; required contract reconciliation
-    before behavior changes; moved current artifact remediation before gate
-    activation; and replaced vague test and mutation criteria with observable
-    boundaries.
-  title: 2.3.6 Artifact Compaction Enforcement Patch
+    Adversarial review tightened the decision-context contract by making
+    downstream consequences non-inferential, defining top-level and per-decision
+    JSON completeness fields, adding the 2.3.6 archive transition, replacing
+    vague archive wording with compacted-decision wording, requiring version
+    policy reconciliation before metadata edits, and narrowing schema/prose
+    changes to the decision artifact and Resonera guidance.
+  title: 2.3.7 Decision Context Source Contract
 what: >-
-  Make artifact compaction a deterministic repository invariant rather than an
-  opportunistic runtime-hook side effect. The patch adds an explicit compaction
-  maintenance surface, makes explicit artifact validation invocations real instead
-  of silent no-ops, enforces 10/40/50 caps for current v2 artifacts, and brings
-  existing over-cap artifacts back inside retained-entry bounds.
+  Add a decision-context source contract to the `agentera decisions --format json`
+  surface so Resonera and downstream capabilities can deliberate from CLI state
+  instead of reading `.agentera/decisions.yaml` or falling back to git history.
+  The contract makes full-detail decision context explicit, reports compacted
+  historical decision limitations honestly, and exposes structured fields for
+  decision outcome, reasoning, alternatives, confidence, feeds-into, and
+  downstream consequence references where the data exists.
 why: >-
-  Agentera depends on bounded artifacts for CLI-first state access and cross-cycle
-  agent performance. Today compaction depends on how a file was edited: runtime
-  write/edit hooks can compact TODO Resolved, but apply_patch, scripts, direct
-  edits, and manual validation commands bypass the quantity contract. YAML
-  artifacts also declare compaction rules without reliable enforcement. That lets
-  progress, decisions, health, and TODO state grow past the contract while
-  validation appears green.
+  Decision 51 showed that capability startup and state gathering still over-read
+  raw artifacts after CLI state access. Decisions are especially sensitive:
+  compaction can turn older decisions into summaries, and agents currently
+  compensate by reading raw YAML or considering git history. A source contract
+  makes the CLI the first trusted state seam, including completeness and caveats,
+  so agents know when the CLI output is sufficient and when compacted historical
+  data is inherently incomplete.
 constraints: >-
-  Preserve `.agentera/docs.yaml` artifact path resolution. Keep CHANGELOG as
-  exempt public history. Keep session-stop bookmark compaction working. Use
-  runtime hooks only as a convenience, not as the only enforcement layer. Do not
-  mutate vision or objective state without explicit approval; objective experiment
-  files are classified but skipped by default. Do not expand into the deferred
-  2.3.7+ source-contract train or richer decision-outcome retrieval beyond
-  preserving the existing decision compaction contract. Do not tag, push, publish,
-  refresh installed apps, edit vision, or edit objective state without explicit
-  approval.
+  Preserve Decision 45 structured CLI boundaries and Decision 44 plain vocabulary.
+  Keep `agentera decisions` a routine state command, not a slash-route alias or
+  direct capability invocation. Preserve docs.yaml artifact path resolution and
+  compaction gate behavior. Derive downstream consequence references only from
+  existing structured references such as `feeds_into`, TODO identifiers, plan or
+  progress references, or explicit artifact mentions; otherwise emit null or
+  missing with a caveat. Do not fabricate missing historical reasoning or
+  alternatives from compacted decisions, do not require git-history fallback, and
+  do not require raw `.agentera/decisions.yaml` reads for normal deliberation.
+  Limit schema/prose changes to the decision artifact, decision compaction, CLI
+  decision output, and Resonera guidance. Do not implement the separate
+  Orkestrera, Dokumentera, Inspektera, Optimera, or Realisera source-contract
+  TODOs. Do not tag, push, publish, refresh installed apps, edit vision, or edit
+  objective state without explicit approval.
 scope:
   included:
-    - "Explicit compaction check/fix surface for TODO Resolved plus current v2 YAML growing artifacts: progress, decisions, health, and session."
-    - Classification for optional experiment artifacts, with objective-state experiment mutation skipped unless explicitly approved.
-    - Explicit validator CLI behavior for artifact/file arguments so validation commands either validate the requested artifact or fail clearly.
-    - Repo gate coverage so changed artifacts cannot bypass compaction through apply_patch, scripts, generated edits, or direct file changes.
-    - Current artifact remediation for existing over-cap TODO, progress, decisions, and health state.
-    - Focused tests and 2.3.6 metadata sync.
+    - Source-contract metadata for `agentera decisions --format json` and existing filtered decisions output.
+    - "Structured decision context fields for full-detail decisions: outcome or choice, reasoning, alternatives, confidence, feeds-into, and non-inferential downstream consequence references."
+    - Honest compacted-decision completeness reporting so older compacted entries do not trigger raw artifact or git-history fallback expectations.
+    - Minimal decision schema, compaction, Resonera guidance, and test updates needed for future decision compaction to preserve the context promised by the CLI.
+    - Focused startup-state evidence showing Resonera-style deliberation can use CLI decision context without defensive raw artifact reads.
+    - TODO, docs, changelog, progress, and 2.3.7 version metadata sync.
   excluded:
-    - CHANGELOG compaction.
-    - Rich decision-history or decision-source-contract retrieval, deferred to 2.3.7+ TODOs.
-    - Broad runtime adapter redesign or new package formats.
+    - A full dependency graph of every downstream artifact affected by every decision.
+    - Broad source-contract work for Orkestrera, Dokumentera, Inspektera, Optimera, or Realisera.
+    - Reconstructing historical compacted decision details from git history.
     - Publication, tag, push, installed app refresh, vision edit, or objective-state edit.
   deferred:
-    - Source-contract feature train now targeted at 2.3.7 through 2.3.12.
-    - Objective experiment compaction mutation unless the user explicitly approves protected objective-state edits.
-    - Policy changes to make compacted decision summaries richer than the existing schema contract.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-14-2-3-5-install-state-reliability-patch.yaml
+    - Deeper decision outcome lifecycle tracking across TODO, progress, and plan state unless needed to expose the current CLI contract honestly.
+    - Cross-artifact impact graph or provenance indexing beyond existing `feeds_into` and explicit artifact references.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-14-2-3-6-artifact-compaction-enforcement-patch.yaml
 design: >-
-  Treat compaction as a checkable invariant with two observable modes: a read-only
-  check mode for gates and an explicit fix mode for controlled mutation. The
-  command reports machine-readable counts and status per artifact, resolves paths
-  through docs mapping, and shares behavior with runtime validation hooks where
-  those hooks already apply. Fix mode may only move entries between full-detail
-  and compact archive regions, replace older retained entries with schema-defined
-  summaries, or remove entries beyond the retained 50-entry boundary; it must not
-  churn unrelated metadata, mapping, or protected state. Enforcement is activated
-  only after the current over-cap artifacts are remediated.
+  Treat decision context as a CLI-owned state envelope. The command emits one
+  top-level `source_contract` for the result set and per-decision completeness
+  fields such as `context_complete`, `missing_fields`, `compacted`, and `caveats`.
+  Full-detail decision entries are projected into stable JSON with explicit
+  included fields and raw-read policy. Compacted decision entries, and any
+  existing decision archive entries if discovered, remain available as bounded
+  summaries with `context_complete=false` and explicit missing fields rather than
+  pretending raw reads or git history can restore data. If the existing decision
+  archive or compaction contract cannot preserve required future context, update
+  it minimally and test both current historical limitations and future compaction
+  behavior.
 tasks:
   - number: 1
-    name: Compaction contract inventory and reconciliation
+    name: Decision context inventory and archive boundary
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN Agentera artifact mappings are available WHEN compaction status is computed THEN TODO Resolved, progress, decisions, health, and session are classified with active, archive, total, and over-limit counts.
-      - GIVEN known non-compactable or protected artifacts are present WHEN compaction status is computed THEN changelog, plan, docs, vision, design, and objective-state experiment files are classified as exempt, unsupported, or protected without mutating them.
-      - GIVEN existing schema metadata is incomplete or inconsistent WHEN reconciliation finishes THEN the plan records whether minimal schema updates are required before behavior changes continue.
+      - GIVEN decisions, schemas, CLI output, and Resonera usage are inspected WHEN the inventory completes THEN implementation evidence records which required decision-context fields are already available, which are missing, and which are incomplete for compacted decision entries.
+      - GIVEN 2.3.6 is complete but was still active WHEN 2.3.7 becomes active THEN the completed 2.3.6 plan is archived with complete status and the new active plan references that archive path.
+      - GIVEN compacted decision entries or existing archive entries are present WHEN the boundary is recorded THEN full-detail completeness is distinguished from compacted historical limitations without recommending raw artifact or git-history fallback.
     evidence:
-      - cycle: 469
+      - cycle: 477
         note: >-
-          Task 1 inventory added a read-only compaction status helper that preserves
-          `.agentera/docs.yaml` path mapping, counts TODO Resolved, progress,
-          decisions, health, and session, and classifies changelog as exempt;
-          plan, docs, and design as unsupported; vision and objective-scoped
-          experiment files as protected. Current counts are TODO Resolved
-          active=0 archive=53 total=53 over=13, progress active=225 archive=40
-          total=265 over=215, decisions active=12 archive=40 total=52 over=2,
-          health active=11 archive=9 total=20 over=1, and session active=10
-          archive=40 total=50 over=0. Schema reconciliation found that minimal
-          schema metadata updates are required before later behavior-changing
-          tasks: TODO lacks explicit COMPACTION metadata for Resolved entries,
-          and changelog/design/plan/docs budget wording still implies compaction
-          despite their Task 1 classification as exempt or unsupported. No
-          remediation, vision edit, objective-state edit, tag, push, publish,
-          installed-app refresh, or plan status change was performed.
+          Task 1 inventory inspected `uv run scripts/agentera decisions --format json`,
+          `uv run scripts/agentera decisions --topic source-contract --format json`,
+          `.agentera/decisions.yaml`, `skills/agentera/schemas/artifacts/decisions.yaml`,
+          `hooks/compaction.py`, and Resonera guidance. Full-detail active decisions
+          already retain and the current CLI already emits `number`, `date`, `question`,
+          `context`, `alternatives`, `choice`, `reasoning`, `confidence`, and
+          `feeds_into` for the 10 retained full entries. Missing from the current
+          decision-context source contract are top-level `source_contract`, per-decision
+          `context_complete` or equivalent completeness flags, `missing_fields`,
+          `compacted`, caveats, an explicit raw-read policy, an `outcome` alias separate
+          from `choice`, and non-inferential downstream consequence references beyond
+          the raw `feeds_into` text. Compacted historical decision entries are present
+          as 40 archive entries; schema DR1 and the current compaction formatter preserve
+          only decision number, date, and chosen choice/summary, with existing archive
+          entries mixed between structured `{summary: ...}` maps and legacy strings.
+          Therefore compacted entries are inherently incomplete for question, context,
+          alternatives, full reasoning, confidence, structured feeds-into, and downstream
+          consequence references, and the boundary is to report those limitations as
+          missing/caveated data rather than recommending raw `.agentera/decisions.yaml`
+          reads or git-history fallback. `uv run scripts/agentera gate --format json`
+          and `uv run scripts/agentera compact --mode check --format json` both passed
+          before evidence edits with DECISIONS.md active_count=10, archive_count=40,
+          total_count=50, over_limit_count=0. Archive reconciliation confirmed 2.3.6
+          is archived at `.agentera/archive/PLAN-2026-05-14-2-3-6-artifact-compaction-enforcement-patch.yaml`
+          with `header.status: complete`, and this active 2.3.7 plan already references
+          that path via `previous_plan_archived`.
   - number: 2
-    name: Shared compaction check and fix behavior
+    name: Decisions CLI source-contract output
     depends_on: [1]
     status: complete
     acceptance:
-      - GIVEN a compactable artifact exceeds 10 full, 40 compact, or 50 total retained entries WHEN check mode runs THEN it reports the artifact as over limit and does not modify files.
-      - GIVEN fix mode runs on an over-limit compactable artifact WHEN the operation completes THEN the artifact matches its schema compaction contract and unrelated top-level metadata, mapping, and protected state are unchanged.
-      - GIVEN optional artifacts are missing or protected WHEN check or fix mode runs THEN they are reported predictably without failing unrelated compactable artifacts.
+      - GIVEN `agentera decisions --format json` runs WHEN full-detail decisions are returned THEN each decision exposes outcome or choice, reasoning, alternatives, confidence, feeds-into, and downstream consequence references through stable structured fields.
+      - GIVEN the decisions command emits source metadata WHEN agents consume it THEN top-level `source_contract` declares completeness, included fields, raw-read policy, caveats, and fallback behavior truthfully.
+      - GIVEN existing topic or filtered decisions output is used WHEN the output is formatted as JSON THEN the same source-contract and per-decision completeness guarantees apply to the filtered result.
   - number: 3
-    name: Explicit CLI surfaces
-    depends_on: [2]
+    name: Compacted decision completeness and future preservation
+    depends_on: [1, 2]
     status: complete
     acceptance:
-      - GIVEN a user runs the compaction command in text or JSON mode WHEN artifacts are in bounds or over bounds THEN the command returns truthful status, counts, exit code, and repair guidance.
-      - GIVEN a user invokes artifact validation with explicit artifact and file arguments WHEN the artifact is valid or invalid THEN the command performs real validation and returns a truthful pass or fail instead of succeeding as a no-op.
-      - GIVEN canonical artifact names and explicit file paths differ WHEN validation or compaction runs THEN provided paths and docs-mapped defaults are resolved consistently and reported in the output.
+      - GIVEN compacted historical decision entries are included WHEN JSON is rendered THEN unavailable fields are explicitly marked missing rather than causing agents to read raw YAML or git history.
+      - GIVEN future decision compaction runs WHEN a full decision moves to compact form THEN the retained summary preserves the contract-required outcome information allowed by the decision schema.
+      - GIVEN compacted decision behavior changes WHEN validation runs THEN decision schema, decision compaction, and CLI tests agree on the retained fields and no unrelated artifact families are changed.
   - number: 4
-    name: Runtime hook convergence
+    name: Resonera startup and deliberation integration
     depends_on: [2, 3]
     status: complete
     acceptance:
-      - GIVEN existing runtime hooks validate TODO or YAML artifacts WHEN they run after supported write/edit events THEN they use the same validation and compaction behavior as the explicit command.
-      - GIVEN a sparse or unsupported runtime hook payload is received WHEN validation cannot reconstruct the artifact safely THEN the hook allows or reports according to its existing runtime contract without claiming compaction occurred.
-      - GIVEN hook regression tests run WHEN they cover TODO Resolved, YAML validation, apply_patch parsing, and unsupported payloads THEN at least one pass and one fail path is covered for each changed hook boundary.
+      - GIVEN Resonera needs decision context WHEN capability startup state is requested THEN CLI fallback and source-contract guidance point to `agentera decisions --format json` as sufficient for normal deliberation.
+      - GIVEN a deliberation references previous decisions WHEN the available decision context is complete THEN capability guidance avoids defensive raw `.agentera/decisions.yaml` reads.
+      - GIVEN compacted historical context is incomplete WHEN Resonera guidance encounters it THEN the limitation is surfaced as a decision caveat instead of a raw-read or git-history instruction.
   - number: 5
-    name: Current artifact remediation
-    depends_on: [2, 3]
+    name: Focused regression and startup-state validation
+    depends_on: [2, 3, 4]
     status: complete
     acceptance:
-      - GIVEN the current repository starts with over-cap TODO, progress, decisions, or health artifacts WHEN the new fix path runs THEN those artifacts end within 10 full, 40 compact, and 50 total retained entries.
-      - GIVEN remediation rewrites artifacts WHEN the diff is inspected THEN only permitted compaction changes appear and session remains within its existing 10/40/50 boundary.
-      - GIVEN artifact validation follows remediation WHEN TODO, progress, decisions, health, and session are checked THEN validation passes for the compacted artifacts.
+      - GIVEN focused CLI tests run WHEN decisions are full-detail, filtered, or compacted THEN pass and fail paths cover source-contract completeness, missing-field caveats, and path-resolution behavior.
+      - GIVEN startup state-access tests run WHEN Resonera-style decision context is available through the CLI THEN no new raw-after-CLI artifact read requirement is introduced.
+      - GIVEN repository gates run WHEN the implementation is complete THEN compaction and artifact validation gates remain passing.
   - number: 6
-    name: Repo gate enforcement and regression suite
-    depends_on: [4, 5]
+    name: 2.3.7 state and release metadata sync
+    depends_on: [1, 2, 3, 4, 5]
     status: complete
     acceptance:
-      - GIVEN artifact files are changed by apply_patch, scripts, generated edits, direct edits, or runtime write/edit hooks WHEN the repository gate runs THEN over-limit compactable artifacts are detected regardless of edit path.
-      - GIVEN a gate failure is reported WHEN the user reads the message THEN it includes the exact safe check or fix command needed to repair artifact state.
-      - GIVEN focused regression tests run WHEN they cover check over-cap failure, check in-bounds success, fix mutation, explicit validator valid and invalid results, mapped paths, missing optional artifacts, gate invocation, and retained hook behavior THEN every changed boundary has at least one pass and one fail-path test.
-  - number: 7
-    name: 2.3.6 state and release metadata sync
-    depends_on: [1, 2, 3, 4, 5, 6]
-    status: complete
-    acceptance:
-      - GIVEN compaction enforcement passes verification WHEN closeout runs THEN TODO, progress, docs, and changelog record the completed 2.3.6 patch and the remaining deferred source-contract train.
-      - GIVEN the docs semver policy maps fix work to a patch bump WHEN release metadata is synchronized THEN version-bearing files target 2.3.6 consistently.
-      - GIVEN the release metadata sync completes WHEN scope is audited THEN no publication, tag, remote push, installed app refresh, vision edit, objective-state edit, or unexpected session overrun occurred without explicit approval.
+      - GIVEN decision-context validation passes WHEN closeout runs THEN TODO, progress, docs, and changelog record the completed 2.3.7 source-contract patch and the remaining deferred source-contract train.
+      - GIVEN version-bearing files are inspected WHEN metadata is synchronized THEN the target version follows the existing docs.yaml semver policy and release train; any mismatch with the 2.3.7 TODO label is resolved explicitly before edits.
+      - GIVEN release metadata sync completes WHEN scope is audited THEN no publication, tag, remote push, installed app refresh, vision edit, or objective-state edit occurred without explicit approval.
 overall_acceptance:
-  - GIVEN any compactable artifact exceeds the 10/40/50 shape WHEN the repository check runs THEN the check fails before release or push can silently proceed.
-  - GIVEN a user runs the explicit fix path WHEN artifacts are over cap THEN compactable artifacts are bounded deterministically while exempt, unsupported, and protected artifacts are left alone.
-  - GIVEN artifact validation is invoked explicitly by artifact and file WHEN no runtime JSON hook payload exists THEN the command validates the requested artifact instead of returning a false pass.
-  - GIVEN 2.3.6 closes WHEN state and metadata sync finish THEN the repository records compaction enforcement as a patch release without publication, push, tag, installed app refresh, vision edit, or objective-state edit.
+  - GIVEN `agentera decisions --format json` is used during deliberation WHEN full-detail decisions are available THEN agents receive outcome, reasoning, alternatives, confidence, feeds-into, downstream consequence references, and a source contract without raw artifact reads.
+  - GIVEN compacted historical decision entries are encountered WHEN their full context is no longer retained THEN the CLI reports honest completeness caveats and does not imply raw YAML or git history must be read.
+  - GIVEN 2.3.7 closes WHEN validation and state sync finish THEN deferred 2.3.8+ source-contract TODOs remain visible and no prohibited release or protected-state action occurred.
 surprises: []

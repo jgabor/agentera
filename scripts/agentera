@@ -563,6 +563,35 @@ def _extract_entries(data: Any) -> list[dict]:
     return []
 
 
+_DECISION_ARCHIVE_RE = re.compile(r"Decision\s+(?P<number>\d+)(?:\s+\((?P<date>\d{4}-\d{2}-\d{2})\))?:\s*(?P<summary>.*)")
+
+
+def _decision_archive_entry(entry: Any) -> dict[str, Any]:
+    if isinstance(entry, dict):
+        archive_entry = dict(entry)
+    else:
+        archive_entry = {"summary": str(entry)}
+    archive_entry["compacted"] = True
+    summary = str(archive_entry.get("summary") or "")
+    match = _DECISION_ARCHIVE_RE.search(summary)
+    if match:
+        archive_entry.setdefault("number", int(match.group("number")))
+        if match.group("date"):
+            archive_entry.setdefault("date", match.group("date"))
+    return archive_entry
+
+
+def _extract_decision_entries(data: Any) -> list[dict[str, Any]]:
+    if not isinstance(data, dict):
+        return _extract_entries(data)
+    decisions = data.get("decisions") or []
+    archive = data.get("archive") or []
+    entries = [entry for entry in decisions if isinstance(entry, dict)] if isinstance(decisions, list) else []
+    if isinstance(archive, list):
+        entries.extend(_decision_archive_entry(entry) for entry in archive)
+    return entries
+
+
 def _as_list(value: Any) -> list:
     return value if isinstance(value, list) else []
 
@@ -604,6 +633,15 @@ def _filter_by_topic(entries: list[dict], topic: str, fields: dict) -> list[dict
     return [
         e for e in entries
         if any(t in str(e.get(fn, "")).lower() for fn in fnames)
+    ]
+
+
+def _filter_decisions_by_topic(entries: list[dict], topic: str, fields: dict) -> list[dict]:
+    t = topic.lower()
+    fnames = [*_string_field_names(fields), "summary", "outcome"]
+    return [
+        entry for entry in entries
+        if any(t in str(entry.get(field, "")).lower() for field in fnames)
     ]
 
 
@@ -938,6 +976,122 @@ def _structured_state(
     if source_contract is not None:
         payload["source_contract"] = source_contract
     return payload
+
+
+DECISION_CONTEXT_FIELDS = [
+    "number",
+    "date",
+    "question",
+    "context",
+    "alternatives",
+    "choice",
+    "reasoning",
+    "confidence",
+    "feeds_into",
+]
+
+
+def _decision_field_missing(entry: dict[str, Any], field: str) -> bool:
+    value = entry.get(field)
+    return value is None or value == "" or value == [] or value == {}
+
+
+def _decision_downstream_references(entry: dict[str, Any]) -> list[dict[str, str]] | None:
+    value = entry.get("feeds_into")
+    if value is None or value == "":
+        return None
+    if isinstance(value, list):
+        refs = [str(item).strip() for item in value if str(item).strip()]
+    else:
+        refs = [part.strip() for part in str(value).split(",") if part.strip()]
+    if not refs:
+        return None
+    return [{"source_field": "feeds_into", "reference": ref} for ref in refs]
+
+
+def _decision_context_entry(entry: dict[str, Any]) -> dict[str, Any]:
+    enriched = dict(entry)
+    if enriched.get("outcome") in (None, "") and enriched.get("choice") not in (None, ""):
+        enriched["outcome"] = enriched["choice"]
+
+    compacted = bool(enriched.get("compacted")) or (
+        "summary" in enriched
+        and any(_decision_field_missing(enriched, field) for field in ("question", "reasoning", "confidence"))
+    )
+    missing_fields = [field for field in DECISION_CONTEXT_FIELDS if _decision_field_missing(enriched, field)]
+    if _decision_field_missing(enriched, "choice") and _decision_field_missing(enriched, "outcome"):
+        missing_fields.append("outcome")
+
+    downstream_references = _decision_downstream_references(enriched)
+    caveats: list[str] = []
+    if compacted:
+        caveats.append("Decision entry is compacted; full decision context is not available in this CLI result.")
+    if missing_fields:
+        caveats.append("Decision entry is missing one or more full-detail context fields.")
+    if downstream_references is None:
+        caveats.append("No explicit downstream consequence references were present; none were inferred.")
+
+    enriched["downstream_consequence_references"] = downstream_references
+    enriched["context_complete"] = not compacted and not missing_fields and downstream_references is not None
+    enriched["missing_fields"] = missing_fields
+    enriched["compacted"] = compacted
+    enriched["caveats"] = caveats
+    return enriched
+
+
+def _decision_source_contract(source: dict[str, Any], entries: list[dict[str, Any]], filters: dict[str, Any]) -> dict[str, Any]:
+    compacted_entries = sum(1 for entry in entries if entry.get("compacted"))
+    entries_with_missing_fields = sum(1 for entry in entries if entry.get("missing_fields"))
+    entries_without_downstream_references = sum(
+        1 for entry in entries if entry.get("downstream_consequence_references") is None
+    )
+    complete_for_returned = bool(source.get("exists")) and all(
+        entry.get("context_complete") is True for entry in entries
+    )
+    caveats = [
+        "Downstream consequence references are derived only from explicit structured feeds_into values; no references are inferred.",
+        "Compacted archive decisions are not expanded by this command and are not complete full-detail decision context.",
+    ]
+    if entries_with_missing_fields:
+        caveats.append("One or more returned decisions are missing full-detail context fields.")
+    if entries_without_downstream_references:
+        caveats.append("One or more returned decisions lack explicit downstream consequence references.")
+    return {
+        "artifact": "DECISIONS.md",
+        "path": source.get("path"),
+        "complete_for_returned_decisions": complete_for_returned,
+        "complete_for_decision_context": complete_for_returned,
+        "completeness": {
+            "returned_decisions": len(entries),
+            "context_complete": complete_for_returned,
+            "compacted_entries": compacted_entries,
+            "entries_with_missing_fields": entries_with_missing_fields,
+            "entries_without_downstream_references": entries_without_downstream_references,
+        },
+        "included_fields": [
+            *DECISION_CONTEXT_FIELDS,
+            "outcome",
+            "downstream_consequence_references",
+            "context_complete",
+            "missing_fields",
+            "compacted",
+            "caveats",
+        ],
+        "raw_artifact_reads_required": False,
+        "raw_artifact_read_policy": (
+            "Use `agentera decisions --format json` for normal deliberation context. "
+            "Do not read `.agentera/decisions.yaml` unless investigating artifact corruption or CLI defects; "
+            "historical compacted gaps are exposed through missing_fields and caveats."
+        ),
+        "caveats": caveats,
+        "fallback_behavior": {
+            "normal": "Use this command's entries and source_contract; no raw decision artifact read is required for returned full-detail or compacted decision entries.",
+            "filtered_result": "The same per-decision guarantees apply after filters; an empty filtered result means no matching returned decisions.",
+            "missing_or_incomplete": "If a required field is missing, treat only the present structured fields as authoritative and do not infer absent context.",
+            "compacted_history": "Compacted archive decisions are included with explicit missing_fields and caveats; treat absent historical context as unavailable during normal deliberation.",
+        },
+        "filters": {key: value for key, value in filters.items() if value is not None},
+    }
 
 
 def _plan_artifact_summary(data: dict[str, Any], header: dict[str, Any]) -> dict[str, Any]:
@@ -1504,18 +1658,22 @@ def _query_decisions(args: argparse.Namespace, schemas: dict) -> int:
         return 1
     path = _artifact_path(info, "decisions")
     data = _load_artifact(path)
-    entries = _extract_entries(data)
+    entries = _extract_decision_entries(data)
     topic = getattr(args, "topic", None)
     if topic:
-        entries = _filter_by_topic(entries, topic, info["fields"])
+        entries = _filter_decisions_by_topic(entries, topic, info["fields"])
     if _output_format(args) != "text":
+        entries = [_decision_context_entry(entry) for entry in entries]
+        source = _source_metadata("decisions", path)
+        filters = {"topic": topic}
         return _emit_state_structured(
             "decisions",
             _structured_state(
                 "decisions",
                 entries,
-                _source_metadata("decisions", path),
-                filters={"topic": topic},
+                source,
+                filters=filters,
+                source_contract=_decision_source_contract(source, entries, filters),
             ),
             args,
         )

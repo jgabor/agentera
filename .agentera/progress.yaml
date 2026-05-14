@@ -1,4 +1,331 @@
 cycles:
+- number: 482
+  timestamp: 2026-05-14 22:05
+  type: fix
+  phase: build
+  what: Synchronized PLAN Task 6 closeout state and release metadata for the active
+    2.3.7 Decision Context Source Contract without updating plan status, refreshing
+    installed apps, editing vision or objective state, publishing, tagging, pushing,
+    or committing.
+  commit: pending
+  inspiration: Task 6 required TODO, changelog, docs, progress, and version-bearing
+    package surfaces to agree that the decision-context source-contract patch is complete
+    while the remaining 2.3.8+ source-contract train stays visible.
+  discovered: 'The exact TODO label was `[feat:2.3.7]`, while `.agentera/docs.yaml`
+    maps `feat` to a minor bump. The active plan, TODO target, and release train already
+    selected a bounded 2.3.7 patch closeout, so the mismatch is explicitly resolved
+    in docs evidence by honoring 2.3.7 for this source-contract patch and keeping
+    future unselected feature targets governed by `semver_policy`.
+
+    '
+  verified: '`uv run hooks/validate_artifact.py --artifact TODO.md --file TODO.md
+    --format json`, `uv run hooks/validate_artifact.py --artifact CHANGELOG.md --file
+    CHANGELOG.md --format json`, `uv run hooks/validate_artifact.py --artifact DOCS.md
+    --file .agentera/docs.yaml --format json`, `uv run hooks/validate_artifact.py
+    --artifact PROGRESS.md --file .agentera/progress.yaml --format json`, and `uv
+    run hooks/validate_artifact.py --artifact SESSION.md --file .agentera/session.yaml
+    --format json` passed. `uv run pytest tests/test_query_cli.py::TestDecisions
+    tests/test_resonera_capability.py -q` passed with 19 focused decision and Resonera
+    tests. `uv run pytest tests/test_package_registry.py tests/test_runtime_adapters.py
+    -k ''version_bearing_package_surfaces_align or opencode_agentera_version_reader_extracts_current_literal
+    or opencode_version_marker_is_documented'' tests/test_startup_analysis_contract.py::test_benchmark_persistence_appends_aggregate_row_and_latest_reports
+    -q` passed with 3 selected version-surface tests. `python -m py_compile scripts/agentera
+    hooks/validate_artifact.py hooks/compaction.py scripts/validate_capability.py scripts/package_registry.py
+    scripts/startup_analysis_contract.py` passed. Initial `uv run scripts/agentera gate
+    --format json` and `uv run scripts/agentera compact --mode check --format json`
+    correctly failed because this closeout pushed TODO Resolved and PROGRESS one entry
+    over the 10/40/50 boundary; `uv run scripts/agentera compact --mode fix --format
+    json` passed and compacted only TODO.md#Resolved and PROGRESS.md. Pre-edit CLI
+    state confirmed `agentera decisions --format json` returns 50 entries, 40 compacted
+    entries, explicit compacted caveats, and `raw_artifact_reads_required: false`;
+    `agentera hej --format json --capability-context realisera` reported the installed
+    app as update-needed, and no installed app refresh was performed. Final `uv run
+    scripts/agentera gate --format json`, `uv run scripts/agentera compact --mode
+    check --format json`, `uv run scripts/agentera decisions --format json`, and
+    `git diff --check` passed after compaction.
+
+    '
+  next: 'Hand Task 6 back to Orkestrera evaluation. Do not update `.agentera/plan.yaml`
+    status, publish, tag, push, refresh installed apps, edit vision, or edit objective
+    state.
+
+    '
+  context:
+    intent: PLAN Task 6 state and release metadata sync for 2.3.7 Decision Context
+      Source Contract
+    constraints: execute Task 6 only; closeout artifacts and version metadata only;
+      preserve Decision 45 structured CLI boundaries, Decision 44 plain vocabulary,
+      docs.yaml path resolution, compaction gate behavior, and routine `agentera decisions`;
+      no 2.3.8+ implementation; no plan-status edit; no installed app refresh; no
+      vision edit; no objective-state edit; no commit, tag, push, or publish
+    scope: TODO.md, CHANGELOG.md, .agentera/docs.yaml, .agentera/progress.yaml, version-bearing
+      package surfaces, skill frontmatter, and version-alignment tests
+- number: 481
+  timestamp: 2026-05-14 21:30
+  type: fix
+  phase: build
+  what: Performed PLAN Task 5 focused regression and startup-state validation for
+    active plan 2.3.7 Decision Context Source Contract without changing product behavior,
+    plan status, release metadata, installed apps, vision, objective state, tags,
+    remotes, or publication state.
+  commit: pending
+  inspiration: Task 5 required independent validation that decision CLI JSON source-contract
+    behavior, Resonera startup guidance, startup state-access metrics, compaction,
+    and artifact validation all still pass after Tasks 1-4.
+  discovered: 'Focused validation passed without a product-behavior fix. The live
+    decisions CLI returned 50 decision entries with 40 compacted archive entries,
+    explicit missing-field caveats, `raw_artifact_reads_required: false`, and source-contract
+    fallback text that does not require raw decision artifact reads for normal returned
+    context.'
+  verified: '`uv run pytest tests/test_query_cli.py::TestDecisions::test_json_decisions_include_source_contract_and_context_fields
+    tests/test_query_cli.py::TestDecisions::test_filtered_json_decisions_keep_source_contract_and_guarantees
+    tests/test_query_cli.py::TestDecisions::test_json_decisions_do_not_fabricate_downstream_references
+    tests/test_query_cli.py::TestDecisions::test_json_compacted_decision_is_marked_incomplete
+    tests/test_query_cli.py::TestDecisions::test_json_compacted_decision_keeps_retained_outcome_fields
+    tests/test_query_cli.py::TestDecisions::test_filtered_json_decisions_can_match_compacted_summary
+    tests/test_query_cli.py::TestDecisions::test_decision_compact_fields_agree_with_schema_and_cli_contract`
+    passed with 7 tests. `uv run pytest tests/test_resonera_capability.py::test_resonera_startup_uses_decisions_cli_source_contract
+    tests/test_resonera_capability.py::test_resonera_treats_compacted_decisions_as_caveats_not_raw_read_fallback`
+    passed with 2 tests. `uv run pytest tests/test_startup_analysis_contract.py` passed
+    with 39 tests. `uv run pytest tests/test_compaction_status.py tests/test_hook_v2.py
+    -q` passed with 82 tests. `uv run scripts/validate_capability.py skills/agentera/capabilities/resonera`
+    passed. `uv run scripts/validate_capability.py --self-validate` passed. `uv run
+    scripts/agentera decisions --format json` passed and returned 50 entries, 40 compacted
+    entries, and `raw_artifact_reads_required: false`. Pre-progress `uv run scripts/agentera
+    gate`, explicit PROGRESS and DECISIONS artifact validation, `python -m py_compile
+    scripts/agentera hooks/validate_artifact.py hooks/compaction.py scripts/validate_capability.py`,
+    and `git diff --check` passed. Adding this cycle pushed PROGRESS over the 10/40/50
+    boundary; `uv run scripts/agentera compact --mode fix --format json` passed and
+    compacted PROGRESS only. Final `uv run scripts/agentera gate --format json`, `uv
+    run scripts/agentera compact --mode check --format json`, explicit PROGRESS and
+    DECISIONS artifact validation, `python -m py_compile scripts/agentera hooks/validate_artifact.py
+    hooks/compaction.py scripts/validate_capability.py`, `git diff --check`, and `uv
+    run scripts/agentera progress --format json` passed.'
+  next: Hand Task 5 back to Orkestrera evaluation. Do not perform Task 6 release metadata
+    sync, do not update plan status, and do not tag, push, publish, refresh installed
+    apps, edit vision, or edit objective state.
+  context:
+    intent: PLAN Task 5 focused regression and startup-state validation for 2.3.7
+      Decision Context Source Contract
+    constraints: execute Task 5 only; no product behavior unless validation failed;
+      no release metadata sync; no installed app refresh; no plan-status edit; no
+      vision edit; no objective-state edit; no commit, tag, push, or publish
+    scope: Focused decisions CLI tests, Resonera guidance tests, startup state-access
+      contract tests, compaction and artifact validation gates, capability validation,
+      py_compile, diff check, live decisions CLI verification, and this progress cycle
+- number: 480
+  timestamp: 2026-05-14 21:22
+  type: fix
+  phase: build
+  what: Implemented PLAN Task 4 Resonera startup and deliberation integration for
+    active plan 2.3.7 without updating plan status, release metadata, installed apps,
+    vision, objective state, or later-task validation scope.
+  commit: pending
+  inspiration: Task 4 required Resonera to consume the Task 1-3 decision context source
+    contract directly, so normal deliberation starts from `agentera decisions --format
+    json` instead of defensive raw decision artifact reads or historical reconstruction.
+  discovered: Resonera prose still referenced prior `DECISIONS.md` existence rather
+    than the structured decisions CLI source contract, and the compacted-history fallback
+    text still named git history even while telling agents not to use it. That wording
+    could keep the defensive fallback in agent behavior despite the CLI now exposing
+    archive entries, completeness fields, missing fields, and caveats.
+  verified: '`uv run pytest tests/test_resonera_capability.py tests/test_query_cli.py::TestDecisions
+    -q` passed with 19 focused Resonera and decisions tests. `uv run scripts/agentera
+    decisions --format json` passed and returned 50 entries with source_contract,
+    compacted caveats, and no compacted-history git fallback wording. `uv run scripts/agentera
+    decisions --topic dispatch --format json` passed and returned compacted Decision
+    42 with explicit missing_fields and caveats. `python -m py_compile scripts/agentera`
+    passed. `uv run scripts/validate_capability.py skills/agentera/capabilities/resonera`
+    passed. `uv run hooks/validate_artifact.py --artifact DECISIONS.md --file .agentera/decisions.yaml
+    --format json` passed. Pre-progress `uv run scripts/agentera gate --format json`,
+    `uv run scripts/agentera compact --mode check --format json`, and `git diff --check`
+    passed. Adding this cycle pushed PROGRESS over the 10/40/50 boundary; `uv run
+    scripts/agentera compact --mode fix --format json` passed and compacted PROGRESS
+    only. Final PROGRESS validation, DECISIONS validation, gate, compact check, and
+    `git diff --check` passed.'
+  next: Hand Task 4 back to Orkestrera evaluation. Do not implement Tasks 5-6, do
+    not update plan status, and do not tag, push, publish, refresh installed apps,
+    edit vision, or edit objective state.
+  context:
+    intent: PLAN Task 4 Resonera startup and deliberation integration for 2.3.7 Decision
+      Context Source Contract
+    constraints: execute Task 4 only; no final focused validation or release metadata
+      sync beyond Task 4 needs; no plan-status edit; no installed app refresh; no
+      vision edit; no objective-state edit; no commit, tag, push, or publish
+    scope: Resonera prose, Resonera artifact guidance, compacted-history fallback
+      wording in decision CLI JSON source_contract, focused tests, real decision CLI
+      verification, and this progress cycle
+- number: 479
+  timestamp: 2026-05-14 21:18
+  type: fix
+  phase: build
+  what: Implemented PLAN Task 3 compacted decision completeness and future preservation
+    for active plan 2.3.7 without changing Resonera startup/prose integration, startup-state
+    validation scope, release metadata, installed apps, plan status, vision, or objective
+    state.
+  commit: pending
+  inspiration: 'Orkestrera scoped this cycle to the decision context source contract
+    gap left after Task 2: compacted historical decisions must be visible through
+    normal JSON with explicit missing-field boundaries, and future compaction must
+    retain schema-allowed outcome information instead of forcing raw YAML or git-history
+    fallback.'
+  discovered: The decisions CLI loaded only the active `decisions` list and ignored
+    the `archive` list, so current compacted historical entries were invisible to
+    JSON consumers. YAML decision compaction also reduced future full decisions to
+    summary-only archive entries, discarding structured number/date/choice, outcome,
+    and explicit feeds_into data that the source contract can safely expose without
+    inference. The focused fix keeps compacted entries incomplete for unavailable
+    context, reasoning, alternatives, confidence, and missing downstream references.
+  verified: '`uv run pytest tests/test_query_cli.py::TestDecisions tests/test_compaction_status.py::test_decision_compaction_retains_schema_allowed_outcome_fields
+    tests/test_decision45_cli_contract.py tests/test_decision44_vocabulary.py` passed
+    with 21 tests covering compacted historical JSON behavior, compacted summary topic
+    filtering, future decision compaction retained fields, schema/CLI agreement, Decision
+    45 CLI boundaries, and Decision 44 vocabulary. `python -m py_compile scripts/agentera
+    hooks/compaction.py` passed. `uv run scripts/agentera decisions --format json`
+    passed and returned 50 entries with 40 compacted archive entries, explicit `missing_fields`,
+    `compacted`, `caveats`, and source-contract completeness counts. `uv run scripts/agentera
+    decisions --topic dispatch --format json` passed and returned compacted Decision
+    42 with explicit missing fields and no inferred downstream references. `uv run
+    hooks/validate_artifact.py --artifact DECISIONS.md --file .agentera/decisions.yaml
+    --format json` passed. Pre-progress `uv run scripts/agentera gate --format json`,
+    `uv run scripts/agentera compact --mode check --format json`, and `git diff --check`
+    passed. Adding this cycle pushed PROGRESS over the 10/40/50 boundary; `uv run
+    scripts/agentera compact --mode fix --format json` passed and compacted PROGRESS
+    only. Final `uv run scripts/agentera gate --format json`, `uv run scripts/agentera
+    compact --mode check --format json`, DECISIONS validation, `git diff --check`,
+    and py_compile passed after compaction.'
+  next: Hand Task 3 back to Orkestrera evaluation. Do not implement Tasks 4-6, do
+    not update plan status, and do not tag, push, publish, refresh installed apps,
+    edit vision, or edit objective state.
+  context:
+    intent: PLAN Task 3 compacted decision completeness and future preservation for
+      2.3.7 Decision Context Source Contract
+    constraints: execute Task 3 only; no Resonera startup/prose integration; no focused
+      startup-state validation suite; no release metadata sync; no installed app refresh;
+      no plan-status edit; no vision edit; no objective-state edit; no commit, tag,
+      push, or publish
+    scope: scripts/agentera decisions JSON archive handling, decision artifact schema
+      archive fields, hooks/compaction.py decision YAML compaction, focused CLI/compaction/schema
+      tests, real decision CLI verification, and this progress cycle
+- number: 478
+  timestamp: 2026-05-14 20:54
+  type: fix
+  phase: build
+  what: 'Implemented PLAN Task 2 decisions CLI source-contract JSON output for the
+    active 2.3.7 Decision Context Source Contract without changing compaction preservation
+    behavior, Resonera guidance, startup-state validation scope, release metadata,
+    installed apps, vision, objective state, or plan status.
+
+    '
+  commit: pending
+  inspiration: 'Orkestrera scoped this cycle to the routine `agentera decisions` JSON
+    surface: returned decisions need stable structured context fields, truthful source
+    metadata, and non-inferential downstream consequence references so agents can
+    consume current decision context without raw artifact reads.
+
+    '
+  discovered: 'The decisions command already emitted active full-detail fields, so
+    the narrow fix was to normalize JSON entries only: add `outcome` as a `choice`
+    alias, derive `downstream_consequence_references` only from explicit `feeds_into`,
+    mark per-entry completeness through `context_complete`, `missing_fields`, `compacted`,
+    and `caveats`, and attach a top-level `source_contract` that declares included
+    fields, completeness, raw-read policy, caveats, and fallback behavior. Text output
+    remains unchanged, and compacted archive entries remain caveated/incomplete rather
+    than expanded or fabricated.
+
+    '
+  verified: '`uv run pytest tests/test_query_cli.py::TestDecisions -q` passed with
+    8 decisions tests covering unfiltered JSON contract shape, filtered JSON contract
+    shape, downstream reference derivation/non-fabrication, compacted incomplete markers,
+    and existing text behavior. `uv run pytest tests/test_query_cli.py -q` passed
+    with 137 query CLI tests. `uv run scripts/agentera decisions --format json` passed
+    and returned 10 complete active decisions with source_contract metadata. `uv run
+    scripts/agentera decisions --topic source-contract --format json` passed and returned
+    an empty filtered result with the same source_contract/fallback policy. `uv run
+    python -m py_compile scripts/agentera` passed with no output. Adding this cycle
+    temporarily pushed PROGRESS over the 10/40/50 retention limit; `uv run scripts/agentera
+    compact --mode fix --format json` passed and compacted PROGRESS only. Follow-up
+    `uv run scripts/agentera gate --format json`, `uv run scripts/agentera compact
+    --mode check --format json`, explicit PROGRESS/DECISIONS artifact validation,
+    and `git diff --check` all passed.
+
+    '
+  next: 'Hand Task 2 back to Orkestrera evaluation. Do not implement Tasks 3-6, do
+    not change plan status, do not tag, push, publish, refresh installed apps, edit
+    vision, or edit objective state.
+
+    '
+  context:
+    intent: PLAN Task 2 decisions CLI source-contract output for 2.3.7 Decision Context
+      Source Contract
+    constraints: execute Task 2 only; no compacted decision preservation behavior;
+      no Resonera guidance changes; no startup-state validation suite; no release
+      metadata sync; no installed app refresh; no plan-status edit; no vision edit;
+      no objective-state edit; no commit, tag, push, or publish
+    scope: scripts/agentera decisions JSON output, focused query CLI tests, real decisions
+      command verification, and this progress cycle
+- number: 477
+  timestamp: 2026-05-14 20:42
+  type: fix
+  phase: build
+  what: 'Recorded PLAN Task 1 decision-context inventory evidence and the 2.3.6 archive
+    boundary for the active 2.3.7 Decision Context Source Contract without changing
+    Task 1 status, implementing CLI output changes, changing compaction behavior,
+    editing Resonera guidance, syncing release metadata, refreshing installed apps,
+    or touching vision/objective state.
+
+    '
+  commit: pending
+  inspiration: 'Orkestrera scoped this cycle to inventory and reconciliation only:
+    establish which decision-context fields are already available, which are missing,
+    and which are incomplete for compacted historical decisions before downstream
+    source-contract implementation begins.
+
+    '
+  discovered: 'The current decisions CLI emits full-detail active decision fields
+    (`number`, `date`, `question`, `context`, `alternatives`, `choice`, `reasoning`,
+    `confidence`, and `feeds_into`) but no decision-specific `source_contract`, per-entry
+    completeness flags, missing-field list, compacted marker, caveats, explicit raw-read
+    policy, outcome alias, or structured downstream consequence references. The decisions
+    artifact contains 10 full entries plus 40 compacted archive entries. Decision
+    schema DR1 and the compaction formatter preserve only decision number, date, and
+    choice/summary for compacted entries, so archived decisions are incomplete for
+    question, context, alternatives, reasoning, confidence, structured feeds-into,
+    and downstream consequence references. Resonera guidance still tells sessions
+    to reference DECISIONS.md and read mapped artifacts rather than treating `agentera
+    decisions --format json` plus a source contract as sufficient. The active 2.3.7
+    plan already references the completed 2.3.6 archive path.
+
+    '
+  verified: '`uv run scripts/agentera decisions --format json` passed and returned
+    10 active full-detail entries from `.agentera/decisions.yaml`. `uv run scripts/agentera
+    decisions --topic source-contract --format json` passed with an empty filtered
+    result and no source-contract metadata. `uv run scripts/agentera gate --format
+    json` passed before evidence edits with over_limit_count 0 and changed_count 0,
+    including DECISIONS.md active_count 10, archive_count 40, total_count 50, over_limit_count
+    0. `uv run scripts/agentera compact --mode check --format json` passed before
+    evidence edits with the same decisions boundary. Direct archive inspection confirmed
+    `.agentera/archive/PLAN-2026-05-14-2-3-6-artifact-compaction-enforcement-patch.yaml`
+    has `header.status: complete`, and `uv run scripts/agentera plan --format json`
+    confirmed active 2.3.7 `previous_plan_archived` points to that archive path.
+
+    '
+  next: 'Hand Task 1 back to Orkestrera evaluation. Do not implement Tasks 2-6, do
+    not change Task 1 status, do not add decision CLI source-contract behavior, do
+    not change compaction behavior or Resonera guidance, and do not tag, push, publish,
+    refresh installed apps, edit vision, or edit objective state.
+
+    '
+  context:
+    intent: PLAN Task 1 decision context inventory and archive boundary for 2.3.7
+      Decision Context Source Contract
+    constraints: execute Task 1 only; no commit; no push; no tag; no publish; no installed
+      app refresh; no plan-status edit; no Tasks 2-6 behavior changes; no vision edit;
+      no objective-state edit; no raw artifact or git-history fallback recommendation
+      for normal deliberation
+    scope: .agentera/plan.yaml evidence, .agentera/progress.yaml cycle, decisions
+      CLI output, decisions artifact/schema, decision compaction status, Resonera
+      guidance inventory, 2.3.6 archive boundary, and validation
 - number: 476
   timestamp: 2026-05-14 19:10
   type: fix
@@ -25,15 +352,15 @@ cycles:
   verified: 'Explicit artifact validation passed for TODO.md, CHANGELOG.md, DOCS.md,
     PROGRESS.md, and SESSION.md after closeout and explicit compaction. `uv run scripts/agentera
     compact --mode fix --format json` compacted the one-entry TODO Resolved and PROGRESS
-    overflows caused by the closeout entry, preserving CHANGELOG as exempt public history.
-    `uv run scripts/agentera gate --format json` passed with over_limit_count 0 and
-    changed_count 0. `uv run scripts/agentera compact --mode check --format json` passed
-    with over_limit_count 0 and changed_count 0. Version alignment passed with `uv run
-    pytest tests/test_package_registry.py -q` and `uv run pytest tests/test_startup_analysis_contract.py::test_benchmark_persistence_appends_aggregate_row_and_latest_reports
+    overflows caused by the closeout entry, preserving CHANGELOG as exempt public
+    history. `uv run scripts/agentera gate --format json` passed with over_limit_count
+    0 and changed_count 0. `uv run scripts/agentera compact --mode check --format
+    json` passed with over_limit_count 0 and changed_count 0. Version alignment passed
+    with `uv run pytest tests/test_package_registry.py -q` and `uv run pytest tests/test_startup_analysis_contract.py::test_benchmark_persistence_appends_aggregate_row_and_latest_reports
     -q`. Focused compaction and gate regressions passed with `uv run pytest tests/test_compaction_status.py
     tests/test_explicit_cli_surfaces.py -q`; hook/session compaction regressions passed
-    with `uv run pytest tests/test_hook_v2.py tests/test_session_stop.py -q`. `uv run
-    python -m py_compile scripts/agentera hooks/compaction.py hooks/validate_artifact.py
+    with `uv run pytest tests/test_hook_v2.py tests/test_session_stop.py -q`. `uv
+    run python -m py_compile scripts/agentera hooks/compaction.py hooks/validate_artifact.py
     hooks/session_stop.py scripts/package_registry.py scripts/startup_analysis_contract.py`
     passed with no output, and `git diff --check` passed with no output.
 
@@ -207,281 +534,23 @@ cycles:
       edit; no real repository artifact remediation
     scope: hooks/validate_artifact.py runtime post-write validation and compaction
       behavior, focused hook regression tests, and this progress cycle
-- number: 472
-  timestamp: 2026-05-14 18:10
-  type: feat
-  phase: build
-  what: 'Implemented PLAN Task 3 explicit CLI surfaces for the active 2.3.6 artifact
-    compaction enforcement patch without remediating real over-cap repository artifacts
-    or changing plan status.
-
-    '
-  commit: pending
-  inspiration: 'Orkestrera scoped this cycle to Task 3 only: expose truthful compaction
-    CLI check/fix output and explicit artifact validation while preserving Task 1/2
-    shared compaction behavior, docs.yaml path resolution, CHANGELOG exemption, and
-    objective-state skip boundaries.
-
-    '
-  discovered: 'The explicit validator path was indeed stdin-only and could silently
-    pass when called with artifact and file intent. The CLI also needed to tolerate
-    stale installed compaction helpers by falling back to the local helper only when
-    the active helper lacks the Task 2 run_compaction contract.
-
-    '
-  verified: '`uv run pytest tests/test_explicit_cli_surfaces.py -q` passed with 6
-    tests. `uv run pytest tests/test_compaction_status.py -q` passed with 6 tests.
-    `uv run python -m py_compile scripts/agentera hooks/validate_artifact.py hooks/compaction.py`
-    passed with no output. `uv run hooks/validate_artifact.py --artifact PROGRESS.md
-    --file .agentera/progress.yaml --format json` returned exit 2 truthfully for pre-existing
-    progress schema violations. `git diff --check` passed with no output. `uv run
-    scripts/agentera compact --format json` returned exit 1 in check mode, reporting
-    existing over-cap repository artifacts without remediating them.
-
-    '
-  next: 'Hand Task 3 back to Orkestrera evaluation. Do not implement runtime hook
-    convergence, real artifact remediation, repository gates, release metadata sync,
-    tagging, pushing, publishing, installed app refresh, vision edits, or objective-state
-    edits without explicit orchestration.
-
-    '
-  context:
-    intent: PLAN Task 3 explicit CLI surfaces for artifact compaction enforcement
-    constraints: implement Task 3 only; no real repository artifact remediation; no
-      commit; no push; no tag; no publish; no installed app refresh; no plan-status
-      edit; no vision edit; no objective-state edit
-    scope: scripts/agentera compact CLI, hooks/validate_artifact.py explicit argument
-      validation mode, focused tests, and this progress cycle
-- number: 471
-  timestamp: 2026-05-14 17:42
-  type: fix
-  phase: build
-  what: 'Retried PLAN Task 2 shared compaction check and fix behavior by closing the
-    evaluator-found TODO Resolved overflow gap without expanding scope into CLI surfaces,
-    repository gates, or real artifact remediation.
-
-    '
-  commit: pending
-  inspiration: 'The evaluator proved AC2 still failed for TODO Resolved when entries
-    were already compact one-line bullets: check mode saw the artifact as over-limit,
-    but fix mode preserved up to 50 one-line entries and left the archive budget 10
-    entries over the uniform 10/40/50 contract.
-
-    '
-  discovered: 'The TODO-specific no-op guard only considered total and full-entry
-    limits, so `oneline > 40` could bypass compaction. The TODO compactor also allocated
-    by total retained slots instead of independently enforcing at most 10 full entries
-    and at most 40 compact one-line entries.
-
-    '
-  verified: '`uv run pytest tests/test_compaction_status.py -q` passed with 6 tests,
-    including the new isolated 53 one-line TODO Resolved regression. `uv run pytest
-    tests/test_session_stop.py::TestCompactEntries tests/test_session_stop.py::TestWriteSessionBookmarkCompaction
-    -q` passed with 3 tests. `uv run python -m py_compile hooks/compaction.py` passed
-    with no output. `uv run hooks/validate_artifact.py --artifact PROGRESS.md --file
-    .agentera/progress.yaml` passed with no output. `git diff --check` passed with
-    no output. Real repository artifacts were not remediated; fix mode only ran against
-    pytest tmp_path fixtures.
-
-    '
-  next: 'Hand the Task 2 retry back to Orkestrera evaluation. Do not implement Task
-    3 CLI surfaces, Task 5 real artifact remediation, or Task 6 repo gate without
-    explicit orchestration.
-
-    '
-  context:
-    intent: PLAN Task 2 retry for TODO Resolved compaction AC2 failure
-    constraints: fix only TODO Resolved check/fix behavior; no commit; no push; no
-      tag; no publish; no installed app refresh; no plan-status edit; no vision edit;
-      no objective-state edit; no real artifact remediation
-    scope: hooks/compaction.py TODO Resolved thresholds, focused regression tests,
-      and this progress cycle
-- number: 470
-  timestamp: 2026-05-14 17:15
-  type: fix
-  phase: build
-  what: 'Implemented PLAN Task 2 shared compaction check and fix behavior for the
-    active 2.3.6 artifact compaction enforcement patch, limited to core/helper APIs
-    and isolated fixture tests.
-
-    '
-  commit: pending
-  inspiration: 'Orkestrera scoped this cycle to Task 2 only: shared check/fix behavior,
-    no public CLI command, no repository gate, no real artifact remediation, no plan-status
-    edit, and no vision or objective-state mutation.
-
-    '
-  discovered: 'Task 1 had added read-only YAML-aware status, while existing mutation
-    paths only compacted Markdown-style files and TODO Resolved. The compaction module
-    also still claimed pure stdlib despite importing PyYAML. Task 2 therefore needed
-    a project-level check/fix seam plus YAML compaction that preserves unrelated top-level
-    metadata while bounding active and archive entries.
-
-    '
-  verified: '`uv run pytest tests/test_compaction_status.py` passed with 5 tests.
-    `uv run pytest tests/test_session_stop.py::TestCompactEntries tests/test_session_stop.py::TestWriteSessionBookmarkCompaction`
-    passed with 3 tests. `uv run python -m py_compile hooks/compaction.py` passed
-    with no output. `git diff --check` passed with no output. The progress artifact
-    hook validator ran against `.agentera/progress.yaml` and failed on pre-existing
-    historical cycle values outside this Task 2 change, including older `type: release`,
-    `type: validation`, `type: code`, `phase: verify`, `phase: release`, and `phase:
-    validate` entries.
-
-    '
-  next: 'Hand Task 2 to Orkestrera evaluation. Do not implement Task 3 public CLI,
-    Task 5 artifact remediation, Task 6 repo gate, or Task 7 follow-up behavior without
-    explicit orchestration.
-
-    '
-  context:
-    intent: PLAN Task 2 shared compaction check and fix behavior
-    constraints: implement Task 2 only; no commit; no push; no publish; no tag; no
-      public CLI command; no repository gate; no real over-limit artifact remediation;
-      no plan-status edit; no vision edit; no objective-state edit; preserve docs.yaml
-      path resolution, changelog exemption, session-stop bookmark compaction, and
-      existing decision compaction contract
-    scope: hooks/compaction.py shared check/fix helpers, YAML compaction behavior,
-      focused isolated tests, and this progress cycle
-- number: 469
-  timestamp: 2026-05-14 16:30
-  type: fix
-  phase: build
-  what: 'Implemented PLAN Task 1 compaction contract inventory and reconciliation
-    for the active 2.3.6 artifact compaction enforcement patch without changing PLAN
-    task status or remediating current over-cap artifacts.
-
-    '
-  commit: pending
-  inspiration: 'Orkestrera scoped this cycle to Task 1 only: compute read-only compaction
-    status for the explicit artifact families, preserve docs.yaml path mapping, classify
-    exempt/unsupported/protected artifacts without mutation, and record whether schema
-    metadata needs cleanup before later behavior-changing tasks.
-
-    '
-  discovered: 'The shipped compaction writer still parses Markdown-style progress,
-    decisions, health, and experiment entries, while the live artifacts are v2 YAML.
-    Task 1 therefore added a read-only YAML-aware status helper rather than a fix
-    path. Current counts are TODO Resolved active=0 archive=53 total=53 over=13, progress
-    active=225 archive=40 total=265 over=215, decisions active=12 archive=40 total=52
-    over=2, health active=11 archive=9 total=20 over=1, and session active=10 archive=40
-    total=50 over=0. Changelog is exempt; plan, docs, and design are unsupported;
-    vision is protected; no objective-scoped experiment files are currently present.
-    Schema reconciliation found that minimal schema metadata updates are required
-    before later behavior-changing tasks because TODO lacks explicit Resolved compaction
-    metadata, while changelog/design/plan/docs budget wording still implies compaction
-    despite their Task 1 classification.
-
-    '
-  verified: '`uv run pytest tests/test_compaction_status.py -q` passed with 2 tests.
-    The current status inventory command parsed `hooks/compaction.py` and reported
-    the counts recorded in this cycle. `uv run pytest tests/test_compaction_status.py
-    tests/test_session_stop.py::TestCompactEntries tests/test_session_stop.py::TestWriteSessionBookmarkCompaction
-    -q` passed with 5 tests after correcting an initial invalid test selector. `uv
-    run hooks/validate_artifact.py --artifact PLAN.md --file .agentera/plan.yaml`,
-    `uv run hooks/validate_artifact.py --artifact PROGRESS.md --file .agentera/progress.yaml`,
-    `uv run python -m py_compile hooks/compaction.py`, and `git diff --check` passed
-    with no output.
-
-    '
-  next: 'Hand Task 1 to Orkestrera evaluation. Do not continue into Tasks 2-7 without
-    explicit orchestration, and do not compact/remediate current artifacts until the
-    planned remediation task.
-
-    '
-  context:
-    intent: PLAN Task 1 compaction contract inventory and reconciliation
-    constraints: execute only Task 1; no commit; no push; no publish; no tag; no installed
-      app refresh; no plan-status edit; no vision edit; no objective-state edit; preserve
-      docs.yaml path resolution, changelog public history exemption, session-stop
-      bookmark compaction, and current decision compaction contract
-    scope: hooks/compaction.py read-only status helper, focused tests, Task 1 plan
-      evidence, and this progress cycle
-- number: 466
-  timestamp: 2026-05-14 16:05
-  type: fix
-  phase: build
-  what: 'Retried PLAN Task 4 upgrade-versus-repair semantics for the 2.3.5 install-state
-    reliability patch by fixing only the mixed version-drift plus missing-command
-    failure.
-
-    '
-  commit: pending
-  inspiration: 'The evaluator found that pure version drift correctly rendered as
-    an update, but a stale or missing required CLI behavior signal was being hidden
-    by the top-level `update_needed` status when both signals were present.
-
-    '
-  discovered: '`scripts/agentera_upgrade.py` appended both `version_mismatch` and
-    `missing_command` signals, but top-level status precedence checked for any `update_needed`
-    signal before stale probe failures. That made structured consumers and doctor
-    wording treat a broken mixed state as update-only.
-
-    '
-  verified: '`uv run pytest tests/test_install_root_characterization.py::test_version_drift_plus_missing_required_command_remains_repair
-    tests/test_install_root_characterization.py::test_upgrade_characterizes_doctor_root_shapes
-    -q` passed with 2 tests. `uv run pytest tests/test_query_cli.py::TestHej::test_version_drift_reports_update_needed_not_repair
-    tests/test_query_cli.py::TestHej::test_version_drift_text_guidance_uses_update_wording
-    tests/test_install_root_characterization.py -q` passed with 9 tests. `uv run hooks/validate_artifact.py
-    --artifact PROGRESS.md --file .agentera/progress.yaml` passed with no output.
-    `git diff --check` passed with no output.
-
-    '
-  next: 'Hand Task 4 retry back to Orkestrera evaluation. Leave PLAN task status unchanged;
-    do not continue into Tasks 5-6.
-
-    '
-  context:
-    intent: PLAN Task 4 retry for upgrade versus repair semantics
-    constraints: execute only Task 4 retry; fix only identified failure; no commit;
-      no push; no plan-status edit; no vision edit; no objective-state edit; preserve
-      dry-run/apply/retry commands and approval text
-    scope: scripts/agentera_upgrade.py, tests/test_install_root_characterization.py,
-      and this progress entry
-- number: 465
-  timestamp: 2026-05-14 15:50
-  type: fix
-  phase: build
-  what: 'Implemented PLAN Task 4 upgrade-versus-repair semantics for the 2.3.5 install-state
-    reliability patch.
-
-    '
-  commit: pending
-  inspiration: 'Orkestrera scoped this cycle to Task 4 only: valid Agentera app files
-    with version drift must render as an update path, while missing behavior, malformed
-    app files, incomplete app files, and unsafe selected homes must retain repair
-    or blocked-state guidance.
-
-    '
-  discovered: 'The status builder used the same stale/repair channel for a proven
-    managed version mismatch and for unverifiable cases such as missing bundle markers
-    or missing required commands. Hej attention text and doctor recovery steps then
-    inherited repair wording even when the only problem was that valid app files were
-    behind the expected version.
-
-    '
-  verified: 'Initial focused run `uv run pytest tests/test_query_cli.py::TestHej tests/test_install_root_characterization.py::test_upgrade_characterizes_doctor_root_shapes`
-    failed with 3 expected red tests before the status semantics fix. Final run of
-    the same command passed with 31 tests. `uv run hooks/validate_artifact.py --artifact
-    PROGRESS.md --file .agentera/progress.yaml` passed with no output. `git diff --check`
-    passed with no output.
-
-    '
-  next: 'Hand Task 4 to Orkestrera evaluation. Leave PLAN task status unchanged; do
-    not continue into Tasks 5-6 without explicit orchestration.
-
-    '
-  context:
-    intent: PLAN Task 4 upgrade versus repair semantics
-    constraints: execute only Task 4; no commit; no push; no plan-status edit; no
-      vision edit; no objective-state edit; preserve dry-run-before-write, approval
-      text, retry commands, and read-only doctor behavior
-    scope: scripts/agentera, scripts/agentera_upgrade.py, tests/test_query_cli.py,
-      tests/test_install_root_characterization.py, and this progress entry
 archive:
+- summary: 'Cycle 472 (2026-05-14): Implemented PLAN Task 3 explicit CLI surfaces
+    for the active 2.3.6 artifact compaction enforcement patch...'
+- summary: 'Cycle 471 (2026-05-14): Retried PLAN Task 2 shared compaction check and
+    fix behavior by closing the evaluator-found TODO...'
+- summary: 'Cycle 470 (2026-05-14): Implemented PLAN Task 2 shared compaction check
+    and fix behavior for the active 2.3.6 artifact...'
+- summary: 'Cycle 469 (2026-05-14): Implemented PLAN Task 1 compaction contract inventory
+    and reconciliation for the active 2.3.6 artifact compaction...'
 - summary: 'Cycle 468 (2026-05-14): Synchronized PLAN Task 6 closeout metadata for
     the active 2.3.5 install-state reliability patch without changing PLAN status.'
 - summary: 'Cycle 467 (2026-05-14): Executed PLAN Task 5 focused regression validation
     for the active 2.3.5 install-state reliability patch without changing PLAN status.'
+- summary: 'Cycle 466 (2026-05-14): Retried PLAN Task 4 upgrade-versus-repair semantics
+    for the 2.3.5 install-state reliability patch by fixing only...'
+- summary: 'Cycle 465 (2026-05-14): Implemented PLAN Task 4 upgrade-versus-repair
+    semantics for the 2.3.5 install-state reliability patch.'
 - summary: 'Cycle 464 (2026-05-14): Implemented PLAN Task 3 runtime adapter propagation
     for the 2.3.5 install-state reliability patch.'
 - summary: 'Cycle 463 (2026-05-14): Implemented PLAN Task 2 installed CLI resolution
@@ -546,15 +615,3 @@ archive:
     measurement plan by verifying the existing corpus...'
 - summary: 'Cycle 433 (2026-05-13): Completed Task 1 for the active post-2.3 startup-overhead
     measurement plan by recording explicit runtime-history consent...'
-- summary: 'Cycle 432 (2026-05-13): Completed Task 8 for post-2.3 startup overhead
-    measurement by synchronizing progress, docs, TODO, changelog, and...'
-- summary: 'Cycle 431 (2026-05-13): Completed Task 7 for post-2.3 startup overhead
-    measurement by strengthening focused regression, non-live default validation,...'
-- summary: 'Cycle 430 (2026-05-13): Completed Task 6 for post-2.3 startup overhead
-    measurement by adding privacy-preserving structured and human-readable report...'
-- summary: 'Cycle 429 (2026-05-13): Completed Task 5 for post-2.3 startup overhead
-    measurement by adding threshold derivation and a recommendation...'
-- summary: 'Cycle 428 (2026-05-13): Completed Task 4 for post-2.3 startup overhead
-    measurement by adding a pure aggregation layer over...'
-- summary: 'Cycle 427 (2026-05-13): Completed Task 3 retry 1 for post-2.3 startup
-    overhead measurement by adding an explicit fixture/temp-store...'

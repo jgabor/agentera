@@ -105,10 +105,22 @@ The sharp colleague, here to help you think, not consult.
 
 1. Read relevant codebase context (enough to ask informed questions, not a research binge)
 2. If decision profile exists, read `$PROFILERA_PROFILE_DIR/PROFILE.md` directly. Check for high-confidence entries and surface them.
-3. If `DECISIONS.md` exists, reference prior decisions rather than re-deliberating
+3. Run `agentera decisions --format json` for prior decision context. Use the returned `entries` and `source_contract` as sufficient for normal deliberation, including capability startup fallback.
 4. Reflect your understanding in 1-2 sentences
 5. Ask the first question through the runtime-native question tool; for
    `resonera <topic>`, this is the first user-facing action after the reflection.
+
+### Decision context source contract
+
+For normal startup and deliberation, `agentera decisions --format json` is the
+decision context source. The JSON result includes active and archive entries,
+top-level `source_contract` guidance, and per-decision `context_complete`,
+`missing_fields`, `compacted`, and `caveats` fields.
+
+- When `source_contract.complete_for_returned_decisions` is true, reference the returned decisions without defensively reading raw `.agentera/decisions.yaml`.
+- When a returned decision is compacted or incomplete, surface the missing context as a decision caveat and continue with only the structured fields present.
+- Do not reconstruct absent historical reasoning, alternatives, confidence, or downstream references during normal deliberation.
+- Read the raw decision artifact only for explicit artifact repair/corruption work or after the CLI itself reports an unavailable/defective state path.
 
 ### If no topic is provided
 

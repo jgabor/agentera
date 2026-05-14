@@ -37,6 +37,23 @@ def _progress_cycle(number):
     }
 
 
+def _decision(number):
+    return {
+        "number": number,
+        "date": f"2026-05-{number:02d}",
+        "question": f"Question {number}?",
+        "context": f"Context {number}",
+        "alternatives": [
+            {"name": "Keep", "status": "chosen"},
+            {"name": "Skip", "status": "rejected"},
+        ],
+        "choice": f"Choice {number}",
+        "reasoning": f"Reasoning {number}",
+        "confidence": "firm",
+        "feeds_into": f"PLAN.md#DEC-{number}",
+    }
+
+
 def test_compaction_status_counts_mapped_compactable_artifacts(compaction, tmp_path):
     project = tmp_path
     _write_docs_mapping(project)
@@ -211,6 +228,50 @@ def test_fix_mode_compacts_todo_resolved_one_line_overflow(compaction, tmp_path)
     assert after_status.archive_count == 40
     assert after_status.total_count == 40
     assert after_status.over_limit_count == 0
+
+
+def test_decision_compaction_retains_schema_allowed_outcome_fields(compaction, tmp_path):
+    project = tmp_path
+    _write_docs_mapping(project)
+    state = project / "state"
+    state.mkdir()
+    (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
+    (state / "progress.yaml").write_text("cycles: []\narchive: []\n", encoding="utf-8")
+    (state / "health.yaml").write_text("audits: []\narchive: []\n", encoding="utf-8")
+    (state / "session.yaml").write_text("bookmarks: []\narchive: []\n", encoding="utf-8")
+    unrelated_paths = [state / "progress.yaml", state / "health.yaml", state / "session.yaml", state / "TODO.md"]
+    unrelated_originals = {path: path.read_text(encoding="utf-8") for path in unrelated_paths}
+    decisions_path = state / "decisions.yaml"
+    decisions_path.write_text(
+        yaml.safe_dump({"decisions": [_decision(i) for i in range(1, 13)], "archive": []}, sort_keys=False),
+        encoding="utf-8",
+    )
+
+    operations = {op.status.artifact: op for op in compaction.run_compaction(project, mode="fix")}
+    after = yaml.safe_load(decisions_path.read_text(encoding="utf-8"))
+
+    assert operations["DECISIONS.md"].action == "compacted"
+    assert [entry["number"] for entry in after["decisions"]] == [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    assert after["archive"] == [
+        {
+            "summary": "Decision 2 (2026-05-02): Choice 2",
+            "number": 2,
+            "date": "2026-05-02",
+            "choice": "Choice 2",
+            "feeds_into": "PLAN.md#DEC-2",
+            "outcome": "Choice 2",
+        },
+        {
+            "summary": "Decision 1 (2026-05-01): Choice 1",
+            "number": 1,
+            "date": "2026-05-01",
+            "choice": "Choice 1",
+            "feeds_into": "PLAN.md#DEC-1",
+            "outcome": "Choice 1",
+        },
+    ]
+    for path, original in unrelated_originals.items():
+        assert path.read_text(encoding="utf-8") == original
 
 
 def test_fix_mode_reports_missing_and_protected_without_blocking_compactable(compaction, tmp_path):
