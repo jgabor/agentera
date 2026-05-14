@@ -122,11 +122,15 @@ Capability names use Swedish-style `-era` verb forms. The name is the action:
 | Fallback to hej | No sufficient match routes to hej for orientation. |
 | Concrete next action | A route suggestion tied to an object such as `PLAN Task N`, `TODO`, `OBJECTIVE`, or `VISION refresh`. |
 | Suggest, don't force | Hej recommends the next capability but waits for user confirmation. |
-| Capability handoff label | A recommendation from one capability to another. Use glyph plus canonical name, such as `⧉ realisera` or `≡ planera`, not standalone slash-capability names. |
+| Capability handoff label | A recommendation from one capability to another. Use glyph plus canonical name, such as `⧉ realisera` or `≡ planera`, not standalone slash-capability names. SG priority codes are internal protocol references and are not user-facing handoff labels. |
 | Explicit route documentation | User-facing examples that teach the actual entry route. Use `/agentera <alias>` such as `/agentera build`; do not present aliases as CLI commands. |
 | Runtime question tool | Host-native bounded-choice prompt. Current examples: Claude Code `AskUserQuestion`, Copilot `ask_user`, Codex `request_user_input`, and OpenCode `question`. These are guidance examples, not schema authority. |
-| Question-tool gating | Use a native question tool only for at least two meaningful non-terminal next actions or consequential Proceed/Cancel; `Done` and custom/free-form answers do not count as alternatives. Initial Agentera/hej briefs stay free-form unless bounded choices were requested. |
-| Handoff confirmation | Selecting a downstream capability option in a bounded prompt confirms invocation; selecting `Done` stops without routing. |
+| Question-tool gating | Use a native question tool only for at least two meaningful non-terminal next actions or consequential Proceed/Cancel; `Done` and custom/free-form answers do not count as alternatives. Initial Agentera/hej briefs stay free-form unless bounded choices were requested. A single suggested handoff uses a free-form prompt, not a native question menu. This dispatcher rule governs hej and capability handoff prompts; invoked capability prose can impose stricter question-tool requirements. |
+| Handoff confirmation | Clear free-form acceptance of the named single suggestion confirms invocation. Selecting a downstream capability option in a bounded prompt also confirms invocation; selecting `Done` stops without routing. Ambiguous replies get one clarifying question. |
+| Route | Direct user invocation by canonical capability name, primary alias, or slash route. A route is already consent to invoke the capability and does not need an extra handoff confirmation. |
+| Suggest | Recommend a downstream capability and wait for confirmation. |
+| Dispatch | Autonomous invocation of another capability, allowed only when the current capability explicitly owns that orchestration flow. |
+| Chain | Autonomous dispatch of multiple capabilities, allowed only inside an explicitly orchestrated flow. Otherwise, suggest the next capability and wait. |
 | Legacy bridge | Temporary v1 entry points, especially `/hej`, that guide users to `/agentera` and the v2 upgrade path. |
 
 CLI-visible `agentera hej` labels are source labels. Preserve them in CLI tests

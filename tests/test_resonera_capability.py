@@ -118,3 +118,18 @@ def test_resonera_prose_exists_and_contains_workflow():
     content = prose_path.read_text()
     for required in ["Starting a session", "Asking good questions", "When the user picks", "Safety rails", "Exit signals"]:
         assert required in content, f"prose.md must contain section '{required}'"
+
+
+def test_resonera_requires_native_question_tool_after_routing():
+    content = (RESONERA_CAP_DIR / "prose.md").read_text(encoding="utf-8")
+    normalized = " ".join(content.split())
+
+    assert "Once routed to resonera" in normalized
+    assert "runtime-native question tool" in normalized
+    assert "Claude Code `AskUserQuestion`" in content
+    assert "OpenCode `question`" in normalized
+    assert "Copilot `ask_user`" in content
+    assert "Codex `request_user_input`" in content
+    assert "overrides the master dispatcher's generic hej/handoff question-tool gate" in normalized
+    assert "first user-facing action after the reflection" in normalized
+    assert "provide a provisional recommendation in the question text" in normalized

@@ -242,17 +242,38 @@ CLI state layer first for artifact-backed state.
 Capability handoffs use glyph plus canonical capability name, for example
 `⧉ realisera` or `≡ planera`. Reserve `/agentera <alias>` wording for explicit
 slash-route documentation and do not use standalone slash-capability names such
-as `/realisera` or `/planera` as handoff labels. The first Agentera/hej response
-in a fresh interaction should deliver the brief and a free-form continuation
-prompt, not a native question menu, unless the user explicitly asks for bounded
-choices. Mid-conversation, use the runtime's native question tool only when
-there are at least two meaningful non-terminal next actions or a consequential
-Proceed/Cancel decision; do not count `Done` or free-form/custom answer affordances
-as alternatives. Current host examples are Claude Code `AskUserQuestion`, Copilot
-`ask_user`, Codex `request_user_input`, and OpenCode `question`. Put the
-recommended choice first with `(Recommended)` in its label and include `Done`.
-Selecting a downstream capability option is confirmation to invoke that
-capability; selecting `Done` stops without routing.
+as `/realisera` or `/planera` as handoff labels. SG priority codes such as `SG2`
+are internal protocol references; do not render them in user-facing handoff
+labels.
+
+Handoff verbs are normative:
+
+- `route`: the user directly invoked a capability by canonical name, primary
+  alias, or slash route. This is consent to invoke that capability; do not ask
+  for extra handoff confirmation.
+- `suggest`: recommend a downstream capability and wait for user confirmation.
+- `handoff prompt`: ask whether to run the suggested capability. With one
+  suggested action, use a free-form prompt; clear replies such as `yes`, `start`,
+  `do it`, or `run <capability>` confirm the named suggestion. Ambiguous replies
+  get one clarifying question.
+- `dispatch`: invoke another capability autonomously only when the current
+  capability explicitly owns that orchestration flow.
+- `chain`: dispatch multiple capabilities autonomously only inside an explicitly
+  orchestrated flow; otherwise suggest the next capability and wait.
+
+The first Agentera/hej response in a fresh interaction should deliver the brief
+and a free-form continuation prompt, not a native question menu, unless the user
+explicitly asks for bounded choices. Mid-conversation, use the runtime's native
+question tool only when there are at least two meaningful non-terminal next
+actions or a consequential Proceed/Cancel decision; do not count `Done` or
+free-form/custom answer affordances as alternatives. Current host examples are
+Claude Code `AskUserQuestion`, Copilot `ask_user`, Codex `request_user_input`,
+and OpenCode `question`. Put the recommended choice first with `(Recommended)`
+in its label and include `Done`. Selecting a downstream capability option is
+confirmation to invoke that capability; selecting `Done` stops without routing.
+This generic question-tool gating applies to hej and capability handoff prompts.
+Once a capability is invoked, that capability's own interaction rules control
+whether the runtime-native question tool is required.
 
 ### Step 0: V1 migration handling
 

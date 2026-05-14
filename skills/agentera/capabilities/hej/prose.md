@@ -262,14 +262,15 @@ Show where things stand.
    - Valid objects: `PLAN Task N: <title>`, `TODO: <item>`, `DECISION N follow-up`, `OBJECTIVE: <metric>`, or `VISION refresh`.
    - A skill name without a concrete object is not a valid suggestion.
 
-    Priority order:
-   - Active PLAN with pending tasks → suggest ⎈ (SG12) orkestrera for the first unblocked pending task.
-   - Critical or degrading health → suggest ⛶ (SG3) inspektera or ⧉ (SG2) realisera for the named finding.
-   - Active non-closed OBJECTIVE with stalled or missing metric evidence → suggest ⎘ (SG7) optimera for that metric.
-   - TODO.md open items → suggest ⧉ (SG2) realisera for the highest-severity open item; prefer items that unlock product evidence or future plans.
-   - Pending DECISIONS.md follow-up → suggest ❈ (SG4) resonera for the named unresolved decision.
-   - Vision exists but no plan, objective, decision follow-up, or TODO work is active → suggest ≡ (SG5) planera.
-   - No vision, no executable follow-ups, and no active plan → suggest ⛥ (SG6) visionera to choose a direction.
+    Priority order. SG codes are internal protocol references; never render them
+    in user-facing handoff labels:
+   - Active PLAN with pending tasks → suggest ⎈ orkestrera for the first unblocked pending task.
+   - Critical or degrading health → suggest ⛶ inspektera or ⧉ realisera for the named finding.
+   - Active non-closed OBJECTIVE with stalled or missing metric evidence → suggest ⎘ optimera for that metric.
+   - TODO.md open items → suggest ⧉ realisera for the highest-severity open item; prefer items that unlock product evidence or future plans.
+   - Pending DECISIONS.md follow-up → suggest ❈ resonera for the named unresolved decision.
+   - Vision exists but no plan, objective, decision follow-up, or TODO work is active → suggest ≡ planera.
+   - No vision, no executable follow-ups, and no active plan → suggest ⛥ visionera to choose a direction.
 
    Do not let `healthy + plan complete → ⛥` override active TODO, OBJECTIVE, DECISIONS, or a newer active PLAN. A completed plan means "look for the next executable follow-up," not automatically "refresh vision."
 
@@ -278,6 +279,7 @@ Show where things stand.
    - The waiting bullet should ask whether to run the named action, not ask the user to pick from skills.
    - On the initial Agentera/hej brief, use a free-form continuation prompt rather than a native question menu unless the user asked for bounded choices.
    - Mid-conversation, use the native question tool only for at least two meaningful non-terminal next actions or a consequential Proceed/Cancel decision; `Done` and free-form/custom answer affordances do not count as alternatives.
+   - For one suggested action, clear free-form acceptance such as `yes`, `start`, `do it`, or `run <capability>` confirms that suggestion. Ambiguous replies get one clarifying question.
 
 ---
 

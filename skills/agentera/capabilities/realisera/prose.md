@@ -166,13 +166,14 @@ Each cycle: **build toward the vision, or fix something broken?** Consult the de
 
 **Fixing issues:** Pick from TODO.md by severity (critical > degraded > annoying).
 
-**Optimization-shaped work:** Delegate to ⎘ optimera for measurable metrics.
+**Optimization-shaped work:** suggest ⎘ optimera for measurable metrics and
+wait for confirmation instead of silently delegating.
 
 Write a 1-2 sentence rationale. Scope down aggressively.
 
 Compose a Context block for this cycle: intent, constraints, unknowns, and scope. Keep it ≤80 words.
 
-**Decision gate**: After selecting work, check whether any `exploratory` (DL3) entries in DECISIONS.md relate to the selected work area. If found: flag the uncertain foundation, suggest ❈ resonera to firm up the decision. In autonomous mode, proceed with the work but log the risk.
+**Decision gate**: After selecting work, check whether any `exploratory` (DL3) entries in DECISIONS.md relate to the selected work area. If found: flag the uncertain foundation, suggest ❈ resonera to firm up the decision, and wait for confirmation before invoking it. In autonomous mode, proceed with the work but log the risk instead of silently dispatching resonera.
 
 ### Step 3: Seek inspiration
 

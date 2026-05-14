@@ -53,7 +53,8 @@ Assess work complexity. Read the description (user, DECISIONS.md, or TODO.md). S
 | One module affected, clear scope, fits one realisera cycle | **Light** |
 | Multiple modules, multi-file changes, 3+ logical steps, new feature spanning architecture | **Full** |
 
-**Skip**: This doesn't need a plan. Route to ⧉ realisera. Stop here.
+**Skip**: This doesn't need a plan. Suggest ⧉ realisera and wait for
+confirmation unless the user already asked to implement now. Stop here.
 
 **Light or Full**: Proceed to planning.
 
@@ -210,8 +211,8 @@ surprises: []
 
 ## Step 6: Handoff
 
-- **Single task**: suggest ⧉ realisera to execute.
-- **Full plan**: suggest ⎈ orkestrera to execute the entire plan.
+- **Single task**: suggest ⧉ realisera to execute and wait for confirmation.
+- **Full plan**: suggest ⎈ orkestrera to execute the entire plan and wait for confirmation.
 
 ---
 

@@ -50,7 +50,7 @@ The sharp colleague, here to coordinate. Brief status updates between dispatches
 
 ## The orchestration loop
 
-The conductor follows a deterministic state machine. It does not reason creatively about orchestration; it follows the loop. All creativity happens in the dispatched capabilities.
+The conductor follows a deterministic state machine. It does not reason creatively about orchestration; it follows the loop. All creativity happens in the dispatched capabilities. In orkestrera only, `dispatch` and `chain` are autonomous orchestration verbs inside the approved conductor flow; if the loop says `suggest`, wait for user confirmation before invoking that capability.
 
 ### Step 0: Assess
 

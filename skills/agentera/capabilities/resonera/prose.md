@@ -86,9 +86,15 @@ The sharp colleague, here to help you think, not consult.
 
 ## Interaction rules
 
-- Ask questions through the runtime question tool (`AskUserQuestion`) only.
-  **One per turn, no exceptions.**
+- Once routed to resonera, ask every user-facing deliberation question through
+  the runtime-native question tool: Claude Code `AskUserQuestion`, OpenCode
+  `question`, Copilot `ask_user`, and Codex `request_user_input`.
+  **One per turn, no exceptions.** This overrides the master dispatcher's
+  generic hej/handoff question-tool gate.
 - Every question includes a `Done` option.
+- If the user asks for a recommendation, provide a provisional recommendation
+  in the question text, then ask whether to accept it, challenge it, choose an
+  alternative, or stop.
 - Don't ask about "depth" or "mode." Read the room.
 
 ---
@@ -101,7 +107,8 @@ The sharp colleague, here to help you think, not consult.
 2. If decision profile exists, read `$PROFILERA_PROFILE_DIR/PROFILE.md` directly. Check for high-confidence entries and surface them.
 3. If `DECISIONS.md` exists, reference prior decisions rather than re-deliberating
 4. Reflect your understanding in 1-2 sentences
-5. Ask your first question
+5. Ask the first question through the runtime-native question tool; for
+   `resonera <topic>`, this is the first user-facing action after the reflection.
 
 ### If no topic is provided
 

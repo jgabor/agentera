@@ -2,15 +2,12 @@
 
 ## ⇶ Critical
 
-- [ ] [fix] Decisions are compacted into single lines only containing the question, but not the outcome, losing important context. The outcomes still live in git history, but there is currently no mechanism to retrieve them efficiently.
-- [ ] [fix] Outcomes based on decisions are not tracked, which can lead to a decision being forgotten or lost due to compaction, or if several decisions has been made that puts them outside the typical query range.
-- [ ] Analyze session transcripts to identify instances where linting thresholds unnecessarily compress or rewrite relevant information and determine if the thresholds should be increased.
-
 ## ⇉ Degraded
 
 ## → Normal
 
 - [ ] [fix:2.3.x] Demote `AGENTERA_HOME` to a validated override in `scripts/install_root.py` instead of the normal app-home source of truth. Normal installed execution should resolve directly to the platform app directory (`XDG_DATA_HOME`/macOS Application Support/Windows AppData) unless an explicit valid override is supplied; runtime adapters such as OpenCode must not blindly propagate stale legacy values like `~/.agents/agentera`, and doctor/upgrade/tests should preserve custom-install and hermetic-test support without making stale parent-process environments authoritative.
+- [ ] [fix:2.3.x] Add logic to semantically differentiate between Agentera app upgrades and broken or stale state. Currently, a new version is interpreted as a "stale" installation", causing the agent to recommend a "safe fix" instead of an "upgrade" (e.g., `2.3.2` -> `2.3.4`).
 - [ ] [feat:2.3.5] Add a Resonera decision-context source contract so `agentera decisions --format json` exposes outcome, reasoning, alternatives, feeds-into, confidence, and downstream consequences without requiring raw `.agentera/decisions.yaml` reads or git-history fallback during deliberation.
 - [ ] [feat:2.3.6] Add an Orkestrera orchestration-context source contract that combines dependency-ready plan tasks, latest progress verification, health/TODO/decision caveats, retry state, and evaluation requirements so task selection and Inspektera handoff do not need raw artifact reads.
 - [ ] [feat:2.3.7] Add Dokumentera closeout-context source contracts for TODO, docs, changelog, and progress state so final synchronization can verify mappings, benchmark evidence, remaining blockers, and no-release boundaries through CLI output before any raw artifact fallback.
@@ -20,6 +17,9 @@
 
 ## ⇢ Annoying
 
+- [ ] [fix] Outcomes based on decisions are not tracked, which can lead to a decision being forgotten or lost due to compaction, or if several decisions has been made that puts them outside the typical query range.
+- [ ] Analyze session transcripts to identify instances where linting thresholds unnecessarily compress or rewrite relevant information and determine if the thresholds should be increased.
+- [ ] [fix] Decisions are compacted into single lines only containing the question, but not the outcome, losing important context. The outcomes still live in git history, but there is currently no mechanism to retrieve them efficiently.
 - [ ] [fix] Investigate, review, and improve `agentera doctor` output so a ready/healthy status does not always show a `Next:` section that can be interpreted as required action; distinguish optional repair/upgrade guidance from actual required follow-up, and fix command formatting issues such as missing whitespace before `--dry-run`.
 
 ## Resolved
