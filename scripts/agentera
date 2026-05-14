@@ -16,6 +16,8 @@ Commands:
   agentera docs              Documentation contract summary
   agentera objective         Active optimera objective summary
   agentera experiments       Active optimera experiments summary
+  agentera gate              Run check-only repository gates
+  agentera compact           Check or fix artifact compaction budgets
   agentera describe          Runtime CLI/schema introspection
   agentera lint              Pre-write artifact prose self-audit
   agentera query <artifact>  Advanced custom artifact query
@@ -192,6 +194,28 @@ def _load_self_audit_helper(model: dict[str, Path | str] | None = None) -> Any:
     sys.modules["agentera_self_audit"] = module
     spec.loader.exec_module(module)
     return module
+
+
+def _load_compaction_helper(model: dict[str, Path | str] | None = None) -> Any:
+    model = model or _active_app_model()
+    candidates = [
+        _model_path(model, "activeBundleRoot") / "hooks" / "compaction.py",
+        Path(__file__).resolve().parent.parent / "hooks" / "compaction.py",
+    ]
+    last_helper = candidates[0]
+    for helper in candidates:
+        last_helper = helper
+        if not helper.is_file():
+            continue
+        spec = importlib.util.spec_from_file_location("agentera_compaction_cli", helper)
+        if spec is None or spec.loader is None:
+            continue
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["agentera_compaction_cli"] = module
+        spec.loader.exec_module(module)
+        if hasattr(module, "run_compaction"):
+            return module
+    raise RuntimeError(_surface_missing_message("compaction helper", last_helper, model))
 
 
 def _load_schemas(schemas_dir: Path) -> dict[str, dict[str, Any]]:
@@ -791,6 +815,8 @@ COMMAND_FILTERS = {
     "experiments": ["topic", "status", "limit"],
     "query": ["list_artifacts", "topic", "severity", "dimension", "status", "limit"],
     "lint": ["artifact", "file", "text", "strict", "format"],
+    "gate": ["project", "format"],
+    "compact": ["project", "mode", "format"],
     "doctor": ["install_root", "home", "project", "expected_version", "expect_command"],
     "upgrade": ["project", "install_root", "home", "runtime", "only", "dry_run", "yes", "force", "update_packages"],
     "describe": ["format"],
@@ -809,6 +835,8 @@ COMMAND_DESCRIPTIONS = {
     "experiments": "Active optimera experiments summary.",
     "query": "Advanced custom artifact query.",
     "lint": "Run pre-write artifact prose self-audit.",
+    "gate": "Run check-only repository gates.",
+    "compact": "Check or fix artifact compaction budgets.",
     "upgrade": "Plan or apply an idempotent v1-to-v2 upgrade.",
     "doctor": "Check Agentera CLI, app, and runtime status.",
     "describe": "Runtime self-description for CLI commands, formats, fields, aliases, schemas, and doctor categories.",
@@ -1113,6 +1141,8 @@ def _command_description(name: str, *, kind: str, fields: list[str] | None = Non
     output_formats = ["text", "json", "yaml"]
     if name == "lint":
         output_formats = ["text", "json"]
+    elif name in {"compact", "gate"}:
+        output_formats = ["text", "json"]
     elif name == "doctor":
         output_formats = ["text", "json"]
     elif name == "upgrade":
@@ -1138,6 +1168,8 @@ def _describe_commands() -> list[dict[str, Any]]:
     commands.extend([
         _command_description("query", kind="advanced_artifact_query"),
         _command_description("lint", kind="artifact_lint", fields=["command", "status", "artifact", "checks", "summary"]),
+        _command_description("gate", kind="repo_gate", fields=["command", "status", "project", "summary", "operations"]),
+        _command_description("compact", kind="artifact_compaction", fields=["command", "status", "project", "summary", "operations"]),
         _command_description("describe", kind="runtime_introspection"),
         _command_description("upgrade", kind="upgrade"),
         _command_description("doctor", kind="self_check"),
@@ -1331,6 +1363,138 @@ def _query_last_phase(args: argparse.Namespace, schemas: dict) -> int:
     if phase:
         print(phase)
     return 0
+
+
+def _compaction_operation_payload(op: Any) -> dict[str, Any]:
+    status = op.status
+    payload: dict[str, Any] = {
+        "artifact": status.artifact,
+        "path": status.path,
+        "exists": status.exists,
+        "classification": status.classification,
+        "active_count": status.active_count,
+        "archive_count": status.archive_count,
+        "total_count": status.total_count,
+        "over_limit_count": status.over_limit_count,
+        "mode": op.mode,
+        "action": op.action,
+        "changed": op.changed,
+        "message": op.message,
+        "reason": status.reason,
+    }
+    if op.result is not None:
+        payload["result"] = {
+            "active_before": op.result.full_before,
+            "archive_before": op.result.oneline_before,
+            "active_after": op.result.full_after,
+            "archive_after": op.result.oneline_after,
+            "dropped": op.result.dropped,
+            "changed": op.result.changed,
+        }
+    return payload
+
+
+def _compaction_guidance(mode: str, operations: list[Any]) -> str:
+    over = [op for op in operations if op.action in {"over_limit", "pending_fix"}]
+    errors = [op for op in operations if op.action == "error"]
+    check_command = "uv run scripts/agentera compact --mode check --format json"
+    fix_command = "uv run scripts/agentera compact --mode fix --format json"
+    if errors:
+        return f"Inspect the reported errors, repair invalid artifacts, then rerun `{check_command}`."
+    if mode == "check" and over:
+        artifacts = ", ".join(op.status.artifact for op in over)
+        return (
+            f"Over-limit compactable artifacts: {artifacts}. "
+            f"Safe check: `{check_command}`. "
+            f"Safe fix: `{fix_command}`."
+        )
+    if mode == "fix" and over:
+        return "Some artifacts remain over limit; inspect skipped or unsupported artifacts before manual remediation."
+    return "No repair needed. Compactable artifacts are within uniform_10_40_50 limits."
+
+
+def _compaction_summary(mode: str, operations: list[Any]) -> dict[str, Any]:
+    counts: dict[str, int] = {}
+    for op in operations:
+        counts[op.action] = counts.get(op.action, 0) + 1
+    over_limit = sum(1 for op in operations if op.action in {"over_limit", "pending_fix"})
+    errors = sum(1 for op in operations if op.action == "error")
+    changed = sum(1 for op in operations if op.changed)
+    status = "fail" if errors or (mode == "check" and over_limit) else "pass"
+    return {
+        "status": status,
+        "mode": mode,
+        "artifact_count": len(operations),
+        "over_limit_count": over_limit,
+        "error_count": errors,
+        "changed_count": changed,
+        "action_counts": counts,
+        "guidance": _compaction_guidance(mode, operations),
+    }
+
+
+def _compaction_exit_code(mode: str, operations: list[Any]) -> int:
+    if any(op.action == "error" for op in operations):
+        return 2
+    if mode == "check" and any(op.action == "over_limit" for op in operations):
+        return 1
+    return 0
+
+
+def cmd_compact(args: argparse.Namespace) -> int:
+    mode = getattr(args, "mode", "check")
+    project = getattr(args, "project", Path.cwd()).resolve()
+    helper = _load_compaction_helper()
+    operations = helper.run_compaction(project, mode=mode)
+    payload = _compaction_payload("compact", project, mode, operations)
+    _emit_compaction_payload(args, payload, mode)
+    return _compaction_exit_code(mode, operations)
+
+
+def _compaction_payload(command: str, project: Path, mode: str, operations: list[Any]) -> dict[str, Any]:
+    summary = _compaction_summary(mode, operations)
+    return {
+        "command": command,
+        "status": summary["status"],
+        "project": str(project),
+        "summary": summary,
+        "operations": [_compaction_operation_payload(op) for op in operations],
+    }
+
+
+def _emit_compaction_payload(args: argparse.Namespace, payload: dict[str, Any], mode: str) -> None:
+    summary = payload["summary"]
+    project = payload["project"]
+    if _output_format(args) == "json":
+        _emit_structured(payload, "json")
+    else:
+        print(f"status={summary['status']} | mode={mode} | project={project}")
+        print(
+            "counts="
+            f"artifacts:{summary['artifact_count']} "
+            f"over_limit:{summary['over_limit_count']} "
+            f"errors:{summary['error_count']} "
+            f"changed:{summary['changed_count']}"
+        )
+        for item in payload["operations"]:
+            print(
+                f"- artifact={item['artifact']} | action={item['action']} | "
+                f"classification={item['classification']} | path={item['path']} | "
+                f"active={item['active_count']} | archive={item['archive_count']} | "
+                f"total={item['total_count']} | over={item['over_limit_count']} | "
+                f"message={item['message']}"
+            )
+        print(f"guidance={summary['guidance']}")
+
+
+def cmd_gate(args: argparse.Namespace) -> int:
+    project = getattr(args, "project", Path.cwd()).resolve()
+    helper = _load_compaction_helper()
+    operations = helper.run_compaction(project, mode="check")
+    payload = _compaction_payload("gate", project, "check", operations)
+    payload["gate"] = "compaction"
+    _emit_compaction_payload(args, payload, "check")
+    return _compaction_exit_code("check", operations)
 
 
 def _query_decisions(args: argparse.Namespace, schemas: dict) -> int:
@@ -2718,6 +2882,36 @@ def build_parser() -> argparse.ArgumentParser:
     experiments.add_argument("--limit", type=int, default=5, help="Limit recent entries")
     add_structured_args(experiments)
 
+    compact = sub.add_parser(
+        "compact",
+        help="Check or fix artifact compaction budgets",
+    )
+    compact.add_argument(
+        "--project",
+        type=_agent_path,
+        default=Path.cwd(),
+        help="Project directory whose artifacts should be checked or compacted (default: cwd)",
+    )
+    compact.add_argument(
+        "--mode",
+        choices=["check", "fix"],
+        default="check",
+        help="Check only, or apply compaction to over-limit compactable artifacts",
+    )
+    compact.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+
+    gate = sub.add_parser(
+        "gate",
+        help="Run check-only repository gates",
+    )
+    gate.add_argument(
+        "--project",
+        type=_agent_path,
+        default=Path.cwd(),
+        help="Project directory whose repository gates should check (default: cwd)",
+    )
+    gate.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+
     q = sub.add_parser("query", help="Advanced custom artifact query")
     q.add_argument("query", nargs="?", help="Query pattern or artifact name")
     q.add_argument("--list-artifacts", action="store_true", help="List all discovered artifact types")
@@ -2875,6 +3069,10 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_state(args)
         if args.command == "query":
             return cmd_query(args)
+        if args.command == "compact":
+            return cmd_compact(args)
+        if args.command == "gate":
+            return cmd_gate(args)
         if args.command == "lint":
             return cmd_lint(args)
         if args.command == "upgrade":

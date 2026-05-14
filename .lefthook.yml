@@ -11,6 +11,8 @@ output: [
 
 pre-commit:
   commands:
+    compaction-gate:
+      run: uv run scripts/agentera gate
     docs:
       run: bunx markdownlint --dot --fix --disable MD013 MD024 MD029 MD033 MD036 MD040 MD041 MD060 -- {staged_files}
       stage_fixed: true
@@ -26,5 +28,7 @@ pre-commit:
 pre-push:
   parallel: true
   commands:
+    compaction-gate:
+      run: uv run scripts/agentera gate
     test:
       run: uv run --with pytest --with pyyaml pytest tests/ -q

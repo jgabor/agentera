@@ -29,5 +29,7 @@ jobs:
         run: uv run scripts/validate_cross_capability.py
       - name: Lifecycle adapter metadata
         run: uv run scripts/validate_lifecycle_adapters.py --check-uv-runtime
+      - name: Repository gates
+        run: uv run scripts/agentera gate
       - name: Test suite
         run: uv run --with pytest --with pyyaml pytest tests/ -q

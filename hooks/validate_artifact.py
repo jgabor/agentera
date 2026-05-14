@@ -16,6 +16,7 @@ Exit codes:
 from __future__ import annotations
 
 import importlib.util
+import argparse
 import json
 import os
 import re
@@ -33,6 +34,32 @@ _AGENT_YAML_RE = re.compile(r"\.agentera/([a-z_]+)\.yaml$")
 _HUMAN_FACING = {"TODO.md", "CHANGELOG.md", "DESIGN.md"}
 _COMPACTION_MODULE = None
 
+_CANONICAL_SCHEMA_NAMES = {
+    "DECISIONS.md": "decisions",
+    "DOCS.md": "docs",
+    "EXPERIMENTS.md": "experiments",
+    "HEALTH.md": "health",
+    "PLAN.md": "plan",
+    "PROGRESS.md": "progress",
+    "SESSION.md": "session",
+    "VISION.md": "vision",
+}
+
+_DEFAULT_ARTIFACT_PATHS = {
+    "VISION.md": ".agentera/vision.yaml",
+    "TODO.md": "TODO.md",
+    "CHANGELOG.md": "CHANGELOG.md",
+    "DECISIONS.md": ".agentera/decisions.yaml",
+    "PLAN.md": ".agentera/plan.yaml",
+    "PROGRESS.md": ".agentera/progress.yaml",
+    "HEALTH.md": ".agentera/health.yaml",
+    "DOCS.md": ".agentera/docs.yaml",
+    "DESIGN.md": "DESIGN.md",
+    "SESSION.md": ".agentera/session.yaml",
+}
+
+_ARTIFACT_BY_SCHEMA_NAME = {schema: artifact for artifact, schema in _CANONICAL_SCHEMA_NAMES.items()}
+
 
 def _load_compaction_module():
     global _COMPACTION_MODULE
@@ -49,13 +76,19 @@ def _load_compaction_module():
     return module
 
 
-def _compact_after_valid_write(basename: str, abs_path: str) -> list[str]:
-    if basename != "TODO.md" or not os.path.exists(abs_path):
+def _compact_after_valid_write(artifact: str, abs_path: str) -> list[str]:
+    if not os.path.exists(abs_path):
         return []
     try:
-        _load_compaction_module().compact_file(Path(abs_path), "todo-resolved")
+        compaction = _load_compaction_module()
+        if artifact == "TODO.md":
+            compaction.compact_file(Path(abs_path), "todo-resolved")
+        elif artifact in compaction.COMPACTABLE_YAML_ARTIFACTS:
+            compaction.compact_yaml_file(Path(abs_path), artifact)
+        else:
+            return []
     except Exception as exc:
-        return [f"TODO.md: compaction failed: {exc}"]
+        return [f"{artifact}: compaction failed: {exc}"]
     return []
 
 
@@ -602,6 +635,56 @@ def _resolve(fp: str, cwd: str) -> str:
     return fp if os.path.isabs(fp) else str(Path(cwd) / fp)
 
 
+def _docs_path_overrides(cwd: str) -> dict[str, str]:
+    docs_path = Path(cwd) / ".agentera" / "docs.yaml"
+    if not docs_path.is_file():
+        return {}
+    try:
+        data = yaml.safe_load(docs_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    mapping = data.get("mapping") if isinstance(data, dict) else None
+    if not isinstance(mapping, list):
+        return {}
+    overrides: dict[str, str] = {}
+    for entry in mapping:
+        if not isinstance(entry, dict):
+            continue
+        artifact = entry.get("artifact")
+        path = entry.get("path")
+        if isinstance(artifact, str) and isinstance(path, str):
+            overrides[artifact] = path
+    return overrides
+
+
+def _default_artifact_path(artifact: str, cwd: str) -> str:
+    rel = _docs_path_overrides(cwd).get(artifact, _DEFAULT_ARTIFACT_PATHS.get(artifact, ""))
+    return _resolve(rel, cwd) if rel else ""
+
+
+def _artifact_paths(cwd: str) -> dict[str, str]:
+    paths = dict(_DEFAULT_ARTIFACT_PATHS)
+    paths.update(_docs_path_overrides(cwd))
+    return {artifact: _resolve(path, cwd) for artifact, path in paths.items()}
+
+
+def _same_path(left: str, right: str) -> bool:
+    return Path(left).resolve(strict=False) == Path(right).resolve(strict=False)
+
+
+def _artifact_for_write(abs_path: str, rel_path: str, basename: str, cwd: str) -> str | None:
+    for artifact, mapped_path in _artifact_paths(cwd).items():
+        if _same_path(abs_path, mapped_path):
+            return artifact
+
+    match = _AGENT_YAML_RE.search(rel_path)
+    if match:
+        return _ARTIFACT_BY_SCHEMA_NAME.get(match.group(1))
+    if basename in _HUMAN_FACING:
+        return basename
+    return None
+
+
 def _read_if_needed(content: str | None, abs_path: str) -> str | None:
     if content is not None:
         return content
@@ -638,26 +721,45 @@ class ArtifactSchemaValidator:
         abs_path = _resolve(write.file_path, cwd)
         rel = os.path.relpath(abs_path, cwd).replace("\\", "/")
         basename = os.path.basename(abs_path)
+        artifact = _artifact_for_write(abs_path, rel, basename, cwd)
 
-        match = _AGENT_YAML_RE.search(rel)
-        if match:
-            name = match.group(1)
+        if artifact in _CANONICAL_SCHEMA_NAMES:
+            name = _CANONICAL_SCHEMA_NAMES[artifact]
             schema = self.load_schema(name)
             if schema is None:
                 return []
             content = _read_if_needed(write.content, abs_path)
-            return [] if content is None else self.validate_yaml(content, schema, name)
+            if content is None:
+                return []
+            violations = self.validate_yaml(content, schema, name)
+            if violations:
+                return violations
+            return _compact_after_valid_write(artifact, abs_path)
 
-        if basename in _HUMAN_FACING:
+        if artifact in _HUMAN_FACING:
             content = _read_if_needed(write.content, abs_path)
             if content is None:
                 return []
-            violations = self.validate_markdown(content, basename)
+            violations = self.validate_markdown(content, artifact)
             if violations:
                 return violations
-            return _compact_after_valid_write(basename, abs_path)
+            return _compact_after_valid_write(artifact, abs_path)
 
         return []
+
+    def validate_explicit(self, artifact: str, file_path: str, cwd: str) -> list[str]:
+        content = _read_if_needed(None, file_path)
+        if content is None:
+            return [f"{artifact}: cannot read artifact file '{file_path}'"]
+        if artifact in _CANONICAL_SCHEMA_NAMES:
+            name = _CANONICAL_SCHEMA_NAMES[artifact]
+            schema = self.load_schema(name)
+            if schema is None:
+                return [f"{artifact}: schema '{name}' is not available"]
+            return self.validate_yaml(content, schema, name)
+        if artifact in _HUMAN_FACING:
+            return self.validate_markdown(content, artifact)
+        return [f"{artifact}: unsupported artifact; expected one of: {', '.join(sorted(_DEFAULT_ARTIFACT_PATHS))}"]
 
 
 def load_schema(name: str) -> dict | None:
@@ -701,7 +803,53 @@ class HookCliAdapter:
         violations = self.validator.validate_write(write, cwd)
         return (2, violations) if violations else (0, [])
 
-    def main(self) -> int:
+    def run_explicit(
+        self,
+        artifact: str,
+        file_path: str | None,
+        cwd: str,
+    ) -> tuple[int, dict]:
+        artifact = artifact.strip()
+        default_path = _default_artifact_path(artifact, cwd)
+        resolved_file = _resolve(file_path, cwd) if file_path else default_path
+        violations = self.validator.validate_explicit(artifact, resolved_file, cwd)
+        payload = {
+            "command": "validate-artifact",
+            "status": "fail" if violations else "pass",
+            "artifact": artifact,
+            "file": resolved_file,
+            "docs_mapped_default": default_path or None,
+            "path_source": "provided" if file_path else "docs_mapped_default",
+            "violations": violations,
+        }
+        return (2, payload) if violations else (0, payload)
+
+    def main(self, argv: list[str] | None = None) -> int:
+        parser = argparse.ArgumentParser(description="Validate Agentera artifacts")
+        parser.add_argument("--artifact", help="Canonical artifact name, e.g. PROGRESS.md")
+        parser.add_argument("--file", help="Artifact file path to validate; defaults to docs.yaml mapping when omitted")
+        parser.add_argument("--cwd", default=os.getcwd(), help="Project directory for relative paths and docs.yaml mapping")
+        parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format for explicit validation")
+        args = parser.parse_args(argv)
+
+        if args.artifact:
+            rc, payload = self.run_explicit(args.artifact, args.file, _resolve(args.cwd, os.getcwd()))
+            if args.format == "json":
+                print(json.dumps(payload, ensure_ascii=False, indent=2))
+            else:
+                print(
+                    f"status={payload['status']} | artifact={payload['artifact']} | "
+                    f"file={payload['file']} | docs_mapped_default={payload['docs_mapped_default']} | "
+                    f"path_source={payload['path_source']}"
+                )
+                for violation in payload["violations"]:
+                    print(violation, file=sys.stderr)
+            return rc
+
+        if args.file:
+            print("--file requires --artifact for explicit validation", file=sys.stderr)
+            return 2
+
         rc, violations = self.run(sys.stdin.read(), os.getcwd())
         for violation in violations:
             print(violation, file=sys.stderr)

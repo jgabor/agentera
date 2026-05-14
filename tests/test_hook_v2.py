@@ -682,12 +682,58 @@ class TestHookCliAdapter:
         assert rc == 2
         assert any("invalid YAML" in violation for violation in violations)
 
+    def test_run_passes_and_compacts_mapped_progress_yaml(self, hook, project_dir):
+        state = project_dir / "state"
+        state.mkdir()
+        (project_dir / ".agentera" / "docs.yaml").write_text(
+            "mapping:\n"
+            "- artifact: PROGRESS.md\n"
+            "  path: state/progress.yaml\n",
+            encoding="utf-8",
+        )
+        artifact = state / "progress.yaml"
+        artifact.write_text(yaml_dump({"cycles": _progress_cycles(12)}), encoding="utf-8")
+        payload = json.dumps({
+            "input": {"path": str(artifact)},
+            "cwd": str(project_dir),
+        })
+
+        rc, violations = hook.HookCliAdapter().run(payload)
+
+        import yaml
+        data = yaml.safe_load(artifact.read_text(encoding="utf-8"))
+        assert rc == 0
+        assert violations == []
+        assert len(data["cycles"]) == 10
+        assert len(data["archive"]) == 2
+
+    def test_run_fails_invalid_yaml_without_compacting(self, hook, project_dir):
+        artifact = project_dir / ".agentera" / "progress.yaml"
+        artifact.write_text("cycles: [\n", encoding="utf-8")
+        payload = json.dumps({
+            "tool_name": "Write",
+            "tool_input": {"file_path": str(artifact)},
+            "cwd": str(project_dir),
+        })
+
+        rc, violations = hook.HookCliAdapter().run(payload)
+
+        assert rc == 2
+        assert any("invalid YAML" in violation for violation in violations)
+        assert "archive:" not in artifact.read_text(encoding="utf-8")
+
+    def test_run_allows_sparse_unsupported_payload_without_claiming_work(self, hook, project_dir):
+        payload = json.dumps({"tool_name": "apply_patch", "tool_input": {"command": "@@\n-no file"}})
+
+        assert hook.HookCliAdapter().run(payload, default_cwd=str(project_dir)) == (0, [])
+
 
 # ── Main integration via stdin ─────────────────────────────────────
 
 
 def _run_main(hook, monkeypatch, data: dict, cwd: str):
     monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps({**data, "cwd": cwd})))
+    monkeypatch.setattr("sys.argv", ["validate_artifact.py"])
     captured_err = io.StringIO()
     monkeypatch.setattr("sys.stderr", captured_err)
     captured_out = io.StringIO()
@@ -804,10 +850,12 @@ class TestMainYamlArtifact:
 
     def test_empty_stdin(self, hook, monkeypatch):
         monkeypatch.setattr("sys.stdin", io.StringIO(""))
+        monkeypatch.setattr("sys.argv", ["validate_artifact.py"])
         assert hook.main() == 0
 
     def test_malformed_json(self, hook, monkeypatch):
         monkeypatch.setattr("sys.stdin", io.StringIO("{bad json"))
+        monkeypatch.setattr("sys.argv", ["validate_artifact.py"])
         assert hook.main() == 0
 
 
@@ -839,6 +887,23 @@ class TestMainAdapterFormats:
             "tool_input": {"path": str(artifact), "patch": "@@\n-old\n+new"},
         }, str(project_dir))
         assert rc == 2
+
+    def test_codex_apply_patch_header_passes_and_compacts_yaml(self, hook, project_dir, monkeypatch):
+        artifact = project_dir / ".agentera" / "progress.yaml"
+        artifact.write_text(yaml_dump({"cycles": _progress_cycles(11)}), encoding="utf-8")
+        patch = "*** Begin Patch\n*** Update File: .agentera/progress.yaml\n@@\n-old\n+new\n"
+
+        rc, err, out = _run_main(hook, monkeypatch, {
+            "tool_name": "apply_patch",
+            "tool_input": {"command": patch},
+        }, str(project_dir))
+
+        import yaml
+        data = yaml.safe_load(artifact.read_text(encoding="utf-8"))
+        assert rc == 0
+        assert err == ""
+        assert len(data["cycles"]) == 10
+        assert len(data["archive"]) == 1
 
 
 class TestFailOpenSafetyRule:
@@ -874,3 +939,18 @@ class TestFailOpenSafetyRule:
 def yaml_dump(data: dict) -> str:
     import yaml
     return yaml.dump(data, default_flow_style=False, allow_unicode=True)
+
+
+def _progress_cycles(count: int) -> list[dict]:
+    return [
+        {
+            "number": number,
+            "timestamp": f"2026-05-{number:02d} 10:00",
+            "type": "fix",
+            "phase": "build",
+            "what": f"Completed focused hook convergence check {number}",
+            "commit": "pending",
+            "context": {"intent": "Exercise runtime hook compaction"},
+        }
+        for number in range(count, 0, -1)
+    ]

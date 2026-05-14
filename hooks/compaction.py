@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.10"
-# dependencies = []
+# dependencies = ["pyyaml"]
 # ///
 """Shared compaction engine for growing artifacts.
 
@@ -11,8 +11,8 @@ one-line archive entries, drop anything beyond 50. Exposes a generic
 parse/compact/write pipeline plus per-artifact specs for PROGRESS,
 DECISIONS, HEALTH, EXPERIMENTS, and the TODO Resolved section.
 
-Pure stdlib. Imported by hooks/session_stop.py, scripts/compact_artifact.py,
-and hooks/validate_artifact.py.
+Imported by hooks/session_stop.py, scripts/compact_artifact.py, and
+hooks/validate_artifact.py.
 """
 
 from __future__ import annotations
@@ -21,6 +21,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
+
+import yaml
 
 
 # ---------------------------------------------------------------------------
@@ -47,6 +49,33 @@ class CompactResult:
     oneline_after: int
     dropped: int
     changed: bool
+
+
+@dataclass(frozen=True)
+class CompactionStatus:
+    """Read-only compaction classification for one artifact path."""
+
+    artifact: str
+    path: str
+    classification: str
+    active_count: int | None
+    archive_count: int | None
+    total_count: int | None
+    over_limit_count: int | None
+    reason: str
+    exists: bool = True
+
+
+@dataclass(frozen=True)
+class CompactionOperation:
+    """Check/fix outcome for one known artifact family."""
+
+    status: CompactionStatus
+    mode: str
+    action: str
+    changed: bool = False
+    result: CompactResult | None = None
+    message: str = ""
 
 
 @dataclass
@@ -115,6 +144,7 @@ def _truncate_words(text: str, limit: int = 15) -> str:
 
 _HEADER_NUM_RE = re.compile(r"(?:Cycle|Decision|Audit|Experiment)\s+(\d+)")
 _HEADER_DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
+_NUMBER_RE = re.compile(r"(?:Cycle|Decision|Audit|Experiment|EXP-)\s*(\d+)")
 
 
 def _parse_header(header: str) -> tuple[str, str, str]:
@@ -298,6 +328,399 @@ SPECS: dict[str, ArtifactSpec] = {
 }
 
 
+DEFAULT_ARTIFACT_PATHS: dict[str, str] = {
+    "VISION.md": ".agentera/vision.yaml",
+    "TODO.md": "TODO.md",
+    "CHANGELOG.md": "CHANGELOG.md",
+    "DECISIONS.md": ".agentera/decisions.yaml",
+    "PLAN.md": ".agentera/plan.yaml",
+    "PROGRESS.md": ".agentera/progress.yaml",
+    "HEALTH.md": ".agentera/health.yaml",
+    "DOCS.md": ".agentera/docs.yaml",
+    "DESIGN.md": "DESIGN.md",
+    "SESSION.md": ".agentera/session.yaml",
+}
+
+COMPACTABLE_YAML_ARTIFACTS: dict[str, tuple[str, str]] = {
+    "PROGRESS.md": ("cycles", "archive"),
+    "DECISIONS.md": ("decisions", "archive"),
+    "HEALTH.md": ("audits", "archive"),
+    "SESSION.md": ("bookmarks", "archive"),
+}
+
+YAML_SPEC_BY_ARTIFACT: dict[str, str] = {
+    "PROGRESS.md": "progress",
+    "DECISIONS.md": "decisions",
+    "HEALTH.md": "health",
+    "SESSION.md": "session",
+}
+
+NON_COMPACTABLE_ARTIFACTS: dict[str, tuple[str, str]] = {
+    "CHANGELOG.md": ("exempt", "public release history is not compacted"),
+    "PLAN.md": ("unsupported", "active plan is lifecycle state, not a uniform retained-entry log"),
+    "DOCS.md": ("unsupported", "docs owns artifact mapping and schema metadata"),
+    "VISION.md": ("protected", "vision state is protected during execution cycles"),
+    "DESIGN.md": ("unsupported", "design is a human-facing identity artifact, not a uniform retained-entry log"),
+}
+
+
+def _over_limit_count(active_count: int, archive_count: int) -> int:
+    """Return the largest entry excess across the 10/40/50 contract."""
+    total_count = active_count + archive_count
+    return max(
+        max(active_count - MAX_FULL_ENTRIES, 0),
+        max(archive_count - MAX_ONELINE_ENTRIES, 0),
+        max(total_count - MAX_TOTAL_ENTRIES, 0),
+    )
+
+
+def _parse_docs_yaml_mapping(docs_text: str) -> dict[str, str]:
+    """Extract artifact path overrides from the v2 docs.yaml mapping list."""
+    mapping: dict[str, str] = {}
+    in_mapping = False
+    current: str | None = None
+    for line in docs_text.splitlines():
+        if line.startswith("mapping:"):
+            in_mapping = True
+            continue
+        if in_mapping and line and not line.startswith((" ", "-")):
+            break
+        if not in_mapping:
+            continue
+        artifact_match = re.match(r"-\s+artifact:\s*(.+?)\s*$", line)
+        if artifact_match:
+            current = artifact_match.group(1).strip().strip("'\"")
+            continue
+        path_match = re.match(r"\s+path:\s*(.+?)\s*$", line)
+        if path_match and current:
+            mapping[current] = path_match.group(1).strip().strip("'\"")
+            current = None
+    return mapping
+
+
+def _artifact_paths(project_root: Path) -> dict[str, Path]:
+    """Resolve canonical artifact paths, preserving docs.yaml mapping precedence."""
+    paths = dict(DEFAULT_ARTIFACT_PATHS)
+    docs_path = project_root / ".agentera" / "docs.yaml"
+    if docs_path.exists():
+        paths.update(_parse_docs_yaml_mapping(docs_path.read_text(encoding="utf-8")))
+    return {artifact: project_root / path for artifact, path in paths.items()}
+
+
+def _missing_status(artifact: str, path: Path, classification: str) -> CompactionStatus:
+    return CompactionStatus(
+        artifact=artifact,
+        path=str(path),
+        classification=classification,
+        active_count=0,
+        archive_count=0,
+        total_count=0,
+        over_limit_count=0,
+        reason="artifact path is not present",
+        exists=False,
+    )
+
+
+def _yaml_counts(path: Path, active_key: str, archive_key: str) -> tuple[int, int]:
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if not isinstance(data, dict):
+        return 0, 0
+    active = data.get(active_key) or []
+    archive = data.get(archive_key) or []
+    return (
+        len(active) if isinstance(active, list) else 0,
+        len(archive) if isinstance(archive, list) else 0,
+    )
+
+
+def _yaml_entry_number(entry: object) -> int:
+    """Best-effort numeric recency key for YAML active/archive entries."""
+    if isinstance(entry, dict):
+        number = entry.get("number")
+        if isinstance(number, int):
+            return number
+        if isinstance(number, str) and number.isdigit():
+            return int(number)
+        summary = str(entry.get("summary", ""))
+    else:
+        summary = str(entry)
+    match = _NUMBER_RE.search(summary)
+    return int(match.group(1)) if match else 0
+
+
+def _yaml_entry_timestamp(entry: object) -> str:
+    if isinstance(entry, dict):
+        return str(entry.get("timestamp") or entry.get("date") or "")
+    return ""
+
+
+def _yaml_summary_text(entry: dict, *fields: str) -> str:
+    for field in fields:
+        value = entry.get(field)
+        if isinstance(value, str) and value.strip():
+            return _truncate_words(value.strip(), 15)
+        if isinstance(value, dict) and value:
+            return _truncate_words(
+                ", ".join(f"{key}: {val}" for key, val in value.items()),
+                15,
+            )
+    return "no summary"
+
+
+def _yaml_archive_entry(spec_name: str, entry: object) -> dict[str, object]:
+    """Convert a full YAML entry to its schema archive representation."""
+    if not isinstance(entry, dict):
+        return {"summary": str(entry)}
+
+    if spec_name == "progress":
+        number = entry.get("number", "?")
+        date = str(entry.get("timestamp", "")).split()[0]
+        date_part = f" ({date})" if date else ""
+        summary = _yaml_summary_text(entry, "what", "type")
+        return {"summary": f"Cycle {number}{date_part}: {summary}"}
+
+    if spec_name == "decisions":
+        number = entry.get("number", "?")
+        date = str(entry.get("date", ""))
+        date_part = f" ({date})" if date else ""
+        choice = _yaml_summary_text(entry, "choice", "question")
+        return {"summary": f"Decision {number}{date_part}: {choice}"}
+
+    if spec_name == "health":
+        number = entry.get("number", "?")
+        date = str(entry.get("date", ""))
+        date_part = f" ({date})" if date else ""
+        summary = _yaml_summary_text(entry, "trajectory", "grades")
+        return {"summary": f"Audit {number}{date_part}: {summary}"}
+
+    if spec_name == "session":
+        timestamp = str(entry.get("timestamp", ""))
+        summary = _yaml_summary_text(entry, "summary")
+        return {"timestamp": timestamp, "summary": summary}
+
+    return {"summary": _yaml_summary_text(entry, "summary")}
+
+
+def _yaml_sort_entries(entries: list[object], spec_name: str) -> list[object]:
+    """Return full entries in the schema's active ordering."""
+    if spec_name in {"decisions", "health"}:
+        return sorted(entries, key=_yaml_entry_number)
+    if spec_name == "session":
+        return sorted(entries, key=_yaml_entry_timestamp, reverse=True)
+    return sorted(entries, key=_yaml_entry_number, reverse=True)
+
+
+def _yaml_recent_full_and_older(entries: list[object], spec_name: str) -> tuple[list[object], list[object]]:
+    """Select the newest full entries, then restore schema active ordering."""
+    if spec_name == "session":
+        newest_first = sorted(entries, key=_yaml_entry_timestamp, reverse=True)
+    else:
+        newest_first = sorted(entries, key=_yaml_entry_number, reverse=True)
+    recent = newest_first[:MAX_FULL_ENTRIES]
+    older = newest_first[MAX_FULL_ENTRIES:]
+    return _yaml_sort_entries(recent, spec_name), older
+
+
+def _yaml_archive_sort_key(entry: object) -> tuple[str, int | str]:
+    timestamp = _yaml_entry_timestamp(entry)
+    if timestamp:
+        return ("timestamp", timestamp)
+    return ("number", _yaml_entry_number(entry))
+
+
+def _yaml_archive_entries(entries: list[object]) -> list[object]:
+    """Return newest archive entries first when enough signal exists."""
+    return sorted(entries, key=_yaml_archive_sort_key, reverse=True)
+
+
+def compact_yaml_file(path: Path, artifact: str) -> CompactResult:
+    """Compact a v2 YAML artifact, preserving unrelated top-level keys."""
+    if artifact not in COMPACTABLE_YAML_ARTIFACTS:
+        raise ValueError(f"unsupported YAML artifact: {artifact}")
+    if not path.exists():
+        raise FileNotFoundError(str(path))
+
+    active_key, archive_key = COMPACTABLE_YAML_ARTIFACTS[artifact]
+    spec_name = YAML_SPEC_BY_ARTIFACT[artifact]
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if not isinstance(data, dict):
+        data = {}
+
+    active = data.get(active_key) or []
+    archive = data.get(archive_key) or []
+    if not isinstance(active, list):
+        active = []
+    if not isinstance(archive, list):
+        archive = []
+
+    full_before = len(active)
+    oneline_before = len(archive)
+    if _over_limit_count(full_before, oneline_before) == 0:
+        return CompactResult(full_before, oneline_before, full_before, oneline_before, 0, False)
+
+    recent_full, older_active = _yaml_recent_full_and_older(active, spec_name)
+    compacted_from_active = [
+        _yaml_archive_entry(spec_name, entry)
+        for entry in older_active
+    ]
+    archive_candidates = _yaml_archive_entries(compacted_from_active + archive)
+    archive_after = archive_candidates[:MAX_ONELINE_ENTRIES]
+
+    data[active_key] = recent_full
+    data[archive_key] = archive_after
+    path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+
+    full_after = len(recent_full)
+    oneline_after = len(archive_after)
+    dropped = full_before + oneline_before - full_after - oneline_after
+    return CompactResult(full_before, oneline_before, full_after, oneline_after, dropped, True)
+
+
+def _count_status(artifact: str, path: Path, active_count: int, archive_count: int) -> CompactionStatus:
+    total_count = active_count + archive_count
+    return CompactionStatus(
+        artifact=artifact,
+        path=str(path),
+        classification="compactable",
+        active_count=active_count,
+        archive_count=archive_count,
+        total_count=total_count,
+        over_limit_count=_over_limit_count(active_count, archive_count),
+        reason="uniform_10_40_50",
+    )
+
+
+def compute_compaction_status(project_root: Path) -> list[CompactionStatus]:
+    """Compute read-only compaction classifications for known artifact families.
+
+    This inventories current status only. It never rewrites artifacts and treats
+    objective-scoped experiment files as protected unless a later explicit fix
+    path opts into objective-state mutation.
+    """
+    paths = _artifact_paths(project_root)
+    statuses: list[CompactionStatus] = []
+
+    todo_path = paths["TODO.md"]
+    if todo_path.exists():
+        entries = parse_entries(todo_path.read_text(encoding="utf-8"), "todo-resolved")
+        active_count = sum(1 for entry in entries if entry["kind"] == "full")
+        archive_count = sum(1 for entry in entries if entry["kind"] == "oneline")
+        statuses.append(_count_status("TODO.md#Resolved", todo_path, active_count, archive_count))
+    else:
+        statuses.append(_missing_status("TODO.md#Resolved", todo_path, "compactable"))
+
+    for artifact, (active_key, archive_key) in COMPACTABLE_YAML_ARTIFACTS.items():
+        path = paths[artifact]
+        if path.exists():
+            statuses.append(_count_status(artifact, path, *_yaml_counts(path, active_key, archive_key)))
+        else:
+            statuses.append(_missing_status(artifact, path, "compactable"))
+
+    for artifact, (classification, reason) in NON_COMPACTABLE_ARTIFACTS.items():
+        path = paths[artifact]
+        statuses.append(CompactionStatus(
+            artifact=artifact,
+            path=str(path),
+            classification=classification,
+            active_count=None,
+            archive_count=None,
+            total_count=None,
+            over_limit_count=None,
+            reason=reason,
+            exists=path.exists(),
+        ))
+
+    for experiments_path in sorted((project_root / ".agentera" / "optimera").glob("*/experiments.yaml")):
+        active_count, archive_count = _yaml_counts(experiments_path, "experiments", "archive")
+        statuses.append(CompactionStatus(
+            artifact="EXPERIMENTS.md",
+            path=str(experiments_path),
+            classification="protected",
+            active_count=active_count,
+            archive_count=archive_count,
+            total_count=active_count + archive_count,
+            over_limit_count=_over_limit_count(active_count, archive_count),
+            reason="objective-state experiment files are classified but skipped by default",
+        ))
+
+    return statuses
+
+
+def _operation_for_status(status: CompactionStatus, mode: str) -> CompactionOperation:
+    if not status.exists:
+        return CompactionOperation(status, mode, "missing", message=status.reason)
+    if status.classification != "compactable":
+        return CompactionOperation(status, mode, "skipped", message=status.reason)
+    if not status.over_limit_count:
+        return CompactionOperation(status, mode, "ok", message="within uniform_10_40_50 limits")
+    return CompactionOperation(
+        status,
+        mode,
+        "over_limit" if mode == "check" else "pending_fix",
+        message=f"over uniform_10_40_50 limit by {status.over_limit_count}",
+    )
+
+
+def check_compaction(project_root: Path) -> list[CompactionOperation]:
+    """Report compaction status for known artifacts without modifying files."""
+    return [_operation_for_status(status, "check") for status in compute_compaction_status(project_root)]
+
+
+def fix_compaction(project_root: Path) -> list[CompactionOperation]:
+    """Apply compaction to over-limit compactable artifacts only.
+
+    Missing optional artifacts and protected/unsupported/exempt artifacts are
+    reported as skipped/missing and do not prevent unrelated fixes.
+    """
+    operations: list[CompactionOperation] = []
+    for status in compute_compaction_status(project_root):
+        baseline = _operation_for_status(status, "fix")
+        if baseline.action != "pending_fix":
+            operations.append(baseline)
+            continue
+
+        path = Path(status.path)
+        try:
+            if status.artifact == "TODO.md#Resolved":
+                result = compact_file(path, "todo-resolved")
+            elif status.artifact in YAML_SPEC_BY_ARTIFACT:
+                result = compact_yaml_file(path, status.artifact)
+            else:
+                operations.append(CompactionOperation(
+                    status,
+                    "fix",
+                    "skipped",
+                    message=f"no fixer registered for {status.artifact}",
+                ))
+                continue
+        except Exception as exc:
+            operations.append(CompactionOperation(status, "fix", "error", message=str(exc)))
+            continue
+
+        operations.append(CompactionOperation(
+            status,
+            "fix",
+            "compacted" if result.changed else "ok",
+            changed=result.changed,
+            result=result,
+            message=(
+                f"full {result.full_before}->{result.full_after}; "
+                f"archive {result.oneline_before}->{result.oneline_after}; "
+                f"dropped {result.dropped}"
+            ),
+        ))
+    return operations
+
+
+def run_compaction(project_root: Path, mode: str = "check") -> list[CompactionOperation]:
+    """Shared project-level compaction entry point for check/fix callers."""
+    if mode == "check":
+        return check_compaction(project_root)
+    if mode == "fix":
+        return fix_compaction(project_root)
+    raise ValueError(f"unknown compaction mode: {mode}")
+
+
 # ---------------------------------------------------------------------------
 # Generic parse helpers
 # ---------------------------------------------------------------------------
@@ -475,9 +898,6 @@ def _parse_todo_resolved(text: str, spec: ArtifactSpec) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
-_NUMBER_RE = re.compile(r"(?:Cycle|Decision|Audit|Experiment|EXP-)\s*(\d+)")
-
-
 def _entry_number(entry: dict) -> int:
     """Extract the numeric identifier from an entry header (0 if absent)."""
     m = _NUMBER_RE.search(entry["header"])
@@ -561,10 +981,15 @@ def _compact_todo_entries(entries: list[dict]) -> list[dict]:
     newest-first.
     """
     result: list[dict] = []
-    for i, entry in enumerate(entries):
-        if i < MAX_FULL_ENTRIES:
+    full_count = 0
+    oneline_count = 0
+    for entry in entries:
+        if entry["kind"] == "full" and full_count < MAX_FULL_ENTRIES:
             result.append(entry)
-        elif i < MAX_TOTAL_ENTRIES:
+            full_count += 1
+            continue
+
+        if oneline_count < MAX_ONELINE_ENTRIES:
             if entry["kind"] == "full":
                 result.append({
                     "header": _format_todo_oneline(entry),
@@ -573,6 +998,7 @@ def _compact_todo_entries(entries: list[dict]) -> list[dict]:
                 })
             else:
                 result.append(entry)
+            oneline_count += 1
     return result
 
 
@@ -661,7 +1087,11 @@ def _compact_todo_resolved(path: Path) -> CompactResult:
     oneline_before = sum(1 for e in entries if e["kind"] == "oneline")
     total_before = len(entries)
 
-    if total_before <= MAX_FULL_ENTRIES + MAX_ONELINE_ENTRIES and full_before <= MAX_FULL_ENTRIES:
+    if (
+        total_before <= MAX_TOTAL_ENTRIES
+        and full_before <= MAX_FULL_ENTRIES
+        and oneline_before <= MAX_ONELINE_ENTRIES
+    ):
         return CompactResult(full_before, oneline_before, full_before, oneline_before, 0, False)
 
     compacted = _compact_todo_entries(entries)
@@ -714,6 +1144,7 @@ def compact_file(path: Path, spec_name: str) -> CompactResult:
 
     needs_compact = (
         full_before > MAX_FULL_ENTRIES
+        or oneline_before > MAX_ONELINE_ENTRIES
         or total_before > MAX_FULL_ENTRIES + MAX_ONELINE_ENTRIES
     )
     if not needs_compact:

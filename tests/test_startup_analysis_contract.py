@@ -1466,7 +1466,7 @@ def test_benchmark_persistence_appends_aggregate_row_and_latest_reports(
         "latest-report.md",
         "runs.jsonl",
     }
-    assert row["agentera_version"] == "2.3.5"
+    assert row["agentera_version"] == "2.3.6"
     assert set(row) == set(_contract()["aggregate_history"]["row_shape"])
     assert isinstance(row["git_dirty"], bool)
     assert row["runtime_scope"] == ["opencode"]

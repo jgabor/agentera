@@ -1,0 +1,116 @@
+header:
+  level: full
+  created: 2026-05-14
+  status: complete
+  reviewed: 2026-05-14
+  critic_issues: 6 found, 6 addressed, 0 dismissed
+  revised: >-
+    Adversarial review tightened the explicit-override distinction, limited scope
+    to the two 2.3.5 install-state TODOs plus required validation and closeout,
+    removed implementation leakage from acceptance criteria, scoped runtime work
+    to adapters that propagate `AGENTERA_HOME`, recorded the reconciled Decision
+    47 invariant, and made upgrade-vs-repair semantics depend on the shared
+    app-home contract.
+  title: 2.3.5 Install-State Reliability Patch
+what: >-
+  Make 2.3.5 a narrow install-state reliability patch that stops stale
+  parent-process `AGENTERA_HOME` values from becoming authoritative during normal
+  installed execution and separates app-update guidance from broken-state repair
+  guidance.
+why: >-
+  The app-home migration created the durable `AGENTERA_HOME` and app-files model,
+  but runtime-injected legacy values can still steer agents to old roots, and
+  ordinary version mismatch is still worded like stale or broken repair. That
+  undermines the one-install, one-entry-point recovery flow and makes normal
+  upgrades look scarier than they are.
+constraints: >-
+  Preserve Decision 47: the normal platform Agentera directory is the default
+  installed source of truth, while `AGENTERA_HOME` remains valid only as a
+  deliberate, validated app-home override. Keep `agentera doctor` read-only, keep
+  `agentera upgrade` as the repair writer, require dry-run before writes,
+  preserve explicit valid custom app homes and hermetic tests, avoid shell-startup
+  mutation, do not expand into 2.3.6 source-contract work, and do not tag, push,
+  publish, refresh installed apps, edit vision, or edit objective state without
+  explicit approval.
+scope:
+  included:
+    - "TODO scope: `[fix:2.3.5]` demote `AGENTERA_HOME` to a validated override."
+    - "TODO scope: `[fix:2.3.5]` distinguish app upgrades from broken or stale state."
+    - Validation, documentation/state sync, changelog, and 2.3.5 version metadata required to close those fixes.
+  excluded:
+    - Source-contract feature train now targeted at 2.3.6 and later.
+    - New runtime package formats or broad adapter registry redesign.
+    - Shell startup file cleanup or mutation.
+    - Release publication, remote push, tag creation, installed app refresh, vision edits, or objective-state edits.
+  deferred:
+    - Broader install-root vocabulary cleanup not required by the two 2.3.5 TODOs.
+    - Startup benchmark or source-contract optimization work.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-14-repair-runtime-schema-coverage-and-token-savings-estimates.yaml
+design: >-
+  Use `scripts/install_root.py`, `scripts/agentera_upgrade.py`, `scripts/agentera`,
+  `.opencode/plugins/agentera.js`, and the install-root/runtime regression tests
+  as concrete anchors, but keep the plan focused on behavior. The reconciled
+  invariant is: platform app-home resolution is the normal installed truth;
+  `AGENTERA_HOME` is accepted only when it is a validated, intentional override,
+  with explicit flags and hermetic test channels preserved. Keep update-needed,
+  repairable broken state, blocked unsafe state, and fresh state separate in
+  structured status so user-facing copy can choose upgrade wording for version
+  mismatch and safe-repair wording only for broken or unverifiable app files. Runtime
+  adapters that propagate `AGENTERA_HOME` should pass a validated app home, not
+  blindly mirror inherited legacy values. Test proportionality target: one
+  positive and one negative regression per changed boundary.
+tasks:
+  - number: 1
+    name: App-home override contract
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN no explicit Agentera directory was selected WHEN normal installed execution resolves its home THEN stale legacy environment residue does not outrank the normal platform directory.
+      - GIVEN a deliberate custom Agentera directory is valid and current WHEN it is selected through an explicit flag, hermetic test channel, or validated override THEN that directory remains authoritative.
+      - GIVEN a selected custom directory is missing, unmanaged, or unsafe WHEN Agentera evaluates it THEN Agentera blocks or asks for explicit approval without silently overwriting or falling back.
+  - number: 2
+    name: Installed CLI resolution behavior
+    depends_on: [1]
+    status: complete
+    acceptance:
+      - GIVEN a runtime-injected deprecated default value exists WHEN the installed CLI starts without an explicit Agentera directory THEN the CLI reports the normal platform directory as the selected home when that is the safe path.
+      - GIVEN a hermetic test or custom-install environment supplies a valid Agentera directory WHEN the CLI starts THEN the CLI uses that directory without forcing platform defaults.
+      - GIVEN the selected Agentera directory contains only recognized user data WHEN upgrade preview runs THEN the preview separates user data from managed app files without treating the user data as unknown files.
+  - number: 3
+    name: Runtime adapter propagation
+    depends_on: [1, 2]
+    status: complete
+    acceptance:
+      - GIVEN a runtime adapter that propagates `AGENTERA_HOME` inherits stale legacy residue WHEN it prepares shell-tool execution THEN it does not pass that residue as authoritative.
+      - GIVEN a runtime adapter can discover a fresh normal Agentera directory WHEN it prepares shell-tool execution THEN shell tools receive the validated home needed to run the installed CLI.
+      - GIVEN a user intentionally configured a valid custom Agentera directory WHEN runtime setup is inspected or refreshed THEN that custom directory remains preserved.
+  - number: 4
+    name: Upgrade versus repair semantics
+    depends_on: [1, 2]
+    status: complete
+    acceptance:
+      - GIVEN Agentera app files are valid but older than the expected version WHEN status or recovery guidance is rendered THEN the user-facing wording presents this as an upgrade or update path, not as an old or broken local copy.
+      - GIVEN app files are missing required behavior, malformed, incomplete, or unsafe WHEN status or recovery guidance is rendered THEN safe-repair and blocked-state language remains available.
+      - GIVEN structured status is consumed by hej or doctor WHEN version mismatch is present THEN machine-readable output distinguishes update-needed from broken or unverifiable state.
+  - number: 5
+    name: Focused regression validation
+    depends_on: [2, 3, 4]
+    status: complete
+    acceptance:
+      - GIVEN app-home resolution changes are complete WHEN focused tests run THEN positive and negative coverage protects normal defaults, stale legacy residue, valid custom overrides, and unsafe selected directories.
+      - GIVEN status semantics change WHEN CLI regression tests run THEN JSON and text outputs preserve dry-run-before-write, approval text, retry commands, and read-only doctor behavior.
+      - GIVEN runtime propagation changes are complete WHEN adapter tests run THEN every modified adapter preserves custom installs and rejects stale blind propagation.
+  - number: 6
+    name: 2.3.5 state and release metadata sync
+    depends_on: [1, 2, 3, 4, 5]
+    status: complete
+    acceptance:
+      - GIVEN both 2.3.5 fixes pass verification WHEN closeout runs THEN TODO, progress, docs, and changelog record the completed reliability patch and remaining deferred train.
+      - GIVEN the docs semver policy maps fix work to a patch bump WHEN release metadata is synchronized THEN version-bearing files target 2.3.5 consistently.
+      - GIVEN the release metadata sync completes WHEN scope is audited THEN no publication, tag, remote push, installed app refresh, vision edit, or objective-state edit occurred without explicit approval.
+overall_acceptance:
+  - GIVEN stale legacy `AGENTERA_HOME` residue exists in a parent runtime WHEN a normal installed Agentera invocation starts THEN the platform Agentera directory is used or previewed safely rather than treating the residue as the normal source of truth.
+  - GIVEN a valid custom Agentera directory or explicit directory flag is used WHEN Agentera starts or runtime setup is refreshed THEN that custom selection remains supported.
+  - GIVEN app files are merely out of date WHEN user-facing recovery guidance renders THEN it is framed as an upgrade or update, while broken, missing, unmanaged, or unsafe states keep repair or blocked language.
+  - GIVEN 2.3.5 closes WHEN validation and state sync finish THEN version metadata, TODO, changelog, docs, and progress agree on the patch release without publishing, pushing, tagging, refreshing the installed app, or editing protected state.
+surprises: []

@@ -1,114 +1,44 @@
 decisions:
-- number: 41
-  date: '2026-05-04'
-  question: What did the Agentera 2.0 token benchmark prove against the revised 10% reduction target?
-  context: ROADMAP.md originally set an aspirational 40%+ token reduction target for Agentera 2.0. On 2026-05-05 the release
-    target was revised to -10%; after release-residue cleanup, the measured -10.4% result exceeds that v2.0 target while
-    carrying further optimization into future versions.
-    The benchmark compared the v1 dispatch payload (all 12 SKILL.md files plus SPEC.md)
-    against the v2 payload (master SKILL.md, protocol.yaml, 12 prose.md files, and 48
-    schema YAML files).
-  alternatives:
-  - name: Treat 40% reduction as a hard v2.0 release gate
-    status: rejected
-    description: The measured result missed the target, but Decision 39's primary
-      value was structural consolidation through schemas, query CLI, and one entry point.
-  - name: Record the measured delta and carry token reduction as follow-up work
-    status: rejected
-    description: Preserve the benchmark evidence honestly, but do not keep the old
-      -40% target as a v2.0 release blocker after the release target was revised.
-  - name: Revise v2.0 target to -10% and require the current measurement to meet it
-    status: chosen
-    description: Preserve the benchmark evidence honestly, close the v2.0 release gate only after the remeasurement exceeds
-      the revised target, and carry additional token optimization into future versions.
-  choice: >-
-    Record the benchmark as complete for the revised v2.0 target. Initial v2 measurement was 313,356 bytes (-11.0%). After
-    the 2026-05-05 release-residue cleanup, v1 baseline remains 352,213 bytes (~88,053 tokens) and v2 measures 315,697
-    bytes (~78,924 tokens). Delta is -36,516 bytes, or -10.4%, about 9,129 estimated tokens saved. The release target is
-    now -10%, and the current measurement exceeds it for v2.0.
-  reasoning: >-
-    The 12 v2 prose.md files remain the dominant payload at 208,512 bytes, while 48 capability schema files add 84,889
-    bytes that did not exist in v1. The remeasurement uses `uv run scripts/measure_token_payload.py` to preserve the
-    Decision 41 byte-count proxy: master SKILL.md, protocol.yaml, 12 capability prose.md files, and 48 capability schema
-    YAML files compared with the fixed v1 baseline. The benchmark proves a real but modest token reduction. It does not
-    prove the original 40% target, so that target is no longer used as the v2.0 release gate. The structural payoff is
-    machine-readable schemas, artifact-specific query summaries, and a single dispatch point; larger token reductions remain
-    follow-up work for future versions.
-  confidence: firm
-  feeds_into: ROADMAP.md, gap-analysis-2026-05-05.md, future token-reduction work
-- number: 42
-  date: '2026-05-04'
-  question: How should a user invoke any of the 12 capabilities through the single `/agentera` entry point, and how does the
-    dispatcher route requests reliably?
-  context: D39 committed to a single bundled skill with one entry point (`/agentera`). The v2 codebase has schema-driven trigger
-    discovery from capability `triggers.yaml` files, but no explicit invocation model defines how bare `/agentera`, `/agentera
-    <capability-name>`, and `/agentera <natural-language-request>` are handled. Concerns about LLM misrouting (e.g., sending
-    a user who wants a quick audit into a lengthy resonera deliberation) require guardrails. All 4 runtimes (Claude Code,
-    OpenCode, Copilot, Codex) can pass the full message text to the agent after the command trigger, so `<request>` is available
-    everywhere.
-  alternatives:
-  - name: Pure LLM routing
-    status: rejected
-    description: let the model match capability triggers without guardrails. Simple but unreliable; high misrouting risk to
-      lengthy workflows.
-  - name: Explicit commands only
-    status: rejected
-    description: require users to name capabilities directly. Reliable but loses the "always type `/agentera`" simplicity.
-  - name: Layered guardrails with deterministic heuristics
-    status: chosen
-    description: combine deterministic state checks, explicit names, confidence thresholds, disambiguation, and fallback.
-      Chosen.
-  choice: "Five-layer dispatch model, heuristics hardcoded in `SKILL.md`:\n  1. **Bare `/agentera`** → deterministic heuristic\
-    \ decision tree. Checks project state (active plan, critical TODOs, stale health, missing vision) and routes to the appropriate\
-    \ capability. Fast, never wrong.\n  2. **`/agentera <capability-name>`** → direct route to named capability. Bypasses\
-    \ all NL matching.\n  3. **NL request with high-confidence match** → route via trigger pattern matching from capability\
-    \ schemas.\n  4. **Borderline match** → disambiguation prompt: present matching options and let user choose.\n  5. **Low\
-    \ confidence / no match** → fallback to hej orientation.\n  Heuristics for bare `/agentera` are hardcoded in `SKILL.md`.\
-    \ If the tree grows beyond ~7 rules, extraction to a separate file will be considered.\n  **Reasoning**: Deterministic\
-    \ state checks eliminate LLM uncertainty for the most common case (user opens project, wants next action). Explicit capability\
-    \ names give power users direct access. Confidence thresholds prevent misrouting to lengthy workflows. Disambiguation\
-    \ preserves transparency. Hej fallback is always safe. This model works across all 4 runtimes because `<request>` is just\
-    \ message text passed to the agent.\n  **Confidence**: firm\n  **Feeds into**: SKILL.md (routing logic update), README.md\
-    \ (user-facing docs), capability prose.md (trigger pattern refinement)"
-  reasoning: "Deterministic state checks eliminate LLM uncertainty for the most common case (user opens project, wants next\
-    \ action). Explicit capability names give power users direct access. Confidence thresholds prevent misrouting to lengthy\
-    \ workflows. Disambiguation preserves transparency. Hej fallback is always safe. This model works across all 4 runtimes\
-    \ because `<request>` is just message text passed to the agent.\n  **Confidence**: firm\n  **Feeds into**: SKILL.md (routing\
-    \ logic update), README.md (user-facing docs), capability prose.md (trigger pattern refinement)"
-  confidence: provisional
-  feeds_into: SKILL.md (routing logic update), README.md (user-facing docs), capability prose.md (trigger pattern refinement)
 - number: 43
   date: '2026-05-07'
-  question: How should Agentera expose plain user-facing routes without losing canonical Swedish capability identity?
-  context: The 2026-05-07 vocabulary deliberation settled on "Brand the worldview. Boring-name the work." Users should not
-    need to know Swedish capability names first, but Decisions 39-40 made capabilities canonical v2 protocol objects and
+  question: How should Agentera expose plain user-facing routes without losing canonical
+    Swedish capability identity?
+  context: The 2026-05-07 vocabulary deliberation settled on "Brand the worldview.
+    Boring-name the work." Users should not need to know Swedish capability names
+    first, but Decisions 39-40 made capabilities canonical v2 protocol objects and
     Decision 42 routes explicit capability names through `/agentera`.
   alternatives:
   - name: Rename capabilities to plain English
     status: rejected
-    description: Clearer first contact, but high churn across directories, schemas, artifacts, markers, tests, and product identity.
+    description: Clearer first contact, but high churn across directories, schemas,
+      artifacts, markers, tests, and product identity.
   - name: Trigger phrases only
     status: rejected
-    description: Improves natural-language routing but gives users no stable plain shortcut.
+    description: Improves natural-language routing but gives users no stable plain
+      shortcut.
   - name: One primary plain alias per capability
     status: chosen
-    description: Keep canonical names and add a small documented action alias surface; colloquial variants stay in trigger schemas.
-  choice: >-
-    Keep Swedish `-era` names canonical and add one primary plain `/agentera <alias>` per capability: `status`, `vision`,
-    `discuss`, `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`, `design`, and `orchestrate`.
-  reasoning: >-
-    Aliases reduce first-contact friction without renaming protocol objects. Exact aliases stay few and stable; secondary
-    phrases like `brief`, `what's next`, `deliberate`, `brainstorm`, and `rubber duck` belong in trigger schemas so they do
-    not become canonical identity.
+    description: Keep canonical names and add a small documented action alias surface;
+      colloquial variants stay in trigger schemas.
+  choice: 'Keep Swedish `-era` names canonical and add one primary plain `/agentera
+    <alias>` per capability: `status`, `vision`, `discuss`, `research`, `plan`, `build`,
+    `optimize`, `audit`, `document`, `profile`, `design`, and `orchestrate`.'
+  reasoning: Aliases reduce first-contact friction without renaming protocol objects.
+    Exact aliases stay few and stable; secondary phrases like `brief`, `what's next`,
+    `deliberate`, `brainstorm`, and `rubber duck` belong in trigger schemas so they
+    do not become canonical identity.
   confidence: firm
-  feeds_into: SKILL.md routing, schemas/triggers.yaml, README.md, docs/vocabulary.md, tests
+  feeds_into: SKILL.md routing, schemas/triggers.yaml, README.md, docs/vocabulary.md,
+    tests
 - number: 44
   date: '2026-05-07'
-  question: How should Agentera handle plain-English vocabulary inside capability prose and internal protocol docs after Decision 43?
-  context: >-
-    Decision 43 kept Swedish names while adding aliases. This review found abstract prose terms such as `freshness`, non-Git
-    `checkpoint`, `guard`, `Reality Verification Gate`, `conductor protocol`, `memory layer`, `operating record`, `drift`,
-    and `DTC` kept as internal vocabulary even when plain wording is equally precise.
+  question: How should Agentera handle plain-English vocabulary inside capability
+    prose and internal protocol docs after Decision 43?
+  context: Decision 43 kept Swedish names while adding aliases. This review found
+    abstract prose terms such as `freshness`, non-Git `checkpoint`, `guard`, `Reality
+    Verification Gate`, `conductor protocol`, `memory layer`, `operating record`,
+    `drift`, and `DTC` kept as internal vocabulary even when plain wording is equally
+    precise.
   alternatives:
   - name: Keep current internal vocabulary
     status: rejected
@@ -119,103 +49,113 @@ decisions:
   - name: Plain prose with stable IDs
     status: chosen
     description: replace prose and labels first; migrate identifiers deliberately.
-  choice: >-
-    Use plain English for capability/protocol prose and labels. Deprecate `freshness`; use current/up-to-date/out-of-date/synced/status
-    wording. Keep `checkpoint` only for Git commits. Replace most `guard` with check/stop-condition wording; keep `gate` only
-    for hard pass/fail. Use `behavioral verification gate`, `orchestration loop`, `saved project context`, mismatch/out-of-sync
-    wording, and `docs-first` workflow language.
-  reasoning: >-
-    Identity belongs in stable names and IDs, not every workflow noun. Plain prose reduces cognitive load; stable IDs protect
-    compatibility until migration earns its cost.
+  choice: Use plain English for capability/protocol prose and labels. Deprecate `freshness`;
+    use current/up-to-date/out-of-date/synced/status wording. Keep `checkpoint` only
+    for Git commits. Replace most `guard` with check/stop-condition wording; keep
+    `gate` only for hard pass/fail. Use `behavioral verification gate`, `orchestration
+    loop`, `saved project context`, mismatch/out-of-sync wording, and `docs-first`
+    workflow language.
+  reasoning: Identity belongs in stable names and IDs, not every workflow noun. Plain
+    prose reduces cognitive load; stable IDs protect compatibility until migration
+    earns its cost.
   confidence: firm
-  feeds_into: docs/vocabulary.md, capability prose, safe labels/tests, active plan wording, TODO.md
+  feeds_into: docs/vocabulary.md, capability prose, safe labels/tests, active plan
+    wording, TODO.md
 - number: 45
   date: '2026-05-08'
-  question: >-
-    How should Agentera apply the agent-ready interface playbook to its CLI surface after the 2.2.0 alias and vocabulary work?
-  context: >-
-    Inspirera analysis of `~/docs/agent-ready-interface-playbook.md` identified structured routine output, runtime schema
-    introspection, sparse responses, and input hardening as the highest-value Agentera interface improvements. Decision 44
-    protects stable command names and parseable labels, while Decision 43 keeps slash route aliases separate from CLI state
-    commands. The current `bundle-status` command names a narrow installed-bundle check even though the desired surface is a
-    broader Agentera CLI/install/runtime self-check.
+  question: How should Agentera apply the agent-ready interface playbook to its CLI
+    surface after the 2.2.0 alias and vocabulary work?
+  context: Inspirera analysis of `~/docs/agent-ready-interface-playbook.md` identified
+    structured routine output, runtime schema introspection, sparse responses, and
+    input hardening as the highest-value Agentera interface improvements. Decision
+    44 protects stable command names and parseable labels, while Decision 43 keeps
+    slash route aliases separate from CLI state commands. The current `bundle-status`
+    command names a narrow installed-bundle check even though the desired surface
+    is a broader Agentera CLI/install/runtime self-check.
   alternatives:
   - name: Freeze state commands and improve outputs
     status: chosen
-    description: >-
-      Preserve routine state command names, add structured output and field selection, add runtime describe/schema
-      introspection, and harden inputs without adding slash-route aliases as CLI commands.
+    description: Preserve routine state command names, add structured output and field
+      selection, add runtime describe/schema introspection, and harden inputs without
+      adding slash-route aliases as CLI commands.
   - name: Add CLI commands for route aliases
     status: rejected
-    description: >-
-      Would blur the Decision 43 route/CLI boundary by teaching aliases like status, build, audit, and document as CLI state
-      commands.
+    description: Would blur the Decision 43 route/CLI boundary by teaching aliases
+      like status, build, audit, and document as CLI state commands.
   - name: Keep bundle-status as the long-term diagnostic command
     status: rejected
-    description: >-
-      Accurate for today's installed-bundle check, but too narrow for future Agentera CLI self-audit, runtime, hook, package,
-      and schema health checks.
+    description: Accurate for today's installed-bundle check, but too narrow for future
+      Agentera CLI self-audit, runtime, hook, package, and schema health checks.
   - name: Add doctor while keeping bundle-status as an alias
     status: rejected
-    description: >-
-      Safer for compatibility, but leaves duplicate CLI vocabulary in the pending release and weakens the plain-English command
-      surface cleanup.
-  choice: >-
-    Build one phased agent-ready state interface plan for pending 2.2.0: keep routine state command names stable, improve human
-    text output where useful, add structured routine output, add runtime describe/schema introspection, add field selection,
-    harden artifact/path inputs, and hard-rename `agentera bundle-status` to `agentera doctor` with no compatibility alias.
-  reasoning: >-
-    The playbook's core lesson is that agent-facing interfaces need predictable structured I/O, runtime self-description,
-    scoped responses, and defensive boundaries. Agentera already has the schema and registry foundations; the next step is to
-    expose them through the CLI without collapsing slash routes into state commands. `doctor` is the right plain command for
-    Agentera's own install/runtime/CLI health, while artifact health remains `agentera health`.
+    description: Safer for compatibility, but leaves duplicate CLI vocabulary in the
+      pending release and weakens the plain-English command surface cleanup.
+  choice: 'Build one phased agent-ready state interface plan for pending 2.2.0: keep
+    routine state command names stable, improve human text output where useful, add
+    structured routine output, add runtime describe/schema introspection, add field
+    selection, harden artifact/path inputs, and hard-rename `agentera bundle-status`
+    to `agentera doctor` with no compatibility alias.'
+  reasoning: The playbook's core lesson is that agent-facing interfaces need predictable
+    structured I/O, runtime self-description, scoped responses, and defensive boundaries.
+    Agentera already has the schema and registry foundations; the next step is to
+    expose them through the CLI without collapsing slash routes into state commands.
+    `doctor` is the right plain command for Agentera's own install/runtime/CLI health,
+    while artifact health remains `agentera health`.
   confidence: firm
   feeds_into: PLAN.md, scripts/agentera, README.md, docs/vocabulary.md, tests
 - number: 46
   date: '2026-05-08'
-  question: How should Agentera handle capability handoff wording and confirmation guidance for pending 2.2.0?
-  context: >-
-    `docs/notes.md` identified three related release-polish gaps: capability handoffs still teach standalone slash-capability
-    labels such as `/realisera`, next capability recommendations are inconsistent, and bounded choices do not consistently use
-    runtime-native question tools. Decisions 43 and 45 already separate `/agentera <alias>` routes from CLI state commands, so
-    handoff prose should stop making agents remember runtime-specific slash conventions. The user selected the handoff polish
-    option for v2.2.0 and explicitly required recording this decision before implementation continues.
+  question: How should Agentera handle capability handoff wording and confirmation
+    guidance for pending 2.2.0?
+  context: '`docs/notes.md` identified three related release-polish gaps: capability
+    handoffs still teach standalone slash-capability labels such as `/realisera`,
+    next capability recommendations are inconsistent, and bounded choices do not consistently
+    use runtime-native question tools. Decisions 43 and 45 already separate `/agentera
+    <alias>` routes from CLI state commands, so handoff prose should stop making agents
+    remember runtime-specific slash conventions. The user selected the handoff polish
+    option for v2.2.0 and explicitly required recording this decision before implementation
+    continues.'
   alternatives:
   - name: Handoff polish for v2.2.0
     status: chosen
-    description: >-
-      Normalize handoffs to glyph plus canonical capability name, reserve `/agentera <alias>` for explicit route docs, use
-      runtime-native question tools for bounded choices, and add regression coverage.
+    description: Normalize handoffs to glyph plus canonical capability name, reserve
+      `/agentera <alias>` for explicit route docs, use runtime-native question tools
+      for bounded choices, and add regression coverage.
   - name: Completed-plan lifecycle cleanup
     status: rejected
-    description: Relevant, but broader lifecycle behavior that should be planned separately from release polish.
+    description: Relevant, but broader lifecycle behavior that should be planned separately
+      from release polish.
   - name: CLI write support
     status: rejected
-    description: Valuable, but too large for the current 2.2.0 release window and likely deserves its own design.
+    description: Valuable, but too large for the current 2.2.0 release window and
+      likely deserves its own design.
   - name: Record follow-ups only
     status: rejected
-    description: Leaves a small but visible v2.2.0 UX inconsistency unresolved after Decisions 43-45 tightened the route surface.
-  choice: >-
-    Include a narrow handoff-polish item in pending 2.2.0: capability prose should recommend downstream capabilities as glyph
-    plus canonical name labels such as `⧉ realisera`, reserve `/agentera <alias>` for explicit slash-route documentation, use
-    the runtime's native question tool for clear bounded choices, put the recommended option first, include `Done`, and ask for
-    confirmation before invoking a downstream capability.
-  reasoning: >-
-    This compounds Decisions 43-45 without changing command semantics. It removes a runtime-convention burden from agents,
-    makes handoffs more consistent, and keeps the release scope smaller than lifecycle archival or YAML write support.
+    description: Leaves a small but visible v2.2.0 UX inconsistency unresolved after
+      Decisions 43-45 tightened the route surface.
+  choice: "Include a narrow handoff-polish item in pending 2.2.0: capability prose\
+    \ should recommend downstream capabilities as glyph plus canonical name labels\
+    \ such as `\u29C9 realisera`, reserve `/agentera <alias>` for explicit slash-route\
+    \ documentation, use the runtime's native question tool for clear bounded choices,\
+    \ put the recommended option first, include `Done`, and ask for confirmation before\
+    \ invoking a downstream capability."
+  reasoning: This compounds Decisions 43-45 without changing command semantics. It
+    removes a runtime-convention burden from agents, makes handoffs more consistent,
+    and keeps the release scope smaller than lifecycle archival or YAML write support.
   confidence: firm
   feeds_into: SKILL.md, capability prose, tests, CHANGELOG.md, docs/vocabulary.md
 - number: 47
   date: '2026-05-08'
-  question: How should Agentera rename bundle semantics and organize app, profile, and user data roots?
-  context: >-
-    Current `AGENTERA_HOME` means a replaceable installed bundle root, while `PROFILE.md` lives in the platform data directory.
-    That split makes “bundle” leak into user language and blurs mutable user data versus managed app files.
+  question: How should Agentera rename bundle semantics and organize app, profile,
+    and user data roots?
+  context: "Current `AGENTERA_HOME` means a replaceable installed bundle root, while\
+    \ `PROFILE.md` lives in the platform data directory. That split makes \u201Cbundle\u201D\
+    \ leak into user language and blurs mutable user data versus managed app files."
   alternatives:
   - name: App-home layout
     status: chosen
-    description: >-
-      `AGENTERA_HOME` is a durable platform data home; managed app files live under `AGENTERA_HOME/app`; profile and usage data live at the home root.
+    description: '`AGENTERA_HOME` is a durable platform data home; managed app files
+      live under `AGENTERA_HOME/app`; profile and usage data live at the home root.'
   - name: Rename only in user-facing prose
     status: rejected
     description: Keeps root semantics and internal contracts confusing.
@@ -224,148 +164,186 @@ decisions:
     description: Preserves the profile/app split and stale install-root ambiguity.
   - name: Mutate through doctor
     status: rejected
-    description: Makes the self-check command write state instead of preserving read-only diagnostics.
-  choice: >-
-    Replace bundle terminology with app terminology across live internals, redefine default `AGENTERA_HOME` as the platform data home, place the managed Agentera app under `AGENTERA_HOME/app`, and keep `PROFILE.md`, `USAGE.md`, history, and intermediate corpus data under `AGENTERA_HOME`.
-  reasoning: >-
-    “Install the Agentera app” is clearer than “install the Agentera bundle,” and home/app separation protects user data from app refreshes. `agentera doctor` should detect legacy bundle-root installs and report migration_required with exact dry-run/apply commands; `agentera upgrade` owns the idempotent migration writes.
+    description: Makes the self-check command write state instead of preserving read-only
+      diagnostics.
+  choice: Replace bundle terminology with app terminology across live internals, redefine
+    default `AGENTERA_HOME` as the platform data home, place the managed Agentera
+    app under `AGENTERA_HOME/app`, and keep `PROFILE.md`, `USAGE.md`, history, and
+    intermediate corpus data under `AGENTERA_HOME`.
+  reasoning: "\u201CInstall the Agentera app\u201D is clearer than \u201Cinstall the\
+    \ Agentera bundle,\u201D and home/app separation protects user data from app refreshes.\
+    \ `agentera doctor` should detect legacy bundle-root installs and report migration_required\
+    \ with exact dry-run/apply commands; `agentera upgrade` owns the idempotent migration\
+    \ writes."
   confidence: firm
-  feeds_into: TODO.md, PLAN.md, README.md, UPGRADE.md, scripts/install_root.py, scripts/agentera_upgrade.py, scripts/agentera, package/runtime registries, tests
+  feeds_into: TODO.md, PLAN.md, README.md, UPGRADE.md, scripts/install_root.py, scripts/agentera_upgrade.py,
+    scripts/agentera, package/runtime registries, tests
 - number: 48
   date: '2026-05-08'
-  question: How should Agentera expose self-audit and maintainer scripts through the CLI?
-  context: >-
-    Agents currently call `scripts/self_audit.py` through inline Python for pre-write artifact checks. Decision 45 made the
-    CLI an agent-ready state interface, and Decision 47 keeps `agentera doctor` read-only for install/app/runtime diagnostics
-    while `agentera upgrade` owns writes. README still exposes several direct maintainer scripts.
+  question: How should Agentera expose self-audit and maintainer scripts through the
+    CLI?
+  context: Agents currently call `scripts/self_audit.py` through inline Python for
+    pre-write artifact checks. Decision 45 made the CLI an agent-ready state interface,
+    and Decision 47 keeps `agentera doctor` read-only for install/app/runtime diagnostics
+    while `agentera upgrade` owns writes. README still exposes several direct maintainer
+    scripts.
   alternatives:
   - name: Add agentera lint first
     status: chosen
-    description: >-
-      Expose self-audit through a dedicated lint namespace with structured output, advisory default behavior, and optional strict mode.
+    description: Expose self-audit through a dedicated lint namespace with structured
+      output, advisory default behavior, and optional strict mode.
   - name: Fold self-audit into doctor
     status: rejected
-    description: >-
-      Blurs doctor beyond install/app/runtime health into artifact prose quality and codebase health.
+    description: Blurs doctor beyond install/app/runtime health into artifact prose
+      quality and codebase health.
   - name: Merge all scripts now
     status: rejected
-    description: >-
-      Creates a junk-drawer CLI before stable command namespaces are defined.
+    description: Creates a junk-drawer CLI before stable command namespaces are defined.
   - name: Keep scripts only
     status: rejected
-    description: >-
-      Leaves agents using ad hoc inline Python for a contractually required pre-write check.
-  choice: >-
-    Expose `scripts/self_audit.py` through `agentera lint` first. Keep `agentera doctor` scoped to install/app/runtime diagnostics.
-    Promote other scripts only behind cohesive namespaces: `agentera validate` for validators, `agentera verify` or `agentera smoke`
-    for eval and smoke gates, and `agentera corpus`/`agentera usage` for profile analytics. Keep registry/model modules private.
-  reasoning: >-
-    A lint command solves the immediate agent ergonomics problem without changing doctor semantics. Script promotion should be
-    driven by stable workflow value and structured I/O, not by the existence of a standalone Python file.
+    description: Leaves agents using ad hoc inline Python for a contractually required
+      pre-write check.
+  choice: 'Expose `scripts/self_audit.py` through `agentera lint` first. Keep `agentera
+    doctor` scoped to install/app/runtime diagnostics. Promote other scripts only
+    behind cohesive namespaces: `agentera validate` for validators, `agentera verify`
+    or `agentera smoke` for eval and smoke gates, and `agentera corpus`/`agentera
+    usage` for profile analytics. Keep registry/model modules private.'
+  reasoning: A lint command solves the immediate agent ergonomics problem without
+    changing doctor semantics. Script promotion should be driven by stable workflow
+    value and structured I/O, not by the existence of a standalone Python file.
   confidence: firm
   feeds_into: TODO.md, scripts/agentera, README.md, capability prose, tests
 - number: 49
   date: '2026-05-08'
-  question: What TODO.md item contract should replace ISS-N counters and bracketed slug IDs?
-  context: >-
-    `skills/agentera/references/contract.md` still documents `ISS-N` TODO identities while live `TODO.md` items use bracketed
-    slugs such as `[agentera-221-...]`. The user rejected both as volatile, duplicate-prone manual identity, but still wants
-    an optional exact release target such as `2.2.5` or patch-lane target such as `2.2.x`.
+  question: What TODO.md item contract should replace ISS-N counters and bracketed
+    slug IDs?
+  context: '`skills/agentera/references/contract.md` still documents `ISS-N` TODO
+    identities while live `TODO.md` items use bracketed slugs such as `[agentera-221-...]`.
+    The user rejected both as volatile, duplicate-prone manual identity, but still
+    wants an optional exact release target such as `2.2.5` or patch-lane target such
+    as `2.2.x`.'
   alternatives:
   - name: Keep ISS-N counters
     status: rejected
-    description: Requires a central counter and creates collision/renumbering risk during concurrent artifact edits.
+    description: Requires a central counter and creates collision/renumbering risk
+      during concurrent artifact edits.
   - name: Keep bracketed slug IDs
     status: rejected
-    description: Human-generated slugs drift, duplicate easily, and make TODO lines noisier than the work requires.
+    description: Human-generated slugs drift, duplicate easily, and make TODO lines
+      noisier than the work requires.
   - name: Separate release-target tag
     status: rejected
-    description: Parseable, but adds a second metadata token when one token can express both required type and optional target.
+    description: Parseable, but adds a second metadata token when one token can express
+      both required type and optional target.
   - name: Single type-or-type-target tag
     status: chosen
-    description: Use `[type]` for untargeted work, `[type:X.Y.Z]` for work targeted at an exact release, and `[type:X.Y.x]` for work targeted at a patch lane whose exact patch is intentionally not chosen yet.
-  choice: >-
-    Use one mandatory TODO prefix tag: `[type]` for untargeted items, `[type:X.Y.Z]` for exact release-targeted items, and
-    `[type:X.Y.x]` for a patch-lane target whose exact patch is intentionally not chosen yet. Type is one of `feat`, `fix`,
-    `docs`, `refactor`, `chore`, `test`, or `perf`; `X.Y.Z` is an exact semver target, and `x` is allowed only in the patch
-    position. Forbid scopes, `v` prefixes, minor/major ranges like `2.x` or `2.2.*`, inequality ranges, multiple targets,
-    and generated item IDs. When the release is selected, convert `[type:X.Y.x]` to `[type:X.Y.Z]`. Status comes from the
-    checkbox, priority from the section, and identity from normalized summary text.
-  reasoning: >-
-    Only change type and optional release target carry durable TODO metadata. Patch-lane targets preserve useful release intent
-    without forcing false precision before the exact patch is selected. Content identity avoids counters and slug churn, while
-    the single prefix tag keeps `TODO.md` readable and deterministic for `agentera todo`, compaction, and release queries.
+    description: Use `[type]` for untargeted work, `[type:X.Y.Z]` for work targeted
+      at an exact release, and `[type:X.Y.x]` for work targeted at a patch lane whose
+      exact patch is intentionally not chosen yet.
+  choice: 'Use one mandatory TODO prefix tag: `[type]` for untargeted items, `[type:X.Y.Z]`
+    for exact release-targeted items, and `[type:X.Y.x]` for a patch-lane target whose
+    exact patch is intentionally not chosen yet. Type is one of `feat`, `fix`, `docs`,
+    `refactor`, `chore`, `test`, or `perf`; `X.Y.Z` is an exact semver target, and
+    `x` is allowed only in the patch position. Forbid scopes, `v` prefixes, minor/major
+    ranges like `2.x` or `2.2.*`, inequality ranges, multiple targets, and generated
+    item IDs. When the release is selected, convert `[type:X.Y.x]` to `[type:X.Y.Z]`.
+    Status comes from the checkbox, priority from the section, and identity from normalized
+    summary text.'
+  reasoning: Only change type and optional release target carry durable TODO metadata.
+    Patch-lane targets preserve useful release intent without forcing false precision
+    before the exact patch is selected. Content identity avoids counters and slug
+    churn, while the single prefix tag keeps `TODO.md` readable and deterministic
+    for `agentera todo`, compaction, and release queries.
   confidence: firm
-  feeds_into: TODO.md, skills/agentera/references/contract.md, skills/agentera/schemas/artifacts/todo.yaml, scripts/agentera, hooks/compaction.py, tests
+  feeds_into: TODO.md, skills/agentera/references/contract.md, skills/agentera/schemas/artifacts/todo.yaml,
+    scripts/agentera, hooks/compaction.py, tests
 - number: 50
   date: '2026-05-12'
   question: What should Agentera 2.3.0 include?
-  context: >-
-    2.2.3 release prep is complete and no open 2.2.x TODOs remain. Open degraded items cluster around installed capability
-    reliability: self-audit helper exposure, schema discovery, and split install roots. Decision 47 requires app-home migration;
-    Decision 48 says expose self-audit via `agentera lint` without merging every script into the CLI.
+  context: '2.2.3 release prep is complete and no open 2.2.x TODOs remain. Open degraded
+    items cluster around installed capability reliability: self-audit helper exposure,
+    schema discovery, and split install roots. Decision 47 requires app-home migration;
+    Decision 48 says expose self-audit via `agentera lint` without merging every script
+    into the CLI.'
   alternatives:
   - name: Focused reliability release
     status: chosen
-    description: Anchor 2.3.0 on app-home migration, `agentera lint`, and installed-capability diagnostics.
+    description: Anchor 2.3.0 on app-home migration, `agentera lint`, and installed-capability
+      diagnostics.
   - name: Patch-only reliability
     status: rejected
-    description: Fix helper/schema/root defects without app-home migration, leaving the root ambiguity intact.
+    description: Fix helper/schema/root defects without app-home migration, leaving
+      the root ambiguity intact.
   - name: Broad capability expansion
     status: rejected
-    description: Include Profilera corpus parity too, increasing validation scope before the app surface is coherent.
-  choice: >-
-    Make 2.3.0 a focused reliability release. Include Decision 47 app-home migration as a hard requirement; implement Decision
-    48 first through `agentera lint`; resolve the degraded helper exposure/removal, schema discovery, and split-root doctor
-    checks. Defer Profilera corpus parity and broad script namespace promotion beyond `lint`.
-  reasoning: >-
-    The highest-friction failures share one cause: agents cannot confidently locate the active app, helper scripts, schemas,
-    and install roots. App-home migration gives those surfaces one durable model, while `lint` solves the immediate self-audit
-    ergonomics without turning the CLI into a script dump.
+    description: Include Profilera corpus parity too, increasing validation scope
+      before the app surface is coherent.
+  choice: Make 2.3.0 a focused reliability release. Include Decision 47 app-home migration
+    as a hard requirement; implement Decision 48 first through `agentera lint`; resolve
+    the degraded helper exposure/removal, schema discovery, and split-root doctor
+    checks. Defer Profilera corpus parity and broad script namespace promotion beyond
+    `lint`.
+  reasoning: 'The highest-friction failures share one cause: agents cannot confidently
+    locate the active app, helper scripts, schemas, and install roots. App-home migration
+    gives those surfaces one durable model, while `lint` solves the immediate self-audit
+    ergonomics without turning the CLI into a script dump.'
   confidence: firm
-  feeds_into: TODO.md, .agentera/plan.yaml, scripts/install_root.py, scripts/agentera_upgrade.py, scripts/agentera, README.md, UPGRADE.md, capability prose, tests
+  feeds_into: TODO.md, .agentera/plan.yaml, scripts/install_root.py, scripts/agentera_upgrade.py,
+    scripts/agentera, README.md, UPGRADE.md, capability prose, tests
 - number: 51
   date: '2026-05-13'
-  question: What should Agentera measure before optimizing capability startup state access?
-  context: >-
-    Decision 41 closed the v2.0 token benchmark against the revised -10% target, but follow-up discussion identified a different
-    pain: agents invoke Agentera capabilities, run Agentera CLI state commands for compressed project state, and then still read,
-    grep, or glob raw `.agentera/*.yaml` or root artifact files before implementation work begins. An uncommitted startup-window
-    draft first tried to measure only slash-route or exact intro-marker windows, found zero qualifying windows, and would have
-    closed the startup-envelope follow-up. That draft was too strict because real OpenCode usage usually invokes capabilities
-    through natural language such as `run orkestrera` or bare names such as `planera`.
+  question: What should Agentera measure before optimizing capability startup state
+    access?
+  context: 'Decision 41 closed the v2.0 token benchmark against the revised -10% target,
+    but follow-up discussion identified a different pain: agents invoke Agentera capabilities,
+    run Agentera CLI state commands for compressed project state, and then still read,
+    grep, or glob raw `.agentera/*.yaml` or root artifact files before implementation
+    work begins. An uncommitted startup-window draft first tried to measure only slash-route
+    or exact intro-marker windows, found zero qualifying windows, and would have closed
+    the startup-envelope follow-up. That draft was too strict because real OpenCode
+    usage usually invokes capabilities through natural language such as `run orkestrera`
+    or bare names such as `planera`.'
   alternatives:
   - name: Keep the route/intro startup-window metric
     status: rejected
-    description: It misses the observed OpenCode behavior because most follow-up capability invocations do not use `/agentera` route text.
+    description: It misses the observed OpenCode behavior because most follow-up capability
+      invocations do not use `/agentera` route text.
   - name: Design a generic startup state envelope immediately
     status: rejected
-    description: The direct session scan shows redundant state access exists, but the interface should be driven by the retained artifact-overlap metric.
+    description: The direct session scan shows redundant state access exists, but
+      the interface should be driven by the retained artifact-overlap metric.
   - name: Patch individual capability startup habits now
     status: rejected
-    description: Lower scope, but it would likely fight symptoms while leaving the CLI state surface insufficient for capability startup needs.
+    description: Lower scope, but it would likely fight symptoms while leaving the
+      CLI state surface insufficient for capability startup needs.
   - name: Measure CLI-state-to-raw-artifact overlap
     status: chosen
-    description: Count state-gathering sequences where an Agentera CLI state command is followed by raw artifact read/grep/glob of the same state family before implementation work.
-  choice: >-
-    Replace the old startup-window metric with a state-access metric: after a capability-related user turn, anchor on the first
-    Agentera CLI state call, stop at the first implementation boundary or next user turn, and count subsequent raw artifact
-    read/grep/glob access, especially when the raw artifact overlaps the CLI state family already fetched.
-  reasoning: >-
-    Direct OpenCode inspection found the actual pattern: bare `planera`, bare `resonera`, natural-language Orkestrera handoffs, and
-    subagent prompts frequently run `agentera plan`, `agentera progress`, `agentera docs`, or related state commands and then read
-    raw YAML/Markdown artifacts before work begins. The discarded route/intro classifier therefore produced a false weak-evidence
-    `close_without_implementation` result by measuring the wrong anchor. The retained state-access metric measures the product
-    problem directly and can distinguish a broad CLI startup-envelope need from narrower capability guidance fixes.
+    description: Count state-gathering sequences where an Agentera CLI state command
+      is followed by raw artifact read/grep/glob of the same state family before implementation
+      work.
+  choice: 'Replace the old startup-window metric with a state-access metric: after
+    a capability-related user turn, anchor on the first Agentera CLI state call, stop
+    at the first implementation boundary or next user turn, and count subsequent raw
+    artifact read/grep/glob access, especially when the raw artifact overlaps the
+    CLI state family already fetched.'
+  reasoning: 'Direct OpenCode inspection found the actual pattern: bare `planera`,
+    bare `resonera`, natural-language Orkestrera handoffs, and subagent prompts frequently
+    run `agentera plan`, `agentera progress`, `agentera docs`, or related state commands
+    and then read raw YAML/Markdown artifacts before work begins. The discarded route/intro
+    classifier therefore produced a false weak-evidence `close_without_implementation`
+    result by measuring the wrong anchor. The retained state-access metric measures
+    the product problem directly and can distinguish a broad CLI startup-envelope
+    need from narrower capability guidance fixes.'
   confidence: firm
-  feeds_into: startup state-access analysis, scripts/agentera, scripts/extract_corpus.py, capability prose, tests, TODO.md
+  feeds_into: startup state-access analysis, scripts/agentera, scripts/extract_corpus.py,
+    capability prose, tests, TODO.md
 - number: 52
   date: '2026-05-13'
   question: How should Agentera run and retain startup state-access benchmark metrics?
-  context: >-
-    Decision 51 made startup state-access overlap an optimization metric. To compare versions, Agentera needs a repeatable
-    manual run for `scripts/startup_analysis_contract.py` that can read local runtime history without committing or shipping
-    generated local evidence.
+  context: Decision 51 made startup state-access overlap an optimization metric. To
+    compare versions, Agentera needs a repeatable manual run for `scripts/startup_analysis_contract.py`
+    that can read local runtime history without committing or shipping generated local
+    evidence.
   alternatives:
   - name: Ad hoc analyzer commands
     status: rejected
@@ -376,70 +354,99 @@ decisions:
   - name: Manual Mage benchmark with user-local retention
     status: chosen
     description: Mage runs the benchmark manually; aggregate history stays under `${AGENTERA_HOME}/benchmarks/startup-state/`.
-  choice: >-
-    Add a manual Mage benchmark suite starting with the Decision 51 startup state-access metric. Persist aggregate `runs.jsonl`
-    history under the user Agentera data home, not the repository, and retain only the latest redacted detailed report beside it.
-  reasoning: >-
-    Mage gives a clear manual benchmark surface while the Python analyzer remains the metric source of truth. User-local JSONL
-    enables longitudinal optimization targets without polluting git or packages, and latest-only report retention preserves
+  choice: Add a manual Mage benchmark suite starting with the Decision 51 startup
+    state-access metric. Persist aggregate `runs.jsonl` history under the user Agentera
+    data home, not the repository, and retain only the latest redacted detailed report
+    beside it.
+  reasoning: Mage gives a clear manual benchmark surface while the Python analyzer
+    remains the metric source of truth. User-local JSONL enables longitudinal optimization
+    targets without polluting git or packages, and latest-only report retention preserves
     debuggability without accumulating bulky private artifacts.
   confidence: firm
   feeds_into: magefile.go, startup state-access benchmark, TODO.md
 archive:
-- 'Decision 40 (2026-05-04): [YAML agent artifacts] — Use YAML, no v1 compatibility, and call sub-modules capabilities.'
-- 'Decision 39 (2026-05-04): [Single bundled v2 skill] — Agentera 2.0 collapsed 12 skills into one `/agentera` entry point with capability schemas and CLI-backed state.'
-- 'Decision 38 (2026-04-30): [Separate semantic eval surface] — Hej semantic fixtures assert output facts and artifact-derived next actions.'
-- 'Decision 37 (2026-04-29): [Fail-open artifact hook] — Unhandled validation-hook crashes log and allow writes.'
-- 'Decision 36 (2026-04-29): [Generate contracts JSON schema] — SPEC table parser outputs structured validation JSON.'
-- 'Decision 35 (2026-04-29): [Build shared self_audit.py module] — Shared module plus hook enforce self-audit checks.'
-- 'Decision 34 (2026-04-29): [Self-audit protocol] — Producing skills run prose checks before artifact writes.'
-- 'Decision 31 (2026-04-12): [Named per-objective subdirs] — Self-contained optimera objectives live under `.agentera/optimera/`.'
-- 'Decision 32 (2026-04-26): [`scripts/usage_stats.py`] — Usage analytics count completed workflows from session corpus markers.'
-- 'Decision 33 (2026-04-28): [Suite bundle first] — Installed suite bundle owns shared tools and runtime infrastructure.'
-- 'Decision 1 (2026-03-29): **Question**: How should planera (a planning skill) be designed to fit the agent-skills suite?'
-- 'Decision 2 (2026-03-29): **Question**: Should the vision brainstorm be extracted from realisera into a dedicated skill?'
-- 'Decision 3 (2026-03-29): **Question**: How should dokumentera (a documentation skill) be designed for the suite?'
-- 'Decision 4 (2026-03-30): **Question**: how should skill-generated docs and artifacts integrate with existing project documentation
-  conventions?'
-- 'Decision 5 (2026-03-30): **Question**: should visionera''s VISION.md include a product identity layer (brand personality,
-  voice, aesthetic, communication style)?'
-- 'Decision 6 (2026-03-30): **Question**: how should the DESIGN.md spec be absorbed into the skill suite, given skills must
-  work standalone?'
-- 'Decision 7 (2026-03-30): **Question**: How should the skill ecosystem enforce cross-skill alignment and prevent shared
-  primitives from diverging as skills are added?'
-- 'Decision 8 (2026-03-30): **Question**: Should the ecosystem unify its confidence model, and if so, on what scale?'
-- 'Decision 9 (2026-03-31): **Question**: What should this skill ecosystem be named? The current name "agent-skills" is generic
-  and doesn''t represent what it is...'
-- 'Decision 10 (2026-03-31): **Question**: Which patterns from gstack (garrytan/gstack) should agentera adopt, defer, or reject?'
-- 'Decision 11 (2026-03-31): **Question**: How should agentera express its identity visually across skills and artifacts?'
-- 'Decision 12 (2026-03-31): **Question**: How should version management work across the agentera ecosystem, both for agentera''s
-  own skill versions and for target projects...'
-- 'Decision 13 (2026-04-01): **Question**: Should agentera artifacts be consolidated out of the project root, and should their
-  naming adopt common conventions?'
-- 'Decision 14 (2026-04-02): **Question**: How should the ecosystem''s user-facing messages be formatted?'
-- 'Decision 15 (2026-04-02): **Question**: How should TODO.md categorize issues beyond bug-severity, and should issues carry
-  type tags?'
-- 'Decision 16 (2026-04-02): **Question**: How should the ecosystem''s voice and tone work across all 11 skills?'
-- 'Decision 17 (2026-04-02): **Question**: How should skills narrate their process between structural markers?'
-- 'Decision 18 (2026-04-02): **Question**: How should the ecosystem handle em-dashes and double dashes in all text?'
-- 'Decision 19 (2026-04-02): **Question**: How should the ecosystem handle line-breaks in prose text?'
-- 'Decision 20 (2026-04-02): **Question**: Should the agentera ecosystem add an orchestration skill, and what should it own?'
-- 'Decision 21 (2026-04-02): **Question**: How should autonomous plans constrain test generation to prevent unbounded output?'
-- 'Decision 22 (2026-04-03): **Question**: Should ISS-19 phase tracking be enforced across skills, and how should the ecosystem
-  detect stale artifacts?'
-- 'Decision 23 (2026-04-03): **Question**: Where should session-to-session state live: new SESSION.md artifact, extend PROGRESS.md,
-  or infrastructure dotfile?'
-- 'Decision 24 (2026-04-03): **Question**: Should the PostToolUse validation hook coexist with the git pre-commit hook, or
-  replace it?'
-- 'Decision 25 (2026-04-03): **Question**: Should agentera''s North Star evolve from "a solo founder installs an engineering
-  team" to a spec-centric framing?'
-- 'Decision 26 (2026-04-10): **Question**: Should the terminology for the ecosystem spec and per-skill context files be renamed
-  for clarity and cohesion?'
-- 'Decision 27 (2026-04-11): **Question**: How to implement Section 21''s session corpus contract to close the gap between
-  spec and extraction pipeline'
-- 'Decision 28 (2026-04-11): **Question**: Where should PROFILE.md and profilera''s generated artifacts live by default, and
-  how should runtime adapters provide path overrides?'
-- 'Decision 29 (2026-04-11): **Question**: How should optimera handle measurement archetypes that go beyond thin command-wrapper
-  harnesses, and what should the first such reference...'
-- 'Decision 30 (2026-04-12): **Question**: How should the realisera-token harness be redesigned after three consecutive discarded
-  experiments where run-to-run variance (13-20%) drowned the optimization...'
+- summary: "Decision 42 (2026-05-04): Five-layer dispatch model, heuristics hardcoded\
+    \ in `SKILL.md`: 1. **Bare `/agentera`** \u2192 deterministic heuristic decision\
+    \ tree...."
+- summary: 'Decision 41 (2026-05-04): Record the benchmark as complete for the revised
+    v2.0 target. Initial v2 measurement was 313,356...'
+- "Decision 40 (2026-05-04): [YAML agent artifacts] \u2014 Use YAML, no v1 compatibility,\
+  \ and call sub-modules capabilities."
+- "Decision 39 (2026-05-04): [Single bundled v2 skill] \u2014 Agentera 2.0 collapsed\
+  \ 12 skills into one `/agentera` entry point with capability schemas and CLI-backed\
+  \ state."
+- "Decision 38 (2026-04-30): [Separate semantic eval surface] \u2014 Hej semantic\
+  \ fixtures assert output facts and artifact-derived next actions."
+- "Decision 37 (2026-04-29): [Fail-open artifact hook] \u2014 Unhandled validation-hook\
+  \ crashes log and allow writes."
+- "Decision 36 (2026-04-29): [Generate contracts JSON schema] \u2014 SPEC table parser\
+  \ outputs structured validation JSON."
+- "Decision 35 (2026-04-29): [Build shared self_audit.py module] \u2014 Shared module\
+  \ plus hook enforce self-audit checks."
+- "Decision 34 (2026-04-29): [Self-audit protocol] \u2014 Producing skills run prose\
+  \ checks before artifact writes."
+- "Decision 33 (2026-04-28): [Suite bundle first] \u2014 Installed suite bundle owns\
+  \ shared tools and runtime infrastructure."
+- "Decision 32 (2026-04-26): [`scripts/usage_stats.py`] \u2014 Usage analytics count\
+  \ completed workflows from session corpus markers."
+- "Decision 31 (2026-04-12): [Named per-objective subdirs] \u2014 Self-contained optimera\
+  \ objectives live under `.agentera/optimera/`."
+- 'Decision 30 (2026-04-12): **Question**: How should the realisera-token harness
+  be redesigned after three consecutive discarded experiments where run-to-run variance
+  (13-20%) drowned the optimization...'
+- 'Decision 29 (2026-04-11): **Question**: How should optimera handle measurement
+  archetypes that go beyond thin command-wrapper harnesses, and what should the first
+  such reference...'
+- 'Decision 28 (2026-04-11): **Question**: Where should PROFILE.md and profilera''s
+  generated artifacts live by default, and how should runtime adapters provide path
+  overrides?'
+- 'Decision 27 (2026-04-11): **Question**: How to implement Section 21''s session
+  corpus contract to close the gap between spec and extraction pipeline'
+- 'Decision 26 (2026-04-10): **Question**: Should the terminology for the ecosystem
+  spec and per-skill context files be renamed for clarity and cohesion?'
+- 'Decision 25 (2026-04-03): **Question**: Should agentera''s North Star evolve from
+  "a solo founder installs an engineering team" to a spec-centric framing?'
+- 'Decision 24 (2026-04-03): **Question**: Should the PostToolUse validation hook
+  coexist with the git pre-commit hook, or replace it?'
+- 'Decision 23 (2026-04-03): **Question**: Where should session-to-session state live:
+  new SESSION.md artifact, extend PROGRESS.md, or infrastructure dotfile?'
+- 'Decision 22 (2026-04-03): **Question**: Should ISS-19 phase tracking be enforced
+  across skills, and how should the ecosystem detect stale artifacts?'
+- 'Decision 21 (2026-04-02): **Question**: How should autonomous plans constrain test
+  generation to prevent unbounded output?'
+- 'Decision 20 (2026-04-02): **Question**: Should the agentera ecosystem add an orchestration
+  skill, and what should it own?'
+- 'Decision 19 (2026-04-02): **Question**: How should the ecosystem handle line-breaks
+  in prose text?'
+- 'Decision 18 (2026-04-02): **Question**: How should the ecosystem handle em-dashes
+  and double dashes in all text?'
+- 'Decision 17 (2026-04-02): **Question**: How should skills narrate their process
+  between structural markers?'
+- 'Decision 16 (2026-04-02): **Question**: How should the ecosystem''s voice and tone
+  work across all 11 skills?'
+- 'Decision 15 (2026-04-02): **Question**: How should TODO.md categorize issues beyond
+  bug-severity, and should issues carry type tags?'
+- 'Decision 14 (2026-04-02): **Question**: How should the ecosystem''s user-facing
+  messages be formatted?'
+- 'Decision 13 (2026-04-01): **Question**: Should agentera artifacts be consolidated
+  out of the project root, and should their naming adopt common conventions?'
+- 'Decision 12 (2026-03-31): **Question**: How should version management work across
+  the agentera ecosystem, both for agentera''s own skill versions and for target projects...'
+- 'Decision 11 (2026-03-31): **Question**: How should agentera express its identity
+  visually across skills and artifacts?'
+- 'Decision 10 (2026-03-31): **Question**: Which patterns from gstack (garrytan/gstack)
+  should agentera adopt, defer, or reject?'
+- 'Decision 9 (2026-03-31): **Question**: What should this skill ecosystem be named?
+  The current name "agent-skills" is generic and doesn''t represent what it is...'
+- 'Decision 8 (2026-03-30): **Question**: Should the ecosystem unify its confidence
+  model, and if so, on what scale?'
+- 'Decision 7 (2026-03-30): **Question**: How should the skill ecosystem enforce cross-skill
+  alignment and prevent shared primitives from diverging as skills are added?'
+- 'Decision 6 (2026-03-30): **Question**: how should the DESIGN.md spec be absorbed
+  into the skill suite, given skills must work standalone?'
+- 'Decision 5 (2026-03-30): **Question**: should visionera''s VISION.md include a
+  product identity layer (brand personality, voice, aesthetic, communication style)?'
+- 'Decision 4 (2026-03-30): **Question**: how should skill-generated docs and artifacts
+  integrate with existing project documentation conventions?'
+- 'Decision 3 (2026-03-29): **Question**: How should dokumentera (a documentation
+  skill) be designed for the suite?'
