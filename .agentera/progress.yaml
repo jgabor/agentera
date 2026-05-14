@@ -1,4 +1,44 @@
 cycles:
+- number: 461
+  timestamp: 2026-05-14 11:50
+  type: fix
+  phase: release
+  what: >
+    Prepared the local 2.3.4 patch release metadata for the startup state
+    completeness and PLAN artifact source-contract scope.
+  commit: pending
+  inspiration: >
+    The operator corrected the release boundary: current completed changes should
+    be cut as 2.3.4, so follow-up capability source-contract work was retargeted
+    to 2.3.5 and later while the selected patch release metadata became in
+    scope.
+  discovered: >
+    Version-bearing package surfaces, plugin manifests, registry metadata,
+    lockfile, OpenCode marker, and skill frontmatter still reported 2.3.3.
+    Focused release validation also exposed that the remaining AGENTERA_HOME TODO
+    must continue pointing install-root semantics at `scripts/install_root.py`.
+  verified: >
+    `uv run pytest tests/test_package_registry.py tests/test_runtime_adapters.py
+    tests/test_startup_analysis_contract.py -q` passed with 128 tests after the
+    version assertion and TODO wording updates. `uv run
+    hooks/validate_artifact.py --artifact TODO.md --file TODO.md`, `uv run
+    hooks/validate_artifact.py --artifact CHANGELOG.md --file CHANGELOG.md`, `uv
+    run hooks/validate_artifact.py --artifact DOCS.md --file .agentera/docs.yaml`,
+    `uv run scripts/agentera docs`, `uv run scripts/agentera todo`, `uv run
+    scripts/validate_capability.py skills/agentera/capabilities/hej`, `uv run
+    scripts/validate_capability.py --self-validate`, and `git diff --check`
+    passed.
+  next: >
+    Commit the 2.3.4 patch release locally if requested. Do not tag, push,
+    publish, refresh the installed app, edit vision, or touch objective state
+    without explicit approval.
+  context:
+    intent: 2.3.4 patch release metadata sync
+    constraints: no tag, no push, no publication, no installed app refresh, no
+      vision edit, no objective-state edit
+    scope: version files, package registry, plugin manifests, OpenCode marker,
+      skill frontmatter, TODO retargeting, changelog, docs metadata, focused
+      release tests, and progress evidence
 - number: 460
   timestamp: 2026-05-14 09:10
   type: fix

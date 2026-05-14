@@ -10,7 +10,13 @@
 
 ## → Normal
 
-- [ ] [fix:2.3.x] Demote `AGENTERA_HOME` to a validated override instead of the normal app-home source of truth. Normal installed execution should resolve directly to the platform app directory (`XDG_DATA_HOME`/macOS Application Support/Windows AppData) unless an explicit valid override is supplied; runtime adapters such as OpenCode must not blindly propagate stale legacy values like `~/.agents/agentera`, and doctor/upgrade/tests should preserve custom-install and hermetic-test support without making stale parent-process environments authoritative.
+- [ ] [fix:2.3.x] Demote `AGENTERA_HOME` to a validated override in `scripts/install_root.py` instead of the normal app-home source of truth. Normal installed execution should resolve directly to the platform app directory (`XDG_DATA_HOME`/macOS Application Support/Windows AppData) unless an explicit valid override is supplied; runtime adapters such as OpenCode must not blindly propagate stale legacy values like `~/.agents/agentera`, and doctor/upgrade/tests should preserve custom-install and hermetic-test support without making stale parent-process environments authoritative.
+- [ ] [feat:2.3.5] Add a Resonera decision-context source contract so `agentera decisions --format json` exposes outcome, reasoning, alternatives, feeds-into, confidence, and downstream consequences without requiring raw `.agentera/decisions.yaml` reads or git-history fallback during deliberation.
+- [ ] [feat:2.3.6] Add an Orkestrera orchestration-context source contract that combines dependency-ready plan tasks, latest progress verification, health/TODO/decision caveats, retry state, and evaluation requirements so task selection and Inspektera handoff do not need raw artifact reads.
+- [ ] [feat:2.3.7] Add Dokumentera closeout-context source contracts for TODO, docs, changelog, and progress state so final synchronization can verify mappings, benchmark evidence, remaining blockers, and no-release boundaries through CLI output before any raw artifact fallback.
+- [ ] [feat:2.3.8] Add an Inspektera evidence-context source contract that packages plan criteria, progress verification, docs/health findings, protected-state/version checks, and residual risks so evaluations can stay CLI-first and avoid defensive raw artifact inspection.
+- [ ] [feat:2.3.9] Add an Optimera benchmark-context source contract or equivalent CLI summary for startup benchmark history/latest results so optimization work can inspect rates, token estimates, runtime caveats, and recommendation triggers without reading user-local `latest-report.json` directly.
+- [ ] [feat:2.3.10] Add a Realisera execution-context source contract that exposes the current task's acceptance criteria, constraints, expected verification, allowed files/scope, and progress evidence requirements so implementation agents can start from CLI state instead of raw plan/progress reads.
 
 ## ⇢ Annoying
 

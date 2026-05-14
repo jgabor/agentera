@@ -4,6 +4,7 @@
 
 ### Changed
 
+- 2.3.4 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the startup state completeness and PLAN artifact source-contract scope.
 - 2.3.3 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the Profilera corpus runtime parity scope.
 - 2.3.2 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the plain-language recovery messaging scope.
 - 2.3.1 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the runtime-injected stale-default recovery scope; Profilera corpus parity remains deferred beyond 2.3.1.
@@ -65,6 +66,7 @@
 
 ### Verified
 
+- 2.3.4 patch release readiness is recorded locally without publication, installed app refresh, tag, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces are aligned.
 - PLAN artifact fallback closeout is synchronized without a selected release target:
   focused CLI/contract tests passed with 88 selected tests, `agentera plan
   --format json --fields source_contract` reports
