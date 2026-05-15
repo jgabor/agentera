@@ -47,6 +47,10 @@ exit condition: fixture passes only when status, attention item, and concrete Ta
     "⌂ hej · waiting"
   ],
   "forbidden_output": [
+    "/realisera",
+    "/planera",
+    "/orkestrera",
+    "/optimera",
     "Execute Task 4: Add Unit-Level Assertion Tests"
   ],
   "required_artifacts": [

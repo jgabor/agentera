@@ -100,7 +100,11 @@ decisions:
   confidence: firm
   feeds_into: SKILL.md, capability prose, tests, CHANGELOG.md, docs/vocabulary.md
   satisfaction:
-    state: open
+    state: provisionally_satisfied
+    evidence: 'D46 handoff enforcement now has runtime-facing regression evidence: semantic fixture defaults and documentation
+      require glyph plus canonical capability names such as `⧉ realisera`, hej routing fixtures forbid standalone slash-capability
+      labels such as `/realisera`, focused semantic/dispatch tests passed 49 tests on 2026-05-15, and semantic fixture evals
+      passed 4 fixtures. User confirmation is still required before marking this decision user-confirmed satisfied.'
 - number: 47
   date: '2026-05-08'
   question: How should Agentera rename bundle semantics and organize app, profile, and user data roots?

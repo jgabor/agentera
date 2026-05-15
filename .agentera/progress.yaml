@@ -1,4 +1,52 @@
 cycles:
+- number: 511
+  timestamp: 2026-05-15 19:41
+  type: fix
+  phase: audit
+  what: Completed the D46 handoff wording enforcement plan and local 2.3.14 closeout
+    metadata sync.
+  commit: pending
+  inspiration: Orkestrera resumed the active D46 Handoff Wording Enforcement plan
+    after the plan remained active with all tasks pending despite focused implementation
+    already landing in semantic fixtures and tests.
+  discovered: 'The concrete D46 behavior gap was runtime-facing fixture drift, not
+    missing dispatcher prose: semantic fixture helpers still used `route /realisera`
+    and `suggested -> /realisera`, and hej routing failure examples did not explicitly
+    assert that stale slash-capability labels tripped the forbidden-output guard.
+    Decisions CLI context confirmed Decision 46 remained open, and docs metadata still
+    reflected 2.3.13.'
+  verified: D46 enforcement now requires glyph/name handoff labels in semantic fixtures,
+    forbids standalone slash-capability labels in hej startup fixtures, and classifies
+    stale `/realisera` fixture output through `forbidden_output[0]`. Verification
+    passed with `uv run pytest tests/test_semantic_eval.py tests/test_semantic_fixtures.py
+    tests/test_hej_routing_fixture.py tests/test_skill_dispatch_contract.py tests/test_package_registry.py
+    tests/test_runtime_adapters.py -q` (141 passed), `uv run scripts/semantic_eval.py
+    fixtures/semantic/hej-routing-plan-priority.md fixtures/semantic/hej-cli-budget.md
+    fixtures/semantic/hej-bare-message.md fixtures/semantic/hej-bare-empty-repo.md`
+    (4 fixtures passed), Hej and Planera capability validation (PASS), schema self-validation
+    (PASS), TODO, DECISIONS, DOCS, CHANGELOG, PLAN, PROGRESS, and SESSION artifact
+    validation (PASS), `agentera compact --mode check --format json` (status=pass),
+    `agentera gate --format json` (status=pass), and `git diff --check` (PASS).
+    Metadata sync resolved the D46 TODO, marked Decision
+    46 only provisionally satisfied with evidence, updated CHANGELOG and DOCS audit
+    metadata, marked the plan complete, and aligned declared version-bearing surfaces
+    to 2.3.14 without publication, push, tag, installed-app refresh, profile refresh,
+    vision edit, objective-state edit, or unsupported capability-name CLI command.
+  next: Hand the completed D46 plan to final verification. Do not commit, push, tag,
+    publish, refresh installed apps or profile, edit vision or objective state, or
+    run unsupported capability-name CLI commands unless explicitly requested.
+  context:
+    intent: D46 handoff wording enforcement and 2.3.14 local closeout metadata sync
+    constraints: Local metadata sync only; no publication, remote push, tag, installed-app
+      refresh, profile refresh, vision edit, objective-state edit, objective-state
+      mutation, commit, or unsupported capability-name CLI command
+    version_surfaces: pyproject.toml, uv.lock, plugin.json, .github/plugin/plugin.json,
+      .codex-plugin/plugin.json, .claude-plugin/marketplace.json, .opencode/plugins/agentera.js,
+      skills/agentera/SKILL.md, skills/hej/SKILL.md, registry.json
+    scope: Semantic fixture handoff labels, hej routing fixture forbidden-output classification,
+      Decision 46 provisional satisfaction evidence, TODO resolution, changelog closeout
+      notes, docs audit metadata, progress evidence, active plan completion, and declared
+      2.3.14 version-bearing alignment
 - number: 510
   timestamp: 2026-05-15 14:05
   type: fix
@@ -332,44 +380,9 @@ cycles:
     scope: TODO, CHANGELOG, docs audit metadata, version-bearing package/plugin/OpenCode/skill
       surfaces, plan evidence, progress cycle, artifact validation, gates, and local
       scope audit
-- number: 501
-  timestamp: 2026-05-15 10:10
-  type: chore
-  phase: audit
-  what: Completed PLAN Task 7 local closeout metadata sync for the 2.3.10 Inspektera
-    evidence-context source-contract patch.
-  commit: pending
-  inspiration: Task 7 required TODO, progress, docs, and changelog to record the completed
-    2.3.10 source-contract patch and deferred 2.3.11+ source-contract train, with
-    version-bearing changes constrained by `.agentera/docs.yaml` version policy and
-    the package registry.
-  discovered: TODO now resolves `[feat:2.3.10]` while keeping `[feat:2.3.11]` and
-    `[feat:2.3.12]` open. DOCS records the 2.3.10 audit label, version-policy resolution
-    for the selected exact patch-train target despite the `[feat:2.3.10]` label, deferred
-    2.3.11+ work, and local-only no-publication/no-refresh boundary. CHANGELOG records
-    the 2.3.10 changed/fixed/added/verified closeout. Version-bearing package, plugin,
-    registry, lockfile, OpenCode marker, and skill frontmatter surfaces now target
-    2.3.10; the docs `version_files` list and package registry were corrected to include
-    the already test-enforced active and legacy skill frontmatter surfaces.
-  verified: 'Final required verification ran after this progress entry: focused version
-    tests, capability validation, self-validation, artifact validators, TODO/DOCS/CHANGELOG
-    validators, repository gate, compaction check, diff whitespace check, and protected-file
-    status/diff-stat audit.'
-  next: Hand completed 2.3.10 plan to independent evaluation. Do not refresh installed
-    apps, refresh profile state, edit vision or objective state, publish, push, tag,
-    commit, or run unsupported capability-name CLI commands without explicit approval.
-  context:
-    intent: PLAN Task 7 local closeout metadata sync for 2.3.10 Inspektera Evidence
-      Context Source Contract
-    constraints: Local metadata sync only; selected exact target is 2.3.10 despite
-      `[feat:2.3.10]`; future unselected feature targets remain governed by docs.yaml
-      semver policy; no publication; no tag; no remote push; no installed app refresh;
-      no profile refresh; no vision edit; no objective-state edit; no Optimera state
-      changes; no unsupported capability-name CLI command
-    scope: TODO, CHANGELOG, docs audit metadata, version-bearing package/plugin/OpenCode/skill
-      surfaces, plan evidence, progress cycle, artifact validation, gates, and local
-      scope audit
 archive:
+- summary: 'Cycle 501 (2026-05-15): Completed PLAN Task 7 local closeout metadata
+    sync for the 2.3.10 Inspektera evidence-context source-contract patch.'
 - summary: 'Cycle 500 (2026-05-15): Completed PLAN Task 6 evaluation startup fixtures
     and validation gates for Inspektera evidence_context.'
 - summary: 'Cycle 499 (2026-05-15): Completed PLAN Task 5 focused evidence-context
@@ -448,5 +461,3 @@ archive:
     behavior for the 2.3.5 install-state reliability patch.'
 - summary: 'Cycle 462 (2026-05-14): Implemented the PLAN Task 1 app-home override
     contract for normal installed execution.'
-- summary: 'Cycle 461 (2026-05-14): Prepared the local 2.3.4 patch release metadata
-    for the startup state completeness and PLAN artifact...'

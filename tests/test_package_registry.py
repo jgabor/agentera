@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import json
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -13,6 +14,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REGISTRY_PATH = REPO_ROOT / "references/adapters/package-registry.yaml"
+PACKAGE_MANIFEST_PATH = REPO_ROOT / "registry.json"
 
 
 def _load_module() -> ModuleType:
@@ -32,13 +34,18 @@ def _registry_fixture() -> dict[str, Any]:
     return data
 
 
+def _manifest_suite_version() -> str:
+    data = json.loads(PACKAGE_MANIFEST_PATH.read_text(encoding="utf-8"))
+    return data["skills"][0]["version"]
+
+
 def test_package_registry_returns_package_facts_in_deterministic_order_without_duplicate_ids():
     registry_module = _load_module()
 
     registry = registry_module.load_registry(REGISTRY_PATH)
 
     assert registry.package_ids == ("agentera",)
-    assert registry.suite_version() == "2.3.12"
+    assert registry.suite_version() == _manifest_suite_version()
     assert len(registry.package_ids) == len(set(registry.package_ids))
     assert registry.version_surface_ids() == (
         "registry",

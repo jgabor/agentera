@@ -64,6 +64,10 @@ Briefed the project from `agentera hej`; continue with the suggested plan task w
     "⌂ hej · waiting"
   ],
   "forbidden_output": [
+    "/realisera",
+    "/planera",
+    "/orkestrera",
+    "/optimera",
     "Hello",
     "Hi there",
     "How can I help",

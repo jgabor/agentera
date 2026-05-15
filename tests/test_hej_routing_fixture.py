@@ -63,9 +63,15 @@ def test_requires_expected_concrete_next_action_from_seeded_artifacts(semantic_e
     )
 
     result = semantic_eval.evaluate_fixture(fixture, str(FIXTURE_PATH))
+    facts = {fact["fact"]: fact for fact in result["checked_facts"]}
 
     assert result["status"] == "fail"
     assert result["failing_fact"]["fact"] == "required_output[2]"
+    assert facts["forbidden_output[0]"] == {
+        "fact": "forbidden_output[0]",
+        "status": "fail",
+        "detail": "captured output contains forbidden '/realisera'",
+    }
 
 
 def test_fails_when_output_routes_to_generic_skill_without_artifact_item(semantic_eval, semantic_fixtures):
@@ -85,9 +91,11 @@ def test_fails_when_output_routes_to_generic_skill_without_artifact_item(semanti
     )
 
     result = semantic_eval.evaluate_fixture(fixture, str(FIXTURE_PATH))
+    facts = {fact["fact"]: fact for fact in result["checked_facts"]}
 
     assert result["status"] == "fail"
     assert result["failing_fact"]["fact"] == "required_output[1]"
+    assert facts["forbidden_output[0]"]["status"] == "fail"
 
 
 def test_fails_when_output_chooses_lower_priority_item(semantic_eval, semantic_fixtures):
@@ -107,9 +115,11 @@ def test_fails_when_output_chooses_lower_priority_item(semantic_eval, semantic_f
     )
 
     result = semantic_eval.evaluate_fixture(fixture, str(FIXTURE_PATH))
+    facts = {fact["fact"]: fact for fact in result["checked_facts"]}
 
     assert result["status"] == "fail"
     assert result["failing_fact"]["fact"] == "required_output[1]"
+    assert facts["forbidden_output[0]"]["status"] == "fail"
 
 
 def test_cli_budget_fixture_requires_composite_hej_tool_call(semantic_eval, semantic_fixtures):

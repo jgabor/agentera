@@ -1,4 +1,4 @@
-last_audit: '2026-05-15 (Decision satisfaction tracking patch metadata sync)'
+last_audit: '2026-05-15 (D46 handoff wording enforcement patch metadata sync)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -234,15 +234,15 @@ index:
   status: current
 - document: Semantic eval command
   path: scripts/semantic_eval.py
-  last_updated: '2026-05-05'
+  last_updated: '2026-05-15'
   status: current
 - document: Semantic fixture contract
   path: scripts/semantic_fixtures.py
-  last_updated: '2026-05-05'
+  last_updated: '2026-05-15'
   status: current
 - document: Semantic eval fixtures
   path: fixtures/semantic/
-  last_updated: '2026-05-05'
+  last_updated: '2026-05-15'
   status: current
 - document: Usage analytics script
   path: scripts/usage_stats.py
