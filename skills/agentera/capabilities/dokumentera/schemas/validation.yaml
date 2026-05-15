@@ -81,3 +81,45 @@ VALIDATION:
       - "Exit marker present"
       - "Exit marker uses glyph ▤ (SG8)"
       - "Exit marker status is one of complete, flagged, stuck, waiting"
+  9:
+    id: V9
+    rule: closeout_context_first
+    description: >-
+      During final synchronization, Dokumentera MUST use `agentera hej
+      --format json --capability-context dokumentera` and its `closeout_context`
+      before reading TODO, docs, changelog, or progress artifacts directly.
+      Complete closeout context is the normal source for mappings, version
+      policy, blockers, boundaries, progress evidence, benchmark evidence,
+      caveats, fallback commands, raw-read policy, and completeness.
+    severity: critical
+    checks:
+      - "Closeout starts from hej capability context"
+      - "Complete closeout_context is used before raw artifact reads"
+      - "Completeness and non-empty evidence flags are preserved"
+  10:
+    id: V10
+    rule: closeout_fallback_before_raw
+    description: >-
+      If closeout context is incomplete or caveated, Dokumentera MUST run the
+      listed existing CLI fallback commands before any last-resort raw artifact
+      read. No unsupported capability-name command or new closeout command may
+      be introduced.
+    severity: critical
+    checks:
+      - "Listed CLI fallback commands run before raw artifact reads"
+      - "Raw reads are last-resort diagnostics or write targets only"
+      - "No unsupported capability-name command is introduced"
+  11:
+    id: V11
+    rule: closeout_caveat_preservation
+    description: >-
+      Dokumentera MUST preserve closeout caveats about stale app/profile state,
+      compacted or missing state, missing benchmark evidence, absent local
+      metadata or tags, and unrecorded publication or remote state. Caveats must
+      not be hidden, reconstructed, or converted into approval to refresh apps,
+      profiles, vision, objective state, publication, push, or tags.
+    severity: critical
+    checks:
+      - "State caveats are carried into closeout notes"
+      - "Missing benchmark evidence remains caveated"
+      - "Publication, remote, tag, app refresh, and profile refresh are not invented"

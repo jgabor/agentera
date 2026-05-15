@@ -608,6 +608,41 @@ def test_classifier_handles_bare_planera_and_multiple_cli_state_families(startup
     assert sequence["redundant_raw_artifact_labels"] == ["DOCS.md", "PLAN.md"]
 
 
+def test_classifier_records_complete_dokumentera_closeout_without_raw_artifact_reads(startup_analysis_contract):
+    corpus = {
+        "records": [
+            _fixture_turn("turn-user", "2026-05-13T09:30:00Z", "user", "dokumentera closeout"),
+            _fixture_tool(
+                "tool-cli-closeout",
+                "2026-05-13T09:30:01Z",
+                "bash",
+                {"command": "uv run scripts/agentera hej --format json --capability-context dokumentera"},
+            ),
+            _fixture_tool("tool-impl", "2026-05-13T09:30:02Z", "apply_patch", {"patchText": "x"}),
+        ]
+    }
+
+    result = startup_analysis_contract.classify_startup_records(corpus, salt="fixture-salt")
+
+    assert result["degradations"] == []
+    assert len(result["state_gathering_sequences"]) == 1
+    sequence = result["state_gathering_sequences"][0]
+    assert sequence["capability"] == "dokumentera"
+    assert sequence["counts"] == {
+        "capability_prose_read": 0,
+        "cli_state_call": 1,
+        "implementation_boundary": 1,
+        "non_state_context": 0,
+        "raw_artifact_access": 0,
+    }
+    assert sequence["raw_artifact_labels_after_cli"] == []
+    assert sequence["redundant_raw_artifact_labels"] == []
+    assert [event["event_class"] for event in sequence["events"]] == [
+        "cli_state_call",
+        "implementation_boundary",
+    ]
+
+
 def test_classifier_degrades_bounded_records_and_ignores_raw_before_cli(startup_analysis_contract):
     records = [
         _fixture_turn("turn-user", "2026-05-13T10:00:00Z", "user", "resonera"),
@@ -1466,7 +1501,7 @@ def test_benchmark_persistence_appends_aggregate_row_and_latest_reports(
         "latest-report.md",
         "runs.jsonl",
     }
-    assert row["agentera_version"] == "2.3.8"
+    assert row["agentera_version"] == "2.3.9"
     assert set(row) == set(_contract()["aggregate_history"]["row_shape"])
     assert isinstance(row["git_dirty"], bool)
     assert row["runtime_scope"] == ["opencode"]

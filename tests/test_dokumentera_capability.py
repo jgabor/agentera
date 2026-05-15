@@ -130,6 +130,7 @@ def test_dokumentera_prose_exists_and_contains_workflow():
     content = prose_path.read_text()
     for required in [
         "Step 0: Detect context",
+        "Closeout context startup",
         "Intent-first mode",
         "Explore-and-generate mode",
         "Update-and-verify mode",
@@ -138,3 +139,37 @@ def test_dokumentera_prose_exists_and_contains_workflow():
         "Cross-capability integration",
     ]:
         assert required in content, f"prose.md must contain section '{required}'"
+
+
+def test_dokumentera_prose_requires_closeout_context_before_raw_reads():
+    content = (DOKUMENTERA_CAP_DIR / "prose.md").read_text()
+
+    assert "agentera hej --format json --capability-context dokumentera" in content
+    assert "complete_for_closeout_context: true" in content
+    assert "Do not raw-read `TODO.md`, `.agentera/docs.yaml`, `CHANGELOG.md`, or `.agentera/progress.yaml`" in content
+    assert "Run the listed `closeout_context.fallback_commands` before any raw artifact read" in content
+    assert "Never hide or reconstruct caveats" in content
+    assert "does not approve publication, remote push, installed app refresh" in content
+
+
+def test_dokumentera_validation_schema_requires_closeout_context_rules():
+    validation = yaml.safe_load((DOKUMENTERA_CAP_DIR / "schemas" / "validation.yaml").read_text())["VALIDATION"]
+    rules = {entry["rule"]: entry for entry in validation.values()}
+
+    assert rules["closeout_context_first"]["severity"] == "critical"
+    assert "Complete closeout context" in rules["closeout_context_first"]["description"]
+    assert rules["closeout_fallback_before_raw"]["severity"] == "critical"
+    assert "listed existing CLI fallback commands" in rules["closeout_fallback_before_raw"]["description"]
+    assert rules["closeout_caveat_preservation"]["severity"] == "critical"
+    assert "unrecorded publication or remote state" in rules["closeout_caveat_preservation"]["description"]
+
+
+def test_dokumentera_artifact_schema_declares_closeout_state_consumption():
+    artifacts = yaml.safe_load((DOKUMENTERA_CAP_DIR / "schemas" / "artifacts.yaml").read_text())["ARTIFACTS"]
+    by_artifact = {entry["artifact_id"]: entry for entry in artifacts.values()}
+
+    assert "closeout_context" in by_artifact["docs"]["description"]
+    assert "closeout_context" in by_artifact["progress"]["description"]
+    assert "closeout_context" in by_artifact["todo"]["description"]
+    assert "changelog" in by_artifact
+    assert "release, tag, publication, or remote state" in by_artifact["changelog"]["description"]

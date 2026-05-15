@@ -1254,7 +1254,7 @@ class TestHej:
         assert "capability=orkestrera" in r.stdout
         assert "app_home: status=fresh" in r.stdout
         assert "source_contract:" in r.stdout
-        assert "fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context" in r.stdout
+        assert "fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context,closeout_context" in r.stdout
         assert "render=caller-owned README-style hej dashboard" in r.stdout
         assert "access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls" in r.stdout
         assert "capability_startup_complete=true" in r.stdout
@@ -1551,6 +1551,175 @@ class TestHej:
         ]
         assert "raw artifact reads are last-resort diagnostics" in context["source_contract"]["raw_artifact_read_policy"]
         assert "agentera orkestrera" not in json.dumps(context)
+
+    def test_hej_dokumentera_closeout_context_reports_required_closeout_state(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "2.3.9 Dokumentera Closeout Context Source Contract", "status": "active"},
+            "tasks": [{"number": 1, "name": "Closeout", "status": "pending"}],
+        })
+        mapping = [
+            {"artifact": "TODO.md", "path": "TODO.md"},
+            {"artifact": "CHANGELOG.md", "path": "CHANGELOG.md"},
+            {"artifact": "PROGRESS.md", "path": ".agentera/progress.yaml"},
+            {"artifact": "DOCS.md", "path": ".agentera/docs.yaml"},
+        ]
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "conventions": {
+                "version_files": ["pyproject.toml"],
+                "version_files_registry": "references/adapters/package-registry.yaml docs_targets.version_files",
+                "semver_policy": {"feat": "minor", "fix": "patch", "docs/chore/test": "no bump"},
+            },
+            "mapping": mapping,
+            "coverage": {"tests": "Benchmark evidence is retained through CLI-visible startup summaries."},
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 9, "timestamp": "2026-05-15", "verified": "closeout context tests passed"}],
+        })
+        _write_artifact(project, "TODO.md", {
+            "entries": [{"severity": "normal", "status": "open", "description": "Track 2.3.9 closeout"}],
+        })
+        (project / "CHANGELOG.md").write_text(
+            "# Changelog\n\n## [Unreleased]\n\n- Prior closeout remains visible; the 2.3.9+ train stays deferred.\n",
+            encoding="utf-8",
+        )
+
+        r = _run("hej", "--format", "json", "--capability-context", "dokumentera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        assert "agentera dokumentera" not in r.stdout
+        data = json.loads(r.stdout)
+        capability_context = data["source_contract"]["capability_context"]
+        assert capability_context["capability"] == "dokumentera"
+        assert "changelog" in capability_context["declared_state_needs"]
+        assert "agentera query changelog --format json" in capability_context["cli_fallback"]
+
+        context = data["closeout_context"]
+        assert context["capability"] == "dokumentera"
+        assert context["artifact_mappings"]["entries"] == mapping
+        assert context["version_policy"]["semver_policy"]["fix"] == "patch"
+        assert context["todo_blockers"]["open_count"] == 1
+        assert context["todo_blockers"]["items"][0]["text"] == "Track 2.3.9 closeout"
+        assert context["changelog_boundary"]["selected_target_version"] == "2.3.9"
+        assert context["changelog_boundary"]["selected_target_recorded"] is False
+        assert context["changelog_boundary"]["unreleased_present"] is True
+        assert context["changelog_boundary"]["source_provenance"]["internal_source"] == "CLI-resolved CHANGELOG.md heading scan"
+        assert context["progress_evidence"]["cycle"] == {"number": 9, "timestamp": "2026-05-15"}
+        assert context["progress_evidence"]["verified_present"] is True
+        assert context["progress_evidence"]["non_empty_evidence_present"] is True
+        assert context["progress_evidence"]["non_empty_evidence_fields"] == ["verified"]
+        assert context["benchmark_evidence"]["status"] == "available"
+        assert context["benchmark_evidence"]["non_empty_evidence_present"] is True
+        assert context["benchmark_evidence"]["user_local_benchmark_reads_required"] is False
+        assert context["release_boundary"]["local_metadata_evidence"]["status"] == "not_recorded"
+        assert context["release_boundary"]["publication_evidence"]["remote_push"] == "not_recorded_in_cli_state"
+        assert context["release_boundary"]["publication_evidence"]["remote_checks_performed"] is False
+        assert context["release_boundary"]["app_refresh_evidence"]["refresh"] == "not_recorded_in_cli_state"
+        assert "agentera query --list-artifacts" in context["fallback_commands"]
+        assert "agentera decisions --format json" in context["fallback_commands"]
+        contract = context["source_contract"]
+        assert contract["complete_for_closeout_context"] is True
+        assert contract["caveated"] is True
+        assert contract["raw_artifact_reads_required"] is False
+        assert "raw artifact reads are last-resort diagnostics" in contract["raw_artifact_read_policy"]
+        assert "changelog" in contract["closeout_state_families"]
+        assert contract["missing_required_closeout_state"] == []
+        assert "local metadata/tag versus publication boundary" in contract["owns"]
+        assert "provenance pointers and non-empty evidence flags" in contract["owns"]
+        assert "truthful completeness flag" in contract["owns"]
+
+    def test_hej_dokumentera_closeout_context_marks_required_missing_state_incomplete(self, project):
+        r = _run("hej", "--format", "json", "--capability-context", "dokumentera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["closeout_context"]
+        contract = context["source_contract"]
+        assert contract["complete_for_closeout_context"] is False
+        assert set(contract["missing_required_closeout_state"]) == {
+            "artifact_mappings",
+            "version_policy",
+            "todo_blockers",
+            "changelog_boundary",
+            "progress_evidence",
+        }
+        assert contract["raw_artifact_reads_required"] is False
+        assert context["fallback_commands"][:5] == [
+            "agentera todo --format json",
+            "agentera docs --format json",
+            "agentera progress --format json",
+            "agentera query changelog --format json",
+            "agentera query --list-artifacts",
+        ]
+        assert "agentera dokumentera" not in json.dumps(context)
+
+    def test_hej_dokumentera_closeout_context_caveats_unavailable_benchmark_evidence(self, project):
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "conventions": {"semver_policy": {"feat": "minor", "fix": "patch"}},
+            "mapping": [{"artifact": "DOCS.md", "path": ".agentera/docs.yaml"}],
+            "coverage": {"tests": "Focused tests passed."},
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 3, "timestamp": "2026-05-15", "verified": "tests passed"}],
+        })
+        _write_artifact(project, "TODO.md", {"entries": []})
+        (project / "CHANGELOG.md").write_text("# Changelog\n\n## [Unreleased]\n", encoding="utf-8")
+
+        r = _run("hej", "--format", "json", "--capability-context", "dokumentera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["closeout_context"]
+        assert context["benchmark_evidence"]["status"] == "unavailable"
+        assert context["benchmark_evidence"]["history_scope"] == "not_exposed_by_supported_cli_state"
+        assert context["benchmark_evidence"]["user_local_benchmark_reads_required"] is False
+        assert "do not read user-local benchmark files" in context["benchmark_evidence"]["caveats"][0]
+        assert context["source_contract"]["complete_for_closeout_context"] is True
+        assert context["source_contract"]["caveated"] is True
+
+    def test_hej_dokumentera_closeout_context_distinguishes_local_tag_from_publication(self, project):
+        subprocess.run(["git", "init"], cwd=project, capture_output=True, text=True, check=True)
+        blob = subprocess.run(
+            ["git", "hash-object", "-w", "--stdin"],
+            cwd=project,
+            input="tag target\n",
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        subprocess.run(["git", "tag", "v2.3.9", blob], cwd=project, capture_output=True, text=True, check=True)
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "2.3.9 Dokumentera Closeout Context Source Contract", "status": "active"},
+            "tasks": [{"number": 1, "name": "Closeout", "status": "pending"}],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "conventions": {"semver_policy": {"feat": "minor", "fix": "patch"}},
+            "mapping": [{"artifact": "DOCS.md", "path": ".agentera/docs.yaml"}],
+            "coverage": {"tests": "Benchmark evidence is retained through CLI-visible summaries."},
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 3, "timestamp": "2026-05-15", "verified": "tests passed"}],
+        })
+        _write_artifact(project, "TODO.md", {"entries": []})
+        (project / "CHANGELOG.md").write_text(
+            "# Changelog\n\n## [Unreleased]\n\n## [2.3.9] - local closeout\n",
+            encoding="utf-8",
+        )
+
+        r = _run("hej", "--format", "json", "--capability-context", "dokumentera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        release_boundary = json.loads(r.stdout)["closeout_context"]["release_boundary"]
+        assert release_boundary["local_metadata_evidence"]["status"] == "recorded"
+        assert release_boundary["local_tag_evidence"]["status"] == "available"
+        assert release_boundary["local_tag_evidence"]["tag"] == "v2.3.9"
+        assert release_boundary["local_tag_evidence"]["object_type"] == "blob"
+        assert release_boundary["publication_evidence"]["package_publication"] == "not_recorded_in_cli_state"
+        assert release_boundary["publication_evidence"]["remote_push"] == "not_recorded_in_cli_state"
+        assert release_boundary["publication_evidence"]["remote_checks_performed"] is False
+
+    def test_dokumentera_closeout_context_does_not_add_capability_name_cli_command(self, project):
+        r = _run("dokumentera", cwd=project)
+
+        assert r.returncode != 0
+        assert "invalid choice" in r.stderr
 
     def test_fresh_hej_structured_output_explains_absent_state(self, project):
         r = _run("hej", "--format", "json", cwd=project)

@@ -173,6 +173,7 @@ structured_output:
         - attention
         - next_action
         - orchestration_context
+        - closeout_context
         - source
         - source_contract
       source_contract:
@@ -206,6 +207,14 @@ structured_output:
             selected next task, task acceptance/evidence summaries, caveats, fallback
             commands, and a source contract. It must not introduce `agentera
             orkestrera` or other capability-name CLI commands.
+          closeout_context_semantics: >-
+            `agentera hej --format json --capability-context dokumentera` may include
+            closeout_context with artifact mappings, version policy, TODO blockers,
+            changelog boundary, progress evidence, benchmark evidence or an unavailable
+            caveat, local metadata/tag versus publication boundary state, fallback
+            commands, caveats, provenance pointers, non-empty evidence flags, and a
+            raw-read-last-resort source contract. It must not introduce `agentera
+            dokumentera`, new top-level commands, or new subcommands.
           current_status: complete
           current_missing_state: []
       empty_state: >-
@@ -294,6 +303,7 @@ field_selection:
         - attention
         - next_action
         - orchestration_context
+        - closeout_context
         - source
         - source_contract
   retained_context:

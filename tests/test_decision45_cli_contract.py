@@ -107,6 +107,10 @@ def test_startup_completeness_contract_preserves_cli_vocabulary():
     assert "--capability-context <capability>" in hej_contract["capability_context_semantics"]
     assert "orchestration_context" in contract["structured_output"]["envelope"]["hej"]["fields"]
     assert "must not introduce `agentera orkestrera`" in hej_contract["orchestration_context_semantics"]
+    assert "closeout_context" in contract["structured_output"]["envelope"]["hej"]["fields"]
+    assert "--capability-context dokumentera" in hej_contract["closeout_context_semantics"]
+    assert "local metadata/tag versus publication boundary state" in hej_contract["closeout_context_semantics"]
+    assert "must not introduce `agentera dokumentera`" in hej_contract["closeout_context_semantics"]
     assert hej_contract["current_status"] == "complete"
     assert hej_contract["current_missing_state"] == []
     assert startup["state_families_added"] == [

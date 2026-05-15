@@ -38,7 +38,7 @@ def test_package_registry_returns_package_facts_in_deterministic_order_without_d
     registry = registry_module.load_registry(REGISTRY_PATH)
 
     assert registry.package_ids == ("agentera",)
-    assert registry.suite_version() == "2.3.8"
+    assert registry.suite_version() == "2.3.9"
     assert len(registry.package_ids) == len(set(registry.package_ids))
     assert registry.version_surface_ids() == (
         "registry",
@@ -311,11 +311,11 @@ def test_active_version_files_and_skill_frontmatter_report_current_suite_version
             actual = match.group(1) if match else None
         else:
             assert suite_version in text, f"{target} does not mention current suite version"
-            assert "2.2.3" not in text, f"{target} still declares previous active version"
+            assert "2.3.8" not in text, f"{target} still declares previous active version"
             continue
         assert actual == suite_version, f"{target} has version {actual!r}, expected {suite_version!r}"
 
     for skill_path in ("skills/agentera/SKILL.md", "skills/hej/SKILL.md"):
         text = (REPO_ROOT / skill_path).read_text(encoding="utf-8")
         assert f'version: "{suite_version}"' in text
-        assert 'version: "2.2.3"' not in text
+        assert 'version: "2.3.8"' not in text

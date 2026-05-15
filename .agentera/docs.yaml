@@ -1,4 +1,4 @@
-last_audit: '2026-05-14 (2.3.8 orchestration-context source-contract patch metadata sync)'
+last_audit: '2026-05-15 (2.3.9 Dokumentera closeout-context source-contract patch metadata sync)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -76,7 +76,7 @@ index:
   status: current
 - document: Python package manifest
   path: pyproject.toml
-  last_updated: '2026-05-14'
+  last_updated: '2026-05-15'
   status: current
 - document: Upgrade guide
   path: UPGRADE.md
@@ -96,15 +96,15 @@ index:
   status: current
 - document: Progress
   path: .agentera/progress.yaml
-  last_updated: '2026-05-14'
+  last_updated: '2026-05-15'
   status: current
 - document: TODO
   path: TODO.md
-  last_updated: '2026-05-14'
+  last_updated: '2026-05-15'
   status: current
 - document: Changelog
   path: CHANGELOG.md
-  last_updated: '2026-05-14'
+  last_updated: '2026-05-15'
   status: current
 - document: Health
   path: .agentera/health.yaml
@@ -112,11 +112,11 @@ index:
   status: current
 - document: Plan
   path: .agentera/plan.yaml
-  last_updated: '2026-05-14'
+  last_updated: '2026-05-15'
   status: current
 - document: DOCS
   path: .agentera/docs.yaml
-  last_updated: '2026-05-14'
+  last_updated: '2026-05-15'
   status: current
 - document: Vocabulary
   path: docs/vocabulary.md
@@ -140,11 +140,11 @@ index:
   status: current
 - document: Registry
   path: registry.json
-  last_updated: '2026-05-14'
+  last_updated: '2026-05-15'
   status: current
 - document: Marketplace manifest
   path: .claude-plugin/marketplace.json
-  last_updated: '2026-05-14'
+  last_updated: '2026-05-15'
   status: current
 - document: Codex marketplace manifest
   path: .agents/plugins/marketplace.json
@@ -152,19 +152,19 @@ index:
   status: current
 - document: Copilot plugin manifest
   path: plugin.json
-  last_updated: '2026-05-14'
+  last_updated: '2026-05-15'
   status: current
 - document: Copilot repo plugin manifest
   path: .github/plugin/plugin.json
-  last_updated: '2026-05-14'
+  last_updated: '2026-05-15'
   status: current
 - document: Codex plugin manifest
   path: .codex-plugin/plugin.json
-  last_updated: '2026-05-14'
+  last_updated: '2026-05-15'
   status: current
 - document: OpenCode plugin adapter
   path: .opencode/plugins/agentera.js
-  last_updated: '2026-05-14'
+  last_updated: '2026-05-15'
   status: current
 - document: OpenCode adapter reference
   path: references/adapters/opencode.md
@@ -176,7 +176,7 @@ index:
   status: current
 - document: Agent-ready state CLI contract
   path: references/cli/agent-ready-state-contract.yaml
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-15'
   status: current
 - document: Startup measurement contract
   path: references/analysis/startup-measurement-contract.yaml
@@ -184,7 +184,7 @@ index:
   status: current
 - document: Startup analysis report generator
   path: scripts/startup_analysis_contract.py
-  last_updated: '2026-05-13'
+  last_updated: '2026-05-15'
   status: current
 - document: Startup overhead report surface
   path: startup-overhead-report.md / startup-overhead-report.json (generated under caller-selected output directory)
@@ -252,7 +252,7 @@ index:
   status: current
 - document: Agentera CLI
   path: scripts/agentera
-  last_updated: '2026-05-08'
+  last_updated: '2026-05-15'
   status: current
 - document: Upgrade orchestrator
   path: scripts/agentera_upgrade.py
@@ -288,7 +288,7 @@ index:
   status: current
 - document: Agentera skill dispatcher
   path: skills/agentera/SKILL.md
-  last_updated: '2026-05-14'
+  last_updated: '2026-05-15'
   status: current
 - document: Agentera protocol
   path: skills/agentera/protocol.yaml
@@ -363,14 +363,49 @@ coverage:
   undocumented: 0 skills lack documentation
   stale: none
   release_metadata: >
-    The 2.3.8 patch release metadata sync applies the selected Orkestrera
-    orchestration-context source-contract target, explicitly resolves the
-    `[feat:2.3.8]` label versus semver-policy tension by keeping the preselected
-    2.3 patch train target, records the remaining 2.3.9+ source-contract train
-    as deferred, and keeps future version changes governed by `.agentera/docs.yaml`
-    `semver_policy`.
+    The 2.3.9 patch release metadata sync applies the selected Dokumentera
+    closeout-context source-contract target, explicitly resolves the `[feat:2.3.9]`
+    label versus semver-policy tension by keeping the preselected 2.3 patch
+    train target, records the remaining 2.3.10+ source-contract train as deferred,
+    and keeps future version changes governed by `.agentera/docs.yaml` `semver_policy`.
   tests: 'Startup measurement now documents the Decision 51 state-access metric and the Decision 52 manual benchmark retention boundary. The metric is raw artifact access after CLI state during capability startup/state gathering, replacing an uncommitted route/intro startup-window draft that found zero qualifying windows and would have closed the startup-envelope follow-up. The contract records the post-2.3 boundary, natural-language and bare-capability invocation markers, state-gathering sequence boundaries, counted event classes, degradation reasons, report fields, Section 22 compatibility, privacy boundary, local-only report command, structured report, human-readable report, recommendation gate, manual-only benchmark rule, exact runtime/path approval requirement, default `${AGENTERA_HOME}/benchmarks/startup-state/` storage, durable `runs.jsonl` plus fixed latest report files, and aggregate-history exclusions for raw transcripts, raw corpus files, raw intermediates, raw store paths, raw session IDs, private salts, and generated salted hashes. Focused contract tests validate redaction helpers, state-sequence classification, raw-after-CLI overlap counts, thresholds, recommendations, report surfaces, benchmark retention boundaries, supported Claude Code and GitHub Copilot fixture extraction, aggregate token fields, comparable-row savings/null reasons, and privacy exclusions. Task 7 closeout records durable benchmark evidence with estimator `approx_bytes_div_4_v1`, raw-after-CLI estimated tokens `621`, redundant raw estimated tokens `533`, null reason `previous_missing_token_estimates`, CLI behavior rates `0.4444`, 18 total state sequences, retained recommendation `plan_cli_startup_envelope`, and live-runtime `schema_divergent` caveats for current local Claude Code and GitHub Copilot stores. The 2.3.7 patch release metadata sync now applies the selected decision-context source-contract release target, explicitly resolves the `[feat:2.3.7]` label versus semver-policy tension by keeping the preselected 2.3 patch train target, records the remaining 2.3.8+ source-contract train as deferred, and keeps future version changes governed by `.agentera/docs.yaml` `semver_policy`.'
 audit_log:
+- date: '2026-05-15'
+  label: 2.3.9 Dokumentera closeout-context source-contract patch metadata sync
+  findings:
+  - type: checked
+    description: >
+      Active version-bearing package surfaces now report 2.3.9 across
+      `pyproject.toml`, `uv.lock`, `registry.json`, plugin manifests, the OpenCode
+      `AGENTERA_VERSION` marker, and skill frontmatter.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      The 2.3.9 patch release covers the completed Dokumentera closeout-context
+      source-contract patch: `agentera hej --format json --capability-context
+      dokumentera` exposes artifact mappings, version policy, TODO blockers,
+      changelog and release boundaries, progress and benchmark evidence, fallback
+      commands, caveats, non-empty evidence flags, and raw-read-last-resort policy.
+    resolution: fixed
+    severity: info
+  - type: version-policy
+    description: >
+      The TODO label is `[feat:2.3.9]`, while the general semver policy maps
+      `feat` to a minor bump. This closeout resolves the mismatch by honoring the
+      already selected exact 2.3.9 source-contract patch train target for this
+      bounded CLI-context contract; future unselected feature targets must apply
+      this document's `semver_policy` before selecting a version. The 2.3.10+
+      source-contract train remains deferred.
+    resolution: noted
+    severity: info
+  - type: version-policy
+    description: >
+      Release readiness is local-only: no publication, tag, remote push, installed
+      app refresh, profile refresh, vision edit, objective-state edit, or unsupported
+      capability CLI command was performed.
+    resolution: noted
+    severity: info
 - date: '2026-05-14'
   label: 2.3.8 orchestration-context source-contract patch metadata sync
   findings:

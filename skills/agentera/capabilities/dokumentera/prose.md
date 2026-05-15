@@ -64,6 +64,10 @@ index:
 
 ## Step 0: Detect context
 
+Before artifact-backed work, use supported Agentera CLI state first. For final
+documentation or metadata synchronization, follow the closeout context startup
+contract below before reading TODO, docs, changelog, or progress artifacts directly.
+
 Determine what kind of documentation work is needed:
 
 1. Read DOCS.md (if exists) for current state
@@ -77,6 +81,40 @@ Determine what kind of documentation work is needed:
 | Docs exist, may be stale | **Update and verify** (audit-driven) |
 | Broad "audit the docs" / "are docs up to date" | **Full audit** |
 | No DOCS.md exists | **First-run survey** (convention detection) |
+
+---
+
+## Closeout context startup
+
+Closeout synchronization uses the existing state seam:
+
+```bash
+agentera hej --format json --capability-context dokumentera
+```
+
+When the response includes `closeout_context.source_contract.complete_for_closeout_context: true`, use `closeout_context` as the normal source for:
+
+- artifact mappings
+- version policy
+- TODO blockers
+- changelog and release boundary state
+- progress evidence
+- benchmark evidence or unavailable caveat
+- fallback commands
+- state caveats
+- raw-read policy
+- completeness and non-empty evidence flags
+
+Do not raw-read `TODO.md`, `.agentera/docs.yaml`, `CHANGELOG.md`, or `.agentera/progress.yaml` merely to reconstruct those fields when the closeout context is complete. Raw artifacts are write targets or last-resort diagnostics, not normal closeout inputs.
+
+When closeout context is incomplete or caveated:
+
+1. Preserve every returned caveat, including stale app/profile state, compacted state, missing benchmark evidence, absent local tag/metadata, and no-publication/no-remote state.
+2. Run the listed `closeout_context.fallback_commands` before any raw artifact read. Expected existing fallbacks are `agentera todo --format json`, `agentera docs --format json`, `agentera progress --format json`, `agentera query changelog --format json`, `agentera query --list-artifacts`, and `agentera decisions --format json` when listed.
+3. If fallback CLI state is still incomplete, raw reads may be used only as last-resort diagnostics or as explicit write targets after artifact path resolution.
+4. Never hide or reconstruct caveats while preparing docs, changelog, TODO, or progress closeout. Carry them into the final synchronization note.
+
+Closeout context does not approve publication, remote push, installed app refresh, profile refresh, vision edits, or objective-state edits. Treat those fields as recorded evidence or caveats only.
 
 ---
 

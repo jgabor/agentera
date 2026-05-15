@@ -39,6 +39,7 @@ import importlib.util
 import json
 import os
 import re
+import subprocess
 import sys
 from datetime import date
 from pathlib import Path
@@ -764,6 +765,7 @@ HEJ_STRUCTURED_FIELDS = [
     "attention",
     "next_action",
     "orchestration_context",
+    "closeout_context",
     "source",
     "source_contract",
 ]
@@ -797,6 +799,7 @@ STARTUP_COMPLETENESS_AVAILABLE_STATE = [
     "attention",
     "next_action",
     "orchestration_context",
+    "closeout_context",
 ]
 
 STARTUP_COMPLETENESS_MISSING_STATE: list[str] = []
@@ -830,6 +833,7 @@ STATE_FAMILY_FALLBACK_COMMANDS = {
     "health": "agentera health --format json",
     "todo": "agentera todo --format json",
     "decisions": "agentera decisions --format json",
+    "changelog": "agentera query changelog --format json",
     "objective": "agentera objective --format json",
     "experiments": "agentera experiments --format json",
 }
@@ -1254,6 +1258,8 @@ def _progress_verification_summary(progress: dict[str, Any]) -> dict[str, Any]:
             "source_provenance": source,
             "cycle": None,
             "verified_present": False,
+            "non_empty_evidence_present": False,
+            "non_empty_evidence_fields": [],
             "verified": None,
             "verification_summary": None,
             "latest_progress_verification_pointer": None,
@@ -1274,15 +1280,410 @@ def _progress_verification_summary(progress: dict[str, Any]) -> dict[str, Any]:
         "field": "verified",
     }
     caveats = [] if verified_present else ["Latest progress cycle has no non-empty verified evidence."]
+    evidence_fields = ["verified"] if verified_present else []
     return {
         "status": "available",
         "source_provenance": source,
         "cycle": cycle,
         "verified_present": verified_present,
+        "non_empty_evidence_present": verified_present,
+        "non_empty_evidence_fields": evidence_fields,
         "verified": verified if verified_present else None,
         "verification_summary": verified if verified_present else None,
         "latest_progress_verification_pointer": pointer,
         "caveats": caveats,
+    }
+
+
+_TARGET_VERSION_RE = re.compile(r"\b\d+\.\d+\.\d+\b")
+
+
+def _selected_target_version(plan: dict[str, Any]) -> str | None:
+    text_parts = [str(plan.get("title", "") or "")]
+    first_pending = plan.get("first_pending")
+    if isinstance(first_pending, dict):
+        text_parts.extend(str(first_pending.get(key, "") or "") for key in ("name", "title"))
+    for task in _as_list(plan.get("tasks")):
+        if isinstance(task, dict):
+            text_parts.extend(str(task.get(key, "") or "") for key in ("name", "title"))
+    match = _TARGET_VERSION_RE.search("\n".join(text_parts))
+    return match.group(0) if match else None
+
+
+def _changelog_records_target(text: str, target_version: str | None) -> bool:
+    if not target_version:
+        return False
+    target_re = re.compile(rf"(?<![\d.]){re.escape(target_version)}(?![\d.+-])")
+    return any(target_re.search(line) for line in text.splitlines())
+
+
+def _source_provenance(source_family: str, command: str, field: str | None = None) -> dict[str, Any]:
+    provenance: dict[str, Any] = {
+        "source_family": source_family,
+        "command": command,
+    }
+    if field:
+        provenance["field"] = field
+    return provenance
+
+
+def _docs_conventions(docs: dict[str, Any]) -> dict[str, Any]:
+    conventions = docs.get("conventions")
+    return conventions if isinstance(conventions, dict) else {}
+
+
+def _closeout_artifact_mappings(docs: dict[str, Any]) -> dict[str, Any]:
+    mapping = _as_list(docs.get("mapping"))
+    caveats = [] if docs.get("exists") and mapping else ["Docs artifact mappings are unavailable or empty in CLI docs state."]
+    return {
+        "status": "available" if docs.get("exists") and mapping else "unavailable",
+        "source_provenance": _source_provenance("docs", "agentera docs --format json", "summary.mapping"),
+        "entries": mapping,
+        "mapping_entries": len(mapping),
+        "caveats": caveats,
+    }
+
+
+def _closeout_version_policy(docs: dict[str, Any]) -> dict[str, Any]:
+    conventions = _docs_conventions(docs)
+    semver_policy = conventions.get("semver_policy") if isinstance(conventions.get("semver_policy"), dict) else {}
+    version_files = _as_list(conventions.get("version_files"))
+    registry = conventions.get("version_files_registry")
+    available = bool(semver_policy)
+    caveats = [] if available else ["Docs version policy is unavailable in CLI docs state."]
+    return {
+        "status": "available" if available else "unavailable",
+        "source_provenance": _source_provenance("docs", "agentera docs --format json", "summary.conventions"),
+        "version_files": version_files,
+        "version_files_registry": registry,
+        "semver_policy": semver_policy,
+        "caveats": caveats,
+    }
+
+
+def _closeout_todo_blockers(schemas: dict, todo_items: list[dict[str, str]]) -> dict[str, Any]:
+    info = schemas.get("todo", {"path": "TODO.md", "fields": {}})
+    path = _artifact_path(info, "todo")
+    exists = path.exists()
+    caveats = [] if exists else ["TODO state is unavailable in CLI state."]
+    return {
+        "status": "available" if exists else "unavailable",
+        "source_provenance": _source_provenance("todo", "agentera todo --format json"),
+        "open_count": len(todo_items),
+        "items": todo_items,
+        "caveats": caveats,
+    }
+
+
+def _closeout_changelog_boundary(schemas: dict, plan: dict[str, Any]) -> dict[str, Any]:
+    info = schemas.get("changelog", {"path": "CHANGELOG.md", "fields": {}})
+    path = _artifact_path(info, "changelog")
+    source = _source_metadata("changelog", path)
+    target_version = _selected_target_version(plan)
+    if not path.exists():
+        return {
+            "status": "unavailable",
+            "source": source,
+            "source_provenance": _source_provenance("changelog", "agentera query changelog --format json"),
+            "selected_target_version": target_version,
+            "selected_target_recorded": False,
+            "unreleased_present": False,
+            "latest_release_heading": None,
+            "boundary_present": False,
+            "boundary": None,
+            "caveats": ["CHANGELOG state is unavailable in CLI state."],
+        }
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return {
+            "status": "unavailable",
+            "source": source,
+            "source_provenance": _source_provenance("changelog", "agentera query changelog --format json"),
+            "selected_target_version": target_version,
+            "selected_target_recorded": False,
+            "unreleased_present": False,
+            "latest_release_heading": None,
+            "boundary_present": False,
+            "boundary": None,
+            "caveats": [f"CHANGELOG state could not be read by the CLI: {exc}"],
+        }
+
+    headings = [line.strip() for line in text.splitlines() if line.startswith("## ")]
+    unreleased = next((heading for heading in headings if "unreleased" in heading.lower()), None)
+    latest_release = next((heading for heading in headings if "unreleased" not in heading.lower()), None)
+    selected_recorded = _changelog_records_target(text, target_version)
+    caveats: list[str] = []
+    if not headings:
+        caveats.append("CHANGELOG state has no release headings.")
+    if target_version and not selected_recorded:
+        caveats.append(f"CHANGELOG state has no {target_version} closeout entry yet.")
+    boundary = unreleased or latest_release
+    return {
+        "status": "available" if headings else "incomplete",
+        "source": source,
+        "source_provenance": {
+            **_source_provenance("changelog", "agentera query changelog --format json", "release_headings"),
+            "internal_source": "CLI-resolved CHANGELOG.md heading scan",
+        },
+        "selected_target_version": target_version,
+        "selected_target_recorded": selected_recorded,
+        "unreleased_present": unreleased is not None,
+        "latest_release_heading": latest_release,
+        "boundary_present": boundary is not None,
+        "boundary": boundary,
+        "release_state": "selected_target_recorded" if selected_recorded else "no_selected_target_closeout_entry",
+        "caveats": caveats,
+    }
+
+
+def _closeout_benchmark_evidence(docs: dict[str, Any]) -> dict[str, Any]:
+    coverage = docs.get("coverage") if isinstance(docs.get("coverage"), dict) else {}
+    tests_summary = str(coverage.get("tests", "") or "").strip()
+    if tests_summary and "benchmark" in tests_summary.lower():
+        return {
+            "status": "available",
+            "source_provenance": _source_provenance("docs", "agentera docs --format json", "summary.coverage.tests"),
+            "summary_present": True,
+            "non_empty_evidence_present": True,
+            "history_scope": "cli_visible_summary",
+            "user_local_benchmark_reads_required": False,
+            "summary": tests_summary,
+            "caveats": [],
+        }
+    return {
+        "status": "unavailable",
+        "source_provenance": _source_provenance("docs", "agentera docs --format json", "summary.coverage.tests"),
+        "summary_present": False,
+        "non_empty_evidence_present": False,
+        "history_scope": "not_exposed_by_supported_cli_state",
+        "user_local_benchmark_reads_required": False,
+        "summary": None,
+        "caveats": [
+            "Supported CLI/state summaries do not expose benchmark evidence; do not read user-local benchmark files for normal closeout."
+        ],
+    }
+
+
+def _local_git_tag_evidence(target_version: str | None) -> dict[str, Any]:
+    tag = f"v{target_version}" if target_version else None
+    source = {
+        "source_family": "local_git",
+        "command": "git tag --list <target-tag>",
+        "remote": False,
+    }
+    if not tag:
+        return {
+            "status": "unavailable",
+            "tag": None,
+            "source_provenance": source,
+            "object_type": None,
+            "caveats": ["No selected target version is available for local tag evidence."],
+        }
+    try:
+        result = subprocess.run(
+            ["git", "tag", "--list", tag],
+            capture_output=True,
+            text=True,
+            cwd=Path.cwd(),
+            timeout=2,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {
+            "status": "unavailable",
+            "tag": tag,
+            "source_provenance": source,
+            "object_type": None,
+            "caveats": [f"Local git tag evidence is unavailable: {exc}"],
+        }
+    if result.returncode != 0:
+        return {
+            "status": "unavailable",
+            "tag": tag,
+            "source_provenance": source,
+            "object_type": None,
+            "caveats": ["Local git tag evidence is unavailable because this project is not a git worktree."],
+        }
+    if tag not in result.stdout.splitlines():
+        return {
+            "status": "absent",
+            "tag": tag,
+            "source_provenance": source,
+            "object_type": None,
+            "caveats": [f"Local tag {tag} is not present."],
+        }
+    object_type = None
+    try:
+        object_result = subprocess.run(
+            ["git", "cat-file", "-t", tag],
+            capture_output=True,
+            text=True,
+            cwd=Path.cwd(),
+            timeout=2,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        object_result = None
+    if object_result is not None and object_result.returncode == 0:
+        object_type = object_result.stdout.strip() or None
+    return {
+        "status": "available",
+        "tag": tag,
+        "source_provenance": source,
+        "object_type": object_type,
+        "caveats": [] if object_type else [f"Local tag {tag} exists but object type could not be verified."],
+    }
+
+
+def _closeout_release_boundary(changelog_boundary: dict[str, Any], bundle: dict[str, Any]) -> dict[str, Any]:
+    target_version = changelog_boundary.get("selected_target_version")
+    local_tag = _local_git_tag_evidence(str(target_version) if target_version else None)
+    metadata_recorded = bool(changelog_boundary.get("selected_target_recorded"))
+    caveats = [*changelog_boundary.get("caveats", []), *local_tag.get("caveats", [])]
+    if not metadata_recorded and local_tag.get("status") != "available":
+        caveats.append("No local closeout metadata or local tag evidence is recorded for the selected target.")
+    return {
+        "status": "available" if changelog_boundary.get("boundary_present") else "incomplete",
+        "selected_target_version": target_version,
+        "boundary": changelog_boundary.get("boundary"),
+        "local_metadata_evidence": {
+            "status": "recorded" if metadata_recorded else "not_recorded",
+            "source_provenance": changelog_boundary.get("source_provenance"),
+            "field": "changelog_boundary.selected_target_recorded",
+        },
+        "local_tag_evidence": local_tag,
+        "publication_evidence": {
+            "package_publication": "not_recorded_in_cli_state",
+            "remote_push": "not_recorded_in_cli_state",
+            "remote_checks_performed": False,
+            "registry_checks_performed": False,
+            "source_provenance": _source_provenance(
+                "closeout_context",
+                "agentera hej --format json --capability-context dokumentera",
+                "release_boundary.publication_evidence",
+            ),
+            "caveats": ["Closeout context does not contact remotes or package registries."],
+        },
+        "app_refresh_evidence": {
+            "installed_app_status": bundle.get("status"),
+            "refresh": "not_recorded_in_cli_state",
+            "approval_recorded": False,
+            "source_provenance": _source_provenance("hej", "agentera hej --format json", "bundle.status"),
+        },
+        "caveats": caveats,
+    }
+
+
+def _dokumentera_closeout_context(
+    capability: str | None,
+    schemas: dict,
+    plan: dict[str, Any],
+    progress: dict[str, Any],
+    todo_items: list[dict[str, str]],
+    docs: dict[str, Any],
+    profile: dict[str, Any],
+    bundle: dict[str, Any],
+) -> dict[str, Any] | None:
+    if capability != "dokumentera":
+        return None
+
+    capability_contract = _capability_context(capability) or {}
+    artifact_mappings = _closeout_artifact_mappings(docs)
+    version_policy = _closeout_version_policy(docs)
+    todo_blockers = _closeout_todo_blockers(schemas, todo_items)
+    changelog_boundary = _closeout_changelog_boundary(schemas, plan)
+    progress_evidence = _progress_verification_summary(progress)
+    benchmark_evidence = _closeout_benchmark_evidence(docs)
+    release_boundary = _closeout_release_boundary(changelog_boundary, bundle)
+
+    required_state = {
+        "artifact_mappings": artifact_mappings["status"] == "available",
+        "version_policy": version_policy["status"] == "available",
+        "todo_blockers": todo_blockers["status"] == "available",
+        "changelog_boundary": changelog_boundary["boundary_present"],
+        "progress_evidence": progress_evidence["status"] == "available",
+        "benchmark_evidence_or_caveat": benchmark_evidence["status"] == "available" or bool(benchmark_evidence["caveats"]),
+    }
+    missing_required = [name for name, present in required_state.items() if not present]
+
+    state_caveats: list[str] = []
+    for family in capability_contract.get("missing_state_families", []):
+        state_caveats.append(f"{family} state is not included in hej startup context.")
+    for component in (
+        artifact_mappings,
+        version_policy,
+        todo_blockers,
+        changelog_boundary,
+        release_boundary,
+        progress_evidence,
+        benchmark_evidence,
+    ):
+        state_caveats.extend(component.get("caveats", []))
+    if bundle.get("status") != "fresh":
+        state_caveats.append("Agentera app state is not fresh; this is a caveat, not approval to refresh installed apps.")
+    if profile.get("status") != "loaded":
+        state_caveats.append("profile-derived state is unavailable in hej context.")
+    elif profile.get("stale") is True:
+        state_caveats.append("profile-derived state is stale; this is a caveat, not approval to refresh profile state.")
+    state_caveats = list(dict.fromkeys(state_caveats))
+
+    fallback_commands = list(dict.fromkeys([
+        "agentera todo --format json",
+        "agentera docs --format json",
+        "agentera progress --format json",
+        "agentera query changelog --format json",
+        "agentera query --list-artifacts",
+        *capability_contract.get("cli_fallback", []),
+    ]))
+    complete = not missing_required
+    caveated = bool(state_caveats)
+    return {
+        "capability": "dokumentera",
+        "artifact_mappings": artifact_mappings,
+        "version_policy": version_policy,
+        "todo_blockers": todo_blockers,
+        "changelog_boundary": changelog_boundary,
+        "release_boundary": release_boundary,
+        "progress_evidence": progress_evidence,
+        "benchmark_evidence": benchmark_evidence,
+        "state_family_caveats": state_caveats,
+        "fallback_commands": fallback_commands,
+        "source_contract": {
+            "complete_for_closeout_context": complete,
+            "caveated": caveated,
+            "raw_artifact_reads_required": False,
+            "raw_artifact_read_policy": (
+                "Use this closeout_context and included hej state first. Run listed routine/query CLI fallback commands "
+                "for missing or incomplete closeout state; raw artifact reads are last-resort diagnostics, not normal closeout behavior."
+            ),
+            "included_state_families": capability_contract.get("included_state_families", []),
+            "missing_state_families": capability_contract.get("missing_state_families", []),
+            "closeout_state_families": [
+                "docs",
+                "todo",
+                "changelog",
+                "progress",
+                "benchmark_evidence",
+            ],
+            "required_closeout_state": required_state,
+            "missing_required_closeout_state": missing_required,
+            "fallback_commands": fallback_commands,
+            "caveats": state_caveats,
+            "owns": [
+                "artifact mappings",
+                "version policy",
+                "TODO blockers",
+                "changelog or no-release boundary",
+                "local metadata/tag versus publication boundary",
+                "latest progress evidence",
+                "benchmark evidence pointer or unavailable caveat",
+                "provenance pointers and non-empty evidence flags",
+                "fallback commands",
+                "raw-read policy",
+                "truthful completeness flag",
+            ],
+        },
     }
 
 
@@ -2262,6 +2663,7 @@ def _query_docs(args: argparse.Namespace, schemas: dict) -> int:
     mapping = _as_list(data.get("mapping"))
     index = _as_list(data.get("index"))
     coverage = data.get("coverage") if isinstance(data.get("coverage"), dict) else {}
+    conventions = data.get("conventions") if isinstance(data.get("conventions"), dict) else {}
     topic = getattr(args, "topic", None)
     if topic:
         t = topic.lower()
@@ -2284,6 +2686,7 @@ def _query_docs(args: argparse.Namespace, schemas: dict) -> int:
                 filters={"topic": topic, "status": status_filter},
                 summary={
                     "last_audit": data.get("last_audit"),
+                    "conventions": conventions,
                     "mapping": mapping,
                     "mapping_entries": len(mapping),
                     "coverage": coverage,
@@ -2662,10 +3065,12 @@ def _docs_summary(schemas: dict) -> dict[str, Any]:
     mapping = _as_list(data.get("mapping"))
     index = _as_list(data.get("index"))
     coverage = data.get("coverage") if isinstance(data.get("coverage"), dict) else {}
+    conventions = data.get("conventions") if isinstance(data.get("conventions"), dict) else {}
     return {
         "exists": True,
         "status": "available",
         "last_audit": data.get("last_audit"),
+        "conventions": conventions,
         "mapping": mapping,
         "mapping_entries": len(mapping),
         "coverage": coverage,
@@ -2676,6 +3081,7 @@ def _docs_summary(schemas: dict) -> dict[str, Any]:
                 "plan task details, dependencies, acceptance criteria, and evidence summaries",
                 "docs artifact mapping and source-contract completeness metadata",
                 "latest progress verification metadata needed for Orkestrera evaluation",
+                "Dokumentera closeout context metadata for docs/TODO/changelog/progress synchronization",
             ],
         },
         "indexed_documents": len(index),
@@ -2963,6 +3369,27 @@ def cmd_hej(_args: argparse.Namespace) -> int:
             key=lambda entry: TODO_SEVERITY_ORDER.get(entry["severity"], 2),
         )[0]
         attention.append(f"{first_todo['severity']}: TODO: {first_todo['text']}")
+    capability_name = getattr(_args, "capability_context", None)
+    orchestration_context = _orchestration_context(
+        capability_name,
+        plan,
+        progress,
+        health,
+        todo_items,
+        docs,
+        profile_dict,
+        next_action,
+    )
+    closeout_context = _dokumentera_closeout_context(
+        capability_name,
+        schemas,
+        plan,
+        progress,
+        todo_items,
+        docs,
+        profile_dict,
+        bundle,
+    )
     if _output_format(_args) != "text":
         bundle_public = public_doctor_status(bundle)
         app_home = {
@@ -2991,16 +3418,8 @@ def cmd_hej(_args: argparse.Namespace) -> int:
                 "state_presence": state_presence,
                 "attention": attention[:6],
                 "next_action": next_action,
-                "orchestration_context": _orchestration_context(
-                    getattr(_args, "capability_context", None),
-                    plan,
-                    progress,
-                    health,
-                    todo_items,
-                    docs,
-                    profile_dict,
-                    next_action,
-                ),
+                "orchestration_context": orchestration_context,
+                "closeout_context": closeout_context,
                 "source": {
                     "schemas_dir": str(schemas_dir),
                     "project": str(Path.cwd()),
@@ -3012,7 +3431,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
                     "access": "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal hej",
                     "empty_state": "fresh mode with missing artifact summaries and zero issue counts",
                     "capability_startup": _startup_completeness_contract(),
-                    "capability_context": _capability_context(getattr(_args, "capability_context", None)),
+                    "capability_context": _capability_context(capability_name),
                 },
             },
             _args,
@@ -3065,7 +3484,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     print("next_action:")
     print(f"- {_format_next_action(next_action)}")
     print("source_contract:")
-    print("- fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context")
+    print("- fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context,closeout_context")
     print("- render=caller-owned README-style hej dashboard")
     print("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls")
     startup_contract = _startup_completeness_contract()
@@ -3075,13 +3494,22 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     print(f"- missing_state={missing_state}")
     print(f"- confidence_caveats={'; '.join(startup_contract['confidence_caveats'])}")
     print(f"- cli_fallback={'; '.join(startup_contract['cli_fallback'])}")
-    context = _capability_context(getattr(_args, "capability_context", None))
+    context = _capability_context(capability_name)
     if context:
         print("- capability_context="
               f"capability={context['capability']} | "
               f"included={', '.join(context['included_state_families']) or 'none'} | "
               f"missing={', '.join(context['missing_state_families']) or 'none'} | "
               f"cli_fallback={'; '.join(context['cli_fallback']) or 'none'}")
+    if closeout_context:
+        closeout_contract = closeout_context["source_contract"]
+        print("closeout_context:")
+        print(
+            "- "
+            f"complete_for_closeout_context={str(closeout_contract['complete_for_closeout_context']).lower()} | "
+            f"caveated={str(closeout_contract['caveated']).lower()} | "
+            f"fallback={'; '.join(closeout_context['fallback_commands'])}"
+        )
     return 0
 
 
