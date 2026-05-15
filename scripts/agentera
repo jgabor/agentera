@@ -4119,6 +4119,46 @@ def cmd_verify(args: argparse.Namespace) -> int:
     return result.returncode
 
 
+def _usage_syntax() -> str:
+    return "agentera usage [--format text|json] [--corpus PATH] [--project VALUE]"
+
+
+def _usage_example() -> str:
+    return "agentera usage --format json --project agentera"
+
+
+def _validate_usage_request(args: argparse.Namespace) -> str:
+    output_format = str(getattr(args, "format", "text") or "text")
+    if output_format not in {"text", "json"}:
+        raise ValueError(
+            f"unsupported usage format {output_format!r}; valid formats: text, json. "
+            f"Syntax: {_usage_syntax()}. Example: {_usage_example()}"
+        )
+    return output_format
+
+
+def _usage_command(args: argparse.Namespace, output_format: str) -> list[str]:
+    scripts_dir = Path(__file__).resolve().parent
+    command = [sys.executable, str(scripts_dir / "usage_stats.py")]
+    if getattr(args, "corpus", None) is not None:
+        command.extend(["--corpus", str(args.corpus)])
+    if getattr(args, "project", None):
+        command.extend(["--project", str(args.project)])
+    if output_format == "json":
+        command.append("--json")
+    return command
+
+
+def cmd_usage(args: argparse.Namespace) -> int:
+    output_format = _validate_usage_request(args)
+    result = _run_verify_engine(_usage_command(args, output_format))
+    if result.stdout:
+        print(result.stdout, end="")
+    if result.stderr:
+        print(result.stderr, end="", file=sys.stderr)
+    return result.returncode
+
+
 def _query_last_phase(args: argparse.Namespace, schemas: dict) -> int:
     output_format = getattr(args, "format", "text")
     info = schemas.get("progress")
@@ -5687,7 +5727,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="agentera",
         description="agentera: read project state, upgrade installs, and print priming guidance",
-        epilog="Examples: agentera verify smoke installed-skills; agentera verify eval skills --format json",
+        epilog="Examples: agentera verify smoke installed-skills; agentera usage --format json",
         formatter_class=argparse.RawTextHelpFormatter,
     )
     sub = parser.add_subparsers(dest="command")
@@ -5828,6 +5868,19 @@ def build_parser() -> argparse.ArgumentParser:
     verify.add_argument("--parallel", type=int, default=1, help="Eval skills parallelism bound")
     verify.add_argument("--timeout", type=int, default=120, help="Eval skills per-skill timeout bound in seconds")
     verify.add_argument("--runtime", default="auto", help="Eval skills runtime: auto, claude, or opencode")
+
+    usage = sub.add_parser(
+        "usage",
+        help="Generate suite usage analytics",
+        description=(
+            "Generate suite usage analytics from the existing Section 22 corpus. "
+            "Examples: agentera usage; agentera usage --format json --project agentera"
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    usage.add_argument("--format", default="text", help="Output format: text or json")
+    usage.add_argument("--corpus", type=_agent_path, help="Path to a Section 22 corpus.json envelope")
+    usage.add_argument("--project", help="Scope analysis to a project id or path-like value")
 
     q = sub.add_parser("query", help="Advanced custom artifact query")
     q.add_argument("query", nargs="?", help="Query pattern or artifact name")
@@ -6034,6 +6087,8 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_gate(args)
         if args.command == "verify":
             return cmd_verify(args)
+        if args.command == "usage":
+            return cmd_usage(args)
         if args.command == "lint":
             return cmd_lint(args)
         if args.command == "validate":
