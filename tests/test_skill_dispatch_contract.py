@@ -63,7 +63,10 @@ def test_master_skill_defines_capability_handoff_contract() -> None:
     assert "first Agentera/hej response" in normalized
     assert "free-form continuation prompt" in normalized
     assert "at least two meaningful non-terminal next actions" in normalized
-    assert "do not count `Done` or free-form/custom answer affordances" in normalized
+    assert "state-changing Proceed/Cancel handoff" in normalized
+    assert "State-changing means the proposed next step may write artifacts" in normalized
+    assert "state-changing capability handoffs are consequential Proceed/Cancel decisions" in normalized
+    assert "Do not count `Done` or free-form/custom answer affordances" in normalized
     assert "recommended choice first" in normalized
     assert "Selecting a downstream capability option is confirmation" in normalized
     assert "selecting `Done` stops without routing" in normalized
@@ -73,7 +76,7 @@ def test_master_skill_defines_capability_handoff_contract() -> None:
     assert "`route`: the user directly invoked a capability" in normalized
     assert "This is consent to invoke that capability" in normalized
     assert "`suggest`: recommend a downstream capability and wait for user confirmation" in normalized
-    assert "With one suggested action, use a free-form prompt" in normalized
+    assert "A single non-mutating suggestion may use a free-form prompt" in normalized
     assert "clear replies such as `yes`, `start`, `do it`, or `run <capability>` confirm" in normalized
     assert "Ambiguous replies get one clarifying question" in normalized
     assert "`dispatch`: invoke another capability autonomously only when" in normalized
@@ -99,7 +102,8 @@ def test_vocabulary_documents_handoff_and_route_boundary() -> None:
     assert "Runtime question tool" in content
     assert "Question-tool gating" in content
     assert "Initial Agentera/hej briefs stay free-form" in content
-    assert "A single suggested handoff uses a free-form prompt" in content
+    assert "a single state-changing handoff uses native Proceed/Cancel confirmation" in content
+    assert "A single non-mutating suggested handoff may use a free-form prompt" in content
     assert "invoked capability prose can impose stricter question-tool requirements" in content
     assert "Handoff confirmation" in content
     assert "Direct user invocation by canonical capability name" in content
@@ -120,7 +124,8 @@ def test_hej_handoff_guidance_hides_internal_sg_codes() -> None:
     assert "suggest ≡ planera" in content
     assert "suggest ⎈ (SG" not in content
     assert "suggest ⧉ (SG" not in content
-    assert "For one suggested action, clear free-form acceptance" in normalized
+    assert "State-changing handoffs are consequential Proceed/Cancel decisions" in normalized
+    assert "For one non-mutating suggested action, clear free-form acceptance" in normalized
     assert "Ambiguous replies get one clarifying question" in normalized
 
 

@@ -277,9 +277,11 @@ Show where things stand.
 5. **Route**: present one concrete suggestion and let the user choose. No coercion.
    - Do not list generic skill options unless the user asks for the full menu.
    - The waiting bullet should ask whether to run the named action, not ask the user to pick from skills.
-   - On the initial Agentera/hej brief, use a free-form continuation prompt rather than a native question menu unless the user asked for bounded choices.
+   - On the initial Agentera/hej brief, use a free-form continuation prompt rather than a native question menu unless the user asked for bounded choices or the suggested next step is a state-changing Proceed/Cancel handoff.
    - Mid-conversation, use the native question tool only for at least two meaningful non-terminal next actions or a consequential Proceed/Cancel decision; `Done` and free-form/custom answer affordances do not count as alternatives.
-   - For one suggested action, clear free-form acceptance such as `yes`, `start`, `do it`, or `run <capability>` confirms that suggestion. Ambiguous replies get one clarifying question.
+   - State-changing handoffs are consequential Proceed/Cancel decisions even when there is only one suggested action. State-changing means the proposed next step may write artifacts, edit code, run optimization or orchestration cycles, apply migrations, refresh app/runtime state, or otherwise mutate project/runtime state.
+   - Use the behavior rule first, with common examples such as ⧉ realisera, ≡ planera when creating or updating plans, ▤ dokumentera when writing docs, ⎘ optimera when running or applying optimization cycles, and ⎈ orkestrera when dispatching cycles.
+   - For one non-mutating suggested action, clear free-form acceptance such as `yes`, `start`, `do it`, or `run <capability>` confirms that suggestion. Ambiguous replies get one clarifying question.
 
 ---
 

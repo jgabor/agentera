@@ -252,10 +252,17 @@ Handoff verbs are normative:
   alias, or slash route. This is consent to invoke that capability; do not ask
   for extra handoff confirmation.
 - `suggest`: recommend a downstream capability and wait for user confirmation.
-- `handoff prompt`: ask whether to run the suggested capability. With one
-  suggested action, use a free-form prompt; clear replies such as `yes`, `start`,
-  `do it`, or `run <capability>` confirm the named suggestion. Ambiguous replies
-  get one clarifying question.
+- `handoff prompt`: ask whether to run the suggested capability. Use the native
+  question tool for multi-choice prompts and for a single state-changing
+  Proceed/Cancel handoff. State-changing means the proposed next step may write
+  artifacts, edit code, run optimization or orchestration cycles, apply
+  migrations, refresh app/runtime state, or otherwise mutate project/runtime
+  state. Use the behavior rule first, with common examples such as ⧉ realisera,
+  ≡ planera when creating or updating plans, ▤ dokumentera when writing docs,
+  ⎘ optimera when running or applying optimization cycles, and ⎈ orkestrera
+  when dispatching cycles. A single non-mutating suggestion may use a free-form
+  prompt; clear replies such as `yes`, `start`, `do it`, or `run <capability>`
+  confirm the named suggestion. Ambiguous replies get one clarifying question.
 - `dispatch`: invoke another capability autonomously only when the current
   capability explicitly owns that orchestration flow.
 - `chain`: dispatch multiple capabilities autonomously only inside an explicitly
@@ -263,17 +270,20 @@ Handoff verbs are normative:
 
 The first Agentera/hej response in a fresh interaction should deliver the brief
 and a free-form continuation prompt, not a native question menu, unless the user
-explicitly asks for bounded choices. Mid-conversation, use the runtime's native
-question tool only when there are at least two meaningful non-terminal next
-actions or a consequential Proceed/Cancel decision; do not count `Done` or
-free-form/custom answer affordances as alternatives. Current host examples are
-Claude Code `AskUserQuestion`, Copilot `ask_user`, Codex `request_user_input`,
-and OpenCode `question`. Put the recommended choice first with `(Recommended)`
-in its label and include `Done`. Selecting a downstream capability option is
-confirmation to invoke that capability; selecting `Done` stops without routing.
-This generic question-tool gating applies to hej and capability handoff prompts.
-Once a capability is invoked, that capability's own interaction rules control
-whether the runtime-native question tool is required.
+explicitly asks for bounded choices or the suggested next step is a
+state-changing Proceed/Cancel handoff. Mid-conversation, use the runtime's
+native question tool only when there are at least two meaningful non-terminal
+next actions or a consequential Proceed/Cancel decision; state-changing
+capability handoffs are consequential Proceed/Cancel decisions even when there
+is only one suggested action. Do not count `Done` or free-form/custom answer
+affordances as alternatives. Current host examples are Claude Code
+`AskUserQuestion`, Copilot `ask_user`, Codex `request_user_input`, and OpenCode
+`question`. Put the recommended choice first with `(Recommended)` in its label
+and include `Done`. Selecting a downstream capability option is confirmation to
+invoke that capability; selecting `Done` stops without routing. This generic
+question-tool gating applies to hej and capability handoff prompts. Once a
+capability is invoked, that capability's own interaction rules control whether
+the runtime-native question tool is required.
 
 ### Step 0: V1 migration handling
 
