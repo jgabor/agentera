@@ -63,23 +63,37 @@ audits:
 Step markers: display `── step N/7: verb` before each step.
 Steps: orient, select, assess, distill, audit, report, connect.
 
+### Evidence context startup
+
+Before Step 1, start evaluation state gathering with:
+
+```bash
+agentera hej --format json --capability-context inspektera
+```
+
+Use the returned `evidence_context` before raw plan, progress, docs, health, TODO, or decisions artifacts. If `evidence_context.source_contract.complete_for_evidence_context` is true, do not read raw PLAN, PROGRESS, DOCS, HEALTH, TODO, or DECISIONS artifacts merely to reconstruct evaluation target, plan criteria, progress verification, docs state, health state, TODO state, protected-state checks, version checks, residual risks, fallback commands, caveats, provenance, or non-empty evidence flags.
+
+If `evidence_context` is absent, incomplete, or caveated for a state family you need, run the listed `evidence_context.fallback_commands` first. If those are unavailable, use `source_contract.capability_context.cli_fallback` from the same hej response. Raw artifact reads are last-resort diagnostics after listed CLI fallbacks, not normal evaluation startup behavior.
+
+Preserve caveats from `evidence_context.state_family_caveats`, `evidence_context.residual_risks.attributed_items`, `decision_context.caveats`, `protected_state_checks.caveats`, and `version_checks.caveats` when reporting evaluation results. Do not hide, flatten, or reconstruct stale app/profile state, compacted decisions, protected-state boundaries, unavailable version evidence, absent publication or remote evidence, manual-check states, or residual risks. These caveats calibrate confidence; they are not approval to refresh installed apps, refresh profile state, read or edit `.agentera/vision.yaml`, read or edit objective state, contact remotes or registries, or invent missing history.
+
 ## Step 1: Orient
 
-Read HEALTH.md, TODO.md, and PROGRESS.md in parallel. These reads are independent; issue all in a single response.
+Use complete `evidence_context` first for the evaluated target, current plan criteria, latest progress verification, docs state, health state, TODO state, decision caveats, protected-state checks, version checks, and residual risks. Only run listed CLI fallbacks before raw artifact reads when the context is incomplete for the state needed.
 
-1. **HEALTH.md**: prior audit findings and grades (if exists)
-2. **VISION.md**: the "what SHOULD BE" against which "what IS" is compared (if exists)
-3. **DECISIONS.md**: why things are the way they are (if exists). Findings contradicting deliberate decisions are not findings.
-4. **TODO.md**: known problems (if exists). Don't re-report unless worsened.
-5. **PROGRESS.md**: last 3 cycle entries only (recent changes = higher-priority audit targets)
-5b. **Change magnitude**: if PROGRESS.md has commit hashes from cycles since the last HEALTH.md audit date, run `git log --stat` on those commits to estimate total change volume. If no PROGRESS.md or no commit hashes, skip; default depth applies.
-5c. **Plan context** (for artifact current-state review): if PLAN.md exists, read its `header.created` value and scan task statuses for dispatched capabilities. This provides the plan-relative staleness baseline for the protected Artifact freshness health dimension. If PLAN.md is absent or has no created date, note that plan context is unavailable; the fallback heuristic will apply.
-6. **Decision profile**: read `$PROFILERA_PROFILE_DIR/PROFILE.md` directly when it exists. It calibrates what "healthy" means for this user per contract profile consumption conventions. If missing, proceed without persona grounding.
+1. **Health state**: use `evidence_context.health_state` for prior audit findings, grades, freshness, and caveats.
+2. **Protected-state boundary**: use `evidence_context.protected_state_checks` and preserve any not-checked-by-design caveats instead of reading protected state.
+3. **Decision context**: use `evidence_context.decision_context` for decision caveats. Findings contradicting deliberate decisions are not findings.
+4. **TODO state**: use `evidence_context.todo_state` for known problems. Don't re-report unless worsened.
+5. **Progress verification**: use `evidence_context.progress_verification` for recent-cycle verification and caveats.
+5b. **Change magnitude**: if CLI progress evidence exposes commit hashes from cycles since the last health audit timestamp, run `git log --stat` on those commits to estimate total change volume. If CLI progress evidence has no commit hashes, skip; default depth applies.
+5c. **Plan context** (for artifact current-state review): use `evidence_context.evaluation_target` and `evidence_context.plan_criteria` for the plan-relative baseline. If the evidence context reports no target, missing criteria, or missing freshness baseline, preserve that caveat; do not reconstruct it from raw plan state during normal startup.
+6. **Decision profile**: use profile/app caveats already attributed in `evidence_context.residual_risks`; stale or unavailable profile state calibrates confidence but is not approval to refresh profile state or read profile directly during startup.
 7. **Project discovery**: map directory structure, read dependency manifests, README, CLAUDE.md, AGENTS.md, identify language/stack/build commands, `git log --oneline -20`
 
 Before proceeding: in your response, list the key structural facts (module boundaries, dependency patterns, test coverage gaps) you observed. These survive context compaction.
 
-**Exit-early stop condition**: If `git diff` since the last HEALTH.md update shows no file changes, report exit signal `complete: no changes since last audit` and stop.
+**Exit-early stop condition**: If `git diff` since the last `evidence_context.health_state` audit timestamp shows no file changes, report exit signal `complete: no changes since last audit` and stop.
 
 ---
 

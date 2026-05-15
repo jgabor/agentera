@@ -61,3 +61,39 @@ VALIDATION:
       - "Exit marker present after audit"
       - "Exit marker uses glyph ⛶ (SG3)"
       - "Exit marker status is one of complete, flagged, stuck, waiting"
+  7:
+    id: V7
+    rule: evidence_context_first
+    description: >-
+      Inspektera evaluation startup MUST begin with `agentera hej --format json
+      --capability-context inspektera` and use complete CLI `evidence_context` before
+      raw plan, progress, docs, health, TODO, or decisions artifacts.
+    severity: critical
+    checks:
+      - "Evidence context is requested through hej capability context before raw artifacts"
+      - "Complete evidence_context is used for evaluation target, criteria, evidence, caveats, and residual risks"
+  8:
+    id: V8
+    rule: evidence_context_fallback_before_raw
+    description: >-
+      When evidence_context is absent, incomplete, or caveated for needed state,
+      Inspektera MUST run listed existing CLI fallback commands before any last-resort
+      raw artifact read.
+    severity: critical
+    checks:
+      - "evidence_context.fallback_commands are attempted before raw artifact reads"
+      - "source_contract.capability_context.cli_fallback is used when evidence_context is unavailable"
+      - "Raw artifact reads are last-resort diagnostics, not normal evaluation startup"
+  9:
+    id: V9
+    rule: evidence_context_caveats_preserved
+    description: >-
+      Inspektera reports MUST preserve evidence_context caveats for stale app/profile
+      state, compacted decisions, protected-state boundaries, unavailable version or
+      publication evidence, manual-check states, and residual risks instead of hiding,
+      flattening, or reconstructing them.
+    severity: critical
+    checks:
+      - "state_family_caveats are preserved in evaluation results"
+      - "residual_risks.attributed_items are preserved with category, status, message, and provenance"
+      - "Compacted decision, protected-state, version, publication, remote, app, and profile caveats are not reconstructed or hidden"

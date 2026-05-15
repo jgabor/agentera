@@ -144,3 +144,56 @@ def test_inspektera_prose_exists_and_contains_workflow():
         "Exit signals",
     ]:
         assert required in content, f"prose.md must contain section '{required}'"
+
+
+def test_inspektera_prose_requires_evidence_context_first():
+    content = (INSPEKTERA_CAP_DIR / "prose.md").read_text()
+
+    for required in [
+        "agentera hej --format json --capability-context inspektera",
+        "Use the returned `evidence_context` before raw plan, progress, docs, health, TODO, or decisions artifacts",
+        "evidence_context.fallback_commands",
+        "source_contract.capability_context.cli_fallback",
+        "Raw artifact reads are last-resort diagnostics",
+        "state_family_caveats",
+        "residual_risks.attributed_items",
+        "compacted decisions",
+        "protected-state boundaries",
+        "manual-check states",
+    ]:
+        assert required in content, f"prose.md must preserve evidence-context guidance: {required!r}"
+
+
+def test_inspektera_artifacts_schema_declares_evidence_context_consumption():
+    content = (INSPEKTERA_CAP_DIR / "schemas" / "artifacts.yaml").read_text()
+
+    for required in [
+        "CLI `evidence_context`",
+        "before raw plan artifact fallback",
+        "before raw progress artifact fallback",
+        "before raw docs artifact fallback",
+        "before raw health artifact fallback",
+        "before raw TODO artifact fallback",
+        "before raw decisions artifact fallback",
+        "Compacted decision caveats must be preserved",
+        "not approval to refresh profile state",
+    ]:
+        assert required in content, f"artifacts schema must declare evidence-context consumption: {required!r}"
+
+
+def test_inspektera_validation_schema_enforces_context_first_rules():
+    content = (INSPEKTERA_CAP_DIR / "schemas" / "validation.yaml").read_text()
+
+    for required in [
+        "evidence_context_first",
+        "agentera hej --format json",
+        "--capability-context inspektera",
+        "raw plan, progress, docs, health, TODO, or decisions artifacts",
+        "evidence_context_fallback_before_raw",
+        "evidence_context.fallback_commands",
+        "source_contract.capability_context.cli_fallback",
+        "evidence_context_caveats_preserved",
+        "state_family_caveats",
+        "residual_risks.attributed_items",
+    ]:
+        assert required in content, f"validation schema must enforce evidence-context rule: {required!r}"

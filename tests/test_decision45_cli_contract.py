@@ -79,6 +79,8 @@ def test_decision_45_contract_classifies_later_task_boundaries():
     assert field_selection["retained_context"] == ["command", "status"]
     assert field_selection["fields_by_command"]["routine_state_commands"]["fields"] == contract["structured_output"]["envelope"]["routine_state_commands"]["fields"]
     assert field_selection["fields_by_command"]["hej"]["fields"] == contract["structured_output"]["envelope"]["hej"]["fields"]
+    assert "evidence_context" in field_selection["fields_by_command"]["hej"]["fields"]
+    assert "raw_yaml" not in field_selection["fields_by_command"]["hej"]["fields"]
     assert contract["input_hardening"]["status"] == "implemented_boundary_validation"
     assert "Do not add describe behavior." in contract["non_goals_for_task_1"]
     assert "Do not harden executable inputs." in contract["non_goals_for_task_1"]
@@ -108,9 +110,15 @@ def test_startup_completeness_contract_preserves_cli_vocabulary():
     assert "orchestration_context" in contract["structured_output"]["envelope"]["hej"]["fields"]
     assert "must not introduce `agentera orkestrera`" in hej_contract["orchestration_context_semantics"]
     assert "closeout_context" in contract["structured_output"]["envelope"]["hej"]["fields"]
+    assert "evidence_context" in contract["structured_output"]["envelope"]["hej"]["fields"]
     assert "--capability-context dokumentera" in hej_contract["closeout_context_semantics"]
     assert "local metadata/tag versus publication boundary state" in hej_contract["closeout_context_semantics"]
     assert "must not introduce `agentera dokumentera`" in hej_contract["closeout_context_semantics"]
+    assert "--capability-context inspektera" in hej_contract["evidence_context_semantics"]
+    assert "provenance pointers" in hej_contract["evidence_context_semantics"]
+    assert "non-empty evidence flags" in hej_contract["evidence_context_semantics"]
+    assert "must not introduce `agentera inspektera`" in hej_contract["evidence_context_semantics"]
+    assert hej_contract["evidence_context_target_contract"] == "evidence_context_target_contract"
     assert hej_contract["current_status"] == "complete"
     assert hej_contract["current_missing_state"] == []
     assert startup["state_families_added"] == [
@@ -121,6 +129,60 @@ def test_startup_completeness_contract_preserves_cli_vocabulary():
     assert "absence metadata" in startup["empty_state_behavior"]
     assert "v1_migration" in startup["repair_guidance_behavior"]
     assert "Do not add Decision 43 slash-route aliases" in startup["non_goals"][0]
+
+
+def test_evidence_context_target_contract_records_task_1_inventory_and_selection_rules():
+    contract = _contract()
+    evidence = contract["evidence_context_target_contract"]
+
+    assert evidence["status"] == "task_1_design_contract"
+    assert evidence["planned_invocation"] == "agentera hej --format json --capability-context inspektera"
+    assert evidence["implementation_status"] == "implemented_provenance_and_boundary_contract"
+    assert evidence["status_vocabulary"]["protected_and_version_boundaries"] == [
+        "verified_local",
+        "not_checked_by_design",
+        "requires_manual_check",
+        "unavailable",
+    ]
+    assert evidence["inventory"]["archive_boundary"]["verified_header_status"] == "complete"
+    assert "profile-derived state is stale; record as caveat and do not refresh profile" in evidence["inventory"]["stale_state_caveats"]
+
+    selection = evidence["target_selection"]
+    assert selection["no_raw_plan_or_progress_reads_required"] is True
+    assert [item["selection_reason"] for item in selection["selection_order"]] == [
+        "in_progress_task",
+        "first_dependency_ready_pending_task",
+        "latest_completed_task_with_evidence",
+        "no_plan_task_target",
+    ]
+    assert selection["no_target_behavior"]["raw_artifact_reads_required"] is False
+
+    required = evidence["evidence_matrix"]["required_for_normal_task_evaluation"]
+    optional = evidence["evidence_matrix"]["optional_or_caveated_for_normal_task_evaluation"]
+    assert {item["family"] for item in required} >= {
+        "evaluation_target",
+        "plan_criteria",
+        "progress_verification",
+        "docs_state",
+        "health_state",
+        "todo_state",
+        "source_contract",
+    }
+    assert {item["family"] for item in optional} >= {
+        "decisions_context",
+        "vision_context",
+        "profile_context",
+        "protected_state_checks",
+        "version_checks",
+    }
+    assert "agentera inspektera" in evidence["prohibited_actions"]
+    fallback_reasons = [item["reason"] for item in evidence["inventory"]["last_resort_raw_fallbacks"]]
+    assert not any("until Task 4 updates it" in reason for reason in fallback_reasons)
+    assert any(
+        item.get("raw_artifact_reads_required_for_startup") is False
+        and "complete evidence_context covers normal evaluation startup" in item["reason"]
+        for item in evidence["inventory"]["last_resort_raw_fallbacks"]
+    )
 
 
 def test_plan_source_contract_closes_plan_artifact_fallback():

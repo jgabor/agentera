@@ -174,6 +174,7 @@ structured_output:
         - next_action
         - orchestration_context
         - closeout_context
+        - evidence_context
         - source
         - source_contract
       source_contract:
@@ -215,6 +216,15 @@ structured_output:
             commands, caveats, provenance pointers, non-empty evidence flags, and a
             raw-read-last-resort source contract. It must not introduce `agentera
             dokumentera`, new top-level commands, or new subcommands.
+          evidence_context_semantics: >-
+            `agentera hej --format json --capability-context inspektera` may include
+            evidence_context with an evaluation target, plan criteria, progress
+            verification, docs state, health state, TODO state, protected-state and
+            version boundary status values, decision-context caveats, attributed
+            residual risks, fallback commands, caveats, provenance pointers, non-empty
+            evidence flags, and a raw-read-last-resort source contract. It must not
+            introduce `agentera inspektera`, new top-level commands, or new subcommands.
+          evidence_context_target_contract: evidence_context_target_contract
           current_status: complete
           current_missing_state: []
       empty_state: >-
@@ -260,6 +270,181 @@ startup_completeness:
     - Do not add Decision 43 slash-route aliases to the CLI command surface.
     - Do not remove or rename routine state commands.
     - Do not implement Task 6 benchmark comparison.
+evidence_context_target_contract:
+  status: task_1_design_contract
+  planned_context_name: evidence_context
+  planned_invocation: agentera hej --format json --capability-context inspektera
+  implementation_status: implemented_provenance_and_boundary_contract
+  status_vocabulary:
+    protected_and_version_boundaries:
+      - verified_local
+      - not_checked_by_design
+      - requires_manual_check
+      - unavailable
+  inventory:
+    cli_first_sources:
+      - command: agentera hej --format json --capability-context orkestrera
+        included_state:
+          - plan
+          - progress
+          - health
+          - todo
+          - docs
+        missing_state:
+          - decisions
+          - vision
+          - profile
+        fallback_commands:
+          - agentera decisions --format json
+        caveats:
+          - profile-derived state is stale and must not trigger profile refresh
+          - orchestration_context is incomplete for missing decisions, vision, and profile state
+      - command: agentera plan --format json
+        included_state:
+          - active plan header and summary
+          - task dependencies
+          - task statuses
+          - task acceptance criteria
+          - task evidence summaries
+          - previous_plan_archived pointer
+        missing_state: []
+        raw_artifact_reads_required: false
+      - command: agentera progress --format json
+        included_state:
+          - latest progress cycles
+          - latest verification text
+          - cycle provenance
+        missing_state:
+          - explicit retry-attempt count
+        raw_artifact_reads_required: false
+      - command: agentera docs --format json
+        included_state:
+          - artifact mapping
+          - version files
+          - semver policy
+          - indexed document freshness
+        missing_state: []
+        raw_artifact_reads_required: false
+      - command: agentera health --format json
+        included_state:
+          - latest audit
+          - dimension grades
+          - findings
+          - trajectory
+        missing_state: []
+        raw_artifact_reads_required: false
+      - command: agentera todo --format json
+        included_state:
+          - open 2.3.10 evidence-context TODO
+          - deferred 2.3.11 and 2.3.12 source-contract TODOs
+          - known open issues
+        missing_state: []
+        raw_artifact_reads_required: false
+      - command: agentera decisions --format json
+        included_state:
+          - decisions 51 and 52 with complete context
+          - compacted historical decision summaries
+        missing_state:
+          - full context for 40 compacted historical entries
+        raw_artifact_reads_required: false
+        caveats:
+          - compacted decisions expose missing_fields and caveats instead of reconstructed history
+    last_resort_raw_fallbacks:
+      - reason: archived previous-plan status is not exposed by routine CLI state
+        path: .agentera/archive/PLAN-2026-05-15-2-3-9-dokumentera-closeout-context-source-contract.yaml
+        verified_field: header.status=complete
+      - reason: Inspektera prose and schemas are validated directly; complete evidence_context covers normal evaluation startup without raw plan/progress/docs/health/TODO/decisions reads.
+        paths:
+          - skills/agentera/capabilities/inspektera/prose.md
+          - skills/agentera/capabilities/inspektera/schemas/artifacts.yaml
+          - skills/agentera/capabilities/inspektera/schemas/validation.yaml
+        raw_artifact_reads_required_for_startup: false
+    stale_state_caveats:
+      - profile-derived state is stale; record as caveat and do not refresh profile
+      - installed app state, when stale or update-needed, is a caveat and not approval to run upgrade, repair, or refresh
+    archive_boundary:
+      previous_plan: .agentera/archive/PLAN-2026-05-15-2-3-9-dokumentera-closeout-context-source-contract.yaml
+      verified_header_status: complete
+      scope_decision: previous-plan archival is already handled by Planera activation and is not implementation scope for 2.3.10 Task 1
+  target_selection:
+    source: CLI state only during normal startup
+    no_raw_plan_or_progress_reads_required: true
+    selection_order:
+      - order: 1
+        selector: current in-progress plan task
+        selection_reason: in_progress_task
+      - order: 2
+        selector: first dependency-ready pending plan task from orchestration_context.selected_next_task or plan entries
+        selection_reason: first_dependency_ready_pending_task
+      - order: 3
+        selector: most recent completed plan task with non-empty evidence summary
+        selection_reason: latest_completed_task_with_evidence
+      - order: 4
+        selector: repository-level evidence context with no task target
+        selection_reason: no_plan_task_target
+    no_target_behavior:
+      status: no_target
+      complete_for_evidence_context: false
+      caveat: No plan task target was selected; evaluate repository-level evidence only and keep fallback commands visible.
+      raw_artifact_reads_required: false
+    required_target_fields:
+      - target_type
+      - target_number
+      - target_name
+      - target_status
+      - selection_reason
+      - source_provenance
+      - caveats
+  evidence_matrix:
+    required_for_normal_task_evaluation:
+      - family: evaluation_target
+        source: plan/orchestration CLI state
+        fallback: agentera plan --format json
+      - family: plan_criteria
+        source: agentera plan --format json entries.acceptance
+        fallback: none when complete_for_plan_artifact is true
+      - family: progress_verification
+        source: agentera progress --format json latest verification
+        fallback: agentera progress --format json
+      - family: docs_state
+        source: agentera docs --format json summary and entries
+        fallback: agentera docs --format json
+      - family: health_state
+        source: agentera health --format json latest audit
+        fallback: agentera health --format json
+      - family: todo_state
+        source: agentera todo --format json known issues and source-contract TODOs
+        fallback: agentera todo --format json
+      - family: source_contract
+        source: evidence_context.source_contract
+        fallback: listed existing CLI commands before raw reads
+    optional_or_caveated_for_normal_task_evaluation:
+      - family: decisions_context
+        source: agentera decisions --format json
+        caveat: compacted historical entries remain incomplete and must not be reconstructed from raw artifacts
+      - family: vision_context
+        source: hej startup only when included by capability context
+        caveat: missing vision is a caveat, not a raw-read requirement for normal evaluation startup
+      - family: profile_context
+        source: hej profile summary
+        caveat: stale or missing profile is a caveat, not approval to refresh or read profile directly during normal startup
+      - family: protected_state_checks
+        source: local CLI-visible evidence only
+        caveat: use statuses verified_local, not_checked_by_design, requires_manual_check, or unavailable
+      - family: version_checks
+        source: local docs/version state only
+        caveat: do not contact remotes, registries, installed apps, or profile generation
+      - family: publication_or_remote_state
+        source: none during normal evidence context
+        caveat: not_recorded_in_cli_state unless a supported local command explicitly exposes it
+  prohibited_actions:
+    - agentera inspektera
+    - adding new top-level CLI commands for this contract
+    - adding new subcommands for this contract
+    - refreshing installed app state
+    - refreshing profile state
+    - editing .agentera/vision.yaml
+    - editing objective state
 field_selection:
   status: implemented_sparse_response_layer
   applies_after: structured_output
@@ -304,6 +489,7 @@ field_selection:
         - next_action
         - orchestration_context
         - closeout_context
+        - evidence_context
         - source
         - source_contract
   retained_context:

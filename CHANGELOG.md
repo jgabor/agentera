@@ -4,6 +4,7 @@
 
 ### Changed
 
+- 2.3.10 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Inspektera evidence-context source-contract patch; the 2.3.11+ source-contract train remains deferred.
 - 2.3.9 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the Dokumentera closeout-context source-contract patch; the 2.3.10+ source-contract train remains deferred.
 - 2.3.6 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the artifact compaction enforcement patch; the 2.3.7+ source-contract train remains deferred.
 - 2.3.8 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the Orkestrera orchestration-context source-contract patch; the 2.3.9+ source-contract train remains deferred.
@@ -17,6 +18,7 @@
 
 ### Fixed
 
+- Inspektera evaluation startup now uses `agentera hej --format json --capability-context inspektera` evidence context before raw plan, progress, docs, health, TODO, or decisions state, preserving fallbacks and caveats for incomplete state.
 - Dokumentera closeout synchronization now uses `agentera hej --format json --capability-context dokumentera` before raw TODO, docs, changelog, or progress reads, preserving blockers, evidence, fallback commands, caveats, and local-only no-publication boundaries.
 - Artifact compaction is now enforced as a repo-level invariant through shared check/fix compaction, explicit `agentera compact` and `agentera gate` CLI surfaces, runtime hook convergence, current artifact remediation, Lefthook/CI gate wiring, and focused regressions while preserving `.agentera/docs.yaml` path resolution, CHANGELOG exemption, and session-stop bookmark compaction.
 - Decision-context JSON output now exposes a source contract, outcome alias, reasoning, alternatives, confidence, explicit feeds-into references, downstream consequence references, per-entry completeness fields, compacted-entry missing-field caveats, and Resonera startup guidance without requiring raw `.agentera/decisions.yaml` reads or git-history fallback for normal deliberation.
@@ -62,6 +64,7 @@
 
 ### Added
 
+- Inspektera evidence context now exposes evaluation target, plan criteria, progress verification, docs and health state, TODO state, protected/version boundary checks, compacted decision caveats, attributed residual risks, fallback commands, caveats, provenance, non-empty evidence flags, and a raw-read-last-resort source contract without adding `agentera inspektera` or another capability-name CLI command.
 - Dokumentera closeout context now exposes artifact mappings, version policy, TODO blockers, changelog and release boundaries, progress evidence, benchmark evidence or unavailable caveat, non-empty evidence flags, fallback commands, caveats, and raw-read-last-resort policy without adding `agentera dokumentera` or another capability-name CLI command.
 - `agentera hej` startup state now carries completeness/source contract behavior, full startup state coverage for plan/docs/progress/TODO/health, docs mapping and source metadata, progress verification metadata, and `--capability-context` fallback policy so capability startup can prefer CLI state before raw artifact access.
 - Orkestrera capability context now includes dependency-ready tasks, blocked task reasons, selected next task, task acceptance/evidence summaries, latest progress verification, retry-state provenance, evaluator handoff inputs, fallback commands, caveats, and a raw-read-last-resort source contract.
@@ -79,6 +82,7 @@
 
 ### Verified
 
+- 2.3.10 Inspektera evidence-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.3.10, while the 2.3.11+ source-contract train remains open.
 - 2.3.9 Dokumentera closeout-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.3.9, while the 2.3.10+ source-contract train remains open.
 - 2.3.6 artifact compaction enforcement patch closeout is synchronized locally without publication, installed app refresh, tag, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.3.6, while the 2.3.7+ source-contract train remains open.
 - 2.3.8 orchestration-context source-contract patch closeout is synchronized locally without publication, installed app refresh, tag, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.3.8, while the 2.3.9+ source-contract train remains open.

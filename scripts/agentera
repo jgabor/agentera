@@ -766,6 +766,7 @@ HEJ_STRUCTURED_FIELDS = [
     "next_action",
     "orchestration_context",
     "closeout_context",
+    "evidence_context",
     "source",
     "source_contract",
 ]
@@ -800,6 +801,7 @@ STARTUP_COMPLETENESS_AVAILABLE_STATE = [
     "next_action",
     "orchestration_context",
     "closeout_context",
+    "evidence_context",
 ]
 
 STARTUP_COMPLETENESS_MISSING_STATE: list[str] = []
@@ -817,7 +819,7 @@ def _app_status_attention(bundle: dict[str, Any]) -> str:
 
 STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS = [
     "representative benchmark evidence exists, but claude-code and github-copilot coverage is degraded by schema divergence",
-    "Task 4 expands the startup envelope using existing hej, plan, docs, and progress state outputs",
+    "Inspektera evidence context uses existing hej, plan, progress, docs, health, TODO, and decisions state outputs",
 ]
 
 STARTUP_COMPLETENESS_CLI_FALLBACK = [
@@ -1683,6 +1685,465 @@ def _dokumentera_closeout_context(
                 "raw-read policy",
                 "truthful completeness flag",
             ],
+        },
+    }
+
+
+def _dependency_ready_tasks(tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    task_by_number = {task.get("number"): task for task in tasks if task.get("number") is not None}
+    ready: list[dict[str, Any]] = []
+    for task in tasks:
+        status = _entry_status(task, "pending")
+        if status in DONE_STATUSES or status in BLOCKED_STATUSES:
+            continue
+        blocked = False
+        for dep in _as_list(task.get("depends_on")):
+            dependency = task_by_number.get(dep)
+            if dependency is None or _entry_status(dependency, "pending") not in DONE_STATUSES:
+                blocked = True
+                break
+        if not blocked:
+            ready.append(task)
+    return ready
+
+
+def _select_evidence_target(plan: dict[str, Any]) -> dict[str, Any]:
+    tasks = [task for task in _as_list(plan.get("tasks")) if isinstance(task, dict)]
+    no_target = {
+        "status": "no_target",
+        "target_type": "repository",
+        "task": None,
+        "selection_reason": "no_plan_task_target",
+        "source_provenance": _source_provenance("plan", "agentera plan --format json", "entries"),
+        "caveats": ["No plan task target was selected; evaluate repository-level evidence only."],
+    }
+    if not plan.get("exists") or not tasks:
+        return no_target
+
+    in_progress = next((task for task in tasks if _entry_status(task, "pending") == "in_progress"), None)
+    if in_progress:
+        return {
+            "status": "selected",
+            "target_type": "plan_task",
+            "task": _task_ref(in_progress),
+            "selection_reason": "in_progress_task",
+            "source_provenance": _source_provenance("plan", "agentera plan --format json", "entries.status"),
+            "caveats": [],
+        }
+
+    ready = _dependency_ready_tasks(tasks)
+    if ready:
+        return {
+            "status": "selected",
+            "target_type": "plan_task",
+            "task": _task_ref(ready[0]),
+            "selection_reason": "first_dependency_ready_pending_task",
+            "source_provenance": _source_provenance("plan", "agentera plan --format json", "entries.depends_on"),
+            "caveats": [],
+        }
+
+    completed_with_evidence = next(
+        (
+            task for task in reversed(tasks)
+            if _entry_status(task, "pending") in DONE_STATUSES and _has_recorded_value(task.get("evidence"))
+        ),
+        None,
+    )
+    if completed_with_evidence:
+        return {
+            "status": "selected",
+            "target_type": "plan_task",
+            "task": _task_ref(completed_with_evidence),
+            "selection_reason": "latest_completed_task_with_evidence",
+            "source_provenance": _source_provenance("plan", "agentera plan --format json", "entries.evidence"),
+            "caveats": [],
+        }
+    return no_target
+
+
+def _evidence_plan_criteria(plan: dict[str, Any], target: dict[str, Any]) -> dict[str, Any]:
+    task_ref = target.get("task") if isinstance(target.get("task"), dict) else None
+    selected = None
+    if task_ref:
+        tasks = [task for task in _as_list(plan.get("tasks")) if isinstance(task, dict)]
+        selected = next((task for task in tasks if task.get("number") == task_ref.get("number")), None)
+    criteria = _as_list(selected.get("acceptance")) if isinstance(selected, dict) else []
+    return {
+        "status": "available" if criteria else "incomplete",
+        "source_provenance": _source_provenance("plan", "agentera plan --format json", "entries.acceptance"),
+        "target": task_ref,
+        "criteria": criteria,
+        "criteria_count": len(criteria),
+        "non_empty_evidence_present": bool(criteria),
+        "non_empty_evidence_fields": ["criteria"] if criteria else [],
+        "caveats": [] if criteria else ["Selected evaluation target has no acceptance criteria in CLI plan state."],
+    }
+
+
+def _evidence_docs_state(docs: dict[str, Any]) -> dict[str, Any]:
+    available = bool(docs.get("exists"))
+    non_empty_fields = [
+        field for field in ("mapping_entries", "indexed_documents", "last_audit")
+        if _has_recorded_value(docs.get(field))
+    ]
+    freshness, freshness_caveat = _freshness_state(docs.get("last_audit"), "Docs")
+    return {
+        "status": "available" if available else "unavailable",
+        "source_provenance": _source_provenance("docs", "agentera docs --format json"),
+        "mapping_entries": docs.get("mapping_entries", 0),
+        "indexed_documents": docs.get("indexed_documents", 0),
+        "last_audit": docs.get("last_audit"),
+        "freshness": freshness,
+        "non_empty_evidence_present": bool(non_empty_fields),
+        "non_empty_evidence_fields": non_empty_fields,
+        "caveats": (["Docs state is unavailable in CLI docs state."] if not available else [])
+        + ([freshness_caveat] if available and freshness_caveat else []),
+    }
+
+
+def _evidence_health_state(health: dict[str, Any]) -> dict[str, Any]:
+    available = bool(health.get("exists"))
+    non_empty_fields = [
+        field for field in ("audit_number", "trajectory", "grade")
+        if _has_recorded_value({"audit_number": health.get("number"), **health}.get(field))
+    ]
+    freshness, freshness_caveat = _freshness_state(health.get("timestamp"), "Health")
+    return {
+        "status": "available" if available else "unavailable",
+        "source_provenance": _source_provenance("health", "agentera health --format json"),
+        "audit_number": health.get("number"),
+        "timestamp": health.get("timestamp"),
+        "trajectory": health.get("trajectory"),
+        "grade": health.get("grade"),
+        "degrading": bool(health.get("degrading")),
+        "freshness": freshness,
+        "non_empty_evidence_present": bool(non_empty_fields),
+        "non_empty_evidence_fields": non_empty_fields,
+        "caveats": (["Health state is unavailable in CLI health state."] if not available else [])
+        + ([freshness_caveat] if available and freshness_caveat else []),
+    }
+
+
+def _freshness_state(value: Any, label: str, stale_after_days: int = 30) -> tuple[str, str | None]:
+    if not isinstance(value, str) or not value.strip():
+        return "unknown", None
+    try:
+        observed = date.fromisoformat(value.strip()[:10])
+    except ValueError:
+        return "unknown", f"{label} freshness date is not ISO-parseable in CLI state."
+    age_days = (date.today() - observed).days
+    if age_days > stale_after_days:
+        return "stale", f"{label} evidence is stale ({age_days} days old; threshold={stale_after_days})."
+    return "current", None
+
+
+def _evidence_todo_state(schemas: dict, todo_items: list[dict[str, str]]) -> dict[str, Any]:
+    info = schemas.get("todo", {"path": "TODO.md", "fields": {}})
+    exists = _artifact_path(info, "todo").exists()
+    return {
+        "status": "available" if exists else "unavailable",
+        "source_provenance": _source_provenance("todo", "agentera todo --format json"),
+        "open_count": len(todo_items),
+        "items": todo_items,
+        "non_empty_evidence_present": bool(todo_items),
+        "non_empty_evidence_fields": ["items"] if todo_items else [],
+        "caveats": [] if exists else ["TODO state is unavailable in CLI TODO state."],
+    }
+
+
+def _evidence_protected_state_checks() -> dict[str, Any]:
+    source = _source_provenance(
+        "evidence_context",
+        "agentera hej --format json --capability-context inspektera",
+        "protected_state_checks",
+    )
+    return {
+        "status": "not_checked_by_design",
+        "allowed_status_values": ["verified_local", "not_checked_by_design", "requires_manual_check", "unavailable"],
+        "source_provenance": source,
+        "checks": [
+            {
+                "name": "vision_state",
+                "status": "not_checked_by_design",
+                "protected": True,
+                "checked": False,
+                "source_provenance": source,
+                "caveats": ["Vision state is protected during execution cycles and was not read or modified."],
+            },
+            {
+                "name": "objective_state",
+                "status": "not_checked_by_design",
+                "protected": True,
+                "checked": False,
+                "source_provenance": source,
+                "caveats": ["Objective state is protected during execution cycles and was not read or modified."],
+            },
+        ],
+        "caveats": [
+            "Protected-state boundaries are reported without reading or modifying vision or objective state."
+        ],
+    }
+
+
+def _evidence_version_checks(docs: dict[str, Any]) -> dict[str, Any]:
+    conventions = _docs_conventions(docs)
+    version_files = _as_list(conventions.get("version_files"))
+    semver_policy = conventions.get("semver_policy") if isinstance(conventions.get("semver_policy"), dict) else {}
+    source = _source_provenance("docs", "agentera docs --format json", "summary.conventions")
+    checks = [
+        {
+            "name": "docs_version_policy",
+            "status": "verified_local" if semver_policy else "unavailable",
+            "source_provenance": source,
+            "evidence": {"semver_policy": semver_policy},
+            "caveats": [] if semver_policy else ["Docs semver policy is unavailable in CLI docs state."],
+        },
+        {
+            "name": "version_files",
+            "status": "verified_local" if version_files else "unavailable",
+            "source_provenance": source,
+            "evidence": {"version_files": version_files},
+            "caveats": [] if version_files else ["Docs version files are unavailable in CLI docs state."],
+        },
+        {
+            "name": "publication_evidence",
+            "status": "requires_manual_check",
+            "source_provenance": _source_provenance("evidence_context", "agentera hej --format json --capability-context inspektera", "version_checks.publication_evidence"),
+            "remote_checks_performed": False,
+            "registry_checks_performed": False,
+            "caveats": ["Publication and registry evidence is not recorded in CLI evidence context and requires manual verification if needed."],
+        },
+        {
+            "name": "remote_push_evidence",
+            "status": "requires_manual_check",
+            "source_provenance": _source_provenance("evidence_context", "agentera hej --format json --capability-context inspektera", "version_checks.remote_push_evidence"),
+            "remote_checks_performed": False,
+            "caveats": ["Remote push evidence is not recorded in CLI evidence context and requires manual verification if needed."],
+        },
+        {
+            "name": "installed_app_refresh",
+            "status": "not_checked_by_design",
+            "source_provenance": _source_provenance("evidence_context", "agentera hej --format json --capability-context inspektera", "version_checks.installed_app_refresh"),
+            "refresh_performed": False,
+            "caveats": ["Installed app refresh state is deliberately not checked or changed by evidence context."],
+        },
+    ]
+    if any(check["status"] == "requires_manual_check" for check in checks):
+        status = "requires_manual_check"
+    elif any(check["status"] == "unavailable" for check in checks):
+        status = "unavailable"
+    else:
+        status = "verified_local"
+    return {
+        "status": status,
+        "allowed_status_values": ["verified_local", "not_checked_by_design", "requires_manual_check", "unavailable"],
+        "source_provenance": source,
+        "checks": checks,
+        "caveats": [caveat for check in checks for caveat in check.get("caveats", [])],
+    }
+
+
+def _decision_context_risk(schemas: dict) -> dict[str, Any]:
+    info = schemas.get("decisions", {"path": ".agentera/decisions.yaml", "fields": {}})
+    path = _artifact_path(info, "decisions")
+    source = _source_metadata("decisions", path)
+    data = _load_named_artifact(schemas, "decisions")
+    entries = [_decision_context_entry(entry) for entry in _extract_decision_entries(data)]
+    if not source.get("exists"):
+        return {
+            "status": "unavailable",
+            "source_provenance": _source_provenance("decisions", "agentera decisions --format json"),
+            "summary": None,
+            "caveats": ["Decision state is unavailable in CLI evidence context."],
+        }
+    contract = _decision_source_contract(source, entries, {})
+    compacted = contract["completeness"]["compacted_entries"]
+    missing = contract["completeness"]["entries_with_missing_fields"]
+    caveats = contract.get("caveats", []) if compacted or missing else []
+    return {
+        "status": "caveated" if caveats else "available",
+        "source_provenance": _source_provenance("decisions", "agentera decisions --format json"),
+        "summary": contract["completeness"],
+        "caveats": caveats,
+    }
+
+
+def _residual_risk_entry(category: str, status: str, message: str, source_provenance: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "category": category,
+        "status": status,
+        "message": message,
+        "source_provenance": source_provenance,
+    }
+
+
+def _inspektera_evidence_context(
+    capability: str | None,
+    schemas: dict,
+    plan: dict[str, Any],
+    progress: dict[str, Any],
+    health: dict[str, Any],
+    todo_items: list[dict[str, str]],
+    docs: dict[str, Any],
+    profile: dict[str, Any],
+    bundle: dict[str, Any],
+) -> dict[str, Any] | None:
+    if capability != "inspektera":
+        return None
+
+    capability_contract = _capability_context(capability) or {}
+    evaluation_target = _select_evidence_target(plan)
+    plan_criteria = _evidence_plan_criteria(plan, evaluation_target)
+    progress_verification = _progress_verification_summary(progress)
+    docs_state = _evidence_docs_state(docs)
+    health_state = _evidence_health_state(health)
+    todo_state = _evidence_todo_state(schemas, todo_items)
+    protected_state_checks = _evidence_protected_state_checks()
+    version_checks = _evidence_version_checks(docs)
+    decision_context_risk = _decision_context_risk(schemas)
+
+    state_caveats: list[str] = []
+    attributed_risks: list[dict[str, Any]] = []
+    for family in capability_contract.get("missing_state_families", []):
+        message = f"{family} state is not included in hej startup context."
+        state_caveats.append(message)
+        attributed_risks.append(_residual_risk_entry(
+            "missing_state_family",
+            "caveated",
+            message,
+            _source_provenance("hej", "agentera hej --format json --capability-context inspektera", "source_contract.capability_context.missing_state_families"),
+        ))
+    if bundle.get("status") != "fresh":
+        message = "Agentera app state is not fresh; this is a caveat, not approval to refresh installed apps."
+        state_caveats.append(message)
+        attributed_risks.append(_residual_risk_entry(
+            "installed_app_state",
+            "caveated",
+            message,
+            _source_provenance("hej", "agentera hej --format json", "bundle.status"),
+        ))
+    if profile.get("status") != "loaded":
+        message = "profile-derived state is unavailable in hej context."
+        state_caveats.append(message)
+        attributed_risks.append(_residual_risk_entry(
+            "profile_state",
+            "unavailable",
+            message,
+            _source_provenance("hej", "agentera hej --format json", "profile.status"),
+        ))
+    elif profile.get("stale") is True:
+        message = "profile-derived state is stale; this is a caveat, not approval to refresh profile state."
+        state_caveats.append(message)
+        attributed_risks.append(_residual_risk_entry(
+            "profile_state",
+            "caveated",
+            message,
+            _source_provenance("hej", "agentera hej --format json", "profile.stale"),
+        ))
+    for component in (evaluation_target, plan_criteria, progress_verification, docs_state, health_state, todo_state, protected_state_checks, version_checks):
+        for caveat in component.get("caveats", []):
+            state_caveats.append(caveat)
+            attributed_risks.append(_residual_risk_entry(
+                "evidence_family",
+                "caveated",
+                caveat,
+                component.get("source_provenance", _source_provenance("evidence_context", "agentera hej --format json --capability-context inspektera")),
+            ))
+    if decision_context_risk.get("caveats"):
+        for caveat in decision_context_risk["caveats"]:
+            state_caveats.append(caveat)
+            attributed_risks.append(_residual_risk_entry(
+                "decisions_context",
+                decision_context_risk["status"],
+                caveat,
+                decision_context_risk["source_provenance"],
+            ))
+    retry_state = _retry_state()
+    for caveat in retry_state.get("caveats", []):
+        state_caveats.append(caveat)
+        attributed_risks.append(_residual_risk_entry(
+            "retry_state",
+            retry_state["status"],
+            caveat,
+            retry_state["source_provenance"],
+        ))
+    state_caveats = list(dict.fromkeys(state_caveats))
+    deduped_risks = []
+    seen_risks: set[tuple[str, str]] = set()
+    for risk in attributed_risks:
+        key = (risk["category"], risk["message"])
+        if key not in seen_risks:
+            seen_risks.add(key)
+            deduped_risks.append(risk)
+
+    required_state = {
+        "evaluation_target": evaluation_target["status"] == "selected",
+        "plan_criteria": plan_criteria["status"] == "available",
+        "progress_verification": progress_verification["status"] == "available",
+        "docs_state": docs_state["status"] == "available",
+        "health_state": health_state["status"] == "available",
+        "todo_state": todo_state["status"] == "available",
+        "source_contract": True,
+    }
+    missing_required = [name for name, present in required_state.items() if not present]
+    fallback_commands = list(dict.fromkeys([
+        "agentera plan --format json",
+        "agentera progress --format json",
+        "agentera docs --format json",
+        "agentera health --format json",
+        "agentera todo --format json",
+        "agentera query --list-artifacts",
+        *capability_contract.get("cli_fallback", []),
+    ]))
+    return {
+        "capability": "inspektera",
+        "evaluation_target": evaluation_target,
+        "plan_criteria": plan_criteria,
+        "progress_verification": progress_verification,
+        "docs_state": docs_state,
+        "health_state": health_state,
+        "todo_state": todo_state,
+        "protected_state_checks": protected_state_checks,
+        "version_checks": version_checks,
+        "decision_context": decision_context_risk,
+        "residual_risks": {
+            "status": "caveated" if deduped_risks else "none_recorded",
+            "items": state_caveats,
+            "attributed_items": deduped_risks,
+            "caveats": [],
+        },
+        "state_family_caveats": state_caveats,
+        "fallback_commands": fallback_commands,
+        "source_contract": {
+            "complete_for_evidence_context": not missing_required,
+            "caveated": bool(state_caveats),
+            "raw_artifact_reads_required": False,
+            "raw_artifact_read_policy": (
+                "Use this evidence_context and included hej state first. Run listed routine/query CLI fallback commands "
+                "for missing or incomplete evidence state; raw artifact reads are last-resort diagnostics, not normal evaluation startup behavior."
+            ),
+            "included_state_families": capability_contract.get("included_state_families", []),
+            "missing_state_families": capability_contract.get("missing_state_families", []),
+            "required_evidence_state": required_state,
+            "missing_required_evidence_state": missing_required,
+            "fallback_commands": fallback_commands,
+            "caveats": state_caveats,
+            "owns": [
+                "evaluation target",
+                "plan criteria",
+                "progress verification",
+                "docs state",
+                "health state",
+                "TODO state",
+                "protected-state placeholder checks",
+                "version boundary checks",
+                "compacted decision caveats",
+                "attributed residual risks",
+                "fallback commands",
+                "raw-read policy",
+                "truthful completeness metadata",
+            ],
+            "deferred": [],
         },
     }
 
@@ -3125,6 +3586,7 @@ def _health_summary(schemas: dict) -> dict[str, Any]:
     return {
         "exists": True,
         "number": latest.get("number", "?"),
+        "timestamp": latest.get("timestamp"),
         "trajectory": trajectory,
         "grade": worst[1] if worst else "",
         "worst": worst,
@@ -3390,6 +3852,17 @@ def cmd_hej(_args: argparse.Namespace) -> int:
         profile_dict,
         bundle,
     )
+    evidence_context = _inspektera_evidence_context(
+        capability_name,
+        schemas,
+        plan,
+        progress,
+        health,
+        todo_items,
+        docs,
+        profile_dict,
+        bundle,
+    )
     if _output_format(_args) != "text":
         bundle_public = public_doctor_status(bundle)
         app_home = {
@@ -3420,6 +3893,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
                 "next_action": next_action,
                 "orchestration_context": orchestration_context,
                 "closeout_context": closeout_context,
+                "evidence_context": evidence_context,
                 "source": {
                     "schemas_dir": str(schemas_dir),
                     "project": str(Path.cwd()),
@@ -3484,7 +3958,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     print("next_action:")
     print(f"- {_format_next_action(next_action)}")
     print("source_contract:")
-    print("- fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context,closeout_context")
+    print("- fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context,closeout_context,evidence_context")
     print("- render=caller-owned README-style hej dashboard")
     print("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls")
     startup_contract = _startup_completeness_contract()
@@ -3509,6 +3983,15 @@ def cmd_hej(_args: argparse.Namespace) -> int:
             f"complete_for_closeout_context={str(closeout_contract['complete_for_closeout_context']).lower()} | "
             f"caveated={str(closeout_contract['caveated']).lower()} | "
             f"fallback={'; '.join(closeout_context['fallback_commands'])}"
+        )
+    if evidence_context:
+        evidence_contract = evidence_context["source_contract"]
+        print("evidence_context:")
+        print(
+            "- "
+            f"complete_for_evidence_context={str(evidence_contract['complete_for_evidence_context']).lower()} | "
+            f"caveated={str(evidence_contract['caveated']).lower()} | "
+            f"fallback={'; '.join(evidence_context['fallback_commands'])}"
         )
     return 0
 

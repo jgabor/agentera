@@ -1,4 +1,4 @@
-last_audit: '2026-05-15 (2.3.9 Dokumentera closeout-context source-contract patch metadata sync)'
+last_audit: '2026-05-15 (2.3.10 Inspektera evidence-context source-contract patch metadata sync)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -12,6 +12,8 @@ conventions:
   - .codex-plugin/plugin.json
   - .claude-plugin/marketplace.json
   - .opencode/plugins/agentera.js
+  - skills/agentera/SKILL.md
+  - skills/hej/SKILL.md
   - registry.json
   version_files_registry: references/adapters/package-registry.yaml docs_targets.version_files
   semver_policy:
@@ -363,13 +365,52 @@ coverage:
   undocumented: 0 skills lack documentation
   stale: none
   release_metadata: >
-    The 2.3.9 patch release metadata sync applies the selected Dokumentera
-    closeout-context source-contract target, explicitly resolves the `[feat:2.3.9]`
+    The 2.3.10 patch release metadata sync applies the selected Inspektera
+    evidence-context source-contract target, explicitly resolves the `[feat:2.3.10]`
     label versus semver-policy tension by keeping the preselected 2.3 patch
-    train target, records the remaining 2.3.10+ source-contract train as deferred,
+    train target, records the remaining 2.3.11+ source-contract train as deferred,
     and keeps future version changes governed by `.agentera/docs.yaml` `semver_policy`.
   tests: 'Startup measurement now documents the Decision 51 state-access metric and the Decision 52 manual benchmark retention boundary. The metric is raw artifact access after CLI state during capability startup/state gathering, replacing an uncommitted route/intro startup-window draft that found zero qualifying windows and would have closed the startup-envelope follow-up. The contract records the post-2.3 boundary, natural-language and bare-capability invocation markers, state-gathering sequence boundaries, counted event classes, degradation reasons, report fields, Section 22 compatibility, privacy boundary, local-only report command, structured report, human-readable report, recommendation gate, manual-only benchmark rule, exact runtime/path approval requirement, default `${AGENTERA_HOME}/benchmarks/startup-state/` storage, durable `runs.jsonl` plus fixed latest report files, and aggregate-history exclusions for raw transcripts, raw corpus files, raw intermediates, raw store paths, raw session IDs, private salts, and generated salted hashes. Focused contract tests validate redaction helpers, state-sequence classification, raw-after-CLI overlap counts, thresholds, recommendations, report surfaces, benchmark retention boundaries, supported Claude Code and GitHub Copilot fixture extraction, aggregate token fields, comparable-row savings/null reasons, and privacy exclusions. Task 7 closeout records durable benchmark evidence with estimator `approx_bytes_div_4_v1`, raw-after-CLI estimated tokens `621`, redundant raw estimated tokens `533`, null reason `previous_missing_token_estimates`, CLI behavior rates `0.4444`, 18 total state sequences, retained recommendation `plan_cli_startup_envelope`, and live-runtime `schema_divergent` caveats for current local Claude Code and GitHub Copilot stores. The 2.3.7 patch release metadata sync now applies the selected decision-context source-contract release target, explicitly resolves the `[feat:2.3.7]` label versus semver-policy tension by keeping the preselected 2.3 patch train target, records the remaining 2.3.8+ source-contract train as deferred, and keeps future version changes governed by `.agentera/docs.yaml` `semver_policy`.'
 audit_log:
+- date: '2026-05-15'
+  label: 2.3.10 Inspektera evidence-context source-contract patch metadata sync
+  findings:
+  - type: checked
+    description: >
+      Active version-bearing package surfaces now report 2.3.10 across
+      `pyproject.toml`, `uv.lock`, `registry.json`, plugin manifests, the OpenCode
+      `AGENTERA_VERSION` marker, and skill frontmatter. The formal `version_files`
+      list and package registry now include active and legacy skill frontmatter,
+      matching the existing version-alignment tests and prior closeout evidence.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      The 2.3.10 patch release covers the completed Inspektera evidence-context
+      source-contract patch: `agentera hej --format json --capability-context
+      inspektera` exposes evaluation target, plan criteria, progress verification,
+      docs and health state, TODO state, protected/version checks, compacted decision
+      caveats, attributed residual risks, fallback commands, provenance, non-empty
+      evidence flags, and raw-read-last-resort policy.
+    resolution: fixed
+    severity: info
+  - type: version-policy
+    description: >
+      The TODO label is `[feat:2.3.10]`, while the general semver policy maps
+      `feat` to a minor bump. This closeout resolves the mismatch by honoring the
+      already selected exact 2.3.10 source-contract patch train target for this
+      bounded CLI-context contract; future unselected feature targets must apply
+      this document's `semver_policy` before selecting a version. The 2.3.11+
+      source-contract train remains deferred.
+    resolution: noted
+    severity: info
+  - type: version-policy
+    description: >
+      Release readiness is local-only: no publication, tag, remote push, installed
+      app refresh, profile refresh, vision edit, objective-state edit, or unsupported
+      capability CLI command was performed.
+    resolution: noted
+    severity: info
 - date: '2026-05-15'
   label: 2.3.9 Dokumentera closeout-context source-contract patch metadata sync
   findings:

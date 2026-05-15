@@ -128,6 +128,60 @@ def _write_fixture_artifact(project: Path, fixture: dict) -> Path:
     return _write_artifact(project, rel, fixture["data"])
 
 
+def _seed_inspektera_evidence_context(
+    project: Path,
+    *,
+    acceptance: list[str] | None = None,
+    progress_verified: str | None = "evidence context tests passed",
+    docs_last_audit: str | None = None,
+    health_timestamp: str | None = None,
+    docs_conventions: dict | None = None,
+    decisions: dict | None = None,
+) -> None:
+    _write_artifact(project, ".agentera/plan.yaml", {
+        "header": {"title": "2.3.10 Inspektera Evidence Context Source Contract", "status": "active"},
+        "tasks": [
+            {"number": 1, "name": "Inventory", "status": "complete", "evidence": ["done"]},
+            {
+                "number": 2,
+                "name": "Focused evidence-context regression coverage",
+                "status": "pending",
+                "depends_on": [1],
+                "acceptance": acceptance if acceptance is not None else ["emit context"],
+            },
+        ],
+    })
+    _write_artifact(project, ".agentera/progress.yaml", {
+        "cycles": [{
+            "number": 10,
+            "timestamp": health_timestamp or date.today().isoformat(),
+            "verified": progress_verified,
+        }],
+    })
+    _write_artifact(project, ".agentera/docs.yaml", {
+        "last_audit": docs_last_audit or date.today().isoformat(),
+        "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
+        "index": [{"document": "Plan", "path": ".agentera/plan.yaml"}],
+        "conventions": docs_conventions if docs_conventions is not None else {
+            "semver_policy": {"feat": "minor"},
+            "version_files": ["pyproject.toml"],
+        },
+    })
+    _write_artifact(project, ".agentera/health.yaml", {
+        "audits": [{
+            "number": 12,
+            "timestamp": health_timestamp or date.today().isoformat(),
+            "trajectory": "stable",
+            "grades": {"Architecture": "B"},
+        }],
+    })
+    _write_artifact(project, "TODO.md", {
+        "entries": [{"severity": "normal", "status": "open", "description": "Track 2.3.10 evidence context"}],
+    })
+    if decisions is not None:
+        _write_artifact(project, ".agentera/decisions.yaml", decisions)
+
+
 # ---------------------------------------------------------------------------
 # prime
 # ---------------------------------------------------------------------------
@@ -1254,7 +1308,7 @@ class TestHej:
         assert "capability=orkestrera" in r.stdout
         assert "app_home: status=fresh" in r.stdout
         assert "source_contract:" in r.stdout
-        assert "fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context,closeout_context" in r.stdout
+        assert "fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context,closeout_context,evidence_context" in r.stdout
         assert "render=caller-owned README-style hej dashboard" in r.stdout
         assert "access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls" in r.stdout
         assert "capability_startup_complete=true" in r.stdout
@@ -1719,6 +1773,307 @@ class TestHej:
         r = _run("dokumentera", cwd=project)
 
         assert r.returncode != 0
+        assert "invalid choice" in r.stderr
+
+    def test_hej_inspektera_evidence_context_reports_required_evidence_state(self, project):
+        _seed_inspektera_evidence_context(project)
+
+        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        assert "agentera inspektera" not in r.stdout
+        data = json.loads(r.stdout)
+        assert "evidence_context" in data["source_contract"]["fields"]
+        context = data["evidence_context"]
+        assert set(context) == {
+            "capability",
+            "evaluation_target",
+            "plan_criteria",
+            "progress_verification",
+            "docs_state",
+            "health_state",
+            "todo_state",
+            "protected_state_checks",
+            "version_checks",
+            "decision_context",
+            "residual_risks",
+            "state_family_caveats",
+            "fallback_commands",
+            "source_contract",
+        }
+        assert context["capability"] == "inspektera"
+        assert context["evaluation_target"]["status"] == "selected"
+        assert context["evaluation_target"]["task"] == {"number": 2, "name": "Focused evidence-context regression coverage", "status": "pending"}
+        assert context["evaluation_target"]["selection_reason"] == "first_dependency_ready_pending_task"
+        assert context["evaluation_target"]["source_provenance"] == {
+            "source_family": "plan",
+            "command": "agentera plan --format json",
+            "field": "entries.depends_on",
+        }
+        assert context["plan_criteria"]["criteria"] == ["emit context"]
+        assert context["plan_criteria"]["source_provenance"] == {
+            "source_family": "plan",
+            "command": "agentera plan --format json",
+            "field": "entries.acceptance",
+        }
+        assert context["plan_criteria"]["non_empty_evidence_present"] is True
+        assert context["plan_criteria"]["non_empty_evidence_fields"] == ["criteria"]
+        assert context["progress_verification"]["verified_present"] is True
+        assert context["progress_verification"]["source_provenance"] == {
+            "source_family": "progress",
+            "command": "agentera progress --format json",
+        }
+        assert context["progress_verification"]["non_empty_evidence_present"] is True
+        assert context["docs_state"]["mapping_entries"] == 1
+        assert context["docs_state"]["source_provenance"] == {
+            "source_family": "docs",
+            "command": "agentera docs --format json",
+        }
+        assert context["docs_state"]["non_empty_evidence_present"] is True
+        assert context["health_state"]["audit_number"] == 12
+        assert context["health_state"]["source_provenance"] == {
+            "source_family": "health",
+            "command": "agentera health --format json",
+        }
+        assert context["health_state"]["non_empty_evidence_present"] is True
+        assert context["todo_state"]["open_count"] == 1
+        assert context["todo_state"]["source_provenance"] == {
+            "source_family": "todo",
+            "command": "agentera todo --format json",
+        }
+        assert context["todo_state"]["non_empty_evidence_present"] is True
+        assert context["protected_state_checks"]["status"] == "not_checked_by_design"
+        assert context["protected_state_checks"]["checks"][0]["status"] == "not_checked_by_design"
+        assert context["version_checks"]["status"] == "requires_manual_check"
+        assert context["version_checks"]["source_provenance"] == {
+            "source_family": "docs",
+            "command": "agentera docs --format json",
+            "field": "summary.conventions",
+        }
+        version_statuses = {check["name"]: check["status"] for check in context["version_checks"]["checks"]}
+        assert version_statuses["docs_version_policy"] == "verified_local"
+        assert version_statuses["version_files"] == "verified_local"
+        assert version_statuses["publication_evidence"] == "requires_manual_check"
+        assert version_statuses["installed_app_refresh"] == "not_checked_by_design"
+        assert "Retry attempt state is not recorded; no attempt count is exposed." in context["residual_risks"]["items"]
+        assert context["residual_risks"]["attributed_items"]
+        assert "agentera plan --format json" in context["fallback_commands"]
+        assert "agentera decisions --format json" in context["fallback_commands"]
+        contract = context["source_contract"]
+        assert contract["complete_for_evidence_context"] is True
+        assert contract["caveated"] is True
+        assert contract["raw_artifact_reads_required"] is False
+        assert "raw artifact reads are last-resort diagnostics" in contract["raw_artifact_read_policy"]
+        assert contract["required_evidence_state"] == {
+            "evaluation_target": True,
+            "plan_criteria": True,
+            "progress_verification": True,
+            "docs_state": True,
+            "health_state": True,
+            "todo_state": True,
+            "source_contract": True,
+        }
+        assert contract["missing_required_evidence_state"] == []
+        assert "truthful completeness metadata" in contract["owns"]
+        assert "attributed residual risks" in contract["owns"]
+        assert "Task 3 provenance, protected-state, and residual-risk semantics" not in contract["deferred"]
+        assert "Task 4 Inspektera guidance and schema integration" not in contract["deferred"]
+
+    def test_hej_inspektera_complete_context_keeps_startup_guidance_cli_first(self, project):
+        _seed_inspektera_evidence_context(project)
+
+        r = _run(
+            "hej",
+            "--format",
+            "json",
+            "--capability-context",
+            "inspektera",
+            "--fields",
+            "evidence_context,source_contract",
+            cwd=project,
+        )
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["evidence_context"]
+        contract = context["source_contract"]
+        assert contract["complete_for_evidence_context"] is True
+        assert contract["missing_required_evidence_state"] == []
+        assert contract["raw_artifact_reads_required"] is False
+        assert "last-resort diagnostics" in contract["raw_artifact_read_policy"]
+        assert all(command.startswith("agentera ") for command in contract["fallback_commands"])
+        assert not any(".agentera/" in command or command.endswith(".md") for command in contract["fallback_commands"])
+
+        prose = (REPO_ROOT / "skills" / "agentera" / "capabilities" / "inspektera" / "prose.md").read_text(encoding="utf-8")
+        assert "If `evidence_context.source_contract.complete_for_evidence_context` is true" in prose
+        assert "do not read raw PLAN, PROGRESS, DOCS, HEALTH, TODO, or DECISIONS artifacts" in prose
+        assert "Raw artifact reads are last-resort diagnostics" in prose
+        assert "Read HEALTH.md, TODO.md, and PROGRESS.md in parallel" not in prose
+        assert "before raw plan, progress, docs, health, TODO, or decisions artifacts" in prose
+        orient_step = prose.split("## Step 1: Orient", 1)[1].split("## Step 2:", 1)[0]
+        for raw_startup_marker in ("HEALTH.md", "DECISIONS.md", "TODO.md", "PROGRESS.md", "PLAN.md"):
+            assert raw_startup_marker not in orient_step
+        for cli_first_marker in (
+            "evidence_context.health_state",
+            "evidence_context.decision_context",
+            "evidence_context.todo_state",
+            "evidence_context.progress_verification",
+            "evidence_context.evaluation_target",
+            "evidence_context.plan_criteria",
+        ):
+            assert cli_first_marker in orient_step
+
+    def test_hej_inspektera_evidence_context_marks_missing_required_state_incomplete(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Missing progress", "status": "active"},
+            "tasks": [{"number": 1, "name": "Ready", "status": "pending", "acceptance": ["selected"]}],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
+        })
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [{"number": 1, "trajectory": "stable", "grades": {"Architecture": "B"}}],
+        })
+        _write_artifact(project, "TODO.md", {
+            "entries": [{"severity": "normal", "status": "open", "description": "Track evidence"}],
+        })
+
+        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["evidence_context"]
+        contract = context["source_contract"]
+        assert contract["complete_for_evidence_context"] is False
+        assert contract["missing_required_evidence_state"] == ["progress_verification"]
+        assert context["progress_verification"]["status"] == "unavailable"
+        assert "No progress cycles are recorded in CLI progress state." in contract["caveats"]
+        assert contract["raw_artifact_reads_required"] is False
+        assert "agentera progress --format json" in contract["fallback_commands"]
+        assert "agentera inspektera" not in json.dumps(context)
+
+    def test_hej_inspektera_evidence_context_marks_missing_plan_criteria_incomplete(self, project):
+        _seed_inspektera_evidence_context(project, acceptance=[])
+
+        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["evidence_context"]
+        contract = context["source_contract"]
+        assert context["plan_criteria"] == {
+            "status": "incomplete",
+            "source_provenance": {
+                "source_family": "plan",
+                "command": "agentera plan --format json",
+                "field": "entries.acceptance",
+            },
+            "target": {"number": 2, "name": "Focused evidence-context regression coverage", "status": "pending"},
+            "criteria": [],
+            "criteria_count": 0,
+            "non_empty_evidence_present": False,
+            "non_empty_evidence_fields": [],
+            "caveats": ["Selected evaluation target has no acceptance criteria in CLI plan state."],
+        }
+        assert contract["complete_for_evidence_context"] is False
+        assert contract["missing_required_evidence_state"] == ["plan_criteria"]
+        assert "agentera plan --format json" in contract["fallback_commands"]
+        assert "Selected evaluation target has no acceptance criteria in CLI plan state." in contract["caveats"]
+
+    def test_hej_inspektera_evidence_context_preserves_stale_docs_and_health_caveats(self, project):
+        _seed_inspektera_evidence_context(
+            project,
+            docs_last_audit="2026-01-01",
+            health_timestamp="2026-01-01",
+        )
+
+        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["evidence_context"]
+        contract = context["source_contract"]
+        assert context["docs_state"]["status"] == "available"
+        assert context["docs_state"]["freshness"] == "stale"
+        assert context["health_state"]["status"] == "available"
+        assert context["health_state"]["freshness"] == "stale"
+        assert contract["complete_for_evidence_context"] is True
+        assert contract["missing_required_evidence_state"] == []
+        assert any(caveat.startswith("Docs evidence is stale") for caveat in contract["caveats"])
+        assert any(caveat.startswith("Health evidence is stale") for caveat in contract["caveats"])
+        assert any(
+            item["category"] == "evidence_family" and item["message"].startswith("Docs evidence is stale")
+            for item in context["residual_risks"]["attributed_items"]
+        )
+        assert any(
+            item["category"] == "evidence_family" and item["message"].startswith("Health evidence is stale")
+            for item in context["residual_risks"]["attributed_items"]
+        )
+
+    def test_hej_inspektera_evidence_context_reports_protected_state_as_unknown_by_design(self, project):
+        _seed_inspektera_evidence_context(project)
+
+        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        protected = json.loads(r.stdout)["evidence_context"]["protected_state_checks"]
+        assert protected["status"] == "not_checked_by_design"
+        assert protected["allowed_status_values"] == [
+            "verified_local",
+            "not_checked_by_design",
+            "requires_manual_check",
+            "unavailable",
+        ]
+        assert protected["source_provenance"] == {
+            "source_family": "evidence_context",
+            "command": "agentera hej --format json --capability-context inspektera",
+            "field": "protected_state_checks",
+        }
+        assert {check["name"] for check in protected["checks"]} == {"vision_state", "objective_state"}
+        assert all(check["checked"] is False for check in protected["checks"])
+        assert all(check["status"] == "not_checked_by_design" for check in protected["checks"])
+        assert "Protected-state boundaries are reported without reading or modifying vision or objective state." in protected["caveats"]
+
+    def test_hej_inspektera_evidence_context_preserves_attributed_decision_and_profile_caveats(self, project):
+        profile = project / ".xdg" / "agentera" / "PROFILE.md"
+        profile.parent.mkdir(parents=True)
+        profile.write_text("<!-- Generated: 2026-04-01 -->\n# Profile\n", encoding="utf-8")
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Residual risks", "status": "active"},
+            "tasks": [{"number": 1, "name": "Ready", "status": "pending", "acceptance": ["selected"]}],
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 1, "timestamp": "2026-05-15", "verified": "tests passed"}],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
+            "conventions": {"semver_policy": {"fix": "patch"}, "version_files": ["pyproject.toml"]},
+        })
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [{"number": 1, "trajectory": "stable", "grades": {"Architecture": "B"}}],
+        })
+        _write_artifact(project, "TODO.md", {"entries": []})
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [],
+            "archive": [{"summary": "Decision 9 (2026-05-14): compacted evidence caveat"}],
+        })
+
+        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["evidence_context"]
+        decision_context = context["decision_context"]
+        assert decision_context["status"] == "caveated"
+        assert decision_context["summary"]["compacted_entries"] == 1
+        assert "Compacted archive decisions are not expanded" in " ".join(decision_context["caveats"])
+        attributed = context["residual_risks"]["attributed_items"]
+        categories = {item["category"] for item in attributed}
+        assert "decisions_context" in categories
+        assert "profile_state" in categories
+        assert any("profile-derived state is stale" in item["message"] for item in attributed)
+        assert any("Compacted archive decisions" in item["message"] for item in attributed)
+
+    def test_inspektera_capability_name_is_not_a_cli_command(self, project):
+        r = _run("inspektera", cwd=project)
+
+        assert r.returncode != 0
+        assert r.stdout == ""
         assert "invalid choice" in r.stderr
 
     def test_fresh_hej_structured_output_explains_absent_state(self, project):
@@ -2321,6 +2676,53 @@ class TestRoutineStructuredOutput:
         assert set(data).issubset(set(available))
         assert data["command"] == "hej"
         assert data["status"] == "ok"
+
+    def test_sparse_hej_evidence_context_field_selection_uses_supported_seam(self, project):
+        _seed_inspektera_evidence_context(project)
+        contract = yaml.safe_load(CONTRACT_PATH.read_text(encoding="utf-8"))
+        available = contract["field_selection"]["fields_by_command"]["hej"]["fields"]
+
+        r = _run(
+            "hej",
+            "--format",
+            "json",
+            "--capability-context",
+            "inspektera",
+            "--fields",
+            "evidence_context,source_contract",
+            cwd=project,
+        )
+
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert list(data) == ["command", "status", "evidence_context", "source_contract"]
+        assert set(data).issubset(set(available) | {"command", "status"})
+        assert data["evidence_context"]["source_contract"]["complete_for_evidence_context"] is True
+        assert "evidence_context" in data["source_contract"]["fields"]
+        assert "agentera inspektera" not in r.stdout
+
+    def test_sparse_hej_rejects_unsupported_evidence_context_field_without_partial_stdout(self, project):
+        _seed_inspektera_evidence_context(project)
+        contract = yaml.safe_load(CONTRACT_PATH.read_text(encoding="utf-8"))
+        available = contract["field_selection"]["fields_by_command"]["hej"]["fields"]
+
+        r = _run(
+            "hej",
+            "--format",
+            "json",
+            "--capability-context",
+            "inspektera",
+            "--fields",
+            "evidence_context,raw_yaml",
+            cwd=project,
+        )
+
+        assert r.returncode == 1
+        assert r.stdout == ""
+        assert "unsupported field 'raw_yaml'" in r.stderr
+        assert "Available fields: " in r.stderr
+        assert "evidence_context" in r.stderr
+        assert "raw_yaml" not in available
 
     def test_sparse_output_rejects_unsupported_field_without_partial_stdout(self, project):
         self._seed(project, "plan")
