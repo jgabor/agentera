@@ -52,7 +52,7 @@ scope:
     - Publication, tagging, pushing, installed-app refresh, or profile refresh.
   deferred:
     - >-
-      Deeper collector validation or metadata drift guard work unless a changed
+      Deeper collector validation or metadata alignment work unless a changed
       D47 surface or focused test directly requires it.
     - >-
       Broad cleanup of unrelated historical wording in archived decisions,
@@ -170,8 +170,8 @@ tasks:
         has a `preserve` or `defer` rationale from Task 1.
       - >-
         GIVEN version, package, plugin, registry, or runtime metadata files are
-        changed WHEN metadata drift checks are relevant THEN the selected checks
-        prove those surfaces remain aligned; otherwise drift-guard work is
+        changed WHEN metadata alignment checks are relevant THEN the selected checks
+        prove those surfaces remain aligned; otherwise alignment work is
         recorded as deferred with no code changes.
       - >-
         GIVEN capability prose, schemas, or Agentera artifacts are changed WHEN
