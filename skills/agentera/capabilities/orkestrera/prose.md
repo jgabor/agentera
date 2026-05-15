@@ -67,6 +67,16 @@ If completeness is false or caveated:
 
 Never hide or reconstruct caveats before handing work to inspektera. Pass them through as audit context.
 
+### Decision satisfaction authority
+
+When orchestration touches decision satisfaction, agents may mark provisional
+satisfaction with evidence only. Orkestrera must not mark, infer, or
+user-confirm final satisfaction; only the user confirms final satisfaction. If
+decisions are compacted, missing satisfaction state, open, provisional, or
+review-needed, preserve the caveat and review pressure in dispatch and
+evaluation context instead of reconstructing hidden outcomes or claiming
+automation proved intent.
+
 ### Contract values
 
 Contract values are inlined where referenced. Visual tokens from protocol: status tokens VT1-VT4 (■/▣/□/▨) for task states, skill glyph SG12 (⎈) for the exit marker, inline separator VT16 (·), list item VT15 (▸), flow/target VT17 (→), section divider VT14. Exit signals EX1-EX4 for the exit marker. Severity issue levels SI1-SI4 for logging. Decision labels DL1-DL3 for interpreting DECISIONS.md entries.

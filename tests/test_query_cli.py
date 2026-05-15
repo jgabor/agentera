@@ -390,6 +390,10 @@ class TestDecisions:
                     "reasoning": "Routine state commands should avoid raw artifact reads.",
                     "confidence": "firm",
                     "feeds_into": "PLAN.md, TODO.md#DEC-1",
+                    "satisfaction": {
+                        "state": "user_confirmed_satisfied",
+                        "user_confirmation": {"confirmed_by": "Jonathan", "confirmed_at": "2026-05-15"},
+                    },
                 },
             ],
         })
@@ -416,9 +420,11 @@ class TestDecisions:
         contract = data["source_contract"]
         assert contract["artifact"] == "DECISIONS.md"
         assert contract["complete_for_returned_decisions"] is True
+        assert contract["complete_for_decision_context"] is True
         assert contract["raw_artifact_reads_required"] is False
-        assert "raw_artifact_read_policy" in contract
-        assert "fallback_behavior" in contract
+        assert "normal deliberation context" in contract["raw_artifact_read_policy"]
+        assert "historical compacted gaps are exposed" in contract["raw_artifact_read_policy"]
+        assert "no raw decision artifact read is required" in contract["fallback_behavior"]["normal"]
         assert "outcome" in contract["included_fields"]
         assert "downstream_consequence_references" in contract["included_fields"]
         assert contract["completeness"]["entries_with_missing_fields"] == 0
@@ -436,6 +442,10 @@ class TestDecisions:
                     "reasoning": "Filtered results need the same guarantees.",
                     "confidence": "firm",
                     "feeds_into": ["scripts/agentera"],
+                    "satisfaction": {
+                        "state": "user_confirmed_satisfied",
+                        "user_confirmation": {"confirmed_by": "Jonathan", "confirmed_at": "2026-05-15"},
+                    },
                 },
                 {
                     "number": 2,
@@ -447,6 +457,10 @@ class TestDecisions:
                     "reasoning": "Readable.",
                     "confidence": "firm",
                     "feeds_into": ["DESIGN.md"],
+                    "satisfaction": {
+                        "state": "user_confirmed_satisfied",
+                        "user_confirmation": {"confirmed_by": "Jonathan", "confirmed_at": "2026-05-15"},
+                    },
                 },
             ],
         })
@@ -460,6 +474,145 @@ class TestDecisions:
         assert data["entries"][0]["context_complete"] is True
         assert data["source_contract"]["filters"] == {"topic": "runtime"}
         assert data["source_contract"]["complete_for_returned_decisions"] is True
+
+    def test_json_decisions_surface_legacy_missing_satisfaction_as_review_needed(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": 1,
+                    "date": "2026-05-14",
+                    "question": "Legacy decision?",
+                    "context": "Old entries predate satisfaction state.",
+                    "alternatives": [{"name": "Keep valid", "status": "chosen"}],
+                    "choice": "Keep valid.",
+                    "reasoning": "Legacy history must not be reconstructed.",
+                    "confidence": "firm",
+                    "feeds_into": "PLAN.md",
+                },
+            ],
+        })
+
+        r = _run("decisions", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        entry = json.loads(r.stdout)["entries"][0]
+        assert entry["satisfaction"] == {
+            "state": None,
+            "evidence": None,
+            "user_confirmation": None,
+            "review_needed": True,
+            "source": "missing_legacy_state",
+            "caveats": ["Missing legacy satisfaction state is not treated as satisfied."],
+        }
+        assert entry["context_complete"] is False
+        assert any("missing legacy state" in caveat for caveat in entry["caveats"])
+
+    def test_json_decisions_expose_satisfaction_state_metadata_and_caveats(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": 1,
+                    "date": "2026-05-14",
+                    "question": "Open satisfaction?",
+                    "context": "Open decisions require review.",
+                    "alternatives": [{"name": "Track", "status": "chosen"}],
+                    "choice": "Track satisfaction on the entry.",
+                    "reasoning": "The entry owns satisfaction.",
+                    "confidence": "firm",
+                    "feeds_into": "PLAN.md",
+                    "satisfaction": {"state": "open"},
+                },
+                {
+                    "number": 2,
+                    "date": "2026-05-14",
+                    "question": "Provisional satisfaction?",
+                    "context": "Agents may attach provisional evidence.",
+                    "alternatives": [{"name": "Evidence", "status": "chosen"}],
+                    "choice": "Expose evidence without user confirmation.",
+                    "reasoning": "Evidence is not user confirmation.",
+                    "confidence": "firm",
+                    "feeds_into": "tests",
+                    "satisfaction": {
+                        "state": "provisionally_satisfied",
+                        "evidence": "Focused CLI tests pass.",
+                    },
+                },
+                {
+                    "number": 3,
+                    "date": "2026-05-14",
+                    "question": "Confirmed satisfaction?",
+                    "context": "Only the user may confirm satisfaction.",
+                    "alternatives": [{"name": "Confirm", "status": "chosen"}],
+                    "choice": "Expose user confirmation metadata.",
+                    "reasoning": "Downstream artifacts do not prove acceptance.",
+                    "confidence": "firm",
+                    "feeds_into": "CHANGELOG.md",
+                    "satisfaction": {
+                        "state": "user_confirmed_satisfied",
+                        "user_confirmation": {"confirmed_by": "Jonathan", "confirmed_at": "2026-05-15"},
+                    },
+                },
+            ],
+        })
+
+        r = _run("decisions", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        entries = {entry["number"]: entry for entry in data["entries"]}
+        assert entries[1]["satisfaction"] == {
+            "state": "open",
+            "evidence": None,
+            "user_confirmation": None,
+            "review_needed": True,
+            "source": "decision.satisfaction",
+            "caveats": ["Satisfaction state is open and requires review."],
+        }
+        assert entries[2]["satisfaction"]["evidence"] == "Focused CLI tests pass."
+        assert entries[2]["satisfaction"]["user_confirmation"] is None
+        assert entries[2]["satisfaction"]["review_needed"] is True
+        assert "requires user confirmation" in " ".join(entries[2]["satisfaction"]["caveats"])
+        assert entries[3]["satisfaction"]["user_confirmation"] == {
+            "confirmed_by": "Jonathan",
+            "confirmed_at": "2026-05-15",
+        }
+        assert entries[3]["satisfaction"]["review_needed"] is False
+        assert entries[3]["satisfaction"]["caveats"] == []
+        assert data["source_contract"]["satisfaction_context"]["owner"] == "decision entry"
+        assert "Do not infer satisfaction" in data["source_contract"]["satisfaction_context"]["non_inference_policy"]
+        assert data["source_contract"]["completeness"]["entries_requiring_satisfaction_review"] == 2
+        assert data["source_contract"]["completeness"]["user_confirmed_satisfied_entries"] == 1
+
+    def test_json_decisions_do_not_confirm_satisfaction_from_downstream_reference(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": 1,
+                    "date": "2026-05-14",
+                    "question": "Downstream reference without satisfaction?",
+                    "context": "A generated file exists downstream.",
+                    "alternatives": [{"name": "No inference", "status": "chosen"}],
+                    "choice": "Do not infer user confirmation.",
+                    "reasoning": "Only user confirmation can satisfy the decision.",
+                    "confidence": "firm",
+                    "feeds_into": "scripts/agentera",
+                },
+            ],
+        })
+
+        r = _run("decisions", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        entry = data["entries"][0]
+        assert entry["downstream_consequence_references"] == [
+            {"source_field": "feeds_into", "reference": "scripts/agentera"},
+        ]
+        assert entry["satisfaction"]["state"] is None
+        assert entry["satisfaction"]["review_needed"] is True
+        assert entry["satisfaction"].get("user_confirmation") is None
+        assert data["source_contract"]["completeness"]["user_confirmed_satisfied_entries"] == 0
+        assert "Missing, open, provisional, or unconfirmed satisfaction requires review" in data["source_contract"]["fallback_behavior"]["satisfaction"]
 
     def test_json_decisions_do_not_fabricate_downstream_references(self, project):
         _write_artifact(project, ".agentera/decisions.yaml", {
@@ -485,7 +638,7 @@ class TestDecisions:
         assert entry["downstream_consequence_references"] is None
         assert entry["context_complete"] is False
         assert "feeds_into" in entry["missing_fields"]
-        assert "No explicit downstream consequence references were present" in entry["caveats"][-1]
+        assert any("No explicit downstream consequence references were present" in caveat for caveat in entry["caveats"])
         assert data["source_contract"]["completeness"]["entries_without_downstream_references"] == 1
 
     def test_json_compacted_decision_is_marked_incomplete(self, project):
@@ -510,6 +663,7 @@ class TestDecisions:
         assert "outcome" in entry["missing_fields"]
         assert entry["downstream_consequence_references"] is None
         assert data["source_contract"]["complete_for_returned_decisions"] is False
+        assert data["source_contract"]["complete_for_decision_context"] is False
         assert data["source_contract"]["completeness"]["compacted_entries"] == 1
         assert "missing_fields" in data["source_contract"]["raw_artifact_read_policy"]
         assert "unavailable" in data["source_contract"]["fallback_behavior"]["compacted_history"]
@@ -526,6 +680,10 @@ class TestDecisions:
                     "choice": "Keep structured compact outcome",
                     "outcome": "Keep structured compact outcome",
                     "feeds_into": "scripts/agentera",
+                    "satisfaction": {
+                        "state": "user_confirmed_satisfied",
+                        "user_confirmation": {"confirmed_by": "Jonathan", "confirmed_at": "2026-05-15"},
+                    },
                 },
             ],
         })
@@ -541,8 +699,39 @@ class TestDecisions:
         assert entry["downstream_consequence_references"] == [
             {"source_field": "feeds_into", "reference": "scripts/agentera"},
         ]
+        assert entry["satisfaction"]["state"] == "user_confirmed_satisfied"
+        assert entry["satisfaction"]["review_needed"] is False
         assert entry["context_complete"] is False
         assert "reasoning" in entry["missing_fields"]
+
+    def test_compaction_check_and_gate_report_protected_overflow_pressure(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": number,
+                    "date": "2026-05-15",
+                    "question": f"Decision {number}?",
+                    "choice": "Keep under review.",
+                    "satisfaction": {"state": "open"},
+                }
+                for number in range(1, 12)
+            ],
+            "archive": [],
+        })
+
+        compact = _run("compact", "--mode", "check", "--format", "json", cwd=project)
+        gate = _run("gate", "--format", "json", cwd=project)
+
+        assert compact.returncode == 1, compact.stdout
+        assert gate.returncode == 1, gate.stdout
+        for result in (compact, gate):
+            payload = json.loads(result.stdout)
+            decision_op = next(op for op in payload["operations"] if op["artifact"] == "DECISIONS.md")
+            assert payload["status"] == "fail"
+            assert payload["summary"]["protected_overflow_count"] == 1
+            assert decision_op["action"] == "protected_overflow"
+            assert decision_op["protected_overflow_count"] == 1
+            assert "protected-overflow review pressure" in decision_op["message"]
 
     def test_filtered_json_decisions_can_match_compacted_summary(self, project):
         _write_artifact(project, ".agentera/decisions.yaml", {
@@ -1836,6 +2025,93 @@ class TestHej:
         assert release_boundary["publication_evidence"]["remote_push"] == "not_recorded_in_cli_state"
         assert release_boundary["publication_evidence"]["remote_checks_performed"] is False
 
+    def test_hej_dokumentera_closeout_context_blocks_stale_protected_decisions(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "2.3.9 Dokumentera Closeout Context Source Contract", "status": "active"},
+            "tasks": [{"number": 1, "name": "Closeout", "status": "pending"}],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "conventions": {"version_files": ["pyproject.toml"], "semver_policy": {"fix": "patch"}},
+            "mapping": [{"artifact": "DOCS.md", "path": ".agentera/docs.yaml"}],
+            "coverage": {"tests": "Benchmark evidence is retained through CLI-visible summaries."},
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 3, "timestamp": "2026-05-15", "verified": "tests passed"}],
+        })
+        _write_artifact(project, "TODO.md", {"entries": []})
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": index,
+                    "date": "2026-05-14",
+                    "question": f"Protected decision {index}?",
+                    "context": "Compaction pressure fixture.",
+                    "alternatives": ["Review", "Defer"],
+                    "choice": "Review",
+                    "reasoning": "Open satisfaction is protected from compaction.",
+                    "confidence": 80,
+                    "feeds_into": ["PLAN Task 4"],
+                    "satisfaction": {"state": "open"},
+                }
+                for index in range(1, 12)
+            ],
+        })
+        (project / "CHANGELOG.md").write_text("# Changelog\n\n## [Unreleased]\n", encoding="utf-8")
+
+        r = _run("hej", "--format", "json", "--capability-context", "dokumentera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["closeout_context"]
+        pressure = context["decision_review_pressure"]
+        assert pressure["status"] == "review_required"
+        assert pressure["summary"]["protected_overflow_count"] == 1
+        assert any("10/40/50 compaction budget" in caveat for caveat in pressure["caveats"])
+        assert context["source_contract"]["complete_for_closeout_context"] is False
+        assert "decision_review_pressure" in context["source_contract"]["missing_required_closeout_state"]
+        assert any("10/40/50 compaction budget" in caveat for caveat in context["state_family_caveats"])
+
+    def test_hej_dokumentera_closeout_context_does_not_fabricate_decision_review_pressure(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "2.3.9 Dokumentera Closeout Context Source Contract", "status": "active"},
+            "tasks": [{"number": 1, "name": "Closeout", "status": "pending"}],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "conventions": {"version_files": ["pyproject.toml"], "semver_policy": {"fix": "patch"}},
+            "mapping": [{"artifact": "DOCS.md", "path": ".agentera/docs.yaml"}],
+            "coverage": {"tests": "Benchmark evidence is retained through CLI-visible summaries."},
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 3, "timestamp": "2026-05-15", "verified": "tests passed"}],
+        })
+        _write_artifact(project, "TODO.md", {"entries": []})
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": 1,
+                    "date": "2026-05-14",
+                    "question": "Protected but not stale?",
+                    "context": "Review date has not elapsed.",
+                    "alternatives": ["Review later", "Close"],
+                    "choice": "Review later",
+                    "reasoning": "Open satisfaction is protected but not stale.",
+                    "confidence": 75,
+                    "feeds_into": ["PLAN Task 4"],
+                    "satisfaction": {"state": "open", "review_date": "2999-01-01"},
+                }
+            ],
+        })
+        (project / "CHANGELOG.md").write_text("# Changelog\n\n## [Unreleased]\n", encoding="utf-8")
+
+        r = _run("hej", "--format", "json", "--capability-context", "dokumentera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["closeout_context"]
+        assert context["decision_review_pressure"]["status"] == "available"
+        assert context["decision_review_pressure"]["caveats"] == []
+        assert context["source_contract"]["complete_for_closeout_context"] is True
+        assert "decision_review_pressure" not in context["source_contract"]["missing_required_closeout_state"]
+        assert not any("10/40/50 compaction budget" in caveat for caveat in context["state_family_caveats"])
+
     def test_dokumentera_closeout_context_does_not_add_capability_name_cli_command(self, project):
         r = _run("dokumentera", cwd=project)
 
@@ -1863,6 +2139,7 @@ class TestHej:
             "protected_state_checks",
             "version_checks",
             "decision_context",
+            "decision_review_pressure",
             "residual_risks",
             "state_family_caveats",
             "fallback_commands",
@@ -1917,6 +2194,8 @@ class TestHej:
             "command": "agentera docs --format json",
             "field": "summary.conventions",
         }
+        assert context["decision_review_pressure"]["status"] == "unavailable"
+        assert context["decision_review_pressure"]["caveats"] == []
         version_statuses = {check["name"]: check["status"] for check in context["version_checks"]["checks"]}
         assert version_statuses["docs_version_policy"] == "verified_local"
         assert version_statuses["version_files"] == "verified_local"
@@ -2135,6 +2414,62 @@ class TestHej:
         assert "profile_state" in categories
         assert any("profile-derived state is stale" in item["message"] for item in attributed)
         assert any("Compacted archive decisions" in item["message"] for item in attributed)
+
+    def test_hej_inspektera_evidence_context_attributes_stale_protected_decision_review_pressure(self, project):
+        _seed_inspektera_evidence_context(project, decisions={
+            "decisions": [{
+                "number": 7,
+                "date": "2026-05-14",
+                "question": "Review old protected decision?",
+                "context": "Review date elapsed.",
+                "alternatives": ["Review", "Defer"],
+                "choice": "Review",
+                "reasoning": "Open satisfaction needs user review.",
+                "confidence": 75,
+                "feeds_into": ["PLAN Task 4"],
+                "satisfaction": {"state": "open", "review_date": "2026-01-01"},
+            }],
+        })
+
+        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["evidence_context"]
+        pressure = context["decision_review_pressure"]
+        assert pressure["status"] == "review_required"
+        assert pressure["stale_protected_decisions"][0]["reason"] == "review_date_elapsed"
+        assert "satisfaction.review_date elapsed" in pressure["caveats"][0]
+        assert any(
+            item["category"] == "decision_review_pressure" and "satisfaction.review_date elapsed" in item["message"]
+            for item in context["residual_risks"]["attributed_items"]
+        )
+
+    def test_hej_inspektera_evidence_context_does_not_fabricate_decision_review_warnings(self, project):
+        _seed_inspektera_evidence_context(project, decisions={
+            "decisions": [{
+                "number": 8,
+                "date": "2026-05-14",
+                "question": "Future protected review?",
+                "context": "Review date has not elapsed.",
+                "alternatives": ["Review later", "Close"],
+                "choice": "Review later",
+                "reasoning": "Open satisfaction is protected but not stale.",
+                "confidence": 75,
+                "feeds_into": ["PLAN Task 4"],
+                "satisfaction": {"state": "open", "review_date": "2999-01-01"},
+            }],
+        })
+
+        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["evidence_context"]
+        assert context["decision_review_pressure"]["status"] == "available"
+        assert context["decision_review_pressure"]["caveats"] == []
+        assert not any(
+            item["category"] == "decision_review_pressure"
+            for item in context["residual_risks"]["attributed_items"]
+        )
 
     def test_hej_optimera_benchmark_context_reports_retained_benchmark_summary(self, project):
         app_home = project / "app-home"

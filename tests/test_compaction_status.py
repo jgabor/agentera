@@ -51,6 +51,10 @@ def _decision(number):
         "reasoning": f"Reasoning {number}",
         "confidence": "firm",
         "feeds_into": f"PLAN.md#DEC-{number}",
+        "satisfaction": {
+            "state": "user_confirmed_satisfied",
+            "user_confirmation": {"confirmed_by": "Jonathan", "confirmed_at": "2026-05-15"},
+        },
     }
 
 
@@ -134,7 +138,16 @@ def test_check_mode_reports_over_limit_without_mutation(compaction, tmp_path):
     over_full = {"cycles": [_progress_cycle(i) for i in range(1, 12)], "archive": []}
     over_archive = {
         "decisions": [],
-        "archive": [{"summary": f"Decision {i} (2026-04-01): old"} for i in range(1, 42)],
+        "archive": [
+            {
+                "summary": f"Decision {i} (2026-04-01): old",
+                "satisfaction": {
+                    "state": "user_confirmed_satisfied",
+                    "user_confirmation": {"confirmed_by": "Jonathan", "confirmed_at": "2026-05-15"},
+                },
+            }
+            for i in range(1, 42)
+        ],
     }
     over_total = {
         "audits": [{"number": i} for i in range(1, 11)],
@@ -260,6 +273,10 @@ def test_decision_compaction_retains_schema_allowed_outcome_fields(compaction, t
             "choice": "Choice 2",
             "feeds_into": "PLAN.md#DEC-2",
             "outcome": "Choice 2",
+            "satisfaction": {
+                "state": "user_confirmed_satisfied",
+                "user_confirmation": {"confirmed_by": "Jonathan", "confirmed_at": "2026-05-15"},
+            },
         },
         {
             "summary": "Decision 1 (2026-05-01): Choice 1",
@@ -268,10 +285,101 @@ def test_decision_compaction_retains_schema_allowed_outcome_fields(compaction, t
             "choice": "Choice 1",
             "feeds_into": "PLAN.md#DEC-1",
             "outcome": "Choice 1",
+            "satisfaction": {
+                "state": "user_confirmed_satisfied",
+                "user_confirmation": {"confirmed_by": "Jonathan", "confirmed_at": "2026-05-15"},
+            },
         },
     ]
     for path, original in unrelated_originals.items():
         assert path.read_text(encoding="utf-8") == original
+
+
+def test_decision_compaction_keeps_review_needed_active_entries_full(compaction, tmp_path):
+    project = tmp_path
+    _write_docs_mapping(project)
+    state = project / "state"
+    state.mkdir()
+    (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
+    (state / "progress.yaml").write_text("cycles: []\narchive: []\n", encoding="utf-8")
+    (state / "health.yaml").write_text("audits: []\narchive: []\n", encoding="utf-8")
+    (state / "session.yaml").write_text("bookmarks: []\narchive: []\n", encoding="utf-8")
+    decisions = [_decision(i) for i in range(1, 13)]
+    decisions[0]["satisfaction"] = {"state": "open"}
+    decisions[1]["satisfaction"] = {"state": "provisionally_satisfied", "evidence": "local test evidence"}
+    decisions_path = state / "decisions.yaml"
+    decisions_path.write_text(yaml.safe_dump({"decisions": decisions, "archive": []}, sort_keys=False), encoding="utf-8")
+
+    operations = {op.status.artifact: op for op in compaction.run_compaction(project, mode="fix")}
+    after = yaml.safe_load(decisions_path.read_text(encoding="utf-8"))
+
+    assert operations["DECISIONS.md"].action == "compacted"
+    assert [entry["number"] for entry in after["decisions"]] == [1, 2, 5, 6, 7, 8, 9, 10, 11, 12]
+    assert {entry["number"] for entry in after["archive"]} == {3, 4}
+    assert all(entry["number"] not in {1, 2} for entry in after["archive"])
+    assert after["decisions"][0]["satisfaction"] == {"state": "open"}
+    assert after["decisions"][1]["satisfaction"] == {
+        "state": "provisionally_satisfied",
+        "evidence": "local test evidence",
+    }
+
+
+def test_decision_protected_overflow_reports_review_pressure_without_mutation(compaction, tmp_path):
+    project = tmp_path
+    _write_docs_mapping(project)
+    state = project / "state"
+    state.mkdir()
+    (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
+    (state / "progress.yaml").write_text("cycles: []\narchive: []\n", encoding="utf-8")
+    (state / "health.yaml").write_text("audits: []\narchive: []\n", encoding="utf-8")
+    (state / "session.yaml").write_text("bookmarks: []\narchive: []\n", encoding="utf-8")
+    decisions_path = state / "decisions.yaml"
+    decisions = [_decision(i) for i in range(1, 12)]
+    for entry in decisions:
+        entry["satisfaction"] = {"state": "open"}
+    decisions_path.write_text(yaml.safe_dump({"decisions": decisions, "archive": []}, sort_keys=False), encoding="utf-8")
+    original = decisions_path.read_text(encoding="utf-8")
+
+    check_ops = {op.status.artifact: op for op in compaction.run_compaction(project, mode="check")}
+    fix_ops = {op.status.artifact: op for op in compaction.run_compaction(project, mode="fix")}
+
+    assert check_ops["DECISIONS.md"].action == "protected_overflow"
+    assert check_ops["DECISIONS.md"].message == "protected-overflow review pressure by 1"
+    assert check_ops["DECISIONS.md"].status.protected_overflow_count == 1
+    assert fix_ops["DECISIONS.md"].action == "protected_overflow"
+    assert decisions_path.read_text(encoding="utf-8") == original
+
+
+def test_decision_compaction_requires_review_before_dropping_legacy_archive(compaction, tmp_path):
+    project = tmp_path
+    _write_docs_mapping(project)
+    state = project / "state"
+    state.mkdir()
+    (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
+    (state / "progress.yaml").write_text("cycles: []\narchive: []\n", encoding="utf-8")
+    (state / "health.yaml").write_text("audits: []\narchive: []\n", encoding="utf-8")
+    (state / "session.yaml").write_text("bookmarks: []\narchive: []\n", encoding="utf-8")
+    decisions_path = state / "decisions.yaml"
+    decisions_path.write_text(
+        yaml.safe_dump(
+            {
+                "decisions": [],
+                "archive": [
+                    {"summary": f"Decision {i} (2026-04-01): archived"}
+                    for i in range(1, 42)
+                ],
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    original = decisions_path.read_text(encoding="utf-8")
+
+    operations = {op.status.artifact: op for op in compaction.run_compaction(project, mode="fix")}
+
+    assert operations["DECISIONS.md"].action == "protected_overflow"
+    assert "protected-overflow review pressure" in operations["DECISIONS.md"].message
+    assert decisions_path.read_text(encoding="utf-8") == original
 
 
 def test_fix_mode_reports_missing_and_protected_without_blocking_compactable(compaction, tmp_path):

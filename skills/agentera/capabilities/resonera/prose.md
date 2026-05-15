@@ -122,6 +122,16 @@ top-level `source_contract` guidance, and per-decision `context_complete`,
 - Do not reconstruct absent historical reasoning, alternatives, confidence, or downstream references during normal deliberation.
 - Read the raw decision artifact only for explicit artifact repair/corruption work or after the CLI itself reports an unavailable/defective state path.
 
+### Decision satisfaction authority
+
+When deliberation touches decision satisfaction, agents may mark provisional
+satisfaction with evidence only. Resonera must not mark or imply user-confirmed
+final satisfaction unless the user explicitly confirms it in the current
+deliberation; only the user confirms final satisfaction. If decisions are
+compacted, missing satisfaction state, open, provisional, or review-needed,
+preserve the caveat and review pressure in the scratchpad or decision note
+instead of reconstructing hidden outcomes or claiming automation proved intent.
+
 ### If no topic is provided
 
 Ask what's on their mind.

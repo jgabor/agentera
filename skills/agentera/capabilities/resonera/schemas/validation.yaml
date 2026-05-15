@@ -60,3 +60,18 @@ VALIDATION:
     severity: warning
     checks:
       - "No red-flag phrases in output"
+  7:
+    id: V7
+    rule: satisfaction_authority_boundary
+    description: >-
+      When Resonera touches decision satisfaction, it may capture provisional
+      satisfaction with evidence but MUST NOT user-confirm satisfaction unless the
+      user explicitly confirms it. Missing, compacted, open, provisional, or
+      review-needed satisfaction state remains a caveat and review pressure;
+      automation must not reconstruct hidden outcomes or claim it proved user
+      intent.
+    severity: critical
+    checks:
+      - "Provisional satisfaction requires evidence"
+      - "Only the user confirms final satisfaction"
+      - "Missing or compacted satisfaction caveats are preserved"

@@ -94,3 +94,17 @@ VALIDATION:
     checks:
       - "No protected state mutation during context generation"
       - "No unsupported `agentera realisera` or `agentera build` command introduced"
+  10:
+    id: V10
+    rule: satisfaction_authority_boundary
+    description: >-
+      When Realisera touches decision satisfaction, it may mark provisional
+      satisfaction with evidence but MUST NOT user-confirm satisfaction. Missing,
+      compacted, open, provisional, or review-needed satisfaction state remains a
+      caveat and review pressure; automation must not reconstruct hidden outcomes
+      or claim it proved user intent.
+    severity: critical
+    checks:
+      - "Provisional satisfaction requires evidence"
+      - "Only the user confirms final satisfaction"
+      - "Missing or compacted satisfaction caveats are preserved"
