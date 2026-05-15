@@ -3,304 +3,340 @@ header:
   created: 2026-05-15
   status: complete
   reviewed: 2026-05-15
-  critic_issues: 10 found, 10 addressed, 0 dismissed
+  critic_issues: 8 found, 8 addressed, 0 dismissed
   revised: >-
-    Adversarial review resolved unsupported-command test wording, constrained
-    objective and experiment state to read-only existing CLI summaries, moved 2.3.10
-    archival into Planera activation evidence, made the CLI-internal benchmark-file
-    read boundary explicit, classified incomplete versus caveated benchmark states,
-    narrowed the test matrix, normalized manual-refresh statuses, required stable
-    provenance labels instead of path-derived IDs, and kept schema changes declarative.
-    [post-audit-flagged: PLAN.md full-plan artifact exceeds the advisory prose budget;
-    preserving executable criteria is more valuable than compressing the plan below the
-    single-entry lint threshold.]
-  title: 2.3.11 Optimera Benchmark Context Source Contract
+    Adversarial review moved 2.3.11 archival into Planera activation
+    bookkeeping, split required Realisera state into blockers versus caveats,
+    made source scope conservative instead of inferred, added changelog fallback
+    coverage, widened raw-read reduction criteria, named Decision 45 contract
+    updates explicitly, made completed-plan sweep context read-only, and confined
+    unsupported-command probes to tests only. [post-audit-flagged: PLAN.md full-plan
+    artifact exceeds the advisory prose budget; preserving reviewed executable
+    acceptance criteria is more valuable than compressing below the single-entry
+    lint threshold.]
+  title: 2.3.12 Realisera Execution Context Source Contract
 what: >-
-  Add an Optimera benchmark-context source contract through the existing `agentera hej
-  --format json --capability-context optimera` startup seam so optimization work can
-  receive startup benchmark history, latest benchmark metrics, runtime coverage
-  caveats, token-impact estimates, comparison status, recommendation triggers, and
-  manual refresh guidance from CLI state before any direct user-local benchmark file
-  access.
+  Add a Realisera execution-context source contract through the existing
+  `agentera hej --format json --capability-context realisera` startup seam so
+  implementation cycles can receive the selected work item, acceptance criteria,
+  constraints, verification expectations, artifact update requirements, progress
+  logging requirements, and explicit scope/caveat boundaries from CLI state before
+  raw plan, progress, TODO, docs, health, decisions, or changelog reads.
 why: >-
-  Decision 52 made startup benchmark evidence manual and user-local, while the 2.3.10
-  evidence-context patch proved that complete, caveated source contracts keep agents
-  CLI-first. Optimera is the next raw-heavy consumer because it needs benchmark rates,
-  token estimates, and recommendation triggers to decide whether optimization work has
-  enough measurement evidence without reading `${AGENTERA_HOME}/benchmarks/startup-state/latest-report.json`
-  directly.
+  The source-contract train made plan, orchestration, closeout, evidence, and
+  benchmark startup paths CLI-first. Realisera remains the most important
+  raw-heavy consumer because each cycle gathers plan, progress, TODO, health,
+  docs, decisions, profile, vision, design, changelog, and git context before
+  implementation. A complete execution_context should make plan-driven cycles
+  start from CLI state and reserve raw artifact reads for source/code edits or
+  last-resort diagnostics.
 constraints: >-
-  Preserve Decision 45 structured CLI boundaries and Decision 44 plain vocabulary. Do
-  not add `agentera optimera`, a new top-level command, a new subcommand, or any
-  route-alias command. The primary seam is `agentera hej --format json
-  --capability-context optimera`; routine fallback state commands are existing read-only
-  commands only: `agentera docs --format json` and `agentera query --list-artifacts`.
-  `agentera objective --format json` and `agentera experiments --format json` may be
-  listed only as optional read-only fallbacks when existing Optimera objective state is
-  already present; they must not create, initialize, or mutate `.agentera/optimera/**`.
-  The CLI may read bounded retained benchmark files from the user Agentera data home to
-  build the summary; agents should consume the CLI summary and treat direct benchmark
-  file reads as last-resort diagnostics. Manual benchmark refresh guidance may name
-  `mage bench:startupState` but must never run it automatically. Do not commit or
-  expose raw transcripts, raw corpus files, raw intermediates, raw runtime store paths,
-  raw session IDs, private salts, generated salted hashes, raw benchmark report bodies,
-  or full local benchmark paths. Do not implement 2.3.12 Realisera execution context.
-  Do not publish, push, tag, refresh installed apps, refresh profile, edit vision, edit
-  objective state, or run real local runtime-history benchmarks without explicit
-  approval.
+  Preserve Decision 45 state CLI boundaries and Decision 43 slash-route separation.
+  Do not add `agentera realisera`, `agentera build`, a new top-level command, a new
+  subcommand, or any route-alias command. The primary seam is `agentera hej
+  --format json --capability-context realisera`; allowed fallback commands are
+  existing state/query commands such as `agentera plan --format json`, `agentera
+  progress --format json`, `agentera todo --format json`, `agentera health
+  --format json`, `agentera docs --format json`, `agentera decisions --format
+  json`, and `agentera query changelog --format json`. Do not refresh profile or
+  installed app state, edit `.agentera/vision.yaml`, edit objective state, change
+  Realisera's one-cycle rule, change commit/push safety rails, auto-dispatch work,
+  run publication, push, tag, or implement 2.3.13+ source-contract work.
 scope:
   included:
     - >-
-      `benchmark_context` through `agentera hej --format json --capability-context
-      optimera`.
-    - Source-contract metadata declaring completeness, caveats, fallback and manual-refresh guidance, raw-read policy, provenance, and privacy boundary.
+      `execution_context` through `agentera hej --format json --capability-context
+      realisera`.
     - >-
-      Bounded benchmark inputs from retained user-local startup benchmark files:
-      aggregate history row data, latest report summary data, runtime coverage, rates,
-      token estimates, comparable-row status, and recommendation action.
-    - Optimera prose and schemas that require complete `benchmark_context` before direct `latest-report.json`, `latest-report.md`, or `runs.jsonl` access during benchmark-oriented startup.
-    - Focused tests with synthetic temp Agentera-home benchmark fixtures, validation gates, and 2.3.11 local metadata sync.
+      Source-contract metadata declaring completeness, caveats, fallback commands,
+      raw-read policy, provenance, and read-only context-generation boundaries.
+    - >-
+      Plan-driven selected work, task acceptance criteria, implementation
+      constraints, verification expectations, artifact update requirements,
+      progress logging requirements, changelog boundary, and conservative scope
+      boundary metadata.
+    - >-
+      Completed-plan sweep metadata as read-only context; actual sweep writes,
+      archive, and active-plan removal remain Realisera execution behavior.
+    - >-
+      Realisera prose and schemas that require complete execution_context before
+      direct startup reads of plan, progress, TODO, docs, health, decisions, or
+      changelog artifacts.
+    - >-
+      Focused regression tests, validation gates, independent review, and 2.3.12
+      local metadata sync.
   excluded:
-    - Unsupported `agentera optimera` or other capability-name CLI commands.
-    - Running real local runtime-history benchmarks as part of implementation, tests, or validation.
-    - Committed benchmark outputs, raw user-local benchmark file bodies, raw runtime stores, or path-derived identifiers.
-    - New objective or experiment artifact model, objective creation, harness changes, or `.agentera/optimera/**` mutation.
-    - 2.3.12 Realisera execution-context state.
-    - Remote checks, publication, tag creation, installed app refresh, profile refresh, vision edit, or objective-state edit.
+    - Unsupported `agentera realisera`, `agentera build`, or other route-alias CLI commands.
+    - Automatic worktree dispatch, implementation sub-agent launch, or product work execution.
+    - Changes to Realisera's one-cycle rule, commit safety rails, no-push rule, or git config.
+    - Vision, profile, installed app, objective-state, or Optimera objective-state mutation.
+    - Invented file allowlists, path-derived scope facts, or raw artifact bodies in source contracts.
+    - Publication, remote push, tag creation, and 2.3.13+ source-contract work.
   deferred:
-    - 2.3.12 Realisera execution-context source contract.
-    - Rich benchmark trend visualization beyond bounded history summary fields.
-    - Any expansion of Optimera objective or experiment lifecycle beyond read-only existing CLI summaries.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-15-2-3-10-inspektera-evidence-context-source-contract.yaml
+    - A generic execution-context contract shared across non-Realisera implementation agents.
+    - Rich source-file allowlist inference beyond explicitly recorded plan/source-contract data.
+    - Any change to Realisera worktree dispatch or commit orchestration mechanics.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-15-2-3-11-optimera-benchmark-context-source-contract.yaml
 design: >-
-  Expose a minimal composite `benchmark_context` only when capability context is
-  `optimera`. The stable top-level shape is `benchmark_source`, `latest_report`,
-  `history_summary`, `runtime_coverage`, `state_access_metrics`, `token_impact`,
-  `comparison`, `recommendation`, `manual_refresh`, `privacy_boundary`,
-  `state_family_caveats`, `fallback_commands`, and `source_contract`. CLI code may
-  read only retained benchmark files under the user Agentera data home and may emit
-  only bounded counts, rates, canonical labels, status values, and source labels such
-  as `startup_benchmark_latest_report` or `startup_benchmark_history`. It must not
-  emit full local paths, raw report bodies, raw transcript-derived content, salts,
-  hashes, or runtime-store identifiers. `complete_for_benchmark_context` is true when
-  the latest report summary, aggregate history summary, runtime coverage status,
-  primary state-access metrics, token-impact status, recommendation status, and source
-  contract are present. Missing retained files, malformed latest report, malformed
-  history rows, or an empty latest report make the context incomplete. Empty aggregate
-  history, degraded runtime coverage, absent token estimates, and non-comparable
-  previous rows keep the context usable with caveats when the latest report still
-  contains current benchmark metrics. Manual refresh status is `available` only when a
-  complete context exists and no manual run is suggested, `requires_manual_run` when
-  evidence is absent or too old to support an optimization decision, `not_run_by_design`
-  when the CLI deliberately did not run `mage bench:startupState`, and `unavailable`
-  when the manual command surface cannot be described.
+  Expose an optional `execution_context` only when capability context is `realisera`.
+  The stable shape is `work_selection`, `plan_task`, `acceptance_criteria`,
+  `constraints`, `scope_boundary`, `verification_expectations`,
+  `artifact_update_requirements`, `progress_logging_requirements`,
+  `changelog_boundary`, `git_boundary`, `plan_completion_sweep`,
+  `state_family_caveats`, `fallback_commands`, and `source_contract`. Complete
+  plan-driven mode requires a dependency-ready pending task with non-empty
+  acceptance criteria plus enough CLI state to describe verification, artifact
+  update, and logging expectations. Completed-plan mode may be complete for
+  read-only sweep guidance when all tasks are complete and required sweep inputs
+  are visible. Missing plan state, no eligible task, blocked or skipped tasks,
+  empty acceptance criteria, unavailable progress/TODO/docs/health/changelog state,
+  compacted decision gaps, stale profile, missing vision/design/profile context,
+  or unspecified source-file scope must be explicit incomplete or caveated output.
+  Source scope is conservative: include artifact families and only explicit source
+  paths from plan/source-contract state; otherwise report `source_scope.status:
+  unspecified` instead of guessing.
 tasks:
   - number: 1
-    name: Benchmark context inventory and state contract
+    name: Execution context inventory and state contract
     depends_on: []
     status: complete
-    evidence:
-      - >-
-        Inventory completed CLI-first through Orkestrera/plan/docs/todo/progress and
-        decisions fallback state. Decision 51 and Decision 52 define the startup
-        benchmark metric, retention files, manual-only benchmark rule, and privacy
-        boundary. Implementation treated 2.3.10 plan archival as already handled.
     acceptance:
       - >-
-        GIVEN docs, decisions, TODO, completed 2.3.10 plan state, and benchmark
-        contracts are inventoried CLI-first WHEN inventory completes THEN
-        implementation evidence records included state, missing state, benchmark file
-        sources, user-local privacy boundaries, and last-resort raw fallback rules.
+        GIVEN Planera activation has archived the completed 2.3.11 plan WHEN
+        implementation begins THEN implementation evidence treats archival as
+        already handled and does not make archive creation product scope.
       - >-
-        GIVEN the completed 2.3.10 plan is archived during Planera activation WHEN
-        implementation begins THEN implementation scope treats archival as already
-        handled and does not make archive creation part of any product task.
+        GIVEN Realisera prose, schemas, CLI startup state, Decision 45 contract,
+        prior context implementations, TODO, progress, and decisions are inventoried
+        CLI-first WHEN inventory completes THEN included state, missing state,
+        fallback commands, and last-resort raw-read rules are recorded.
       - >-
-        GIVEN user-local benchmark evidence may be available, absent, malformed,
-        empty, degraded, or non-comparable WHEN the contract is specified THEN each
-        case has an explicit incomplete or caveated outcome without reading real
-        runtime stores or running the benchmark.
+        GIVEN Realisera needs vision, decisions, profile, design, changelog, plan,
+        progress, TODO, docs, and health WHEN the state contract is specified THEN
+        each family is classified as required, optional, caveated, or fallback-only
+        for plan-driven execution context.
+      - >-
+        GIVEN plan-driven, no-plan, blocked/dependency-unready, empty-criteria, and
+        completed-plan sweep modes exist WHEN the contract is specified THEN each
+        mode has a deterministic complete, incomplete, or caveated outcome.
+    evidence:
+      - >-
+        Inventory used the supported CLI seam and existing context builders: current
+        Realisera needs are plan/TODO/progress/docs/health through the hej startup
+        envelope, with vision/changelog/decisions/profile/design preserved as caveats
+        or existing CLI fallbacks.
+      - >-
+        Implemented deterministic `execution_context.mode` values for `plan_driven`,
+        `no_plan`, `blocked_or_dependency_unready`, and `completed_plan_sweep`, with
+        empty acceptance and missing state represented through required-state flags
+        and caveats.
   - number: 2
-    name: Benchmark context output contract
+    name: Execution context output contract
     depends_on: [1]
     status: complete
-    evidence:
-      - >-
-        `scripts/agentera` now emits Optimera-only `benchmark_context` through the
-        existing `agentera hej --format json --capability-context optimera` seam,
-        with latest report, history, runtime coverage, state-access, token-impact,
-        comparison, recommendation, manual-refresh, privacy, fallback, and source
-        contract fields. No `agentera optimera` command was added.
     acceptance:
       - >-
-        GIVEN `agentera hej --format json --capability-context optimera` runs and
-        retained startup benchmark evidence is available WHEN structured output is
-        returned THEN it includes `benchmark_context` with source, latest report
-        summary, history summary, runtime coverage, rates, token estimates, comparison
-        status, recommendation, manual refresh guidance, privacy boundary, caveats,
-        fallbacks, and truthful completeness metadata.
+        GIVEN `agentera hej --format json --capability-context realisera` runs with
+        a dependency-ready pending plan task WHEN structured output is returned THEN
+        it includes `execution_context` with selected work, task details, acceptance
+        criteria, constraints, verification expectations, artifact update requirements,
+        progress logging requirements, changelog boundary, scope boundary, fallbacks,
+        and truthful completeness metadata.
       - >-
-        GIVEN retained benchmark files are missing, empty, or malformed WHEN benchmark
-        context is built THEN `complete_for_benchmark_context` is false, missing
-        evidence is named, manual refresh guidance is present when available, and
-        direct raw file reads remain last-resort diagnostics rather than normal
-        startup behavior.
+        GIVEN plan state is absent, blocked, dependency-unready, complete with sweep
+        pending, or missing acceptance criteria WHEN execution context is built THEN
+        the context reports the correct incomplete or caveated mode and lists only
+        existing CLI fallback commands before any raw artifact diagnostic.
       - >-
-        GIVEN CLI command guidance and parser surfaces are scanned WHEN this task
-        completes THEN no new `agentera optimera`, top-level command, route-alias
-        command, or unsupported capability-name command is introduced.
+        GIVEN Decision 45 structured-output and field-selection contracts are updated
+        WHEN this task completes THEN `execution_context` appears in hej structured
+        fields, startup completeness metadata, sparse field selection, and contract
+        tests without introducing a new command.
+      - >-
+        GIVEN CLI parser surfaces and guidance are scanned WHEN this task completes
+        THEN no `agentera realisera`, `agentera build`, top-level command,
+        route-alias command, or unsupported capability-name command is introduced.
+    evidence:
+      - >-
+        `agentera hej --format json --capability-context realisera` now returns
+        `execution_context` with selected work, task details, acceptance criteria,
+        constraints, verification expectations, artifact update requirements,
+        progress logging requirements, changelog boundary, conservative scope
+        boundary, fallbacks, and truthful completeness metadata.
+      - >-
+        Decision 45 and sparse field-selection contracts include `execution_context`;
+        parser-negative tests keep Realisera capability names and slash aliases out
+        of the CLI command surface.
   - number: 3
-    name: Benchmark provenance, privacy, and comparison semantics
+    name: Boundary, safety, and lifecycle semantics
     depends_on: [2]
     status: complete
-    evidence:
-      - >-
-        Benchmark context summaries use stable source labels, non-empty evidence
-        flags, bounded counts/rates/statuses/scalars, explicit comparison null
-        reasons, runtime degradation caveats, and privacy-boundary omissions for
-        unsafe retained benchmark strings or raw local paths.
     acceptance:
       - >-
-        GIVEN benchmark metrics are present WHEN `benchmark_context` is returned THEN
-        each non-empty evidence family includes stable source labels, non-empty
-        evidence flags, and bounded fields without raw paths, path-derived IDs, hashes,
-        salts, or raw transcript-derived content.
+        GIVEN execution_context emits non-empty state families WHEN provenance is
+        reported THEN each family uses stable source labels, source_provenance,
+        non-empty evidence flags, and no raw artifact bodies or path-derived IDs.
       - >-
-        GIVEN previous benchmark rows are missing, incomparable, or lack token estimate
-        fields WHEN comparison status is reported THEN the context preserves exact null
-        reasons such as previous-row missing, estimator mismatch, benchmark-mode
-        mismatch, runtime-scope mismatch, or previous missing token estimates.
+        GIVEN plan task text lacks explicit source-file scope WHEN scope_boundary is
+        returned THEN artifact-family scope remains available, source-file scope is
+        `unspecified`, and the context does not invent allowed or prohibited paths.
       - >-
-        GIVEN runtime stores are missing, sparse, locked, unreadable, or schema-divergent
-        WHEN runtime coverage is summarized THEN those caveats are preserved as bounded
-        degradation evidence and not treated as successful product behavior evidence.
+        GIVEN completed-plan sweep is eligible WHEN execution_context is generated
+        THEN `plan_completion_sweep` is read-only metadata with required updates,
+        archive candidate, and mutation_allowed=false for context generation.
+      - >-
+        GIVEN stale profile, missing vision/design/profile context, compacted
+        decisions, or missing changelog evidence is present WHEN context is returned
+        THEN those caveats are preserved and do not authorize profile refresh,
+        vision edit, objective edit, installed app refresh, dispatch, commit, push,
+        tag, or publication.
+    evidence:
+      - >-
+        Output provenance uses stable source labels and `source_provenance` command
+        pointers. Scope metadata reports artifact families and leaves source-file
+        scope `unspecified` unless explicit paths are present.
+      - >-
+        `plan_completion_sweep` is read-only with `mutation_allowed=false`, and
+        protected-action caveats explicitly avoid profile refresh, installed-app
+        refresh, vision/objective edits, dispatch, commit, push, tag, and publication.
   - number: 4
-    name: Optimera guidance and schema integration
+    name: Realisera guidance and schema integration
     depends_on: [2, 3]
     status: complete
-    evidence:
-      - >-
-        Optimera prose now requires `benchmark_context` before direct retained
-        benchmark file reads for benchmark-oriented startup. Optimera artifact and
-        validation schemas declare CLI benchmark_context consumption, context-first
-        behavior, and caveat preservation.
     acceptance:
       - >-
-        GIVEN Optimera startup begins for benchmark-oriented work WHEN capability prose
-        is read THEN it directs agents to start from `agentera hej --format json
-        --capability-context optimera` and use complete `benchmark_context` before
-        direct `latest-report.json`, `latest-report.md`, or `runs.jsonl` reads.
+        GIVEN Realisera startup begins in plan-driven mode WHEN capability prose is
+        read THEN it instructs agents to start from `agentera hej --format json
+        --capability-context realisera` and use complete execution_context before
+        direct plan, progress, TODO, docs, health, decisions, or changelog reads.
       - >-
-        GIVEN benchmark context is incomplete WHEN guidance continues THEN it instructs
-        agents to use listed CLI and manual-refresh guidance before any last-resort
-        direct benchmark file read.
+        GIVEN execution_context is incomplete or caveated WHEN guidance continues
+        THEN it instructs agents to run listed CLI fallbacks before last-resort raw
+        artifact diagnostics and to preserve all caveats in cycle reporting.
       - >-
-        GIVEN benchmark caveats about manual-only execution, missing local history,
-        runtime coverage, token estimates, previous comparison, or privacy boundaries
-        are present WHEN Optimera reports results THEN those caveats are preserved
-        rather than hidden, upgraded, or reconstructed.
+        GIVEN Realisera schemas are validated WHEN this task completes THEN artifact
+        descriptions declare CLI `execution_context` consumption and validation rules
+        declare context-first, fallback-before-raw, read-only context generation, and
+        caveat-preservation behavior without overstating machine enforcement.
+    evidence:
       - >-
-        GIVEN capability schemas are validated WHEN this task completes THEN Optimera
-        artifact descriptions declare CLI `benchmark_context` consumption and schema
-        rules declare context-first and caveat-preservation behavior without claiming
-        machine enforcement beyond the schema contract.
+        Realisera prose now starts Step 1 from `agentera hej --format json
+        --capability-context realisera`, tells agents to use complete
+        `execution_context` before raw startup reads, and preserves caveats/fallbacks
+        when context is incomplete.
+      - >-
+        Realisera artifact and validation schemas now declare execution-context
+        consumption, fallback-before-raw behavior, read-only context generation, and
+        caveat preservation.
   - number: 5
-    name: Focused benchmark-context regression coverage
+    name: Focused execution-context regression coverage
     depends_on: [2, 3, 4]
     status: complete
-    evidence:
-      - >-
-        Focused tests in `tests/test_query_cli.py` cover complete synthetic
-        benchmark fixtures, missing retained files, malformed latest report, empty
-        history, skipped/missing/degraded runtime coverage, non-comparable previous
-        rows, privacy-bounded recommendation and scalar fields, sparse field
-        selection, unsupported-field failure, and negative `agentera optimera`
-        parser probes. Decision 45 contract tests assert benchmark_context in the
-        structured hej envelope.
     acceptance:
       - >-
-        GIVEN complete synthetic benchmark fixtures are available under a temp Agentera
-        home WHEN focused CLI tests run THEN they assert stable top-level context keys,
-        complete source-contract metadata, no unsupported command text, no raw paths,
-        and raw-read-last-resort policy.
+        GIVEN complete synthetic plan fixtures are available WHEN focused CLI tests
+        run THEN they assert stable execution_context top-level keys, complete source
+        contract metadata, no unsupported command text, conservative source scope,
+        changelog fallback coverage, and raw-read-last-resort policy.
       - >-
-        GIVEN missing retained files, malformed latest report, empty history, degraded
-        runtime coverage, non-comparable previous row, unsupported field selection, and
-        negative unsupported-command probes are tested WHEN focused tests run THEN each
-        case has deterministic complete, incomplete, or caveated outcomes with exact
-        fallback and caveat assertions.
+        GIVEN no-plan, blocked plan, dependency-unready task, empty acceptance,
+        completed-plan sweep, stale profile, compacted decision caveat, missing
+        changelog, unsupported sparse field, and parser-negative scenarios are tested
+        WHEN focused tests run THEN each case has deterministic complete, incomplete,
+        or caveated outcomes with exact caveat and fallback assertions.
       - >-
-        GIVEN Decision 45 and field-selection tests run WHEN implementation is complete
-        THEN `benchmark_context` is represented in the structured hej envelope for
-        Optimera and unsupported fields still fail clearly.
+        GIVEN unsupported `agentera realisera` and `agentera build` probes are needed
+        WHEN tests run THEN those probes are isolated to parser assertions and do not
+        appear in runtime fallback guidance, source contracts, or prose startup instructions.
       - >-
-        GIVEN testable state families are covered WHEN this task completes THEN coverage
-        includes available and missing or caveated paths for latest report, history,
-        runtime coverage, token estimates, comparison status, and recommendation state.
+        GIVEN Decision 45 and field-selection tests run WHEN implementation is
+        complete THEN `execution_context` is represented in the structured hej
+        envelope for Realisera and unsupported fields still fail without partial stdout.
+    evidence:
+      - >-
+        `tests/test_query_cli.py` covers plan-driven Realisera execution context,
+        blocked/dependency-unready incomplete fallback behavior, sparse
+        `execution_context` field selection, and negative `realisera`/`build` parser
+        probes.
+      - >-
+        `tests/test_decision45_cli_contract.py` asserts Decision 45 hej fields,
+        execution-context semantics, and startup state-family registration.
   - number: 6
     name: Startup fixtures and validation gates
     depends_on: [5]
     status: complete
-    evidence:
-      - >-
-        Final focused regression suite passed: `uv run pytest tests/test_query_cli.py
-        tests/test_decision45_cli_contract.py tests/test_optimera_capability.py
-        tests/test_startup_analysis_contract.py` (222 passed). Optimera capability
-        validation, capability schema self-validation, independent evaluation review,
-        and `git diff --check` passed. Installed app refresh and real local
-        benchmark execution were not run.
     acceptance:
       - >-
-        GIVEN complete Optimera benchmark context is available through CLI state WHEN
-        deterministic startup or evaluation fixtures run THEN normal Optimera benchmark
-        guidance introduces no raw-after-CLI reads for user-local benchmark report files.
+        GIVEN complete Realisera execution context is available through CLI state
+        WHEN deterministic startup or evaluation fixtures run THEN normal plan-driven
+        Realisera startup introduces no raw-after-CLI reads for plan, progress, TODO,
+        docs, health, decisions, or changelog state families covered by the context.
+      - >-
+        GIVEN vision, profile, or design state is not included in the startup envelope
+        WHEN fixtures run THEN caveat or fallback behavior is asserted rather than
+        hidden by raw artifact reads.
       - >-
         GIVEN validation runs WHEN implementation is complete THEN focused pytest
-        targets, Optimera capability validation, self-validation, artifact validators,
-        `agentera gate`, compaction check, and `git diff --check` pass without installed
-        app refresh or real local benchmark execution.
+        targets, Realisera capability validation, self-validation, artifact validators,
+        `agentera gate`, compaction check, and `git diff --check` pass without profile
+        refresh, installed app refresh, dispatch, push, tag, or publication.
       - >-
         GIVEN independent evaluation reviews the completed implementation WHEN this
         task finishes THEN blocking findings are resolved and residual risks are
         recorded in plan evidence rather than hidden.
-  - number: 7
-    name: 2.3.11 local closeout metadata sync
-    depends_on: [1, 2, 3, 4, 5, 6]
-    status: complete
     evidence:
       - >-
-        Local metadata sync records the completed 2.3.11 benchmark-context patch in
-        TODO, progress, docs, and changelog while leaving deferred 2.3.12 Realisera
-        execution-context work visible. Version-bearing files listed by docs.yaml
-        are aligned to 2.3.11 only.
+        Focused CLI/contract regression passed with `uv run pytest tests/test_query_cli.py
+        tests/test_decision45_cli_contract.py -q` (181 tests).
+      - >-
+        `uv run scripts/validate_capability.py skills/agentera/capabilities/realisera`,
+        `uv run scripts/validate_capability.py --self-validate`, `uv run
+        hooks/validate_artifact.py --artifact PLAN.md --file .agentera/plan.yaml
+        --format json`, `uv run scripts/agentera gate --format json`, `uv run
+        scripts/agentera compact --mode check --format json`, and `git diff --check`
+        passed. PLAN lint still fails only the pre-existing advisory verbosity budget.
+  - number: 7
+    name: 2.3.12 local closeout metadata sync
+    depends_on: [1, 2, 3, 4, 5, 6]
+    status: complete
     acceptance:
       - >-
-        GIVEN benchmark-context validation passes WHEN closeout synchronization runs
-        THEN TODO, progress, docs, and changelog record the completed 2.3.11
-        source-contract patch and keep the deferred 2.3.12 source-contract work visible.
+        GIVEN execution-context validation passes WHEN closeout synchronization runs
+        THEN TODO, progress, docs, and changelog record the completed 2.3.12
+        source-contract patch and any deferred 2.3.13+ source-contract work remains
+        visible.
       - >-
         GIVEN version-bearing files are inspected WHEN local metadata is synchronized
-        THEN only files listed by docs.yaml version policy and the version-files registry
-        are changed for 2.3.11 alignment.
+        THEN only files listed by docs.yaml version policy and the version-files
+        registry are changed for 2.3.12 alignment.
       - >-
         GIVEN local metadata sync completes WHEN scope is audited THEN no publication,
         remote push, tag creation, installed app refresh, profile refresh, vision edit,
-        objective-state edit, Optimera objective-state mutation, real local benchmark
-        execution, or unsupported capability CLI command introduction occurred without
-        explicit approval; negative parser probes are allowed only as tests proving no
-        unsupported command exists.
+        objective-state edit, Optimera objective-state mutation, automatic dispatch,
+        or unsupported capability CLI command introduction occurred without explicit
+        approval; negative parser probes are test-only evidence.
+    evidence:
+      - >-
+        TODO resolves `[feat:2.3.12]`; CHANGELOG, DOCS audit metadata, PROGRESS,
+        and version-bearing package/plugin/OpenCode/skill surfaces record local
+        2.3.12 alignment without publication, remote push, tag creation, installed
+        app refresh, profile refresh, vision edit, objective-state edit, objective
+        mutation, automatic dispatch, or unsupported CLI command introduction.
 overall_acceptance:
   - >-
-    GIVEN Optimera startup needs benchmark evidence WHEN retained startup benchmark
-    state exists THEN the agent receives rates, token estimates, runtime caveats,
-    recommendations, comparison status, and manual-refresh guidance through CLI state
-    without normal direct report-file reads.
+    GIVEN Realisera plan-driven startup needs current task context WHEN a
+    dependency-ready task exists THEN the agent receives acceptance criteria,
+    constraints, verification expectations, artifact update requirements, progress
+    logging requirements, changelog boundary, and conservative scope metadata through
+    CLI state without normal direct raw startup reads.
   - >-
-    GIVEN benchmark evidence is missing, degraded, manual-only, or incomparable WHEN
-    optimization work proceeds THEN the source contract names missing state, caveats,
-    privacy boundaries, and fallback or manual-refresh guidance honestly.
+    GIVEN execution state is missing, blocked, caveated, no-plan, or completed-plan
+    sweep shaped WHEN implementation work proceeds THEN the source contract names
+    missing state, caveats, fallback commands, and read-only context-generation
+    boundaries honestly.
   - >-
-    GIVEN 2.3.11 closes WHEN validation and local metadata sync finish THEN 2.3.12
-    remains visible and no prohibited release, installed-app, unsupported CLI,
-    protected-state, objective-state, or real benchmark action occurred.
+    GIVEN 2.3.12 closes WHEN validation and local metadata sync finish THEN no
+    unsupported CLI command, prohibited mutation, automatic dispatch, publication,
+    push, tag, profile refresh, installed app refresh, vision edit, objective edit,
+    or 2.3.13+ implementation occurred.
 surprises: []

@@ -2385,6 +2385,138 @@ class TestHej:
         assert r.stdout == ""
         assert "invalid choice" in r.stderr
 
+    def test_hej_realisera_execution_context_reports_plan_driven_startup(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "2.3.12 Realisera Execution Context Source Contract", "status": "active"},
+            "constraints": "Do not add `agentera realisera` or `agentera build`.",
+            "tasks": [
+                {"number": 1, "name": "Done", "status": "complete"},
+                {
+                    "number": 2,
+                    "name": "Execution context output contract",
+                    "status": "pending",
+                    "depends_on": [1],
+                    "acceptance": ["emit execution_context"],
+                    "evidence": ["verify source contract"],
+                },
+            ],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [
+                {"artifact": "PLAN.md", "path": ".agentera/plan.yaml"},
+                {"artifact": "CHANGELOG.md", "path": "CHANGELOG.md"},
+                {"artifact": "PROGRESS.md", "path": ".agentera/progress.yaml"},
+            ],
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 10, "timestamp": "2026-05-15", "verified": "previous tests passed"}],
+        })
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [{"number": 3, "trajectory": "stable", "grades": {"Architecture": "B"}}],
+        })
+        _write_artifact(project, "TODO.md", {
+            "entries": [{"severity": "normal", "status": "open", "description": "Track execution context"}],
+        })
+        (project / "CHANGELOG.md").write_text("# Changelog\n\n## [Unreleased]\n", encoding="utf-8")
+
+        r = _run(
+            "hej",
+            "--format",
+            "json",
+            "--capability-context",
+            "realisera",
+            "--fields",
+            "execution_context,source_contract",
+            cwd=project,
+        )
+
+        assert r.returncode == 0, r.stderr
+        assert "agentera realisera" not in r.stdout
+        assert "agentera build" not in r.stdout
+        data = json.loads(r.stdout)
+        assert "execution_context" in data["source_contract"]["fields"]
+        capability_context = data["source_contract"]["capability_context"]
+        assert capability_context["capability"] == "realisera"
+        assert "agentera query changelog --format json" in capability_context["cli_fallback"]
+        context = data["execution_context"]
+        assert context["mode"] == "plan_driven"
+        assert context["work_selection"]["task"] == {"number": 2, "name": "Execution context output contract", "status": "pending"}
+        assert context["constraints"]["plan_constraints_present"] is True
+        assert context["acceptance_criteria"]["items"] == ["emit execution_context"]
+        assert context["plan_task"]["evidence_summary"] == {"count": 1, "items": ["verify source contract"]}
+        assert context["scope_boundary"]["source_scope"]["status"] == "unspecified"
+        assert context["plan_completion_sweep"]["mutation_allowed"] is False
+        assert context["changelog_boundary"]["unreleased_present"] is True
+        assert context["source_contract"]["complete_for_execution_context"] is True
+        assert context["source_contract"]["raw_artifact_reads_required"] is False
+        assert "raw artifact reads are last-resort diagnostics" in context["source_contract"]["raw_artifact_read_policy"]
+        assert "source-file scope is unspecified" in " ".join(context["source_contract"]["caveats"])
+
+    def test_hej_realisera_execution_context_reports_incomplete_modes_and_fallbacks(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Blocked execution", "status": "active"},
+            "tasks": [{"number": 1, "name": "Blocked", "status": "pending", "depends_on": [99]}],
+        })
+
+        r = _run("hej", "--format", "json", "--capability-context", "realisera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["execution_context"]
+        assert context["mode"] == "blocked_or_dependency_unready"
+        assert context["source_contract"]["complete_for_execution_context"] is False
+        assert set(context["source_contract"]["missing_required_execution_state"]) >= {
+            "work_selection",
+            "acceptance_criteria",
+            "artifact_update_requirements",
+            "changelog_boundary",
+        }
+        assert context["fallback_commands"][:5] == [
+            "agentera query changelog --format json",
+            "agentera decisions --format json",
+            "agentera plan --format json",
+            "agentera progress --format json",
+            "agentera health --format json",
+        ]
+        assert "agentera realisera" not in json.dumps(context)
+        assert "agentera build" not in json.dumps(context)
+
+    def test_sparse_hej_realisera_execution_context_field_selection_uses_supported_seam(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Sparse execution", "status": "active"},
+            "tasks": [{"number": 1, "name": "Ready", "status": "pending", "acceptance": ["selected"]}],
+        })
+        (project / "CHANGELOG.md").write_text("# Changelog\n\n## [Unreleased]\n", encoding="utf-8")
+        contract = yaml.safe_load(CONTRACT_PATH.read_text(encoding="utf-8"))
+        available = contract["field_selection"]["fields_by_command"]["hej"]["fields"]
+
+        r = _run(
+            "hej",
+            "--format",
+            "json",
+            "--capability-context",
+            "realisera",
+            "--fields",
+            "execution_context,source_contract",
+            cwd=project,
+        )
+
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert list(data) == ["command", "status", "execution_context", "source_contract"]
+        assert set(data).issubset(set(available) | {"command", "status"})
+        assert data["execution_context"]["source_contract"]["raw_artifact_reads_required"] is False
+
+    def test_realisera_capability_name_and_build_alias_are_not_cli_commands(self, project):
+        realisera = _run("realisera", cwd=project)
+        build = _run("build", cwd=project)
+
+        assert realisera.returncode != 0
+        assert build.returncode != 0
+        assert realisera.stdout == ""
+        assert build.stdout == ""
+        assert "invalid choice" in realisera.stderr
+        assert "invalid choice" in build.stderr
+
     def test_inspektera_capability_name_is_not_a_cli_command(self, project):
         r = _run("inspektera", cwd=project)
 

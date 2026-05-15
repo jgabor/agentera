@@ -768,6 +768,7 @@ HEJ_STRUCTURED_FIELDS = [
     "closeout_context",
     "evidence_context",
     "benchmark_context",
+    "execution_context",
     "source",
     "source_contract",
 ]
@@ -804,6 +805,7 @@ STARTUP_COMPLETENESS_AVAILABLE_STATE = [
     "closeout_context",
     "evidence_context",
     "benchmark_context",
+    "execution_context",
 ]
 
 STARTUP_COMPLETENESS_MISSING_STATE: list[str] = []
@@ -2865,6 +2867,239 @@ def _evaluator_handoff(
     }
 
 
+def _task_by_ref(plan: dict[str, Any], task_ref: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not task_ref:
+        return None
+    for task in _as_list(plan.get("tasks")):
+        if isinstance(task, dict) and task.get("number") == task_ref.get("number"):
+            return task
+    return None
+
+
+def _plan_context_field(plan: dict[str, Any], field: str) -> Any:
+    summary = plan.get("summary") if isinstance(plan.get("summary"), dict) else {}
+    return summary.get(field, plan.get(field))
+
+
+def _realisera_scope_boundary(plan: dict[str, Any], selected: dict[str, Any] | None) -> dict[str, Any]:
+    explicit_paths: list[str] = []
+    for source in (selected or {}, _plan_context_field(plan, "scope") or {}):
+        if not isinstance(source, dict):
+            continue
+        for key in ("source_files", "files", "paths"):
+            for value in _as_list(source.get(key)):
+                text = str(value).strip()
+                if text and text not in explicit_paths:
+                    explicit_paths.append(text)
+    return {
+        "artifact_families": ["plan", "progress", "todo", "docs", "health", "changelog", "decisions", "vision", "profile", "design"],
+        "source_scope": {
+            "status": "explicit" if explicit_paths else "unspecified",
+            "explicit_paths": explicit_paths,
+            "policy": "Do not infer source-file allowlists or exclusions from task text; use only explicit plan/source-contract paths.",
+        },
+    }
+
+
+def _realisera_artifact_update_requirements(plan: dict[str, Any], docs: dict[str, Any]) -> dict[str, Any]:
+    mapping = _as_list(docs.get("mapping"))
+    mapped = [entry.get("artifact") for entry in mapping if isinstance(entry, dict) and entry.get("artifact")]
+    return {
+        "required_families": ["plan", "progress", "todo", "changelog"],
+        "protected_families": ["vision", "objective", "profile", "installed_app"],
+        "docs_mapping_available": bool(docs.get("exists") and mapping),
+        "mapped_artifacts": mapped,
+        "plan_status_update_required": bool(plan.get("exists")),
+        "policy": "Update execution artifacts during the cycle; do not mutate protected state without explicit approval.",
+        "source_provenance": _source_provenance("docs", "agentera docs --format json", "summary.mapping"),
+    }
+
+
+def _realisera_plan_completion_sweep(plan: dict[str, Any]) -> dict[str, Any]:
+    complete = bool(plan.get("complete_plan"))
+    return {
+        "status": "eligible" if complete else "not_eligible",
+        "mutation_allowed": False,
+        "required_updates": ["progress aggregate cycle", "changelog plan-level entries", "TODO milestone advance", "health cross-reference"],
+        "archive_candidate": "active plan archive path is generated only during Realisera sweep execution" if complete else None,
+        "caveats": [] if complete else ["Plan completion sweep is not eligible until every plan task is complete."],
+        "source_provenance": _source_provenance("plan", "agentera plan --format json", "summary.status"),
+    }
+
+
+def _realisera_execution_context(
+    capability: str | None,
+    schemas: dict,
+    plan: dict[str, Any],
+    progress: dict[str, Any],
+    health: dict[str, Any],
+    todo_items: list[dict[str, str]],
+    docs: dict[str, Any],
+    profile: dict[str, Any],
+    bundle: dict[str, Any],
+) -> dict[str, Any] | None:
+    if capability != "realisera":
+        return None
+
+    capability_contract = _capability_context(capability) or {}
+    tasks = [task for task in _as_list(plan.get("tasks")) if isinstance(task, dict)]
+    target = _select_evidence_target(plan)
+    selected = _task_by_ref(plan, target.get("task") if isinstance(target, dict) else None)
+    acceptance = _as_list(selected.get("acceptance")) if isinstance(selected, dict) else []
+    progress_verification = _progress_verification_summary(progress)
+    changelog_boundary = _closeout_changelog_boundary(schemas, plan)
+    sweep = _realisera_plan_completion_sweep(plan)
+
+    if plan.get("complete_plan"):
+        mode = "completed_plan_sweep"
+    elif not plan.get("exists") or not tasks:
+        mode = "no_plan"
+    elif target.get("status") == "selected" and selected is not None:
+        mode = "plan_driven"
+    else:
+        mode = "blocked_or_dependency_unready"
+
+    state_caveats: list[str] = []
+    fallback_commands: list[str] = []
+    for family in capability_contract.get("missing_state_families", []):
+        state_caveats.append(f"{family} state is not included in hej startup context.")
+    fallback_commands.extend(capability_contract.get("cli_fallback", []))
+
+    if not plan.get("exists"):
+        state_caveats.append("plan state is unavailable; execution context cannot select plan-driven work.")
+        fallback_commands.append("agentera plan --format json")
+    if mode == "blocked_or_dependency_unready":
+        state_caveats.append("No dependency-ready pending plan task is available in CLI plan state.")
+        fallback_commands.append("agentera plan --format json")
+    if mode == "plan_driven" and not acceptance:
+        state_caveats.append("Selected Realisera task has no acceptance criteria in CLI plan state.")
+        fallback_commands.append("agentera plan --format json")
+    if not progress.get("exists"):
+        state_caveats.append("progress state is unavailable; progress logging context is incomplete.")
+        fallback_commands.append("agentera progress --format json")
+    if not health.get("exists"):
+        state_caveats.append("health state is unavailable or incomplete.")
+        fallback_commands.append("agentera health --format json")
+    if not docs.get("exists"):
+        state_caveats.append("docs mapping state is unavailable or incomplete.")
+        fallback_commands.append("agentera docs --format json")
+    if not todo_items:
+        state_caveats.append("todo state has no open entries in hej context; absence may mean none open or unavailable.")
+        fallback_commands.append("agentera todo --format json")
+    if changelog_boundary.get("status") != "available":
+        state_caveats.extend(changelog_boundary.get("caveats", []))
+        fallback_commands.append("agentera query changelog --format json")
+    if profile.get("status") != "loaded":
+        state_caveats.append("profile-derived state is unavailable in hej context.")
+    elif profile.get("stale") is True:
+        state_caveats.append("profile-derived state is stale; this is a caveat, not approval to refresh profile state.")
+    if bundle.get("status") != "fresh":
+        state_caveats.append("Agentera app state is not fresh; this is a caveat, not approval to refresh installed apps.")
+    if _realisera_scope_boundary(plan, selected)["source_scope"]["status"] == "unspecified":
+        state_caveats.append("source-file scope is unspecified; no allowed or prohibited source paths were inferred.")
+
+    fallback_commands = list(dict.fromkeys(fallback_commands))
+    state_caveats = list(dict.fromkeys(state_caveats))
+    required_state = {
+        "work_selection": mode in {"plan_driven", "completed_plan_sweep"},
+        "acceptance_criteria": mode == "completed_plan_sweep" or bool(acceptance),
+        "artifact_update_requirements": bool(docs.get("exists")),
+        "progress_logging_requirements": progress_verification["status"] == "available" or bool(progress_verification.get("caveats")),
+        "changelog_boundary": changelog_boundary.get("status") == "available",
+        "scope_boundary": True,
+        "safety_boundaries": True,
+    }
+    missing_required = [name for name, present in required_state.items() if not present]
+    caveated = bool(state_caveats)
+    complete = mode in {"plan_driven", "completed_plan_sweep"} and not missing_required
+    return {
+        "capability": "realisera",
+        "mode": mode,
+        "work_selection": {
+            "status": target.get("status"),
+            "selection_reason": target.get("selection_reason"),
+            "task": _task_ref(selected) if isinstance(selected, dict) else None,
+            "source_provenance": target.get("source_provenance"),
+            "caveats": target.get("caveats", []),
+        },
+        "plan_task": _orchestration_task_summary(selected) if isinstance(selected, dict) else None,
+        "acceptance_criteria": {
+            "status": "available" if acceptance else "incomplete",
+            "items": acceptance,
+            "count": len(acceptance),
+            "source_provenance": _source_provenance("plan", "agentera plan --format json", "entries.acceptance"),
+        },
+        "constraints": {
+            "plan_constraints_present": _has_recorded_value(_plan_context_field(plan, "constraints")),
+            "plan_constraints_summary": (
+                "Plan constraints are represented here as structured safety and fallback policy; "
+                "run the plan CLI fallback only if full wording is needed."
+            ),
+            "protected_actions": [
+                "no profile refresh",
+                "no installed app refresh",
+                "no vision edit",
+                "no objective-state edit",
+                "no dispatch without explicit cycle execution",
+                "no commit/push/tag/publication without explicit approval",
+            ],
+            "unsupported_cli_command_policy": "Do not introduce capability-name or slash-alias CLI commands for Realisera.",
+            "source_provenance": _source_provenance("plan", "agentera plan --format json", "summary.constraints"),
+        },
+        "scope_boundary": _realisera_scope_boundary(plan, selected),
+        "verification_expectations": {
+            "latest_progress_verification": progress_verification,
+            "expected_commands": ["focused pytest targets", "Realisera capability validation", "self-validation", "agentera gate", "compaction check", "git diff --check"],
+            "source_provenance": _source_provenance("plan", "agentera plan --format json", "entries.acceptance"),
+        },
+        "artifact_update_requirements": _realisera_artifact_update_requirements(plan, docs),
+        "progress_logging_requirements": {
+            "append_cycle": True,
+            "verified_field_mandatory": True,
+            "latest_progress_verification_pointer": progress_verification.get("latest_progress_verification_pointer"),
+            "source_provenance": _source_provenance("progress", "agentera progress --format json"),
+        },
+        "changelog_boundary": changelog_boundary,
+        "git_boundary": {
+            "remote_push_allowed": False,
+            "commit_allowed_only_with_explicit_user_request": True,
+            "tag_or_publication_allowed": False,
+            "source_provenance": _source_provenance("execution_context", "agentera hej --format json --capability-context realisera", "git_boundary"),
+        },
+        "plan_completion_sweep": sweep,
+        "state_family_caveats": state_caveats,
+        "fallback_commands": fallback_commands,
+        "source_contract": {
+            "complete_for_execution_context": complete,
+            "caveated": caveated,
+            "raw_artifact_reads_required": False,
+            "raw_artifact_read_policy": (
+                "Use this execution_context and included hej state first. Run listed routine/query CLI fallback commands "
+                "for missing or incomplete execution state; raw artifact reads are last-resort diagnostics, not normal Realisera startup behavior."
+            ),
+            "included_state_families": capability_contract.get("included_state_families", []),
+            "missing_state_families": capability_contract.get("missing_state_families", []),
+            "required_execution_state": required_state,
+            "missing_required_execution_state": missing_required,
+            "fallback_commands": fallback_commands,
+            "caveats": state_caveats,
+            "owns": [
+                "selected work item",
+                "task details and acceptance criteria",
+                "constraints and safety boundaries",
+                "verification expectations",
+                "artifact update requirements",
+                "progress logging requirements",
+                "changelog boundary",
+                "scope boundary",
+                "read-only plan completion sweep metadata",
+                "truthful completeness metadata",
+            ],
+            "deferred": [],
+        },
+    }
+
+
 def _orchestration_context(
     capability: str | None,
     plan: dict[str, Any],
@@ -4180,6 +4415,9 @@ def _plan_summary(schemas: dict) -> dict[str, Any]:
         "exists": True,
         "status": status,
         "title": title,
+        "constraints": data.get("constraints"),
+        "scope": data.get("scope"),
+        "design": data.get("design"),
         "tasks": tasks,
         "complete": complete,
         "total": total,
@@ -4538,6 +4776,17 @@ def cmd_hej(_args: argparse.Namespace) -> int:
         bundle,
     )
     benchmark_context = _optimera_benchmark_context(capability_name)
+    execution_context = _realisera_execution_context(
+        capability_name,
+        schemas,
+        plan,
+        progress,
+        health,
+        todo_items,
+        docs,
+        profile_dict,
+        bundle,
+    )
     if _output_format(_args) != "text":
         bundle_public = public_doctor_status(bundle)
         app_home = {
@@ -4570,6 +4819,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
                 "closeout_context": closeout_context,
                 "evidence_context": evidence_context,
                 "benchmark_context": benchmark_context,
+                "execution_context": execution_context,
                 "source": {
                     "schemas_dir": str(schemas_dir),
                     "project": str(Path.cwd()),
@@ -4634,7 +4884,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     print("next_action:")
     print(f"- {_format_next_action(next_action)}")
     print("source_contract:")
-    print("- fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context,closeout_context,evidence_context,benchmark_context")
+    print("- fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context,closeout_context,evidence_context,benchmark_context,execution_context")
     print("- render=caller-owned README-style hej dashboard")
     print("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls")
     startup_contract = _startup_completeness_contract()
@@ -4678,6 +4928,16 @@ def cmd_hej(_args: argparse.Namespace) -> int:
             f"caveated={str(benchmark_contract['caveated']).lower()} | "
             f"manual_refresh={benchmark_contract['manual_refresh_status']} | "
             f"fallback={'; '.join(benchmark_context['fallback_commands'])}"
+        )
+    if execution_context:
+        execution_contract = execution_context["source_contract"]
+        print("execution_context:")
+        print(
+            "- "
+            f"mode={execution_context['mode']} | "
+            f"complete_for_execution_context={str(execution_contract['complete_for_execution_context']).lower()} | "
+            f"caveated={str(execution_contract['caveated']).lower()} | "
+            f"fallback={'; '.join(execution_context['fallback_commands'])}"
         )
     return 0
 

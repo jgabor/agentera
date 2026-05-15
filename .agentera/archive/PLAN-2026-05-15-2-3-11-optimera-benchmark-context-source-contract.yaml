@@ -1,0 +1,306 @@
+header:
+  level: full
+  created: 2026-05-15
+  status: complete
+  reviewed: 2026-05-15
+  critic_issues: 10 found, 10 addressed, 0 dismissed
+  revised: >-
+    Adversarial review resolved unsupported-command test wording, constrained
+    objective and experiment state to read-only existing CLI summaries, moved 2.3.10
+    archival into Planera activation evidence, made the CLI-internal benchmark-file
+    read boundary explicit, classified incomplete versus caveated benchmark states,
+    narrowed the test matrix, normalized manual-refresh statuses, required stable
+    provenance labels instead of path-derived IDs, and kept schema changes declarative.
+    [post-audit-flagged: PLAN.md full-plan artifact exceeds the advisory prose budget;
+    preserving executable criteria is more valuable than compressing the plan below the
+    single-entry lint threshold.]
+  title: 2.3.11 Optimera Benchmark Context Source Contract
+what: >-
+  Add an Optimera benchmark-context source contract through the existing `agentera hej
+  --format json --capability-context optimera` startup seam so optimization work can
+  receive startup benchmark history, latest benchmark metrics, runtime coverage
+  caveats, token-impact estimates, comparison status, recommendation triggers, and
+  manual refresh guidance from CLI state before any direct user-local benchmark file
+  access.
+why: >-
+  Decision 52 made startup benchmark evidence manual and user-local, while the 2.3.10
+  evidence-context patch proved that complete, caveated source contracts keep agents
+  CLI-first. Optimera is the next raw-heavy consumer because it needs benchmark rates,
+  token estimates, and recommendation triggers to decide whether optimization work has
+  enough measurement evidence without reading `${AGENTERA_HOME}/benchmarks/startup-state/latest-report.json`
+  directly.
+constraints: >-
+  Preserve Decision 45 structured CLI boundaries and Decision 44 plain vocabulary. Do
+  not add `agentera optimera`, a new top-level command, a new subcommand, or any
+  route-alias command. The primary seam is `agentera hej --format json
+  --capability-context optimera`; routine fallback state commands are existing read-only
+  commands only: `agentera docs --format json` and `agentera query --list-artifacts`.
+  `agentera objective --format json` and `agentera experiments --format json` may be
+  listed only as optional read-only fallbacks when existing Optimera objective state is
+  already present; they must not create, initialize, or mutate `.agentera/optimera/**`.
+  The CLI may read bounded retained benchmark files from the user Agentera data home to
+  build the summary; agents should consume the CLI summary and treat direct benchmark
+  file reads as last-resort diagnostics. Manual benchmark refresh guidance may name
+  `mage bench:startupState` but must never run it automatically. Do not commit or
+  expose raw transcripts, raw corpus files, raw intermediates, raw runtime store paths,
+  raw session IDs, private salts, generated salted hashes, raw benchmark report bodies,
+  or full local benchmark paths. Do not implement 2.3.12 Realisera execution context.
+  Do not publish, push, tag, refresh installed apps, refresh profile, edit vision, edit
+  objective state, or run real local runtime-history benchmarks without explicit
+  approval.
+scope:
+  included:
+    - >-
+      `benchmark_context` through `agentera hej --format json --capability-context
+      optimera`.
+    - Source-contract metadata declaring completeness, caveats, fallback and manual-refresh guidance, raw-read policy, provenance, and privacy boundary.
+    - >-
+      Bounded benchmark inputs from retained user-local startup benchmark files:
+      aggregate history row data, latest report summary data, runtime coverage, rates,
+      token estimates, comparable-row status, and recommendation action.
+    - Optimera prose and schemas that require complete `benchmark_context` before direct `latest-report.json`, `latest-report.md`, or `runs.jsonl` access during benchmark-oriented startup.
+    - Focused tests with synthetic temp Agentera-home benchmark fixtures, validation gates, and 2.3.11 local metadata sync.
+  excluded:
+    - Unsupported `agentera optimera` or other capability-name CLI commands.
+    - Running real local runtime-history benchmarks as part of implementation, tests, or validation.
+    - Committed benchmark outputs, raw user-local benchmark file bodies, raw runtime stores, or path-derived identifiers.
+    - New objective or experiment artifact model, objective creation, harness changes, or `.agentera/optimera/**` mutation.
+    - 2.3.12 Realisera execution-context state.
+    - Remote checks, publication, tag creation, installed app refresh, profile refresh, vision edit, or objective-state edit.
+  deferred:
+    - 2.3.12 Realisera execution-context source contract.
+    - Rich benchmark trend visualization beyond bounded history summary fields.
+    - Any expansion of Optimera objective or experiment lifecycle beyond read-only existing CLI summaries.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-15-2-3-10-inspektera-evidence-context-source-contract.yaml
+design: >-
+  Expose a minimal composite `benchmark_context` only when capability context is
+  `optimera`. The stable top-level shape is `benchmark_source`, `latest_report`,
+  `history_summary`, `runtime_coverage`, `state_access_metrics`, `token_impact`,
+  `comparison`, `recommendation`, `manual_refresh`, `privacy_boundary`,
+  `state_family_caveats`, `fallback_commands`, and `source_contract`. CLI code may
+  read only retained benchmark files under the user Agentera data home and may emit
+  only bounded counts, rates, canonical labels, status values, and source labels such
+  as `startup_benchmark_latest_report` or `startup_benchmark_history`. It must not
+  emit full local paths, raw report bodies, raw transcript-derived content, salts,
+  hashes, or runtime-store identifiers. `complete_for_benchmark_context` is true when
+  the latest report summary, aggregate history summary, runtime coverage status,
+  primary state-access metrics, token-impact status, recommendation status, and source
+  contract are present. Missing retained files, malformed latest report, malformed
+  history rows, or an empty latest report make the context incomplete. Empty aggregate
+  history, degraded runtime coverage, absent token estimates, and non-comparable
+  previous rows keep the context usable with caveats when the latest report still
+  contains current benchmark metrics. Manual refresh status is `available` only when a
+  complete context exists and no manual run is suggested, `requires_manual_run` when
+  evidence is absent or too old to support an optimization decision, `not_run_by_design`
+  when the CLI deliberately did not run `mage bench:startupState`, and `unavailable`
+  when the manual command surface cannot be described.
+tasks:
+  - number: 1
+    name: Benchmark context inventory and state contract
+    depends_on: []
+    status: complete
+    evidence:
+      - >-
+        Inventory completed CLI-first through Orkestrera/plan/docs/todo/progress and
+        decisions fallback state. Decision 51 and Decision 52 define the startup
+        benchmark metric, retention files, manual-only benchmark rule, and privacy
+        boundary. Implementation treated 2.3.10 plan archival as already handled.
+    acceptance:
+      - >-
+        GIVEN docs, decisions, TODO, completed 2.3.10 plan state, and benchmark
+        contracts are inventoried CLI-first WHEN inventory completes THEN
+        implementation evidence records included state, missing state, benchmark file
+        sources, user-local privacy boundaries, and last-resort raw fallback rules.
+      - >-
+        GIVEN the completed 2.3.10 plan is archived during Planera activation WHEN
+        implementation begins THEN implementation scope treats archival as already
+        handled and does not make archive creation part of any product task.
+      - >-
+        GIVEN user-local benchmark evidence may be available, absent, malformed,
+        empty, degraded, or non-comparable WHEN the contract is specified THEN each
+        case has an explicit incomplete or caveated outcome without reading real
+        runtime stores or running the benchmark.
+  - number: 2
+    name: Benchmark context output contract
+    depends_on: [1]
+    status: complete
+    evidence:
+      - >-
+        `scripts/agentera` now emits Optimera-only `benchmark_context` through the
+        existing `agentera hej --format json --capability-context optimera` seam,
+        with latest report, history, runtime coverage, state-access, token-impact,
+        comparison, recommendation, manual-refresh, privacy, fallback, and source
+        contract fields. No `agentera optimera` command was added.
+    acceptance:
+      - >-
+        GIVEN `agentera hej --format json --capability-context optimera` runs and
+        retained startup benchmark evidence is available WHEN structured output is
+        returned THEN it includes `benchmark_context` with source, latest report
+        summary, history summary, runtime coverage, rates, token estimates, comparison
+        status, recommendation, manual refresh guidance, privacy boundary, caveats,
+        fallbacks, and truthful completeness metadata.
+      - >-
+        GIVEN retained benchmark files are missing, empty, or malformed WHEN benchmark
+        context is built THEN `complete_for_benchmark_context` is false, missing
+        evidence is named, manual refresh guidance is present when available, and
+        direct raw file reads remain last-resort diagnostics rather than normal
+        startup behavior.
+      - >-
+        GIVEN CLI command guidance and parser surfaces are scanned WHEN this task
+        completes THEN no new `agentera optimera`, top-level command, route-alias
+        command, or unsupported capability-name command is introduced.
+  - number: 3
+    name: Benchmark provenance, privacy, and comparison semantics
+    depends_on: [2]
+    status: complete
+    evidence:
+      - >-
+        Benchmark context summaries use stable source labels, non-empty evidence
+        flags, bounded counts/rates/statuses/scalars, explicit comparison null
+        reasons, runtime degradation caveats, and privacy-boundary omissions for
+        unsafe retained benchmark strings or raw local paths.
+    acceptance:
+      - >-
+        GIVEN benchmark metrics are present WHEN `benchmark_context` is returned THEN
+        each non-empty evidence family includes stable source labels, non-empty
+        evidence flags, and bounded fields without raw paths, path-derived IDs, hashes,
+        salts, or raw transcript-derived content.
+      - >-
+        GIVEN previous benchmark rows are missing, incomparable, or lack token estimate
+        fields WHEN comparison status is reported THEN the context preserves exact null
+        reasons such as previous-row missing, estimator mismatch, benchmark-mode
+        mismatch, runtime-scope mismatch, or previous missing token estimates.
+      - >-
+        GIVEN runtime stores are missing, sparse, locked, unreadable, or schema-divergent
+        WHEN runtime coverage is summarized THEN those caveats are preserved as bounded
+        degradation evidence and not treated as successful product behavior evidence.
+  - number: 4
+    name: Optimera guidance and schema integration
+    depends_on: [2, 3]
+    status: complete
+    evidence:
+      - >-
+        Optimera prose now requires `benchmark_context` before direct retained
+        benchmark file reads for benchmark-oriented startup. Optimera artifact and
+        validation schemas declare CLI benchmark_context consumption, context-first
+        behavior, and caveat preservation.
+    acceptance:
+      - >-
+        GIVEN Optimera startup begins for benchmark-oriented work WHEN capability prose
+        is read THEN it directs agents to start from `agentera hej --format json
+        --capability-context optimera` and use complete `benchmark_context` before
+        direct `latest-report.json`, `latest-report.md`, or `runs.jsonl` reads.
+      - >-
+        GIVEN benchmark context is incomplete WHEN guidance continues THEN it instructs
+        agents to use listed CLI and manual-refresh guidance before any last-resort
+        direct benchmark file read.
+      - >-
+        GIVEN benchmark caveats about manual-only execution, missing local history,
+        runtime coverage, token estimates, previous comparison, or privacy boundaries
+        are present WHEN Optimera reports results THEN those caveats are preserved
+        rather than hidden, upgraded, or reconstructed.
+      - >-
+        GIVEN capability schemas are validated WHEN this task completes THEN Optimera
+        artifact descriptions declare CLI `benchmark_context` consumption and schema
+        rules declare context-first and caveat-preservation behavior without claiming
+        machine enforcement beyond the schema contract.
+  - number: 5
+    name: Focused benchmark-context regression coverage
+    depends_on: [2, 3, 4]
+    status: complete
+    evidence:
+      - >-
+        Focused tests in `tests/test_query_cli.py` cover complete synthetic
+        benchmark fixtures, missing retained files, malformed latest report, empty
+        history, skipped/missing/degraded runtime coverage, non-comparable previous
+        rows, privacy-bounded recommendation and scalar fields, sparse field
+        selection, unsupported-field failure, and negative `agentera optimera`
+        parser probes. Decision 45 contract tests assert benchmark_context in the
+        structured hej envelope.
+    acceptance:
+      - >-
+        GIVEN complete synthetic benchmark fixtures are available under a temp Agentera
+        home WHEN focused CLI tests run THEN they assert stable top-level context keys,
+        complete source-contract metadata, no unsupported command text, no raw paths,
+        and raw-read-last-resort policy.
+      - >-
+        GIVEN missing retained files, malformed latest report, empty history, degraded
+        runtime coverage, non-comparable previous row, unsupported field selection, and
+        negative unsupported-command probes are tested WHEN focused tests run THEN each
+        case has deterministic complete, incomplete, or caveated outcomes with exact
+        fallback and caveat assertions.
+      - >-
+        GIVEN Decision 45 and field-selection tests run WHEN implementation is complete
+        THEN `benchmark_context` is represented in the structured hej envelope for
+        Optimera and unsupported fields still fail clearly.
+      - >-
+        GIVEN testable state families are covered WHEN this task completes THEN coverage
+        includes available and missing or caveated paths for latest report, history,
+        runtime coverage, token estimates, comparison status, and recommendation state.
+  - number: 6
+    name: Startup fixtures and validation gates
+    depends_on: [5]
+    status: complete
+    evidence:
+      - >-
+        Final focused regression suite passed: `uv run pytest tests/test_query_cli.py
+        tests/test_decision45_cli_contract.py tests/test_optimera_capability.py
+        tests/test_startup_analysis_contract.py` (222 passed). Optimera capability
+        validation, capability schema self-validation, independent evaluation review,
+        and `git diff --check` passed. Installed app refresh and real local
+        benchmark execution were not run.
+    acceptance:
+      - >-
+        GIVEN complete Optimera benchmark context is available through CLI state WHEN
+        deterministic startup or evaluation fixtures run THEN normal Optimera benchmark
+        guidance introduces no raw-after-CLI reads for user-local benchmark report files.
+      - >-
+        GIVEN validation runs WHEN implementation is complete THEN focused pytest
+        targets, Optimera capability validation, self-validation, artifact validators,
+        `agentera gate`, compaction check, and `git diff --check` pass without installed
+        app refresh or real local benchmark execution.
+      - >-
+        GIVEN independent evaluation reviews the completed implementation WHEN this
+        task finishes THEN blocking findings are resolved and residual risks are
+        recorded in plan evidence rather than hidden.
+  - number: 7
+    name: 2.3.11 local closeout metadata sync
+    depends_on: [1, 2, 3, 4, 5, 6]
+    status: complete
+    evidence:
+      - >-
+        Local metadata sync records the completed 2.3.11 benchmark-context patch in
+        TODO, progress, docs, and changelog while leaving deferred 2.3.12 Realisera
+        execution-context work visible. Version-bearing files listed by docs.yaml
+        are aligned to 2.3.11 only.
+    acceptance:
+      - >-
+        GIVEN benchmark-context validation passes WHEN closeout synchronization runs
+        THEN TODO, progress, docs, and changelog record the completed 2.3.11
+        source-contract patch and keep the deferred 2.3.12 source-contract work visible.
+      - >-
+        GIVEN version-bearing files are inspected WHEN local metadata is synchronized
+        THEN only files listed by docs.yaml version policy and the version-files registry
+        are changed for 2.3.11 alignment.
+      - >-
+        GIVEN local metadata sync completes WHEN scope is audited THEN no publication,
+        remote push, tag creation, installed app refresh, profile refresh, vision edit,
+        objective-state edit, Optimera objective-state mutation, real local benchmark
+        execution, or unsupported capability CLI command introduction occurred without
+        explicit approval; negative parser probes are allowed only as tests proving no
+        unsupported command exists.
+overall_acceptance:
+  - >-
+    GIVEN Optimera startup needs benchmark evidence WHEN retained startup benchmark
+    state exists THEN the agent receives rates, token estimates, runtime caveats,
+    recommendations, comparison status, and manual-refresh guidance through CLI state
+    without normal direct report-file reads.
+  - >-
+    GIVEN benchmark evidence is missing, degraded, manual-only, or incomparable WHEN
+    optimization work proceeds THEN the source contract names missing state, caveats,
+    privacy boundaries, and fallback or manual-refresh guidance honestly.
+  - >-
+    GIVEN 2.3.11 closes WHEN validation and local metadata sync finish THEN 2.3.12
+    remains visible and no prohibited release, installed-app, unsupported CLI,
+    protected-state, objective-state, or real benchmark action occurred.
+surprises: []

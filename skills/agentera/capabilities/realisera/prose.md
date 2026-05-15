@@ -119,29 +119,46 @@ Steps: orient, select, research, plan, dispatch, verify, commit, audit, log.
 
 ### Step 1: Orient
 
-Read VISION.md, PROGRESS.md, TODO.md, and HEALTH.md in parallel. These reads are independent; issue all in a single response.
-
-If `.agentera/progress.yaml` has 3+ cycles, query recent state first:
+Start from the supported Realisera execution-context seam:
 
 ```bash
-uv run ${AGENTERA_HOME:-.}/scripts/agentera progress
+agentera hej --format json --capability-context realisera
 ```
 
-1. **PROGRESS.md**: what happened last cycle, what was suggested next
-2. **VISION.md**: read `principles` and `direction` fields
-3. **TODO.md**: what's broken or degraded
-4. **HEALTH.md**: read `critical` and `degraded` findings only (if exists)
-5. **DECISIONS.md**: read all entries (if exists). `firm` (DL1) entries are hard constraints. `provisional` (DL2) entries are strong defaults. Note `exploratory` (DL3) entries.
-6. **Decision profile**: read `$PROFILERA_PROFILE_DIR/PROFILE.md` directly when it exists (default: `$XDG_DATA_HOME/agentera/PROFILE.md`). If missing, proceed without persona grounding but flag it.
+If `execution_context.source_contract.complete_for_execution_context` is true,
+use `execution_context` and included `hej` state as normal startup context. Do
+not read raw PLAN, PROGRESS, TODO, DOCS, HEALTH, DECISIONS, CHANGELOG, VISION,
+PROFILE, or DESIGN artifacts just to re-check selected work, acceptance
+criteria, constraints, verification expectations, artifact update requirements,
+progress logging requirements, changelog boundary, or scope caveats.
 
-7. **Project discovery** (cycle 1 or when unfamiliar):
-   - Map the directory structure
-   - Read dependency manifests
-   - Read README.md, CLAUDE.md, AGENTS.md if they exist
-   - Identify build/test/lint commands
-   - Read key source files to understand architecture
+If `execution_context` is incomplete or caveated, preserve every caveat in the
+cycle report and run the listed `execution_context.fallback_commands` before any
+last-resort raw artifact diagnostic. Raw artifact reads are last-resort
+diagnostics, not normal Realisera startup behavior.
 
-8. `git log --oneline -20` for recent changes
+For progress fallback specifically, use `uv run scripts/agentera progress --format json`
+or the installed app equivalent from the returned fallback command; the routine
+progress command owns startup progress state.
+
+1. **execution_context.work_selection**: selected task or no-plan/completed-plan mode
+2. **execution_context.acceptance_criteria**: exact criteria for this cycle
+3. **execution_context.constraints**: plan constraints and protected-action boundaries
+4. **execution_context.verification_expectations**: expected validation and latest progress evidence
+5. **execution_context.artifact_update_requirements**: plan, TODO, changelog, and progress update obligations
+6. **execution_context.changelog_boundary**: current public-history boundary or fallback
+7. **execution_context.scope_boundary**: artifact-family scope and conservative source-file scope
+8. **source_contract.capability_context**: missing state families and CLI fallback commands
+9. **profile summary**: use `hej.profile`; stale or missing profile is a caveat, not approval to refresh it.
+
+10. **Project discovery** (cycle 1 or when unfamiliar):
+    - Map the directory structure
+    - Read dependency manifests
+    - Read README.md, CLAUDE.md, AGENTS.md if they exist
+    - Identify build/test/lint commands
+    - Read key source files to understand architecture
+
+11. `git log --oneline -20` for recent changes
 
 Before proceeding, list the 3-5 facts that determine this cycle.
 

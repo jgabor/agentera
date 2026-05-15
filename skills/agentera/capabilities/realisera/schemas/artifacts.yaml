@@ -4,64 +4,77 @@ ARTIFACTS:
     artifact_id: vision
     local_role: produces_and_consumes
     description: >-
-      Realisera reads this for work selection and never modifies it during cycles.
-      Created during brainstorm (bootstrap or user-requested refinement).
+      Realisera consumes this through CLI execution_context caveats or explicit
+      fallback state when available, and never modifies it during cycles. Created
+      during brainstorm (bootstrap or user-requested refinement).
   2:
     id: A2
     artifact_id: todo
     local_role: produces_and_consumes
     description: >-
-      Realisera reads this for work candidates and writes newly discovered
-      issues and resolved entries. Severity classified per protocol SI1-SI4.
+      Realisera consumes TODO state from execution_context and included hej state
+      before direct reads, then writes newly discovered issues and resolved
+      entries. Severity classified per protocol SI1-SI4.
   3:
     id: A3
     artifact_id: changelog
     local_role: produces_and_consumes
     description: >-
-      Realisera appends public change entries under [Unreleased] based on
-      commit type and promotes on version bumps.
+      Realisera consumes changelog boundary from execution_context or the listed
+      CLI fallback before direct reads. It appends public change entries under
+      [Unreleased] based on commit type and promotes on version bumps.
   4:
     id: A4
     artifact_id: progress
     local_role: produces_and_consumes
     description: >-
-      Operational cycle log. Realisera appends one entry per cycle with
-      mandatory Verified field. Compacted by applying schema COMPACTION rules.
+      Operational cycle log. Realisera consumes latest progress evidence from
+      execution_context first, then appends one entry per cycle with mandatory
+      Verified field. Compacted by applying schema COMPACTION rules.
   5:
     id: A5
     artifact_id: health
     local_role: consumes
     description: >-
-      Realisera reads critical and degraded findings for work selection.
+      Realisera consumes health state from execution_context and included hej
+      state before direct reads, focusing on critical and degraded findings for
+      work selection.
   6:
     id: A6
     artifact_id: decisions
     local_role: consumes
     description: >-
-      Realisera reads firm (DL1) entries as constraints and exploratory (DL3)
-      entries as uncertain foundations during work selection.
+      Realisera consumes decision caveats and fallback commands from
+      execution_context first. Firm (DL1) entries are constraints and exploratory
+      (DL3) entries are uncertain foundations during work selection.
   7:
     id: A7
     artifact_id: plan
     local_role: produces_and_consumes
     description: >-
-      Realisera reads pending tasks for work selection and updates task status
-      and surprises.
+      Realisera consumes selected task, acceptance criteria, dependencies,
+      constraints, and source contract metadata from CLI execution_context before
+      direct plan reads, then updates task status and surprises during execution.
   8:
     id: A8
     artifact_id: profile
     local_role: consumes
     description: >-
-      Realisera reads this directly when it exists.
+      Realisera consumes hej profile summary first. Missing or stale profile state
+      is a caveat and does not authorize profile refresh or direct profile reads
+      during normal startup.
   9:
     id: A9
     artifact_id: docs
     local_role: consumes
     description: >-
-      Realisera reads this first to resolve project-local artifact mappings.
+      Realisera consumes artifact mappings and docs caveats from execution_context
+      and included hej docs state before direct docs reads.
   10:
     id: A10
     artifact_id: design
     local_role: consumes
     description: >-
-      Realisera reads this when building user-facing features.
+      Realisera treats design state missing from execution_context as a caveat or
+      fallback-only need, and reads it only when building user-facing features
+      after listed CLI fallbacks are exhausted.

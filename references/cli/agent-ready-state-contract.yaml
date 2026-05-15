@@ -176,6 +176,7 @@ structured_output:
         - closeout_context
         - evidence_context
         - benchmark_context
+        - execution_context
         - source
         - source_contract
       source_contract:
@@ -233,6 +234,14 @@ structured_output:
             recommendation action, manual-refresh guidance, privacy boundary,
             fallback commands, and a raw-read-last-resort source contract. It must
             not introduce `agentera optimera`, new top-level commands, or new subcommands.
+          execution_context_semantics: >-
+            `agentera hej --format json --capability-context realisera` may include
+            execution_context with selected work, task details, acceptance criteria,
+            constraints, verification expectations, artifact update requirements,
+            progress logging requirements, changelog boundary, scope boundary,
+            fallback commands, caveats, read-only plan-completion sweep metadata,
+            and a raw-read-last-resort source contract. It must not introduce
+            `agentera realisera`, `agentera build`, new top-level commands, or new subcommands.
           evidence_context_target_contract: evidence_context_target_contract
           current_status: complete
           current_missing_state: []
@@ -269,6 +278,7 @@ startup_completeness:
     - docs artifact mapping and source-contract completeness metadata
     - latest progress verification metadata needed for Orkestrera evaluation
     - Optimera benchmark_context metadata for retained startup benchmark summaries
+    - Realisera execution_context metadata for plan-driven implementation startup
   empty_state_behavior: >-
     agentera hej reports absent plan, docs, and progress state explicitly through
     structured summaries and state_presence absence metadata instead of forcing
@@ -501,6 +511,7 @@ field_selection:
         - closeout_context
         - evidence_context
         - benchmark_context
+        - execution_context
         - source
         - source_contract
   retained_context:

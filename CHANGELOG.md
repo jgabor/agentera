@@ -4,7 +4,8 @@
 
 ### Changed
 
-- 2.3.11 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Optimera benchmark-context source-contract patch; the 2.3.12 Realisera execution-context source-contract work remains deferred.
+- 2.3.12 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Realisera execution-context source-contract patch.
+- 2.3.11 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Optimera benchmark-context source-contract patch; the 2.3.12 Realisera execution-context source-contract work is now closed separately.
 - 2.3.10 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Inspektera evidence-context source-contract patch; the 2.3.12+ source-contract train remains deferred.
 - 2.3.9 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the Dokumentera closeout-context source-contract patch; the 2.3.10+ source-contract train remains deferred.
 - 2.3.6 patch release metadata now aligns package, plugin, OpenCode marker, and skill frontmatter versions with the artifact compaction enforcement patch; the 2.3.7+ source-contract train remains deferred.
@@ -19,6 +20,7 @@
 
 ### Fixed
 
+- Realisera plan-driven startup now uses `agentera hej --format json --capability-context realisera` execution context before raw plan, progress, TODO, docs, health, decisions, changelog, vision, profile, or design startup reads, preserving fallbacks and caveats for missing state.
 - Optimera benchmark-oriented startup now uses `agentera hej --format json --capability-context optimera` benchmark context before direct retained benchmark file reads, preserving fallback commands, caveats, and manual-refresh guidance for missing or incomplete local benchmark evidence.
 - Inspektera evaluation startup now uses `agentera hej --format json --capability-context inspektera` evidence context before raw plan, progress, docs, health, TODO, or decisions state, preserving fallbacks and caveats for incomplete state.
 - Dokumentera closeout synchronization now uses `agentera hej --format json --capability-context dokumentera` before raw TODO, docs, changelog, or progress reads, preserving blockers, evidence, fallback commands, caveats, and local-only no-publication boundaries.
@@ -66,6 +68,7 @@
 
 ### Added
 
+- Realisera execution context now exposes selected work, task details, acceptance criteria, constraints, verification expectations, artifact update requirements, progress logging requirements, changelog boundary, conservative scope boundary, git boundary, read-only plan-completion sweep metadata, fallbacks, caveats, and a raw-read-last-resort source contract without adding another capability-name CLI command.
 - Optimera benchmark context now exposes retained startup benchmark source status, latest report summary, aggregate history, runtime coverage caveats, state-access rates, token-impact estimates, comparison status, bounded recommendation action, manual refresh guidance, privacy boundary, fallbacks, and a raw-read-last-resort source contract without adding `agentera optimera` or another capability-name CLI command.
 - Inspektera evidence context now exposes evaluation target, plan criteria, progress verification, docs and health state, TODO state, protected/version boundary checks, compacted decision caveats, attributed residual risks, fallback commands, caveats, provenance, non-empty evidence flags, and a raw-read-last-resort source contract without adding `agentera inspektera` or another capability-name CLI command.
 - Dokumentera closeout context now exposes artifact mappings, version policy, TODO blockers, changelog and release boundaries, progress evidence, benchmark evidence or unavailable caveat, non-empty evidence flags, fallback commands, caveats, and raw-read-last-resort policy without adding `agentera dokumentera` or another capability-name CLI command.
@@ -85,7 +88,8 @@
 
 ### Verified
 
-- 2.3.11 Optimera benchmark-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, objective-state mutation, or real local benchmark execution; focused CLI/contract/Optimera/startup tests passed with 222 tests, Optimera capability validation and schema self-validation passed, independent evaluation found no blocking findings after privacy and runtime-caveat fixes, and the 2.3.12 Realisera execution-context source-contract work remains open.
+- 2.3.12 Realisera execution-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, objective-state mutation, or unsupported capability CLI command introduction; focused CLI/contract tests passed with 181 tests, Realisera capability validation and schema self-validation passed, repository gate/compaction/artifact validation/diff-check gates passed, and PLAN lint remains failed only on the pre-existing advisory verbosity budget.
+- 2.3.11 Optimera benchmark-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, objective-state mutation, or real local benchmark execution; focused CLI/contract/Optimera/startup tests passed with 222 tests, Optimera capability validation and schema self-validation passed, independent evaluation found no blocking findings after privacy and runtime-caveat fixes, and the 2.3.12 Realisera execution-context source-contract work is now closed separately.
 - 2.3.10 Inspektera evidence-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.3.10, while the 2.3.12+ source-contract train remains open.
 - 2.3.9 Dokumentera closeout-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.3.9, while the 2.3.10+ source-contract train remains open.
 - 2.3.6 artifact compaction enforcement patch closeout is synchronized locally without publication, installed app refresh, tag, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.3.6, while the 2.3.7+ source-contract train remains open.

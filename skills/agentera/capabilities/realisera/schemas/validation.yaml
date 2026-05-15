@@ -60,3 +60,37 @@ VALIDATION:
     severity: warning
     checks:
       - "DOCS.md checked before artifact access"
+  7:
+    id: V7
+    rule: execution_context_first
+    description: >-
+      Realisera startup SHOULD begin from `agentera hej --format json
+      --capability-context realisera` and consume complete execution_context
+      state before direct reads of plan, progress, TODO, docs, health,
+      decisions, changelog, vision, profile, or design artifacts.
+    severity: warning
+    checks:
+      - "execution_context requested through supported hej capability-context seam"
+      - "complete execution_context used before direct startup artifact reads"
+  8:
+    id: V8
+    rule: fallback_before_raw
+    description: >-
+      When execution_context is incomplete or caveated, Realisera MUST run listed
+      CLI fallback commands before any last-resort raw artifact diagnostic and
+      MUST preserve caveats in cycle reporting.
+    severity: critical
+    checks:
+      - "CLI fallback commands run before raw artifact diagnostics"
+      - "execution_context caveats preserved in progress or cycle report"
+  9:
+    id: V9
+    rule: context_generation_readonly
+    description: >-
+      Generating execution_context is read-only. It MUST NOT refresh profile or
+      installed app state, edit vision or objective state, dispatch work, commit,
+      push, tag, publish, or introduce unsupported capability-name CLI commands.
+    severity: critical
+    checks:
+      - "No protected state mutation during context generation"
+      - "No unsupported `agentera realisera` or `agentera build` command introduced"
