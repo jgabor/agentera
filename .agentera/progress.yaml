@@ -1,4 +1,185 @@
 cycles:
+- number: 524
+  timestamp: 2026-05-15 23:18
+  type: feat
+  phase: build
+  what: Synchronized PLAN Task 4 version and local state closeout for the D48 `agentera
+    verify` namespace feature.
+  commit: pending
+  inspiration: Orkestrera assigned Task 4 only after Tasks 1-3 were independently
+    evaluated PASS, requiring feat-level release metadata handling, TODO/PROGRESS/PLAN
+    closeout, policy-required CHANGELOG/DOCS updates, focused verification, and a
+    scope audit with no publication, push, tag, installed-app refresh, profile refresh,
+    vision edit, objective edit, decision satisfaction change, package-manager update,
+    unsupported capability-name CLI command, or D48 validate/corpus/usage work.
+  discovered: '`.agentera/docs.yaml` maps `feat` to a minor bump and lists version-bearing
+    surfaces through `conventions.version_files`, with registry source `references/adapters/package-registry.yaml
+    docs_targets.version_files`. The active release metadata was 2.4.0 before closeout,
+    so the documented feature target is 2.5.0.'
+  verified: Version-bearing surfaces were aligned from 2.4.0 to 2.5.0 across `pyproject.toml`,
+    `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`,
+    `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, `skills/agentera/SKILL.md`,
+    `skills/hej/SKILL.md`, and `registry.json`. Focused verification passed with `uv
+    run pytest tests/test_verify_namespace.py -q` (8 tests), `uv run pytest tests/test_explicit_cli_surfaces.py
+    -q` (9 tests), `uv run pytest tests/test_package_registry.py tests/test_packaged_cli.py
+    -q` (13 tests), safe verify probes for smoke text, smoke JSON, eval skills JSON,
+    and semantic fixture JSON, invalid family and unsafe live refusal probes, direct
+    probes for `scripts/eval_skills.py`, `scripts/semantic_eval.py`, `scripts/smoke_installed_skills.py`,
+    `scripts/smoke_live_hosts.py`, and `scripts/smoke_setup_helpers.py`; `node scripts/smoke_opencode_bootstrap.mjs`
+    returned the expected bounded local failure for absent OpenCode skills. TODO,
+    CHANGELOG, DOCS, PLAN, and PROGRESS were synced with this evidence; touched artifact
+    validators and `git diff --check` passed after artifact updates.
+  next: D48 Verify Namespace Plan is complete after Task 4 closeout. The D48 corpus/usage
+    TODO remains open. Do not publish, commit, push, tag, refresh installed app/profile,
+    edit vision or objective state, change decision satisfaction state, update packages,
+    run unsupported capability-name CLI commands, or implement D48 validate, corpus,
+    or usage work unless explicitly requested.
+  context:
+    intent: PLAN Task 4 version and local state sync for D48 verify namespace
+    constraints: Task 4 only; preserve unrelated dirty work; local metadata sync only;
+      no publication, commit, push, tag, installed-app refresh, profile refresh, vision
+      edit, objective edit, decision satisfaction change, package update, unsupported
+      capability-name CLI command, or D48 validate/corpus/usage work
+    scope: Feature-level minor version alignment, TODO resolution, CHANGELOG notes,
+      DOCS audit metadata, PROGRESS evidence, PLAN completion evidence, focused verify
+      namespace and package tests, safe verify/direct smoke/eval probes, direct artifact
+      validators, and diff whitespace check
+- number: 523
+  timestamp: 2026-05-15 23:10
+  type: test
+  phase: build
+  what: Completed PLAN Task 3 verification coverage and guidance alignment for the
+    D48 `agentera verify` namespace.
+  commit: pending
+  inspiration: Orkestrera assigned only Task 3 from the active D48 Verify Namespace
+    Plan to add focused regression coverage and align touched help/docs/guidance while
+    preserving existing smoke/eval script vocabulary, direct-script compatibility,
+    safe defaults, unrelated dirty work, and Task 4 release/local-state closeout.
+  discovered: 'The verify facade behavior already delegated correctly after Task 2.
+    The missing coverage fit best in a dedicated CLI regression file. Focused tests
+    exposed one discoverability gap: top-level help listed `verify` but did not show
+    an `agentera verify ...` example, so the smallest guidance change was a root help
+    epilog plus raw formatter preservation for verify examples.'
+  verified: Added `tests/test_verify_namespace.py` covering successful smoke text
+    output, successful eval JSON output, semantic fixture JSON output, invalid family/target/format
+    and missing-fixture feedback, unsafe live and eval mode guards, help discoverability,
+    direct Python smoke/eval script compatibility, and bounded direct OpenCode bootstrap
+    behavior when Node is available. Updated `scripts/agentera` help examples and
+    `references/cli/agent-ready-state-contract.yaml` status/evidence wording without
+    renaming smoke/eval scripts or target vocabulary and without adding live or long-running
+    defaults. Verification passed with `uv run pytest tests/test_verify_namespace.py
+    -q`, `uv run pytest tests/test_explicit_cli_surfaces.py -q`, safe verify probes
+    for smoke text, smoke JSON, eval skills JSON, and semantic fixture JSON, invalid
+    family and unsafe live probes, direct probes for `scripts/eval_skills.py`, `scripts/semantic_eval.py`,
+    `scripts/smoke_installed_skills.py`, `scripts/smoke_live_hosts.py`, and `scripts/smoke_setup_helpers.py`;
+    `node scripts/smoke_opencode_bootstrap.mjs` returned the expected bounded local
+    failure for absent OpenCode skills. PLAN/PROGRESS/DOCS artifact validation and
+    `git diff --check` passed after artifact updates.
+  next: Hand Task 3 to Orkestrera evaluation. Task 4 remains responsible for version
+    bumps, TODO resolution, changelog/docs audit closeout, release metadata, and final
+    local state sync. Do not publish, push, tag, commit, refresh installed app/profile,
+    edit vision/objective state, change decision satisfaction state, or implement
+    D48 validate, corpus, or usage work.
+  context:
+    intent: D48 Verify Namespace Plan Task 3 coverage and guidance alignment
+    constraints: Task 3 only; preserve direct smoke/eval scripts and unrelated dirty
+      work; no Task 4 version/TODO/changelog/docs closeout, D48 validate/corpus/usage
+      work, publication, push, tag, commit, installed-app/profile refresh, vision/objective
+      edit, decision satisfaction change, or unsupported capability-name CLI command
+    scope: Focused verify namespace regression tests, minimal help and reference contract
+      wording alignment, safe verify/direct probes, PLAN Task 3 evidence, PROGRESS
+      cycle evidence, artifact validation, and diff whitespace check
+- number: 522
+  timestamp: 2026-05-15 23:02
+  type: feat
+  phase: build
+  what: Implemented PLAN Task 2 behavior for the D48 `agentera verify` namespace.
+  commit: pending
+  inspiration: Orkestrera assigned only Task 2 from the active D48 Verify Namespace
+    Plan to implement bounded smoke and eval gate behavior while preserving direct
+    smoke/eval scripts and avoiding D48 validate, corpus, usage, Task 3 guidance alignment,
+    Task 4 closeout, publication, push, tag, installed-app/profile refresh, vision/objective
+    edits, decision satisfaction changes, and unsupported capability-name CLI commands.
+  discovered: The smallest compatible implementation was a facade in `scripts/agentera`
+    that validates `agentera verify <family> <target>` inputs and delegates to existing
+    direct scripts. `scripts/eval_skills.py --dry-run --runtime auto` still performs
+    host PATH detection, so the verify default pins `--runtime claude` for dry-run
+    discovery unless the caller explicitly opts into runtime-backed execution with
+    `--run`.
+  verified: Added stable text/JSON verify envelopes with family, target, status, engine
+    command, exit code, bounded stdout/stderr diagnostics, and safety metadata. Focused
+    probes passed for `uv run scripts/agentera verify smoke installed-skills`, `uv
+    run scripts/agentera verify smoke installed-skills --format json`, `uv run scripts/agentera
+    verify smoke live-hosts --format json`, `uv run scripts/agentera verify smoke
+    setup-helpers --format json`, `uv run scripts/agentera verify eval skills --format
+    json`, `uv run scripts/agentera verify eval semantic fixtures/semantic/hej-bare-message.md`,
+    and the semantic JSON form. `uv run scripts/agentera verify smoke opencode-bootstrap
+    --format json` returned a stable bounded `status=fail` for the existing local
+    absent-OpenCode-skills condition. Invalid-input probes for unsupported family,
+    target, format, unsafe `--live` without `--yes`, and missing semantic fixtures
+    exited nonzero with valid values, syntax, and examples. Direct compatibility probes
+    for `scripts/eval_skills.py`, `scripts/semantic_eval.py`, `scripts/smoke_installed_skills.py`,
+    `scripts/smoke_live_hosts.py`, and `scripts/smoke_setup_helpers.py` passed; `node
+    scripts/smoke_opencode_bootstrap.mjs` remained callable with its existing bounded
+    local failure diagnostics.
+  next: Hand Task 2 to Orkestrera evaluation. Leave comprehensive regression coverage/guidance
+    alignment to Task 3 and version/TODO/changelog/docs closeout to Task 4; do not
+    implement D48 validate, corpus, or usage work.
+  context:
+    intent: D48 Verify Namespace Plan Task 2 gate behavior
+    constraints: Task 2 only; preserve direct smoke/eval scripts and unrelated dirty
+      work; no D48 validate/corpus/usage work, Task 3 comprehensive regression or
+      guidance alignment, Task 4 version/TODO/changelog/docs closeout, publication,
+      push, tag, installed-app/profile refresh, vision/objective edit, decision satisfaction
+      change, or unsupported capability-name CLI command
+    scope: Minimal `agentera verify` facade, safe default smoke/eval delegates, bounded
+      diagnostics, invalid-input guidance, focused behavior probes, PLAN Task 2 evidence,
+      PROGRESS cycle evidence, artifact validation, and diff whitespace check
+- number: 521
+  timestamp: 2026-05-15 22:55
+  type: feat
+  phase: build
+  what: Defined the PLAN Task 1 command contract for the planned `agentera verify`
+    namespace.
+  commit: pending
+  inspiration: Orkestrera assigned only Task 1 from the active D48 Verify Namespace
+    Plan to record the public verify namespace contract for smoke and eval gates without
+    implementing runtime behavior, D48 validate/corpus/usage work, publication, push,
+    tag, installed-app refresh, profile refresh, vision edit, objective edit, decision
+    satisfaction change, or unsupported capability-name CLI commands.
+  discovered: '`uv run scripts/agentera --help` currently exposes no `verify` command,
+    confirming Task 1 is contract-only. Existing direct surfaces remain present: `scripts/eval_skills.py
+    --help` documents `--skill`, `--dry-run`, `--parallel`, `--timeout`, and `--runtime`;
+    `scripts/semantic_eval.py --help` documents fixture path inputs; `scripts/smoke_installed_skills.py
+    --help` documents offline default behavior plus `--real-npx`; `scripts/smoke_live_hosts.py
+    --help` documents offline default behavior plus explicit `--live` and `--yes`
+    live-host opt-in. `scripts/smoke_setup_helpers.py --help` runs the existing smoke
+    checks and passed, and `scripts/smoke_opencode_bootstrap.mjs --help` runs the
+    existing bootstrap smoke check and returned bounded local failure diagnostics
+    for absent OpenCode skills.'
+  verified: 'Added design-only `verify_namespace` to `references/cli/agent-ready-state-contract.yaml`
+    with public command `agentera verify`, rejected umbrella `agentera smoke`, explicit
+    rationale, gate families `smoke` and `eval`, smoke targets `installed-skills`,
+    `live-hosts`, `setup-helpers`, and `opencode-bootstrap`, eval targets `skills`
+    and `semantic`, text/json output expectations, safety requirements for live or
+    long-running gates, direct-script compatibility constraints, invalid-input diagnostics
+    for unknown families, targets, formats, and unsafe live defaults, examples, and
+    non-goals. Updated `.agentera/plan.yaml` Task 1 to complete with evidence. Validation
+    to run after artifact updates: PLAN/PROGRESS artifact validators and `git diff
+    --check`.'
+  next: Hand Task 1 to Orkestrera evaluation after validation. Do not implement runtime
+    `agentera verify` behavior, D48 validate/corpus/usage work, publish, push, tag,
+    refresh installed apps/profile, edit vision or objective state, change decision
+    satisfaction state, or run unsupported capability-name CLI commands.
+  context:
+    intent: D48 Verify Namespace Plan Task 1 contract definition
+    constraints: Task 1 only; contract definition and evidence recording only; preserve
+      direct smoke/eval scripts and unrelated dirty work; no runtime verify implementation,
+      D48 validate/corpus/usage work, publication, push, tag, installed-app/profile
+      refresh, vision/objective edit, decision satisfaction change, or unsupported
+      capability-name CLI command
+    scope: CLI contract reference update, PLAN Task 1 evidence, PROGRESS cycle evidence,
+      safe help/probe commands, artifact validation, and diff whitespace check
 - number: 520
   timestamp: 2026-05-15 22:50
   type: feat
@@ -258,173 +439,15 @@ cycles:
     scope: Focused `tests/test_self_audit.py` regression coverage, PLAN Task 3 evidence,
       PROGRESS cycle evidence, PLAN/PROGRESS artifact validation, and diff whitespace
       checks
-- number: 514
-  timestamp: 2026-05-15 21:44
-  type: fix
-  phase: audit
-  what: Completed PLAN Task 2 contract-preserving lint anchor correction.
-  commit: pending
-  inspiration: Orkestrera assigned Task 2 to make concrete Planera anchors pass artifact
-    lint without changing the `agentera lint --artifact <ARTIFACT>` command contract
-    or weakening generic unanchored prose detection.
-  discovered: The false-positive boundary was repo-style paths without file extensions,
-    such as `internal/runtime`, `internal/app`, and `internal/tui`; the abstraction
-    checker recognized extension-bearing paths but not concrete source/package boundaries.
-  verified: '`AGENTERA_HOME="/home/jgabor/git/agentera" uv run scripts/agentera lint
-    --artifact PLAN.md --text "Deliver queue visibility through queued-message fixture,
-    semantic snapshots, PTY smoke, mage check, source docs, and concrete internal/runtime
-    internal/app internal/tui boundaries." --format json` exited 0 with status=pass
-    and abstraction detail `internal/runtime`. Generic prose still exited 0 in advisory
-    JSON mode with abstraction fail `abstraction creep: no concrete anchor`; the same
-    generic prose with `--strict --format json` exited 1 and advisory=false. File
-    input on `/tmp/opencode/aila-m13-plan.yaml` exited 0 with abstraction pass `docs/notes/PROMPT.md`
-    and only verbosity fail. Text output advisory mode exited 0, piped stdin JSON
-    mode exited 0 with source=`stdin`, and `uv run pytest tests/test_self_audit.py
-    -q` passed with 21 tests.'
-  next: Hand Task 2 to Orkestrera evaluation. Do not run Task 3 regression expansion,
-    version metadata, changelog/TODO closeout, publication, commit, push, tag, installed-app
-    refresh, profile refresh, vision edit, objective edit, or decision satisfaction
-    changes.
-  context:
-    intent: PLAN Task 2 contract-preserving lint correction
-    constraints: Smallest correction only; preserve lint CLI contract and advisory/strict
-      behavior; no Task 3 regression expansion or release/local closeout work
-    scope: Self-audit repo path anchor recognition, focused lint contract checks,
-      plan Task 2 evidence, and progress evidence
-- number: 513
-  timestamp: 2026-05-15 20:45
-  type: fix
-  phase: audit
-  what: Characterized PLAN Task 1 for the Planera lint anchor false positive.
-  commit: pending
-  inspiration: Orkestrera assigned only Task 1 to reproduce or bound the reported
-    `agentera lint --artifact PLAN.md` no-anchor advisory without implementing the
-    correction.
-  discovered: 'The exact reported `/tmp/opencode/aila-m13-plan.yaml` file exists and
-    contains recognized anchors including `ROADMAP.md:523-542` and `docs/notes/PROMPT.md`.
-    The exact file no longer reproduces the no-anchor advisory; lint passes abstraction
-    on `docs/notes/PROMPT.md` and fails only the PLAN verbosity budget. A reduced
-    boundary sample using queued-message fixture, semantic snapshots, PTY smoke, mage
-    check, source docs, and concrete `internal/runtime`, `internal/app`, and `internal/tui`
-    boundaries still reproduces `abstraction creep: no concrete anchor`, showing the
-    bad advisory is tied to human-concrete anchors outside the current recognized
-    anchor patterns.'
-  verified: '`uv run scripts/agentera lint --artifact PLAN.md --file "/tmp/opencode/aila-m13-plan.yaml"
-    --format json` exited 0 with status=fail, advisory=true, verbosity fail `1183
-    words exceeds 100 budget`, abstraction pass `docs/notes/PROMPT.md`, and filler
-    pass. `uv run scripts/agentera lint --artifact PLAN.md --text "Deliver queue visibility
-    through queued-message fixture, semantic snapshots, PTY smoke, mage check, source
-    docs, and concrete internal/runtime internal/app internal/tui boundaries." --format
-    json` exited 0 with abstraction fail `abstraction creep: no concrete anchor`.
-    `uv run scripts/agentera lint --artifact PLAN.md --text "Deliver ROADMAP.md:523-542
-    queue visibility through queued-message fixture and mage check evidence." --format
-    json` exited 0 with status=pass and abstraction pass `:523`. `uv run scripts/agentera
-    lint --artifact PLAN.md --text "This plan improves the system broadly and makes
-    the implementation better for users." --format json` exited 0 with abstraction
-    fail `abstraction creep: no concrete anchor`.'
-  next: Hand Task 1 characterization to Orkestrera evaluation. Do not implement Task
-    2, commit, push, tag, publish, refresh installed apps/profile, edit vision or
-    objective state, or change decision satisfaction state.
-  context:
-    intent: PLAN Task 1 false-positive characterization
-    constraints: Characterization only; no implementation, release metadata, publication,
-      commit, installed-app refresh, profile refresh, vision edit, objective-state
-      edit, or decision satisfaction change
-    scope: Exact temporary plan lint behavior, reduced anchor-boundary reproduction,
-      recognized-anchor control, and generic prose control
-- number: 512
-  timestamp: 2026-05-15 20:10
-  type: docs
-  phase: audit
-  what: Synchronized D47 PLAN Task 4 local metadata closeout for the app-home vocabulary
-    cleanup.
-  commit: pending
-  inspiration: Orkestrera assigned D47 Task 4 after Tasks 1-3 were complete and evaluator-passed,
-    with closeout limited to TODO, progress, changelog, docs audit metadata, and plan
-    evidence.
-  discovered: Task 4 closeout began after Tasks 1-3 were complete, the D47 vocabulary
-    TODO remained open, and docs audit metadata still reflected the previous D46 closeout.
-    D47 remains only provisionally satisfied, so decisions metadata was not touched
-    and no user-confirmed satisfaction was claimed.
-  verified: Task 1 independent evaluation passed for required term/surface inventory
-    and compatibility/historical preservation. Task 2 independent evaluation passed
-    for live app-home vocabulary updates while preserving compatibility contracts,
-    canonical artifact labels, CLI selectors, route/handoff boundaries, historical
-    records, and migration examples. Task 3 focused verification covered app-home
-    contract behavior, doctor/upgrade behavior, package/runtime surfaces, affected
-    textual fixtures, targeted stale-terminology audit, lifecycle adapter metadata,
-    CLI describe metadata, schema self-validation, edited capability validation, PLAN
-    and SESSION artifact validation, and `git diff --check`; the focused verification
-    suite reported 346 passing tests. Task 4 closeout validation and Orkestrera evaluation
-    passed; the D47 plan is complete with all four tasks complete. Closeout validation
-    passed with `uv run hooks/validate_artifact.py --artifact TODO.md --file TODO.md
-    --format json` (status=pass), `uv run hooks/validate_artifact.py --artifact CHANGELOG.md
-    --file CHANGELOG.md --format json` (status=pass), `uv run hooks/validate_artifact.py
-    --artifact DOCS.md --file .agentera/docs.yaml --format json` (status=pass), `uv
-    run hooks/validate_artifact.py --artifact PROGRESS.md --file .agentera/progress.yaml
-    --format json` (status=pass), `uv run hooks/validate_artifact.py --artifact PLAN.md
-    --file .agentera/plan.yaml --format json` (status=pass), and `git diff --check`
-    (PASS).
-  next: D47 Task 4 evaluation passed; the D47 plan is complete with all four tasks
-    complete. Do not touch decisions satisfaction state, commit, push, tag, publish,
-    refresh installed apps or profile, update packages, edit vision or objective state,
-    or run unsupported capability-name CLI commands.
-  context:
-    intent: D47 PLAN Task 4 local metadata closeout
-    constraints: Local metadata sync only; no decision satisfaction-state change,
-      publication, push, tag, installed-app refresh, profile refresh, package update,
-      vision edit, objective edit, commit, or unsupported capability-name CLI command
-    scope: TODO resolution, changelog local notes, docs audit metadata, progress evidence,
-      and plan Task 4 completion evidence after evaluation passed
-- number: 511
-  timestamp: 2026-05-15 19:41
-  type: fix
-  phase: audit
-  what: Completed the D46 handoff wording enforcement plan and local 2.3.14 closeout
-    metadata sync.
-  commit: pending
-  inspiration: Orkestrera resumed the active D46 Handoff Wording Enforcement plan
-    after the plan remained active with all tasks pending despite focused implementation
-    already landing in semantic fixtures and tests.
-  discovered: 'The concrete D46 behavior gap was runtime-facing fixture drift, not
-    missing dispatcher prose: semantic fixture helpers still used `route /realisera`
-    and `suggested -> /realisera`, and hej routing failure examples did not explicitly
-    assert that stale slash-capability labels tripped the forbidden-output guard.
-    Decisions CLI context confirmed Decision 46 remained open, and docs metadata still
-    reflected 2.3.13.'
-  verified: D46 enforcement now requires glyph/name handoff labels in semantic fixtures,
-    forbids standalone slash-capability labels in hej startup fixtures, and classifies
-    stale `/realisera` fixture output through `forbidden_output[0]`. Verification
-    passed with `uv run pytest tests/test_semantic_eval.py tests/test_semantic_fixtures.py
-    tests/test_hej_routing_fixture.py tests/test_skill_dispatch_contract.py tests/test_package_registry.py
-    tests/test_runtime_adapters.py -q` (141 passed), `uv run scripts/semantic_eval.py
-    fixtures/semantic/hej-routing-plan-priority.md fixtures/semantic/hej-cli-budget.md
-    fixtures/semantic/hej-bare-message.md fixtures/semantic/hej-bare-empty-repo.md`
-    (4 fixtures passed), Hej and Planera capability validation (PASS), schema self-validation
-    (PASS), TODO, DECISIONS, DOCS, CHANGELOG, PLAN, PROGRESS, and SESSION artifact
-    validation (PASS), `agentera compact --mode check --format json` (status=pass),
-    `agentera gate --format json` (status=pass), and `git diff --check` (PASS). Metadata
-    sync resolved the D46 TODO, marked Decision 46 only provisionally satisfied with
-    evidence, updated CHANGELOG and DOCS audit metadata, marked the plan complete,
-    and aligned declared version-bearing surfaces to 2.3.14 without publication, push,
-    tag, installed-app refresh, profile refresh, vision edit, objective-state edit,
-    or unsupported capability-name CLI command.
-  next: Hand the completed D46 plan to final verification. Do not commit, push, tag,
-    publish, refresh installed apps or profile, edit vision or objective state, or
-    run unsupported capability-name CLI commands unless explicitly requested.
-  context:
-    intent: D46 handoff wording enforcement and 2.3.14 local closeout metadata sync
-    constraints: Local metadata sync only; no publication, remote push, tag, installed-app
-      refresh, profile refresh, vision edit, objective-state edit, objective-state
-      mutation, commit, or unsupported capability-name CLI command
-    version_surfaces: pyproject.toml, uv.lock, plugin.json, .github/plugin/plugin.json,
-      .codex-plugin/plugin.json, .claude-plugin/marketplace.json, .opencode/plugins/agentera.js,
-      skills/agentera/SKILL.md, skills/hej/SKILL.md, registry.json
-    scope: Semantic fixture handoff labels, hej routing fixture forbidden-output classification,
-      Decision 46 provisional satisfaction evidence, TODO resolution, changelog closeout
-      notes, docs audit metadata, progress evidence, active plan completion, and declared
-      2.3.14 version-bearing alignment
 archive:
+- summary: 'Cycle 514 (2026-05-15): Completed PLAN Task 2 contract-preserving lint
+    anchor correction.'
+- summary: 'Cycle 513 (2026-05-15): Characterized PLAN Task 1 for the Planera lint
+    anchor false positive.'
+- summary: 'Cycle 512 (2026-05-15): Synchronized D47 PLAN Task 4 local metadata closeout
+    for the app-home vocabulary cleanup.'
+- summary: 'Cycle 511 (2026-05-15): Completed the D46 handoff wording enforcement
+    plan and local 2.3.14 closeout metadata sync.'
 - summary: 'Cycle 510 (2026-05-15): Synchronized PLAN Task 7 local closeout metadata
     for the 2.3.13 Decision satisfaction tracking patch.'
 - summary: 'Cycle 509 (2026-05-15): Added PLAN Task 6 focused regression coverage
@@ -497,11 +520,3 @@ archive:
     for the active 2.3.6 artifact compaction enforcement...'
 - summary: 'Cycle 475 (2026-05-14): Implemented PLAN Task 6 repository gate enforcement
     and regression coverage for the active 2.3.6 artifact...'
-- summary: 'Cycle 474 (2026-05-14): Executed PLAN Task 5 current artifact remediation
-    for the active 2.3.6 artifact compaction enforcement patch...'
-- summary: 'Cycle 473 (2026-05-14): Implemented PLAN Task 4 runtime hook convergence
-    for the active 2.3.6 artifact compaction enforcement patch...'
-- summary: 'Cycle 472 (2026-05-14): Implemented PLAN Task 3 explicit CLI surfaces
-    for the active 2.3.6 artifact compaction enforcement patch...'
-- summary: 'Cycle 471 (2026-05-14): Retried PLAN Task 2 shared compaction check and
-    fix behavior by closing the evaluator-found TODO...'
