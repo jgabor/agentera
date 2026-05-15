@@ -171,6 +171,7 @@ structured_output:
         - objective
         - state_presence
         - attention
+        - decision_attention
         - next_action
         - orchestration_context
         - closeout_context
@@ -242,6 +243,14 @@ structured_output:
             fallback commands, caveats, read-only plan-completion sweep metadata,
             and a raw-read-last-resort source contract. It must not introduce
             `agentera realisera`, `agentera build`, new top-level commands, or new subcommands.
+          decision_attention_semantics: >-
+            `agentera hej --format json` may include one bounded `decision_attention`
+            payload when returned decisions require satisfaction review. The payload
+            derives from the same `_decision_context_entry` and
+            `_decision_satisfaction_context` semantics as `agentera decisions --format
+            json`, never infers satisfaction, never mutates `.agentera/decisions.yaml`,
+            keeps top-level attention bounded, and must not change `next_action`
+            routing priority.
           evidence_context_target_contract: evidence_context_target_contract
           current_status: complete
           current_missing_state: []
@@ -506,6 +515,7 @@ field_selection:
         - objective
         - state_presence
         - attention
+        - decision_attention
         - next_action
         - orchestration_context
         - closeout_context

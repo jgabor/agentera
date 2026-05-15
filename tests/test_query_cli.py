@@ -1564,7 +1564,7 @@ class TestHej:
         assert "capability=orkestrera" in r.stdout
         assert "app_home: status=fresh" in r.stdout
         assert "source_contract:" in r.stdout
-        assert "fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context,closeout_context,evidence_context" in r.stdout
+        assert "fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,decision_attention,next_action,orchestration_context,closeout_context,evidence_context" in r.stdout
         assert "render=caller-owned README-style hej dashboard" in r.stdout
         assert "access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls" in r.stdout
         assert "capability_startup_complete=true" in r.stdout
@@ -1586,6 +1586,110 @@ class TestHej:
         assert data["docs"]["mapping"] == [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}]
         assert data["docs"]["source_contract"]["capability_startup_complete"] is True
         assert data["progress"]["latest_verification"] == "pytest passed"
+
+    def test_hej_surfaces_bounded_decision_satisfaction_attention_without_next_action_change(self, project):
+        decisions_path = _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {"number": 1, "question": "Legacy missing satisfaction?", "choice": "Review legacy."},
+                {"number": 2, "question": "Open satisfaction?", "choice": "Keep open.", "satisfaction": {"state": "open"}},
+                {
+                    "number": 3,
+                    "question": "Provisional satisfaction?",
+                    "choice": "Needs user confirmation.",
+                    "satisfaction": {"state": "provisionally_satisfied", "evidence": "Tests passed."},
+                },
+                {
+                    "number": 4,
+                    "question": "Unconfirmed satisfied?",
+                    "choice": "Missing confirmation metadata.",
+                    "satisfaction": {"state": "user_confirmed_satisfied"},
+                },
+                {
+                    "number": 5,
+                    "question": "Confirmed satisfied?",
+                    "choice": "Done.",
+                    "satisfaction": {
+                        "state": "user_confirmed_satisfied",
+                        "user_confirmation": {"confirmed_by": "Jonathan", "confirmed_at": "2026-05-15"},
+                    },
+                },
+                {
+                    "number": 6,
+                    "question": "Explicit review needed?",
+                    "choice": "Still review.",
+                    "satisfaction": {
+                        "state": "user_confirmed_satisfied",
+                        "user_confirmation": {"confirmed_by": "Jonathan", "confirmed_at": "2026-05-15"},
+                        "review_needed": True,
+                    },
+                },
+            ],
+        })
+        before = decisions_path.read_text(encoding="utf-8")
+        _write_artifact(project, "TODO.md", {
+            "entries": [{"severity": "normal", "status": "open", "description": "Implement next TODO"}],
+        })
+
+        r = _run("hej", "--format", "json", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        assert decisions_path.read_text(encoding="utf-8") == before
+        data = json.loads(r.stdout)
+        decision_attention = data["decision_attention"]
+        assert decision_attention["type"] == "decision_satisfaction_review"
+        assert decision_attention["count"] == 5
+        assert decision_attention["max_entries"] == 3
+        assert decision_attention["bounded"] is True
+        assert len(decision_attention["entries"]) == 3
+        assert decision_attention["states"] == {
+            "missing": 1,
+            "open": 1,
+            "provisionally_satisfied": 1,
+            "unconfirmed_user_confirmed_satisfied": 2,
+        }
+        assert [entry["number"] for entry in decision_attention["entries"]] == [1, 2, 3]
+        assert any("decisions need satisfaction review" in item for item in data["attention"])
+        decision_index = next(i for i, item in enumerate(data["attention"]) if "decisions need satisfaction review" in item)
+        todo_index = next(i for i, item in enumerate(data["attention"]) if "TODO:" in item)
+        assert decision_index < todo_index
+        assert len(data["attention"]) <= 6
+        assert data["next_action"]["capability"] == "realisera"
+        assert data["next_action"]["reason"] == "highest-priority open TODO"
+
+    def test_hej_omits_decision_attention_when_all_decisions_are_confirmed(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": 1,
+                    "question": "Confirmed?",
+                    "choice": "Done.",
+                    "satisfaction": {
+                        "state": "user_confirmed_satisfied",
+                        "user_confirmation": {"confirmed_by": "Jonathan", "confirmed_at": "2026-05-15"},
+                    },
+                },
+            ],
+        })
+
+        r = _run("hej", "--format", "json", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert data["decision_attention"] is None
+        assert all("decisions need satisfaction review" not in item for item in data["attention"])
+
+    def test_hej_text_renders_decision_attention(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {"number": 1, "question": "Needs review?", "choice": "Open.", "satisfaction": {"state": "open"}},
+            ],
+        })
+
+        r = _run("hej", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        assert "attention:" in r.stdout
+        assert "normal: decisions need satisfaction review (1; open=1); Decision 1: Needs review?" in r.stdout
 
     def test_hej_capability_context_names_included_and_missing_state_families(self, project):
         _write_artifact(project, ".agentera/plan.yaml", {

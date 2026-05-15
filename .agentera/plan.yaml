@@ -3,163 +3,166 @@ header:
   created: 2026-05-15
   status: complete
   reviewed: 2026-05-15
-  critic_issues: 6 found, 6 addressed, 0 dismissed
-  title: D48 Usage Namespace Plan
+  critic_issues: 8 found, 8 addressed, 0 dismissed
+  title: Decision Review Attention Plan
 what: >-
-  Add a supported `agentera usage` CLI namespace for profile analytics by exposing
-  the existing suite usage report through the Agentera CLI while preserving
-  `scripts/usage_stats.py` as the direct analytics engine.
+  Add a bounded `agentera hej` dashboard attention item for non-confirmed decisions so
+  open, provisional, missing-satisfaction, and review-needed decision states are visible
+  during normal orientation without changing decision satisfaction state or dashboard
+  routing priority.
 why: >-
-  The project already has usage analytics and a documented USAGE.md location, but
-  agents must know the direct script to run it. A supported usage namespace makes
-  profile analytics discoverable through the same CLI pattern as D48 validate and
-  verify without turning usage reporting into corpus extraction or profile refresh.
+  `agentera decisions --format json` already exposes satisfaction review caveats, but
+  returning users usually start with `agentera hej`. If hej only surfaces TODOs while
+  non-confirmed decisions remain hidden in decision state, stale review pressure can be
+  missed. The dashboard should make that pressure visible without inferring user intent
+  or turning decision review into the next executable action ahead of current TODOs.
 constraints: >-
-  Select `agentera usage` as the planned public namespace and record why
-  `agentera corpus` is rejected for this plan. Preserve direct `scripts/usage_stats.py`
-  behavior, including `--json`, `--corpus`, `--project`, default corpus lookup through
-  `PROFILERA_PROFILE_DIR`, default report output through `AGENTERA_USAGE_DIR` then
-  `PROFILERA_PROFILE_DIR` then platform data home, and missing-corpus guidance. JSON
-  mode must preserve the existing top-level analytics payload and must not write
-  USAGE.md. Tests must isolate user data paths with temporary environment variables.
-  Unmatched `--project` filters remain valid empty reports rather than invalid input.
-  Do not auto-build corpus data, refresh profiles, scan home directories, run live
-  host extraction, publish, push, tag, refresh installed apps or profiles, edit vision
-  state, edit objective state, change decision satisfaction state, or implement D48
-  validate, verify, or corpus work.
+  Reuse the same satisfaction semantics as `agentera decisions --format json`, centered
+  on `_decision_context_entry` and `_decision_satisfaction_context` in `scripts/agentera`.
+  Only `satisfaction.state=user_confirmed_satisfied` with explicit `user_confirmation`
+  counts as confirmed. Missing satisfaction objects, missing or unrecognized states,
+  `open`, `provisionally_satisfied`, unconfirmed `user_confirmed_satisfied`, and entries
+  with `review_needed=true` count as non-confirmed. Do not infer satisfaction from
+  downstream references, commits, compacted history, or evidence. Do not mutate
+  `.agentera/decisions.yaml`, change decision satisfaction, alter compaction protection,
+  add a new decision command, redesign the hej dashboard, or change `next_action` priority.
+  Keep top-level hej attention bounded to 6 items and include at most one decision-review
+  attention item with bounded details. Do not publish, push, tag, refresh installed apps
+  or profiles, edit vision state, edit objective state, or run unsupported capability-name
+  CLI commands.
 scope:
   included:
-    - Public `agentera usage` command contract and help examples.
-    - Rejected-alternative rationale for `agentera corpus` as an extraction/lifecycle namespace.
-    - Supported usage flags `--format text|json`, `--corpus PATH`, and `--project VALUE`.
-    - Text behavior that preserves the existing USAGE.md write plus stdout summary.
-    - JSON behavior that preserves the existing analytics payload with no USAGE.md write.
-    - Missing-corpus and invalid-format diagnostics with syntax, valid values, examples, and nonzero exits.
-    - Temporary-path test isolation for `AGENTERA_USAGE_DIR` and `PROFILERA_PROFILE_DIR`.
-    - Focused namespace tests, direct script compatibility checks, package/CLI surface checks, and local artifact closeout.
+    - Decision review attention contract for `agentera hej` text and JSON output.
+    - One bounded decision-review attention item derived from decision satisfaction context.
+    - Stable structured metadata for the decision attention item when JSON output is used.
+    - Tests for open, provisional, missing legacy, unconfirmed, and confirmed decisions.
+    - Tests proving `agentera hej` remains read-only for decisions and preserves `next_action` routing.
+    - Minimal guidance or contract updates required by touched behavior.
+    - DOCS-policy version check and local artifact closeout if the implemented change remains a `feat`.
   excluded:
-    - A public `agentera corpus` command.
-    - New corpus extraction behavior or Section 22 corpus schema changes.
-    - Usage analytics algorithm redesign beyond what the facade requires.
-    - Profile refresh, installed-app refresh, live host scans, home-directory mining, publication, remote push, tagging, vision edits, objective edits, or decision satisfaction changes.
-    - Any additional D48 validate, verify, or corpus namespace implementation.
+    - Editing `.agentera/decisions.yaml` satisfaction state or user confirmation metadata.
+    - Inferring satisfaction from downstream files, commits, feeds_into references, generated artifacts, or compacted history.
+    - Changing compaction protection rules or protected decision review semantics.
+    - Adding a new public decision-review CLI namespace.
+    - Broad hej dashboard redesign or TODO/plan/health next-action priority changes.
+    - Publication, remote push, tagging, installed-app refresh, profile refresh, vision edits, objective edits, or package-manager updates.
   deferred:
-    - A future corpus extraction or corpus lifecycle namespace if profilera needs one.
-    - Broader usage analytics improvements such as new aggregation fields or report layout changes.
-    - Surfacing usage/profile analytics in hej attention items.
+    - A dedicated decision-review workflow for user confirmation.
+    - Richer decision dashboard sections beyond one bounded attention item.
+    - Broader DECISIONS.md source-contract completeness improvements already tracked as a separate performance TODO.
 design: >-
-  Treat `agentera usage` as a stable usage-reporting facade, not a new analytics
-  engine. The command should make the already-supported `scripts/usage_stats.py`
-  workflow discoverable through `scripts/agentera`, preserve direct script behavior
-  for existing callers, keep JSON output unwrapped for consumers, and keep all corpus
-  or profile generation out of scope.
+  Implement this as a small decision-satisfaction summary path inside the existing hej
+  command. The summary should derive from the same enriched decision entries used by
+  the decisions JSON source contract, then add one attention string before TODO attention
+  and a structured `decision_attention` payload for JSON consumers. The attention item
+  should report counts by state and at most three decision identifiers/titles; detailed
+  review still belongs to `agentera decisions --format json`.
 tasks:
   - number: 1
-    name: Usage namespace contract definition
+    name: Decision attention contract boundary
     depends_on: []
     status: complete
     acceptance:
       - >-
-        GIVEN the D48 analytics namespace is reviewed WHEN public command names are
-        compared THEN `agentera usage` is the selected command and `agentera corpus`
-        is recorded as rejected or deferred because this plan reports analytics rather
-        than extracting corpus data.
+        GIVEN the hej decision-review behavior is specified WHEN non-confirmed classes
+        are listed THEN missing satisfaction, missing or unrecognized state, `open`,
+        `provisionally_satisfied`, unconfirmed `user_confirmed_satisfied`, and explicit
+        `review_needed=true` entries are included while confirmed entries with explicit
+        user confirmation are excluded.
       - >-
-        GIVEN the command contract is reviewed WHEN supported options are listed THEN
-        `--format text|json`, `--corpus PATH`, `--project VALUE`, default path
-        precedence, no-write JSON behavior, and unmatched-project empty-report behavior
-        are explicit.
+        GIVEN the attention order is specified WHEN hej has app/profile/v1/health/plan/TODO
+        context THEN the decision-review item appears after app/profile/v1/health/plan
+        pressure but before TODO attention, subject to the existing 6-item top-level bound.
       - >-
-        GIVEN direct analytics users already call `scripts/usage_stats.py` WHEN the
-        namespace contract is recorded THEN that script's observable CLI behavior is
-        preserved as a compatibility requirement.
+        GIVEN the structured JSON contract is specified WHEN decision review pressure
+        exists THEN JSON output includes a stable bounded payload with count, states,
+        entries, max_entries, bounded=true, and no raw unbounded decision text.
       - >-
-        GIVEN invalid usage namespace input is possible WHEN diagnostics are specified
-        THEN unsupported formats or malformed facade requests return valid values,
-        syntax, examples, and nonzero exits without listing private corpus-derived
-        project IDs.
+        GIVEN satisfaction authority is reviewed WHEN implementation starts THEN the
+        plan explicitly forbids changing satisfaction state, inferring satisfaction,
+        or making decision review the `next_action` ahead of current plan/health/TODO routing.
     evidence:
       - >-
-        Added `usage_namespace` to `references/cli/agent-ready-state-contract.yaml` with
-        public command `agentera usage`, rejected/deferred command `agentera corpus`,
-        rationale that this plan reports usage analytics rather than extracting corpus
-        data, supported flags `--format text|json`, `--corpus PATH`, and `--project VALUE`,
-        path precedence, JSON no-write behavior, unmatched-project empty-report behavior,
-        missing-corpus guidance, compatibility constraints, and non-goals.
+        Added the decision attention contract to `references/cli/agent-ready-state-contract.yaml`,
+        including the new `decision_attention` hej structured field and semantics that
+        derive from `_decision_context_entry` and `_decision_satisfaction_context`, never
+        infer satisfaction, never mutate `.agentera/decisions.yaml`, keep top-level
+        attention bounded, and preserve `next_action` priority.
       - >-
-        Preserved direct `scripts/usage_stats.py` as the compatibility engine and
-        explicitly recorded that JSON output remains the existing top-level analytics
-        payload rather than a wrapper envelope.
+        Contract boundary is implemented in `scripts/agentera` with one bounded
+        `decision_satisfaction_review` payload containing count, states, entries,
+        max_entries, bounded=true, and one attention string inserted before TODO
+        attention while leaving next-action selection unchanged.
   - number: 2
-    name: Usage namespace behavior
+    name: Hej decision attention behavior
     depends_on:
       - 1
     status: complete
     acceptance:
       - >-
-        GIVEN a corpus exists at the default or explicit path WHEN `agentera usage`
-        runs in text mode THEN it prints the existing bounded summary and writes
-        USAGE.md only to the existing usage report destination.
+        GIVEN decisions contain non-confirmed satisfaction states WHEN `agentera hej`
+        runs in text mode THEN attention includes one bounded decision-review item with
+        counts and up to three decision references.
       - >-
-        GIVEN a corpus exists WHEN `agentera usage --format json` runs THEN stdout
-        contains the existing top-level analytics payload fields and USAGE.md is not
-        written or modified.
+        GIVEN decisions contain non-confirmed satisfaction states WHEN `agentera hej
+        --format json` runs THEN JSON output includes the same attention item and a
+        structured decision-review payload with bounded entries.
       - >-
-        GIVEN `--corpus PATH` or `--project VALUE` is supplied WHEN the namespace runs
-        THEN those values are forwarded consistently with direct `scripts/usage_stats.py`
-        behavior, including valid empty reports for unmatched projects.
+        GIVEN decisions are all explicitly user-confirmed satisfied WHEN hej runs THEN
+        no decision-review attention item is emitted.
       - >-
-        GIVEN no usable corpus exists WHEN the namespace runs THEN it exits nonzero
-        with the existing actionable missing-corpus guidance and does not attempt to
-        build corpus data, refresh profiles, or scan home directories.
+        GIVEN TODO or health remains the highest-priority executable work WHEN decision
+        review pressure exists THEN `next_action` remains the existing TODO/health/plan
+        action and decision review stays attention-only.
+      - >-
+        GIVEN `agentera hej` reads decision state WHEN the command exits THEN
+        `.agentera/decisions.yaml` content is unchanged.
     evidence:
       - >-
-        Implemented `agentera usage` in `scripts/agentera` as a direct subprocess
-        facade over `scripts/usage_stats.py`, forwarding `--corpus`, `--project`, and
-        JSON mode as `--json` while text mode preserves the direct script's default
-        USAGE.md write and stdout summary.
+        Implemented `_decision_review_attention` in `scripts/agentera`; it enriches
+        decision entries through existing decision context helpers, includes missing
+        legacy state, open, provisional, unconfirmed user-confirmed, unrecognized, and
+        explicit review-needed satisfaction pressure, and excludes explicitly
+        user-confirmed satisfied decisions unless they are explicitly marked review-needed.
       - >-
-        Added bounded invalid-format guidance for unsupported `--format` values with
-        valid formats, syntax, and a concrete example. Missing corpus behavior remains
-        owned by the direct script and no corpus/profile refresh path was added.
+        `agentera hej --format json` now includes `decision_attention` and the matching
+        attention item; the current repo output shows bounded provisional decision
+        pressure while preserving `next_action` as the active plan task.
   - number: 3
-    name: Usage namespace coverage and guidance alignment
+    name: Regression coverage and guidance alignment
     depends_on:
       - 2
     status: complete
     acceptance:
       - >-
-        GIVEN the usage namespace behavior exists WHEN focused tests run THEN they
-        cover text success, JSON success, explicit corpus path, project filtering,
-        unmatched-project empty reports, missing corpus failure, invalid format
-        feedback, help discoverability, and direct `scripts/usage_stats.py`
-        compatibility.
+        GIVEN focused tests run WHEN fixture decisions include open, provisional,
+        missing legacy, unconfirmed confirmed, and confirmed states THEN only the
+        non-confirmed entries contribute to decision-review attention.
       - >-
-        GIVEN tests execute the default text write path WHEN they set up fixtures THEN
-        `AGENTERA_USAGE_DIR` and `PROFILERA_PROFILE_DIR` point at temporary directories
-        and no test writes the real user data home.
+        GIVEN more than three non-confirmed decisions exist WHEN hej renders attention
+        THEN structured entries are bounded and the top-level attention list remains
+        at or below six items.
       - >-
-        GIVEN package or command-surface checks exist WHEN usage namespace guidance is
-        touched THEN relevant packaged CLI, registry, explicit CLI surface, and help
-        checks are updated without adding unsupported capability-name commands.
+        GIVEN existing decisions JSON behavior is still required WHEN tests run THEN
+        `agentera decisions --format json` source-contract semantics remain compatible.
       - >-
-        GIVEN docs or contract guidance changes WHEN validation runs THEN affected
-        usage namespace tests, direct script compatibility probes, artifact validators,
-        and `git diff --check` pass.
+        GIVEN capability or CLI guidance is touched WHEN validation runs THEN tests and
+        validators prove no unsupported capability-name commands or satisfaction-state
+        mutation guidance were introduced.
     evidence:
       - >-
-        Added `tests/test_usage_namespace.py` covering text success with isolated
-        USAGE.md output, JSON success with no write, explicit corpus path, project
-        filtering, unmatched-project empty reports, missing-corpus failure, invalid
-        format feedback, help discoverability, and direct `scripts/usage_stats.py`
-        JSON compatibility.
+        Added focused `tests/test_query_cli.py` coverage for missing legacy, open,
+        provisional, unconfirmed user-confirmed, explicit review-needed, and explicitly
+        confirmed decisions; tests prove bounded entries, top-level attention ordering
+        before TODO, `next_action` preservation, and `.agentera/decisions.yaml` read-only
+        behavior.
       - >-
-        Verification passed with `uv run pytest tests/test_usage_namespace.py -q`,
-        `uv run pytest tests/test_usage_stats.py -q`, `uv run pytest
-        tests/test_usage_namespace.py tests/test_usage_stats.py tests/test_explicit_cli_surfaces.py
-        -q`, and invalid-format guidance probe `uv run scripts/agentera usage --format xml`.
+        Regression verification passed with `uv run pytest tests/test_query_cli.py -q`
+        (185 tests) and `uv run pytest tests/test_hej_capability.py
+        tests/test_decision_satisfaction_guidance.py -q` (15 tests), preserving existing
+        decisions JSON and hej capability guidance behavior.
   - number: 4
-    name: Version metadata sync
+    name: Policy-gated local closeout
     depends_on:
       - 1
       - 2
@@ -167,84 +170,53 @@ tasks:
     status: complete
     acceptance:
       - >-
-        GIVEN the implemented change is a `feat` WHEN `.agentera/docs.yaml` version
-        policy is reviewed THEN version-bearing surfaces follow the DOCS-owned
-        `semver_policy` and `version_files` list.
+        GIVEN the implemented change is classified as `feat` WHEN `.agentera/docs.yaml`
+        semver policy and `version_files` are reviewed THEN local version-bearing
+        surfaces are updated only as required by that policy.
       - >-
-        GIVEN version-bearing surfaces change WHEN package and metadata checks run
-        THEN package registry and packaged CLI tests pass with aligned version values.
+        GIVEN verification passes WHEN local state is synced THEN TODO, CHANGELOG,
+        DOCS, PROGRESS, and PLAN record exact evidence without unrelated documentation
+        churn or decision satisfaction edits.
       - >-
-        GIVEN release metadata is synced WHEN scope is audited THEN no package
-        publication, remote push, tag, installed-app refresh, profile refresh,
-        vision edit, objective edit, or decision satisfaction change occurred.
+        GIVEN closeout completes WHEN final checks run THEN relevant hej/decision tests,
+        package metadata tests if version files changed, touched artifact validators,
+        compaction check or fix, and `git diff --check` pass.
     evidence:
       - >-
-        Reviewed `.agentera/docs.yaml` semver policy: `feat` maps to a minor bump and
-        `version_files` lists the version-bearing surfaces. Aligned `pyproject.toml`,
-        `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`,
+        Classified the implemented behavior as a `feat`; per `.agentera/docs.yaml`
+        semver policy and `version_files`, aligned `pyproject.toml`, `uv.lock`,
+        `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`,
         `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`,
         `skills/agentera/SKILL.md`, `skills/hej/SKILL.md`, and `registry.json` from
-        2.5.0 to 2.6.0.
+        2.6.0 to 2.7.0.
       - >-
-        Package metadata verification passed with `uv run pytest tests/test_package_registry.py
-        tests/test_packaged_cli.py -q`, and no package publication, remote push, tag,
-        installed-app refresh, profile refresh, vision edit, objective edit, or decision
-        satisfaction change occurred.
-  - number: 5
-    name: Local artifact closeout
-    depends_on:
-      - 1
-      - 2
-      - 3
-      - 4
-    status: complete
-    acceptance:
-      - >-
-        GIVEN verification passes WHEN project state is synced THEN TODO, CHANGELOG,
-        DOCS, PROGRESS, and PLAN record the usage namespace scope and exact evidence
-        without unrelated documentation churn.
-      - >-
-        GIVEN the D48 usage namespace closes WHEN TODO is reviewed THEN the open
-        `[feat] Implement agentera corpus or agentera usage CLI namespace for profile
-        analytics (D48)` item is resolved and no D48 corpus extraction work is claimed.
-      - >-
-        GIVEN closeout completes WHEN final checks run THEN relevant tests, artifact
-        validators, compaction gate if needed, and `git diff --check` pass.
-    evidence:
-      - >-
-        Synced TODO, CHANGELOG, DOCS audit metadata, PROGRESS, and PLAN for the 2.6.0
-        D48 usage namespace closeout, resolving the usage/corpus TODO while explicitly
-        not claiming `agentera corpus` or corpus extraction work.
-      - >-
-        Final validation evidence is recorded in PROGRESS and CHANGELOG: focused usage
-        namespace tests, direct usage stats tests, explicit CLI surface tests,
-        package/version metadata tests, touched artifact validators, compaction if
-        needed, and `git diff --check`.
+        Synced TODO, CHANGELOG, DOCS audit metadata, PROGRESS, and PLAN with exact
+        evidence and no decision satisfaction edits, no new decision command, no
+        publication, no push, no tag, no installed-app/profile refresh, and no
+        vision/objective edit. Final validators, compaction, package metadata tests,
+        and `git diff --check` are part of closeout verification.
 overall_acceptance:
   - >-
-    GIVEN an agent needs usage/profile analytics WHEN it uses the supported CLI THEN
-    `agentera usage` is discoverable and does not require guessing `scripts/usage_stats.py`.
+    GIVEN non-confirmed decisions exist WHEN a user runs `agentera hej` THEN the dashboard
+    surfaces bounded decision review pressure instead of hiding it behind TODO state.
   - >-
-    GIVEN machine consumers already rely on usage analytics JSON WHEN JSON mode is
-    used through the namespace THEN the existing top-level analytics payload is
-    preserved without a wrapper envelope or USAGE.md write.
+    GIVEN decision satisfaction authority belongs to the decision entry and user
+    confirmation WHEN hej summarizes review pressure THEN it does not mutate, infer, or
+    user-confirm satisfaction.
   - >-
-    GIVEN default usage report generation writes a user-local artifact WHEN tests or
-    probes run THEN write destinations are explicit, isolated where appropriate, and
-    never caused by corpus/profile refresh side effects.
+    GIVEN executable routing remains important WHEN decision review pressure exists THEN
+    `next_action` priority for plan, health, objective, and TODO work is preserved.
   - >-
-    GIVEN the feature closes WHEN local state is synced THEN the D48 usage TODO is
-    resolved with exact evidence and release metadata follows `.agentera/docs.yaml`
-    policy.
+    GIVEN JSON consumers rely on stable startup state WHEN decision attention appears
+    THEN the structured payload is bounded, explicit, and compatible with existing hej output.
 surprises:
   - >-
-    Pre-write lint initially flagged the draft as over the PLAN.md per-entry word
-    budget; the revised draft passed verbosity, abstraction, and filler checks with
-    `scripts/usage_stats.py` as the concrete anchor.
+    Pre-write lint passed with concrete anchors in `scripts/agentera` and
+    `.agentera/decisions.yaml`.
   - >-
-    Adversarial review found six issues and all were addressed: choose pass-through
-    JSON instead of a wrapper envelope, isolate default report writes in tests,
-    preserve `AGENTERA_USAGE_DIR`/`PROFILERA_PROFILE_DIR` precedence, include package
-    surface checks, treat unmatched projects as valid empty reports, and split version
-    metadata from final artifact closeout.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-15-d48-verify-namespace-plan.yaml
+    Adversarial review found eight issues and all were addressed: avoid unbounded release
+    scope, define exact attention ordering, use decision satisfaction helpers rather
+    than legacy status/follow_up, specify JSON payload shape, bound top-level and nested
+    details separately, require read-only decisions behavior, include legacy missing
+    satisfaction in review pressure, and test `next_action` preservation.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-15-d48-usage-namespace-plan.yaml
