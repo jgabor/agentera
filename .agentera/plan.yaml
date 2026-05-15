@@ -239,7 +239,7 @@ tasks:
         `--capability-context inspektera`, unsupported hej fields failing without partial
         stdout, and Decision 45 field-selection contract coverage for `evidence_context`.
       - >-
-        `scripts/agentera` now exposes deterministic docs/health freshness caveats and
+        `scripts/agentera` now exposes deterministic docs/health current-state caveats and
         clears the obsolete Task 4 deferred source-contract entry. Focused verification
         passed with `uv run pytest tests/test_query_cli.py::TestHej tests/test_query_cli.py::TestRoutineStructuredOutput tests/test_decision45_cli_contract.py`
         (98 tests) and `python -m py_compile scripts/agentera`. No unsupported CLI

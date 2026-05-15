@@ -81,13 +81,13 @@ Preserve caveats from `evidence_context.state_family_caveats`, `evidence_context
 
 Use complete `evidence_context` first for the evaluated target, current plan criteria, latest progress verification, docs state, health state, TODO state, decision caveats, protected-state checks, version checks, and residual risks. Only run listed CLI fallbacks before raw artifact reads when the context is incomplete for the state needed.
 
-1. **Health state**: use `evidence_context.health_state` for prior audit findings, grades, freshness, and caveats.
+1. **Health state**: use `evidence_context.health_state` for prior audit findings, grades, current-state status, and caveats.
 2. **Protected-state boundary**: use `evidence_context.protected_state_checks` and preserve any not-checked-by-design caveats instead of reading protected state.
 3. **Decision context**: use `evidence_context.decision_context` for decision caveats. Findings contradicting deliberate decisions are not findings.
 4. **TODO state**: use `evidence_context.todo_state` for known problems. Don't re-report unless worsened.
 5. **Progress verification**: use `evidence_context.progress_verification` for recent-cycle verification and caveats.
 5b. **Change magnitude**: if CLI progress evidence exposes commit hashes from cycles since the last health audit timestamp, run `git log --stat` on those commits to estimate total change volume. If CLI progress evidence has no commit hashes, skip; default depth applies.
-5c. **Plan context** (for artifact current-state review): use `evidence_context.evaluation_target` and `evidence_context.plan_criteria` for the plan-relative baseline. If the evidence context reports no target, missing criteria, or missing freshness baseline, preserve that caveat; do not reconstruct it from raw plan state during normal startup.
+5c. **Plan context** (for artifact current-state review): use `evidence_context.evaluation_target` and `evidence_context.plan_criteria` for the plan-relative baseline. If the evidence context reports no target, missing criteria, or missing current-state baseline, preserve that caveat; do not reconstruct it from raw plan state during normal startup.
 6. **Decision profile**: use profile/app caveats already attributed in `evidence_context.residual_risks`; stale or unavailable profile state calibrates confidence but is not approval to refresh profile state or read profile directly during startup.
 7. **Project discovery**: map directory structure, read dependency manifests, README, CLAUDE.md, AGENTS.md, identify language/stack/build commands, `git log --oneline -20`
 

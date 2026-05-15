@@ -1786,18 +1786,18 @@ def _evidence_docs_state(docs: dict[str, Any]) -> dict[str, Any]:
         field for field in ("mapping_entries", "indexed_documents", "last_audit")
         if _has_recorded_value(docs.get(field))
     ]
-    freshness, freshness_caveat = _freshness_state(docs.get("last_audit"), "Docs")
+    current_state, current_state_caveat = _current_state_status(docs.get("last_audit"), "Docs")
     return {
         "status": "available" if available else "unavailable",
         "source_provenance": _source_provenance("docs", "agentera docs --format json"),
         "mapping_entries": docs.get("mapping_entries", 0),
         "indexed_documents": docs.get("indexed_documents", 0),
         "last_audit": docs.get("last_audit"),
-        "freshness": freshness,
+        "current_state": current_state,
         "non_empty_evidence_present": bool(non_empty_fields),
         "non_empty_evidence_fields": non_empty_fields,
         "caveats": (["Docs state is unavailable in CLI docs state."] if not available else [])
-        + ([freshness_caveat] if available and freshness_caveat else []),
+        + ([current_state_caveat] if available and current_state_caveat else []),
     }
 
 
@@ -1807,7 +1807,7 @@ def _evidence_health_state(health: dict[str, Any]) -> dict[str, Any]:
         field for field in ("audit_number", "trajectory", "grade")
         if _has_recorded_value({"audit_number": health.get("number"), **health}.get(field))
     ]
-    freshness, freshness_caveat = _freshness_state(health.get("timestamp"), "Health")
+    current_state, current_state_caveat = _current_state_status(health.get("timestamp"), "Health")
     return {
         "status": "available" if available else "unavailable",
         "source_provenance": _source_provenance("health", "agentera health --format json"),
@@ -1816,21 +1816,21 @@ def _evidence_health_state(health: dict[str, Any]) -> dict[str, Any]:
         "trajectory": health.get("trajectory"),
         "grade": health.get("grade"),
         "degrading": bool(health.get("degrading")),
-        "freshness": freshness,
+        "current_state": current_state,
         "non_empty_evidence_present": bool(non_empty_fields),
         "non_empty_evidence_fields": non_empty_fields,
         "caveats": (["Health state is unavailable in CLI health state."] if not available else [])
-        + ([freshness_caveat] if available and freshness_caveat else []),
+        + ([current_state_caveat] if available and current_state_caveat else []),
     }
 
 
-def _freshness_state(value: Any, label: str, stale_after_days: int = 30) -> tuple[str, str | None]:
+def _current_state_status(value: Any, label: str, stale_after_days: int = 30) -> tuple[str, str | None]:
     if not isinstance(value, str) or not value.strip():
         return "unknown", None
     try:
         observed = date.fromisoformat(value.strip()[:10])
     except ValueError:
-        return "unknown", f"{label} freshness date is not ISO-parseable in CLI state."
+        return "unknown", f"{label} current-state date is not ISO-parseable in CLI state."
     age_days = (date.today() - observed).days
     if age_days > stale_after_days:
         return "stale", f"{label} evidence is stale ({age_days} days old; threshold={stale_after_days})."

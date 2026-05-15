@@ -1990,9 +1990,9 @@ class TestHej:
         context = json.loads(r.stdout)["evidence_context"]
         contract = context["source_contract"]
         assert context["docs_state"]["status"] == "available"
-        assert context["docs_state"]["freshness"] == "stale"
+        assert context["docs_state"]["current_state"] == "stale"
         assert context["health_state"]["status"] == "available"
-        assert context["health_state"]["freshness"] == "stale"
+        assert context["health_state"]["current_state"] == "stale"
         assert contract["complete_for_evidence_context"] is True
         assert contract["missing_required_evidence_state"] == []
         assert any(caveat.startswith("Docs evidence is stale") for caveat in contract["caveats"])
