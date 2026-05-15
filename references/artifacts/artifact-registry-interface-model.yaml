@@ -101,6 +101,7 @@ owned_enums:
     - global_user_state
     - archive
     - local_harness
+    - cli_context
   scope:
     - project_root
     - project_agent_state
@@ -108,6 +109,7 @@ owned_enums:
     - archive
     - objective_scoped
     - local_harness
+    - cli_context
   local_usage_role:
     - produces
     - consumes
@@ -231,6 +233,16 @@ explicit_special_cases:
       meaning: active objective directory name
       aliases_rejected_after_migration:
         - <objective-name>
+    docs_yaml_can_override_path: false
+  - artifact_id: benchmark_context
+    display_name: benchmark_context
+    artifact_type: cli_context
+    scope: cli_context
+    default_path: agentera hej --format json --capability-context optimera#benchmark_context
+    producers:
+      - agentera_cli
+    consumers:
+      - optimera
     docs_yaml_can_override_path: false
 consumer_permissions:
   cross_capability_validator:
