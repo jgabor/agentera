@@ -76,7 +76,7 @@ def test_offline_smoke_fails_stale_installed_reference_before_runtime(
 
     assert result.ok is False
     assert result.real_npx_attempted is False
-    assert result.errors == ["hej: missing bundled support file references/missing.md"]
+    assert result.errors == ["hej: missing app support file references/missing.md"]
 
 
 def test_default_smoke_does_not_run_real_npx(tmp_path: Path, monkeypatch) -> None:

@@ -97,7 +97,7 @@ If no runtime has extractable records, skip the selection question, say no local
 
 ### Step 2: Run extraction
 
-Read `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` if it already exists and still matches the selected runtime set. If the corpus is absent, stale, or was produced for a different source selection, run the bundled extractor from the Agentera v2 repository:
+Read `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` if it already exists and still matches the selected runtime set. If the corpus is absent, stale, or was produced for a different source selection, run the extractor from the Agentera app:
 
 ```bash
 uv run ${AGENTERA_HOME:-.}/scripts/extract_corpus.py

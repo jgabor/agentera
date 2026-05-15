@@ -118,7 +118,7 @@ def test_setup_helpers_characterize_explicit_root_shapes(
         with pytest.raises(module.InstallRootError) as exc:
             module.resolve_install_root(str(root))
         message = str(exc.value)
-        assert f"--install-root {root.resolve()} is not a valid agentera install" in message
+        assert f"--install-root {root.resolve()} is not a valid Agentera directory" in message
         assert ", ".join(expected_missing) in message
 
 

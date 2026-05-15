@@ -35,13 +35,13 @@ Copilot CLI, and Codex CLI.
 What's new:
 
 - **One install, one entry point**: the twelve v1 skills are now capabilities
-  inside the bundled Agentera skill.
+  inside the Agentera skill.
 - **Guided v1 upgrades**: Agentera detects older project state and walks through
   the migration instead of leaving users to move files by hand.
 - **More dependable saved context**: project state is structured, validated, and
   easier for the next agent session to read.
 - **Better runtime support**: Codex, Copilot CLI, OpenCode, and Claude Code now
-  share the same bundled suite model.
+  share the same managed app model.
 
 ### Upgrading from v1
 
@@ -68,7 +68,7 @@ Coding agents are good at tasks and bad at continuity. They forget decisions,
 repeat investigations, lose project context, and hand the next session a pile of
 code with little explanation.
 
-Agentera fixes that with a single bundled skill containing twelve specialized
+Agentera fixes that with a single Agentera skill containing twelve specialized
 capabilities that coordinate through plain project files. One capability plans,
 another builds, another audits, another documents, another remembers your
 decision style. The work stops being a chat transcript and becomes saved project
@@ -244,7 +244,7 @@ A good default loop is:
 
 ## Capabilities
 
-All twelve capabilities are bundled in `skills/agentera/`. Each has a
+All twelve capabilities live in `skills/agentera/`. Each has a
 `prose.md` defining its behavior and `schemas/` defining its triggers,
 artifacts, validation rules, and exit signals. The dispatcher in
 `skills/agentera/SKILL.md` routes every `/agentera` request to the matching
@@ -302,7 +302,7 @@ uv run scripts/validate_capability.py skills/agentera/capabilities/<name>
 
 ## Hooks
 
-Agentera works as a portable bundled skill first. Hooks are optional, but they
+Agentera works as a portable Agentera skill first. Hooks are optional, but they
 add enough value that most users should know they exist.
 
 Use hooks when you want:

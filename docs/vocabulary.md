@@ -26,7 +26,7 @@ included when they shape cross-suite usage.
 | Rule | Use | Avoid |
 | --- | --- | --- |
 | Internal workflows are capabilities. | `capability`, `twelve capabilities`, `capability prose`, `capability schemas` | Calling hej/realisera/etc. standalone skills, except in v1 history. |
-| The runtime surface is a skill. | `bundled skill`, `Agentera skill`, `single installed Agentera app` | `twelve-skill suite` for v2 behavior. |
+| The runtime surface is a skill. | `Agentera skill`, `single installed Agentera app` | `twelve-skill suite` for v2 behavior. |
 | `/agentera` is the main invocation. | `/agentera`, `$agentera` for Codex-specific docs | `/hej` except as a legacy bridge. |
 | The CLI source and rendered dashboard are different. | `agentera hej` source data, `Hej dashboard` rendered briefing | Treating raw CLI labels as the user-facing dashboard. |
 | Routine state uses flat commands. | `agentera plan`, `agentera docs`, `agentera health` | `agentera query plan` for routine state. |
@@ -70,9 +70,9 @@ brand language before they can act.
 | Term | Definition | Common sources |
 | --- | --- | --- |
 | Agentera | The open protocol for turning AI agents into engineering teams through shared project state, roles, decisions, and verification. | `README.md`, `.agentera/vision.yaml`, `skills/agentera/SKILL.md` |
-| Agentera v2 | The current architecture: one bundled skill, one `/agentera` entry point, twelve capabilities, YAML project state, and CLI-first access. | `README.md`, `UPGRADE.md`, `.agentera/decisions.yaml` |
-| Bundled skill | The runtime-loaded Agentera skill at `skills/agentera/`. It contains the dispatcher and twelve capabilities. | `skills/agentera/SKILL.md` |
-| Capability | A routed behavioral unit inside the bundle, with `prose.md` plus `triggers.yaml`, `artifacts.yaml`, `validation.yaml`, and `exit.yaml`. | `AGENTS.md`, `skills/agentera/capabilities/*` |
+| Agentera v2 | The current architecture: one Agentera skill, one `/agentera` entry point, twelve capabilities, YAML project state, and CLI-first access. | `README.md`, `UPGRADE.md`, `.agentera/decisions.yaml` |
+| Agentera skill | The runtime-loaded Agentera skill at `skills/agentera/`. It contains the dispatcher and twelve capabilities. | `skills/agentera/SKILL.md` |
+| Capability | A routed behavioral unit inside the Agentera skill, with `prose.md` plus `triggers.yaml`, `artifacts.yaml`, `validation.yaml`, and `exit.yaml`. | `AGENTS.md`, `skills/agentera/capabilities/*` |
 | Shared protocol | The primitive vocabulary in `protocol.yaml`: confidence, severity, decision labels, exits, visual tokens, glyphs, and phases. | `skills/agentera/protocol.yaml` |
 | Capability schema contract | The executable contract for capability schema groups, stable IDs, priorities, deprecations, and primitive references. | `skills/agentera/capability_schema_contract.yaml` |
 | Project state | Structured files that preserve intent, decisions, plans, progress, health, docs, design, and session continuity. | `README.md`, `.agentera/docs.yaml` |
@@ -364,7 +364,7 @@ not add precision:
 | Missing chosen directory | Needs a user decision when provided through `AGENTERA_HOME` or explicit `--install-root`. |
 | Package refresh | Package-manager or marketplace update. It does not prove Agentera's app files are current. |
 | App repair | Normal repair flow that previews or applies Agentera app files plus managed runtime config, plugins, hooks, commands, and safe cleanup together. It must not edit shell startup files, and package-manager commands remain opt-in through `--update-packages`. |
-| `--only bundle` | Narrow app-only operation for bundle/app-file work. Do not present it as the normal repair recommendation when managed runtime surfaces may also need repair. |
+| `--only bundle` | Compatibility selector for narrow app-file work. Do not present it as the normal repair recommendation when managed runtime surfaces may also need repair. |
 | Preview | No-write mode. Required before upgrade or app repair writes; the underlying command flag is `--dry-run`. |
 | `--yes` | Explicit apply flag after preview and approval. |
 | Final check | Setup validation after upgrade apply. Internal code may still call this postflight doctor. |
@@ -434,7 +434,7 @@ Visualisera owns visual identity in `DESIGN.md`. Protocol owns token meanings in
 | Phrase | Use |
 | --- | --- |
 | “The open protocol for turning AI agents into engineering teams.” | Product identity. |
-| “One install, one entry point, one query interface to all project state.” | v2 bundle promise. |
+| “One install, one entry point, one query interface to all project state.” | v2 app-home promise. |
 | “Continuity lives in files, not memory.” | Realisera/project-state principle. |
 | “The conversation preserves reasoning; the artifact preserves the plan.” | Planera boundary. |
 | “Planera owns WHAT and WHY; realisera owns HOW.” | Planning/building boundary. |
@@ -458,7 +458,7 @@ schema concept, runtime capability, install state, or user action.
 
 | Ambiguous term | Why bare usage is risky | Required wording |
 | --- | --- | --- |
-| Skill | Confuses v1 standalone skills, the v2 bundled skill, and internal workflows. | Use `Agentera skill` for the installed runtime bundle, `v1 skill` for history, and `capability` for v2 workflows. |
+| Skill | Confuses v1 standalone skills, the v2 Agentera skill, and internal workflows. | Use `Agentera skill` for the installed runtime surface, `v1 skill` for history, and `capability` for v2 workflows. |
 | Contract | Could mean schema structure, artifact shape, protocol primitive, adapter behavior, or product promise. | Use `schema contract`, `artifact schema`, `protocol primitives`, `runtime adapter contract`, or `product promise`. |
 | Status | Different surfaces use different state machines and output labels. | Use `exit status`, `task status`, `installed-app status`, `install status`, `docs status`, or `health status`. |
 | Freshness | Sounds like a branded synonym for several normal states: current, stale, synced, or out of date. | Use object-specific state wording such as `artifact is current`, `Agentera app files need repair`, `docs are current`, or `plan-level current-state check`. |
@@ -500,7 +500,7 @@ High-signal source surfaces for this vocabulary:
 | `scripts/install_root.py` | Install-root classification semantics. |
 | `hooks/validate_artifact.py` | Runtime artifact-write validation and hook exit codes. |
 | `README.md` | Product, invocation, artifact, and user-facing capability language. |
-| `UPGRADE.md` | Upgrade flow, package refresh, durable bundle, and runtime migration terms. |
+| `UPGRADE.md` | Upgrade flow, package refresh, app-home repair, and runtime migration terms. |
 | `DESIGN.md` | Visual identity, glyph, severity, confidence, and structural token language. |
 | `.agentera/docs.yaml` | Current documentation registry, mapping, coverage, and audit vocabulary. |
 | `.agentera/decisions.yaml` | Decision grammar, v2 architecture rationale, routing decisions. |

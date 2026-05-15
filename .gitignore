@@ -2,6 +2,7 @@
 .codex
 docs/*
 !docs/benchmark.md
+!docs/d47-app-home-vocabulary-inventory.md
 !docs/vocabulary.md
 __pycache__/
 *.pyc

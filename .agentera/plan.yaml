@@ -3,224 +3,247 @@ header:
   created: 2026-05-15
   status: complete
   reviewed: 2026-05-15
-  critic_issues: 6 found, 6 addressed, 0 dismissed
-  revised: >-
-    Made the plan evidence-first so implementation must reproduce the D46 runtime
-    gap before changing prose. Added explicit semantic/runtime fixture coverage,
-    capability-guidance enforcement, native question-tool behavior checks, and
-    metadata closeout so the fix cannot be satisfied by SKILL.md wording alone.
-  title: D46 Handoff Wording Enforcement
+  critic_issues: 10 found, 10 addressed, 0 dismissed
+  title: D47 App-Home Vocabulary Cleanup
 what: >-
-  Fix Decision 46 handoff behavior so Agentera agents consistently render
-  downstream capability recommendations as glyph plus canonical capability name,
-  reserve `/agentera <alias>` wording for explicit route documentation, and use
-  the runtime-native question tool when bounded or state-changing handoff choices
-  require it.
+  Audit repository surfaces for obsolete `bundle` terminology and legacy
+  artifact-label wording after the D47 app-home migration, then update only
+  places where old wording describes current live behavior. The cleanup target
+  includes `scripts/`, `hooks/`, `skills/agentera/`, tests, README/UPGRADE/docs,
+  registry/package/runtime surfaces, and Agentera-facing guidance.
 why: >-
-  D46 is still open because the documented handoff contract appears not to shape
-  actual agent behavior reliably. Prose-only rules are not enough when runtime
-  agents continue to emit standalone slash-capability labels or skip required
-  confirmation behavior. The fix should make the intended handoff surface
-  observable, testable, and hard to regress.
+  D47 changed Agentera's install model to a durable app home with managed app
+  files under `AGENTERA_HOME/app`. Stale bundle-root vocabulary in current CLI,
+  runtime, docs, tests, and guidance surfaces makes installation state harder for
+  agents and users to reason about and increases future migration risk.
 constraints: >-
-  Preserve Decisions 43, 45, and 46: do not add capability-name CLI commands, do
-  not reintroduce standalone slash-capability handoff labels, and do not blur
-  `/agentera <alias>` slash routes with `agentera` state commands. Preserve
-  CLI-first artifact access and truthful source contracts. Do not edit vision or
-  objective state, publish, push, tag, refresh installed apps/profile, or mark
-  D46 user-confirmed satisfied without user confirmation.
+  Preserve D47 semantics: `AGENTERA_HOME` is the durable app home, managed app
+  files live under `AGENTERA_HOME/app`, user data remains under the app home,
+  `agentera doctor` stays read-only, and `agentera upgrade` owns idempotent
+  migration writes. Do not rewrite historical decision records or changelog text
+  solely to remove old wording. Do not rename canonical artifact IDs, filenames,
+  schema names, CLI selectors, JSON fields, persisted metadata keys, or stable
+  API fields unless a compatibility review explicitly permits it. Preserve D43,
+  D45, and D46 route/CLI/handoff boundaries. Do not publish, push, tag, refresh
+  installed apps/profile, edit vision state, or edit objective state.
 scope:
   included:
-    - Reproduce and characterize where D46 guidance fails in real or fixture-backed agent output.
-    - Tighten dispatcher and capability guidance only where it changes observable routing and handoff behavior.
-    - Add regression coverage for slashless handoff labels, explicit route documentation boundaries, and native question-tool gating.
-    - Update semantic fixtures or eval expectations so runtime-facing examples reject old `/realisera`-style handoff output.
-    - Sync TODO, progress, changelog, docs metadata, and D46 provisional satisfaction evidence after verification.
+    - >-
+      Search current repository text for `bundle`, `bundled`, `bundle-root`,
+      `bundle_root`, `bundle root`, `install root`, and legacy labels such as
+      `DECISIONS.md`, `DOCS.md`, `PLAN.md`, and `PROGRESS.md` where used as
+      canonical current labels.
+    - >-
+      Classify each relevant occurrence as `replace`, `preserve`, or `defer`
+      with path, term, rationale, and action.
+    - >-
+      Replace current-behavior wording with app-home vocabulary such as
+      `app home`, `managed app`, `app refresh`, and `user data root`.
+    - >-
+      Update focused tests, fixtures, docs, or contract checks only where stale
+      wording can regress current D47 behavior.
+    - >-
+      Sync local closeout metadata after verification without claiming D47
+      user-confirmed satisfaction.
   excluded:
-    - Adding `agentera realisera`, `agentera planera`, or any other capability-name CLI command.
-    - Renaming canonical Swedish capability names or changing Decision 43 primary aliases.
-    - Building a general routing engine rewrite beyond the D46 enforcement gap.
-    - User-confirming D46 satisfaction without an explicit user confirmation step.
+    - D48 CLI namespace work such as `agentera validate`, `agentera smoke`, or `agentera usage`.
+    - Redesigning or renaming canonical artifact names, filenames, schema IDs, or CLI selectors.
+    - User-confirming D47 satisfaction without explicit user confirmation.
     - Publication, tagging, pushing, installed-app refresh, or profile refresh.
   deferred:
-    - Broader UX redesign for all capability handoff prompts beyond D46 compliance.
-    - Cross-runtime automated UI tests for every host question tool if lightweight fixtures can cover this release.
-    - Bulk cleanup of unrelated bundle terminology, doctor output, or raw-read performance TODOs.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-15-2-3-13-decision-satisfaction-tracking.yaml
+    - >-
+      Deeper collector validation or metadata drift guard work unless a changed
+      D47 surface or focused test directly requires it.
+    - >-
+      Broad cleanup of unrelated historical wording in archived decisions,
+      changelog entries, or legacy migration examples.
 design: >-
-  Treat D46 as an enforcement problem, not a prose-polish problem. Start by
-  collecting the failing output shape from tests, fixtures, or recent session
-  transcripts. Then move the contract into the smallest runtime-facing seams
-  that agents actually consume: hej dashboard instructions, dispatcher handoff
-  rules, capability prose handoff sections, docs vocabulary, semantic fixtures,
-  and regression tests. Tests should fail on standalone slash-capability handoff
-  labels and on state-changing handoffs that avoid the native question tool, but
-  still allow `/agentera <alias>` when documenting explicit slash routes.
+  Treat this as a bounded vocabulary and contract cleanup, not a repository-wide
+  rewrite. Start with a concrete inventory table so every replacement and every
+  preserved old term has an auditable reason. Default to changing labels,
+  descriptions, help text, docs, tests, and fixtures that describe current live
+  behavior. Default to preserving compatibility-facing keys and historical text.
+  Verification should combine focused app-home behavior tests with a targeted
+  terminology audit proving that remaining old terms are intentional.
 tasks:
   - number: 1
-    name: D46 failure characterization
+    name: Terminology inventory and classification
     depends_on: []
     status: complete
-    acceptance:
-      - >-
-        GIVEN the open D46 TODO and decision state WHEN current tests, semantic
-        fixtures, and available session examples are reviewed THEN the plan has a
-        concrete failing output pattern instead of assuming prose is ignored.
-      - >-
-        GIVEN existing handoff tests already assert SKILL.md wording WHEN the
-        behavior gap is characterized THEN the missing coverage is identified as
-        runtime-facing output, fixture, or question-tool behavior rather than
-        duplicate prose assertions.
-      - >-
-        GIVEN a handoff example uses `/realisera`, `/planera`, SG codes, or a
-        state-changing free-form prompt WHEN classified THEN the classification
-        records whether it violates label vocabulary, route/CLI separation, or
-        native question-tool gating.
-      - >-
-        GIVEN no reproducible violation can be found WHEN characterization
-        completes THEN the TODO is converted into a narrower evidence-gathering
-        follow-up instead of making speculative implementation changes.
     evidence:
       - >-
-        Characterization found concrete stale runtime-facing examples in semantic
-        fixture helpers and hej routing tests: defaults used `route /realisera`
-        and `suggested -> /realisera`, while contract tests only asserted prose
-        strings. The gap was fixture/eval behavior, not another SKILL.md wording
-        assertion.
+        Created `docs/d47-app-home-vocabulary-inventory.md` and exposed it with
+        `.gitignore` exception `!docs/d47-app-home-vocabulary-inventory.md`.
+        Independent evaluation now passes all Task 1 criteria: required terms
+        and surfaces are classified across scripts, hooks, skills, tests,
+        root/docs, package/runtime manifests, `.opencode`, `.agentera/**`, and
+        archives; the table has the required columns; compatibility identifiers
+        are preserved by default; historical, changelog, migration, and archive
+        records remain preserved.
+    acceptance:
+      - >-
+        GIVEN repository text is searched in `scripts/`, `hooks/`,
+        `skills/agentera/`, tests, README/UPGRADE/docs, registry/package/runtime
+        surfaces, and Agentera-facing guidance WHEN matches for `bundle`,
+        `bundled`, `bundle-root`, `bundle_root`, `bundle root`, `install root`,
+        `DECISIONS.md`, `DOCS.md`, `PLAN.md`, and `PROGRESS.md` are reviewed THEN
+        each relevant occurrence is classified as `replace`, `preserve`, or
+        `defer`.
+      - >-
+        GIVEN a relevant occurrence is classified WHEN the inventory is complete
+        THEN the executor has a table with path, matched term, classification,
+        rationale, and planned action available in the final closeout summary or
+        a committed artifact.
+      - >-
+        GIVEN a key, flag, JSON field, schema field, fixture key, persisted
+        metadata key, filename, artifact ID, or CLI selector contains old wording
+        WHEN classified THEN compatibility is checked before any rename and the
+        default action is to preserve the identifier while updating surrounding
+        labels or descriptions.
+      - >-
+        GIVEN D47 wording appears in historical decisions, changelog entries, or
+        explicit legacy-migration examples WHEN classified THEN the wording is
+        not rewritten solely for vocabulary consistency.
   - number: 2
-    name: Runtime-facing handoff contract enforcement
+    name: Live app-home vocabulary updates
     depends_on: [1]
     status: complete
-    acceptance:
-      - >-
-        GIVEN Agentera suggests a downstream capability from hej or another
-        capability WHEN the suggested action is rendered THEN the visible label is
-        glyph plus canonical name, such as `⧉ realisera`, not a standalone
-        slash-capability route.
-      - >-
-        GIVEN documentation needs to describe a slash route WHEN `/agentera
-        <alias>` wording appears THEN the context clearly marks it as explicit
-        slash-route documentation, not a handoff label or CLI command.
-      - >-
-        GIVEN a state-changing handoff such as creating/updating a plan, running
-        realisera, running optimera, documenting, migrating, or orchestrating WHEN
-        a confirmation prompt is needed THEN the runtime-native question tool is
-        required even if there is only one suggested action.
-      - >-
-        GIVEN a single non-mutating suggestion is shown WHEN the user replies with
-        `yes`, `start`, `do it`, or `run <capability>` THEN the guidance treats
-        that as confirmation of the named suggestion and asks one clarifying
-        question only for ambiguous replies.
     evidence:
       - >-
-        Updated semantic fixture defaults and fixture documentation to require
-        `⧉ realisera`, and updated hej startup fixtures to forbid standalone
-        slash-capability handoff labels such as `/realisera`, `/planera`,
-        `/orkestrera`, and `/optimera` while preserving explicit `/agentera
-        <alias>` route documentation boundaries in dispatcher tests.
+        Updated live app-home vocabulary across current docs, capability prose,
+        setup/smoke diagnostics, adapter docs, lifecycle validation wording,
+        package description text, and private package-entry helper names while
+        preserving compatibility contracts, canonical artifact labels, CLI
+        selectors, route/handoff boundaries, historical records, and migration
+        examples. Independent evaluation passed all Task 2 acceptance criteria.
+        Verification evidence included `git diff --check`, focused setup/smoke,
+        runtime, packaged CLI, app-home contract, setup-copilot, and package
+        registry pytest suites, lifecycle adapter validation, and validation for
+        edited capabilities. The OpenCode bootstrap smoke still has an unrelated
+        pre-existing environment propagation assertion failure outside the edited
+        diagnostic wording.
+    acceptance:
+      - >-
+        GIVEN an occurrence is classified `replace` WHEN updated THEN
+        user-facing or live internal wording uses app-home vocabulary such as
+        `app home`, `managed app`, `app refresh`, and `user data root` instead of
+        obsolete bundle-root wording.
+      - >-
+        GIVEN legacy migration behavior is documented or exercised WHEN wording
+        changes THEN it remains clear that `agentera doctor` is read-only and
+        `agentera upgrade` owns migration writes.
+      - >-
+        GIVEN canonical artifact labels or legacy labels are touched WHEN wording
+        changes THEN only explanatory prose is updated unless the name is purely
+        display text; canonical artifact IDs, filenames, schema names, and CLI
+        selectors are not renamed.
+      - >-
+        GIVEN route, CLI, or capability handoff examples are touched WHEN updates
+        are made THEN D43, D45, and D46 boundaries remain intact, including glyph
+        plus canonical capability labels where required.
   - number: 3
-    name: Regression and semantic coverage
-    depends_on: [1, 2]
+    name: Regression and validation coverage
+    depends_on: [2]
     status: complete
-    acceptance:
-      - >-
-        GIVEN unit tests scan dispatcher and capability prose WHEN they run THEN
-        standalone slash-capability handoff labels, SG-code labels, and unsupported
-        capability-name CLI command examples fail the suite.
-      - >-
-        GIVEN semantic fixtures model Agentera startup or capability handoff output
-        WHEN old output such as `route /realisera` or `suggested -> /realisera`
-        appears THEN semantic evaluation rejects it in favor of glyph/name handoff
-        wording tied to a concrete object.
-      - >-
-        GIVEN question-tool gating examples are tested WHEN a handoff is
-        state-changing THEN coverage distinguishes native Proceed/Cancel behavior
-        from acceptable free-form confirmation for non-mutating suggestions.
-      - >-
-        GIVEN test proportionality is checked WHEN new cases are added THEN each
-        new behavior has at least one passing and one failing fixture or an
-        explicit reason a failing fixture would duplicate an existing guard.
     evidence:
       - >-
-        Focused regression coverage now includes passing glyph/name fixture output
-        and failing stale `/realisera` examples. `tests/test_hej_routing_fixture.py`
-        asserts stale slash output trips the dedicated forbidden-output guard, and
-        semantic eval fixtures require glyph/name output tied to concrete tasks.
+        Focused regression and validation coverage passed after updating the
+        affected install-root characterization expectation to the new `Agentera
+        directory` wording. Verification covered app-home contract behavior,
+        doctor/upgrade behavior, package/runtime surfaces, affected textual
+        fixtures, targeted stale-terminology audit, lifecycle adapter metadata,
+        CLI describe metadata, schema self-validation, edited capability
+        validation, PLAN and SESSION artifact validation, and `git diff --check`.
+        The focused verification suite reported 346 passing tests. Remaining
+        caveats are non-blocking: the known OpenCode bootstrap environment
+        propagation assertion and the known Planera full-plan lint verbosity
+        advisory.
+    acceptance:
+      - >-
+        GIVEN changed code, tests, docs, or fixtures are in place WHEN focused
+        verification runs THEN selected tests cover app-home contract behavior,
+        `doctor`/`upgrade` behavior, package/runtime surfaces, and affected
+        textual fixtures, or the closeout explains why a category was not touched.
+      - >-
+        GIVEN stale terminology is intentionally preserved WHEN a targeted
+        terminology audit is reviewed THEN every remaining relevant occurrence
+        has a `preserve` or `defer` rationale from Task 1.
+      - >-
+        GIVEN version, package, plugin, registry, or runtime metadata files are
+        changed WHEN metadata drift checks are relevant THEN the selected checks
+        prove those surfaces remain aligned; otherwise drift-guard work is
+        recorded as deferred with no code changes.
+      - >-
+        GIVEN capability prose, schemas, or Agentera artifacts are changed WHEN
+        validation runs THEN affected capability validation, schema validation,
+        artifact validation, and `git diff --check` pass.
   - number: 4
-    name: Focused verification gates
-    depends_on: [2, 3]
+    name: Local metadata closeout
+    depends_on: [1, 2, 3]
     status: complete
-    acceptance:
-      - >-
-        GIVEN implementation is complete WHEN focused tests run THEN
-        `tests/test_skill_dispatch_contract.py` and the relevant semantic eval
-        tests pass.
-      - >-
-        GIVEN capability guidance changes are complete WHEN validation runs THEN
-        affected capability validation and self-validation pass without adding
-        unsupported command surfaces.
-      - >-
-        GIVEN artifact changes are complete WHEN repository gates run THEN
-        artifact validation, compaction check if applicable, Agentera gate, and
-        `git diff --check` pass.
-      - >-
-        GIVEN verification evidence is recorded WHEN realisera closes the work
-        THEN the evidence names the exact tests and fixtures that prove D46 is
-        enforced beyond prose wording.
     evidence:
       - >-
-        Verification passed with `uv run pytest tests/test_semantic_eval.py
-        tests/test_semantic_fixtures.py tests/test_hej_routing_fixture.py
-        tests/test_skill_dispatch_contract.py tests/test_package_registry.py
-        tests/test_runtime_adapters.py -q` (141 passed), `uv run
-        scripts/semantic_eval.py fixtures/semantic/hej-routing-plan-priority.md
-        fixtures/semantic/hej-cli-budget.md fixtures/semantic/hej-bare-message.md
-        fixtures/semantic/hej-bare-empty-repo.md` (4 passed), Hej and Planera
-        capability validation, schema self-validation, artifact validators,
-        `agentera compact --mode check --format json`, `agentera gate --format
-        json`, and `git diff --check`.
-  - number: 5
-    name: D46 closeout metadata sync
-    depends_on: [1, 2, 3, 4]
-    status: complete
+        Task 4 local metadata closeout updated TODO, CHANGELOG, DOCS audit
+        metadata, PROGRESS, and this plan evidence to record the D47 app-home
+        vocabulary cleanup. Evidence recorded from completed work: Task 1
+        independent evaluation passed for inventory coverage, required columns,
+        compatibility preservation, and historical/migration/archive preservation;
+        Task 2 independent evaluation passed for live app-home vocabulary updates
+        while preserving compatibility contracts, canonical artifact labels, CLI
+        selectors, route/handoff boundaries, historical records, and migration
+        examples; Task 3 focused verification covered app-home contract behavior,
+        doctor/upgrade behavior, package/runtime surfaces, affected textual
+        fixtures, targeted stale-terminology audit, lifecycle adapter metadata,
+        CLI describe metadata, schema self-validation, edited capability
+        validation, PLAN and SESSION artifact validation, and `git diff --check`,
+        with 346 passing tests. Task 4 closeout validation passed with `uv run
+        hooks/validate_artifact.py --artifact TODO.md --file TODO.md --format
+        json` (status=pass), `uv run hooks/validate_artifact.py --artifact
+        CHANGELOG.md --file CHANGELOG.md --format json` (status=pass), `uv run
+        hooks/validate_artifact.py --artifact DOCS.md --file .agentera/docs.yaml
+        --format json` (status=pass), `uv run hooks/validate_artifact.py
+        --artifact PROGRESS.md --file .agentera/progress.yaml --format json`
+        (status=pass), `uv run hooks/validate_artifact.py --artifact PLAN.md
+        --file .agentera/plan.yaml --format json` (status=pass), and `git diff
+        --check` (PASS). Orkestrera evaluation passed Task 4 acceptance criteria,
+        and closeout did not touch `.agentera/decisions.yaml`, claim
+        user-confirmed D47 satisfaction, or record publication, push, tag,
+        installed-app refresh, profile refresh, vision edit, objective edit,
+        package update, version bump, or unsupported capability-name CLI command.
     acceptance:
       - >-
-        GIVEN Tasks 1-4 are verified WHEN metadata is synced THEN TODO, PROGRESS,
-        CHANGELOG, docs audit metadata, and version-bearing surfaces reflect the
-        D46 handoff enforcement fix.
+        GIVEN verification passes WHEN metadata is synced THEN TODO, progress,
+        changelog, docs audit metadata, and plan state record the D47 vocabulary
+        cleanup and exact verification evidence.
       - >-
-        GIVEN D46 has implementation evidence but no explicit user confirmation
-        WHEN decisions metadata is updated THEN D46 is at most marked
-        provisionally satisfied with evidence, not user-confirmed satisfied.
+        GIVEN D47 remains only provisionally satisfied WHEN decisions metadata is
+        touched THEN user-confirmed satisfaction is not claimed and the decision
+        satisfaction state is left unchanged unless the user explicitly confirms
+        it.
       - >-
-        GIVEN local metadata sync completes WHEN scope is audited THEN no
-        publication, remote push, tag, installed-app refresh, profile refresh,
-        vision edit, objective-state edit, or unsupported capability-name CLI
-        command occurred.
-    evidence:
-      - >-
-        TODO resolved the D46 item, Decision 46 is provisionally satisfied with
-        evidence but not user-confirmed, CHANGELOG and DOCS audit metadata record
-        2.3.14 local-only closeout, PROGRESS records the verification evidence,
-        and version-bearing package, plugin, registry, lockfile, OpenCode marker,
-        and skill frontmatter surfaces target 2.3.14 without publication, push,
-        tag, installed-app refresh, profile refresh, vision edit, objective-state
-        edit, or unsupported capability-name CLI command.
+        GIVEN closeout completes WHEN scope is audited THEN no publication, push,
+        tag, installed-app refresh, profile refresh, vision edit, objective edit,
+        or unsupported capability-name CLI command occurred.
 overall_acceptance:
   - >-
-    GIVEN Agentera produces a capability handoff WHEN the output is user-facing
-    THEN it uses glyph plus canonical capability name and never standalone
-    slash-capability labels.
+    GIVEN a user or agent reads current CLI, docs, runtime, or guidance surfaces
+    WHEN they describe Agentera installation state THEN they see app-home
+    vocabulary rather than obsolete bundle-root wording except in explicit
+    legacy or historical contexts.
   - >-
-    GIVEN a suggested handoff may mutate project or runtime state WHEN the agent
-    asks whether to proceed THEN it uses the runtime-native question tool with a
-    recommended option and `Done`/cancel semantics.
+    GIVEN D47 migration behavior is exercised or documented WHEN reviewed THEN
+    managed app files, user data roots, `agentera doctor`, and `agentera upgrade`
+    responsibilities remain truthful.
   - >-
-    GIVEN `/agentera <alias>` appears in Agentera materials WHEN reviewed THEN it
-    is explicit route documentation and is not confused with `agentera` CLI state
-    commands or handoff labels.
+    GIVEN preserved old terminology remains WHEN the cleanup is complete THEN
+    each relevant occurrence has a documented compatibility, legacy, historical,
+    or deferred-work rationale.
   - >-
-    GIVEN D46 is later reviewed WHEN TODO, decisions, tests, and semantic
-    fixtures are inspected THEN there is concrete evidence that the behavior is
-    enforced, not only described in prose.
-surprises: []
+    GIVEN verification runs WHEN the plan closes THEN focused tests, affected
+    validators, targeted terminology audit, and `git diff --check` pass.
+surprises:
+  - >-
+    [post-audit-flagged] `agentera lint --artifact PLAN.md --file
+    .agentera/plan.yaml --format json` passed abstraction/filler checks but
+    flagged the required full-plan artifact for exceeding the 100-word advisory
+    budget.

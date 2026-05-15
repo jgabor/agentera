@@ -12,7 +12,7 @@ might mutate. The two top-level modes:
 
     Default mode (no flags)
         Runs offline profilera corpus fixtures for Claude Code, Codex,
-        OpenCode, and GitHub Copilot through the bundled extractor,
+        OpenCode, and GitHub Copilot through the Agentera app extractor,
         verifies missing local runtime stores are bounded degradation, then
         delegates to ``scripts/smoke_setup_helpers.py`` as a subprocess so
         the existing helper smoke continues to gate this harness. No live CLI
@@ -30,7 +30,7 @@ might mutate. The two top-level modes:
         session state stays off the user's real OpenCode store. The Claude
         section runs with temporary ``HOME``, ``XDG_*``, and
         ``CLAUDE_CONFIG_DIR`` state plus ``AGENTERA_HOME`` and
-        ``CLAUDE_PLUGIN_ROOT`` exported to a temporary install root.
+        ``CLAUDE_PLUGIN_ROOT`` exported to a temporary app home.
 
 Cost gate (live mode only):
     Prints ``Estimated cost: $0.50-2.50 across five model calls`` and a
@@ -1023,7 +1023,7 @@ def run_codex_live_section(
        (so codex is authenticated) and run ``setup_codex.py
        --config-file <tmp>/config.toml --install-root <repo>`` so the
        tmp config carries ``[shell_environment_policy].set.AGENTERA_HOME``
-       pointing at the real install root.
+       pointing at the real app home.
     5. Use a tmp workdir for the non-interactive ``codex exec`` run.
     6. Issue exactly ONE ``codex exec`` invocation with a combined prompt
        asking the agent to (a) print AGENTERA_HOME from a bash tool call
@@ -1421,7 +1421,7 @@ def run_codex_hook_section(
     1. PATH probe (``shutil.which("codex")``); skip ``not-on-path`` on
        miss without invoking the binary. Same shape as Task 3 section.
     2. Hook-config-absent gate: if ``hooks/codex-hooks.json`` is missing
-       from the install root, SKIP with a distinct ``hook config absent``
+       from the app home, SKIP with a distinct ``hook config absent``
        reason so this case is visibly different from ``hook didn't fire``
        and ``hook fired but returned non-zero``.
     3. Snapshot ``~/.codex/hooks.json`` and SHA256-hash it BEFORE any
@@ -1592,8 +1592,8 @@ def run_codex_hook_section(
         # Codex hook config that points PreToolUse + PostToolUse
         # apply_patch matchers at the wrapper. AGENTERA_HOME is exported
         # so the real validate_artifact.py inside the wrapper resolves
-        # the install root the way it does in production. Quoting the
-        # command path defends against any future install root that
+        # the app home the way it does in production. Quoting the
+        # command path defends against any future app home that
         # contains spaces.
         tmp_hooks_config = tmp_codex_home / CODEX_HOOKS_FILENAME
         hook_command = f'uv run "{wrapper_script}"'
@@ -1997,7 +1997,7 @@ def run_claude_live_section(
     4. Auth probe: ``claude -p "reply with OK"`` in the isolated env with a 30s timeout.
        Timeout, non-zero exit, or output that does not contain ``OK``
        records a SKIP with guidance pointing at Claude auth.
-    5. Build a tmp install root directory containing the v2 query CLI
+    5. Build a tmp app home containing the v2 query CLI
        and artifact schemas (the ``AGENTERA_HOME`` value for export).
     6. Compose a combined prompt with the same marker brackets as the
        other sections (``===AGENTERA_HOME_ECHO_BEGIN===`` /
@@ -2007,7 +2007,7 @@ def run_claude_live_section(
        The ``claude -p`` pipe mode is non-interactive and Claude's shell
        tool runs without approval round-trips.
     8. Parse the agent output between the markers and assert
-       ``AGENTERA_HOME=<tmp install root>`` echoed back and the query
+       ``AGENTERA_HOME=<tmp app home>`` echoed back and the query
        output includes core artifact names.
 
     On any substantive failure step, hard-fail via :func:`fail` (the
@@ -2280,13 +2280,13 @@ def run_copilot_live_section(
        ``bash -c 'export …'`` rather than sourcing any rc, so none should
        change; the SHA256 round-trip is defense-in-depth that mirrors the
        Codex section's contract on ``~/.codex/config.toml``.
-    5. Build a tmp install root directory containing the v2 query CLI and
+    5. Build a tmp app home containing the v2 query CLI and
        artifact schemas (``AGENTERA_HOME`` value for the export).
     6. Compose a combined prompt with the same marker brackets as Task 3
        (``===AGENTERA_HOME_ECHO_BEGIN===`` / ``===QUERY_OUTPUT_BEGIN===``)
        instructing the agent to (a) echo ``AGENTERA_HOME`` from a shell
        tool call and (b) run ``agentera query --list-artifacts`` via the
-       exported install root.
+       exported app home.
     7. Issue exactly ONE invocation of the AC1 shape:
        ``bash -c 'export AGENTERA_HOME=<tmp>; copilot -p "<prompt>"
        --allow-all-tools'`` via ``subprocess.run(["bash", "-c", "..."])``.
@@ -2294,7 +2294,7 @@ def run_copilot_live_section(
        Copilot inherits ``AGENTERA_HOME`` from a parent bash shell that
        exported it (matching the real-user shell-rc setup pattern).
     8. Parse the agent output between the markers and assert
-       ``AGENTERA_HOME=<tmp install root>`` echoed back and the query output
+       ``AGENTERA_HOME=<tmp app home>`` echoed back and the query output
        includes core artifact names.
     9. SHA256 each rc file AFTER and assert byte-identity vs the BEFORE
        hash for every snapshotted candidate (AC4).
@@ -2396,8 +2396,8 @@ def run_copilot_live_section(
         rc_sha_before[rc] = _sha256(rc)
         info(f"copilot-rc sha256 (before) {rc}: {rc_sha_before[rc]}")
 
-    # Step 5: build a tmp install root directory with the v2 query CLI.
-    # Using a tmp install root (not REPO_ROOT) cleanly proves that the
+    # Step 5: build a tmp app home with the v2 query CLI.
+    # Using a tmp app home (not REPO_ROOT) cleanly proves that the
     # bash-exported AGENTERA_HOME value is what propagates to copilot —
     # there is no way for the harness's parent process to have set it to
     # this fresh tmp path.
@@ -2588,7 +2588,7 @@ def run_opencode_live_section(
     the command runs with ``--pure`` in a temporary workdir, exports a temporary
     ``AGENTERA_HOME``, and asks OpenCode to use its shell tool to echo that env
     value and run ``agentera query --list-artifacts`` through the exported
-    install root. OpenCode data/config/cache paths are redirected to temporary
+    app home. OpenCode data/config/cache paths are redirected to temporary
     XDG directories; if the user's ``auth.json`` exists it is copied into the
     temporary data dir so the live run can authenticate without writing to the
     real OpenCode store.

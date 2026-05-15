@@ -488,7 +488,7 @@ try {
   await hooksMissing["shell.env"]({ cwd: tmpdir }, envOut2);
   assert(
     !("AGENTERA_HOME" in envOut2.env),
-    "shell.env must leave AGENTERA_HOME unset (not empty string) when install root is not discoverable"
+    "shell.env must leave AGENTERA_HOME unset (not empty string) when the app home is not discoverable"
   );
   // Restore for subsequent assertions.
   fs.renameSync(parkedScript, stagedScript);

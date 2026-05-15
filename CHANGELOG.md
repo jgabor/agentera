@@ -20,6 +20,7 @@
 
 ### Fixed
 
+- D47 app-home vocabulary cleanup now replaces obsolete current-behavior bundle/install-root wording across live docs, guidance, diagnostics, package text, and affected tests while preserving compatibility identifiers, canonical artifact labels, CLI selectors, historical records, and migration examples.
 - D46 handoff wording enforcement now rejects stale standalone slash-capability examples in semantic fixtures and test helpers, requiring glyph plus canonical capability names such as `⧉ realisera` for user-facing handoff labels while preserving `/agentera <alias>` for explicit route documentation.
 - Decision satisfaction state is now explicit in the decision contract and validator: automation may record provisional evidence, user-confirmed satisfaction requires explicit user-confirmation metadata, and missing legacy state remains review-needed rather than silently satisfied.
 - Decisions JSON, shared compaction, Inspektera evidence context, and Dokumentera closeout context now preserve satisfaction caveats and protected-decision review pressure without inferring satisfaction from downstream references, commits, file changes, or compacted history.
@@ -92,6 +93,7 @@
 
 ### Verified
 
+- D47 app-home vocabulary cleanup closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, vision edit, objective edit, decision satisfaction-state change, or unsupported capability-name CLI command; independent Task 1 and Task 2 evaluations passed, focused Task 3 verification reported 346 passing tests, and Task 4 metadata validators plus `git diff --check` passed.
 - 2.3.12 Realisera execution-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, objective-state mutation, or unsupported capability CLI command introduction; focused CLI/contract tests passed with 181 tests, Realisera capability validation and schema self-validation passed, repository gate/compaction/artifact validation/diff-check gates passed, and PLAN lint remains failed only on the pre-existing advisory verbosity budget.
 - 2.3.11 Optimera benchmark-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, objective-state mutation, or real local benchmark execution; focused CLI/contract/Optimera/startup tests passed with 222 tests, Optimera capability validation and schema self-validation passed, independent evaluation found no blocking findings after privacy and runtime-caveat fixes, and the 2.3.12 Realisera execution-context source-contract work is now closed separately.
 - 2.3.10 Inspektera evidence-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.3.10, while the 2.3.12+ source-contract train remains open.

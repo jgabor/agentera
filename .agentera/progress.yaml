@@ -1,4 +1,48 @@
 cycles:
+- number: 512
+  timestamp: 2026-05-15 20:10
+  type: docs
+  phase: audit
+  what: Synchronized D47 PLAN Task 4 local metadata closeout for the app-home vocabulary
+    cleanup.
+  commit: pending
+  inspiration: Orkestrera assigned D47 Task 4 after Tasks 1-3 were complete and evaluator-passed,
+    with closeout limited to TODO, progress, changelog, docs audit metadata, and plan
+    evidence.
+  discovered: Task 4 closeout began after Tasks 1-3 were complete, the D47 vocabulary
+    TODO remained open, and docs audit metadata still reflected the previous D46 closeout.
+    D47 remains only provisionally satisfied, so decisions metadata was not touched
+    and no user-confirmed satisfaction was claimed.
+  verified: Task 1 independent evaluation passed for required term/surface inventory
+    and compatibility/historical preservation. Task 2 independent evaluation passed
+    for live app-home vocabulary updates while preserving compatibility contracts,
+    canonical artifact labels, CLI selectors, route/handoff boundaries, historical
+    records, and migration examples. Task 3 focused verification covered app-home
+    contract behavior, doctor/upgrade behavior, package/runtime surfaces, affected
+    textual fixtures, targeted stale-terminology audit, lifecycle adapter metadata,
+    CLI describe metadata, schema self-validation, edited capability validation, PLAN
+    and SESSION artifact validation, and `git diff --check`; the focused verification
+    suite reported 346 passing tests. Task 4 closeout validation and Orkestrera evaluation
+    passed; the D47 plan is complete with all four tasks complete. Closeout validation
+    passed with `uv run hooks/validate_artifact.py --artifact TODO.md --file TODO.md
+    --format json` (status=pass), `uv run hooks/validate_artifact.py --artifact CHANGELOG.md
+    --file CHANGELOG.md --format json` (status=pass), `uv run hooks/validate_artifact.py
+    --artifact DOCS.md --file .agentera/docs.yaml --format json` (status=pass), `uv
+    run hooks/validate_artifact.py --artifact PROGRESS.md --file .agentera/progress.yaml
+    --format json` (status=pass), `uv run hooks/validate_artifact.py --artifact PLAN.md
+    --file .agentera/plan.yaml --format json` (status=pass), and `git diff --check`
+    (PASS).
+  next: D47 Task 4 evaluation passed; the D47 plan is complete with all four tasks
+    complete. Do not touch decisions satisfaction state, commit, push, tag, publish,
+    refresh installed apps or profile, update packages, edit vision or objective state,
+    or run unsupported capability-name CLI commands.
+  context:
+    intent: D47 PLAN Task 4 local metadata closeout
+    constraints: Local metadata sync only; no decision satisfaction-state change,
+      publication, push, tag, installed-app refresh, profile refresh, package update,
+      vision edit, objective edit, commit, or unsupported capability-name CLI command
+    scope: TODO resolution, changelog local notes, docs audit metadata, progress evidence,
+      and plan Task 4 completion evidence after evaluation passed
 - number: 511
   timestamp: 2026-05-15 19:41
   type: fix
@@ -26,12 +70,12 @@ cycles:
     (4 fixtures passed), Hej and Planera capability validation (PASS), schema self-validation
     (PASS), TODO, DECISIONS, DOCS, CHANGELOG, PLAN, PROGRESS, and SESSION artifact
     validation (PASS), `agentera compact --mode check --format json` (status=pass),
-    `agentera gate --format json` (status=pass), and `git diff --check` (PASS).
-    Metadata sync resolved the D46 TODO, marked Decision
-    46 only provisionally satisfied with evidence, updated CHANGELOG and DOCS audit
-    metadata, marked the plan complete, and aligned declared version-bearing surfaces
-    to 2.3.14 without publication, push, tag, installed-app refresh, profile refresh,
-    vision edit, objective-state edit, or unsupported capability-name CLI command.
+    `agentera gate --format json` (status=pass), and `git diff --check` (PASS). Metadata
+    sync resolved the D46 TODO, marked Decision 46 only provisionally satisfied with
+    evidence, updated CHANGELOG and DOCS audit metadata, marked the plan complete,
+    and aligned declared version-bearing surfaces to 2.3.14 without publication, push,
+    tag, installed-app refresh, profile refresh, vision edit, objective-state edit,
+    or unsupported capability-name CLI command.
   next: Hand the completed D46 plan to final verification. Do not commit, push, tag,
     publish, refresh installed apps or profile, edit vision or objective state, or
     run unsupported capability-name CLI commands unless explicitly requested.
@@ -339,48 +383,9 @@ cycles:
     scope: TODO, CHANGELOG, docs audit metadata, version-bearing package/plugin/OpenCode/skill
       surfaces, plan evidence, progress cycle, artifact validation, gates, and local
       scope audit
-- number: 502
-  timestamp: 2026-05-15 11:27
-  type: feat
-  phase: audit
-  what: Completed PLAN Task 7 local closeout metadata sync for the 2.3.11 Optimera
-    benchmark-context source-contract patch.
-  commit: pending
-  inspiration: Task 7 required TODO, progress, docs, and changelog to record the completed
-    2.3.11 source-contract patch and deferred 2.3.12 Realisera execution-context work,
-    with version-bearing changes constrained by `.agentera/docs.yaml` version policy
-    and the package registry.
-  discovered: TODO now resolves `[feat:2.3.11]` while keeping `[feat:2.3.12]` open.
-    DOCS records the 2.3.11 audit label, version-policy resolution for the selected
-    exact patch-train target despite the `[feat:2.3.11]` label, deferred 2.3.12 work,
-    and local-only no-publication/no-refresh/no-benchmark-execution boundary. CHANGELOG
-    records the 2.3.11 changed/fixed/added/verified closeout. Version-bearing package,
-    plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces now
-    target 2.3.11.
-  verified: Focused CLI/contract/Optimera/startup verification passed with `uv run
-    pytest tests/test_query_cli.py tests/test_decision45_cli_contract.py tests/test_optimera_capability.py
-    tests/test_startup_analysis_contract.py` (222 tests). `uv run scripts/validate_capability.py
-    skills/agentera/capabilities/optimera`, `uv run scripts/validate_capability.py
-    --self-validate`, independent evaluation review, and `git diff --check` passed.
-    Final artifact validators, repository gate, compaction check, and diff status
-    audit run after this progress entry.
-  next: Hand completed 2.3.11 plan to independent evaluation or release closeout.
-    Do not refresh installed apps, refresh profile state, edit vision or objective
-    state, run real local benchmarks, publish, push, tag, commit, or run unsupported
-    capability-name CLI commands without explicit approval.
-  context:
-    intent: PLAN Task 7 local closeout metadata sync for 2.3.11 Optimera Benchmark
-      Context Source Contract
-    constraints: Local metadata sync only; selected exact target is 2.3.11 despite
-      `[feat:2.3.11]`; future unselected feature targets remain governed by docs.yaml
-      semver policy; no publication; no tag; no remote push; no installed app refresh;
-      no profile refresh; no vision edit; no objective-state edit; no Optimera objective-state
-      mutation; no real local benchmark execution; no unsupported capability-name
-      CLI command
-    scope: TODO, CHANGELOG, docs audit metadata, version-bearing package/plugin/OpenCode/skill
-      surfaces, plan evidence, progress cycle, artifact validation, gates, and local
-      scope audit
 archive:
+- summary: 'Cycle 502 (2026-05-15): Completed PLAN Task 7 local closeout metadata
+    sync for the 2.3.11 Optimera benchmark-context source-contract patch.'
 - summary: 'Cycle 501 (2026-05-15): Completed PLAN Task 7 local closeout metadata
     sync for the 2.3.10 Inspektera evidence-context source-contract patch.'
 - summary: 'Cycle 500 (2026-05-15): Completed PLAN Task 6 evaluation startup fixtures
@@ -459,5 +464,3 @@ archive:
     for the 2.3.5 install-state reliability patch.'
 - summary: 'Cycle 463 (2026-05-14): Implemented PLAN Task 2 installed CLI resolution
     behavior for the 2.3.5 install-state reliability patch.'
-- summary: 'Cycle 462 (2026-05-14): Implemented the PLAN Task 1 app-home override
-    contract for normal installed execution.'

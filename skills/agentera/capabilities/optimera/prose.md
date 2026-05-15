@@ -85,7 +85,7 @@ Script that measures the metric and outputs structured JSON. Written during brai
 
 Wraps the project's own tooling (test runners, benchmarks, linters) and translates output into a consistent format. The project's tooling is the source of truth.
 
-**Before writing a harness**, inspect the project's existing test, benchmark, lint, or measurement commands. The v2 bundle currently ships only the shared contract reference, so harness specifics come from project tooling and the objective's measurement fields.
+**Before writing a harness**, inspect the project's existing test, benchmark, lint, or measurement commands. The Agentera app currently ships only the shared contract reference, so harness specifics come from project tooling and the objective's measurement fields.
 
 **Output contract** (minimal):
 

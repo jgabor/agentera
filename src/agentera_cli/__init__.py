@@ -9,17 +9,17 @@ from importlib import resources
 from pathlib import Path
 
 
-def _repo_fallback_bundle() -> Path:
+def _repo_fallback_app_source() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-def _bundle_root() -> Path:
+def _packaged_app_source() -> Path:
     packaged = resources.files(__package__) / "bundle"
     with resources.as_file(packaged) as path:
         candidate = Path(path)
         if (candidate / "scripts" / "agentera").is_file():
             return candidate
-    return _repo_fallback_bundle()
+    return _repo_fallback_app_source()
 
 
 def _platform_default_app_home() -> Path:
@@ -36,9 +36,9 @@ def _platform_default_app_home() -> Path:
 
 
 def main() -> int:
-    bundle = _bundle_root()
-    scripts = bundle / "scripts"
-    os.environ.setdefault("AGENTERA_BOOTSTRAP_SOURCE_ROOT", str(bundle))
+    app_source = _packaged_app_source()
+    scripts = app_source / "scripts"
+    os.environ.setdefault("AGENTERA_BOOTSTRAP_SOURCE_ROOT", str(app_source))
     os.environ.setdefault(
         "AGENTERA_DEFAULT_INSTALL_ROOT",
         str(_platform_default_app_home()),

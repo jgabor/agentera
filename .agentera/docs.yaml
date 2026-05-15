@@ -1,4 +1,4 @@
-last_audit: '2026-05-15 (D46 handoff wording enforcement patch metadata sync)'
+last_audit: '2026-05-15 (D47 app-home vocabulary cleanup closeout metadata sync)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -368,6 +368,57 @@ coverage:
     Post-v2.3.12 release metadata is intentionally deferred for the next aggregate release.
   tests: 'Startup measurement now documents the Decision 51 state-access metric and the Decision 52 manual benchmark retention boundary. The metric is raw artifact access after CLI state during capability startup/state gathering, replacing an uncommitted route/intro startup-window draft that found zero qualifying windows and would have closed the startup-envelope follow-up. The contract records the post-2.3 boundary, natural-language and bare-capability invocation markers, state-gathering sequence boundaries, counted event classes, degradation reasons, report fields, Section 22 compatibility, privacy boundary, local-only report command, structured report, human-readable report, recommendation gate, manual-only benchmark rule, exact runtime/path approval requirement, default `${AGENTERA_HOME}/benchmarks/startup-state/` storage, durable `runs.jsonl` plus fixed latest report files, and aggregate-history exclusions for raw transcripts, raw corpus files, raw intermediates, raw store paths, raw session IDs, private salts, and generated salted hashes. Focused contract tests validate redaction helpers, state-sequence classification, raw-after-CLI overlap counts, thresholds, recommendations, report surfaces, benchmark retention boundaries, supported Claude Code and GitHub Copilot fixture extraction, aggregate token fields, comparable-row savings/null reasons, and privacy exclusions. Task 7 closeout records durable benchmark evidence with estimator `approx_bytes_div_4_v1`, raw-after-CLI estimated tokens `621`, redundant raw estimated tokens `533`, null reason `previous_missing_token_estimates`, CLI behavior rates `0.4444`, 18 total state sequences, retained recommendation `plan_cli_startup_envelope`, and live-runtime `schema_divergent` caveats for current local Claude Code and GitHub Copilot stores. The 2.3.7 patch release metadata sync now applies the selected decision-context source-contract release target, explicitly resolves the `[feat:2.3.7]` label versus semver-policy tension by keeping the preselected 2.3 patch train target, records the remaining 2.3.8+ source-contract train as deferred, and keeps future version changes governed by `.agentera/docs.yaml` `semver_policy`.'
 audit_log:
+- date: '2026-05-15'
+  label: D47 app-home vocabulary cleanup closeout metadata sync
+  findings:
+  - type: checked
+    description: >
+      D47 vocabulary cleanup inventory and live app-home wording updates are
+      recorded: Task 1 independently passed with required terms and surfaces
+      classified across scripts, hooks, skills, tests, root/docs,
+      package/runtime manifests, `.opencode`, `.agentera/**`, and archives; Task
+      2 independently passed after updating current docs, capability prose,
+      setup/smoke diagnostics, adapter docs, lifecycle validation wording,
+      package description text, private package-entry helper names, and the
+      affected test expectation.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Task 3 verification covered app-home contract behavior, doctor/upgrade
+      behavior, package/runtime surfaces, affected textual fixtures, targeted
+      stale-terminology audit, lifecycle adapter metadata, CLI describe metadata,
+      schema self-validation, edited capability validation, PLAN and SESSION
+      artifact validation, and `git diff --check`; the focused verification suite
+      reported 346 passing tests. Known non-blocking caveats remain the OpenCode
+      bootstrap environment propagation assertion and Planera full-plan lint
+      verbosity advisory.
+    resolution: fixed
+    severity: info
+  - type: checked
+    description: >
+      Task 4 closeout sync updates TODO, CHANGELOG, DOCS audit metadata,
+      PROGRESS, and PLAN evidence only. Task 4 evaluation passed, and the D47
+      plan is complete with all four tasks complete. `.agentera/decisions.yaml`
+      was not touched, and no user-confirmed satisfaction is claimed. Closeout
+      validation passed with `uv run hooks/validate_artifact.py --artifact TODO.md
+      --file TODO.md --format json`, `uv run hooks/validate_artifact.py
+      --artifact CHANGELOG.md --file
+      CHANGELOG.md --format json`, `uv run hooks/validate_artifact.py --artifact
+      DOCS.md --file .agentera/docs.yaml --format json`, `uv run
+      hooks/validate_artifact.py --artifact PROGRESS.md --file
+      .agentera/progress.yaml --format json`, `uv run hooks/validate_artifact.py
+      --artifact PLAN.md --file .agentera/plan.yaml --format json`, and `git diff
+      --check`.
+    resolution: noted
+    severity: info
+  - type: version-policy
+    description: >
+      Closeout is local-only: no publication, tag, remote push, installed-app
+      refresh, profile refresh, vision edit, objective edit, package update,
+      version bump, or unsupported capability-name CLI command was performed.
+    resolution: noted
+    severity: info
 - date: '2026-05-15'
   label: 2.3.12 Realisera execution-context source-contract patch metadata sync
   findings:

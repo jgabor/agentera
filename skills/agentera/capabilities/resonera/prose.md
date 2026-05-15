@@ -24,7 +24,7 @@ One file in `.agentera/`, bootstrapped if absent.
 |------|---------|-----------|
 | `DECISIONS.md` | Canonical decision artifact, stored as `.agentera/decisions.yaml` unless mapped otherwise. What was decided, alternatives considered, and why. | First decision entry in YAML form. |
 
-Use `agentera describe --format json` and its `artifact_schemas` entry for `decisions` to locate the active installed schema; do not search install roots manually. Existing decisions artifacts provide repository-local examples of the shape.
+Use `agentera describe --format json` and its `artifact_schemas` entry for `decisions` to locate the active installed schema; do not search Agentera directories manually. Existing decisions artifacts provide repository-local examples of the shape.
 
 ### Artifact path resolution
 

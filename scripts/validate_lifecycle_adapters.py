@@ -264,7 +264,7 @@ def validate_suite_bundle_surface(
     runtime_names: set[str] | None = None,
     package_registry: PackageRegistry | None = None,
 ) -> list[str]:
-    """Validate aggregate runtime metadata for the shared bundle root.
+    """Validate aggregate runtime metadata for the shared Agentera app root.
 
     The ``agentera`` block is interpreted from each runtime manifest location:
     ``installRoot`` points back to the installed Agentera package root, and
@@ -309,7 +309,7 @@ def validate_suite_bundle_surface(
                     None,
                 )
         if not isinstance(metadata, dict):
-            errors.append(f"{runtime}: missing agentera suite bundle metadata")
+            errors.append(f"{runtime}: missing agentera app metadata")
             continue
         expected_shape = package_shapes.get(runtime)
         if metadata.get("packageShape") != expected_shape:
@@ -317,7 +317,7 @@ def validate_suite_bundle_surface(
 
         install_root_value = metadata.get("installRoot")
         if not isinstance(install_root_value, str) or not install_root_value:
-            errors.append(f"{runtime}: agentera.installRoot must point at the bundle root")
+            errors.append(f"{runtime}: agentera.installRoot must point at the Agentera app root")
             continue
         install_root = _resolve_from_manifest(root, manifest, install_root_value)
         if install_root is None:
@@ -328,7 +328,7 @@ def validate_suite_bundle_surface(
 
         shared_paths = metadata.get("sharedPaths")
         if not isinstance(shared_paths, list) or not all(isinstance(path, str) for path in shared_paths):
-            errors.append(f"{runtime}: agentera.sharedPaths must list bundle paths")
+            errors.append(f"{runtime}: agentera.sharedPaths must list app paths")
             continue
         listed = set(shared_paths)
         for path, expected_kind in required_paths.items():
@@ -337,7 +337,7 @@ def validate_suite_bundle_surface(
                 continue
             resolved = _resolve_inside(install_root, path)
             if resolved is None:
-                errors.append(f"{runtime}: shared tool path {path} must stay inside install root")
+                errors.append(f"{runtime}: shared tool path {path} must stay inside the Agentera app root")
             elif expected_kind == "dir" and not resolved.is_dir():
                 errors.append(f"{runtime}: shared tool path {path} must resolve to a directory")
             elif expected_kind == "file" and not resolved.is_file():
@@ -535,12 +535,12 @@ def validate_codex_profilera_metadata(root: Path, plugin: dict[str, Any]) -> lis
         None,
     )
     if not isinstance(agentera, dict):
-        return ["codex.agentera: missing aggregate bundled skill metadata"]
+        return ["codex.agentera: missing aggregate Agentera app metadata"]
 
     if agentera.get("runtimeSupport") != "portable":
         errors.append("codex.agentera: runtimeSupport must stay portable")
     if agentera.get("policy", {}).get("allow_implicit_invocation") is not True:
-        errors.append("codex.agentera: bundled skill must allow implicit invocation")
+        errors.append("codex.agentera: Agentera app entry must allow implicit invocation")
     invocation_hint = agentera.get("invocationHint")
     if not isinstance(invocation_hint, str) or "$agentera" not in invocation_hint:
         errors.append("codex.agentera: invocation hint must name $agentera")
@@ -559,7 +559,7 @@ def validate_codex_profilera_metadata(root: Path, plugin: dict[str, Any]) -> lis
         text = path.read_text(encoding="utf-8")
         if "path: ./skills/agentera" not in text:
             errors.append(
-                f"codex.agentera: {path.relative_to(root)} must point at bundled skills/agentera"
+                f"codex.agentera: {path.relative_to(root)} must point at installed skills/agentera"
             )
         for stale_path in ("path: ./skills/hej", "metadata: ./skills/hej", "skills/<name>/agents"):
             if stale_path in text:

@@ -2,7 +2,7 @@
 name: agentera
 description: >
   The open protocol for turning AI agents into engineering teams.
-  One bundled skill with twelve capabilities, each defined by human-readable
+  One Agentera skill with twelve capabilities, each defined by human-readable
   prose and machine-readable schemas. The agent reads this file to route
   incoming requests to the right capability. Use this skill for /agentera,
   Agentera capability requests, and a complete user message exactly `hej`;
@@ -13,7 +13,7 @@ spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 
 # agentera
 
-One install, one entry point, one query interface to all project state. Twelve capabilities bundled into a single skill.
+One install, one entry point, one query interface to all project state. Twelve capabilities live inside one Agentera skill.
 
 ---
 
@@ -229,7 +229,7 @@ unsupported capability-name command `agentera resonera`. Never run unsupported
 capability-name commands such as `agentera resonera`, `agentera planera`, or
 `agentera realisera` as a bootstrap step. Shared words stay split by interface:
 `/agentera plan` routes to planera, while `agentera plan` reads plan state from
-the CLI. When a capability-specific startup bundle is needed, request it through
+the CLI. When capability-specific startup context is needed, request it through
 the existing state seam with
 `agentera hej --format json --capability-context <capability>`. Use returned
 `capability_context.included_state_families` directly, and for
@@ -376,7 +376,7 @@ All capabilities use the exit vocabulary defined by `protocol.yaml` `EXIT_SIGNAL
 
 ## Cross-skill integration
 
-The twelve-skill suite is collapsed into a single bundled skill. Each capability's schemas define cross-capability artifact references using stable IDs. Cross-capability routing is handled through capability trigger schemas described in the Routing Logic section. Capabilities read from and write to the same artifact store (`.agentera/` for agent-facing, project root for human-facing), so inter-capability data flows through shared artifacts, not direct invocation.
+The twelve-skill suite is collapsed into one Agentera skill. Each capability's schemas define cross-capability artifact references using stable IDs. Cross-capability routing is handled through capability trigger schemas described in the Routing Logic section. Capabilities read from and write to the same artifact store (`.agentera/` for agent-facing, project root for human-facing), so inter-capability data flows through shared artifacts, not direct invocation.
 
 ### Artifact path resolution
 
