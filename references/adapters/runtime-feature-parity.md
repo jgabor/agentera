@@ -66,9 +66,9 @@ copilot plugin install jgabor/agentera
 The marketplace install path is verified working. Granular installs avoid
 umbrella discovery bug `github/copilot-cli#2390`.
 
-Granular installs provide core `SKILL.md` behavior. Bundle-only tools such as
-doctor, installer, validators, and shared setup helpers require the umbrella
-suite bundle or a local clone with the shared `scripts/` directory.
+Granular installs provide core `SKILL.md` behavior. App-home tools such as
+doctor, installer, validators, and shared setup helpers require the managed
+Agentera app or a local clone with the shared `scripts/` directory.
 
 Deprecated fallback: `copilot plugin install OWNER/REPO`, Git URLs, and local
 paths still work, but Copilot warns they are deprecated.
@@ -82,11 +82,11 @@ claims, but changes to runtime identity, lifecycle events, artifact-validation
 support, config targets, diagnostics, or documentation claims must be validated
 against the registry rather than duplicated here as an independent table.
 
-Install-root classification is not runtime-specific. `scripts/install_root.py` is
-the shared Module for `AGENTERA_HOME`, default durable root, managed root,
-out-of-date root, unmanaged root, and diagnostic semantics. Package metadata
-registry work stays outside both the RuntimeAdapter registry and the install-root
-Module.
+App-home classification is not runtime-specific. `scripts/install_root.py` is
+the shared Module for `AGENTERA_HOME`, the normal user data root, managed app,
+out-of-date app, unknown directories, and diagnostic semantics. Package metadata
+registry work stays outside both the RuntimeAdapter registry and this shared
+classification Module.
 
 | Surface | Path |
 |---------|------|

@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents when working with code in this r
 
 ## What this is
 
-agentera v2: one bundled skill (`skills/agentera/`) with twelve capabilities. Each capability is defined by human-readable prose (`prose.md`) and machine-readable schemas (`triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`). The agent reads `SKILL.md` to route incoming requests to the right capability.
+agentera v2: one Agentera skill (`skills/agentera/`) with twelve capabilities. Each capability is defined by human-readable prose (`prose.md`) and machine-readable schemas (`triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`). The agent reads `SKILL.md` to route incoming requests to the right capability.
 
 ## Repository layout
 
@@ -116,7 +116,7 @@ Use the scope for the primary behavior changed, not every file touched.
 | `hooks` | `hooks/*`, artifact validation hooks, session hooks, compaction hooks |
 | `schemas` | `protocol.yaml`, `capability_schema_contract.yaml`, artifact schemas, schema contracts |
 | `eval` | Semantic eval runner, fixtures, evaluation harnesses |
-| `install` | Install root, upgrade, bundle freshness, setup, doctor install behavior |
+| `install` | App home, upgrade, app refresh, setup, doctor install behavior |
 | `package` | `registry.json`, plugin manifests, lockfiles, version-bearing package surfaces |
 | `runtime` | Cross-runtime behavior or shared adapter contracts |
 | `opencode` | OpenCode-specific runtime behavior or packaging |

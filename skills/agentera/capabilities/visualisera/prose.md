@@ -22,7 +22,7 @@ One file in `.agentera/`.
 |----------|---------|-----------|
 | `DESIGN.md` | Visual identity. Colors, typography, spacing, constraints, components, themes. An agent-readable design system. | Created via deep design conversation. |
 
-Use this prose plus `agentera describe --format json` and its `artifact_schemas` entry for `design` as the active design artifact specification; do not search install roots manually. The design schema covers `<!-- design:X -->` marker syntax, standard sections, YAML token block format, and naming conventions.
+Use this prose plus `agentera describe --format json` and its `artifact_schemas` entry for `design` as the active design artifact specification; do not search Agentera directories manually. The design schema covers `<!-- design:X -->` marker syntax, standard sections, YAML token block format, and naming conventions.
 
 ### Artifact path resolution
 
@@ -213,7 +213,7 @@ Validate the written file against the `DESIGN.md` structure described in this ca
 
 ### Step 7: Next steps
 
-▸ **Set up enforcement**: propose project-local checks for tokens, component usage, and visual mismatches; no separate bundled enforcement reference ships in v2
+▸ **Set up enforcement**: propose project-local checks for tokens, component usage, and visual mismatches; no separate Agentera enforcement reference ships in v2
 ▸ **Build to the spec**: use ⧉ realisera to implement UI that respects the design tokens
 ▸ **Document it**: use ▤ dokumentera to add the design system to project documentation
 ▸ **Refine later**: use ◰ visualisera again to evolve the design as the project matures

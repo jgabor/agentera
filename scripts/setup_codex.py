@@ -9,7 +9,7 @@ Codex propagates env vars into shell-tool subprocesses via the
 ``[shell_environment_policy].set`` table in ``~/.codex/config.toml`` (see
 ``ShellEnvironmentPolicyToml`` in the openai/codex config schema). This
 helper writes (or refuses to overwrite) that one key so users do not
-have to hand-edit TOML on every install root change.
+have to hand-edit TOML when the Agentera directory changes.
 
 Three structural branches drive the write logic; each maps to one
 TOML state and one line-based mutation:
@@ -27,7 +27,7 @@ TOML state and one line-based mutation:
       nothing). With ``--force`` merge ``AGENTERA_HOME`` alongside
       the existing keys, preserving sibling keys and inline order.
 
-The install root is verified against four canonical sibling entries
+The Agentera directory is verified against four canonical sibling entries
 (``scripts/validate_capability.py``, ``hooks/``, ``skills/``, ``skills/agentera/SKILL.md``)
 before any write. Auto-detection walks up from this script's location.
 ``--install-root PATH`` overrides detection; ``--config-file PATH``
@@ -46,7 +46,7 @@ Exit codes:
 
     0  no change needed (idempotent re-run) or change applied
     1  --dry-run detected a pending change (mirrors validate_capability.py)
-    2  error: bad install root, conflict without --force, missing
+    2  error: bad Agentera directory, conflict without --force, missing
        config target directory the helper cannot create, etc.
 """
 
@@ -103,7 +103,7 @@ CODEX_HOOK_STATUS_MESSAGE = "validating artifact"
 
 
 class InstallRootError(RuntimeError):
-    """Raised when the install root cannot be resolved or fails verification.
+    """Raised when the Agentera directory cannot be resolved or fails verification.
 
     Carries a user-facing message naming the missing canonical entries
     (or the auto-detection failure) so the operator sees the fix in
@@ -114,7 +114,7 @@ class InstallRootError(RuntimeError):
 def verify_install_root(root: Path) -> list[str]:
     """Return setup evidence missing from ``root`` via the shared classifier.
 
-    Empty list means ``root`` is a valid agentera install. The check is
+    Empty list means ``root`` is a valid Agentera directory. The check is
     delegated to ``scripts/install_root.py`` so caller behavior follows the
     install-root Interface rather than local canonical-entry rules.
     """
@@ -171,7 +171,7 @@ def resolve_install_root(explicit: str | None) -> Path:
         if classification.kind != "managed_fresh":
             missing = verify_install_root(root)
             raise InstallRootError(
-                f"--install-root {root} is not a valid agentera install: "
+                f"--install-root {root} is not a valid Agentera directory: "
                 f"missing canonical entries: {', '.join(missing)}"
             )
         return root
@@ -179,7 +179,7 @@ def resolve_install_root(explicit: str | None) -> Path:
     detected = auto_detect_install_root()
     if detected is None:
         raise InstallRootError(
-            "could not auto-detect agentera install root. "
+            "could not auto-detect the Agentera directory. "
             "Pass --install-root PATH where PATH contains "
             f"{', '.join(CANONICAL_ENTRIES)}."
         )
@@ -931,7 +931,7 @@ def main(argv: list[str] | None = None) -> int:
         type=str,
         default=None,
         help=(
-            "Path to the agentera install root. Must contain "
+            "Path to the Agentera directory. Must contain "
             f"{', '.join(CANONICAL_ENTRIES)}. Default: auto-detect from this "
             "script's location, then fall back to AGENTERA_HOME or "
             "CLAUDE_PLUGIN_ROOT env vars."
@@ -968,13 +968,13 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help=(
             "Deprecated compatibility flag. Agentera v2 is exposed to Codex "
-            "as one bundled $agentera skill through plugin metadata, so this "
+            "as one $agentera app entry through plugin metadata, so this "
             "flag no longer writes [agents.*] config blocks."
         ),
     )
     args = parser.parse_args(argv)
 
-    # Step 1: resolve and verify install root.
+    # Step 1: resolve and verify the Agentera directory.
     try:
         install_root = resolve_install_root(args.install_root)
     except InstallRootError as err:
@@ -1007,8 +1007,8 @@ def main(argv: list[str] | None = None) -> int:
     outcome = plan_change(current_text, install_root, force=args.force)
 
     # Step 4b: v1 used this flag to write per-skill [agents.*] entries.
-    # In v2 those paths do not exist; Codex sees one bundled $agentera
-    # skill through plugin metadata, so the compatibility flag is a no-op.
+    # In v2 those paths do not exist; Codex sees one $agentera app entry
+    # through plugin metadata, so the compatibility flag is a no-op.
     if args.enable_agents:
         print(
             "--enable-agents is deprecated in Agentera v2; no [agents.*] "

@@ -25,7 +25,7 @@ Four artifacts, bootstrapped if absent. TODO.md and CHANGELOG.md stay at project
 | `CHANGELOG.md` | Public change history. | `# Changelog\n\n## [Unreleased]\n` |
 | `PROGRESS.md` | Canonical progress artifact. Operational cycle log. | First cycle entry in `.agentera/progress.yaml` by default. |
 
-Use `agentera describe --format json` and its `artifact_schemas` entries for `vision` and `progress` to locate the active installed schemas; do not search install roots manually.
+Use `agentera describe --format json` and its `artifact_schemas` entries for `vision` and `progress` to locate the active installed schemas; do not search Agentera directories manually.
 
 ### Artifact path resolution
 

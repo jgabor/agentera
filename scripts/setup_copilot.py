@@ -26,7 +26,7 @@ Three shell branches identify the diagnostic target only:
 Legacy marker and bare ``AGENTERA_HOME`` rc states are diagnostic-only. Agentera
 will not edit those lines; cleanup is a user-owned manual boundary.
 
-The install root is verified against four canonical sibling entries
+The Agentera directory is verified against four canonical sibling entries
 (``scripts/validate_capability.py``, ``hooks/``, ``skills/``, ``skills/agentera/SKILL.md``)
 before any diagnostic output. Auto-detection walks up from this script's location.
 ``--install-root PATH`` overrides detection; ``--rc-file PATH``
@@ -43,7 +43,7 @@ Usage::
 Exit codes:
 
     0  diagnostic completed; no shell startup file was changed
-    2  error: bad install root, unreadable diagnostic target, etc.
+    2  error: bad Agentera directory, unreadable diagnostic target, etc.
 """
 
 from __future__ import annotations
@@ -110,7 +110,7 @@ SHELL_TABLE: dict[str, tuple[type(_bash_rc), str]] = {
 
 
 class InstallRootError(RuntimeError):
-    """Raised when the install root cannot be resolved or fails verification.
+    """Raised when the Agentera directory cannot be resolved or fails verification.
 
     Carries a user-facing message naming the missing canonical entries
     (or the auto-detection failure) so the operator sees the fix in
@@ -121,7 +121,7 @@ class InstallRootError(RuntimeError):
 def verify_install_root(root: Path) -> list[str]:
     """Return setup evidence missing from ``root`` via the shared classifier.
 
-    Empty list means ``root`` is a valid agentera install. The check is
+    Empty list means ``root`` is a valid Agentera directory. The check is
     delegated to ``scripts/install_root.py`` so caller behavior follows the
     install-root Interface rather than local canonical-entry rules.
     """
@@ -170,7 +170,7 @@ def resolve_install_root(explicit: str | None) -> Path:
         if classification.kind != "managed_fresh":
             missing = verify_install_root(root)
             raise InstallRootError(
-                f"--install-root {root} is not a valid agentera install: "
+                f"--install-root {root} is not a valid Agentera directory: "
                 f"missing canonical entries: {', '.join(missing)}"
             )
         return root
@@ -178,7 +178,7 @@ def resolve_install_root(explicit: str | None) -> Path:
     detected = auto_detect_install_root()
     if detected is None:
         raise InstallRootError(
-            "could not auto-detect agentera install root. "
+            "could not auto-detect the Agentera directory. "
             "Pass --install-root PATH where PATH contains "
             f"{', '.join(CANONICAL_ENTRIES)}."
         )
@@ -554,7 +554,7 @@ def main(argv: list[str] | None = None) -> int:
         type=str,
         default=None,
         help=(
-            "Path to the agentera install root. Must contain "
+            "Path to the Agentera directory. Must contain "
             f"{', '.join(CANONICAL_ENTRIES)}. Default: auto-detect from this "
             "script's location, then fall back to AGENTERA_HOME or "
             "CLAUDE_PLUGIN_ROOT env vars."
@@ -580,7 +580,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    # Step 1: resolve and verify install root.
+    # Step 1: resolve and verify the Agentera directory.
     try:
         install_root = resolve_install_root(args.install_root)
     except InstallRootError as err:

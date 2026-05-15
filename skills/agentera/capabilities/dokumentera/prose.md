@@ -22,7 +22,7 @@ One index file; writes individual doc files across the project.
 |----------|---------|-----------|
 | `DOCS.md` | Canonical documentation contract, stored as `.agentera/docs.yaml` unless mapped otherwise. Conventions, artifact mapping, and documentation index. | Created on first dokumentera run. |
 
-Use `agentera describe --format json` and its `artifact_schemas` entry for `docs` to locate the active installed schema; do not search install roots manually. The repository's existing `.agentera/docs.yaml` shape provides the local structure. Individual documentation files are written to their mapped locations.
+Use `agentera describe --format json` and its `artifact_schemas` entry for `docs` to locate the active installed schema; do not search Agentera directories manually. The repository's existing `.agentera/docs.yaml` shape provides the local structure. Individual documentation files are written to their mapped locations.
 
 ### Artifact path resolution
 

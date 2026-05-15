@@ -22,7 +22,7 @@ One file in `.agentera/`, bootstrapped if absent.
 |------|---------|-----------|
 | `HEALTH.md` | Canonical health artifact, stored as `.agentera/health.yaml` unless mapped otherwise. Findings, dimension grades, trajectory. | First audit entry in YAML form. |
 
-Use `agentera describe --format json` and its `artifact_schemas` entry for `health` to locate the active installed schema; do not search install roots manually. Existing health artifacts provide repository-local examples of the shape.
+Use `agentera describe --format json` and its `artifact_schemas` entry for `health` to locate the active installed schema; do not search Agentera directories manually. Existing health artifacts provide repository-local examples of the shape.
 
 ### Artifact path resolution
 

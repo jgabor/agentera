@@ -29,7 +29,7 @@ One file and one archive directory in `.agentera/`.
 
 **Presence signal**: `.agentera/plan.yaml` means active planned work. Absence means no plan, so realisera reasons from VISION.md.
 
-Use `agentera describe --format json` and its `artifact_schemas` entry for `plan` to locate the active installed schema; do not search install roots manually. Existing plan artifacts provide repository-local examples of the shape.
+Use `agentera describe --format json` and its `artifact_schemas` entry for `plan` to locate the active installed schema; do not search Agentera directories manually. Existing plan artifacts provide repository-local examples of the shape.
 
 ### Artifact path resolution
 

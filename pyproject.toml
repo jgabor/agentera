@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "agentera"
 version = "2.3.12"
-description = "Agentera bundled skill protocol and packaged upgrade CLI"
+description = "Agentera app-home protocol and packaged upgrade CLI"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"

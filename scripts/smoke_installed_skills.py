@@ -3,7 +3,7 @@
 # requires-python = ">=3.10"
 # dependencies = []
 # ///
-"""Offline smoke-test for installed Agentera skill bundles.
+"""Offline smoke-test for installed Agentera skill packages.
 
 Default mode is offline and credential-free. It creates an isolated HOME and
 XDG config directory, mirrors the repository's skill payload into that sandbox,
@@ -112,7 +112,7 @@ def validate_installed_bundles(
 
         for dirname in SUPPORT_DIRS:
             if (source_skill / dirname).is_dir() and not (installed_skill / dirname).is_dir():
-                errors.append(f"{name}: missing bundled support directory {dirname}/")
+                errors.append(f"{name}: missing app support directory {dirname}/")
 
         for ref in extract_support_refs(skill_md.read_text(encoding="utf-8")):
             if not ref.startswith(LOCAL_SUPPORT_PREFIXES):
@@ -130,7 +130,7 @@ def validate_installed_bundles(
                 cross_skill_path = next(skills_root.glob(f"*/{ref}"), None)
                 if cross_skill_path is not None:
                     continue
-            errors.append(f"{name}: missing bundled support file {ref}")
+            errors.append(f"{name}: missing app support file {ref}")
 
     return SmokeResult(
         ok=not errors,
@@ -244,7 +244,7 @@ def main(argv: list[str] | None = None) -> int:
     if result.ok:
         npx = "attempted" if result.real_npx_attempted else "not attempted"
         print(
-            f"PASS: installed skill bundle smoke checked {len(result.checked_skills)} skills; "
+            f"PASS: installed skill package smoke checked {len(result.checked_skills)} skills; "
             f"real npx {npx}"
         )
         return 0

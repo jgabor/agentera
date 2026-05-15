@@ -22,7 +22,7 @@ One agent-facing file in `.agentera/` by default.
 |----------|---------|-----------|
 | `VISION.md` | Canonical vision artifact. North star, direction, principles, personas, aspirations. An evergreen constitution. | Created via deep brainstorm session, written to `.agentera/vision.yaml` by default. |
 
-Use `agentera describe --format json` and its `artifact_schemas` entry for `vision` to locate the active installed schema; do not search install roots manually. Existing vision artifacts provide repository-local examples of the shape. Visionera adapts and expands them based on the conversation.
+Use `agentera describe --format json` and its `artifact_schemas` entry for `vision` to locate the active installed schema; do not search Agentera directories manually. Existing vision artifacts provide repository-local examples of the shape. Visionera adapts and expands them based on the conversation.
 
 ### Artifact path resolution
 
