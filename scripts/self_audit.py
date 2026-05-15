@@ -53,6 +53,12 @@ _FILE_PATH_RE = re.compile(
     r"\b(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+\.[A-Za-z]{1,10}\b"
 )
 
+_REPO_PATH_RE = re.compile(
+    r"\b(?:internal|src|lib|pkg|cmd|app|test|tests|doc|docs|script|scripts|"
+    r"skill|skills|hook|hooks|fixture|fixtures|reference|references)"
+    r"(?:/[A-Za-z0-9_.-]+)+\b"
+)
+
 _LINE_NUMBER_RE = re.compile(r":\d{2,}\b")
 
 _COMMIT_HASH_RE = re.compile(r"\b[0-9a-fA-F]{7,}\b")
@@ -139,14 +145,18 @@ def check_verbosity(
 def check_abstraction(text: str) -> tuple[bool, str]:
     """Scan for at least one concrete anchor in the text.
 
-    Looks for: file path, line number, commit hash, metric value,
-    backtick-enclosed identifier, or direct quote.
+    Looks for: file path, repository path, line number, commit hash,
+    metric value, backtick-enclosed identifier, or direct quote.
 
     Returns:
         ``(True, anchor)`` if at least one anchor is found.
         ``(False, reason)`` with an abstraction creep message otherwise.
     """
     match = _FILE_PATH_RE.search(text)
+    if match:
+        return (True, match.group(0))
+
+    match = _REPO_PATH_RE.search(text)
     if match:
         return (True, match.group(0))
 
