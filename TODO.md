@@ -6,6 +6,17 @@
 
 ## → Normal
 
+- [ ] [fix] D46 handoff wording implementation doesn't appear to trigger in practice — review whether the handoff guidance in SKILL.md is being followed by runtime agents or if the prose needs a different enforcement mechanism.
+- [ ] [chore] Audit codebase for leftover "bundle" terminology and legacy artifact names (e.g. DECISIONS.md) per D47 app-home migration — replace with app-home vocabulary.
+- [ ] [feat] Implement `agentera validate` CLI namespace for capability/artifact validators (D48).
+- [ ] [feat] Implement `agentera smoke` or `agentera verify` CLI namespace for eval and smoke gates (D48).
+- [ ] [feat] Implement `agentera corpus` or `agentera usage` CLI namespace for profile analytics (D48).
+- [ ] [feat] Surface non-confirmed decisions (open, provisionally satisfied, review-needed) in `agentera hej` dashboard attention items so stale unreviewed decisions don't hide silently in the archive.
+- [ ] [perf] Reduce PLAN.md raw reads after CLI (7 reads, 37 redundant tokens in latest benchmark): strengthen `agentera plan --format json` source_contract completeness signal so planera agents skip raw plan.yaml reads.
+- [ ] [perf] Reduce planera prose re-reads (5 reads in latest benchmark): improve planera routing/guidance discoverability so agents don't re-read prose.md on every invocation.
+- [ ] [perf] Reduce DECISIONS.md raw reads after CLI (2 reads, 24 redundant tokens): ensure `agentera decisions --format json` source_contract makes compacted/missing context boundaries unambiguous.
+- [ ] [perf] Reduce AGENTERA_ARTIFACTS raw reads after CLI (4 reads): agents don't know where artifacts live — improve artifact path discovery through `agentera describe` or hej composite output.
+
 ## ⇢ Annoying
 
 - [ ] We should consider removing support for Claude Code: <https://xcancel.com/ClaudeDevs/status/2054610152817619388>
