@@ -17,6 +17,7 @@ Commands:
   agentera objective         Active optimera objective summary
   agentera experiments       Active optimera experiments summary
   agentera gate              Run check-only repository gates
+  agentera verify            Run bounded smoke or eval verification gates
   agentera compact           Check or fix artifact compaction budgets
   agentera describe          Runtime CLI/schema introspection
   agentera lint              Pre-write artifact prose self-audit
@@ -150,6 +151,14 @@ VALIDATE_ARTIFACT_LABELS = [
     "TODO.md",
     "VISION.md",
 ]
+
+VERIFY_FAMILIES = ["smoke", "eval"]
+VERIFY_TARGETS = {
+    "smoke": ["installed-skills", "live-hosts", "setup-helpers", "opencode-bootstrap"],
+    "eval": ["skills", "semantic"],
+}
+VERIFY_FORMATS = ["text", "json"]
+VERIFY_DIAGNOSTIC_LINE_LIMIT = 20
 
 
 def _active_app_model() -> dict[str, Path | str]:
@@ -3871,6 +3880,245 @@ def cmd_validate(args: argparse.Namespace) -> int:
     )
 
 
+def _verify_syntax() -> str:
+    return "agentera verify <family> <target> [--format text|json] [target options]"
+
+
+def _verify_example(family: str | None = None) -> str:
+    if family == "smoke":
+        return "agentera verify smoke installed-skills --format json"
+    if family == "eval":
+        return "agentera verify eval skills --format json"
+    return "agentera verify smoke installed-skills; agentera verify eval skills --format json"
+
+
+def _validate_verify_request(args: argparse.Namespace) -> tuple[str, str, str]:
+    family = str(getattr(args, "verify_family", "") or "")
+    target = str(getattr(args, "verify_target", "") or "")
+    output_format = str(getattr(args, "format", "text") or "text")
+    if output_format not in VERIFY_FORMATS:
+        raise ValueError(
+            f"unsupported verify format {output_format!r}; valid formats: {', '.join(VERIFY_FORMATS)}. "
+            "Syntax: agentera verify <family> <target> --format text|json [target options]. "
+            f"Example: {_verify_example('smoke')}"
+        )
+    if family not in VERIFY_FAMILIES:
+        raise ValueError(
+            f"unsupported verify family {family!r}; valid families: {', '.join(VERIFY_FAMILIES)}. "
+            f"Syntax: {_verify_syntax()}. Examples: {_verify_example()}"
+        )
+    valid_targets = VERIFY_TARGETS[family]
+    if target not in valid_targets:
+        raise ValueError(
+            f"unsupported verify target {target!r} for family {family!r}; valid targets: {', '.join(valid_targets)}. "
+            f"Syntax: agentera verify {family} <target> [--format text|json] [target options]. "
+            f"Example: {_verify_example(family)}"
+        )
+    if family == "smoke" and target == "live-hosts" and getattr(args, "live", False) and not getattr(args, "yes", False):
+        raise ValueError(
+            "unsafe live-host verify request requires explicit non-interactive consent. "
+            "Safe default: omit --live to run offline fixture and setup-helper checks only. "
+            "Valid opt-in flags: --live --yes. "
+            "Syntax: agentera verify smoke live-hosts [--live --yes] [--format text|json]. "
+            "Example: agentera verify smoke live-hosts --live --yes --format json"
+        )
+    if family == "eval" and target == "skills" and getattr(args, "run", False) and getattr(args, "dry_run", False):
+        raise ValueError(
+            "unsupported eval skills request combines --run and --dry-run; choose one mode. "
+            "Safe default: omit --run to list the bounded dry-run plan without invoking a runtime. "
+            "Syntax: agentera verify eval skills [--run] [--skill NAME] [--timeout SECONDS] [--parallel N] [--runtime auto|claude|opencode] [--format text|json]. "
+            "Example: agentera verify eval skills --dry-run --format json"
+        )
+    if family == "eval" and target == "skills":
+        runtime = str(getattr(args, "runtime", "auto"))
+        if runtime not in {"auto", "claude", "opencode"}:
+            raise ValueError(
+                f"unsupported eval skills runtime {runtime!r}; valid runtimes: auto, claude, opencode. "
+                "Syntax: agentera verify eval skills [--run] [--runtime auto|claude|opencode] [--format text|json]. "
+                "Example: agentera verify eval skills --format json"
+            )
+        if int(getattr(args, "parallel", 1)) < 1 or int(getattr(args, "timeout", 120)) < 1:
+            raise ValueError(
+                "eval skills bounds must be positive integers. "
+                "Syntax: agentera verify eval skills [--parallel N] [--timeout SECONDS] [--format text|json]. "
+                "Example: agentera verify eval skills --parallel 1 --timeout 120 --format json"
+            )
+    if family == "eval" and target == "semantic" and not getattr(args, "fixtures", []):
+        raise ValueError(
+            "semantic verify requires explicit fixture path(s); broad fixture discovery is not a safe default. "
+            "Valid targets for eval: skills, semantic. "
+            "Syntax: agentera verify eval semantic <fixture> [<fixture>...] [--format text|json]. "
+            "Example: agentera verify eval semantic fixtures/semantic/hej-bare-message.md --format json"
+        )
+    return family, target, output_format
+
+
+def _bounded_lines(text: str, limit: int = VERIFY_DIAGNOSTIC_LINE_LIMIT) -> list[str]:
+    lines = text.splitlines()
+    if len(lines) <= limit:
+        return lines
+    return lines[:limit] + [f"... truncated {len(lines) - limit} line(s)"]
+
+
+def _verify_status(result: subprocess.CompletedProcess[str]) -> str:
+    return "pass" if result.returncode == 0 else "fail"
+
+
+def _verify_payload(
+    *,
+    family: str,
+    target: str,
+    output_format: str,
+    engine_command: list[str],
+    result: subprocess.CompletedProcess[str],
+    safety: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "command": "verify",
+        "status": _verify_status(result),
+        "family": family,
+        "target": target,
+        "format": output_format,
+        "engine": {
+            "command": engine_command,
+            "exit_code": result.returncode,
+        },
+        "diagnostics": {
+            "stdout": _bounded_lines(result.stdout),
+            "stderr": _bounded_lines(result.stderr),
+            "line_limit": VERIFY_DIAGNOSTIC_LINE_LIMIT,
+        },
+        "safety": safety,
+    }
+
+
+def _emit_verify_text(payload: dict[str, Any]) -> None:
+    engine = payload["engine"]
+    safety = payload["safety"]
+    print(
+        f"verify {payload['family']} {payload['target']}: {payload['status']} "
+        f"(engine_exit={engine['exit_code']})"
+    )
+    print(f"engine={' '.join(engine['command'])}")
+    print(f"safety={safety['mode']}; {safety['summary']}")
+    stdout = payload["diagnostics"]["stdout"]
+    stderr = payload["diagnostics"]["stderr"]
+    if stdout:
+        print("stdout:")
+        for line in stdout:
+            print(f"  {line}")
+    if stderr:
+        print("stderr:")
+        for line in stderr:
+            print(f"  {line}")
+
+
+def _run_verify_engine(command: list[str]) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(command, cwd=Path(__file__).resolve().parent.parent, text=True, capture_output=True, check=False)
+    except FileNotFoundError as exc:
+        return subprocess.CompletedProcess(command, 127, "", f"{command[0]} not found: {exc}")
+
+
+def _verify_command(args: argparse.Namespace, family: str, target: str) -> tuple[list[str], dict[str, Any]]:
+    scripts_dir = Path(__file__).resolve().parent
+    if family == "smoke" and target == "installed-skills":
+        command = [sys.executable, str(scripts_dir / "smoke_installed_skills.py")]
+        mode = "offline"
+        if getattr(args, "installed_root", None) is not None:
+            command.extend(["--installed-root", str(args.installed_root)])
+            mode = "explicit-installed-root"
+        if getattr(args, "real_npx", False):
+            command.append("--real-npx")
+            mode = "explicit-real-npx"
+        return command, {
+            "mode": mode,
+            "summary": "default path is offline and credential-free; real npx requires --real-npx",
+            "live": False,
+            "mutates_installed_app": False,
+        }
+    if family == "smoke" and target == "live-hosts":
+        command = [sys.executable, str(scripts_dir / "smoke_live_hosts.py")]
+        if getattr(args, "live", False):
+            command.extend(["--live", "--yes"])
+            return command, {
+                "mode": "explicit-live",
+                "summary": "live host sections explicitly enabled with --live --yes and direct harness timeouts",
+                "live": True,
+                "mutates_installed_app": False,
+            }
+        return command, {
+            "mode": "offline",
+            "summary": "default runs offline fixture, missing-store, setup-helper, and upgrade-repair smoke checks only",
+            "live": False,
+            "mutates_installed_app": False,
+        }
+    if family == "smoke" and target == "setup-helpers":
+        return [sys.executable, str(scripts_dir / "smoke_setup_helpers.py")], {
+            "mode": "local-smoke",
+            "summary": "uses temporary homes/config paths; no installed-app or profile mutation",
+            "live": False,
+            "mutates_installed_app": False,
+        }
+    if family == "smoke" and target == "opencode-bootstrap":
+        return ["node", str(scripts_dir / "smoke_opencode_bootstrap.mjs")], {
+            "mode": "local-smoke",
+            "summary": "uses temporary OpenCode config paths; no package refresh or profile mutation",
+            "live": False,
+            "mutates_installed_app": False,
+        }
+    if family == "eval" and target == "skills":
+        command = [sys.executable, str(scripts_dir / "eval_skills.py")]
+        if getattr(args, "skill", None):
+            command.extend(["--skill", str(args.skill)])
+        if getattr(args, "run", False):
+            command.extend(["--parallel", str(args.parallel), "--timeout", str(args.timeout), "--runtime", str(args.runtime)])
+            return command, {
+                "mode": "explicit-runtime",
+                "summary": "runtime-backed eval explicitly enabled with --run and bounded timeout/parallel controls",
+                "live": True,
+                "long_running_default": False,
+            }
+        # The direct runner's `--dry-run --runtime auto` still probes PATH. Pin a
+        # concrete runtime for safe discovery unless the caller explicitly chose one.
+        dry_run_runtime = str(args.runtime) if str(args.runtime) != "auto" else "claude"
+        command.extend(["--parallel", str(args.parallel), "--timeout", str(args.timeout), "--runtime", dry_run_runtime])
+        command.append("--dry-run")
+        return command, {
+            "mode": "dry-run",
+            "summary": "default lists skill prompts without invoking Claude Code, OpenCode, or long-running evals",
+            "live": False,
+            "long_running_default": False,
+        }
+    if family == "eval" and target == "semantic":
+        return [sys.executable, str(scripts_dir / "semantic_eval.py"), *[str(path) for path in args.fixtures]], {
+            "mode": "offline-fixtures",
+            "summary": "requires explicit fixture path(s) and never invokes model runtimes",
+            "live": False,
+            "long_running_default": False,
+        }
+    raise AssertionError(f"unhandled verify target {family}/{target}")
+
+
+def cmd_verify(args: argparse.Namespace) -> int:
+    family, target, output_format = _validate_verify_request(args)
+    command, safety = _verify_command(args, family, target)
+    result = _run_verify_engine(command)
+    payload = _verify_payload(
+        family=family,
+        target=target,
+        output_format=output_format,
+        engine_command=command,
+        result=result,
+        safety=safety,
+    )
+    if output_format == "json":
+        _emit_structured(payload, "json")
+    else:
+        _emit_verify_text(payload)
+    return result.returncode
+
+
 def _query_last_phase(args: argparse.Namespace, schemas: dict) -> int:
     output_format = getattr(args, "format", "text")
     info = schemas.get("progress")
@@ -5439,6 +5687,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="agentera",
         description="agentera: read project state, upgrade installs, and print priming guidance",
+        epilog="Examples: agentera verify smoke installed-skills; agentera verify eval skills --format json",
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     sub = parser.add_subparsers(dest="command")
 
@@ -5553,6 +5803,31 @@ def build_parser() -> argparse.ArgumentParser:
         help="Project directory whose repository gates should check (default: cwd)",
     )
     gate.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+
+    verify = sub.add_parser(
+        "verify",
+        help="Run bounded smoke or eval verification gates",
+        description=(
+            "Run supported smoke or eval verification gates through a stable facade. "
+            "Examples: agentera verify smoke installed-skills; "
+            "agentera verify eval skills --format json"
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    verify.add_argument("verify_family", nargs="?", help="Gate family: smoke or eval")
+    verify.add_argument("verify_target", nargs="?", help="Gate target for the selected family")
+    verify.add_argument("fixtures", nargs="*", help="Explicit fixture path(s) for `agentera verify eval semantic`")
+    verify.add_argument("--format", default="text", help="Output format: text or json")
+    verify.add_argument("--installed-root", type=_agent_path, help="Installed package root for smoke installed-skills")
+    verify.add_argument("--real-npx", action="store_true", help="Opt in to the direct installed-skills real npx path")
+    verify.add_argument("--live", action="store_true", help="Opt in to direct live-host runtime checks")
+    verify.add_argument("--yes", action="store_true", help="Confirm non-interactive live-host opt-in")
+    verify.add_argument("--dry-run", action="store_true", help="Keep eval skills in dry-run mode without runtime invocation")
+    verify.add_argument("--run", action="store_true", help="Opt in to runtime-backed eval skills execution")
+    verify.add_argument("--skill", help="Skill name for eval skills")
+    verify.add_argument("--parallel", type=int, default=1, help="Eval skills parallelism bound")
+    verify.add_argument("--timeout", type=int, default=120, help="Eval skills per-skill timeout bound in seconds")
+    verify.add_argument("--runtime", default="auto", help="Eval skills runtime: auto, claude, or opencode")
 
     q = sub.add_parser("query", help="Advanced custom artifact query")
     q.add_argument("query", nargs="?", help="Query pattern or artifact name")
@@ -5757,6 +6032,8 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_compact(args)
         if args.command == "gate":
             return cmd_gate(args)
+        if args.command == "verify":
+            return cmd_verify(args)
         if args.command == "lint":
             return cmd_lint(args)
         if args.command == "validate":

@@ -1,4 +1,4 @@
-last_audit: '2026-05-15 (D48 validate namespace feature closeout metadata sync)'
+last_audit: '2026-05-15 (D48 verify namespace feature closeout metadata sync)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges

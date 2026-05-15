@@ -659,6 +659,166 @@ validate_namespace:
     - scripts/validate_capability.py --help defines capability_dir, --self-validate, --validate-protocol, and --check-primitives.
     - hooks/validate_artifact.py --help defines --artifact, --file, --cwd, and --format text|json.
     - hooks/validate_artifact.py invalid artifact JSON lists valid canonical artifact labels.
+verify_namespace:
+  status: implemented_with_task_3_coverage
+  command: verify
+  rejected_umbrella_command: smoke
+  purpose: >-
+    Define the supported `agentera verify` namespace so agents can run or inspect
+    smoke and eval gates through one discoverable verification surface without
+    guessing direct script names or unsupported capability-name CLI commands.
+  namespace_rationale: >-
+    `agentera verify` is the selected public command because it naturally covers
+    both smoke checks and evaluation gates. `agentera smoke` is rejected as the
+    umbrella command because it describes only smoke checks and would not clearly
+    describe semantic or skill evaluation gates.
+  command_shape: agentera verify <family> <target> [--format text|json] [target options]
+  supported_gate_families:
+    smoke:
+      command_shape: agentera verify smoke <target> [--format text|json] [target options]
+      valid_targets:
+        installed-skills:
+          direct_entrypoint: scripts/smoke_installed_skills.py
+          expected_default_behavior: >-
+            Offline, credential-free installed skill package shape validation; must
+            not invoke package managers or runtimes unless an explicit opt-in flag
+            requests the existing direct script's real package-manager path.
+          safety_requirements:
+            - Default execution is offline and non-interactive.
+            - Real package-manager or installed-surface checks require explicit opt-in.
+            - Output is bounded and suitable for agent consumption.
+        live-hosts:
+          direct_entrypoint: scripts/smoke_live_hosts.py
+          expected_default_behavior: >-
+            Offline fixture parity, bounded missing-store degradation, and delegated
+            setup-helper checks only; live host CLI calls are forbidden by default.
+          safety_requirements:
+            - Live runtime invocation requires explicit `--live` plus non-interactive consent such as `--yes` or an equivalent documented environment opt-in.
+            - Live sections must retain timeout or per-runtime bounds and print an audit line for consent.
+            - Default examples and tests must avoid live network, credential use, and host-dependent work.
+        setup-helpers:
+          direct_entrypoint: scripts/smoke_setup_helpers.py
+          expected_default_behavior: >-
+            Direct setup-helper smoke checks remain available with existing observable
+            behavior; the current direct script runs checks even when `--help` is
+            supplied, so verify must not assume argparse-style help for compatibility.
+          safety_requirements:
+            - No installed app/profile mutation by default.
+            - Non-interactive execution remains bounded.
+        opencode-bootstrap:
+          direct_entrypoint: scripts/smoke_opencode_bootstrap.mjs
+          expected_default_behavior: >-
+            Direct OpenCode bootstrap smoke checks remain available with existing
+            observable behavior, including bounded local-environment failure when the
+            expected OpenCode skills setup is absent.
+          safety_requirements:
+            - No installation, package refresh, or profile/app mutation by default.
+            - Diagnostics remain bounded and local to the checked bootstrap contract.
+      output_formats:
+        - text
+        - json
+      expected_examples:
+        - agentera verify smoke installed-skills
+        - agentera verify smoke live-hosts --format json
+        - agentera verify smoke live-hosts --live --yes --format json
+        - agentera verify smoke setup-helpers
+        - agentera verify smoke opencode-bootstrap --format json
+    eval:
+      command_shape: agentera verify eval <target> [--format text|json] [target options]
+      valid_targets:
+        skills:
+          direct_entrypoint: scripts/eval_skills.py
+          expected_default_behavior: >-
+            Skill eval verification must preserve `scripts/eval_skills.py` as the
+            direct runner. Any runtime-backed eval work is host-dependent and must be
+            explicitly opted in or bounded through existing dry-run, runtime, timeout,
+            skill, and parallel controls.
+          safety_requirements:
+            - Default verify behavior must not start long-running runtime-backed evals without explicit opt-in or a documented bounded mode.
+            - Runtime-backed runs must retain per-skill timeout and concurrency bounds.
+            - Dry-run listing remains available for safe discovery.
+        semantic:
+          direct_entrypoint: scripts/semantic_eval.py
+          expected_default_behavior: >-
+            Offline semantic fixture evaluation remains the direct compatibility
+            surface. Verify must require explicit fixture paths or a documented bounded
+            fixture selection; it must not scan broad corpora by default.
+          safety_requirements:
+            - Offline fixture evaluation only by default.
+            - Missing or broad fixture input fails with bounded guidance instead of starting an unbounded search.
+      output_formats:
+        - text
+        - json
+      expected_examples:
+        - agentera verify eval skills --format json
+        - agentera verify eval skills --dry-run --format json
+        - agentera verify eval semantic fixtures/semantic/hej-bare-message.md
+        - agentera verify eval semantic fixtures/semantic/hej-bare-message.md --format json
+  output_contract:
+    text: >-
+      Human-readable output must identify the verify family, target, status, direct
+      engine used, and bounded diagnostics. It may mirror existing direct script PASS
+      or FAIL wording when that preserves compatibility.
+    json: >-
+      JSON output must use a stable verification result envelope with command,
+      status, family, target, format, engine command, exit_code, diagnostics, and
+      safety/opt-in metadata when applicable. Raw runtime transcripts, credentials,
+      private paths beyond explicit command inputs, and unbounded logs are excluded.
+    status_values:
+      - pass
+      - fail
+      - invalid
+      - skipped
+  invalid_input_behavior:
+    family_error: >-
+      Unknown verify families must exit nonzero, list valid families `smoke` and
+      `eval`, show `agentera verify <family> <target> [--format text|json]`, and
+      include concrete examples for one smoke target and one eval target.
+    target_error: >-
+      Unknown targets must exit nonzero, list valid targets for the selected family,
+      show the correct family syntax, and include one concrete example for that family.
+    format_error: >-
+      Unknown formats must exit nonzero, list valid values `text` and `json`, show
+      syntax using `--format text|json`, and must not silently fall back to another format.
+    unsafe_live_default_error: >-
+      Requests that would run live, host-dependent, mutating, or long-running gates
+      without required opt-in must exit nonzero with bounded diagnostics explaining
+      the missing opt-in, the safe default, valid opt-in flags or environment contract,
+      correct syntax, and a concrete explicitly bounded example.
+  compatibility_constraints:
+    - >-
+      `scripts/eval_skills.py` remains callable directly with existing `--skill`,
+      `--dry-run`, `--parallel`, `--timeout`, and `--runtime` behavior.
+    - >-
+      `scripts/semantic_eval.py` remains callable directly with fixture path arguments
+      and existing offline semantic fixture behavior.
+    - >-
+      `scripts/smoke_installed_skills.py` remains callable directly with existing
+      offline default behavior plus the explicit `--real-npx` opt-in path.
+    - >-
+      `scripts/smoke_live_hosts.py` remains callable directly with existing offline
+      default behavior and explicit `--live`/`--yes` live-host opt-in behavior.
+    - >-
+      `scripts/smoke_setup_helpers.py` remains callable directly with existing
+      observable smoke-check behavior, including current non-argparse `--help` behavior.
+    - >-
+      `scripts/smoke_opencode_bootstrap.mjs` remains callable directly with existing
+      observable local bootstrap diagnostics and failure behavior.
+  non_goals:
+    - Do not add `agentera smoke` as the umbrella command.
+    - Do not add unsupported capability-name CLI commands such as `agentera realisera` or `agentera orkestrera`.
+    - Do not remove, rename, or redesign direct smoke or eval scripts.
+    - Do not implement D48 `validate`, `corpus`, or `usage` work.
+    - Do not run live network, installed-app mutation, profile refresh, publication, push, tag, or package-update flows as part of this contract definition.
+  evidence_sources:
+    - agentera --help exposes the `verify` namespace and safe smoke/eval examples.
+    - tests/test_verify_namespace.py covers smoke success, eval success, text output, JSON output, invalid input feedback, safety boundaries, and preserved direct-script compatibility.
+    - scripts/eval_skills.py --help defines `--skill`, `--dry-run`, `--parallel`, `--timeout`, and `--runtime`.
+    - scripts/semantic_eval.py --help defines fixture path inputs for offline semantic evaluation.
+    - scripts/smoke_installed_skills.py --help documents offline default behavior and explicit `--real-npx` opt-in.
+    - scripts/smoke_live_hosts.py --help documents offline default behavior plus explicit `--live` and `--yes` live-host opt-in.
+    - scripts/smoke_setup_helpers.py --help currently runs the smoke checks and passed during Task 1 probing.
+    - scripts/smoke_opencode_bootstrap.mjs --help currently runs the bootstrap smoke check and returned bounded local failure diagnostics when OpenCode skills were absent.
 non_goals_for_task_1:
   - Do not rename bundle-status to doctor.
   - Do not add doctor behavior.

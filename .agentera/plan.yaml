@@ -3,265 +3,325 @@ header:
   created: 2026-05-15
   status: complete
   reviewed: 2026-05-15
-  critic_issues: 4 found, 4 addressed, 0 dismissed
-  title: D48 Validate Namespace Plan
+  critic_issues: 8 found, 8 addressed, 0 dismissed
+  title: D48 Verify Namespace Plan
 what: >-
-  Define and deliver an `agentera validate` CLI namespace for Agentera's existing
-  capability and artifact validation workflows. The namespace should give agents
-  one discoverable, non-interactive validation surface while preserving current
-  validator behavior, artifact labels, and direct script/hook entry points.
+  Plan the next D48 CLI namespace for eval and smoke gates by adding a supported
+  `agentera verify` surface with stable behavior for smoke and eval gate families,
+  while preserving existing direct smoke/eval scripts as compatibility surfaces.
 why: >-
-  The next highest-priority TODO asks for the D48 validation namespace because
-  validation is currently discoverable only through separate commands such as
-  `scripts/validate_capability.py` and `hooks/validate_artifact.py`. A standard
-  namespace makes validation safer for agents: they can ask the CLI what to run,
-  receive structured results, and avoid guessing unsupported command names.
+  Agents currently have TODO-level intent for smoke or verify gates but no
+  discoverable namespace, so they must guess direct script names and flags. A
+  supported verify namespace should make safe gate execution explicit, bounded,
+  non-interactive, and consistent with the new `agentera validate` pattern without
+  broadening into unrelated D48 namespaces.
 constraints: >-
-  Preserve existing validation semantics, existing direct validator entry points,
-  artifact labels, capability schema contracts, non-interactive behavior, JSON
-  output expectations, and hook behavior. Do not implement the separate D48
-  `smoke`, `verify`, `corpus`, or `usage` namespaces. Do not redesign schemas,
-  rename canonical artifacts, publish, push, tag, refresh installed apps/profile,
-  edit vision state, edit objective state, change decision satisfaction state, or
-  run unsupported capability-name CLI commands.
+  Select `agentera verify` as the planned public namespace before build; record why
+  `agentera smoke` is not the umbrella command. Preserve existing direct entrypoints
+  such as `scripts/eval_skills.py`, `scripts/semantic_eval.py`,
+  `scripts/smoke_installed_skills.py`, `scripts/smoke_live_hosts.py`,
+  `scripts/smoke_setup_helpers.py`, and `scripts/smoke_opencode_bootstrap.mjs`.
+  Preserve non-interactive behavior, bounded output, text/json result expectations,
+  and invalid-input guidance with valid values, syntax, examples, and nonzero exits.
+  Default tests and default command examples must avoid live network, installed-app
+  mutation, profile refresh, and long-running evals unless explicitly opted in and
+  bounded. Do not implement D48 `validate`, `corpus`, or `usage` work; do not redesign
+  eval/smoke harnesses broadly; do not publish, push, tag, refresh installed apps or
+  profiles, edit vision state, edit objective state, change decision satisfaction
+  state, or run unsupported capability-name CLI commands.
 scope:
   included:
     - >-
-      User-facing `agentera validate` command contract for capability and artifact
-      validation use cases.
+      Public `agentera verify` command contract with gate families `smoke` and
+      `eval`.
     - >-
-      Stable text and JSON result behavior for success, validation failure, and
-      invalid input cases.
+      Planned smoke gate values `installed-skills`, `live-hosts`, `setup-helpers`,
+      and `opencode-bootstrap`, with live-host behavior explicitly opt-in and
+      bounded.
     - >-
-      Compatibility guarantees for existing direct validation commands and hook
-      validation behavior.
+      Planned eval gate values `skills` and `semantic`, with long-running or
+      host-dependent behavior explicitly bounded or opt-in.
     - >-
-      Help, error, or guidance text needed so agents can discover valid targets
-      and correct syntax.
+      Stable text and JSON results for success, validation failure, command failure,
+      and invalid input.
     - >-
-      Focused regression coverage and affected artifact/capability validation.
+      Help and invalid-input guidance that lists valid gate families, target values,
+      correct syntax, and concrete examples.
     - >-
-      Feature-level release metadata and local state sync under `.agentera/docs.yaml`
-      semver policy.
+      Compatibility guarantees for existing direct eval and smoke scripts.
+    - >-
+      Focused regression coverage and guidance alignment for the selected namespace.
+    - >-
+      Release metadata and local state sync according to `.agentera/docs.yaml`
+      `semver_policy` and `version_files`.
   excluded:
-    - D48 `smoke`, `verify`, `corpus`, or `usage` namespaces.
-    - Broad validator semantic redesign or schema-contract redesign.
-    - Renaming artifact IDs, schema names, persisted metadata keys, or CLI selectors.
+    - D48 `validate`, `corpus`, or `usage` namespace work.
+    - Broad eval harness redesign, smoke harness redesign, or live-host reliability work.
+    - Renaming persisted artifact IDs, schema names, capability names, or direct script files.
     - Publication, remote push, tagging, installed-app refresh, profile refresh, vision edits, objective edits, or decision satisfaction changes.
   deferred:
-    - Broader validation UX improvements outside the D48 namespace.
-    - Consolidation of smoke/eval/usage command families.
-    - Historical cleanup of old validation examples not touched by this work.
+    - Consolidating the future D48 corpus or usage namespace.
+    - Broader smoke/eval performance tuning beyond bounded namespace behavior.
+    - Historical cleanup of older smoke/eval examples not touched by this feature.
 design: >-
-  Treat D48 validate as a CLI discoverability and contract feature, not as a
-  rewrite of validation engines. The plan should prove that agents can validate
-  capability and artifact targets through a standard namespace, while existing
-  direct validators remain valid compatibility surfaces.
+  Treat this as a user-facing verification namespace, not a rewrite of smoke or eval
+  engines. `agentera verify` is the planned umbrella because it can contain both
+  smoke and eval gate families; `agentera smoke` remains the rejected umbrella because
+  it would not naturally describe semantic or skill evaluation gates. The namespace
+  should expose supported gate families and target names directly, preserve direct
+  scripts for compatibility, and keep live/long-running gates explicitly opt-in or
+  bounded so default agent runs stay safe.
 tasks:
   - number: 1
-    name: Validate namespace contract definition
+    name: Verify namespace contract definition
     depends_on: []
     status: complete
     acceptance:
       - >-
-        GIVEN an agent needs to validate Agentera capability or artifact state
-        WHEN the intended `agentera validate` namespace is specified THEN the
-        supported target families, required inputs, output formats, and non-goals
-        are clear without relying on unsupported capability-name commands.
+        GIVEN an agent needs to run eval or smoke gates WHEN the verify namespace
+        contract is reviewed THEN `agentera verify` is the recorded public command,
+        `agentera smoke` is recorded as the rejected umbrella alternative, and the
+        rationale is explicit.
       - >-
-        GIVEN current direct validation commands already exist WHEN compatibility
+        GIVEN the command contract is reviewed WHEN supported values are listed THEN
+        gate families `smoke` and `eval`, their target values, output formats,
+        safety requirements, and non-goals are clear without relying on unsupported
+        capability-name commands.
+      - >-
+        GIVEN current direct smoke and eval scripts already exist WHEN compatibility
         expectations are defined THEN their continued availability and observable
         behavior are preserved as acceptance constraints.
       - >-
-        GIVEN invalid validation input is possible WHEN the command contract is
-        reviewed THEN valid values, correct syntax, and concrete examples are
-        included in the expected user-facing behavior.
+        GIVEN invalid verify input is possible WHEN user-facing behavior is specified
+        THEN unknown families, targets, formats, and unsafe live defaults return
+        bounded diagnostics with valid values, correct syntax, concrete examples, and
+        nonzero exits.
     evidence:
       - >-
-        Defined the design-only external contract in
-        `references/cli/agent-ready-state-contract.yaml` under
-        `validate_namespace` with supported target families `capability` and
-        `artifact`, required inputs, `text` and `json` output formats, examples,
-        non-goals, and explicit prohibition on unsupported capability-name CLI
-        commands.
+        Added design-only `verify_namespace` to
+        `references/cli/agent-ready-state-contract.yaml`: public command is
+        `agentera verify`; rejected umbrella alternative is `agentera smoke` because
+        smoke does not naturally describe semantic or skill eval gates; Task 1
+        explicitly does not implement runtime `agentera verify` behavior.
       - >-
-        Recorded direct-validator compatibility constraints: keep
-        `scripts/validate_capability.py skills/agentera/capabilities/<name>` and
-        `scripts/validate_capability.py --self-validate` available with existing
-        behavior; keep `hooks/validate_artifact.py --artifact <ARTIFACT> --file
-        <PATH> --format text|json` available with existing docs.yaml mapping,
-        JSON envelope, violation wording, and hook behavior.
+        Contract lists gate families `smoke` and `eval`, smoke targets
+        `installed-skills`, `live-hosts`, `setup-helpers`, and
+        `opencode-bootstrap`, eval targets `skills` and `semantic`, text/json output
+        expectations, safety requirements, invalid-input behavior, examples, and
+        non-goals without adding unsupported capability-name CLI commands.
       - >-
-        Substantiated invalid-input expectations from current behavior:
-        `hooks/validate_artifact.py --artifact NOTREAL.md --file .agentera/plan.yaml
-        --format json` returned a JSON failure listing valid artifact labels;
-        invalid capability directory validation reported missing `prose.md` and
-        `schemas/`; the contract now requires valid values, correct syntax, and
-        concrete examples for invalid family, capability, artifact, and format
-        input.
+        Compatibility constraints preserve direct entrypoints
+        `scripts/eval_skills.py`, `scripts/semantic_eval.py`,
+        `scripts/smoke_installed_skills.py`, `scripts/smoke_live_hosts.py`,
+        `scripts/smoke_setup_helpers.py`, and
+        `scripts/smoke_opencode_bootstrap.mjs` with existing observable behavior.
+      - >-
+        Evidence probes: `uv run scripts/agentera --help` currently exposes no
+        `verify` command; `uv run scripts/eval_skills.py --help`, `uv run
+        scripts/semantic_eval.py --help`, `uv run scripts/smoke_installed_skills.py
+        --help`, and `uv run scripts/smoke_live_hosts.py --help` documented the
+        direct surfaces and safe opt-ins; `uv run scripts/smoke_setup_helpers.py
+        --help` ran existing smoke checks and passed; `node
+        scripts/smoke_opencode_bootstrap.mjs --help` ran existing bootstrap smoke
+        checks and returned bounded local failure diagnostics for absent OpenCode
+        skills.
   - number: 2
-    name: Validate namespace behavior
-    depends_on: [1]
+    name: Verify namespace gate behavior
+    depends_on:
+      - 1
     status: complete
     acceptance:
       - >-
-        GIVEN a valid capability validation target WHEN an agent uses the validate
-        namespace THEN the command returns the same validation judgment available
-        from the existing capability validator with stable text and JSON results.
+        GIVEN a supported smoke gate target is requested WHEN an agent runs the
+        verify namespace THEN the command returns a stable text or JSON result with
+        bounded diagnostics and without requiring live network or installed-app
+        mutation by default.
       - >-
-        GIVEN a valid artifact validation target WHEN an agent uses the validate
-        namespace THEN the command returns the same validation judgment available
-        from the existing artifact validator with stable text and JSON results.
+        GIVEN a supported eval gate target is requested WHEN an agent runs the
+        verify namespace THEN the command returns a stable text or JSON result with
+        bounded diagnostics and without starting long-running or host-dependent work
+        unless explicitly opted in.
       - >-
-        GIVEN callers continue to use existing direct validation commands WHEN the
-        validate namespace is present THEN those direct commands still work and
-        their documented behavior is not broken.
+        GIVEN callers continue to use existing direct smoke or eval commands WHEN
+        the verify namespace is present THEN those direct commands remain callable
+        with their documented behavior unchanged.
+      - >-
+        GIVEN unsupported families, targets, formats, or unsafe default requests are
+        provided WHEN the command fails THEN it exits nonzero and includes valid
+        values, correct syntax, and one concrete example.
     evidence:
       - >-
-        Implemented `agentera validate` in `scripts/agentera` with supported target
-        families `capability` and `artifact` only. Capability targets accept canonical
-        capability names or paths and delegate to `scripts/validate_capability.py`;
-        artifact targets accept canonical artifact labels, optional `--file`, optional
-        `--cwd`, and delegate to `hooks/validate_artifact.py`.
+        Implemented `agentera verify` in `scripts/agentera` as a thin facade over
+        existing direct smoke/eval scripts, with supported families `smoke` and
+        `eval`, smoke targets `installed-skills`, `live-hosts`, `setup-helpers`,
+        and `opencode-bootstrap`, eval targets `skills` and `semantic`, output
+        formats `text` and `json`, and bounded stdout/stderr diagnostics capped at
+        20 lines per stream in the stable JSON/text envelope.
       - >-
-        Capability namespace checks passed: `uv run scripts/agentera validate capability
-        hej` returned the existing validator text judgment `PASS: capability directory
-        is valid`; `uv run scripts/agentera validate capability hej --format json`
-        returned status `pass`, target_family `capability`, target `hej`, no violations,
-        and embedded engine stdout/stderr evidence from the direct validator; `uv run
-        scripts/agentera validate capability skills/agentera/capabilities/hej --format
-        json` confirmed path targets return the same pass judgment.
+        Smoke behavior evidence: `uv run scripts/agentera verify smoke installed-skills`
+        passed in offline mode without real npx; `uv run scripts/agentera verify smoke
+        installed-skills --format json` returned status `pass` with safety mode
+        `offline`; `uv run scripts/agentera verify smoke live-hosts --format json`
+        passed the existing offline fixture/setup/upgrade smoke path with `live=false`;
+        `uv run scripts/agentera verify smoke setup-helpers --format json` passed;
+        `uv run scripts/agentera verify smoke opencode-bootstrap --format json`
+        returned a stable bounded `status=fail` result for the existing local OpenCode
+        skills absence instead of invoking package refresh or installed-app mutation.
       - >-
-        Artifact namespace checks passed: `uv run scripts/agentera validate artifact
-        --artifact PLAN.md --file .agentera/plan.yaml --format text` returned status
-        `pass` with the same PLAN.md file/default mapping judgment as the direct hook;
-        `uv run scripts/agentera validate artifact --artifact PLAN.md --file
-        .agentera/plan.yaml --format json` returned status `pass`, target_family
-        `artifact`, target `PLAN.md`, no violations, preserved artifact file/default
-        mapping fields, and engine command `validate-artifact`.
+        Eval behavior evidence: `uv run scripts/agentera verify eval skills --format
+        json` passed by delegating to `scripts/eval_skills.py --dry-run --runtime
+        claude`, avoiding host runtime auto-detection and long-running model work by
+        default; `uv run scripts/agentera verify eval semantic fixtures/semantic/hej-bare-message.md`
+        and the JSON form passed by delegating to `scripts/semantic_eval.py` with an
+        explicit fixture path and bounded diagnostics.
       - >-
-        Compatibility checks passed: `uv run scripts/validate_capability.py
-        skills/agentera/capabilities/hej`, `uv run scripts/validate_capability.py
-        --self-validate`, and `uv run hooks/validate_artifact.py --artifact PLAN.md
-        --file .agentera/plan.yaml --format json` continued to return their direct
-        pass judgments after the namespace was added. Invalid capability input was
-        bounded with valid names, syntax, and example guidance via `uv run
-        scripts/agentera validate capability notreal --format json`.
+        Direct compatibility evidence: `uv run scripts/eval_skills.py --dry-run
+        --runtime claude`, `uv run scripts/semantic_eval.py fixtures/semantic/hej-bare-message.md`,
+        `uv run scripts/smoke_installed_skills.py`, `uv run scripts/smoke_live_hosts.py`,
+        and `uv run scripts/smoke_setup_helpers.py` remained callable and passed with
+        their existing outputs; `node scripts/smoke_opencode_bootstrap.mjs` remained
+        callable and returned the existing bounded local failure diagnostics for absent
+        OpenCode skills.
+      - >-
+        Invalid-input evidence: `uv run scripts/agentera verify bogus installed-skills`,
+        `uv run scripts/agentera verify smoke nope`, `uv run scripts/agentera verify
+        eval skills --format xml`, `uv run scripts/agentera verify smoke live-hosts
+        --live --format json`, and `uv run scripts/agentera verify eval semantic
+        --format json` exited nonzero with bounded diagnostics listing valid values,
+        correct syntax, and concrete examples.
   - number: 3
-    name: Validation coverage and guidance alignment
-    depends_on: [2]
+    name: Verification coverage and guidance alignment
+    depends_on:
+      - 2
     status: complete
     acceptance:
       - >-
-        GIVEN the validate namespace behavior exists WHEN focused tests run THEN
-        they cover successful capability validation, successful artifact
-        validation, invalid target feedback, JSON output, and preserved direct
-        validator compatibility.
+        GIVEN the verify namespace behavior exists WHEN focused tests run THEN they
+        cover successful smoke gate behavior, successful eval gate behavior, text
+        output, JSON output, invalid input feedback, safety boundaries, and preserved
+        direct-script compatibility.
       - >-
-        GIVEN help, docs, fixtures, or capability guidance are touched WHEN they
-        are reviewed THEN they make the validation namespace discoverable while
-        preserving existing artifact and capability vocabulary.
+        GIVEN help, docs, fixtures, or capability guidance are touched WHEN they are
+        reviewed THEN they make the verify namespace discoverable while preserving
+        existing smoke/eval script vocabulary and keeping live or long-running gates
+        explicitly bounded.
       - >-
-        GIVEN affected capability or artifact guidance changes WHEN validation
-        runs THEN affected capability validation, artifact validation, package or
-        CLI tests, and diff checks pass.
+        GIVEN affected guidance or artifacts change WHEN validation runs THEN
+        relevant CLI tests, direct smoke/eval probes, artifact validation, and diff
+        checks pass.
     evidence:
       - >-
-        Added focused regression coverage in `tests/test_validate_namespace.py` for
-        successful `agentera validate capability hej` text validation matching
-        `scripts/validate_capability.py`, successful capability JSON output,
-        successful `agentera validate artifact --artifact PROGRESS.md` JSON output
-        matching `hooks/validate_artifact.py`, invalid capability target feedback,
-        and validate help discoverability while preserving canonical capability
-        names and artifact labels.
+        Added focused `tests/test_verify_namespace.py` regression coverage for the
+        `agentera verify` namespace: successful smoke text output through
+        `installed-skills`, successful eval JSON output through `skills`, successful
+        semantic eval JSON output with an explicit fixture, invalid family/target/format
+        and missing-fixture diagnostics, unsafe `--live` and `--run`/`--dry-run`
+        safety guards, help discoverability, direct Python smoke/eval script
+        compatibility, and bounded direct OpenCode bootstrap smoke behavior when Node
+        is available.
       - >-
-        Reviewed the Task 1/2 validate guidance surfaces and made the minimal
-        alignment in `references/cli/agent-ready-state-contract.yaml`: the
-        `validate_namespace` status now reflects implemented behavior, the purpose
-        describes the supported namespace, and evidence sources state that
-        `agentera --help` exposes validate. No capability prose, artifact labels,
-        capability names, schema groups, fixtures, or direct validator vocabulary
-        were renamed.
+        Aligned discoverability guidance minimally by adding top-level `agentera --help`
+        examples for `agentera verify smoke installed-skills` and `agentera verify eval
+        skills --format json`, preserving smoke/eval vocabulary and direct script target
+        names. Updated `references/cli/agent-ready-state-contract.yaml` from Task 1
+        contract-only wording to implemented-with-Task-3-coverage wording without adding
+        `agentera smoke`, unsupported capability-name commands, live defaults, or
+        long-running eval defaults.
       - >-
-        Focused verification passed: `uv run pytest tests/test_validate_namespace.py
-        -q`; `uv run pytest tests/test_explicit_cli_surfaces.py -q`; `uv run
-        scripts/agentera validate capability hej`; `uv run scripts/agentera validate
-        capability hej --format json`; `uv run scripts/validate_capability.py
-        skills/agentera/capabilities/hej`; `uv run scripts/validate_capability.py
-        --self-validate`; `uv run scripts/agentera validate artifact --artifact
-        PROGRESS.md --file .agentera/progress.yaml --format json`; `uv run
-        hooks/validate_artifact.py --artifact PROGRESS.md --file .agentera/progress.yaml
-        --format json`; `uv run hooks/validate_artifact.py --artifact PLAN.md
-        --file .agentera/plan.yaml --format json`; `uv run hooks/validate_artifact.py
-        --artifact DOCS.md --file .agentera/docs.yaml --format json`; and `git diff
-        --check`.
+        Verification evidence: `uv run pytest tests/test_verify_namespace.py -q` passed
+        (8 tests), `uv run pytest tests/test_explicit_cli_surfaces.py -q` passed (9
+        tests), safe verify probes passed for smoke text, smoke JSON, eval skills JSON,
+        and semantic fixture JSON, invalid family and unsafe live probes exited nonzero
+        with bounded guidance, direct probes for `scripts/eval_skills.py`,
+        `scripts/semantic_eval.py`, `scripts/smoke_installed_skills.py`,
+        `scripts/smoke_live_hosts.py`, and `scripts/smoke_setup_helpers.py` passed, and
+        `node scripts/smoke_opencode_bootstrap.mjs` returned the expected bounded local
+        failure for absent OpenCode skills.
+      - >-
+        Artifact and diff evidence after Task 3 artifact updates: PROGRESS, PLAN, and
+        DOCS validation passed with `hooks/validate_artifact.py`, and `git diff --check`
+        passed.
   - number: 4
     name: Version and local state sync
-    depends_on: [1, 2, 3]
+    depends_on:
+      - 1
+      - 2
+      - 3
     status: complete
     acceptance:
       - >-
         GIVEN the change type is `feat` WHEN release metadata is reviewed THEN
-        version-bearing surfaces are updated for the documented minor-level policy
-        unless the docs policy proves no version-bearing surface applies.
+        version-bearing surfaces follow DOCS-owned `semver_policy` and
+        `version_files`, or no version bump is recorded if those policies are absent.
       - >-
-        GIVEN verification passes WHEN project state is synced THEN TODO,
-        PROGRESS, PLAN, and conditional CHANGELOG/DOCS records include the feature
-        scope and exact verification evidence.
+        GIVEN verification passes WHEN project state is synced THEN TODO, PROGRESS,
+        PLAN, and policy-required CHANGELOG/DOCS records include the feature scope
+        and exact verification evidence without unrelated documentation churn.
       - >-
         GIVEN closeout completes WHEN scope is audited THEN no publication, push,
         tag, installed-app refresh, profile refresh, vision edit, objective edit,
-        decision satisfaction change, or unsupported capability-name CLI command
-        occurred.
+        decision satisfaction change, package-manager update, unsupported
+        capability-name CLI command, or D48 validate/corpus/usage work occurred.
     evidence:
       - >-
         Reviewed `.agentera/docs.yaml` semver policy and version file conventions:
-        `feat` maps to a minor bump, current version-bearing surfaces were at
-        2.3.15, and the documented feature target is 2.4.0. Aligned
-        `pyproject.toml`, `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`,
+        `feat` maps to a minor bump, current version-bearing surfaces were at 2.4.0,
+        and the documented feature target is 2.5.0. Aligned `pyproject.toml`,
+        `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`,
         `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
         `.opencode/plugins/agentera.js`, `skills/agentera/SKILL.md`,
-        `skills/hej/SKILL.md`, and `registry.json` to 2.4.0.
+        `skills/hej/SKILL.md`, and `registry.json` to 2.5.0.
       - >-
-        Synchronized local state for the D48 validate namespace feature in TODO,
-        CHANGELOG, DOCS audit metadata, PROGRESS cycle 520, and this PLAN Task 4
-        evidence. The D48 validate TODO was resolved with the feature scope and
-        verification evidence while the D48 smoke/verify and corpus/usage TODOs
-        remain open.
+        Synced TODO, CHANGELOG, DOCS audit metadata, PROGRESS, and PLAN for the D48
+        verify namespace feature. The D48 smoke/verify TODO is resolved with exact
+        verification evidence, while the separate D48 corpus/usage TODO remains open
+        and no unrelated documentation churn was added.
       - >-
-        Focused verification passed: `uv run pytest tests/test_validate_namespace.py
-        -q`; `uv run pytest tests/test_explicit_cli_surfaces.py -q`; `uv run
-        pytest tests/test_package_registry.py tests/test_packaged_cli.py -q`; `uv
-        run scripts/agentera validate capability hej`; `uv run scripts/agentera
-        validate capability hej --format json`; `uv run scripts/agentera validate
-        artifact --artifact PROGRESS.md --file .agentera/progress.yaml --format
-        json`; `uv run scripts/validate_capability.py skills/agentera/capabilities/hej`;
-        `uv run scripts/validate_capability.py --self-validate`; direct artifact
-        validators for PROGRESS.md, PLAN.md, TODO.md, CHANGELOG.md, and DOCS.md;
-        and `git diff --check`.
+        Focused verification passed with `uv run pytest tests/test_verify_namespace.py
+        -q` (8 tests), `uv run pytest tests/test_explicit_cli_surfaces.py -q` (9 tests),
+        `uv run pytest tests/test_package_registry.py tests/test_packaged_cli.py -q`
+        (13 tests), `uv run scripts/agentera verify smoke installed-skills`, `uv run
+        scripts/agentera verify smoke installed-skills --format json`, `uv run
+        scripts/agentera verify eval skills --format json`, and `uv run scripts/agentera
+        verify eval semantic fixtures/semantic/hej-bare-message.md --format json`.
       - >-
-        Scope audit: no publication, push, tag, commit, installed-app refresh,
-        profile refresh, vision edit, objective edit, decision satisfaction change,
-        package-manager update, unsupported capability-name CLI command, or D48
-        smoke/verify/corpus/usage namespace work occurred during Task 4 closeout.
+        Direct compatibility and bounded-failure probes completed: `uv run
+        scripts/agentera verify bogus installed-skills` and `uv run scripts/agentera
+        verify smoke live-hosts --live --format json` exited nonzero with bounded valid
+        values, syntax, and examples; direct probes for `scripts/eval_skills.py`,
+        `scripts/semantic_eval.py`, `scripts/smoke_installed_skills.py`,
+        `scripts/smoke_live_hosts.py`, and `scripts/smoke_setup_helpers.py` passed;
+        `node scripts/smoke_opencode_bootstrap.mjs` returned the expected bounded local
+        failure for absent OpenCode skills.
+      - >-
+        Scope audit evidence: closeout did not publish, push, tag, commit, refresh an
+        installed app or profile, edit vision/objective state, change decision
+        satisfaction state, update packages through a package manager, run unsupported
+        capability-name CLI commands, or implement D48 validate/corpus/usage work.
 overall_acceptance:
   - >-
-    GIVEN an agent needs validation help WHEN it runs `agentera validate` for a
-    supported capability or artifact target THEN it receives a stable validation
-    result without guessing lower-level scripts.
+    GIVEN an agent needs eval or smoke gate verification WHEN it uses the supported
+    namespace THEN it can discover valid gate families and targets without guessing
+    direct scripts.
   - >-
-    GIVEN unsupported validation input is provided WHEN the command fails THEN the
-    response identifies valid values, correct syntax, and a concrete example.
+    GIVEN safe default execution matters WHEN verify commands or tests run THEN live,
+    host-dependent, mutating, or long-running gates are explicit opt-ins and bounded.
   - >-
-    GIVEN existing direct validators and hooks remain part of the project WHEN the
-    namespace lands THEN their observable behavior remains compatible.
+    GIVEN existing direct scripts remain part of the project WHEN the namespace lands
+    THEN their observable behavior remains compatible.
   - >-
     GIVEN the feature closes WHEN verification and state sync finish THEN the D48
-    TODO is resolved with exact evidence and feature-level release metadata handled
-    under the documented semver policy.
+    smoke/verify TODO is resolved with exact evidence and release metadata follows
+    `.agentera/docs.yaml` policy.
 surprises:
   - >-
     Pre-write `agentera lint --artifact PLAN.md --text ... --format json` passed
-    verbosity, abstraction, and filler checks for the D48 validate namespace draft,
-    with abstraction anchored by `scripts/validate_capability.py`.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-15-planera-lint-anchor-false-positive-fix.yaml
+    verbosity, abstraction, and filler checks for the D48 verify namespace draft,
+    with abstraction anchored by `scripts/eval_skills.py`.
+  - >-
+    Adversarial review found eight issues and all were addressed: select a single
+    namespace before build, list exact supported gate values, keep anchors as context
+    rather than HOW, add safe-default constraints, make version handling DOCS-owned,
+    constrain artifact sync to policy and actual user-facing changes, specify bounded
+    invalid-input behavior, and sharpen direct-script compatibility boundaries.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-15-d48-validate-namespace-plan.yaml
