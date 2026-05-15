@@ -59,3 +59,11 @@ ARTIFACTS:
     description: >-
       Optimera reads this first to resolve project-local artifact mappings
       before accessing other artifacts.
+  9:
+    id: A9
+    artifact_id: benchmark_context
+    local_role: consumes
+    description: >-
+      CLI-provided startup benchmark summary from `agentera hej --format json
+      --capability-context optimera`. Optimera consumes this before any direct
+      latest-report.json, latest-report.md, or runs.jsonl diagnostic read.

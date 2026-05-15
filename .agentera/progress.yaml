@@ -1,4 +1,45 @@
 cycles:
+- number: 502
+  timestamp: 2026-05-15 11:27
+  type: feat
+  phase: audit
+  what: Completed PLAN Task 7 local closeout metadata sync for the 2.3.11 Optimera
+    benchmark-context source-contract patch.
+  commit: pending
+  inspiration: Task 7 required TODO, progress, docs, and changelog to record the completed
+    2.3.11 source-contract patch and deferred 2.3.12 Realisera execution-context work,
+    with version-bearing changes constrained by `.agentera/docs.yaml` version policy
+    and the package registry.
+  discovered: TODO now resolves `[feat:2.3.11]` while keeping `[feat:2.3.12]` open.
+    DOCS records the 2.3.11 audit label, version-policy resolution for the selected
+    exact patch-train target despite the `[feat:2.3.11]` label, deferred 2.3.12 work,
+    and local-only no-publication/no-refresh/no-benchmark-execution boundary. CHANGELOG
+    records the 2.3.11 changed/fixed/added/verified closeout. Version-bearing package,
+    plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces now
+    target 2.3.11.
+  verified: Focused CLI/contract/Optimera/startup verification passed with `uv run
+    pytest tests/test_query_cli.py tests/test_decision45_cli_contract.py tests/test_optimera_capability.py
+    tests/test_startup_analysis_contract.py` (222 tests). `uv run scripts/validate_capability.py
+    skills/agentera/capabilities/optimera`, `uv run scripts/validate_capability.py
+    --self-validate`, independent evaluation review, and `git diff --check` passed.
+    Final artifact validators, repository gate, compaction check, and diff status
+    audit run after this progress entry.
+  next: Hand completed 2.3.11 plan to independent evaluation or release closeout.
+    Do not refresh installed apps, refresh profile state, edit vision or objective
+    state, run real local benchmarks, publish, push, tag, commit, or run unsupported
+    capability-name CLI commands without explicit approval.
+  context:
+    intent: PLAN Task 7 local closeout metadata sync for 2.3.11 Optimera Benchmark
+      Context Source Contract
+    constraints: Local metadata sync only; selected exact target is 2.3.11 despite
+      `[feat:2.3.11]`; future unselected feature targets remain governed by docs.yaml
+      semver policy; no publication; no tag; no remote push; no installed app refresh;
+      no profile refresh; no vision edit; no objective-state edit; no Optimera objective-state
+      mutation; no real local benchmark execution; no unsupported capability-name
+      CLI command
+    scope: TODO, CHANGELOG, docs audit metadata, version-bearing package/plugin/OpenCode/skill
+      surfaces, plan evidence, progress cycle, artifact validation, gates, and local
+      scope audit
 - number: 501
   timestamp: 2026-05-15 10:10
   type: chore
@@ -368,61 +409,9 @@ cycles:
     scope: Focused CLI tests, Dokumentera capability tests, startup-analysis fixture,
       capability validation, artifact validation, gates, independent evaluation, and
       plan status update
-- number: 492
-  timestamp: 2026-05-15 07:35
-  type: fix
-  phase: build
-  what: Integrated PLAN Task 4 Dokumentera closeout-context guidance without refreshing
-    installed apps, refreshing profile state, editing vision or objective state, publishing,
-    pushing, tagging, or committing.
-  commit: pending
-  inspiration: Task 4 required Dokumentera guidance to use complete closeout context
-    before raw TODO, docs, changelog, or progress reads; to run listed CLI fallbacks
-    before last-resort raw reads when context is incomplete; and to preserve blockers,
-    stale state, compacted state, missing benchmark, local metadata/tag, publication,
-    remote, and refresh caveats.
-  discovered: Dokumentera prose now includes a `Closeout context startup` section
-    requiring `agentera hej --format json --capability-context dokumentera`. Complete
-    `closeout_context` is the normal source for artifact mappings, version policy,
-    TODO blockers, changelog and release boundary state, progress evidence, benchmark
-    evidence or unavailable caveat, fallback commands, state caveats, raw-read policy,
-    completeness, and non-empty evidence flags. The guidance forbids raw reads of
-    `TODO.md`, `.agentera/docs.yaml`, `CHANGELOG.md`, or `.agentera/progress.yaml`
-    merely to reconstruct complete context, requires listed `closeout_context.fallback_commands`
-    before any raw artifact read when context is incomplete or caveated, and states
-    closeout context does not approve publication, remote push, installed app refresh,
-    profile refresh, vision edits, or objective-state edits. Dokumentera validation
-    gained critical rules for closeout context-first behavior, fallback-before-raw
-    behavior, and caveat preservation. Artifact schema descriptions for docs, progress,
-    TODO, and changelog now state closeout state is consumed through CLI `closeout_context`
-    before raw fallback and must not invent release, tag, publication, or remote state.
-  verified: '`uv run pytest tests/test_dokumentera_capability.py` passed with 8 tests.
-    Focused suite `uv run pytest tests/test_query_cli.py tests/test_decision45_cli_contract.py
-    tests/test_dokumentera_capability.py` passed with 165 tests. `uv run scripts/validate_capability.py
-    skills/agentera/capabilities/dokumentera`, `uv run scripts/validate_capability.py
-    --self-validate`, live `uv run scripts/agentera hej --format json --capability-context
-    dokumentera --fields closeout_context`, `uv run scripts/agentera gate --format
-    json`, `uv run scripts/agentera compact --mode check --format json`, and `git
-    diff --check` passed. Independent evaluation returned PASS with no blocking findings;
-    residual risks are old generic non-closeout `Read DOCS.md` wording, the intentionally
-    minimal benchmark detector, and the internal changelog heading scan behind the
-    existing query fallback.'
-  next: Continue with Task 5 focused regression and startup-state validation. Do not
-    refresh installed apps, refresh profile state, edit vision or objective state,
-    publish, push, tag, commit, or run unsupported capability-name CLI commands without
-    explicit approval.
-  context:
-    intent: PLAN Task 4 Dokumentera guidance integration for 2.3.9 Dokumentera Closeout
-      Context Source Contract
-    constraints: use existing `hej --capability-context dokumentera` seam; no `agentera
-      dokumentera`; no new top-level command; no raw TODO/docs/changelog/progress
-      reads when complete closeout context is available; listed CLI fallbacks before
-      raw reads when incomplete; preserve caveats; no installed app refresh; no profile
-      refresh; no vision edit; no objective-state edit; no publish, push, tag, commit,
-      or unsupported capability-name CLI command
-    scope: Dokumentera prose, Dokumentera artifact schema, Dokumentera validation
-      schema, focused tests, validation, independent evaluation, and plan status update
 archive:
+- summary: 'Cycle 492 (2026-05-15): Integrated PLAN Task 4 Dokumentera closeout-context
+    guidance without refreshing installed apps, refreshing profile state, editing...'
 - summary: 'Cycle 491 (2026-05-15): Implemented PLAN Task 3 progress and benchmark
     evidence provenance for the Dokumentera closeout context without...'
 - summary: 'Cycle 490 (2026-05-15): Implemented PLAN Task 2 Dokumentera closeout context
@@ -501,5 +490,3 @@ archive:
     Coverage And Token Savings Estimates plan by...'
 - summary: 'Cycle 453 (2026-05-14): Completed Task 1 for the Repair Runtime Schema
     Coverage And Token Savings Estimates plan by...'
-- summary: 'Cycle 452 (2026-05-14): Completed Task 7 for the Reduce Post-CLI Startup
-    Artifact Reads plan by synchronizing TODO, progress,...'

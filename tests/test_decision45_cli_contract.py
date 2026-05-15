@@ -111,6 +111,7 @@ def test_startup_completeness_contract_preserves_cli_vocabulary():
     assert "must not introduce `agentera orkestrera`" in hej_contract["orchestration_context_semantics"]
     assert "closeout_context" in contract["structured_output"]["envelope"]["hej"]["fields"]
     assert "evidence_context" in contract["structured_output"]["envelope"]["hej"]["fields"]
+    assert "benchmark_context" in contract["structured_output"]["envelope"]["hej"]["fields"]
     assert "--capability-context dokumentera" in hej_contract["closeout_context_semantics"]
     assert "local metadata/tag versus publication boundary state" in hej_contract["closeout_context_semantics"]
     assert "must not introduce `agentera dokumentera`" in hej_contract["closeout_context_semantics"]
@@ -118,6 +119,9 @@ def test_startup_completeness_contract_preserves_cli_vocabulary():
     assert "provenance pointers" in hej_contract["evidence_context_semantics"]
     assert "non-empty evidence flags" in hej_contract["evidence_context_semantics"]
     assert "must not introduce `agentera inspektera`" in hej_contract["evidence_context_semantics"]
+    assert "--capability-context optimera" in hej_contract["benchmark_context_semantics"]
+    assert "comparison null reasons" in hej_contract["benchmark_context_semantics"]
+    assert "must not introduce `agentera optimera`" in hej_contract["benchmark_context_semantics"]
     assert hej_contract["evidence_context_target_contract"] == "evidence_context_target_contract"
     assert hej_contract["current_status"] == "complete"
     assert hej_contract["current_missing_state"] == []
@@ -125,6 +129,7 @@ def test_startup_completeness_contract_preserves_cli_vocabulary():
         "plan task details, dependencies, acceptance criteria, and evidence summaries",
         "docs artifact mapping and source-contract completeness metadata",
         "latest progress verification metadata needed for Orkestrera evaluation",
+        "Optimera benchmark_context metadata for retained startup benchmark summaries",
     ]
     assert "absence metadata" in startup["empty_state_behavior"]
     assert "v1_migration" in startup["repair_guidance_behavior"]

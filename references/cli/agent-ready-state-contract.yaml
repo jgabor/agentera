@@ -175,6 +175,7 @@ structured_output:
         - orchestration_context
         - closeout_context
         - evidence_context
+        - benchmark_context
         - source
         - source_contract
       source_contract:
@@ -224,6 +225,14 @@ structured_output:
             residual risks, fallback commands, caveats, provenance pointers, non-empty
             evidence flags, and a raw-read-last-resort source contract. It must not
             introduce `agentera inspektera`, new top-level commands, or new subcommands.
+          benchmark_context_semantics: >-
+            `agentera hej --format json --capability-context optimera` may include
+            benchmark_context with retained startup benchmark source status, latest
+            report summary, aggregate history summary, runtime coverage caveats,
+            state-access rates, token-impact estimates, comparison null reasons,
+            recommendation action, manual-refresh guidance, privacy boundary,
+            fallback commands, and a raw-read-last-resort source contract. It must
+            not introduce `agentera optimera`, new top-level commands, or new subcommands.
           evidence_context_target_contract: evidence_context_target_contract
           current_status: complete
           current_missing_state: []
@@ -259,6 +268,7 @@ startup_completeness:
     - plan task details, dependencies, acceptance criteria, and evidence summaries
     - docs artifact mapping and source-contract completeness metadata
     - latest progress verification metadata needed for Orkestrera evaluation
+    - Optimera benchmark_context metadata for retained startup benchmark summaries
   empty_state_behavior: >-
     agentera hej reports absent plan, docs, and progress state explicitly through
     structured summaries and state_presence absence metadata instead of forcing
@@ -269,7 +279,7 @@ startup_completeness:
   non_goals:
     - Do not add Decision 43 slash-route aliases to the CLI command surface.
     - Do not remove or rename routine state commands.
-    - Do not implement Task 6 benchmark comparison.
+    - Do not add a separate benchmark command; Optimera benchmark comparison stays inside benchmark_context.
 evidence_context_target_contract:
   status: task_1_design_contract
   planned_context_name: evidence_context
@@ -490,6 +500,7 @@ field_selection:
         - orchestration_context
         - closeout_context
         - evidence_context
+        - benchmark_context
         - source
         - source_contract
   retained_context:

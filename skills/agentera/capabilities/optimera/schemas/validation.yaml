@@ -61,3 +61,31 @@ VALIDATION:
       - "Exit marker present after experiment"
       - "Exit marker uses glyph ⎘ (SG7)"
       - "Exit marker status is one of complete, flagged, stuck, waiting"
+  7:
+    id: V7
+    rule: benchmark_context_first
+    description: >-
+      For benchmark-oriented startup, Optimera MUST start from `agentera hej
+      --format json --capability-context optimera` and consume complete
+      benchmark_context before direct retained benchmark file reads. Direct
+      latest-report.json, latest-report.md, or runs.jsonl reads are last-resort
+      diagnostics only when the CLI context is incomplete.
+    severity: critical
+    checks:
+      - "Optimera startup uses benchmark_context before direct retained benchmark files"
+      - "Incomplete benchmark_context follows listed CLI fallback and manual refresh guidance"
+      - "Direct benchmark file reads are treated as last-resort diagnostics"
+  8:
+    id: V8
+    rule: benchmark_caveat_preservation
+    description: >-
+      Benchmark caveats from benchmark_context MUST be preserved when Optimera
+      reports measurement evidence. Agents must not hide, upgrade, reconstruct,
+      or infer away caveats for manual-only execution, missing local history,
+      runtime coverage degradation, missing token estimates, non-comparable
+      previous rows, or privacy boundaries.
+    severity: critical
+    checks:
+      - "Manual-only benchmark execution caveats are reported"
+      - "Missing or malformed retained evidence remains incomplete"
+      - "Runtime coverage, token-impact, comparison, and privacy caveats are preserved"

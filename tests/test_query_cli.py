@@ -182,6 +182,73 @@ def _seed_inspektera_evidence_context(
         _write_artifact(project, ".agentera/decisions.yaml", decisions)
 
 
+def _write_startup_benchmark_fixture(
+    app_home: Path,
+    *,
+    latest: dict | None = None,
+    history_rows: list[dict] | None = None,
+    history_text: str | None = None,
+) -> Path:
+    benchmark_dir = app_home / "benchmarks" / "startup-state"
+    benchmark_dir.mkdir(parents=True, exist_ok=True)
+    report = latest if latest is not None else {
+        "contract_version": "startup-state-analysis-v1",
+        "generated_at": "2026-05-15T10:00:00+00:00",
+        "benchmark_mode": "full_boundary_snapshot",
+        "benchmark_previous_watermark_at": None,
+        "benchmark_window_started_after": "2026-05-12T15:50:13+00:00",
+        "benchmark_watermark_at": "2026-05-15T09:59:59+00:00",
+        "runtime_coverage": [
+            {"runtime": "opencode", "status": "ok", "reason": "records_extracted", "record_count": 18, "candidate_count": 1, "error_count": 0},
+            {"runtime": "claude-code", "status": "degraded", "reason": "schema_divergent", "record_count": 0, "candidate_count": 2, "error_count": 1},
+        ],
+        "total_records": 18,
+        "total_state_sequences": 9,
+        "state_sequences_with_raw_after_cli": 4,
+        "state_sequences_with_redundant_raw_access": 3,
+        "total_cli_state_calls": 11,
+        "total_raw_artifact_access_after_cli": 5,
+        "total_redundant_raw_artifact_accesses": 4,
+        "raw_after_cli_sequence_rate": 0.4444,
+        "redundant_raw_sequence_rate": 0.3333,
+        "cli_state_command_counts": {"agentera plan": 4, "agentera docs": 2},
+        "raw_artifact_access_after_cli_counts": {"PLAN.md": 3, "/home/private/PLAN.md": 1},
+        "redundant_raw_artifact_access_counts": {"PLAN.md": 2},
+        "per_capability_state_counts": {"optimera": 4},
+        "token_estimator_version": "approx_bytes_div_4_v1",
+        "estimated_raw_after_cli_tokens": 621,
+        "estimated_redundant_raw_tokens": 533,
+        "estimated_raw_after_cli_tokens_by_artifact": {"PLAN.md": 400},
+        "estimated_redundant_raw_tokens_by_artifact": {"PLAN.md": 300},
+        "estimated_tokens_saved_vs_previous": None,
+        "estimated_tokens_saved_vs_previous_null_reason": "previous_missing_token_estimates",
+        "startup_recommendation": {
+            "action": "targeted_capability_guidance_fixes",
+            "measured_trigger": "raw_artifact_access_after_cli_hotspot",
+            "rationale": "Raw artifact access follows CLI state, but evidence is narrow.",
+        },
+        "implementation_recommended": False,
+    }
+    (benchmark_dir / "latest-report.json").write_text(json.dumps(report, sort_keys=True) + "\n", encoding="utf-8")
+    if history_text is not None:
+        (benchmark_dir / "runs.jsonl").write_text(history_text, encoding="utf-8")
+    else:
+        rows = history_rows if history_rows is not None else [{
+            "contract_version": "startup-state-analysis-v1",
+            "generated_at": report["generated_at"],
+            "agentera_version": "2.3.11",
+            "git_commit": "0123456789abcdef0123456789abcdef01234567",
+            "runtime_scope": ["opencode", "claude-code"],
+            "benchmark_mode": report["benchmark_mode"],
+            "total_state_sequences": report["total_state_sequences"],
+            "raw_after_cli_rate": report["raw_after_cli_sequence_rate"],
+            "redundant_raw_access_rate": report["redundant_raw_sequence_rate"],
+            "startup_recommendation_action": report["startup_recommendation"]["action"],
+        }]
+        (benchmark_dir / "runs.jsonl").write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
+    return benchmark_dir
+
+
 # ---------------------------------------------------------------------------
 # prime
 # ---------------------------------------------------------------------------
@@ -2068,6 +2135,255 @@ class TestHej:
         assert "profile_state" in categories
         assert any("profile-derived state is stale" in item["message"] for item in attributed)
         assert any("Compacted archive decisions" in item["message"] for item in attributed)
+
+    def test_hej_optimera_benchmark_context_reports_retained_benchmark_summary(self, project):
+        app_home = project / "app-home"
+        _install_runtime_surface(app_home)
+        benchmark_dir = _write_startup_benchmark_fixture(app_home)
+
+        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "optimera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        assert "agentera optimera" not in r.stdout
+        data = json.loads(r.stdout)
+        assert "benchmark_context" in data["source_contract"]["fields"]
+        capability_context = data["source_contract"]["capability_context"]
+        assert capability_context["capability"] == "optimera"
+        assert "benchmark_context" in capability_context["included_state_families"]
+        context = data["benchmark_context"]
+        context_text = json.dumps(context, sort_keys=True)
+        assert str(app_home) not in context_text
+        assert str(benchmark_dir) not in context_text
+        assert "raw_benchmark_report_bodies" in context_text
+        assert context["source_contract"]["complete_for_benchmark_context"] is True
+        assert context["source_contract"]["raw_artifact_reads_required"] is False
+        assert "last-resort direct latest-report.json" in context["source_contract"]["raw_artifact_read_policy"]
+        assert context["latest_report"]["total_state_sequences"] == 9
+        assert context["history_summary"]["row_count"] == 1
+        assert "git_commit" not in context["history_summary"]["latest_row"]
+        assert context["runtime_coverage"]["status"] == "degraded"
+        assert context["state_access_metrics"]["raw_after_cli_sequence_rate"] == 0.4444
+        assert context["state_access_metrics"]["raw_artifact_access_after_cli_counts"] == {"PLAN.md": 3}
+        assert any("unsafe label" in caveat for caveat in context["state_access_metrics"]["caveats"])
+        assert context["token_impact"]["estimated_redundant_raw_tokens"] == 533
+        assert context["comparison"]["status"] == "not_comparable"
+        assert context["comparison"]["null_reason"] == "previous_missing_token_estimates"
+        assert context["recommendation"]["action"] == "targeted_capability_guidance_fixes"
+        assert context["manual_refresh"]["status"] == "available"
+        assert context["manual_refresh"]["execution_status"] == "not_run_by_design"
+
+    def test_hej_optimera_benchmark_context_marks_missing_retained_files_incomplete(self, project):
+        app_home = project / "app-home"
+        _install_runtime_surface(app_home)
+
+        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "optimera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["benchmark_context"]
+        contract = context["source_contract"]
+        assert contract["complete_for_benchmark_context"] is False
+        assert "latest_report" in contract["missing_required_benchmark_state"]
+        assert "history_summary" in contract["missing_required_benchmark_state"]
+        assert context["latest_report"]["status"] == "missing"
+        assert context["history_summary"]["status"] == "missing"
+        assert context["manual_refresh"]["status"] == "requires_manual_run"
+        assert "mage bench:startupState" == context["manual_refresh"]["command"]
+        assert "agentera docs --format json" in context["fallback_commands"]
+        assert contract["raw_artifact_reads_required"] is False
+
+    def test_hej_optimera_benchmark_context_preserves_malformed_latest_report_boundary(self, project):
+        app_home = project / "app-home"
+        _install_runtime_surface(app_home)
+        benchmark_dir = app_home / "benchmarks" / "startup-state"
+        benchmark_dir.mkdir(parents=True)
+        (benchmark_dir / "latest-report.json").write_text("{not json\n", encoding="utf-8")
+        (benchmark_dir / "runs.jsonl").write_text(
+            json.dumps({"generated_at": "2026-05-15T10:00:00+00:00", "runtime_scope": ["opencode"]}) + "\n",
+            encoding="utf-8",
+        )
+
+        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "optimera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["benchmark_context"]
+        assert context["latest_report"]["status"] == "malformed"
+        assert context["source_contract"]["complete_for_benchmark_context"] is False
+        assert "startup_benchmark_latest_report is malformed JSON." in context["source_contract"]["caveats"]
+        assert context["manual_refresh"]["status"] == "requires_manual_run"
+
+    def test_hej_optimera_benchmark_context_keeps_empty_history_caveated_not_raw(self, project):
+        app_home = project / "app-home"
+        _install_runtime_surface(app_home)
+        _write_startup_benchmark_fixture(app_home, history_text="")
+
+        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "optimera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["benchmark_context"]
+        assert context["history_summary"]["status"] == "empty"
+        assert context["source_contract"]["complete_for_benchmark_context"] is True
+        assert context["source_contract"]["caveated"] is True
+        assert context["history_summary"]["non_empty_evidence_present"] is False
+        assert "direct retained benchmark file reads are last-resort diagnostics" in context["benchmark_source"]["normal_read_policy"]
+
+    def test_hej_optimera_benchmark_context_caveats_skipped_or_missing_runtime_coverage(self, project):
+        app_home = project / "app-home"
+        _install_runtime_surface(app_home)
+        _write_startup_benchmark_fixture(app_home, latest={
+            "contract_version": "startup-state-analysis-v1",
+            "generated_at": "2026-05-15T10:00:00+00:00",
+            "benchmark_mode": "full_boundary_snapshot",
+            "runtime_coverage": [
+                {"runtime": "none", "status": "skipped", "reason": "no_runtime_stores_approved", "record_count": 0},
+                {"runtime": "codex", "status": "missing", "reason": "runtime_store_missing", "record_count": 0},
+            ],
+            "total_records": 0,
+            "total_state_sequences": 1,
+            "state_sequences_with_raw_after_cli": 0,
+            "state_sequences_with_redundant_raw_access": 0,
+            "raw_after_cli_sequence_rate": 0,
+            "redundant_raw_sequence_rate": 0,
+            "cli_state_command_counts": {},
+            "raw_artifact_access_after_cli_counts": {},
+            "redundant_raw_artifact_access_counts": {},
+            "per_capability_state_counts": {},
+            "token_estimator_version": "approx_bytes_div_4_v1",
+            "estimated_raw_after_cli_tokens": 0,
+            "estimated_redundant_raw_tokens": 0,
+            "estimated_raw_after_cli_tokens_by_artifact": {},
+            "estimated_redundant_raw_tokens_by_artifact": {},
+            "estimated_tokens_saved_vs_previous": None,
+            "estimated_tokens_saved_vs_previous_null_reason": "previous_row_missing",
+            "startup_recommendation": {"action": "close_without_implementation", "measured_trigger": "none"},
+            "implementation_recommended": False,
+        })
+
+        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "optimera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["benchmark_context"]
+        assert context["runtime_coverage"]["status"] == "degraded"
+        assert "skipped" in context["runtime_coverage"]["status_counts"]
+        assert "missing" in context["runtime_coverage"]["status_counts"]
+        assert any("missing, skipped" in caveat for caveat in context["runtime_coverage"]["caveats"])
+        assert context["source_contract"]["complete_for_benchmark_context"] is True
+
+    def test_hej_optimera_benchmark_context_bounds_recommendation_privacy(self, project):
+        app_home = project / "app-home"
+        _install_runtime_surface(app_home)
+        private_path = str(app_home / "benchmarks" / "startup-state" / "latest-report.json")
+        _write_startup_benchmark_fixture(app_home, latest={
+            "contract_version": private_path,
+            "generated_at": private_path,
+            "benchmark_mode": private_path,
+            "benchmark_previous_watermark_at": private_path,
+            "benchmark_window_started_after": private_path,
+            "benchmark_watermark_at": private_path,
+            "runtime_coverage": [{"runtime": "opencode", "status": "ok", "reason": "records_extracted", "record_count": 1}],
+            "total_records": 1,
+            "total_state_sequences": 1,
+            "state_sequences_with_raw_after_cli": 1,
+            "state_sequences_with_redundant_raw_access": 1,
+            "raw_after_cli_sequence_rate": 1,
+            "redundant_raw_sequence_rate": 1,
+            "cli_state_command_counts": {},
+            "raw_artifact_access_after_cli_counts": {},
+            "redundant_raw_artifact_access_counts": {},
+            "per_capability_state_counts": {},
+            "token_estimator_version": private_path,
+            "estimated_raw_after_cli_tokens": 8,
+            "estimated_redundant_raw_tokens": 8,
+            "estimated_raw_after_cli_tokens_by_artifact": {},
+            "estimated_redundant_raw_tokens_by_artifact": {},
+            "estimated_tokens_saved_vs_previous": None,
+            "estimated_tokens_saved_vs_previous_null_reason": "previous_row_missing",
+            "startup_recommendation": {
+                "action": "custom_action_with_private_data",
+                "measured_trigger": private_path,
+                "rationale": f"raw body mentioned {private_path}",
+            },
+            "implementation_recommended": False,
+        })
+
+        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "optimera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["benchmark_context"]
+        context_text = json.dumps(context, sort_keys=True)
+        assert private_path not in context_text
+        assert context["latest_report"]["contract_version"] is None
+        assert context["latest_report"]["generated_at"] is None
+        assert context["latest_report"]["benchmark_mode"] is None
+        assert context["latest_report"]["benchmark_window"] == {
+            "previous_watermark_at": None,
+            "window_started_after": None,
+            "watermark_at": None,
+        }
+        assert context["history_summary"]["latest_row"]["generated_at"] is None
+        assert context["history_summary"]["latest_row"]["benchmark_mode"] is None
+        assert context["history_summary"]["latest_row"]["startup_recommendation_action"] is None
+        assert context["token_impact"]["token_estimator_version"] is None
+        assert context["recommendation"]["action"] == "omitted_by_privacy_boundary"
+        assert context["recommendation"]["measured_trigger"] == "omitted_by_privacy_boundary"
+        assert context["recommendation"]["rationale"] is None
+        assert context["recommendation"]["rationale_present"] is True
+        assert any("not emitted" in caveat for caveat in context["recommendation"]["caveats"])
+
+    def test_sparse_hej_benchmark_context_field_selection_uses_supported_seam(self, project):
+        app_home = project / "app-home"
+        _install_runtime_surface(app_home)
+        _write_startup_benchmark_fixture(app_home)
+        contract = yaml.safe_load(CONTRACT_PATH.read_text(encoding="utf-8"))
+        available = contract["field_selection"]["fields_by_command"]["hej"]["fields"]
+
+        r = _run_installed(
+            app_home,
+            "hej",
+            "--format",
+            "json",
+            "--capability-context",
+            "optimera",
+            "--fields",
+            "benchmark_context,source_contract",
+            cwd=project,
+        )
+
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert list(data) == ["command", "status", "benchmark_context", "source_contract"]
+        assert set(data).issubset(set(available) | {"command", "status"})
+        assert data["benchmark_context"]["source_contract"]["complete_for_benchmark_context"] is True
+        assert "benchmark_context" in data["source_contract"]["fields"]
+        assert "agentera optimera" not in r.stdout
+
+    def test_sparse_hej_rejects_unsupported_benchmark_context_field_without_partial_stdout(self, project):
+        app_home = project / "app-home"
+        _install_runtime_surface(app_home)
+        _write_startup_benchmark_fixture(app_home)
+
+        r = _run_installed(
+            app_home,
+            "hej",
+            "--format",
+            "json",
+            "--capability-context",
+            "optimera",
+            "--fields",
+            "benchmark_context,raw_yaml",
+            cwd=project,
+        )
+
+        assert r.returncode == 1
+        assert r.stdout == ""
+        assert "unsupported field 'raw_yaml'" in r.stderr
+        assert "benchmark_context" in r.stderr
+
+    def test_optimera_capability_name_is_not_a_cli_command(self, project):
+        r = _run("optimera", cwd=project)
+
+        assert r.returncode != 0
+        assert r.stdout == ""
+        assert "invalid choice" in r.stderr
 
     def test_inspektera_capability_name_is_not_a_cli_command(self, project):
         r = _run("inspektera", cwd=project)

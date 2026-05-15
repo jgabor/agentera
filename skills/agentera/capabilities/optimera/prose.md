@@ -32,6 +32,20 @@ Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. I
 
 Before starting, read `references/contract.md` (at v2 skill location `skills/agentera/references/contract.md`) for authoritative values: token budgets, severity levels, format contracts, and other shared conventions referenced in the steps below. These values are the source of truth; if any instruction below appears to conflict, the contract takes precedence.
 
+### Benchmark context source contract
+
+For benchmark-oriented optimization work, start from:
+
+```bash
+agentera hej --format json --capability-context optimera
+```
+
+Use `benchmark_context` before direct retained startup benchmark file access. If `benchmark_context.source_contract.complete_for_benchmark_context` is true, do not read `latest-report.json`, `latest-report.md`, or `runs.jsonl` during normal Optimera startup. Use the bounded fields in `benchmark_context.latest_report`, `benchmark_context.history_summary`, `benchmark_context.runtime_coverage`, `benchmark_context.state_access_metrics`, `benchmark_context.token_impact`, `benchmark_context.comparison`, `benchmark_context.recommendation`, and `benchmark_context.manual_refresh` instead.
+
+If benchmark_context is incomplete, follow `benchmark_context.fallback_commands` and `benchmark_context.manual_refresh` first. Direct reads of retained benchmark files are last-resort diagnostics only, and must preserve the context caveats rather than reconstructing hidden state. Never run `mage bench:startupState` automatically; it is manual-only.
+
+When reporting benchmark evidence, preserve caveats about manual-only execution, missing or malformed retained evidence, empty local history, runtime coverage degradation, missing token estimates, non-comparable previous rows, and privacy boundaries. Do not expose raw transcripts, raw corpus files, raw intermediates, raw runtime store paths, raw session IDs, private salts, generated salted hashes, raw benchmark report bodies, or full local benchmark paths.
+
 ### objective.yaml
 
 Evergreen. Created via brainstorm on first run, refined only when the user explicitly asks. Outside those two cases, the agent reads it but never writes it. Typical structure:
@@ -164,6 +178,8 @@ Step markers: display `── step N/8: verb` before each step.
 Steps: orient, analyze, hypothesize, implement, measure, decide, audit, log.
 
 ### Step 1: Orient
+
+**Benchmark context**: for benchmark-oriented work, use `benchmark_context` from `agentera hej --format json --capability-context optimera` before direct retained benchmark files. Raw benchmark file reads are last-resort diagnostics.
 
 **Active-objective inference**: before reading any per-objective artifact, determine which objective is active by inspecting `.agentera/optimera/`:
 

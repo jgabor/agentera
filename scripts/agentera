@@ -767,6 +767,7 @@ HEJ_STRUCTURED_FIELDS = [
     "orchestration_context",
     "closeout_context",
     "evidence_context",
+    "benchmark_context",
     "source",
     "source_contract",
 ]
@@ -802,6 +803,7 @@ STARTUP_COMPLETENESS_AVAILABLE_STATE = [
     "orchestration_context",
     "closeout_context",
     "evidence_context",
+    "benchmark_context",
 ]
 
 STARTUP_COMPLETENESS_MISSING_STATE: list[str] = []
@@ -847,6 +849,7 @@ STARTUP_ENVELOPE_STATE_FAMILIES = {
     "health",
     "todo",
     "objective",
+    "benchmark_context",
 }
 
 COMMAND_FILTERS = {
@@ -1464,6 +1467,677 @@ def _closeout_benchmark_evidence(docs: dict[str, Any]) -> dict[str, Any]:
         "caveats": [
             "Supported CLI/state summaries do not expose benchmark evidence; do not read user-local benchmark files for normal closeout."
         ],
+    }
+
+
+BENCHMARK_CONTEXT_COMMAND = "agentera hej --format json --capability-context optimera"
+BENCHMARK_LATEST_REPORT_LABEL = "startup_benchmark_latest_report"
+BENCHMARK_HISTORY_LABEL = "startup_benchmark_history"
+BENCHMARK_CONTEXT_SOURCE_LABELS = [
+    BENCHMARK_LATEST_REPORT_LABEL,
+    BENCHMARK_HISTORY_LABEL,
+]
+BENCHMARK_TOKEN_NULL_REASONS = [
+    "previous_row_missing",
+    "previous_missing_token_estimates",
+    "estimator_version_mismatch",
+    "runtime_scope_mismatch",
+    "benchmark_mode_mismatch",
+    "contract_version_mismatch",
+]
+BENCHMARK_RECOMMENDATION_ACTIONS = {
+    "plan_cli_startup_envelope",
+    "targeted_capability_guidance_fixes",
+    "close_without_implementation",
+}
+BENCHMARK_CAVEATED_RUNTIME_STATUSES = {
+    "degraded",
+    "missing",
+    "skipped",
+    "locked",
+    "unreadable",
+}
+BENCHMARK_FORBIDDEN_OUTPUTS = [
+    "raw_transcripts",
+    "raw_corpus_files",
+    "raw_intermediates",
+    "raw_runtime_store_paths",
+    "raw_session_ids",
+    "private_salts",
+    "generated_salted_hashes",
+    "raw_benchmark_report_bodies",
+    "full_local_benchmark_paths",
+]
+BENCHMARK_SAFE_LABEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 .:_-]{0,79}$")
+BENCHMARK_SAFE_SCALAR_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 .:_+@-]{0,119}$")
+
+
+def _agentera_data_home() -> Path:
+    override = os.environ.get("AGENTERA_HOME")
+    if override:
+        return Path(override).expanduser()
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "agentera"
+    if sys.platform == "win32":
+        appdata = os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))
+        return Path(appdata) / "agentera"
+    xdg = os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
+    return Path(xdg) / "agentera"
+
+
+def _startup_benchmark_dir() -> Path:
+    return _agentera_data_home() / "benchmarks" / "startup-state"
+
+
+def _safe_benchmark_number(value: Any) -> int | float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return value
+    return None
+
+
+def _safe_benchmark_label(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    label = value.strip()
+    if not label or "/" in label or "\\" in label:
+        return None
+    if re.fullmatch(r"[0-9a-fA-F]{16,}", label):
+        return None
+    if not BENCHMARK_SAFE_LABEL_RE.fullmatch(label):
+        return None
+    return label
+
+
+def _safe_benchmark_scalar(value: Any, field: str, allowed_values: set[str] | None = None) -> tuple[str | None, list[str]]:
+    if value is None:
+        return None, []
+    if not isinstance(value, str):
+        return None, [f"{field} was omitted because it is not a bounded string value."]
+    text = value.strip()
+    if allowed_values is not None and text not in allowed_values:
+        return None, [f"{field} was omitted because it is not a supported bounded value."]
+    if not text or "/" in text or "\\" in text or re.fullmatch(r"[0-9a-fA-F]{16,}", text):
+        return None, [f"{field} was omitted at the benchmark privacy boundary."]
+    if not BENCHMARK_SAFE_SCALAR_RE.fullmatch(text):
+        return None, [f"{field} was omitted because it is outside the bounded scalar contract."]
+    return text, []
+
+
+def _safe_benchmark_label_counts(value: Any, family: str) -> tuple[dict[str, int | float], list[str]]:
+    if not isinstance(value, dict):
+        return {}, []
+    counts: dict[str, int | float] = {}
+    dropped = 0
+    for key, raw_count in value.items():
+        label = _safe_benchmark_label(key)
+        count = _safe_benchmark_number(raw_count)
+        if label is None or count is None:
+            dropped += 1
+            continue
+        counts[label] = count
+    caveats = []
+    if dropped:
+        caveats.append(f"{family} omitted {dropped} unsafe label(s) at the benchmark privacy boundary.")
+    return dict(sorted(counts.items())), caveats
+
+
+def _read_benchmark_json(path: Path, label: str) -> tuple[str, dict[str, Any] | None, list[str]]:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return "missing", None, [f"{label} is missing from retained startup benchmark evidence."]
+    except OSError:
+        return "unreadable", None, [f"{label} could not be read by the CLI."]
+    if not text.strip():
+        return "empty", None, [f"{label} is empty."]
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return "malformed", None, [f"{label} is malformed JSON."]
+    if not isinstance(data, dict) or not data:
+        return "empty", None, [f"{label} did not contain a non-empty JSON object."]
+    return "available", data, []
+
+
+def _read_benchmark_history(path: Path) -> tuple[str, list[dict[str, Any]], list[str]]:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return "missing", [], [f"{BENCHMARK_HISTORY_LABEL} is missing from retained startup benchmark evidence."]
+    except OSError:
+        return "unreadable", [], [f"{BENCHMARK_HISTORY_LABEL} could not be read by the CLI."]
+    lines = [line for line in text.splitlines() if line.strip()]
+    if not lines:
+        return "empty", [], ["Startup benchmark aggregate history exists but has no rows."]
+    rows: list[dict[str, Any]] = []
+    malformed = 0
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            malformed += 1
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+        else:
+            malformed += 1
+    if malformed:
+        return "malformed", rows, [f"Startup benchmark aggregate history has {malformed} malformed row(s)."]
+    if not rows:
+        return "empty", [], ["Startup benchmark aggregate history has no usable rows."]
+    return "available", rows, []
+
+
+def _latest_benchmark_summary(status: str, report: dict[str, Any] | None, caveats: list[str]) -> dict[str, Any]:
+    source = _source_provenance("benchmark_context", BENCHMARK_CONTEXT_COMMAND, "latest_report")
+    if status != "available" or report is None:
+        return {
+            "status": status,
+            "source_label": BENCHMARK_LATEST_REPORT_LABEL,
+            "source_provenance": source,
+            "non_empty_evidence_present": False,
+            "contract_version": None,
+            "generated_at": None,
+            "benchmark_mode": None,
+            "benchmark_window": {},
+            "total_records": None,
+            "total_state_sequences": None,
+            "caveats": caveats,
+        }
+    summary_caveats = list(caveats)
+    contract_version, scalar_caveats = _safe_benchmark_scalar(report.get("contract_version"), "latest_report.contract_version")
+    summary_caveats.extend(scalar_caveats)
+    generated_at, scalar_caveats = _safe_benchmark_scalar(report.get("generated_at"), "latest_report.generated_at")
+    summary_caveats.extend(scalar_caveats)
+    benchmark_mode, scalar_caveats = _safe_benchmark_scalar(report.get("benchmark_mode"), "latest_report.benchmark_mode")
+    summary_caveats.extend(scalar_caveats)
+    previous_watermark, scalar_caveats = _safe_benchmark_scalar(report.get("benchmark_previous_watermark_at"), "latest_report.benchmark_previous_watermark_at")
+    summary_caveats.extend(scalar_caveats)
+    window_started, scalar_caveats = _safe_benchmark_scalar(report.get("benchmark_window_started_after"), "latest_report.benchmark_window_started_after")
+    summary_caveats.extend(scalar_caveats)
+    watermark_at, scalar_caveats = _safe_benchmark_scalar(report.get("benchmark_watermark_at"), "latest_report.benchmark_watermark_at")
+    summary_caveats.extend(scalar_caveats)
+    total_state_sequences = _safe_benchmark_number(report.get("total_state_sequences"))
+    if total_state_sequences is None:
+        summary_caveats.append("Latest startup benchmark report is missing total_state_sequences.")
+    return {
+        "status": "available",
+        "source_label": BENCHMARK_LATEST_REPORT_LABEL,
+        "source_provenance": source,
+        "non_empty_evidence_present": True,
+        "contract_version": contract_version,
+        "generated_at": generated_at,
+        "benchmark_mode": benchmark_mode,
+        "benchmark_window": {
+            "previous_watermark_at": previous_watermark,
+            "window_started_after": window_started,
+            "watermark_at": watermark_at,
+        },
+        "total_records": _safe_benchmark_number(report.get("total_records")),
+        "total_state_sequences": total_state_sequences,
+        "caveats": summary_caveats,
+    }
+
+
+def _history_benchmark_summary(status: str, rows: list[dict[str, Any]], caveats: list[str]) -> dict[str, Any]:
+    latest = rows[-1] if rows else None
+    latest_summary: dict[str, Any] | None = None
+    summary_caveats = list(caveats)
+    if latest:
+        runtime_scope = latest.get("runtime_scope") if isinstance(latest.get("runtime_scope"), list) else []
+        safe_scope = [label for value in runtime_scope if (label := _safe_benchmark_label(value))]
+        if len(safe_scope) != len(runtime_scope):
+            summary_caveats.append("Startup benchmark history omitted unsafe runtime-scope label(s).")
+        generated_at, scalar_caveats = _safe_benchmark_scalar(latest.get("generated_at"), "history_summary.latest_row.generated_at")
+        summary_caveats.extend(scalar_caveats)
+        agentera_version, scalar_caveats = _safe_benchmark_scalar(latest.get("agentera_version"), "history_summary.latest_row.agentera_version")
+        summary_caveats.extend(scalar_caveats)
+        benchmark_mode, scalar_caveats = _safe_benchmark_scalar(latest.get("benchmark_mode"), "history_summary.latest_row.benchmark_mode")
+        summary_caveats.extend(scalar_caveats)
+        recommendation_action, scalar_caveats = _safe_benchmark_scalar(
+            latest.get("startup_recommendation_action"),
+            "history_summary.latest_row.startup_recommendation_action",
+            BENCHMARK_RECOMMENDATION_ACTIONS,
+        )
+        summary_caveats.extend(scalar_caveats)
+        latest_summary = {
+            "generated_at": generated_at,
+            "agentera_version": agentera_version,
+            "runtime_scope": safe_scope,
+            "benchmark_mode": benchmark_mode,
+            "total_state_sequences": _safe_benchmark_number(latest.get("total_state_sequences")),
+            "raw_after_cli_rate": _safe_benchmark_number(latest.get("raw_after_cli_rate")),
+            "redundant_raw_access_rate": _safe_benchmark_number(latest.get("redundant_raw_access_rate")),
+            "startup_recommendation_action": recommendation_action,
+        }
+    return {
+        "status": status,
+        "source_label": BENCHMARK_HISTORY_LABEL,
+        "source_provenance": _source_provenance("benchmark_context", BENCHMARK_CONTEXT_COMMAND, "history_summary"),
+        "non_empty_evidence_present": bool(rows),
+        "row_count": len(rows),
+        "latest_row": latest_summary,
+        "caveats": summary_caveats,
+    }
+
+
+def _runtime_benchmark_coverage(report_status: str, report: dict[str, Any] | None) -> dict[str, Any]:
+    source = _source_provenance("benchmark_context", BENCHMARK_CONTEXT_COMMAND, "runtime_coverage")
+    if report_status != "available" or report is None:
+        return {
+            "status": "missing",
+            "source_label": BENCHMARK_LATEST_REPORT_LABEL,
+            "source_provenance": source,
+            "non_empty_evidence_present": False,
+            "items": [],
+            "status_counts": {},
+            "caveats": ["Runtime coverage is unavailable without a valid latest startup benchmark report."],
+        }
+    raw_items = report.get("runtime_coverage")
+    if not isinstance(raw_items, list):
+        return {
+            "status": "missing",
+            "source_label": BENCHMARK_LATEST_REPORT_LABEL,
+            "source_provenance": source,
+            "non_empty_evidence_present": False,
+            "items": [],
+            "status_counts": {},
+            "caveats": ["Latest startup benchmark report has no runtime_coverage list."],
+        }
+    items: list[dict[str, Any]] = []
+    caveats: list[str] = []
+    status_counts: dict[str, int] = {}
+    for raw in raw_items[:12]:
+        if not isinstance(raw, dict):
+            caveats.append("Runtime coverage omitted a non-object item.")
+            continue
+        runtime = _safe_benchmark_label(raw.get("runtime"))
+        status = _safe_benchmark_label(raw.get("status"))
+        reason = _safe_benchmark_label(raw.get("reason"))
+        if runtime is None:
+            caveats.append("Runtime coverage omitted an unsafe runtime label.")
+            continue
+        status = status or "unknown"
+        status_counts[status] = status_counts.get(status, 0) + 1
+        item = {"runtime": runtime, "status": status}
+        if reason:
+            item["reason"] = reason
+        for key in ("record_count", "candidate_count", "error_count"):
+            number = _safe_benchmark_number(raw.get(key))
+            if number is not None:
+                item[key] = number
+        items.append(item)
+    if len(raw_items) > len(items):
+        caveats.append("Runtime coverage summary is bounded and may omit invalid or excess rows.")
+    caveated_statuses = sorted({
+        str(item.get("status"))
+        for item in items
+        if str(item.get("status")) in BENCHMARK_CAVEATED_RUNTIME_STATUSES
+    })
+    if caveated_statuses:
+        status_value = "degraded"
+        caveats.append(
+            "One or more runtime stores are missing, skipped, locked, unreadable, or degraded; "
+            "treat this as benchmark evidence caveat, not successful product behavior."
+        )
+    elif any(item.get("status") == "sparse" for item in items):
+        status_value = "sparse"
+        caveats.append("One or more runtime stores are sparse; benchmark coverage is caveated.")
+    elif items:
+        status_value = "available"
+    else:
+        status_value = "missing"
+        caveats.append("Runtime coverage has no usable bounded rows.")
+    return {
+        "status": status_value,
+        "source_label": BENCHMARK_LATEST_REPORT_LABEL,
+        "source_provenance": source,
+        "non_empty_evidence_present": bool(items),
+        "items": items,
+        "status_counts": dict(sorted(status_counts.items())),
+        "caveats": list(dict.fromkeys(caveats)),
+    }
+
+
+def _state_access_benchmark_metrics(report_status: str, report: dict[str, Any] | None) -> dict[str, Any]:
+    source = _source_provenance("benchmark_context", BENCHMARK_CONTEXT_COMMAND, "state_access_metrics")
+    if report_status != "available" or report is None:
+        return {
+            "status": "missing",
+            "source_label": BENCHMARK_LATEST_REPORT_LABEL,
+            "source_provenance": source,
+            "non_empty_evidence_present": False,
+            "caveats": ["State-access metrics are unavailable without a valid latest startup benchmark report."],
+        }
+    caveats: list[str] = []
+    cli_counts, cli_caveats = _safe_benchmark_label_counts(report.get("cli_state_command_counts"), "cli_state_command_counts")
+    raw_counts, raw_caveats = _safe_benchmark_label_counts(report.get("raw_artifact_access_after_cli_counts"), "raw_artifact_access_after_cli_counts")
+    redundant_counts, redundant_caveats = _safe_benchmark_label_counts(report.get("redundant_raw_artifact_access_counts"), "redundant_raw_artifact_access_counts")
+    capability_counts, capability_caveats = _safe_benchmark_label_counts(report.get("per_capability_state_counts"), "per_capability_state_counts")
+    caveats.extend([*cli_caveats, *raw_caveats, *redundant_caveats, *capability_caveats])
+    required = {
+        "total_state_sequences": _safe_benchmark_number(report.get("total_state_sequences")),
+        "state_sequences_with_raw_after_cli": _safe_benchmark_number(report.get("state_sequences_with_raw_after_cli")),
+        "state_sequences_with_redundant_raw_access": _safe_benchmark_number(report.get("state_sequences_with_redundant_raw_access")),
+        "raw_after_cli_sequence_rate": _safe_benchmark_number(report.get("raw_after_cli_sequence_rate")),
+        "redundant_raw_sequence_rate": _safe_benchmark_number(report.get("redundant_raw_sequence_rate")),
+    }
+    missing = [key for key, value in required.items() if value is None]
+    if missing:
+        caveats.append(f"Latest startup benchmark report is missing state-access metric fields: {', '.join(missing)}.")
+    if required["total_state_sequences"] == 0:
+        caveats.append("Startup benchmark observed zero state-gathering sequences; optimization conclusions are weak.")
+    return {
+        "status": "incomplete" if missing else "available",
+        "source_label": BENCHMARK_LATEST_REPORT_LABEL,
+        "source_provenance": source,
+        "non_empty_evidence_present": not missing,
+        **required,
+        "total_cli_state_calls": _safe_benchmark_number(report.get("total_cli_state_calls")),
+        "total_raw_artifact_access_after_cli": _safe_benchmark_number(report.get("total_raw_artifact_access_after_cli")),
+        "total_redundant_raw_artifact_accesses": _safe_benchmark_number(report.get("total_redundant_raw_artifact_accesses")),
+        "cli_state_command_counts": cli_counts,
+        "raw_artifact_access_after_cli_counts": raw_counts,
+        "redundant_raw_artifact_access_counts": redundant_counts,
+        "per_capability_state_counts": capability_counts,
+        "caveats": list(dict.fromkeys(caveats)),
+    }
+
+
+def _token_benchmark_impact(report_status: str, report: dict[str, Any] | None) -> dict[str, Any]:
+    source = _source_provenance("benchmark_context", BENCHMARK_CONTEXT_COMMAND, "token_impact")
+    if report_status != "available" or report is None:
+        return {
+            "status": "missing",
+            "source_label": BENCHMARK_LATEST_REPORT_LABEL,
+            "source_provenance": source,
+            "non_empty_evidence_present": False,
+            "caveats": ["Token-impact estimates are unavailable without a valid latest startup benchmark report."],
+        }
+    raw_by_artifact, raw_caveats = _safe_benchmark_label_counts(report.get("estimated_raw_after_cli_tokens_by_artifact"), "estimated_raw_after_cli_tokens_by_artifact")
+    redundant_by_artifact, redundant_caveats = _safe_benchmark_label_counts(report.get("estimated_redundant_raw_tokens_by_artifact"), "estimated_redundant_raw_tokens_by_artifact")
+    estimator_version, estimator_caveats = _safe_benchmark_scalar(report.get("token_estimator_version"), "token_impact.token_estimator_version")
+    required = {
+        "token_estimator_version": estimator_version,
+        "estimated_raw_after_cli_tokens": _safe_benchmark_number(report.get("estimated_raw_after_cli_tokens")),
+        "estimated_redundant_raw_tokens": _safe_benchmark_number(report.get("estimated_redundant_raw_tokens")),
+    }
+    missing = [key for key, value in required.items() if value in (None, "")]
+    caveats = [*raw_caveats, *redundant_caveats, *estimator_caveats]
+    if missing:
+        caveats.append(f"Latest startup benchmark report is missing token-impact fields: {', '.join(missing)}.")
+    return {
+        "status": "missing" if missing else "available",
+        "source_label": BENCHMARK_LATEST_REPORT_LABEL,
+        "source_provenance": source,
+        "non_empty_evidence_present": not missing,
+        **required,
+        "estimated_raw_after_cli_tokens_by_artifact": raw_by_artifact,
+        "estimated_redundant_raw_tokens_by_artifact": redundant_by_artifact,
+        "caveats": list(dict.fromkeys(caveats)),
+    }
+
+
+def _benchmark_comparison(report_status: str, report: dict[str, Any] | None) -> dict[str, Any]:
+    source = _source_provenance("benchmark_context", BENCHMARK_CONTEXT_COMMAND, "comparison")
+    if report_status != "available" or report is None:
+        return {
+            "status": "missing",
+            "source_label": BENCHMARK_LATEST_REPORT_LABEL,
+            "source_provenance": source,
+            "estimated_tokens_saved_vs_previous": None,
+            "null_reason": None,
+            "allowed_null_reasons": BENCHMARK_TOKEN_NULL_REASONS,
+            "caveats": ["Benchmark comparison is unavailable without a valid latest startup benchmark report."],
+        }
+    saved = report.get("estimated_tokens_saved_vs_previous")
+    reason = report.get("estimated_tokens_saved_vs_previous_null_reason")
+    if _safe_benchmark_number(saved) is not None:
+        status = "comparable"
+        caveats: list[str] = []
+    elif reason in BENCHMARK_TOKEN_NULL_REASONS:
+        status = "not_comparable"
+        caveats = [f"Benchmark comparison is not comparable: {reason}."]
+    else:
+        status = "missing"
+        caveats = ["Benchmark comparison status is missing from latest startup benchmark report."]
+    return {
+        "status": status,
+        "source_label": BENCHMARK_LATEST_REPORT_LABEL,
+        "source_provenance": source,
+        "estimated_tokens_saved_vs_previous": _safe_benchmark_number(saved),
+        "null_reason": reason if reason in BENCHMARK_TOKEN_NULL_REASONS else None,
+        "allowed_null_reasons": BENCHMARK_TOKEN_NULL_REASONS,
+        "caveats": caveats,
+    }
+
+
+def _benchmark_recommendation(report_status: str, report: dict[str, Any] | None) -> dict[str, Any]:
+    source = _source_provenance("benchmark_context", BENCHMARK_CONTEXT_COMMAND, "recommendation")
+    if report_status != "available" or report is None:
+        return {
+            "status": "missing",
+            "source_label": BENCHMARK_LATEST_REPORT_LABEL,
+            "source_provenance": source,
+            "action": None,
+            "measured_trigger": None,
+            "rationale": None,
+            "rationale_present": False,
+            "rationale_boundary": "not_emitted_from_retained_report",
+            "implementation_recommended": False,
+            "caveats": ["Startup benchmark recommendation is unavailable without a valid latest report."],
+        }
+    recommendation = report.get("startup_recommendation")
+    if not isinstance(recommendation, dict):
+        return {
+            "status": "missing",
+            "source_label": BENCHMARK_LATEST_REPORT_LABEL,
+            "source_provenance": source,
+            "action": None,
+            "measured_trigger": None,
+            "rationale": None,
+            "rationale_present": False,
+            "rationale_boundary": "not_emitted_from_retained_report",
+            "implementation_recommended": False,
+            "caveats": ["Latest startup benchmark report has no startup_recommendation object."],
+        }
+    caveats: list[str] = []
+    action = recommendation.get("action")
+    if action not in BENCHMARK_RECOMMENDATION_ACTIONS:
+        action = "omitted_by_privacy_boundary"
+        caveats.append("Startup benchmark recommendation action was omitted because it is not a supported bounded value.")
+    trigger = recommendation.get("measured_trigger")
+    if isinstance(trigger, str) and _safe_benchmark_label(trigger) is None:
+        trigger = "omitted_by_privacy_boundary"
+        caveats.append("Startup benchmark recommendation trigger was omitted at the privacy boundary.")
+    elif not isinstance(trigger, str):
+        trigger = None
+    rationale_present = isinstance(recommendation.get("rationale"), str) and bool(recommendation.get("rationale", "").strip())
+    if rationale_present:
+        caveats.append("Startup benchmark recommendation rationale is present but not emitted from retained benchmark JSON.")
+    return {
+        "status": "available",
+        "source_label": BENCHMARK_LATEST_REPORT_LABEL,
+        "source_provenance": source,
+        "action": action,
+        "measured_trigger": trigger,
+        "rationale": None,
+        "rationale_present": rationale_present,
+        "rationale_boundary": "not_emitted_from_retained_report",
+        "implementation_recommended": bool(report.get("implementation_recommended")),
+        "caveats": caveats,
+    }
+
+
+def _benchmark_manual_refresh(
+    complete: bool,
+    latest_report: dict[str, Any],
+    state_metrics: dict[str, Any],
+) -> dict[str, Any]:
+    caveats = ["The CLI did not run `mage bench:startupState`; benchmark refresh is manual-only by design."]
+    if latest_report.get("status") in {"missing", "empty", "malformed", "unreadable"}:
+        status = "requires_manual_run"
+        caveats.append("Retained startup benchmark evidence is absent or invalid; run the manual benchmark before using it for optimization decisions.")
+    elif state_metrics.get("total_state_sequences") == 0:
+        status = "requires_manual_run"
+        caveats.append("Retained startup benchmark evidence has zero state-gathering sequences; refresh or gather better evidence before optimizing from it.")
+    elif complete:
+        status = "available"
+    else:
+        status = "requires_manual_run"
+    return {
+        "status": status,
+        "command": "mage bench:startupState",
+        "execution_status": "not_run_by_design",
+        "auto_run": False,
+        "caveats": list(dict.fromkeys(caveats)),
+    }
+
+
+def _benchmark_privacy_boundary() -> dict[str, Any]:
+    return {
+        "status": "enforced",
+        "source_provenance": _source_provenance("benchmark_context", BENCHMARK_CONTEXT_COMMAND, "privacy_boundary"),
+        "user_local_benchmark_reads": "cli_internal_summary_only",
+        "normal_agent_file_reads": "last_resort_diagnostics_only",
+        "raw_paths_emitted": False,
+        "raw_report_bodies_emitted": False,
+        "forbidden_outputs": BENCHMARK_FORBIDDEN_OUTPUTS,
+        "allowed_outputs": [
+            "canonical source labels",
+            "canonical runtime labels",
+            "canonical artifact labels",
+            "bounded counts and rates",
+            "token estimate aggregates",
+            "comparison null reasons",
+            "manual refresh command",
+        ],
+    }
+
+
+def _optimera_benchmark_context(capability: str | None) -> dict[str, Any] | None:
+    if capability != "optimera":
+        return None
+
+    benchmark_dir = _startup_benchmark_dir()
+    latest_status, latest_data, latest_caveats = _read_benchmark_json(
+        benchmark_dir / "latest-report.json",
+        BENCHMARK_LATEST_REPORT_LABEL,
+    )
+    history_status, history_rows, history_caveats = _read_benchmark_history(benchmark_dir / "runs.jsonl")
+
+    latest_report = _latest_benchmark_summary(latest_status, latest_data, latest_caveats)
+    history_summary = _history_benchmark_summary(history_status, history_rows, history_caveats)
+    runtime_coverage = _runtime_benchmark_coverage(latest_status, latest_data)
+    state_metrics = _state_access_benchmark_metrics(latest_status, latest_data)
+    token_impact = _token_benchmark_impact(latest_status, latest_data)
+    comparison = _benchmark_comparison(latest_status, latest_data)
+    recommendation = _benchmark_recommendation(latest_status, latest_data)
+    privacy_boundary = _benchmark_privacy_boundary()
+
+    required_state = {
+        "latest_report": latest_report["status"] == "available" and bool(latest_report.get("non_empty_evidence_present")),
+        "history_summary": history_summary["status"] in {"available", "empty"},
+        "runtime_coverage": runtime_coverage["status"] != "missing",
+        "state_access_metrics": state_metrics["status"] == "available",
+        "token_impact_status": token_impact["status"] in {"available", "missing"},
+        "recommendation_status": recommendation["status"] in {"available", "missing"},
+        "source_contract": True,
+    }
+    missing_required = [name for name, present in required_state.items() if not present]
+    complete = not missing_required
+    manual_refresh = _benchmark_manual_refresh(complete, latest_report, state_metrics)
+    benchmark_source_caveats = [*latest_caveats, *history_caveats]
+    retained_outputs = [
+        {"source_label": BENCHMARK_LATEST_REPORT_LABEL, "filename": "latest-report.json", "status": latest_status},
+        {"source_label": BENCHMARK_HISTORY_LABEL, "filename": "runs.jsonl", "status": history_status},
+        {"source_label": "startup_benchmark_latest_markdown", "filename": "latest-report.md", "status": "not_read_by_context"},
+    ]
+    caveats = list(dict.fromkeys([
+        *benchmark_source_caveats,
+        *latest_report.get("caveats", []),
+        *history_summary.get("caveats", []),
+        *runtime_coverage.get("caveats", []),
+        *state_metrics.get("caveats", []),
+        *token_impact.get("caveats", []),
+        *comparison.get("caveats", []),
+        *recommendation.get("caveats", []),
+        *manual_refresh.get("caveats", []),
+    ]))
+    fallback_commands = [
+        "agentera docs --format json",
+        "agentera query --list-artifacts",
+    ]
+    return {
+        "capability": "optimera",
+        "benchmark_source": {
+            "status": "available" if latest_status == "available" and history_status in {"available", "empty"} else "incomplete",
+            "source_provenance": _source_provenance("benchmark_context", BENCHMARK_CONTEXT_COMMAND, "benchmark_source"),
+            "retained_outputs": retained_outputs,
+            "non_empty_evidence_present": latest_report["non_empty_evidence_present"] or history_summary["non_empty_evidence_present"],
+            "normal_read_policy": "Agents consume this CLI summary first; direct retained benchmark file reads are last-resort diagnostics.",
+            "caveats": benchmark_source_caveats,
+        },
+        "latest_report": latest_report,
+        "history_summary": history_summary,
+        "runtime_coverage": runtime_coverage,
+        "state_access_metrics": state_metrics,
+        "token_impact": token_impact,
+        "comparison": comparison,
+        "recommendation": recommendation,
+        "manual_refresh": manual_refresh,
+        "privacy_boundary": privacy_boundary,
+        "state_family_caveats": caveats,
+        "fallback_commands": fallback_commands,
+        "source_contract": {
+            "complete_for_benchmark_context": complete,
+            "caveated": bool(caveats),
+            "raw_artifact_reads_required": False,
+            "raw_artifact_read_policy": (
+                "Use this benchmark_context from `agentera hej --format json --capability-context optimera` first. "
+                "If incomplete, follow fallback_commands and manual_refresh before any last-resort direct latest-report.json, "
+                "latest-report.md, or runs.jsonl diagnostic read."
+            ),
+            "benchmark_state_families": [
+                "latest_report",
+                "history_summary",
+                "runtime_coverage",
+                "state_access_metrics",
+                "token_impact",
+                "comparison",
+                "recommendation",
+                "manual_refresh",
+                "privacy_boundary",
+            ],
+            "required_benchmark_state": required_state,
+            "missing_required_benchmark_state": missing_required,
+            "source_labels": BENCHMARK_CONTEXT_SOURCE_LABELS,
+            "fallback_commands": fallback_commands,
+            "manual_refresh_status": manual_refresh["status"],
+            "privacy_boundary": {
+                "raw_paths_emitted": False,
+                "raw_report_bodies_emitted": False,
+                "forbidden_outputs": BENCHMARK_FORBIDDEN_OUTPUTS,
+            },
+            "caveats": caveats,
+            "owns": [
+                "retained startup benchmark source status",
+                "latest report summary",
+                "aggregate history summary",
+                "runtime coverage caveats",
+                "state-access rates and counts",
+                "token-impact estimates",
+                "comparison null reasons",
+                "startup recommendation action",
+                "manual refresh guidance",
+                "privacy boundary",
+                "raw-read-last-resort policy",
+                "truthful completeness metadata",
+            ],
+            "deferred": ["2.3.12 Realisera execution-context state"],
+        },
     }
 
 
@@ -3863,6 +4537,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
         profile_dict,
         bundle,
     )
+    benchmark_context = _optimera_benchmark_context(capability_name)
     if _output_format(_args) != "text":
         bundle_public = public_doctor_status(bundle)
         app_home = {
@@ -3894,6 +4569,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
                 "orchestration_context": orchestration_context,
                 "closeout_context": closeout_context,
                 "evidence_context": evidence_context,
+                "benchmark_context": benchmark_context,
                 "source": {
                     "schemas_dir": str(schemas_dir),
                     "project": str(Path.cwd()),
@@ -3958,7 +4634,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     print("next_action:")
     print(f"- {_format_next_action(next_action)}")
     print("source_contract:")
-    print("- fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context,closeout_context,evidence_context")
+    print("- fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,next_action,orchestration_context,closeout_context,evidence_context,benchmark_context")
     print("- render=caller-owned README-style hej dashboard")
     print("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls")
     startup_contract = _startup_completeness_contract()
@@ -3992,6 +4668,16 @@ def cmd_hej(_args: argparse.Namespace) -> int:
             f"complete_for_evidence_context={str(evidence_contract['complete_for_evidence_context']).lower()} | "
             f"caveated={str(evidence_contract['caveated']).lower()} | "
             f"fallback={'; '.join(evidence_context['fallback_commands'])}"
+        )
+    if benchmark_context:
+        benchmark_contract = benchmark_context["source_contract"]
+        print("benchmark_context:")
+        print(
+            "- "
+            f"complete_for_benchmark_context={str(benchmark_contract['complete_for_benchmark_context']).lower()} | "
+            f"caveated={str(benchmark_contract['caveated']).lower()} | "
+            f"manual_refresh={benchmark_contract['manual_refresh_status']} | "
+            f"fallback={'; '.join(benchmark_context['fallback_commands'])}"
         )
     return 0
 
