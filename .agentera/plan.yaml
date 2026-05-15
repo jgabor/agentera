@@ -3,204 +3,224 @@ header:
   created: 2026-05-15
   status: complete
   reviewed: 2026-05-15
-  critic_issues: 9 found, 9 addressed, 0 dismissed
+  critic_issues: 6 found, 6 addressed, 0 dismissed
   revised: >-
-    Defined protected-overflow behavior, legacy archive review semantics,
-    validation severity, staleness rules, a canonical satisfaction model, shared
-    compaction callers, source-contract naming, and closeout dependency
-    boundaries. [post-audit-flagged: PLAN.md full-plan artifact exceeds the
-    advisory prose budget; preserving reviewed executable acceptance criteria is
-    more valuable than compressing below the single-entry lint threshold.]
-  title: 2.3.13 Decision Satisfaction Tracking
+    Made the plan evidence-first so implementation must reproduce the D46 runtime
+    gap before changing prose. Added explicit semantic/runtime fixture coverage,
+    capability-guidance enforcement, native question-tool behavior checks, and
+    metadata closeout so the fix cannot be satisfied by SKILL.md wording alone.
+  title: D46 Handoff Wording Enforcement
 what: >-
-  Implement Decision 53 so decisions carry durable satisfaction state, CLI
-  consumers can see whether the intended outcome is still open, provisionally
-  satisfied, or user-confirmed satisfied, and compaction, audit, and closeout
-  workflows cannot hide unresolved decisions.
+  Fix Decision 46 handoff behavior so Agentera agents consistently render
+  downstream capability recommendations as glyph plus canonical capability name,
+  reserve `/agentera <alias>` wording for explicit route documentation, and use
+  the runtime-native question tool when bounded or state-changing handoff choices
+  require it.
 why: >-
-  Agentera compounds only when intent survives implementation. Downstream
-  references and compacted summaries do not prove satisfaction; the user chose
-  decision-entry-owned satisfaction state, with automation limited to provisional
-  evidence and final satisfaction owned by the user.
+  D46 is still open because the documented handoff contract appears not to shape
+  actual agent behavior reliably. Prose-only rules are not enough when runtime
+  agents continue to emit standalone slash-capability labels or skip required
+  confirmation behavior. The fix should make the intended handoff surface
+  observable, testable, and hard to regress.
 constraints: >-
-  Preserve CLI-first state access and truthful source contracts. Do not infer
-  satisfaction from feeds_into, commits, or file changes. Do not let automation
-  user-confirm satisfaction. Preserve legacy decisions without silently marking
-  them satisfied. Do not edit vision/objective state, publish, push, tag, refresh
-  installed apps/profile, or introduce unsupported capability-name CLI commands.
+  Preserve Decisions 43, 45, and 46: do not add capability-name CLI commands, do
+  not reintroduce standalone slash-capability handoff labels, and do not blur
+  `/agentera <alias>` slash routes with `agentera` state commands. Preserve
+  CLI-first artifact access and truthful source contracts. Do not edit vision or
+  objective state, publish, push, tag, refresh installed apps/profile, or mark
+  D46 user-confirmed satisfied without user confirmation.
 scope:
   included:
-    - Decision schema and validation contract for satisfaction state, authority, legacy review, and compaction protection.
-    - Decisions CLI JSON satisfaction output, canonical-path metadata, completeness, caveats, and fallback policy.
-    - Shared compaction behavior used by CLI, hooks, and artifact validation paths.
-    - Inspektera health-audit and Dokumentera release-closeout review-pressure surfaces.
-    - Capability prose and schema guidance for provisional evidence, user confirmation, and caveat preservation.
-    - Focused regression tests, artifact validation, compaction check, gate, and local metadata sync.
+    - Reproduce and characterize where D46 guidance fails in real or fixture-backed agent output.
+    - Tighten dispatcher and capability guidance only where it changes observable routing and handoff behavior.
+    - Add regression coverage for slashless handoff labels, explicit route documentation boundaries, and native question-tool gating.
+    - Update semantic fixtures or eval expectations so runtime-facing examples reject old `/realisera`-style handoff output.
+    - Sync TODO, progress, changelog, docs metadata, and D46 provisional satisfaction evidence after verification.
   excluded:
-    - Automatic user confirmation of satisfaction.
-    - Satisfaction inferred solely from feeds_into, downstream files, commits, or generated references.
-    - Reconstructing compacted historical decisions from git history.
-    - Changing Decision 53, vision state, objective state, or unsupported CLI route surfaces.
+    - Adding `agentera realisera`, `agentera planera`, or any other capability-name CLI command.
+    - Renaming canonical Swedish capability names or changing Decision 43 primary aliases.
+    - Building a general routing engine rewrite beyond the D46 enforcement gap.
+    - User-confirming D46 satisfaction without an explicit user confirmation step.
     - Publication, tagging, pushing, installed-app refresh, or profile refresh.
   deferred:
-    - A broader decision lifecycle UI beyond CLI JSON and existing state contexts.
-    - Bulk user-review tooling for all historical decisions unless protected overflow makes it required.
-    - Cross-project migration tooling outside this repository.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-15-2-3-12-realisera-execution-context-source-contract.yaml
+    - Broader UX redesign for all capability handoff prompts beyond D46 compliance.
+    - Cross-runtime automated UI tests for every host question tool if lightweight fixtures can cover this release.
+    - Bulk cleanup of unrelated bundle terminology, doctor output, or raw-read performance TODOs.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-15-2-3-13-decision-satisfaction-tracking.yaml
 design: >-
-  Treat satisfaction as first-class decision state. The canonical model is
-  satisfaction.state = open, provisionally_satisfied, or
-  user_confirmed_satisfied; missing legacy state is a derived review-needed
-  condition, not a fourth satisfied state. Provisional satisfaction carries
-  evidence. User-confirmed satisfaction carries explicit user-confirmation
-  metadata. Compaction may compact only entries safe under that state model;
-  protected overflow produces review pressure and a non-success gate/check result
-  instead of silently compacting or dropping protected context. Health audit and
-  release closeout consume the same decision context so stale protected decisions
-  are visible before work is considered healthy or release-ready.
+  Treat D46 as an enforcement problem, not a prose-polish problem. Start by
+  collecting the failing output shape from tests, fixtures, or recent session
+  transcripts. Then move the contract into the smallest runtime-facing seams
+  that agents actually consume: hej dashboard instructions, dispatcher handoff
+  rules, capability prose handoff sections, docs vocabulary, semantic fixtures,
+  and regression tests. Tests should fail on standalone slash-capability handoff
+  labels and on state-changing handoffs that avoid the native question tool, but
+  still allow `/agentera <alias>` when documenting explicit slash routes.
 tasks:
   - number: 1
-    name: Satisfaction contract and legacy semantics
+    name: D46 failure characterization
     depends_on: []
     status: complete
     acceptance:
       - >-
-        GIVEN Decision 53 and the current decisions schema WHEN the contract is
-        updated THEN it defines the satisfaction states, provisional evidence
-        requirement, user-confirmation authority, review-needed derivation, and
-        stale-review trigger.
+        GIVEN the open D46 TODO and decision state WHEN current tests, semantic
+        fixtures, and available session examples are reviewed THEN the plan has a
+        concrete failing output pattern instead of assuming prose is ignored.
       - >-
-        GIVEN an active legacy decision lacks satisfaction state WHEN it is read
-        or validated THEN it remains valid but is surfaced as review-needed
-        rather than silently satisfied.
+        GIVEN existing handoff tests already assert SKILL.md wording WHEN the
+        behavior gap is characterized THEN the missing coverage is identified as
+        runtime-facing output, fixture, or question-tool behavior rather than
+        duplicate prose assertions.
       - >-
-        GIVEN a legacy compacted archive entry lacks satisfaction state WHEN
-        compaction would drop it THEN compaction reports user review required
-        instead of silently deleting it.
+        GIVEN a handoff example uses `/realisera`, `/planera`, SG codes, or a
+        state-changing free-form prompt WHEN classified THEN the classification
+        records whether it violates label vocabulary, route/CLI separation, or
+        native question-tool gating.
       - >-
-        GIVEN malformed satisfaction data or user-confirmed satisfaction without
-        user-confirmation metadata WHEN validation runs THEN the artifact reports
-        an error.
+        GIVEN no reproducible violation can be found WHEN characterization
+        completes THEN the TODO is converted into a narrower evidence-gathering
+        follow-up instead of making speculative implementation changes.
+    evidence:
+      - >-
+        Characterization found concrete stale runtime-facing examples in semantic
+        fixture helpers and hej routing tests: defaults used `route /realisera`
+        and `suggested -> /realisera`, while contract tests only asserted prose
+        strings. The gap was fixture/eval behavior, not another SKILL.md wording
+        assertion.
   - number: 2
-    name: Decisions CLI satisfaction source contract
+    name: Runtime-facing handoff contract enforcement
     depends_on: [1]
     status: complete
     acceptance:
       - >-
-        GIVEN decisions have open, provisional, confirmed, or missing satisfaction
-        state WHEN agentera decisions --format json runs THEN each entry exposes
-        satisfaction state, existing evidence or confirmation metadata,
-        review-needed flags, and non-inferential caveats.
+        GIVEN Agentera suggests a downstream capability from hej or another
+        capability WHEN the suggested action is rendered THEN the visible label is
+        glyph plus canonical name, such as `⧉ realisera`, not a standalone
+        slash-capability route.
       - >-
-        GIVEN a downstream reference exists without satisfaction state WHEN
-        decisions JSON is returned THEN the entry does not report user-confirmed
-        satisfaction.
+        GIVEN documentation needs to describe a slash route WHEN `/agentera
+        <alias>` wording appears THEN the context clearly marks it as explicit
+        slash-route documentation, not a handoff label or CLI command.
       - >-
-        GIVEN filtered or compacted entries are returned WHEN source_contract is
-        emitted THEN included fields, completeness, fallback policy, canonical
-        artifact label, and concrete path truthfully describe satisfaction context.
+        GIVEN a state-changing handoff such as creating/updating a plan, running
+        realisera, running optimera, documenting, migrating, or orchestrating WHEN
+        a confirmation prompt is needed THEN the runtime-native question tool is
+        required even if there is only one suggested action.
+      - >-
+        GIVEN a single non-mutating suggestion is shown WHEN the user replies with
+        `yes`, `start`, `do it`, or `run <capability>` THEN the guidance treats
+        that as confirmation of the named suggestion and asks one clarifying
+        question only for ambiguous replies.
+    evidence:
+      - >-
+        Updated semantic fixture defaults and fixture documentation to require
+        `⧉ realisera`, and updated hej startup fixtures to forbid standalone
+        slash-capability handoff labels such as `/realisera`, `/planera`,
+        `/orkestrera`, and `/optimera` while preserving explicit `/agentera
+        <alias>` route documentation boundaries in dispatcher tests.
   - number: 3
-    name: Shared compaction protection and review pressure
+    name: Regression and semantic coverage
     depends_on: [1, 2]
     status: complete
     acceptance:
       - >-
-        GIVEN an active decision is open, provisionally satisfied, or
-        review-needed WHEN any shared compaction caller evaluates DECISIONS THEN
-        that decision is not compacted or dropped.
+        GIVEN unit tests scan dispatcher and capability prose WHEN they run THEN
+        standalone slash-capability handoff labels, SG-code labels, and unsupported
+        capability-name CLI command examples fail the suite.
       - >-
-        GIVEN protected entries make the normal 10/40/50 budget impossible WHEN
-        compaction check or gate runs THEN output reports protected-overflow
-        review pressure and returns a non-success result without mutating
-        protected entries.
+        GIVEN semantic fixtures model Agentera startup or capability handoff output
+        WHEN old output such as `route /realisera` or `suggested -> /realisera`
+        appears THEN semantic evaluation rejects it in favor of glyph/name handoff
+        wording tied to a concrete object.
       - >-
-        GIVEN a user-confirmed satisfied decision is compacted WHEN it enters
-        archive THEN its compacted entry preserves satisfaction state and remains
-        visible through decisions JSON.
+        GIVEN question-tool gating examples are tested WHEN a handoff is
+        state-changing THEN coverage distinguishes native Proceed/Cancel behavior
+        from acceptable free-form confirmation for non-mutating suggestions.
+      - >-
+        GIVEN test proportionality is checked WHEN new cases are added THEN each
+        new behavior has at least one passing and one failing fixture or an
+        explicit reason a failing fixture would duplicate an existing guard.
+    evidence:
+      - >-
+        Focused regression coverage now includes passing glyph/name fixture output
+        and failing stale `/realisera` examples. `tests/test_hej_routing_fixture.py`
+        asserts stale slash output trips the dedicated forbidden-output guard, and
+        semantic eval fixtures require glyph/name output tied to concrete tasks.
   - number: 4
-    name: Health audit and release closeout review surfaces
+    name: Focused verification gates
     depends_on: [2, 3]
     status: complete
     acceptance:
       - >-
-        GIVEN a protected decision is stale because it would be compacted or
-        dropped under 10/40/50, or because its review date has elapsed, WHEN
-        Inspektera evidence context is generated THEN decision review pressure
-        appears as attributed residual risk or caveat.
+        GIVEN implementation is complete WHEN focused tests run THEN
+        `tests/test_skill_dispatch_contract.py` and the relevant semantic eval
+        tests pass.
       - >-
-        GIVEN stale protected decisions exist WHEN Dokumentera closeout context is
-        generated THEN release closeout surfaces them as review-required blockers
-        or caveats before local metadata is considered complete.
+        GIVEN capability guidance changes are complete WHEN validation runs THEN
+        affected capability validation and self-validation pass without adding
+        unsupported command surfaces.
       - >-
-        GIVEN no stale protected decisions exist WHEN those contexts are generated
-        THEN they do not fabricate decision review warnings.
+        GIVEN artifact changes are complete WHEN repository gates run THEN
+        artifact validation, compaction check if applicable, Agentera gate, and
+        `git diff --check` pass.
+      - >-
+        GIVEN verification evidence is recorded WHEN realisera closes the work
+        THEN the evidence names the exact tests and fixtures that prove D46 is
+        enforced beyond prose wording.
+    evidence:
+      - >-
+        Verification passed with `uv run pytest tests/test_semantic_eval.py
+        tests/test_semantic_fixtures.py tests/test_hej_routing_fixture.py
+        tests/test_skill_dispatch_contract.py tests/test_package_registry.py
+        tests/test_runtime_adapters.py -q` (141 passed), `uv run
+        scripts/semantic_eval.py fixtures/semantic/hej-routing-plan-priority.md
+        fixtures/semantic/hej-cli-budget.md fixtures/semantic/hej-bare-message.md
+        fixtures/semantic/hej-bare-empty-repo.md` (4 passed), Hej and Planera
+        capability validation, schema self-validation, artifact validators,
+        `agentera compact --mode check --format json`, `agentera gate --format
+        json`, and `git diff --check`.
   - number: 5
-    name: Capability guidance and authority boundaries
+    name: D46 closeout metadata sync
     depends_on: [1, 2, 3, 4]
     status: complete
     acceptance:
       - >-
-        GIVEN agents produce or update decision-related artifacts WHEN capability
-        prose and schemas are read THEN they state that agents may mark
-        provisional satisfaction with evidence but may not user-confirm satisfaction.
+        GIVEN Tasks 1-4 are verified WHEN metadata is synced THEN TODO, PROGRESS,
+        CHANGELOG, docs audit metadata, and version-bearing surfaces reflect the
+        D46 handoff enforcement fix.
       - >-
-        GIVEN compaction, audit, closeout, orchestration, or execution sees
-        decision caveats WHEN capability guidance applies THEN caveats are
-        preserved rather than reconstructed or hidden.
-      - >-
-        GIVEN capability validation runs WHEN guidance changes are complete THEN
-        context-first, fallback-before-raw, and satisfaction-caveat preservation
-        rules are declared without overstating machine enforcement.
-  - number: 6
-    name: Focused regression coverage and gates
-    depends_on: [2, 3, 4, 5]
-    status: complete
-    acceptance:
-      - >-
-        GIVEN focused tests run WHEN implementation is complete THEN they cover
-        satisfaction schema validation, decisions JSON output, non-inference from
-        downstream references, protected compaction, archive retention,
-        health-audit review pressure, and closeout review pressure.
-      - >-
-        GIVEN existing compacted-decision and source-contract tests run WHEN
-        updated THEN historical compacted gaps remain explicit and normal decisions
-        context requires no raw artifact fallback.
-      - >-
-        GIVEN test proportionality is checked WHEN tests are added THEN each
-        testable behavior has at least one passing and one failing fixture or an
-        explicit reason it cannot.
-      - >-
-        GIVEN validation gates run WHEN the task completes THEN artifact
-        validators, capability validation, self-validation, compaction check,
-        agentera gate, and git diff --check pass.
-  - number: 7
-    name: 2.3.13 local closeout metadata sync
-    depends_on: [1, 2, 3, 4, 5, 6]
-    status: complete
-    acceptance:
-      - >-
-        GIVEN Tasks 1-6 are verified WHEN closeout sync runs THEN TODO, PROGRESS,
-        CHANGELOG, docs audit metadata, and version-bearing surfaces record the
-        completed patch scope.
-      - >-
-        GIVEN version policy is applied WHEN metadata changes are made THEN only
-        version files declared by .agentera/docs.yaml and the package registry are
-        changed for 2.3.13 alignment.
+        GIVEN D46 has implementation evidence but no explicit user confirmation
+        WHEN decisions metadata is updated THEN D46 is at most marked
+        provisionally satisfied with evidence, not user-confirmed satisfied.
       - >-
         GIVEN local metadata sync completes WHEN scope is audited THEN no
         publication, remote push, tag, installed-app refresh, profile refresh,
         vision edit, objective-state edit, or unsupported capability-name CLI
         command occurred.
+    evidence:
+      - >-
+        TODO resolved the D46 item, Decision 46 is provisionally satisfied with
+        evidence but not user-confirmed, CHANGELOG and DOCS audit metadata record
+        2.3.14 local-only closeout, PROGRESS records the verification evidence,
+        and version-bearing package, plugin, registry, lockfile, OpenCode marker,
+        and skill frontmatter surfaces target 2.3.14 without publication, push,
+        tag, installed-app refresh, profile refresh, vision edit, objective-state
+        edit, or unsupported capability-name CLI command.
 overall_acceptance:
   - >-
-    GIVEN a decision is not user-confirmed satisfied WHEN Agentera compacts,
-    audits, or closes a release THEN unresolved state remains visible and cannot
-    be hidden by downstream references.
+    GIVEN Agentera produces a capability handoff WHEN the output is user-facing
+    THEN it uses glyph plus canonical capability name and never standalone
+    slash-capability labels.
   - >-
-    GIVEN automation finds evidence that a decision may be satisfied WHEN it
-    updates decision state THEN the result is provisional until the user confirms
-    it.
+    GIVEN a suggested handoff may mutate project or runtime state WHEN the agent
+    asks whether to proceed THEN it uses the runtime-native question tool with a
+    recommended option and `Done`/cancel semantics.
   - >-
-    GIVEN a decision is user-confirmed satisfied WHEN normal CLI consumers query
-    decisions THEN they can see the confirmed state after eligible compaction.
+    GIVEN `/agentera <alias>` appears in Agentera materials WHEN reviewed THEN it
+    is explicit route documentation and is not confused with `agentera` CLI state
+    commands or handoff labels.
+  - >-
+    GIVEN D46 is later reviewed WHEN TODO, decisions, tests, and semantic
+    fixtures are inspected THEN there is concrete evidence that the behavior is
+    enforced, not only described in prose.
 surprises: []

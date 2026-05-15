@@ -20,6 +20,7 @@
 
 ### Fixed
 
+- D46 handoff wording enforcement now rejects stale standalone slash-capability examples in semantic fixtures and test helpers, requiring glyph plus canonical capability names such as `⧉ realisera` for user-facing handoff labels while preserving `/agentera <alias>` for explicit route documentation.
 - Decision satisfaction state is now explicit in the decision contract and validator: automation may record provisional evidence, user-confirmed satisfaction requires explicit user-confirmation metadata, and missing legacy state remains review-needed rather than silently satisfied.
 - Decisions JSON, shared compaction, Inspektera evidence context, and Dokumentera closeout context now preserve satisfaction caveats and protected-decision review pressure without inferring satisfaction from downstream references, commits, file changes, or compacted history.
 - Realisera plan-driven startup now uses `agentera hej --format json --capability-context realisera` execution context before raw plan, progress, TODO, docs, health, decisions, changelog, vision, profile, or design startup reads, preserving fallbacks and caveats for missing state.

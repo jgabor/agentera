@@ -31,8 +31,8 @@ Fixture format::
     ## Expected Facts
     ```json
     {
-      "required_output": ["suggested -> /realisera"],
-      "forbidden_output": ["/optimera"],
+      "required_output": ["suggested → ⧉ realisera"],
+      "forbidden_output": ["/realisera", "/optimera"],
       "required_tool_calls": ["agentera hej"],
       "forbidden_tool_calls": ["agentera plan"],
       "tool_call_counts": {"agentera hej": 1},

@@ -55,6 +55,10 @@ Briefed the empty project from `agentera hej`; continue with the suggested proje
     "⌂ hej · waiting"
   ],
   "forbidden_output": [
+    "/realisera",
+    "/planera",
+    "/orkestrera",
+    "/optimera",
     "Hello",
     "Hi there",
     "How can I help",

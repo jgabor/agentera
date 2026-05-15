@@ -14,7 +14,7 @@ def _fixture(
     *,
     prompt: str = "Start a session and route the project.",
     seeded_state: dict | None = None,
-    captured_output: str = "suggested -> /realisera for Task 1",
+    captured_output: str = "suggested → ⧉ realisera for Task 1",
     tool_trace: dict | None = None,
     expected_facts: dict | None = None,
 ) -> str:
@@ -22,8 +22,8 @@ def _fixture(
         seeded_state = {"files": [{"path": ".agentera/plan.yaml", "content": "Task 1 pending"}]}
     if expected_facts is None:
         expected_facts = {
-            "required_output": ["/realisera", "Task 1"],
-            "forbidden_output": ["/optimera"],
+            "required_output": ["⧉ realisera", "Task 1"],
+            "forbidden_output": ["/realisera", "/optimera"],
             "artifact_expectations": {"writes": "none"},
         }
     tool_trace_section = ""

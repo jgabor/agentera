@@ -19,10 +19,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 def _fixture_text(
     *,
-    output: str = "route /realisera to Task 2",
+    output: str = "suggest ⧉ realisera for Task 2",
     tool_trace: list[str] | None = None,
     required: str = "Task 2",
-    forbidden: str = "/optimera",
+    forbidden: str = "/realisera",
     artifact_path: str = ".agentera/plan.yaml",
     artifact_contains: str = "Task 2",
 ) -> str:
@@ -47,7 +47,7 @@ def _fixture_text(
         ## Expected Facts
         ```json
         {{
-          "required_output": ["/realisera", "{required}"],
+          "required_output": ["⧉ realisera", "{required}"],
           "forbidden_output": ["{forbidden}"],
           "required_artifacts": [{{"path": "{artifact_path}", "contains": ["{artifact_contains}"]}}],
           "artifact_expectations": {{"writes": "none"}}
@@ -77,7 +77,7 @@ class TestRequiredOutputAssertion:
         facts = _fact_map(
             semantic_eval,
             semantic_fixtures,
-            _fixture_text(output="route /realisera", required="Task 999"),
+            _fixture_text(output="suggest ⧉ realisera", required="Task 999"),
         )
 
         assert facts["required_output[1]"] == {
@@ -94,20 +94,20 @@ class TestForbiddenOutputAssertion:
         assert facts["forbidden_output[0]"] == {
             "fact": "forbidden_output[0]",
             "status": "pass",
-            "detail": "captured output omits forbidden '/optimera'",
+            "detail": "captured output omits forbidden '/realisera'",
         }
 
     def test_fail_forbidden_output_reports_present_text(self, semantic_eval, semantic_fixtures):
         facts = _fact_map(
             semantic_eval,
             semantic_fixtures,
-            _fixture_text(output="route /realisera, not /optimera"),
+            _fixture_text(output="route /realisera"),
         )
 
         assert facts["forbidden_output[0]"] == {
             "fact": "forbidden_output[0]",
             "status": "fail",
-            "detail": "captured output contains forbidden '/optimera'",
+            "detail": "captured output contains forbidden '/realisera'",
         }
 
 
@@ -224,7 +224,7 @@ def test_pass_summary_reports_checked_facts(semantic_eval, semantic_fixtures):
 def test_fail_summary_reports_first_failing_fact(semantic_eval, semantic_fixtures):
     fixture, errors = semantic_fixtures.validate_fixture_text(
         _fixture_text(
-            output="route /realisera",
+            output="suggest ⧉ realisera",
             required="Task 999",
             artifact_path=".agentera/MISSING.md",
         )
