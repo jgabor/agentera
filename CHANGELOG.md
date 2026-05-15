@@ -20,6 +20,7 @@
 
 ### Fixed
 
+- `agentera lint --artifact PLAN.md` now treats concrete repo-style path anchors such as `internal/runtime`, `internal/app`, and `internal/tui` as anchors, preventing false no-anchor advisories for concrete Planera plans while preserving abstraction advisories for generic unanchored prose.
 - D47 app-home vocabulary cleanup now replaces obsolete current-behavior bundle/install-root wording across live docs, guidance, diagnostics, package text, and affected tests while preserving compatibility identifiers, canonical artifact labels, CLI selectors, historical records, and migration examples.
 - D46 handoff wording enforcement now rejects stale standalone slash-capability examples in semantic fixtures and test helpers, requiring glyph plus canonical capability names such as `⧉ realisera` for user-facing handoff labels while preserving `/agentera <alias>` for explicit route documentation.
 - Decision satisfaction state is now explicit in the decision contract and validator: automation may record provisional evidence, user-confirmed satisfaction requires explicit user-confirmation metadata, and missing legacy state remains review-needed rather than silently satisfied.

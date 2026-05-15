@@ -1,4 +1,156 @@
 cycles:
+- number: 516
+  timestamp: 2026-05-15 22:15
+  type: fix
+  phase: audit
+  what: Synchronized PLAN Task 4 version and local state closeout for the Planera
+    lint anchor false-positive fix.
+  commit: pending
+  inspiration: Orkestrera assigned Task 4 only after Tasks 1-3 were complete and independently
+    evaluated PASS, requiring fix-level release metadata handling, TODO/PROGRESS/PLAN
+    closeout, conditional CHANGELOG/DOCS updates, focused verification, and a scope
+    audit with no publication, push, tag, installed-app refresh, profile refresh,
+    vision edit, objective edit, decision satisfaction change, or unsupported capability-name
+    CLI command.
+  discovered: '`.agentera/docs.yaml` maps `fix` to a patch bump and lists version-bearing
+    surfaces through `conventions.version_files`, mirrored by `references/adapters/package-registry.yaml`
+    `docs_targets.version_files`. The active surfaces were at 2.3.14 before closeout,
+    so the local patch target is 2.3.15.'
+  verified: Version-bearing surfaces were aligned from 2.3.14 to 2.3.15 across `pyproject.toml`,
+    `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`,
+    `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, `skills/agentera/SKILL.md`,
+    `skills/hej/SKILL.md`, and `registry.json`. Focused verification passed with `uv
+    run pytest tests/test_self_audit.py -q` (23 tests), `uv run pytest tests/test_package_registry.py
+    tests/test_packaged_cli.py -q` (13 tests), anchored/generic/strict PLAN.md lint
+    probes, file input on `/tmp/opencode/aila-m13-plan.yaml` with abstraction pass
+    `docs/notes/PROMPT.md`, stdin lint input with abstraction pass `internal/runtime`,
+    TODO/CHANGELOG/DOCS/PLAN and PROGRESS artifact validators, and `git diff --check`.
+  next: Planera Lint Anchor False Positive Fix is complete after Task 4 closeout.
+    Do not publish, commit, push, tag, refresh installed apps/profile, edit vision
+    or objective state, change decision satisfaction state, update packages, or run
+    unsupported capability-name CLI commands unless explicitly requested.
+  context:
+    intent: PLAN Task 4 version and local state sync
+    constraints: Task 4 only; preserve unrelated dirty work; local metadata sync only;
+      no publication, commit, push, tag, installed-app refresh, profile refresh, vision
+      edit, objective edit, decision satisfaction change, package update, or unsupported
+      capability-name CLI command
+    scope: Fix-level patch version alignment, TODO resolution, CHANGELOG notes, DOCS
+      audit metadata, PROGRESS evidence, PLAN completion evidence, focused tests,
+      artifact validation, package/version metadata tests, and diff whitespace check
+- number: 515
+  timestamp: 2026-05-15 22:05
+  type: test
+  phase: audit
+  what: Completed PLAN Task 3 regression coverage and guidance alignment for the Planera
+    lint anchor fix.
+  commit: pending
+  inspiration: 'Orkestrera assigned Task 3 only: add focused regression coverage for
+    the fixed Planera-plan anchor false positive, keep concrete anchors distinct from
+    generic prose, and validate touched PLAN/PROGRESS artifacts without release metadata,
+    TODO closeout, publication, commit, installed-app refresh, vision, objective,
+    or decision-state changes.'
+  discovered: The most direct coverage point was the existing lint CLI test file.
+    No user-facing lint diagnostics, guidance docs, capability prose, or fixtures
+    needed changes because the current diagnostics already distinguish concrete anchors
+    from generic prose; Task 3 only needed dedicated regression tests.
+  verified: '`uv run pytest tests/test_self_audit.py -q` passed with 23 tests, including
+    the new `PLAN.md` anchored repo-style pass regression and the unanchored generic
+    prose advisory-failure regression. `AGENTERA_HOME=/home/jgabor/git/agentera uv
+    run scripts/agentera lint --artifact PLAN.md --text "Deliver queue visibility
+    through queued-message fixture, semantic snapshots, PTY smoke, mage check, source
+    docs, and concrete internal/runtime internal/app internal/tui boundaries." --format
+    json` exited 0 with status=pass and abstraction detail `internal/runtime`. `AGENTERA_HOME=/home/jgabor/git/agentera
+    uv run scripts/agentera lint --artifact PLAN.md --text "This plan improves the
+    system broadly and makes the implementation better for users." --format json`
+    exited 0 in advisory mode with status=fail and abstraction detail `abstraction
+    creep: no concrete anchor`. PLAN/PROGRESS artifact validation and `git diff --check`
+    passed after artifact updates.'
+  next: Hand Task 3 to Orkestrera evaluation. Do not implement Task 4, update TODO,
+    changelog, version files, release metadata, publication, commit, push, tag, installed-app/profile
+    refresh, vision/objective state, or decision satisfaction state.
+  context:
+    intent: PLAN Task 3 regression coverage and guidance alignment
+    constraints: Task 3 only; preserve unrelated dirty work; no Task 4 closeout, release
+      metadata, publication, commit, installed-app refresh, profile refresh, vision
+      edit, objective edit, or decision satisfaction change
+    scope: Focused `tests/test_self_audit.py` regression coverage, PLAN Task 3 evidence,
+      PROGRESS cycle evidence, PLAN/PROGRESS artifact validation, and diff whitespace
+      checks
+- number: 514
+  timestamp: 2026-05-15 21:44
+  type: fix
+  phase: audit
+  what: Completed PLAN Task 2 contract-preserving lint anchor correction.
+  commit: pending
+  inspiration: Orkestrera assigned Task 2 to make concrete Planera anchors pass artifact
+    lint without changing the `agentera lint --artifact <ARTIFACT>` command contract
+    or weakening generic unanchored prose detection.
+  discovered: The false-positive boundary was repo-style paths without file extensions,
+    such as `internal/runtime`, `internal/app`, and `internal/tui`; the abstraction
+    checker recognized extension-bearing paths but not concrete source/package boundaries.
+  verified: '`AGENTERA_HOME="/home/jgabor/git/agentera" uv run scripts/agentera lint
+    --artifact PLAN.md --text "Deliver queue visibility through queued-message fixture,
+    semantic snapshots, PTY smoke, mage check, source docs, and concrete internal/runtime
+    internal/app internal/tui boundaries." --format json` exited 0 with status=pass
+    and abstraction detail `internal/runtime`. Generic prose still exited 0 in advisory
+    JSON mode with abstraction fail `abstraction creep: no concrete anchor`; the same
+    generic prose with `--strict --format json` exited 1 and advisory=false. File
+    input on `/tmp/opencode/aila-m13-plan.yaml` exited 0 with abstraction pass `docs/notes/PROMPT.md`
+    and only verbosity fail. Text output advisory mode exited 0, piped stdin JSON
+    mode exited 0 with source=`stdin`, and `uv run pytest tests/test_self_audit.py
+    -q` passed with 21 tests.'
+  next: Hand Task 2 to Orkestrera evaluation. Do not run Task 3 regression expansion,
+    version metadata, changelog/TODO closeout, publication, commit, push, tag, installed-app
+    refresh, profile refresh, vision edit, objective edit, or decision satisfaction
+    changes.
+  context:
+    intent: PLAN Task 2 contract-preserving lint correction
+    constraints: Smallest correction only; preserve lint CLI contract and advisory/strict
+      behavior; no Task 3 regression expansion or release/local closeout work
+    scope: Self-audit repo path anchor recognition, focused lint contract checks,
+      plan Task 2 evidence, and progress evidence
+- number: 513
+  timestamp: 2026-05-15 20:45
+  type: fix
+  phase: audit
+  what: Characterized PLAN Task 1 for the Planera lint anchor false positive.
+  commit: pending
+  inspiration: Orkestrera assigned only Task 1 to reproduce or bound the reported
+    `agentera lint --artifact PLAN.md` no-anchor advisory without implementing the
+    correction.
+  discovered: 'The exact reported `/tmp/opencode/aila-m13-plan.yaml` file exists and
+    contains recognized anchors including `ROADMAP.md:523-542` and `docs/notes/PROMPT.md`.
+    The exact file no longer reproduces the no-anchor advisory; lint passes abstraction
+    on `docs/notes/PROMPT.md` and fails only the PLAN verbosity budget. A reduced
+    boundary sample using queued-message fixture, semantic snapshots, PTY smoke, mage
+    check, source docs, and concrete `internal/runtime`, `internal/app`, and `internal/tui`
+    boundaries still reproduces `abstraction creep: no concrete anchor`, showing the
+    bad advisory is tied to human-concrete anchors outside the current recognized
+    anchor patterns.'
+  verified: '`uv run scripts/agentera lint --artifact PLAN.md --file "/tmp/opencode/aila-m13-plan.yaml"
+    --format json` exited 0 with status=fail, advisory=true, verbosity fail `1183
+    words exceeds 100 budget`, abstraction pass `docs/notes/PROMPT.md`, and filler
+    pass. `uv run scripts/agentera lint --artifact PLAN.md --text "Deliver queue visibility
+    through queued-message fixture, semantic snapshots, PTY smoke, mage check, source
+    docs, and concrete internal/runtime internal/app internal/tui boundaries." --format
+    json` exited 0 with abstraction fail `abstraction creep: no concrete anchor`.
+    `uv run scripts/agentera lint --artifact PLAN.md --text "Deliver ROADMAP.md:523-542
+    queue visibility through queued-message fixture and mage check evidence." --format
+    json` exited 0 with status=pass and abstraction pass `:523`. `uv run scripts/agentera
+    lint --artifact PLAN.md --text "This plan improves the system broadly and makes
+    the implementation better for users." --format json` exited 0 with abstraction
+    fail `abstraction creep: no concrete anchor`.'
+  next: Hand Task 1 characterization to Orkestrera evaluation. Do not implement Task
+    2, commit, push, tag, publish, refresh installed apps/profile, edit vision or
+    objective state, or change decision satisfaction state.
+  context:
+    intent: PLAN Task 1 false-positive characterization
+    constraints: Characterization only; no implementation, release metadata, publication,
+      commit, installed-app refresh, profile refresh, vision edit, objective-state
+      edit, or decision satisfaction change
+    scope: Exact temporary plan lint behavior, reduced anchor-boundary reproduction,
+      recognized-anchor control, and generic prose control
 - number: 512
   timestamp: 2026-05-15 20:10
   type: docs
@@ -241,149 +393,15 @@ cycles:
     scope: Shared decision review-pressure context, Inspektera residual-risk attribution,
       Dokumentera closeout blocker/caveat completeness, focused tests, and latest
       progress substantiation
-- number: 506
-  timestamp: 2026-05-15 13:39
-  type: feat
-  phase: build
-  what: Implemented PLAN Task 3 shared compaction protection and protected-overflow
-    review pressure.
-  commit: pending
-  inspiration: Orkestrera assigned Task 3 to ensure shared compaction callers preserve
-    open, provisional, or review-needed decisions, report protected-overflow review
-    pressure when decision protection makes the 10/40/50 budget impossible, and keep
-    user-confirmed satisfaction intact through decision archive compaction and JSON
-    output.
-  discovered: Shared decision compaction already refused to compact or drop non-confirmed
-    decisions in fix mode, but check/gate reported only generic over-limit pressure,
-    and active review-needed decisions blocked otherwise safe compaction of nearby
-    satisfied decisions. The shared status model now carries protected_overflow_count,
-    CLI payloads and exit codes surface protected_overflow, and decision compaction
-    keeps review-needed active entries full while archiving only confirmed eligible
-    entries.
-  verified: Focused Task 3 checks passed with `uv run pytest tests/test_compaction_status.py
-    -q` (10 passed), `uv run pytest tests/test_query_cli.py::TestDecisions -q` (15
-    passed), and `python -m py_compile hooks/compaction.py scripts/agentera`. Repository
-    compaction check/gate initially reported only PROGRESS over-limit after the new
-    progress evidence; final compaction fix/check/gate were run after this entry.
-  next: Hand PLAN Task 3 to Orkestrera evaluator review. Do not mark the plan task
-    complete, commit, push, tag, publish, refresh installed apps or profile, edit
-    vision or objective state, or run unsupported capability-name CLI commands.
-  context:
-    intent: PLAN Task 3 shared compaction protection and review pressure under Orkestrera
-    constraints: Task 3 only; no Task 4 health/closeout surfaces, Task 5 capability
-      prose, Task 6 broad gates, Task 7 metadata/version closeout, plan completion,
-      commit, push, tag, publish, install/profile refresh, vision edit, objective-state
-      edit, or unsupported capability-name CLI command
-    scope: Shared compaction engine, compact/gate payload and exit status, focused
-      decision compaction and decisions JSON tests, and latest progress substantiation
-- number: 505
-  timestamp: 2026-05-15 13:31
-  type: feat
-  phase: build
-  what: Implemented PLAN Task 2 decisions CLI satisfaction source-contract output.
-  commit: pending
-  inspiration: Orkestrera assigned Task 2 to make `agentera decisions --format json`
-    truthfully expose per-entry satisfaction state, evidence or confirmation metadata,
-    review-needed flags, and non-inferential caveats without broadening into later
-    plan tasks.
-  discovered: Decisions JSON already avoided downstream-reference fabrication and
-    marked missing legacy satisfaction as review-needed, but satisfaction metadata
-    was not normalized across open, provisional, confirmed, and missing states, and
-    the source_contract did not explicitly describe satisfaction ownership, completeness
-    counters, or fallback policy.
-  verified: Focused Task 2 checks passed with `uv run pytest tests/test_query_cli.py::TestDecisions
-    -q` (14 passed). `uv run scripts/agentera decisions --format json` passed and
-    showed each returned decision with a satisfaction object containing state, evidence,
-    user_confirmation, review_needed, source, and caveats; the emitted source_contract
-    included canonical_artifact_label, satisfaction_context, entries_requiring_satisfaction_review,
-    user_confirmed_satisfied_entries, and the non-inference satisfaction fallback
-    policy.
-  next: Hand PLAN Task 2 to Orkestrera evaluator review. Do not mark the plan task
-    complete, commit, push, tag, publish, refresh installed apps or profile, edit
-    vision or objective state, or run unsupported capability-name CLI commands.
-  context:
-    intent: PLAN Task 2 Decisions CLI satisfaction source contract under Orkestrera
-    constraints: Task 2 only; no Task 3+ behavior; no plan completion; no commit,
-      push, tag, publish, install/profile refresh, vision edit, objective-state edit,
-      or unsupported capability-name CLI command
-    scope: Decisions JSON satisfaction context, non-inferential downstream handling,
-      source-contract truthfulness, focused tests, and latest progress substantiation
-- number: 504
-  timestamp: 2026-05-15 12:45
-  type: feat
-  phase: audit
-  what: Implemented PLAN Task 1 satisfaction contract and legacy semantics for Decision
-    53.
-  commit: pending
-  inspiration: Orkestrera evaluation required a Task 1-specific progress cycle after
-    the initial implementation report lacked latest-progress substantiation. Task
-    1 acceptance covers the decisions satisfaction schema contract, validation errors,
-    legacy review-needed read semantics, and compaction protection for legacy archived
-    decisions.
-  discovered: The implementation already added decision satisfaction schema fields,
-    validation, read-time legacy `review_needed` derivation, and compaction refusal
-    before dropping or compacting unconfirmed decisions. No additional Task 1 implementation
-    gap was found during the retry; only progress evidence was missing.
-  verified: 'Task 1 focused checks passed before this progress update with `uv run
-    pytest tests/test_hook_v2.py` (79 passed), `uv run pytest tests/test_compaction_status.py`
-    (8 passed), `uv run pytest tests/test_query_cli.py::TestDecisions` (12 passed),
-    `uv run scripts/validate_capability.py --self-validate` (PASS), `uv run hooks/validate_artifact.py
-    --artifact DECISIONS.md --file .agentera/decisions.yaml --format json` (status=pass),
-    `uv run scripts/agentera compact --mode check --format json` (status=pass), and
-    `uv run scripts/agentera decisions --format json` showing legacy decisions with
-    `review_needed: true` rather than satisfied.'
-  next: Hand PLAN Task 1 to Orkestrera evaluator review. Do not mark the plan task
-    complete, commit, push, tag, publish, refresh installed apps or profile, edit
-    vision or objective state, or run unsupported capability-name CLI commands.
-  context:
-    intent: PLAN Task 1 satisfaction contract and legacy semantics under Orkestrera
-      evaluation retry
-    constraints: Task 1 only; progress evidence update only unless a Task 1 implementation
-      gap is found; no plan completion; no commit, push, tag, publish, install/profile
-      refresh, vision edit, objective-state edit, or unsupported capability-name CLI
-      command
-    scope: Decisions satisfaction contract, validator behavior, compaction-drop protection,
-      legacy read review-needed semantics, focused verification evidence, and latest
-      progress substantiation
-- number: 503
-  timestamp: 2026-05-15 12:30
-  type: feat
-  phase: audit
-  what: Completed PLAN Task 7 local closeout metadata sync for the 2.3.12 Realisera
-    execution-context source-contract patch.
-  commit: pending
-  inspiration: Task 7 required TODO, progress, docs, and changelog to record the completed
-    2.3.12 source-contract patch, with version-bearing changes constrained by `.agentera/docs.yaml`
-    version policy and the package registry.
-  discovered: TODO now resolves `[feat:2.3.12]`. DOCS records the 2.3.12 audit label,
-    version-policy resolution for the selected exact patch-train target despite the
-    `[feat:2.3.12]` label, and the local-only no-publication/no-refresh/no-dispatch
-    boundary. CHANGELOG records the 2.3.12 changed/fixed/added/verified closeout.
-    Version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill
-    frontmatter surfaces now target 2.3.12.
-  verified: Focused CLI/contract verification passed with `uv run pytest tests/test_query_cli.py
-    tests/test_decision45_cli_contract.py -q` (181 tests). `uv run scripts/validate_capability.py
-    skills/agentera/capabilities/realisera`, `uv run scripts/validate_capability.py
-    --self-validate`, `uv run hooks/validate_artifact.py --artifact PLAN.md --file
-    .agentera/plan.yaml --format json`, `uv run scripts/agentera gate --format json`,
-    `uv run scripts/agentera compact --mode check --format json`, and `git diff --check`
-    passed. PLAN lint remains failed only on the advisory verbosity budget.
-  next: Hand completed 2.3.12 plan to release closeout or commit review. Do not refresh
-    installed apps, refresh profile state, edit vision or objective state, publish,
-    push, tag, commit, or run unsupported capability-name CLI commands without explicit
-    approval.
-  context:
-    intent: PLAN Task 7 local closeout metadata sync for 2.3.12 Realisera Execution
-      Context Source Contract
-    constraints: Local metadata sync only; selected exact target is 2.3.12 despite
-      `[feat:2.3.12]`; future unselected feature targets remain governed by docs.yaml
-      semver policy; no publication; no tag; no remote push; no installed app refresh;
-      no profile refresh; no vision edit; no objective-state edit; no Optimera objective-state
-      mutation; no automatic dispatch; no unsupported capability-name CLI command
-    scope: TODO, CHANGELOG, docs audit metadata, version-bearing package/plugin/OpenCode/skill
-      surfaces, plan evidence, progress cycle, artifact validation, gates, and local
-      scope audit
 archive:
+- summary: 'Cycle 506 (2026-05-15): Implemented PLAN Task 3 shared compaction protection
+    and protected-overflow review pressure.'
+- summary: 'Cycle 505 (2026-05-15): Implemented PLAN Task 2 decisions CLI satisfaction
+    source-contract output.'
+- summary: 'Cycle 504 (2026-05-15): Implemented PLAN Task 1 satisfaction contract
+    and legacy semantics for Decision 53.'
+- summary: 'Cycle 503 (2026-05-15): Completed PLAN Task 7 local closeout metadata
+    sync for the 2.3.12 Realisera execution-context source-contract patch.'
 - summary: 'Cycle 502 (2026-05-15): Completed PLAN Task 7 local closeout metadata
     sync for the 2.3.11 Optimera benchmark-context source-contract patch.'
 - summary: 'Cycle 501 (2026-05-15): Completed PLAN Task 7 local closeout metadata
@@ -456,11 +474,3 @@ archive:
     the active 2.3.5 install-state reliability patch without changing PLAN status.'
 - summary: 'Cycle 467 (2026-05-14): Executed PLAN Task 5 focused regression validation
     for the active 2.3.5 install-state reliability patch without changing PLAN status.'
-- summary: 'Cycle 466 (2026-05-14): Retried PLAN Task 4 upgrade-versus-repair semantics
-    for the 2.3.5 install-state reliability patch by fixing only...'
-- summary: 'Cycle 465 (2026-05-14): Implemented PLAN Task 4 upgrade-versus-repair
-    semantics for the 2.3.5 install-state reliability patch.'
-- summary: 'Cycle 464 (2026-05-14): Implemented PLAN Task 3 runtime adapter propagation
-    for the 2.3.5 install-state reliability patch.'
-- summary: 'Cycle 463 (2026-05-14): Implemented PLAN Task 2 installed CLI resolution
-    behavior for the 2.3.5 install-state reliability patch.'

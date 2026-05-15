@@ -265,6 +265,34 @@ class TestLintCli:
         assert payload["summary"] == {"failed": 1, "passed": 2, "advisory": False}
         assert payload["checks"][1]["name"] == "abstraction"
 
+    def test_plan_lint_accepts_repo_style_anchor_regression(self):
+        text = (
+            "Deliver queue visibility through queued-message fixture, semantic snapshots, "
+            "PTY smoke, mage check, source docs, and concrete internal/runtime "
+            "internal/app internal/tui boundaries."
+        )
+        r = _run_lint("--artifact", "PLAN.md", "--text", text, "--format", "json")
+
+        assert r.returncode == 0
+        payload = json.loads(r.stdout)
+        assert payload["status"] == "pass"
+        assert payload["summary"] == {"failed": 0, "passed": 3, "advisory": True}
+        abstraction = next(check for check in payload["checks"] if check["name"] == "abstraction")
+        assert abstraction["status"] == "pass"
+        assert abstraction["detail"] == "internal/runtime"
+
+    def test_plan_lint_rejects_unanchored_generic_prose_regression(self):
+        text = "This plan improves the system broadly and makes the implementation better for users."
+        r = _run_lint("--artifact", "PLAN.md", "--text", text, "--format", "json")
+
+        assert r.returncode == 0
+        payload = json.loads(r.stdout)
+        assert payload["status"] == "fail"
+        assert payload["summary"] == {"failed": 1, "passed": 2, "advisory": True}
+        abstraction = next(check for check in payload["checks"] if check["name"] == "abstraction")
+        assert abstraction["status"] == "fail"
+        assert abstraction["detail"] == "abstraction creep: no concrete anchor"
+
     def test_lint_missing_installed_helper_reports_app_model(self, tmp_path):
         app_home = tmp_path / "agentera-home"
         (app_home / "app" / "scripts").mkdir(parents=True)
