@@ -73,6 +73,7 @@
 
 ### Added
 
+- `agentera validate capability` and `agentera validate artifact` now expose a supported validation namespace for capability and artifact validators, preserving existing direct validator behavior while adding stable text/JSON command results and bounded invalid-input guidance.
 - Decision satisfaction tracking now exposes per-entry satisfaction state, provisional evidence, user confirmation metadata, review-needed flags, protected-overflow compaction status, and release-closeout review pressure across the CLI, hooks, audit context, closeout context, and capability guidance.
 - Realisera execution context now exposes selected work, task details, acceptance criteria, constraints, verification expectations, artifact update requirements, progress logging requirements, changelog boundary, conservative scope boundary, git boundary, read-only plan-completion sweep metadata, fallbacks, caveats, and a raw-read-last-resort source contract without adding another capability-name CLI command.
 - Optimera benchmark context now exposes retained startup benchmark source status, latest report summary, aggregate history, runtime coverage caveats, state-access rates, token-impact estimates, comparison status, bounded recommendation action, manual refresh guidance, privacy boundary, fallbacks, and a raw-read-last-resort source contract without adding `agentera optimera` or another capability-name CLI command.

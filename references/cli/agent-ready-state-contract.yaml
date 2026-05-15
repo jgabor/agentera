@@ -551,6 +551,114 @@ input_hardening:
   rationale: >-
     The playbook warns that agents hallucinate structurally unsafe inputs. Task 6
     should validate these boundaries without broadening the CLI command surface.
+validate_namespace:
+  status: implemented
+  command: validate
+  purpose: >-
+    Define the supported `agentera validate` namespace so agents can use one
+    discoverable validation surface without guessing unsupported capability-name
+    CLI commands.
+  supported_target_families:
+    capability:
+      command_shape: agentera validate capability <capability-or-path> [--format text|json]
+      required_inputs:
+        - capability-or-path: canonical capability name or capability directory path
+      valid_capability_names:
+        - hej
+        - visionera
+        - resonera
+        - inspirera
+        - planera
+        - realisera
+        - optimera
+        - inspektera
+        - dokumentera
+        - profilera
+        - visualisera
+        - orkestrera
+      output_formats:
+        - text
+        - json
+      expected_examples:
+        - agentera validate capability hej
+        - agentera validate capability skills/agentera/capabilities/hej --format json
+      validation_engine: scripts/validate_capability.py
+      compatibility_constraint: >-
+        `scripts/validate_capability.py skills/agentera/capabilities/<name>` and
+        `scripts/validate_capability.py --self-validate` remain supported direct
+        validator commands with their existing observable behavior.
+    artifact:
+      command_shape: agentera validate artifact --artifact <ARTIFACT> [--file <PATH>] [--cwd <PROJECT>] [--format text|json]
+      required_inputs:
+        - artifact: canonical artifact label
+      optional_inputs:
+        - file: artifact file path; defaults through docs.yaml mapping when omitted
+        - cwd: project directory for relative paths and docs.yaml mapping
+      valid_artifacts:
+        - CHANGELOG.md
+        - DECISIONS.md
+        - DESIGN.md
+        - DOCS.md
+        - HEALTH.md
+        - PLAN.md
+        - PROGRESS.md
+        - SESSION.md
+        - TODO.md
+        - VISION.md
+      output_formats:
+        - text
+        - json
+      expected_examples:
+        - agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json
+        - agentera validate artifact --artifact PROGRESS.md --format text
+      validation_engine: hooks/validate_artifact.py
+      compatibility_constraint: >-
+        `hooks/validate_artifact.py --artifact <ARTIFACT> --file <PATH> --format
+        text|json` remains a supported direct validator command with existing
+        docs.yaml mapping, JSON envelope, violation wording, and hook behavior.
+  invalid_input_behavior:
+    family_error: >-
+      Unsupported validate target families must name the valid families
+      `capability` and `artifact`, show the correct syntax, and include one
+      concrete capability example plus one concrete artifact example.
+    capability_error: >-
+      Unsupported capability targets must list valid capability names, show
+      `agentera validate capability <capability-or-path> [--format text|json]`,
+      and include `agentera validate capability hej` as an example.
+    artifact_error: >-
+      Unsupported artifact labels must list canonical artifact labels, show
+      `agentera validate artifact --artifact <ARTIFACT> [--file <PATH>] [--format text|json]`,
+      and include `agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json`
+      as an example.
+    format_error: >-
+      Unsupported formats must list valid values `text` and `json` and must not
+      fall back silently to a different format.
+  output_contract:
+    text: >-
+      Human-readable output may mirror the existing validator text, including
+      PASS/FAILED summaries and violation lines.
+    json: >-
+      JSON output must use a stable validation result envelope with command,
+      status, target_family, target, file or path metadata when applicable, and
+      violations or errors. Artifact JSON should preserve the existing
+      `validate-artifact` semantics unless a compatibility-preserving wrapper
+      field is explicitly added in the implementation task.
+    status_values:
+      - pass
+      - fail
+  non_goals:
+    - Do not implement `agentera validate` behavior in Task 1.
+    - Do not add capability-name CLI commands such as `agentera realisera`.
+    - Do not replace or remove `scripts/validate_capability.py`.
+    - Do not replace or remove `hooks/validate_artifact.py`.
+    - Do not rename artifact labels, capability names, or schema contract groups.
+    - Do not implement D48 smoke, verify, corpus, or usage namespaces.
+    - Do not redesign validation semantics or persisted artifact shapes.
+  evidence_sources:
+    - agentera --help exposes the validate namespace for capability and artifact validation.
+    - scripts/validate_capability.py --help defines capability_dir, --self-validate, --validate-protocol, and --check-primitives.
+    - hooks/validate_artifact.py --help defines --artifact, --file, --cwd, and --format text|json.
+    - hooks/validate_artifact.py invalid artifact JSON lists valid canonical artifact labels.
 non_goals_for_task_1:
   - Do not rename bundle-status to doctor.
   - Do not add doctor behavior.
