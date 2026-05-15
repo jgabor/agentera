@@ -1,4 +1,41 @@
 cycles:
+- number: 526
+  timestamp: 2026-05-15 23:58
+  type: feat
+  phase: build
+  what: Completed and synchronized the `agentera hej` decision-review attention feature.
+  commit: pending
+  inspiration: Orkestrera executed the Decision Review Attention Plan so non-confirmed
+    decisions become visible during normal hej orientation without mutating `.agentera/decisions.yaml`,
+    inferring satisfaction, adding a new command, changing `next_action` priority,
+    altering compaction semantics, refreshing installed apps/profiles, publishing,
+    pushing, tagging, or editing vision/objective state.
+  discovered: The smallest safe implementation was a bounded helper inside `scripts/agentera`
+    that derives decision review pressure from `_decision_context_entry` and `_decision_satisfaction_context`,
+    emits at most one attention item, includes at most three decision summaries in
+    structured JSON, and keeps detailed review in `agentera decisions --format json`.
+  verified: Added `decision_attention` to hej structured output and source-contract
+    fields, updated `references/cli/agent-ready-state-contract.yaml`, added hej regression
+    coverage for missing legacy, open, provisional, unconfirmed, explicit review-needed,
+    and confirmed decisions, proved `.agentera/decisions.yaml` stays unchanged, and
+    aligned version-bearing surfaces from 2.6.0 to 2.7.0. Verification passed with
+    `uv run pytest tests/test_query_cli.py -q`, `uv run pytest tests/test_hej_capability.py
+    tests/test_decision_satisfaction_guidance.py -q`, and repo `agentera hej --format
+    json` showing bounded decision_attention while preserving the plan next_action.
+  next: Decision Review Attention Plan is complete. Remaining open TODOs start with
+    reducing PLAN.md raw reads after CLI. Do not publish, commit, push, tag, refresh
+    installed app/profile, edit vision or objective state, change decision satisfaction
+    state, update packages, run unsupported capability-name CLI commands, or add new
+    decision commands unless explicitly requested.
+  context:
+    intent: Hej decision-review attention feature and closeout
+    constraints: Read-only decision state; no satisfaction mutation or inference;
+      no compaction semantics change; no new command; no next_action priority change;
+      no publication, push, tag, installed-app/profile refresh, vision/objective edit,
+      or unsupported capability-name CLI command.
+    scope: Hej decision attention contract, bounded JSON/text behavior, focused tests,
+      package/version metadata, TODO/CHANGELOG/DOCS/PLAN/PROGRESS sync, artifact validation,
+      compaction, and diff whitespace check.
 - number: 525
   timestamp: 2026-05-15 23:45
   type: feat
@@ -403,46 +440,9 @@ cycles:
     scope: CLI contract reference update, PLAN Task 1 evidence, PROGRESS cycle evidence,
       focused help/direct-validator probes, artifact validation, and diff whitespace
       check
-- number: 516
-  timestamp: 2026-05-15 22:15
-  type: fix
-  phase: audit
-  what: Synchronized PLAN Task 4 version and local state closeout for the Planera
-    lint anchor false-positive fix.
-  commit: pending
-  inspiration: Orkestrera assigned Task 4 only after Tasks 1-3 were complete and independently
-    evaluated PASS, requiring fix-level release metadata handling, TODO/PROGRESS/PLAN
-    closeout, conditional CHANGELOG/DOCS updates, focused verification, and a scope
-    audit with no publication, push, tag, installed-app refresh, profile refresh,
-    vision edit, objective edit, decision satisfaction change, or unsupported capability-name
-    CLI command.
-  discovered: '`.agentera/docs.yaml` maps `fix` to a patch bump and lists version-bearing
-    surfaces through `conventions.version_files`, mirrored by `references/adapters/package-registry.yaml`
-    `docs_targets.version_files`. The active surfaces were at 2.3.14 before closeout,
-    so the local patch target is 2.3.15.'
-  verified: Version-bearing surfaces were aligned from 2.3.14 to 2.3.15 across `pyproject.toml`,
-    `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`,
-    `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, `skills/agentera/SKILL.md`,
-    `skills/hej/SKILL.md`, and `registry.json`. Focused verification passed with `uv
-    run pytest tests/test_self_audit.py -q` (23 tests), `uv run pytest tests/test_package_registry.py
-    tests/test_packaged_cli.py -q` (13 tests), anchored/generic/strict PLAN.md lint
-    probes, file input on `/tmp/opencode/aila-m13-plan.yaml` with abstraction pass
-    `docs/notes/PROMPT.md`, stdin lint input with abstraction pass `internal/runtime`,
-    TODO/CHANGELOG/DOCS/PLAN and PROGRESS artifact validators, and `git diff --check`.
-  next: Planera Lint Anchor False Positive Fix is complete after Task 4 closeout.
-    Do not publish, commit, push, tag, refresh installed apps/profile, edit vision
-    or objective state, change decision satisfaction state, update packages, or run
-    unsupported capability-name CLI commands unless explicitly requested.
-  context:
-    intent: PLAN Task 4 version and local state sync
-    constraints: Task 4 only; preserve unrelated dirty work; local metadata sync only;
-      no publication, commit, push, tag, installed-app refresh, profile refresh, vision
-      edit, objective edit, decision satisfaction change, package update, or unsupported
-      capability-name CLI command
-    scope: Fix-level patch version alignment, TODO resolution, CHANGELOG notes, DOCS
-      audit metadata, PROGRESS evidence, PLAN completion evidence, focused tests,
-      artifact validation, package/version metadata tests, and diff whitespace check
 archive:
+- summary: 'Cycle 516 (2026-05-15): Synchronized PLAN Task 4 version and local state
+    closeout for the Planera lint anchor false-positive...'
 - summary: 'Cycle 515 (2026-05-15): Completed PLAN Task 3 regression coverage and
     guidance alignment for the Planera lint anchor fix.'
 - summary: 'Cycle 514 (2026-05-15): Completed PLAN Task 2 contract-preserving lint
@@ -521,5 +521,3 @@ archive:
     JSON output for the active 2.3.7 Decision Context...'
 - summary: 'Cycle 477 (2026-05-14): Recorded PLAN Task 1 decision-context inventory
     evidence and the 2.3.6 archive boundary for the active...'
-- summary: 'Cycle 476 (2026-05-14): Synchronized PLAN Task 7 state and release metadata
-    for the active 2.3.6 artifact compaction enforcement...'

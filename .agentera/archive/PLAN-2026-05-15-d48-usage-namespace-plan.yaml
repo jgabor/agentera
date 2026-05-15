@@ -1,0 +1,250 @@
+header:
+  level: full
+  created: 2026-05-15
+  status: complete
+  reviewed: 2026-05-15
+  critic_issues: 6 found, 6 addressed, 0 dismissed
+  title: D48 Usage Namespace Plan
+what: >-
+  Add a supported `agentera usage` CLI namespace for profile analytics by exposing
+  the existing suite usage report through the Agentera CLI while preserving
+  `scripts/usage_stats.py` as the direct analytics engine.
+why: >-
+  The project already has usage analytics and a documented USAGE.md location, but
+  agents must know the direct script to run it. A supported usage namespace makes
+  profile analytics discoverable through the same CLI pattern as D48 validate and
+  verify without turning usage reporting into corpus extraction or profile refresh.
+constraints: >-
+  Select `agentera usage` as the planned public namespace and record why
+  `agentera corpus` is rejected for this plan. Preserve direct `scripts/usage_stats.py`
+  behavior, including `--json`, `--corpus`, `--project`, default corpus lookup through
+  `PROFILERA_PROFILE_DIR`, default report output through `AGENTERA_USAGE_DIR` then
+  `PROFILERA_PROFILE_DIR` then platform data home, and missing-corpus guidance. JSON
+  mode must preserve the existing top-level analytics payload and must not write
+  USAGE.md. Tests must isolate user data paths with temporary environment variables.
+  Unmatched `--project` filters remain valid empty reports rather than invalid input.
+  Do not auto-build corpus data, refresh profiles, scan home directories, run live
+  host extraction, publish, push, tag, refresh installed apps or profiles, edit vision
+  state, edit objective state, change decision satisfaction state, or implement D48
+  validate, verify, or corpus work.
+scope:
+  included:
+    - Public `agentera usage` command contract and help examples.
+    - Rejected-alternative rationale for `agentera corpus` as an extraction/lifecycle namespace.
+    - Supported usage flags `--format text|json`, `--corpus PATH`, and `--project VALUE`.
+    - Text behavior that preserves the existing USAGE.md write plus stdout summary.
+    - JSON behavior that preserves the existing analytics payload with no USAGE.md write.
+    - Missing-corpus and invalid-format diagnostics with syntax, valid values, examples, and nonzero exits.
+    - Temporary-path test isolation for `AGENTERA_USAGE_DIR` and `PROFILERA_PROFILE_DIR`.
+    - Focused namespace tests, direct script compatibility checks, package/CLI surface checks, and local artifact closeout.
+  excluded:
+    - A public `agentera corpus` command.
+    - New corpus extraction behavior or Section 22 corpus schema changes.
+    - Usage analytics algorithm redesign beyond what the facade requires.
+    - Profile refresh, installed-app refresh, live host scans, home-directory mining, publication, remote push, tagging, vision edits, objective edits, or decision satisfaction changes.
+    - Any additional D48 validate, verify, or corpus namespace implementation.
+  deferred:
+    - A future corpus extraction or corpus lifecycle namespace if profilera needs one.
+    - Broader usage analytics improvements such as new aggregation fields or report layout changes.
+    - Surfacing usage/profile analytics in hej attention items.
+design: >-
+  Treat `agentera usage` as a stable usage-reporting facade, not a new analytics
+  engine. The command should make the already-supported `scripts/usage_stats.py`
+  workflow discoverable through `scripts/agentera`, preserve direct script behavior
+  for existing callers, keep JSON output unwrapped for consumers, and keep all corpus
+  or profile generation out of scope.
+tasks:
+  - number: 1
+    name: Usage namespace contract definition
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the D48 analytics namespace is reviewed WHEN public command names are
+        compared THEN `agentera usage` is the selected command and `agentera corpus`
+        is recorded as rejected or deferred because this plan reports analytics rather
+        than extracting corpus data.
+      - >-
+        GIVEN the command contract is reviewed WHEN supported options are listed THEN
+        `--format text|json`, `--corpus PATH`, `--project VALUE`, default path
+        precedence, no-write JSON behavior, and unmatched-project empty-report behavior
+        are explicit.
+      - >-
+        GIVEN direct analytics users already call `scripts/usage_stats.py` WHEN the
+        namespace contract is recorded THEN that script's observable CLI behavior is
+        preserved as a compatibility requirement.
+      - >-
+        GIVEN invalid usage namespace input is possible WHEN diagnostics are specified
+        THEN unsupported formats or malformed facade requests return valid values,
+        syntax, examples, and nonzero exits without listing private corpus-derived
+        project IDs.
+    evidence:
+      - >-
+        Added `usage_namespace` to `references/cli/agent-ready-state-contract.yaml` with
+        public command `agentera usage`, rejected/deferred command `agentera corpus`,
+        rationale that this plan reports usage analytics rather than extracting corpus
+        data, supported flags `--format text|json`, `--corpus PATH`, and `--project VALUE`,
+        path precedence, JSON no-write behavior, unmatched-project empty-report behavior,
+        missing-corpus guidance, compatibility constraints, and non-goals.
+      - >-
+        Preserved direct `scripts/usage_stats.py` as the compatibility engine and
+        explicitly recorded that JSON output remains the existing top-level analytics
+        payload rather than a wrapper envelope.
+  - number: 2
+    name: Usage namespace behavior
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN a corpus exists at the default or explicit path WHEN `agentera usage`
+        runs in text mode THEN it prints the existing bounded summary and writes
+        USAGE.md only to the existing usage report destination.
+      - >-
+        GIVEN a corpus exists WHEN `agentera usage --format json` runs THEN stdout
+        contains the existing top-level analytics payload fields and USAGE.md is not
+        written or modified.
+      - >-
+        GIVEN `--corpus PATH` or `--project VALUE` is supplied WHEN the namespace runs
+        THEN those values are forwarded consistently with direct `scripts/usage_stats.py`
+        behavior, including valid empty reports for unmatched projects.
+      - >-
+        GIVEN no usable corpus exists WHEN the namespace runs THEN it exits nonzero
+        with the existing actionable missing-corpus guidance and does not attempt to
+        build corpus data, refresh profiles, or scan home directories.
+    evidence:
+      - >-
+        Implemented `agentera usage` in `scripts/agentera` as a direct subprocess
+        facade over `scripts/usage_stats.py`, forwarding `--corpus`, `--project`, and
+        JSON mode as `--json` while text mode preserves the direct script's default
+        USAGE.md write and stdout summary.
+      - >-
+        Added bounded invalid-format guidance for unsupported `--format` values with
+        valid formats, syntax, and a concrete example. Missing corpus behavior remains
+        owned by the direct script and no corpus/profile refresh path was added.
+  - number: 3
+    name: Usage namespace coverage and guidance alignment
+    depends_on:
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the usage namespace behavior exists WHEN focused tests run THEN they
+        cover text success, JSON success, explicit corpus path, project filtering,
+        unmatched-project empty reports, missing corpus failure, invalid format
+        feedback, help discoverability, and direct `scripts/usage_stats.py`
+        compatibility.
+      - >-
+        GIVEN tests execute the default text write path WHEN they set up fixtures THEN
+        `AGENTERA_USAGE_DIR` and `PROFILERA_PROFILE_DIR` point at temporary directories
+        and no test writes the real user data home.
+      - >-
+        GIVEN package or command-surface checks exist WHEN usage namespace guidance is
+        touched THEN relevant packaged CLI, registry, explicit CLI surface, and help
+        checks are updated without adding unsupported capability-name commands.
+      - >-
+        GIVEN docs or contract guidance changes WHEN validation runs THEN affected
+        usage namespace tests, direct script compatibility probes, artifact validators,
+        and `git diff --check` pass.
+    evidence:
+      - >-
+        Added `tests/test_usage_namespace.py` covering text success with isolated
+        USAGE.md output, JSON success with no write, explicit corpus path, project
+        filtering, unmatched-project empty reports, missing-corpus failure, invalid
+        format feedback, help discoverability, and direct `scripts/usage_stats.py`
+        JSON compatibility.
+      - >-
+        Verification passed with `uv run pytest tests/test_usage_namespace.py -q`,
+        `uv run pytest tests/test_usage_stats.py -q`, `uv run pytest
+        tests/test_usage_namespace.py tests/test_usage_stats.py tests/test_explicit_cli_surfaces.py
+        -q`, and invalid-format guidance probe `uv run scripts/agentera usage --format xml`.
+  - number: 4
+    name: Version metadata sync
+    depends_on:
+      - 1
+      - 2
+      - 3
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the implemented change is a `feat` WHEN `.agentera/docs.yaml` version
+        policy is reviewed THEN version-bearing surfaces follow the DOCS-owned
+        `semver_policy` and `version_files` list.
+      - >-
+        GIVEN version-bearing surfaces change WHEN package and metadata checks run
+        THEN package registry and packaged CLI tests pass with aligned version values.
+      - >-
+        GIVEN release metadata is synced WHEN scope is audited THEN no package
+        publication, remote push, tag, installed-app refresh, profile refresh,
+        vision edit, objective edit, or decision satisfaction change occurred.
+    evidence:
+      - >-
+        Reviewed `.agentera/docs.yaml` semver policy: `feat` maps to a minor bump and
+        `version_files` lists the version-bearing surfaces. Aligned `pyproject.toml`,
+        `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`,
+        `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`,
+        `skills/agentera/SKILL.md`, `skills/hej/SKILL.md`, and `registry.json` from
+        2.5.0 to 2.6.0.
+      - >-
+        Package metadata verification passed with `uv run pytest tests/test_package_registry.py
+        tests/test_packaged_cli.py -q`, and no package publication, remote push, tag,
+        installed-app refresh, profile refresh, vision edit, objective edit, or decision
+        satisfaction change occurred.
+  - number: 5
+    name: Local artifact closeout
+    depends_on:
+      - 1
+      - 2
+      - 3
+      - 4
+    status: complete
+    acceptance:
+      - >-
+        GIVEN verification passes WHEN project state is synced THEN TODO, CHANGELOG,
+        DOCS, PROGRESS, and PLAN record the usage namespace scope and exact evidence
+        without unrelated documentation churn.
+      - >-
+        GIVEN the D48 usage namespace closes WHEN TODO is reviewed THEN the open
+        `[feat] Implement agentera corpus or agentera usage CLI namespace for profile
+        analytics (D48)` item is resolved and no D48 corpus extraction work is claimed.
+      - >-
+        GIVEN closeout completes WHEN final checks run THEN relevant tests, artifact
+        validators, compaction gate if needed, and `git diff --check` pass.
+    evidence:
+      - >-
+        Synced TODO, CHANGELOG, DOCS audit metadata, PROGRESS, and PLAN for the 2.6.0
+        D48 usage namespace closeout, resolving the usage/corpus TODO while explicitly
+        not claiming `agentera corpus` or corpus extraction work.
+      - >-
+        Final validation evidence is recorded in PROGRESS and CHANGELOG: focused usage
+        namespace tests, direct usage stats tests, explicit CLI surface tests,
+        package/version metadata tests, touched artifact validators, compaction if
+        needed, and `git diff --check`.
+overall_acceptance:
+  - >-
+    GIVEN an agent needs usage/profile analytics WHEN it uses the supported CLI THEN
+    `agentera usage` is discoverable and does not require guessing `scripts/usage_stats.py`.
+  - >-
+    GIVEN machine consumers already rely on usage analytics JSON WHEN JSON mode is
+    used through the namespace THEN the existing top-level analytics payload is
+    preserved without a wrapper envelope or USAGE.md write.
+  - >-
+    GIVEN default usage report generation writes a user-local artifact WHEN tests or
+    probes run THEN write destinations are explicit, isolated where appropriate, and
+    never caused by corpus/profile refresh side effects.
+  - >-
+    GIVEN the feature closes WHEN local state is synced THEN the D48 usage TODO is
+    resolved with exact evidence and release metadata follows `.agentera/docs.yaml`
+    policy.
+surprises:
+  - >-
+    Pre-write lint initially flagged the draft as over the PLAN.md per-entry word
+    budget; the revised draft passed verbosity, abstraction, and filler checks with
+    `scripts/usage_stats.py` as the concrete anchor.
+  - >-
+    Adversarial review found six issues and all were addressed: choose pass-through
+    JSON instead of a wrapper envelope, isolate default report writes in tests,
+    preserve `AGENTERA_USAGE_DIR`/`PROFILERA_PROFILE_DIR` precedence, include package
+    surface checks, treat unmatched projects as valid empty reports, and split version
+    metadata from final artifact closeout.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-15-d48-verify-namespace-plan.yaml

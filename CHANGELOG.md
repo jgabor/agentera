@@ -73,6 +73,7 @@
 
 ### Added
 
+- `agentera hej` now surfaces non-confirmed decision satisfaction pressure as one bounded attention item and a structured `decision_attention` JSON payload, preserving decision satisfaction authority, read-only decision state, and existing `next_action` priority.
 - `agentera usage` now exposes a supported suite usage analytics namespace over `scripts/usage_stats.py`, preserving default USAGE.md report generation, JSON pass-through, `--corpus`, `--project`, missing-corpus guidance, direct script compatibility, and isolated test write paths without adding `agentera corpus` or profile refresh behavior.
 - `agentera verify` now exposes a supported smoke/eval verification namespace with `smoke` targets `installed-skills`, `live-hosts`, `setup-helpers`, and `opencode-bootstrap`, `eval` targets `skills` and `semantic`, stable text/JSON results, safe default offline/dry-run behavior, bounded diagnostics, and preserved direct smoke/eval scripts.
 - `agentera validate capability` and `agentera validate artifact` now expose a supported validation namespace for capability and artifact validators, preserving existing direct validator behavior while adding stable text/JSON command results and bounded invalid-input guidance.
