@@ -20,6 +20,7 @@ Commands:
   agentera compact           Check or fix artifact compaction budgets
   agentera describe          Runtime CLI/schema introspection
   agentera lint              Pre-write artifact prose self-audit
+  agentera validate          Validate capabilities or artifacts
   agentera query <artifact>  Advanced custom artifact query
   agentera upgrade           Plan or apply a v1-to-v2 upgrade
 
@@ -121,6 +122,34 @@ If schemas are missing:
   2. Make sure Agentera's app files exist at the reported `managedAppRoot` path.
   3. Run `agentera doctor` for a plain-language repair preview.
 """
+
+CAPABILITY_NAMES = [
+    "hej",
+    "visionera",
+    "resonera",
+    "inspirera",
+    "planera",
+    "realisera",
+    "optimera",
+    "inspektera",
+    "dokumentera",
+    "profilera",
+    "visualisera",
+    "orkestrera",
+]
+
+VALIDATE_ARTIFACT_LABELS = [
+    "CHANGELOG.md",
+    "DECISIONS.md",
+    "DESIGN.md",
+    "DOCS.md",
+    "HEALTH.md",
+    "PLAN.md",
+    "PROGRESS.md",
+    "SESSION.md",
+    "TODO.md",
+    "VISION.md",
+]
 
 
 def _active_app_model() -> dict[str, Path | str]:
@@ -3706,6 +3735,142 @@ def cmd_lint(args: argparse.Namespace) -> int:
     return 1 if payload["status"] == "fail" and getattr(args, "strict", False) else 0
 
 
+def _validate_capability_target(target: str) -> Path:
+    _validate_agent_string(target, "capability target")
+    source_root = Path(__file__).resolve().parent.parent
+    if target in CAPABILITY_NAMES:
+        return source_root / "skills" / "agentera" / "capabilities" / target
+    if target.isidentifier() or re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", target):
+        valid = ", ".join(CAPABILITY_NAMES)
+        raise ValueError(
+            f"unsupported capability target {target!r}; valid capability names: {valid}. "
+            "Syntax: agentera validate capability <capability-or-path> [--format text|json]. "
+            "Example: agentera validate capability hej"
+        )
+    _validate_path_value(target, "capability path")
+    return Path(target)
+
+
+def _validation_process_payload(
+    *,
+    target_family: str,
+    target: str,
+    path: Path | None,
+    result: subprocess.CompletedProcess[str],
+) -> dict[str, Any]:
+    lines = [line.strip() for line in result.stderr.splitlines()]
+    violations = [line[2:] if line.startswith("  ") else line for line in lines if line.strip()]
+    payload: dict[str, Any] = {
+        "command": "validate",
+        "status": "pass" if result.returncode == 0 else "fail",
+        "target_family": target_family,
+        "target": target,
+        "violations": violations,
+        "engine": {
+            "exit_code": result.returncode,
+            "stdout": result.stdout.splitlines(),
+            "stderr": result.stderr.splitlines(),
+        },
+    }
+    if path is not None:
+        payload["path"] = str(path.resolve(strict=False))
+    return payload
+
+
+def cmd_validate_capability(args: argparse.Namespace) -> int:
+    cap_dir = _validate_capability_target(str(args.target))
+    validator = Path(__file__).resolve().parent / "validate_capability.py"
+    result = subprocess.run(
+        [sys.executable, str(validator), str(cap_dir)],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if getattr(args, "format", "text") == "json":
+        _emit_structured(
+            _validation_process_payload(
+                target_family="capability",
+                target=str(args.target),
+                path=cap_dir,
+                result=result,
+            ),
+            "json",
+        )
+    else:
+        if result.stdout:
+            print(result.stdout, end="")
+        if result.stderr:
+            print(result.stderr, end="", file=sys.stderr)
+    return result.returncode
+
+
+def _validate_artifact_label(artifact: str) -> None:
+    _validate_agent_string(artifact, "artifact")
+    if artifact not in VALIDATE_ARTIFACT_LABELS:
+        valid = ", ".join(VALIDATE_ARTIFACT_LABELS)
+        raise ValueError(
+            f"unsupported artifact {artifact!r}; valid artifacts: {valid}. "
+            "Syntax: agentera validate artifact --artifact <ARTIFACT> [--file <PATH>] [--format text|json]. "
+            "Example: agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json"
+        )
+
+
+def cmd_validate_artifact(args: argparse.Namespace) -> int:
+    artifact = str(args.artifact)
+    _validate_artifact_label(artifact)
+    hook = Path(__file__).resolve().parent.parent / "hooks" / "validate_artifact.py"
+    command = [
+        sys.executable,
+        str(hook),
+        "--artifact",
+        artifact,
+        "--cwd",
+        str(args.cwd),
+        "--format",
+        str(args.format),
+    ]
+    if args.file is not None:
+        command.extend(["--file", str(args.file)])
+    result = subprocess.run(command, text=True, capture_output=True, check=False)
+    if getattr(args, "format", "text") == "json":
+        try:
+            payload = json.loads(result.stdout)
+        except json.JSONDecodeError:
+            payload = {"status": "fail", "violations": [result.stdout.strip()] if result.stdout.strip() else []}
+        payload = {
+            **payload,
+            "command": "validate",
+            "status": payload.get("status", "fail"),
+            "target_family": "artifact",
+            "target": artifact,
+            "engine": {
+                "command": "validate-artifact",
+                "exit_code": result.returncode,
+            },
+        }
+        _emit_structured(payload, "json")
+    else:
+        if result.stdout:
+            print(result.stdout, end="")
+        if result.stderr:
+            print(result.stderr, end="", file=sys.stderr)
+    return result.returncode
+
+
+def cmd_validate(args: argparse.Namespace) -> int:
+    if args.validate_family == "capability":
+        return cmd_validate_capability(args)
+    if args.validate_family == "artifact":
+        return cmd_validate_artifact(args)
+    raise ValueError(
+        "unsupported validate target family; valid families: capability, artifact. "
+        "Syntax: agentera validate capability <capability-or-path> [--format text|json] OR "
+        "agentera validate artifact --artifact <ARTIFACT> [--file <PATH>] [--format text|json]. "
+        "Examples: agentera validate capability hej; "
+        "agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json"
+    )
+
+
 def _query_last_phase(args: argparse.Namespace, schemas: dict) -> int:
     output_format = getattr(args, "format", "text")
     info = schemas.get("progress")
@@ -5418,6 +5583,48 @@ def build_parser() -> argparse.ArgumentParser:
     )
     lint.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
 
+    validate = sub.add_parser(
+        "validate",
+        help="Validate capabilities or artifacts",
+        description=(
+            "Validate capability directories or canonical Agentera artifacts. "
+            "Examples: agentera validate capability hej; "
+            "agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json"
+        ),
+    )
+    validate_sub = validate.add_subparsers(dest="validate_family")
+    validate_capability = validate_sub.add_parser(
+        "capability",
+        help="Validate a capability name or directory path",
+    )
+    validate_capability.add_argument(
+        "target",
+        help="Canonical capability name or capability directory path",
+    )
+    validate_capability.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+    validate_artifact = validate_sub.add_parser(
+        "artifact",
+        help="Validate a canonical artifact label and file",
+    )
+    validate_artifact.add_argument(
+        "--artifact",
+        required=True,
+        choices=VALIDATE_ARTIFACT_LABELS,
+        help="Canonical artifact label",
+    )
+    validate_artifact.add_argument(
+        "--file",
+        type=_agent_path,
+        help="Artifact file path to validate; defaults to docs.yaml mapping when omitted",
+    )
+    validate_artifact.add_argument(
+        "--cwd",
+        type=_agent_path,
+        default=Path.cwd(),
+        help="Project directory for relative paths and docs.yaml mapping",
+    )
+    validate_artifact.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+
     u = sub.add_parser(
         "upgrade",
         help="Plan or apply an idempotent v1-to-v2 upgrade",
@@ -5552,6 +5759,8 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_gate(args)
         if args.command == "lint":
             return cmd_lint(args)
+        if args.command == "validate":
+            return cmd_validate(args)
         if args.command == "upgrade":
             return cmd_upgrade(args)
         if args.command == "doctor":

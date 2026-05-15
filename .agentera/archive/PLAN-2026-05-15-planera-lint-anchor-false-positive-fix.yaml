@@ -1,0 +1,251 @@
+header:
+  level: full
+  created: 2026-05-15
+  status: complete
+  reviewed: 2026-05-15
+  critic_issues: 4 found, 4 addressed, 0 dismissed
+  title: Planera Lint Anchor False Positive Fix
+what: >-
+  Investigate and fix the false-positive `agentera lint --artifact PLAN.md`
+  abstraction advisory reported for a Planera plan draft that already contained
+  concrete anchors. The fix should make lint results trustworthy for Planera
+  plans without weakening the abstraction check for generic prose.
+why: >-
+  The highest-priority open TODO is a degraded false positive in the pre-write
+  artifact lint path. If lint flags concrete Planera plans as anchorless, agents
+  either rewrite useful detail away or carry unnecessary `[post-audit-flagged]`
+  caveats. The result should preserve self-audit trust while keeping diagnostics
+  actionable.
+constraints: >-
+  Preserve the existing `agentera lint --artifact <ARTIFACT>` CLI contract,
+  advisory-by-default behavior, strict-mode failure behavior, JSON/text output
+  shapes, text/file/stdin input behavior, and canonical artifact labels. Do not
+  loosen the abstraction rule so generic or unanchored prose passes. Do not
+  redesign lint thresholds broadly, mine session transcripts, implement D48
+  namespace changes, publish, push, tag, refresh installed apps/profile, edit
+  vision state, edit objective state, or change decision satisfaction state.
+scope:
+  included:
+    - >-
+      Reproduce or bound the reported false positive using the temporary Planera
+      plan path `/tmp/opencode/aila-m13-plan.yaml` when available, or a
+      representative copy with equivalent concrete anchors.
+    - >-
+      Identify the observable lint behavior that makes an anchored Planera plan
+      receive the no-anchor advisory.
+    - >-
+      Apply the smallest product change that makes anchored Planera plans pass
+      while preserving failures for unanchored prose.
+    - >-
+      Add or update focused regression coverage for PLAN.md lint behavior and
+      any changed diagnostics or guidance.
+    - >-
+      Handle fix-level release metadata according to `.agentera/docs.yaml`
+      semver policy.
+    - >-
+      Sync required local state after verification, with TODO, PROGRESS, and
+      PLAN closeout mandatory and CHANGELOG/DOCS updates conditional on policy
+      or touched surfaces.
+  excluded:
+    - Broad self-audit threshold redesign beyond this false positive.
+    - Transcript-wide lint threshold analysis from the separate annoying TODO.
+    - D48 CLI namespace work such as validate, smoke, verify, corpus, or usage.
+    - Renaming artifact IDs, CLI selectors, schema names, or persisted metadata keys.
+    - >-
+      Publication, remote push, tagging, installed-app refresh, profile refresh,
+      vision edits, objective edits, or decision satisfaction changes.
+  deferred:
+    - Larger prose-health policy changes discovered while fixing this issue.
+    - Cross-runtime benchmark improvements unrelated to the false-positive path.
+    - Cleanup of historical resolved TODO or changelog wording.
+design: >-
+  Treat the TODO as a contract bug in the self-audit surface. First check the
+  reported temporary Planera draft or a faithful representative through
+  `agentera lint`, then make the least invasive correction that preserves the
+  current CLI and artifact-label contracts. Verification should prove both sides:
+  a concrete Planera plan no longer receives the abstraction advisory, and generic
+  prose still receives it.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-15-d47-app-home-vocabulary-cleanup.yaml
+tasks:
+  - number: 1
+    name: False-positive characterization
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the reported temporary Planera draft or a representative copy
+        contains concrete anchors WHEN it is checked through the artifact lint
+        surface THEN the no-anchor advisory is reproduced or non-reproducibility
+        is recorded with evidence.
+      - >-
+        GIVEN characterization completes WHEN evidence is recorded THEN the
+        bad advisory is tied to observable lint input and output behavior.
+      - >-
+        GIVEN generic prose lacks concrete anchors WHEN it is checked through
+        the same lint surface THEN the abstraction advisory remains observable
+        as the control case.
+    evidence:
+      - >-
+        Exact reported file exists at `/tmp/opencode/aila-m13-plan.yaml` and
+        includes anchors such as `ROADMAP.md:523-542`, `docs/notes/PROMPT.md`,
+        `internal/runtime`, `internal/app`, and `internal/tui`. `uv run
+        scripts/agentera lint --artifact PLAN.md --file
+        "/tmp/opencode/aila-m13-plan.yaml" --format json` returned status=fail
+        advisory=true only for verbosity (`1183 words exceeds 100 budget`);
+        abstraction status=pass with detected anchor `docs/notes/PROMPT.md`.
+      - >-
+        Reduced boundary input with queued-message fixture, semantic snapshots,
+        PTY smoke, mage check, source docs, and concrete `internal/runtime`,
+        `internal/app`, and `internal/tui` boundaries returned abstraction
+        status=fail with `abstraction creep: no concrete anchor`, tying the
+        advisory to anchors outside the current recognized regex classes.
+      - >-
+        Recognized anchor control `ROADMAP.md:523-542` returned abstraction
+        status=pass with detected anchor `:523`; generic prose control returned
+        abstraction status=fail with `abstraction creep: no concrete anchor`.
+  - number: 2
+    name: Contract-preserving lint correction
+    depends_on: [1]
+    status: complete
+    acceptance:
+      - >-
+        GIVEN a Planera plan draft includes concrete anchors WHEN artifact lint
+        evaluates it THEN the abstraction check passes without requiring
+        unrelated wording changes.
+      - >-
+        GIVEN generic artifact prose lacks concrete anchors WHEN artifact lint
+        evaluates it THEN the abstraction advisory is still reported.
+      - >-
+        GIVEN callers use text input, file input, piped input, text output, JSON
+        output, default advisory mode, or strict mode WHEN the lint command runs
+        THEN the existing command contract and exit behavior remain compatible.
+    evidence:
+      - >-
+        Updated the self-audit abstraction checker to recognize repo-style path
+        anchors under concrete source/doc/test directories without changing lint
+        CLI input handling, output fields, advisory default, or strict exit logic.
+      - >-
+        `AGENTERA_HOME="/home/jgabor/git/agentera" uv run scripts/agentera lint
+        --artifact PLAN.md --text "Deliver queue visibility through
+        queued-message fixture, semantic snapshots, PTY smoke, mage check, source
+        docs, and concrete internal/runtime internal/app internal/tui boundaries."
+        --format json` exited 0 with status=pass and abstraction detail
+        `internal/runtime`.
+      - >-
+        `AGENTERA_HOME="/home/jgabor/git/agentera" uv run scripts/agentera lint
+        --artifact PLAN.md --text "This plan improves the system broadly and
+        makes the implementation better for users." --format json` exited 0 in
+        default advisory mode with abstraction fail `abstraction creep: no
+        concrete anchor`; the same text with `--strict --format json` exited 1
+        with advisory=false.
+      - >-
+        Contract checks preserved supported modes: text input and JSON output on
+        the boundary sample exited 0, file input on `/tmp/opencode/aila-m13-plan.yaml`
+        exited 0 with abstraction pass `docs/notes/PROMPT.md` and only verbosity
+        fail, text output on generic prose exited 0 in advisory mode, piped stdin
+        with `internal/runtime` exited 0 with source=`stdin`, and `uv run pytest
+        tests/test_self_audit.py -q` passed with 21 tests.
+  - number: 3
+    name: Regression coverage and guidance alignment
+    depends_on: [2]
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the false-positive scenario is fixed WHEN focused regression tests
+        run THEN they cover the anchored Planera-plan pass case and the
+        unanchored prose failure case.
+      - >-
+        GIVEN user-facing lint diagnostics or guidance changes WHEN docs or
+        fixtures are updated THEN they keep the distinction between concrete
+        anchors and generic prose clear.
+      - >-
+        GIVEN capability or artifact guidance is touched WHEN validation runs
+        THEN affected capability validation, artifact validation, and diff checks
+        pass.
+    evidence:
+      - >-
+        Added focused CLI regression coverage in `tests/test_self_audit.py` for
+        `PLAN.md` lint: the repo-style anchored boundary sample with
+        `internal/runtime`, `internal/app`, and `internal/tui` now asserts
+        status=pass and abstraction detail `internal/runtime`; the unanchored
+        generic prose control now asserts advisory status=fail with `abstraction
+        creep: no concrete anchor`.
+      - >-
+        No user-facing lint diagnostics, guidance docs, or fixtures were changed
+        for Task 3. The added tests keep the distinction explicit by naming the
+        concrete repo-style anchor pass case separately from the unanchored
+        generic prose failure case.
+      - >-
+        `uv run pytest tests/test_self_audit.py -q` passed with 23 tests after the
+        regression additions. Task 3 artifact validation and diff evidence is
+        recorded in PROGRESS cycle 515.
+  - number: 4
+    name: Version and local state sync
+    depends_on: [1, 2, 3]
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the fix is complete WHEN release metadata is reviewed THEN
+        version-bearing surfaces are updated for a fix-level change unless the
+        documented semver policy proves no version-bearing surface applies.
+      - >-
+        GIVEN verification passes WHEN project state is synced THEN mandatory
+        TODO, PROGRESS, and PLAN closeout records include the fix and exact
+        verification evidence, with CHANGELOG and DOCS updated when policy or
+        touched surfaces require them.
+      - >-
+        GIVEN closeout completes WHEN scope is audited THEN no publication,
+        push, tag, installed-app refresh, profile refresh, vision edit,
+        objective edit, decision satisfaction change, or unsupported
+        capability-name CLI command occurred.
+    evidence:
+      - >-
+        `.agentera/docs.yaml` `semver_policy` maps `fix` to `patch`, and
+        `conventions.version_files` plus
+        `references/adapters/package-registry.yaml` `docs_targets.version_files`
+        identify the release metadata surfaces. Those surfaces were aligned from
+        2.3.14 to 2.3.15 in `pyproject.toml`, `uv.lock`, `plugin.json`,
+        `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`,
+        `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`,
+        `skills/agentera/SKILL.md`, `skills/hej/SKILL.md`, and `registry.json`.
+      - >-
+        State sync resolved the degraded TODO for the exact PLAN.md lint
+        false-positive issue, added CHANGELOG 2.3.15 changed/fixed/verified
+        entries, updated DOCS audit metadata, added PROGRESS cycle 516, and marked
+        this plan complete with Task 4 evidence.
+      - >-
+        Verification evidence: `uv run pytest tests/test_self_audit.py -q` passed
+        with 23 tests; `uv run pytest tests/test_package_registry.py
+        tests/test_packaged_cli.py -q` passed with 13 tests; anchored PLAN.md lint
+        probe exited 0 with status=pass and abstraction detail `internal/runtime`;
+        generic PLAN.md lint probe exited 0 in advisory mode with abstraction fail
+        `abstraction creep: no concrete anchor`; strict generic probe exited 1 with
+        advisory=false; file input on `/tmp/opencode/aila-m13-plan.yaml` exited 0
+        with abstraction pass `docs/notes/PROMPT.md` and only verbosity fail; stdin
+        lint input exited 0 with source=`stdin` and abstraction detail
+        `internal/runtime`; TODO, CHANGELOG, DOCS, PROGRESS, and PLAN artifact
+        validators passed; `git diff --check` passed.
+      - >-
+        Scope audit: no publication, push, tag, installed-app refresh, profile
+        refresh, vision edit, objective edit, decision satisfaction change, package
+        update, commit, or unsupported capability-name CLI command occurred.
+overall_acceptance:
+  - >-
+    GIVEN a concrete Planera plan draft is linted WHEN it includes accepted
+    anchors THEN it does not receive a false no-anchor advisory.
+  - >-
+    GIVEN generic artifact prose is linted WHEN it lacks concrete anchors THEN
+    the abstraction advisory still appears.
+  - >-
+    GIVEN existing lint callers use supported inputs, outputs, and strictness
+    modes WHEN the fix ships THEN command compatibility is preserved.
+  - >-
+    GIVEN the plan closes WHEN verification and state sync finish THEN the TODO
+    is resolved with exact evidence and fix-level release metadata handled under
+    the documented semver policy.
+surprises:
+  - >-
+    [post-audit-flagged] Pre-write `agentera lint --artifact PLAN.md` on the
+    draft passed abstraction and filler checks, but reported `verbosity mismatch:
+    125 words exceeds 100 budget`; this is the known full-plan advisory budget
+    mismatch, not an abstraction failure.
