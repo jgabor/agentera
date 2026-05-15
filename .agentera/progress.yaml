@@ -1,4 +1,46 @@
 cycles:
+- number: 525
+  timestamp: 2026-05-15 23:45
+  type: feat
+  phase: build
+  what: Completed and synchronized the D48 `agentera usage` namespace feature.
+  commit: pending
+  inspiration: Orkestrera executed the D48 Usage Namespace Plan to expose existing
+    suite usage analytics through a supported CLI command while preserving `scripts/usage_stats.py`,
+    rejecting `agentera corpus` for this plan, isolating user-data write paths in
+    tests, and keeping corpus/profile refresh, installed-app refresh, publication,
+    push, tag, vision/objective edits, decision satisfaction changes, and unrelated
+    D48 validate or verify work out of scope.
+  discovered: 'The smallest safe implementation was a direct `agentera usage` facade
+    over `scripts/usage_stats.py`: text mode preserves the existing USAGE.md write
+    and stdout summary, JSON mode passes through the existing top-level analytics
+    payload without writing USAGE.md, `--corpus` and `--project` preserve direct script
+    semantics, and unmatched project filters remain valid empty reports.'
+  verified: Added `usage_namespace` guidance to `references/cli/agent-ready-state-contract.yaml`,
+    implemented `agentera usage` in `scripts/agentera`, added `tests/test_usage_namespace.py`,
+    and aligned version-bearing surfaces from 2.5.0 to 2.6.0 across `pyproject.toml`,
+    `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`,
+    `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, `skills/agentera/SKILL.md`,
+    `skills/hej/SKILL.md`, and `registry.json`. Verification passed with `uv run pytest
+    tests/test_usage_namespace.py -q`, `uv run pytest tests/test_usage_stats.py -q`,
+    `uv run pytest tests/test_usage_namespace.py tests/test_usage_stats.py tests/test_explicit_cli_surfaces.py
+    -q`, `uv run pytest tests/test_package_registry.py tests/test_packaged_cli.py
+    -q`, and invalid-format guidance probe `uv run scripts/agentera usage --format
+    xml`.
+  next: D48 Usage Namespace Plan is complete. Remaining open TODOs start with surfacing
+    non-confirmed decisions in hej attention. Do not publish, commit, push, tag, refresh
+    installed app/profile, edit vision or objective state, change decision satisfaction
+    state, update packages, run unsupported capability-name CLI commands, or implement
+    additional D48 validate, verify, or corpus work unless explicitly requested.
+  context:
+    intent: D48 usage namespace feature and closeout
+    constraints: Preserve direct usage analytics script; no corpus auto-build, profile
+      refresh, installed-app refresh, publication, push, tag, vision/objective edit,
+      decision satisfaction change, unsupported capability-name CLI command, or unrelated
+      D48 work.
+    scope: Usage namespace contract, CLI facade, focused tests, package/version metadata,
+      TODO/CHANGELOG/DOCS/PLAN/PROGRESS sync, artifact validation, and diff whitespace
+      check.
 - number: 524
   timestamp: 2026-05-15 23:18
   type: feat
@@ -400,46 +442,9 @@ cycles:
     scope: Fix-level patch version alignment, TODO resolution, CHANGELOG notes, DOCS
       audit metadata, PROGRESS evidence, PLAN completion evidence, focused tests,
       artifact validation, package/version metadata tests, and diff whitespace check
-- number: 515
-  timestamp: 2026-05-15 22:05
-  type: test
-  phase: audit
-  what: Completed PLAN Task 3 regression coverage and guidance alignment for the Planera
-    lint anchor fix.
-  commit: pending
-  inspiration: 'Orkestrera assigned Task 3 only: add focused regression coverage for
-    the fixed Planera-plan anchor false positive, keep concrete anchors distinct from
-    generic prose, and validate touched PLAN/PROGRESS artifacts without release metadata,
-    TODO closeout, publication, commit, installed-app refresh, vision, objective,
-    or decision-state changes.'
-  discovered: The most direct coverage point was the existing lint CLI test file.
-    No user-facing lint diagnostics, guidance docs, capability prose, or fixtures
-    needed changes because the current diagnostics already distinguish concrete anchors
-    from generic prose; Task 3 only needed dedicated regression tests.
-  verified: '`uv run pytest tests/test_self_audit.py -q` passed with 23 tests, including
-    the new `PLAN.md` anchored repo-style pass regression and the unanchored generic
-    prose advisory-failure regression. `AGENTERA_HOME=/home/jgabor/git/agentera uv
-    run scripts/agentera lint --artifact PLAN.md --text "Deliver queue visibility
-    through queued-message fixture, semantic snapshots, PTY smoke, mage check, source
-    docs, and concrete internal/runtime internal/app internal/tui boundaries." --format
-    json` exited 0 with status=pass and abstraction detail `internal/runtime`. `AGENTERA_HOME=/home/jgabor/git/agentera
-    uv run scripts/agentera lint --artifact PLAN.md --text "This plan improves the
-    system broadly and makes the implementation better for users." --format json`
-    exited 0 in advisory mode with status=fail and abstraction detail `abstraction
-    creep: no concrete anchor`. PLAN/PROGRESS artifact validation and `git diff --check`
-    passed after artifact updates.'
-  next: Hand Task 3 to Orkestrera evaluation. Do not implement Task 4, update TODO,
-    changelog, version files, release metadata, publication, commit, push, tag, installed-app/profile
-    refresh, vision/objective state, or decision satisfaction state.
-  context:
-    intent: PLAN Task 3 regression coverage and guidance alignment
-    constraints: Task 3 only; preserve unrelated dirty work; no Task 4 closeout, release
-      metadata, publication, commit, installed-app refresh, profile refresh, vision
-      edit, objective edit, or decision satisfaction change
-    scope: Focused `tests/test_self_audit.py` regression coverage, PLAN Task 3 evidence,
-      PROGRESS cycle evidence, PLAN/PROGRESS artifact validation, and diff whitespace
-      checks
 archive:
+- summary: 'Cycle 515 (2026-05-15): Completed PLAN Task 3 regression coverage and
+    guidance alignment for the Planera lint anchor fix.'
 - summary: 'Cycle 514 (2026-05-15): Completed PLAN Task 2 contract-preserving lint
     anchor correction.'
 - summary: 'Cycle 513 (2026-05-15): Characterized PLAN Task 1 for the Planera lint
@@ -518,5 +523,3 @@ archive:
     evidence and the 2.3.6 archive boundary for the active...'
 - summary: 'Cycle 476 (2026-05-14): Synchronized PLAN Task 7 state and release metadata
     for the active 2.3.6 artifact compaction enforcement...'
-- summary: 'Cycle 475 (2026-05-14): Implemented PLAN Task 6 repository gate enforcement
-    and regression coverage for the active 2.3.6 artifact...'

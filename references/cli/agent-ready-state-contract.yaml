@@ -819,6 +819,101 @@ verify_namespace:
     - scripts/smoke_live_hosts.py --help documents offline default behavior plus explicit `--live` and `--yes` live-host opt-in.
     - scripts/smoke_setup_helpers.py --help currently runs the smoke checks and passed during Task 1 probing.
     - scripts/smoke_opencode_bootstrap.mjs --help currently runs the bootstrap smoke check and returned bounded local failure diagnostics when OpenCode skills were absent.
+usage_namespace:
+  status: implemented
+  command: usage
+  rejected_namespace_command: corpus
+  purpose: >-
+    Define the supported `agentera usage` namespace so agents can run suite usage
+    analytics through one discoverable CLI surface without guessing the direct
+    analytics script or conflating reporting with corpus extraction.
+  namespace_rationale: >-
+    `agentera usage` is the selected public command because the existing product is
+    usage analytics and USAGE.md reporting. `agentera corpus` is rejected for this
+    plan because it implies corpus extraction or lifecycle management, which belongs
+    to profilera/Section 22 tooling rather than usage reporting.
+  command_shape: agentera usage [--format text|json] [--corpus PATH] [--project VALUE]
+  direct_entrypoint: scripts/usage_stats.py
+  supported_options:
+    format:
+      values:
+        - text
+        - json
+      default: text
+      text_behavior: >-
+        Delegates to `scripts/usage_stats.py`, writes USAGE.md to the existing report
+        destination, and prints the existing bounded stdout summary.
+      json_behavior: >-
+        Delegates to `scripts/usage_stats.py --json`, preserves the existing top-level
+        analytics payload, and does not write USAGE.md.
+    corpus:
+      syntax: --corpus PATH
+      behavior: >-
+        Uses the supplied Section 22 corpus.json envelope. When omitted, default
+        corpus lookup remains owned by `scripts/usage_stats.py` and follows
+        `PROFILERA_PROFILE_DIR/intermediate/corpus.json` before platform data-home
+        defaults.
+    project:
+      syntax: --project VALUE
+      behavior: >-
+        Scopes analytics using the direct script's project matching behavior.
+        Unmatched values are valid and produce an empty scoped report rather than a
+        nonzero invalid-input error.
+  output_contract:
+    text: >-
+      Human-readable output preserves the direct script's summary lines, including
+      scope, skill count, invocation totals, report path, run timestamp, and corpus
+      extraction timestamp.
+    json: >-
+      JSON output preserves the direct script analytics payload with top-level
+      `generated_at`, `extracted_at`, `project_filter`, `skills`, `per_project`, and
+      `invocations` fields. It is intentionally not wrapped in a facade envelope.
+  path_contract:
+    report_precedence:
+      - AGENTERA_USAGE_DIR/USAGE.md
+      - PROFILERA_PROFILE_DIR/USAGE.md
+      - platform data home agentera/USAGE.md
+    corpus_precedence:
+      - PROFILERA_PROFILE_DIR/intermediate/corpus.json
+      - platform data home agentera/intermediate/corpus.json
+    test_isolation: >-
+      Facade tests that exercise default text writes must set temporary
+      `AGENTERA_USAGE_DIR` and `PROFILERA_PROFILE_DIR` values and must not write the
+      real user data home.
+  invalid_input_behavior:
+    format_error: >-
+      Unknown formats must exit nonzero, list valid values `text` and `json`, show
+      `agentera usage [--format text|json] [--corpus PATH] [--project VALUE]`, and
+      include one concrete example.
+    missing_corpus: >-
+      Missing or unusable corpus data preserves `scripts/usage_stats.py` actionable
+      guidance and must not auto-build corpus data, refresh profiles, scan home
+      directories, or run live host extraction.
+    project_filter: >-
+      Unmatched `--project` values are valid empty reports. Diagnostics must not list
+      private corpus-derived project IDs as valid values.
+  compatibility_constraints:
+    - >-
+      `scripts/usage_stats.py` remains callable directly with existing `--json`,
+      `--corpus`, and `--project` behavior.
+    - >-
+      JSON consumers continue to receive the existing direct analytics payload shape
+      without a namespace wrapper envelope.
+    - >-
+      Default text behavior continues to write USAGE.md only through the existing
+      usage report destination rules.
+  non_goals:
+    - Do not add `agentera corpus` in this plan.
+    - Do not build or refresh corpus data.
+    - Do not refresh PROFILE.md or run profilera.
+    - Do not run live host scans or mine home directories beyond direct script path lookup.
+    - Do not remove, rename, or redesign `scripts/usage_stats.py`.
+    - Do not add unsupported capability-name CLI commands.
+    - Do not implement additional D48 validate, verify, or corpus namespace work.
+  evidence_sources:
+    - agentera --help exposes the `usage` namespace and a JSON example.
+    - tests/test_usage_namespace.py covers text output, JSON output, corpus/project flags, missing-corpus guidance, invalid format, help discovery, test path isolation, and direct-script compatibility.
+    - tests/test_usage_stats.py remains the direct analytics engine coverage.
 non_goals_for_task_1:
   - Do not rename bundle-status to doctor.
   - Do not add doctor behavior.

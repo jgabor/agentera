@@ -3,246 +3,163 @@ header:
   created: 2026-05-15
   status: complete
   reviewed: 2026-05-15
-  critic_issues: 8 found, 8 addressed, 0 dismissed
-  title: D48 Verify Namespace Plan
+  critic_issues: 6 found, 6 addressed, 0 dismissed
+  title: D48 Usage Namespace Plan
 what: >-
-  Plan the next D48 CLI namespace for eval and smoke gates by adding a supported
-  `agentera verify` surface with stable behavior for smoke and eval gate families,
-  while preserving existing direct smoke/eval scripts as compatibility surfaces.
+  Add a supported `agentera usage` CLI namespace for profile analytics by exposing
+  the existing suite usage report through the Agentera CLI while preserving
+  `scripts/usage_stats.py` as the direct analytics engine.
 why: >-
-  Agents currently have TODO-level intent for smoke or verify gates but no
-  discoverable namespace, so they must guess direct script names and flags. A
-  supported verify namespace should make safe gate execution explicit, bounded,
-  non-interactive, and consistent with the new `agentera validate` pattern without
-  broadening into unrelated D48 namespaces.
+  The project already has usage analytics and a documented USAGE.md location, but
+  agents must know the direct script to run it. A supported usage namespace makes
+  profile analytics discoverable through the same CLI pattern as D48 validate and
+  verify without turning usage reporting into corpus extraction or profile refresh.
 constraints: >-
-  Select `agentera verify` as the planned public namespace before build; record why
-  `agentera smoke` is not the umbrella command. Preserve existing direct entrypoints
-  such as `scripts/eval_skills.py`, `scripts/semantic_eval.py`,
-  `scripts/smoke_installed_skills.py`, `scripts/smoke_live_hosts.py`,
-  `scripts/smoke_setup_helpers.py`, and `scripts/smoke_opencode_bootstrap.mjs`.
-  Preserve non-interactive behavior, bounded output, text/json result expectations,
-  and invalid-input guidance with valid values, syntax, examples, and nonzero exits.
-  Default tests and default command examples must avoid live network, installed-app
-  mutation, profile refresh, and long-running evals unless explicitly opted in and
-  bounded. Do not implement D48 `validate`, `corpus`, or `usage` work; do not redesign
-  eval/smoke harnesses broadly; do not publish, push, tag, refresh installed apps or
-  profiles, edit vision state, edit objective state, change decision satisfaction
-  state, or run unsupported capability-name CLI commands.
+  Select `agentera usage` as the planned public namespace and record why
+  `agentera corpus` is rejected for this plan. Preserve direct `scripts/usage_stats.py`
+  behavior, including `--json`, `--corpus`, `--project`, default corpus lookup through
+  `PROFILERA_PROFILE_DIR`, default report output through `AGENTERA_USAGE_DIR` then
+  `PROFILERA_PROFILE_DIR` then platform data home, and missing-corpus guidance. JSON
+  mode must preserve the existing top-level analytics payload and must not write
+  USAGE.md. Tests must isolate user data paths with temporary environment variables.
+  Unmatched `--project` filters remain valid empty reports rather than invalid input.
+  Do not auto-build corpus data, refresh profiles, scan home directories, run live
+  host extraction, publish, push, tag, refresh installed apps or profiles, edit vision
+  state, edit objective state, change decision satisfaction state, or implement D48
+  validate, verify, or corpus work.
 scope:
   included:
-    - >-
-      Public `agentera verify` command contract with gate families `smoke` and
-      `eval`.
-    - >-
-      Planned smoke gate values `installed-skills`, `live-hosts`, `setup-helpers`,
-      and `opencode-bootstrap`, with live-host behavior explicitly opt-in and
-      bounded.
-    - >-
-      Planned eval gate values `skills` and `semantic`, with long-running or
-      host-dependent behavior explicitly bounded or opt-in.
-    - >-
-      Stable text and JSON results for success, validation failure, command failure,
-      and invalid input.
-    - >-
-      Help and invalid-input guidance that lists valid gate families, target values,
-      correct syntax, and concrete examples.
-    - >-
-      Compatibility guarantees for existing direct eval and smoke scripts.
-    - >-
-      Focused regression coverage and guidance alignment for the selected namespace.
-    - >-
-      Release metadata and local state sync according to `.agentera/docs.yaml`
-      `semver_policy` and `version_files`.
+    - Public `agentera usage` command contract and help examples.
+    - Rejected-alternative rationale for `agentera corpus` as an extraction/lifecycle namespace.
+    - Supported usage flags `--format text|json`, `--corpus PATH`, and `--project VALUE`.
+    - Text behavior that preserves the existing USAGE.md write plus stdout summary.
+    - JSON behavior that preserves the existing analytics payload with no USAGE.md write.
+    - Missing-corpus and invalid-format diagnostics with syntax, valid values, examples, and nonzero exits.
+    - Temporary-path test isolation for `AGENTERA_USAGE_DIR` and `PROFILERA_PROFILE_DIR`.
+    - Focused namespace tests, direct script compatibility checks, package/CLI surface checks, and local artifact closeout.
   excluded:
-    - D48 `validate`, `corpus`, or `usage` namespace work.
-    - Broad eval harness redesign, smoke harness redesign, or live-host reliability work.
-    - Renaming persisted artifact IDs, schema names, capability names, or direct script files.
-    - Publication, remote push, tagging, installed-app refresh, profile refresh, vision edits, objective edits, or decision satisfaction changes.
+    - A public `agentera corpus` command.
+    - New corpus extraction behavior or Section 22 corpus schema changes.
+    - Usage analytics algorithm redesign beyond what the facade requires.
+    - Profile refresh, installed-app refresh, live host scans, home-directory mining, publication, remote push, tagging, vision edits, objective edits, or decision satisfaction changes.
+    - Any additional D48 validate, verify, or corpus namespace implementation.
   deferred:
-    - Consolidating the future D48 corpus or usage namespace.
-    - Broader smoke/eval performance tuning beyond bounded namespace behavior.
-    - Historical cleanup of older smoke/eval examples not touched by this feature.
+    - A future corpus extraction or corpus lifecycle namespace if profilera needs one.
+    - Broader usage analytics improvements such as new aggregation fields or report layout changes.
+    - Surfacing usage/profile analytics in hej attention items.
 design: >-
-  Treat this as a user-facing verification namespace, not a rewrite of smoke or eval
-  engines. `agentera verify` is the planned umbrella because it can contain both
-  smoke and eval gate families; `agentera smoke` remains the rejected umbrella because
-  it would not naturally describe semantic or skill evaluation gates. The namespace
-  should expose supported gate families and target names directly, preserve direct
-  scripts for compatibility, and keep live/long-running gates explicitly opt-in or
-  bounded so default agent runs stay safe.
+  Treat `agentera usage` as a stable usage-reporting facade, not a new analytics
+  engine. The command should make the already-supported `scripts/usage_stats.py`
+  workflow discoverable through `scripts/agentera`, preserve direct script behavior
+  for existing callers, keep JSON output unwrapped for consumers, and keep all corpus
+  or profile generation out of scope.
 tasks:
   - number: 1
-    name: Verify namespace contract definition
+    name: Usage namespace contract definition
     depends_on: []
     status: complete
     acceptance:
       - >-
-        GIVEN an agent needs to run eval or smoke gates WHEN the verify namespace
-        contract is reviewed THEN `agentera verify` is the recorded public command,
-        `agentera smoke` is recorded as the rejected umbrella alternative, and the
-        rationale is explicit.
+        GIVEN the D48 analytics namespace is reviewed WHEN public command names are
+        compared THEN `agentera usage` is the selected command and `agentera corpus`
+        is recorded as rejected or deferred because this plan reports analytics rather
+        than extracting corpus data.
       - >-
-        GIVEN the command contract is reviewed WHEN supported values are listed THEN
-        gate families `smoke` and `eval`, their target values, output formats,
-        safety requirements, and non-goals are clear without relying on unsupported
-        capability-name commands.
+        GIVEN the command contract is reviewed WHEN supported options are listed THEN
+        `--format text|json`, `--corpus PATH`, `--project VALUE`, default path
+        precedence, no-write JSON behavior, and unmatched-project empty-report behavior
+        are explicit.
       - >-
-        GIVEN current direct smoke and eval scripts already exist WHEN compatibility
-        expectations are defined THEN their continued availability and observable
-        behavior are preserved as acceptance constraints.
+        GIVEN direct analytics users already call `scripts/usage_stats.py` WHEN the
+        namespace contract is recorded THEN that script's observable CLI behavior is
+        preserved as a compatibility requirement.
       - >-
-        GIVEN invalid verify input is possible WHEN user-facing behavior is specified
-        THEN unknown families, targets, formats, and unsafe live defaults return
-        bounded diagnostics with valid values, correct syntax, concrete examples, and
-        nonzero exits.
+        GIVEN invalid usage namespace input is possible WHEN diagnostics are specified
+        THEN unsupported formats or malformed facade requests return valid values,
+        syntax, examples, and nonzero exits without listing private corpus-derived
+        project IDs.
     evidence:
       - >-
-        Added design-only `verify_namespace` to
-        `references/cli/agent-ready-state-contract.yaml`: public command is
-        `agentera verify`; rejected umbrella alternative is `agentera smoke` because
-        smoke does not naturally describe semantic or skill eval gates; Task 1
-        explicitly does not implement runtime `agentera verify` behavior.
+        Added `usage_namespace` to `references/cli/agent-ready-state-contract.yaml` with
+        public command `agentera usage`, rejected/deferred command `agentera corpus`,
+        rationale that this plan reports usage analytics rather than extracting corpus
+        data, supported flags `--format text|json`, `--corpus PATH`, and `--project VALUE`,
+        path precedence, JSON no-write behavior, unmatched-project empty-report behavior,
+        missing-corpus guidance, compatibility constraints, and non-goals.
       - >-
-        Contract lists gate families `smoke` and `eval`, smoke targets
-        `installed-skills`, `live-hosts`, `setup-helpers`, and
-        `opencode-bootstrap`, eval targets `skills` and `semantic`, text/json output
-        expectations, safety requirements, invalid-input behavior, examples, and
-        non-goals without adding unsupported capability-name CLI commands.
-      - >-
-        Compatibility constraints preserve direct entrypoints
-        `scripts/eval_skills.py`, `scripts/semantic_eval.py`,
-        `scripts/smoke_installed_skills.py`, `scripts/smoke_live_hosts.py`,
-        `scripts/smoke_setup_helpers.py`, and
-        `scripts/smoke_opencode_bootstrap.mjs` with existing observable behavior.
-      - >-
-        Evidence probes: `uv run scripts/agentera --help` currently exposes no
-        `verify` command; `uv run scripts/eval_skills.py --help`, `uv run
-        scripts/semantic_eval.py --help`, `uv run scripts/smoke_installed_skills.py
-        --help`, and `uv run scripts/smoke_live_hosts.py --help` documented the
-        direct surfaces and safe opt-ins; `uv run scripts/smoke_setup_helpers.py
-        --help` ran existing smoke checks and passed; `node
-        scripts/smoke_opencode_bootstrap.mjs --help` ran existing bootstrap smoke
-        checks and returned bounded local failure diagnostics for absent OpenCode
-        skills.
+        Preserved direct `scripts/usage_stats.py` as the compatibility engine and
+        explicitly recorded that JSON output remains the existing top-level analytics
+        payload rather than a wrapper envelope.
   - number: 2
-    name: Verify namespace gate behavior
+    name: Usage namespace behavior
     depends_on:
       - 1
     status: complete
     acceptance:
       - >-
-        GIVEN a supported smoke gate target is requested WHEN an agent runs the
-        verify namespace THEN the command returns a stable text or JSON result with
-        bounded diagnostics and without requiring live network or installed-app
-        mutation by default.
+        GIVEN a corpus exists at the default or explicit path WHEN `agentera usage`
+        runs in text mode THEN it prints the existing bounded summary and writes
+        USAGE.md only to the existing usage report destination.
       - >-
-        GIVEN a supported eval gate target is requested WHEN an agent runs the
-        verify namespace THEN the command returns a stable text or JSON result with
-        bounded diagnostics and without starting long-running or host-dependent work
-        unless explicitly opted in.
+        GIVEN a corpus exists WHEN `agentera usage --format json` runs THEN stdout
+        contains the existing top-level analytics payload fields and USAGE.md is not
+        written or modified.
       - >-
-        GIVEN callers continue to use existing direct smoke or eval commands WHEN
-        the verify namespace is present THEN those direct commands remain callable
-        with their documented behavior unchanged.
+        GIVEN `--corpus PATH` or `--project VALUE` is supplied WHEN the namespace runs
+        THEN those values are forwarded consistently with direct `scripts/usage_stats.py`
+        behavior, including valid empty reports for unmatched projects.
       - >-
-        GIVEN unsupported families, targets, formats, or unsafe default requests are
-        provided WHEN the command fails THEN it exits nonzero and includes valid
-        values, correct syntax, and one concrete example.
+        GIVEN no usable corpus exists WHEN the namespace runs THEN it exits nonzero
+        with the existing actionable missing-corpus guidance and does not attempt to
+        build corpus data, refresh profiles, or scan home directories.
     evidence:
       - >-
-        Implemented `agentera verify` in `scripts/agentera` as a thin facade over
-        existing direct smoke/eval scripts, with supported families `smoke` and
-        `eval`, smoke targets `installed-skills`, `live-hosts`, `setup-helpers`,
-        and `opencode-bootstrap`, eval targets `skills` and `semantic`, output
-        formats `text` and `json`, and bounded stdout/stderr diagnostics capped at
-        20 lines per stream in the stable JSON/text envelope.
+        Implemented `agentera usage` in `scripts/agentera` as a direct subprocess
+        facade over `scripts/usage_stats.py`, forwarding `--corpus`, `--project`, and
+        JSON mode as `--json` while text mode preserves the direct script's default
+        USAGE.md write and stdout summary.
       - >-
-        Smoke behavior evidence: `uv run scripts/agentera verify smoke installed-skills`
-        passed in offline mode without real npx; `uv run scripts/agentera verify smoke
-        installed-skills --format json` returned status `pass` with safety mode
-        `offline`; `uv run scripts/agentera verify smoke live-hosts --format json`
-        passed the existing offline fixture/setup/upgrade smoke path with `live=false`;
-        `uv run scripts/agentera verify smoke setup-helpers --format json` passed;
-        `uv run scripts/agentera verify smoke opencode-bootstrap --format json`
-        returned a stable bounded `status=fail` result for the existing local OpenCode
-        skills absence instead of invoking package refresh or installed-app mutation.
-      - >-
-        Eval behavior evidence: `uv run scripts/agentera verify eval skills --format
-        json` passed by delegating to `scripts/eval_skills.py --dry-run --runtime
-        claude`, avoiding host runtime auto-detection and long-running model work by
-        default; `uv run scripts/agentera verify eval semantic fixtures/semantic/hej-bare-message.md`
-        and the JSON form passed by delegating to `scripts/semantic_eval.py` with an
-        explicit fixture path and bounded diagnostics.
-      - >-
-        Direct compatibility evidence: `uv run scripts/eval_skills.py --dry-run
-        --runtime claude`, `uv run scripts/semantic_eval.py fixtures/semantic/hej-bare-message.md`,
-        `uv run scripts/smoke_installed_skills.py`, `uv run scripts/smoke_live_hosts.py`,
-        and `uv run scripts/smoke_setup_helpers.py` remained callable and passed with
-        their existing outputs; `node scripts/smoke_opencode_bootstrap.mjs` remained
-        callable and returned the existing bounded local failure diagnostics for absent
-        OpenCode skills.
-      - >-
-        Invalid-input evidence: `uv run scripts/agentera verify bogus installed-skills`,
-        `uv run scripts/agentera verify smoke nope`, `uv run scripts/agentera verify
-        eval skills --format xml`, `uv run scripts/agentera verify smoke live-hosts
-        --live --format json`, and `uv run scripts/agentera verify eval semantic
-        --format json` exited nonzero with bounded diagnostics listing valid values,
-        correct syntax, and concrete examples.
+        Added bounded invalid-format guidance for unsupported `--format` values with
+        valid formats, syntax, and a concrete example. Missing corpus behavior remains
+        owned by the direct script and no corpus/profile refresh path was added.
   - number: 3
-    name: Verification coverage and guidance alignment
+    name: Usage namespace coverage and guidance alignment
     depends_on:
       - 2
     status: complete
     acceptance:
       - >-
-        GIVEN the verify namespace behavior exists WHEN focused tests run THEN they
-        cover successful smoke gate behavior, successful eval gate behavior, text
-        output, JSON output, invalid input feedback, safety boundaries, and preserved
-        direct-script compatibility.
+        GIVEN the usage namespace behavior exists WHEN focused tests run THEN they
+        cover text success, JSON success, explicit corpus path, project filtering,
+        unmatched-project empty reports, missing corpus failure, invalid format
+        feedback, help discoverability, and direct `scripts/usage_stats.py`
+        compatibility.
       - >-
-        GIVEN help, docs, fixtures, or capability guidance are touched WHEN they are
-        reviewed THEN they make the verify namespace discoverable while preserving
-        existing smoke/eval script vocabulary and keeping live or long-running gates
-        explicitly bounded.
+        GIVEN tests execute the default text write path WHEN they set up fixtures THEN
+        `AGENTERA_USAGE_DIR` and `PROFILERA_PROFILE_DIR` point at temporary directories
+        and no test writes the real user data home.
       - >-
-        GIVEN affected guidance or artifacts change WHEN validation runs THEN
-        relevant CLI tests, direct smoke/eval probes, artifact validation, and diff
-        checks pass.
+        GIVEN package or command-surface checks exist WHEN usage namespace guidance is
+        touched THEN relevant packaged CLI, registry, explicit CLI surface, and help
+        checks are updated without adding unsupported capability-name commands.
+      - >-
+        GIVEN docs or contract guidance changes WHEN validation runs THEN affected
+        usage namespace tests, direct script compatibility probes, artifact validators,
+        and `git diff --check` pass.
     evidence:
       - >-
-        Added focused `tests/test_verify_namespace.py` regression coverage for the
-        `agentera verify` namespace: successful smoke text output through
-        `installed-skills`, successful eval JSON output through `skills`, successful
-        semantic eval JSON output with an explicit fixture, invalid family/target/format
-        and missing-fixture diagnostics, unsafe `--live` and `--run`/`--dry-run`
-        safety guards, help discoverability, direct Python smoke/eval script
-        compatibility, and bounded direct OpenCode bootstrap smoke behavior when Node
-        is available.
+        Added `tests/test_usage_namespace.py` covering text success with isolated
+        USAGE.md output, JSON success with no write, explicit corpus path, project
+        filtering, unmatched-project empty reports, missing-corpus failure, invalid
+        format feedback, help discoverability, and direct `scripts/usage_stats.py`
+        JSON compatibility.
       - >-
-        Aligned discoverability guidance minimally by adding top-level `agentera --help`
-        examples for `agentera verify smoke installed-skills` and `agentera verify eval
-        skills --format json`, preserving smoke/eval vocabulary and direct script target
-        names. Updated `references/cli/agent-ready-state-contract.yaml` from Task 1
-        contract-only wording to implemented-with-Task-3-coverage wording without adding
-        `agentera smoke`, unsupported capability-name commands, live defaults, or
-        long-running eval defaults.
-      - >-
-        Verification evidence: `uv run pytest tests/test_verify_namespace.py -q` passed
-        (8 tests), `uv run pytest tests/test_explicit_cli_surfaces.py -q` passed (9
-        tests), safe verify probes passed for smoke text, smoke JSON, eval skills JSON,
-        and semantic fixture JSON, invalid family and unsafe live probes exited nonzero
-        with bounded guidance, direct probes for `scripts/eval_skills.py`,
-        `scripts/semantic_eval.py`, `scripts/smoke_installed_skills.py`,
-        `scripts/smoke_live_hosts.py`, and `scripts/smoke_setup_helpers.py` passed, and
-        `node scripts/smoke_opencode_bootstrap.mjs` returned the expected bounded local
-        failure for absent OpenCode skills.
-      - >-
-        Artifact and diff evidence after Task 3 artifact updates: PROGRESS, PLAN, and
-        DOCS validation passed with `hooks/validate_artifact.py`, and `git diff --check`
-        passed.
+        Verification passed with `uv run pytest tests/test_usage_namespace.py -q`,
+        `uv run pytest tests/test_usage_stats.py -q`, `uv run pytest
+        tests/test_usage_namespace.py tests/test_usage_stats.py tests/test_explicit_cli_surfaces.py
+        -q`, and invalid-format guidance probe `uv run scripts/agentera usage --format xml`.
   - number: 4
-    name: Version and local state sync
+    name: Version metadata sync
     depends_on:
       - 1
       - 2
@@ -250,78 +167,84 @@ tasks:
     status: complete
     acceptance:
       - >-
-        GIVEN the change type is `feat` WHEN release metadata is reviewed THEN
-        version-bearing surfaces follow DOCS-owned `semver_policy` and
-        `version_files`, or no version bump is recorded if those policies are absent.
+        GIVEN the implemented change is a `feat` WHEN `.agentera/docs.yaml` version
+        policy is reviewed THEN version-bearing surfaces follow the DOCS-owned
+        `semver_policy` and `version_files` list.
       - >-
-        GIVEN verification passes WHEN project state is synced THEN TODO, PROGRESS,
-        PLAN, and policy-required CHANGELOG/DOCS records include the feature scope
-        and exact verification evidence without unrelated documentation churn.
+        GIVEN version-bearing surfaces change WHEN package and metadata checks run
+        THEN package registry and packaged CLI tests pass with aligned version values.
       - >-
-        GIVEN closeout completes WHEN scope is audited THEN no publication, push,
-        tag, installed-app refresh, profile refresh, vision edit, objective edit,
-        decision satisfaction change, package-manager update, unsupported
-        capability-name CLI command, or D48 validate/corpus/usage work occurred.
+        GIVEN release metadata is synced WHEN scope is audited THEN no package
+        publication, remote push, tag, installed-app refresh, profile refresh,
+        vision edit, objective edit, or decision satisfaction change occurred.
     evidence:
       - >-
-        Reviewed `.agentera/docs.yaml` semver policy and version file conventions:
-        `feat` maps to a minor bump, current version-bearing surfaces were at 2.4.0,
-        and the documented feature target is 2.5.0. Aligned `pyproject.toml`,
-        `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`,
-        `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
-        `.opencode/plugins/agentera.js`, `skills/agentera/SKILL.md`,
-        `skills/hej/SKILL.md`, and `registry.json` to 2.5.0.
+        Reviewed `.agentera/docs.yaml` semver policy: `feat` maps to a minor bump and
+        `version_files` lists the version-bearing surfaces. Aligned `pyproject.toml`,
+        `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`,
+        `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`,
+        `skills/agentera/SKILL.md`, `skills/hej/SKILL.md`, and `registry.json` from
+        2.5.0 to 2.6.0.
       - >-
-        Synced TODO, CHANGELOG, DOCS audit metadata, PROGRESS, and PLAN for the D48
-        verify namespace feature. The D48 smoke/verify TODO is resolved with exact
-        verification evidence, while the separate D48 corpus/usage TODO remains open
-        and no unrelated documentation churn was added.
+        Package metadata verification passed with `uv run pytest tests/test_package_registry.py
+        tests/test_packaged_cli.py -q`, and no package publication, remote push, tag,
+        installed-app refresh, profile refresh, vision edit, objective edit, or decision
+        satisfaction change occurred.
+  - number: 5
+    name: Local artifact closeout
+    depends_on:
+      - 1
+      - 2
+      - 3
+      - 4
+    status: complete
+    acceptance:
       - >-
-        Focused verification passed with `uv run pytest tests/test_verify_namespace.py
-        -q` (8 tests), `uv run pytest tests/test_explicit_cli_surfaces.py -q` (9 tests),
-        `uv run pytest tests/test_package_registry.py tests/test_packaged_cli.py -q`
-        (13 tests), `uv run scripts/agentera verify smoke installed-skills`, `uv run
-        scripts/agentera verify smoke installed-skills --format json`, `uv run
-        scripts/agentera verify eval skills --format json`, and `uv run scripts/agentera
-        verify eval semantic fixtures/semantic/hej-bare-message.md --format json`.
+        GIVEN verification passes WHEN project state is synced THEN TODO, CHANGELOG,
+        DOCS, PROGRESS, and PLAN record the usage namespace scope and exact evidence
+        without unrelated documentation churn.
       - >-
-        Direct compatibility and bounded-failure probes completed: `uv run
-        scripts/agentera verify bogus installed-skills` and `uv run scripts/agentera
-        verify smoke live-hosts --live --format json` exited nonzero with bounded valid
-        values, syntax, and examples; direct probes for `scripts/eval_skills.py`,
-        `scripts/semantic_eval.py`, `scripts/smoke_installed_skills.py`,
-        `scripts/smoke_live_hosts.py`, and `scripts/smoke_setup_helpers.py` passed;
-        `node scripts/smoke_opencode_bootstrap.mjs` returned the expected bounded local
-        failure for absent OpenCode skills.
+        GIVEN the D48 usage namespace closes WHEN TODO is reviewed THEN the open
+        `[feat] Implement agentera corpus or agentera usage CLI namespace for profile
+        analytics (D48)` item is resolved and no D48 corpus extraction work is claimed.
       - >-
-        Scope audit evidence: closeout did not publish, push, tag, commit, refresh an
-        installed app or profile, edit vision/objective state, change decision
-        satisfaction state, update packages through a package manager, run unsupported
-        capability-name CLI commands, or implement D48 validate/corpus/usage work.
+        GIVEN closeout completes WHEN final checks run THEN relevant tests, artifact
+        validators, compaction gate if needed, and `git diff --check` pass.
+    evidence:
+      - >-
+        Synced TODO, CHANGELOG, DOCS audit metadata, PROGRESS, and PLAN for the 2.6.0
+        D48 usage namespace closeout, resolving the usage/corpus TODO while explicitly
+        not claiming `agentera corpus` or corpus extraction work.
+      - >-
+        Final validation evidence is recorded in PROGRESS and CHANGELOG: focused usage
+        namespace tests, direct usage stats tests, explicit CLI surface tests,
+        package/version metadata tests, touched artifact validators, compaction if
+        needed, and `git diff --check`.
 overall_acceptance:
   - >-
-    GIVEN an agent needs eval or smoke gate verification WHEN it uses the supported
-    namespace THEN it can discover valid gate families and targets without guessing
-    direct scripts.
+    GIVEN an agent needs usage/profile analytics WHEN it uses the supported CLI THEN
+    `agentera usage` is discoverable and does not require guessing `scripts/usage_stats.py`.
   - >-
-    GIVEN safe default execution matters WHEN verify commands or tests run THEN live,
-    host-dependent, mutating, or long-running gates are explicit opt-ins and bounded.
+    GIVEN machine consumers already rely on usage analytics JSON WHEN JSON mode is
+    used through the namespace THEN the existing top-level analytics payload is
+    preserved without a wrapper envelope or USAGE.md write.
   - >-
-    GIVEN existing direct scripts remain part of the project WHEN the namespace lands
-    THEN their observable behavior remains compatible.
+    GIVEN default usage report generation writes a user-local artifact WHEN tests or
+    probes run THEN write destinations are explicit, isolated where appropriate, and
+    never caused by corpus/profile refresh side effects.
   - >-
-    GIVEN the feature closes WHEN verification and state sync finish THEN the D48
-    smoke/verify TODO is resolved with exact evidence and release metadata follows
-    `.agentera/docs.yaml` policy.
+    GIVEN the feature closes WHEN local state is synced THEN the D48 usage TODO is
+    resolved with exact evidence and release metadata follows `.agentera/docs.yaml`
+    policy.
 surprises:
   - >-
-    Pre-write `agentera lint --artifact PLAN.md --text ... --format json` passed
-    verbosity, abstraction, and filler checks for the D48 verify namespace draft,
-    with abstraction anchored by `scripts/eval_skills.py`.
+    Pre-write lint initially flagged the draft as over the PLAN.md per-entry word
+    budget; the revised draft passed verbosity, abstraction, and filler checks with
+    `scripts/usage_stats.py` as the concrete anchor.
   - >-
-    Adversarial review found eight issues and all were addressed: select a single
-    namespace before build, list exact supported gate values, keep anchors as context
-    rather than HOW, add safe-default constraints, make version handling DOCS-owned,
-    constrain artifact sync to policy and actual user-facing changes, specify bounded
-    invalid-input behavior, and sharpen direct-script compatibility boundaries.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-15-d48-validate-namespace-plan.yaml
+    Adversarial review found six issues and all were addressed: choose pass-through
+    JSON instead of a wrapper envelope, isolate default report writes in tests,
+    preserve `AGENTERA_USAGE_DIR`/`PROFILERA_PROFILE_DIR` precedence, include package
+    surface checks, treat unmatched projects as valid empty reports, and split version
+    metadata from final artifact closeout.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-15-d48-verify-namespace-plan.yaml
