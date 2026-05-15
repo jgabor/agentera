@@ -47,6 +47,7 @@ GROUP_PREFIXES:
   COMPACTION: DX
   DECISION: DC
   ALTERNATIVE: DA
+  SATISFACTION: DS
   ARCHIVE: DR
   VALIDATION: DV
 
@@ -206,6 +207,56 @@ DECISION:
     description: >-
       What artifacts, skills, or work items this decision affects.
       Downstream consumers that should be aware of this choice.
+  9:
+    id: DC9
+    field: satisfaction
+    type: map
+    required: false
+    description: >-
+      First-class satisfaction state for this decision. Missing satisfaction is
+      valid legacy data, but consumers must derive review_needed=true rather
+      than treating the decision as satisfied.
+
+SATISFACTION:
+  1:
+    id: DS1
+    field: state
+    parent: DECISION.satisfaction
+    type: string
+    required: true
+    description: >-
+      Canonical satisfaction state. This is the only satisfaction state field;
+      review_needed is derived from missing or stale protected state, not stored
+      as a fourth state.
+    validation:
+      - "Must be one of: open, provisionally_satisfied, user_confirmed_satisfied"
+  2:
+    id: DS2
+    field: evidence
+    parent: DECISION.satisfaction
+    type: string
+    required: false
+    description: >-
+      Evidence that an agent may attach when state is provisionally_satisfied.
+      Provisional satisfaction requires non-empty evidence that cites concrete
+      implemented behavior, tests, artifacts, or user-visible outcomes.
+  3:
+    id: DS3
+    field: user_confirmation
+    parent: DECISION.satisfaction
+    type: map
+    required: false
+    description: >-
+      Explicit user authority metadata required when state is
+      user_confirmed_satisfied. Agents must not create this state unless the
+      current user directly confirms the decision is satisfied.
+    children:
+      - field: confirmed_by
+        type: string
+        required: true
+      - field: confirmed_at
+        type: string
+        required: true
 
 ALTERNATIVE:
   1:
@@ -306,6 +357,15 @@ ARCHIVE:
     description: >-
       Explicit downstream references retained from the full decision when
       present. Consumers must not infer downstream consequences when absent.
+  7:
+    id: DR7
+    field: satisfaction
+    type: map
+    required: false
+    description: >-
+      Satisfaction state retained when a confirmed full decision is compacted.
+      Legacy compacted entries may omit this field; such entries are valid but
+      review-needed, and compaction must not silently drop them.
 
 VALIDATION:
   1:
@@ -362,3 +422,40 @@ VALIDATION:
       Advisory check. Per-decision entry should be <=200 words.
     checks:
       - "Per-decision word count <= 200"
+  6:
+    id: DV6
+    rule: satisfaction_contract
+    severity: error
+    description: >-
+      Satisfaction, when present, must use the canonical state model. Agents
+      may mark provisional satisfaction only with evidence. User-confirmed
+      satisfaction requires explicit user-confirmation metadata.
+    checks:
+      - "satisfaction.state is one of: open, provisionally_satisfied, user_confirmed_satisfied"
+      - "provisionally_satisfied requires non-empty satisfaction.evidence"
+      - "user_confirmed_satisfied requires satisfaction.user_confirmation.confirmed_by and confirmed_at"
+  7:
+    id: DV7
+    rule: legacy_review_needed
+    severity: advisory
+    description: >-
+      Active or archived legacy decisions without satisfaction remain valid but
+      consumers must derive review_needed=true rather than silently treating
+      them as satisfied.
+    checks:
+      - "missing satisfaction is valid legacy data"
+      - "missing satisfaction derives review_needed=true"
+  8:
+    id: DV8
+    rule: stale_review_trigger
+    severity: warning
+    description: >-
+      Open, provisionally satisfied, or legacy review-needed decisions are
+      protected from compaction/drop. If such decisions exceed compaction
+      budgets, or are encountered during health audits or release closeout,
+      user review is required before treating the state as healthy or
+      release-ready.
+    checks:
+      - "open decisions are protected"
+      - "provisionally_satisfied decisions are protected"
+      - "legacy missing satisfaction is protected until reviewed"

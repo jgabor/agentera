@@ -1001,6 +1001,7 @@ DECISION_CONTEXT_FIELDS = [
     "reasoning",
     "confidence",
     "feeds_into",
+    "satisfaction",
 ]
 
 
@@ -1020,6 +1021,43 @@ def _decision_downstream_references(entry: dict[str, Any]) -> list[dict[str, str
     if not refs:
         return None
     return [{"source_field": "feeds_into", "reference": ref} for ref in refs]
+
+
+def _decision_satisfaction_context(entry: dict[str, Any]) -> dict[str, Any]:
+    satisfaction = entry.get("satisfaction")
+    if not isinstance(satisfaction, dict):
+        return {
+            "state": None,
+            "evidence": None,
+            "user_confirmation": None,
+            "review_needed": True,
+            "source": "missing_legacy_state",
+            "caveats": ["Missing legacy satisfaction state is not treated as satisfied."],
+        }
+    state = satisfaction.get("state")
+    evidence = satisfaction.get("evidence")
+    user_confirmation = satisfaction.get("user_confirmation")
+    caveats: list[str] = []
+    review_needed = True
+    if state == "user_confirmed_satisfied":
+        review_needed = not isinstance(user_confirmation, dict) or not user_confirmation
+        if review_needed:
+            caveats.append("User-confirmed satisfaction is missing explicit user confirmation metadata.")
+    elif state == "provisionally_satisfied":
+        if evidence in (None, "", [], {}):
+            caveats.append("Provisional satisfaction is missing concrete evidence.")
+        caveats.append("Provisional satisfaction still requires user confirmation.")
+    elif state == "open":
+        caveats.append("Satisfaction state is open and requires review.")
+    else:
+        caveats.append("Satisfaction state is missing or unrecognized and requires review.")
+    enriched = dict(satisfaction)
+    enriched.setdefault("evidence", evidence)
+    enriched.setdefault("user_confirmation", user_confirmation)
+    enriched["review_needed"] = review_needed
+    enriched["source"] = "decision.satisfaction"
+    enriched["caveats"] = caveats
+    return enriched
 
 
 def _decision_context_entry(entry: dict[str, Any]) -> dict[str, Any]:
@@ -1043,9 +1081,18 @@ def _decision_context_entry(entry: dict[str, Any]) -> dict[str, Any]:
         caveats.append("Decision entry is missing one or more full-detail context fields.")
     if downstream_references is None:
         caveats.append("No explicit downstream consequence references were present; none were inferred.")
+    satisfaction = _decision_satisfaction_context(enriched)
+    if satisfaction.get("review_needed"):
+        caveats.append("Decision satisfaction requires user review; missing legacy state is not treated as satisfied.")
 
+    enriched["satisfaction"] = satisfaction
     enriched["downstream_consequence_references"] = downstream_references
-    enriched["context_complete"] = not compacted and not missing_fields and downstream_references is not None
+    enriched["context_complete"] = (
+        not compacted
+        and not missing_fields
+        and downstream_references is not None
+        and not satisfaction.get("review_needed")
+    )
     enriched["missing_fields"] = missing_fields
     enriched["compacted"] = compacted
     enriched["caveats"] = caveats
@@ -1058,6 +1105,18 @@ def _decision_source_contract(source: dict[str, Any], entries: list[dict[str, An
     entries_without_downstream_references = sum(
         1 for entry in entries if entry.get("downstream_consequence_references") is None
     )
+    entries_requiring_satisfaction_review = sum(
+        1
+        for entry in entries
+        if isinstance(entry.get("satisfaction"), dict) and entry["satisfaction"].get("review_needed")
+    )
+    user_confirmed_satisfied_entries = sum(
+        1
+        for entry in entries
+        if isinstance(entry.get("satisfaction"), dict)
+        and entry["satisfaction"].get("state") == "user_confirmed_satisfied"
+        and not entry["satisfaction"].get("review_needed")
+    )
     complete_for_returned = bool(source.get("exists")) and all(
         entry.get("context_complete") is True for entry in entries
     )
@@ -1069,8 +1128,11 @@ def _decision_source_contract(source: dict[str, Any], entries: list[dict[str, An
         caveats.append("One or more returned decisions are missing full-detail context fields.")
     if entries_without_downstream_references:
         caveats.append("One or more returned decisions lack explicit downstream consequence references.")
+    if entries_requiring_satisfaction_review:
+        caveats.append("One or more returned decisions require satisfaction review; satisfaction is never inferred from downstream references.")
     return {
         "artifact": "DECISIONS.md",
+        "canonical_artifact_label": "DECISIONS.md",
         "path": source.get("path"),
         "complete_for_returned_decisions": complete_for_returned,
         "complete_for_decision_context": complete_for_returned,
@@ -1080,6 +1142,8 @@ def _decision_source_contract(source: dict[str, Any], entries: list[dict[str, An
             "compacted_entries": compacted_entries,
             "entries_with_missing_fields": entries_with_missing_fields,
             "entries_without_downstream_references": entries_without_downstream_references,
+            "entries_requiring_satisfaction_review": entries_requiring_satisfaction_review,
+            "user_confirmed_satisfied_entries": user_confirmed_satisfied_entries,
         },
         "included_fields": [
             *DECISION_CONTEXT_FIELDS,
@@ -1090,6 +1154,15 @@ def _decision_source_contract(source: dict[str, Any], entries: list[dict[str, An
             "compacted",
             "caveats",
         ],
+        "satisfaction_context": {
+            "owner": "decision entry",
+            "state_field": "satisfaction.state",
+            "evidence_field": "satisfaction.evidence",
+            "confirmation_field": "satisfaction.user_confirmation",
+            "review_needed_field": "satisfaction.review_needed",
+            "confirmation_policy": "Only satisfaction.state=user_confirmed_satisfied with explicit user_confirmation metadata is reported as user-confirmed satisfied.",
+            "non_inference_policy": "Do not infer satisfaction from feeds_into, commits, downstream files, generated references, or compacted history.",
+        },
         "raw_artifact_reads_required": False,
         "raw_artifact_read_policy": (
             "Use `agentera decisions --format json` for normal deliberation context. "
@@ -1101,6 +1174,7 @@ def _decision_source_contract(source: dict[str, Any], entries: list[dict[str, An
             "normal": "Use this command's entries and source_contract; no raw decision artifact read is required for returned full-detail or compacted decision entries.",
             "filtered_result": "The same per-decision guarantees apply after filters; an empty filtered result means no matching returned decisions.",
             "missing_or_incomplete": "If a required field is missing, treat only the present structured fields as authoritative and do not infer absent context.",
+            "satisfaction": "Use only each entry's satisfaction object for satisfaction state. Missing, open, provisional, or unconfirmed satisfaction requires review and must not be reported as user-confirmed satisfied.",
             "compacted_history": "Compacted archive decisions are included with explicit missing_fields and caveats; treat absent historical context as unavailable during normal deliberation.",
         },
         "filters": {key: value for key, value in filters.items() if value is not None},
@@ -2274,6 +2348,7 @@ def _dokumentera_closeout_context(
     progress_evidence = _progress_verification_summary(progress)
     benchmark_evidence = _closeout_benchmark_evidence(docs)
     release_boundary = _closeout_release_boundary(changelog_boundary, bundle)
+    decision_review_pressure = _decision_review_pressure(schemas)
 
     required_state = {
         "artifact_mappings": artifact_mappings["status"] == "available",
@@ -2282,6 +2357,7 @@ def _dokumentera_closeout_context(
         "changelog_boundary": changelog_boundary["boundary_present"],
         "progress_evidence": progress_evidence["status"] == "available",
         "benchmark_evidence_or_caveat": benchmark_evidence["status"] == "available" or bool(benchmark_evidence["caveats"]),
+        "decision_review_pressure": decision_review_pressure["status"] != "review_required",
     }
     missing_required = [name for name, present in required_state.items() if not present]
 
@@ -2296,6 +2372,7 @@ def _dokumentera_closeout_context(
         release_boundary,
         progress_evidence,
         benchmark_evidence,
+        decision_review_pressure,
     ):
         state_caveats.extend(component.get("caveats", []))
     if bundle.get("status") != "fresh":
@@ -2325,6 +2402,7 @@ def _dokumentera_closeout_context(
         "release_boundary": release_boundary,
         "progress_evidence": progress_evidence,
         "benchmark_evidence": benchmark_evidence,
+        "decision_review_pressure": decision_review_pressure,
         "state_family_caveats": state_caveats,
         "fallback_commands": fallback_commands,
         "source_contract": {
@@ -2343,6 +2421,7 @@ def _dokumentera_closeout_context(
                 "changelog",
                 "progress",
                 "benchmark_evidence",
+                "decisions",
             ],
             "required_closeout_state": required_state,
             "missing_required_closeout_state": missing_required,
@@ -2356,6 +2435,7 @@ def _dokumentera_closeout_context(
                 "local metadata/tag versus publication boundary",
                 "latest progress evidence",
                 "benchmark evidence pointer or unavailable caveat",
+                "protected decision review pressure",
                 "provenance pointers and non-empty evidence flags",
                 "fallback commands",
                 "raw-read policy",
@@ -2644,6 +2724,118 @@ def _decision_context_risk(schemas: dict) -> dict[str, Any]:
     }
 
 
+def _parse_decision_review_date(value: Any) -> date | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return date.fromisoformat(value.strip()[:10])
+    except ValueError:
+        return None
+
+
+def _decision_review_due(entry: dict[str, Any]) -> tuple[str | None, date | None]:
+    satisfaction = entry.get("satisfaction") if isinstance(entry.get("satisfaction"), dict) else {}
+    candidates = [
+        ("review_date", entry.get("review_date")),
+        ("review_by", entry.get("review_by")),
+        ("satisfaction.review_date", satisfaction.get("review_date")),
+        ("satisfaction.review_by", satisfaction.get("review_by")),
+        ("satisfaction.review_due", satisfaction.get("review_due")),
+    ]
+    for field, value in candidates:
+        parsed = _parse_decision_review_date(value)
+        if parsed is not None:
+            return field, parsed
+    return None, None
+
+
+def _decision_label(entry: dict[str, Any]) -> str:
+    number = entry.get("number")
+    if number not in (None, ""):
+        return f"Decision {number}"
+    summary = entry.get("summary")
+    if isinstance(summary, str) and summary.strip():
+        return summary.strip().split(":", 1)[0]
+    return "Decision entry"
+
+
+def _decision_review_pressure(schemas: dict) -> dict[str, Any]:
+    info = schemas.get("decisions", {"path": ".agentera/decisions.yaml", "fields": {}})
+    path = _artifact_path(info, "decisions")
+    source = _source_metadata("decisions", path)
+    source_provenance = _source_provenance("decisions", "agentera decisions --format json")
+    if not source.get("exists"):
+        return {
+            "status": "unavailable",
+            "source_provenance": source_provenance,
+            "summary": None,
+            "stale_protected_decisions": [],
+            "caveats": [],
+        }
+
+    data = _load_named_artifact(schemas, "decisions")
+    active = data.get("decisions") if isinstance(data, dict) and isinstance(data.get("decisions"), list) else []
+    archive = data.get("archive") if isinstance(data, dict) and isinstance(data.get("archive"), list) else []
+    active_entries = [_decision_context_entry(entry) for entry in active if isinstance(entry, dict)]
+    archive_entries = [_decision_context_entry(entry) for entry in archive if isinstance(entry, dict)]
+    protected_active = [entry for entry in active_entries if entry.get("satisfaction", {}).get("review_needed")]
+    protected_archive = [entry for entry in archive_entries if entry.get("satisfaction", {}).get("review_needed")]
+
+    today = date.today()
+    stale: list[dict[str, Any]] = []
+    caveats: list[str] = []
+    for collection, entries in (("decisions", protected_active), ("archive", protected_archive)):
+        for entry in entries:
+            field, review_date = _decision_review_due(entry)
+            if review_date is None or review_date > today:
+                continue
+            label = _decision_label(entry)
+            message = f"{label} requires protected decision review because {field} elapsed on {review_date.isoformat()}."
+            stale.append({
+                "label": label,
+                "collection": collection,
+                "reason": "review_date_elapsed",
+                "review_date": review_date.isoformat(),
+                "source_field": field,
+                "message": message,
+            })
+            caveats.append(message)
+
+    protected_overflow_count = max(
+        len(protected_active) - 10,
+        len(protected_archive) - 40,
+        len(protected_active) + len(protected_archive) - 50,
+        0,
+    )
+    if protected_overflow_count:
+        message = (
+            "Protected decisions exceed the 10/40/50 compaction budget; "
+            f"{protected_overflow_count} protected decision(s) require review before compaction can complete."
+        )
+        stale.append({
+            "label": "DECISIONS.md",
+            "collection": "decisions/archive",
+            "reason": "protected_compaction_budget_pressure",
+            "protected_overflow_count": protected_overflow_count,
+            "message": message,
+        })
+        caveats.append(message)
+
+    caveats = list(dict.fromkeys(caveats))
+    return {
+        "status": "review_required" if caveats else "available",
+        "source_provenance": source_provenance,
+        "summary": {
+            "protected_active_decisions": len(protected_active),
+            "protected_archive_decisions": len(protected_archive),
+            "protected_overflow_count": protected_overflow_count,
+            "stale_protected_decisions": len(stale),
+        },
+        "stale_protected_decisions": stale,
+        "caveats": caveats,
+    }
+
+
 def _residual_risk_entry(category: str, status: str, message: str, source_provenance: dict[str, Any]) -> dict[str, Any]:
     return {
         "category": category,
@@ -2677,6 +2869,7 @@ def _inspektera_evidence_context(
     protected_state_checks = _evidence_protected_state_checks()
     version_checks = _evidence_version_checks(docs)
     decision_context_risk = _decision_context_risk(schemas)
+    decision_review_pressure = _decision_review_pressure(schemas)
 
     state_caveats: list[str] = []
     attributed_risks: list[dict[str, Any]] = []
@@ -2734,6 +2927,15 @@ def _inspektera_evidence_context(
                 caveat,
                 decision_context_risk["source_provenance"],
             ))
+    if decision_review_pressure.get("caveats"):
+        for caveat in decision_review_pressure["caveats"]:
+            state_caveats.append(caveat)
+            attributed_risks.append(_residual_risk_entry(
+                "decision_review_pressure",
+                decision_review_pressure["status"],
+                caveat,
+                decision_review_pressure["source_provenance"],
+            ))
     retry_state = _retry_state()
     for caveat in retry_state.get("caveats", []):
         state_caveats.append(caveat)
@@ -2782,6 +2984,7 @@ def _inspektera_evidence_context(
         "protected_state_checks": protected_state_checks,
         "version_checks": version_checks,
         "decision_context": decision_context_risk,
+        "decision_review_pressure": decision_review_pressure,
         "residual_risks": {
             "status": "caveated" if deduped_risks else "none_recorded",
             "items": state_caveats,
@@ -2814,6 +3017,7 @@ def _inspektera_evidence_context(
                 "protected-state placeholder checks",
                 "version boundary checks",
                 "compacted decision caveats",
+                "protected decision review pressure",
                 "attributed residual risks",
                 "fallback commands",
                 "raw-read policy",
@@ -3535,6 +3739,7 @@ def _compaction_operation_payload(op: Any) -> dict[str, Any]:
         "archive_count": status.archive_count,
         "total_count": status.total_count,
         "over_limit_count": status.over_limit_count,
+        "protected_overflow_count": getattr(status, "protected_overflow_count", 0),
         "mode": op.mode,
         "action": op.action,
         "changed": op.changed,
@@ -3555,11 +3760,18 @@ def _compaction_operation_payload(op: Any) -> dict[str, Any]:
 
 def _compaction_guidance(mode: str, operations: list[Any]) -> str:
     over = [op for op in operations if op.action in {"over_limit", "pending_fix"}]
+    protected = [op for op in operations if op.action == "protected_overflow"]
     errors = [op for op in operations if op.action == "error"]
     check_command = "uv run scripts/agentera compact --mode check --format json"
     fix_command = "uv run scripts/agentera compact --mode fix --format json"
     if errors:
         return f"Inspect the reported errors, repair invalid artifacts, then rerun `{check_command}`."
+    if protected:
+        artifacts = ", ".join(op.status.artifact for op in protected)
+        return (
+            f"Protected-overflow review pressure blocks compaction for: {artifacts}. "
+            "Resolve or explicitly confirm protected decision satisfaction before rerunning."
+        )
     if mode == "check" and over:
         artifacts = ", ".join(op.status.artifact for op in over)
         return (
@@ -3577,14 +3789,16 @@ def _compaction_summary(mode: str, operations: list[Any]) -> dict[str, Any]:
     for op in operations:
         counts[op.action] = counts.get(op.action, 0) + 1
     over_limit = sum(1 for op in operations if op.action in {"over_limit", "pending_fix"})
+    protected_overflow = sum(1 for op in operations if op.action == "protected_overflow")
     errors = sum(1 for op in operations if op.action == "error")
     changed = sum(1 for op in operations if op.changed)
-    status = "fail" if errors or (mode == "check" and over_limit) else "pass"
+    status = "fail" if errors or protected_overflow or (mode == "check" and over_limit) else "pass"
     return {
         "status": status,
         "mode": mode,
         "artifact_count": len(operations),
         "over_limit_count": over_limit,
+        "protected_overflow_count": protected_overflow,
         "error_count": errors,
         "changed_count": changed,
         "action_counts": counts,
@@ -3595,6 +3809,8 @@ def _compaction_summary(mode: str, operations: list[Any]) -> dict[str, Any]:
 def _compaction_exit_code(mode: str, operations: list[Any]) -> int:
     if any(op.action == "error" for op in operations):
         return 2
+    if any(op.action == "protected_overflow" for op in operations):
+        return 1
     if mode == "check" and any(op.action == "over_limit" for op in operations):
         return 1
     return 0
@@ -3632,6 +3848,7 @@ def _emit_compaction_payload(args: argparse.Namespace, payload: dict[str, Any], 
             "counts="
             f"artifacts:{summary['artifact_count']} "
             f"over_limit:{summary['over_limit_count']} "
+            f"protected_overflow:{summary['protected_overflow_count']} "
             f"errors:{summary['error_count']} "
             f"changed:{summary['changed_count']}"
         )
@@ -3641,6 +3858,7 @@ def _emit_compaction_payload(args: argparse.Namespace, payload: dict[str, Any], 
                 f"classification={item['classification']} | path={item['path']} | "
                 f"active={item['active_count']} | archive={item['archive_count']} | "
                 f"total={item['total_count']} | over={item['over_limit_count']} | "
+                f"protected_overflow={item['protected_overflow_count']} | "
                 f"message={item['message']}"
             )
         print(f"guidance={summary['guidance']}")

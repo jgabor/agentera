@@ -77,6 +77,16 @@ If `evidence_context` is absent, incomplete, or caveated for a state family you 
 
 Preserve caveats from `evidence_context.state_family_caveats`, `evidence_context.residual_risks.attributed_items`, `decision_context.caveats`, `protected_state_checks.caveats`, and `version_checks.caveats` when reporting evaluation results. Do not hide, flatten, or reconstruct stale app/profile state, compacted decisions, protected-state boundaries, unavailable version evidence, absent publication or remote evidence, manual-check states, or residual risks. These caveats calibrate confidence; they are not approval to refresh installed apps, refresh profile state, read or edit `.agentera/vision.yaml`, read or edit objective state, contact remotes or registries, or invent missing history.
 
+### Decision satisfaction authority
+
+When an audit touches decision satisfaction, agents may mark provisional
+satisfaction with evidence only. Inspektera must not mark, infer, or
+user-confirm final satisfaction; only the user confirms final satisfaction. If
+decisions are compacted, missing satisfaction state, open, provisional, or
+review-needed, preserve the caveat and review pressure in findings and residual
+risks instead of reconstructing hidden outcomes or claiming automation proved
+intent.
+
 ## Step 1: Orient
 
 Use complete `evidence_context` first for the evaluated target, current plan criteria, latest progress verification, docs state, health state, TODO state, decision caveats, protected-state checks, version checks, and residual risks. Only run listed CLI fallbacks before raw artifact reads when the context is incomplete for the state needed.

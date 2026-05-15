@@ -63,6 +63,7 @@ class CompactionStatus:
     total_count: int | None
     over_limit_count: int | None
     reason: str
+    protected_overflow_count: int | None = 0
     exists: bool = True
 
 
@@ -433,6 +434,18 @@ def _yaml_counts(path: Path, active_key: str, archive_key: str) -> tuple[int, in
     )
 
 
+def _yaml_lists(path: Path, active_key: str, archive_key: str) -> tuple[list[object], list[object]]:
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if not isinstance(data, dict):
+        return [], []
+    active = data.get(active_key) or []
+    archive = data.get(archive_key) or []
+    return (
+        active if isinstance(active, list) else [],
+        archive if isinstance(archive, list) else [],
+    )
+
+
 def _yaml_entry_number(entry: object) -> int:
     """Best-effort numeric recency key for YAML active/archive entries."""
     if isinstance(entry, dict):
@@ -485,7 +498,7 @@ def _yaml_archive_entry(spec_name: str, entry: object) -> dict[str, object]:
         date_part = f" ({date})" if date else ""
         choice = _yaml_summary_text(entry, "choice", "question")
         archive_entry: dict[str, object] = {"summary": f"Decision {number}{date_part}: {choice}"}
-        for field in ("number", "date", "choice", "outcome", "feeds_into"):
+        for field in ("number", "date", "choice", "outcome", "feeds_into", "satisfaction"):
             value = entry.get(field)
             if value not in (None, "", [], {}):
                 archive_entry[field] = value
@@ -540,6 +553,68 @@ def _yaml_archive_entries(entries: list[object]) -> list[object]:
     return sorted(entries, key=_yaml_archive_sort_key, reverse=True)
 
 
+def _decision_satisfaction_state(entry: object) -> str | None:
+    if not isinstance(entry, dict):
+        return None
+    satisfaction = entry.get("satisfaction")
+    if not isinstance(satisfaction, dict):
+        return None
+    state = satisfaction.get("state")
+    return state if isinstance(state, str) else None
+
+
+def _decision_requires_user_review(entry: object) -> bool:
+    if not isinstance(entry, dict):
+        return True
+    satisfaction = entry.get("satisfaction")
+    if not isinstance(satisfaction, dict):
+        return True
+    confirmation = satisfaction.get("user_confirmation")
+    return (
+        _decision_satisfaction_state(entry) != "user_confirmed_satisfied"
+        or not isinstance(confirmation, dict)
+        or not confirmation
+    )
+
+
+def _decision_protected_overflow_count(active: list[object], archive: list[object]) -> int:
+    protected_active = sum(1 for entry in active if _decision_requires_user_review(entry))
+    protected_archive = sum(1 for entry in archive if _decision_requires_user_review(entry))
+    return max(
+        protected_active - MAX_FULL_ENTRIES,
+        protected_archive - MAX_ONELINE_ENTRIES,
+        protected_active + protected_archive - MAX_TOTAL_ENTRIES,
+        0,
+    )
+
+
+def _select_decision_active_entries(active: list[object]) -> tuple[list[object], list[object]]:
+    """Keep review-needed decisions full, filling remaining active slots with newest satisfied entries."""
+    protected = [entry for entry in active if _decision_requires_user_review(entry)]
+    if len(protected) > MAX_FULL_ENTRIES:
+        raise RuntimeError(
+            "DECISIONS.md: protected-overflow review pressure; "
+            f"{len(protected)} protected active decision(s) exceed {MAX_FULL_ENTRIES} full-detail slots"
+        )
+    satisfied = [entry for entry in active if not _decision_requires_user_review(entry)]
+    newest_satisfied = sorted(satisfied, key=_yaml_entry_number, reverse=True)
+    keep_satisfied = newest_satisfied[: MAX_FULL_ENTRIES - len(protected)]
+    compact_satisfied = newest_satisfied[MAX_FULL_ENTRIES - len(protected):]
+    return _yaml_sort_entries(protected + keep_satisfied, "decisions"), compact_satisfied
+
+
+def _select_decision_archive_entries(archive_candidates: list[object]) -> list[object]:
+    protected = [entry for entry in archive_candidates if _decision_requires_user_review(entry)]
+    if len(protected) > MAX_ONELINE_ENTRIES:
+        raise RuntimeError(
+            "DECISIONS.md: protected-overflow review pressure; "
+            f"{len(protected)} protected archived decision(s) exceed {MAX_ONELINE_ENTRIES} archive slots"
+        )
+    satisfied = [entry for entry in archive_candidates if not _decision_requires_user_review(entry)]
+    keep_satisfied = _yaml_archive_entries(satisfied)[: MAX_ONELINE_ENTRIES - len(protected)]
+    return _yaml_archive_entries(protected + keep_satisfied)
+
+
 def compact_yaml_file(path: Path, artifact: str) -> CompactResult:
     """Compact a v2 YAML artifact, preserving unrelated top-level keys."""
     if artifact not in COMPACTABLE_YAML_ARTIFACTS:
@@ -565,13 +640,19 @@ def compact_yaml_file(path: Path, artifact: str) -> CompactResult:
     if _over_limit_count(full_before, oneline_before) == 0:
         return CompactResult(full_before, oneline_before, full_before, oneline_before, 0, False)
 
-    recent_full, older_active = _yaml_recent_full_and_older(active, spec_name)
+    if spec_name == "decisions":
+        recent_full, older_active = _select_decision_active_entries(active)
+    else:
+        recent_full, older_active = _yaml_recent_full_and_older(active, spec_name)
     compacted_from_active = [
         _yaml_archive_entry(spec_name, entry)
         for entry in older_active
     ]
     archive_candidates = _yaml_archive_entries(compacted_from_active + archive)
-    archive_after = archive_candidates[:MAX_ONELINE_ENTRIES]
+    if spec_name == "decisions":
+        archive_after = _select_decision_archive_entries(archive_candidates)
+    else:
+        archive_after = archive_candidates[:MAX_ONELINE_ENTRIES]
 
     data[active_key] = recent_full
     data[archive_key] = archive_after
@@ -583,7 +664,13 @@ def compact_yaml_file(path: Path, artifact: str) -> CompactResult:
     return CompactResult(full_before, oneline_before, full_after, oneline_after, dropped, True)
 
 
-def _count_status(artifact: str, path: Path, active_count: int, archive_count: int) -> CompactionStatus:
+def _count_status(
+    artifact: str,
+    path: Path,
+    active_count: int,
+    archive_count: int,
+    protected_overflow_count: int = 0,
+) -> CompactionStatus:
     total_count = active_count + archive_count
     return CompactionStatus(
         artifact=artifact,
@@ -593,7 +680,8 @@ def _count_status(artifact: str, path: Path, active_count: int, archive_count: i
         archive_count=archive_count,
         total_count=total_count,
         over_limit_count=_over_limit_count(active_count, archive_count),
-        reason="uniform_10_40_50",
+        reason="protected-overflow review pressure" if protected_overflow_count else "uniform_10_40_50",
+        protected_overflow_count=protected_overflow_count,
     )
 
 
@@ -619,7 +707,13 @@ def compute_compaction_status(project_root: Path) -> list[CompactionStatus]:
     for artifact, (active_key, archive_key) in COMPACTABLE_YAML_ARTIFACTS.items():
         path = paths[artifact]
         if path.exists():
-            statuses.append(_count_status(artifact, path, *_yaml_counts(path, active_key, archive_key)))
+            active, archive = _yaml_lists(path, active_key, archive_key)
+            protected_overflow_count = (
+                _decision_protected_overflow_count(active, archive)
+                if artifact == "DECISIONS.md"
+                else 0
+            )
+            statuses.append(_count_status(artifact, path, len(active), len(archive), protected_overflow_count))
         else:
             statuses.append(_missing_status(artifact, path, "compactable"))
 
@@ -658,6 +752,13 @@ def _operation_for_status(status: CompactionStatus, mode: str) -> CompactionOper
         return CompactionOperation(status, mode, "missing", message=status.reason)
     if status.classification != "compactable":
         return CompactionOperation(status, mode, "skipped", message=status.reason)
+    if status.protected_overflow_count:
+        return CompactionOperation(
+            status,
+            mode,
+            "protected_overflow",
+            message=f"protected-overflow review pressure by {status.protected_overflow_count}",
+        )
     if not status.over_limit_count:
         return CompactionOperation(status, mode, "ok", message="within uniform_10_40_50 limits")
     return CompactionOperation(

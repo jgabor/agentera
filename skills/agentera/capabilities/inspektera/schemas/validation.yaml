@@ -97,3 +97,17 @@ VALIDATION:
       - "state_family_caveats are preserved in evaluation results"
       - "residual_risks.attributed_items are preserved with category, status, message, and provenance"
       - "Compacted decision, protected-state, version, publication, remote, app, and profile caveats are not reconstructed or hidden"
+  10:
+    id: V10
+    rule: satisfaction_authority_boundary
+    description: >-
+      When Inspektera touches decision satisfaction, it may report provisional
+      satisfaction with evidence but MUST NOT user-confirm satisfaction. Missing,
+      compacted, open, provisional, or review-needed satisfaction state remains a
+      caveat and review pressure; automation must not reconstruct hidden outcomes
+      or claim it proved user intent.
+    severity: critical
+    checks:
+      - "Provisional satisfaction requires evidence"
+      - "Only the user confirms final satisfaction"
+      - "Missing or compacted satisfaction caveats are preserved"

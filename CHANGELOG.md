@@ -20,6 +20,8 @@
 
 ### Fixed
 
+- Decision satisfaction state is now explicit in the decision contract and validator: automation may record provisional evidence, user-confirmed satisfaction requires explicit user-confirmation metadata, and missing legacy state remains review-needed rather than silently satisfied.
+- Decisions JSON, shared compaction, Inspektera evidence context, and Dokumentera closeout context now preserve satisfaction caveats and protected-decision review pressure without inferring satisfaction from downstream references, commits, file changes, or compacted history.
 - Realisera plan-driven startup now uses `agentera hej --format json --capability-context realisera` execution context before raw plan, progress, TODO, docs, health, decisions, changelog, vision, profile, or design startup reads, preserving fallbacks and caveats for missing state.
 - Optimera benchmark-oriented startup now uses `agentera hej --format json --capability-context optimera` benchmark context before direct retained benchmark file reads, preserving fallback commands, caveats, and manual-refresh guidance for missing or incomplete local benchmark evidence.
 - Inspektera evaluation startup now uses `agentera hej --format json --capability-context inspektera` evidence context before raw plan, progress, docs, health, TODO, or decisions state, preserving fallbacks and caveats for incomplete state.
@@ -68,6 +70,7 @@
 
 ### Added
 
+- Decision satisfaction tracking now exposes per-entry satisfaction state, provisional evidence, user confirmation metadata, review-needed flags, protected-overflow compaction status, and release-closeout review pressure across the CLI, hooks, audit context, closeout context, and capability guidance.
 - Realisera execution context now exposes selected work, task details, acceptance criteria, constraints, verification expectations, artifact update requirements, progress logging requirements, changelog boundary, conservative scope boundary, git boundary, read-only plan-completion sweep metadata, fallbacks, caveats, and a raw-read-last-resort source contract without adding another capability-name CLI command.
 - Optimera benchmark context now exposes retained startup benchmark source status, latest report summary, aggregate history, runtime coverage caveats, state-access rates, token-impact estimates, comparison status, bounded recommendation action, manual refresh guidance, privacy boundary, fallbacks, and a raw-read-last-resort source contract without adding `agentera optimera` or another capability-name CLI command.
 - Inspektera evidence context now exposes evaluation target, plan criteria, progress verification, docs and health state, TODO state, protected/version boundary checks, compacted decision caveats, attributed residual risks, fallback commands, caveats, provenance, non-empty evidence flags, and a raw-read-last-resort source contract without adding `agentera inspektera` or another capability-name CLI command.

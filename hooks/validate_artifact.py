@@ -548,6 +548,49 @@ def _validate_decision_alternatives(data: dict, name: str) -> list[str]:
     return violations
 
 
+def _validate_decision_satisfaction(data: dict, name: str) -> list[str]:
+    violations: list[str] = []
+    allowed_states = {"open", "provisionally_satisfied", "user_confirmed_satisfied"}
+    entries: list[tuple[str, object]] = [
+        (f"decisions[{index}]", decision)
+        for index, decision in enumerate(data.get("decisions", []))
+    ] + [
+        (f"archive[{index}]", decision)
+        for index, decision in enumerate(data.get("archive", []))
+    ]
+    for entry_path, decision in entries:
+        if not isinstance(decision, dict) or "satisfaction" not in decision:
+            continue
+        path = f"{entry_path}.satisfaction"
+        satisfaction = decision.get("satisfaction")
+        if not isinstance(satisfaction, dict):
+            violations.append(f"{name}: '{path}' must be a mapping")
+            continue
+        state = satisfaction.get("state")
+        if not isinstance(state, str) or not state.strip():
+            violations.append(f"{name}: missing required field '{path}.state'")
+            continue
+        if state not in allowed_states:
+            violations.append(
+                f"{name}: invalid value '{state}' for '{path}.state' "
+                "(expected one of: open, provisionally_satisfied, user_confirmed_satisfied)"
+            )
+            continue
+        if state == "provisionally_satisfied" and _is_empty_required(satisfaction.get("evidence")):
+            violations.append(f"{name}: '{path}.evidence' is required for provisionally_satisfied")
+        if state == "user_confirmed_satisfied":
+            confirmation = satisfaction.get("user_confirmation")
+            if not isinstance(confirmation, dict):
+                violations.append(f"{name}: '{path}.user_confirmation' is required for user_confirmed_satisfied")
+                continue
+            for field in ("confirmed_by", "confirmed_at"):
+                if _is_empty_required(confirmation.get(field)):
+                    violations.append(
+                        f"{name}: missing required field '{path}.user_confirmation.{field}'"
+                    )
+    return violations
+
+
 def _validation_rule_severity(schema: dict, rule: str) -> str | None:
     for entry in schema.get("VALIDATION", {}).values():
         if isinstance(entry, dict) and entry.get("rule") == rule:
@@ -587,6 +630,7 @@ def _validate_yaml(content: str, schema: dict, name: str) -> list[str]:
     _validate_sequences(data, schema, name, violations)
     if name == "decisions":
         violations.extend(_validate_decision_alternatives(data, name))
+        violations.extend(_validate_decision_satisfaction(data, name))
     word_budget_severity = _validation_rule_severity(schema, "word_budget")
     for _, be in schema.get("BUDGET", {}).items():
         if not isinstance(be, dict):

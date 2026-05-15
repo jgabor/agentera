@@ -1,4 +1,258 @@
 cycles:
+- number: 510
+  timestamp: 2026-05-15 14:05
+  type: fix
+  phase: audit
+  what: Synchronized PLAN Task 7 local closeout metadata for the 2.3.13 Decision satisfaction
+    tracking patch.
+  commit: pending
+  inspiration: Orkestrera selected PLAN Task 7 after Tasks 1-6 were evaluator-passed,
+    with final local closeout limited to TODO, PROGRESS, CHANGELOG, docs audit metadata,
+    and declared version-bearing surfaces.
+  discovered: CLI state confirmed Task 7 as the pending Realisera work item, Tasks
+    1-6 complete, changelog lacking a 2.3.13 closeout entry, docs last_audit still
+    at 2.3.12, the Decision 53 TODO still open, and version surfaces still aligned
+    to 2.3.12. `.agentera/docs.yaml` and `references/adapters/package-registry.yaml`
+    agreed that only `pyproject.toml`, `uv.lock`, plugin manifests, `.opencode/plugins/agentera.js`,
+    skill frontmatter, and `registry.json` are version-bearing for this alignment.
+  verified: Task 7 metadata sync updated TODO, CHANGELOG, DOCS audit metadata, PROGRESS,
+    and only the declared version-bearing files to record 2.3.13 local closeout scope.
+    Acceptance is ready for evaluator review after running metadata validators and
+    scope audit; Task 7 intentionally remains pending for Orkestrera evaluator resolution.
+  next: Hand PLAN Task 7 to Orkestrera evaluator review. Do not mark Task 7 complete,
+    commit, push, tag, publish, refresh installed apps or profile, edit vision or
+    objective state, or run unsupported capability-name CLI commands.
+  context:
+    intent: PLAN Task 7 local closeout metadata sync for 2.3.13 Decision satisfaction
+      tracking
+    constraints: Local metadata sync only; no publication, remote push, tag, installed-app
+      refresh, profile refresh, vision edit, objective-state edit, objective-state
+      mutation, plan completion, commit, or unsupported capability-name CLI command
+    version_surfaces: pyproject.toml, uv.lock, plugin.json, .github/plugin/plugin.json,
+      .codex-plugin/plugin.json, .claude-plugin/marketplace.json, .opencode/plugins/agentera.js,
+      skills/agentera/SKILL.md, skills/hej/SKILL.md, registry.json
+    scope: Decision satisfaction tracking closeout metadata, TODO resolution, changelog
+      closeout notes, docs audit metadata, progress evidence, and declared 2.3.13
+      version-bearing alignment
+- number: 509
+  timestamp: 2026-05-15 13:59
+  type: test
+  phase: audit
+  what: Added PLAN Task 6 focused regression coverage and prepared validation gates.
+  commit: pending
+  inspiration: Orkestrera assigned Task 6 to cover the Decision 53 regression surface
+    without broadening into Task 7 metadata closeout or changing plan status.
+  discovered: Existing focused suites already covered satisfaction schema validation,
+    Decisions JSON satisfaction output, downstream non-inference, protected compaction,
+    archive satisfaction retention, and Inspektera review pressure. Missing proportional
+    refinements were a closeout no-review-pressure counterpart and stronger normal-versus-compacted
+    decisions source-contract assertions for raw artifact fallback behavior.
+  verified: Focused Task 6 checks passed before final gates with `uv run pytest tests/test_hook_v2.py::TestValidateYamlDecisions
+    tests/test_query_cli.py::TestDecisions tests/test_query_cli.py::TestHej::test_hej_dokumentera_closeout_context_reports_required_closeout_state
+    tests/test_query_cli.py::TestHej::test_hej_dokumentera_closeout_context_blocks_stale_protected_decisions
+    tests/test_query_cli.py::TestHej::test_hej_dokumentera_closeout_context_does_not_fabricate_decision_review_pressure
+    tests/test_query_cli.py::TestHej::test_hej_inspektera_evidence_context_reports_required_evidence_state
+    tests/test_query_cli.py::TestHej::test_hej_inspektera_evidence_context_attributes_stale_protected_decision_review_pressure
+    tests/test_query_cli.py::TestHej::test_hej_inspektera_evidence_context_does_not_fabricate_decision_review_warnings
+    -q` (28 passed) and `uv run pytest tests/test_compaction_status.py -q` (10 passed).
+    Initial gates exposed an invalid progress phase and PROGRESS over-limit state;
+    both were corrected with a valid `audit` phase and `uv run scripts/agentera compact
+    --mode fix --format json` (status=pass, PROGRESS compacted). Final gates passed
+    with `uv run hooks/validate_artifact.py --artifact PROGRESS.md --file .agentera/progress.yaml
+    --format json` (status=pass), `uv run scripts/validate_capability.py --self-validate`
+    (PASS), all 12 `uv run scripts/validate_capability.py skills/agentera/capabilities/<name>`
+    checks (PASS), `uv run scripts/agentera compact --mode check --format json` (status=pass),
+    `uv run scripts/agentera gate --format json` (status=pass), and `git diff --check`
+    (PASS).
+  next: Hand PLAN Task 6 to Orkestrera evaluator review. Do not mark the plan task
+    complete, perform Task 7 metadata/version closeout, commit, push, tag, publish,
+    refresh installed apps or profile, edit vision or objective state, or run unsupported
+    capability-name CLI commands.
+  context:
+    intent: PLAN Task 6 focused regression coverage and gates under Orkestrera
+    constraints: Task 6 only; no Task 7 local closeout metadata sync, changelog/TODO
+      version sync, package version bumps, publication, tags, push, installed-app/profile
+      refresh, vision edit, objective-state edit, or plan completion
+    proportionality: Satisfaction schema validation has valid and malformed fixtures;
+      Decisions JSON has complete normal and compacted/incomplete fixtures; downstream
+      references have present and absent/non-inferred fixtures; protected compaction
+      has compactable and protected-overflow fixtures; archive retention has retained
+      satisfied and blocked legacy-gap fixtures; Inspektera and Dokumentera review
+      pressure each have review-required and no-fabrication fixtures.
+    scope: Focused regression tests, source-contract assertions, closeout review-pressure
+      no-fabrication fixture, progress evidence, and required validation gates
+- number: 508
+  timestamp: 2026-05-15 13:53
+  type: docs
+  phase: build
+  what: Added PLAN Task 5 capability guidance for decision satisfaction authority
+    boundaries.
+  commit: pending
+  inspiration: Orkestrera assigned Task 5 to make Realisera, Inspektera, Dokumentera,
+    Orkestrera, and Resonera guidance respect Decision 53 satisfaction ownership without
+    broadening into Task 6 gates or Task 7 metadata closeout.
+  discovered: The affected capabilities already had context-first and fallback-before-raw
+    guidance, but satisfaction authority was not stated in capability prose or validation
+    rules. The new guidance limits agents to evidence-backed provisional satisfaction,
+    reserves final satisfaction confirmation for the user, and preserves compacted,
+    missing, open, provisional, or review-needed caveats as review pressure.
+  verified: Focused Task 5 checks passed with `uv run scripts/validate_capability.py
+    skills/agentera/capabilities/realisera` (PASS), `uv run scripts/validate_capability.py
+    skills/agentera/capabilities/inspektera` (PASS), `uv run scripts/validate_capability.py
+    skills/agentera/capabilities/dokumentera` (PASS), `uv run scripts/validate_capability.py
+    skills/agentera/capabilities/orkestrera` (PASS), `uv run scripts/validate_capability.py
+    skills/agentera/capabilities/resonera` (PASS), `uv run pytest tests/test_decision_satisfaction_guidance.py
+    -q` (3 passed), and `uv run pytest tests/test_realisera_capability.py tests/test_inspektera_capability.py
+    tests/test_dokumentera_capability.py tests/test_orkestrera_capability.py tests/test_resonera_capability.py
+    -q` (38 passed).
+  next: Hand PLAN Task 5 to Orkestrera evaluator review. Do not mark the plan task
+    complete, commit, push, tag, publish, refresh installed apps or profile, edit
+    vision or objective state, or run unsupported capability-name CLI commands.
+  context:
+    intent: PLAN Task 5 capability guidance and authority boundaries under Orkestrera
+    constraints: Task 5 only; no Task 6 gates, Task 7 metadata closeout, plan completion,
+      commit, push, tag, publish, install/profile refresh, vision edit, objective-state
+      edit, or unsupported capability-name CLI command
+    scope: Capability prose and validation schemas for Realisera, Inspektera, Dokumentera,
+      Orkestrera, and Resonera, focused guidance assertions, and latest progress substantiation
+- number: 507
+  timestamp: 2026-05-15 13:45
+  type: feat
+  phase: build
+  what: Implemented PLAN Task 4 health audit and release closeout review surfaces.
+  commit: pending
+  inspiration: Orkestrera assigned Task 4 to make stale protected decisions visible
+    in Inspektera evidence context and Dokumentera release closeout context without
+    broadening into capability prose, broad regression gates, or release metadata
+    closeout.
+  discovered: Inspektera already attributed compacted decision and profile caveats,
+    and Dokumentera already caveated closeout metadata gaps, but neither had a shared
+    stale protected-decision review-pressure surface. The new shared helper reports
+    elapsed decision review dates and protected-overflow pressure against the 10/40/50
+    compaction budget, while returning no caveat when no stale protected decisions
+    exist.
+  verified: Focused Task 4 checks passed with `uv run pytest tests/test_query_cli.py::TestHej::test_hej_dokumentera_closeout_context_reports_required_closeout_state
+    tests/test_query_cli.py::TestHej::test_hej_dokumentera_closeout_context_blocks_stale_protected_decisions
+    tests/test_query_cli.py::TestHej::test_hej_inspektera_evidence_context_reports_required_evidence_state
+    tests/test_query_cli.py::TestHej::test_hej_inspektera_evidence_context_attributes_stale_protected_decision_review_pressure
+    tests/test_query_cli.py::TestHej::test_hej_inspektera_evidence_context_does_not_fabricate_decision_review_warnings
+    -q` (5 passed) and `python -m py_compile scripts/agentera` (passed).
+  next: Hand PLAN Task 4 to Orkestrera evaluator review. Do not mark the plan task
+    complete, commit, push, tag, publish, refresh installed apps or profile, edit
+    vision or objective state, or run unsupported capability-name CLI commands.
+  context:
+    intent: PLAN Task 4 stale protected decision review surfaces under Orkestrera
+    constraints: Task 4 only; no Task 5 capability prose/guidance, Task 6 broad regression
+      gates, Task 7 metadata/version closeout, plan completion, commit, push, tag,
+      publish, install/profile refresh, vision edit, objective-state edit, retry-count
+      invention, or unsupported capability-name CLI command
+    scope: Shared decision review-pressure context, Inspektera residual-risk attribution,
+      Dokumentera closeout blocker/caveat completeness, focused tests, and latest
+      progress substantiation
+- number: 506
+  timestamp: 2026-05-15 13:39
+  type: feat
+  phase: build
+  what: Implemented PLAN Task 3 shared compaction protection and protected-overflow
+    review pressure.
+  commit: pending
+  inspiration: Orkestrera assigned Task 3 to ensure shared compaction callers preserve
+    open, provisional, or review-needed decisions, report protected-overflow review
+    pressure when decision protection makes the 10/40/50 budget impossible, and keep
+    user-confirmed satisfaction intact through decision archive compaction and JSON
+    output.
+  discovered: Shared decision compaction already refused to compact or drop non-confirmed
+    decisions in fix mode, but check/gate reported only generic over-limit pressure,
+    and active review-needed decisions blocked otherwise safe compaction of nearby
+    satisfied decisions. The shared status model now carries protected_overflow_count,
+    CLI payloads and exit codes surface protected_overflow, and decision compaction
+    keeps review-needed active entries full while archiving only confirmed eligible
+    entries.
+  verified: Focused Task 3 checks passed with `uv run pytest tests/test_compaction_status.py
+    -q` (10 passed), `uv run pytest tests/test_query_cli.py::TestDecisions -q` (15
+    passed), and `python -m py_compile hooks/compaction.py scripts/agentera`. Repository
+    compaction check/gate initially reported only PROGRESS over-limit after the new
+    progress evidence; final compaction fix/check/gate were run after this entry.
+  next: Hand PLAN Task 3 to Orkestrera evaluator review. Do not mark the plan task
+    complete, commit, push, tag, publish, refresh installed apps or profile, edit
+    vision or objective state, or run unsupported capability-name CLI commands.
+  context:
+    intent: PLAN Task 3 shared compaction protection and review pressure under Orkestrera
+    constraints: Task 3 only; no Task 4 health/closeout surfaces, Task 5 capability
+      prose, Task 6 broad gates, Task 7 metadata/version closeout, plan completion,
+      commit, push, tag, publish, install/profile refresh, vision edit, objective-state
+      edit, or unsupported capability-name CLI command
+    scope: Shared compaction engine, compact/gate payload and exit status, focused
+      decision compaction and decisions JSON tests, and latest progress substantiation
+- number: 505
+  timestamp: 2026-05-15 13:31
+  type: feat
+  phase: build
+  what: Implemented PLAN Task 2 decisions CLI satisfaction source-contract output.
+  commit: pending
+  inspiration: Orkestrera assigned Task 2 to make `agentera decisions --format json`
+    truthfully expose per-entry satisfaction state, evidence or confirmation metadata,
+    review-needed flags, and non-inferential caveats without broadening into later
+    plan tasks.
+  discovered: Decisions JSON already avoided downstream-reference fabrication and
+    marked missing legacy satisfaction as review-needed, but satisfaction metadata
+    was not normalized across open, provisional, confirmed, and missing states, and
+    the source_contract did not explicitly describe satisfaction ownership, completeness
+    counters, or fallback policy.
+  verified: Focused Task 2 checks passed with `uv run pytest tests/test_query_cli.py::TestDecisions
+    -q` (14 passed). `uv run scripts/agentera decisions --format json` passed and
+    showed each returned decision with a satisfaction object containing state, evidence,
+    user_confirmation, review_needed, source, and caveats; the emitted source_contract
+    included canonical_artifact_label, satisfaction_context, entries_requiring_satisfaction_review,
+    user_confirmed_satisfied_entries, and the non-inference satisfaction fallback
+    policy.
+  next: Hand PLAN Task 2 to Orkestrera evaluator review. Do not mark the plan task
+    complete, commit, push, tag, publish, refresh installed apps or profile, edit
+    vision or objective state, or run unsupported capability-name CLI commands.
+  context:
+    intent: PLAN Task 2 Decisions CLI satisfaction source contract under Orkestrera
+    constraints: Task 2 only; no Task 3+ behavior; no plan completion; no commit,
+      push, tag, publish, install/profile refresh, vision edit, objective-state edit,
+      or unsupported capability-name CLI command
+    scope: Decisions JSON satisfaction context, non-inferential downstream handling,
+      source-contract truthfulness, focused tests, and latest progress substantiation
+- number: 504
+  timestamp: 2026-05-15 12:45
+  type: feat
+  phase: audit
+  what: Implemented PLAN Task 1 satisfaction contract and legacy semantics for Decision
+    53.
+  commit: pending
+  inspiration: Orkestrera evaluation required a Task 1-specific progress cycle after
+    the initial implementation report lacked latest-progress substantiation. Task
+    1 acceptance covers the decisions satisfaction schema contract, validation errors,
+    legacy review-needed read semantics, and compaction protection for legacy archived
+    decisions.
+  discovered: The implementation already added decision satisfaction schema fields,
+    validation, read-time legacy `review_needed` derivation, and compaction refusal
+    before dropping or compacting unconfirmed decisions. No additional Task 1 implementation
+    gap was found during the retry; only progress evidence was missing.
+  verified: 'Task 1 focused checks passed before this progress update with `uv run
+    pytest tests/test_hook_v2.py` (79 passed), `uv run pytest tests/test_compaction_status.py`
+    (8 passed), `uv run pytest tests/test_query_cli.py::TestDecisions` (12 passed),
+    `uv run scripts/validate_capability.py --self-validate` (PASS), `uv run hooks/validate_artifact.py
+    --artifact DECISIONS.md --file .agentera/decisions.yaml --format json` (status=pass),
+    `uv run scripts/agentera compact --mode check --format json` (status=pass), and
+    `uv run scripts/agentera decisions --format json` showing legacy decisions with
+    `review_needed: true` rather than satisfied.'
+  next: Hand PLAN Task 1 to Orkestrera evaluator review. Do not mark the plan task
+    complete, commit, push, tag, publish, refresh installed apps or profile, edit
+    vision or objective state, or run unsupported capability-name CLI commands.
+  context:
+    intent: PLAN Task 1 satisfaction contract and legacy semantics under Orkestrera
+      evaluation retry
+    constraints: Task 1 only; progress evidence update only unless a Task 1 implementation
+      gap is found; no plan completion; no commit, push, tag, publish, install/profile
+      refresh, vision edit, objective-state edit, or unsupported capability-name CLI
+      command
+    scope: Decisions satisfaction contract, validator behavior, compaction-drop protection,
+      legacy read review-needed semantics, focused verification evidence, and latest
+      progress substantiation
 - number: 503
   timestamp: 2026-05-15 12:30
   type: feat
@@ -115,290 +369,21 @@ cycles:
     scope: TODO, CHANGELOG, docs audit metadata, version-bearing package/plugin/OpenCode/skill
       surfaces, plan evidence, progress cycle, artifact validation, gates, and local
       scope audit
-- number: 500
-  timestamp: 2026-05-15 10:05
-  type: test
-  phase: build
-  what: Completed PLAN Task 6 evaluation startup fixtures and validation gates for
-    Inspektera evidence_context.
-  commit: pending
-  inspiration: Task 6 required deterministic startup/evaluation coverage proving that
-    complete Inspektera `evidence_context` prevents normal raw-after-CLI reads for
-    plan, progress, docs, health, TODO, or decisions state, plus local validation
-    gates and independent evaluation review.
-  discovered: Added a focused startup fixture assertion to `tests/test_query_cli.py`
-    that requests `evidence_context` through the supported `hej --capability-context
-    inspektera` seam, verifies complete source-contract metadata and CLI-only fallbacks,
-    and checks Inspektera Step 1 guidance for evidence-context state instead of raw
-    startup artifact reads. Independent review found remaining raw Step 1 guidance
-    and stale Task 4 fallback contract text; `skills/agentera/capabilities/inspektera/prose.md`
-    and `references/cli/agent-ready-state-contract.yaml` now fix those issues. A second
-    independent review found no blocking Task 6 findings.
-  verified: Focused verification passed with `uv run pytest tests/test_query_cli.py::TestHej
-    tests/test_query_cli.py::TestRoutineStructuredOutput tests/test_decision45_cli_contract.py
-    tests/test_inspektera_capability.py` (107 tests) and `uv run scripts/validate_capability.py
-    skills/agentera/capabilities/inspektera`. Final required gates were run after
-    this progress entry.
-  next: Continue with Task 7 local closeout metadata sync. Do not refresh installed
-    apps, refresh profile state, edit vision or objective state, publish, push, tag,
-    commit, or run unsupported capability-name CLI commands without explicit approval.
-  context:
-    intent: PLAN Task 6 evaluation startup fixtures and validation gates for 2.3.10
-      Inspektera Evidence Context Source Contract
-    constraints: Existing `hej --capability-context inspektera` seam only; no `agentera
-      inspektera`; no new command surface; no installed app refresh; no profile refresh;
-      no vision edit; no objective-state edit; no Optimera objective state changes;
-      no publish, push, tag, commit, or unsupported capability-name CLI command
-    scope: Focused startup fixture test, Inspektera startup guidance, CLI state contract,
-      plan evidence, progress cycle, validation gates, and independent review evidence
-- number: 499
-  timestamp: 2026-05-15 09:52
-  type: test
-  phase: build
-  what: Completed PLAN Task 5 focused evidence-context regression coverage for Inspektera.
-  commit: pending
-  inspiration: Task 5 required deterministic focused tests for the complete evidence_context
-    fixture, missing and caveated evidence-family paths, Decision 45 field-selection
-    coverage, unsupported capability command usage, raw-read policy, and residual-risk
-    preservation.
-  discovered: '`tests/test_query_cli.py` now has a reusable Inspektera evidence-context
-    fixture, stable top-level key assertions, exact source-provenance checks for plan,
-    progress, docs, health, TODO, and version state, missing plan criteria coverage,
-    stale docs/health caveat coverage, protected-state not-checked-by-design coverage,
-    unsupported `agentera inspektera` command coverage, sparse hej `evidence_context`
-    field selection coverage, and unsupported sparse-field rejection coverage. `tests/test_decision45_cli_contract.py`
-    now explicitly asserts `evidence_context` is in hej field selection and `raw_yaml`
-    is not. `scripts/agentera` now reports deterministic docs/health freshness caveats
-    and no longer advertises completed Task 4 as deferred in the evidence_context
-    source contract.'
-  verified: Focused verification passed with `uv run pytest tests/test_query_cli.py::TestHej
-    tests/test_query_cli.py::TestRoutineStructuredOutput tests/test_decision45_cli_contract.py`
-    (98 tests) and `python -m py_compile scripts/agentera`.
-  next: Continue with Task 6 evaluation startup fixtures and validation gates. Do
-    not refresh installed apps, refresh profile state, edit vision or objective state,
-    publish, push, tag, commit, or run unsupported capability-name CLI commands without
-    explicit approval.
-  context:
-    intent: PLAN Task 5 focused evidence-context regression coverage for 2.3.10 Inspektera
-      Evidence Context Source Contract
-    constraints: Existing `hej --capability-context inspektera` seam only; no `agentera
-      inspektera`; no new command surface; no installed app refresh; no profile refresh;
-      no vision edit; no objective-state edit; no Optimera objective state changes;
-      no publish, push, tag, commit, or unsupported capability-name CLI command
-    scope: Focused query CLI tests, Decision 45 contract tests, minimal evidence_context
-      freshness semantics, plan evidence, and progress cycle
-- number: 498
-  timestamp: 2026-05-15 09:42
-  type: fix
-  phase: build
-  what: Completed PLAN Task 4 Inspektera guidance and schema integration for the evidence_context
-    source contract.
-  commit: pending
-  inspiration: Task 4 required Inspektera evaluation startup to use the existing `agentera
-    hej --format json --capability-context inspektera` seam, complete `evidence_context`
-    before raw artifacts, listed CLI fallbacks before last-resort raw reads, and caveat
-    preservation in prose and schemas.
-  discovered: Inspektera prose now has an evidence-context startup section before
-    Step 1 and replaces raw-first orientation with context-first state gathering.
-    Artifact schema descriptions now declare CLI `evidence_context` consumption before
-    raw plan, progress, docs, health, TODO, decisions, profile, vision, and design
-    artifact fallback. Validation schema V7-V9 require context-first startup, fallback-before-raw
-    behavior, and preservation of stale app/profile, compacted decision, protected-state,
-    version, publication, remote, manual-check, and attributed residual-risk caveats.
-  verified: Focused verification passed with `uv run scripts/validate_capability.py
-    skills/agentera/capabilities/inspektera` and `uv run pytest tests/test_inspektera_capability.py`
-    (8 tests).
-  next: Continue with Task 5 focused evidence-context regression coverage. Do not
-    refresh installed apps, refresh profile state, edit vision or objective state,
-    publish, push, tag, commit, or run unsupported capability-name CLI commands without
-    explicit approval.
-  context:
-    intent: PLAN Task 4 guidance and schema integration for 2.3.10 Inspektera Evidence
-      Context Source Contract
-    constraints: Existing `hej --capability-context inspektera` seam only; no `agentera
-      inspektera`; no new command surface; no installed app refresh; no profile refresh;
-      no vision edit; no objective-state edit; no publish, push, tag, commit, or unsupported
-      capability-name CLI command
-    scope: Inspektera prose, artifacts schema, validation schema, focused capability
-      tests, plan evidence, and progress cycle
-- number: 497
-  timestamp: 2026-05-15 09:08
-  type: fix
-  phase: build
-  what: Implemented PLAN Task 3 provenance, protected-state, version-boundary, and
-    attributed residual-risk semantics for Inspektera evidence_context.
-  commit: pending
-  inspiration: Task 3 required evidence families to carry provenance and non-empty
-    evidence flags, protected/version boundary statuses to distinguish local, unavailable,
-    manual-check, and not-checked states without remote or protected-state reads,
-    and residual risks to preserve compacted decisions, missing state, stale profile/app,
-    absent publication, and retry caveats with attribution.
-  discovered: '`scripts/agentera` now reports non-empty evidence flags for plan criteria,
-    progress verification, docs state, health state, and TODO state. Protected checks
-    report vision and objective state as `not_checked_by_design` without reading or
-    modifying protected artifacts. Version checks report docs version policy and version
-    files as `verified_local` or `unavailable`, publication and remote push evidence
-    as `requires_manual_check`, and installed app refresh as `not_checked_by_design`.
-    Residual risks now include attributed entries with category, status, message,
-    and provenance; compacted decision caveats are summarized through the existing
-    decision-context parser and not reconstructed from raw history.'
-  verified: Focused validation passed with `uv run pytest tests/test_query_cli.py::TestHej::test_hej_inspektera_evidence_context_reports_required_evidence_state
-    tests/test_query_cli.py::TestHej::test_hej_inspektera_evidence_context_marks_missing_required_state_incomplete
-    tests/test_query_cli.py::TestHej::test_hej_inspektera_evidence_context_preserves_attributed_decision_and_profile_caveats
-    tests/test_decision45_cli_contract.py -q` (10 tests) and `python -m py_compile
-    scripts/agentera`. `uv run scripts/validate_capability.py skills/agentera/capabilities/inspektera`,
-    `uv run scripts/validate_capability.py --self-validate`, PLAN and PROGRESS artifact
-    validators, `uv run scripts/agentera compact --mode check --format json`, and
-    `git diff --check` passed. Compaction check initially found PROGRESS over the
-    uniform limit by 1; `uv run scripts/agentera compact --mode fix --format json`
-    compacted PROGRESS safely before the final check.
-  next: Continue with Task 4 Inspektera guidance and schema integration. Do not refresh
-    installed apps, refresh profile state, edit vision or objective state, publish,
-    push, tag, commit, or run unsupported capability-name CLI commands without explicit
-    approval.
-  context:
-    intent: PLAN Task 3 provenance and residual-risk semantics for 2.3.10 Inspektera
-      Evidence Context Source Contract
-    constraints: Extend existing evidence_context only; no new command or subcommand;
-      no remote, registry, installed-app refresh, profile refresh, vision read/edit,
-      objective-state read/edit, publish, push, tag, commit, or unsupported capability-name
-      CLI command
-    scope: scripts/agentera evidence_context, agent-ready CLI contract, focused query
-      CLI tests, Decision 45 contract tests, plan evidence, and progress cycle
-- number: 496
-  timestamp: 2026-05-15 08:42
-  type: fix
-  phase: build
-  what: Implemented PLAN Task 2 minimum Inspektera evidence_context output contract
-    through the existing hej capability-context seam.
-  commit: pending
-  inspiration: Task 2 required `agentera hej --format json --capability-context inspektera`
-    to expose evaluation target, plan criteria, progress verification, docs state,
-    health state, TODO state, protected/version placeholders, residual risks, fallbacks,
-    raw-read policy, and truthful completeness metadata without adding any capability-name
-    CLI command.
-  discovered: '`scripts/agentera` now builds `evidence_context` only for capability
-    context `inspektera`. The target selector uses CLI-visible plan state in the Task
-    1 order: in-progress task, first dependency-ready pending task, latest completed
-    task with evidence, then repository-level no-target. Required evidence state covers
-    evaluation target, plan criteria, progress verification, docs state, health state,
-    TODO state, and source contract; missing required state makes `complete_for_evidence_context`
-    false while keeping `raw_artifact_reads_required: false` and listing existing
-    CLI fallbacks. Protected-state and version checks are truthful `not_checked_by_design`
-    placeholders deferred to Task 3, and residual risks preserve caveats for missing
-    optional state, profile/app staleness, and absent retry count.'
-  verified: Focused tests passed with `uv run pytest tests/test_query_cli.py::TestHej::test_hej_inspektera_evidence_context_reports_required_evidence_state
-    tests/test_query_cli.py::TestHej::test_hej_inspektera_evidence_context_marks_missing_required_state_incomplete
-    tests/test_query_cli.py::TestHej::test_returning_v2_composite_briefing tests/test_decision45_cli_contract.py`
-    (10 tests). `python -m py_compile scripts/agentera`, `uv run scripts/validate_capability.py
-    skills/agentera/capabilities/inspektera`, `uv run scripts/validate_capability.py
-    --self-validate`, PLAN and PROGRESS artifact validators, `uv run scripts/agentera
-    compact --mode check --format json`, and `git diff --check` passed. Compaction
-    check initially found PROGRESS over the uniform limit by 1; `uv run scripts/agentera
-    compact --mode fix --format json` compacted PROGRESS safely before the final check.
-  next: Continue with Task 3 provenance, protected-state, and residual-risk semantics.
-    Do not refresh installed apps, refresh profile state, edit vision or objective
-    state, publish, push, tag, commit, or run unsupported capability-name CLI commands
-    without explicit approval.
-  context:
-    intent: PLAN Task 2 minimum evidence_context output contract for 2.3.10 Inspektera
-      Evidence Context Source Contract
-    constraints: Existing `hej --capability-context inspektera` seam only; no `agentera
-      inspektera`; no new top-level command; no new subcommand; no full Task 3 provenance/protected
-      semantics; no installed app refresh; no profile refresh; no vision edit; no
-      objective-state edit; no publish, push, tag, commit, or unsupported capability-name
-      CLI command
-    scope: scripts/agentera hej JSON output, agent-ready CLI contract, focused query
-      CLI tests, Decision 45 contract tests, plan evidence, and progress cycle
-- number: 495
-  timestamp: 2026-05-15 08:20
-  type: fix
-  phase: build
-  what: Completed PLAN Task 1 evidence-context inventory and target-selection contract
-    without implementing the full Inspektera evidence_context output.
-  commit: pending
-  inspiration: Task 1 required CLI-first inventory of existing state, Inspektera guidance,
-    and prior context contracts, plus an evaluated-unit target contract and required/optional
-    evidence matrix before Task 2 builds the output context.
-  discovered: '`agentera hej --format json --capability-context orkestrera` includes
-    plan, progress, health, TODO, and docs, but misses decisions, vision, and profile;
-    `agentera decisions --format json` covers Decisions 51 and 52 and exposes 40 compacted
-    historical entries as incomplete with caveats. `agentera plan --format json` is
-    complete for active plan startup and points to the 2.3.9 archive; a raw last-resort
-    archive read verified `.agentera/archive/PLAN-2026-05-15-2-3-9-dokumentera-closeout-context-source-contract.yaml`
-    has `header.status: complete`. Profile-derived state is stale and remains a caveat;
-    installed app stale/update-needed state is recorded as caveated when present and
-    no refresh path was run.'
-  verified: Focused contract validation passed with `uv run pytest tests/test_decision45_cli_contract.py`.
-    `uv run scripts/validate_capability.py skills/agentera/capabilities/inspektera`,
-    `uv run scripts/validate_capability.py --self-validate`, and PLAN/PROGRESS artifact
-    validators passed. Compaction check initially found PROGRESS over the uniform
-    limit by 1; `uv run scripts/agentera compact --mode fix --format json` compacted
-    PROGRESS safely, then compact check and `git diff --check` passed.
-  next: Continue with Task 2 evidence context output contract. Do not refresh installed
-    apps, refresh profile state, edit vision or objective state, publish, push, tag,
-    commit, or run unsupported capability-name CLI commands without explicit approval.
-  context:
-    intent: PLAN Task 1 inventory and evaluated-target contract for 2.3.10 Inspektera
-      Evidence Context Source Contract
-    constraints: CLI-first state inventory; raw archive read only as last-resort verification
-      for archived plan header status; no full evidence_context output yet; no installed
-      app refresh; no profile refresh; no vision edit; no objective-state edit; no
-      publish, push, tag, commit, or unsupported capability-name CLI command
-    scope: Agent-ready state CLI contract, focused Decision 45 contract test, plan
-      evidence, progress cycle, and focused validation
-- number: 494
-  timestamp: 2026-05-15 07:49
-  type: chore
-  phase: audit
-  what: Completed PLAN Task 6 2.3.9 local closeout metadata sync and marked the active
-    plan complete without publishing, tagging, pushing, refreshing installed apps,
-    refreshing profile state, editing vision, or editing objective state.
-  commit: pending
-  inspiration: Task 6 required TODO, progress, docs, and changelog to record the completed
-    2.3.9 Dokumentera closeout-context source-contract patch and deferred 2.3.10+
-    source-contract train, while version-bearing files explicitly use the selected
-    2.3.9 patch-train target despite the `[feat:2.3.9]` TODO label.
-  discovered: Version-bearing surfaces now target 2.3.9 across `pyproject.toml`, `uv.lock`,
-    `registry.json`, root and repository plugin manifests, Codex plugin metadata,
-    Claude marketplace metadata, OpenCode `AGENTERA_VERSION`, and active/legacy skill
-    frontmatter. `TODO.md` marks the 2.3.9 Dokumentera closeout-context source-contract
-    item resolved and keeps the 2.3.10+ Inspektera, Optimera, and Realisera source-contract
-    train open. `.agentera/docs.yaml` now records the 2.3.9 audit label, release metadata
-    note, version-policy resolution for the `[feat:2.3.9]` patch-train target, deferred
-    2.3.10+ work, and local-only no-publication/no-refresh boundary. `CHANGELOG.md`
-    now records the 2.3.9 metadata alignment, closeout context behavior, and local-only
-    verified closeout. Live closeout context now reports selected target metadata
-    recorded, local tag `v2.3.9` absent, package publication and remote push not recorded
-    in CLI state, installed app update-needed, and profile stale; no refresh or tag
-    was run.
-  verified: Focused validation passed with `uv run pytest tests/test_query_cli.py
-    tests/test_decision45_cli_contract.py tests/test_dokumentera_capability.py tests/test_startup_analysis_contract.py
-    tests/test_package_registry.py tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_agentera_version_reader_extracts_current_literal
-    tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_version_bearing_package_surfaces_align`
-    (219 tests). `uv run scripts/validate_capability.py skills/agentera/capabilities/dokumentera`,
-    `uv run scripts/validate_capability.py --self-validate`, TODO/DOCS/CHANGELOG/PLAN/PROGRESS
-    artifact validators, live `uv run scripts/agentera hej --format json --capability-context
-    dokumentera --fields closeout_context`, `uv run scripts/agentera gate --format
-    json`, `uv run scripts/agentera compact --mode check --format json`, and `git
-    diff --check` passed. Compaction checks initially failed after moving the 2.3.9
-    TODO item to resolved; `uv run scripts/agentera compact --mode fix --format json`
-    compacted `TODO.md#Resolved` safely from 41 to 40.
-  next: Hand completed 2.3.9 plan to independent evaluation. Do not refresh installed
-    apps, refresh profile state, edit vision or objective state, publish, push, tag,
-    commit, or run unsupported capability-name CLI commands without explicit approval.
-  context:
-    intent: PLAN Task 6 local closeout metadata sync for 2.3.9 Dokumentera Closeout
-      Context Source Contract
-    constraints: local metadata sync only; selected exact target is 2.3.9 despite
-      `[feat:2.3.9]`; future unselected feature targets remain governed by docs.yaml
-      semver policy; no publication; no tag; no remote push; no installed app refresh;
-      no profile refresh; no vision edit; no objective-state edit; no unsupported
-      capability-name CLI command
-    scope: TODO, CHANGELOG, docs audit metadata, version-bearing package/plugin/OpenCode/skill
-      surfaces, release metadata tests, artifact validation, gates, and live closeout
-      context caveat verification
 archive:
+- summary: 'Cycle 500 (2026-05-15): Completed PLAN Task 6 evaluation startup fixtures
+    and validation gates for Inspektera evidence_context.'
+- summary: 'Cycle 499 (2026-05-15): Completed PLAN Task 5 focused evidence-context
+    regression coverage for Inspektera.'
+- summary: 'Cycle 498 (2026-05-15): Completed PLAN Task 4 Inspektera guidance and
+    schema integration for the evidence_context source contract.'
+- summary: 'Cycle 497 (2026-05-15): Implemented PLAN Task 3 provenance, protected-state,
+    version-boundary, and attributed residual-risk semantics for Inspektera evidence_context.'
+- summary: 'Cycle 496 (2026-05-15): Implemented PLAN Task 2 minimum Inspektera evidence_context
+    output contract through the existing hej capability-context seam.'
+- summary: 'Cycle 495 (2026-05-15): Completed PLAN Task 1 evidence-context inventory
+    and target-selection contract without implementing the full Inspektera evidence_context...'
+- summary: 'Cycle 494 (2026-05-15): Completed PLAN Task 6 2.3.9 local closeout metadata
+    sync and marked the active plan complete...'
 - summary: 'Cycle 493 (2026-05-15): Completed PLAN Task 5 focused regression and startup-state
     validation for the Dokumentera closeout context without...'
 - summary: 'Cycle 492 (2026-05-15): Integrated PLAN Task 4 Dokumentera closeout-context
@@ -465,17 +450,3 @@ archive:
     contract for normal installed execution.'
 - summary: 'Cycle 461 (2026-05-14): Prepared the local 2.3.4 patch release metadata
     for the startup state completeness and PLAN artifact...'
-- summary: 'Cycle 460 (2026-05-14): Closed the narrower PLAN.md redundant raw startup-read
-    follow-up by making `agentera plan --format json` self-describe...'
-- summary: 'Cycle 459 (2026-05-14): Completed Task 7 for the Repair Runtime Schema
-    Coverage And Token Savings Estimates plan by...'
-- summary: 'Cycle 458 (2026-05-14): Completed Task 6 for the Repair Runtime Schema
-    Coverage And Token Savings Estimates plan by...'
-- summary: 'Cycle 457 (2026-05-14): Completed Task 5 for the Repair Runtime Schema
-    Coverage And Token Savings Estimates plan by...'
-- summary: 'Cycle 456 (2026-05-14): Completed Task 4 for the Repair Runtime Schema
-    Coverage And Token Savings Estimates plan by...'
-- summary: 'Cycle 455 (2026-05-14): Completed Task 3 for the Repair Runtime Schema
-    Coverage And Token Savings Estimates plan by...'
-- summary: 'Cycle 454 (2026-05-14): Completed Task 2 for the Repair Runtime Schema
-    Coverage And Token Savings Estimates plan by...'

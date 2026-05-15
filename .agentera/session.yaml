@@ -1,147 +1,182 @@
 bookmarks:
-- timestamp: 2026-05-15 10:13
+- timestamp: 2026-05-15 14:36
   artifacts:
   - CHANGELOG.md
+  - DECISIONS.md
   - DOCS.md
   - PLAN.md
   - PROGRESS.md
   - SESSION.md
   - TODO.md
-  summary: Modified 6 artifact(s)
-- timestamp: 2026-05-15 10:13
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:36
   artifacts:
   - CHANGELOG.md
-  - DOCS.md
-  - PLAN.md
-  - PROGRESS.md
-  - TODO.md
-  summary: Modified 5 artifact(s)
-- timestamp: 2026-05-15 09:33
-  artifacts:
-  - CHANGELOG.md
+  - DECISIONS.md
   - DOCS.md
   - PLAN.md
   - PROGRESS.md
   - SESSION.md
   - TODO.md
-  summary: Modified 6 artifact(s)
-- timestamp: 2026-05-15 09:33
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:33
   artifacts:
   - CHANGELOG.md
+  - DECISIONS.md
   - DOCS.md
   - PLAN.md
   - PROGRESS.md
   - SESSION.md
   - TODO.md
-  summary: Modified 6 artifact(s)
-- timestamp: 2026-05-15 09:23
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:33
   artifacts:
+  - CHANGELOG.md
+  - DECISIONS.md
+  - DOCS.md
   - PLAN.md
+  - PROGRESS.md
   - SESSION.md
-  summary: Modified 2 artifact(s)
-- timestamp: 2026-05-15 09:23
+  - TODO.md
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:27
   artifacts:
+  - CHANGELOG.md
+  - DECISIONS.md
+  - DOCS.md
   - PLAN.md
+  - PROGRESS.md
   - SESSION.md
-  summary: Modified 2 artifact(s)
-- timestamp: 2026-05-15 09:20
+  - TODO.md
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:27
   artifacts:
+  - CHANGELOG.md
+  - DECISIONS.md
+  - DOCS.md
   - PLAN.md
+  - PROGRESS.md
   - SESSION.md
-  summary: Modified 2 artifact(s)
-- timestamp: 2026-05-15 09:20
+  - TODO.md
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:27
   artifacts:
+  - CHANGELOG.md
+  - DECISIONS.md
+  - DOCS.md
   - PLAN.md
+  - PROGRESS.md
   - SESSION.md
-  summary: Modified 2 artifact(s)
-- timestamp: 2026-05-15 09:16
+  - TODO.md
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:27
   artifacts:
+  - CHANGELOG.md
+  - DECISIONS.md
+  - DOCS.md
   - PLAN.md
+  - PROGRESS.md
   - SESSION.md
-  summary: Modified 2 artifact(s)
-- timestamp: 2026-05-15 09:16
+  - TODO.md
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:26
   artifacts:
+  - CHANGELOG.md
+  - DECISIONS.md
+  - DOCS.md
   - PLAN.md
+  - PROGRESS.md
   - SESSION.md
-  summary: Modified 2 artifact(s)
+  - TODO.md
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:26
+  artifacts:
+  - CHANGELOG.md
+  - DECISIONS.md
+  - DOCS.md
+  - PLAN.md
+  - PROGRESS.md
+  - SESSION.md
+  - TODO.md
+  summary: Modified 7 artifact(s)
 archive:
-- timestamp: 2026-05-15 09:02
-  summary: Modified 2 artifact(s)
-- timestamp: 2026-05-15 09:02
-  summary: Modified 2 artifact(s)
-- timestamp: 2026-05-15 08:59
-  summary: Modified 2 artifact(s)
-- timestamp: 2026-05-15 08:59
-  summary: Modified 1 artifact(s)
-- timestamp: 2026-05-15 08:19
-  summary: Modified 6 artifact(s)
-- timestamp: 2026-05-15 08:19
-  summary: Modified 6 artifact(s)
-- timestamp: 2026-05-15 08:18
-  summary: Modified 6 artifact(s)
-- timestamp: 2026-05-15 08:18
-  summary: Modified 6 artifact(s)
-- timestamp: 2026-05-15 08:15
-  summary: Modified 6 artifact(s)
-- timestamp: 2026-05-15 08:15
-  summary: Modified 6 artifact(s)
-- timestamp: 2026-05-15 08:08
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 08:08
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 08:07
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 08:07
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 08:04
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 08:04
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 08:00
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 08:00
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:57
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:57
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:54
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:54
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:45
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:45
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:43
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:43
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:39
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:39
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:36
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:36
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:30
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:30
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:28
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:28
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:18
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:18
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:16
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 07:16
-  summary: Modified 3 artifact(s)
-- timestamp: 2026-05-15 06:59
-  summary: Modified 2 artifact(s)
-- timestamp: 2026-05-15 06:59
-  summary: Modified 1 artifact(s)
+- timestamp: 2026-05-15 14:26
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:26
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:25
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:25
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:25
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:25
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:24
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 14:22
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 13:54
+  summary: Modified 7 artifact(s)
+- timestamp: 2026-05-15 13:54
+  summary: Modified 7 artifact(s)

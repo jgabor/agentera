@@ -1,4 +1,4 @@
-last_audit: '2026-05-15 (2.3.12 Realisera execution-context source-contract patch metadata sync)'
+last_audit: '2026-05-15 (Decision satisfaction tracking patch metadata sync)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -365,11 +365,7 @@ coverage:
   undocumented: 0 skills lack documentation
   stale: none
   release_metadata: >
-    The 2.3.12 patch release metadata sync applies the selected Realisera
-    execution-context source-contract target, explicitly resolves the `[feat:2.3.12]`
-    label versus semver-policy tension by keeping the preselected 2.3 patch
-    train target, records the source-contract train through Realisera as closed,
-    and keeps future version changes governed by `.agentera/docs.yaml` `semver_policy`.
+    Post-v2.3.12 release metadata is intentionally deferred for the next aggregate release.
   tests: 'Startup measurement now documents the Decision 51 state-access metric and the Decision 52 manual benchmark retention boundary. The metric is raw artifact access after CLI state during capability startup/state gathering, replacing an uncommitted route/intro startup-window draft that found zero qualifying windows and would have closed the startup-envelope follow-up. The contract records the post-2.3 boundary, natural-language and bare-capability invocation markers, state-gathering sequence boundaries, counted event classes, degradation reasons, report fields, Section 22 compatibility, privacy boundary, local-only report command, structured report, human-readable report, recommendation gate, manual-only benchmark rule, exact runtime/path approval requirement, default `${AGENTERA_HOME}/benchmarks/startup-state/` storage, durable `runs.jsonl` plus fixed latest report files, and aggregate-history exclusions for raw transcripts, raw corpus files, raw intermediates, raw store paths, raw session IDs, private salts, and generated salted hashes. Focused contract tests validate redaction helpers, state-sequence classification, raw-after-CLI overlap counts, thresholds, recommendations, report surfaces, benchmark retention boundaries, supported Claude Code and GitHub Copilot fixture extraction, aggregate token fields, comparable-row savings/null reasons, and privacy exclusions. Task 7 closeout records durable benchmark evidence with estimator `approx_bytes_div_4_v1`, raw-after-CLI estimated tokens `621`, redundant raw estimated tokens `533`, null reason `previous_missing_token_estimates`, CLI behavior rates `0.4444`, 18 total state sequences, retained recommendation `plan_cli_startup_envelope`, and live-runtime `schema_divergent` caveats for current local Claude Code and GitHub Copilot stores. The 2.3.7 patch release metadata sync now applies the selected decision-context source-contract release target, explicitly resolves the `[feat:2.3.7]` label versus semver-policy tension by keeping the preselected 2.3 patch train target, records the remaining 2.3.8+ source-contract train as deferred, and keeps future version changes governed by `.agentera/docs.yaml` `semver_policy`.'
 audit_log:
 - date: '2026-05-15'

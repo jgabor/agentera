@@ -386,6 +386,80 @@ class TestValidateYamlDecisions:
         violations = hook.validate_yaml(content, schema, "decisions")
         assert violations == []
 
+    def test_legacy_missing_satisfaction_remains_valid(self, hook):
+        schema = hook.load_schema("decisions")
+        content = yaml_dump({
+            "decisions": [
+                {
+                    "number": 1, "date": "2026-05-04",
+                    "question": "Which format?", "context": "Need portability",
+                    "choice": "YAML", "reasoning": "Widely supported",
+                    "confidence": "firm",
+                    "alternatives": [{"name": "YAML", "status": "chosen"}],
+                }
+            ]
+        })
+
+        assert hook.validate_yaml(content, schema, "decisions") == []
+
+    def test_decision_satisfaction_contract_rejects_malformed_state(self, hook):
+        schema = hook.load_schema("decisions")
+        base = {
+            "number": 1, "date": "2026-05-04",
+            "question": "Which format?", "context": "Need portability",
+            "choice": "YAML", "reasoning": "Widely supported",
+            "confidence": "firm",
+            "alternatives": [{"name": "YAML", "status": "chosen"}],
+        }
+        content = yaml_dump({
+            "decisions": [
+                {**base, "satisfaction": "done"},
+                {**base, "number": 2, "satisfaction": {"state": "satisfied"}},
+                {**base, "number": 3, "satisfaction": {"state": "provisionally_satisfied"}},
+                {**base, "number": 4, "satisfaction": {"state": "user_confirmed_satisfied"}},
+            ]
+        })
+
+        violations = hook.validate_yaml(content, schema, "decisions")
+        assert any("decisions[0].satisfaction' must be a mapping" in v for v in violations)
+        assert any("invalid value 'satisfied'" in v for v in violations)
+        assert any("evidence' is required for provisionally_satisfied" in v for v in violations)
+        assert any("user_confirmation' is required for user_confirmed_satisfied" in v for v in violations)
+
+    def test_user_confirmed_satisfaction_requires_confirmation_metadata(self, hook):
+        schema = hook.load_schema("decisions")
+        content = yaml_dump({
+            "decisions": [
+                {
+                    "number": 1, "date": "2026-05-04",
+                    "question": "Which format?", "context": "Need portability",
+                    "choice": "YAML", "reasoning": "Widely supported",
+                    "confidence": "firm",
+                    "alternatives": [{"name": "YAML", "status": "chosen"}],
+                    "satisfaction": {
+                        "state": "user_confirmed_satisfied",
+                        "user_confirmation": {"confirmed_by": "Jonathan", "confirmed_at": "2026-05-15"},
+                    },
+                }
+            ]
+        })
+
+        assert hook.validate_yaml(content, schema, "decisions") == []
+
+    def test_archive_satisfaction_uses_same_validation_contract(self, hook):
+        schema = hook.load_schema("decisions")
+        content = yaml_dump({
+            "archive": [
+                {
+                    "summary": "Decision 1 (2026-05-04): YAML",
+                    "satisfaction": {"state": "user_confirmed_satisfied"},
+                }
+            ]
+        })
+
+        violations = hook.validate_yaml(content, schema, "decisions")
+        assert any("archive[0].satisfaction.user_confirmation' is required" in v for v in violations)
+
     def test_out_of_order_numbers(self, hook):
         schema = hook.load_schema("decisions")
         content = yaml_dump({

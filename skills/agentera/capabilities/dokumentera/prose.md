@@ -116,6 +116,16 @@ When closeout context is incomplete or caveated:
 
 Closeout context does not approve publication, remote push, installed app refresh, profile refresh, vision edits, or objective-state edits. Treat those fields as recorded evidence or caveats only.
 
+### Decision satisfaction authority
+
+When documentation or closeout work touches decision satisfaction, agents may
+mark provisional satisfaction with evidence only. Dokumentera must not mark or
+imply user-confirmed final satisfaction; only the user confirms final
+satisfaction. If decisions are compacted, missing satisfaction state, open,
+provisional, or review-needed, preserve the caveat and review pressure in docs
+or closeout notes instead of reconstructing hidden outcomes or claiming
+automation proved intent.
+
 ---
 
 ## First-run survey (convention detection)

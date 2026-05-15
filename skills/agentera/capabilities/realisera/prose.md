@@ -141,6 +141,15 @@ For progress fallback specifically, use `uv run scripts/agentera progress --form
 or the installed app equivalent from the returned fallback command; the routine
 progress command owns startup progress state.
 
+### Decision satisfaction authority
+
+When a cycle touches decision satisfaction, agents may mark provisional
+satisfaction with evidence only. Realisera must not mark or imply
+user-confirmed satisfaction; only the user confirms final satisfaction. If
+decisions are compacted, missing satisfaction state, open, provisional, or
+review-needed, preserve the caveat and review pressure in the cycle report
+instead of reconstructing hidden outcomes or claiming automation proved intent.
+
 1. **execution_context.work_selection**: selected task or no-plan/completed-plan mode
 2. **execution_context.acceptance_criteria**: exact criteria for this cycle
 3. **execution_context.constraints**: plan constraints and protected-action boundaries

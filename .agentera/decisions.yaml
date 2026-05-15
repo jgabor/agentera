@@ -1,35 +1,4 @@
 decisions:
-- number: 43
-  date: '2026-05-07'
-  question: How should Agentera expose plain user-facing routes without losing canonical
-    Swedish capability identity?
-  context: The 2026-05-07 vocabulary deliberation settled on "Brand the worldview.
-    Boring-name the work." Users should not need to know Swedish capability names
-    first, but Decisions 39-40 made capabilities canonical v2 protocol objects and
-    Decision 42 routes explicit capability names through `/agentera`.
-  alternatives:
-  - name: Rename capabilities to plain English
-    status: rejected
-    description: Clearer first contact, but high churn across directories, schemas,
-      artifacts, markers, tests, and product identity.
-  - name: Trigger phrases only
-    status: rejected
-    description: Improves natural-language routing but gives users no stable plain
-      shortcut.
-  - name: One primary plain alias per capability
-    status: chosen
-    description: Keep canonical names and add a small documented action alias surface;
-      colloquial variants stay in trigger schemas.
-  choice: 'Keep Swedish `-era` names canonical and add one primary plain `/agentera
-    <alias>` per capability: `status`, `vision`, `discuss`, `research`, `plan`, `build`,
-    `optimize`, `audit`, `document`, `profile`, `design`, and `orchestrate`.'
-  reasoning: Aliases reduce first-contact friction without renaming protocol objects.
-    Exact aliases stay few and stable; secondary phrases like `brief`, `what's next`,
-    `deliberate`, `brainstorm`, and `rubber duck` belong in trigger schemas so they
-    do not become canonical identity.
-  confidence: firm
-  feeds_into: SKILL.md routing, schemas/triggers.yaml, README.md, docs/vocabulary.md,
-    tests
 - number: 44
   date: '2026-05-07'
   question: How should Agentera handle plain-English vocabulary inside capability
@@ -61,6 +30,11 @@ decisions:
   confidence: firm
   feeds_into: docs/vocabulary.md, capability prose, safe labels/tests, active plan
     wording, TODO.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-15'
 - number: 45
   date: '2026-05-08'
   question: How should Agentera apply the agent-ready interface playbook to its CLI
@@ -103,6 +77,11 @@ decisions:
     while artifact health remains `agentera health`.
   confidence: firm
   feeds_into: PLAN.md, scripts/agentera, README.md, docs/vocabulary.md, tests
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-15'
 - number: 46
   date: '2026-05-08'
   question: How should Agentera handle capability handoff wording and confirmation
@@ -144,6 +123,8 @@ decisions:
     and keeps the release scope smaller than lifecycle archival or YAML write support.
   confidence: firm
   feeds_into: SKILL.md, capability prose, tests, CHANGELOG.md, docs/vocabulary.md
+  satisfaction:
+    state: open
 - number: 47
   date: '2026-05-08'
   question: How should Agentera rename bundle semantics and organize app, profile,
@@ -178,6 +159,14 @@ decisions:
   confidence: firm
   feeds_into: TODO.md, PLAN.md, README.md, UPGRADE.md, scripts/install_root.py, scripts/agentera_upgrade.py,
     scripts/agentera, package/runtime registries, tests
+  satisfaction:
+    state: provisionally_satisfied
+    evidence: >-
+      App-home implementation and tests exist: scripts/agentera_upgrade.py enforces
+      managed app root planning/action behavior, scripts/agentera reports app_home,
+      managedAppRoot, and userDataRoot, scripts/validate_app_home_contract.py checks
+      public surfaces, and the focused app-home/upgrade/legacy-default test set
+      passed 9 tests on 2026-05-15.
 - number: 48
   date: '2026-05-08'
   question: How should Agentera expose self-audit and maintainer scripts through the
@@ -204,15 +193,18 @@ decisions:
     description: Leaves agents using ad hoc inline Python for a contractually required
       pre-write check.
   choice: 'Expose `scripts/self_audit.py` through `agentera lint` first. Keep `agentera
-    doctor` scoped to install/app/runtime diagnostics. Promote other scripts only
-    behind cohesive namespaces: `agentera validate` for validators, `agentera verify`
-    or `agentera smoke` for eval and smoke gates, and `agentera corpus`/`agentera
-    usage` for profile analytics. Keep registry/model modules private.'
+    doctor` scoped to install/app/runtime diagnostics. Promote other maintainer scripts
+    behind cohesive non-deferred namespaces: `agentera validate` for validators,
+    `agentera verify` or `agentera smoke` for eval and smoke gates, and `agentera
+    corpus`/`agentera usage` for profile analytics. Keep registry/model modules private.'
   reasoning: A lint command solves the immediate agent ergonomics problem without
-    changing doctor semantics. Script promotion should be driven by stable workflow
-    value and structured I/O, not by the existence of a standalone Python file.
+    changing doctor semantics. The remaining maintainer namespaces are part of the
+    decision's required CLI surface; their command shapes should still be cohesive,
+    structured, and workflow-driven rather than a junk drawer of raw script wrappers.
   confidence: firm
   feeds_into: TODO.md, scripts/agentera, README.md, capability prose, tests
+  satisfaction:
+    state: open
 - number: 49
   date: '2026-05-08'
   question: What TODO.md item contract should replace ISS-N counters and bracketed
@@ -257,6 +249,8 @@ decisions:
   confidence: firm
   feeds_into: TODO.md, skills/agentera/references/contract.md, skills/agentera/schemas/artifacts/todo.yaml,
     scripts/agentera, hooks/compaction.py, tests
+  satisfaction:
+    state: open
 - number: 50
   date: '2026-05-12'
   question: What should Agentera 2.3.0 include?
@@ -290,6 +284,11 @@ decisions:
   confidence: firm
   feeds_into: TODO.md, .agentera/plan.yaml, scripts/install_root.py, scripts/agentera_upgrade.py,
     scripts/agentera, README.md, UPGRADE.md, capability prose, tests
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-15'
 - number: 51
   date: '2026-05-13'
   question: What should Agentera measure before optimizing capability startup state
@@ -337,6 +336,17 @@ decisions:
   confidence: firm
   feeds_into: startup state-access analysis, scripts/agentera, scripts/extract_corpus.py,
     capability prose, tests, TODO.md
+  satisfaction:
+    state: provisionally_satisfied
+    evidence: >-
+      Startup state-access measurement is defined in
+      `references/analysis/startup-measurement-contract.yaml`, implemented through
+      `scripts/startup_analysis_contract.py`, exposed through the Mage benchmark
+      entrypoint and Optimera benchmark context, and documented in benchmark/docs
+      metadata. Focused benchmark-context tests passed 8/8 on 2026-05-15. Remaining
+      caveats: the measurement contract is still draft, one focused persistence test
+      has 2.3.12/2.3.13 version drift, Claude/Copilot corpus coverage is degraded,
+      and the startup-envelope optimization follow-up remains open.
 - number: 52
   date: '2026-05-13'
   question: How should Agentera run and retain startup state-access benchmark metrics?
@@ -364,89 +374,172 @@ decisions:
     debuggability without accumulating bulky private artifacts.
   confidence: firm
   feeds_into: magefile.go, startup state-access benchmark, TODO.md
+  satisfaction:
+    state: provisionally_satisfied
+    evidence: >-
+      Manual startup state benchmark retention is implemented through `magefile.go`,
+      `scripts/startup_analysis_contract.py` persistence, `${AGENTERA_HOME}/benchmarks/startup-state/`
+      aggregate/latest-report storage, Optimera benchmark context, docs/runbook and
+      privacy-boundary documentation, and the Decision 52 TODO is resolved. Focused
+      benchmark retention checks were 10/11 passing on 2026-05-15. Remaining caveats:
+      one test has 2.3.12/2.3.13 version drift, the measurement contract is still
+      draft, and the startup-envelope optimization follow-up remains open.
+- number: 53
+  date: '2026-05-15'
+  question: How should Agentera track whether decisions are satisfied?
+  context: Current decision CLI output exposes compacted entries and downstream references,
+    but open TODOs show decisions can be forgotten after compaction or when they fall
+    outside normal query range. The user wants outcome tracking and compaction recovery
+    handled together.
+  alternatives:
+  - name: Track downstream references only
+    status: rejected
+    description: Shows where a decision should feed, but does not prove the intended
+      outcome was accepted as fulfilled.
+  - name: Store satisfaction outside decisions
+    status: rejected
+    description: Keeps the decision schema smaller, but makes decisions depend on secondary
+      indexes and leaves compaction without a canonical preservation rule.
+  - name: Decision-entry satisfaction state
+    status: chosen
+    description: Store satisfaction on the decision entry, let automation mark provisional
+      evidence, require user confirmation for final satisfaction, and protect unresolved
+      decisions from compaction.
+  choice: Store decision satisfaction state on each decision entry. Agents may mark
+    provisional satisfaction with evidence, but only the user may confirm satisfaction.
+    Open or provisionally satisfied decisions must not be compacted; old protected decisions
+    trigger review before compaction, during health audits, and at release closeout.
+  reasoning: Decision satisfaction is an intent state, not just evidence of a downstream
+    write. Keeping it on the decision entry makes compaction rules and CLI source contracts
+    preserve the outcome instead of forcing agents into memory or git-history recovery.
+  confidence: firm
+  feeds_into: TODO.md, .agentera/decisions.yaml, scripts/agentera, hooks/compaction.py,
+    tests, capability prose
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-15'
 archive:
+- summary: 'Decision 43 (2026-05-07): Keep Swedish `-era` names canonical and add
+    one primary plain `/agentera <alias>` per capability.'
+  satisfaction: &batch_confirmed_2026_05_15
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-15'
 - summary: "Decision 42 (2026-05-04): Five-layer dispatch model, heuristics hardcoded\
     \ in `SKILL.md`: 1. **Bare `/agentera`** \u2192 deterministic heuristic decision\
     \ tree...."
+  satisfaction: *batch_confirmed_2026_05_15
 - summary: 'Decision 41 (2026-05-04): Record the benchmark as complete for the revised
     v2.0 target. Initial v2 measurement was 313,356...'
-- "Decision 40 (2026-05-04): [YAML agent artifacts] \u2014 Use YAML, no v1 compatibility,\
-  \ and call sub-modules capabilities."
-- "Decision 39 (2026-05-04): [Single bundled v2 skill] \u2014 Agentera 2.0 collapsed\
-  \ 12 skills into one `/agentera` entry point with capability schemas and CLI-backed\
-  \ state."
-- "Decision 38 (2026-04-30): [Separate semantic eval surface] \u2014 Hej semantic\
-  \ fixtures assert output facts and artifact-derived next actions."
-- "Decision 37 (2026-04-29): [Fail-open artifact hook] \u2014 Unhandled validation-hook\
-  \ crashes log and allow writes."
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: "Decision 40 (2026-05-04): [YAML agent artifacts] \u2014 Use YAML, no v1 compatibility,\
+    \ and call sub-modules capabilities."
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: "Decision 39 (2026-05-04): [Single bundled v2 skill] \u2014 Agentera 2.0 collapsed\
+    \ 12 skills into one `/agentera` entry point with capability schemas and CLI-backed\
+    \ state."
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: "Decision 38 (2026-04-30): [Separate semantic eval surface] \u2014 Hej semantic\
+    \ fixtures assert output facts and artifact-derived next actions."
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: "Decision 37 (2026-04-29): [Fail-open artifact hook] \u2014 Unhandled validation-hook\
+    \ crashes log and allow writes."
+  satisfaction: *batch_confirmed_2026_05_15
 - "Decision 36 (2026-04-29): [Generate contracts JSON schema] \u2014 SPEC table parser\
   \ outputs structured validation JSON."
 - "Decision 35 (2026-04-29): [Build shared self_audit.py module] \u2014 Shared module\
   \ plus hook enforce self-audit checks."
 - "Decision 34 (2026-04-29): [Self-audit protocol] \u2014 Producing skills run prose\
   \ checks before artifact writes."
-- "Decision 33 (2026-04-28): [Suite bundle first] \u2014 Installed suite bundle owns\
-  \ shared tools and runtime infrastructure."
-- "Decision 32 (2026-04-26): [`scripts/usage_stats.py`] \u2014 Usage analytics count\
-  \ completed workflows from session corpus markers."
-- "Decision 31 (2026-04-12): [Named per-objective subdirs] \u2014 Self-contained optimera\
-  \ objectives live under `.agentera/optimera/`."
+- summary: "Decision 33 (2026-04-28): [Suite bundle first] \u2014 Installed suite bundle owns\
+    \ shared tools and runtime infrastructure."
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: "Decision 32 (2026-04-26): [`scripts/usage_stats.py`] \u2014 Usage analytics count\
+    \ completed workflows from session corpus markers."
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: "Decision 31 (2026-04-12): [Named per-objective subdirs] \u2014 Self-contained optimera\
+    \ objectives live under `.agentera/optimera/`."
+  satisfaction: *batch_confirmed_2026_05_15
 - 'Decision 30 (2026-04-12): **Question**: How should the realisera-token harness
   be redesigned after three consecutive discarded experiments where run-to-run variance
   (13-20%) drowned the optimization...'
-- 'Decision 29 (2026-04-11): **Question**: How should optimera handle measurement
-  archetypes that go beyond thin command-wrapper harnesses, and what should the first
-  such reference...'
-- 'Decision 28 (2026-04-11): **Question**: Where should PROFILE.md and profilera''s
-  generated artifacts live by default, and how should runtime adapters provide path
-  overrides?'
-- 'Decision 27 (2026-04-11): **Question**: How to implement Section 21''s session
-  corpus contract to close the gap between spec and extraction pipeline'
-- 'Decision 26 (2026-04-10): **Question**: Should the terminology for the ecosystem
-  spec and per-skill context files be renamed for clarity and cohesion?'
-- 'Decision 25 (2026-04-03): **Question**: Should agentera''s North Star evolve from
-  "a solo founder installs an engineering team" to a spec-centric framing?'
-- 'Decision 24 (2026-04-03): **Question**: Should the PostToolUse validation hook
-  coexist with the git pre-commit hook, or replace it?'
-- 'Decision 23 (2026-04-03): **Question**: Where should session-to-session state live:
-  new SESSION.md artifact, extend PROGRESS.md, or infrastructure dotfile?'
-- 'Decision 22 (2026-04-03): **Question**: Should ISS-19 phase tracking be enforced
-  across skills, and how should the ecosystem detect stale artifacts?'
-- 'Decision 21 (2026-04-02): **Question**: How should autonomous plans constrain test
-  generation to prevent unbounded output?'
-- 'Decision 20 (2026-04-02): **Question**: Should the agentera ecosystem add an orchestration
-  skill, and what should it own?'
+- summary: 'Decision 29 (2026-04-11): **Question**: How should optimera handle measurement
+    archetypes that go beyond thin command-wrapper harnesses, and what should the first
+    such reference...'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 28 (2026-04-11): **Question**: Where should PROFILE.md and profilera''s
+    generated artifacts live by default, and how should runtime adapters provide path
+    overrides?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 27 (2026-04-11): **Question**: How to implement Section 21''s session
+    corpus contract to close the gap between spec and extraction pipeline'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 26 (2026-04-10): **Question**: Should the terminology for the ecosystem
+    spec and per-skill context files be renamed for clarity and cohesion?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 25 (2026-04-03): **Question**: Should agentera''s North Star evolve from
+    "a solo founder installs an engineering team" to a spec-centric framing?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 24 (2026-04-03): **Question**: Should the PostToolUse validation hook
+    coexist with the git pre-commit hook, or replace it?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 23 (2026-04-03): **Question**: Where should session-to-session state live:
+    new SESSION.md artifact, extend PROGRESS.md, or infrastructure dotfile?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 22 (2026-04-03): **Question**: Should ISS-19 phase tracking be enforced
+    across skills, and how should the ecosystem detect stale artifacts?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 21 (2026-04-02): **Question**: How should autonomous plans constrain test
+    generation to prevent unbounded output?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 20 (2026-04-02): **Question**: Should the agentera ecosystem add an orchestration
+    skill, and what should it own?'
+  satisfaction: *batch_confirmed_2026_05_15
 - 'Decision 19 (2026-04-02): **Question**: How should the ecosystem handle line-breaks
   in prose text?'
 - 'Decision 18 (2026-04-02): **Question**: How should the ecosystem handle em-dashes
   and double dashes in all text?'
-- 'Decision 17 (2026-04-02): **Question**: How should skills narrate their process
-  between structural markers?'
-- 'Decision 16 (2026-04-02): **Question**: How should the ecosystem''s voice and tone
-  work across all 11 skills?'
-- 'Decision 15 (2026-04-02): **Question**: How should TODO.md categorize issues beyond
-  bug-severity, and should issues carry type tags?'
-- 'Decision 14 (2026-04-02): **Question**: How should the ecosystem''s user-facing
-  messages be formatted?'
-- 'Decision 13 (2026-04-01): **Question**: Should agentera artifacts be consolidated
-  out of the project root, and should their naming adopt common conventions?'
-- 'Decision 12 (2026-03-31): **Question**: How should version management work across
-  the agentera ecosystem, both for agentera''s own skill versions and for target projects...'
-- 'Decision 11 (2026-03-31): **Question**: How should agentera express its identity
-  visually across skills and artifacts?'
+- summary: 'Decision 17 (2026-04-02): **Question**: How should skills narrate their process
+    between structural markers?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 16 (2026-04-02): **Question**: How should the ecosystem''s voice and tone
+    work across all 11 skills?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 15 (2026-04-02): **Question**: How should TODO.md categorize issues beyond
+    bug-severity, and should issues carry type tags?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 14 (2026-04-02): **Question**: How should the ecosystem''s user-facing
+    messages be formatted?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 13 (2026-04-01): **Question**: Should agentera artifacts be consolidated
+    out of the project root, and should their naming adopt common conventions?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 12 (2026-03-31): **Question**: How should version management work across
+    the agentera ecosystem, both for agentera''s own skill versions and for target projects...'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 11 (2026-03-31): **Question**: How should agentera express its identity
+    visually across skills and artifacts?'
+  satisfaction: *batch_confirmed_2026_05_15
 - 'Decision 10 (2026-03-31): **Question**: Which patterns from gstack (garrytan/gstack)
   should agentera adopt, defer, or reject?'
-- 'Decision 9 (2026-03-31): **Question**: What should this skill ecosystem be named?
-  The current name "agent-skills" is generic and doesn''t represent what it is...'
-- 'Decision 8 (2026-03-30): **Question**: Should the ecosystem unify its confidence
-  model, and if so, on what scale?'
-- 'Decision 7 (2026-03-30): **Question**: How should the skill ecosystem enforce cross-skill
-  alignment and prevent shared primitives from diverging as skills are added?'
-- 'Decision 6 (2026-03-30): **Question**: how should the DESIGN.md spec be absorbed
-  into the skill suite, given skills must work standalone?'
-- 'Decision 5 (2026-03-30): **Question**: should visionera''s VISION.md include a
-  product identity layer (brand personality, voice, aesthetic, communication style)?'
-- 'Decision 4 (2026-03-30): **Question**: how should skill-generated docs and artifacts
-  integrate with existing project documentation conventions?'
-- 'Decision 3 (2026-03-29): **Question**: How should dokumentera (a documentation
-  skill) be designed for the suite?'
+- summary: 'Decision 9 (2026-03-31): **Question**: What should this skill ecosystem be named?
+    The current name "agent-skills" is generic and doesn''t represent what it is...'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 8 (2026-03-30): **Question**: Should the ecosystem unify its confidence
+    model, and if so, on what scale?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 7 (2026-03-30): **Question**: How should the skill ecosystem enforce cross-skill
+    alignment and prevent shared primitives from diverging as skills are added?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 6 (2026-03-30): **Question**: how should the DESIGN.md spec be absorbed
+    into the skill suite, given skills must work standalone?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 5 (2026-03-30): **Question**: should visionera''s VISION.md include a
+    product identity layer (brand personality, voice, aesthetic, communication style)?'
+  satisfaction: *batch_confirmed_2026_05_15
+- summary: 'Decision 4 (2026-03-30): **Question**: how should skill-generated docs and artifacts
+    integrate with existing project documentation conventions?'
+  satisfaction: *batch_confirmed_2026_05_15
