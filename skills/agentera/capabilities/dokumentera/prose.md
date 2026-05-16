@@ -22,11 +22,11 @@ One index file; writes individual doc files across the project.
 |----------|---------|-----------|
 | `DOCS.md` | Canonical documentation contract, stored as `.agentera/docs.yaml` unless mapped otherwise. Conventions, artifact mapping, and documentation index. | Created on first dokumentera run. |
 
-Use `agentera describe --format json` and its `artifact_schemas` entry for `docs` to locate the active installed schema; do not search Agentera directories manually. The repository's existing `.agentera/docs.yaml` shape provides the local structure. Individual documentation files are written to their mapped locations.
+Use `agentera describe --format json` and its `artifact_schemas` entry for `docs` to locate the active installed schema; use `artifact_locations` or `agentera query --list-artifacts --format json` for mapped artifact paths and raw-access boundaries. Do not search Agentera directories manually. The repository's existing `.agentera/docs.yaml` shape provides the local structure when editing that artifact. Individual documentation files are written to their mapped locations.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/docs.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, .agentera/progress.yaml, .agentera/decisions.yaml, .agentera/health.yaml).
+Before reading or writing any artifact, prefer the CLI artifact-location contract from `agentera describe --format json` or `agentera query --list-artifacts --format json`. It resolves `.agentera/docs.yaml` mappings, default paths, existence, normal read commands, and raw-access boundaries without a separate raw docs read. Raw `.agentera/docs.yaml` access is reserved for writing or validating the docs artifact itself, corruption diagnostics, or unavailable/incomplete CLI discovery. This applies to all artifact references in this capability, including cross-capability reads (VISION.md, .agentera/progress.yaml, .agentera/decisions.yaml, .agentera/health.yaml).
 
 ### Contract values
 
@@ -110,7 +110,7 @@ Do not raw-read `TODO.md`, `.agentera/docs.yaml`, `CHANGELOG.md`, or `.agentera/
 When closeout context is incomplete or caveated:
 
 1. Preserve every returned caveat, including stale app/profile state, compacted state, missing benchmark evidence, absent local tag/metadata, and no-publication/no-remote state.
-2. Run the listed `closeout_context.fallback_commands` before any raw artifact read. Expected existing fallbacks are `agentera todo --format json`, `agentera docs --format json`, `agentera progress --format json`, `agentera query changelog --format json`, `agentera query --list-artifacts`, and `agentera decisions --format json` when listed.
+2. Run the listed `closeout_context.fallback_commands` before any raw artifact read. Expected existing fallbacks are `agentera todo --format json`, `agentera docs --format json`, `agentera progress --format json`, `agentera query changelog --format json`, `agentera query --list-artifacts --format json`, and `agentera decisions --format json` when listed.
 3. If fallback CLI state is still incomplete, raw reads may be used only as last-resort diagnostics or as explicit write targets after artifact path resolution.
 4. Never hide or reconstruct caveats while preparing docs, changelog, TODO, or progress closeout. Carry them into the final synchronization note.
 

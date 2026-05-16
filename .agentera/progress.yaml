@@ -1,4 +1,48 @@
 cycles:
+- number: 530
+  timestamp: 2026-05-16 04:59
+  type: feat
+  phase: build
+  what: Completed and synchronized the AGENTERA_ARTIFACTS artifact-location discovery
+    contract.
+  commit: pending
+  inspiration: Orkestrera executed the AGENTERA_ARTIFACTS Raw-Read Reduction Plan
+    so agents can discover mapped artifact paths, normal read commands, and raw-access
+    boundaries through supported CLI surfaces instead of raw-reading `.agentera/docs.yaml`
+    or probing `.agentera/` after CLI state.
+  discovered: 'Retained startup benchmark rows showed AGENTERA_ARTIFACTS pressure
+    in prior versions (`2.3.3` 1 raw read, `2.3.13` 4 reads/63 estimated tokens, `2.7.0`
+    4 reads/114 estimated tokens, `2.8.0` 1 read/23 estimated tokens). The actionable
+    gap was path discovery: previous `query --list-artifacts --format json` returned
+    names only, and `describe --format json` exposed schema/default paths without
+    a compact resolved-location/read-boundary contract.'
+  verified: Added registry-backed artifact-location projection in `scripts/agentera`
+    using `ArtifactRecord`, `load_docs_path_overrides`, and `resolve_artifact_path`;
+    exposed it through `describe --format json` as `artifact_locations` and schema-entry
+    `location`, and through `query --list-artifacts --format json` as a v2 wrapper
+    with `names`, `artifacts`, `source`, `source_contract`, and caveats while preserving
+    text names output. Updated Agentera dispatcher, Planera, Orkestrera, and Dokumentera
+    guidance; updated closeout/evaluation fallbacks to structured list-artifacts discovery;
+    added mapped-path, routine-command, raw-boundary, missing-schema, and unsupported
+    capability-command regressions. Verification passed with 307 focused/relevant
+    tests, capability contract self-validation, and `git diff --check`. No live benchmark
+    was run; proxy evidence is the new CLI surface directly removing the historical
+    path-discovery reason while preserving legitimate raw writes, archival, validation,
+    diagnostics, CLI-defect, unavailable-state, and benchmark-analysis access.
+  next: AGENTERA_ARTIFACTS Raw-Read Reduction Plan is complete. Remaining work is
+    normal closeout or commit if requested. Do not publish, push, tag, refresh installed
+    app/profile, edit vision or objective state, change decision satisfaction state,
+    mutate package-manager state, or run unsupported capability-name CLI commands
+    unless explicitly requested.
+  context:
+    intent: AGENTERA_ARTIFACTS path-discovery raw-read reduction after CLI state
+    constraints: Preserve routine state-command ownership, text list-artifacts compatibility,
+      route/CLI separation, legitimate raw write/diagnostic boundaries, and no installed
+      app/profile, package-manager, publication, push, tag, vision, objective, or
+      decision satisfaction changes.
+    scope: CLI artifact-location projection, describe/query discovery surfaces, dispatcher
+      and capability guidance, focused tests, startup benchmark proxy evidence, PLAN/PROGRESS
+      sync, capability contract self-validation, and diff whitespace check.
 - number: 529
   timestamp: 2026-05-16 02:16
   type: feat
@@ -21,14 +65,15 @@ cycles:
     missing-artifact, filtered-result, satisfaction-review, compacted-history, raw-artifact-access,
     and fallback boundaries. Updated `references/cli/agent-ready-state-contract.yaml`,
     master Agentera guidance, and DECISIONS.md consumers in Planera, Realisera, Inspektera,
-    Dokumentera, Visionera, Optimera, Orkestrera, Resonera, and Profilera to preserve `missing_fields`,
-    `compacted`, `caveats`, and `satisfaction.review_needed` instead of raw-reading
-    missing history. Focused tests passed for full-detail, compacted, missing-field,
-    satisfaction-review, filtered no-match, missing artifact, Orkestrera caveat preservation,
-    reference contract, and consumer guidance; full query CLI tests passed. Direct
-    source-contract proof showed current compacted decisions are not full-detail complete
-    but are complete for normal deliberation, and refreshed `mage bench:startupState`
-    reported zero raw-after-CLI and zero redundant raw artifact reads.
+    Dokumentera, Visionera, Optimera, Orkestrera, Resonera, and Profilera to preserve
+    `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` instead
+    of raw-reading missing history. Focused tests passed for full-detail, compacted,
+    missing-field, satisfaction-review, filtered no-match, missing artifact, Orkestrera
+    caveat preservation, reference contract, and consumer guidance; full query CLI
+    tests passed. Direct source-contract proof showed current compacted decisions
+    are not full-detail complete but are complete for normal deliberation, and refreshed
+    `mage bench:startupState` reported zero raw-after-CLI and zero redundant raw artifact
+    reads.
   next: Decision Source Contract Raw-Read Reduction Plan is complete. Remaining open
     TODOs start with AGENTERA_ARTIFACTS raw reads after CLI. Do not publish, commit,
     push, tag, refresh installed app/profile, edit vision or objective state, change
@@ -392,51 +437,9 @@ cycles:
       capability-name CLI command
     scope: CLI contract reference update, PLAN Task 1 evidence, PROGRESS cycle evidence,
       safe help/probe commands, artifact validation, and diff whitespace check
-- number: 520
-  timestamp: 2026-05-15 22:50
-  type: feat
-  phase: build
-  what: Synchronized PLAN Task 4 version and local state closeout for the D48 `agentera
-    validate` namespace feature.
-  commit: pending
-  inspiration: Orkestrera assigned Task 4 only after Tasks 1-3 were independently
-    evaluated PASS, requiring feat-level release metadata handling, TODO/PROGRESS/PLAN
-    closeout, conditional CHANGELOG/DOCS updates, focused verification, and a scope
-    audit with no publication, push, tag, installed-app refresh, profile refresh,
-    vision edit, objective edit, decision satisfaction change, package update, unsupported
-    capability-name CLI command, or D48 smoke/verify/corpus/usage namespace work.
-  discovered: '`.agentera/docs.yaml` maps `feat` to a minor bump and lists version-bearing
-    surfaces through `conventions.version_files`, with registry source `references/adapters/package-registry.yaml
-    docs_targets.version_files`. The active release metadata was 2.3.15 before closeout,
-    so the documented feature target is 2.4.0.'
-  verified: Version-bearing surfaces were aligned from 2.3.15 to 2.4.0 across `pyproject.toml`,
-    `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`,
-    `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, `skills/agentera/SKILL.md`,
-    `skills/hej/SKILL.md`, and `registry.json`. Focused verification passed with `uv
-    run pytest tests/test_validate_namespace.py -q`, `uv run pytest tests/test_explicit_cli_surfaces.py
-    -q`, `uv run pytest tests/test_package_registry.py tests/test_packaged_cli.py
-    -q`, `uv run scripts/agentera validate capability hej`, `uv run scripts/agentera
-    validate capability hej --format json`, `uv run scripts/agentera validate artifact
-    --artifact PROGRESS.md --file .agentera/progress.yaml --format json`, `uv run
-    scripts/validate_capability.py skills/agentera/capabilities/hej`, `uv run scripts/validate_capability.py
-    --self-validate`, direct artifact validators for PROGRESS/PLAN/TODO/CHANGELOG/DOCS,
-    and `git diff --check`.
-  next: D48 Validate Namespace Plan is complete after Task 4 closeout. Do not publish,
-    commit, push, tag, refresh installed app/profile, edit vision or objective state,
-    change decision satisfaction state, update packages, run unsupported capability-name
-    CLI commands, or implement D48 smoke/verify/corpus/usage namespaces unless explicitly
-    requested.
-  context:
-    intent: PLAN Task 4 version and local state sync for D48 validate namespace
-    constraints: Task 4 only; preserve unrelated dirty work; local metadata sync only;
-      no publication, commit, push, tag, installed-app refresh, profile refresh, vision
-      edit, objective edit, decision satisfaction change, package update, unsupported
-      capability-name CLI command, or D48 smoke/verify/corpus/usage namespace work
-    scope: Feature-level minor version alignment, TODO resolution, CHANGELOG notes,
-      DOCS audit metadata, PROGRESS evidence, PLAN completion evidence, focused validate
-      namespace and package tests, direct validators, artifact validation, and diff
-      whitespace check
 archive:
+- summary: 'Cycle 520 (2026-05-15): Synchronized PLAN Task 4 version and local state
+    closeout for the D48 `agentera validate` namespace...'
 - summary: 'Cycle 519 (2026-05-15): Completed PLAN Task 3 validation coverage and
     guidance alignment for the `agentera validate` namespace.'
 - summary: 'Cycle 518 (2026-05-15): Implemented PLAN Task 2 behavior for the `agentera
@@ -515,5 +518,3 @@ archive:
     metadata for the active 2.3.7 Decision Context...'
 - summary: 'Cycle 481 (2026-05-14): Performed PLAN Task 5 focused regression and startup-state
     validation for active plan 2.3.7 Decision Context...'
-- summary: 'Cycle 480 (2026-05-14): Implemented PLAN Task 4 Resonera startup and deliberation
-    integration for active plan 2.3.7 without updating...'

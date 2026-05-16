@@ -49,7 +49,12 @@ from typing import Any
 
 import yaml
 
-from artifact_registry import ArtifactRecord, load_artifact_registry, resolve_artifact_path
+from artifact_registry import (
+    ArtifactRecord,
+    load_artifact_registry,
+    load_docs_path_overrides,
+    resolve_artifact_path,
+)
 from agentera_upgrade import (
     build_doctor_status,
     cmd_doctor,
@@ -91,7 +96,7 @@ Supported state commands:
   agentera objective                            # Active optimera objective
   agentera experiments                          # Active optimera experiments
   agentera lint --artifact PROGRESS.md          # Pre-write artifact prose self-audit
-  agentera query --list-artifacts               # Discover advanced schemas
+  agentera query --list-artifacts               # Discover advanced schema names
   agentera query <artifact-name>                # Advanced custom artifact query
 
 When to use agentera:
@@ -825,6 +830,16 @@ ROUTINE_STATE_COMMANDS = [
     "docs",
     "objective",
     "experiments",
+]
+
+ALLOWED_RAW_ARTIFACT_USES = [
+    "artifact writes",
+    "artifact archival",
+    "artifact validation",
+    "corruption diagnostics",
+    "CLI defects",
+    "unavailable or incomplete CLI state after CLI fallbacks",
+    "benchmark analysis",
 ]
 
 STARTUP_COMPLETENESS_AVAILABLE_STATE = [
@@ -2405,7 +2420,7 @@ def _optimera_benchmark_context(capability: str | None) -> dict[str, Any] | None
     ]))
     fallback_commands = [
         "agentera docs --format json",
-        "agentera query --list-artifacts",
+        "agentera query --list-artifacts --format json",
     ]
     return {
         "capability": "optimera",
@@ -2649,7 +2664,7 @@ def _dokumentera_closeout_context(
         "agentera docs --format json",
         "agentera progress --format json",
         "agentera query changelog --format json",
-        "agentera query --list-artifacts",
+        "agentera query --list-artifacts --format json",
         *capability_contract.get("cli_fallback", []),
     ]))
     complete = not missing_required
@@ -3231,7 +3246,7 @@ def _inspektera_evidence_context(
         "agentera docs --format json",
         "agentera health --format json",
         "agentera todo --format json",
-        "agentera query --list-artifacts",
+        "agentera query --list-artifacts --format json",
         *capability_contract.get("cli_fallback", []),
     ]))
     return {
@@ -3721,10 +3736,122 @@ def _describe_schema_fields(schema: dict[str, Any]) -> list[dict[str, Any]]:
     return fields
 
 
+def _artifact_read_interfaces(name: str, record: ArtifactRecord | None) -> dict[str, Any]:
+    artifact_id = record.artifact_id if record is not None else name
+    routine_command = f"agentera {artifact_id} --format json" if artifact_id in STATE_COMMAND_HANDLERS else None
+    if artifact_id == "benchmark_context":
+        advanced_command = BENCHMARK_CONTEXT_COMMAND
+    elif artifact_id in STATE_COMMAND_HANDLERS:
+        advanced_command = None
+    else:
+        advanced_command = f"agentera query {artifact_id} --format json"
+    if routine_command:
+        policy = "Use the routine state command for normal content reads before any raw artifact access."
+    elif advanced_command:
+        policy = "Use the listed CLI discovery/query surface before any last-resort raw artifact access."
+    else:
+        policy = "No normal content-read command is registered; raw access is limited to allowed boundary cases."
+    return {
+        "normal_read_command": routine_command,
+        "advanced_query_command": advanced_command,
+        "raw_access_boundary": {
+            "normal_policy": policy,
+            "allowed_raw_artifact_uses": ALLOWED_RAW_ARTIFACT_USES,
+        },
+    }
+
+
+def _project_relative_or_absolute(path: Path) -> str:
+    try:
+        return str(path.relative_to(Path.cwd().resolve()))
+    except ValueError:
+        return str(path)
+
+
+def _artifact_location_record(
+    name: str,
+    info: dict[str, Any],
+    schemas_dir: Path,
+    docs_overrides: dict[str, str],
+) -> dict[str, Any]:
+    record = info.get("record") if isinstance(info.get("record"), ArtifactRecord) else None
+    schema = info.get("schema") if isinstance(info.get("schema"), dict) else {}
+    meta = schema.get("meta", {}) if isinstance(schema, dict) else {}
+    schema_file = schemas_dir / f"{name}.yaml"
+    artifact_id = record.artifact_id if record is not None else name
+    display_name = record.display_name if record is not None else str(meta.get("name", name))
+    default_path = record.default_path if record is not None else str(info.get("path") or "")
+    mapped_path = default_path
+    resolution_source = "registry default" if record is not None else "schema metadata"
+    caveats: list[str] = []
+    if record is not None and record.docs_yaml_can_override_path and record.display_name in docs_overrides:
+        mapped_path = docs_overrides[record.display_name]
+        resolution_source = ".agentera/docs.yaml mapping"
+    active_objective_name = _active_objective_name()
+    resolved_path: Path | None = None
+    if record is not None and record.path_template and "<name>" in mapped_path and not active_objective_name:
+        caveats.append("Path template contains <name>; no active objective name was available for resolution.")
+    else:
+        try:
+            resolved_path = resolve_artifact_path(record, Path.cwd(), active_objective_name) if record is not None else _resolve_artifact_path(mapped_path)
+        except ValueError as exc:
+            caveats.append(str(exc))
+    path_payload = {
+        "default_path": default_path,
+        "mapped_path": mapped_path,
+        "resolved_path": str(resolved_path) if resolved_path is not None else None,
+        "display_path": _project_relative_or_absolute(resolved_path) if resolved_path is not None else mapped_path,
+        "resolution_source": resolution_source,
+        "exists": resolved_path.exists() if resolved_path is not None else False,
+        "docs_yaml_can_override_path": record.docs_yaml_can_override_path if record is not None else False,
+        "project_boundary_check": "enforced" if resolved_path is not None else "not_resolved",
+    }
+    return {
+        "artifact_id": artifact_id,
+        "name": artifact_id,
+        "display_name": display_name,
+        "artifact_type": record.artifact_type if record is not None else meta.get("artifact_type", "unknown"),
+        "format": meta.get("format", "unknown") if isinstance(meta, dict) else "unknown",
+        "producer": sorted(record.producers) if record is not None else meta.get("producer", "unknown"),
+        "consumers": sorted(record.consumers) if record is not None else meta.get("consumers", "unknown"),
+        "schema_file": str(schema_file) if schema_file.is_file() else None,
+        "path": path_payload,
+        **_artifact_read_interfaces(name, record),
+        "caveats": caveats,
+    }
+
+
+def _artifact_location_contract(
+    schemas_dir: Path,
+    schemas: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    docs_overrides = load_docs_path_overrides(Path.cwd())
+    records = [_artifact_location_record(name, schemas[name], schemas_dir, docs_overrides) for name in sorted(schemas)]
+    caveats = [caveat for record in records for caveat in record["caveats"]]
+    return {
+        "schemaVersion": "agentera.artifact_locations.v1",
+        "status": "complete" if schemas_dir.is_dir() else "missing_schemas",
+        "source": {
+            "schemas_dir": str(schemas_dir),
+            "docs_yaml_path": str(Path.cwd() / ".agentera" / "docs.yaml"),
+            "docs_yaml_overrides_loaded": bool(docs_overrides),
+        },
+        "source_contract": {
+            "raw_artifact_reads_required_for_discovery": False,
+            "normal_content_policy": "Use routine state commands when normal_read_command is present; use query only for advanced/custom artifact inspection.",
+            "raw_artifact_read_policy": "Raw artifact reads remain valid only for explicit writes, archival, validation, corruption diagnostics, CLI defects, unavailable/incomplete CLI state after fallbacks, and benchmark analysis.",
+            "allowed_raw_artifact_uses": ALLOWED_RAW_ARTIFACT_USES,
+        },
+        "artifacts": records,
+        "caveats": caveats,
+    }
+
+
 def _describe_artifact_schemas(
     schemas_dir: Path,
     schemas: dict[str, dict[str, Any]],
     model: dict[str, Path | str],
+    artifact_locations: dict[str, dict[str, Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     gaps: list[dict[str, Any]] = []
     if not schemas_dir.is_dir():
@@ -3741,11 +3868,13 @@ def _describe_artifact_schemas(
         schema = info.get("schema") if isinstance(info.get("schema"), dict) else {}
         meta = schema.get("meta", {}) if isinstance(schema, dict) else {}
         schema_file = schemas_dir / f"{name}.yaml"
+        location = artifact_locations.get(name) if artifact_locations else None
         artifacts.append({
             "name": name,
             "status": "discovered" if meta else "unknown_metadata",
             "schema_file": str(schema_file) if schema_file.is_file() else None,
             "path": info.get("path") or "unknown",
+            "location": location,
             "artifact_type": meta.get("artifact_type", "unknown") if isinstance(meta, dict) else "unknown",
             "format": meta.get("format", "unknown") if isinstance(meta, dict) else "unknown",
             "producer": meta.get("producer", "unknown") if isinstance(meta, dict) else "unknown",
@@ -3820,7 +3949,9 @@ def _build_describe_payload() -> dict[str, Any]:
     gaps: list[dict[str, Any]] = []
     if contract_error:
         gaps.append({"scope": "contract", "status": "missing", "message": contract_error})
-    artifact_schemas, schema_gaps = _describe_artifact_schemas(schemas_dir, schemas, app_model)
+    artifact_locations_payload = _artifact_location_contract(schemas_dir, schemas)
+    artifact_locations = {entry["name"]: entry for entry in artifact_locations_payload["artifacts"]}
+    artifact_schemas, schema_gaps = _describe_artifact_schemas(schemas_dir, schemas, app_model, artifact_locations)
     gaps.extend(schema_gaps)
 
     slash_aliases = _contract_section(contract, "slash_route_aliases", gaps)
@@ -3861,6 +3992,7 @@ def _build_describe_payload() -> dict[str, Any]:
             "note": "Decision 43 aliases are slash-route aliases only, not Agentera CLI commands.",
         },
         "artifact_schemas": artifact_schemas,
+        "artifact_locations": artifact_locations_payload,
         "doctor": {
             "command": "doctor",
             "removed_command": (doctor_contract or {}).get("removed_command", "unknown") if isinstance(doctor_contract, dict) else "unknown",
@@ -5961,10 +6093,21 @@ def cmd_query(args: argparse.Namespace) -> int:
     if getattr(args, "limit", None) is not None and args.limit < 0:
         raise ValueError("limit must be zero or greater")
     if getattr(args, "list_artifacts", False):
-        schemas = _load_schemas(_discover_schemas_dir())
+        schemas_dir = _discover_schemas_dir()
+        schemas = _load_schemas(schemas_dir)
         names = sorted(schemas)
         if output_format != "text":
-            _emit_structured(names, output_format)
+            locations = _artifact_location_contract(schemas_dir, schemas)
+            _emit_structured({
+                "schemaVersion": "agentera.query.list_artifacts.v2",
+                "command": "query",
+                "status": locations["status"],
+                "names": names,
+                "artifacts": locations["artifacts"],
+                "source": locations["source"],
+                "source_contract": locations["source_contract"],
+                "caveats": locations["caveats"],
+            }, output_format)
             return 0
         for name in sorted(schemas):
             print(name)

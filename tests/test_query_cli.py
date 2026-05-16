@@ -2207,7 +2207,7 @@ class TestHej:
         assert context["release_boundary"]["publication_evidence"]["remote_push"] == "not_recorded_in_cli_state"
         assert context["release_boundary"]["publication_evidence"]["remote_checks_performed"] is False
         assert context["release_boundary"]["app_refresh_evidence"]["refresh"] == "not_recorded_in_cli_state"
-        assert "agentera query --list-artifacts" in context["fallback_commands"]
+        assert "agentera query --list-artifacts --format json" in context["fallback_commands"]
         assert "agentera decisions --format json" in context["fallback_commands"]
         contract = context["source_contract"]
         assert contract["complete_for_closeout_context"] is True
@@ -2240,7 +2240,7 @@ class TestHej:
             "agentera docs --format json",
             "agentera progress --format json",
             "agentera query changelog --format json",
-            "agentera query --list-artifacts",
+            "agentera query --list-artifacts --format json",
         ]
         assert "agentera dokumentera" not in json.dumps(context)
 
@@ -3600,9 +3600,35 @@ class TestArtifactTypeCoverage:
     def test_list_artifacts_json_format(self, project):
         r = _run("query", "--list-artifacts", "--format", "json", cwd=project)
         assert r.returncode == 0
-        names = json.loads(r.stdout)
-        assert "session" in names
-        assert "plan" in names
+        data = json.loads(r.stdout)
+        assert data["schemaVersion"] == "agentera.query.list_artifacts.v2"
+        assert "session" in data["names"]
+        assert "plan" in data["names"]
+        artifacts = {entry["name"]: entry for entry in data["artifacts"]}
+        assert artifacts["plan"]["normal_read_command"] == "agentera plan --format json"
+        assert artifacts["plan"]["path"]["mapped_path"] == ".agentera/plan.yaml"
+        assert artifacts["plan"]["path"]["exists"] is False
+        assert "artifact writes" in artifacts["plan"]["raw_access_boundary"]["allowed_raw_artifact_uses"]
+        assert data["source_contract"]["raw_artifact_reads_required_for_discovery"] is False
+
+    def test_list_artifacts_json_reports_docs_yaml_mapped_paths(self, project):
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [{"artifact": "PLAN.md", "path": "docs/state/plan.yaml"}],
+        })
+        _write_artifact(project, "docs/state/plan.yaml", {"header": {"status": "active"}, "tasks": []})
+
+        r = _run("query", "--list-artifacts", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        artifacts = {entry["name"]: entry for entry in data["artifacts"]}
+        plan = artifacts["plan"]
+        assert plan["path"]["default_path"] == ".agentera/plan.yaml"
+        assert plan["path"]["mapped_path"] == "docs/state/plan.yaml"
+        assert plan["path"]["display_path"] == "docs/state/plan.yaml"
+        assert plan["path"]["resolution_source"] == ".agentera/docs.yaml mapping"
+        assert plan["path"]["exists"] is True
+        assert plan["normal_read_command"] == "agentera plan --format json"
 
 
 ROUTINE_STRUCTURED_COMMANDS = [
@@ -3913,6 +3939,12 @@ class TestDescribeIntrospection:
         assert "plan" in schemas
         assert schemas["plan"]["status"] == "discovered"
         assert any(field["field"] == "status" and field["id"] == "PH3" for field in schemas["plan"]["fields"])
+        assert schemas["plan"]["location"]["normal_read_command"] == "agentera plan --format json"
+        assert schemas["plan"]["location"]["path"]["mapped_path"] == ".agentera/plan.yaml"
+        locations = {entry["name"]: entry for entry in data["artifact_locations"]["artifacts"]}
+        assert locations["plan"]["path"]["default_path"] == ".agentera/plan.yaml"
+        assert locations["plan"]["path"]["project_boundary_check"] == "enforced"
+        assert data["artifact_locations"]["source_contract"]["raw_artifact_reads_required_for_discovery"] is False
         assert data["doctor"]["command"] == "doctor"
         assert data["doctor"]["removed_command"] == "bundle-status"
         assert data["doctor"]["compatibility_alias"] == "forbidden"
@@ -3935,6 +3967,8 @@ class TestDescribeIntrospection:
         data = json.loads(r.stdout)
         assert data["status"] == "incomplete"
         assert data["artifact_schemas"] == []
+        assert data["artifact_locations"]["status"] == "missing_schemas"
+        assert data["artifact_locations"]["artifacts"] == []
         assert data["source"]["app_model"]["appHome"] == str(tmp_path)
         assert data["source"]["app_model"]["skillRoot"] == str(tmp_path / "skills" / "agentera")
         assert any(
