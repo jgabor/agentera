@@ -18,7 +18,7 @@ may expose an event while agentera still lacks a shipped adapter path for it.
 
 | Runtime | Bare text `hej` behavior | Evidence |
 |---------|--------------------------|----------|
-| OpenCode | Deterministic exact-match adapter route through `chat.message`; only a complete lowercase text message `hej` is rewritten to load `agentera` and run the `agentera hej` dashboard path, accepting OpenCode's CLI-added single trailing newline as a transport artifact. | `.opencode/plugins/agentera.js`, `scripts/smoke_opencode_bootstrap.mjs` |
+| OpenCode | Deterministic exact-match adapter route through `chat.message`; only a complete lowercase text message `hej` is rewritten to load `agentera` and run the `agentera hej` dashboard path, accepting OpenCode's CLI-added single trailing newline as a transport artifact. | `.opencode/plugins/agentera.js`, `scripts/smoke_opencode_bootstrap.mjs`, OpenCode `packages/plugin/src/index.ts` Hooks interface |
 | Claude Code | Metadata/context only; `UserPromptSubmit` can observe or add context but is not a verified prompt rewrite router. | `skills/agentera/SKILL.md`, marketplace metadata |
 | Copilot CLI | Metadata/context only; skills, prompts, hooks, and plugins expose Agentera but do not guarantee pre-model bare-prompt routing. | `plugin.json`, `.github/plugin/plugin.json`, `.github/hooks` |
 | Codex CLI | Metadata/context only; `$agentera` is explicit and the legacy `$hej` bridge is not implicitly invocable. | `.codex-plugin/plugin.json`, `agents/openai.yaml` |
@@ -47,6 +47,17 @@ mutation.
 | Copilot sparse edits | Copilot `preToolUse` stdin may omit full content or unique old/new replacement evidence. The hook allows those payloads. |
 | Codex preload/bookmarks | `codex_hooks` supports lifecycle events, but `hooks/codex-hooks.json` ships only `apply_patch` PreToolUse/PostToolUse wiring. |
 | Codex artifact hard gate | The adapter parses patch headers for touched paths, but it does not reconstruct final candidate content for blocking validation. |
+
+## Subagent Dispatch
+
+| Runtime | Dispatch surface | Descriptor source | Verification surface |
+|---------|------------------|-------------------|----------------------|
+| Claude Code | Native Task/subagent surface | Host-managed; no Agentera descriptor files shipped for this phase | RuntimeAdapter registry |
+| OpenCode | `@<capability>` descriptors under `~/.config/opencode/agents` | `.opencode/agents/*.md`, bootstrapped by `.opencode/plugins/agentera.js` | `scripts/smoke_opencode_bootstrap.mjs`, `agentera validate descriptors` |
+| Copilot CLI | User-driven host action such as `/fleet` when available | Host-managed; no Agentera descriptor files shipped for this phase | RuntimeAdapter registry |
+| Codex CLI | Native agent descriptors under `~/.codex/agents` with bounded `[agents]` settings | `skills/agentera/agents/*.toml`, installed by `scripts/setup_codex.py` and `agentera upgrade` | `agentera validate descriptors`, `tests/test_setup_codex.py`, `tests/test_upgrade_cli.py` |
+
+Agentera v2 does not write legacy `[agents.<name>]` Codex config blocks. Capability dispatch must use runtime-native subagent descriptors or host Task surfaces, not unsupported `agentera <capability>` CLI commands.
 
 ## Copilot install notes
 
@@ -79,7 +90,7 @@ Runtime adapter facts are owned by the RuntimeAdapter registry at
 `references/adapters/runtime-adapter-registry.yaml` and loaded through
 `scripts/runtime_adapter_registry.py`. This reference may describe registry
 claims, but changes to runtime identity, lifecycle events, artifact-validation
-support, config targets, diagnostics, or documentation claims must be validated
+support, subagent dispatch, config targets, diagnostics, or documentation claims must be validated
 against the registry rather than duplicated here as an independent table.
 
 App-home classification is not runtime-specific. `scripts/install_root.py` is
@@ -93,8 +104,10 @@ classification Module.
 | Shared artifact validator | `hooks/validate_artifact.py` |
 | Claude Code hook registry | `hooks/hooks.json` |
 | OpenCode plugin | `.opencode/plugins/agentera.js` |
+| OpenCode agent descriptors | `.opencode/agents/*.md` |
 | Copilot pre-write hook | `.github/hooks/preToolUse.json` |
 | Codex hook config | `hooks/codex-hooks.json` |
+| Codex agent descriptors | `skills/agentera/agents/*.toml` |
 | RuntimeAdapter registry | `references/adapters/runtime-adapter-registry.yaml` |
 | RuntimeAdapter registry loader | `scripts/runtime_adapter_registry.py` |
 | Lifecycle metadata validator | `scripts/validate_lifecycle_adapters.py` |

@@ -49,6 +49,7 @@ packages = ["src/agentera_cli"]
 ".github/hooks" = "agentera_cli/bundle/.github/hooks"
 ".github/plugin" = "agentera_cli/bundle/.github/plugin"
 ".opencode/commands" = "agentera_cli/bundle/.opencode/commands"
+".opencode/agents" = "agentera_cli/bundle/.opencode/agents"
 ".opencode/plugins" = "agentera_cli/bundle/.opencode/plugins"
 ".opencode/package.json" = "agentera_cli/bundle/.opencode/package.json"
 "README.md" = "agentera_cli/bundle/README.md"

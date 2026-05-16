@@ -21,6 +21,7 @@ REQUIRED_GROUPS = (
     "host_detection",
     "lifecycle_events",
     "artifact_validation",
+    "subagent_dispatch",
     "config_targets",
     "diagnostics",
     "documentation_claims",
@@ -30,6 +31,7 @@ REQUIRED_FIELDS = {
     "host_detection": ("binary_names", "host_config_locations", "availability_probe_label"),
     "lifecycle_events": ("supported_events", "unsupported_events", "event_status", "limitations"),
     "artifact_validation": ("validation_events", "hard_gate_claims", "payload_reconstruction_limitations"),
+    "subagent_dispatch": ("mechanism", "setup_targets", "descriptor_sources", "invocation_pattern", "limitations"),
     "config_targets": ("runtime_config_files", "hook_targets", "plugin_targets", "environment_exports", "write_safety_labels"),
     "diagnostics": ("check_names", "status_labels", "gap_labels", "primary_messages"),
     "documentation_claims": ("reference_paths", "parity_claims", "install_claims", "known_drifts"),
@@ -42,6 +44,9 @@ LIST_FIELDS = {
     "validation_events",
     "hard_gate_claims",
     "payload_reconstruction_limitations",
+    "setup_targets",
+    "descriptor_sources",
+    "limitations",
     "runtime_config_files",
     "hook_targets",
     "plugin_targets",
@@ -56,7 +61,15 @@ LIST_FIELDS = {
     "install_claims",
     "known_drifts",
 }
-STRING_FIELDS = {"runtime_id", "display_name", "adapter_family", "support_status", "availability_probe_label"}
+STRING_FIELDS = {
+    "runtime_id",
+    "display_name",
+    "adapter_family",
+    "support_status",
+    "availability_probe_label",
+    "mechanism",
+    "invocation_pattern",
+}
 MAP_FIELDS = {"event_status"}
 SUPPORTED_EVENT_NAMES = {
     "PreToolUse",
@@ -82,9 +95,9 @@ SUPPORTED_EVENT_NAMES = {
     "session.idle",
 }
 CONSUMER_GROUPS = {
-    "lifecycle": ("identity", "lifecycle_events", "artifact_validation", "documentation_claims"),
+    "lifecycle": ("identity", "lifecycle_events", "artifact_validation", "subagent_dispatch", "documentation_claims"),
     "doctor": ("identity", "host_detection", "config_targets", "diagnostics", "documentation_claims"),
-    "upgrade": ("identity", "host_detection", "config_targets", "diagnostics"),
+    "upgrade": ("identity", "host_detection", "subagent_dispatch", "config_targets", "diagnostics"),
     "docs": REQUIRED_GROUPS,
     "tests": REQUIRED_GROUPS,
 }

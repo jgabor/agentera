@@ -43,6 +43,7 @@ import os
 import re
 import subprocess
 import sys
+import tomllib
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -4228,17 +4229,121 @@ def cmd_validate_artifact(args: argparse.Namespace) -> int:
     return result.returncode
 
 
+def _frontmatter_fields(text: str) -> dict[str, str]:
+    lines = text.splitlines()
+    if not lines or lines[0] != "---":
+        return {}
+    try:
+        closing = lines.index("---", 1)
+    except ValueError:
+        return {}
+    fields: dict[str, str] = {}
+    for line in lines[1:closing]:
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        fields[key.strip()] = value.strip().strip('"')
+    return fields
+
+
+def _descriptor_validation_payload() -> dict[str, Any]:
+    source_root = Path(__file__).resolve().parent.parent
+    codex_dir = source_root / "skills" / "agentera" / "agents"
+    opencode_dir = source_root / ".opencode" / "agents"
+    checks: list[dict[str, Any]] = []
+    violations: list[str] = []
+
+    for name in CAPABILITY_NAMES:
+        codex_path = codex_dir / f"{name}.toml"
+        check = {"runtime": "codex", "capability": name, "path": str(codex_path), "status": "pass"}
+        try:
+            text = codex_path.read_text(encoding="utf-8")
+            parsed = tomllib.loads(text)
+        except (OSError, tomllib.TOMLDecodeError) as exc:
+            check = {**check, "status": "fail", "message": str(exc)}
+            violations.append(f"codex {name}: {exc}")
+            checks.append(check)
+            continue
+        expected_ref = f"capabilities/{name}/prose.md"
+        if parsed.get("name") != name:
+            check = {**check, "status": "fail", "message": "name field does not match capability"}
+            violations.append(f"codex {name}: name field must be {name}")
+        elif not isinstance(parsed.get("description"), str) or not parsed["description"].strip():
+            check = {**check, "status": "fail", "message": "description is required"}
+            violations.append(f"codex {name}: description is required")
+        elif not isinstance(parsed.get("developer_instructions"), str) or expected_ref not in parsed["developer_instructions"]:
+            check = {**check, "status": "fail", "message": "developer_instructions must reference capability prose"}
+            violations.append(f"codex {name}: developer_instructions must reference {expected_ref}")
+        elif "# agentera_managed: true" not in text.splitlines()[:5]:
+            check = {**check, "status": "fail", "message": "managed marker is required"}
+            violations.append(f"codex {name}: managed marker is required")
+        checks.append(check)
+
+        opencode_path = opencode_dir / f"{name}.md"
+        check = {"runtime": "opencode", "capability": name, "path": str(opencode_path), "status": "pass"}
+        try:
+            text = opencode_path.read_text(encoding="utf-8")
+        except OSError as exc:
+            check = {**check, "status": "fail", "message": str(exc)}
+            violations.append(f"opencode {name}: {exc}")
+            checks.append(check)
+            continue
+        fields = _frontmatter_fields(text)
+        expected_ref = f"capabilities/{name}/prose.md"
+        if fields.get("name") != name:
+            check = {**check, "status": "fail", "message": "frontmatter name does not match capability"}
+            violations.append(f"opencode {name}: frontmatter name must be {name}")
+        elif fields.get("agentera_managed") != "true":
+            check = {**check, "status": "fail", "message": "agentera_managed frontmatter is required"}
+            violations.append(f"opencode {name}: agentera_managed frontmatter is required")
+        elif not fields.get("description"):
+            check = {**check, "status": "fail", "message": "description is required"}
+            violations.append(f"opencode {name}: description is required")
+        elif expected_ref not in text:
+            check = {**check, "status": "fail", "message": "descriptor must reference capability prose"}
+            violations.append(f"opencode {name}: descriptor must reference {expected_ref}")
+        checks.append(check)
+
+    return {
+        "command": "validate",
+        "status": "fail" if violations else "pass",
+        "target_family": "descriptors",
+        "target": "agent-descriptors",
+        "checks": checks,
+        "violations": violations,
+        "summary": {
+            "passed": sum(1 for check in checks if check["status"] == "pass"),
+            "failed": sum(1 for check in checks if check["status"] == "fail"),
+        },
+    }
+
+
+def cmd_validate_descriptors(args: argparse.Namespace) -> int:
+    payload = _descriptor_validation_payload()
+    if getattr(args, "format", "text") == "json":
+        _emit_structured(payload, "json")
+    else:
+        print(f"descriptor validation {payload['status']}: {payload['summary']['passed']} passed, {payload['summary']['failed']} failed")
+        for violation in payload["violations"]:
+            print(f"- {violation}", file=sys.stderr)
+    return 0 if payload["status"] == "pass" else 1
+
+
 def cmd_validate(args: argparse.Namespace) -> int:
     if args.validate_family == "capability":
         return cmd_validate_capability(args)
     if args.validate_family == "artifact":
         return cmd_validate_artifact(args)
+    if args.validate_family == "descriptors":
+        return cmd_validate_descriptors(args)
     raise ValueError(
-        "unsupported validate target family; valid families: capability, artifact. "
+        "unsupported validate target family; valid families: capability, artifact, descriptors. "
         "Syntax: agentera validate capability <capability-or-path> [--format text|json] OR "
-        "agentera validate artifact --artifact <ARTIFACT> [--file <PATH>] [--format text|json]. "
+        "agentera validate artifact --artifact <ARTIFACT> [--file <PATH>] [--format text|json] OR "
+        "agentera validate descriptors [--format text|json]. "
         "Examples: agentera validate capability hej; "
-        "agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json"
+        "agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json; "
+        "agentera validate descriptors --format json"
     )
 
 
@@ -6342,11 +6447,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate = sub.add_parser(
         "validate",
-        help="Validate capabilities or artifacts",
+        help="Validate capabilities, artifacts, or descriptors",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
         description=(
-            "Validate capability directories or canonical Agentera artifacts. "
-            "Examples: agentera validate capability hej; "
-            "agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json"
+            "Validate capability directories, canonical Agentera artifacts, or runtime agent descriptors.\n\n"
+            "Examples:\n"
+            "  agentera validate capability hej\n"
+            "  agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json\n"
+            "agentera validate descriptors --format json"
         ),
     )
     validate_sub = validate.add_subparsers(dest="validate_family")
@@ -6381,6 +6489,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Project directory for relative paths and docs.yaml mapping",
     )
     validate_artifact.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+    validate_descriptors = validate_sub.add_parser(
+        "descriptors",
+        help="Validate Codex and OpenCode Agentera capability descriptors",
+        description="Validate Codex and OpenCode Agentera capability descriptors.",
+    )
+    validate_descriptors.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
 
     u = sub.add_parser(
         "upgrade",

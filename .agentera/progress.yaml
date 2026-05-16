@@ -1,4 +1,62 @@
 cycles:
+- number: 547
+  timestamp: 2026-05-16 17:14
+  type: fix
+  phase: build
+  what: Reconciled source-backed OpenCode bare-message hook usage for plan Task 1.
+  commit: pending
+  inspiration: Realisera executed Runtime Docs Compatibility Fix Plan Task 1 after
+    public OpenCode plugin docs omitted the raw-message hook.
+  discovered: OpenCode `packages/plugin/src/index.ts` defines `chat.message` on
+    the exported Hooks interface, so Layer 1 routing is source-backed despite the
+    public-docs omission.
+  verified: '`node scripts/smoke_opencode_bootstrap.mjs` passed. `uv run pytest tests/test_runtime_adapters.py
+    tests/test_runtime_adapter_registry.py -q` passed with 85 tests. `uv run scripts/validate_lifecycle_adapters.py`
+    passed. Source and test surfaces preserve exact bare-`hej` routing through
+    `chat.message`, reject broad greeting matching, and preserve `event`, `shell.env`,
+    and tool hooks.'
+  next: Continue Runtime Docs Compatibility Fix Plan with Task 2 or Task 3. Do not
+    refresh installed apps/profiles, publish, push, tag, change package-manager state,
+    edit vision/objective state, change decision satisfaction, or commit unless explicitly
+    requested.
+  context:
+    intent: Realisera execution of Runtime Docs Compatibility Fix Plan Task 1 with corrected OpenCode source evidence.
+    constraints: No unsupported capability-name CLI commands, installed app/profile
+      refresh, publication, push, tag, package-manager change, vision/objective edit,
+      decision satisfaction change, or commit.
+    scope: '`.opencode/plugins/agentera.js`, OpenCode command templates, smoke/runtime-adapter
+      tests, RuntimeAdapter registry/docs, CHANGELOG, TODO, PLAN, and PROGRESS.'
+- number: 546
+  timestamp: 2026-05-16 14:45
+  type: feat
+  phase: build
+  what: Completed the Cross-runtime Subagent Dispatch Plan.
+  commit: pending
+  inspiration: Orkestrera executed the active Planera plan to make capability subagent
+    dispatch concrete across Codex CLI, OpenCode, Claude Code, and Copilot CLI.
+  discovered: 'Descriptor installation touched more seams than prose: Codex setup,
+    upgrade copy actions, OpenCode bootstrap, bundle surfaces, registry tests, installed-surface
+    fixtures, and OpenCode app-home injection.'
+  verified: Passing gates included `uv run pytest tests/test_setup_codex.py`, `uv
+    run pytest tests/test_validate_namespace.py`, `uv run pytest tests/test_runtime_adapter_registry.py`,
+    `node scripts/smoke_opencode_bootstrap.mjs`, `uv run pytest tests/test_upgrade_cli.py`,
+    `uv run pytest tests/test_setup_doctor.py`, Orkestrera/Realisera capability prose
+    tests, Orkestrera/Realisera/Optimera capability validators, RuntimeAdapter/package
+    tests, `uv run scripts/agentera validate descriptors`, artifact validators, clean
+    compaction, `git diff --check`, and final full `uv run pytest` with 1087 passed.
+  next: Active dispatch plan is complete. Remaining open TODOs are the explicit capability
+    invocation routing bug and Planera confirmation-boundary guidance. Do not commit,
+    refresh installed apps/profiles, publish, push, tag, change package-manager state,
+    edit vision/objective state, or change decision satisfaction unless explicitly
+    requested.
+  context:
+    intent: Orkestrera execution of Cross-runtime Subagent Dispatch Plan Tasks 1-7.
+    constraints: No unsupported capability-name CLI commands, installed app/profile
+      refresh, publication, push, tag, package-manager change, vision/objective edit,
+      decision satisfaction change, or commit.
+    scope: RuntimeAdapter `subagent_dispatch`, Codex descriptors/setup/upgrade, OpenCode
+      descriptors/plugin/bootstrap, Orkestrera/Realisera/Optimera dispatch prose,
+      descriptor validation, tests, TODO, CHANGELOG, PLAN, and PROGRESS.
 - number: 545
   timestamp: 2026-05-16 09:24
   type: fix
@@ -224,68 +282,10 @@ cycles:
     constraints: Log missed capability-routing issue as TODO; avoid unexamined internal/public
       vocabulary divergence; preserve compatibility only with explicit rationale.
     scope: TODO, PLAN, and PROGRESS updates only.
-- number: 537
-  timestamp: 2026-05-16 08:21
-  type: docs
-  phase: plan
-  what: Planned the doctor ready-state Next output fix.
-  commit: pending
-  inspiration: 'Planera selected the highest-priority open TODO after the transcript
-    lint threshold plan completed: `agentera doctor` reports a ready/healthy status
-    while rendering a required-looking `Next:` repair sequence.'
-  discovered: 'Live installed-app reproduction shows `agentera doctor` text output
-    with `status: ready` followed by Preview/apply/retry repair steps, while `agentera
-    doctor --json` reports `status=fresh`, `signals=[]`, expected version `2.3.12`,
-    and marker version `2.3.12`. The likely seam is text rendering in `scripts/agentera_upgrade.py`,
-    not upgrade execution.'
-  verified: Archived the completed Transcript Lint Threshold Analysis Plan to `.agentera/archive/PLAN-2026-05-16-transcript-lint-threshold-analysis.yaml`
-    and wrote the active Doctor Ready Next Output Plan in `.agentera/plan.yaml`. The
-    plan scopes reproduction, doctor text action-state design, minimal rendering implementation,
-    regressions for fresh/update/repair/blocked states, artifact synchronization,
-    and final verification.
-  next: "Handoff to \u29C9 realisera for Task 1: reproduce doctor ready-state output\
-    \ ambiguity. Do not refresh installed apps/profiles, edit vision/objective state,\
-    \ change decision satisfaction, publish, push, tag, commit, or change upgrade\
-    \ apply semantics unless explicitly requested."
-  context:
-    intent: Plan next open TODO
-    constraints: Plan-only update; preserve doctor JSON compatibility, non-interactive
-      upgrade safety, protected state boundaries, and installed app/profile state.
-    scope: Active PLAN replacement, previous-plan archive, and progress logging.
-- number: 536
-  timestamp: 2026-05-16 08:07
-  type: fix
-  phase: audit
-  what: Closed out transcript lint threshold analysis with full-file PLAN.md lint
-    behavior.
-  commit: pending
-  inspiration: Realisera completed Task 6 after correcting the evidence model to include
-    retained archived plan markers, then closed the original TODO with a targeted
-    lint-budget seam fix instead of a blind threshold increase.
-  discovered: The actionable threshold problem was not transcript retention alone;
-    it was repeated retained evidence that full PLAN.md artifacts were being judged
-    against a compact per-entry budget. Other signals such as unflagged TODO.md verbosity
-    remain inconclusive rather than a reason to widen all budgets.
-  verified: 'Verification passed with `uv run pytest tests/test_startup_analysis_contract.py
-    tests/test_self_audit.py` (71 tests), local `AGENTERA_HOME=/home/jgabor/git/agentera
-    uv run scripts/agentera lint --artifact PLAN.md --file .agentera/plan.yaml --format
-    json` showing all lint checks passed, artifact validators for PLAN.md, PROGRESS.md,
-    TODO.md, and CHANGELOG.md, and `git diff --check`. TODO and CHANGELOG now record
-    the resolved outcome: file-backed lint uses full-file budgets, while `--text`
-    and stdin keep per-entry budgets; no abstraction, filler, compaction, privacy,
-    installed-app, profile, vision, objective, decision-satisfaction, publication,
-    tag, push, or package-manager changes were made.'
-  next: Transcript Lint Threshold Analysis Plan is complete. Remaining open TODOs
-    are the `agentera doctor` ready/healthy `Next:` output issue and considering removal
-    of Claude Code support. Do not commit, publish, push, tag, refresh installed apps/profiles,
-    edit vision/objective state, or change decision satisfaction unless explicitly
-    requested.
-  context:
-    intent: Transcript lint threshold analysis final closeout
-    constraints: Preserve per-entry snippet lint semantics, advisory/strict behavior,
-      privacy boundaries, compaction gates, and protected state boundaries.
-    scope: Final plan/TODO/changelog/progress synchronization and verification evidence.
 archive:
+- summary: 'Cycle 537 (2026-05-16): Planned the doctor ready-state Next output fix.'
+- summary: 'Cycle 536 (2026-05-16): Closed out transcript lint threshold analysis
+    with full-file PLAN.md lint behavior.'
 - summary: 'Cycle 535 (2026-05-16): Reworked threshold analysis around retained archive
     evidence.'
 - summary: 'Cycle 534 (2026-05-16): Took the no-threshold-change path and verified
@@ -362,7 +362,3 @@ archive:
     regression coverage for Inspektera.'
 - summary: 'Cycle 498 (2026-05-15): Completed PLAN Task 4 Inspektera guidance and
     schema integration for the evidence_context source contract.'
-- summary: 'Cycle 497 (2026-05-15): Implemented PLAN Task 3 provenance, protected-state,
-    version-boundary, and attributed residual-risk semantics for Inspektera evidence_context.'
-- summary: 'Cycle 496 (2026-05-15): Implemented PLAN Task 2 minimum Inspektera evidence_context
-    output contract through the existing hej capability-context seam.'

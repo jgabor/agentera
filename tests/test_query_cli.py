@@ -81,6 +81,7 @@ def _install_runtime_surface(app_home: Path) -> Path:
         ".github/hooks",
         ".github/plugin",
         ".opencode/commands",
+        ".opencode/agents",
         ".opencode/plugins",
     ):
         source = REPO_ROOT / directory

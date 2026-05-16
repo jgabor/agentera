@@ -1,0 +1,247 @@
+header:
+  level: full
+  created: 2026-05-16
+  status: complete
+  reviewed: 2026-05-16
+  critic_issues: 3 found, 3 addressed, 0 dismissed
+  revised: >-
+    Review split the broad TODO cluster into runtime-contract, Codex, OpenCode, prose, validation,
+    and closeout tasks; kept the explicit capability-routing bug out of scope; and added user-owned
+    runtime-surface protection so descriptor installation does not overwrite custom agent files.
+  title: Cross-runtime Subagent Dispatch Plan
+what: >-
+  Implement cross-runtime capability subagent dispatch support for Agentera by documenting the runtime
+  contract, installing Codex and OpenCode capability descriptors, aligning Orkestrera/Realisera/Optimera
+  dispatch prose, and validating descriptor parity across Claude Code, Codex CLI, OpenCode, and Copilot CLI.
+why: >-
+  TODO.md has a cohesive 2.4.x feature cluster around dispatching capabilities as subordinate agents.
+  Current guidance still says the host adapter resolves dispatch, while concrete runtime behavior differs:
+  Claude Code has a Task tool, Codex needs custom agent TOML files, OpenCode can invoke `@<capability>`
+  agents, and Copilot cannot programmatically spawn subagents and should surface `/fleet` guidance instead.
+constraints: >-
+  Do not add unsupported capability-name CLI commands such as `agentera realisera` or `agentera orkestrera`.
+  Preserve CLI-first startup contracts, dry-run/apply safety, non-interactive setup behavior, user-owned
+  runtime files, shell startup ownership, package-manager opt-in boundaries, `.agentera/vision.yaml`, objective
+  state, and decision satisfaction state. Do not publish, push, tag, commit, refresh installed apps/profiles,
+  or bump release metadata unless explicitly approved.
+scope:
+  included:
+    - Orkestrera dispatch prose for Claude Code, Codex CLI, OpenCode, and Copilot CLI.
+    - Realisera dispatch prose for Claude Code, Codex CLI, OpenCode, and Copilot CLI.
+    - Optimera dispatch prose audit and alignment where it dispatches implementation agents.
+    - Codex capability `.toml` descriptor templates and `setup_codex.py` installation/configuration support.
+    - OpenCode `.opencode/agents/<name>.md` descriptors and plugin bootstrap registration.
+    - Runtime adapter registry documentation for `subagent_dispatch` mechanism, setup, template, invocation, and limitations.
+    - Cross-runtime validation, smoke tests, TODO, CHANGELOG, PLAN, and PROGRESS synchronization.
+  excluded:
+    - The separate explicit user-invocation routing bug for messages such as `resonera ...` in TODO.md line 9.
+    - Replacing Agentera's one bundled skill with per-capability runtime skills or new CLI commands.
+    - Full worktree isolation parity for OpenCode Strategy B unless needed to keep existing tests truthful.
+    - Copilot programmatic subagent spawning, because the TODO explicitly records it as unsupported.
+    - Live model-host execution, package publication, release tagging, remote pushes, and installed app/profile refreshes.
+  deferred:
+    - A later routing-correctness plan for explicit capability invocations outside subagent dispatch.
+    - Broader runtime adapter redesign beyond the subagent-dispatch group and descriptor installation seams.
+    - Release/version metadata unless this implementation is selected for a release train.
+design: >-
+  Treat subagent dispatch as a runtime adapter contract, not scattered prose. Extend the RuntimeAdapter registry
+  and interface model with one `subagent_dispatch` group that records each runtime's mechanism, setup surface,
+  descriptor template, invocation form, and limitations. Generate or install descriptor files from the capability
+  inventory so all twelve Agentera capabilities stay in sync. Codex descriptors should define `name`,
+  `description`, and `developer_instructions` pointing to `$AGENTERA_HOME/app/skills/agentera/capabilities/<name>/prose.md`
+  or the active installed equivalent, while `setup_codex.py` manages `~/.codex/agents/*.toml` and `[agents]`
+  concurrency settings without reviving deprecated `[agents.*]` blocks. OpenCode descriptors should live under
+  `.opencode/agents/`, carry an Agentera-managed marker, point at capability prose, and be bootstrapped by
+  `.opencode/plugins/agentera.js` without overwriting user-owned files. Capability prose should consume the
+  registry truth: Claude Code uses the Task tool, Codex asks the named custom agent in natural language,
+  OpenCode invokes `@<capability>`, and Copilot recommends `/fleet` and waits for user approval.
+tasks:
+  - number: 1
+    name: Define the subagent dispatch contract
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the current runtime surfaces are reviewed WHEN the contract is defined THEN evidence names the
+        dispatch mechanism, setup path, descriptor template, invocation form, and limitation for Claude Code,
+        Codex CLI, OpenCode, and Copilot CLI.
+      - >-
+        GIVEN the explicit routing bug is related but separate WHEN scope is finalized THEN TODO.md line 9 remains
+        excluded and no plan task depends on fixing direct user-message routing.
+      - >-
+        GIVEN user-owned runtime files exist WHEN ownership rules are selected THEN descriptor writes require an
+        Agentera-managed marker or absent target and preserve unknown files.
+    evidence:
+      - >-
+        Defined the concrete contract across RuntimeAdapter `subagent_dispatch`, Codex descriptor installation,
+        OpenCode descriptor bootstrap, capability prose, and adapter docs. Scope still excludes the direct
+        `resonera ...` invocation routing bug, which remains open in TODO.md.
+      - >-
+        Ownership rules preserve unknown Codex/OpenCode descriptor files: Codex setup and upgrade refresh absent
+        or Agentera-managed targets only, and OpenCode plugin bootstrap skips user-owned collisions.
+  - number: 2
+    name: Extend RuntimeAdapter registry and model
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `runtime-adapter-interface-model.yaml` and `runtime-adapter-registry.yaml` are updated WHEN registry
+        validation runs THEN `subagent_dispatch` is a typed, required runtime-owned group with approved fields.
+      - >-
+        GIVEN consumers load registry views WHEN tests run THEN docs/tests consumers can read `subagent_dispatch`
+        without absorbing package metadata or install-root ownership facts.
+      - >-
+        GIVEN `references/adapters/runtime-adapter-registry.yaml` is read by humans WHEN reviewed THEN each runtime
+        records mechanism, setup, template, invocation, and limitation facts for subagent dispatch.
+    evidence:
+      - >-
+        Added required `subagent_dispatch` fields to `references/adapters/runtime-adapter-interface-model.yaml`,
+        `references/adapters/runtime-adapter-registry.yaml`, and `scripts/runtime_adapter_registry.py`.
+      - >-
+        `uv run pytest tests/test_runtime_adapter_registry.py tests/test_runtime_adapters.py tests/test_package_registry.py`
+        passed, proving consumer views and ownership boundaries include the new group correctly.
+  - number: 3
+    name: Add Codex capability agent descriptors
+    depends_on:
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the bundled skill has twelve capabilities WHEN descriptor templates are inspected THEN Codex has one
+        `.toml` descriptor per capability with `name`, `description`, and `developer_instructions` pointing to the
+        active capability `prose.md` path.
+      - >-
+        GIVEN `setup_codex.py` runs against an isolated config WHEN installation is applied THEN managed descriptors
+        are installed under the Codex agents directory and reruns are idempotent.
+      - >-
+        GIVEN Codex config is managed WHEN setup runs THEN `[agents]` contains `max_threads = 6` and `max_depth = 1`
+        without reintroducing deprecated `[agents.*]` config blocks or unsafe sibling-key overwrites.
+    evidence:
+      - >-
+        Added twelve managed `skills/agentera/agents/*.toml` descriptors with `name`, `description`, managed marker,
+        and `developer_instructions` pointing to each capability `prose.md`.
+      - >-
+        Updated `scripts/setup_codex.py` and runtime upgrade planning to install descriptors under `~/.codex/agents`,
+        add bounded `[agents]` settings, avoid legacy `[agents.*]` blocks, and preserve user-owned files.
+      - >-
+        `uv run pytest tests/test_setup_codex.py tests/test_upgrade_cli.py` passed with Codex descriptor apply,
+        dry-run, idempotence, and package-upgrade coverage.
+  - number: 4
+    name: Add OpenCode capability agent descriptors
+    depends_on:
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the bundled skill has twelve capabilities WHEN `.opencode/agents/` is inspected THEN each capability
+        has a managed markdown descriptor with name, description, invocation behavior, and a pointer to `prose.md`.
+      - >-
+        GIVEN `.opencode/plugins/agentera.js` bootstraps runtime surfaces WHEN plugin smoke tests run THEN agent
+        descriptors are restored/refreshed when Agentera-owned and user-owned collisions are skipped.
+      - >-
+        GIVEN OpenCode dispatch guidance is used WHEN a capability is invoked as a subagent THEN the documented form
+        is `@<capability>` and same-worktree limitations are explicit.
+    evidence:
+      - >-
+        Added twelve managed `.opencode/agents/*.md` descriptors with frontmatter, prose pointers, and `@<capability>`
+        dispatch guidance.
+      - >-
+        Updated `.opencode/plugins/agentera.js` to bootstrap agent descriptors into `~/.config/opencode/agents`,
+        refresh only Agentera-managed descriptors, skip user-owned collisions, and preserve valid pre-merged app homes.
+      - >-
+        `node scripts/smoke_opencode_bootstrap.mjs` passed, covering descriptor restore, collision preservation,
+        missing-source reporting, plugin init bootstrap, and shell env behavior.
+  - number: 5
+    name: Align dispatch prose across capabilities
+    depends_on:
+      - 2
+      - 3
+      - 4
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `orkestrera/prose.md` Step 2 Dispatch is reviewed WHEN updated THEN it contains explicit Claude Code,
+        Codex CLI, OpenCode, and Copilot CLI instructions and removes the abstract host-adapter line.
+      - >-
+        GIVEN `realisera/prose.md` Step 5 Dispatch is reviewed WHEN updated THEN it contains the same per-runtime
+        dispatch patterns and preserves its pre-dispatch commit gate and stale-base guidance.
+      - >-
+        GIVEN `optimera/prose.md` dispatch sections are audited WHEN updated THEN implementation-agent dispatch uses
+        the same runtime patterns or records why Optimera needs a narrower variant.
+    evidence:
+      - >-
+        Replaced Orkestrera's abstract host-adapter dispatch line with a runtime table for Claude Code Task, OpenCode
+        descriptors, Codex descriptors, and Copilot `/fleet` fallback, while forbidding unsupported capability-name CLI commands.
+      - >-
+        Added matching runtime dispatch substrate tables to Realisera Step 5 and Optimera Step 4 while preserving their
+        pre-dispatch commit gate and stale-base guidance.
+      - >-
+        `uv run scripts/validate_capability.py` passed for Orkestrera, Realisera, and Optimera; focused capability
+        prose tests also passed.
+  - number: 6
+    name: Validate and smoke-test descriptor parity
+    depends_on:
+      - 3
+      - 4
+      - 5
+    status: complete
+    acceptance:
+      - >-
+        GIVEN descriptor files exist WHEN validation runs THEN every capability has matching Codex `.toml` and
+        OpenCode `.md` descriptors with required fields and prose pointers.
+      - >-
+        GIVEN setup or doctor validation is selected WHEN tests run THEN Codex `realisera.toml`, OpenCode
+        `realisera.md`, Copilot `/fleet` limitation prose, and Claude Code Task-tool prompt contract are covered.
+      - >-
+        GIVEN focused gates run WHEN implementation is complete THEN relevant setup, upgrade, runtime-adapter,
+        capability prose, smoke, and artifact validator tests pass without live model-host calls.
+    evidence:
+      - >-
+        Added `agentera validate descriptors` and validate namespace coverage for all 24 Codex/OpenCode descriptor files.
+      - >-
+        Focused gates passed: descriptor validation, setup Codex, OpenCode smoke, setup doctor, upgrade CLI,
+        runtime adapters, package registry, capability prose tests, and capability validators.
+      - >-
+        Full repository verification passed with `uv run pytest` after updating installed-surface test fixtures for
+        the new `.opencode/agents` bundle surface.
+  - number: 7
+    name: Synchronize artifacts and close TODO cluster
+    depends_on:
+      - 6
+    status: complete
+    acceptance:
+      - >-
+        GIVEN all implementation tasks pass WHEN artifacts are updated THEN TODO.md resolves the included subagent
+        dispatch items while leaving the direct capability-routing bug open.
+      - >-
+        GIVEN user-facing behavior changes WHEN CHANGELOG is updated THEN it names Codex descriptors, OpenCode
+        descriptors, runtime adapter dispatch docs, and capability prose dispatch guidance.
+      - >-
+        GIVEN closeout verification runs WHEN the plan is complete THEN PLAN, PROGRESS, TODO, CHANGELOG, touched
+        capability schemas/prose, compaction, `git diff --check`, and focused tests record passing evidence.
+    evidence:
+      - >-
+        TODO.md resolved the included subagent dispatch cluster while leaving the direct capability-routing bug and
+        Planera confirmation-boundary TODO open.
+      - >-
+        CHANGELOG.md records Codex descriptors, OpenCode descriptors, RuntimeAdapter dispatch docs, capability prose
+        dispatch guidance, descriptor validation, and OpenCode shell env behavior.
+      - >-
+        PLAN, TODO, CHANGELOG, and PROGRESS artifacts were synchronized for closeout; validators, compaction, and
+        diff checks are part of final verification.
+overall_acceptance:
+  - >-
+    Claude Code, Codex CLI, OpenCode, and Copilot CLI have one registry-owned description of capability subagent
+    dispatch mechanism, setup, descriptor template, invocation form, and limitations.
+  - >-
+    Codex and OpenCode receive managed per-capability descriptor files for all twelve Agentera capabilities, with
+    idempotent setup/upgrade behavior and user-owned collision protection.
+  - >-
+    Orkestrera, Realisera, and Optimera dispatch guidance names concrete runtime behavior instead of relying on an
+    abstract host-adapter resolution line.
+  - >-
+    Validation and smoke coverage proves descriptor parity and runtime-specific limitations without live host calls,
+    unsupported capability-name CLI commands, package publication, protected-state edits, or release side effects.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-16-doctor-ready-next-output-plan.yaml

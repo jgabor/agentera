@@ -14,8 +14,9 @@ have to hand-edit TOML when the Agentera directory changes.
 Three structural branches drive the write logic; each maps to one
 TOML state and one line-based mutation:
 
-1. **File absent**: write a fresh config containing only the
-   ``[shell_environment_policy]`` section with the ``set`` inline-table.
+1. **File absent**: write a fresh config containing the
+   ``[shell_environment_policy]`` section with the ``set`` inline-table and
+   bounded ``[agents]`` settings.
 2. **Section present, ``set`` key absent**: insert a ``set = { ... }``
    line immediately after the section header. Every other table is
    left byte-identical.
@@ -32,7 +33,8 @@ The Agentera directory is verified against four canonical sibling entries
 before any write. Auto-detection walks up from this script's location.
 ``--install-root PATH`` overrides detection; ``--config-file PATH``
 overrides the TOML target (tests use this to avoid touching the real
-``~/.codex/config.toml``).
+``~/.codex/config.toml``). It also installs Agentera-managed runtime-native
+capability descriptors under an ``agents/`` sibling of the config file.
 
 Usage::
 
@@ -85,6 +87,24 @@ SECTION_NAME = "shell_environment_policy"
 
 # Default config target.
 DEFAULT_CONFIG_PATH = Path.home() / ".codex" / "config.toml"
+
+# Runtime-native subagent dispatch uses descriptor files under ~/.codex/agents
+# plus one bounded [agents] table. We never write legacy [agents.<name>] blocks.
+DEFAULT_AGENT_LIMITS = {"max_threads": 6, "max_depth": 1}
+CAPABILITY_AGENT_NAMES: tuple[str, ...] = (
+    "hej",
+    "visionera",
+    "resonera",
+    "inspirera",
+    "planera",
+    "realisera",
+    "optimera",
+    "inspektera",
+    "dokumentera",
+    "profilera",
+    "visualisera",
+    "orkestrera",
+)
 
 # Env-var fallbacks for auto-detection. Checked in order before the
 # script-location walk-up so an explicit override always wins.
@@ -293,18 +313,21 @@ def emit_set_inline_table(pairs: dict[str, str]) -> str:
     return "{ " + rendered + " }" if pairs else "{ }"
 
 
+def render_agents_config_section() -> str:
+    return "[agents]\n" + "\n".join(
+        f"{key} = {value}" for key, value in DEFAULT_AGENT_LIMITS.items()
+    ) + "\n"
+
+
 def render_fresh_config(install_root: Path) -> str:
     """Return the full text of a fresh ``~/.codex/config.toml``.
 
-    Used when the file does not exist. Contains only the
-    ``[shell_environment_policy]`` section with the managed key, plus a
-    trailing newline so editors do not flag the file as missing-EOL.
+    Used when the file does not exist. Contains the managed
+    ``[shell_environment_policy]`` key and bounded ``[agents]`` settings, plus
+    a trailing newline so editors do not flag the file as missing-EOL.
     """
     set_value = emit_set_inline_table({MANAGED_KEY: str(install_root)})
-    return (
-        f"[{SECTION_NAME}]\n"
-        f"set = {set_value}\n"
-    )
+    return f"[{SECTION_NAME}]\nset = {set_value}\n\n{render_agents_config_section()}"
 
 
 def codex_hook_trusted_hash(
@@ -609,6 +632,36 @@ def _ensure_features_hooks_enabled(text: str) -> str:
     return _replace_table_key_line(text, "features", "hooks", "hooks = true")
 
 
+def _ensure_codex_agent_limits(text: str) -> str:
+    parsed = tomllib.loads(text) if text.strip() else {}
+    agents = parsed.get("agents")
+    if isinstance(agents, dict) and all(agents.get(key) == value for key, value in DEFAULT_AGENT_LIMITS.items()):
+        return text
+
+    lines = [line.rstrip("\r\n") for line in text.splitlines(keepends=True)]
+    table_idx = _find_table_header_index(lines, "agents")
+    if table_idx is None:
+        if isinstance(agents, dict) and agents:
+            raise ValueError("[agents] uses an unsupported inline or child-table-only form")
+        return _append_table(
+            text,
+            "agents",
+            [f"{key} = {value}" for key, value in DEFAULT_AGENT_LIMITS.items()],
+        )
+
+    for key, value in DEFAULT_AGENT_LIMITS.items():
+        line = f"{key} = {value}"
+        lines = [line_text.rstrip("\r\n") for line_text in text.splitlines(keepends=True)]
+        table_idx = _find_table_header_index(lines, "agents")
+        if table_idx is None:
+            raise ValueError("[agents] header disappeared during update")
+        if _find_table_key_index(lines, table_idx, key) is None:
+            text = _insert_table_key_line(text, "agents", line)
+        else:
+            text = _replace_table_key_line(text, "agents", key, line)
+    return text
+
+
 def _hook_state_line(key: str, trusted_hash: str) -> str:
     return (
         f"{_toml_basic_string(key)} = "
@@ -689,7 +742,35 @@ def _with_codex_hook_trust(
     before_text: str | None,
     hooks_path: Path | None,
 ) -> Outcome:
-    if hooks_path is None or outcome.action == "conflict":
+    if outcome.action == "conflict":
+        return outcome
+
+    before = before_text or ""
+    try:
+        new_text = _ensure_codex_agent_limits(outcome.new_text)
+    except ValueError as exc:
+        return Outcome(
+            action="conflict",
+            new_text="",
+            message=f"cannot safely update Codex agent dispatch settings: {exc}",
+            diff="",
+        )
+
+    if new_text != outcome.new_text:
+        action = outcome.action if outcome.action != "noop" else "insert"
+        message = (
+            "would configure Codex agent dispatch limits"
+            if outcome.action == "noop"
+            else f"{outcome.message}; would configure Codex agent dispatch limits"
+        )
+        outcome = Outcome(
+            action=action,
+            new_text=new_text,
+            message=message,
+            diff=_unified_diff(before, new_text),
+        )
+
+    if hooks_path is None:
         return outcome
 
     try:
@@ -705,7 +786,6 @@ def _with_codex_hook_trust(
     if new_text == outcome.new_text:
         return outcome
 
-    before = before_text or ""
     action = outcome.action if outcome.action != "noop" else "insert"
     if outcome.action == "noop":
         message = "would trust Codex apply_patch hooks in config.toml"
@@ -904,6 +984,84 @@ def _conflict_diff_text(
     )
 
 
+class AgentDescriptorChange(NamedTuple):
+    action: str
+    name: str
+    source: Path
+    target: Path
+    message: str
+    content: str
+
+
+def codex_agent_source_dir(install_root: Path) -> Path:
+    candidates = (
+        install_root / "app" / "skills" / "agentera" / "agents",
+        install_root / "skills" / "agentera" / "agents",
+    )
+    for candidate in candidates:
+        if candidate.is_dir():
+            return candidate
+    return candidates[0]
+
+
+def default_agents_dir_for_config(config_path: Path) -> Path:
+    return config_path.parent / "agents"
+
+
+def _codex_descriptor_managed(text: str) -> bool:
+    return any(
+        line.strip() == "# agentera_managed: true"
+        for line in text.splitlines()[:5]
+    )
+
+
+def plan_agent_descriptor_changes(
+    install_root: Path,
+    agents_dir: Path,
+    *,
+    force: bool,
+) -> list[AgentDescriptorChange]:
+    source_dir = codex_agent_source_dir(install_root)
+    changes: list[AgentDescriptorChange] = []
+    for name in CAPABILITY_AGENT_NAMES:
+        source = source_dir / f"{name}.toml"
+        target = agents_dir / f"{name}.toml"
+        try:
+            source_text = source.read_text(encoding="utf-8")
+        except OSError:
+            changes.append(AgentDescriptorChange("blocked", name, source, target, "source descriptor is missing", ""))
+            continue
+
+        if not target.exists():
+            changes.append(AgentDescriptorChange("pending", name, source, target, "would install Codex agent descriptor", source_text))
+            continue
+        if not target.is_file():
+            changes.append(AgentDescriptorChange("blocked", name, source, target, "target exists but is not a regular file", source_text))
+            continue
+
+        try:
+            target_text = target.read_text(encoding="utf-8")
+        except OSError as exc:
+            changes.append(AgentDescriptorChange("blocked", name, source, target, f"cannot read target descriptor: {exc}", source_text))
+            continue
+
+        if target_text == source_text:
+            changes.append(AgentDescriptorChange("noop", name, source, target, "Codex agent descriptor is current", source_text))
+        elif force or _codex_descriptor_managed(target_text):
+            changes.append(AgentDescriptorChange("pending", name, source, target, "would refresh Codex agent descriptor", source_text))
+        else:
+            changes.append(AgentDescriptorChange("blocked", name, source, target, "target exists without Agentera ownership proof; treating it as user-owned", source_text))
+    return changes
+
+
+def write_agent_descriptor_changes(changes: list[AgentDescriptorChange]) -> None:
+    for change in changes:
+        if change.action != "pending":
+            continue
+        change.target.parent.mkdir(parents=True, exist_ok=True)
+        change.target.write_text(change.content, encoding="utf-8")
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -947,6 +1105,15 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--agents-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Directory for Codex runtime-native agent descriptors. "
+            "Default: an agents/ sibling of --config-file."
+        ),
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help=(
@@ -967,9 +1134,9 @@ def main(argv: list[str] | None = None) -> int:
         "--enable-agents",
         action="store_true",
         help=(
-            "Deprecated compatibility flag. Agentera v2 is exposed to Codex "
-            "as one $agentera app entry through plugin metadata, so this "
-            "flag no longer writes [agents.*] config blocks."
+            "Deprecated compatibility flag. Agentera v2 installs Codex "
+            "runtime-native descriptor files, so this flag no longer writes "
+            "[agents.*] config blocks."
         ),
     )
     args = parser.parse_args(argv)
@@ -1003,29 +1170,38 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 2
 
-    # Step 4: plan the AGENTERA_HOME change.
+    # Step 4: plan the AGENTERA_HOME change and runtime-native descriptors.
     outcome = plan_change(current_text, install_root, force=args.force)
+    agents_dir = args.agents_dir or default_agents_dir_for_config(config_path)
+    descriptor_changes = plan_agent_descriptor_changes(install_root, agents_dir, force=args.force)
+    pending_descriptors = [change for change in descriptor_changes if change.action == "pending"]
+    blocked_descriptors = [change for change in descriptor_changes if change.action == "blocked"]
 
     # Step 4b: v1 used this flag to write per-skill [agents.*] entries.
-    # In v2 those paths do not exist; Codex sees one $agentera app entry
-    # through plugin metadata, so the compatibility flag is a no-op.
+    # In v2 descriptor files live under ~/.codex/agents, so the flag remains a
+    # no-op for config blocks while normal descriptor installation continues.
     if args.enable_agents:
         print(
             "--enable-agents is deprecated in Agentera v2; no [agents.*] "
-            "blocks will be written.",
+            "blocks will be written; runtime-native descriptor files are managed separately.",
             file=sys.stderr,
         )
 
     # Step 5: dispatch on the outcome.
-    if outcome.action == "noop":
-        print(outcome.message)
-        return 0
-
     if outcome.action == "conflict":
         print(outcome.message, file=sys.stderr)
         if outcome.diff:
             print(outcome.diff, file=sys.stderr)
         return 2
+
+    if blocked_descriptors:
+        for change in blocked_descriptors:
+            print(f"error: {change.target}: {change.message}", file=sys.stderr)
+        return 2
+
+    if outcome.action == "noop" and not pending_descriptors:
+        print(outcome.message)
+        return 0
 
     # Pending change: write or print depending on --dry-run.
     if args.dry_run:
@@ -1034,17 +1210,26 @@ def main(argv: list[str] | None = None) -> int:
             sys.stdout.write(outcome.diff)
             if not outcome.diff.endswith("\n"):
                 print()
+        for change in pending_descriptors:
+            print(f"{change.message}: {change.target}")
         return 1
 
-    # Real write path. Ensure parent directory exists.
+    # Real write path. Ensure parent directories exist.
     try:
-        config_path.parent.mkdir(parents=True, exist_ok=True)
-        config_path.write_text(outcome.new_text, encoding="utf-8")
+        if outcome.action != "noop":
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            config_path.write_text(outcome.new_text, encoding="utf-8")
+        write_agent_descriptor_changes(pending_descriptors)
     except OSError as err:
-        print(f"error writing {config_path}: {err}", file=sys.stderr)
+        print(f"error writing Codex setup targets: {err}", file=sys.stderr)
         return 2
 
-    print(f"wrote {config_path}: {outcome.message.replace('would ', '')}")
+    if outcome.action != "noop":
+        print(f"wrote {config_path}: {outcome.message.replace('would ', '')}")
+    else:
+        print(outcome.message)
+    for change in pending_descriptors:
+        print(f"wrote {change.target}: {change.message.replace('would ', '')}")
     return 0
 
 

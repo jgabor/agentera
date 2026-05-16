@@ -230,11 +230,12 @@ def test_packaged_runtime_upgrade_wires_durable_bundle_not_uvx_cache(tmp_path: P
 
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["summary"]["applied"] == 3
+    assert payload["summary"]["applied"] == 15
     config = (home / ".codex" / "config.toml").read_text(encoding="utf-8")
     assert f'AGENTERA_HOME = "{app_home}"' in config
     assert f'AGENTERA_HOME = "{REPO_ROOT}"' not in config
     assert (home / ".codex" / "hooks.json").is_file()
+    assert (home / ".codex" / "agents" / "realisera.toml").is_file()
 
 
 def test_packaged_runtime_upgrade_blocks_without_bundle_phase(tmp_path: Path) -> None:
@@ -313,6 +314,9 @@ def test_runtime_upgrade_accepts_coherent_app_home_without_bundle_phase(tmp_path
     )
     assert (home / ".codex" / "hooks.json").read_text(encoding="utf-8") == (
         app_home / "app" / "hooks" / "codex-hooks.json"
+    ).read_text(encoding="utf-8")
+    assert (home / ".codex" / "agents" / "orkestrera.toml").read_text(encoding="utf-8") == (
+        app_home / "app" / "skills" / "agentera" / "agents" / "orkestrera.toml"
     ).read_text(encoding="utf-8")
 
 
@@ -479,10 +483,14 @@ def test_runtime_upgrade_configures_codex_without_v1_agent_blocks(tmp_path: Path
     assert f"{hooks_path}:post_tool_use:0:0" in config
     assert "trusted_hash = \"sha256:" in config
     assert "enabled = true" in config
+    assert "[agents]" in config
+    assert "max_threads = 6" in config
+    assert "max_depth = 1" in config
     assert "[agents." not in config
     assert hooks_path.read_text(encoding="utf-8") == (
         REPO_ROOT / "hooks" / "codex-hooks.json"
     ).read_text(encoding="utf-8")
+    assert (home / ".codex" / "agents" / "planera.toml").is_file()
 
     second = _run(
         "upgrade",
@@ -499,7 +507,7 @@ def test_runtime_upgrade_configures_codex_without_v1_agent_blocks(tmp_path: Path
     assert second.returncode == 0, second.stderr
     payload = json.loads(second.stdout)
     assert payload["status"] == "noop"
-    assert payload["phases"][0]["summary"]["noop"] == 2
+    assert payload["phases"][0]["summary"]["noop"] == 14
 
 
 def test_runtime_upgrade_refreshes_codex_managed_entries_preserving_user_config(tmp_path: Path) -> None:
@@ -584,6 +592,10 @@ def test_runtime_upgrade_plan_characterizes_runtime_and_package_items(tmp_path: 
     assert runtime_items[("codex", "configure")]["status"] == "pending"
     assert runtime_items[("codex", "copy-hooks")]["target"] == str(home / ".codex/hooks.json")
     assert runtime_items[("codex", "copy-hooks")]["message"] == "will copy current Agentera file"
+    assert any(
+        item["runtime"] == "codex" and item["action"] == "copy-agent" and item["target"].endswith("/realisera.toml")
+        for item in runtime_phase["items"]
+    )
     assert runtime_items[("copilot", "configure")]["target"] == str(home / ".bashrc")
     assert runtime_items[("copilot", "configure")]["status"] == "blocked"
     assert runtime_items[("copilot", "configure")]["ownership"] == {
@@ -594,6 +606,10 @@ def test_runtime_upgrade_plan_characterizes_runtime_and_package_items(tmp_path: 
     assert "Agentera will not edit shell startup files" in runtime_items[("copilot", "configure")]["message"]
     assert "cleanup is a user-owned manual boundary" in runtime_items[("copilot", "configure")]["message"]
     assert runtime_items[("opencode", "copy-plugin")]["target"] == str(home / ".config/opencode/plugins/agentera.js")
+    assert any(
+        item["runtime"] == "opencode" and item["action"] == "copy-agent" and item["target"].endswith("/realisera.md")
+        for item in runtime_phase["items"]
+    )
     assert runtime_items[("claude", "configure")] == {
         "status": "noop",
         "runtime": "claude",
@@ -696,11 +712,15 @@ def test_runtime_upgrade_apply_characterizes_write_and_package_apply_messages(tm
     assert runtime_items[("codex", "configure")]["status"] == "applied"
     assert runtime_items[("codex", "configure")]["message"] == "runtime update applied"
     assert runtime_items[("codex", "copy-hooks")]["status"] == "applied"
+    assert runtime_items[("codex", "copy-agent")]["status"] == "applied"
     assert runtime_items[("opencode", "copy-plugin")]["status"] == "applied"
+    assert runtime_items[("opencode", "copy-agent")]["status"] == "applied"
     assert runtime_items[("claude", "configure")]["status"] == "noop"
     assert (home / ".codex/config.toml").is_file()
     assert (home / ".codex/hooks.json").is_file()
+    assert (home / ".codex/agents/realisera.toml").is_file()
     assert (home / ".config/opencode/plugins/agentera.js").is_file()
+    assert (home / ".config/opencode/agents/realisera.md").is_file()
 
     upgrade = _load_upgrade_module()
 
@@ -757,7 +777,9 @@ def test_whole_repair_preview_lists_managed_actions_skips_and_blocks(tmp_path: P
     runtime_items = {(item["runtime"], item["action"]): item for item in phases["runtime"]["items"]}
     assert runtime_items[("codex", "configure")]["status"] == "pending"
     assert runtime_items[("codex", "copy-hooks")]["status"] == "pending"
+    assert runtime_items[("codex", "copy-agent")]["status"] == "pending"
     assert runtime_items[("opencode", "copy-plugin")]["status"] == "pending"
+    assert runtime_items[("opencode", "copy-agent")]["status"] == "pending"
     assert runtime_items[("copilot", "configure")]["status"] == "blocked"
     assert "Agentera will not edit shell startup files" in runtime_items[("copilot", "configure")]["message"]
     cleanup_by_path = {Path(item["path"]).name: item for item in phases["cleanup"]["items"]}
@@ -821,9 +843,11 @@ def test_whole_repair_apply_after_clean_preview_applies_safe_actions_only(tmp_pa
     assert (app_home / "app" / "scripts" / "agentera").is_file()
     assert f'AGENTERA_HOME = "{app_home}"' in (home / ".codex" / "config.toml").read_text(encoding="utf-8")
     assert (home / ".codex" / "hooks.json").is_file()
+    assert (home / ".codex" / "agents" / "realisera.toml").is_file()
     assert plugin.read_text(encoding="utf-8") == (REPO_ROOT / ".opencode" / "plugins" / "agentera.js").read_text(
         encoding="utf-8"
     )
+    assert (opencode_dir / "agents" / "realisera.md").is_file()
     assert not command.exists()
     assert shell_rc.read_bytes() == before_rc
 
@@ -943,7 +967,7 @@ def test_runtime_upgrade_applies_safe_items_even_when_one_item_is_blocked(tmp_pa
 
     assert result.returncode == 1, result.stdout
     payload = json.loads(result.stdout)
-    assert payload["summary"]["applied"] == 6
+    assert payload["summary"]["applied"] == 30
     assert payload["summary"]["blocked"] == 1
     assert f'AGENTERA_HOME = "{REPO_ROOT}"' in (home / ".codex" / "config.toml").read_text(
         encoding="utf-8"

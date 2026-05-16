@@ -12,6 +12,8 @@
 
 ### Changed
 
+- RuntimeAdapter registry and interface docs now include a required `subagent_dispatch` group covering each runtime's mechanism, setup targets, descriptor sources, invocation pattern, and limitations without absorbing package metadata or install-root ownership facts.
+- Orkestrera, Realisera, and Optimera dispatch prose now names concrete Claude Code, OpenCode, Codex CLI, and Copilot CLI subagent surfaces instead of relying on an abstract host-adapter substrate line.
 - 2.4.0 minor release metadata now aligns package, plugin, OpenCode marker, registry, lockfile, and skill frontmatter versions with the aggregate post-v2.3.12 feature and fix set after intermediate version bumps were removed from history.
 - 2.3.12 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Realisera execution-context source-contract patch.
 - 2.3.11 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Optimera benchmark-context source-contract patch; the 2.3.12 Realisera execution-context source-contract work is now closed separately.
@@ -29,6 +31,7 @@
 
 ### Fixed
 
+- OpenCode `shell.env` injection now preserves a valid pre-merged `AGENTERA_HOME` but replaces stale inherited legacy values with the validated app home.
 - `agentera doctor` now renders an up-to-date app home as `No action needed` without a required-looking `Next:` repair block, hard-renames doctor app metadata to canonical statuses (`up_to_date`, `outdated`, `repair_needed`, `migration_needed`, `manual_review_needed`), preserves safe preview/apply/retry guidance for actionable states, blocks automatic repair for manual-review states, and covers dry-run command spacing with focused regressions.
 - `agentera lint --artifact <ARTIFACT> --file <PATH>` now checks verbosity against the artifact full-file budget while `--text` and stdin keep per-entry budgets, removing repeated false-positive PLAN.md full-plan pressure found in retained `post-audit-flagged` archive evidence.
 - `agentera lint --artifact PLAN.md` now treats concrete repo-style path anchors such as `internal/runtime`, `internal/app`, and `internal/tui` as anchors, preventing false no-anchor advisories for concrete Planera plans while preserving abstraction advisories for generic unanchored prose.
@@ -84,6 +87,9 @@
 
 ### Added
 
+- Codex now ships one managed `skills/agentera/agents/*.toml` descriptor per Agentera capability; `setup_codex.py` and `agentera upgrade` install them under `~/.codex/agents` and configure bounded `[agents]` settings without reviving deprecated `[agents.*]` blocks.
+- OpenCode now ships one managed `.opencode/agents/*.md` descriptor per Agentera capability; `.opencode/plugins/agentera.js` bootstraps those descriptors into `~/.config/opencode/agents` while preserving user-owned collisions.
+- `agentera validate descriptors` now validates Codex and OpenCode capability descriptor parity, required metadata, managed markers, and capability prose pointers in text or JSON form.
 - Startup threshold analysis now includes a privacy-safe retained-artifact scan and classifier path for archived lint evidence, emitting only canonical artifact labels, warning categories, salted event labels, aggregate counts, and coverage caveats.
 - `agentera decisions --format json` now exposes a clearer DECISIONS.md source contract with `complete_for_returned_full_detail`, `complete_for_normal_deliberation_context`, a decision context truth table, separate missing-full-detail, missing-artifact, filtered-result, satisfaction-review, and compacted-history boundaries, raw artifact access boundaries, and fallback policy so agents can use compacted/missing decision caveats without raw `.agentera/decisions.yaml` reads or inference.
 - `agentera hej --format json --capability-context planera` now exposes `source_contract.capability_context.startup_contract`, a bounded compact Planera startup contract with planning levels, step markers, CLI-first orientation, raw plan artifact boundaries, full-plan review/self-audit requirements, handoff expectations, prose authority exceptions, seam-selection rationale, and unsupported-command boundary without adding `agentera planera` or reading `planera/prose.md` at runtime.
@@ -113,6 +119,7 @@
 
 ### Verified
 
+- Cross-runtime subagent dispatch support passed descriptor validation, OpenCode bootstrap smoke, capability validators, setup/upgrade/runtime/package tests, artifact validators, compaction checks, `git diff --check`, and the full `uv run pytest` suite locally after synchronizing plan artifacts.
 - 2.4.0 aggregate release metadata is synchronized locally without remote push; intermediate post-v2.3.12 version bumps were removed from rewritten history, version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.4.0, package/version contract tests passed, touched artifact validators passed, and `git diff --check` passed.
 - D47 app-home vocabulary cleanup closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, vision edit, objective edit, decision satisfaction-state change, or unsupported capability-name CLI command; independent Task 1 and Task 2 evaluations passed, focused Task 3 verification reported 346 passing tests, and Task 4 metadata validators plus `git diff --check` passed.
 - 2.3.12 Realisera execution-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, objective-state mutation, or unsupported capability CLI command introduction; focused CLI/contract tests passed with 181 tests, Realisera capability validation and schema self-validation passed, repository gate/compaction/artifact validation/diff-check gates passed, and PLAN lint remains failed only on the pre-existing advisory verbosity budget.
@@ -141,6 +148,10 @@
 - 2.3.3 patch release readiness is recorded locally without publication, installed app refresh, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces are aligned.
 
 ## [Unreleased]
+
+### Fixed
+
+- OpenCode bare `hej` routing is documented as source-backed by the `chat.message` Hooks interface, with smoke/runtime-adapter tests preserving exact-match routing while recording the public-docs omission as known drift.
 
 ## [2.2.3] · 2026-05-09
 

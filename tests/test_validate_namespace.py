@@ -145,14 +145,37 @@ def test_validate_help_discovers_namespace_without_renaming_targets() -> None:
     root_help = _run_cli("--help")
     validate_help = _run_cli("validate", "--help")
     artifact_help = _run_cli("validate", "artifact", "--help")
+    descriptors_help = _run_cli("validate", "descriptors", "--help")
 
-    assert root_help.returncode == validate_help.returncode == artifact_help.returncode == 0
+    assert root_help.returncode == validate_help.returncode == artifact_help.returncode == descriptors_help.returncode == 0
     assert "validate" in root_help.stdout
-    assert "Validate capabilities or artifacts" in root_help.stdout
+    assert "Validate capabilities, artifacts, or descriptors" in root_help.stdout
     assert "agentera validate capability hej" in validate_help.stdout
     assert "agentera validate artifact --artifact" in validate_help.stdout
+    assert "agentera validate descriptors" in validate_help.stdout
     assert "PLAN.md --file .agentera/plan.yaml --format json" in validate_help.stdout
     assert "capability" in validate_help.stdout
     assert "artifact" in validate_help.stdout
+    assert "descriptors" in validate_help.stdout
     assert "PROGRESS.md" in artifact_help.stdout
     assert "PLAN.md" in artifact_help.stdout
+    assert "OpenCode" in descriptors_help.stdout
+
+
+def test_validate_descriptors_json_reports_runtime_descriptor_parity() -> None:
+    result = _run_cli("validate", "descriptors", "--format", "json")
+    payload = json.loads(result.stdout)
+
+    assert result.returncode == 0
+    assert payload["command"] == "validate"
+    assert payload["status"] == "pass"
+    assert payload["target_family"] == "descriptors"
+    assert payload["target"] == "agent-descriptors"
+    assert payload["summary"] == {"passed": 24, "failed": 0}
+    assert payload["violations"] == []
+    assert {(check["runtime"], check["capability"]) for check in payload["checks"]} >= {
+        ("codex", "realisera"),
+        ("opencode", "realisera"),
+        ("codex", "orkestrera"),
+        ("opencode", "orkestrera"),
+    }

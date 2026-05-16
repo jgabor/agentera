@@ -14,6 +14,20 @@ const AGENTERA_VERSION = "2.4.0";
 const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode --skill agentera -y";
 const REQUIRED_SKILL_NAMES = ["agentera"];
 const LEGACY_BRIDGE_SKILL_NAMES = new Set(["hej"]);
+const REQUIRED_AGENT_NAMES = [
+  "hej",
+  "visionera",
+  "resonera",
+  "inspirera",
+  "planera",
+  "realisera",
+  "optimera",
+  "inspektera",
+  "dokumentera",
+  "profilera",
+  "visualisera",
+  "orkestrera",
+];
 
 const COMMAND_TEMPLATES = {
   "agentera": `---
@@ -81,6 +95,12 @@ function resolveOpencodeSkillsDir() {
     : path.join(process.env.HOME, ".config", "opencode", "skills");
 }
 
+function resolveOpencodeAgentsDir() {
+  return process.env.OPENCODE_CONFIG_DIR
+    ? path.join(process.env.OPENCODE_CONFIG_DIR, "agents")
+    : path.join(process.env.HOME, ".config", "opencode", "agents");
+}
+
 function hasManagedMarker(filePath) {
   let content;
   try {
@@ -144,6 +164,99 @@ function isManagedSkillSymlink(targetPath, name) {
 }
 
 const skillBootstrap = { lastReport: null };
+
+function validAgentDescriptor(sourceDir, name) {
+  const descriptor = path.join(sourceDir, `${name}.md`);
+  return fs.existsSync(descriptor) && hasManagedMarker(descriptor);
+}
+
+function resolveInstalledOpenCodeAgentsDir() {
+  const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+  const candidates = [
+    process.env.AGENTERA_HOME && path.join(process.env.AGENTERA_HOME, "app", ".opencode", "agents"),
+    path.join(resolveDefaultAgenteraAppHome(), "app", ".opencode", "agents"),
+    path.join(pluginRoot, ".opencode", "agents"),
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (REQUIRED_AGENT_NAMES.every((name) => validAgentDescriptor(candidate, name))) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+const agentBootstrap = { lastReport: null };
+
+function bootstrapAgents() {
+  const report = {
+    restored: [],
+    refreshed: [],
+    skippedUserOwned: [],
+    unchanged: [],
+    missingSource: [],
+    markerVersion: null,
+  };
+  try {
+    const sourceDir = resolveInstalledOpenCodeAgentsDir();
+    if (!sourceDir) {
+      report.missingSource = [...REQUIRED_AGENT_NAMES];
+      agentBootstrap.lastReport = report;
+      return report;
+    }
+
+    const targetDir = resolveOpencodeAgentsDir();
+    fs.mkdirSync(targetDir, { recursive: true });
+
+    const markerFile = path.join(targetDir, ".agentera-version");
+    let existingVersion = null;
+    try {
+      existingVersion = fs.readFileSync(markerFile, "utf8").trim();
+    } catch {
+      // marker absent — proceed
+    }
+    report.markerVersion = existingVersion;
+
+    for (const name of REQUIRED_AGENT_NAMES) {
+      const sourceFile = path.join(sourceDir, `${name}.md`);
+      const targetFile = path.join(targetDir, `${name}.md`);
+      if (!validAgentDescriptor(sourceDir, name)) {
+        report.missingSource.push(name);
+        continue;
+      }
+
+      const content = fs.readFileSync(sourceFile, "utf8");
+      if (!fs.existsSync(targetFile)) {
+        fs.writeFileSync(targetFile, content);
+        report.restored.push(name);
+        continue;
+      }
+
+      const existingContent = fs.readFileSync(targetFile, "utf8");
+      if (existingContent === content) {
+        report.unchanged.push(name);
+        continue;
+      }
+
+      if (!hasManagedMarker(targetFile)) {
+        report.skippedUserOwned.push(name);
+        continue;
+      }
+
+      fs.writeFileSync(targetFile, content);
+      report.refreshed.push(name);
+    }
+
+    if (existingVersion !== AGENTERA_VERSION || report.restored.length || report.refreshed.length) {
+      fs.writeFileSync(markerFile, AGENTERA_VERSION);
+    }
+  } catch (err) {
+    console.error("[agentera] bootstrapAgents error:", err);
+  }
+  agentBootstrap.lastReport = report;
+  return report;
+}
 
 function bootstrapSkills() {
   const report = {
@@ -314,8 +427,12 @@ function isRunnableAgenteraAppRoot(candidate) {
     || fs.existsSync(path.join(candidate, "scripts", "validate_capability.py"));
 }
 
+function isValidAgenteraAppHome(candidate) {
+  return typeof candidate === "string" && isRunnableAgenteraAppRoot(path.join(candidate, "app"));
+}
+
 function resolveAgenteraAppHome() {
-  if (process.env.AGENTERA_HOME && isRunnableAgenteraAppRoot(path.join(process.env.AGENTERA_HOME, "app"))) {
+  if (isValidAgenteraAppHome(process.env.AGENTERA_HOME)) {
     return process.env.AGENTERA_HOME;
   }
   const defaultAppHome = resolveDefaultAgenteraAppHome();
@@ -514,6 +631,7 @@ export const Agentera = async (input = {}, _options) => {
   setProfileDir();
   bootstrapCommands();
   bootstrapSkills();
+  bootstrapAgents();
 
   // Resolve app home once at init. shell.env must propagate the validated app
   // home, not stale parent-process residue inherited by the runtime.
@@ -533,6 +651,7 @@ export const Agentera = async (input = {}, _options) => {
       const env = output && output.env;
       if (!env || typeof env !== "object") return;
       if (!initialAgenteraAppHome) return;
+      if (isValidAgenteraAppHome(env.AGENTERA_HOME)) return;
       env.AGENTERA_HOME = initialAgenteraAppHome;
     },
 
@@ -561,8 +680,11 @@ Agentera.__test = {
   OPENCODE_SKILL_INSTALL_COMMAND,
   COMMAND_TEMPLATES,
   BARE_HEJ_ROUTED_PROMPT,
+  REQUIRED_AGENT_NAMES,
   bootstrapCommands,
+  bootstrapAgents,
   bootstrapSkills,
+  agentBootstrap,
   commandBootstrap,
   hasManagedMarker,
   isBareHejUserMessage,
@@ -571,7 +693,9 @@ Agentera.__test = {
   resolveAgenteraHome,
   resolveAgenteraAppHome,
   resolveDefaultAgenteraAppHome,
+  isValidAgenteraAppHome,
   resolveOpencodeCommandsDir,
+  resolveOpencodeAgentsDir,
   resolveOpencodeSkillsDir,
   routeBareHejMessage,
   skillBootstrap,

@@ -16,7 +16,7 @@ Status: production reference (formerly design document).
 | Skill install | Documented below | `npx skills add jgabor/agentera -g -a opencode --skill agentera -y` |
 | Profile path | Documented below | `~/.config/opencode/profile/PROFILE.md` |
 
-Routes exact bare text hej through chat.message to the bundled Agentera dashboard path.
+Routes exact bare text hej through chat.message to the bundled Agentera dashboard path. The public docs page omits this hook, but `packages/plugin/src/index.ts` defines `"chat.message"` on the exported `Hooks` interface.
 
 The plugin was promoted from `references/adapters/opencode-plugin.js` to `.opencode/plugins/agentera.js` and is now the production location. Install it with:
 
@@ -106,11 +106,12 @@ Read PROFILE.md from the runtime-provided profile path (Section 21). In OpenCode
 
 **Adapter approach**: Map agentera's worktree isolation to one of two strategies:
 
-**Strategy A: Task tool dispatch (recommended for initial port)**
+**Strategy A: Managed descriptor dispatch (recommended for current port)**
 
-- Define agentera's dispatched agents as OpenCode subagents
-- Each subagent gets a markdown file in `.opencode/agents/` with the appropriate prompt and permissions
-- The orchestrating skill (realisera, orkestrera) uses `@subagent-name` to invoke work
+- Define Agentera's dispatched capabilities as OpenCode subagents
+- Each capability gets a managed markdown file in `.opencode/agents/`
+- The OpenCode plugin copies those descriptors to `~/.config/opencode/agents/` on startup and preserves user-owned collisions
+- The orchestrating skill (realisera, orkestrera) uses `@<capability>` to invoke work
 - Limitation: runs in the same working tree, not isolated. Suitable for non-destructive work.
 
 **Strategy B: Manual git worktree (full isolation parity)**
@@ -128,15 +129,15 @@ Read PROFILE.md from the runtime-provided profile path (Section 21). In OpenCode
 Spawn a Sonnet implementation agent in a worktree (isolation: "worktree")
 
 # OpenCode Strategy A
-Invoke @general subagent with the implementation plan via the Task tool
+Invoke the relevant managed capability descriptor, for example @realisera, with the implementation plan
 
 # OpenCode Strategy B
 git worktree add ../worktree-branch branch-name
-Dispatch @general subagent with cwd set to ../worktree-branch
+Dispatch the relevant managed descriptor with cwd set to ../worktree-branch
 After completion: git merge, git worktree remove
 ```
 
-**Gap**: Strategy A lacks workspace isolation (same working tree). Strategy B requires manual git worktree orchestration in the skill workflow. For the initial portable-core port, Strategy A is sufficient because realisera and orkestrera are capability-gated skills, not portable-core requirements.
+**Gap**: Strategy A lacks workspace isolation (same working tree). Strategy B requires manual git worktree orchestration in the skill workflow. Agentera v2 ships managed descriptors, so the remaining gap is isolation, not descriptor availability.
 
 ### Eval mechanism (Capability-gated)
 
@@ -192,7 +193,7 @@ def dispatch_opencode(skill_name: str, prompt: str) -> dict:
 
 **What agentera requires**: Callbacks at session start, session stop, before tool use for hard-gated artifact validation, and after tool use for validation warnings.
 
-**OpenCode mechanism**: OpenCode provides a rich plugin event system. Session lifecycle events arrive through the generic `event` hook as `event.type` payload values. The documented plugin example branches on `event.type === "session.idle"` inside `event`, and the local `@opencode-ai/plugin` types expose `event?: ({ event }) => Promise<void>`.
+**OpenCode mechanism**: OpenCode provides a rich plugin event system. Session lifecycle events arrive through the generic `event` hook as `event.type` payload values. The documented plugin example branches on `event.type === "session.idle"` inside `event`, and the local `@opencode-ai/plugin` types expose `event?: ({ event }) => Promise<void>`. The plugin source `packages/plugin/src/index.ts` also exposes `"chat.message"` on the exported `Hooks` interface.
 
 | Agentera hook | OpenCode event | Notes |
 |---------------|----------------|-------|
@@ -221,6 +222,9 @@ export const AgenteraPlugin = async ({ project, client, $, directory, worktree }
     },
     "tool.execute.after": async (input, output) => {
       // PostToolUse equivalent: report validation warnings
+    },
+    "chat.message": async (input, output) => {
+      // Exact bare hej prompt rewrite.
     }
   }
 }
@@ -231,6 +235,8 @@ export const AgenteraPlugin = async ({ project, client, $, directory, worktree }
 Install-root semantics used by the plugin are contract-bound to `scripts/install_root.py` and `.agentera/install_root_interface_model.yaml`. OpenCode still keeps one temporary adapter-local compatibility exception for older manual `~/.agents/skills/agentera` installs; new install-root behavior should change the shared Module/fixture first, not add more JavaScript-local root identity rules.
 
 OpenCode runtime facts are owned by the RuntimeAdapter registry at `references/adapters/runtime-adapter-registry.yaml` and loaded through `scripts/runtime_adapter_registry.py`. This reference describes the OpenCode adapter behavior, but registry-owned values such as event support, artifact-validation claims, config targets, diagnostic labels, and documentation claims must be validated against the registry rather than changed here as an independent source. The install-root Module must keep package manifest registry and package metadata consolidation work outside its scope.
+
+Registry parity claims: Blocks invalid reconstructable artifact candidates. Routes exact bare text hej through chat.message to the bundled Agentera dashboard path.
 
 1. **SessionStart** (`event.type === "session.created"`): Observe session creation through the event hook. Session-start context preload remains deferred because no supported model-context injection path is verified for this adapter. Do not attach dead preload code to event observation alone.
 
