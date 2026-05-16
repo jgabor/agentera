@@ -20,6 +20,7 @@
 
 ### Fixed
 
+- `agentera lint --artifact <ARTIFACT> --file <PATH>` now checks verbosity against the artifact full-file budget while `--text` and stdin keep per-entry budgets, removing repeated false-positive PLAN.md full-plan pressure found in retained `post-audit-flagged` archive evidence.
 - `agentera lint --artifact PLAN.md` now treats concrete repo-style path anchors such as `internal/runtime`, `internal/app`, and `internal/tui` as anchors, preventing false no-anchor advisories for concrete Planera plans while preserving abstraction advisories for generic unanchored prose.
 - D47 app-home vocabulary cleanup now replaces obsolete current-behavior bundle/install-root wording across live docs, guidance, diagnostics, package text, and affected tests while preserving compatibility identifiers, canonical artifact labels, CLI selectors, historical records, and migration examples.
 - D46 handoff wording enforcement now rejects stale standalone slash-capability examples in semantic fixtures and test helpers, requiring glyph plus canonical capability names such as `⧉ realisera` for user-facing handoff labels while preserving `/agentera <alias>` for explicit route documentation.
@@ -73,6 +74,7 @@
 
 ### Added
 
+- Startup threshold analysis now includes a privacy-safe retained-artifact scan and classifier path for archived lint evidence, emitting only canonical artifact labels, warning categories, salted event labels, aggregate counts, and coverage caveats.
 - `agentera decisions --format json` now exposes a clearer DECISIONS.md source contract with `complete_for_returned_full_detail`, `complete_for_normal_deliberation_context`, a decision context truth table, separate missing-full-detail, missing-artifact, filtered-result, satisfaction-review, and compacted-history boundaries, raw artifact access boundaries, and fallback policy so agents can use compacted/missing decision caveats without raw `.agentera/decisions.yaml` reads or inference.
 - `agentera hej --format json --capability-context planera` now exposes `source_contract.capability_context.startup_contract`, a bounded compact Planera startup contract with planning levels, step markers, CLI-first orientation, raw plan artifact boundaries, full-plan review/self-audit requirements, handoff expectations, prose authority exceptions, seam-selection rationale, and unsupported-command boundary without adding `agentera planera` or reading `planera/prose.md` at runtime.
 - `agentera plan --format json` now exposes a stronger read-only source contract with canonical artifact label, persisted artifact path, `complete_for_normal_startup_evaluation`, complete summary/entry field coverage, raw plan artifact access boundaries, and fallback policy so Planera startup can skip defensive `.agentera/plan.yaml` reads when CLI state is complete; legacy `entries`-shaped artifacts no longer overclaim complete current-plan startup coverage.

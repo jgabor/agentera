@@ -293,6 +293,24 @@ class TestLintCli:
         assert abstraction["status"] == "fail"
         assert abstraction["detail"] == "abstraction creep: no concrete anchor"
 
+    def test_plan_lint_file_input_uses_full_file_budget(self, tmp_path):
+        text = "Updated `scripts/agentera` with retained artifact evidence. " + ("detail " * 130)
+        plan_path = tmp_path / "plan.yaml"
+        plan_path.write_text(text, encoding="utf-8")
+
+        file_result = _run_lint("--artifact", "PLAN.md", "--file", str(plan_path), "--format", "json")
+        text_result = _run_lint("--artifact", "PLAN.md", "--text", text, "--format", "json")
+
+        assert file_result.returncode == 0
+        file_payload = json.loads(file_result.stdout)
+        assert file_payload["status"] == "pass"
+
+        text_payload = json.loads(text_result.stdout)
+        assert text_payload["status"] == "fail"
+        verbosity = next(check for check in text_payload["checks"] if check["name"] == "verbosity")
+        assert verbosity["status"] == "fail"
+        assert "exceeds 100 budget" in verbosity["detail"]
+
     def test_lint_missing_installed_helper_reports_app_model(self, tmp_path):
         app_home = tmp_path / "agentera-home"
         (app_home / "app" / "scripts").mkdir(parents=True)

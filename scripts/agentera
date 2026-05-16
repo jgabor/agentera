@@ -4037,10 +4037,15 @@ def _lint_input_text(args: argparse.Namespace) -> tuple[str, str]:
     return sys.stdin.read(), "stdin"
 
 
-def _lint_checks(text: str, artifact: str) -> list[dict[str, Any]]:
+def _lint_checks(text: str, artifact: str, *, full_artifact: bool = False) -> list[dict[str, Any]]:
     self_audit = _load_self_audit_helper()
+    verbosity_check = (
+        self_audit.check_full_file_verbosity(text, artifact)
+        if full_artifact and hasattr(self_audit, "check_full_file_verbosity")
+        else self_audit.check_verbosity(text, artifact)
+    )
     raw_results = {
-        "verbosity": self_audit.check_verbosity(text, artifact),
+        "verbosity": verbosity_check,
         "abstraction": self_audit.check_abstraction(text),
         "filler": self_audit.check_filler(text),
     }
@@ -4061,7 +4066,8 @@ def _lint_payload(args: argparse.Namespace) -> dict[str, Any]:
     text, source = _lint_input_text(args)
     artifact = str(args.artifact)
     _validate_agent_string(artifact, "artifact")
-    checks = _lint_checks(text, artifact)
+    full_artifact = getattr(args, "file", None) is not None
+    checks = _lint_checks(text, artifact, full_artifact=full_artifact)
     failures = [check for check in checks if check["status"] == "fail"]
     return {
         "command": "lint",

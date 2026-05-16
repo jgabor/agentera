@@ -494,6 +494,219 @@ def test_privacy_redaction_removes_transcripts_paths_and_session_ids(startup_ana
     assert redacted["events"][0]["file_path"] == "TODO.md"
 
 
+def test_threshold_evidence_scan_reports_redacted_lint_rewrite_candidates(startup_analysis_contract):
+    corpus = {
+        "metadata": {
+            "runtime_statuses": [
+                {"runtime": "opencode", "status": "ok", "reason": "records_extracted", "record_count": 3}
+            ],
+        },
+        "records": [
+            _fixture_turn("turn-user", "2026-05-13T11:00:00Z", "user", "realisera PRIVATE_PROMPT_TOKEN"),
+            _fixture_turn(
+                "turn-warning",
+                "2026-05-13T11:00:01Z",
+                "assistant",
+                "lint fail for PROGRESS.md: verbosity mismatch and abstraction creep in `scripts/self_audit.py` "
+                + ("detail_anchor `kept` " * 20),
+            ),
+            _fixture_tool(
+                "tool-rewrite",
+                "2026-05-13T11:00:02Z",
+                "apply_patch",
+                {"patchText": "short rewrite"},
+            ),
+        ],
+    }
+
+    scan = startup_analysis_contract.scan_threshold_evidence(corpus, salt="fixture-salt")
+    rendered = json.dumps(scan, sort_keys=True)
+
+    assert scan["output_envelope"] == "threshold_evidence_scan_v1"
+    assert scan["counts"]["warning_events"] == 1
+    assert scan["counts"]["by_warning"] == {
+        "self_audit.abstraction": 1,
+        "self_audit.verbosity": 1,
+    }
+    assert scan["counts"]["by_artifact"] == {"PROGRESS.md": 1}
+    assert scan["counts"]["by_capability"] == {"realisera": 1}
+    assert scan["counts"]["by_detail_loss_status"] == {"possible_useful_detail_removed": 1}
+    event = scan["warning_events"][0]
+    assert event["event_label"].startswith("record:")
+    assert event["rewrite_followup"]["event_label"].startswith("record:")
+    assert event["rewrite_followup"]["word_count_delta"] < 0
+    assert "PRIVATE_PROMPT_TOKEN" not in rendered
+    assert "detail_anchor" not in rendered
+    assert "short rewrite" not in rendered
+    assert scan["privacy_redaction_summary"]["raw_transcript_text"] == "not_emitted"
+
+
+def test_threshold_evidence_scan_reports_runtime_coverage_caveats(startup_analysis_contract):
+    corpus = {
+        "metadata": {
+            "runtime_statuses": [
+                {"runtime": "github-copilot", "status": "degraded", "reason": "schema_divergent", "record_count": 0}
+            ],
+        },
+        "records": [],
+    }
+
+    scan = startup_analysis_contract.scan_threshold_evidence(corpus, salt="fixture-salt")
+
+    assert scan["counts"]["warning_events"] == 0
+    assert scan["runtime_coverage"] == [
+        {"runtime": "github-copilot", "status": "degraded", "reason": "schema_divergent", "record_count": 0}
+    ]
+    assert scan["coverage_caveats"] == [
+        "Runtime coverage is incomplete or degraded; absence of warning evidence is not proof of absence."
+    ]
+
+
+def _threshold_scan_event(label: str, category: str, status: str) -> dict:
+    return {
+        "event_label": label,
+        "conversation": "session:redacted",
+        "capability": "realisera",
+        "artifact_label": "PROGRESS.md",
+        "warnings": [
+            {
+                "family": "self_audit",
+                "category": category,
+                "threshold_source": "scripts/self_audit.py::_PER_ENTRY_BUDGETS",
+            }
+        ],
+        "detail_loss_status": status,
+        "raw_text": "PRIVATE_TRANSCRIPT_TOKEN should not be retained",
+        "raw_tool_arguments": "PRIVATE_PATCH_TOKEN should not be retained",
+    }
+
+
+def test_threshold_classifier_marks_repeated_detail_loss_as_likely_false_positive(startup_analysis_contract):
+    scan = {
+        "output_envelope": "threshold_evidence_scan_v1",
+        "coverage_caveats": [],
+        "warning_events": [
+            _threshold_scan_event("record:a", "verbosity", "possible_useful_detail_removed"),
+            _threshold_scan_event("record:b", "verbosity", "possible_useful_detail_removed"),
+        ],
+        "privacy_redaction_summary": {"raw_transcript_text": "not_emitted", "raw_tool_arguments": "not_emitted"},
+    }
+
+    classification = startup_analysis_contract.classify_threshold_evidence(scan)
+    rendered = json.dumps(classification, sort_keys=True)
+
+    assert classification["output_envelope"] == "threshold_evidence_classification_v1"
+    assert classification["counts"]["by_classification"] == {"likely_false_positive": 1}
+    assert classification["counts"]["repeated_false_positive_categories"] == 1
+    assert classification["recommendation"]["action"] == "consider_minimal_threshold_or_diagnostic_change"
+    assert classification["categories"] == [
+        {
+            "warning": "self_audit.verbosity",
+            "classification": "likely_false_positive",
+            "event_count": 2,
+            "artifacts": ["PROGRESS.md"],
+            "capabilities": ["realisera"],
+            "event_classification_counts": {"likely_false_positive": 2},
+            "detail_loss_status_counts": {"possible_useful_detail_removed": 2},
+            "event_labels": ["record:a", "record:b"],
+        }
+    ]
+    assert "PRIVATE_TRANSCRIPT_TOKEN" not in rendered
+    assert "PRIVATE_PATCH_TOKEN" not in rendered
+
+
+def test_threshold_classifier_distinguishes_legitimate_pressure_and_inconclusive(startup_analysis_contract):
+    legitimate = startup_analysis_contract.classify_threshold_evidence(
+        {
+            "output_envelope": "threshold_evidence_scan_v1",
+            "coverage_caveats": [],
+            "warning_events": [
+                _threshold_scan_event("record:a", "abstraction", "possible_compression_without_anchor_loss"),
+                _threshold_scan_event("record:b", "abstraction", "not_detected"),
+            ],
+        }
+    )
+    inconclusive = startup_analysis_contract.classify_threshold_evidence(
+        {
+            "output_envelope": "threshold_evidence_scan_v1",
+            "coverage_caveats": [],
+            "warning_events": [_threshold_scan_event("record:c", "filler", "not_assessed")],
+        }
+    )
+
+    assert legitimate["categories"][0]["classification"] == "legitimate_pressure"
+    assert legitimate["recommendation"]["action"] == "no_threshold_change_yet"
+    assert inconclusive["categories"][0]["classification"] == "inconclusive"
+    assert inconclusive["recommendation"]["action"] == "no_threshold_change_yet"
+
+
+def test_threshold_classifier_reports_unsupported_coverage_without_threshold_change(startup_analysis_contract):
+    caveat = "Runtime coverage is incomplete or degraded; absence of warning evidence is not proof of absence."
+    categorized = startup_analysis_contract.classify_threshold_evidence(
+        {
+            "output_envelope": "threshold_evidence_scan_v1",
+            "coverage_caveats": [caveat],
+            "warning_events": [_threshold_scan_event("record:a", "verbosity", "not_assessed")],
+        }
+    )
+    empty = startup_analysis_contract.classify_threshold_evidence(
+        {"output_envelope": "threshold_evidence_scan_v1", "coverage_caveats": [caveat], "warning_events": []}
+    )
+
+    assert categorized["categories"][0]["classification"] == "unsupported_by_available_coverage"
+    assert categorized["recommendation"]["action"] == "no_threshold_change_yet"
+    assert empty["counts"]["by_classification"] == {"unsupported_by_available_coverage": 1}
+    assert empty["counts"]["category_count"] == 0
+    assert empty["recommendation"]["action"] == "defer_without_threshold_change"
+
+
+def test_retained_threshold_scan_classifies_archived_plan_budget_pressure(startup_analysis_contract):
+    scan = startup_analysis_contract.scan_retained_threshold_evidence(
+        {
+            "archive/plan-a.yaml": """
+            title: Example archived plan
+            revised: "[post-audit-flagged] Agentera lint remains advisory because full plans exceed the compact PLAN.md entry budget. PRIVATE_ARCHIVE_TEXT_TOKEN"
+            """,
+            "archive/plan-b.yaml": """
+            title: Another archived plan
+            revised: "[post-audit-flagged: PLAN.md full-plan artifact exceeds the advisory prose budget; preserving reviewed executable detail.] PRIVATE_SECOND_ARCHIVE_TOKEN"
+            """,
+        },
+        salt="fixture-salt",
+    )
+    classification = startup_analysis_contract.classify_threshold_evidence(scan)
+    rendered = json.dumps({"scan": scan, "classification": classification}, sort_keys=True)
+
+    assert scan["counts"]["warning_events"] == 2
+    assert scan["counts"]["by_warning"] == {"self_audit.verbosity": 2}
+    assert scan["counts"]["by_artifact"] == {"PLAN.md": 2}
+    assert scan["counts"]["by_detail_loss_status"] == {"retained_artifact_false_positive_signal": 2}
+    assert classification["counts"]["by_classification"] == {"likely_false_positive": 1}
+    assert classification["counts"]["repeated_false_positive_categories"] == 1
+    assert classification["recommendation"]["action"] == "consider_minimal_threshold_or_diagnostic_change"
+    category = classification["categories"][0]
+    assert category["warning"] == "self_audit.verbosity"
+    assert category["artifacts"] == ["PLAN.md"]
+    assert category["detail_loss_status_counts"] == {"retained_artifact_false_positive_signal": 2}
+    assert "PRIVATE_ARCHIVE_TEXT_TOKEN" not in rendered
+    assert "PRIVATE_SECOND_ARCHIVE_TOKEN" not in rendered
+
+
+def test_retained_threshold_scan_keeps_unflagged_budget_pressure_inconclusive(startup_analysis_contract):
+    scan = startup_analysis_contract.scan_retained_threshold_evidence(
+        {
+            "TODO.md": "Advisory TODO lint still reports verbosity because TODO.md includes too much detail.",
+        },
+        salt="fixture-salt",
+    )
+    classification = startup_analysis_contract.classify_threshold_evidence(scan)
+
+    assert scan["counts"]["by_warning"] == {"self_audit.verbosity": 1}
+    assert scan["counts"]["by_artifact"] == {"TODO.md": 1}
+    assert classification["categories"][0]["classification"] == "inconclusive"
+    assert classification["recommendation"]["action"] == "no_threshold_change_yet"
+
+
 def test_section_22_extension_is_versioned_and_existing_surfaces_are_named():
     contract = _contract()
     compatibility = contract["section_22_compatibility"]
