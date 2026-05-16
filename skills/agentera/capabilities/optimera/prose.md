@@ -393,7 +393,7 @@ Every experiment reads `$PROFILERA_PROFILE_DIR/PROFILE.md` when it exists and ap
 
 ### Optimera uses ❈ resonera for objective decisions
 
-When the brainstorm session surfaces ambiguity about what to optimize (competing metrics, unclear constraints, or tradeoffs between measurement approaches), suggest ❈ resonera to deliberate first. Resonera can produce or refine objective.yaml directly, and its DECISIONS.md entries give optimera context for why the objective was chosen. If `DECISIONS.md` exists, read it during the Orient step for context on prior deliberations.
+When the brainstorm session surfaces ambiguity about what to optimize (competing metrics, unclear constraints, or tradeoffs between measurement approaches), suggest ❈ resonera to deliberate first. Resonera can produce or refine objective.yaml directly, and its DECISIONS.md entries give optimera context for why the objective was chosen. During Orient, use `agentera decisions --format json` for prior deliberation context and preserve returned `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` pressure instead of raw-reading missing historical context.
 
 ### Inspektera feeds ⎘ optimera
 

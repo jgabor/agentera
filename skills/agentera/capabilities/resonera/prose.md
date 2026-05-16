@@ -121,6 +121,7 @@ top-level `source_contract` guidance, and per-decision `context_complete`,
 - When a returned decision is compacted or incomplete, surface the missing context as a decision caveat and continue with only the structured fields present.
 - Do not reconstruct absent historical reasoning, alternatives, confidence, or downstream references during normal deliberation.
 - Read the raw decision artifact only for explicit artifact repair/corruption work or after the CLI itself reports an unavailable/defective state path.
+- When source_contract reports `complete_for_normal_deliberation_context=true`, do not raw-read `.agentera/decisions.yaml` merely because `complete_for_decision_context` is false; preserve `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` in downstream handoffs.
 
 ### Decision satisfaction authority
 

@@ -334,6 +334,27 @@ class TestDecisions:
         assert r.returncode == 0
         assert r.stdout.strip() == ""
 
+    def test_json_decisions_missing_artifact_boundary_is_explicit(self, project):
+        r = _run("decisions", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        contract = data["source_contract"]
+        assert data["status"] == "empty"
+        assert data["entries"] == []
+        assert data["source"]["exists"] is False
+        assert contract["complete_for_returned_full_detail"] is False
+        assert contract["complete_for_normal_deliberation_context"] is False
+        assert contract["completeness"]["source_exists"] is False
+        assert contract["missing_artifact_boundary"]["applies_when"] == "source.exists=false"
+        assert contract["missing_artifact_boundary"]["raw_artifact_read_required"] is False
+        assert contract["decision_context_truth_table"]["missing_or_unavailable_artifact"] == {
+            "full_detail_complete": False,
+            "normal_deliberation_context_complete": False,
+            "raw_artifact_read_required": False,
+            "meaning": "No decision state is available from the CLI result; use CLI fallback or diagnostics before raw artifact repair.",
+        }
+
     def test_filter_topic_match(self, project):
         _write_artifact(project, ".agentera/decisions.yaml", {
             "decisions": [
@@ -421,13 +442,24 @@ class TestDecisions:
         assert contract["artifact"] == "DECISIONS.md"
         assert contract["complete_for_returned_decisions"] is True
         assert contract["complete_for_decision_context"] is True
+        assert contract["complete_for_returned_full_detail"] is True
+        assert contract["complete_for_normal_deliberation_context"] is True
         assert contract["raw_artifact_reads_required"] is False
+        assert "complete_for_normal_deliberation_context" in contract["raw_artifact_read_policy"]
         assert "normal deliberation context" in contract["raw_artifact_read_policy"]
         assert "historical compacted gaps are exposed" in contract["raw_artifact_read_policy"]
         assert "no raw decision artifact read is required" in contract["fallback_behavior"]["normal"]
+        assert contract["normal_deliberation_context"]["legacy_full_detail_signal"] == "complete_for_decision_context"
+        assert contract["decision_context_truth_table"]["full_detail_entries"] == {
+            "full_detail_complete": True,
+            "normal_deliberation_context_complete": True,
+            "raw_artifact_read_required": False,
+        }
+        assert contract["raw_artifact_access_boundary"]["normal_deliberation"] == "skip raw `.agentera/decisions.yaml` reads when complete_for_normal_deliberation_context=true"
         assert "outcome" in contract["included_fields"]
         assert "downstream_consequence_references" in contract["included_fields"]
         assert contract["completeness"]["entries_with_missing_fields"] == 0
+        assert contract["completeness"]["normal_deliberation_context"] is True
 
     def test_filtered_json_decisions_keep_source_contract_and_guarantees(self, project):
         _write_artifact(project, ".agentera/decisions.yaml", {
@@ -474,6 +506,43 @@ class TestDecisions:
         assert data["entries"][0]["context_complete"] is True
         assert data["source_contract"]["filters"] == {"topic": "runtime"}
         assert data["source_contract"]["complete_for_returned_decisions"] is True
+        assert data["source_contract"]["complete_for_normal_deliberation_context"] is True
+        assert data["source_contract"]["filtered_result_boundary"]["raw_artifact_read_required"] is False
+
+    def test_filtered_json_decisions_no_match_is_not_missing_artifact(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": 1,
+                    "date": "2026-05-14",
+                    "question": "Runtime source contract?",
+                    "context": "Runtime agents need filtered decisions.",
+                    "alternatives": [{"name": "JSON", "status": "chosen"}],
+                    "choice": "Use JSON source contract.",
+                    "reasoning": "Filtered results need the same guarantees.",
+                    "confidence": "firm",
+                    "feeds_into": ["scripts/agentera"],
+                    "satisfaction": {
+                        "state": "user_confirmed_satisfied",
+                        "user_confirmation": {"confirmed_by": "Jonathan", "confirmed_at": "2026-05-15"},
+                    },
+                },
+            ],
+        })
+
+        r = _run("decisions", "--topic", "nonexistent", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        contract = data["source_contract"]
+        assert data["status"] == "ok"
+        assert data["entries"] == []
+        assert data["source"]["exists"] is True
+        assert contract["complete_for_returned_full_detail"] is True
+        assert contract["complete_for_normal_deliberation_context"] is True
+        assert contract["completeness"]["filtered_no_match"] is True
+        assert contract["filtered_result_boundary"]["normal_behavior"] == "Treat the result as no matching returned decisions, not as missing decision state."
+        assert contract["decision_context_truth_table"]["filtered_no_match"]["meaning"] == "The artifact exists, but no returned decisions matched the filter."
 
     def test_json_decisions_surface_legacy_missing_satisfaction_as_review_needed(self, project):
         _write_artifact(project, ".agentera/decisions.yaml", {
@@ -582,6 +651,9 @@ class TestDecisions:
         assert "Do not infer satisfaction" in data["source_contract"]["satisfaction_context"]["non_inference_policy"]
         assert data["source_contract"]["completeness"]["entries_requiring_satisfaction_review"] == 2
         assert data["source_contract"]["completeness"]["user_confirmed_satisfied_entries"] == 1
+        assert data["source_contract"]["complete_for_normal_deliberation_context"] is True
+        assert data["source_contract"]["satisfaction_review_boundary"]["raw_artifact_read_required"] is False
+        assert data["source_contract"]["decision_context_truth_table"]["satisfaction_review_needed"]["carry_forward"] == ["satisfaction.review_needed", "caveats"]
 
     def test_json_decisions_do_not_confirm_satisfaction_from_downstream_reference(self, project):
         _write_artifact(project, ".agentera/decisions.yaml", {
@@ -640,6 +712,9 @@ class TestDecisions:
         assert "feeds_into" in entry["missing_fields"]
         assert any("No explicit downstream consequence references were present" in caveat for caveat in entry["caveats"])
         assert data["source_contract"]["completeness"]["entries_without_downstream_references"] == 1
+        assert data["source_contract"]["complete_for_normal_deliberation_context"] is True
+        assert data["source_contract"]["missing_full_detail_boundary"]["raw_artifact_read_required"] is False
+        assert "missing_fields/caveats" in data["source_contract"]["missing_full_detail_boundary"]["normal_behavior"]
 
     def test_json_compacted_decision_is_marked_incomplete(self, project):
         _write_artifact(project, ".agentera/decisions.yaml", {
@@ -664,10 +739,14 @@ class TestDecisions:
         assert entry["downstream_consequence_references"] is None
         assert data["source_contract"]["complete_for_returned_decisions"] is False
         assert data["source_contract"]["complete_for_decision_context"] is False
+        assert data["source_contract"]["complete_for_returned_full_detail"] is False
+        assert data["source_contract"]["complete_for_normal_deliberation_context"] is True
         assert data["source_contract"]["completeness"]["compacted_entries"] == 1
         assert "missing_fields" in data["source_contract"]["raw_artifact_read_policy"]
         assert "unavailable" in data["source_contract"]["fallback_behavior"]["compacted_history"]
         assert "git history" not in data["source_contract"]["fallback_behavior"]["compacted_history"]
+        assert data["source_contract"]["compacted_history_boundary"]["raw_artifact_read_required"] is False
+        assert data["source_contract"]["decision_context_truth_table"]["compacted_archive_entries"]["carry_forward"] == ["missing_fields", "compacted", "caveats"]
 
     def test_json_compacted_decision_keeps_retained_outcome_fields(self, project):
         _write_artifact(project, ".agentera/decisions.yaml", {
@@ -1991,7 +2070,9 @@ class TestHej:
         assert decisions["entries"][0]["compacted"] is True
         assert decisions["entries"][0]["context_complete"] is False
         assert decisions["source_contract"]["complete_for_returned_decisions"] is False
+        assert decisions["source_contract"]["complete_for_normal_deliberation_context"] is True
         assert decisions["source_contract"]["completeness"]["compacted_entries"] == 1
+        assert decisions["source_contract"]["compacted_history_boundary"]["raw_artifact_read_required"] is False
 
     def test_hej_orkestrera_context_caveats_latest_progress_without_verified(self, project):
         _write_artifact(project, ".agentera/plan.yaml", {

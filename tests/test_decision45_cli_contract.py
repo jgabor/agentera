@@ -210,3 +210,20 @@ def test_plan_source_contract_closes_plan_artifact_fallback():
     assert "agents should skip defensive `.agentera/plan.yaml` reads" in plan_contract["complete_semantics"]
     assert "previous-plan archive references" in plan_contract["complete_semantics"]
     assert "writes, archival, validation, corruption diagnostics" in plan_contract["complete_semantics"]
+
+
+def test_decisions_source_contract_closes_raw_read_fallback():
+    contract = _contract()
+    decisions_contract = contract["structured_output"]["envelope"]["routine_state_commands"]["source_contract"]["decisions"]
+
+    assert decisions_contract["status"] == "implemented_normal_deliberation_envelope"
+    assert "complete_for_returned_full_detail" in decisions_contract["fields"]
+    assert "complete_for_normal_deliberation_context" in decisions_contract["fields"]
+    assert "decision_context_truth_table" in decisions_contract["fields"]
+    assert "missing_full_detail_boundary" in decisions_contract["fields"]
+    assert "compacted_history_boundary" in decisions_contract["fields"]
+    assert "Normal deliberation should key off" in decisions_contract["complete_semantics"]
+    assert "returned entries plus `missing_fields`, `compacted`, `caveats`" in decisions_contract["complete_semantics"]
+    assert "Empty filtered results mean no returned decisions matched" in decisions_contract["complete_semantics"]
+    assert "Raw decision artifact access is reserved" in decisions_contract["raw_access_semantics"]
+    assert "not required merely because returned decisions are compacted" in decisions_contract["raw_access_semantics"]
