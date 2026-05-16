@@ -191,7 +191,11 @@ When `agentera plan --format json` returns
 `source_contract.complete_for_plan_artifact=true`, treat its `summary`,
 `entries`, and `source_contract` as complete for normal `PLAN.md` startup and
 evaluation context; do not read `.agentera/plan.yaml` merely to re-check task
-dependencies, acceptance criteria, evidence, or plan metadata.
+dependencies, acceptance criteria, evidence, overall acceptance, surprises,
+prior-plan archive references, or plan metadata. This no-raw-read rule is for
+normal read-only startup/evaluation. Raw mapped plan artifact access remains valid
+for writes, archives, validation, corruption diagnostics, or unavailable or
+incomplete CLI state after CLI fallbacks.
 
 For bare `/agentera` or a bare user message exactly `hej`, run `agentera hej`
 first and render the README-style hej dashboard from that single composite

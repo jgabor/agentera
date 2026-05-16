@@ -73,6 +73,7 @@
 
 ### Added
 
+- `agentera plan --format json` now exposes a stronger read-only source contract with canonical artifact label, persisted artifact path, `complete_for_normal_startup_evaluation`, complete summary/entry field coverage, raw plan artifact access boundaries, and fallback policy so Planera startup can skip defensive `.agentera/plan.yaml` reads when CLI state is complete; legacy `entries`-shaped artifacts no longer overclaim complete current-plan startup coverage.
 - `agentera hej` now surfaces non-confirmed decision satisfaction pressure as one bounded attention item and a structured `decision_attention` JSON payload, preserving decision satisfaction authority, read-only decision state, and existing `next_action` priority.
 - `agentera usage` now exposes a supported suite usage analytics namespace over `scripts/usage_stats.py`, preserving default USAGE.md report generation, JSON pass-through, `--corpus`, `--project`, missing-corpus guidance, direct script compatibility, and isolated test write paths without adding `agentera corpus` or profile refresh behavior.
 - `agentera verify` now exposes a supported smoke/eval verification namespace with `smoke` targets `installed-skills`, `live-hosts`, `setup-helpers`, and `opencode-bootstrap`, `eval` targets `skills` and `semantic`, stable text/JSON results, safe default offline/dry-run behavior, bounded diagnostics, and preserved direct smoke/eval scripts.

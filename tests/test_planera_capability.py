@@ -115,3 +115,14 @@ def test_planera_prose_exists_and_contains_workflow():
     content = prose_path.read_text()
     for required in ["Step 0: Detect level", "Step 1: Orient", "Step 2: Specify", "Step 5: Write PLAN.md", "Step 6: Handoff", "Safety rails", "Exit signals"]:
         assert required in content, f"prose.md must contain section '{required}'"
+
+
+def test_planera_prose_uses_complete_plan_cli_state_before_raw_artifact_reads():
+    content = (PLANERA_CAP_DIR / "prose.md").read_text()
+
+    assert "agentera plan\n--format json" in content
+    assert "source_contract.complete_for_plan_artifact" in content
+    assert "do not reread the\npersisted plan artifact defensively" in content
+    assert "skip raw `.agentera/plan.yaml` reads" in content
+    assert "writing a new plan, archiving a completed plan, artifact validation" in content
+    assert "CLI-provided fallback before any\nlast-resort raw artifact read" in content
