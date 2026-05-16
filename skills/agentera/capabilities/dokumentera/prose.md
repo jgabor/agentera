@@ -244,7 +244,7 @@ Steps: explore, gaps, generate, audit, update.
 1. Map directory structure, read dependency manifests
 2. Read existing docs to see what's already documented
 3. Read key source files: architecture, public APIs, patterns
-4. Read VISION.md, PROGRESS.md, DECISIONS.md, decision profile if they exist
+4. Read VISION.md, PROGRESS.md, DECISIONS.md, decision profile if they exist; use `agentera decisions --format json` for normal decision context and carry returned `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` pressure into documentation scope instead of raw-reading missing historical decision context.
 5. `git log --oneline -20` for context
 
 **Exit-early stop condition**: If DOCS.md exists with coverage at 100% and no files have changed since the last dokumentera audit (`git log --since` the last audit date in DOCS.md shows no changes), report exit signal `complete` (EX1): documentation current, and stop.

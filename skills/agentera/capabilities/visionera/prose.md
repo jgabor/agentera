@@ -94,7 +94,7 @@ If code exists, read deeply before asking questions. You arrive informed.
 2. Read dependency manifests: stack, libraries, what choices reveal
 3. Read README.md, CLAUDE.md, AGENTS.md if they exist
 4. Read key source files to understand what the software does today
-5. Read PROGRESS.md, TODO.md, DECISIONS.md for trajectory
+5. Read PROGRESS.md, TODO.md, DECISIONS.md for trajectory; use `agentera decisions --format json` for normal decision context and preserve returned `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` pressure instead of raw-reading missing historical decision context.
 6. Read HEALTH.md for current quality
 7. Read DESIGN.md for existing visual identity
 8. **Decision profile**: read `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) directly per protocol confidence scale (CS1-CS5) conventions. If missing, proceed without persona grounding.
@@ -179,7 +179,7 @@ Steps: read, research, propose, audit, update.
 1. Read the current vision artifact
 2. Read the codebase (same depth as Create Step 1)
 3. Read PROGRESS.md for what's been built since the vision was created
-4. Read DECISIONS.md for what decisions have shifted thinking
+4. Use `agentera decisions --format json` for what decisions have shifted thinking; carry compacted/missing-field caveats forward rather than reconstructing absent historical context.
 5. Read HEALTH.md for what structural realities constrain the vision
 6. Read TODO.md for what recurring problems suggest the vision needs adjustment
 

@@ -369,7 +369,7 @@ Resonera reads the decision profile at the start of every deliberation. High-con
 
 ### Fed by resonera
 
-DECISIONS.md (maintained by resonera) is a high-signal source for profilera's extraction scripts. Each decision entry captures reasoning, tradeoffs, and confidence, making deliberation sessions one of the richest inputs for decision profile generation.
+DECISIONS.md (maintained by resonera) is a high-signal source for profilera's extraction scripts. Each decision entry captures reasoning, tradeoffs, and confidence, making deliberation sessions one of the richest inputs for decision profile generation. For normal read-only extraction, prefer `agentera decisions --format json` and preserve returned `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` pressure rather than raw-reading missing historical context.
 
 ### Consumed by inspektera
 

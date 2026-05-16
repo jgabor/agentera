@@ -96,7 +96,7 @@ family is missing or incomplete, run the CLI-provided fallback before any
 last-resort raw artifact read.
 
 1. **VISION.md**: the north star (if exists)
-2. **DECISIONS.md**: read `firm` (DL1) entries only (hard constraints for planning)
+2. **DECISIONS.md**: use `agentera decisions --format json`; read `firm` (DL1) entries only (hard constraints for planning), and preserve returned `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` pressure instead of raw-reading missing historical context.
 3. **HEALTH.md**: latest codebase health grades (if exists)
 4. **TODO.md**: related known issues (if exists)
 5. **PROGRESS.md**: what was built recently (if exists)
@@ -107,7 +107,7 @@ last-resort raw artifact read.
    - Read dependency manifests, README.md, CLAUDE.md, AGENTS.md
    - Identify build/test/lint commands
 
-Before decomposing: summarize the constraints from VISION.md and DECISIONS.md.
+Before decomposing: summarize the constraints from VISION.md and DECISIONS.md. If the decisions source contract reports `complete_for_normal_deliberation_context=true`, do not read raw `.agentera/decisions.yaml` for normal planning context.
 
 ---
 

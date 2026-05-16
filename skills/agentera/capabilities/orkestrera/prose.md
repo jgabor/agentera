@@ -32,7 +32,7 @@ Use the returned `orchestration_context` before raw plan, progress, health, TODO
 | `PROGRESS.md` | CLI context first | Cross-cycle context. Use `orchestration_context.progress_verification`; dispatched capabilities write their own entries. |
 | `HEALTH.md` | CLI context first | Health context. Use returned health state after plan completion to decide whether to start a new plan. |
 | `TODO.md` | CLI context first; update only for blocked logging | Blocked task logging. Write when a task exhausts its retry budget. |
-| `DECISIONS.md` | CLI fallback before raw read | Decision context. Use included decision caveats or `agentera decisions --format json`; compacted decision caveats must stay visible. |
+| `DECISIONS.md` | CLI fallback before raw diagnostics | Decision context. Use included decision caveats or `agentera decisions --format json`; when `complete_for_normal_deliberation_context=true`, preserve `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` instead of raw-reading missing history. |
 | `VISION.md` | CLI/context caveat first | Direction context for bootstrap. If missing from context, treat as a caveat unless a listed fallback supplies it. |
 | `PROFILE.md` | Context caveat first | Persona context. Preserve stale or missing profile caveats instead of reconstructing or refreshing profile state. |
 
@@ -133,7 +133,7 @@ Use `orchestration_context.selected_next_task` when present. Otherwise, use `orc
 
 If no tasks are eligible (all remaining tasks are blocked by incomplete dependencies), report `stuck` with the dependency chain.
 
-Use decision state or caveats from the returned context first. If decisions are missing or incomplete, run the listed fallback command such as `agentera decisions --format json` before any raw DECISIONS.md read. Note firm constraints and any `exploratory` (DL3) entries that relate to the selected task's domain. Preserve compacted-entry caveats and include uncertainty in the dispatch context instead of filling gaps by reconstruction.
+Use decision state or caveats from the returned context first. If decisions are missing from startup context, run the listed fallback command such as `agentera decisions --format json`. If that command reports `complete_for_normal_deliberation_context=true`, do not raw-read `.agentera/decisions.yaml` merely because full-detail completeness is false; note firm constraints and any `exploratory` (DL3) entries that relate to the selected task's domain, and preserve `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` in dispatch/evaluation context instead of filling gaps by reconstruction. Raw DECISIONS.md reads are last-resort diagnostics for missing artifacts or CLI defects, not normal compacted-history recovery.
 
 ### Step 2: Dispatch
 
@@ -392,7 +392,7 @@ When no plan exists or the current plan is complete, orkestrera invokes planera 
 
 ### Orkestrera reads ❈ resonera output
 
-Decision state provides firm constraints during task selection. Use the orchestration context first, then `agentera decisions --format json` if listed as a fallback. If a task relates to an exploratory decision, orkestrera notes the uncertainty in the dispatch context and preserves compacted-decision caveats.
+Decision state provides firm constraints during task selection. Use the orchestration context first, then `agentera decisions --format json` if listed as a fallback. If a task relates to an exploratory decision, orkestrera notes the uncertainty in the dispatch context and preserves `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` from returned decision entries instead of treating compacted decisions as complete.
 
 ### Orkestrera reads ⛥ visionera output
 

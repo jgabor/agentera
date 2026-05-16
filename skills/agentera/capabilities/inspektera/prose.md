@@ -286,7 +286,7 @@ Evaluates whether state artifacts are current relative to plan activity or recen
 
 ### Prose health
 
-Evaluate artifact prose quality against the three Self-Audit Protocol rules. Read all project artifacts (PROGRESS.md, DECISIONS.md, PLAN.md, HEALTH.md, TODO.md, CHANGELOG.md, VISION.md, DESIGN.md, DOCS.md) and check each entry.
+Evaluate artifact prose quality against the three Self-Audit Protocol rules. Use routine CLI state first for artifact-backed context, including `agentera decisions --format json` for DECISIONS.md. Preserve returned decision `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` pressure; raw decision artifact reads are for artifact-quality inspection, corruption diagnostics, or CLI defects, not normal post-CLI context recovery. Read all project artifacts (PROGRESS.md, DECISIONS.md, PLAN.md, HEALTH.md, TODO.md, CHANGELOG.md, VISION.md, DESIGN.md, DOCS.md) and check each entry when the prose-health audit explicitly requires raw artifact prose.
 
 **Rule 1: Verbosity overrun**: approximate word count per entry. Compare against per-entry budgets. Entries exceeding their budget by 50%+ are findings.
 
@@ -322,7 +322,7 @@ After all agents complete:
 
 1. **Filter**: discard findings below 50 confidence. Mark 50-69 as "info" (SF3) regardless of apparent severity.
 2. **Deduplicate**: merge by preference: (1) fullest context, (2) most evidence-rich dimension, (3) most recent. Preserve complementary evidence from discarded findings.
-3. **Cross-reference** against DECISIONS.md and TODO.md:
+3. **Cross-reference** against DECISIONS.md and TODO.md using `agentera decisions --format json` for normal decision context:
    - Matches known decision → discard or downgrade to info (SF3)
    - Matches known issue → "already tracked", skip
    - Genuinely new → include at full severity

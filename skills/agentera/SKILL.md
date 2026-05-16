@@ -247,6 +247,12 @@ behavior not covered by the compact contract, or investigating benchmark/read-tr
 evidence. This preserves Planera prose as detailed authority and does not add
 `agentera planera`; `/agentera plan` remains routing while `agentera plan`
 remains plan state.
+For normal DECISIONS.md context, use `agentera decisions --format json` and its
+source_contract. When `complete_for_normal_deliberation_context=true`, preserve
+returned `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed`
+instead of raw-reading `.agentera/decisions.yaml` to reconstruct missing history.
+Raw decision artifact access is reserved for Resonera-owned writes/repairs,
+artifact corruption diagnostics, or CLI defect investigation.
 Reading a capability's `prose.md` file is not itself a capability invocation;
 invocation means routing to the capability, following its prose, and using the
 CLI state layer first for artifact-backed state.

@@ -281,10 +281,37 @@ def test_master_skill_documents_route_alias_contract_boundary():
     assert "capability_context.startup_contract" in text
     assert "agentera hej --format json --capability-context planera" in text
     assert "Read Planera prose only when" in text
+    assert "complete_for_normal_deliberation_context=true" in text
+    assert "Raw decision artifact access is reserved" in text
     assert "missing_state_families" in text
     assert "ROUTE_ALIASES.primary_aliases" in text
     assert "Canonical Swedish names remain the" in text
     assert "Secondary user wording stays in" in text
+
+
+def test_decision_context_consumers_preserve_cli_caveats():
+    capability_text = "\n".join(
+        (CAPABILITIES_DIR / name / "prose.md").read_text(encoding="utf-8")
+        for name in (
+            "planera",
+            "realisera",
+            "inspektera",
+            "dokumentera",
+            "visionera",
+            "optimera",
+            "orkestrera",
+            "resonera",
+            "profilera",
+        )
+    )
+
+    assert capability_text.count("agentera decisions --format json") >= 9
+    assert capability_text.count("missing_fields") >= 9
+    assert capability_text.count("compacted") >= 9
+    assert capability_text.count("caveats") >= 9
+    assert capability_text.count("satisfaction.review_needed") >= 9
+    assert "do not raw-read `.agentera/decisions.yaml` merely because `complete_for_decision_context` is false" in capability_text
+    assert "Raw DECISIONS.md reads are last-resort diagnostics" in capability_text
 
 
 def test_master_upgrade_check_requires_dry_run_preview():

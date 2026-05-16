@@ -1162,6 +1162,9 @@ def _decision_context_entry(entry: dict[str, Any]) -> dict[str, Any]:
 
 
 def _decision_source_contract(source: dict[str, Any], entries: list[dict[str, Any]], filters: dict[str, Any]) -> dict[str, Any]:
+    source_exists = bool(source.get("exists"))
+    active_filters = {key: value for key, value in filters.items() if value is not None}
+    filtered_no_match = source_exists and bool(active_filters) and not entries
     compacted_entries = sum(1 for entry in entries if entry.get("compacted"))
     entries_with_missing_fields = sum(1 for entry in entries if entry.get("missing_fields"))
     entries_without_downstream_references = sum(
@@ -1179,13 +1182,18 @@ def _decision_source_contract(source: dict[str, Any], entries: list[dict[str, An
         and entry["satisfaction"].get("state") == "user_confirmed_satisfied"
         and not entry["satisfaction"].get("review_needed")
     )
-    complete_for_returned = bool(source.get("exists")) and all(
+    complete_for_returned = source_exists and all(
         entry.get("context_complete") is True for entry in entries
     )
+    complete_for_normal_deliberation = source_exists
     caveats = [
         "Downstream consequence references are derived only from explicit structured feeds_into values; no references are inferred.",
         "Compacted archive decisions are not expanded by this command and are not complete full-detail decision context.",
     ]
+    if not source_exists:
+        caveats.append("Decision artifact is missing or unavailable; no decision context is available from this command result.")
+    if filtered_no_match:
+        caveats.append("Filtered result is empty; no returned decisions match the filter, but the decision artifact was available.")
     if entries_with_missing_fields:
         caveats.append("One or more returned decisions are missing full-detail context fields.")
     if entries_without_downstream_references:
@@ -1198,9 +1206,15 @@ def _decision_source_contract(source: dict[str, Any], entries: list[dict[str, An
         "path": source.get("path"),
         "complete_for_returned_decisions": complete_for_returned,
         "complete_for_decision_context": complete_for_returned,
+        "complete_for_returned_full_detail": complete_for_returned,
+        "complete_for_normal_deliberation_context": complete_for_normal_deliberation,
         "completeness": {
             "returned_decisions": len(entries),
             "context_complete": complete_for_returned,
+            "returned_full_detail_complete": complete_for_returned,
+            "normal_deliberation_context": complete_for_normal_deliberation,
+            "filtered_no_match": filtered_no_match,
+            "source_exists": source_exists,
             "compacted_entries": compacted_entries,
             "entries_with_missing_fields": entries_with_missing_fields,
             "entries_without_downstream_references": entries_without_downstream_references,
@@ -1225,9 +1239,93 @@ def _decision_source_contract(source: dict[str, Any], entries: list[dict[str, An
             "confirmation_policy": "Only satisfaction.state=user_confirmed_satisfied with explicit user_confirmation metadata is reported as user-confirmed satisfied.",
             "non_inference_policy": "Do not infer satisfaction from feeds_into, commits, downstream files, generated references, or compacted history.",
         },
+        "normal_deliberation_context": {
+            "use_complete_for_normal_deliberation_context": True,
+            "legacy_full_detail_signal": "complete_for_decision_context",
+            "guidance": (
+                "For normal deliberation, use returned entries plus missing_fields, compacted, caveats, "
+                "and satisfaction review state. Do not use the legacy full-detail completeness flag "
+                "as a reason to reread the raw decision artifact."
+            ),
+        },
+        "decision_context_truth_table": {
+            "full_detail_entries": {
+                "full_detail_complete": True,
+                "normal_deliberation_context_complete": True,
+                "raw_artifact_read_required": False,
+            },
+            "compacted_archive_entries": {
+                "full_detail_complete": False,
+                "normal_deliberation_context_complete": True,
+                "raw_artifact_read_required": False,
+                "carry_forward": ["missing_fields", "compacted", "caveats"],
+            },
+            "entries_with_missing_full_detail_fields": {
+                "full_detail_complete": False,
+                "normal_deliberation_context_complete": True,
+                "raw_artifact_read_required": False,
+                "carry_forward": ["missing_fields", "caveats"],
+            },
+            "satisfaction_review_needed": {
+                "full_detail_complete": False,
+                "normal_deliberation_context_complete": True,
+                "raw_artifact_read_required": False,
+                "carry_forward": ["satisfaction.review_needed", "caveats"],
+            },
+            "filtered_no_match": {
+                "full_detail_complete": True,
+                "normal_deliberation_context_complete": True,
+                "raw_artifact_read_required": False,
+                "meaning": "The artifact exists, but no returned decisions matched the filter.",
+            },
+            "missing_or_unavailable_artifact": {
+                "full_detail_complete": False,
+                "normal_deliberation_context_complete": False,
+                "raw_artifact_read_required": False,
+                "meaning": "No decision state is available from the CLI result; use CLI fallback or diagnostics before raw artifact repair.",
+            },
+        },
+        "missing_full_detail_boundary": {
+            "applies_when": "returned decisions have missing_fields or context_complete=false",
+            "normal_behavior": "Use present structured fields only and preserve missing_fields/caveats downstream.",
+            "raw_artifact_read_required": False,
+            "do_not": "Do not infer absent reasoning, alternatives, confidence, feeds_into, outcome, or downstream references.",
+        },
+        "missing_artifact_boundary": {
+            "applies_when": "source.exists=false",
+            "normal_behavior": "Treat decision context as unavailable from this result; do not infer historical decisions.",
+            "raw_artifact_read_required": False,
+            "diagnostic_boundary": "Raw artifact access is reserved for explicit artifact repair/corruption or CLI-defect investigation.",
+        },
+        "filtered_result_boundary": {
+            "applies_when": "filters are present and entries=[] while source.exists=true",
+            "normal_behavior": "Treat the result as no matching returned decisions, not as missing decision state.",
+            "raw_artifact_read_required": False,
+        },
+        "satisfaction_review_boundary": {
+            "applies_when": "one or more entries have satisfaction.review_needed=true",
+            "normal_behavior": "Carry satisfaction review pressure forward; only user confirmation can make a decision user-confirmed satisfied.",
+            "raw_artifact_read_required": False,
+            "do_not": "Do not infer satisfaction from downstream references, commits, generated files, or compacted history.",
+        },
+        "compacted_history_boundary": {
+            "applies_when": "returned entries have compacted=true",
+            "normal_behavior": "Use the compact summary and retained fields; preserve compacted/missing_fields/caveats downstream.",
+            "raw_artifact_read_required": False,
+            "do_not": "Do not expand archive decisions or reconstruct missing context from git history.",
+        },
+        "raw_artifact_access_boundary": {
+            "normal_deliberation": "skip raw `.agentera/decisions.yaml` reads when complete_for_normal_deliberation_context=true",
+            "allowed_raw_artifact_uses": [
+                "Resonera-owned decision writes or repairs",
+                "artifact corruption diagnostics",
+                "CLI defect investigation",
+            ],
+        },
         "raw_artifact_reads_required": False,
         "raw_artifact_read_policy": (
-            "Use `agentera decisions --format json` for normal deliberation context. "
+            "Use `agentera decisions --format json` for normal deliberation context and key normal use off "
+            "complete_for_normal_deliberation_context. "
             "Do not read `.agentera/decisions.yaml` unless investigating artifact corruption or CLI defects; "
             "historical compacted gaps are exposed through missing_fields and caveats."
         ),
@@ -1239,7 +1337,8 @@ def _decision_source_contract(source: dict[str, Any], entries: list[dict[str, An
             "satisfaction": "Use only each entry's satisfaction object for satisfaction state. Missing, open, provisional, or unconfirmed satisfaction requires review and must not be reported as user-confirmed satisfied.",
             "compacted_history": "Compacted archive decisions are included with explicit missing_fields and caveats; treat absent historical context as unavailable during normal deliberation.",
         },
-        "filters": {key: value for key, value in filters.items() if value is not None},
+        "fallback_policy": "If the decision artifact is missing or CLI state appears defective, use CLI fallback/diagnostic paths before raw artifact repair; do not raw-read merely because returned decisions are compacted or incomplete.",
+        "filters": active_filters,
     }
 
 

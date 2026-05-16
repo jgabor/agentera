@@ -162,6 +162,41 @@ structured_output:
             after CLI fallbacks. Legacy `entries`-shaped plan artifacts must not
             report this complete state because they do not expose the current plan
             summary/task/evidence envelope.
+        decisions:
+          status: implemented_normal_deliberation_envelope
+          fields:
+            - complete_for_returned_decisions
+            - complete_for_decision_context
+            - complete_for_returned_full_detail
+            - complete_for_normal_deliberation_context
+            - normal_deliberation_context
+            - decision_context_truth_table
+            - missing_full_detail_boundary
+            - missing_artifact_boundary
+            - filtered_result_boundary
+            - satisfaction_review_boundary
+            - compacted_history_boundary
+            - raw_artifact_access_boundary
+            - raw_artifact_reads_required
+            - raw_artifact_read_policy
+            - fallback_policy
+          complete_semantics: >-
+            `complete_for_decision_context` and
+            `complete_for_returned_full_detail` are full-detail signals and may be
+            false for compacted history, missing full-detail fields, or satisfaction
+            review pressure. Normal deliberation should key off
+            `complete_for_normal_deliberation_context`; when it is true, agents use
+            returned entries plus `missing_fields`, `compacted`, `caveats`, and
+            satisfaction review state without raw `.agentera/decisions.yaml` reads
+            or inference. Empty filtered results mean no returned decisions matched
+            the filter, not missing decision state. Missing artifacts make normal
+            deliberation context unavailable and enter CLI fallback/diagnostic
+            boundaries before any raw artifact repair.
+          raw_access_semantics: >-
+            Raw decision artifact access is reserved for Resonera-owned decision
+            writes/repairs, artifact corruption diagnostics, or CLI defect
+            investigation. It is not required merely because returned decisions are
+            compacted, incomplete, filtered, or require satisfaction review.
       empty_state: >-
         Missing or empty artifacts emit status=empty, entries=[], counts.entries=0,
         and source.exists=false when the source file is absent.
