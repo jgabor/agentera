@@ -274,6 +274,9 @@ def test_master_skill_documents_route_alias_contract_boundary():
     assert "`/agentera build`" in text
     assert "`/agentera plan` routes to planera" in text
     assert "`agentera plan` reads plan state" in text
+    assert "complete_for_plan_artifact=true" in text
+    assert "overall acceptance, surprises" in text
+    assert "Raw mapped plan artifact access remains valid" in text
     assert "agentera hej --format json --capability-context <capability>" in text
     assert "missing_state_families" in text
     assert "ROUTE_ALIASES.primary_aliases" in text

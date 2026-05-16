@@ -201,5 +201,8 @@ def test_plan_source_contract_closes_plan_artifact_fallback():
 
     assert plan_contract["status"] == "implemented_complete_plan_artifact_envelope"
     assert "complete_for_plan_artifact" in plan_contract["fields"]
+    assert "complete_for_normal_startup_evaluation" in plan_contract["fields"]
     assert "raw_artifact_reads_required" in plan_contract["fields"]
-    assert "agents should not read `.agentera/plan.yaml` defensively" in plan_contract["complete_semantics"]
+    assert "agents should skip defensive `.agentera/plan.yaml` reads" in plan_contract["complete_semantics"]
+    assert "previous-plan archive references" in plan_contract["complete_semantics"]
+    assert "writes, archival, validation, corruption diagnostics" in plan_contract["complete_semantics"]

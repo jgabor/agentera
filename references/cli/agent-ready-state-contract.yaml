@@ -140,18 +140,28 @@ structured_output:
           status: implemented_complete_plan_artifact_envelope
           fields:
             - complete_for_plan_artifact
+            - complete_for_normal_startup_evaluation
             - raw_artifact_reads_required
             - raw_artifact_read_policy
             - included_state
+            - complete_state
+            - raw_artifact_access_boundary
             - missing_state
             - fallback
+            - fallback_policy
             - summary_fields
             - entry_fields
           complete_semantics: >-
             When `complete_for_plan_artifact` is true, `agentera plan --format
-            json` includes plan summary metadata, task dependencies, acceptance
-            criteria, and evidence needed for normal startup/evaluation context;
-            agents should not read `.agentera/plan.yaml` defensively.
+            json` includes plan summary metadata, tasks, dependencies, acceptance
+            criteria, evidence, overall acceptance, surprises, and previous-plan
+            archive references needed for normal read-only startup/evaluation
+            context; agents should skip defensive `.agentera/plan.yaml` reads.
+            Raw mapped plan artifact access remains valid for writes, archival,
+            validation, corruption diagnostics, or unavailable/incomplete CLI state
+            after CLI fallbacks. Legacy `entries`-shaped plan artifacts must not
+            report this complete state because they do not expose the current plan
+            summary/task/evidence envelope.
       empty_state: >-
         Missing or empty artifacts emit status=empty, entries=[], counts.entries=0,
         and source.exists=false when the source file is absent.

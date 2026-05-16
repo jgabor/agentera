@@ -1139,11 +1139,26 @@ class TestArtifactSpecificSummaries:
         assert data["entries"][0]["evidence"] == {"artifact": "PLAN.md"}
         contract = data["source_contract"]
         assert contract["artifact"] == "PLAN.md"
+        assert contract["canonical_artifact_label"] == "PLAN.md"
+        assert contract["persisted_artifact_path"].endswith(".agentera/plan.yaml")
         assert contract["complete_for_plan_artifact"] is True
+        assert contract["complete_for_normal_startup_evaluation"] is True
         assert contract["raw_artifact_reads_required"] is False
         assert contract["missing_state"] == []
         assert "task evidence" in contract["included_state"]
         assert "constraints" in contract["summary_fields"]
+        assert "previous_plan_archived" in contract["summary_fields"]
+        assert contract["complete_state"]["normal_startup_evaluation"] is True
+        assert "overall_acceptance" in contract["complete_state"]["summary"]
+        assert "acceptance" in contract["complete_state"]["entries"]
+        assert "evidence" in contract["complete_state"]["entries"]
+        assert (
+            contract["raw_artifact_access_boundary"]["normal_read_only_startup_evaluation"]
+            == "skip raw plan artifact reads when complete_for_plan_artifact is true"
+        )
+        assert "artifact writes" in contract["raw_artifact_access_boundary"]["allowed_raw_artifact_uses"]
+        assert "archival" in contract["raw_artifact_read_policy"]
+        assert "defensive" in contract["raw_artifact_read_policy"]
 
         sparse = _run("plan", "--format", "json", "--fields", "source_contract", cwd=project)
         assert sparse.returncode == 0
@@ -1151,7 +1166,30 @@ class TestArtifactSpecificSummaries:
         assert sparse_data["command"] == "plan"
         assert sparse_data["status"] == "ok"
         assert sparse_data["source_contract"]["complete_for_plan_artifact"] is True
+        assert sparse_data["source_contract"]["complete_for_normal_startup_evaluation"] is True
         assert "entries" not in sparse_data
+
+    def test_legacy_plan_entries_do_not_claim_complete_plan_artifact_contract(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "entries": [
+                {
+                    "title": "Legacy task",
+                    "status": "pending",
+                },
+            ],
+        })
+
+        r = _run("plan", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["summary"] == {"legacy_entries": True}
+        contract = data["source_contract"]
+        assert contract["complete_for_plan_artifact"] is False
+        assert contract["complete_for_normal_startup_evaluation"] is False
+        assert contract["complete_state"]["normal_startup_evaluation"] is False
+        assert contract["missing_state"] == ["current PLAN.md task artifact shape"]
+        assert contract["fallback"] == ["agentera docs --format json"]
 
     def test_progress_summary_surfaces_verification_and_next(self, project):
         _write_artifact(project, ".agentera/progress.yaml", {

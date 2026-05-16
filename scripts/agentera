@@ -1245,14 +1245,27 @@ def _plan_artifact_summary(data: dict[str, Any], header: dict[str, Any]) -> dict
 
 
 def _plan_source_contract(source: dict[str, Any], summary: dict[str, Any]) -> dict[str, Any]:
-    complete = bool(source.get("exists"))
+    legacy_entries = bool(summary.get("legacy_entries"))
+    complete = bool(source.get("exists")) and not legacy_entries
+    missing_state = []
+    if not source.get("exists"):
+        missing_state.append("PLAN.md artifact")
+    if legacy_entries:
+        missing_state.append("current PLAN.md task artifact shape")
+    summary_fields = sorted(summary)
+    entry_fields = ["number", "name", "depends_on", "status", "acceptance", "evidence", "blocked_reason"]
     return {
         "artifact": "PLAN.md",
+        "canonical_artifact_label": "PLAN.md",
+        "persisted_artifact_path": source.get("path"),
         "complete_for_plan_artifact": complete,
+        "complete_for_normal_startup_evaluation": complete,
         "raw_artifact_reads_required": False,
         "raw_artifact_read_policy": (
             "Use `agentera plan --format json` entries, summary, source, and source_contract before raw PLAN.md access. "
-            "When complete_for_plan_artifact is true, do not read `.agentera/plan.yaml` for normal plan startup/evaluation context."
+            "When complete_for_plan_artifact is true, skip defensive `.agentera/plan.yaml` reads during normal read-only "
+            "plan startup/evaluation; raw plan artifact access is reserved for writes, archival, validation, corruption "
+            "diagnostics, or unavailable/incomplete CLI state."
         ),
         "included_state": [
             "header",
@@ -1269,10 +1282,29 @@ def _plan_source_contract(source: dict[str, Any], summary: dict[str, Any]) -> di
             "surprises",
             "previous_plan_archived",
         ],
-        "missing_state": [] if complete else ["PLAN.md artifact"],
+        "complete_state": {
+            "summary": summary_fields,
+            "entries": entry_fields,
+            "normal_startup_evaluation": complete,
+        },
+        "raw_artifact_access_boundary": {
+            "normal_read_only_startup_evaluation": "skip raw plan artifact reads when complete_for_plan_artifact is true",
+            "allowed_raw_artifact_uses": [
+                "artifact writes",
+                "plan archival",
+                "artifact validation",
+                "corruption diagnostics",
+                "unavailable or incomplete CLI state after CLI fallbacks",
+            ],
+        },
+        "missing_state": missing_state,
         "fallback": [] if complete else ["agentera docs --format json"],
-        "summary_fields": sorted(summary),
-        "entry_fields": ["number", "name", "depends_on", "status", "acceptance", "evidence", "blocked_reason"],
+        "fallback_policy": (
+            "When plan CLI output is missing or incomplete, use supported CLI state such as `agentera docs --format json` "
+            "for artifact mapping before any last-resort raw plan artifact read."
+        ),
+        "summary_fields": summary_fields,
+        "entry_fields": entry_fields,
     }
 
 

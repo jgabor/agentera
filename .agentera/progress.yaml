@@ -1,4 +1,49 @@
 cycles:
+- number: 527
+  timestamp: 2026-05-16 00:42
+  type: feat
+  phase: build
+  what: Completed and synchronized the plan source-contract raw-read reduction.
+  commit: pending
+  inspiration: Orkestrera executed the Plan CLI Source Contract Raw-Read Reduction
+    Plan so Planera startup can rely on complete `agentera plan --format json` state
+    instead of defensive raw `.agentera/plan.yaml` reads during normal read-only startup
+    or evaluation, while preserving raw plan access for writes, archives, validation,
+    corruption diagnostics, and unavailable or incomplete CLI state.
+  discovered: 'The benchmark emits privacy-safe canonical artifact labels, so `PLAN.md`
+    maps through `.agentera/docs.yaml` to `.agentera/plan.yaml`. The remaining read
+    trigger was guidance/contract ambiguity rather than missing plan data: the CLI
+    already returned summary, entries, acceptance criteria, evidence, overall acceptance,
+    surprises, and previous-plan archive metadata, but the contract did not explicitly
+    name the read-only boundary and Planera prose still allowed defensive orientation
+    reads.'
+  verified: Added stronger plan source-contract fields in `scripts/agentera`, updated
+    Planera and master Agentera CLI-first guidance, updated `references/cli/agent-ready-state-contract.yaml`,
+    and added focused regression assertions in `tests/test_query_cli.py`, `tests/test_planera_capability.py`,
+    `tests/test_decision45_cli_contract.py`, and `tests/test_cross_capability.py`.
+    Independent evaluation found and the implementation fixed a legacy `entries` shape
+    overclaim where non-current plan artifacts reported complete startup coverage.
+    Verification passed with the focused plan/guidance test set, full `tests/test_query_cli.py`,
+    direct `uv run scripts/agentera plan --format json --fields source_contract,summary,entries`
+    proof, `mage bench:startupState`, and `git diff --check`; the retained benchmark
+    report still shows retrospective PLAN.md pressure (`raw_after_cli=11`, `redundant=10`,
+    recommendation `plan_cli_startup_envelope`) and separates degraded claude-code/github-copilot
+    runtime coverage from product behavior.
+  next: Plan CLI Source Contract Raw-Read Reduction Plan is complete. Remaining open
+    TODOs start with reducing Planera prose re-reads. Do not publish, commit, push,
+    tag, refresh installed app/profile, edit vision or objective state, change decision
+    satisfaction state, update packages beyond policy-required version metadata, run
+    unsupported capability-name CLI commands, or solve unrelated DECISIONS.md and
+    AGENTERA_ARTIFACTS raw-read TODOs unless explicitly requested.
+  context:
+    intent: PLAN.md raw-read reduction after CLI state
+    constraints: Keep command vocabulary stable; no persisted plan artifact shape
+      change; no decision satisfaction, vision, objective, installed app/profile,
+      publication, push, tag, package-manager, unsupported capability command, DECISIONS.md
+      raw-read, or artifact-discovery scope creep.
+    scope: Plan source-contract fields, Planera/master guidance, focused regression
+      tests, benchmark measurement evidence, 2.8.0 version metadata, TODO/CHANGELOG/DOCS/PLAN/PROGRESS
+      sync, validators, compaction, and diff whitespace check.
 - number: 526
   timestamp: 2026-05-15 23:58
   type: feat
@@ -397,50 +442,9 @@ cycles:
       implementation, focused behavior checks, direct-validator compatibility checks,
       PLAN Task 2 evidence, PROGRESS cycle evidence, artifact validation, and diff
       whitespace check
-- number: 517
-  timestamp: 2026-05-15 22:11
-  type: feat
-  phase: build
-  what: Defined the Task 1 command contract for the planned `agentera validate` namespace.
-  commit: pending
-  inspiration: Orkestrera assigned only Task 1 from the D48 Validate Namespace Plan
-    to define the external command contract and compatibility constraints for capability/artifact
-    validation without implementing Task 2 behavior, changing existing validators,
-    refreshing installed app/profile state, editing vision or objective state, changing
-    decision satisfaction state, publishing, pushing, tagging, committing, or running
-    unsupported capability-name CLI commands.
-  discovered: The current `agentera --help` command does not expose a `validate` namespace.
-    The preserved direct surfaces are `scripts/validate_capability.py`, whose help
-    accepts a capability directory plus `--contract`, `--protocol`, `--self-validate`,
-    `--validate-protocol`, and `--check-primitives`, and `hooks/validate_artifact.py`,
-    whose help accepts `--artifact`, `--file`, `--cwd`, and `--format {text,json}`.
-    `agentera describe --format json` exposes canonical capability names and artifact
-    schema discovery; invalid artifact JSON already lists valid canonical artifact
-    labels.
-  verified: 'Added a design-only `validate_namespace` section to `references/cli/agent-ready-state-contract.yaml`
-    defining target families `capability` and `artifact`, required inputs, `text`
-    and `json` output formats, valid capability names, valid artifact labels, concrete
-    examples, invalid-input behavior, compatibility constraints for both direct validators,
-    and non-goals. Evidence commands passed or produced the expected bounded diagnostic
-    behavior: `uv run scripts/agentera --help`, `uv run scripts/validate_capability.py
-    --help`, `uv run hooks/validate_artifact.py --help`, `uv run scripts/agentera
-    describe --format json`, `uv run scripts/validate_capability.py skills/agentera/capabilities/hej`,
-    `uv run scripts/validate_capability.py --self-validate`, `uv run hooks/validate_artifact.py
-    --artifact PLAN.md --file .agentera/plan.yaml --format json`, `uv run hooks/validate_artifact.py
-    --artifact NOTREAL.md --file .agentera/plan.yaml --format json`, and `uv run scripts/validate_capability.py
-    skills/agentera/capabilities/notreal`.'
-  next: Hand Task 1 to Orkestrera evaluation. Do not implement Task 2 behavior, publish,
-    commit, push, tag, refresh installed apps/profile, edit vision or objective state,
-    change decision satisfaction state, or run unsupported capability-name CLI commands.
-  context:
-    intent: D48 PLAN Task 1 validate namespace contract definition
-    constraints: Task 1 only; design/record external command contract and compatibility
-      constraints; preserve existing direct validators, artifact labels, capability
-      schema contracts, unrelated dirty work, and forbidden state/publication actions
-    scope: CLI contract reference update, PLAN Task 1 evidence, PROGRESS cycle evidence,
-      focused help/direct-validator probes, artifact validation, and diff whitespace
-      check
 archive:
+- summary: 'Cycle 517 (2026-05-15): Defined the Task 1 command contract for the planned
+    `agentera validate` namespace.'
 - summary: 'Cycle 516 (2026-05-15): Synchronized PLAN Task 4 version and local state
     closeout for the Planera lint anchor false-positive...'
 - summary: 'Cycle 515 (2026-05-15): Completed PLAN Task 3 regression coverage and
@@ -519,5 +523,3 @@ archive:
     and future preservation for active plan 2.3.7 without...'
 - summary: 'Cycle 478 (2026-05-14): Implemented PLAN Task 2 decisions CLI source-contract
     JSON output for the active 2.3.7 Decision Context...'
-- summary: 'Cycle 477 (2026-05-14): Recorded PLAN Task 1 decision-context inventory
-    evidence and the 2.3.6 archive boundary for the active...'

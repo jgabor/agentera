@@ -1,222 +1,265 @@
 header:
   level: full
-  created: 2026-05-15
+  created: 2026-05-16
   status: complete
-  reviewed: 2026-05-15
+  reviewed: 2026-05-16
   critic_issues: 8 found, 8 addressed, 0 dismissed
-  title: Decision Review Attention Plan
+  title: Plan CLI Source Contract Raw-Read Reduction
 what: >-
-  Add a bounded `agentera hej` dashboard attention item for non-confirmed decisions so
-  open, provisional, missing-satisfaction, and review-needed decision states are visible
-  during normal orientation without changing decision satisfaction state or dashboard
-  routing priority.
+  Reduce Planera-triggered PLAN.md raw artifact reads after successful CLI state
+  access by making the `agentera plan --format json` completeness contract and
+  Planera startup guidance unambiguous enough for agents to rely on structured
+  plan state instead of defensively reading the persisted plan artifact during
+  normal read-only startup or evaluation.
 why: >-
-  `agentera decisions --format json` already exposes satisfaction review caveats, but
-  returning users usually start with `agentera hej`. If hej only surfaces TODOs while
-  non-confirmed decisions remain hidden in decision state, stale review pressure can be
-  missed. The dashboard should make that pressure visible without inferring user intent
-  or turning decision review into the next executable action ahead of current TODOs.
+  The latest TODO keeps PLAN.md as the highest-priority residual post-CLI raw-read
+  source: 7 reads and 37 redundant tokens. Agentera already exposes plan summary,
+  tasks, dependencies, acceptance criteria, and evidence through the CLI, but mixed
+  guidance still leaves agents with an incentive to read `.agentera/plan.yaml`.
+  Closing that ambiguity should lower startup overhead without changing the plan
+  artifact shape or command vocabulary.
 constraints: >-
-  Reuse the same satisfaction semantics as `agentera decisions --format json`, centered
-  on `_decision_context_entry` and `_decision_satisfaction_context` in `scripts/agentera`.
-  Only `satisfaction.state=user_confirmed_satisfied` with explicit `user_confirmation`
-  counts as confirmed. Missing satisfaction objects, missing or unrecognized states,
-  `open`, `provisionally_satisfied`, unconfirmed `user_confirmed_satisfied`, and entries
-  with `review_needed=true` count as non-confirmed. Do not infer satisfaction from
-  downstream references, commits, compacted history, or evidence. Do not mutate
-  `.agentera/decisions.yaml`, change decision satisfaction, alter compaction protection,
-  add a new decision command, redesign the hej dashboard, or change `next_action` priority.
-  Keep top-level hej attention bounded to 6 items and include at most one decision-review
-  attention item with bounded details. Do not publish, push, tag, refresh installed apps
-  or profiles, edit vision state, edit objective state, or run unsupported capability-name
-  CLI commands.
+  Preserve existing routine command vocabulary and the Decision 43 separation between
+  `/agentera plan` as a capability route and `agentera plan` as a state command. Do
+  not add a new command, remove `agentera plan`, change the persisted plan artifact
+  shape, hide plan task evidence or acceptance criteria from JSON output, weaken
+  artifact mapping, mutate decision satisfaction, edit vision or objective state,
+  publish, push, tag, refresh installed apps or profiles, or run unsupported
+  capability-name CLI commands. Treat CLI JSON as the authoritative read model for
+  normal Planera startup/evaluation only; raw plan artifact reads remain allowed for
+  artifact writing, archival, validation, corruption investigation, or unavailable
+  or incomplete CLI output.
 scope:
   included:
-    - Decision review attention contract for `agentera hej` text and JSON output.
-    - One bounded decision-review attention item derived from decision satisfaction context.
-    - Stable structured metadata for the decision attention item when JSON output is used.
-    - Tests for open, provisional, missing legacy, unconfirmed, and confirmed decisions.
-    - Tests proving `agentera hej` remains read-only for decisions and preserves `next_action` routing.
-    - Minimal guidance or contract updates required by touched behavior.
-    - DOCS-policy version check and local artifact closeout if the implemented change remains a `feat`.
+    - Boundary check that maps the benchmark's PLAN.md label to the persisted plan artifact and names the read trigger being closed.
+    - Stronger `agentera plan --format json` source-contract semantics for normal read-only startup and evaluation.
+    - Planera and shared Agentera guidance alignment for complete CLI plan state and CLI fallbacks before last-resort raw reads.
+    - Focused tests for the plan JSON contract and guidance that should stop defensive plan artifact reads.
+    - Smallest feasible measurement or explicit measurement caveat for the benchmark-driven TODO.
+    - Policy-required local artifact closeout and version gate only if the implemented change requires it.
   excluded:
-    - Editing `.agentera/decisions.yaml` satisfaction state or user confirmation metadata.
-    - Inferring satisfaction from downstream files, commits, feeds_into references, generated artifacts, or compacted history.
-    - Changing compaction protection rules or protected decision review semantics.
-    - Adding a new public decision-review CLI namespace.
-    - Broad hej dashboard redesign or TODO/plan/health next-action priority changes.
+    - Broad startup benchmark redesign or runtime-history CI.
+    - Changing the plan artifact schema or realisera task execution semantics.
+    - Eliminating legitimate raw plan reads for writes, archives, validation, or artifact corruption diagnostics.
+    - Solving DECISIONS.md raw reads, AGENTERA_ARTIFACTS discovery reads, or the separate Planera prose re-read TODO.
     - Publication, remote push, tagging, installed-app refresh, profile refresh, vision edits, objective edits, or package-manager updates.
   deferred:
-    - A dedicated decision-review workflow for user confirmation.
-    - Richer decision dashboard sections beyond one bounded attention item.
-    - Broader DECISIONS.md source-contract completeness improvements already tracked as a separate performance TODO.
+    - DECISIONS.md source-contract completeness improvements.
+    - Artifact path discovery through `agentera describe` or hej composite output.
+    - Broader Planera prose discoverability work that is not specifically about raw plan artifact reads.
 design: >-
-  Implement this as a small decision-satisfaction summary path inside the existing hej
-  command. The summary should derive from the same enriched decision entries used by
-  the decisions JSON source contract, then add one attention string before TODO attention
-  and a structured `decision_attention` payload for JSON consumers. The attention item
-  should report counts by state and at most three decision identifiers/titles; detailed
-  review still belongs to `agentera decisions --format json`.
+  Treat the existing `agentera plan --format json` routine command as the read-only
+  plan state authority for normal startup and evaluation. The returned contract should
+  clearly state which plan fields are complete, that `raw_artifact_reads_required` is
+  false when the plan artifact exists, and that raw plan artifact access is a last-resort
+  fallback rather than normal startup behavior. Capability guidance should point Planera
+  at CLI-provided state and fallbacks first while preserving persisted artifact authority
+  for writes, archives, validation, and corruption checks.
 tasks:
   - number: 1
-    name: Decision attention contract boundary
+    name: Benchmark and artifact boundary
     depends_on: []
     status: complete
     acceptance:
       - >-
-        GIVEN the hej decision-review behavior is specified WHEN non-confirmed classes
-        are listed THEN missing satisfaction, missing or unrecognized state, `open`,
-        `provisionally_satisfied`, unconfirmed `user_confirmed_satisfied`, and explicit
-        `review_needed=true` entries are included while confirmed entries with explicit
-        user confirmation are excluded.
+        GIVEN the TODO cites PLAN.md raw reads WHEN the benchmark or TODO evidence is
+        inspected THEN the plan names whether PLAN.md is a canonical artifact label,
+        `.agentera/plan.yaml`, a root file, or another measured path.
       - >-
-        GIVEN the attention order is specified WHEN hej has app/profile/v1/health/plan/TODO
-        context THEN the decision-review item appears after app/profile/v1/health/plan
-        pressure but before TODO attention, subject to the existing 6-item top-level bound.
+        GIVEN a guidance or contract change is selected WHEN implementation starts THEN
+        the exact instruction path or CLI contract ambiguity being closed is identified
+        before broad prose edits are made.
       - >-
-        GIVEN the structured JSON contract is specified WHEN decision review pressure
-        exists THEN JSON output includes a stable bounded payload with count, states,
-        entries, max_entries, bounded=true, and no raw unbounded decision text.
-      - >-
-        GIVEN satisfaction authority is reviewed WHEN implementation starts THEN the
-        plan explicitly forbids changing satisfaction state, inferring satisfaction,
-        or making decision review the `next_action` ahead of current plan/health/TODO routing.
+        GIVEN raw plan access is reviewed WHEN the boundary is recorded THEN writes,
+        archives, validation, corruption checks, and unavailable or incomplete CLI output
+        remain valid raw-artifact cases.
     evidence:
       - >-
-        Added the decision attention contract to `references/cli/agent-ready-state-contract.yaml`,
-        including the new `decision_attention` hej structured field and semantics that
-        derive from `_decision_context_entry` and `_decision_satisfaction_context`, never
-        infer satisfaction, never mutate `.agentera/decisions.yaml`, keep top-level
-        attention bounded, and preserve `next_action` priority.
+        `references/analysis/startup-measurement-contract.yaml` lists `PLAN.md` as a
+        canonical privacy-safe artifact label, while `.agentera/docs.yaml` maps `PLAN.md`
+        to `.agentera/plan.yaml`; the benchmark reports canonical labels, not raw local
+        paths.
       - >-
-        Contract boundary is implemented in `scripts/agentera` with one bounded
-        `decision_satisfaction_review` payload containing count, states, entries,
-        max_entries, bounded=true, and one attention string inserted before TODO
-        attention while leaving next-action selection unchanged.
+        The ambiguity being closed is the combination of Planera prose that still
+        encouraged raw orientation reads and a plan source contract that did not
+        explicitly name the read-only startup boundary, even though `agentera plan
+        --format json` already returned summary, task dependencies, acceptance criteria,
+        evidence, overall acceptance, surprises, and previous-plan archive metadata.
+      - >-
+        The implemented boundary preserves raw mapped plan artifact access for writes,
+        archives, validation, corruption diagnostics, and unavailable or incomplete CLI
+        output after CLI fallbacks.
   - number: 2
-    name: Hej decision attention behavior
+    name: Plan source-contract clarity
     depends_on:
       - 1
     status: complete
     acceptance:
       - >-
-        GIVEN decisions contain non-confirmed satisfaction states WHEN `agentera hej`
-        runs in text mode THEN attention includes one bounded decision-review item with
-        counts and up to three decision references.
+        GIVEN `agentera plan --format json` returns an existing plan WHEN its source
+        contract is read THEN it reports `complete_for_plan_artifact=true`,
+        `raw_artifact_reads_required=false`, and complete read-only coverage for summary,
+        tasks, dependencies, acceptance criteria, evidence, overall acceptance, surprises,
+        and prior-plan archive references.
       - >-
-        GIVEN decisions contain non-confirmed satisfaction states WHEN `agentera hej
-        --format json` runs THEN JSON output includes the same attention item and a
-        structured decision-review payload with bounded entries.
+        GIVEN the source contract is complete WHEN an agent needs normal Planera startup
+        or evaluation context THEN the contract says raw plan artifact reads are not
+        required and should be skipped rather than treated as a defensive default.
       - >-
-        GIVEN decisions are all explicitly user-confirmed satisfied WHEN hej runs THEN
-        no decision-review attention item is emitted.
+        GIVEN the source contract is incomplete or unavailable WHEN an agent needs plan
+        state THEN the fallback path is explicit and tries supported CLI state before
+        last-resort raw artifact reads.
       - >-
-        GIVEN TODO or health remains the highest-priority executable work WHEN decision
-        review pressure exists THEN `next_action` remains the existing TODO/health/plan
-        action and decision review stays attention-only.
-      - >-
-        GIVEN `agentera hej` reads decision state WHEN the command exits THEN
-        `.agentera/decisions.yaml` content is unchanged.
+        GIVEN maintainers review command vocabulary WHEN the contract changes THEN no
+        slash-route alias or capability-name command is introduced.
     evidence:
       - >-
-        Implemented `_decision_review_attention` in `scripts/agentera`; it enriches
-        decision entries through existing decision context helpers, includes missing
-        legacy state, open, provisional, unconfirmed user-confirmed, unrecognized, and
-        explicit review-needed satisfaction pressure, and excludes explicitly
-        user-confirmed satisfied decisions unless they are explicitly marked review-needed.
+        `_plan_source_contract` in `scripts/agentera` now includes `canonical_artifact_label`,
+        `persisted_artifact_path`, `complete_for_normal_startup_evaluation`,
+        `complete_state`, `raw_artifact_access_boundary`, and `fallback_policy` while
+        retaining `complete_for_plan_artifact=true` and `raw_artifact_reads_required=false`
+        for existing plan artifacts.
       - >-
-        `agentera hej --format json` now includes `decision_attention` and the matching
-        attention item; the current repo output shows bounded provisional decision
-        pressure while preserving `next_action` as the active plan task.
+        `uv run scripts/agentera plan --format json --fields source_contract,summary,entries`
+        returned complete read-only coverage for summary fields, task entries, acceptance,
+        evidence, overall acceptance, surprises, and previous-plan archive metadata, with
+        no new slash-route alias or capability-name CLI command.
+      - >-
+        Independent evaluation found that legacy `entries`-shaped plan artifacts were
+        overclaiming completeness; `_plan_source_contract` is now shape-aware and reports
+        `complete_for_plan_artifact=false` plus missing current task shape for legacy
+        entries.
   - number: 3
-    name: Regression coverage and guidance alignment
+    name: Planera guidance alignment
     depends_on:
       - 2
     status: complete
     acceptance:
       - >-
-        GIVEN focused tests run WHEN fixture decisions include open, provisional,
-        missing legacy, unconfirmed confirmed, and confirmed states THEN only the
-        non-confirmed entries contribute to decision-review attention.
+        GIVEN Planera startup receives complete CLI plan state WHEN the orient step is
+        followed THEN it relies on `agentera plan --format json` summary and entries for
+        current-plan context instead of rereading the persisted plan artifact.
       - >-
-        GIVEN more than three non-confirmed decisions exist WHEN hej renders attention
-        THEN structured entries are bounded and the top-level attention list remains
-        at or below six items.
+        GIVEN Planera needs other project state WHEN the guidance is followed THEN this
+        plan does not redesign unrelated VISION, DECISIONS, TODO, HEALTH, PROGRESS, or
+        profile access beyond preserving CLI-first fallback ordering where already defined.
       - >-
-        GIVEN existing decisions JSON behavior is still required WHEN tests run THEN
-        `agentera decisions --format json` source-contract semantics remain compatible.
+        GIVEN Planera must write or archive a plan WHEN artifact mutation begins THEN
+        guidance still allows mapped raw artifact access for the write/archive operation.
       - >-
-        GIVEN capability or CLI guidance is touched WHEN validation runs THEN tests and
-        validators prove no unsupported capability-name commands or satisfaction-state
-        mutation guidance were introduced.
+        GIVEN capability guidance is updated WHEN tests inspect it THEN the guidance does
+        not require installed app refresh, unsupported capability-name CLI commands, or
+        broad artifact discovery before CLI state.
     evidence:
       - >-
-        Added focused `tests/test_query_cli.py` coverage for missing legacy, open,
-        provisional, unconfirmed user-confirmed, explicit review-needed, and explicitly
-        confirmed decisions; tests prove bounded entries, top-level attention ordering
-        before TODO, `next_action` preservation, and `.agentera/decisions.yaml` read-only
-        behavior.
+        `skills/agentera/capabilities/planera/prose.md` now tells Planera to use
+        `agentera plan --format json` for read-only current-plan startup/evaluation and
+        to skip raw `.agentera/plan.yaml` reads when `source_contract.complete_for_plan_artifact`
+        is true, while still allowing mapped raw access for writing, archiving, validation,
+        corruption diagnostics, or incomplete CLI state.
       - >-
-        Regression verification passed with `uv run pytest tests/test_query_cli.py -q`
-        (185 tests) and `uv run pytest tests/test_hej_capability.py
-        tests/test_decision_satisfaction_guidance.py -q` (15 tests), preserving existing
-        decisions JSON and hej capability guidance behavior.
+        `skills/agentera/SKILL.md` now names overall acceptance, surprises, prior-plan
+        archive references, and the same valid raw-read exceptions in the master
+        CLI-first state-access guidance without requiring app refreshes, unsupported
+        capability commands, or broad artifact discovery before CLI state.
   - number: 4
-    name: Policy-gated local closeout
+    name: Regression and measurement evidence
     depends_on:
-      - 1
       - 2
       - 3
     status: complete
     acceptance:
       - >-
-        GIVEN the implemented change is classified as `feat` WHEN `.agentera/docs.yaml`
-        semver policy and `version_files` are reviewed THEN local version-bearing
-        surfaces are updated only as required by that policy.
+        GIVEN focused CLI tests run WHEN a plan artifact includes summary, tasks,
+        dependencies, acceptance, evidence, overall acceptance, surprises, and prior-plan
+        archive metadata THEN JSON output and source-contract fields prove those values
+        are available without a raw plan read.
       - >-
-        GIVEN verification passes WHEN local state is synced THEN TODO, CHANGELOG,
-        DOCS, PROGRESS, and PLAN record exact evidence without unrelated documentation
-        churn or decision satisfaction edits.
+        GIVEN guidance tests run WHEN Planera and shared Agentera instructions are parsed
+        THEN they assert complete CLI plan state suppresses defensive plan artifact reads
+        during normal startup/evaluation.
       - >-
-        GIVEN closeout completes WHEN final checks run THEN relevant hej/decision tests,
-        package metadata tests if version files changed, touched artifact validators,
-        compaction check or fix, and `git diff --check` pass.
+        GIVEN the TODO is benchmark-driven WHEN verification runs THEN the smallest
+        available benchmark or usage-stat command that reports raw plan reads is run, or
+        the exact attempted command, failure reason, and focused-test fallback evidence
+        are recorded.
+      - >-
+        GIVEN benchmark evidence still contains degraded runtime coverage WHEN results
+        are summarized THEN degraded runtimes are separated from product behavior.
     evidence:
       - >-
-        Classified the implemented behavior as a `feat`; per `.agentera/docs.yaml`
-        semver policy and `version_files`, aligned `pyproject.toml`, `uv.lock`,
-        `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`,
-        `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`,
-        `skills/agentera/SKILL.md`, `skills/hej/SKILL.md`, and `registry.json` from
-        2.6.0 to 2.7.0.
+        Focused regression tests passed with `uv run pytest tests/test_query_cli.py::TestArtifactSpecificSummaries::test_plan_json_declares_complete_plan_artifact_contract
+        tests/test_query_cli.py::TestArtifactSpecificSummaries::test_legacy_plan_entries_do_not_claim_complete_plan_artifact_contract
+        tests/test_planera_capability.py::test_planera_prose_uses_complete_plan_cli_state_before_raw_artifact_reads
+        tests/test_decision45_cli_contract.py::test_plan_source_contract_closes_plan_artifact_fallback
+        tests/test_cross_capability.py::test_master_skill_documents_route_alias_contract_boundary
+        -q`.
       - >-
-        Synced TODO, CHANGELOG, DOCS audit metadata, PROGRESS, and PLAN with exact
-        evidence and no decision satisfaction edits, no new decision command, no
-        publication, no push, no tag, no installed-app/profile refresh, and no
-        vision/objective edit. Final validators, compaction, package metadata tests,
-        and `git diff --check` are part of closeout verification.
+        `mage bench:startupState` completed successfully and wrote the retained report to
+        `$AGENTERA_HOME/benchmarks/startup-state/latest-report.json`; the latest window
+        still reports direct PLAN.md pressure (`raw_artifact_access_after_cli_counts.PLAN.md=11`,
+        `redundant_raw_artifact_access_counts.PLAN.md=10`) and recommendation
+        `plan_cli_startup_envelope`, so the measurement is a retrospective pressure
+        baseline rather than proof of future-session adoption.
+      - >-
+        Benchmark runtime coverage was recorded separately: codex and opencode were `ok`,
+        while claude-code and github-copilot were degraded by `schema_divergent`.
+  - number: 5
+    name: Policy-gated closeout
+    depends_on:
+      - 1
+      - 2
+      - 3
+      - 4
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the implemented change is classified under `.agentera/docs.yaml` semver
+        policy WHEN closeout starts THEN version-bearing surfaces are updated only if
+        the policy requires it and the chosen classification is recorded.
+      - >-
+        GIVEN local state is synchronized WHEN artifacts are updated THEN only
+        policy-required TODO, CHANGELOG, DOCS, PROGRESS, and PLAN evidence is changed,
+        with no unrelated artifact churn.
+      - >-
+        GIVEN final verification runs WHEN the plan is ready for handoff THEN focused
+        tests, touched artifact validators, compaction check or fix, and `git diff --check`
+        pass.
+    evidence:
+      - >-
+        Classified the source-contract and guidance expansion as `feat`; per
+        `.agentera/docs.yaml` semver policy, aligned version-bearing surfaces from 2.7.0
+        to 2.8.0 across `pyproject.toml`, `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`,
+        `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`,
+        `skills/agentera/SKILL.md`, `skills/hej/SKILL.md`, and `registry.json`.
+      - >-
+        Synced TODO, CHANGELOG, DOCS, PROGRESS, and PLAN evidence for the Plan CLI source
+        contract raw-read reduction without changing persisted plan artifact shape,
+        decision satisfaction, vision/objective state, installed app/profile state,
+        publication, push, tag, package-manager state, or command vocabulary.
 overall_acceptance:
   - >-
-    GIVEN non-confirmed decisions exist WHEN a user runs `agentera hej` THEN the dashboard
-    surfaces bounded decision review pressure instead of hiding it behind TODO state.
+    GIVEN a complete plan artifact exists WHEN Planera startup or evaluation state is
+    loaded through supported CLI output THEN the agent has enough structured plan state
+    to skip defensive `.agentera/plan.yaml` reads.
   - >-
-    GIVEN decision satisfaction authority belongs to the decision entry and user
-    confirmation WHEN hej summarizes review pressure THEN it does not mutate, infer, or
-    user-confirm satisfaction.
+    GIVEN the persisted plan artifact remains the source for writes and archives WHEN
+    mutation or validation is required THEN the guidance does not prohibit mapped raw
+    artifact access for that operation.
   - >-
-    GIVEN executable routing remains important WHEN decision review pressure exists THEN
-    `next_action` priority for plan, health, objective, and TODO work is preserved.
+    GIVEN the benchmark TODO is closed WHEN evidence is reviewed THEN raw PLAN.md read
+    pressure is measured directly or the missing measurement path is explicitly recorded
+    with focused contract tests as fallback.
   - >-
-    GIVEN JSON consumers rely on stable startup state WHEN decision attention appears
-    THEN the structured payload is bounded, explicit, and compatible with existing hej output.
+    GIVEN command vocabulary is reviewed WHEN the plan completes THEN Agentera keeps
+    routine state commands and slash-route aliases separate.
 surprises:
   - >-
-    Pre-write lint passed with concrete anchors in `scripts/agentera` and
-    `.agentera/decisions.yaml`.
-  - >-
-    Adversarial review found eight issues and all were addressed: avoid unbounded release
-    scope, define exact attention ordering, use decision satisfaction helpers rather
-    than legacy status/follow_up, specify JSON payload shape, bound top-level and nested
-    details separately, require read-only decisions behavior, include legacy missing
-    satisfaction in review pressure, and test `next_action` preservation.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-15-d48-usage-namespace-plan.yaml
+    Adversarial review found eight issues and all were addressed: map the benchmark
+    PLAN.md label to the actual artifact path; avoid overstating raw reads as globally
+    forbidden; name exact JSON contract expectations; trace the instruction path causing
+    reads before editing; narrow closeout to policy-required artifacts; require the
+    smallest feasible measurement or explicit caveat; avoid solving unrelated orientation
+    raw reads; and preserve persisted artifact authority for writes, validation, archives,
+    and corruption checks.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-16-decision-review-attention-plan.yaml

@@ -29,6 +29,16 @@ One file and one archive directory in `.agentera/`.
 
 **Presence signal**: `.agentera/plan.yaml` means active planned work. Absence means no plan, so realisera reasons from VISION.md.
 
+For read-only current-plan startup or evaluation context, use `agentera plan
+--format json` first. When its `source_contract.complete_for_plan_artifact` is
+true, its `summary`, `entries`, and `source_contract` are complete for plan
+metadata, task dependencies, acceptance criteria, task evidence, overall
+acceptance, surprises, and previous-plan archive references; do not reread the
+persisted plan artifact defensively. Raw mapped plan artifact access is still
+required for writing a new plan, archiving a completed plan, artifact validation,
+corruption diagnostics, or when CLI output is unavailable or incomplete after
+CLI fallbacks.
+
 Use `agentera describe --format json` and its `artifact_schemas` entry for `plan` to locate the active installed schema; do not search Agentera directories manually. Existing plan artifacts provide repository-local examples of the shape.
 
 ### Artifact path resolution
@@ -66,7 +76,15 @@ Step markers: display `── step N/6: verb` before each step (Step 0 excluded)
 
 ## Step 1: Orient
 
-Read VISION.md, DECISIONS.md, and TODO.md in parallel. These reads are independent; issue all in a single response.
+Use CLI-provided startup state and listed CLI fallbacks before raw artifact reads.
+For current PLAN.md context, prefer `agentera plan --format json`; if its source
+contract is complete, skip raw `.agentera/plan.yaml` reads during this read-only
+orientation step.
+
+Orient on VISION.md, DECISIONS.md, TODO.md, HEALTH.md, PROGRESS.md, and profile
+state through the supported CLI state seam where available. If a required state
+family is missing or incomplete, run the CLI-provided fallback before any
+last-resort raw artifact read.
 
 1. **VISION.md**: the north star (if exists)
 2. **DECISIONS.md**: read `firm` (DL1) entries only (hard constraints for planning)
