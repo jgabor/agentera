@@ -100,7 +100,7 @@ tasks:
         repair sequence with preview/apply/retry commands.
       - >-
         Live JSON probe `uv run /home/jgabor/.local/share/agentera/app/scripts/agentera doctor --json`
-        reports `status=fresh`, `signals=[]`, `expectedVersion=2.3.12`, and `markerVersion=2.3.12`,
+        reports `status=fresh`, `signals=[]`, `expectedVersion=2.4.0`, and `markerVersion=2.4.0`,
         so the current installed app is healthy while text rendering still presents repair steps.
       - >-
         Command formatting seam is `scripts/agentera_upgrade.py`: `build_doctor_status` builds
