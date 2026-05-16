@@ -1,260 +1,172 @@
 header:
   level: full
   created: 2026-05-16
-  status: complete
+  status: active
   reviewed: 2026-05-16
   critic_issues: 5 found, 5 addressed, 0 dismissed
   revised: >-
-    Narrowed the plan to a registry-backed artifact-location projection, preserved
-    routine state-command ownership, avoided installed-app refresh and capability-name
-    commands, required migration tests for any JSON shape change, and separated path
-    discovery from raw artifact content recovery.
-  title: AGENTERA_ARTIFACTS Raw-Read Reduction Plan
+    Kept the work evidence-first instead of assuming threshold increases, separated self-audit
+    linting from artifact compaction, preserved transcript privacy boundaries, required a no-change
+    path when false positives are not proven, and scoped any implementation to the smallest
+    threshold or diagnostic adjustment backed by transcript evidence.
+  title: Transcript Lint Threshold Analysis Plan
 what: >-
-  Reduce avoidable `AGENTERA_ARTIFACTS` raw reads after CLI state by exposing a
-  compact artifact-location contract through existing Agentera CLI discovery surfaces,
-  so agents can find mapped artifact paths without raw-reading `.agentera/docs.yaml`
-  or probing `.agentera/` directories defensively.
+  Analyze retained session transcript evidence to determine whether Agentera linting or compaction
+  thresholds cause agents to compress, rewrite, or omit relevant information unnecessarily, then
+  adjust thresholds or diagnostics only when the evidence shows repeatable false positives.
 why: >-
-  Retained startup benchmarks show recurring `AGENTERA_ARTIFACTS` raw-after-CLI
-  pressure even after routine artifact source-contract work. The immediate gap is
-  practical path discovery: `agentera query --list-artifacts --format json` currently
-  returns only artifact IDs, while `agentera describe --format json` exposes schema
-  paths and default artifact paths but not a concise resolved-location/read-boundary
-  contract. Agents still lack a direct structured answer to "where is this artifact,
-  who owns normal reads, and when is raw file access valid?"
+  The TODO reports a risk that linting thresholds may be pushing agents to over-compress useful
+  artifact content. Current self-audit budgets are hardcoded in `scripts/self_audit.py`, compaction
+  retention uses uniform artifact budgets, and transcript analysis tooling already enforces strict
+  redaction boundaries. The next step is not to raise limits blindly; it is to prove which threshold,
+  artifact, or warning category causes information loss and whether a targeted change is justified.
 constraints: >-
-  Do not broaden this into a full artifact registry redesign, do not add
-  capability-name CLI commands, do not change routine state-command ownership, do
-  not mutate `.agentera/vision.yaml`, objective state, decision satisfaction state,
-  installed app/profile state, package-manager state, publication metadata, tags,
-  or remotes. Preserve raw artifact access for explicit writes, archives,
-  validation, corruption diagnostics, CLI defects, unavailable/incomplete CLI state
-  after fallbacks, and benchmark analysis. Preserve text output compatibility unless
-  a test-backed CLI contract explicitly changes a structured JSON surface.
+  Do not retain raw transcript text, raw session IDs, raw store paths, credentials, prompts, or local
+  private paths in artifacts. Do not change `.agentera/vision.yaml`, objective state, decision
+  satisfaction state, installed app/profile state, package-manager state, publication metadata, tags,
+  or remotes. Do not weaken linting, compaction, or privacy gates without measured false-positive
+  evidence. Preserve `agentera lint` advisory/strict semantics unless a test-backed contract change
+  is explicitly justified.
 scope:
   included:
-    - Benchmark and CLI-surface evidence for the current `AGENTERA_ARTIFACTS` raw-read gap.
-    - A registry-backed artifact-location projection with mapped path, resolution source, existence, owners, and read/write boundaries.
-    - >-
-      Existing CLI discovery surfaces only: `agentera describe --format json`,
-      `agentera query --list-artifacts --format json`, and, only if needed, a
-      bounded `hej` source-contract pointer.
-    - Regression tests for structured discovery, fallback guidance, path override handling, and unchanged unsupported capability-name commands.
-    - Focused benchmark or proxy evidence that the new surface addresses the historical path-discovery reason without claiming to eliminate legitimate raw writes or diagnostics.
-    - Plan artifact validation and handoff to execution.
+    - Evidence inventory for self-audit budgets, filler/anchor checks, compaction retention budgets, and transcript privacy boundaries.
+    - Privacy-preserving transcript or session-corpus analysis that records aggregate counts, categories, and redacted examples only.
+    - A false-positive rubric distinguishing useful-detail loss from legitimate verbosity, filler, abstraction, or retention-budget enforcement.
+    - Minimal threshold, diagnostic, or documentation changes when evidence supports them.
+    - Regression tests for any changed self-audit, compaction, transcript-redaction, or CLI reporting behavior.
+    - Plan validation and handoff to execution.
   excluded:
-    - Redesigning artifact schemas, capability schema contracts, or the registry model beyond fields required for path discovery.
-    - Adding new top-level state commands or capability-name commands such as `agentera planera`.
-    - Replacing routine state commands with generic `query` for normal artifact content reads.
-    - Reading raw artifacts to reconstruct content already covered by complete CLI source contracts.
+    - Raw transcript excerpt retention in PLAN, PROGRESS, TODO, DECISIONS, docs, tests, or benchmark history.
+    - Broad style rewrites or changing artifact-writing conventions without measured evidence.
+    - Replacing the self-audit protocol, compaction model, or startup benchmark architecture.
     - Installed app refresh, profile refresh, publication, remote push, tags, package-manager changes, vision edits, objective-state edits, or decision satisfaction changes.
   deferred:
-    - Token-budget optimization beyond the path-discovery projection.
-    - User-local benchmark corpus retention changes or runtime-adapter schema repair unrelated to this artifact-location seam.
-    - Closeout metadata/version bumps unless implementation classification and docs semver policy require them.
+    - Cross-runtime transcript collector repair unless degraded coverage blocks the evidence pass.
+    - UI/report polish beyond what is needed to review threshold evidence safely.
+    - Version bumps or release metadata unless an implementation change is classified as `feat` or `fix` under docs policy.
 design: >-
-  Reuse the existing `artifact_registry` authority instead of duplicating path
-  rules. Add a small projection that combines registry identity, docs.yaml mapping
-  overrides, resolved project paths, schema metadata, existence, routine read
-  command ownership, and raw-access boundaries. Surface it where agents already go
-  for discovery, with text output remaining human-readable and structured output
-  carrying the machine contract. Keep `agentera describe` responsible for runtime
-  and schema discovery; keep routine commands responsible for artifact content.
+  Treat the TODO as an evidence pipeline first. Start from existing CLI/corpus/transcript contracts,
+  `scripts/self_audit.py`, compaction checks, and startup-analysis privacy rules. Build or reuse a
+  redacted analysis surface that can identify lint/compaction warnings followed by agent rewrites or
+  compressed artifact entries without storing raw transcript text. Only after classifying repeated
+  false positives should implementation adjust budgets, patterns, diagnostics, or docs.
 tasks:
   - number: 1
-    name: Pin benchmark and discovery gap
+    name: Inventory threshold and transcript surfaces
     depends_on: []
-    status: complete
+    status: pending
     acceptance:
       - >-
-        GIVEN retained startup benchmark history WHEN `AGENTERA_ARTIFACTS` pressure is cited
-        THEN the plan or implementation notes name the exact rows, counts, token estimates,
-        and current historical limitation.
+        GIVEN the TODO names linting thresholds WHEN evidence gathering starts THEN the implementation
+        identifies each relevant threshold source, including self-audit per-entry budgets, abstraction
+        anchors, filler patterns, compaction retention limits, and transcript privacy constraints.
       - >-
-        GIVEN current discovery output is inspected WHEN scope is finalized THEN
-        `agentera query --list-artifacts --format json` names-only output and
-        `agentera describe --format json` missing resolved-location/read-boundary fields are
-        recorded as the actionable gap.
+        GIVEN session evidence is needed WHEN source surfaces are selected THEN raw transcript storage,
+        raw session IDs, raw store paths, prompts, credentials, and local paths are explicitly excluded.
       - >-
-        GIVEN raw access categories are classified WHEN implementation begins THEN legitimate
-        writes, archives, validation, diagnostics, CLI defects, unavailable CLI state, and
-        benchmark analysis are explicitly separated from avoidable path-discovery reads.
-    evidence:
-      - >-
-        Planning evidence named historical `AGENTERA_ARTIFACTS` rows: 2.3.3=1 raw read,
-        2.3.13=4 reads/63 estimated tokens, 2.7.0=4 reads/114 estimated tokens, and
-        2.8.0=1 read/23 estimated tokens; current history remains retained benchmark evidence,
-        not a freshly reproduced runtime window.
-      - >-
-        Confirmed the pre-change gap: structured `query --list-artifacts` returned names only,
-        while `describe` exposed schema/default paths without a resolved artifact-location and
-        read-boundary contract. Allowed raw categories remain writes, archives, validation,
-        diagnostics, CLI defects, unavailable/incomplete CLI state, and benchmark analysis.
+        GIVEN decisions are compacted WHEN planning context is used THEN Decision 34/35 self-audit,
+        Decision 51/52 benchmark privacy, and Decision 23/27 session-state context are carried as
+        caveats without raw decision reads.
   - number: 2
-    name: Define artifact-location contract
+    name: Build redacted threshold-evidence scan
     depends_on:
       - 1
-    status: complete
+    status: pending
     acceptance:
       - >-
-        GIVEN `artifact_registry.py` already owns artifact identity and path resolution WHEN a
-        projection is added THEN it reuses `load_artifact_registry` and `resolve_artifact_path`
-        rather than copying default paths, docs override rules, or project-boundary checks.
+        GIVEN retained session or corpus data is available WHEN the scan runs THEN it reports aggregate
+        counts by warning category, artifact, capability, and threshold source without emitting raw
+        transcript text.
       - >-
-        GIVEN an artifact appears in the registry WHEN structured discovery is emitted THEN each
-        record includes artifact ID, display name, default path, mapped path or unresolved template,
-        resolution source, artifact type, format, producer, consumers, existence, normal read
-        command, schema file, and raw-access boundary.
+        GIVEN a transcript contains a lint warning followed by an agent rewrite WHEN the scan classifies
+        it THEN the result records a redacted event label, warning type, artifact family, and whether
+        useful detail appears to have been removed.
       - >-
-        GIVEN an objective/profile/template path cannot be fully resolved from project state WHEN
-        discovery is emitted THEN the record is truthful and caveated rather than inventing a
-        concrete path.
-    evidence:
-      - >-
-        Added a registry-backed artifact-location projection in `scripts/agentera` using
-        `ArtifactRecord`, `load_docs_path_overrides`, and `resolve_artifact_path`, with path source,
-        existence, routine command, schema file, and raw boundary fields per artifact.
-      - >-
-        Objective/template records resolve only when `_active_objective_name()` can supply a concrete
-        name; otherwise the output reports an unresolved template caveat instead of inventing a path.
+        GIVEN runtime stores are unavailable, sparse, or schema-divergent WHEN the scan runs THEN the
+        output reports coverage caveats rather than fabricating evidence.
   - number: 3
-    name: Expose structured CLI discovery
+    name: Classify false positives versus legitimate pressure
     depends_on:
       - 2
-    status: complete
+    status: pending
     acceptance:
       - >-
-        GIVEN agents run `agentera describe --format json` WHEN they inspect artifact schemas THEN
-        they can obtain the new artifact-location contract without raw-reading `.agentera/docs.yaml`
-        or searching `.agentera/` directories.
+        GIVEN scan results include warning/rewrite candidates WHEN reviewed THEN each candidate category
+        is classified as likely false positive, legitimate lint pressure, inconclusive, or unsupported by
+        available coverage.
       - >-
-        GIVEN agents run `agentera query --list-artifacts --format json` WHEN they need advanced
-        artifact discovery THEN structured output includes the location contract or an explicitly
-        documented compatibility wrapper; plain text output continues to list artifact names.
+        GIVEN useful information loss is claimed WHEN evidence is recorded THEN the claim names only
+        redacted anchors, artifact labels, warning categories, and aggregate counts.
       - >-
-        GIVEN routine state content is needed WHEN the discovery contract points to an artifact
-        THEN it names the owning state command and preserves `query <artifact>` as advanced/custom
-        inspection, not a replacement for normal state reads.
-    evidence:
-      - >-
-        `agentera describe --format json` now emits top-level `artifact_locations` and per-schema
-        `location` records. `agentera query --list-artifacts --format json` now emits a v2 wrapper
-        with `names`, `artifacts`, `source`, `source_contract`, and caveats; plain text output still
-        lists names only.
-      - >-
-        Routine artifacts name commands such as `agentera plan --format json`; custom artifacts keep
-        `agentera query <artifact> --format json` as advanced inspection instead of routine content
-        ownership.
+        GIVEN evidence does not prove false positives WHEN the task completes THEN the plan keeps a
+        no-threshold-change path open and records why the TODO should close or remain deferred.
   - number: 4
-    name: Align startup guidance without bloat
+    name: Apply minimal threshold or diagnostic change if justified
     depends_on:
       - 3
-    status: complete
+    status: pending
     acceptance:
       - >-
-        GIVEN `hej --format json --capability-context <capability>` returns fallback guidance WHEN
-        artifact discovery is needed THEN it points to the structured discovery surface before any
-        raw artifact read.
+        GIVEN a repeated false-positive class is proven WHEN code changes are made THEN the change is
+        limited to the smallest affected budget, anchor pattern, filler diagnostic, compaction limit, or
+        guidance wording.
       - >-
-        GIVEN the `hej` composite output remains the startup envelope WHEN discovery is added THEN
-        the payload stays bounded and does not duplicate every artifact field unless benchmark
-        evidence justifies it.
+        GIVEN no repeated false-positive class is proven WHEN implementation reaches this task THEN no
+        threshold is raised and the output records a no-change evidence report instead.
       - >-
-        GIVEN dispatcher or capability prose mentions `.agentera/docs.yaml` path checks WHEN guidance
-        is updated THEN it explains the CLI-first artifact-location contract and keeps raw docs reads
-        as write targets or last-resort diagnostics.
-    evidence:
-      - >-
-        Updated `skills/agentera/SKILL.md`, Planera, Orkestrera, and Dokumentera prose to use the
-        CLI artifact-location contract before raw docs/path reads, with raw docs access reserved for
-        writes, validation, corruption diagnostics, or unavailable/incomplete CLI discovery.
-      - >-
-        Updated closeout/evaluation fallback command surfaces to use
-        `agentera query --list-artifacts --format json` without duplicating every artifact record in
-        the `hej` startup envelope.
+        GIVEN threshold behavior changes WHEN CLI output is affected THEN `agentera lint` text/JSON and
+        compaction check/fix semantics remain bounded, non-interactive, and test-backed.
   - number: 5
-    name: Add regressions and contract tests
+    name: Add regressions and privacy tests
     depends_on:
       - 4
-    status: complete
+    status: pending
     acceptance:
       - >-
-        GIVEN docs.yaml mapping overrides exist WHEN tests run THEN structured discovery reports the
-        mapped path, resolution source, and existence without repeating canonical registry facts in
-        `.agentera/docs.yaml`.
+        GIVEN self-audit behavior changes WHEN tests run THEN pass/fail cases cover the adjusted budget,
+        anchor, or filler boundary and preserve existing strict/advisory semantics.
       - >-
-        GIVEN describe/query JSON surfaces are emitted WHEN tests inspect them THEN tests assert
-        artifact-location fields, routine command ownership, raw-access boundaries, and missing-schema
-        gap behavior.
+        GIVEN transcript analysis output is added or changed WHEN tests inspect it THEN raw transcript
+        text, raw paths, raw session IDs, prompts, and credentials are absent from retained outputs.
       - >-
-        GIVEN unsupported capability-name commands remain forbidden WHEN tests run THEN `agentera
-        planera` and route/CLI separation assertions still pass.
-    evidence:
-      - >-
-        Added CLI tests for the list-artifacts v2 JSON wrapper, docs.yaml mapped path resolution,
-        describe `artifact_locations`, schema-entry `location`, missing schema behavior, routine
-        command ownership, raw-access boundaries, and unchanged unsupported `agentera planera` route
-        separation.
-      - >-
-        Adjusted startup benchmark persistence test to assert the runtime version source instead of
-        stale hardcoded `2.3.14`, preserving benchmark contract coverage under current `2.10.0`
-        metadata.
+        GIVEN no threshold change is made WHEN tests run THEN evidence-report tests still prove the
+        no-change path is intentional and privacy-safe.
   - number: 6
-    name: Verify measurement and handoff
+    name: Verify and close out threshold analysis
     depends_on:
       - 5
-    status: complete
+    status: pending
     acceptance:
       - >-
-        GIVEN implementation is complete WHEN verification runs THEN focused CLI tests,
-        artifact-registry contract tests, cross-capability guidance tests, and mapped artifact
-        validators pass.
+        GIVEN implementation or no-change analysis is complete WHEN verification runs THEN focused
+        self-audit, compaction, transcript-analysis, artifact validation, and diff whitespace checks pass.
       - >-
-        GIVEN benchmark or proxy evidence is available WHEN closeout records results THEN it reports
-        whether `AGENTERA_ARTIFACTS` raw-after-CLI pressure is reduced, unavailable, or not currently
-        reproduced, without hiding degraded runtime coverage.
+        GIVEN the TODO is resolved WHEN closeout updates artifacts THEN TODO and PROGRESS explain whether
+        thresholds were increased, left unchanged, or deferred due to insufficient evidence.
       - >-
-        GIVEN the plan is handed to execution WHEN Planera exits THEN `.agentera/plan.yaml` is active,
-        the previous complete plan is archived, `git diff --check` passes, and no excluded state was
-        changed.
-    evidence:
-      - >-
-        Verification passed: 307 focused/relevant tests across query CLI, artifact registry contract,
-        cross-capability guidance, Dokumentera, Planera, Orkestrera, and startup analysis; capability
-        contract self-validation passed; `git diff --check` passed.
-      - >-
-        Proxy evidence: the new CLI surfaces directly expose mapped paths and normal read commands,
-        addressing the historical AGENTERA_ARTIFACTS path-discovery reason. No live benchmark was run;
-        retained history remains the baseline and legitimate raw writes/diagnostics are explicitly
-        excluded from the reduction claim.
+        GIVEN runtime coverage is degraded or incomplete WHEN results are reported THEN coverage caveats
+        are preserved rather than hidden.
 overall_acceptance:
   - >-
-    GIVEN an agent needs artifact path discovery after CLI state WHEN it uses supported Agentera CLI
-    surfaces THEN it can identify mapped paths and normal read commands without raw-reading
-    `.agentera/docs.yaml` or probing `.agentera/` directories.
+    GIVEN linting or compaction threshold changes are proposed WHEN evidence is reviewed THEN each change
+    is backed by redacted transcript/corpus evidence showing repeated useful-information loss.
   - >-
-    GIVEN an artifact location is unresolved, templated, missing, or outside normal routine state
-    coverage WHEN structured discovery reports it THEN the output is explicit and caveated rather
-    than pretending raw reads are unnecessary.
+    GIVEN available evidence does not prove false positives WHEN the work completes THEN no threshold is
+    increased and the no-change conclusion is documented with coverage caveats.
   - >-
-    GIVEN artifact content is needed WHEN a routine state command owns it THEN the guidance still
-    prefers that command over generic query or raw file reads.
+    GIVEN transcript analysis is retained in artifacts WHEN validators and tests run THEN no raw
+    transcript text, raw session IDs, raw store paths, credentials, prompts, or local private paths are
+    emitted.
   - >-
-    GIVEN raw artifact access is needed for writes, archival, validation, diagnostics, CLI defects,
-    unavailable CLI state, or benchmarks THEN the new contract permits it explicitly and does not
-    misclassify those accesses as regressions.
+    GIVEN `agentera lint` or compaction behavior changes WHEN users run existing commands THEN advisory,
+    strict, check, and fix semantics remain non-interactive and bounded.
 surprises:
   - >-
-    Planning evidence found four retained benchmark rows with `AGENTERA_ARTIFACTS` pressure:
-    `2.3.3` reported 1 read without token estimates, `2.3.13` reported 4 reads and 63 estimated
-    raw-after-CLI tokens, `2.7.0` reported 4 reads and 114 estimated tokens, and `2.8.0` reported
-    1 read and 23 estimated tokens. Current `query --list-artifacts --format json` returns only
-    names, and current `describe` exposes schema/default paths but no compact resolved-location
-    contract.
+    The first evidence pass found the relevant thresholds split across two mechanisms: self-audit checks
+    in `scripts/self_audit.py` (`PROGRESS.md=500`, `PLAN.md=100`, `TODO.md=100`, filler patterns, anchor
+    patterns) and compaction retention limits enforced by `agentera compact`, not one single lint knob.
   - >-
-    Adversarial review found five issues and all were addressed: avoid broad registry redesign;
-    preserve text-output compatibility and route/CLI separation; do not stuff full artifact tables
-    into every `hej` response without evidence; handle unresolved objective/profile/template paths
-    truthfully; and keep legitimate raw writes/diagnostics out of the raw-read reduction target.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-16-decision-source-contract-raw-read-reduction.yaml
+    Transcript tooling already has strong privacy constraints in `scripts/startup_analysis_contract.py`
+    and `references/analysis/startup-measurement-contract.yaml`, so this plan must use redacted aggregate
+    evidence rather than quoting raw sessions.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-16-agentera-artifacts-raw-read-reduction.yaml
