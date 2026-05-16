@@ -187,7 +187,7 @@ class RuntimeEventParser:
 # ── Validation ─────────────────────────────────────────────────────
 
 
-_SKIP_META = {"meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION"}
+_SKIP_META = {"meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION", "CONVENTION"}
 _LIST_INDICATORS = {"number", "entry", "summary"}
 _SEQUENCE_KEYS_BY_ARTIFACT = {
     "decisions": {"DECISION": "decisions"},
