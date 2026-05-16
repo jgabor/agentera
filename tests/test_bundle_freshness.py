@@ -83,7 +83,7 @@ def test_doctor_reports_legacy_bundle_root_migration_required_with_exact_command
 
     assert result.returncode == 1, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["status"] == "migration_required"
+    assert payload["status"] == "migration_needed"
     assert payload["appHome"] == str(install_root)
     assert "installRoot" not in payload
     assert payload["managedAppRoot"] == str(install_root / "app")
@@ -93,7 +93,7 @@ def test_doctor_reports_legacy_bundle_root_migration_required_with_exact_command
     assert payload["skillRoot"] == str(install_root / "skills" / "agentera")
     assert payload["runtimeRoot"]
     kinds = {signal["kind"] for signal in payload["signals"]}
-    assert "migration_required" in kinds
+    assert "migration_needed" in kinds
     assert "version_mismatch" in kinds
     assert "missing_command" in kinds
     assert any("hej" in signal.get("missingCommands", []) for signal in payload["signals"])
@@ -129,7 +129,7 @@ def test_doctor_reports_coherent_app_and_runtime_roots_without_migration_warning
 
     assert result.returncode == 0, result.stdout
     payload = json.loads(result.stdout)
-    assert payload["status"] == "fresh"
+    assert payload["status"] == "up_to_date"
     assert payload["appHome"] == str(app_home)
     assert payload["managedAppRoot"] == str(managed_app)
     assert payload["activeBundleRoot"] == str(managed_app)
@@ -137,7 +137,7 @@ def test_doctor_reports_coherent_app_and_runtime_roots_without_migration_warning
     assert payload["skillRoot"] == str(managed_app / "skills" / "agentera")
     assert payload["runtimeRoot"]
     kinds = {signal["kind"] for signal in payload["signals"]}
-    assert "migration_required" not in kinds
+    assert "migration_needed" not in kinds
     assert "split_root" not in kinds
 
 
@@ -156,7 +156,7 @@ def test_doctor_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path) -> Non
 
     assert result.returncode == 1
     payload = json.loads(result.stdout)
-    assert payload["status"] == "blocked"
+    assert payload["status"] == "manual_review_needed"
     assert payload["appHomeSource"] == "AGENTERA_HOME"
     assert "installRootSource" not in payload
     assert payload["dryRunCommand"] is None
@@ -176,7 +176,7 @@ def test_doctor_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path) -> Non
 
     assert result.returncode == 1
     payload = json.loads(result.stdout)
-    assert payload["status"] == "blocked"
+    assert payload["status"] == "manual_review_needed"
     assert payload["signals"][0]["kind"] == "invalid_install_root"
     assert "directory that does not exist" in payload["signals"][0]["message"]
     assert not missing.exists()
@@ -193,7 +193,7 @@ def test_doctor_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path) -> Non
 
     assert result.returncode == 1
     payload = json.loads(result.stdout)
-    assert payload["status"] == "blocked"
+    assert payload["status"] == "manual_review_needed"
     assert payload["signals"][0]["kind"] == "invalid_install_root"
     assert "file instead of a directory" in payload["signals"][0]["message"]
     assert "use --force only if you checked" in payload["signals"][0]["message"]
@@ -212,7 +212,7 @@ def test_doctor_blocks_unmanaged_or_invalid_agentera_home(tmp_path: Path) -> Non
 
     assert result.returncode == 1
     payload = json.loads(result.stdout)
-    assert payload["status"] == "blocked"
+    assert payload["status"] == "manual_review_needed"
     assert payload["rootStatus"] == "invalid"
     assert payload["signals"][0]["kind"] == "invalid_bundle"
     assert "broken Agentera install" in payload["signals"][0]["message"]
@@ -231,7 +231,7 @@ def test_doctor_targets_default_root_when_agentera_home_is_unset(tmp_path: Path)
     assert result.returncode == 1
     payload = json.loads(result.stdout)
     expected_root = home / ".local" / "share" / "agentera"
-    assert payload["status"] == "stale"
+    assert payload["status"] == "repair_needed"
     assert payload["appHome"] == str(expected_root)
     assert payload["appHomeSource"] == "default app home"
     assert "installRoot" not in payload
@@ -251,7 +251,7 @@ def test_doctor_allows_user_data_only_platform_app_home_without_writes(tmp_path:
 
     assert result.returncode == 1, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["status"] == "stale"
+    assert payload["status"] == "repair_needed"
     assert payload["appHome"] == str(app_home)
     assert payload["signals"][0]["kind"] == "user_data_only_app_home"
     assert payload["dryRunCommand"] is not None
@@ -269,7 +269,7 @@ def test_doctor_recovers_runtime_injected_deprecated_default_without_unsetting_e
 
     assert result.returncode == 1
     payload = json.loads(result.stdout)
-    assert payload["status"] == "stale"
+    assert payload["status"] == "repair_needed"
     assert payload["appHome"] == str(platform_home)
     assert payload["appHomeSource"] == "default app home"
     assert payload["managedAppRoot"] == str(platform_home / "app")
@@ -452,7 +452,7 @@ def test_doctor_marks_stale_managed_app_under_deprecated_default_as_recoverable(
     assert result.returncode == 1
     payload = json.loads(result.stdout)
     kinds = [signal["kind"] for signal in payload["signals"]]
-    assert payload["status"] == "stale"
+    assert payload["status"] == "repair_needed"
     assert payload["appHome"] == str(platform_home)
     assert payload["appHomeSource"] == "default app home"
     assert kinds == ["missing_bundle"]
@@ -473,7 +473,7 @@ def test_doctor_blocks_explicit_or_custom_invalid_paths_without_stale_default_re
     for result in (explicit, custom, explicit_file_result):
         assert result.returncode == 1
         payload = json.loads(result.stdout)
-        assert payload["status"] == "blocked"
+        assert payload["status"] == "manual_review_needed"
         assert payload["signals"][0]["kind"] == "invalid_install_root"
         assert payload["dryRunCommand"] is None
         assert payload["applyCommand"] is None
@@ -576,9 +576,9 @@ def test_stale_bundle_refresh_dry_run_then_apply_preserves_install_root(tmp_path
     status = _run("doctor", "--install-root", str(install_root), "--json")
     assert status.returncode == 0, status.stdout
     status_payload = json.loads(status.stdout)
-    assert status_payload["status"] == "fresh"
+    assert status_payload["status"] == "up_to_date"
     assert status_payload["activeBundleRoot"] == str(install_root / "app")
-    assert "migration_required" not in {signal["kind"] for signal in status_payload["signals"]}
+    assert "migration_needed" not in {signal["kind"] for signal in status_payload["signals"]}
 
     retry = subprocess.run(
         ["uv", "run", str(install_root / "app" / "scripts" / "agentera"), "hej"],
@@ -627,7 +627,7 @@ def test_doctor_reports_pre_argparse_cli_failures_as_status_signals(tmp_path: Pa
 
     assert result.returncode == 1
     payload = json.loads(result.stdout)
-    assert payload["status"] == "migration_required"
+    assert payload["status"] == "migration_needed"
     signal = next(signal for signal in payload["signals"] if signal["kind"] == "cli_probe_failed")
     assert signal["kind"] == "cli_probe_failed"
     assert signal["returnCode"] != 0

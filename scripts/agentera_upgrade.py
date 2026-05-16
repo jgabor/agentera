@@ -33,6 +33,11 @@ DEFAULT_INSTALL_ROOT_ENV = "AGENTERA_DEFAULT_INSTALL_ROOT"
 BUNDLE_MARKER = ".agentera-bundle.json"
 PHASES = ("bundle", "artifacts", "runtime", "cleanup", "packages")
 STATUSES = ("pending", "applied", "noop", "blocked", "failed", "skipped")
+APP_UP_TO_DATE = "up_to_date"
+APP_OUTDATED = "outdated"
+APP_REPAIR_NEEDED = "repair_needed"
+APP_MIGRATION_NEEDED = "migration_needed"
+APP_MANUAL_REVIEW_NEEDED = "manual_review_needed"
 EXPECTED_STATE_COMMANDS = ("hej",)
 USER_STATE_NAMES = ("PROFILE.md", "USAGE.md", "history", "corpus", "corpus.json")
 ROOT_USER_STATE_NAMES = (*USER_STATE_NAMES, "TODO.md", "CHANGELOG.md", "DESIGN.md")
@@ -381,7 +386,7 @@ def _doctor_roots(app_home: Path) -> dict[str, Path]:
 
 def _recoverable_stale_default_signal(app_home: Path, roots: dict[str, Path]) -> dict[str, str]:
     return {
-        "status": "stale",
+        "status": APP_REPAIR_NEEDED,
         "kind": "recoverable_stale_default",
         "message": "Agentera found an old app directory and can repair it without asking you to edit shell settings",
         "deprecatedDefaultAppHome": str(app_home),
@@ -391,7 +396,7 @@ def _recoverable_stale_default_signal(app_home: Path, roots: dict[str, Path]) ->
 
 def _user_data_only_signal(app_home: Path, roots: dict[str, Path]) -> dict[str, str]:
     return {
-        "status": "stale",
+        "status": APP_REPAIR_NEEDED,
         "kind": "user_data_only_app_home",
         "message": "This Agentera directory only has your Agentera data, so Agentera can safely add fresh app files under app/",
         "appHome": str(app_home),
@@ -454,7 +459,7 @@ def build_doctor_status(
     if classification.kind == "missing_default":
         root_status = "missing"
         signals.append({
-            "status": "stale",
+            "status": APP_REPAIR_NEEDED,
             "kind": "missing_bundle",
             "message": "Agentera is not installed in the normal directory yet",
         })
@@ -465,7 +470,7 @@ def build_doctor_status(
         root_status = "missing"
         blocked = True
         signals.append({
-            "status": "blocked",
+            "status": APP_MANUAL_REVIEW_NEEDED,
             "kind": "invalid_install_root",
             "message": (
                 "Agentera was told to use a directory that does not exist. "
@@ -476,7 +481,7 @@ def build_doctor_status(
         root_status = "invalid"
         blocked = True
         signals.append({
-            "status": "blocked",
+            "status": APP_MANUAL_REVIEW_NEEDED,
             "kind": "invalid_install_root",
             "message": f"Agentera was told to use a file instead of a directory; {_blocked_root_recovery_message(root_source)}",
         })
@@ -490,7 +495,7 @@ def build_doctor_status(
         root_status = "unmanaged"
         blocked = True
         signals.append({
-            "status": "blocked",
+            "status": APP_MANUAL_REVIEW_NEEDED,
             "kind": "unmanaged_install_root",
             "message": f"This directory already has files Agentera does not recognize, so Agentera will not change it automatically; {_blocked_root_recovery_message(root_source)}",
         })
@@ -498,7 +503,7 @@ def build_doctor_status(
         root_status = "invalid"
         blocked = True
         signals.append({
-            "status": "blocked",
+            "status": APP_MANUAL_REVIEW_NEEDED,
             "kind": "invalid_bundle",
             "message": f"This directory looks like a broken Agentera install; {_blocked_root_recovery_message(root_source)}",
         })
@@ -506,8 +511,8 @@ def build_doctor_status(
         root_status = "managed"
         if legacy_bundle_root:
             signals.append({
-                "status": "migration_required",
-                "kind": "migration_required",
+                "status": APP_MIGRATION_NEEDED,
+                "kind": APP_MIGRATION_NEEDED,
                 "message": "Agentera app files are in the old place and can be moved into app/",
                 "legacyBundleRoot": str(install_root),
                 "managedAppRoot": str(roots["managed_app_root"]),
@@ -517,7 +522,7 @@ def build_doctor_status(
             if recoverable_stale_default:
                 signals.append(_recoverable_stale_default_signal(install_root, roots))
             signals.append({
-                "status": "stale",
+                "status": APP_REPAIR_NEEDED,
                 "kind": "missing_marker",
                 "message": "Agentera cannot prove these app files are current, so it should refresh them",
             })
@@ -525,7 +530,7 @@ def build_doctor_status(
             if recoverable_stale_default:
                 signals.append(_recoverable_stale_default_signal(install_root, roots))
             signals.append({
-                "status": "update_needed",
+                "status": APP_OUTDATED,
                 "kind": "version_mismatch",
                 "expected": expected,
                 "actual": marker_version,
@@ -548,7 +553,7 @@ def build_doctor_status(
             elif probe["missingCommands"]:
                 kind = "missing_command"
             signals.append({
-                "status": "stale",
+                "status": APP_REPAIR_NEEDED,
                 "kind": kind,
                 "message": probe["message"],
                 "returnCode": probe["returnCode"],
@@ -582,15 +587,15 @@ def build_doctor_status(
         "--yes",
     ]
     status = (
-        "blocked"
+        APP_MANUAL_REVIEW_NEEDED
         if blocked
-        else "migration_required"
-        if any(signal["kind"] == "migration_required" for signal in signals)
-        else "stale"
-        if any(signal["status"] == "stale" for signal in signals)
-        else "update_needed"
-        if any(signal["status"] == "update_needed" for signal in signals)
-        else "fresh"
+        else APP_MIGRATION_NEEDED
+        if any(signal["kind"] == APP_MIGRATION_NEEDED for signal in signals)
+        else APP_REPAIR_NEEDED
+        if any(signal["status"] == APP_REPAIR_NEEDED for signal in signals)
+        else APP_OUTDATED
+        if any(signal["status"] == APP_OUTDATED for signal in signals)
+        else APP_UP_TO_DATE
     )
     return {
         "schemaVersion": "agentera.bundleStatus.v1",
@@ -612,8 +617,8 @@ def build_doctor_status(
         "rootStatus": root_status,
         "markerVersion": marker_version,
         "signals": signals,
-        "dryRunCommand": None if blocked else _command_text(preview_parts),
-        "applyCommand": None if blocked else _command_text(apply_parts),
+        "dryRunCommand": None if blocked or status == APP_UP_TO_DATE else _command_text(preview_parts),
+        "applyCommand": None if blocked or status == APP_UP_TO_DATE else _command_text(apply_parts),
         "retryCommand": _command_text([
             "uv",
             "run",
@@ -1937,10 +1942,11 @@ PLAIN_STATUS = {
     "blocked": "needs a decision",
     "failed": "failed",
     "skipped": "skipped",
-    "fresh": "ready",
-    "stale": "needs repair",
-    "update_needed": "needs update",
-    "migration_required": "needs repair",
+    APP_UP_TO_DATE: "up to date",
+    APP_REPAIR_NEEDED: "needs repair",
+    APP_OUTDATED: "outdated",
+    APP_MIGRATION_NEEDED: "needs migration",
+    APP_MANUAL_REVIEW_NEEDED: "needs manual review",
 }
 
 PHASE_LABELS = {
@@ -1968,7 +1974,11 @@ def _plain_status(value: str) -> str:
 
 
 def _doctor_action_noun(status: dict[str, Any]) -> str:
-    return "update" if status["status"] == "update_needed" else "repair"
+    if status["status"] == APP_OUTDATED:
+        return "update"
+    if status["status"] == APP_MIGRATION_NEEDED:
+        return "migration"
+    return "repair"
 
 
 def _plain_action(item: dict[str, Any]) -> str:
@@ -2072,7 +2082,10 @@ def render_doctor_status(status: dict[str, Any]) -> str:
             lines.append(f"  - {_plain_status(signal['status'])}: {signal['message']}")
             if signal.get("missingCommands"):
                 lines.append(f"    Missing command: {', '.join(signal['missingCommands'])}")
-    if status["dryRunCommand"]:
+    if status["status"] == APP_UP_TO_DATE:
+        lines.append("")
+        lines.append("No action needed: Agentera app files are up to date.")
+    elif status["dryRunCommand"]:
         lines.append("")
         lines.append("Next:")
         lines.append(f"  1. Preview the {action_noun}: {status['dryRunCommand']}")
@@ -2112,4 +2125,4 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         print(json.dumps(public_doctor_status(status), indent=2, sort_keys=True))
     else:
         print(render_doctor_status(status))
-    return 0 if status["status"] == "fresh" else 1
+    return 0 if status["status"] == APP_UP_TO_DATE else 1

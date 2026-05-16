@@ -202,15 +202,15 @@ def test_upgrade_characterizes_doctor_root_shapes(
     )
 
     cases = [
-        (fresh, "explicit --install-root", "migration_required", "managed", ["migration_required"]),
-        (stale_missing_marker, "explicit --install-root", "migration_required", "managed", ["migration_required", "missing_marker"]),
-        (stale_version, "explicit --install-root", "migration_required", "managed", ["migration_required", "version_mismatch"]),
-        (update_home, "explicit --install-root", "update_needed", "managed", ["version_mismatch"]),
-        (tmp_path / "missing-explicit", "explicit --install-root", "blocked", "missing", ["invalid_install_root"]),
-        (tmp_path / "missing-env", "AGENTERA_HOME", "blocked", "missing", ["invalid_install_root"]),
-        (tmp_path / "missing-default", "default app home", "stale", "missing", ["missing_bundle"]),
-        (file_root, "explicit --install-root", "blocked", "invalid", ["invalid_install_root"]),
-        (unmanaged, "explicit --install-root", "blocked", "unmanaged", ["unmanaged_install_root"]),
+        (fresh, "explicit --install-root", "migration_needed", "managed", ["migration_needed"]),
+        (stale_missing_marker, "explicit --install-root", "migration_needed", "managed", ["migration_needed", "missing_marker"]),
+        (stale_version, "explicit --install-root", "migration_needed", "managed", ["migration_needed", "version_mismatch"]),
+        (update_home, "explicit --install-root", "outdated", "managed", ["version_mismatch"]),
+        (tmp_path / "missing-explicit", "explicit --install-root", "manual_review_needed", "missing", ["invalid_install_root"]),
+        (tmp_path / "missing-env", "AGENTERA_HOME", "manual_review_needed", "missing", ["invalid_install_root"]),
+        (tmp_path / "missing-default", "default app home", "repair_needed", "missing", ["missing_bundle"]),
+        (file_root, "explicit --install-root", "manual_review_needed", "invalid", ["invalid_install_root"]),
+        (unmanaged, "explicit --install-root", "manual_review_needed", "unmanaged", ["unmanaged_install_root"]),
     ]
 
     for root, source_name, expected_status, expected_root_status, expected_kinds in cases:
@@ -225,17 +225,137 @@ def test_upgrade_characterizes_doctor_root_shapes(
         assert status["status"] == expected_status
         assert status["rootStatus"] == expected_root_status
         assert [signal["kind"] for signal in status["signals"]][: len(expected_kinds)] == expected_kinds
-        if expected_status == "blocked":
+        if expected_status == "manual_review_needed":
             assert status["dryRunCommand"] is None
             assert status["applyCommand"] is None
-        elif expected_status in {"stale", "update_needed"}:
+        elif expected_status in {"repair_needed", "outdated", "migration_needed"}:
             assert status["dryRunCommand"] is not None
             assert status["applyCommand"] is not None
-        if expected_status == "update_needed":
+        if expected_status == "outdated":
             rendered = upgrade.render_doctor_status(status)
-            assert "status: needs update" in rendered
+            assert "status: outdated" in rendered
             assert "Preview the update" in rendered
             assert "Preview the repair" not in rendered
+
+
+def test_doctor_up_to_date_text_has_no_required_next_block(
+    upgrade: ModuleType,
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source"
+    home = tmp_path / "home"
+    project = tmp_path / "project"
+    app_home = tmp_path / "app-home"
+    project.mkdir()
+    _write_upgrade_root(app_home / "app", marker_version="current")
+
+    status = upgrade.build_doctor_status(
+        app_home,
+        root_source="explicit --install-root",
+        source_root=source,
+        home=home,
+        project=project,
+        expected_version="current",
+        probe_cli=False,
+    )
+
+    assert status["status"] == "up_to_date"
+    assert status["dryRunCommand"] is None
+    assert status["applyCommand"] is None
+    assert status["signals"] == []
+
+    rendered = upgrade.render_doctor_status(status)
+    assert "status: up to date" in rendered
+    assert "No action needed: Agentera app files are up to date." in rendered
+    assert "Next:" not in rendered
+    assert "Preview the" not in rendered
+    assert "repair" not in rendered.lower()
+
+
+def test_doctor_actionable_text_and_json_keep_canonical_guidance(
+    upgrade: ModuleType,
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source"
+    home = tmp_path / "home"
+    project = tmp_path / "project"
+    project.mkdir()
+    update_home = tmp_path / "update-home"
+    repair_home = tmp_path / "repair-home"
+    _write_upgrade_root(update_home / "app", marker_version="old")
+    _write_upgrade_root(repair_home / "app", marker_version="old", commands=("doctor",))
+
+    cases = [
+        (update_home, ("hej",), "outdated", "Preview the update", "Preview the repair"),
+        (repair_home, ("hej",), "repair_needed", "Preview the repair", "Preview the update"),
+    ]
+    legacy_statuses = {"fresh", "stale", "update_needed", "migration_required", "blocked"}
+
+    for app_home, expected_commands, expected_status, expected_label, rejected_label in cases:
+        status = upgrade.build_doctor_status(
+            app_home,
+            root_source="explicit --install-root",
+            source_root=source,
+            home=home,
+            project=project,
+            expected_version="current",
+            expected_commands=expected_commands,
+            probe_cli=True,
+        )
+
+        public = upgrade.public_doctor_status(status)
+        assert public["status"] == expected_status
+        assert public["status"] not in legacy_statuses
+        assert {signal["status"] for signal in public["signals"]}.isdisjoint(legacy_statuses)
+        assert public["dryRunCommand"] is not None
+        assert public["applyCommand"] is not None
+        assert public["retryCommand"] is not None
+        assert " --dry-run" in public["dryRunCommand"]
+
+        rendered = upgrade.render_doctor_status(status)
+        assert f"status: {upgrade._plain_status(expected_status)}" in rendered
+        assert "Next:" in rendered
+        assert expected_label in rendered
+        assert rejected_label not in rendered
+        assert "Then retry Agentera" in rendered
+
+
+def test_doctor_manual_review_text_and_json_block_automatic_repair(
+    upgrade: ModuleType,
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source"
+    home = tmp_path / "home"
+    project = tmp_path / "project"
+    unmanaged = tmp_path / "unmanaged"
+    project.mkdir()
+    unmanaged.mkdir()
+    (unmanaged / "README.txt").write_text("user-owned directory\n", encoding="utf-8")
+
+    status = upgrade.build_doctor_status(
+        unmanaged,
+        root_source="explicit --install-root",
+        source_root=source,
+        home=home,
+        project=project,
+        expected_version="current",
+        probe_cli=False,
+    )
+
+    public = upgrade.public_doctor_status(status)
+    assert public["status"] == "manual_review_needed"
+    assert public["signals"][0]["status"] == "manual_review_needed"
+    assert public["dryRunCommand"] is None
+    assert public["applyCommand"] is None
+    assert "installRoot" not in public
+    assert "installRootSource" not in public
+
+    rendered = upgrade.render_doctor_status(status)
+    assert "status: needs manual review" in rendered
+    assert "Preview the repair" not in rendered
+    assert "apply the repair" not in rendered
+    assert "Next: choose a safer Agentera directory" in rendered
+    assert "use `--force` only after checking" in rendered
 
 
 def test_version_mismatch_plus_missing_required_command_remains_repair(
@@ -259,7 +379,7 @@ def test_version_mismatch_plus_missing_required_command_remains_repair(
         expected_commands=("hej",),
     )
 
-    assert status["status"] == "stale"
+    assert status["status"] == "repair_needed"
     assert [signal["kind"] for signal in status["signals"]] == ["version_mismatch", "missing_command"]
     assert status["dryRunCommand"] is not None
     assert status["applyCommand"] is not None

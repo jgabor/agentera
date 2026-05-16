@@ -1,0 +1,82 @@
+header:
+  level: full
+  created: 2026-05-16
+  status: complete
+  reviewed: 2026-05-16
+  title: Transcript Lint Threshold Analysis Plan
+what: >-
+  Analyze retained transcript and artifact evidence to determine whether linting thresholds compress or
+  rewrite useful information unnecessarily, then adjust only the smallest proven threshold or diagnostic
+  seam.
+why: >-
+  The TODO warned that linting thresholds might push agents to over-compress artifact content. The
+  completed analysis corrected an initial transcript-only evidence model by including retained
+  `.agentera/archive` markers such as `post-audit-flagged`.
+constraints: >-
+  Preserve transcript privacy, protected state boundaries, advisory/strict lint semantics, compaction
+  gates, and per-entry snippet lint behavior.
+tasks:
+  - number: 1
+    name: Inventory threshold and transcript surfaces
+    depends_on: []
+    status: complete
+    evidence:
+      - >-
+        Identified self-audit per-entry budgets, full-file budgets, anchor/filler checks, compaction
+        limits, and transcript privacy constraints.
+  - number: 2
+    name: Build redacted threshold-evidence scan
+    depends_on:
+      - 1
+    status: complete
+    evidence:
+      - >-
+        Added `scan_threshold_evidence` with aggregate-only transcript evidence and coverage caveats.
+  - number: 3
+    name: Classify false positives versus legitimate pressure
+    depends_on:
+      - 2
+    status: complete
+    evidence:
+      - >-
+        Added `classify_threshold_evidence` with likely false-positive, legitimate-pressure,
+        inconclusive, and unsupported-coverage categories.
+  - number: 4
+    name: Apply minimal threshold or diagnostic change if justified
+    depends_on:
+      - 3
+    status: complete
+    evidence:
+      - >-
+        Retained archive evidence showed repeated PLAN.md full-plan verbosity pressure. File-backed lint
+        now uses full-file budgets while `--text` and stdin keep per-entry budgets.
+  - number: 5
+    name: Add regressions and privacy tests
+    depends_on:
+      - 4
+    status: complete
+    evidence:
+      - >-
+        Added tests for transcript scan privacy, retained artifact evidence, classification outcomes, and
+        file-versus-text PLAN.md lint behavior.
+  - number: 6
+    name: Verify and close out threshold analysis
+    depends_on:
+      - 5
+    status: complete
+    evidence:
+      - >-
+        Verification passed with startup-analysis and self-audit tests, artifact validators, PLAN.md
+        full-file lint probe, and `git diff --check` before commit `9916807`.
+overall_acceptance:
+  - >-
+    Repeated false-positive evidence is addressed without blindly widening all thresholds.
+  - >-
+    Raw transcript and raw retained artifact text are not emitted in evidence artifacts.
+  - >-
+    Existing advisory/strict lint and compaction semantics remain bounded and test-backed.
+surprises:
+  - >-
+    The strongest evidence was not a dedicated transcript scan artifact; it was repeated archived
+    `post-audit-flagged` PLAN.md full-plan budget pressure.
+commit: 9916807 fix(cli): use full-file budgets for linted files

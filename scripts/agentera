@@ -868,12 +868,13 @@ STARTUP_COMPLETENESS_MISSING_STATE: list[str] = []
 
 
 def _app_status_attention(bundle: dict[str, Any]) -> str:
-    if bundle["status"] == "update_needed":
+    if bundle["status"] == "outdated":
         return f"normal: app update needed; preview `{bundle['dryRunCommand']}`; app_home={bundle['appHome']}"
     if bundle.get("dryRunCommand"):
-        return f"degraded: app {bundle['status']}; preview `{bundle['dryRunCommand']}`; app_home={bundle['appHome']}"
+        label = str(bundle["status"]).replace("_", " ")
+        return f"degraded: app {label}; preview `{bundle['dryRunCommand']}`; app_home={bundle['appHome']}"
     return (
-        f"critical: app {bundle['status']}; fix AGENTERA_HOME or choose a managed app home; "
+        f"critical: app {str(bundle['status']).replace('_', ' ')}; fix AGENTERA_HOME or choose a managed app home; "
         f"app_home={bundle['appHome']}"
     )
 
@@ -5796,7 +5797,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     decision_attention = _decision_review_attention(schemas)
     next_action = _select_hej_next_action(plan, health, objective, todo_items, decision, saved_context)
     attention = []
-    if bundle["status"] != "fresh":
+    if bundle["status"] != "up_to_date":
         attention.append(_app_status_attention(bundle))
     if v1_migration["detected"]:
         command = v1_migration["dry_run_command"]

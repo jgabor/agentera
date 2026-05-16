@@ -3,286 +3,295 @@ header:
   created: 2026-05-16
   status: complete
   reviewed: 2026-05-16
-  critic_issues: 5 found, 5 addressed, 0 dismissed
+  critic_issues: 2 found, 2 addressed, 0 dismissed
   revised: >-
-    Kept the work evidence-first instead of assuming threshold increases, separated self-audit
-    linting from artifact compaction, preserved transcript privacy boundaries, required a no-change
-    path when false positives are not proven, and scoped any implementation to the smallest
-    threshold or diagnostic adjustment backed by transcript or retained-artifact evidence. Retained
-    archive evidence was added after review because `post-audit-flagged` archived plans are valid
-    redacted signals of PLAN.md full-plan budget pressure.
-  title: Transcript Lint Threshold Analysis Plan
+    Review tightened the plan from generic doctor polish to the reproduced fresh-status rendering seam,
+    added explicit JSON compatibility and dry-run formatting checks, and preserved update/repair/blocked
+    state guidance instead of only removing the `Next:` block. Later Resonera feedback tightened the
+    metadata vocabulary stance: do not accept internal/user-facing divergence by default; prefer one
+    canonical app vocabulary and use compatibility aliases only when existing consumers require them.
+    Decision 54 records the selected hard-rename app-metadata stance before implementation, then
+    gates broader vocabulary targets behind inventory, consumer review, and a later Resonera decision
+    on whether a dedicated `vocabulary.yaml` should replace `docs/vocabulary.md`.
+  title: Doctor Ready Next Output Plan
 what: >-
-  Analyze retained session transcript evidence to determine whether Agentera linting or compaction
-  thresholds cause agents to compress, rewrite, or omit relevant information unnecessarily, then
-  adjust thresholds or diagnostics only when the evidence shows repeatable false positives.
+  Fix `agentera doctor` so ready or healthy states do not render a required-looking `Next:` repair
+  section, and rationalize app metadata vocabulary such as fresh, stale, refresh, fixed, updated, ready,
+  and outdated without creating another DECISIONS.md/decisions.yaml or bundle/app-style terminology split.
+  Keep broader targets such as capability names, artifact names, exit signals, task statuses, health
+  grades, and general prose out of the implementation until they have a separate inventory-backed
+  vocabulary-authority decision.
 why: >-
-  The TODO reports a risk that linting thresholds may be pushing agents to over-compress useful
-  artifact content. Current self-audit budgets are hardcoded in `scripts/self_audit.py`, compaction
-  retention uses uniform artifact budgets, and transcript analysis tooling already enforces strict
-  redaction boundaries. The next step is not to raise limits blindly; it is to prove which threshold,
-  artifact, or warning category causes information loss and whether a targeted change is justified.
+  The next open TODO reports that `agentera doctor` can say `status: ready` while still showing a
+  mandatory-looking `Next:` sequence for repair. Live reproduction confirmed text output prints `Next:`
+  with preview/apply/retry commands even when JSON status is `fresh`, `signals` is empty, and marker
+  version matches expected version. That makes a healthy install look actionable and risks unnecessary
+  repairs.
 constraints: >-
-  Do not retain raw transcript text, raw session IDs, raw store paths, credentials, prompts, or local
-  private paths in artifacts. Do not change `.agentera/vision.yaml`, objective state, decision
-  satisfaction state, installed app/profile state, package-manager state, publication metadata, tags,
-  or remotes. Do not weaken linting, compaction, or privacy gates without measured false-positive
-  evidence. Preserve `agentera lint` advisory/strict semantics unless a test-backed contract change
-  is explicitly justified.
+  Do not change upgrade apply semantics, app-home resolution, installed app/profile state, package-manager
+  state, publication metadata, tags, remotes, `.agentera/vision.yaml`, objective state, or decision
+  satisfaction state. Preserve non-interactive command behavior, JSON field compatibility, and safe
+  dry-run-before-apply repair guidance for stale, blocked, update-needed, or migration-required states
+  until any renamed status contract has explicit compatibility coverage.
 scope:
   included:
-    - Evidence inventory for self-audit budgets, filler/anchor checks, compaction retention budgets, and transcript privacy boundaries.
-    - Privacy-preserving transcript or session-corpus analysis that records aggregate counts, categories, and redacted examples only.
-    - A false-positive rubric distinguishing useful-detail loss from legitimate verbosity, filler, abstraction, or retention-budget enforcement.
-    - Minimal threshold, diagnostic, or documentation changes when evidence supports them.
-    - Regression tests for any changed self-audit, compaction, transcript-redaction, or CLI reporting behavior.
-    - Plan validation and handoff to execution.
+    - >-
+      `agentera doctor` text rendering for fresh/ready, update-needed, repairable, and blocked states.
+    - >-
+      App metadata vocabulary across doctor/upgrade text and JSON surfaces, including whether internal
+      status values should be renamed or compatibility-aliased.
+    - >-
+      Inventory prerequisites for any later vocabulary migration touching capability names, artifact
+      names or paths, exit signals, task statuses, health grades, and general prose outside app metadata.
+    - Action wording that distinguishes required repair/update steps from optional maintenance guidance.
+    - Dry-run command formatting checks, including whitespace before `--dry-run`.
+    - Tests covering fresh ready output, update-needed output, blocked output, vocabulary compatibility, and command formatting.
+    - TODO, CHANGELOG, PLAN, and PROGRESS synchronization after implementation.
   excluded:
-    - Raw transcript excerpt retention in PLAN, PROGRESS, TODO, DECISIONS, docs, tests, or benchmark history.
-    - Broad style rewrites or changing artifact-writing conventions without measured evidence.
-    - Replacing the self-audit protocol, compaction model, or startup benchmark architecture.
-    - Installed app refresh, profile refresh, publication, remote push, tags, package-manager changes, vision edits, objective-state edits, or decision satisfaction changes.
+    - Changing upgrade plan execution or ownership checks beyond output wording needed by doctor.
+    - >-
+      Changing `agentera hej` dashboard routing, v1 migration, runtime adapter setup, package-manager
+      updates, or installed app refresh behavior.
+    - Editing protected vision/objective/decision satisfaction state, publishing, pushing, tagging, or committing without explicit approval.
   deferred:
-    - Cross-runtime transcript collector repair unless degraded coverage blocks the evidence pass.
-    - UI/report polish beyond what is needed to review threshold evidence safely.
-    - Version bumps or release metadata unless an implementation change is classified as `feat` or `fix` under docs policy.
+    - Broader doctor UX redesign outside ready/healthy `Next:` ambiguity, app metadata vocabulary, and command formatting.
+    - >-
+      Renaming capability names, canonical artifact names such as DECISIONS.md or `.agentera/decisions.yaml`,
+      exit signals, task statuses, health grades, or general prose before inventory and consumer review.
+    - >-
+      Replacing `docs/vocabulary.md` with a dedicated `vocabulary.yaml`; this needs a later Resonera
+      decision that defines the file path, schema, ownership, migration boundary, and compatibility rules.
+    - Release/version metadata unless the implementation is intentionally selected for a release train.
 design: >-
-  Treat the TODO as an evidence pipeline first. Start from existing CLI/corpus/transcript contracts,
-  `scripts/self_audit.py`, compaction checks, startup-analysis privacy rules, and retained `.agentera`
-  archive markers. Build or reuse a redacted analysis surface that can identify lint/compaction warnings
-  followed by agent rewrites, archived post-audit flags, or compressed artifact entries without storing
-  raw transcript text. Only after classifying repeated false positives should implementation adjust
-  budgets, patterns, diagnostics, or docs.
+  Treat doctor and upgrade metadata vocabulary as a contract, not just presentation copy. First audit the
+  existing status words and decide whether names like `fresh`, `stale`, `refresh`, and `fixed` should be
+  replaced with standard app terms such as up-to-date, outdated, repaired, updated, installed, migration
+  needed, or manual review needed. Prefer canonical vocabulary shared by JSON and text; keep old JSON
+  values only as explicit compatibility aliases when changing them would break existing consumers. A
+  ready state with no signals should render no required `Next:` repair block. Update-needed, repairable,
+  migration, and blocked states should preserve safe preview/apply/retry or blocked-state guidance. Treat
+  broader vocabulary candidates as explicit non-goals for this implementation unless the app-status seam
+  directly depends on them; record any observed candidates for a later vocabulary-authority deliberation.
+  Selected app-state replacements are `fresh` to `up_to_date`, `update_needed` to `outdated`, `stale`
+  to `repair_needed`, `migration_required` to `migration_needed`, and `blocked` to `manual_review_needed`.
+  Upgrade operation terms map separately: `pending` to `ready_to_apply`, `noop` to `no_changes_needed`,
+  `blocked` to `manual_review_needed`, while `applied`, `failed`, and `skipped` remain standard operation
+  terms unless Task 3 finds a concrete reason to change them.
 tasks:
   - number: 1
-    name: Inventory threshold and transcript surfaces
+    name: Reproduce doctor ready-state output ambiguity
     depends_on: []
     status: complete
     acceptance:
       - >-
-        GIVEN the TODO names linting thresholds WHEN evidence gathering starts THEN the implementation
-        identifies each relevant threshold source, including self-audit per-entry budgets, abstraction
-        anchors, filler patterns, compaction retention limits, and transcript privacy constraints.
+        GIVEN a fresh installed app with matching expected and marker versions WHEN `agentera doctor`
+        runs THEN evidence records that text output currently shows `status: ready` plus a repair-looking
+        `Next:` block.
       - >-
-        GIVEN session evidence is needed WHEN source surfaces are selected THEN raw transcript storage,
-        raw session IDs, raw store paths, prompts, credentials, and local paths are explicitly excluded.
+        GIVEN the same state WHEN `agentera doctor --json` runs THEN evidence records `status=fresh`, an
+        empty `signals` list, and existing dry-run/apply/retry fields without treating them as required.
       - >-
-        GIVEN decisions are compacted WHEN planning context is used THEN Decision 34/35 self-audit,
-        Decision 51/52 benchmark privacy, and Decision 23/27 session-state context are carried as
-        caveats without raw decision reads.
+        GIVEN command formatting is investigated WHEN dry-run commands are captured THEN the plan names
+        where whitespace before `--dry-run` is generated or verified.
     evidence:
       - >-
-        Self-audit threshold sources are `scripts/self_audit.py`: `_PER_ENTRY_BUDGETS` sets
-        `PROGRESS.md=500`, `EXPERIMENTS.md=300`, `HEALTH.md=150`, `DECISIONS.md=200`,
-        `TODO.md=100`, `CHANGELOG.md=300`, and `PLAN.md=100`; unknown artifacts fall back to 500
-        words or full-file budget divided by five. Abstraction anchors are `_FILE_PATH_RE`,
-        `_REPO_PATH_RE`, `_LINE_NUMBER_RE`, `_COMMIT_HASH_RE`, `_METRIC_VALUE_RE`,
-        `_BACKTICK_IDENTIFIER_RE`, and `_QUOTED_TEXT_RE`; filler categories are hardcoded in
-        `_BANNED_PATTERNS`.
+        Live installed CLI probe `uv run /home/jgabor/.local/share/agentera/app/scripts/agentera doctor`
+        reproduced the ambiguity: text output prints `status: ready` and a required-looking `Next:`
+        repair sequence with preview/apply/retry commands.
       - >-
-        Compaction threshold sources are `hooks/compaction.py`: `MAX_FULL_ENTRIES=10`,
-        `MAX_ONELINE_ENTRIES=40`, `MAX_TOTAL_ENTRIES=50`, `_over_limit_count`, and
-        protected decision overflow handling. The retained families include PROGRESS, DECISIONS,
-        HEALTH, EXPERIMENTS, SESSION, and `TODO.md#Resolved`; PLAN is lifecycle state rather than a
-        uniform retained-entry log.
+        Live JSON probe `uv run /home/jgabor/.local/share/agentera/app/scripts/agentera doctor --json`
+        reports `status=fresh`, `signals=[]`, `expectedVersion=2.3.12`, and `markerVersion=2.3.12`,
+        so the current installed app is healthy while text rendering still presents repair steps.
       - >-
-        Transcript privacy sources are `scripts/startup_analysis_contract.py` and
-        `references/analysis/startup-measurement-contract.yaml`. Transcript-bearing keys include
-        `content`, `text`, `prompt`, `message`, `preceding_context`, `input_text`, `output_text`, and
-        `transcript`; path/session keys are redacted or hashed. Retained output forbids raw
-        transcripts, raw corpus files, raw intermediates, raw store paths, raw session IDs, private
-        salts, generated hashes, raw tool arguments, prompts, credentials, and full local paths.
-      - >-
-        Decision fallback `agentera decisions --format json --topic self-audit` returned full-detail
-        Decision 48 and 50 plus compacted Decision 34 and 35 summaries. The source contract is
-        complete for normal deliberation but not full-detail; missing fields, compacted state, and
-        caveats are carried forward without raw decision reads.
+        Command formatting seam is `scripts/agentera_upgrade.py`: `build_doctor_status` builds
+        `preview_parts` with `--dry-run` as a separate argument and `dryRunCommand` uses `_command_text`,
+        which joins shell-quoted parts with single spaces. The reproduced text contains a correct space
+        before `--dry-run`.
   - number: 2
-    name: Build redacted threshold-evidence scan
+    name: Define doctor app metadata vocabulary
     depends_on:
       - 1
     status: complete
     acceptance:
       - >-
-        GIVEN retained session or corpus data is available WHEN the scan runs THEN it reports aggregate
-        counts by warning category, artifact, capability, and threshold source without emitting raw
-        transcript text.
+        GIVEN doctor and upgrade statuses are reviewed WHEN vocabulary is defined THEN the plan chooses a
+        canonical app-state vocabulary and names any compatibility aliases retained for existing JSON
+        consumers.
       - >-
-        GIVEN a transcript contains a lint warning followed by an agent rewrite WHEN the scan classifies
-        it THEN the result records a redacted event label, warning type, artifact family, and whether
-        useful detail appears to have been removed.
+        GIVEN doctor status is fresh WHEN text rendering runs THEN output does not include a required
+        `Next:` repair sequence and does not expose weird primary labels such as stale/fresh when a
+        standard app term is better.
       - >-
-        GIVEN runtime stores are unavailable, sparse, or schema-divergent WHEN the scan runs THEN the
-        output reports coverage caveats rather than fabricating evidence.
+        GIVEN doctor status is update-needed, stale, migration-required, invalid, or blocked WHEN text
+        rendering runs THEN update, repair, migration, or manual-review guidance remains clear, safe,
+        non-interactive, and aligned with the canonical vocabulary.
+      - >-
+        GIVEN broader vocabulary targets are encountered WHEN the app metadata contract is defined THEN
+        capability names, artifact names or paths, exit signals, task statuses, health grades, and general
+        prose are inventoried or deferred rather than renamed without a separate Resonera decision.
     evidence:
       - >-
-        Added `scan_threshold_evidence` to `scripts/startup_analysis_contract.py` with output envelope
-        `threshold_evidence_scan_v1`. The scan groups records by conversation, detects self-audit
-        verbosity/abstraction/filler warnings and compaction over-limit/protected-overflow warnings,
-        counts by warning category, artifact, capability, and threshold source, and links later
-        implementation-boundary rewrites through salted event labels.
+        Reviewed `scripts/agentera_upgrade.py` doctor status construction and text rendering. Current app-state
+        values are `fresh`, `update_needed`, `stale`, `migration_required`, and `blocked`; canonical replacements
+        are `up_to_date`, `outdated`, `repair_needed`, `migration_needed`, and `manual_review_needed`.
       - >-
-        The retained scan output omits raw transcript and tool text. It emits salted `record:` and
-        `session:` labels, canonical artifact labels, bounded word/anchor counts, detail-loss status,
-        warning categories, threshold source IDs, runtime coverage, coverage caveats, degradations, and
-        a privacy redaction summary.
+        Reviewed upgrade preview/apply status values. Operation-plan values map to `ready_to_apply`, `applied`,
+        `no_changes_needed`, `manual_review_needed`, `failed`, and `skipped`; these are scoped to doctor/upgrade
+        app repair UX and do not authorize renaming general Agentera task statuses.
       - >-
-        The rewrite classifier records `possible_useful_detail_removed`,
-        `possible_compression_without_anchor_loss`, `not_detected`, or `not_assessed` from transient
-        word/anchor count deltas; it does not retain before/after text or patch bodies.
+        Compatibility aliases are not retained by default. Task 3 may add a temporary alias only for a concrete
+        existing consumer that cannot be migrated in the same change, and any alias must be documented as
+        transitional rather than canonical.
       - >-
-        Regression tests prove a synthetic lint warning followed by an `apply_patch` rewrite reports
-        aggregate warning/detail-loss evidence without retaining private prompt text, warning detail text,
-        or rewrite body text, and degraded runtime coverage produces a caveat rather than fabricated
-        evidence.
+        Broader targets are explicitly deferred: capability names, canonical artifact names and paths, exit
+        signals, general task statuses, health grades, broad prose, and any replacement of `docs/vocabulary.md`
+        with `vocabulary.yaml` require inventory plus a later Resonera decision.
   - number: 3
-    name: Classify false positives versus legitimate pressure
+    name: Implement minimal doctor rendering change
     depends_on:
       - 2
     status: complete
     acceptance:
       - >-
-        GIVEN scan results include warning/rewrite candidates WHEN reviewed THEN each candidate category
-        is classified as likely false positive, legitimate lint pressure, inconclusive, or unsupported by
-        available coverage.
+        GIVEN text output changes WHEN code is edited THEN the change is limited to doctor rendering and
+        helper wording or compatibility mapping needed to classify up-to-date, outdated, repair-needed,
+        migration-needed, manual-review, optional, update, repair, and blocked next actions.
       - >-
-        GIVEN useful information loss is claimed WHEN evidence is recorded THEN the claim names only
-        redacted anchors, artifact labels, warning categories, and aggregate counts.
+        GIVEN JSON consumers depend on doctor fields WHEN implementation is complete THEN the plan either
+        preserves existing values as compatibility aliases or deliberately migrates them with tests and
+        documented compatibility boundaries; do not add an unexamined internal/public vocabulary split.
       - >-
-        GIVEN evidence does not prove false positives WHEN the task completes THEN the plan keeps a
-        no-threshold-change path open and records why the TODO should close or remain deferred.
+        GIVEN dry-run/apply commands are rendered WHEN they appear in text or JSON THEN command strings
+        include correct spacing before flags such as `--dry-run`.
     evidence:
       - >-
-        Added `classify_threshold_evidence` to `scripts/startup_analysis_contract.py` with output
-        envelope `threshold_evidence_classification_v1`. It groups redacted warning events by warning
-        category and classifies each category as `likely_false_positive`, `legitimate_pressure`,
-        `inconclusive`, or `unsupported_by_available_coverage`.
+        Updated `scripts/agentera_upgrade.py` so doctor app metadata emits canonical statuses:
+        `up_to_date`, `outdated`, `repair_needed`, `migration_needed`, and `manual_review_needed`.
+        Signal statuses now use the same canonical vocabulary, while diagnostic `kind` values remain
+        specific causes except the migration kind, which is now `migration_needed`.
       - >-
-        The classifier treats repeated `possible_useful_detail_removed` events as evidence to consider a
-        minimal threshold or diagnostic change, but keeps `no_threshold_change_yet` for legitimate,
-        inconclusive, or single-instance evidence and `defer_without_threshold_change` when coverage is
-        unavailable or degraded with no events.
+        Updated doctor rendering so `up_to_date` text says app files are up to date and omits the required-looking
+        `Next:` repair sequence; `dryRunCommand` and `applyCommand` are null for `up_to_date` and manual-review
+        states, while outdated/repair/migration states retain preview/apply/retry safety guidance.
       - >-
-        Retained classification output names only canonical artifact labels, capabilities, warning
-        categories, event/classification counts, detail-loss status counts, salted event labels, coverage
-        caveats, and privacy summaries. Tests prove raw transcript and raw tool-argument fields embedded
-        in scan events are not retained.
+        Updated `scripts/agentera` hej app-home handling so `up_to_date` produces no app attention item and
+        non-current app statuses render canonical, readable attention labels.
       - >-
-        Focused tests passed for repeated likely false-positive evidence, legitimate lint pressure,
-        inconclusive evidence, unsupported coverage, the redacted scan path, and degraded runtime coverage.
+        Updated focused doctor/hej tests for the deliberate JSON migration instead of retaining compatibility
+        aliases. `uv run pytest tests/test_bundle_freshness.py tests/test_install_root_characterization.py
+        tests/test_query_cli.py -q` passed with 217 tests.
+      - >-
+        Local live probes now show `agentera doctor` text as `status: up to date` plus `No action needed`, and
+        `agentera doctor --json` reports `status=up_to_date`, `signals=[]`, `dryRunCommand=null`, and
+        `applyCommand=null` with correct command formatting preserved for actionable states by existing tests.
   - number: 4
-    name: Apply minimal threshold or diagnostic change if justified
+    name: Add doctor output regressions
     depends_on:
       - 3
     status: complete
     acceptance:
       - >-
-        GIVEN a repeated false-positive class is proven WHEN code changes are made THEN the change is
-        limited to the smallest affected budget, anchor pattern, filler diagnostic, compaction limit, or
-        guidance wording.
+        GIVEN a fresh app-home fixture WHEN doctor text is rendered THEN tests assert no required `Next:`
+        block, no repair label, and a clear ready/no-required-action message.
       - >-
-        GIVEN no repeated false-positive class is proven WHEN implementation reaches this task THEN no
-        threshold is raised and the output records a no-change evidence report instead.
+        GIVEN update-needed and repairable fixtures WHEN doctor text and JSON are rendered THEN tests
+        assert canonical vocabulary, any compatibility aliases, and preserved preview/apply/retry commands.
       - >-
-        GIVEN threshold behavior changes WHEN CLI output is affected THEN `agentera lint` text/JSON and
-        compaction check/fix semantics remain bounded, non-interactive, and test-backed.
+        GIVEN blocked fixtures and JSON output WHEN tests run THEN blocked safety guidance and JSON
+        compatibility remain covered.
     evidence:
       - >-
-        Retained `.agentera/archive` evidence contains 10 archived plan files with 11
-        `post-audit-flagged` marker matches. The repeated pattern is PLAN.md full-plan verbosity
-        pressure: archived plans report full-plan or full-plan-adjacent PLAN.md artifacts exceeding the
-        compact advisory prose/entry budget while preserving reviewed implementation detail.
+        Added `test_doctor_up_to_date_text_has_no_required_next_block` in
+        `tests/test_install_root_characterization.py`, asserting `up_to_date` JSON has no dry-run/apply
+        commands or signals and rendered text includes `No action needed` without any `Next:`, preview,
+        or repair wording.
       - >-
-        Added `scan_retained_threshold_evidence` so retained artifact text can be classified through the
-        same `threshold_evidence_scan_v1` and `threshold_evidence_classification_v1` pipeline as
-        transcript-derived warning events. The retained output stores canonical artifact labels, warning
-        categories, counts, and salted event labels only; raw retained artifact text is not emitted.
+        Added `test_doctor_actionable_text_and_json_keep_canonical_guidance`, covering `outdated` and
+        `repair_needed` app-home fixtures with canonical JSON statuses, no legacy app-state values,
+        preserved dry-run/apply/retry commands, correct ` --dry-run` spacing, and update-versus-repair
+        text labels.
       - >-
-        Applied the smallest behavior change at the proven seam: file-backed lint now checks verbosity
-        against the artifact's full-file budget, while `--text` and
-        stdin continue to use per-entry budgets for pre-write snippets. This resolves PLAN.md full-plan
-        false-positive pressure without loosening abstraction checks, filler checks, compaction limits,
-        advisory/strict semantics, or privacy gates.
+        Added `test_doctor_manual_review_text_and_json_block_automatic_repair`, covering manual-review
+        JSON with null dry-run/apply commands and text that blocks automatic repair while preserving safer
+        directory or checked `--force` guidance.
+      - >-
+        Focused regression verification passed with `uv run pytest tests/test_install_root_characterization.py
+        tests/test_bundle_freshness.py -q` (28 tests).
   - number: 5
-    name: Add regressions and privacy tests
+    name: Synchronize artifacts and close TODO
     depends_on:
       - 4
     status: complete
     acceptance:
       - >-
-        GIVEN self-audit behavior changes WHEN tests run THEN pass/fail cases cover the adjusted budget,
-        anchor, or filler boundary and preserve existing strict/advisory semantics.
+        GIVEN tests pass WHEN artifacts are updated THEN TODO records the doctor-output issue as resolved
+        with the actual app metadata vocabulary and ready/update/repair rendering behavior.
       - >-
-        GIVEN transcript analysis output is added or changed WHEN tests inspect it THEN raw transcript
-        text, raw paths, raw session IDs, prompts, and credentials are absent from retained outputs.
+        GIVEN the change affects user-facing CLI output WHEN CHANGELOG is updated THEN it names the ready
+        doctor `Next:` fix, app metadata vocabulary choice, and command-formatting coverage.
       - >-
-        GIVEN no threshold change is made WHEN tests run THEN evidence-report tests still prove the
-        no-change path is intentional and privacy-safe.
+        GIVEN progress is logged WHEN closeout completes THEN PROGRESS includes verification evidence and
+        protected-state boundaries.
     evidence:
       - >-
-        Added focused tests for the redacted threshold scan, repeated likely false-positive
-        classification, legitimate lint pressure, inconclusive evidence, unsupported coverage, and the
-        no-threshold-change/defer recommendations.
+        Moved the `agentera doctor` ready/healthy `Next:` issue from TODO open Annoying work to Resolved,
+        naming the canonical app metadata vocabulary and ready/update/repair/manual-review rendering
+        behavior.
       - >-
-        The classification privacy test injects raw transcript and raw tool-argument sentinel fields into
-        scan events and proves retained classification output omits those sentinels.
+        Updated `CHANGELOG.md` Unreleased Fixed notes with the ready-state `Next:` fix, hard-renamed app
+        metadata vocabulary, preserved actionable guidance, and dry-run spacing regression coverage.
       - >-
-        Added retained-artifact scan tests proving archived post-audit PLAN.md budget pressure is
-        classified as repeated likely false-positive evidence, unflagged TODO.md verbosity pressure stays
-        inconclusive, and private retained-artifact sentinels are not emitted.
-      - >-
-        Added a lint regression proving `--file` PLAN.md input uses the full-file budget while `--text`
-        with the same content still uses the 100-word per-entry budget.
+        Added Progress cycle 544 with Task 4-5 evidence and protected-state boundaries; Task 6 remains
+        pending for validators, compaction, diff-check, focused tests, and live/local doctor probes.
   - number: 6
-    name: Verify and close out threshold analysis
+    name: Verify doctor output closeout
     depends_on:
       - 5
     status: complete
     acceptance:
       - >-
-        GIVEN implementation or no-change analysis is complete WHEN verification runs THEN focused
-        self-audit, compaction, transcript-analysis, artifact validation, and diff whitespace checks pass.
+        GIVEN implementation is complete WHEN verification runs THEN focused doctor/upgrade tests,
+        artifact validators, compaction check or fix, and `git diff --check` pass.
       - >-
-        GIVEN the TODO is resolved WHEN closeout updates artifacts THEN TODO and PROGRESS explain whether
-        thresholds were increased, left unchanged, or deferred due to insufficient evidence.
+        GIVEN live installed state is fresh WHEN a local or installed doctor probe runs THEN text output
+        no longer asks for a required repair and dry-run command formatting remains correct where shown.
       - >-
-        GIVEN runtime coverage is degraded or incomplete WHEN results are reported THEN coverage caveats
-        are preserved rather than hidden.
+        GIVEN the plan completes WHEN handoff is reported THEN remaining open TODOs and any residual risks
+        are named without refreshing installed app/profile, publishing, pushing, tagging, or changing
+        protected state unless explicitly approved.
     evidence:
       - >-
-        Verification passed with `uv run pytest tests/test_startup_analysis_contract.py
-        tests/test_self_audit.py` (71 tests), covering transcript scan privacy, retained-artifact
-        evidence scanning, category classification, PLAN.md file-versus-text lint budgets, and existing
-        self-audit behavior.
+        Focused verification passed with `uv run pytest tests/test_bundle_freshness.py
+        tests/test_install_root_characterization.py tests/test_query_cli.py -q` (220 tests).
       - >-
-        Local full-file lint verification passed with `AGENTERA_HOME=/home/jgabor/git/agentera uv run
-        scripts/agentera lint --artifact PLAN.md --file .agentera/plan.yaml --format json`, proving the
-        active full plan no longer receives the compact 100-word entry-budget verbosity advisory.
+        Artifact validators passed for PLAN, PROGRESS, TODO, CHANGELOG, and DECISIONS. Initial compaction
+        check reported TODO Resolved and PROGRESS over by one after closeout edits; safe `uv run
+        scripts/agentera compact --mode fix --format json` compacted both, and the follow-up compaction
+        check passed with zero over-limit artifacts.
       - >-
-        Artifact validation passed for PLAN.md, PROGRESS.md, TODO.md, and CHANGELOG.md, and `git diff
-        --check` passed. TODO closeout records the actual outcome: thresholds were not blindly increased;
-        file-backed lint now uses full-file budgets while snippet lint keeps per-entry budgets.
+        `git diff --check` passed. Local `uv run scripts/agentera doctor` reports `status: up to date`
+        and `No action needed` without a required repair sequence; local `uv run scripts/agentera doctor
+        --json` reports `status=up_to_date`, `signals=[]`, `dryRunCommand=null`, and `applyCommand=null`.
+      - >-
+        No installed app/profile refresh, publication, push, tag, package-manager state change,
+        `.agentera/vision.yaml` edit, objective-state mutation, decision satisfaction change, or commit was
+        performed.
 overall_acceptance:
   - >-
-    GIVEN linting or compaction threshold changes are proposed WHEN evidence is reviewed THEN each change
-    is backed by redacted transcript/corpus evidence showing repeated useful-information loss.
+    App metadata vocabulary is converged across internal and user-facing surfaces unless compatibility
+    forces a documented alias; avoid repeating bundle/app or DECISIONS.md/decisions.yaml-style splits.
   - >-
-    GIVEN available evidence does not prove false positives WHEN the work completes THEN no threshold is
-    increased and the no-change conclusion is documented with coverage caveats.
+    Fresh or ready doctor text communicates that no required action is needed and does not display a
+    mandatory-looking repair `Next:` sequence.
   - >-
-    GIVEN transcript analysis is retained in artifacts WHEN validators and tests run THEN no raw
-    transcript text, raw session IDs, raw store paths, credentials, prompts, or local private paths are
-    emitted.
+    Non-fresh doctor states still provide safe preview/apply/retry or blocked-state guidance.
   - >-
-    GIVEN `agentera lint` or compaction behavior changes WHEN users run existing commands THEN advisory,
-    strict, check, and fix semantics remain non-interactive and bounded.
+    Doctor JSON compatibility, command formatting, and non-interactive repair safety are preserved.
+  - >-
+    Broader vocabulary migration remains inventory-gated, and any move from `docs/vocabulary.md` to a
+    dedicated `vocabulary.yaml` is left to a later Resonera decision rather than hidden inside the doctor fix.
 surprises:
   - >-
-    The first evidence pass found the relevant thresholds split across two mechanisms: self-audit checks
-    in `scripts/self_audit.py` (`PROGRESS.md=500`, `PLAN.md=100`, `TODO.md=100`, filler patterns, anchor
-    patterns) and compaction retention limits enforced by `agentera compact`, not one single lint knob.
-  - >-
-    Transcript tooling already has strong privacy constraints in `scripts/startup_analysis_contract.py`
-    and `references/analysis/startup-measurement-contract.yaml`, so this plan must use redacted aggregate
-    evidence rather than quoting raw sessions.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-16-agentera-artifacts-raw-read-reduction.yaml
+    Live reproduction after the installed app refresh still shows `status: ready` with a repair `Next:`
+    block even though JSON reports `status=fresh`, `signals=[]`, and marker version `2.3.12`.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-16-transcript-lint-threshold-analysis.yaml
