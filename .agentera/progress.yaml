@@ -1,4 +1,257 @@
 cycles:
+- number: 545
+  timestamp: 2026-05-16 09:24
+  type: fix
+  phase: audit
+  what: Completed the Doctor Ready Next Output Plan verification closeout.
+  commit: pending
+  inspiration: Orkestrera Task 6 required final verification and residual-risk reporting
+    after doctor output tests and artifact synchronization completed.
+  discovered: 'The only verification issue was expected post-closeout compaction overflow:
+    TODO Resolved and PROGRESS each exceeded the uniform retained-entry limit by one
+    after adding the doctor closeout entries.'
+  verified: 'Focused tests passed with `uv run pytest tests/test_bundle_freshness.py
+    tests/test_install_root_characterization.py tests/test_query_cli.py -q` (220 tests).
+    Artifact validators passed for PLAN, PROGRESS, TODO, CHANGELOG, and DECISIONS.
+    Safe compaction fix passed and the follow-up `uv run scripts/agentera compact
+    --mode check --format json` reported zero over-limit artifacts. `git diff --check`
+    passed. Local doctor text reports `status: up to date` and `No action needed`;
+    local doctor JSON reports `status=up_to_date`, `signals=[]`, `dryRunCommand=null`,
+    and `applyCommand=null`.'
+  next: Doctor Ready Next Output Plan is complete. Remaining open TODOs are explicit
+    Agentera capability routing for requests such as `resonera ...` and considering
+    removal of Claude Code support. Do not commit, refresh installed apps/profiles,
+    publish, push, tag, change package-manager state, edit vision/objective state,
+    or change decision satisfaction unless explicitly requested.
+  context:
+    intent: Orkestrera execution of Doctor Ready Next Output Plan Task 6
+    constraints: No installed app/profile refresh, publication, push, tag, package-manager
+      state change, `.agentera/vision.yaml` edit, objective-state mutation, decision
+      satisfaction change, or commit.
+    scope: Final verification, PLAN completion evidence, PROGRESS closeout, safe compaction,
+      and final reporting.
+- number: 544
+  timestamp: 2026-05-16 09:22
+  type: test
+  phase: build
+  what: Added doctor output regressions and synchronized Task 5 artifacts.
+  commit: pending
+  inspiration: Orkestrera continued from Task 4 instead of stopping after the implementation
+    task, because the active plan still had dependency-ready regression and closeout
+    work.
+  discovered: The existing characterization suite already covered part of the update-versus-repair
+    label seam, but it did not explicitly forbid an up-to-date `Next:` block or lock
+    manual-review JSON/text against automatic repair commands.
+  verified: Added explicit regressions for `up_to_date` doctor text with no `Next:`/preview/repair
+    wording, actionable `outdated` and `repair_needed` JSON/text with canonical app
+    statuses and preserved preview/apply/retry commands, correct ` --dry-run` spacing,
+    and `manual_review_needed` blocked guidance. Focused verification passed with
+    `uv run pytest tests/test_install_root_characterization.py tests/test_bundle_freshness.py
+    -q` (28 tests). TODO and CHANGELOG now record the doctor-output fix, app metadata
+    vocabulary choice, and command-formatting coverage.
+  next: 'Continue with Plan Task 6: run focused doctor/upgrade tests, artifact validators,
+    compaction check/fix, `git diff --check`, and local/installed doctor probes without
+    refreshing installed app/profile state, publishing, pushing, tagging, changing
+    package-manager state, editing vision/objective state, changing decision satisfaction,
+    or committing.'
+  context:
+    intent: Orkestrera execution of Doctor Ready Next Output Plan Tasks 4 and 5
+    constraints: Do not refresh installed apps/profiles, publish, push, tag, change
+      package-manager state, edit vision/objective state, change decision satisfaction,
+      or commit; preserve dry-run-before-apply safety and no compatibility aliases
+      unless concrete consumers require them.
+    scope: '`tests/test_install_root_characterization.py`, TODO, CHANGELOG, PLAN,
+      and PROGRESS updates.'
+- number: 543
+  timestamp: 2026-05-16 09:11
+  type: fix
+  phase: build
+  what: Implemented canonical doctor app metadata statuses for Plan Task 3.
+  commit: pending
+  inspiration: Orkestrera selected the minimal doctor rendering implementation task
+    after Task 2 defined the canonical app-state vocabulary.
+  discovered: The smallest safe implementation seam was `scripts/agentera_upgrade.py`
+    plus the hej app-attention helper in `scripts/agentera`. Doctor status construction,
+    signal statuses, text rendering, JSON output, and hej app-home summaries all needed
+    the same canonical app-state values to avoid an internal/public vocabulary split.
+  verified: Doctor app metadata now emits `up_to_date`, `outdated`, `repair_needed`,
+    `migration_needed`, and `manual_review_needed`. `up_to_date` renders `No action
+    needed` without a repair-looking `Next:` block and returns null dry-run/apply
+    commands; actionable outdated/repair/migration states retain preview/apply/retry
+    guidance. Focused verification passed with `uv run pytest tests/test_bundle_freshness.py
+    tests/test_install_root_characterization.py tests/test_query_cli.py -q` (217 tests),
+    plus local `agentera doctor` text/JSON probes.
+  next: Continue with Plan Task 4 to add explicit doctor-output regressions around
+    no required `Next:` for up-to-date state and preserved guidance for actionable
+    states.
+  context:
+    intent: Orkestrera execution of Doctor Ready Next Output Plan Task 3
+    constraints: No compatibility aliases by default; preserve dry-run-before-apply
+      safety; do not rename broader vocabulary targets, refresh installed app/profile
+      state, publish, push, tag, change package-manager state, edit vision/objective
+      state, change decision satisfaction, or commit.
+    scope: '`scripts/agentera_upgrade.py`, `scripts/agentera`, focused tests, PLAN
+      and PROGRESS evidence updates.'
+- number: 542
+  timestamp: 2026-05-16 08:54
+  type: docs
+  phase: deliberate
+  what: Defined the doctor app metadata vocabulary contract for Plan Task 2.
+  commit: pending
+  inspiration: Orkestrera selected the next dependency-ready task after Task 1 reproduced
+    the ready-state doctor output ambiguity.
+  discovered: Doctor/hej app metadata currently uses `fresh`, `update_needed`, `stale`,
+    `migration_required`, and `blocked`; upgrade preview/apply operation statuses
+    use `pending`, `applied`, `noop`, `blocked`, `failed`, and `skipped`. These are
+    distinct status families, so only the doctor/upgrade app repair UX is in scope
+    now.
+  verified: 'Marked Plan Task 2 complete and added `app_metadata_vocabulary` to the
+    active plan: app states map to `up_to_date`, `outdated`, `repair_needed`, `migration_needed`,
+    and `manual_review_needed`; upgrade operation statuses map to `ready_to_apply`,
+    `applied`, `no_changes_needed`, `manual_review_needed`, `failed`, and `skipped`.
+    No compatibility aliases are retained by default; Task 3 may add only concrete
+    transitional aliases.'
+  next: Continue with Plan Task 3, implementing the minimal doctor rendering/status
+    change while preserving dry-run/apply/retry safety and deferring broader vocabulary
+    renames.
+  context:
+    intent: Orkestrera execution of Doctor Ready Next Output Plan Task 2
+    constraints: Do not rename capability names, artifact names or paths, exit signals,
+      general task statuses, health grades, broad prose, or `docs/vocabulary.md`;
+      no package-manager state, installed app/profile refresh, publication, push,
+      tag, vision/objective state, decision satisfaction, or commit.
+    scope: Status-surface review and PLAN/PROGRESS evidence updates only.
+- number: 541
+  timestamp: 2026-05-16 08:49
+  type: test
+  phase: audit
+  what: Reproduced doctor ready-state output ambiguity for Plan Task 1.
+  commit: pending
+  inspiration: Orkestrera selected the first dependency-ready task in the active Doctor
+    Ready Next Output Plan.
+  discovered: 'The installed app is healthy but the text renderer still presents repair
+    steps. `agentera doctor` shows `status: ready` followed by preview/apply/retry
+    repair commands, while `agentera doctor --json` reports `status=fresh`, `signals=[]`,
+    `expectedVersion=2.3.12`, and `markerVersion=2.3.12`.'
+  verified: Marked Plan Task 1 complete with evidence. Dry-run command formatting
+    is generated by `scripts/agentera_upgrade.py` `preview_parts` and `_command_text`,
+    and the reproduced text contains correct spacing before `--dry-run`.
+  next: Continue with Plan Task 2, defining the doctor app metadata vocabulary while
+    preserving Decision 54 boundaries and deferring broader vocabulary renames until
+    inventory and a separate Resonera decision.
+  context:
+    intent: Orkestrera execution of Doctor Ready Next Output Plan Task 1
+    constraints: Evidence-only reproduction; do not change upgrade semantics, installed
+      app/profile state, package-manager state, vision/objective state, decision satisfaction,
+      publishing, pushing, tagging, or committing.
+    scope: Doctor text/JSON probes, command-formatting seam inspection, PLAN and PROGRESS
+      evidence updates.
+- number: 540
+  timestamp: 2026-05-16 08:45
+  type: docs
+  phase: deliberate
+  what: Expanded Decision 54 with broader vocabulary inventory boundaries.
+  commit: pending
+  inspiration: User asked to add capability names, artifact names, exit signals, task
+    statuses, health grades, and general prose as rename targets that need thorough
+    inventory and review instead of being silently folded into the doctor app-metadata
+    change.
+  discovered: The immediate doctor issue is still app metadata vocabulary, but wider
+    vocabulary seams are protocol identity surfaces with different compatibility costs.
+    A structured `vocabulary.yaml` replacement for `docs/vocabulary.md` needs its
+    own Resonera decision before implementation.
+  verified: Updated Decision 54 to keep the hard rename for doctor/hej/upgrade app
+    metadata while explicitly deferring broader renames until inventory, consumer
+    review, and a separate Resonera decision on `vocabulary.yaml`. Updated the active
+    Doctor Ready Next Output Plan so broader vocabulary migration remains inventory-gated
+    and out of scope for the doctor rendering fix.
+  next: Validate DECISIONS, PLAN, PROGRESS, TODO, compaction, and whitespace. Continue
+    the active doctor plan only after preserving the broader vocabulary boundary.
+  context:
+    intent: Decision 54 expansion for vocabulary governance
+    constraints: Do not rename capability names, artifact names or paths, exit signals,
+      task statuses, health grades, or general prose in the doctor implementation;
+      decide any `vocabulary.yaml` replacement through a later Resonera deliberation.
+    scope: DECISIONS, PLAN, and PROGRESS updates only.
+- number: 539
+  timestamp: 2026-05-16 08:35
+  type: docs
+  phase: deliberate
+  what: Recorded Decision 54 for app metadata vocabulary convergence.
+  commit: pending
+  inspiration: User correction required real Resonera deliberation with questions
+    before recording a stance on app metadata vocabulary.
+  discovered: The deliberation selected one vocabulary as the first priority, standard
+    app terms as the starting candidate, hard rename now as the migration strictness,
+    and a separate decision before implementation.
+  verified: 'Added Decision 54 to `.agentera/decisions.yaml`: hard-rename app metadata
+    toward canonical terms such as `up_to_date`, `outdated`, `repair_needed`, `migration_needed`,
+    `manual_review_needed`, `ready_to_apply`, `applied`, and `no_changes_needed`;
+    avoid `fresh`, `stale`, `refresh`, and `fixed` as canonical status words; retain
+    compatibility aliases only for concrete existing consumers.'
+  next: Continue the active doctor plan with Decision 54 as the vocabulary authority.
+    Validate decisions, plan, progress, TODO, compaction, and whitespace after this
+    update.
+  context:
+    intent: Resonera deliberation correction and decision recording
+    constraints: Ask the user questions before deciding; avoid internal/public vocabulary
+      divergence by default; do not implement yet.
+    scope: DECISIONS, PLAN, and PROGRESS updates only.
+- number: 538
+  timestamp: 2026-05-16 08:35
+  type: docs
+  phase: deliberate
+  what: Tightened doctor plan around app metadata vocabulary convergence.
+  commit: pending
+  inspiration: User feedback rejected an easy internal-versus-user-facing status split
+    for app metadata and noted a repeated routing failure where an explicit `resonera`
+    request did not trigger true Resonera deliberation.
+  discovered: The current doctor plan already covered misleading ready-state `Next:`
+    output, but it was too willing to keep internal labels such as `fresh`, `stale`,
+    `refresh`, and `fixed` while only changing public text. That risks repeating prior
+    terminology divergence problems such as bundle/app and DECISIONS.md/decisions.yaml.
+  verified: Added a Normal-priority TODO to fix explicit Agentera capability invocation
+    routing so `resonera ...` cannot silently degrade into generic analysis. Updated
+    `.agentera/plan.yaml` so Task 2 defines app metadata vocabulary as a contract,
+    prefers shared canonical terms across JSON and text, and allows old JSON values
+    only as documented compatibility aliases when consumers require them.
+  next: Continue Doctor Ready Next Output Plan Task 1, but carry the stronger vocabulary-convergence
+    stance into Task 2 before implementation. Do not commit, publish, push, tag, refresh
+    installed apps/profiles, edit vision/objective state, or change decision satisfaction
+    unless explicitly requested.
+  context:
+    intent: Resonera correction for app metadata vocabulary
+    constraints: Log missed capability-routing issue as TODO; avoid unexamined internal/public
+      vocabulary divergence; preserve compatibility only with explicit rationale.
+    scope: TODO, PLAN, and PROGRESS updates only.
+- number: 537
+  timestamp: 2026-05-16 08:21
+  type: docs
+  phase: plan
+  what: Planned the doctor ready-state Next output fix.
+  commit: pending
+  inspiration: 'Planera selected the highest-priority open TODO after the transcript
+    lint threshold plan completed: `agentera doctor` reports a ready/healthy status
+    while rendering a required-looking `Next:` repair sequence.'
+  discovered: 'Live installed-app reproduction shows `agentera doctor` text output
+    with `status: ready` followed by Preview/apply/retry repair steps, while `agentera
+    doctor --json` reports `status=fresh`, `signals=[]`, expected version `2.3.12`,
+    and marker version `2.3.12`. The likely seam is text rendering in `scripts/agentera_upgrade.py`,
+    not upgrade execution.'
+  verified: Archived the completed Transcript Lint Threshold Analysis Plan to `.agentera/archive/PLAN-2026-05-16-transcript-lint-threshold-analysis.yaml`
+    and wrote the active Doctor Ready Next Output Plan in `.agentera/plan.yaml`. The
+    plan scopes reproduction, doctor text action-state design, minimal rendering implementation,
+    regressions for fresh/update/repair/blocked states, artifact synchronization,
+    and final verification.
+  next: "Handoff to \u29C9 realisera for Task 1: reproduce doctor ready-state output\
+    \ ambiguity. Do not refresh installed apps/profiles, edit vision/objective state,\
+    \ change decision satisfaction, publish, push, tag, commit, or change upgrade\
+    \ apply semantics unless explicitly requested."
+  context:
+    intent: Plan next open TODO
+    constraints: Plan-only update; preserve doctor JSON compatibility, non-interactive
+      upgrade safety, protected state boundaries, and installed app/profile state.
+    scope: Active PLAN replacement, previous-plan archive, and progress logging.
 - number: 536
   timestamp: 2026-05-16 08:07
   type: fix
@@ -32,343 +285,25 @@ cycles:
     constraints: Preserve per-entry snippet lint semantics, advisory/strict behavior,
       privacy boundaries, compaction gates, and protected state boundaries.
     scope: Final plan/TODO/changelog/progress synchronization and verification evidence.
-- number: 535
-  timestamp: 2026-05-16 08:06
-  type: fix
-  phase: build
-  what: Reworked threshold analysis around retained archive evidence.
-  commit: pending
-  inspiration: User review correctly identified that archived `post-audit-flagged`
-    plans are valid retained evidence for lint-threshold analysis, so the earlier
-    no-evidence conclusion had to be corrected before closeout.
-  discovered: '`.agentera/archive` contains 10 archived plan files with 11 `post-audit-flagged`
-    marker matches. The repeated signal is PLAN.md full-plan verbosity pressure: full
-    plans were being linted with the compact 100-word per-entry budget, creating advisory
-    false-positive pressure even when reviewed plan detail should be preserved.'
-  verified: Added `scan_retained_threshold_evidence` so retained artifact text feeds
-    the same redacted scan and classification pipeline as transcript evidence. Added
-    `check_full_file_verbosity` and changed local `agentera lint --artifact <ARTIFACT>
-    --file <PATH>` behavior to use full-file budgets, while `--text` and stdin keep
-    per-entry budgets. Focused tests passed for retained PLAN.md post-audit evidence,
-    unflagged TODO.md inconclusive pressure, and file-versus-text PLAN.md lint budgets.
-    A local `AGENTERA_HOME=/home/jgabor/git/agentera uv run scripts/agentera lint
-    --artifact PLAN.md --file .agentera/plan.yaml --format json` probe passed all
-    checks.
-  next: 'Finish Task 6 closeout: resolve the TODO with the actual threshold-diagnostic
-    change, update changelog/progress/plan evidence, and run the full focused verification
-    suite plus artifact validators and `git diff --check`. Do not refresh installed
-    apps/profiles, edit vision/objective state, change decision satisfaction, publish,
-    push, tag, or commit unless explicitly requested.'
-  context:
-    intent: Transcript lint threshold analysis retained-artifact correction
-    constraints: Preserve transcript privacy, per-entry snippet lint semantics, advisory/strict
-      behavior, abstraction/filler checks, compaction limits, and protected state
-      boundaries.
-    scope: Retained artifact threshold scan, PLAN.md file-input lint budget seam,
-      tests, plan correction, and progress logging.
-- number: 534
-  timestamp: 2026-05-16 07:55
-  type: test
-  phase: build
-  what: Took the no-threshold-change path and verified classifier regressions.
-  commit: pending
-  inspiration: Realisera executed Tasks 4 and 5 of the Transcript Lint Threshold Analysis
-    Plan by refusing to raise thresholds without repeated redacted false-positive
-    evidence and by proving the evidence-report path is privacy-safe.
-  discovered: 'Superseded by Cycle 535: there was no dedicated threshold-evidence
-    artifact, but retained archived plans with `post-audit-flagged` markers are valid
-    redacted evidence and needed to be analyzed before closeout.'
-  verified: Left self-audit budgets, abstraction/filler checks, compaction retention
-    limits, lint semantics, compaction semantics, and privacy gates unchanged. Full
-    `tests/test_startup_analysis_contract.py` passed with 45 tests, including focused
-    coverage for redacted scan output, repeated likely false-positive classification,
-    legitimate pressure, inconclusive evidence, unsupported runtime coverage, no-threshold-change
-    recommendations, and raw transcript/tool-argument non-retention. PLAN and PROGRESS
-    validation passed, and `git diff --check` passed before this artifact sync.
-  next: Superseded by Cycle 535 retained-artifact analysis. Do not treat this cycle
-    as final no-change evidence.
-  context:
-    intent: Transcript lint threshold analysis Tasks 4-5 no-change and regression
-      verification
-    constraints: No threshold increase without repeated redacted false-positive evidence;
-      no raw transcript, tool-argument, path, prompt, credential, or session retention.
-    scope: Plan evidence, progress logging, classifier regression tests, and no-change
-      threshold outcome.
-- number: 533
-  timestamp: 2026-05-16 07:53
-  type: feat
-  phase: build
-  what: Classified redacted threshold evidence for transcript lint analysis.
-  commit: pending
-  inspiration: Realisera executed Task 3 of the Transcript Lint Threshold Analysis
-    Plan so threshold changes are gated by categorized evidence rather than assumptions
-    about lint or compaction pressure.
-  discovered: The redacted scan output needed a category-level classifier, not just
-    event-level detail-loss statuses. Coverage caveats also need their own unsupported
-    class so degraded or absent runtime stores do not get mistaken for proof that
-    thresholds are safe or unsafe.
-  verified: Added `classify_threshold_evidence` with output envelope `threshold_evidence_classification_v1`.
-    It groups warning events by category and reports likely false positives, legitimate
-    pressure, inconclusive evidence, and unsupported coverage using only canonical
-    artifact labels, capabilities, warning categories, salted event labels, aggregate
-    counts, detail-loss status counts, coverage caveats, and privacy summaries. Focused
-    tests passed for repeated detail-loss evidence, legitimate pressure, inconclusive
-    evidence, unsupported coverage, the redacted scan path, degraded runtime coverage,
-    and raw transcript/tool-argument non-retention.
-  next: 'Continue with Task 4: apply the smallest threshold, diagnostic, documentation,
-    or no-change outcome justified by the classified evidence. Do not raise thresholds,
-    weaken linting or compaction, retain raw transcripts, refresh installed apps/profiles,
-    edit vision/objective state, change decision satisfaction, publish, push, tag,
-    or commit unless explicitly requested.'
-  context:
-    intent: Transcript lint threshold analysis Task 3 classification
-    constraints: Retain aggregate/redacted evidence only; keep the no-threshold-change
-      path open unless repeated false-positive evidence supports a minimal change.
-    scope: Startup analysis classification helper, privacy-preserving classifier tests,
-      plan evidence, and progress logging.
-- number: 532
-  timestamp: 2026-05-16 07:44
-  type: feat
-  phase: build
-  what: Built the redacted threshold-evidence scan for transcript lint analysis.
-  commit: pending
-  inspiration: Realsiera executed Task 2 of the Transcript Lint Threshold Analysis
-    Plan so later analysis can identify lint or compaction warning pressure without
-    retaining raw transcript or tool text.
-  discovered: The existing startup analysis module already owns the right privacy
-    primitives, so the smallest safe seam was `scripts/startup_analysis_contract.py`.
-    The scan can classify self-audit verbosity/abstraction/filler warnings and compaction
-    over-limit/protected-overflow warnings, then link a later implementation-boundary
-    rewrite by salted event labels and count deltas only.
-  verified: Added `scan_threshold_evidence` with output envelope `threshold_evidence_scan_v1`.
-    It reports counts by warning category, artifact, capability, threshold source,
-    and detail-loss status, plus runtime coverage and coverage caveats. Retained warning
-    events include only salted record/session labels, canonical artifact labels, warning
-    categories, threshold source IDs, bounded word/anchor counts, and rewrite deltas.
-    Focused tests passed for a synthetic lint-warning rewrite candidate and degraded
-    runtime coverage; `git diff --check` passed.
-  next: 'Continue with Task 3: classify false positives versus legitimate pressure.
-    Do not raise thresholds, weaken linting or compaction, retain raw transcripts,
-    refresh installed apps/profiles, edit vision/objective state, change decision
-    satisfaction, publish, push, tag, or commit unless explicitly requested.'
-  context:
-    intent: Transcript lint threshold analysis Task 2 redacted scan
-    constraints: Retain aggregate evidence only; no raw transcript text, raw tool
-      arguments, raw paths, prompts, credentials, or session IDs.
-    scope: Startup analysis scan function, privacy-preserving tests, plan evidence,
-      and progress logging.
-- number: 531
-  timestamp: 2026-05-16 07:38
-  type: docs
-  phase: build
-  what: Completed Task 1 inventory for transcript lint threshold analysis.
-  commit: pending
-  inspiration: Realsiera executed the first task of the Transcript Lint Threshold
-    Analysis Plan by identifying concrete threshold and transcript privacy surfaces
-    before any threshold change.
-  discovered: 'Threshold pressure is split across self-audit and compaction, not one
-    lint knob. Self-audit budgets and patterns live in `scripts/self_audit.py`: per-entry
-    budgets include `PROGRESS.md=500`, `PLAN.md=100`, and `TODO.md=100`, with anchor
-    regexes and filler patterns in the same module. Compaction limits live in `hooks/compaction.py`
-    as `MAX_FULL_ENTRIES=10`, `MAX_ONELINE_ENTRIES=40`, and `MAX_TOTAL_ENTRIES=50`,
-    with protected decision overflow handling.'
-  verified: 'Recorded Task 1 evidence in `.agentera/plan.yaml` naming `scripts/self_audit.py`,
-    `hooks/compaction.py`, `scripts/startup_analysis_contract.py`, and `references/analysis/startup-measurement-contract.yaml`.
-    The inventory preserves transcript privacy boundaries: no raw transcript text,
-    raw corpus files, raw intermediates, raw store paths, raw session IDs, private
-    salts, generated hashes, raw tool arguments, prompts, credentials, or full local
-    paths are retained. Decision fallback used `agentera decisions --format json --topic
-    self-audit`; compacted Decision 34 and 35 caveats were carried forward without
-    raw decision reads.'
-  next: 'Continue with Task 2: build or reuse a redacted threshold-evidence scan.
-    Do not raise thresholds, weaken linting or compaction, retain raw transcripts,
-    refresh installed apps/profiles, edit vision/objective state, change decision
-    satisfaction, publish, push, tag, or commit unless explicitly requested.'
-  context:
-    intent: Transcript lint threshold analysis Task 1 inventory
-    constraints: Evidence-only task; preserve privacy, advisory/strict lint semantics,
-      compaction gates, and protected state boundaries.
-    scope: Plan evidence update and progress logging for threshold and transcript
-      surface inventory.
-- number: 530
-  timestamp: 2026-05-16 04:59
-  type: feat
-  phase: build
-  what: Completed and synchronized the AGENTERA_ARTIFACTS artifact-location discovery
-    contract.
-  commit: pending
-  inspiration: Orkestrera executed the AGENTERA_ARTIFACTS Raw-Read Reduction Plan
-    so agents can discover mapped artifact paths, normal read commands, and raw-access
-    boundaries through supported CLI surfaces instead of raw-reading `.agentera/docs.yaml`
-    or probing `.agentera/` after CLI state.
-  discovered: 'Retained startup benchmark rows showed AGENTERA_ARTIFACTS pressure
-    in prior versions (`2.3.3` 1 raw read, `2.3.13` 4 reads/63 estimated tokens, `2.7.0`
-    4 reads/114 estimated tokens, `2.8.0` 1 read/23 estimated tokens). The actionable
-    gap was path discovery: previous `query --list-artifacts --format json` returned
-    names only, and `describe --format json` exposed schema/default paths without
-    a compact resolved-location/read-boundary contract.'
-  verified: Added registry-backed artifact-location projection in `scripts/agentera`
-    using `ArtifactRecord`, `load_docs_path_overrides`, and `resolve_artifact_path`;
-    exposed it through `describe --format json` as `artifact_locations` and schema-entry
-    `location`, and through `query --list-artifacts --format json` as a v2 wrapper
-    with `names`, `artifacts`, `source`, `source_contract`, and caveats while preserving
-    text names output. Updated Agentera dispatcher, Planera, Orkestrera, and Dokumentera
-    guidance; updated closeout/evaluation fallbacks to structured list-artifacts discovery;
-    added mapped-path, routine-command, raw-boundary, missing-schema, and unsupported
-    capability-command regressions. Verification passed with 307 focused/relevant
-    tests, capability contract self-validation, and `git diff --check`. No live benchmark
-    was run; proxy evidence is the new CLI surface directly removing the historical
-    path-discovery reason while preserving legitimate raw writes, archival, validation,
-    diagnostics, CLI-defect, unavailable-state, and benchmark-analysis access.
-  next: AGENTERA_ARTIFACTS Raw-Read Reduction Plan is complete. Remaining work is
-    normal closeout or commit if requested. Do not publish, push, tag, refresh installed
-    app/profile, edit vision or objective state, change decision satisfaction state,
-    mutate package-manager state, or run unsupported capability-name CLI commands
-    unless explicitly requested.
-  context:
-    intent: AGENTERA_ARTIFACTS path-discovery raw-read reduction after CLI state
-    constraints: Preserve routine state-command ownership, text list-artifacts compatibility,
-      route/CLI separation, legitimate raw write/diagnostic boundaries, and no installed
-      app/profile, package-manager, publication, push, tag, vision, objective, or
-      decision satisfaction changes.
-    scope: CLI artifact-location projection, describe/query discovery surfaces, dispatcher
-      and capability guidance, focused tests, startup benchmark proxy evidence, PLAN/PROGRESS
-      sync, capability contract self-validation, and diff whitespace check.
-- number: 529
-  timestamp: 2026-05-16 02:16
-  type: feat
-  phase: build
-  what: Completed and synchronized the DECISIONS.md source-contract raw-read reduction.
-  commit: pending
-  inspiration: Orkestrera executed the Decision Source Contract Raw-Read Reduction
-    Plan so agents can use `agentera decisions --format json` for normal deliberation
-    context even when returned decisions are compacted, missing full-detail fields,
-    filtered, or carrying satisfaction-review pressure, without raw-reading `.agentera/decisions.yaml`
-    or reconstructing absent history.
-  discovered: Historical benchmark row `2026-05-15T15:42:10+00:00` in user-local `runs.jsonl`
-    reported DECISIONS.md raw-after-CLI pressure (`raw=2`, `redundant=1`, estimated
-    redundant tokens `24`) and action `targeted_capability_guidance_fixes`; current
-    benchmark windows no longer reproduced DECISIONS.md reads, so the change tightened
-    historical ambiguity rather than claiming a newly reproduced failure. `.agentera/docs.yaml`
-    maps canonical DECISIONS.md to `.agentera/decisions.yaml`.
-  verified: Added source-contract fields in `scripts/agentera` for `complete_for_returned_full_detail`,
-    `complete_for_normal_deliberation_context`, a decision context truth table, missing-full-detail,
-    missing-artifact, filtered-result, satisfaction-review, compacted-history, raw-artifact-access,
-    and fallback boundaries. Updated `references/cli/agent-ready-state-contract.yaml`,
-    master Agentera guidance, and DECISIONS.md consumers in Planera, Realisera, Inspektera,
-    Dokumentera, Visionera, Optimera, Orkestrera, Resonera, and Profilera to preserve
-    `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` instead
-    of raw-reading missing history. Focused tests passed for full-detail, compacted,
-    missing-field, satisfaction-review, filtered no-match, missing artifact, Orkestrera
-    caveat preservation, reference contract, and consumer guidance; full query CLI
-    tests passed. Direct source-contract proof showed current compacted decisions
-    are not full-detail complete but are complete for normal deliberation, and refreshed
-    `mage bench:startupState` reported zero raw-after-CLI and zero redundant raw artifact
-    reads.
-  next: Decision Source Contract Raw-Read Reduction Plan is complete. Remaining open
-    TODOs start with AGENTERA_ARTIFACTS raw reads after CLI. Do not publish, commit,
-    push, tag, refresh installed app/profile, edit vision or objective state, change
-    decision satisfaction state, mutate `.agentera/decisions.yaml`, run unsupported
-    capability-name CLI commands, or solve unrelated artifact-discovery TODOs unless
-    explicitly requested.
-  context:
-    intent: DECISIONS.md raw-read reduction after CLI state
-    constraints: Preserve decision satisfaction authority, compacted history boundaries,
-      route/CLI separation, unsupported capability-name commands, and no decision
-      artifact mutation, vision/objective edits, installed app/profile refresh, publication,
-      push, tag, package-manager changes, or AGENTERA_ARTIFACTS scope creep.
-    scope: Decisions source-contract fields, reference contract, consumer guidance,
-      focused tests, benchmark measurement, 2.10.0 version metadata, TODO/CHANGELOG/DOCS/PLAN/PROGRESS
-      sync, validators, compaction, and diff whitespace check.
-- number: 528
-  timestamp: 2026-05-16 01:48
-  type: feat
-  phase: build
-  what: Completed and synchronized the Planera compact startup contract.
-  commit: pending
-  inspiration: Orkestrera executed the Planera Prose Re-Read Reduction Plan so normal
-    Planera execution can start from a bounded CLI-provided startup contract instead
-    of rereading `skills/agentera/capabilities/planera/prose.md` on every invocation,
-    while preserving Planera prose as the detailed authority for editing, ambiguity,
-    uncovered behavior, and benchmark/read-trigger investigation.
-  discovered: The retained startup benchmark before implementation emitted `capability_prose_read_counts.planera=5`
-    from the manual `mage bench:startupState` aggregate report. The startup classifier
-    labels read/grep/glob access to `skills/agentera/capabilities/`, `skills/agentera/SKILL.md`,
-    or protocol files as capability prose reads; the actionable scope was avoidable
-    normal Planera invocation reads, not legitimate capability-development or benchmark-investigation
-    reads.
-  verified: Added `source_contract.capability_context.startup_contract` for Planera
-    in `scripts/agentera`, selected `agentera hej --format json --capability-context
-    planera` as the canonical startup surface, left `agentera describe --format json`
-    as runtime/schema introspection, preserved `agentera planera` as unsupported,
-    aligned Planera and master Agentera guidance, and documented the contract in `references/cli/agent-ready-state-contract.yaml`.
-    Focused tests passed for compact contract shape, no-prose-file startup availability,
-    unsupported command behavior, describe command discovery, Planera/master guidance,
-    and the Decision 45 reference contract. Direct `agentera hej --format json --capability-context
-    planera --fields source_contract` proof showed the compact contract, and refreshed
-    `mage bench:startupState` evidence reported `capability_prose_read_counts.planera=0`,
-    `implementation_recommended=false`, and startup recommendation `close_without_implementation`
-    while separating degraded claude-code/github-copilot coverage from product behavior.
-  next: Planera Prose Re-Read Reduction Plan is complete. Remaining open TODOs start
-    with DECISIONS.md raw reads after CLI and AGENTERA_ARTIFACTS raw reads. Do not
-    publish, commit, push, tag, refresh installed app/profile, edit vision or objective
-    state, change decision satisfaction state, run unsupported capability-name CLI
-    commands, or solve unrelated raw-read TODOs unless explicitly requested.
-  context:
-    intent: Planera prose reread reduction after CLI startup context
-    constraints: Preserve prose authority, route/CLI separation, unsupported `agentera
-      planera`, and no decision satisfaction, vision, objective, installed app/profile,
-      publication, push, tag, package-manager, unrelated capability prose, DECISIONS.md,
-      or AGENTERA_ARTIFACTS scope creep.
-    scope: Planera startup contract, source-contract reference, Planera/master guidance,
-      focused tests, benchmark measurement, 2.9.0 version metadata, TODO/CHANGELOG/DOCS/PLAN/PROGRESS
-      sync, validators, compaction, and diff whitespace check.
-- number: 527
-  timestamp: 2026-05-16 00:42
-  type: feat
-  phase: build
-  what: Completed and synchronized the plan source-contract raw-read reduction.
-  commit: pending
-  inspiration: Orkestrera executed the Plan CLI Source Contract Raw-Read Reduction
-    Plan so Planera startup can rely on complete `agentera plan --format json` state
-    instead of defensive raw `.agentera/plan.yaml` reads during normal read-only startup
-    or evaluation, while preserving raw plan access for writes, archives, validation,
-    corruption diagnostics, and unavailable or incomplete CLI state.
-  discovered: 'The benchmark emits privacy-safe canonical artifact labels, so `PLAN.md`
-    maps through `.agentera/docs.yaml` to `.agentera/plan.yaml`. The remaining read
-    trigger was guidance/contract ambiguity rather than missing plan data: the CLI
-    already returned summary, entries, acceptance criteria, evidence, overall acceptance,
-    surprises, and previous-plan archive metadata, but the contract did not explicitly
-    name the read-only boundary and Planera prose still allowed defensive orientation
-    reads.'
-  verified: Added stronger plan source-contract fields in `scripts/agentera`, updated
-    Planera and master Agentera CLI-first guidance, updated `references/cli/agent-ready-state-contract.yaml`,
-    and added focused regression assertions in `tests/test_query_cli.py`, `tests/test_planera_capability.py`,
-    `tests/test_decision45_cli_contract.py`, and `tests/test_cross_capability.py`.
-    Independent evaluation found and the implementation fixed a legacy `entries` shape
-    overclaim where non-current plan artifacts reported complete startup coverage.
-    Verification passed with the focused plan/guidance test set, full `tests/test_query_cli.py`,
-    direct `uv run scripts/agentera plan --format json --fields source_contract,summary,entries`
-    proof, `mage bench:startupState`, and `git diff --check`; the retained benchmark
-    report still shows retrospective PLAN.md pressure (`raw_after_cli=11`, `redundant=10`,
-    recommendation `plan_cli_startup_envelope`) and separates degraded claude-code/github-copilot
-    runtime coverage from product behavior.
-  next: Plan CLI Source Contract Raw-Read Reduction Plan is complete. Remaining open
-    TODOs start with reducing Planera prose re-reads. Do not publish, commit, push,
-    tag, refresh installed app/profile, edit vision or objective state, change decision
-    satisfaction state, update packages beyond policy-required version metadata, run
-    unsupported capability-name CLI commands, or solve unrelated DECISIONS.md and
-    AGENTERA_ARTIFACTS raw-read TODOs unless explicitly requested.
-  context:
-    intent: PLAN.md raw-read reduction after CLI state
-    constraints: Keep command vocabulary stable; no persisted plan artifact shape
-      change; no decision satisfaction, vision, objective, installed app/profile,
-      publication, push, tag, package-manager, unsupported capability command, DECISIONS.md
-      raw-read, or artifact-discovery scope creep.
-    scope: Plan source-contract fields, Planera/master guidance, focused regression
-      tests, benchmark measurement evidence, 2.8.0 version metadata, TODO/CHANGELOG/DOCS/PLAN/PROGRESS
-      sync, validators, compaction, and diff whitespace check.
 archive:
+- summary: 'Cycle 535 (2026-05-16): Reworked threshold analysis around retained archive
+    evidence.'
+- summary: 'Cycle 534 (2026-05-16): Took the no-threshold-change path and verified
+    classifier regressions.'
+- summary: 'Cycle 533 (2026-05-16): Classified redacted threshold evidence for transcript
+    lint analysis.'
+- summary: 'Cycle 532 (2026-05-16): Built the redacted threshold-evidence scan for
+    transcript lint analysis.'
+- summary: 'Cycle 531 (2026-05-16): Completed Task 1 inventory for transcript lint
+    threshold analysis.'
+- summary: 'Cycle 530 (2026-05-16): Completed and synchronized the AGENTERA_ARTIFACTS
+    artifact-location discovery contract.'
+- summary: 'Cycle 529 (2026-05-16): Completed and synchronized the DECISIONS.md source-contract
+    raw-read reduction.'
+- summary: 'Cycle 528 (2026-05-16): Completed and synchronized the Planera compact
+    startup contract.'
+- summary: 'Cycle 527 (2026-05-16): Completed and synchronized the plan source-contract
+    raw-read reduction.'
 - summary: 'Cycle 526 (2026-05-15): Completed and synchronized the `agentera hej`
     decision-review attention feature.'
 - summary: 'Cycle 525 (2026-05-15): Completed and synchronized the D48 `agentera usage`
@@ -431,21 +366,3 @@ archive:
     version-boundary, and attributed residual-risk semantics for Inspektera evidence_context.'
 - summary: 'Cycle 496 (2026-05-15): Implemented PLAN Task 2 minimum Inspektera evidence_context
     output contract through the existing hej capability-context seam.'
-- summary: 'Cycle 495 (2026-05-15): Completed PLAN Task 1 evidence-context inventory
-    and target-selection contract without implementing the full Inspektera evidence_context...'
-- summary: 'Cycle 494 (2026-05-15): Completed PLAN Task 6 2.3.9 local closeout metadata
-    sync and marked the active plan complete...'
-- summary: 'Cycle 493 (2026-05-15): Completed PLAN Task 5 focused regression and startup-state
-    validation for the Dokumentera closeout context without...'
-- summary: 'Cycle 492 (2026-05-15): Integrated PLAN Task 4 Dokumentera closeout-context
-    guidance without refreshing installed apps, refreshing profile state, editing...'
-- summary: 'Cycle 491 (2026-05-15): Implemented PLAN Task 3 progress and benchmark
-    evidence provenance for the Dokumentera closeout context without...'
-- summary: 'Cycle 490 (2026-05-15): Implemented PLAN Task 2 Dokumentera closeout context
-    output contract without adding unsupported capability-name CLI commands,...'
-- summary: 'Cycle 489 (2026-05-15): Recorded PLAN Task 1 closeout context inventory
-    and archive-boundary evidence for active plan 2.3.9 without...'
-- summary: 'Cycle 488 (2026-05-14): Completed PLAN Task 6 2.3.8 state and release
-    metadata sync locally without publishing, tagging, pushing,...'
-- summary: 'Cycle 487 (2026-05-14): Completed PLAN Task 5 Focused startup-state and
-    orchestration validation for active plan 2.3.8 without refreshing...'

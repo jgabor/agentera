@@ -20,6 +20,7 @@
 
 ### Fixed
 
+- `agentera doctor` now renders an up-to-date app home as `No action needed` without a required-looking `Next:` repair block, hard-renames doctor app metadata to canonical statuses (`up_to_date`, `outdated`, `repair_needed`, `migration_needed`, `manual_review_needed`), preserves safe preview/apply/retry guidance for actionable states, blocks automatic repair for manual-review states, and covers dry-run command spacing with focused regressions.
 - `agentera lint --artifact <ARTIFACT> --file <PATH>` now checks verbosity against the artifact full-file budget while `--text` and stdin keep per-entry budgets, removing repeated false-positive PLAN.md full-plan pressure found in retained `post-audit-flagged` archive evidence.
 - `agentera lint --artifact PLAN.md` now treats concrete repo-style path anchors such as `internal/runtime`, `internal/app`, and `internal/tui` as anchors, preventing false no-anchor advisories for concrete Planera plans while preserving abstraction advisories for generic unanchored prose.
 - D47 app-home vocabulary cleanup now replaces obsolete current-behavior bundle/install-root wording across live docs, guidance, diagnostics, package text, and affected tests while preserving compatibility identifiers, canonical artifact labels, CLI selectors, historical records, and migration examples.

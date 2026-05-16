@@ -1413,7 +1413,7 @@ class TestHej:
         r = _run("hej", cwd=project)
 
         assert r.returncode == 0
-        assert "app_home: status=fresh" in r.stdout
+        assert "app_home: status=up_to_date" in r.stdout
         assert "mode: fresh" in r.stdout
         assert "capability=visionera" in r.stdout
         assert "reason=fresh project direction" in r.stdout
@@ -1424,8 +1424,8 @@ class TestHej:
         r = _run("hej", "--install-root", str(install_root), "--expected-version", "2.0.0", cwd=project)
 
         assert r.returncode == 0
-        assert "app_home: status=migration_required" in r.stdout
-        assert "app migration_required" in r.stdout
+        assert "app_home: status=migration_needed" in r.stdout
+        assert "app migration needed" in r.stdout
         assert "upgrade --only bundle" in r.stdout
         assert str(install_root) in r.stdout
 
@@ -1438,7 +1438,7 @@ class TestHej:
         data = json.loads(r.stdout)
         bundle = data["bundle"]
         app_home = data["app_home"]
-        assert bundle["status"] == "migration_required"
+        assert bundle["status"] == "migration_needed"
         assert bundle["expectedVersion"] == "2.0.0"
         assert bundle["markerVersion"] == "1.0.0"
         assert bundle["dryRunCommand"].startswith("uvx --from git+https://github.com/jgabor/agentera")
@@ -1451,7 +1451,7 @@ class TestHej:
         assert bundle["managedAppRoot"] == str(install_root / "app")
         assert bundle["userDataRoot"] == str(install_root)
         assert app_home == {
-            "status": "migration_required",
+            "status": "migration_needed",
             "home": str(install_root),
             "source": "explicit --install-root",
             "managed_app_root": str(install_root / "app"),
@@ -1466,10 +1466,10 @@ class TestHej:
 
         assert r.returncode == 0
         data = json.loads(r.stdout)
-        assert data["bundle"]["status"] == "update_needed"
-        assert data["app_home"]["status"] == "update_needed"
+        assert data["bundle"]["status"] == "outdated"
+        assert data["app_home"]["status"] == "outdated"
         assert data["bundle"]["signals"] == [{
-            "status": "update_needed",
+            "status": "outdated",
             "kind": "version_mismatch",
             "expected": "2.0.0",
             "actual": "1.0.0",
@@ -1485,7 +1485,7 @@ class TestHej:
         r = _run("hej", "--install-root", str(app_home), "--expected-version", "2.0.0", cwd=project)
 
         assert r.returncode == 0
-        assert "app_home: status=update_needed" in r.stdout
+        assert "app_home: status=outdated" in r.stdout
         assert "normal: app update needed" in r.stdout
         assert "repair" not in r.stdout
 
@@ -1512,7 +1512,7 @@ class TestHej:
 
         assert r.returncode == 0
         data = json.loads(r.stdout)
-        assert data["bundle"]["status"] == "migration_required"
+        assert data["bundle"]["status"] == "migration_needed"
         assert data["bundle"]["expectedVersion"] == "9.0.0"
         assert data["bundle"]["expectedVersionSource"] == str(visible)
 
@@ -1539,7 +1539,7 @@ class TestHej:
         data = json.loads(r.stdout)
         assert data["app_home"]["home"] == str(platform_home)
         assert data["app_home"]["source"] == "default app home"
-        assert data["bundle"]["status"] == "stale"
+        assert data["bundle"]["status"] == "repair_needed"
         assert data["bundle"]["signals"][0]["kind"] == "missing_bundle"
         assert not legacy_default.exists()
 
@@ -1565,7 +1565,7 @@ class TestHej:
         assert r.returncode == 0, r.stderr
         data = json.loads(r.stdout)
         assert data["app_home"] == {
-            "status": "fresh",
+            "status": "up_to_date",
             "home": str(custom),
             "source": "AGENTERA_HOME",
             "managed_app_root": str(custom / "app"),
@@ -1593,7 +1593,7 @@ class TestHej:
 
         assert r.returncode == 0, r.stderr
         data = json.loads(r.stdout)
-        assert data["app_home"]["status"] == "blocked"
+        assert data["app_home"]["status"] == "manual_review_needed"
         assert data["app_home"]["home"] == str(custom)
         assert data["app_home"]["source"] == "AGENTERA_HOME"
         assert data["bundle"]["dryRunCommand"] is None
@@ -1679,7 +1679,7 @@ class TestHej:
         assert "attention:" in r.stdout
         assert "object=PLAN Task 2: Composite hej" in r.stdout
         assert "capability=orkestrera" in r.stdout
-        assert "app_home: status=fresh" in r.stdout
+        assert "app_home: status=up_to_date" in r.stdout
         assert "source_contract:" in r.stdout
         assert "fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,decision_attention,next_action,orchestration_context,closeout_context,evidence_context" in r.stdout
         assert "render=caller-owned README-style hej dashboard" in r.stdout
