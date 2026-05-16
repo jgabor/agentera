@@ -1,0 +1,265 @@
+header:
+  level: full
+  created: 2026-05-16
+  status: complete
+  reviewed: 2026-05-16
+  critic_issues: 8 found, 8 addressed, 0 dismissed
+  title: Plan CLI Source Contract Raw-Read Reduction
+what: >-
+  Reduce Planera-triggered PLAN.md raw artifact reads after successful CLI state
+  access by making the `agentera plan --format json` completeness contract and
+  Planera startup guidance unambiguous enough for agents to rely on structured
+  plan state instead of defensively reading the persisted plan artifact during
+  normal read-only startup or evaluation.
+why: >-
+  The latest TODO keeps PLAN.md as the highest-priority residual post-CLI raw-read
+  source: 7 reads and 37 redundant tokens. Agentera already exposes plan summary,
+  tasks, dependencies, acceptance criteria, and evidence through the CLI, but mixed
+  guidance still leaves agents with an incentive to read `.agentera/plan.yaml`.
+  Closing that ambiguity should lower startup overhead without changing the plan
+  artifact shape or command vocabulary.
+constraints: >-
+  Preserve existing routine command vocabulary and the Decision 43 separation between
+  `/agentera plan` as a capability route and `agentera plan` as a state command. Do
+  not add a new command, remove `agentera plan`, change the persisted plan artifact
+  shape, hide plan task evidence or acceptance criteria from JSON output, weaken
+  artifact mapping, mutate decision satisfaction, edit vision or objective state,
+  publish, push, tag, refresh installed apps or profiles, or run unsupported
+  capability-name CLI commands. Treat CLI JSON as the authoritative read model for
+  normal Planera startup/evaluation only; raw plan artifact reads remain allowed for
+  artifact writing, archival, validation, corruption investigation, or unavailable
+  or incomplete CLI output.
+scope:
+  included:
+    - Boundary check that maps the benchmark's PLAN.md label to the persisted plan artifact and names the read trigger being closed.
+    - Stronger `agentera plan --format json` source-contract semantics for normal read-only startup and evaluation.
+    - Planera and shared Agentera guidance alignment for complete CLI plan state and CLI fallbacks before last-resort raw reads.
+    - Focused tests for the plan JSON contract and guidance that should stop defensive plan artifact reads.
+    - Smallest feasible measurement or explicit measurement caveat for the benchmark-driven TODO.
+    - Policy-required local artifact closeout and version gate only if the implemented change requires it.
+  excluded:
+    - Broad startup benchmark redesign or runtime-history CI.
+    - Changing the plan artifact schema or realisera task execution semantics.
+    - Eliminating legitimate raw plan reads for writes, archives, validation, or artifact corruption diagnostics.
+    - Solving DECISIONS.md raw reads, AGENTERA_ARTIFACTS discovery reads, or the separate Planera prose re-read TODO.
+    - Publication, remote push, tagging, installed-app refresh, profile refresh, vision edits, objective edits, or package-manager updates.
+  deferred:
+    - DECISIONS.md source-contract completeness improvements.
+    - Artifact path discovery through `agentera describe` or hej composite output.
+    - Broader Planera prose discoverability work that is not specifically about raw plan artifact reads.
+design: >-
+  Treat the existing `agentera plan --format json` routine command as the read-only
+  plan state authority for normal startup and evaluation. The returned contract should
+  clearly state which plan fields are complete, that `raw_artifact_reads_required` is
+  false when the plan artifact exists, and that raw plan artifact access is a last-resort
+  fallback rather than normal startup behavior. Capability guidance should point Planera
+  at CLI-provided state and fallbacks first while preserving persisted artifact authority
+  for writes, archives, validation, and corruption checks.
+tasks:
+  - number: 1
+    name: Benchmark and artifact boundary
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the TODO cites PLAN.md raw reads WHEN the benchmark or TODO evidence is
+        inspected THEN the plan names whether PLAN.md is a canonical artifact label,
+        `.agentera/plan.yaml`, a root file, or another measured path.
+      - >-
+        GIVEN a guidance or contract change is selected WHEN implementation starts THEN
+        the exact instruction path or CLI contract ambiguity being closed is identified
+        before broad prose edits are made.
+      - >-
+        GIVEN raw plan access is reviewed WHEN the boundary is recorded THEN writes,
+        archives, validation, corruption checks, and unavailable or incomplete CLI output
+        remain valid raw-artifact cases.
+    evidence:
+      - >-
+        `references/analysis/startup-measurement-contract.yaml` lists `PLAN.md` as a
+        canonical privacy-safe artifact label, while `.agentera/docs.yaml` maps `PLAN.md`
+        to `.agentera/plan.yaml`; the benchmark reports canonical labels, not raw local
+        paths.
+      - >-
+        The ambiguity being closed is the combination of Planera prose that still
+        encouraged raw orientation reads and a plan source contract that did not
+        explicitly name the read-only startup boundary, even though `agentera plan
+        --format json` already returned summary, task dependencies, acceptance criteria,
+        evidence, overall acceptance, surprises, and previous-plan archive metadata.
+      - >-
+        The implemented boundary preserves raw mapped plan artifact access for writes,
+        archives, validation, corruption diagnostics, and unavailable or incomplete CLI
+        output after CLI fallbacks.
+  - number: 2
+    name: Plan source-contract clarity
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `agentera plan --format json` returns an existing plan WHEN its source
+        contract is read THEN it reports `complete_for_plan_artifact=true`,
+        `raw_artifact_reads_required=false`, and complete read-only coverage for summary,
+        tasks, dependencies, acceptance criteria, evidence, overall acceptance, surprises,
+        and prior-plan archive references.
+      - >-
+        GIVEN the source contract is complete WHEN an agent needs normal Planera startup
+        or evaluation context THEN the contract says raw plan artifact reads are not
+        required and should be skipped rather than treated as a defensive default.
+      - >-
+        GIVEN the source contract is incomplete or unavailable WHEN an agent needs plan
+        state THEN the fallback path is explicit and tries supported CLI state before
+        last-resort raw artifact reads.
+      - >-
+        GIVEN maintainers review command vocabulary WHEN the contract changes THEN no
+        slash-route alias or capability-name command is introduced.
+    evidence:
+      - >-
+        `_plan_source_contract` in `scripts/agentera` now includes `canonical_artifact_label`,
+        `persisted_artifact_path`, `complete_for_normal_startup_evaluation`,
+        `complete_state`, `raw_artifact_access_boundary`, and `fallback_policy` while
+        retaining `complete_for_plan_artifact=true` and `raw_artifact_reads_required=false`
+        for existing plan artifacts.
+      - >-
+        `uv run scripts/agentera plan --format json --fields source_contract,summary,entries`
+        returned complete read-only coverage for summary fields, task entries, acceptance,
+        evidence, overall acceptance, surprises, and previous-plan archive metadata, with
+        no new slash-route alias or capability-name CLI command.
+      - >-
+        Independent evaluation found that legacy `entries`-shaped plan artifacts were
+        overclaiming completeness; `_plan_source_contract` is now shape-aware and reports
+        `complete_for_plan_artifact=false` plus missing current task shape for legacy
+        entries.
+  - number: 3
+    name: Planera guidance alignment
+    depends_on:
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN Planera startup receives complete CLI plan state WHEN the orient step is
+        followed THEN it relies on `agentera plan --format json` summary and entries for
+        current-plan context instead of rereading the persisted plan artifact.
+      - >-
+        GIVEN Planera needs other project state WHEN the guidance is followed THEN this
+        plan does not redesign unrelated VISION, DECISIONS, TODO, HEALTH, PROGRESS, or
+        profile access beyond preserving CLI-first fallback ordering where already defined.
+      - >-
+        GIVEN Planera must write or archive a plan WHEN artifact mutation begins THEN
+        guidance still allows mapped raw artifact access for the write/archive operation.
+      - >-
+        GIVEN capability guidance is updated WHEN tests inspect it THEN the guidance does
+        not require installed app refresh, unsupported capability-name CLI commands, or
+        broad artifact discovery before CLI state.
+    evidence:
+      - >-
+        `skills/agentera/capabilities/planera/prose.md` now tells Planera to use
+        `agentera plan --format json` for read-only current-plan startup/evaluation and
+        to skip raw `.agentera/plan.yaml` reads when `source_contract.complete_for_plan_artifact`
+        is true, while still allowing mapped raw access for writing, archiving, validation,
+        corruption diagnostics, or incomplete CLI state.
+      - >-
+        `skills/agentera/SKILL.md` now names overall acceptance, surprises, prior-plan
+        archive references, and the same valid raw-read exceptions in the master
+        CLI-first state-access guidance without requiring app refreshes, unsupported
+        capability commands, or broad artifact discovery before CLI state.
+  - number: 4
+    name: Regression and measurement evidence
+    depends_on:
+      - 2
+      - 3
+    status: complete
+    acceptance:
+      - >-
+        GIVEN focused CLI tests run WHEN a plan artifact includes summary, tasks,
+        dependencies, acceptance, evidence, overall acceptance, surprises, and prior-plan
+        archive metadata THEN JSON output and source-contract fields prove those values
+        are available without a raw plan read.
+      - >-
+        GIVEN guidance tests run WHEN Planera and shared Agentera instructions are parsed
+        THEN they assert complete CLI plan state suppresses defensive plan artifact reads
+        during normal startup/evaluation.
+      - >-
+        GIVEN the TODO is benchmark-driven WHEN verification runs THEN the smallest
+        available benchmark or usage-stat command that reports raw plan reads is run, or
+        the exact attempted command, failure reason, and focused-test fallback evidence
+        are recorded.
+      - >-
+        GIVEN benchmark evidence still contains degraded runtime coverage WHEN results
+        are summarized THEN degraded runtimes are separated from product behavior.
+    evidence:
+      - >-
+        Focused regression tests passed with `uv run pytest tests/test_query_cli.py::TestArtifactSpecificSummaries::test_plan_json_declares_complete_plan_artifact_contract
+        tests/test_query_cli.py::TestArtifactSpecificSummaries::test_legacy_plan_entries_do_not_claim_complete_plan_artifact_contract
+        tests/test_planera_capability.py::test_planera_prose_uses_complete_plan_cli_state_before_raw_artifact_reads
+        tests/test_decision45_cli_contract.py::test_plan_source_contract_closes_plan_artifact_fallback
+        tests/test_cross_capability.py::test_master_skill_documents_route_alias_contract_boundary
+        -q`.
+      - >-
+        `mage bench:startupState` completed successfully and wrote the retained report to
+        `$AGENTERA_HOME/benchmarks/startup-state/latest-report.json`; the latest window
+        still reports direct PLAN.md pressure (`raw_artifact_access_after_cli_counts.PLAN.md=11`,
+        `redundant_raw_artifact_access_counts.PLAN.md=10`) and recommendation
+        `plan_cli_startup_envelope`, so the measurement is a retrospective pressure
+        baseline rather than proof of future-session adoption.
+      - >-
+        Benchmark runtime coverage was recorded separately: codex and opencode were `ok`,
+        while claude-code and github-copilot were degraded by `schema_divergent`.
+  - number: 5
+    name: Policy-gated closeout
+    depends_on:
+      - 1
+      - 2
+      - 3
+      - 4
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the implemented change is classified under `.agentera/docs.yaml` semver
+        policy WHEN closeout starts THEN version-bearing surfaces are updated only if
+        the policy requires it and the chosen classification is recorded.
+      - >-
+        GIVEN local state is synchronized WHEN artifacts are updated THEN only
+        policy-required TODO, CHANGELOG, DOCS, PROGRESS, and PLAN evidence is changed,
+        with no unrelated artifact churn.
+      - >-
+        GIVEN final verification runs WHEN the plan is ready for handoff THEN focused
+        tests, touched artifact validators, compaction check or fix, and `git diff --check`
+        pass.
+    evidence:
+      - >-
+        Classified the source-contract and guidance expansion as `feat`; per
+        `.agentera/docs.yaml` semver policy, aligned version-bearing surfaces from 2.7.0
+        to 2.8.0 across `pyproject.toml`, `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`,
+        `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`,
+        `skills/agentera/SKILL.md`, `skills/hej/SKILL.md`, and `registry.json`.
+      - >-
+        Synced TODO, CHANGELOG, DOCS, PROGRESS, and PLAN evidence for the Plan CLI source
+        contract raw-read reduction without changing persisted plan artifact shape,
+        decision satisfaction, vision/objective state, installed app/profile state,
+        publication, push, tag, package-manager state, or command vocabulary.
+overall_acceptance:
+  - >-
+    GIVEN a complete plan artifact exists WHEN Planera startup or evaluation state is
+    loaded through supported CLI output THEN the agent has enough structured plan state
+    to skip defensive `.agentera/plan.yaml` reads.
+  - >-
+    GIVEN the persisted plan artifact remains the source for writes and archives WHEN
+    mutation or validation is required THEN the guidance does not prohibit mapped raw
+    artifact access for that operation.
+  - >-
+    GIVEN the benchmark TODO is closed WHEN evidence is reviewed THEN raw PLAN.md read
+    pressure is measured directly or the missing measurement path is explicitly recorded
+    with focused contract tests as fallback.
+  - >-
+    GIVEN command vocabulary is reviewed WHEN the plan completes THEN Agentera keeps
+    routine state commands and slash-route aliases separate.
+surprises:
+  - >-
+    Adversarial review found eight issues and all were addressed: map the benchmark
+    PLAN.md label to the actual artifact path; avoid overstating raw reads as globally
+    forbidden; name exact JSON contract expectations; trace the instruction path causing
+    reads before editing; narrow closeout to policy-required artifacts; require the
+    smallest feasible measurement or explicit caveat; avoid solving unrelated orientation
+    raw reads; and preserve persisted artifact authority for writes, validation, archives,
+    and corruption checks.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-16-decision-review-attention-plan.yaml

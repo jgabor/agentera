@@ -215,6 +215,16 @@ structured_output:
             capability routing separate from CLI command vocabulary while returning
             declared state needs, included startup state families, missing families,
             and CLI fallback commands for missing routine state.
+          planera_startup_context_semantics: >-
+            `agentera hej --format json --capability-context planera` may include a
+            bounded `startup_contract` for normal Planera execution startup. The
+            contract can summarize planning levels, step markers, CLI-first
+            orientation, raw plan artifact boundaries, full-plan review/self-audit
+            requirements, handoff expectations, and the Planera prose authority
+            boundary without reading `planera/prose.md` at runtime. It must not
+            introduce `agentera planera`, new top-level commands, or hidden
+            capability-name aliases; `agentera describe` remains runtime/schema
+            introspection rather than a capability workflow payload.
           orchestration_context_semantics: >-
             `agentera hej --format json --capability-context orkestrera` may include
             orchestration_context with dependency-ready tasks, blocked task reasons,

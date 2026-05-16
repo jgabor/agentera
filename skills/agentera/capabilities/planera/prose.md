@@ -41,6 +41,15 @@ CLI fallbacks.
 
 Use `agentera describe --format json` and its `artifact_schemas` entry for `plan` to locate the active installed schema; do not search Agentera directories manually. Existing plan artifacts provide repository-local examples of the shape.
 
+For normal Planera startup, `agentera hej --format json --capability-context
+planera` exposes `source_contract.capability_context.startup_contract` as the
+compact read model for planning levels, step markers, CLI-first orientation,
+plan artifact boundaries, full-plan review/self-audit requirements, and handoff
+expectations. Use that compact context before rereading this prose. Read this
+file when editing Planera, resolving contradiction or ambiguity, validating
+detailed behavior not covered by compact context, or investigating benchmark/read-trigger
+evidence.
+
 ### Artifact path resolution
 
 Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`.
