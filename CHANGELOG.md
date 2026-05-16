@@ -4,6 +4,7 @@
 
 ### Changed
 
+- 2.4.0 minor release metadata now aligns package, plugin, OpenCode marker, registry, lockfile, and skill frontmatter versions with the aggregate post-v2.3.12 feature and fix set after intermediate version bumps were removed from history.
 - 2.3.12 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Realisera execution-context source-contract patch.
 - 2.3.11 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Optimera benchmark-context source-contract patch; the 2.3.12 Realisera execution-context source-contract work is now closed separately.
 - 2.3.10 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Inspektera evidence-context source-contract patch; the 2.3.12+ source-contract train remains deferred.
@@ -104,6 +105,7 @@
 
 ### Verified
 
+- 2.4.0 aggregate release metadata is synchronized locally without remote push; intermediate post-v2.3.12 version bumps were removed from rewritten history, version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.4.0, package/version contract tests passed, touched artifact validators passed, and `git diff --check` passed.
 - D47 app-home vocabulary cleanup closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, vision edit, objective edit, decision satisfaction-state change, or unsupported capability-name CLI command; independent Task 1 and Task 2 evaluations passed, focused Task 3 verification reported 346 passing tests, and Task 4 metadata validators plus `git diff --check` passed.
 - 2.3.12 Realisera execution-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, objective-state mutation, or unsupported capability CLI command introduction; focused CLI/contract tests passed with 181 tests, Realisera capability validation and schema self-validation passed, repository gate/compaction/artifact validation/diff-check gates passed, and PLAN lint remains failed only on the pre-existing advisory verbosity budget.
 - 2.3.11 Optimera benchmark-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, objective-state mutation, or real local benchmark execution; focused CLI/contract/Optimera/startup tests passed with 222 tests, Optimera capability validation and schema self-validation passed, independent evaluation found no blocking findings after privacy and runtime-caveat fixes, and the 2.3.12 Realisera execution-context source-contract work is now closed separately.
