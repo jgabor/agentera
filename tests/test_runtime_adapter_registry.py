@@ -46,6 +46,8 @@ def test_runtime_adapter_registry_returns_current_runtimes_in_deterministic_orde
         "Codex CLI",
     ]
     assert "chat.message" in registry.get("opencode")["lifecycle_events"]["supported_events"]
+    assert registry.get("opencode")["subagent_dispatch"]["invocation_pattern"].startswith("Use @<capability>")
+    assert "skills/agentera/agents/*.toml" in registry.get("codex")["subagent_dispatch"]["descriptor_sources"]
 
 
 def test_runtime_adapter_registry_known_and_unknown_ids_have_clear_diagnostics():
@@ -103,6 +105,8 @@ def test_runtime_adapter_registry_consumer_views_share_changed_fixture_facts():
         "docs": "Copilot Canary",
         "tests": "Copilot Canary",
     }
+    assert "subagent_dispatch" in registry.consumer_view("upgrade", "copilot")
+    assert "subagent_dispatch" in registry.consumer_view("tests", "copilot")
 
 
 def test_runtime_adapter_registry_rejects_package_metadata_and_install_root_ownership_fields():

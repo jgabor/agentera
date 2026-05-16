@@ -229,6 +229,17 @@ Keep small enough for one agent session. Too large? Split and save the rest.
 
 **Stale-base awareness**: Before dispatch, run `git rev-list --count origin/main..HEAD`. If count > 0, do not merge the worktree branch. Fetch the sub-agent's diff and apply it to the main checkout.
 
+Runtime dispatch substrates:
+
+| Runtime | Substrate | Limitation |
+|---------|-----------|------------|
+| Claude Code | Task tool with worktree-aware prompt | Native in-session dispatch. |
+| OpenCode | `@<capability>` descriptors from `~/.config/opencode/agents/*.md` or a host Task subagent | Same working tree unless this step explicitly creates and targets a manual git worktree. |
+| Codex CLI | `~/.codex/agents/*.toml` descriptors plus `[agents]` limits | Agentera setup installs descriptor files; do not write legacy `[agents.<name>]` config blocks. |
+| Copilot CLI | User-driven `/fleet` or equivalent host action | No guaranteed programmatic in-session dispatch. |
+
+Never dispatch by running unsupported capability-name CLI commands such as `agentera realisera`; use the runtime-native subagent surface with the implementation prompt below.
+
 Spawn an implementation sub-agent in a worktree with:
 
 - The plan from step 4

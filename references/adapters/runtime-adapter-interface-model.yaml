@@ -9,6 +9,7 @@ record:
     - host_detection
     - lifecycle_events
     - artifact_validation
+    - subagent_dispatch
     - config_targets
     - diagnostics
     - documentation_claims
@@ -57,6 +58,20 @@ record:
         validation_events: list[string]
         hard_gate_claims: list[string]
         payload_reconstruction_limitations: list[string]
+    subagent_dispatch:
+      type: object
+      owns:
+        - mechanism
+        - setup_targets
+        - descriptor_sources
+        - invocation_pattern
+        - limitations
+      required_fields:
+        mechanism: string
+        setup_targets: list[string]
+        descriptor_sources: list[string]
+        invocation_pattern: string
+        limitations: list[string]
     config_targets:
       type: object
       owns:
@@ -101,6 +116,7 @@ ownership:
     - host detection facts used by runtime-facing consumers
     - lifecycle event support and limitations
     - artifact validation support claims
+    - runtime-native subagent dispatch descriptor and invocation facts
     - runtime config, hook, plugin, and environment target paths
     - diagnostic check names, statuses, gaps, and messages
         - adapter documentation parity and known-mismatch claims
@@ -127,6 +143,7 @@ consumer_permissions:
       - identity
       - lifecycle_events
       - artifact_validation
+      - subagent_dispatch
       - documentation_claims
     forbidden_ownership:
       - package_metadata_out_of_scope
@@ -145,6 +162,7 @@ consumer_permissions:
     allowed_groups:
       - identity
       - host_detection
+      - subagent_dispatch
       - config_targets
       - diagnostics
     forbidden_ownership:
@@ -155,6 +173,7 @@ consumer_permissions:
       - identity
       - lifecycle_events
       - artifact_validation
+      - subagent_dispatch
       - config_targets
       - diagnostics
       - documentation_claims
@@ -167,6 +186,7 @@ consumer_permissions:
       - host_detection
       - lifecycle_events
       - artifact_validation
+      - subagent_dispatch
       - config_targets
       - diagnostics
       - documentation_claims

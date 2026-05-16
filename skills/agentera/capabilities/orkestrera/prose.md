@@ -151,7 +151,7 @@ Infer which capability handles the task based on its description:
 
 If the task does not clearly map, default to ⧉ realisera.
 
-Spawn the target capability as a background subagent. Substrate per runtime is resolved by the host adapter, not the conductor.
+Spawn the target capability through the runtime-native subagent substrate named in the runtime dispatch table below. Do not run unsupported capability-name CLI commands such as `agentera realisera` or `agentera planera`; the `agentera` CLI remains a state interface.
 
 ```
 You are executing a planned task for [project].
@@ -170,6 +170,7 @@ provenance. Keep brief.]
 ## Constraints
 - Execute ONLY this task. No scope creep.
 - Follow existing code patterns and conventions.
+- Use the runtime-native subagent descriptor or Task surface for the selected capability.
 - Commit your changes with a conventional commit message.
 - You are working on a plan-driven task. Update the task status in PLAN.md
   to ■ complete when done.
@@ -351,16 +352,16 @@ Orkestrera is part of a twelve-capability suite. It is the orchestration layer t
 
 ### Runtime dispatch substrates
 
-The orchestration loop in Step 2 (Dispatch) is runtime-agnostic: it always spawns the target capability as a background subagent. What that spawn maps to differs per runtime, and the table below names each substrate honestly.
+The orchestration loop in Step 2 (Dispatch) always spawns the target capability as a subagent, but the concrete substrate differs per runtime. Use this table; do not replace it with an abstract host-adapter claim.
 
 | Runtime | Substrate | Notes |
 |---------|-----------|-------|
 | Claude Code | Task tool | Native programmatic in-session subagent dispatch. |
-| OpenCode | Plugin background-agent path | Programmatic in-session dispatch via the OpenCode plugin runtime. |
-| Codex CLI | `[agents.<name>]` config tables in `~/.codex/config.toml` | Wired by `uv run scripts/setup_codex.py --enable-agents`, which writes one `[agents.<name>]` entry per agentera skill pointing at the bundled `agents/<name>.toml` stub. After setup, conversational dispatch works natively. |
+| OpenCode | `~/.config/opencode/agents/*.md` descriptors invoked as `@<capability>` | The plugin bootstraps managed descriptors from `.opencode/agents/` and preserves user-owned collisions. No unsupported capability-name CLI commands. |
+| Codex CLI | `~/.codex/agents/*.toml` descriptors plus bounded `[agents]` settings | `scripts/setup_codex.py` and `agentera upgrade` install one descriptor per Agentera capability from `skills/agentera/agents/*.toml`. Agentera v2 never writes legacy `[agents.<name>]` blocks. |
 | Copilot CLI | None programmatically; user-driven `/fleet` fallback | Copilot exposes no in-session subagent tool call equivalent to the Claude Code Task tool. The conductor surfaces the dispatch as a `/fleet` recommendation; the user runs `/fleet` to execute the parallel subagent. |
 
-The conductor's prose is the same on every runtime. Step 2 (Dispatch) does not branch by runtime; the host adapter resolves the substrate. Conductor-side instructions, retry logic, and inspektera evaluation gating are unchanged.
+Conductor-side instructions, retry logic, and inspektera evaluation gating stay unchanged. Only the concrete dispatch surface changes by runtime.
 
 ### Orkestrera dispatches ⧉ realisera
 

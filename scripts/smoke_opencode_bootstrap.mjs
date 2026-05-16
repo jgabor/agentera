@@ -43,17 +43,21 @@ try {
   );
   const {
     bootstrapCommands,
+    bootstrapAgents,
     bootstrapSkills,
     COMMAND_TEMPLATES,
     AGENTERA_VERSION,
+    REQUIRED_AGENT_NAMES,
     OPENCODE_SKILL_INSTALL_COMMAND,
     commandBootstrap,
+    agentBootstrap,
     skillBootstrap,
     hasManagedMarker,
     resolveAgenteraAppHome,
     resolveDefaultAgenteraAppHome,
     resolveAgenteraHome,
     resolveOpencodeCommandsDir,
+    resolveOpencodeAgentsDir,
     resolveOpencodeSkillsDir,
     writeSessionBookmark,
     isBareHejUserMessage,
@@ -67,8 +71,10 @@ try {
 
   const commandNames = Object.keys(COMMAND_TEMPLATES);
   const commandsDir = resolveOpencodeCommandsDir();
+  const agentsDir = resolveOpencodeAgentsDir();
   const skillsDir = resolveOpencodeSkillsDir();
   assert(commandsDir === path.join(tmpdir, "commands"), "resolveOpencodeCommandsDir should honor OPENCODE_CONFIG_DIR");
+  assert(agentsDir === path.join(tmpdir, "agents"), "resolveOpencodeAgentsDir should honor OPENCODE_CONFIG_DIR");
   assert(skillsDir === path.join(tmpdir, "skills"), "resolveOpencodeSkillsDir should honor OPENCODE_CONFIG_DIR");
 
   // --- Test 0: Current app-home layout ---
@@ -155,7 +161,42 @@ try {
     "bootstrapSkills should not turn a user-owned directory into an Agentera skill path"
   );
 
-  // --- Test 1d: Missing universal Agentera skills report install command and create no unusable paths ---
+  // --- Test 1d: Agent descriptor bootstrap installs per-capability descriptors ---
+  const agentReport = bootstrapAgents();
+  assert(
+    agentReport.restored.length === REQUIRED_AGENT_NAMES.length,
+    "bootstrapAgents should restore all Agentera capability descriptors"
+  );
+  for (const name of REQUIRED_AGENT_NAMES) {
+    const filePath = path.join(agentsDir, `${name}.md`);
+    assert(fs.existsSync(filePath), `${name}.md should exist after agent descriptor bootstrap`);
+    assert(hasManagedMarker(filePath), `${name}.md should contain agentera_managed: true in frontmatter`);
+    assert(
+      fs.readFileSync(filePath, "utf8").includes(`capabilities/${name}/prose.md`),
+      `${name}.md should point to the capability prose source`
+    );
+  }
+  assert(
+    fs.readFileSync(path.join(agentsDir, ".agentera-version"), "utf8").trim() === AGENTERA_VERSION,
+    "agent descriptor marker should equal AGENTERA_VERSION"
+  );
+
+  // --- Test 1e: Agent descriptor bootstrap preserves user-owned collisions ---
+  const userOwnedAgent = path.join(agentsDir, "realisera.md");
+  const userOwnedAgentContent = "---\ndescription: custom realisera\n---\nUser-owned agent.\n";
+  fs.writeFileSync(userOwnedAgent, userOwnedAgentContent);
+  const userOwnedAgentReport = bootstrapAgents();
+  assert(
+    userOwnedAgentReport.skippedUserOwned.includes("realisera"),
+    "bootstrapAgents should report skipped user-owned agent descriptor"
+  );
+  assert(
+    fs.readFileSync(userOwnedAgent, "utf8") === userOwnedAgentContent,
+    "bootstrapAgents should preserve user-owned agent descriptor content"
+  );
+  fs.rmSync(agentsDir, { recursive: true, force: true });
+
+  // --- Test 1f: Missing universal Agentera skills report install command and create no unusable paths ---
   const isolatedPluginRoot = path.join(tmpdir, "isolated-plugin-root");
   const isolatedPluginPath = path.join(isolatedPluginRoot, ".opencode", "plugins", "agentera.js");
   fs.mkdirSync(path.dirname(isolatedPluginPath), { recursive: true });
@@ -175,6 +216,15 @@ try {
   assert(
     isolatedTest.skillBootstrap.lastReport.installCommand === OPENCODE_SKILL_INSTALL_COMMAND,
     "skillBootstrap.lastReport should retain the missing-source install command"
+  );
+  const missingAgentReport = isolatedTest.bootstrapAgents();
+  assert(
+    missingAgentReport.missingSource.length === REQUIRED_AGENT_NAMES.length,
+    "bootstrapAgents should report all missing descriptors when no Agentera source exists"
+  );
+  assert(
+    isolatedTest.agentBootstrap.lastReport.missingSource.length === REQUIRED_AGENT_NAMES.length,
+    "agentBootstrap.lastReport should retain missing descriptor names"
   );
 
   // --- Test 2: No-op on re-run with same version ---
@@ -303,12 +353,14 @@ try {
   // Wipe the commands dir to confirm calling Agentera() rebuilds it without
   // any explicit bootstrapCommands() call from the harness.
   fs.rmSync(commandsDir, { recursive: true, force: true });
+  fs.rmSync(agentsDir, { recursive: true, force: true });
   const lifecycleCountBefore = lifecycle.initCount;
   const hooks1 = await Agentera({}, {});
   assert(typeof hooks1 === "object" && hooks1 !== null, "Agentera() must return a Hooks object");
   assert(lifecycle.initCount === lifecycleCountBefore + 1, "lifecycle.initCount should increment once per Agentera() call");
   assert(typeof lifecycle.lastInitAt === "string", "lifecycle.lastInitAt should be set");
   assert(fs.existsSync(commandsDir), "commands dir should be recreated by Agentera() init");
+  assert(fs.existsSync(agentsDir), "agents dir should be recreated by Agentera() init");
   for (const name of commandNames) {
     assert(
       fs.existsSync(path.join(commandsDir, `${name}.md`)),
@@ -318,6 +370,10 @@ try {
   assert(
     fs.readFileSync(markerFile, "utf8").trim() === AGENTERA_VERSION,
     ".agentera-version should match AGENTERA_VERSION after Agentera() init"
+  );
+  assert(
+    agentBootstrap.lastReport.restored.includes("hej"),
+    "Agentera() init should run agent descriptor bootstrap"
   );
 
   // --- Test 6: Hook surface (real OpenCode interface keys only) ---
@@ -495,6 +551,8 @@ try {
 
   // --- Test 13: shell.env injection — user pre-set branch (process env) ---
   const userPreset = path.join(tmpdir, "user-chosen-root");
+  fs.mkdirSync(path.join(userPreset, "app", "scripts"), { recursive: true });
+  fs.writeFileSync(path.join(userPreset, "app", "scripts", "validate_capability.py"), "#!/usr/bin/env -S uv run --script\n");
   process.env.AGENTERA_HOME = userPreset;
   const hooksPreset = await Agentera({}, {});
   const envOut3 = { env: {} };
@@ -507,11 +565,14 @@ try {
 
   // --- Test 14: shell.env injection — pre-set branch (already in output env) ---
   const hooksAlreadyMerged = await Agentera({}, {});
-  const envOut4 = { env: { AGENTERA_HOME: "/already/merged/by/opencode" } };
+  const alreadyMerged = path.join(tmpdir, "already-merged-root");
+  fs.mkdirSync(path.join(alreadyMerged, "app", "scripts"), { recursive: true });
+  fs.writeFileSync(path.join(alreadyMerged, "app", "scripts", "validate_capability.py"), "#!/usr/bin/env -S uv run --script\n");
+  const envOut4 = { env: { AGENTERA_HOME: alreadyMerged } };
   await hooksAlreadyMerged["shell.env"]({ cwd: tmpdir }, envOut4);
   assert(
-    envOut4.env.AGENTERA_HOME === "/already/merged/by/opencode",
-    "shell.env must preserve a pre-merged AGENTERA_HOME value"
+    envOut4.env.AGENTERA_HOME === alreadyMerged,
+    "shell.env must preserve a valid pre-merged AGENTERA_HOME value"
   );
 
   // --- Test 15: Lifecycle counter monotonicity ---

@@ -61,6 +61,11 @@ def _run(setup_codex: ModuleType, *args: str) -> int:
     return setup_codex.main(list(args))
 
 
+def _write_current_descriptors(setup_codex: ModuleType, install_root: Path, agents_dir: Path) -> None:
+    changes = setup_codex.plan_agent_descriptor_changes(install_root, agents_dir, force=False)
+    setup_codex.write_agent_descriptor_changes(changes)
+
+
 # ---------------------------------------------------------------------------
 # TOML structural branches (6)
 # ---------------------------------------------------------------------------
@@ -69,7 +74,7 @@ def _run(setup_codex: ModuleType, *args: str) -> int:
 def test_branch1_fresh_write(
     setup_codex: ModuleType, tmp_path: Path, install_root: Path, capsys
 ):
-    """Branch 1: absent file → fresh write with only [shell_environment_policy]."""
+    """Branch 1: absent file → fresh write with shell env, agent limits, descriptors."""
     target = tmp_path / "config.toml"
     assert not target.exists()
 
@@ -84,14 +89,24 @@ def test_branch1_fresh_write(
     assert target.exists()
 
     text = target.read_text(encoding="utf-8")
-    # File contains only the managed section. We assert structural shape
+    # File contains only the managed sections. We assert structural shape
     # (header + set line + AGENTERA_HOME at install_root) rather than
     # exact bytes so the emitter can evolve without breaking the test.
     assert "[shell_environment_policy]" in text
     assert "set = {" in text
     assert f'AGENTERA_HOME = "{install_root}"' in text
-    # No other tables introduced.
-    assert text.count("[") == 1
+    assert "[agents]" in text
+    assert "max_threads = 6" in text
+    assert "max_depth = 1" in text
+    assert "[agents." not in text
+
+    agents_dir = target.parent / "agents"
+    for name in setup_codex.CAPABILITY_AGENT_NAMES:
+        descriptor = agents_dir / f"{name}.toml"
+        assert descriptor.is_file()
+        descriptor_text = descriptor.read_text(encoding="utf-8")
+        assert "# agentera_managed: true" in descriptor_text
+        assert f"capabilities/{name}/prose.md" in descriptor_text
 
 
 def test_branch2_section_absent_appends(
@@ -170,6 +185,10 @@ def test_branch4_noop_byte_identical(
     pre_existing = (
         '[shell_environment_policy]\n'
         f'set = {{ AGENTERA_HOME = "{install_root}" }}\n'
+        '\n'
+        '[agents]\n'
+        'max_threads = 6\n'
+        'max_depth = 1\n'
     )
     target.write_text(pre_existing, encoding="utf-8")
     before_bytes = target.read_bytes()
@@ -336,8 +355,13 @@ def test_dry_run_noop_exits_0(
     pre_existing = (
         '[shell_environment_policy]\n'
         f'set = {{ AGENTERA_HOME = "{install_root}" }}\n'
+        '\n'
+        '[agents]\n'
+        'max_threads = 6\n'
+        'max_depth = 1\n'
     )
     target.write_text(pre_existing, encoding="utf-8")
+    _write_current_descriptors(setup_codex, install_root, target.parent / "agents")
     before_bytes = target.read_bytes()
 
     rc = _run(
@@ -357,7 +381,7 @@ def test_dry_run_noop_exits_0(
 def test_enable_agents_is_v2_noop(
     setup_codex: ModuleType, tmp_path: Path, install_root: Path, capsys
 ):
-    """Agentera v2 exposes one bundled skill; --enable-agents must not write v1 paths."""
+    """Agentera v2 installs descriptor files; --enable-agents must not write v1 config paths."""
     target = tmp_path / "config.toml"
 
     rc = _run(

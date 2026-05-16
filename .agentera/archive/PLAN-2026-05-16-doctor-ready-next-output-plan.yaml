@@ -1,0 +1,297 @@
+header:
+  level: full
+  created: 2026-05-16
+  status: complete
+  reviewed: 2026-05-16
+  critic_issues: 2 found, 2 addressed, 0 dismissed
+  revised: >-
+    Review tightened the plan from generic doctor polish to the reproduced fresh-status rendering seam,
+    added explicit JSON compatibility and dry-run formatting checks, and preserved update/repair/blocked
+    state guidance instead of only removing the `Next:` block. Later Resonera feedback tightened the
+    metadata vocabulary stance: do not accept internal/user-facing divergence by default; prefer one
+    canonical app vocabulary and use compatibility aliases only when existing consumers require them.
+    Decision 54 records the selected hard-rename app-metadata stance before implementation, then
+    gates broader vocabulary targets behind inventory, consumer review, and a later Resonera decision
+    on whether a dedicated `vocabulary.yaml` should replace `docs/vocabulary.md`.
+  title: Doctor Ready Next Output Plan
+what: >-
+  Fix `agentera doctor` so ready or healthy states do not render a required-looking `Next:` repair
+  section, and rationalize app metadata vocabulary such as fresh, stale, refresh, fixed, updated, ready,
+  and outdated without creating another DECISIONS.md/decisions.yaml or bundle/app-style terminology split.
+  Keep broader targets such as capability names, artifact names, exit signals, task statuses, health
+  grades, and general prose out of the implementation until they have a separate inventory-backed
+  vocabulary-authority decision.
+why: >-
+  The next open TODO reports that `agentera doctor` can say `status: ready` while still showing a
+  mandatory-looking `Next:` sequence for repair. Live reproduction confirmed text output prints `Next:`
+  with preview/apply/retry commands even when JSON status is `fresh`, `signals` is empty, and marker
+  version matches expected version. That makes a healthy install look actionable and risks unnecessary
+  repairs.
+constraints: >-
+  Do not change upgrade apply semantics, app-home resolution, installed app/profile state, package-manager
+  state, publication metadata, tags, remotes, `.agentera/vision.yaml`, objective state, or decision
+  satisfaction state. Preserve non-interactive command behavior, JSON field compatibility, and safe
+  dry-run-before-apply repair guidance for stale, blocked, update-needed, or migration-required states
+  until any renamed status contract has explicit compatibility coverage.
+scope:
+  included:
+    - >-
+      `agentera doctor` text rendering for fresh/ready, update-needed, repairable, and blocked states.
+    - >-
+      App metadata vocabulary across doctor/upgrade text and JSON surfaces, including whether internal
+      status values should be renamed or compatibility-aliased.
+    - >-
+      Inventory prerequisites for any later vocabulary migration touching capability names, artifact
+      names or paths, exit signals, task statuses, health grades, and general prose outside app metadata.
+    - Action wording that distinguishes required repair/update steps from optional maintenance guidance.
+    - Dry-run command formatting checks, including whitespace before `--dry-run`.
+    - Tests covering fresh ready output, update-needed output, blocked output, vocabulary compatibility, and command formatting.
+    - TODO, CHANGELOG, PLAN, and PROGRESS synchronization after implementation.
+  excluded:
+    - Changing upgrade plan execution or ownership checks beyond output wording needed by doctor.
+    - >-
+      Changing `agentera hej` dashboard routing, v1 migration, runtime adapter setup, package-manager
+      updates, or installed app refresh behavior.
+    - Editing protected vision/objective/decision satisfaction state, publishing, pushing, tagging, or committing without explicit approval.
+  deferred:
+    - Broader doctor UX redesign outside ready/healthy `Next:` ambiguity, app metadata vocabulary, and command formatting.
+    - >-
+      Renaming capability names, canonical artifact names such as DECISIONS.md or `.agentera/decisions.yaml`,
+      exit signals, task statuses, health grades, or general prose before inventory and consumer review.
+    - >-
+      Replacing `docs/vocabulary.md` with a dedicated `vocabulary.yaml`; this needs a later Resonera
+      decision that defines the file path, schema, ownership, migration boundary, and compatibility rules.
+    - Release/version metadata unless the implementation is intentionally selected for a release train.
+design: >-
+  Treat doctor and upgrade metadata vocabulary as a contract, not just presentation copy. First audit the
+  existing status words and decide whether names like `fresh`, `stale`, `refresh`, and `fixed` should be
+  replaced with standard app terms such as up-to-date, outdated, repaired, updated, installed, migration
+  needed, or manual review needed. Prefer canonical vocabulary shared by JSON and text; keep old JSON
+  values only as explicit compatibility aliases when changing them would break existing consumers. A
+  ready state with no signals should render no required `Next:` repair block. Update-needed, repairable,
+  migration, and blocked states should preserve safe preview/apply/retry or blocked-state guidance. Treat
+  broader vocabulary candidates as explicit non-goals for this implementation unless the app-status seam
+  directly depends on them; record any observed candidates for a later vocabulary-authority deliberation.
+  Selected app-state replacements are `fresh` to `up_to_date`, `update_needed` to `outdated`, `stale`
+  to `repair_needed`, `migration_required` to `migration_needed`, and `blocked` to `manual_review_needed`.
+  Upgrade operation terms map separately: `pending` to `ready_to_apply`, `noop` to `no_changes_needed`,
+  `blocked` to `manual_review_needed`, while `applied`, `failed`, and `skipped` remain standard operation
+  terms unless Task 3 finds a concrete reason to change them.
+tasks:
+  - number: 1
+    name: Reproduce doctor ready-state output ambiguity
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN a fresh installed app with matching expected and marker versions WHEN `agentera doctor`
+        runs THEN evidence records that text output currently shows `status: ready` plus a repair-looking
+        `Next:` block.
+      - >-
+        GIVEN the same state WHEN `agentera doctor --json` runs THEN evidence records `status=fresh`, an
+        empty `signals` list, and existing dry-run/apply/retry fields without treating them as required.
+      - >-
+        GIVEN command formatting is investigated WHEN dry-run commands are captured THEN the plan names
+        where whitespace before `--dry-run` is generated or verified.
+    evidence:
+      - >-
+        Live installed CLI probe `uv run /home/jgabor/.local/share/agentera/app/scripts/agentera doctor`
+        reproduced the ambiguity: text output prints `status: ready` and a required-looking `Next:`
+        repair sequence with preview/apply/retry commands.
+      - >-
+        Live JSON probe `uv run /home/jgabor/.local/share/agentera/app/scripts/agentera doctor --json`
+        reports `status=fresh`, `signals=[]`, `expectedVersion=2.4.0`, and `markerVersion=2.4.0`,
+        so the current installed app is healthy while text rendering still presents repair steps.
+      - >-
+        Command formatting seam is `scripts/agentera_upgrade.py`: `build_doctor_status` builds
+        `preview_parts` with `--dry-run` as a separate argument and `dryRunCommand` uses `_command_text`,
+        which joins shell-quoted parts with single spaces. The reproduced text contains a correct space
+        before `--dry-run`.
+  - number: 2
+    name: Define doctor app metadata vocabulary
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN doctor and upgrade statuses are reviewed WHEN vocabulary is defined THEN the plan chooses a
+        canonical app-state vocabulary and names any compatibility aliases retained for existing JSON
+        consumers.
+      - >-
+        GIVEN doctor status is fresh WHEN text rendering runs THEN output does not include a required
+        `Next:` repair sequence and does not expose weird primary labels such as stale/fresh when a
+        standard app term is better.
+      - >-
+        GIVEN doctor status is update-needed, stale, migration-required, invalid, or blocked WHEN text
+        rendering runs THEN update, repair, migration, or manual-review guidance remains clear, safe,
+        non-interactive, and aligned with the canonical vocabulary.
+      - >-
+        GIVEN broader vocabulary targets are encountered WHEN the app metadata contract is defined THEN
+        capability names, artifact names or paths, exit signals, task statuses, health grades, and general
+        prose are inventoried or deferred rather than renamed without a separate Resonera decision.
+    evidence:
+      - >-
+        Reviewed `scripts/agentera_upgrade.py` doctor status construction and text rendering. Current app-state
+        values are `fresh`, `update_needed`, `stale`, `migration_required`, and `blocked`; canonical replacements
+        are `up_to_date`, `outdated`, `repair_needed`, `migration_needed`, and `manual_review_needed`.
+      - >-
+        Reviewed upgrade preview/apply status values. Operation-plan values map to `ready_to_apply`, `applied`,
+        `no_changes_needed`, `manual_review_needed`, `failed`, and `skipped`; these are scoped to doctor/upgrade
+        app repair UX and do not authorize renaming general Agentera task statuses.
+      - >-
+        Compatibility aliases are not retained by default. Task 3 may add a temporary alias only for a concrete
+        existing consumer that cannot be migrated in the same change, and any alias must be documented as
+        transitional rather than canonical.
+      - >-
+        Broader targets are explicitly deferred: capability names, canonical artifact names and paths, exit
+        signals, general task statuses, health grades, broad prose, and any replacement of `docs/vocabulary.md`
+        with `vocabulary.yaml` require inventory plus a later Resonera decision.
+  - number: 3
+    name: Implement minimal doctor rendering change
+    depends_on:
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN text output changes WHEN code is edited THEN the change is limited to doctor rendering and
+        helper wording or compatibility mapping needed to classify up-to-date, outdated, repair-needed,
+        migration-needed, manual-review, optional, update, repair, and blocked next actions.
+      - >-
+        GIVEN JSON consumers depend on doctor fields WHEN implementation is complete THEN the plan either
+        preserves existing values as compatibility aliases or deliberately migrates them with tests and
+        documented compatibility boundaries; do not add an unexamined internal/public vocabulary split.
+      - >-
+        GIVEN dry-run/apply commands are rendered WHEN they appear in text or JSON THEN command strings
+        include correct spacing before flags such as `--dry-run`.
+    evidence:
+      - >-
+        Updated `scripts/agentera_upgrade.py` so doctor app metadata emits canonical statuses:
+        `up_to_date`, `outdated`, `repair_needed`, `migration_needed`, and `manual_review_needed`.
+        Signal statuses now use the same canonical vocabulary, while diagnostic `kind` values remain
+        specific causes except the migration kind, which is now `migration_needed`.
+      - >-
+        Updated doctor rendering so `up_to_date` text says app files are up to date and omits the required-looking
+        `Next:` repair sequence; `dryRunCommand` and `applyCommand` are null for `up_to_date` and manual-review
+        states, while outdated/repair/migration states retain preview/apply/retry safety guidance.
+      - >-
+        Updated `scripts/agentera` hej app-home handling so `up_to_date` produces no app attention item and
+        non-current app statuses render canonical, readable attention labels.
+      - >-
+        Updated focused doctor/hej tests for the deliberate JSON migration instead of retaining compatibility
+        aliases. `uv run pytest tests/test_bundle_freshness.py tests/test_install_root_characterization.py
+        tests/test_query_cli.py -q` passed with 217 tests.
+      - >-
+        Local live probes now show `agentera doctor` text as `status: up to date` plus `No action needed`, and
+        `agentera doctor --json` reports `status=up_to_date`, `signals=[]`, `dryRunCommand=null`, and
+        `applyCommand=null` with correct command formatting preserved for actionable states by existing tests.
+  - number: 4
+    name: Add doctor output regressions
+    depends_on:
+      - 3
+    status: complete
+    acceptance:
+      - >-
+        GIVEN a fresh app-home fixture WHEN doctor text is rendered THEN tests assert no required `Next:`
+        block, no repair label, and a clear ready/no-required-action message.
+      - >-
+        GIVEN update-needed and repairable fixtures WHEN doctor text and JSON are rendered THEN tests
+        assert canonical vocabulary, any compatibility aliases, and preserved preview/apply/retry commands.
+      - >-
+        GIVEN blocked fixtures and JSON output WHEN tests run THEN blocked safety guidance and JSON
+        compatibility remain covered.
+    evidence:
+      - >-
+        Added `test_doctor_up_to_date_text_has_no_required_next_block` in
+        `tests/test_install_root_characterization.py`, asserting `up_to_date` JSON has no dry-run/apply
+        commands or signals and rendered text includes `No action needed` without any `Next:`, preview,
+        or repair wording.
+      - >-
+        Added `test_doctor_actionable_text_and_json_keep_canonical_guidance`, covering `outdated` and
+        `repair_needed` app-home fixtures with canonical JSON statuses, no legacy app-state values,
+        preserved dry-run/apply/retry commands, correct ` --dry-run` spacing, and update-versus-repair
+        text labels.
+      - >-
+        Added `test_doctor_manual_review_text_and_json_block_automatic_repair`, covering manual-review
+        JSON with null dry-run/apply commands and text that blocks automatic repair while preserving safer
+        directory or checked `--force` guidance.
+      - >-
+        Focused regression verification passed with `uv run pytest tests/test_install_root_characterization.py
+        tests/test_bundle_freshness.py -q` (28 tests).
+  - number: 5
+    name: Synchronize artifacts and close TODO
+    depends_on:
+      - 4
+    status: complete
+    acceptance:
+      - >-
+        GIVEN tests pass WHEN artifacts are updated THEN TODO records the doctor-output issue as resolved
+        with the actual app metadata vocabulary and ready/update/repair rendering behavior.
+      - >-
+        GIVEN the change affects user-facing CLI output WHEN CHANGELOG is updated THEN it names the ready
+        doctor `Next:` fix, app metadata vocabulary choice, and command-formatting coverage.
+      - >-
+        GIVEN progress is logged WHEN closeout completes THEN PROGRESS includes verification evidence and
+        protected-state boundaries.
+    evidence:
+      - >-
+        Moved the `agentera doctor` ready/healthy `Next:` issue from TODO open Annoying work to Resolved,
+        naming the canonical app metadata vocabulary and ready/update/repair/manual-review rendering
+        behavior.
+      - >-
+        Updated `CHANGELOG.md` Unreleased Fixed notes with the ready-state `Next:` fix, hard-renamed app
+        metadata vocabulary, preserved actionable guidance, and dry-run spacing regression coverage.
+      - >-
+        Added Progress cycle 544 with Task 4-5 evidence and protected-state boundaries; Task 6 remains
+        pending for validators, compaction, diff-check, focused tests, and live/local doctor probes.
+  - number: 6
+    name: Verify doctor output closeout
+    depends_on:
+      - 5
+    status: complete
+    acceptance:
+      - >-
+        GIVEN implementation is complete WHEN verification runs THEN focused doctor/upgrade tests,
+        artifact validators, compaction check or fix, and `git diff --check` pass.
+      - >-
+        GIVEN live installed state is fresh WHEN a local or installed doctor probe runs THEN text output
+        no longer asks for a required repair and dry-run command formatting remains correct where shown.
+      - >-
+        GIVEN the plan completes WHEN handoff is reported THEN remaining open TODOs and any residual risks
+        are named without refreshing installed app/profile, publishing, pushing, tagging, or changing
+        protected state unless explicitly approved.
+    evidence:
+      - >-
+        Focused verification passed with `uv run pytest tests/test_bundle_freshness.py
+        tests/test_install_root_characterization.py tests/test_query_cli.py -q` (220 tests).
+      - >-
+        Artifact validators passed for PLAN, PROGRESS, TODO, CHANGELOG, and DECISIONS. Initial compaction
+        check reported TODO Resolved and PROGRESS over by one after closeout edits; safe `uv run
+        scripts/agentera compact --mode fix --format json` compacted both, and the follow-up compaction
+        check passed with zero over-limit artifacts.
+      - >-
+        `git diff --check` passed. Local `uv run scripts/agentera doctor` reports `status: up to date`
+        and `No action needed` without a required repair sequence; local `uv run scripts/agentera doctor
+        --json` reports `status=up_to_date`, `signals=[]`, `dryRunCommand=null`, and `applyCommand=null`.
+      - >-
+        No installed app/profile refresh, publication, push, tag, package-manager state change,
+        `.agentera/vision.yaml` edit, objective-state mutation, decision satisfaction change, or commit was
+        performed.
+overall_acceptance:
+  - >-
+    App metadata vocabulary is converged across internal and user-facing surfaces unless compatibility
+    forces a documented alias; avoid repeating bundle/app or DECISIONS.md/decisions.yaml-style splits.
+  - >-
+    Fresh or ready doctor text communicates that no required action is needed and does not display a
+    mandatory-looking repair `Next:` sequence.
+  - >-
+    Non-fresh doctor states still provide safe preview/apply/retry or blocked-state guidance.
+  - >-
+    Doctor JSON compatibility, command formatting, and non-interactive repair safety are preserved.
+  - >-
+    Broader vocabulary migration remains inventory-gated, and any move from `docs/vocabulary.md` to a
+    dedicated `vocabulary.yaml` is left to a later Resonera decision rather than hidden inside the doctor fix.
+surprises:
+  - >-
+    Live reproduction after the installed app refresh still shows `status: ready` with a repair `Next:`
+    block even though JSON reports `status=fresh`, `signals=[]`, and marker version `2.3.12`.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-16-transcript-lint-threshold-analysis.yaml

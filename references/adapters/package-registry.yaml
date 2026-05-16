@@ -117,6 +117,8 @@ records:
           path: .github/plugin
         - id: opencode-commands
           path: .opencode/commands
+        - id: opencode-agents
+          path: .opencode/agents
         - id: opencode-plugins
           path: .opencode/plugins
       files:

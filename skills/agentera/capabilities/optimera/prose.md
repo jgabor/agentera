@@ -250,6 +250,17 @@ Be conservative early; escalate if conservative approaches plateau.
 
 **Stale-base awareness**: some harnesses create the worktree branch from `origin/main` rather than local `HEAD`. Before dispatch, run `git rev-list --count origin/main..HEAD`. If the count is greater than zero, the worktree will be based on a stale commit. Proceed with dispatch, but in Step 5 do NOT merge the worktree branch: fetch the diff and apply it to the main checkout. Re-run the eval harness in the main checkout.
 
+Runtime dispatch substrates:
+
+| Runtime | Substrate | Limitation |
+|---------|-----------|------------|
+| Claude Code | Task tool with worktree-aware prompt | Native in-session dispatch. |
+| OpenCode | `@<capability>` descriptors from `~/.config/opencode/agents/*.md` or a host Task subagent | Same working tree unless this step explicitly creates and targets a manual git worktree. |
+| Codex CLI | `~/.codex/agents/*.toml` descriptors plus `[agents]` limits | Agentera setup installs descriptor files; do not write legacy `[agents.<name>]` config blocks. |
+| Copilot CLI | User-driven `/fleet` or equivalent host action | No guaranteed programmatic in-session dispatch. |
+
+Never dispatch by running unsupported capability-name CLI commands such as `agentera optimera`; use the runtime-native subagent surface with the experiment prompt below.
+
 Spawn an implementation sub-agent in a worktree (`isolation: "worktree"`) with:
 
 - The hypothesis from step 3

@@ -40,6 +40,13 @@ records:
       hard_gate_claims:
         - Native hook files can run artifact validation before tool writes.
       payload_reconstruction_limitations: []
+    subagent_dispatch:
+      mechanism: Claude Code native subagent dispatch
+      setup_targets: []
+      descriptor_sources: []
+      invocation_pattern: Use the host Task/subagent surface with the selected Agentera capability context.
+      limitations:
+        - Agentera does not install per-capability Claude descriptors in this package phase.
     config_targets:
       runtime_config_files: []
       hook_targets:
@@ -103,6 +110,7 @@ records:
         session.idle: phantom
       limitations:
         - OpenCode session preload observes session.created but has no verified context injection path.
+        - OpenCode docs omit chat.message, but the exported plugin Hooks interface defines it.
     artifact_validation:
       validation_events:
         - tool.execute.before
@@ -110,6 +118,15 @@ records:
         - Conditional hard gate for reconstructable write and edit candidates.
       payload_reconstruction_limitations:
         - Sparse payloads and apply_patch patchText without reconstructed full content are allowed.
+    subagent_dispatch:
+      mechanism: OpenCode .opencode/agents descriptors
+      setup_targets:
+        - ~/.config/opencode/agents
+      descriptor_sources:
+        - .opencode/agents/*.md
+      invocation_pattern: Use @<capability> for the installed Agentera capability descriptor.
+      limitations:
+        - OpenCode descriptor bootstrap is file-based and preserves user-owned descriptor collisions.
     config_targets:
       runtime_config_files:
         - ~/.config/opencode/plugins/agentera.js
@@ -120,6 +137,7 @@ records:
         - AGENTERA_HOME
       write_safety_labels:
         - copy-plugin
+        - copy-agent
     diagnostics:
       check_names:
         - plugin_file
@@ -160,6 +178,7 @@ records:
         - OpenCode plugin is copied to the native plugin path.
       known_drifts:
         - OpenCode session preload observes session.created but has no verified context injection path.
+        - OpenCode docs omit chat.message even though the plugin source Hooks interface exposes it.
   - identity:
       runtime_id: copilot
       display_name: Copilot CLI
@@ -199,6 +218,13 @@ records:
         - Conditional hard gate via preToolUse.
       payload_reconstruction_limitations:
         - Malformed, sparse, or non-reconstructable toolArgs are allowed.
+    subagent_dispatch:
+      mechanism: Copilot CLI host-managed dispatch
+      setup_targets: []
+      descriptor_sources: []
+      invocation_pattern: Use the host-native agent selection surface when available.
+      limitations:
+        - Agentera does not install per-capability Copilot descriptors in this package phase.
     config_targets:
       runtime_config_files:
         - ~/.bashrc
@@ -276,6 +302,15 @@ records:
         - Codex can route pre-tool validation through codex_hooks when configured.
       payload_reconstruction_limitations:
         - Shipped config wires apply_patch validation only.
+    subagent_dispatch:
+      mechanism: Codex ~/.codex/agents TOML descriptors
+      setup_targets:
+        - ~/.codex/agents
+      descriptor_sources:
+        - skills/agentera/agents/*.toml
+      invocation_pattern: Use the configured capability agent name through Codex-native subagent dispatch.
+      limitations:
+        - Codex hook wiring remains limited to apply_patch validation; descriptor dispatch is separate runtime state.
     config_targets:
       runtime_config_files:
         - ~/.codex/config.toml
@@ -289,6 +324,7 @@ records:
       write_safety_labels:
         - configure
         - copy-hooks
+        - copy-agent
     diagnostics:
       check_names:
         - config.AGENTERA_HOME

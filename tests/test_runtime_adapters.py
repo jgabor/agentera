@@ -601,6 +601,7 @@ def _validate_runtime_adapter_interface_model(root: Path = REPO_ROOT) -> list[st
         "host_detection",
         "lifecycle_events",
         "artifact_validation",
+        "subagent_dispatch",
         "config_targets",
         "diagnostics",
         "documentation_claims",
@@ -1288,6 +1289,7 @@ class TestLifecycleAdapters:
             "identity",
             "lifecycle_events",
             "artifact_validation",
+            "subagent_dispatch",
             "documentation_claims",
         ]
         assert model["consumer_permissions"]["doctor"]["allowed_groups"] == [
@@ -1300,6 +1302,7 @@ class TestLifecycleAdapters:
         assert model["consumer_permissions"]["upgrade"]["allowed_groups"] == [
             "identity",
             "host_detection",
+            "subagent_dispatch",
             "config_targets",
             "diagnostics",
         ]

@@ -1211,6 +1211,8 @@ def _opencode_skill_item(
 
 
 def _text_has_agentera_managed_marker(text: str) -> bool:
+    if any(line.strip() == "# agentera_managed: true" for line in text.splitlines()[:5]):
+        return True
     lines = text.split("\n")
     if not lines or lines[0] != "---":
         return False
@@ -1415,6 +1417,16 @@ def plan_runtime_phase(
             force=force,
             action=labels[1] if len(labels) > 1 else "copy-hooks",
         ))
+        codex_agents_dir = _home_target(home, adapter["subagent_dispatch"]["setup_targets"][0])
+        codex_agent_action = labels[2] if len(labels) > 2 else "copy-agent"
+        for agent_source in sorted((runtime_source_root / "skills" / "agentera" / "agents").glob("*.toml")):
+            items.append(_copy_item(
+                adapter["identity"]["runtime_id"],
+                agent_source,
+                codex_agents_dir / agent_source.name,
+                force=force,
+                action=codex_agent_action,
+            ))
     if "copilot" in runtimes:
         items.append(_plan_copilot_config(adapters["copilot"], install_root, home, env, copilot_rc_file))
     if "opencode" in runtimes:
@@ -1431,6 +1443,16 @@ def plan_runtime_phase(
         commands_dir = opencode_config_dir / "commands"
         for command_source in sorted((runtime_source_root / ".opencode" / "commands").glob("*.md")):
             items.append(_opencode_command_copy_item(command_source, commands_dir, force=force))
+        agents_dir = opencode_config_dir / "agents"
+        opencode_agent_action = adapter["config_targets"]["write_safety_labels"][1] if len(adapter["config_targets"]["write_safety_labels"]) > 1 else "copy-agent"
+        for agent_source in sorted((runtime_source_root / ".opencode" / "agents").glob("*.md")):
+            items.append(_copy_item(
+                adapter["identity"]["runtime_id"],
+                agent_source,
+                agents_dir / agent_source.name,
+                force=force,
+                action=opencode_agent_action,
+            ))
         skills_dir = opencode_config_dir / "skills"
         skill_source_root = _opencode_runtime_skill_source_root(install_root)
         for name in ("agentera", "hej"):
@@ -1480,7 +1502,7 @@ def _replan_codex_config_item(item: dict[str, Any], install_root: Path, *, force
 
 
 def _runtime_write_still_safe(item: dict[str, Any], install_root: Path, *, force: bool) -> dict[str, Any]:
-    if item["action"] in ("copy-hooks", "copy-plugin", "copy-command"):
+    if item["action"] in ("copy-hooks", "copy-plugin", "copy-command", "copy-agent"):
         return _copy_item(
             item["runtime"],
             Path(item["source"]),
@@ -1508,7 +1530,7 @@ def apply_runtime_phase(phase: dict[str, Any], install_root: Path, *, force: boo
         try:
             target = Path(item["target"])
             target.parent.mkdir(parents=True, exist_ok=True)
-            if item["action"] in ("copy-hooks", "copy-plugin", "copy-command"):
+            if item["action"] in ("copy-hooks", "copy-plugin", "copy-command", "copy-agent"):
                 shutil.copy2(Path(item["source"]), target)
             elif item["action"] == "link-skill":
                 if target.is_symlink() or target.is_file():
