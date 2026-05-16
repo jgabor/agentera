@@ -895,6 +895,23 @@ STARTUP_ENVELOPE_STATE_FAMILIES = {
     "benchmark_context",
 }
 
+PLANERA_STARTUP_CONTRACT_VERSION = "agentera.planeraStartup.v1"
+PLANERA_PLANNING_LEVELS = ["skip", "light", "full"]
+PLANERA_STEP_VERBS = ["orient", "specify", "review", "audit", "write", "handoff"]
+PLANERA_PROSE_AUTHORITY_EXCEPTIONS = [
+    "editing Planera behavior or prose",
+    "resolving contradiction or ambiguity in compact context",
+    "validating detailed behavior not covered by compact context",
+    "investigating benchmark or read-trigger evidence",
+]
+PLANERA_RAW_PLAN_ACCESS_ALLOWED_FOR = [
+    "writing a new plan",
+    "archiving a completed plan",
+    "artifact validation",
+    "corruption diagnostics",
+    "unavailable or incomplete CLI state after CLI fallbacks",
+]
+
 COMMAND_FILTERS = {
     "hej": [],
     "plan": ["status"],
@@ -1346,6 +1363,71 @@ def _capability_artifact_needs(capability: str) -> tuple[list[str], str | None]:
     return needs, None
 
 
+def _planera_startup_contract() -> dict[str, Any]:
+    return {
+        "schemaVersion": PLANERA_STARTUP_CONTRACT_VERSION,
+        "status": "implemented_compact_normal_startup_contract",
+        "canonical_surface": "agentera hej --format json --capability-context planera",
+        "bounded": True,
+        "prose_runtime_read_required": False,
+        "prose_authority": {
+            "normal_startup": (
+                "Use this compact context for normal Planera execution startup before reading "
+                "skills/agentera/capabilities/planera/prose.md."
+            ),
+            "read_planera_prose_when": PLANERA_PROSE_AUTHORITY_EXCEPTIONS,
+        },
+        "planning": {
+            "levels": PLANERA_PLANNING_LEVELS,
+            "step_marker_format": "── step N/6: verb",
+            "required_steps": PLANERA_STEP_VERBS,
+            "full_plan_review_required": True,
+            "pre_write_self_audit_required": True,
+            "max_full_plan_tasks": 8,
+        },
+        "cli_first_orientation": {
+            "use_startup_state_first": True,
+            "current_plan_command": "agentera plan --format json",
+            "complete_plan_contract_key": "source_contract.complete_for_plan_artifact",
+            "fallback_policy": (
+                "Use CLI-provided fallback commands for missing or incomplete state families "
+                "before any last-resort raw artifact read."
+            ),
+        },
+        "artifact_access_boundaries": {
+            "skip_raw_plan_artifact_when": (
+                "`agentera plan --format json` reports source_contract.complete_for_plan_artifact=true "
+                "during normal read-only startup or evaluation."
+            ),
+            "raw_plan_artifact_allowed_for": PLANERA_RAW_PLAN_ACCESS_ALLOWED_FOR,
+            "artifact_mapping_source": "agentera docs/query artifact mapping before writes or closeout",
+        },
+        "handoff_expectations": [
+            "skip level suggests ⧉ realisera and waits for confirmation unless the user already asked to implement now",
+            "single-task plans suggest ⧉ realisera and wait for confirmation",
+            "full plans suggest ⎈ orkestrera and wait for confirmation",
+        ],
+        "unsupported_command_boundary": {
+            "capability_cli_commands_added": False,
+            "forbidden_examples": ["agentera planera"],
+            "route_boundary": "Use `/agentera plan` for routing and `agentera plan` for plan state.",
+        },
+        "seam_decision": {
+            "selected": "hej capability_context",
+            "not_changed": [
+                {
+                    "surface": "agentera describe --format json",
+                    "reason": "runtime/schema command discovery, not capability workflow startup context",
+                },
+                {
+                    "surface": "dispatcher guidance",
+                    "reason": "route and CLI-state separation guidance, not a bounded Planera workflow payload",
+                },
+            ],
+        },
+    }
+
+
 def _capability_context(capability: str | None) -> dict[str, Any] | None:
     if not capability:
         return None
@@ -1356,7 +1438,7 @@ def _capability_context(capability: str | None) -> dict[str, Any] | None:
         for name in missing
         if name in STATE_FAMILY_FALLBACK_COMMANDS
     ]
-    return {
+    context: dict[str, Any] = {
         "capability": capability,
         "declared_state_needs": needs,
         "included_state_families": [name for name in needs if name in STARTUP_ENVELOPE_STATE_FAMILIES],
@@ -1368,6 +1450,9 @@ def _capability_context(capability: str | None) -> dict[str, Any] | None:
         ),
         "schema_error": error,
     }
+    if capability == "planera":
+        context["startup_contract"] = _planera_startup_contract()
+    return context
 
 
 def _task_ref(task: dict[str, Any]) -> dict[str, Any]:

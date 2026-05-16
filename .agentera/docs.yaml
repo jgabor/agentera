@@ -1,4 +1,4 @@
-last_audit: '2026-05-16 (plan source-contract raw-read reduction closeout metadata sync)'
+last_audit: '2026-05-16 (Planera compact startup contract closeout metadata sync)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges

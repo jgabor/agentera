@@ -239,6 +239,14 @@ the existing state seam with
 `capability_context.included_state_families` directly, and for
 `missing_state_families`, run the listed `cli_fallback` commands before raw file
 access.
+For normal ≡ planera execution, use `capability_context.startup_contract` from
+`agentera hej --format json --capability-context planera` before reading
+`skills/agentera/capabilities/planera/prose.md`. Read Planera prose only when
+editing Planera, resolving contradiction or ambiguity, validating detailed
+behavior not covered by the compact contract, or investigating benchmark/read-trigger
+evidence. This preserves Planera prose as detailed authority and does not add
+`agentera planera`; `/agentera plan` remains routing while `agentera plan`
+remains plan state.
 Reading a capability's `prose.md` file is not itself a capability invocation;
 invocation means routing to the capability, following its prose, and using the
 CLI state layer first for artifact-backed state.

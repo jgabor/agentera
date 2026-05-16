@@ -1,4 +1,47 @@
 cycles:
+- number: 528
+  timestamp: 2026-05-16 01:48
+  type: feat
+  phase: build
+  what: Completed and synchronized the Planera compact startup contract.
+  commit: pending
+  inspiration: Orkestrera executed the Planera Prose Re-Read Reduction Plan so normal
+    Planera execution can start from a bounded CLI-provided startup contract instead
+    of rereading `skills/agentera/capabilities/planera/prose.md` on every invocation,
+    while preserving Planera prose as the detailed authority for editing, ambiguity,
+    uncovered behavior, and benchmark/read-trigger investigation.
+  discovered: The retained startup benchmark before implementation emitted `capability_prose_read_counts.planera=5`
+    from the manual `mage bench:startupState` aggregate report. The startup classifier
+    labels read/grep/glob access to `skills/agentera/capabilities/`, `skills/agentera/SKILL.md`,
+    or protocol files as capability prose reads; the actionable scope was avoidable
+    normal Planera invocation reads, not legitimate capability-development or benchmark-investigation
+    reads.
+  verified: Added `source_contract.capability_context.startup_contract` for Planera
+    in `scripts/agentera`, selected `agentera hej --format json --capability-context
+    planera` as the canonical startup surface, left `agentera describe --format json`
+    as runtime/schema introspection, preserved `agentera planera` as unsupported,
+    aligned Planera and master Agentera guidance, and documented the contract in `references/cli/agent-ready-state-contract.yaml`.
+    Focused tests passed for compact contract shape, no-prose-file startup availability,
+    unsupported command behavior, describe command discovery, Planera/master guidance,
+    and the Decision 45 reference contract. Direct `agentera hej --format json --capability-context
+    planera --fields source_contract` proof showed the compact contract, and refreshed
+    `mage bench:startupState` evidence reported `capability_prose_read_counts.planera=0`,
+    `implementation_recommended=false`, and startup recommendation `close_without_implementation`
+    while separating degraded claude-code/github-copilot coverage from product behavior.
+  next: Planera Prose Re-Read Reduction Plan is complete. Remaining open TODOs start
+    with DECISIONS.md raw reads after CLI and AGENTERA_ARTIFACTS raw reads. Do not
+    publish, commit, push, tag, refresh installed app/profile, edit vision or objective
+    state, change decision satisfaction state, run unsupported capability-name CLI
+    commands, or solve unrelated raw-read TODOs unless explicitly requested.
+  context:
+    intent: Planera prose reread reduction after CLI startup context
+    constraints: Preserve prose authority, route/CLI separation, unsupported `agentera
+      planera`, and no decision satisfaction, vision, objective, installed app/profile,
+      publication, push, tag, package-manager, unrelated capability prose, DECISIONS.md,
+      or AGENTERA_ARTIFACTS scope creep.
+    scope: Planera startup contract, source-contract reference, Planera/master guidance,
+      focused tests, benchmark measurement, 2.9.0 version metadata, TODO/CHANGELOG/DOCS/PLAN/PROGRESS
+      sync, validators, compaction, and diff whitespace check.
 - number: 527
   timestamp: 2026-05-16 00:42
   type: feat
@@ -395,54 +438,9 @@ cycles:
     scope: Focused validate namespace regression tests, minimal reference contract
       wording alignment, PLAN Task 3 evidence, PROGRESS cycle evidence, affected validation,
       CLI tests, DOCS/PLAN/PROGRESS artifact validation, and diff whitespace check
-- number: 518
-  timestamp: 2026-05-15 22:35
-  type: feat
-  phase: build
-  what: Implemented PLAN Task 2 behavior for the `agentera validate` namespace.
-  commit: pending
-  inspiration: Orkestrera assigned only Task 2 from the D48 Validate Namespace Plan
-    to implement capability and artifact validation behavior through the namespace
-    while preserving `scripts/validate_capability.py`, `hooks/validate_artifact.py`,
-    existing artifact labels, capability schema contracts, and unrelated dirty work.
-  discovered: 'The smallest compatible implementation was a thin CLI wrapper in `scripts/agentera`:
-    capability validation can delegate to `scripts/validate_capability.py` for text
-    parity and capture the same engine judgment for JSON; artifact validation can
-    delegate to `hooks/validate_artifact.py` for both text and JSON while adding namespace
-    target metadata around the existing `validate-artifact` fields.'
-  verified: 'Focused namespace and compatibility checks passed: `uv run scripts/agentera
-    validate capability hej` returned the existing capability validator PASS text;
-    `uv run scripts/agentera validate capability hej --format json` returned status
-    `pass`, target_family `capability`, target `hej`, no violations, and embedded
-    direct-validator stdout/stderr evidence; `uv run scripts/agentera validate capability
-    skills/agentera/capabilities/hej --format json` returned the same pass judgment
-    for a path target; `uv run scripts/agentera validate artifact --artifact PLAN.md
-    --file .agentera/plan.yaml --format text` returned status `pass` with the same
-    PLAN.md file/default mapping judgment as the artifact hook; `uv run scripts/agentera
-    validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json`
-    returned status `pass`, target_family `artifact`, target `PLAN.md`, no violations,
-    preserved artifact file/default mapping fields, and engine command `validate-artifact`;
-    `uv run scripts/agentera validate artifact --artifact PROGRESS.md --format text`
-    passed through docs.yaml default mapping; `uv run scripts/agentera validate capability
-    notreal --format json` exited with a bounded invalid-capability diagnostic listing
-    valid names, syntax, and example; `uv run scripts/agentera --help` listed the
-    validate command; direct validators `uv run scripts/validate_capability.py skills/agentera/capabilities/hej`,
-    `uv run scripts/validate_capability.py --self-validate`, and `uv run hooks/validate_artifact.py
-    --artifact PLAN.md --file .agentera/plan.yaml --format json` continued to pass.'
-  next: Hand Task 2 to Orkestrera evaluation. Do not implement D48 smoke, verify,
-    corpus, or usage namespaces; leave comprehensive regression coverage/guidance
-    to Task 3 and version/TODO/changelog/docs closeout to Task 4.
-  context:
-    intent: D48 PLAN Task 2 validate namespace behavior
-    constraints: Task 2 only; no D48 smoke/verify/corpus/usage namespaces, validator
-      or schema redesign, publication, push, tag, commit, installed-app/profile refresh,
-      vision/objective edit, decision satisfaction change, or unsupported capability-name
-      CLI commands
-    scope: Minimal `agentera validate capability` and `agentera validate artifact`
-      implementation, focused behavior checks, direct-validator compatibility checks,
-      PLAN Task 2 evidence, PROGRESS cycle evidence, artifact validation, and diff
-      whitespace check
 archive:
+- summary: 'Cycle 518 (2026-05-15): Implemented PLAN Task 2 behavior for the `agentera
+    validate` namespace.'
 - summary: 'Cycle 517 (2026-05-15): Defined the Task 1 command contract for the planned
     `agentera validate` namespace.'
 - summary: 'Cycle 516 (2026-05-15): Synchronized PLAN Task 4 version and local state
@@ -521,5 +519,3 @@ archive:
     integration for active plan 2.3.7 without updating...'
 - summary: 'Cycle 479 (2026-05-14): Implemented PLAN Task 3 compacted decision completeness
     and future preservation for active plan 2.3.7 without...'
-- summary: 'Cycle 478 (2026-05-14): Implemented PLAN Task 2 decisions CLI source-contract
-    JSON output for the active 2.3.7 Decision Context...'

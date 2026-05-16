@@ -1762,6 +1762,66 @@ class TestHej:
         assert context["cli_fallback"] == ["agentera decisions --format json"]
         assert "before raw file access" in context["raw_artifact_read_policy"]
 
+    def test_hej_planera_context_exposes_compact_startup_contract(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Planera context", "status": "active"},
+            "tasks": [{"number": 1, "name": "Plan", "status": "pending"}],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
+        })
+
+        r = _run("hej", "--format", "json", "--capability-context", "planera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        context = data["source_contract"]["capability_context"]
+        contract = context["startup_contract"]
+        assert context["capability"] == "planera"
+        assert contract["schemaVersion"] == "agentera.planeraStartup.v1"
+        assert contract["canonical_surface"] == "agentera hej --format json --capability-context planera"
+        assert contract["bounded"] is True
+        assert contract["prose_runtime_read_required"] is False
+        assert contract["planning"]["levels"] == ["skip", "light", "full"]
+        assert contract["planning"]["required_steps"] == ["orient", "specify", "review", "audit", "write", "handoff"]
+        assert contract["planning"]["full_plan_review_required"] is True
+        assert contract["planning"]["pre_write_self_audit_required"] is True
+        assert contract["cli_first_orientation"]["current_plan_command"] == "agentera plan --format json"
+        assert contract["cli_first_orientation"]["complete_plan_contract_key"] == "source_contract.complete_for_plan_artifact"
+        assert "normal read-only startup" in contract["artifact_access_boundaries"]["skip_raw_plan_artifact_when"]
+        assert "writing a new plan" in contract["artifact_access_boundaries"]["raw_plan_artifact_allowed_for"]
+        assert "editing Planera behavior or prose" in contract["prose_authority"]["read_planera_prose_when"]
+        assert "agentera planera" in contract["unsupported_command_boundary"]["forbidden_examples"]
+        assert contract["unsupported_command_boundary"]["capability_cli_commands_added"] is False
+        assert contract["seam_decision"]["selected"] == "hej capability_context"
+        assert {entry["surface"] for entry in contract["seam_decision"]["not_changed"]} == {
+            "agentera describe --format json",
+            "dispatcher guidance",
+        }
+
+    def test_planera_compact_startup_context_does_not_require_prose_file(self, tmp_path):
+        app_home = tmp_path / "app-home"
+        _install_runtime_surface(app_home)
+        planera_prose = app_home / "app" / "skills" / "agentera" / "capabilities" / "planera" / "prose.md"
+        planera_prose.unlink()
+        project = tmp_path / "project"
+        project.mkdir()
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "No prose read", "status": "active"},
+            "tasks": [{"number": 1, "name": "Plan", "status": "pending"}],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
+        })
+
+        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "planera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        contract = data["source_contract"]["capability_context"]["startup_contract"]
+        assert contract["prose_runtime_read_required"] is False
+        assert contract["canonical_surface"] == "agentera hej --format json --capability-context planera"
+
     def test_hej_orkestrera_context_reports_ready_blocked_and_selected_tasks(self, project):
         _write_artifact(project, ".agentera/plan.yaml", {
             "header": {"title": "Orchestration", "status": "active"},
@@ -3738,9 +3798,18 @@ class TestDescribeIntrospection:
         assert {"query", "describe", "doctor", "upgrade", "prime"}.issubset(command_names)
         assert "bundle-status" not in command_names
         assert "build" not in command_names
+        assert "planera" not in command_names
         assert "audit" not in command_names
         assert data["slash_route_aliases"]["aliases"]["build"] == "realisera"
+        assert data["slash_route_aliases"]["aliases"]["plan"] == "planera"
         assert data["slash_route_aliases"]["cli_commands_added"] is False
+
+    def test_planera_capability_name_remains_unsupported_cli_command(self, project):
+        r = _run("planera", cwd=project)
+
+        assert r.returncode == 2
+        assert r.stdout == ""
+        assert "invalid choice: 'planera'" in r.stderr
 
     def test_describe_json_exposes_formats_fields_schemas_and_doctor_boundaries(self, project):
         r = _run("describe", "--format", "json", cwd=project)
