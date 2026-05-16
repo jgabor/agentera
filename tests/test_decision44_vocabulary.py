@@ -85,8 +85,8 @@ ALLOWED_USES = (
     ),
     AllowedUse(
         r"^\.agentera/plan\.yaml$",
-        r"Decision 44|Git-only checkpoint language|checkpoint wording is limited to Git commit contexts",
-        "The active plan quotes the Decision 44 task scope and acceptance criteria for removing or bounding these terms.",
+        r"Decision 44|Git-only checkpoint language|checkpoint wording is limited to Git commit contexts|test_bundle_freshness\.py",
+        "The active plan quotes the Decision 44 task scope and acceptance criteria for removing or bounding these terms; test file name references such as test_bundle_freshness.py are not Agentera preferred vocabulary.",
     ),
     AllowedUse(
         r"^skills/agentera/.*/schemas/.*\.yaml$|^skills/agentera/schemas/artifacts/.*\.yaml$|^references/adapters/.*\.yaml$|^scripts/runtime_adapter_registry\.py$",

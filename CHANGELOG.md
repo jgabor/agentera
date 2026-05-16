@@ -1,9 +1,18 @@
 # Changelog
 
-## [Unreleased]
+## [2.4.0] · 2026-05-16
+
+### Key highlights
+
+- Source-contract CLI state across Realisera, Optimera, Inspektera, Dokumentera, and Orkestrera eliminates redundant raw artifact reads at startup
+- Artifact compaction enforced as a repo-level invariant with `agentera compact`, `agentera gate`, and Lefthook/CI gate wiring
+- Decision satisfaction tracking requires explicit user confirmation; provisional evidence no longer infers satisfaction
+- Profilera corpus extraction covers OpenCode, Claude Code, Codex, and GitHub Copilot with bounded degradation reporting
+- App-home migration to platform data directory with idempotent upgrade and stale shell-line reporting
 
 ### Changed
 
+- 2.4.0 minor release metadata now aligns package, plugin, OpenCode marker, registry, lockfile, and skill frontmatter versions with the aggregate post-v2.3.12 feature and fix set after intermediate version bumps were removed from history.
 - 2.3.12 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Realisera execution-context source-contract patch.
 - 2.3.11 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Optimera benchmark-context source-contract patch; the 2.3.12 Realisera execution-context source-contract work is now closed separately.
 - 2.3.10 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Inspektera evidence-context source-contract patch; the 2.3.12+ source-contract train remains deferred.
@@ -104,6 +113,7 @@
 
 ### Verified
 
+- 2.4.0 aggregate release metadata is synchronized locally without remote push; intermediate post-v2.3.12 version bumps were removed from rewritten history, version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.4.0, package/version contract tests passed, touched artifact validators passed, and `git diff --check` passed.
 - D47 app-home vocabulary cleanup closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, vision edit, objective edit, decision satisfaction-state change, or unsupported capability-name CLI command; independent Task 1 and Task 2 evaluations passed, focused Task 3 verification reported 346 passing tests, and Task 4 metadata validators plus `git diff --check` passed.
 - 2.3.12 Realisera execution-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, objective-state mutation, or unsupported capability CLI command introduction; focused CLI/contract tests passed with 181 tests, Realisera capability validation and schema self-validation passed, repository gate/compaction/artifact validation/diff-check gates passed, and PLAN lint remains failed only on the pre-existing advisory verbosity budget.
 - 2.3.11 Optimera benchmark-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, objective-state mutation, or real local benchmark execution; focused CLI/contract/Optimera/startup tests passed with 222 tests, Optimera capability validation and schema self-validation passed, independent evaluation found no blocking findings after privacy and runtime-caveat fixes, and the 2.3.12 Realisera execution-context source-contract work is now closed separately.
@@ -129,6 +139,8 @@
 - Decision 51 state-access measurement replaces an uncommitted route/intro startup-window draft that found zero qualifying windows and would have closed the startup-envelope follow-up; direct OpenCode analysis showed repeated `CLI state -> raw artifact access` behavior, so the CLI startup state-envelope follow-up is reopened as planning work without version-bearing metadata changes.
 - Profilera corpus runtime parity state is synchronized without a selected release target: TODO, docs, progress, changelog, and plan state record completion while package, plugin, registry, lockfile, and skill version-bearing files remain unchanged.
 - 2.3.3 patch release readiness is recorded locally without publication, installed app refresh, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces are aligned.
+
+## [Unreleased]
 
 ## [2.2.3] · 2026-05-09
 
@@ -174,6 +186,13 @@
 - Final 2.2.1 verification passed in the local checkout: full pytest reported 806 passed, all 12 Agentera capabilities validated, the capability schema contract self-validated, changed Python entry points compiled, and no vision/objective diff or `v2.2.1` tag was present. Live install proof was not run, so no four-runtime live install confidence is claimed.
 
 ## [2.2.0] · 2026-05-07
+
+### Key highlights
+
+- `agentera doctor` replaces `bundle-status` as the primary install/runtime self-check command
+- Routine state commands gain `--format json|yaml` and sparse `--fields` selection for agent-ready output
+- Decision 43 aliases schema-backed: `/agentera status`, `/agentera discuss`, `/agentera build` route directly to capabilities
+- Input hardening rejects unsafe artifact names, field selectors, path escapes, and traversal values
 
 ### Changed
 
@@ -229,6 +248,12 @@
 
 ## [2.1.0] · 2026-05-05
 
+### Key highlights
+
+- Top-level state commands replace `agentera query` for routine access; query reserved for advanced inspection
+- `agentera hej` provides one-command composite orientation with profile, health, plan progress, objectives, and next action
+- Semantic fixtures can assert required, forbidden, and exact-count tool calls
+
 ### Changed
 
 - Agentera dispatcher, hej, realisera, and optimera guidance now prefer top-level state commands and reserve `agentera query` for advanced/custom inspection.
@@ -270,6 +295,13 @@
 - OpenCode now ships a managed `/hej` bridge command while keeping `/agentera` as the active v2 entry point.
 
 ## [2.0.0] · 2026-05-05
+
+### Key highlights
+
+- 12 standalone v1 skills collapsed into one bundled `/agentera` skill with 12 capabilities
+- Project state moves from Markdown artifacts to structured `.agentera/*.yaml` files for agent consumption
+- Idempotent `agentera upgrade` CLI handles v1-to-v2 migration with runtime config wiring
+- Dispatch payload reduced 10.4% vs v1 baseline
 
 ### Added
 

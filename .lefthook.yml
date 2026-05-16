@@ -11,7 +11,7 @@ output: [
 
 pre-commit:
   commands:
-    compaction-gate:
+    agentera:
       run: uv run scripts/agentera gate
     docs:
       run: bunx markdownlint --dot --fix --disable MD013 MD024 MD029 MD033 MD036 MD040 MD041 MD060 -- {staged_files}
