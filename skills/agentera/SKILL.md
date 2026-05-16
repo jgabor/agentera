@@ -179,8 +179,11 @@ above must have already confirmed the installed CLI is usable.
 
 Routine commands are: `hej`, `plan`, `progress`, `health`, `todo`,
 `decisions`, `docs`, `objective`, and `experiments`. Discovery and custom
-inspection remain available through `query --list-artifacts` and
-`query <artifact-name> --format json|yaml`.
+inspection remain available through `agentera describe --format json`,
+`query --list-artifacts`, and `query <artifact-name> --format json|yaml`.
+Structured discovery includes an artifact-location contract with mapped paths,
+normal read commands, and raw-access boundaries; use that contract before
+reading `.agentera/docs.yaml` or probing `.agentera/` for path discovery.
 
 Do not silently bypass the CLI and read raw `.agentera/*.yaml` files first. If
 CLI state declares complete startup coverage, do not perform defensive raw
@@ -196,6 +199,13 @@ prior-plan archive references, or plan metadata. This no-raw-read rule is for
 normal read-only startup/evaluation. Raw mapped plan artifact access remains valid
 for writes, archives, validation, corruption diagnostics, or unavailable or
 incomplete CLI state after CLI fallbacks.
+
+When artifact paths are the only missing fact, prefer the CLI discovery contract:
+`agentera describe --format json` exposes `artifact_locations`, and
+`agentera query --list-artifacts --format json` exposes the same compact records
+with a `names` compatibility list. Plain `query --list-artifacts` remains the
+human names list. These discovery surfaces do not replace routine state commands
+for normal artifact content reads.
 
 For bare `/agentera` or a bare user message exactly `hej`, run `agentera hej`
 first and render the README-style hej dashboard from that single composite

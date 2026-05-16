@@ -38,7 +38,7 @@ Use the returned `orchestration_context` before raw plan, progress, health, TODO
 
 ### Artifact path resolution
 
-Before a last-resort raw artifact read or any artifact write, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename (.agentera/plan.yaml, etc.). If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`.
+Before a last-resort raw artifact read or any artifact write, prefer the CLI artifact-location contract from `agentera describe --format json` or `agentera query --list-artifacts --format json`. It resolves `.agentera/docs.yaml` mappings, default paths, existence, normal read commands, and raw-access boundaries without a separate raw docs read. Raw `.agentera/docs.yaml` access is reserved for docs artifact writes, validation, corruption diagnostics, or unavailable/incomplete CLI discovery.
 
 ### Orchestration context source contract
 

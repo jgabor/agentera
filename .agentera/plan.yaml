@@ -4,294 +4,257 @@ header:
   status: complete
   reviewed: 2026-05-16
   critic_issues: 5 found, 5 addressed, 0 dismissed
-  title: Decision Source Contract Raw-Read Reduction Plan
+  revised: >-
+    Narrowed the plan to a registry-backed artifact-location projection, preserved
+    routine state-command ownership, avoided installed-app refresh and capability-name
+    commands, required migration tests for any JSON shape change, and separated path
+    discovery from raw artifact content recovery.
+  title: AGENTERA_ARTIFACTS Raw-Read Reduction Plan
 what: >-
-  Reduce avoidable raw `.agentera/decisions.yaml` reads after `agentera decisions
-  --format json` by making the DECISIONS.md source contract unambiguous for
-  normal deliberation, compacted history, missing full-detail fields, filtered
-  results, satisfaction-review caveats, and raw-read exceptions.
+  Reduce avoidable `AGENTERA_ARTIFACTS` raw reads after CLI state by exposing a
+  compact artifact-location contract through existing Agentera CLI discovery surfaces,
+  so agents can find mapped artifact paths without raw-reading `.agentera/docs.yaml`
+  or probing `.agentera/` directories defensively.
 why: >-
-  TODO.md records benchmark pressure for DECISIONS.md raw reads after CLI state
-  (`2 reads`, `24 redundant tokens`). The current decision source contract already
-  says raw decision artifact reads are not required for normal deliberation, but
-  `complete_for_decision_context` becomes false when compacted or incomplete entries
-  are returned. That mixes full-detail completeness with normal-use sufficiency and
-  can lead agents to reread `.agentera/decisions.yaml` defensively even though the
-  CLI exposes compacted/missing context boundaries and caveats.
+  Retained startup benchmarks show recurring `AGENTERA_ARTIFACTS` raw-after-CLI
+  pressure even after routine artifact source-contract work. The immediate gap is
+  practical path discovery: `agentera query --list-artifacts --format json` currently
+  returns only artifact IDs, while `agentera describe --format json` exposes schema
+  paths and default artifact paths but not a concise resolved-location/read-boundary
+  contract. Agents still lack a direct structured answer to "where is this artifact,
+  who owns normal reads, and when is raw file access valid?"
 constraints: >-
-  Do not mutate `.agentera/decisions.yaml` or decision satisfaction state. Do not
-  infer missing decision context from feeds_into, commits, downstream files, generated
-  references, compacted history, or benchmark evidence. Do not expand archived
-  compacted decisions, change compaction policy, add new CLI commands, add
-  capability-name commands, refresh installed apps or profiles, publish, push, tag,
-  edit vision or objective state, change package-manager state, or solve the separate
-  AGENTERA_ARTIFACTS raw-read TODO. Raw decision artifact reads remain valid only for
-  explicit artifact corruption/CLI defect investigation and for Resonera-owned decision
-  writes/repairs that require the persisted artifact.
+  Do not broaden this into a full artifact registry redesign, do not add
+  capability-name CLI commands, do not change routine state-command ownership, do
+  not mutate `.agentera/vision.yaml`, objective state, decision satisfaction state,
+  installed app/profile state, package-manager state, publication metadata, tags,
+  or remotes. Preserve raw artifact access for explicit writes, archives,
+  validation, corruption diagnostics, CLI defects, unavailable/incomplete CLI state
+  after fallbacks, and benchmark analysis. Preserve text output compatibility unless
+  a test-backed CLI contract explicitly changes a structured JSON surface.
 scope:
   included:
-    - Benchmark and artifact-boundary review for the DECISIONS.md raw-after-CLI TODO.
-    - Source-contract truth table separating full-detail completeness from normal deliberation sufficiency.
-    - Bounded `agentera decisions --format json` source-contract fields for compacted, missing, filtered, satisfaction-review, and missing-artifact cases.
-    - Focused regression tests and smallest feasible benchmark/measurement evidence.
-    - Guidance alignment for DECISIONS.md consumers that are implicated by benchmark evidence or tell agents to raw-read decisions for normal context after CLI state.
-    - Mapped artifact closeout and semver-gated version metadata only if policy requires it.
+    - Benchmark and CLI-surface evidence for the current `AGENTERA_ARTIFACTS` raw-read gap.
+    - A registry-backed artifact-location projection with mapped path, resolution source, existence, owners, and read/write boundaries.
+    - >-
+      Existing CLI discovery surfaces only: `agentera describe --format json`,
+      `agentera query --list-artifacts --format json`, and, only if needed, a
+      bounded `hej` source-contract pointer.
+    - Regression tests for structured discovery, fallback guidance, path override handling, and unchanged unsupported capability-name commands.
+    - Focused benchmark or proxy evidence that the new surface addresses the historical path-discovery reason without claiming to eliminate legitimate raw writes or diagnostics.
+    - Plan artifact validation and handoff to execution.
   excluded:
-    - Raw `.agentera/decisions.yaml` mutation or satisfaction-state changes.
-    - Rehydrating compacted archive decisions or reconstructing missing historical context.
-    - Broad artifact-discovery redesign for AGENTERA_ARTIFACTS.
-    - Adding `agentera resonera`, `agentera planera`, or any other capability-name CLI command.
-    - Installed app/profile refresh, publication, remote push, tags, package-manager updates, vision edits, or objective-state edits.
+    - Redesigning artifact schemas, capability schema contracts, or the registry model beyond fields required for path discovery.
+    - Adding new top-level state commands or capability-name commands such as `agentera planera`.
+    - Replacing routine state commands with generic `query` for normal artifact content reads.
+    - Reading raw artifacts to reconstruct content already covered by complete CLI source contracts.
+    - Installed app refresh, profile refresh, publication, remote push, tags, package-manager changes, vision edits, objective-state edits, or decision satisfaction changes.
   deferred:
-    - Broader artifact path discovery through `agentera describe` or hej composite output.
-    - Decision satisfaction review resolution that requires user confirmation.
-    - Other capability-specific raw/prose-read hot spots not tied to DECISIONS.md normal context.
+    - Token-budget optimization beyond the path-discovery projection.
+    - User-local benchmark corpus retention changes or runtime-adapter schema repair unrelated to this artifact-location seam.
+    - Closeout metadata/version bumps unless implementation classification and docs semver policy require them.
 design: >-
-  Keep `agentera decisions --format json` as the single normal read model for decision
-  context. Preserve existing fields where compatible, but add clearer machine-readable
-  semantics so agents can distinguish "not full historical detail" from "raw read
-  needed." Normal deliberation should key off a new explicit sufficiency signal rather
-  than the legacy full-detail completeness flag. Missing or compacted context is carried
-  forward as structured caveats, not repaired by raw reads or inference.
+  Reuse the existing `artifact_registry` authority instead of duplicating path
+  rules. Add a small projection that combines registry identity, docs.yaml mapping
+  overrides, resolved project paths, schema metadata, existence, routine read
+  command ownership, and raw-access boundaries. Surface it where agents already go
+  for discovery, with text output remaining human-readable and structured output
+  carrying the machine contract. Keep `agentera describe` responsible for runtime
+  and schema discovery; keep routine commands responsible for artifact content.
 tasks:
   - number: 1
-    name: Benchmark and artifact boundary
+    name: Pin benchmark and discovery gap
     depends_on: []
     status: complete
     acceptance:
       - >-
-        GIVEN the TODO cites DECISIONS.md raw reads after CLI WHEN benchmark evidence is
-        inspected THEN the exact retained report/window or historical limitation is named.
+        GIVEN retained startup benchmark history WHEN `AGENTERA_ARTIFACTS` pressure is cited
+        THEN the plan or implementation notes name the exact rows, counts, token estimates,
+        and current historical limitation.
       - >-
-        GIVEN DECISIONS.md is a canonical artifact label WHEN raw-read pressure is scoped
-        THEN the plan maps it to `.agentera/decisions.yaml` through CLI/docs artifact
-        mapping rather than assuming a root Markdown file.
+        GIVEN current discovery output is inspected WHEN scope is finalized THEN
+        `agentera query --list-artifacts --format json` names-only output and
+        `agentera describe --format json` missing resolved-location/read-boundary fields are
+        recorded as the actionable gap.
       - >-
-        GIVEN read sources can be classified WHEN implementation scope is chosen THEN
-        avoidable normal-context reads are separated from legitimate decision writes,
-        artifact repair, CLI-defect investigation, validation, and benchmark analysis.
+        GIVEN raw access categories are classified WHEN implementation begins THEN legitimate
+        writes, archives, validation, diagnostics, CLI defects, unavailable CLI state, and
+        benchmark analysis are explicitly separated from avoidable path-discovery reads.
     evidence:
       - >-
-        Historical benchmark row in `/home/jgabor/.local/share/agentera/benchmarks/startup-state/runs.jsonl`
-        generated at `2026-05-15T15:42:10+00:00` reported
-        `raw_artifact_access_after_cli_counts.DECISIONS.md=2`,
-        `redundant_raw_artifact_access_counts.DECISIONS.md=1`, and
-        `estimated_redundant_raw_tokens_by_artifact.DECISIONS.md=24` with action
-        `targeted_capability_guidance_fixes`.
+        Planning evidence named historical `AGENTERA_ARTIFACTS` rows: 2.3.3=1 raw read,
+        2.3.13=4 reads/63 estimated tokens, 2.7.0=4 reads/114 estimated tokens, and
+        2.8.0=1 read/23 estimated tokens; current history remains retained benchmark evidence,
+        not a freshly reproduced runtime window.
       - >-
-        Current `.agentera/docs.yaml` maps canonical `DECISIONS.md` to
-        `.agentera/decisions.yaml`; implementation did not assume a root Markdown
-        artifact and did not mutate `.agentera/decisions.yaml`.
-      - >-
-        Latest benchmark after implementation no longer reproduces DECISIONS.md raw reads;
-        scope therefore targets historical normal-context ambiguity while preserving raw
-        decision artifact access for Resonera writes/repairs, corruption diagnostics, CLI
-        defect investigation, validation, and benchmark analysis.
+        Confirmed the pre-change gap: structured `query --list-artifacts` returned names only,
+        while `describe` exposed schema/default paths without a resolved artifact-location and
+        read-boundary contract. Allowed raw categories remain writes, archives, validation,
+        diagnostics, CLI defects, unavailable/incomplete CLI state, and benchmark analysis.
   - number: 2
-    name: Source-contract truth table
+    name: Define artifact-location contract
     depends_on:
       - 1
     status: complete
     acceptance:
       - >-
-        GIVEN current `_decision_source_contract` and tests are reviewed WHEN new semantics
-        are specified THEN the plan records a truth table for full-detail entries,
-        compacted archive entries, missing full-detail fields, satisfaction-review entries,
-        filtered no-match results, and missing/unavailable artifacts.
+        GIVEN `artifact_registry.py` already owns artifact identity and path resolution WHEN a
+        projection is added THEN it reuses `load_artifact_registry` and `resolve_artifact_path`
+        rather than copying default paths, docs override rules, or project-boundary checks.
       - >-
-        GIVEN compacted or incomplete decisions are returned WHEN normal deliberation uses
-        the JSON output THEN the truth table marks full detail as false, normal-use
-        sufficiency as true with caveats, and raw reads as false.
+        GIVEN an artifact appears in the registry WHEN structured discovery is emitted THEN each
+        record includes artifact ID, display name, default path, mapped path or unresolved template,
+        resolution source, artifact type, format, producer, consumers, existence, normal read
+        command, schema file, and raw-access boundary.
       - >-
-        GIVEN the artifact is missing or the CLI reports unavailable/defective state WHEN
-        normal decision context is requested THEN the truth table marks normal-use sufficiency
-        false and points to fallback/diagnostic boundaries instead of inference.
-      - >-
-        GIVEN existing compatibility fields remain WHEN new fields are designed THEN agents
-        are told to key normal use off `complete_for_normal_deliberation_context`, not the
-        legacy `complete_for_decision_context` full-detail signal.
+        GIVEN an objective/profile/template path cannot be fully resolved from project state WHEN
+        discovery is emitted THEN the record is truthful and caveated rather than inventing a
+        concrete path.
     evidence:
       - >-
-        `_decision_source_contract` now exposes `decision_context_truth_table` with separate
-        cases for full-detail entries, compacted archive entries, entries with missing full-detail
-        fields, satisfaction-review-needed entries, filtered no-match results, and missing or
-        unavailable artifacts.
+        Added a registry-backed artifact-location projection in `scripts/agentera` using
+        `ArtifactRecord`, `load_docs_path_overrides`, and `resolve_artifact_path`, with path source,
+        existence, routine command, schema file, and raw boundary fields per artifact.
       - >-
-        The truth table marks compacted, missing-field, and satisfaction-review cases as not
-        full-detail complete but complete for normal deliberation with caveats and no raw read;
-        missing or unavailable artifact state is not normal-deliberation complete and points to
-        fallback/diagnostic boundaries.
-      - >-
-        New `normal_deliberation_context` guidance tells agents to key normal use off
-        `complete_for_normal_deliberation_context`, not the legacy `complete_for_decision_context`
-        full-detail signal.
+        Objective/template records resolve only when `_active_objective_name()` can supply a concrete
+        name; otherwise the output reports an unresolved template caveat instead of inventing a path.
   - number: 3
-    name: Bounded decision source-contract clarity
+    name: Expose structured CLI discovery
     depends_on:
       - 2
     status: complete
     acceptance:
       - >-
-        GIVEN `agentera decisions --format json` returns source_contract WHEN implementation
-        completes THEN it exposes distinct boundaries for `missing_full_detail_boundary`,
-        `missing_artifact_boundary`, `filtered_result_boundary`, `satisfaction_review_boundary`,
-        and `compacted_history_boundary`.
+        GIVEN agents run `agentera describe --format json` WHEN they inspect artifact schemas THEN
+        they can obtain the new artifact-location contract without raw-reading `.agentera/docs.yaml`
+        or searching `.agentera/` directories.
       - >-
-        GIVEN returned entries are compacted or have missing full-detail fields WHEN source
-        contract is inspected THEN `raw_artifact_reads_required=false` and normal-use
-        sufficiency remains explicit without claiming full historical detail.
+        GIVEN agents run `agentera query --list-artifacts --format json` WHEN they need advanced
+        artifact discovery THEN structured output includes the location contract or an explicitly
+        documented compatibility wrapper; plain text output continues to list artifact names.
       - >-
-        GIVEN satisfaction review is needed WHEN decision context is emitted THEN the contract
-        preserves the non-inference policy and tells agents to carry review pressure forward
-        rather than claiming user-confirmed satisfaction.
-      - >-
-        GIVEN filtered results are empty WHEN source_contract is emitted THEN the contract
-        distinguishes "no matching returned decisions" from missing artifact state.
+        GIVEN routine state content is needed WHEN the discovery contract points to an artifact
+        THEN it names the owning state command and preserves `query <artifact>` as advanced/custom
+        inspection, not a replacement for normal state reads.
     evidence:
       - >-
-        `agentera decisions --format json` source_contract now includes
-        `complete_for_returned_full_detail`, `complete_for_normal_deliberation_context`,
-        `normal_deliberation_context`, `missing_full_detail_boundary`,
-        `missing_artifact_boundary`, `filtered_result_boundary`, `satisfaction_review_boundary`,
-        `compacted_history_boundary`, `raw_artifact_access_boundary`, and `fallback_policy`.
+        `agentera describe --format json` now emits top-level `artifact_locations` and per-schema
+        `location` records. `agentera query --list-artifacts --format json` now emits a v2 wrapper
+        with `names`, `artifacts`, `source`, `source_contract`, and caveats; plain text output still
+        lists names only.
       - >-
-        Direct `uv run scripts/agentera decisions --format json --fields source_contract`
-        showed the active repo has full-detail completeness false due compacted/missing entries,
-        normal deliberation completeness true, 40 compacted entries, 4 satisfaction-review entries,
-        raw reads not required, and explicit carry-forward caveats.
-      - >-
-        The contract preserves satisfaction non-inference and separates filtered no-match results
-        from missing artifact state without expanding compacted decisions or changing satisfaction.
+        Routine artifacts name commands such as `agentera plan --format json`; custom artifacts keep
+        `agentera query <artifact> --format json` as advanced inspection instead of routine content
+        ownership.
   - number: 4
-    name: Regression and measurement evidence
+    name: Align startup guidance without bloat
     depends_on:
       - 3
     status: complete
     acceptance:
       - >-
-        GIVEN focused tests run WHEN full-detail, compacted, missing-field, satisfaction-review,
-        filtered no-match, and missing-artifact cases are exercised THEN each case asserts the
-        correct full-detail, normal-use, and raw-read semantics.
+        GIVEN `hej --format json --capability-context <capability>` returns fallback guidance WHEN
+        artifact discovery is needed THEN it points to the structured discovery surface before any
+        raw artifact read.
       - >-
-        GIVEN downstream caveats are emitted WHEN entries are compacted or incomplete THEN
-        tests assert `missing_fields`, `compacted`, `caveats`, and satisfaction-review pressure
-        remain available for planning/orchestration/handoff context.
+        GIVEN the `hej` composite output remains the startup envelope WHEN discovery is added THEN
+        the payload stays bounded and does not duplicate every artifact field unless benchmark
+        evidence justifies it.
       - >-
-        GIVEN performance evidence is required WHEN verification runs THEN the smallest
-        available startup benchmark or focused proxy is run; if the original historical count
-        is no longer reproduced, the exact limitation and current result are recorded.
-      - >-
-        GIVEN runtime coverage is degraded WHEN benchmark results are summarized THEN degraded
-        runtimes are separated from product behavior.
+        GIVEN dispatcher or capability prose mentions `.agentera/docs.yaml` path checks WHEN guidance
+        is updated THEN it explains the CLI-first artifact-location contract and keeps raw docs reads
+        as write targets or last-resort diagnostics.
     evidence:
       - >-
-        Focused tests passed for full-detail decisions, compacted decisions, missing-field
-        decisions, satisfaction-review decisions, filtered no-match, missing artifact boundary,
-        Orkestrera compacted-decision caveat preservation, Decision 45 reference contract, and
-        DECISIONS.md consumer guidance.
+        Updated `skills/agentera/SKILL.md`, Planera, Orkestrera, and Dokumentera prose to use the
+        CLI artifact-location contract before raw docs/path reads, with raw docs access reserved for
+        writes, validation, corruption diagnostics, or unavailable/incomplete CLI discovery.
       - >-
-        Full `uv run pytest tests/test_query_cli.py -q` passed with 191 tests; guidance/reference
-        tests passed with 62 tests.
-      - >-
-        `mage bench:startupState` reran after implementation and latest report generated at
-        `2026-05-16T02:16:13+00:00` showed `raw_artifact_access_after_cli_counts={}`,
-        `redundant_raw_artifact_access_counts={}`, `total_raw_artifact_access_after_cli=0`,
-        `total_redundant_raw_artifact_accesses=0`, implementation recommended false, and
-        degraded claude-code/github-copilot runtime coverage separated from product behavior.
+        Updated closeout/evaluation fallback command surfaces to use
+        `agentera query --list-artifacts --format json` without duplicating every artifact record in
+        the `hej` startup envelope.
   - number: 5
-    name: DECISIONS.md consumer guidance alignment
+    name: Add regressions and contract tests
     depends_on:
       - 4
     status: complete
     acceptance:
       - >-
-        GIVEN Task 1 identifies any specific redundant-read source WHEN guidance is edited
-        THEN every identified source is updated to use returned decisions, source_contract,
-        and caveats before any raw decision artifact read.
+        GIVEN docs.yaml mapping overrides exist WHEN tests run THEN structured discovery reports the
+        mapped path, resolution source, and existence without repeating canonical registry facts in
+        `.agentera/docs.yaml`.
       - >-
-        GIVEN capability prose and dispatcher guidance mention DECISIONS.md reads WHEN audit
-        runs THEN wording that tells agents to read raw decisions for normal context after CLI
-        state is replaced or bounded by CLI-first source-contract guidance.
+        GIVEN describe/query JSON surfaces are emitted WHEN tests inspect them THEN tests assert
+        artifact-location fields, routine command ownership, raw-access boundaries, and missing-schema
+        gap behavior.
       - >-
-        GIVEN compacted or incomplete decisions are returned WHEN downstream capabilities plan,
-        orchestrate, audit, document, optimize, or hand off work THEN guidance preserves
-        `missing_fields`, `compacted`, `caveats`, and satisfaction-review pressure rather than
-        treating compacted decisions as complete.
-      - >-
-        GIVEN Resonera writes decisions WHEN guidance is changed THEN raw artifact access for
-        decision writes/repairs remains explicitly allowed under Resonera ownership.
+        GIVEN unsupported capability-name commands remain forbidden WHEN tests run THEN `agentera
+        planera` and route/CLI separation assertions still pass.
     evidence:
       - >-
-        Updated `skills/agentera/SKILL.md` and DECISIONS.md consumers in Planera, Realisera,
-        Inspektera, Dokumentera, Visionera, Optimera, Orkestrera, Resonera, and Profilera to use
-        `agentera decisions --format json` for normal decision context and preserve
-        `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` pressure.
+        Added CLI tests for the list-artifacts v2 JSON wrapper, docs.yaml mapped path resolution,
+        describe `artifact_locations`, schema-entry `location`, missing schema behavior, routine
+        command ownership, raw-access boundaries, and unchanged unsupported `agentera planera` route
+        separation.
       - >-
-        Resonera guidance preserves raw decision artifact access for explicit artifact repair,
-        corruption work, unavailable/defective CLI state, and Resonera-owned writes/repairs.
-      - >-
-        Guidance changes did not add any capability-name CLI command and did not touch unrelated
-        AGENTERA_ARTIFACTS discovery behavior.
+        Adjusted startup benchmark persistence test to assert the runtime version source instead of
+        stale hardcoded `2.3.14`, preserving benchmark contract coverage under current `2.10.0`
+        metadata.
   - number: 6
-    name: Plan artifact and policy-gated closeout
+    name: Verify measurement and handoff
     depends_on:
-      - 1
-      - 2
-      - 3
-      - 4
       - 5
     status: complete
     acceptance:
       - >-
-        GIVEN this plan is created WHEN Planera exits THEN `.agentera/plan.yaml` is active,
-        has exactly six pending tasks, records full review/self-audit evidence, and sets
-        `previous_plan_archived` to the archived completed Planera Prose Re-Read Reduction Plan.
+        GIVEN implementation is complete WHEN verification runs THEN focused CLI tests,
+        artifact-registry contract tests, cross-capability guidance tests, and mapped artifact
+        validators pass.
       - >-
-        GIVEN closeout begins WHEN artifacts are edited THEN artifact mappings are queried
-        with `uv run scripts/agentera query --list-artifacts` and only mapped source-of-truth
-        artifacts required by policy are updated.
+        GIVEN benchmark or proxy evidence is available WHEN closeout records results THEN it reports
+        whether `AGENTERA_ARTIFACTS` raw-after-CLI pressure is reduced, unavailable, or not currently
+        reproduced, without hiding degraded runtime coverage.
       - >-
-        GIVEN the implemented change is classified under `.agentera/docs.yaml` semver policy
-        WHEN closeout starts THEN version-bearing surfaces are updated only if policy requires
-        it and the classification is recorded.
-      - >-
-        GIVEN final verification runs WHEN the plan is ready for handoff THEN focused tests,
-        mapped artifact validators, compaction check or fix, and `git diff --check` pass.
+        GIVEN the plan is handed to execution WHEN Planera exits THEN `.agentera/plan.yaml` is active,
+        the previous complete plan is archived, `git diff --check` passes, and no excluded state was
+        changed.
     evidence:
       - >-
-        This plan archived `.agentera/archive/PLAN-2026-05-16-planera-prose-re-read-reduction.yaml`,
-        started active with exactly six pending tasks and review/self-audit evidence, then was
-        completed after implementation and verification.
+        Verification passed: 307 focused/relevant tests across query CLI, artifact registry contract,
+        cross-capability guidance, Dokumentera, Planera, Orkestrera, and startup analysis; capability
+        contract self-validation passed; `git diff --check` passed.
       - >-
-        Closeout queried artifact mappings with `uv run scripts/agentera query --list-artifacts
-        --format json`; mapped source-of-truth artifacts updated are PLAN, TODO, CHANGELOG, DOCS,
-        and PROGRESS, plus semver-policy version-bearing package/plugin/registry/skill surfaces.
-      - >-
-        `.agentera/docs.yaml` semver policy maps `feat` to `minor`, so version metadata was
-        aligned from 2.9.0 to 2.10.0 for this DECISIONS.md source-contract feature.
+        Proxy evidence: the new CLI surfaces directly expose mapped paths and normal read commands,
+        addressing the historical AGENTERA_ARTIFACTS path-discovery reason. No live benchmark was run;
+        retained history remains the baseline and legitimate raw writes/diagnostics are explicitly
+        excluded from the reduction claim.
 overall_acceptance:
   - >-
-    GIVEN decisions JSON includes compacted or incomplete entries WHEN an agent needs normal
-    deliberation context THEN it can proceed from returned structured fields and caveats without
-    raw `.agentera/decisions.yaml` reads or inference.
+    GIVEN an agent needs artifact path discovery after CLI state WHEN it uses supported Agentera CLI
+    surfaces THEN it can identify mapped paths and normal read commands without raw-reading
+    `.agentera/docs.yaml` or probing `.agentera/` directories.
   - >-
-    GIVEN full historical detail is unavailable WHEN the source contract reports normal-use
-    sufficiency THEN the contract still clearly marks full-detail completeness false and carries
-    missing/compacted/satisfaction caveats forward.
+    GIVEN an artifact location is unresolved, templated, missing, or outside normal routine state
+    coverage WHEN structured discovery reports it THEN the output is explicit and caveated rather
+    than pretending raw reads are unnecessary.
   - >-
-    GIVEN raw decision artifact access is considered WHEN the plan completes THEN it remains
-    restricted to decision writes, artifact repair/corruption diagnostics, or CLI defects, not
-    normal post-CLI context recovery.
+    GIVEN artifact content is needed WHEN a routine state command owns it THEN the guidance still
+    prefers that command over generic query or raw file reads.
   - >-
-    GIVEN the separate AGENTERA_ARTIFACTS TODO remains open WHEN this work is implemented THEN
-    artifact-path discovery redesign is not bundled into this DECISIONS.md contract change.
+    GIVEN raw artifact access is needed for writes, archival, validation, diagnostics, CLI defects,
+    unavailable CLI state, or benchmarks THEN the new contract permits it explicitly and does not
+    misclassify those accesses as regressions.
 surprises:
   - >-
-    Adversarial review found five issues and all were addressed: the contract needs an explicit
-    truth table; missing fields, missing artifacts, filtered results, satisfaction review, and
-    compacted history require separate boundaries; guidance alignment must audit all DECISIONS.md
-    consumers implicated by benchmark evidence or raw-read wording; downstream handoffs must
-    preserve caveats instead of treating compacted decisions as complete; and the plan artifact
-    itself must explicitly validate archive linkage, active status, six pending tasks, review,
-    and self-audit evidence.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-16-planera-prose-re-read-reduction.yaml
+    Planning evidence found four retained benchmark rows with `AGENTERA_ARTIFACTS` pressure:
+    `2.3.3` reported 1 read without token estimates, `2.3.13` reported 4 reads and 63 estimated
+    raw-after-CLI tokens, `2.7.0` reported 4 reads and 114 estimated tokens, and `2.8.0` reported
+    1 read and 23 estimated tokens. Current `query --list-artifacts --format json` returns only
+    names, and current `describe` exposes schema/default paths but no compact resolved-location
+    contract.
+  - >-
+    Adversarial review found five issues and all were addressed: avoid broad registry redesign;
+    preserve text-output compatibility and route/CLI separation; do not stuff full artifact tables
+    into every `hej` response without evidence; handle unresolved objective/profile/template paths
+    truthfully; and keep legitimate raw writes/diagnostics out of the raw-read reduction target.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-16-decision-source-contract-raw-read-reduction.yaml

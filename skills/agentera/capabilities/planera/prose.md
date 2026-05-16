@@ -39,7 +39,7 @@ required for writing a new plan, archiving a completed plan, artifact validation
 corruption diagnostics, or when CLI output is unavailable or incomplete after
 CLI fallbacks.
 
-Use `agentera describe --format json` and its `artifact_schemas` entry for `plan` to locate the active installed schema; do not search Agentera directories manually. Existing plan artifacts provide repository-local examples of the shape.
+Use `agentera describe --format json` and its `artifact_schemas` entry for `plan` to locate the active installed schema; use `artifact_locations` or `agentera query --list-artifacts --format json` to locate the mapped plan path and raw-access boundary before any diagnostic raw read. Do not search Agentera directories manually. Existing plan artifacts provide repository-local examples of the shape.
 
 For normal Planera startup, `agentera hej --format json --capability-context
 planera` exposes `source_contract.capability_context.startup_contract` as the
@@ -52,7 +52,7 @@ evidence.
 
 ### Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping, use the default layout: TODO.md, CHANGELOG.md, and DESIGN.md at the project root; canonical VISION.md at `.agentera/vision.yaml`; other agent-facing artifacts at `.agentera/*.yaml`.
+Before reading or writing any artifact, prefer the CLI artifact-location contract from `agentera describe --format json` or `agentera query --list-artifacts --format json`. It resolves `.agentera/docs.yaml` mappings, default paths, existence, and read boundaries without a separate raw docs read. Raw `.agentera/docs.yaml` access is reserved for docs artifact writes, validation, corruption diagnostics, or unavailable/incomplete CLI discovery.
 
 ### Contract values
 
