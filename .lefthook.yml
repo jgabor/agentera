@@ -28,7 +28,7 @@ pre-commit:
 pre-push:
   parallel: true
   commands:
-    compaction-gate:
+    agentera:
       run: uv run scripts/agentera gate
     test:
       run: uv run --with pytest --with pyyaml pytest tests/ -q
