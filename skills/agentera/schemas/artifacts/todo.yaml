@@ -15,7 +15,17 @@ meta:
     Human-facing: remains Markdown at project root.
   artifact_type: human_facing
   path: "TODO.md"
-  producer: [dokumentera, inspektera, inspirera, optimera, orkestrera, realisera, resonera, visualisera]
+  producer:
+    [
+      dokumentera,
+      inspektera,
+      inspirera,
+      optimera,
+      orkestrera,
+      realisera,
+      resonera,
+      visualisera,
+    ]
   consumers: [hej, all_skills]
   format: yaml
 
@@ -23,6 +33,7 @@ GROUP_PREFIXES:
   BUDGET: TB
   ITEM: TI
   VALIDATION: TV
+  CONVENTION: TC
 
 BUDGET:
   1:
@@ -58,3 +69,42 @@ ITEM:
       Current status: open or resolved.
     validation:
       - "Must be one of: open, resolved"
+
+CONVENTION:
+  1:
+    id: TC1
+    field: type_tag
+    level: advisory
+    description: >-
+      Each item should carry a type tag such as [fix], [feat], [chore],
+      [test], [perf], or [docs] for commit-scope alignment and scan
+      discoverability.
+  2:
+    id: TC2
+    field: version_suffix
+    level: advisory
+    description: >-
+      Feature and fix items should include a version scope like [fix:2.4.x]
+      or [feat:2.3.x] when the work targets a specific release train.
+  3:
+    id: TC3
+    field: title_format
+    level: advisory
+    description: >-
+      Items within the same severity section should use a consistent format:
+      either all plain prose or all "**BoldTitle**: description".
+  4:
+    id: TC4
+    field: resolved_summary
+    level: advisory
+    description: >-
+      Resolved items should end with "· resolved by ..." to distinguish
+      completed work from open or deferred items at a glance.
+  5:
+    id: TC5
+    field: resolved_strikethrough
+    level: advisory
+    description: >-
+      Resolved items should wrap the original task text in Markdown
+      strikethrough (~~text~~) before the resolution summary, keeping
+      the original intent readable while visually marking it closed.
