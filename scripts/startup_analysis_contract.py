@@ -68,6 +68,8 @@ STATE_EVENT_CLASSES = frozenset(
 )
 STARTUP_INTERMEDIATE_ENVELOPE = "startup_state_analysis_v1"
 STARTUP_METRICS_ENVELOPE = "startup_state_metrics_v1"
+THRESHOLD_EVIDENCE_ENVELOPE = "threshold_evidence_scan_v1"
+THRESHOLD_CLASSIFICATION_ENVELOPE = "threshold_evidence_classification_v1"
 STARTUP_REPORT_MARKDOWN = "startup-overhead-report.md"
 STARTUP_REPORT_JSON = "startup-overhead-report.json"
 BENCHMARK_HISTORY_JSONL = "runs.jsonl"
@@ -415,6 +417,426 @@ def _arguments_text(record: dict[str, Any]) -> str:
 
 def _estimated_tool_argument_tokens(record: dict[str, Any]) -> int:
     return math.ceil(len(_arguments_text(record).encode("utf-8")) / 4)
+
+
+THRESHOLD_WARNING_PATTERNS: tuple[tuple[str, str, str, re.Pattern[str]], ...] = (
+    (
+        "self_audit",
+        "verbosity",
+        "self_audit.verbosity",
+        re.compile(
+            r"verbosity(?: mismatch)?|exceeds(?: the)?(?: advisory| compact)?(?: prose| word| entry)? budget|"
+            r"\b\d+\s+words?\s+exceeds\s+\d+\s+budget\b|full plans? exceed",
+            re.IGNORECASE,
+        ),
+    ),
+    ("self_audit", "abstraction", "self_audit.abstraction", re.compile(r"abstraction creep", re.IGNORECASE)),
+    ("self_audit", "filler", "self_audit.filler", re.compile(r"\bfiller\s*:", re.IGNORECASE)),
+    ("compaction", "over_limit", "compaction.uniform_10_40_50", re.compile(r"over(?:\s+|_)limit|uniform_10_40_50", re.IGNORECASE)),
+    ("compaction", "protected_overflow", "compaction.protected_overflow", re.compile(r"protected[-_ ]overflow", re.IGNORECASE)),
+)
+
+POST_AUDIT_FLAG_RE = re.compile(r"\[post-audit-flagged(?::[^\]]*)?\]", re.IGNORECASE)
+BUDGET_PRESSURE_RE = THRESHOLD_WARNING_PATTERNS[0][3]
+FULL_PLAN_BUDGET_RE = re.compile(r"full[- ]plan|full plans?|PLAN\.md", re.IGNORECASE)
+
+DETAIL_ANCHOR_RE = re.compile(
+    r"`[^`]+`|\b(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+\b|:\d{2,}\b|\b[0-9a-fA-F]{7,}\b"
+)
+
+
+def _record_threshold_text(record: dict[str, Any]) -> str:
+    parts = [_extract_text(record)]
+    if record.get("source_kind") == "tool_call":
+        parts.append(_arguments_text(record))
+    return "\n".join(part for part in parts if part)
+
+
+def _detail_metrics(text: str) -> dict[str, int]:
+    return {
+        "word_count": len(text.split()),
+        "anchor_count": len(DETAIL_ANCHOR_RE.findall(text)),
+    }
+
+
+def _threshold_warnings(text: str) -> list[dict[str, str]]:
+    warnings: list[dict[str, str]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for family, category, source, pattern in THRESHOLD_WARNING_PATTERNS:
+        if pattern.search(text):
+            key = (family, category, source)
+            if key not in seen:
+                warnings.append({"family": family, "category": category, "threshold_source": source})
+                seen.add(key)
+    return warnings
+
+
+def _detail_loss_status(before: dict[str, int], after: dict[str, int]) -> str:
+    if before["word_count"] == 0 or after["word_count"] == 0:
+        return "not_assessed"
+    word_drop = after["word_count"] < before["word_count"] * 0.75
+    anchor_drop = after["anchor_count"] < before["anchor_count"]
+    if word_drop and anchor_drop:
+        return "possible_useful_detail_removed"
+    if word_drop:
+        return "possible_compression_without_anchor_loss"
+    return "not_detected"
+
+
+def scan_threshold_evidence(
+    corpus: dict[str, Any],
+    *,
+    salt: str,
+    contract: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Scan corpus records for redacted lint/compaction threshold evidence.
+
+    The scan may inspect transient transcript/tool text, but retained output is
+    limited to salted record labels, canonical artifact labels, bounded counts,
+    warning categories, and coverage caveats.
+    """
+
+    loaded = contract or load_contract()
+    records = corpus.get("records", []) if isinstance(corpus, dict) else []
+    if not isinstance(records, list):
+        records = []
+    metadata = corpus.get("metadata", {}) if isinstance(corpus, dict) else {}
+    if not isinstance(metadata, dict):
+        metadata = {}
+    runtime_statuses = metadata.get("runtime_statuses")
+    if not isinstance(runtime_statuses, list):
+        runtime_statuses = []
+    runtime_coverage = [_bounded_runtime_status(status) for status in runtime_statuses if isinstance(status, dict)]
+    coverage_caveats: list[str] = []
+    if not runtime_coverage:
+        coverage_caveats.append("No runtime coverage metadata was available for threshold evidence scanning.")
+    if any(status.get("status") in {"missing", "sparse", "degraded", "skipped"} for status in runtime_coverage):
+        coverage_caveats.append("Runtime coverage is incomplete or degraded; absence of warning evidence is not proof of absence.")
+
+    groups: dict[str, list[dict[str, Any]]] = {}
+    degradations: list[dict[str, str]] = []
+    for record in records:
+        if not isinstance(record, dict):
+            degradations.append({"reason": "malformed_record"})
+            continue
+        key = _conversation_key(record)
+        if key is None:
+            degradations.append({"record": _record_label(record, salt=salt), "reason": "missing_conversation_key"})
+            continue
+        groups.setdefault(key, []).append(record)
+
+    warning_counts: Counter[str] = Counter()
+    artifact_counts: Counter[str] = Counter()
+    capability_counts: Counter[str] = Counter()
+    source_counts: Counter[str] = Counter()
+    detail_status_counts: Counter[str] = Counter()
+    warning_events: list[dict[str, Any]] = []
+
+    for conversation_key, items in groups.items():
+        items.sort(key=lambda item: item.get("timestamp", ""))
+        capability = "unknown"
+        pending: list[dict[str, Any]] = []
+        for record in items:
+            text = _record_threshold_text(record)
+            data = record.get("data") if isinstance(record.get("data"), dict) else {}
+            actor = data.get("actor") if isinstance(data, dict) else None
+            if actor == "user":
+                capability = _capability_invocation(text) or "unknown"
+                pending = []
+                continue
+            if actor == "assistant":
+                capability = _intro_capability(text) or capability
+
+            warnings = _threshold_warnings(text)
+            if warnings:
+                artifact_label = canonical_artifact_label(text, loaded) or "unknown"
+                event = {
+                    "event_label": _record_label(record, salt=salt),
+                    "conversation": hash_label("session", conversation_key, salt=salt),
+                    "capability": capability,
+                    "artifact_label": artifact_label,
+                    "warnings": warnings,
+                    "detail_loss_status": "not_assessed",
+                    "rewrite_followup": None,
+                }
+                before_metrics = _detail_metrics(text)
+                event["observed_counts"] = {
+                    "warning_word_count": before_metrics["word_count"],
+                    "warning_anchor_count": before_metrics["anchor_count"],
+                }
+                warning_events.append(event)
+                pending.append({"event": event, "metrics": before_metrics})
+                artifact_counts[artifact_label] += 1
+                capability_counts[capability] += 1
+                for warning in warnings:
+                    warning_counts[f"{warning['family']}.{warning['category']}"] += 1
+                    source_counts[warning["threshold_source"]] += 1
+
+            if pending and record.get("source_kind") == "tool_call":
+                event_class, _artifact_label, _state_command, _cli_artifact_labels = classify_startup_event(record)
+                if event_class == "implementation_boundary":
+                    after_metrics = _detail_metrics(text)
+                    for pending_item in pending:
+                        event = pending_item["event"]
+                        if event["rewrite_followup"] is not None:
+                            continue
+                        status = _detail_loss_status(pending_item["metrics"], after_metrics)
+                        event["detail_loss_status"] = status
+                        event["rewrite_followup"] = {
+                            "event_label": _record_label(record, salt=salt),
+                            "event_class": event_class,
+                            "word_count_delta": after_metrics["word_count"] - pending_item["metrics"]["word_count"],
+                            "anchor_count_delta": after_metrics["anchor_count"] - pending_item["metrics"]["anchor_count"],
+                        }
+                        detail_status_counts[status] += 1
+                    pending = []
+        for pending_item in pending:
+            detail_status_counts[pending_item["event"]["detail_loss_status"]] += 1
+
+    if degradations:
+        coverage_caveats.append("One or more records were skipped because they were malformed or lacked conversation identity.")
+    return {
+        "output_envelope": THRESHOLD_EVIDENCE_ENVELOPE,
+        "contract_version": loaded.get("version"),
+        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "total_records": len(records),
+        "runtime_coverage": runtime_coverage,
+        "coverage_caveats": list(dict.fromkeys(coverage_caveats)),
+        "counts": {
+            "warning_events": len(warning_events),
+            "by_warning": _counter_dict(warning_counts),
+            "by_artifact": _counter_dict(artifact_counts),
+            "by_capability": _counter_dict(capability_counts),
+            "by_threshold_source": _counter_dict(source_counts),
+            "by_detail_loss_status": _counter_dict(detail_status_counts),
+        },
+        "warning_events": warning_events,
+        "degradations": degradations,
+        "privacy_redaction_summary": {
+            "raw_transcript_text": "not_emitted",
+            "raw_tool_arguments": "not_emitted",
+            "full_local_paths": "not_emitted",
+            "raw_store_paths": "not_emitted",
+            "session_ids": "salted_or_not_emitted",
+            "artifact_labels": "canonical_only",
+        },
+    }
+
+
+def scan_retained_threshold_evidence(
+    artifacts: dict[str, str],
+    *,
+    salt: str,
+    contract: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Scan retained artifact text for privacy-safe threshold evidence."""
+
+    loaded = contract or load_contract()
+    warning_counts: Counter[str] = Counter()
+    artifact_counts: Counter[str] = Counter()
+    source_counts: Counter[str] = Counter()
+    detail_status_counts: Counter[str] = Counter()
+    warning_events: list[dict[str, Any]] = []
+
+    for source_label, text in sorted(artifacts.items()):
+        if not isinstance(source_label, str) or not isinstance(text, str):
+            continue
+        artifact_label = canonical_artifact_label(source_label, loaded) or canonical_artifact_label(text, loaded) or "unknown"
+        warnings = _threshold_warnings(text)
+        if not warnings:
+            continue
+        post_audit_markers = len(POST_AUDIT_FLAG_RE.findall(text))
+        budget_mentions = len(BUDGET_PRESSURE_RE.findall(text))
+        full_plan_budget_pressure = artifact_label == "PLAN.md" and budget_mentions and FULL_PLAN_BUDGET_RE.search(text)
+        if post_audit_markers and full_plan_budget_pressure:
+            detail_status = "retained_artifact_false_positive_signal"
+        else:
+            detail_status = "not_assessed"
+
+        event = {
+            "event_label": hash_label("record", source_label, salt=salt),
+            "conversation": "retained_artifacts",
+            "capability": "agentera",
+            "artifact_label": artifact_label,
+            "evidence_source": "retained_artifact",
+            "warnings": warnings,
+            "detail_loss_status": detail_status,
+            "rewrite_followup": None,
+            "observed_counts": {
+                "post_audit_flag_markers": post_audit_markers,
+                "budget_pressure_mentions": budget_mentions,
+            },
+        }
+        warning_events.append(event)
+        artifact_counts[artifact_label] += 1
+        detail_status_counts[detail_status] += 1
+        for warning in warnings:
+            warning_counts[f"{warning['family']}.{warning['category']}"] += 1
+            source_counts[warning["threshold_source"]] += 1
+
+    return {
+        "output_envelope": THRESHOLD_EVIDENCE_ENVELOPE,
+        "contract_version": loaded.get("version"),
+        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "total_records": len(artifacts),
+        "runtime_coverage": [],
+        "coverage_caveats": [],
+        "counts": {
+            "warning_events": len(warning_events),
+            "by_warning": _counter_dict(warning_counts),
+            "by_artifact": _counter_dict(artifact_counts),
+            "by_capability": {"agentera": len(warning_events)} if warning_events else {},
+            "by_threshold_source": _counter_dict(source_counts),
+            "by_detail_loss_status": _counter_dict(detail_status_counts),
+        },
+        "warning_events": warning_events,
+        "degradations": [],
+        "privacy_redaction_summary": {
+            "raw_artifact_text": "not_emitted",
+            "raw_transcript_text": "not_emitted",
+            "raw_tool_arguments": "not_emitted",
+            "full_local_paths": "not_emitted",
+            "artifact_labels": "canonical_only",
+        },
+    }
+
+
+def _event_warning_keys(event: dict[str, Any]) -> list[str]:
+    keys: list[str] = []
+    for warning in event.get("warnings", []):
+        if not isinstance(warning, dict):
+            continue
+        family = warning.get("family")
+        category = warning.get("category")
+        if isinstance(family, str) and isinstance(category, str):
+            keys.append(f"{family}.{category}")
+    return keys
+
+
+def _event_classification(event: dict[str, Any], *, coverage_caveated: bool) -> str:
+    status = event.get("detail_loss_status")
+    if status == "possible_useful_detail_removed":
+        return "likely_false_positive"
+    if status == "retained_artifact_false_positive_signal":
+        return "likely_false_positive"
+    if status in {"possible_compression_without_anchor_loss", "not_detected"}:
+        return "legitimate_pressure"
+    if coverage_caveated:
+        return "unsupported_by_available_coverage"
+    return "inconclusive"
+
+
+def _category_classification(classifications: Counter[str]) -> str:
+    if classifications["likely_false_positive"]:
+        return "likely_false_positive"
+    if classifications["unsupported_by_available_coverage"]:
+        return "unsupported_by_available_coverage"
+    if classifications["inconclusive"]:
+        return "inconclusive"
+    return "legitimate_pressure"
+
+
+def classify_threshold_evidence(scan: dict[str, Any]) -> dict[str, Any]:
+    """Classify redacted threshold scan output into action-safe categories."""
+
+    events = scan.get("warning_events")
+    if not isinstance(events, list):
+        events = []
+    coverage_caveats = scan.get("coverage_caveats")
+    if not isinstance(coverage_caveats, list):
+        coverage_caveats = []
+
+    by_category: dict[str, dict[str, Any]] = {}
+    coverage_caveated = bool(coverage_caveats)
+    unsupported = bool(coverage_caveats) and not events
+
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        classification = _event_classification(event, coverage_caveated=coverage_caveated)
+        artifact = event.get("artifact_label") if isinstance(event.get("artifact_label"), str) else "unknown"
+        capability = event.get("capability") if isinstance(event.get("capability"), str) else "unknown"
+        detail_status = event.get("detail_loss_status") if isinstance(event.get("detail_loss_status"), str) else "not_assessed"
+        for key in _event_warning_keys(event):
+            entry = by_category.setdefault(
+                key,
+                {
+                    "warning": key,
+                    "event_count": 0,
+                    "artifacts": set(),
+                    "capabilities": set(),
+                    "classification_counts": Counter(),
+                    "detail_loss_status_counts": Counter(),
+                    "event_labels": [],
+                },
+            )
+            entry["event_count"] += 1
+            entry["artifacts"].add(artifact)
+            entry["capabilities"].add(capability)
+            entry["classification_counts"][classification] += 1
+            entry["detail_loss_status_counts"][detail_status] += 1
+            label = event.get("event_label")
+            if isinstance(label, str):
+                entry["event_labels"].append(label)
+
+    categories: list[dict[str, Any]] = []
+    repeated_false_positive = False
+    classification_counts: Counter[str] = Counter()
+    for key, entry in sorted(by_category.items()):
+        classification = _category_classification(entry["classification_counts"])
+        classification_counts[classification] += 1
+        if classification == "likely_false_positive" and entry["event_count"] >= 2:
+            repeated_false_positive = True
+        categories.append(
+            {
+                "warning": key,
+                "classification": classification,
+                "event_count": entry["event_count"],
+                "artifacts": sorted(entry["artifacts"]),
+                "capabilities": sorted(entry["capabilities"]),
+                "event_classification_counts": _counter_dict(entry["classification_counts"]),
+                "detail_loss_status_counts": _counter_dict(entry["detail_loss_status_counts"]),
+                "event_labels": entry["event_labels"],
+            }
+        )
+    if unsupported:
+        classification_counts["unsupported_by_available_coverage"] += 1
+
+    if repeated_false_positive:
+        recommendation = {
+            "action": "consider_minimal_threshold_or_diagnostic_change",
+            "reason": "At least one warning category has repeated redacted evidence of possible useful detail removal.",
+        }
+    elif unsupported:
+        recommendation = {
+            "action": "defer_without_threshold_change",
+            "reason": "Available runtime coverage cannot support a false-positive conclusion.",
+        }
+    else:
+        recommendation = {
+            "action": "no_threshold_change_yet",
+            "reason": "False-positive evidence is absent, single-instance, legitimate pressure, or inconclusive.",
+        }
+
+    return {
+        "output_envelope": THRESHOLD_CLASSIFICATION_ENVELOPE,
+        "input_envelope": scan.get("output_envelope"),
+        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "categories": categories,
+        "counts": {
+            "by_classification": _counter_dict(classification_counts),
+            "category_count": len(categories),
+            "repeated_false_positive_categories": sum(
+                1 for category in categories if category["classification"] == "likely_false_positive" and category["event_count"] >= 2
+            ),
+        },
+        "recommendation": recommendation,
+        "coverage_caveats": [str(caveat) for caveat in coverage_caveats],
+        "privacy_redaction_summary": scan.get("privacy_redaction_summary") or {
+            "raw_transcript_text": "not_emitted",
+            "raw_tool_arguments": "not_emitted",
+        },
+    }
 
 
 def _state_cli_command(command: str) -> str | None:

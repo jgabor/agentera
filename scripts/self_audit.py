@@ -142,6 +142,19 @@ def check_verbosity(
     )
 
 
+def check_full_file_verbosity(text: str, artifact: str) -> tuple[bool, str]:
+    """Check whole-artifact word count against the artifact's full-file budget."""
+
+    word_count = len(text.split())
+    budget = _FULL_FILE_BUDGETS.get(artifact, 2500)
+    if word_count <= budget:
+        return (True, "")
+    return (
+        False,
+        f"verbosity mismatch: {word_count} words exceeds {budget} full-file budget",
+    )
+
+
 def check_abstraction(text: str) -> tuple[bool, str]:
     """Scan for at least one concrete anchor in the text.
 
