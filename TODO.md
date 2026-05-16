@@ -10,6 +10,7 @@
 
 ## ⇢ Annoying
 
+- [ ] Session artifact not committed or cleaned by any capability after, e.g., a orkestrera run, leaving it dangling and untracked
 - [ ] We should consider removing support for Claude Code: <https://xcancel.com/ClaudeDevs/status/2054610152817619388>
 
 ## Resolved

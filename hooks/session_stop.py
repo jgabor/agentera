@@ -7,8 +7,9 @@
 
 Detects which operational artifacts were modified during the session
 (via git diff and git ls-files), and writes a timestamped bookmark to
-session.yaml. Compacts older bookmarks to one-line summaries (keep 10
-full entries, 40 one-line summaries, drop oldest beyond 50 total).
+session.yaml. Stages the session file (git add) so it is never left
+dirty in the working tree. Compacts older bookmarks to one-line summaries
+(keep 10 full entries, 40 one-line summaries, drop oldest beyond 50 total).
 
 Respects docs.yaml artifact path overrides.
 
@@ -346,6 +347,13 @@ def write_session_bookmark(
     # Write result.
     session_path.parent.mkdir(parents=True, exist_ok=True)
     session_path.write_text(format_session_yaml(compacted), encoding="utf-8")
+
+    # Stage the session file so it is never left dirty in the working tree.
+    try:
+        rel = str(session_path.relative_to(project_root))
+        _run_git(project_root, ["add", "--", rel])
+    except (ValueError, OSError):
+        pass
 
     return True
 
