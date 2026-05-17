@@ -1,0 +1,90 @@
+header:
+  level: light
+  created: 2026-05-17
+  status: complete
+  title: Validate Namespace Stable Validator Coverage
+what: >-
+  Extend the canonical `agentera validate` namespace to cover the remaining stable
+  validator helpers: cross-capability artifact graph validation, runtime lifecycle
+  adapter validation, app-home contract terminology validation, and capability
+  schema contract self/protocol checks.
+why: >-
+  The direct helper scripts already pass and remain useful maintainer seams, but
+  user-facing and agent-facing validation should route through the `agentera`
+  namespace first. Adding thin CLI wrappers now reduces direct-helper reliance
+  before the broader helper-script classification cleanup.
+constraints: >-
+  Preserve direct helper script compatibility and output behavior. Keep wrappers
+  thin, non-interactive, JSON-capable, and explicit about delegated engines. Do
+  not refresh installed apps/profiles, publish, push, tag, change package-manager
+  state, edit `.agentera/vision.yaml`, mutate objective state, or change decision
+  satisfaction state.
+tasks:
+  - number: 1
+    name: Add stable validator subcommands
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `agentera validate --help` is inspected WHEN supported families are
+        listed THEN cross-capability, lifecycle-adapters, app-home-contract, and
+        capability-contract validation are discoverable with examples.
+      - >-
+        GIVEN each new validate family is run in text mode WHEN the delegated
+        helper passes THEN stdout preserves the helper's useful success wording and
+        exits zero.
+    evidence: >-
+      `agentera validate` now exposes `cross-capability`, `lifecycle-adapters`,
+      `app-home-contract`, and `capability-contract` families. Text-mode wrapper
+      output matches the direct helper scripts for the delegated validators.
+  - number: 2
+    name: Add structured JSON payloads for delegated validators
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN each new validate family is run with `--format json` WHEN validation
+        passes THEN the payload includes `command`, `status`, `target_family`,
+        delegated engine command names, exit codes, and violations.
+      - >-
+        GIVEN capability contract checks run WHEN `agentera validate
+        capability-contract --format json` is used THEN both self-validation and
+        protocol validation results are represented without requiring direct helper
+        invocation.
+    evidence: >-
+      JSON mode returns `command`, `status`, `target_family`, delegated engine
+      command names, exit codes, stdout/stderr lines, and violations. The
+      `capability-contract` payload includes both `capability-contract-self` and
+      `capability-protocol` checks.
+  - number: 3
+    name: Preserve direct helper compatibility and update docs/tests
+    depends_on:
+      - 1
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN existing direct helpers are run WHEN the validate namespace is added
+        THEN `validate_cross_capability.py`, `validate_lifecycle_adapters.py`,
+        `validate_app_home_contract.py`, and `validate_capability.py` direct calls
+        still pass.
+      - >-
+        GIVEN TODO, changelog, docs, progress, and plan artifacts are inspected
+        WHEN the batch is complete THEN they record the canonical validate
+        namespace coverage and remaining 2.5.x seams.
+    evidence: >-
+      `uv run pytest tests/test_validate_namespace.py -q` passed with 9 tests.
+      Direct helper checks for cross-capability, lifecycle adapters, app-home
+      contract, capability contract self-validation, and protocol validation all
+      passed.
+overall_acceptance:
+  - >-
+    `agentera validate` covers every stable validator named in the 2.5.x TODO
+    while preserving existing direct helper script behavior.
+  - >-
+    Text and JSON modes are regression-tested for the new validate families.
+  - >-
+    Documentation and artifacts record the new canonical validation surface.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-17-opencode-plugin-packaging-and-compaction-context.yaml
