@@ -1,4 +1,41 @@
 cycles:
+- number: 555
+  timestamp: 2026-05-17 10:40
+  type: feat
+  phase: build
+  what: Implemented OpenCode plugin packaging metadata and compaction context support.
+  commit: pending
+  inspiration: Orkestrera executed the OpenCode Plugin Packaging and Compaction Context
+    plan to close the related npm-loadable plugin, compaction context, and source-backed
+    hook coverage TODOs as one coherent 2.5.x adapter batch.
+  discovered: The production OpenCode adapter already registered the core `event`,
+    `shell.env`, `chat.message`, and tool hooks, so the clean seam was to expose the
+    same local plugin file through `.opencode/package.json` `main`/`exports`, add
+    `experimental.session.compacting`, and validate all hook keys against the installed
+    `@opencode-ai/plugin` Hooks interface. Compaction context can stay adapter-thin
+    by calling `agentera hej --format json` and formatting the bounded summary instead
+    of duplicating artifact reads in JavaScript.
+  verified: '`node scripts/smoke_opencode_bootstrap.mjs` passed. `uv run pytest tests/test_runtime_adapters.py
+    tests/test_runtime_adapter_registry.py -q` passed with 88 tests. `uv run scripts/validate_lifecycle_adapters.py`
+    passed. `uv run pytest tests/test_runtime_adapters.py tests/test_runtime_adapter_registry.py
+    tests/test_package_registry.py -q` passed with 100 tests. `uv run scripts/agentera
+    validate descriptors` passed with 24 checks. `uv run pytest -q` passed with 1094
+    tests. Touched artifact validators for TODO, CHANGELOG, PLAN, PROGRESS, and DOCS
+    passed. `uv run scripts/agentera compact --mode check --format json` passed after
+    safe compaction fix trimmed TODO/PROGRESS retained logs. `git diff --check` passed.'
+  next: Commit this OpenCode batch and continue the remaining 2.5.x validate/stats/helper-script
+    cleanup seams.
+  context:
+    intent: Orkestrera execution of the OpenCode Plugin Packaging and Compaction Context
+      plan.
+    constraints: Preserve project-local `.opencode/plugins/agentera.js`, keep `.opencode/package.json`
+      non-version-bearing, use CLI-first compaction summaries, and avoid installed
+      app/profile refresh, publication, push, tag, package-manager change, vision/objective
+      edit, or decision satisfaction change.
+    scope: '`.opencode/package.json`, `.opencode/package-lock.json`, `.opencode/plugins/agentera.js`,
+      `references/adapters/package-registry.yaml`, `references/adapters/runtime-adapter-registry.yaml`,
+      runtime adapter tests, OpenCode smoke, README, UPGRADE, runtime docs, TODO,
+      CHANGELOG, PLAN, DOCS, and PROGRESS.'
 - number: 554
   timestamp: 2026-05-17 10:26
   type: feat
@@ -266,38 +303,9 @@ cycles:
     scope: RuntimeAdapter `subagent_dispatch`, Codex descriptors/setup/upgrade, OpenCode
       descriptors/plugin/bootstrap, Orkestrera/Realisera/Optimera dispatch prose,
       descriptor validation, tests, TODO, CHANGELOG, PLAN, and PROGRESS.
-- number: 545
-  timestamp: 2026-05-16 09:24
-  type: fix
-  phase: audit
-  what: Completed the Doctor Ready Next Output Plan verification closeout.
-  commit: pending
-  inspiration: Orkestrera Task 6 required final verification and residual-risk reporting
-    after doctor output tests and artifact synchronization completed.
-  discovered: 'The only verification issue was expected post-closeout compaction overflow:
-    TODO Resolved and PROGRESS each exceeded the uniform retained-entry limit by one
-    after adding the doctor closeout entries.'
-  verified: 'Focused tests passed with `uv run pytest tests/test_bundle_freshness.py
-    tests/test_install_root_characterization.py tests/test_query_cli.py -q` (220 tests).
-    Artifact validators passed for PLAN, PROGRESS, TODO, CHANGELOG, and DECISIONS.
-    Safe compaction fix passed and the follow-up `uv run scripts/agentera compact
-    --mode check --format json` reported zero over-limit artifacts. `git diff --check`
-    passed. Local doctor text reports `status: up to date` and `No action needed`;
-    local doctor JSON reports `status=up_to_date`, `signals=[]`, `dryRunCommand=null`,
-    and `applyCommand=null`.'
-  next: Doctor Ready Next Output Plan is complete. Remaining open TODOs are explicit
-    Agentera capability routing for requests such as `resonera ...` and considering
-    removal of Claude Code support. Do not commit, refresh installed apps/profiles,
-    publish, push, tag, change package-manager state, edit vision/objective state,
-    or change decision satisfaction unless explicitly requested.
-  context:
-    intent: Orkestrera execution of Doctor Ready Next Output Plan Task 6
-    constraints: No installed app/profile refresh, publication, push, tag, package-manager
-      state change, `.agentera/vision.yaml` edit, objective-state mutation, decision
-      satisfaction change, or commit.
-    scope: Final verification, PLAN completion evidence, PROGRESS closeout, safe compaction,
-      and final reporting.
 archive:
+- summary: 'Cycle 545 (2026-05-16): Completed the Doctor Ready Next Output Plan verification
+    closeout.'
 - summary: 'Cycle 544 (2026-05-16): Added doctor output regressions and synchronized
     Task 5 artifacts.'
 - summary: 'Cycle 543 (2026-05-16): Implemented canonical doctor app metadata statuses
@@ -375,5 +383,3 @@ archive:
     closeout review surfaces.'
 - summary: 'Cycle 506 (2026-05-15): Implemented PLAN Task 3 shared compaction protection
     and protected-overflow review pressure.'
-- summary: 'Cycle 505 (2026-05-15): Implemented PLAN Task 2 decisions CLI satisfaction
-    source-contract output.'

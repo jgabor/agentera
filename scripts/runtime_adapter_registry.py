@@ -91,6 +91,7 @@ SUPPORTED_EVENT_NAMES = {
     "chat.message",
     "tool.execute.before",
     "tool.execute.after",
+    "experimental.session.compacting",
     "session.created",
     "session.idle",
 }

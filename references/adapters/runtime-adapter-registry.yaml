@@ -98,6 +98,7 @@ records:
         - chat.message
         - tool.execute.before
         - tool.execute.after
+        - experimental.session.compacting
         - session.created
         - session.idle
       unsupported_events: []
@@ -106,11 +107,13 @@ records:
         chat.message: supported
         tool.execute.before: supported
         tool.execute.after: supported
+        experimental.session.compacting: supported
         session.created: supported_via_event
         session.idle: supported_via_event
       limitations:
         - OpenCode session preload observes session.created but has no verified context injection path.
         - OpenCode docs omit chat.message, but the exported plugin Hooks interface defines it.
+        - OpenCode compaction context is bounded to CLI-first Agentera summaries.
     artifact_validation:
       validation_events:
         - tool.execute.before

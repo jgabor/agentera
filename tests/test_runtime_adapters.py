@@ -282,7 +282,14 @@ def _validate_opencode_package(root: Path = REPO_ROOT, package_manifest: Any | N
     if command_names != expected:
         errors.append("opencode command templates must match skills/*/SKILL.md")
 
-    for hook in ('event:', '"shell.env"', '"chat.message"', '"tool.execute.before"', '"tool.execute.after"'):
+    for hook in (
+        'event:',
+        '"shell.env"',
+        '"chat.message"',
+        '"tool.execute.before"',
+        '"tool.execute.after"',
+        '"experimental.session.compacting"',
+    ):
         if hook not in plugin_text:
             errors.append(f"opencode plugin missing {hook} hook")
     for phantom in ('"session.created":', '"session.idle":'):
@@ -860,7 +867,15 @@ def _validate_package_surface_characterization(root: Path = REPO_ROOT) -> list[s
     if package.get("dependencies", {}).get("@opencode-ai/plugin") != "1.14.33":
         errors.append("OpenCode package.json behavior must record @opencode-ai/plugin runtime dependency")
     if package.get("agentera", {}).get("packageShape") != opencode_manifest["package_shape"]:
-        errors.append("OpenCode package.json must record suite-bundle runtime package metadata")
+        errors.append("OpenCode package.json must record registry-owned runtime package metadata")
+    if package.get("main") != "./plugins/agentera.js":
+        errors.append("OpenCode package.json must expose the Agentera plugin through main")
+    if package.get("exports", {}).get(".") != "./plugins/agentera.js":
+        errors.append("OpenCode package.json must expose the Agentera plugin through exports")
+    if package.get("agentera", {}).get("opencodePlugin") != "./plugins/agentera.js":
+        errors.append("OpenCode package.json must record the package-loadable plugin entry")
+    if package.get("agentera", {}).get("localPluginPath") != ".opencode/plugins/agentera.js":
+        errors.append("OpenCode package.json must preserve the project-local plugin path")
 
     docs = yaml.safe_load((root / ".agentera/docs.yaml").read_text(encoding="utf-8"))
     version_files = set(docs["conventions"]["version_files"])
@@ -872,6 +887,35 @@ def _validate_package_surface_characterization(root: Path = REPO_ROOT) -> list[s
     for surface in validator_view["version_surfaces"]["surfaces"]:
         if surface["path"] not in version_files:
             errors.append(f"DOCS version_files must include version-bearing surface {surface['path']}")
+    return errors
+
+
+def _opencode_hooks_interface_source(root: Path = REPO_ROOT) -> str:
+    return (root / ".opencode/node_modules/@opencode-ai/plugin/dist/index.d.ts").read_text(encoding="utf-8")
+
+
+def _validate_opencode_source_backed_hooks(root: Path = REPO_ROOT) -> list[str]:
+    plugin_text = (root / ".opencode/plugins/agentera.js").read_text(encoding="utf-8")
+    source_text = _opencode_hooks_interface_source(root)
+    required_hooks = {
+        "event": "session lifecycle events",
+        "shell.env": "AGENTERA_HOME injection",
+        "chat.message": "bare hej routing",
+        "tool.execute.before": "artifact validation hard gate",
+        "tool.execute.after": "post-write validation",
+        "experimental.session.compacting": "compaction context",
+    }
+    errors: list[str] = []
+    for hook, purpose in required_hooks.items():
+        source_needle = f'"{hook}"?:' if "." in hook else f"{hook}?:"
+        plugin_needle = f'"{hook}"' if "." in hook else f"{hook}:"
+        if source_needle not in source_text:
+            errors.append(f"OpenCode @opencode-ai/plugin source must expose {hook} for {purpose}")
+        if plugin_needle not in plugin_text:
+            errors.append(f"Agentera OpenCode plugin must register {hook} for {purpose}")
+    for unsupported in ('"session.created"', '"session.idle"'):
+        if f"{unsupported}?:" in source_text or f"{unsupported}:" in plugin_text:
+            errors.append(f"OpenCode session event {unsupported} must stay payload-backed through event")
     return errors
 
 
@@ -1620,6 +1664,9 @@ class TestLegacyRuntimeCompatibility:
     def test_opencode_package_passes(self):
         assert _validate_opencode_package() == []
 
+    def test_opencode_hook_contract_is_source_backed(self):
+        assert _validate_opencode_source_backed_hooks() == []
+
     def test_opencode_package_observes_manifest_path_fixture_change(self, tmp_path):
         root = tmp_path / "repo"
         (root / "skills/agentera").mkdir(parents=True)
@@ -1629,9 +1676,24 @@ class TestLegacyRuntimeCompatibility:
         (root / "registry.json").write_text(
             json.dumps({"skills": [{"name": "agentera", "version": "1.18.0"}]}), encoding="utf-8"
         )
-        (root / ".opencode/alternate/package.json").write_text(json.dumps({"type": "module"}), encoding="utf-8")
+        (root / ".opencode/alternate/package.json").write_text(
+            json.dumps(
+                {
+                    "type": "module",
+                    "main": "./plugins/agentera.js",
+                    "exports": {".": "./plugins/agentera.js"},
+                    "agentera": {
+                        "packageShape": "npm-loadable-plugin",
+                        "opencodePlugin": "./plugins/agentera.js",
+                        "localPluginPath": ".opencode/plugins/agentera.js",
+                    },
+                    "dependencies": {"@opencode-ai/plugin": "1.14.33"},
+                }
+            ),
+            encoding="utf-8",
+        )
         (root / ".opencode/plugins/agentera.js").write_text(
-            'export const AGENTERA_VERSION = "1.18.0";\n\nexport const COMMAND_TEMPLATES = {\n  "agentera": `---\nagentera_managed: true\n---\nLoad and execute the agentera bundled skill.\n`,\n};\n\nevent:\n"shell.env"\n"chat.message"\n"tool.execute.before"\n"tool.execute.after"\n',
+            'export const AGENTERA_VERSION = "1.18.0";\n\nexport const COMMAND_TEMPLATES = {\n  "agentera": `---\nagentera_managed: true\n---\nLoad and execute the agentera bundled skill.\n`,\n};\n\nevent:\n"shell.env"\n"chat.message"\n"tool.execute.before"\n"tool.execute.after"\n"experimental.session.compacting"\n',
             encoding="utf-8",
         )
         fixture = yaml.safe_load((REPO_ROOT / "references/adapters/package-registry.yaml").read_text(encoding="utf-8"))
@@ -1947,6 +2009,7 @@ class TestLegacyRuntimeCompatibility:
         assert '"chat.message"' in plugin_text
         assert '"tool.execute.before"' in plugin_text
         assert '"tool.execute.after"' in plugin_text
+        assert '"experimental.session.compacting"' in plugin_text
 
         root = tmp_path / "repo"
         commands_dir = root / ".opencode/commands"
@@ -1960,7 +2023,7 @@ class TestLegacyRuntimeCompatibility:
         (root / ".opencode/package.json").write_text(json.dumps({"type": "module"}), encoding="utf-8")
         (root / ".opencode/plugins/agentera.js").write_text(
             'export const AGENTERA_VERSION = "1.18.0";\n\nexport const COMMAND_TEMPLATES = {\n  "agentera": `---\nagentera_managed: true\n---\nLoad and execute the agentera bundled skill.\n`,\n};\n'
-            + '"session.created": async () => {}\n"session.idle": async () => {}\nevent:\n"shell.env"\n"chat.message"\n"tool.execute.before"\n"tool.execute.after"\n',
+            + '"session.created": async () => {}\n"session.idle": async () => {}\nevent:\n"shell.env"\n"chat.message"\n"tool.execute.before"\n"tool.execute.after"\n"experimental.session.compacting"\n',
             encoding="utf-8",
         )
         errors = _validate_opencode_package(root)

@@ -612,6 +612,52 @@ function writeSessionBookmark(projectRoot) {
   } catch {}
 }
 
+function formatCompactionStateContext(state) {
+  if (!state || typeof state !== "object") return null;
+  const lines = ["Agentera project state summary from `agentera hej --format json`:"];
+  if (state.mode) lines.push(`- mode: ${state.mode}`);
+  if (state.profile?.status) lines.push(`- profile: ${state.profile.status}`);
+  if (state.health?.grade) lines.push(`- health: ${state.health.grade}${state.health.trajectory ? `; ${state.health.trajectory}` : ""}`);
+  if (state.issues && typeof state.issues === "object") {
+    const issueText = ["critical", "degraded", "normal", "annoying"]
+      .filter((key) => Number.isFinite(state.issues[key]) && state.issues[key] > 0)
+      .map((key) => `${key}=${state.issues[key]}`)
+      .join(", ");
+    if (issueText) lines.push(`- issues: ${issueText}`);
+  }
+  if (state.plan?.exists) {
+    lines.push(`- plan: ${state.plan.status || "unknown"}${state.plan.title ? `; ${state.plan.title}` : ""}`);
+    if (state.plan.first_pending?.name) lines.push(`- next plan task: ${state.plan.first_pending.name}`);
+  }
+  if (state.progress?.latest) {
+    const latest = state.progress.latest;
+    lines.push(`- latest progress: ${latest.number || "unknown"}${latest.what ? `; ${latest.what}` : ""}`);
+    if (latest.next) lines.push(`- progress next: ${latest.next}`);
+  }
+  if (state.next_action?.object) lines.push(`- next action: ${state.next_action.object}`);
+  const attention = Array.isArray(state.attention) ? state.attention.slice(0, 3) : [];
+  for (const item of attention) lines.push(`- attention: ${item}`);
+  return lines.slice(0, 12).join("\n").slice(0, 6000);
+}
+
+function buildCompactionContext(projectRoot) {
+  try {
+    const agenteraHome = resolveAgenteraHome();
+    if (!agenteraHome) return null;
+    const scriptPath = path.join(agenteraHome, "scripts", "agentera");
+    if (!fs.existsSync(scriptPath)) return null;
+    const stdout = execFileSync("uv", ["run", scriptPath, "hej", "--format", "json"], {
+      cwd: projectRoot,
+      encoding: "utf8",
+      timeout: 30000,
+      stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
+    return formatCompactionStateContext(JSON.parse(stdout));
+  } catch {
+    return null;
+  }
+}
+
 function setProfileDir() {
   if (process.env.PROFILERA_PROFILE_DIR) return;
   if (process.platform === "darwin") {
@@ -687,6 +733,12 @@ export const Agentera = async (input = {}, _options) => {
         }
       }
     },
+
+    "experimental.session.compacting": async (_input, output) => {
+      if (!output || !Array.isArray(output.context)) return;
+      const context = buildCompactionContext(projectRoot);
+      if (context) output.context.push(context);
+    },
   };
 };
 
@@ -704,6 +756,8 @@ Agentera.__test = {
   commandBootstrap,
   hasManagedAgentMarker,
   hasManagedMarker,
+  buildCompactionContext,
+  formatCompactionStateContext,
   isBareHejUserMessage,
   lifecycle,
   normalizeBareHejTransportText,

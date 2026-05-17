@@ -1,4 +1,4 @@
-last_audit: '2026-05-17 (2.5.x Codex hook packaging and trust flow sync)'
+last_audit: '2026-05-17 (2.5.x OpenCode plugin packaging and compaction context sync)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges

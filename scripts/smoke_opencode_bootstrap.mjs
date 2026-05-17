@@ -66,6 +66,7 @@ try {
     normalizeBareHejTransportText,
     routeBareHejMessage,
     BARE_HEJ_ROUTED_PROMPT,
+    formatCompactionStateContext,
     lifecycle,
   } = Agentera.__test;
 
@@ -422,6 +423,10 @@ try {
     `Agentera() return must include tool.execute.before hook (got: ${hookKeys.join(", ")})`
   );
   assert(
+    hookKeys.includes("experimental.session.compacting"),
+    `Agentera() return must include experimental.session.compacting hook (got: ${hookKeys.join(", ")})`
+  );
+  assert(
     !hookKeys.includes("session.created"),
     "Agentera() return must NOT include phantom session.created hook"
   );
@@ -456,6 +461,18 @@ try {
     !isBareHejUserMessage([{ type: "text", text: "hej" }, { type: "file", filename: "note.md" }]),
     "bare hej routing must not fire when the user message has attachments or other meaningful parts"
   );
+  const formattedContext = formatCompactionStateContext({
+    mode: "returning",
+    health: { grade: "B", trajectory: "stable" },
+    issues: { critical: 0, degraded: 0, normal: 2, annoying: 0 },
+    plan: { exists: true, status: "active", title: "Smoke Plan", first_pending: { name: "Next task" } },
+    next_action: { object: "TODO: smoke" },
+    attention: ["normal: smoke"],
+  });
+  assert(
+    formattedContext.includes("agentera hej --format json") && formattedContext.includes("Next task"),
+    "formatCompactionStateContext must build bounded context from CLI summary data"
+  );
 
   // --- Test 7: Direct bookmark helper — missing hook script no-op ---
   const noHookProject = path.join(tmpdir, "no-hook-project");
@@ -480,6 +497,14 @@ try {
   const sessionText = fs.readFileSync(sessionPath, "utf8");
   assert(sessionText.includes("bookmarks:"), "session.yaml bookmark should include bookmarks list");
   assert(sessionText.includes("TODO.md"), "session.yaml bookmark should name modified TODO.md");
+
+  // --- Test 8a: compaction hook appends CLI-first Agentera state context ---
+  const compactionOutput = { context: [] };
+  await hooksForEvents["experimental.session.compacting"]({ sessionID: "s1" }, compactionOutput);
+  assert(
+    compactionOutput.context.some((item) => item.includes("Agentera project state summary")),
+    "experimental.session.compacting must append Agentera context when CLI state is available"
+  );
 
   // --- Test 8b: tool.execute.before hard gate — invalid empty artifact is denied ---
   let denied = false;

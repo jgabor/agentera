@@ -12,6 +12,7 @@
 
 ### Changed
 
+- OpenCode package metadata now exposes `.opencode/plugins/agentera.js` through `.opencode/package.json` `main` and `exports` for npm-style plugin loading while preserving the project-local plugin install path and keeping `.opencode/package.json` out of suite version authority.
 - Codex plugin metadata now exposes optional bundled apply_patch hooks through `.codex-plugin/plugin.json`, while upgrade-generated copied user hooks remain the default reliable Codex hook path and use exact resolved validator commands with matching `[hooks.state]` trust hashes.
 - RuntimeAdapter registry and interface docs now include a required `subagent_dispatch` group covering each runtime's mechanism, setup targets, descriptor sources, invocation pattern, and limitations without absorbing package metadata or install-root ownership facts.
 - Orkestrera, Realisera, and Optimera dispatch prose now names concrete Claude Code, OpenCode, Codex CLI, and Copilot CLI subagent surfaces instead of relying on an abstract host-adapter substrate line.
@@ -32,6 +33,7 @@
 
 ### Fixed
 
+- OpenCode compaction now receives bounded Agentera project context through `experimental.session.compacting`, generated from `agentera hej --format json` summaries rather than direct raw `.agentera` artifact reads; runtime tests validate `event`, `shell.env`, `chat.message`, tool hooks, and compaction hooks against the installed `@opencode-ai/plugin` Hooks interface.
 - Codex copied `~/.codex/hooks.json` generation no longer depends on hook-time `AGENTERA_HOME` expansion; generated hook commands point at the resolved Agentera validator path and tests cover local clone plus installed app-home trust-hash behavior.
 - Canonical capability-name requests with trailing topic text now route directly to the named capability: `resonera <topic>` invokes ❈ resonera instead of falling through to generic analysis or attempting the unsupported `agentera resonera` CLI command. Planera guidance and compact startup context now state that archiving an already complete existing plan is implicit in direct Planera replacement, while human-initiated plan approval and explicit confirmation for active or incomplete plan replacement remain required.
 - Runtime docs compatibility now aligns OpenCode and Codex adapter surfaces with official runtime documentation: exact bare `hej` routing remains source-backed by OpenCode `chat.message`, OpenCode managed agent descriptors use documented `description` plus `mode: subagent` frontmatter with body ownership markers, Codex descriptor defaults are limited to documented personal/project agent directories, and OpenCode session lifecycle events are classified as generic `event` payloads while context preload remains deferred.

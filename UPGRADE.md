@@ -164,13 +164,15 @@ uv run scripts/agentera upgrade --project /path/to/project --yes --update-packag
 
 ### OpenCode
 
-The upgrade command can copy the current bundled plugin to the OpenCode config directory and remove outdated v1 command files. OpenCode package refresh remains opt-in:
+The upgrade command can copy the current bundled plugin to the OpenCode config directory and remove outdated v1 command files. The same adapter remains available as an npm-style package entry through `.opencode/package.json` `main`/`exports`, but the copied `~/.config/opencode/plugins/agentera.js` path remains preserved for project-local installs. OpenCode package refresh remains opt-in:
 
 ```bash
 uv run scripts/agentera upgrade --runtime opencode --yes --update-packages
 ```
 
 Use `--opencode-config-dir PATH` to target a non-default OpenCode config directory.
+
+OpenCode compaction context is provided by `experimental.session.compacting`. The plugin appends bounded context from `agentera hej --format json` and does not read `.agentera` artifacts directly for that hook.
 
 ### Codex
 
