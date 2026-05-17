@@ -10,7 +10,7 @@ may expose an event while agentera still lacks a shipped adapter path for it.
 | Runtime | Skill loading | Session preload | Artifact validation | Session bookmark |
 |---------|---------------|-----------------|---------------------|------------------|
 | Claude Code | Full: marketplace plugin and native skill paths load `skills/<name>/SKILL.md` | Active via `SessionStart` in `hooks/hooks.json` | Advisory after mutation via `PostToolUse` for `Edit` or `Write` | Active via `Stop` |
-| OpenCode | Full: native `skill` tool loads `.opencode`, `.claude`, and `.agents` skill paths | Deferred: `session.created` is observable, but no model-context injection path is verified | Conditional hard gate for reconstructable `write` and `edit` candidates via `tool.execute.before`; `tool.execute.after` remains advisory | Active via generic `event` hook on `session.idle` |
+| OpenCode | Full: native `skill` tool loads `.opencode`, `.claude`, and `.agents` skill paths | Deferred for session start: `session.created` is observable, but no model-context injection path is verified. Active for compaction through bounded `experimental.session.compacting` context from `agentera hej --format json`. | Conditional hard gate for reconstructable `write` and `edit` candidates via `tool.execute.before`; `tool.execute.after` remains advisory | Active via generic `event` hook on `session.idle` |
 | Copilot CLI | Full for portable skills through plugin or skill-folder install paths | Active via `sessionStart` | Conditional hard gate via `preToolUse` when `toolArgs` include path plus candidate content or exact replacement evidence | Active via `sessionEnd` |
 | Codex CLI | Full for portable skills through plugin install, `.agents/skills`, and `$skill` invocation | Not wired by the shipped hook config | Advisory `apply_patch` path validation through shipped PreToolUse and PostToolUse hooks; final patch content is not reconstructed | Not wired by the shipped hook config |
 
@@ -43,6 +43,7 @@ mutation.
 | Runtime | Runtime reason for degraded or blocked capability |
 |---------|---------------------------------------------------|
 | OpenCode preload | The `event` hook observes `session.created`, but no supported adapter path injects text into model context. |
+| OpenCode compaction context | `experimental.session.compacting` appends bounded Agentera state from `agentera hej --format json`; the plugin does not read raw `.agentera` artifacts for compaction. |
 | OpenCode `apply_patch` hard gate | The adapter receives `patchText` without reconstructing full candidate content. It allows that path rather than guessing. |
 | Copilot sparse edits | Copilot `preToolUse` stdin may omit full content or unique old/new replacement evidence. The hook allows those payloads. |
 | Codex preload/bookmarks | `codex_hooks` supports lifecycle events, but Agentera ships only `apply_patch` PreToolUse/PostToolUse wiring for copied user hooks and optional plugin-bundled hooks. |

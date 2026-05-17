@@ -1,7 +1,19 @@
 {
   "type": "module",
+  "main": "./plugins/agentera.js",
+  "exports": {
+    ".": "./plugins/agentera.js"
+  },
+  "files": [
+    "plugins/agentera.js",
+    "commands",
+    "agents",
+    "package.json"
+  ],
   "agentera": {
-    "packageShape": "suite-bundle",
+    "packageShape": "npm-loadable-plugin",
+    "opencodePlugin": "./plugins/agentera.js",
+    "localPluginPath": ".opencode/plugins/agentera.js",
     "installRoot": "..",
     "sharedPaths": [
       "skills",

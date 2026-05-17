@@ -20,7 +20,7 @@ The current version-bearing surfaces are:
 | `.claude-plugin/marketplace.json` | version-bearing surface and runtime package manifest | `metadata.version` and every plugin entry version, including the legacy `hej` bridge, match the suite version. |
 | `.opencode/plugins/agentera.js` | version-bearing surface | `AGENTERA_VERSION` matches the registry suite version and drives the OpenCode command marker file `.agentera-version`. |
 
-`.opencode/package.json` is intentionally not version-bearing. Its current behavior is runtime package manifest behavior only: it keeps `type: "module"`, `dependencies["@opencode-ai/plugin"] == "1.14.33"`, and an `agentera` suite-bundle metadata block, but it has no top-level `name` or `version` field.
+`.opencode/package.json` is intentionally not version-bearing. Its current behavior is runtime package manifest behavior only: it keeps `type: "module"`, `main`/`exports` pointing at `./plugins/agentera.js`, `dependencies["@opencode-ai/plugin"] == "1.14.33"`, and an `agentera` npm-loadable plugin metadata block, but it has no top-level `name` or `version` field.
 
 ## Package-Manager Command Surface
 

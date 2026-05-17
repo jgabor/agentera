@@ -178,7 +178,7 @@ Pick one runtime, install Agentera, then run `/agentera` (`$agentera` in Codex).
 # Claude Code
 npx skills add jgabor/agentera -g -a claude-code --skill agentera -y
 
-# OpenCode (skills + plugin)
+# OpenCode (skills + local plugin)
 npx skills add jgabor/agentera -g -a opencode --skill agentera -y
 mkdir -p ~/.config/opencode/plugins
 curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \
@@ -392,10 +392,16 @@ curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plug
   -o ~/.config/opencode/plugins/agentera.js
 ```
 
-The plugin does not install the skills. It adds Agentera commands,
-app-home discovery, artifact checks, and session bookmarks around skills
-installed through `npx skills add jgabor/agentera -g -a opencode --skill agentera -y` or another
-OpenCode skill path.
+The project-local plugin file remains the reliable install path. The checked-in
+`.opencode/package.json` also exposes `./plugins/agentera.js` through `main` and
+`exports` so the same adapter can be loaded as an npm-style OpenCode plugin
+package without moving the local file.
+
+The plugin does not install the skills. It adds Agentera commands, app-home
+discovery, artifact checks, exact bare `hej` routing, session bookmarks, and
+bounded `experimental.session.compacting` context from `agentera hej --format
+json` around skills installed through `npx skills add jgabor/agentera -g -a
+opencode --skill agentera -y` or another OpenCode skill path.
 
 </details>
 

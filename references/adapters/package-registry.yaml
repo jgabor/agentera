@@ -66,7 +66,7 @@ records:
           runtime: opencode
           path: .opencode/package.json
           version_bearing: false
-          package_shape: suite-bundle
+          package_shape: npm-loadable-plugin
       shared_paths:
         - id: skills
           path: skills
