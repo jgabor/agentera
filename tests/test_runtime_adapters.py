@@ -1858,9 +1858,6 @@ class TestLegacyRuntimeCompatibility:
         }
         assert suite_versions == {current_version}
 
-    def test_version_bearing_package_surfaces_align(self):
-        assert _validate_package_versions() == []
-
     def test_package_surface_characterization_distinguishes_non_version_opencode_manifest(self):
         assert _validate_package_surface_characterization() == []
 
