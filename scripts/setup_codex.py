@@ -367,17 +367,53 @@ def codex_hook_trusted_hash(
     return "sha256:" + hashlib.sha256(payload).hexdigest()
 
 
-def codex_hook_state_entries(hooks_path: Path) -> dict[str, str]:
+def codex_validator_command(install_root: Path) -> str:
+    """Return a hook command that does not depend on hook-time AGENTERA_HOME."""
+    candidates = (
+        install_root / "app" / "hooks" / "validate_artifact.py",
+        install_root / "hooks" / "validate_artifact.py",
+    )
+    validator = next((candidate for candidate in candidates if candidate.is_file()), candidates[0])
+    return f'uv run "{validator}"'
+
+
+def render_codex_hooks_config(command: str) -> str:
+    """Render the Codex apply_patch hook config with an exact command."""
+    payload = {
+        "description": "agentera v2 Codex hooks: schema-backed apply_patch artifact validation",
+        "hooks": {
+            event: [
+                {
+                    "matcher": CODEX_HOOK_MATCHER,
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": command,
+                            "timeout": CODEX_HOOK_TIMEOUT,
+                            "statusMessage": CODEX_HOOK_STATUS_MESSAGE,
+                        }
+                    ],
+                }
+            ]
+            for event in ("PreToolUse", "PostToolUse")
+        },
+    }
+    return json.dumps(payload, indent=2) + "\n"
+
+
+def codex_hook_state_entries(hooks_path: Path, command: str = CODEX_HOOK_COMMAND) -> dict[str, str]:
     """Return required [hooks.state] entries for the installed hooks.json."""
     hooks_path = hooks_path.expanduser().resolve()
     return {
         f"{hooks_path}:pre_tool_use:0:0": codex_hook_trusted_hash(
             "pre_tool_use",
             CODEX_HOOK_MATCHER,
+            command=command,
         ),
         f"{hooks_path}:post_tool_use:0:0": codex_hook_trusted_hash(
             "post_tool_use",
             CODEX_HOOK_MATCHER,
+            command=command,
         ),
     }
 
@@ -670,8 +706,8 @@ def _hook_state_line(key: str, trusted_hash: str) -> str:
     )
 
 
-def _ensure_codex_hook_state(text: str, hooks_path: Path) -> str:
-    entries = codex_hook_state_entries(hooks_path)
+def _ensure_codex_hook_state(text: str, hooks_path: Path, command: str = CODEX_HOOK_COMMAND) -> str:
+    entries = codex_hook_state_entries(hooks_path, command=command)
     parsed = tomllib.loads(text) if text.strip() else {}
     state = parsed.get("hooks", {}).get("state", {}) if isinstance(parsed.get("hooks"), dict) else {}
     if not isinstance(state, dict):
@@ -710,9 +746,9 @@ def _ensure_codex_hook_state(text: str, hooks_path: Path) -> str:
     return text
 
 
-def ensure_codex_hook_trust(text: str, hooks_path: Path) -> str:
+def ensure_codex_hook_trust(text: str, hooks_path: Path, command: str = CODEX_HOOK_COMMAND) -> str:
     """Ensure Codex will execute the installed Agentera apply_patch hooks."""
-    return _ensure_codex_hook_state(_ensure_features_hooks_enabled(text), hooks_path)
+    return _ensure_codex_hook_state(_ensure_features_hooks_enabled(text), hooks_path, command=command)
 
 
 # ---------------------------------------------------------------------------
@@ -742,6 +778,7 @@ def _with_codex_hook_trust(
     outcome: Outcome,
     before_text: str | None,
     hooks_path: Path | None,
+    hook_command: str = CODEX_HOOK_COMMAND,
 ) -> Outcome:
     if outcome.action == "conflict":
         return outcome
@@ -775,7 +812,7 @@ def _with_codex_hook_trust(
         return outcome
 
     try:
-        new_text = ensure_codex_hook_trust(outcome.new_text, hooks_path)
+        new_text = ensure_codex_hook_trust(outcome.new_text, hooks_path, command=hook_command)
     except ValueError as exc:
         return Outcome(
             action="conflict",
@@ -806,6 +843,7 @@ def plan_change(
     *,
     force: bool,
     hooks_path: Path | None = None,
+    hook_command: str = CODEX_HOOK_COMMAND,
 ) -> Outcome:
     """Inspect ``current_text`` and decide which write path applies.
 
@@ -830,7 +868,7 @@ def plan_change(
                 f"{SECTION_NAME}.set.{MANAGED_KEY} = {desired_path}"
             ),
             diff=diff,
-        ), current_text, hooks_path)
+        ), current_text, hooks_path, hook_command)
 
     state = classify_toml(current_text)
 
@@ -854,7 +892,7 @@ def plan_change(
                 f"{MANAGED_KEY} = {desired_path}"
             ),
             diff=diff,
-        ), current_text, hooks_path)
+        ), current_text, hooks_path, hook_command)
 
     # Branch 3a: section present, no set key → insert set line.
     if not state.set_present:
@@ -868,7 +906,7 @@ def plan_change(
                 f"into [{SECTION_NAME}]"
             ),
             diff=diff,
-        ), current_text, hooks_path)
+        ), current_text, hooks_path, hook_command)
 
     # Branch 3b: section + set + AGENTERA_HOME at correct value → noop.
     current_value = state.set_table.get(MANAGED_KEY)
@@ -880,7 +918,7 @@ def plan_change(
                 f"{MANAGED_KEY} already set to {desired_path}; nothing to do"
             ),
             diff="",
-        ), current_text, hooks_path)
+        ), current_text, hooks_path, hook_command)
 
     # Branch 3c: section + set, AGENTERA_HOME at wrong value or missing
     # alongside sibling keys → either merge (--force) or conflict.
@@ -913,7 +951,7 @@ def plan_change(
                 f"{state.set_table[MANAGED_KEY]} to {desired_path}"
             ),
             diff=diff,
-        ), current_text, hooks_path)
+        ), current_text, hooks_path, hook_command)
 
     # Sibling keys exist. Without --force, refuse.
     if not force:
@@ -952,7 +990,7 @@ def plan_change(
             f"(siblings preserved: {', '.join(sorted(siblings))})"
         ),
         diff=diff,
-    ), current_text, hooks_path)
+    ), current_text, hooks_path, hook_command)
 
 
 def _unified_diff(before: str, after: str) -> str:

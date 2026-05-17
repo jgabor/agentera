@@ -427,8 +427,16 @@ codex plugin marketplace add jgabor/agentera
 
 Then use interactive `/plugins` to install and enable the plugin.
 
-The Agentera upgrade flow can wire helper-script access and artifact-validation
-hooks for Codex.
+Codex plugin-bundled hooks are optional on Codex 0.130+. To use them, set
+`[features].plugin_hooks = true`, review the Agentera hook entries in `/hooks`,
+and enable only the hooks you trust. The plugin-bundled hook config resolves the
+validator through `PLUGIN_ROOT`.
+
+The default reliable hook install path remains the copied user hook config. The
+Agentera upgrade flow writes trusted `~/.codex/hooks.json` entries and records
+matching `[hooks.state]` hashes in `~/.codex/config.toml`; those copied commands
+use the resolved Agentera validator path instead of relying on hook-time
+`AGENTERA_HOME` inheritance.
 
 </details>
 

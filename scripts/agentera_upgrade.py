@@ -1157,6 +1157,61 @@ def _copy_item(runtime: str, source: Path, target: Path, *, force: bool, action:
     }
 
 
+def _sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _copy_text_item(
+    runtime: str,
+    source: Path,
+    target: Path,
+    text: str,
+    *,
+    force: bool,
+    action: str,
+    hook_command: str | None = None,
+) -> dict[str, Any]:
+    if not source.is_file():
+        return {
+            "status": "blocked",
+            "runtime": runtime,
+            "action": action,
+            "source": str(source),
+            "target": str(target),
+            "message": "source file is missing",
+        }
+    desired_hash = _sha256_text(text)
+    current = _read_text_or_none(target)
+    dst_hash = _sha256_text(current) if current is not None else None
+    ownership = _runtime_surface_ownership(runtime, action, target)
+    if desired_hash == dst_hash and dst_hash is not None:
+        status = "noop"
+        message = "target already matches generated source"
+    elif target.exists() and not force:
+        status = "pending" if ownership["status"] == "agentera-owned" else "blocked"
+        message = (
+            "will refresh stale Agentera-managed runtime surface"
+            if status == "pending"
+            else "target exists without Agentera ownership proof; treating it as user-owned"
+        )
+    else:
+        status = "pending"
+        message = "will copy generated Agentera file"
+    item = {
+        "status": status,
+        "runtime": runtime,
+        "action": action,
+        "source": str(source),
+        "target": str(target),
+        "ownership": ownership,
+        "message": message,
+        "newText": text,
+    }
+    if hook_command is not None:
+        item["hookCommand"] = hook_command
+    return item
+
+
 def _opencode_command_copy_item(source: Path, commands_dir: Path, *, force: bool) -> dict[str, Any]:
     return _copy_item(
         "opencode",
@@ -1298,6 +1353,7 @@ def _plan_codex_config(
     *,
     force: bool,
     hooks_path: Path,
+    hook_command: str,
 ) -> dict[str, Any]:
     setup_codex = _setup_codex_module()
     runtime_id = adapter["identity"]["runtime_id"]
@@ -1311,6 +1367,7 @@ def _plan_codex_config(
             install_root,
             force=force,
             hooks_path=hooks_path,
+            hook_command=hook_command,
         )
     except Exception as exc:  # noqa: BLE001
         return {
@@ -1401,21 +1458,27 @@ def plan_runtime_phase(
     adapters = {runtime_id: registry.consumer_view("upgrade", runtime_id) for runtime_id in runtimes}
     if "codex" in runtimes:
         adapter = adapters["codex"]
+        setup_codex = _setup_codex_module()
         labels = adapter["config_targets"]["write_safety_labels"]
         hook_target = _home_target(home, _first_target(adapter, "config_targets", "hook_targets"))
+        hook_command = setup_codex.codex_validator_command(install_root)
+        hook_text = setup_codex.render_codex_hooks_config(hook_command)
         items.append(_plan_codex_config(
             adapter,
             install_root,
             home,
             force=force,
             hooks_path=hook_target,
+            hook_command=hook_command,
         ))
-        items.append(_copy_item(
+        items.append(_copy_text_item(
             adapter["identity"]["runtime_id"],
             runtime_source_root / "hooks" / "codex-hooks.json",
             hook_target,
+            hook_text,
             force=force,
             action=labels[1] if len(labels) > 1 else "copy-hooks",
+            hook_command=hook_command,
         ))
         codex_agents_dir = _home_target(home, adapter["subagent_dispatch"]["setup_targets"][0])
         codex_agent_action = labels[2] if len(labels) > 2 else "copy-agent"
@@ -1483,15 +1546,23 @@ def _replan_codex_config_item(item: dict[str, Any], install_root: Path, *, force
     setup_codex = _setup_codex_module()
     target = Path(item["target"])
     hooks_path = None
+    hook_command = setup_codex.codex_validator_command(install_root)
     for candidate in item.get("phaseItems", []):
         if candidate.get("runtime") == "codex" and candidate.get("action") == "copy-hooks":
             hooks_path = Path(candidate["target"])
+            hook_command = candidate.get("hookCommand", hook_command)
             break
     try:
         current = _read_text_or_none(target)
         if current is not None and current.strip():
             setup_codex.tomllib.loads(current)
-        outcome = setup_codex.plan_change(current, install_root, force=force, hooks_path=hooks_path)
+        outcome = setup_codex.plan_change(
+            current,
+            install_root,
+            force=force,
+            hooks_path=hooks_path,
+            hook_command=hook_command,
+        )
     except Exception as exc:  # noqa: BLE001
         return {**item, "status": "blocked", "message": f"runtime safety recheck blocked Codex config change: {exc}"}
     if outcome.action == "conflict":
@@ -1502,6 +1573,16 @@ def _replan_codex_config_item(item: dict[str, Any], install_root: Path, *, force
 
 
 def _runtime_write_still_safe(item: dict[str, Any], install_root: Path, *, force: bool) -> dict[str, Any]:
+    if item["action"] == "copy-hooks" and "newText" in item:
+        return _copy_text_item(
+            item["runtime"],
+            Path(item["source"]),
+            Path(item["target"]),
+            str(item["newText"]),
+            force=force,
+            action=item["action"],
+            hook_command=item.get("hookCommand"),
+        )
     if item["action"] in ("copy-hooks", "copy-plugin", "copy-command", "copy-agent"):
         return _copy_item(
             item["runtime"],
@@ -1531,7 +1612,10 @@ def apply_runtime_phase(phase: dict[str, Any], install_root: Path, *, force: boo
             target = Path(item["target"])
             target.parent.mkdir(parents=True, exist_ok=True)
             if item["action"] in ("copy-hooks", "copy-plugin", "copy-command", "copy-agent"):
-                shutil.copy2(Path(item["source"]), target)
+                if "newText" in item:
+                    target.write_text(str(item["newText"]), encoding="utf-8")
+                else:
+                    shutil.copy2(Path(item["source"]), target)
             elif item["action"] == "link-skill":
                 if target.is_symlink() or target.is_file():
                     target.unlink()

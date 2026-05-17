@@ -312,9 +312,9 @@ def test_runtime_upgrade_accepts_coherent_app_home_without_bundle_phase(tmp_path
     assert f'AGENTERA_HOME = "{app_home}"' in (home / ".codex" / "config.toml").read_text(
         encoding="utf-8"
     )
-    assert (home / ".codex" / "hooks.json").read_text(encoding="utf-8") == (
-        app_home / "app" / "hooks" / "codex-hooks.json"
-    ).read_text(encoding="utf-8")
+    hooks_payload = json.loads((home / ".codex" / "hooks.json").read_text(encoding="utf-8"))
+    hook_command = hooks_payload["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
+    assert hook_command == f'uv run "{app_home / "app" / "hooks" / "validate_artifact.py"}"'
     assert (home / ".codex" / "agents" / "orkestrera.toml").read_text(encoding="utf-8") == (
         app_home / "app" / "skills" / "agentera" / "agents" / "orkestrera.toml"
     ).read_text(encoding="utf-8")
@@ -459,6 +459,7 @@ def test_artifact_upgrade_apply_is_idempotent(tmp_path: Path) -> None:
 
 def test_runtime_upgrade_configures_codex_without_v1_agent_blocks(tmp_path: Path) -> None:
     home = tmp_path / "home"
+    setup_codex = _load_upgrade_module()._setup_codex_module()
 
     first = _run(
         "upgrade",
@@ -481,15 +482,28 @@ def test_runtime_upgrade_configures_codex_without_v1_agent_blocks(tmp_path: Path
     assert "[hooks.state]" in config
     assert f"{hooks_path}:pre_tool_use:0:0" in config
     assert f"{hooks_path}:post_tool_use:0:0" in config
-    assert "trusted_hash = \"sha256:" in config
+    hooks_text = hooks_path.read_text(encoding="utf-8")
+    hook_command = setup_codex.codex_validator_command(REPO_ROOT)
+    hooks_payload = json.loads(hooks_text)
+    assert hooks_payload["hooks"]["PreToolUse"][0]["hooks"][0]["command"] == hook_command
+    assert hooks_payload["hooks"]["PostToolUse"][0]["hooks"][0]["command"] == hook_command
+    assert "${AGENTERA_HOME}" not in hooks_text
+    assert setup_codex.codex_hook_trusted_hash(
+        "pre_tool_use",
+        setup_codex.CODEX_HOOK_MATCHER,
+        command=hook_command,
+    ) in config
+    assert setup_codex.codex_hook_trusted_hash(
+        "post_tool_use",
+        setup_codex.CODEX_HOOK_MATCHER,
+        command=hook_command,
+    ) in config
     assert "enabled = true" in config
     assert "[agents]" in config
     assert "max_threads = 6" in config
     assert "max_depth = 1" in config
     assert "[agents." not in config
-    assert hooks_path.read_text(encoding="utf-8") == (
-        REPO_ROOT / "hooks" / "codex-hooks.json"
-    ).read_text(encoding="utf-8")
+    assert hooks_text == setup_codex.render_codex_hooks_config(hook_command)
     assert (home / ".codex" / "agents" / "planera.toml").is_file()
 
     second = _run(
@@ -513,6 +527,7 @@ def test_runtime_upgrade_configures_codex_without_v1_agent_blocks(tmp_path: Path
 def test_runtime_upgrade_refreshes_codex_managed_entries_preserving_user_config(tmp_path: Path) -> None:
     home = tmp_path / "home"
     app_home = home / ".local" / "share" / "agentera"
+    setup_codex = _load_upgrade_module()._setup_codex_module()
     codex_config = home / ".codex" / "config.toml"
     stale_hooks = home / ".codex" / "hooks.json"
     codex_config.parent.mkdir(parents=True)
@@ -544,9 +559,11 @@ def test_runtime_upgrade_refreshes_codex_managed_entries_preserving_user_config(
     assert '[profiles.default]\nmodel = "gpt-5.5"' in config
     assert f'AGENTERA_HOME = "{app_home}"' in config
     assert "/stale/agentera" not in config
-    assert stale_hooks.read_text(encoding="utf-8") == (app_home / "app" / "hooks" / "codex-hooks.json").read_text(
-        encoding="utf-8"
-    )
+    hooks_text = stale_hooks.read_text(encoding="utf-8")
+    hook_command = setup_codex.codex_validator_command(app_home)
+    assert hooks_text == setup_codex.render_codex_hooks_config(hook_command)
+    assert str(app_home / "app" / "hooks" / "validate_artifact.py") in hooks_text
+    assert "${AGENTERA_HOME}" not in hooks_text
 
 
 def test_runtime_upgrade_plan_characterizes_runtime_and_package_items(tmp_path: Path) -> None:
@@ -591,7 +608,7 @@ def test_runtime_upgrade_plan_characterizes_runtime_and_package_items(tmp_path: 
     assert runtime_items[("codex", "configure")]["target"] == str(home / ".codex/config.toml")
     assert runtime_items[("codex", "configure")]["status"] == "pending"
     assert runtime_items[("codex", "copy-hooks")]["target"] == str(home / ".codex/hooks.json")
-    assert runtime_items[("codex", "copy-hooks")]["message"] == "will copy current Agentera file"
+    assert runtime_items[("codex", "copy-hooks")]["message"] == "will copy generated Agentera file"
     assert any(
         item["runtime"] == "codex" and item["action"] == "copy-agent" and item["target"].endswith("/realisera.toml")
         for item in runtime_phase["items"]

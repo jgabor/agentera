@@ -174,7 +174,9 @@ Use `--opencode-config-dir PATH` to target a non-default OpenCode config directo
 
 ### Codex
 
-The upgrade command writes `AGENTERA_HOME` into `~/.codex/config.toml`, enables trusted Codex hooks state for the installed `~/.codex/hooks.json`, and copies `hooks/codex-hooks.json` to `~/.codex/hooks.json`. Agentera v2 is one bundled `$agentera` skill; the old per-skill `[agents.<name>]` Codex config blocks are v1 artifacts and are not written.
+The upgrade command writes `AGENTERA_HOME` into `~/.codex/config.toml`, enables trusted Codex hooks state for the installed `~/.codex/hooks.json`, and writes a copied user hook config to `~/.codex/hooks.json`. The copied hook commands use the resolved Agentera validator path, so they do not depend on hook subprocesses inheriting `[shell_environment_policy].set`. Agentera v2 is one bundled `$agentera` skill; the old per-skill `[agents.<name>]` Codex config blocks are v1 artifacts and are not written.
+
+Codex 0.130+ can also discover plugin-bundled hooks from the Agentera plugin metadata. That path is optional: users must set `[features].plugin_hooks = true`, review Agentera hooks in `/hooks`, and enable them deliberately. The copied `~/.codex/hooks.json` path remains the default reliable install path.
 
 ```bash
 uv run scripts/agentera upgrade --runtime codex --yes
