@@ -29,6 +29,7 @@ Plus four behavioral gates (12 cases total):
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -440,3 +441,22 @@ def test_nonstandard_config_file_requires_explicit_agents_dir(
     assert rc == 0, out
     assert target.exists()
     assert (agents_dir / "realisera.toml").is_file()
+
+
+def test_codex_hook_trust_uses_exact_resolved_command(setup_codex: ModuleType, tmp_path: Path):
+    hooks_path = tmp_path / ".codex" / "hooks.json"
+    command = f'uv run "{tmp_path / "agentera" / "app" / "hooks" / "validate_artifact.py"}"'
+
+    rendered = setup_codex.render_codex_hooks_config(command)
+    entries = setup_codex.codex_hook_state_entries(hooks_path, command=command)
+    rendered_payload = json.loads(rendered)
+    rendered_command = rendered_payload["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
+
+    assert rendered_command == command
+    assert "${AGENTERA_HOME}" not in rendered
+    assert f"{hooks_path.resolve()}:pre_tool_use:0:0" in entries
+    assert entries[f"{hooks_path.resolve()}:pre_tool_use:0:0"] == setup_codex.codex_hook_trusted_hash(
+        "pre_tool_use",
+        setup_codex.CODEX_HOOK_MATCHER,
+        command=command,
+    )

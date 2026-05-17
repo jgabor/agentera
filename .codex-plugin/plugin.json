@@ -18,6 +18,7 @@
     "orchestration"
   ],
   "skills": "./skills/",
+  "hooks": "./hooks/codex-plugin-hooks.json",
   "interface": {
     "displayName": "Agentera",
     "shortDescription": "Portable skills that give Codex exact bare hej routing, project memory, planning, execution, and review workflows.",

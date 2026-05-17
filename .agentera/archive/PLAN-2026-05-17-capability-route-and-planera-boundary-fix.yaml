@@ -1,0 +1,83 @@
+header:
+  level: light
+  created: 2026-05-17
+  status: complete
+  title: Capability Route and Planera Boundary Fix
+what: >-
+  Fix the remaining 2.5.0 routing and Planera confirmation-boundary TODOs by
+  making canonical capability-name requests with trailing topic text route
+  directly to the named capability, and by clarifying how Planera handles an
+  already-complete existing plan when writing a replacement plan.
+why: >-
+  Direct user requests such as `resonera decide whether to keep this API` are
+  explicit capability invocations and must not fall through to generic analysis.
+  Planera also needed a concrete completed-plan archive boundary so agents know
+  whether replacing a completed plan requires separate pre-write confirmation.
+constraints: >-
+  Do not add unsupported capability-name CLI commands, refresh installed apps or
+  profiles, publish, push, tag, change package-manager state, edit
+  `.agentera/vision.yaml`, mutate objective state, or change decision
+  satisfaction state. Keep the change focused on dispatcher guidance, routing
+  tests, Planera prose, compact Planera startup context, and artifact closeout.
+tasks:
+  - number: 1
+    name: Route canonical capability prefixes
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN a user request begins with a canonical capability name and topic
+        text WHEN schema-backed routing evaluates it THEN the named capability is
+        selected as a direct canonical route.
+      - >-
+        GIVEN the direct route is `resonera <topic>` WHEN dispatcher guidance is
+        read THEN the workflow invokes ❈ resonera and does not return a generic
+        analysis response or run `agentera resonera`.
+      - >-
+        GIVEN primary aliases exist WHEN routing examples are documented THEN
+        slash-route aliases remain separate from CLI state commands.
+  - number: 2
+    name: Define Planera completed-plan archive consent
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN an existing PLAN.md is already complete WHEN the user directly
+        invokes ≡ planera to create a replacement plan THEN archiving the
+        completed plan is implicit and does not require separate pre-write
+        confirmation.
+      - >-
+        GIVEN a human-initiated replacement plan is ready WHEN Planera writes it
+        THEN normal plan approval remains required before the write.
+      - >-
+        GIVEN an existing plan is active or incomplete WHEN Planera would replace,
+        discard, or archive it THEN explicit confirmation is required before the
+        write.
+  - number: 3
+    name: Verify and synchronize closeout
+    depends_on:
+      - 1
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN routing and Planera guidance changed WHEN focused tests and
+        capability validation run THEN the schema routing, Planera prose, skill
+        dispatch, and Planera startup contract checks pass.
+      - >-
+        GIVEN the batch is complete WHEN artifacts are synchronized THEN TODO,
+        CHANGELOG, PLAN, and PROGRESS record the completed 2.5.0 items and the
+        archived prior completed plan.
+overall_acceptance:
+  - >-
+    Canonical capability-name requests with trailing topic text route directly to
+    the capability, including `resonera <topic>`.
+  - >-
+    Planera prose and compact startup context state that archiving an already
+    complete prior plan is implicit in direct Planera invocation, while active or
+    incomplete plan replacement still requires explicit confirmation.
+  - >-
+    Focused routing, Planera, query, skill-dispatch tests, Planera capability
+    validation, artifact validation, and `git diff --check` pass before commit.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-17-runtime-docs-compatibility-fix-plan.yaml

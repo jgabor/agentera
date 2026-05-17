@@ -1,4 +1,35 @@
 cycles:
+- number: 554
+  timestamp: 2026-05-17 10:26
+  type: feat
+  phase: build
+  what: Implemented Codex hook packaging and copied-hook trust flow.
+  commit: pending
+  inspiration: Orkestrera executed the Codex Hook Packaging and Trust Flow plan to
+    close the related plugin-bundled hook, copied user-hook wiring, docs, and regression
+    coverage TODOs as one coherent 2.5.x batch.
+  discovered: The direct Codex setup helper already had trust-state primitives, but
+    upgrade needed to generate copied `~/.codex/hooks.json` content with the exact
+    resolved validator command instead of copying the AGENTERA_HOME-dependent template
+    verbatim. Plugin-bundled hooks needed a separate PLUGIN_ROOT-safe config so optional
+    Codex 0.130+ plugin hook discovery does not share copied-user-hook assumptions.
+  verified: '`uv run pytest tests/test_setup_codex.py tests/test_upgrade_cli.py tests/test_runtime_adapters.py
+    -q` passed with 125 tests. `uv run scripts/validate_lifecycle_adapters.py` passed.
+    `uv run scripts/agentera validate descriptors` passed with 24 checks. `uv run
+    pytest tests/test_runtime_adapter_registry.py tests/test_runtime_adapters.py tests/test_setup_codex.py
+    tests/test_upgrade_cli.py -q` passed with 130 tests. `git diff --check` passed.'
+  next: Continue the 2.5.x goal with OpenCode plugin packaging/compaction coverage
+    or CLI validate/stats/helper-script cleanup after full verification, artifact
+    validation, compaction, and commit.
+  context:
+    intent: Orkestrera execution of the Codex Hook Packaging and Trust Flow plan.
+    constraints: Preserve copied user-hook install as the reliable default; do not
+      assume hook subprocesses inherit shell_environment_policy; no installed app/profile
+      refresh, publication, push, tag, package-manager change, vision/objective edit,
+      or decision satisfaction change.
+    scope: '`.codex-plugin/plugin.json`, `hooks/codex-plugin-hooks.json`, `scripts/setup_codex.py`,
+      `scripts/agentera_upgrade.py`, Codex setup/upgrade/runtime tests, README, UPGRADE,
+      runtime parity docs, TODO, CHANGELOG, PLAN, and PROGRESS.'
 - number: 553
   timestamp: 2026-05-17 10:10
   type: fix
@@ -266,39 +297,9 @@ cycles:
       satisfaction change, or commit.
     scope: Final verification, PLAN completion evidence, PROGRESS closeout, safe compaction,
       and final reporting.
-- number: 544
-  timestamp: 2026-05-16 09:22
-  type: test
-  phase: build
-  what: Added doctor output regressions and synchronized Task 5 artifacts.
-  commit: pending
-  inspiration: Orkestrera continued from Task 4 instead of stopping after the implementation
-    task, because the active plan still had dependency-ready regression and closeout
-    work.
-  discovered: The existing characterization suite already covered part of the update-versus-repair
-    label seam, but it did not explicitly forbid an up-to-date `Next:` block or lock
-    manual-review JSON/text against automatic repair commands.
-  verified: Added explicit regressions for `up_to_date` doctor text with no `Next:`/preview/repair
-    wording, actionable `outdated` and `repair_needed` JSON/text with canonical app
-    statuses and preserved preview/apply/retry commands, correct ` --dry-run` spacing,
-    and `manual_review_needed` blocked guidance. Focused verification passed with
-    `uv run pytest tests/test_install_root_characterization.py tests/test_bundle_freshness.py
-    -q` (28 tests). TODO and CHANGELOG now record the doctor-output fix, app metadata
-    vocabulary choice, and command-formatting coverage.
-  next: 'Continue with Plan Task 6: run focused doctor/upgrade tests, artifact validators,
-    compaction check/fix, `git diff --check`, and local/installed doctor probes without
-    refreshing installed app/profile state, publishing, pushing, tagging, changing
-    package-manager state, editing vision/objective state, changing decision satisfaction,
-    or committing.'
-  context:
-    intent: Orkestrera execution of Doctor Ready Next Output Plan Tasks 4 and 5
-    constraints: Do not refresh installed apps/profiles, publish, push, tag, change
-      package-manager state, edit vision/objective state, change decision satisfaction,
-      or commit; preserve dry-run-before-apply safety and no compatibility aliases
-      unless concrete consumers require them.
-    scope: '`tests/test_install_root_characterization.py`, TODO, CHANGELOG, PLAN,
-      and PROGRESS updates.'
 archive:
+- summary: 'Cycle 544 (2026-05-16): Added doctor output regressions and synchronized
+    Task 5 artifacts.'
 - summary: 'Cycle 543 (2026-05-16): Implemented canonical doctor app metadata statuses
     for Plan Task 3.'
 - summary: 'Cycle 542 (2026-05-16): Defined the doctor app metadata vocabulary contract
@@ -376,5 +377,3 @@ archive:
     and protected-overflow review pressure.'
 - summary: 'Cycle 505 (2026-05-15): Implemented PLAN Task 2 decisions CLI satisfaction
     source-contract output.'
-- summary: 'Cycle 504 (2026-05-15): Implemented PLAN Task 1 satisfaction contract
-    and legacy semantics for Decision 53.'

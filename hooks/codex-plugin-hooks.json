@@ -1,0 +1,31 @@
+{
+  "description": "agentera v2 Codex plugin hooks: schema-backed apply_patch artifact validation using PLUGIN_ROOT",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^apply_patch$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run \"${PLUGIN_ROOT}/hooks/validate_artifact.py\"",
+            "timeout": 10,
+            "statusMessage": "validating artifact"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^apply_patch$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run \"${PLUGIN_ROOT}/hooks/validate_artifact.py\"",
+            "timeout": 10,
+            "statusMessage": "validating artifact"
+          }
+        ]
+      }
+    ]
+  }
+}

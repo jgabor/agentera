@@ -1,4 +1,4 @@
-last_audit: '2026-05-17 (2.5.0 direct capability routing and Planera boundary sync)'
+last_audit: '2026-05-17 (2.5.x Codex hook packaging and trust flow sync)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -74,7 +74,7 @@ mapping:
 index:
 - document: README
   path: README.md
-  last_updated: '2026-05-13'
+  last_updated: '2026-05-17'
   status: current
 - document: Python package manifest
   path: pyproject.toml
@@ -82,7 +82,7 @@ index:
   status: current
 - document: Upgrade guide
   path: UPGRADE.md
-  last_updated: '2026-05-12'
+  last_updated: '2026-05-17'
   status: current
 - document: CLAUDE.md
   path: CLAUDE.md
@@ -162,7 +162,7 @@ index:
   status: current
 - document: Codex plugin manifest
   path: .codex-plugin/plugin.json
-  last_updated: '2026-05-16'
+  last_updated: '2026-05-17'
   status: current
 - document: OpenCode plugin adapter
   path: .opencode/plugins/agentera.js
@@ -174,7 +174,7 @@ index:
   status: current
 - document: Runtime parity reference
   path: references/adapters/runtime-feature-parity.md
-  last_updated: '2026-05-07'
+  last_updated: '2026-05-17'
   status: current
 - document: Agent-ready state CLI contract
   path: references/cli/agent-ready-state-contract.yaml
@@ -250,7 +250,7 @@ index:
   status: current
 - document: Codex setup helper
   path: scripts/setup_codex.py
-  last_updated: '2026-05-05'
+  last_updated: '2026-05-17'
   status: current
 - document: Agentera CLI
   path: scripts/agentera
@@ -258,7 +258,7 @@ index:
   status: current
 - document: Upgrade orchestrator
   path: scripts/agentera_upgrade.py
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-17'
   status: current
 - document: Copilot setup helper
   path: scripts/setup_copilot.py
@@ -320,13 +320,17 @@ index:
   path: hooks/validate_artifact.py
   last_updated: '2026-05-08'
   status: current
+- document: Codex plugin hook config
+  path: hooks/codex-plugin-hooks.json
+  last_updated: '2026-05-17'
+  status: current
 - document: Shared hook utils
   path: hooks/common.py
   last_updated: '2026-05-05'
   status: current
 - document: Test suite
   path: tests/
-  last_updated: '2026-05-12'
+  last_updated: '2026-05-17'
   status: current
 - document: RuntimeAdapter registry tests
   path: tests/test_runtime_adapter_registry.py

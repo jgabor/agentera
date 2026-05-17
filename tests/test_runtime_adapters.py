@@ -108,6 +108,20 @@ def _validate_codex_package(plugin: dict[str, Any]) -> list[str]:
     if plugin.get("skills") != "./skills/":
         errors.append("codex.skills must point to ./skills/")
 
+    hooks = plugin.get("hooks")
+    if not isinstance(hooks, str):
+        errors.append("codex.hooks must point to bundled hook metadata")
+    else:
+        hook_path = _resolve_inside(REPO_ROOT, hooks)
+        if hook_path is None or not hook_path.is_file():
+            errors.append("codex.hooks must resolve from the plugin install root")
+        else:
+            hook_text = hook_path.read_text(encoding="utf-8")
+            if "${PLUGIN_ROOT}/hooks/validate_artifact.py" not in hook_text:
+                errors.append("codex.hooks must use PLUGIN_ROOT to resolve validate_artifact.py")
+            if "AGENTERA_HOME" in hook_text:
+                errors.append("codex.hooks must not depend on AGENTERA_HOME")
+
     interface = plugin.get("interface")
     if not isinstance(interface, dict):
         errors.append("codex.interface metadata must be an object")
@@ -987,6 +1001,20 @@ class TestCodexPackaging:
         legacy = plugin["skillMetadata"][1]
         legacy["policy"]["allow_implicit_invocation"] = True
         assert "codex.hej: legacy bridge must not allow implicit invocation" in _validate_codex_package(plugin)
+
+    def test_codex_package_fails_without_plugin_hook_metadata(self):
+        plugin = _load_json(REPO_ROOT / ".codex-plugin/plugin.json")
+        plugin.pop("hooks", None)
+
+        assert "codex.hooks must point to bundled hook metadata" in _validate_codex_package(plugin)
+
+    def test_codex_package_fails_when_plugin_hooks_use_agentera_home(self):
+        plugin = _load_json(REPO_ROOT / ".codex-plugin/plugin.json")
+        plugin["hooks"] = "./hooks/codex-hooks.json"
+
+        errors = _validate_codex_package(plugin)
+        assert "codex.hooks must use PLUGIN_ROOT to resolve validate_artifact.py" in errors
+        assert "codex.hooks must not depend on AGENTERA_HOME" in errors
 
     def test_codex_marketplace_fails_when_pointing_at_skill_directory(self, tmp_path):
         (tmp_path / ".agents/plugins").mkdir(parents=True)
