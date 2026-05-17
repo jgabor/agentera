@@ -18,6 +18,7 @@ Commands:
   agentera experiments       Active optimera experiments summary
   agentera gate              Run check-only repository gates
   agentera verify            Run bounded smoke or eval verification gates
+  agentera stats             Privacy-gated usage analytics workflow
   agentera compact           Check or fix artifact compaction budgets
   agentera describe          Runtime CLI/schema introspection
   agentera lint              Pre-write artifact prose self-audit
@@ -4763,6 +4764,159 @@ def cmd_usage(args: argparse.Namespace) -> int:
     return result.returncode
 
 
+def _stats_syntax() -> str:
+    return "agentera stats [--format text|json] [--project VALUE] | agentera stats refresh --dry-run|--consent local-history"
+
+
+def _stats_corpus_path() -> Path:
+    override = os.environ.get("PROFILERA_PROFILE_DIR")
+    if override:
+        return Path(override) / "intermediate" / "corpus.json"
+    app_home = os.environ.get("AGENTERA_HOME")
+    if app_home:
+        return Path(app_home) / "intermediate" / "corpus.json"
+    if sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support" / "agentera"
+    elif sys.platform == "win32":
+        base = Path(os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))) / "agentera"
+    else:
+        base = Path(os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))) / "agentera"
+    return base / "intermediate" / "corpus.json"
+
+
+def _stats_existing_corpus_status(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {"status": "missing", "path": path, "reason": "corpus file does not exist"}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"status": "stale", "path": path, "reason": f"corpus is not readable JSON: {exc}"}
+    records = data.get("records", []) if isinstance(data, dict) else []
+    if not any(isinstance(record, dict) and record.get("source_kind") == "conversation_turn" for record in records):
+        return {"status": "stale", "path": path, "reason": "corpus has no conversation_turn records"}
+    metadata = data.get("metadata", {}) if isinstance(data, dict) else {}
+    return {
+        "status": "ready",
+        "path": path,
+        "reason": "existing corpus has conversation_turn records",
+        "extracted_at": metadata.get("extracted_at") if isinstance(metadata, dict) else None,
+        "total_records": len(records),
+    }
+
+
+def _stats_refresh_command(args: argparse.Namespace, corpus_path: Path) -> list[str]:
+    scripts_dir = Path(__file__).resolve().parent
+    command = [sys.executable, str(scripts_dir / "extract_corpus.py"), "--output", str(corpus_path)]
+    for project_root in getattr(args, "project_root", None) or []:
+        command.extend(["--project-root", str(project_root)])
+    return command
+
+
+def _stats_refresh_payload(args: argparse.Namespace, *, dry_run: bool) -> dict[str, Any]:
+    corpus_path = _stats_corpus_path()
+    command = _stats_refresh_command(args, corpus_path)
+    return {
+        "command": "stats refresh",
+        "status": "dry_run" if dry_run else "pending",
+        "privacy": {
+            "local_history_read": False if dry_run else True,
+            "local_history_write": False,
+            "corpus_write": False if dry_run else True,
+            "required_consent": "local-history",
+            "provided_consent": getattr(args, "consent", None),
+        },
+        "corpus_path": str(corpus_path),
+        "engine": {"command": command},
+        "diagnostics": [
+            "dry-run does not read runtime history or write corpus files" if dry_run else "explicit local-history consent enables bounded runtime-store extraction",
+            "generated corpus is internal state for stats at $PROFILERA_PROFILE_DIR/intermediate/corpus.json",
+        ],
+    }
+
+
+def _emit_stats_refresh_text(payload: dict[str, Any]) -> None:
+    print(f"agentera stats refresh: {payload['status']}")
+    print(f"corpus={payload['corpus_path']}")
+    print(f"engine={' '.join(payload['engine']['command'])}")
+    privacy = payload["privacy"]
+    print(
+        "privacy="
+        f"local_history_read={str(privacy['local_history_read']).lower()}, "
+        f"corpus_write={str(privacy['corpus_write']).lower()}, "
+        f"required_consent={privacy['required_consent']}"
+    )
+    for diagnostic in payload["diagnostics"]:
+        print(f"- {diagnostic}")
+
+
+def cmd_stats(args: argparse.Namespace) -> int:
+    output_format = _validate_usage_request(args)
+    action = getattr(args, "stats_action", None)
+    if action == "refresh":
+        dry_run = bool(getattr(args, "dry_run", False))
+        consent = getattr(args, "consent", None)
+        if dry_run and consent:
+            raise ValueError("agentera stats refresh accepts either --dry-run or --consent local-history, not both")
+        if not dry_run and consent != "local-history":
+            raise ValueError(
+                "agentera stats refresh requires explicit --consent local-history to read local runtime history. "
+                "Preview first with agentera stats refresh --dry-run"
+            )
+        payload = _stats_refresh_payload(args, dry_run=dry_run)
+        if dry_run:
+            if output_format == "json":
+                _emit_structured(payload, "json")
+            else:
+                _emit_stats_refresh_text(payload)
+            return 0
+        result = _run_verify_engine(payload["engine"]["command"])
+        payload["status"] = "pass" if result.returncode == 0 else "fail"
+        payload["engine"]["exit_code"] = result.returncode
+        payload["engine"]["stdout"] = result.stdout.splitlines()
+        payload["engine"]["stderr"] = result.stderr.splitlines()
+        if output_format == "json":
+            _emit_structured(payload, "json")
+        else:
+            _emit_stats_refresh_text(payload)
+            if result.stdout:
+                print("stdout:")
+                print(result.stdout, end="")
+            if result.stderr:
+                print("stderr:", file=sys.stderr)
+                print(result.stderr, end="", file=sys.stderr)
+        return result.returncode
+
+    if action is not None:
+        raise ValueError(f"unsupported stats action {action!r}. Syntax: {_stats_syntax()}")
+    corpus_path = _stats_corpus_path()
+    status = _stats_existing_corpus_status(corpus_path)
+    if status["status"] != "ready":
+        if output_format == "json":
+            _emit_structured(
+                {
+                    "command": "stats",
+                    "status": status["status"],
+                    "corpus_path": str(corpus_path),
+                    "reason": status["reason"],
+                    "next": "agentera stats refresh --dry-run",
+                    "privacy": {"local_history_read": False, "local_history_write": False},
+                },
+                "json",
+            )
+        else:
+            print(f"stats data {status['status']}: {status['reason']}", file=sys.stderr)
+            print(f"corpus={corpus_path}", file=sys.stderr)
+            print("Next: agentera stats refresh --dry-run", file=sys.stderr)
+            print("Plain stats does not read local runtime history.", file=sys.stderr)
+        return 2
+    result = _run_verify_engine(_usage_command(argparse.Namespace(format=output_format, corpus=corpus_path, project=getattr(args, "project", None)), output_format))
+    if result.stdout:
+        print(result.stdout, end="")
+    if result.stderr:
+        print(result.stderr, end="", file=sys.stderr)
+    return result.returncode
+
+
 def _query_last_phase(args: argparse.Namespace, schemas: dict) -> int:
     output_format = getattr(args, "format", "text")
     info = schemas.get("progress")
@@ -6398,7 +6552,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="agentera",
         description="agentera: read project state, upgrade installs, and print priming guidance",
-        epilog="Examples: agentera verify smoke installed-skills; agentera usage --format json",
+        epilog="Examples: agentera verify smoke installed-skills; agentera stats refresh --dry-run; agentera usage --format json",
         formatter_class=argparse.RawTextHelpFormatter,
     )
     sub = parser.add_subparsers(dest="command")
@@ -6552,6 +6706,25 @@ def build_parser() -> argparse.ArgumentParser:
     usage.add_argument("--format", default="text", help="Output format: text or json")
     usage.add_argument("--corpus", type=_agent_path, help="Path to a Section 22 corpus.json envelope")
     usage.add_argument("--project", help="Scope analysis to a project id or path-like value")
+
+    stats = sub.add_parser(
+        "stats",
+        help="Generate privacy-gated usage analytics",
+        description=(
+            "Canonical user-facing usage analytics workflow. Plain stats reads only the "
+            "existing internal corpus; refresh requires explicit local-history consent. "
+            "Examples: agentera stats; agentera stats --format json; "
+            "agentera stats refresh --dry-run; "
+            "agentera stats refresh --consent local-history"
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    stats.add_argument("stats_action", nargs="?", help="Optional action: refresh")
+    stats.add_argument("--format", default="text", help="Output format: text or json")
+    stats.add_argument("--project", help="Scope analysis to a project id or path-like value")
+    stats.add_argument("--dry-run", action="store_true", help="Preview corpus refresh without reading runtime history or writing files")
+    stats.add_argument("--consent", choices=["local-history"], help="Required consent for refresh to read local runtime history")
+    stats.add_argument("--project-root", action="append", type=_agent_path, help="Project root to include during refresh; repeatable")
 
     q = sub.add_parser("query", help="Advanced custom artifact query")
     q.add_argument("query", nargs="?", help="Query pattern or artifact name")
@@ -6786,6 +6959,8 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_verify(args)
         if args.command == "usage":
             return cmd_usage(args)
+        if args.command == "stats":
+            return cmd_stats(args)
         if args.command == "lint":
             return cmd_lint(args)
         if args.command == "validate":

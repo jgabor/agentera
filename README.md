@@ -307,6 +307,32 @@ uv run scripts/agentera validate app-home-contract
 uv run scripts/agentera validate capability-contract --format json
 ```
 
+## Usage Analytics
+
+Use `agentera stats` for the user-facing usage analytics workflow. Plain
+`stats` reads only the existing internal corpus at
+`$PROFILERA_PROFILE_DIR/intermediate/corpus.json`; it does not read local runtime
+history or build corpus data by itself.
+
+If stats data is missing or unusable, preview the refresh first:
+
+```bash
+uv run scripts/agentera stats refresh --dry-run
+```
+
+The dry run reports the planned corpus path and extraction command without
+reading runtime history or writing files. To build the internal corpus, provide
+explicit local-history consent:
+
+```bash
+uv run scripts/agentera stats refresh --consent local-history
+```
+
+`agentera usage` remains available for existing automation that already provides
+or expects a Section 22 corpus. Agentera intentionally does not expose a top-level
+`agentera corpus` command; corpus generation stays internal behind
+`agentera stats refresh`.
+
 ## Hooks
 
 Agentera works as a portable Agentera skill first. Hooks are optional, but they

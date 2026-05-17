@@ -1,4 +1,33 @@
 cycles:
+- number: 557
+  timestamp: 2026-05-17 11:18
+  type: feat
+  phase: build
+  what: Added the privacy-gated `agentera stats` workflow.
+  commit: pending
+  inspiration: Orkestrera executed the Stats Privacy and Consent Workflow plan to
+    make stats the canonical user-facing usage analytics command while preserving
+    `agentera usage` compatibility.
+  discovered: The existing usage engine was already the right analysis layer, so the
+    safe seam was a thin `agentera stats` wrapper that reads only the existing internal
+    corpus and a separate `stats refresh` path that previews by default and requires
+    `--consent local-history` before delegating to `extract_corpus.py`.
+  verified: '`uv run pytest tests/test_usage_namespace.py tests/test_usage_stats.py
+    -q` passed with 59 tests. `uv run pytest -q` passed with 1103 tests. Touched
+    artifact validators for TODO, CHANGELOG, PLAN, PROGRESS, and DOCS passed. `uv
+    run scripts/agentera compact --mode check --format json` passed after safe compaction
+    fix trimmed TODO/PROGRESS retained logs. `git diff --check` passed.'
+  next: Commit the stats batch, then continue remaining 2.5.x helper-script cleanup
+    and classification-policy seams.
+  context:
+    intent: Orkestrera execution of the Stats Privacy and Consent Workflow plan.
+    constraints: Preserve `agentera usage` and direct `scripts/usage_stats.py` behavior;
+      do not expose `agentera corpus`; plain stats and refresh dry-runs must not read
+      runtime history or write corpus files; no installed app/profile refresh beyond
+      explicitly consented internal corpus, publication, push, tag, package-manager
+      change, vision/objective edit, or decision satisfaction change.
+    scope: '`scripts/agentera`, `tests/test_usage_namespace.py`, README, TODO, CHANGELOG,
+      PLAN, DOCS, and PROGRESS.'
 - number: 556
   timestamp: 2026-05-17 10:54
   type: feat
@@ -282,34 +311,9 @@ cycles:
     scope: '`.opencode/agents/*.md`, `.opencode/plugins/agentera.js`, descriptor validation,
       OpenCode bootstrap smoke, runtime-adapter tests, OpenCode adapter docs, PLAN,
       and PROGRESS.'
-- number: 547
-  timestamp: 2026-05-16 17:14
-  type: fix
-  phase: build
-  what: Reconciled source-backed OpenCode bare-message hook usage for plan Task 1.
-  commit: pending
-  inspiration: Realisera executed Runtime Docs Compatibility Fix Plan Task 1 after
-    public OpenCode plugin docs omitted the raw-message hook.
-  discovered: OpenCode `packages/plugin/src/index.ts` defines `chat.message` on the
-    exported Hooks interface, so Layer 1 routing is source-backed despite the public-docs
-    omission.
-  verified: '`node scripts/smoke_opencode_bootstrap.mjs` passed. `uv run pytest tests/test_runtime_adapters.py
-    tests/test_runtime_adapter_registry.py -q` passed with 85 tests. `uv run scripts/validate_lifecycle_adapters.py`
-    passed. Source and test surfaces preserve exact bare-`hej` routing through `chat.message`,
-    reject broad greeting matching, and preserve `event`, `shell.env`, and tool hooks.'
-  next: Continue Runtime Docs Compatibility Fix Plan with Task 2 or Task 3. Do not
-    refresh installed apps/profiles, publish, push, tag, change package-manager state,
-    edit vision/objective state, change decision satisfaction, or commit unless explicitly
-    requested.
-  context:
-    intent: Realisera execution of Runtime Docs Compatibility Fix Plan Task 1 with
-      corrected OpenCode source evidence.
-    constraints: No unsupported capability-name CLI commands, installed app/profile
-      refresh, publication, push, tag, package-manager change, vision/objective edit,
-      decision satisfaction change, or commit.
-    scope: '`.opencode/plugins/agentera.js`, OpenCode command templates, smoke/runtime-adapter
-      tests, RuntimeAdapter registry/docs, CHANGELOG, TODO, PLAN, and PROGRESS.'
 archive:
+- summary: 'Cycle 547 (2026-05-16): Reconciled source-backed OpenCode bare-message
+    hook usage for plan Task 1.'
 - summary: 'Cycle 546 (2026-05-16): Completed the Cross-runtime Subagent Dispatch
     Plan.'
 - summary: 'Cycle 545 (2026-05-16): Completed the Doctor Ready Next Output Plan verification
@@ -387,5 +391,3 @@ archive:
     and prepared validation gates.'
 - summary: 'Cycle 508 (2026-05-15): Added PLAN Task 5 capability guidance for decision
     satisfaction authority boundaries.'
-- summary: 'Cycle 507 (2026-05-15): Implemented PLAN Task 4 health audit and release
-    closeout review surfaces.'

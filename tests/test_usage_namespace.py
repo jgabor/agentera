@@ -229,3 +229,128 @@ def test_usage_namespace_preserves_direct_script_json_behavior(tmp_path: Path) -
     for key in ("extracted_at", "project_filter", "skills", "per_project", "invocations"):
         assert namespace_payload[key] == direct_payload[key]
     assert not (usage_dir / "USAGE.md").exists()
+
+
+def test_stats_missing_corpus_points_to_refresh_dry_run_without_side_effects(tmp_path: Path) -> None:
+    profile_dir = tmp_path / "profile"
+    usage_dir = tmp_path / "usage"
+    home_dir = tmp_path / "home"
+
+    result = _run_cli(
+        "stats",
+        env={
+            "HOME": str(home_dir),
+            "PROFILERA_PROFILE_DIR": str(profile_dir),
+            "AGENTERA_USAGE_DIR": str(usage_dir),
+        },
+    )
+
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "stats data missing" in result.stderr
+    assert "Next: agentera stats refresh --dry-run" in result.stderr
+    assert "Plain stats does not read local runtime history" in result.stderr
+    assert not (profile_dir / "intermediate" / "corpus.json").exists()
+    assert not (usage_dir / "USAGE.md").exists()
+
+
+def test_stats_json_uses_existing_internal_corpus_without_corpus_flag(tmp_path: Path) -> None:
+    profile_dir = tmp_path / "profile"
+    usage_dir = tmp_path / "usage"
+    _write_default_corpus(profile_dir)
+
+    result = _run_cli(
+        "stats",
+        "--format",
+        "json",
+        env={"PROFILERA_PROFILE_DIR": str(profile_dir), "AGENTERA_USAGE_DIR": str(usage_dir)},
+    )
+    payload = json.loads(result.stdout)
+
+    assert result.returncode == 0, result.stderr
+    assert payload["extracted_at"] == "2026-05-15T00:00:00Z"
+    assert payload["skills"]["realisera"]["completed"] == 1
+    assert not (usage_dir / "USAGE.md").exists()
+
+
+def test_stats_refresh_dry_run_reports_privacy_boundary_and_writes_nothing(tmp_path: Path) -> None:
+    profile_dir = tmp_path / "profile"
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    (project_root / "AGENTS.md").write_text("# test\n", encoding="utf-8")
+
+    result = _run_cli(
+        "stats",
+        "refresh",
+        "--dry-run",
+        "--format",
+        "json",
+        "--project-root",
+        str(project_root),
+        env={"HOME": str(tmp_path / "home"), "PROFILERA_PROFILE_DIR": str(profile_dir)},
+    )
+    payload = json.loads(result.stdout)
+
+    assert result.returncode == 0, result.stderr
+    assert payload["status"] == "dry_run"
+    assert payload["privacy"]["local_history_read"] is False
+    assert payload["privacy"]["corpus_write"] is False
+    assert payload["privacy"]["required_consent"] == "local-history"
+    assert payload["corpus_path"] == str(profile_dir / "intermediate" / "corpus.json")
+    assert "extract_corpus.py" in " ".join(payload["engine"]["command"])
+    assert not (profile_dir / "intermediate" / "corpus.json").exists()
+
+
+def test_stats_refresh_requires_explicit_local_history_consent(tmp_path: Path) -> None:
+    result = _run_cli(
+        "stats",
+        "refresh",
+        env={"HOME": str(tmp_path / "home"), "PROFILERA_PROFILE_DIR": str(tmp_path / "profile")},
+    )
+
+    assert result.returncode == 2
+    assert "requires explicit --consent local-history" in result.stderr
+    assert "agentera stats refresh --dry-run" in result.stderr
+
+
+def test_stats_refresh_with_consent_builds_internal_corpus(tmp_path: Path) -> None:
+    profile_dir = tmp_path / "profile"
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    (project_root / "AGENTS.md").write_text("# test\n", encoding="utf-8")
+
+    result = _run_cli(
+        "stats",
+        "refresh",
+        "--consent",
+        "local-history",
+        "--format",
+        "json",
+        "--project-root",
+        str(project_root),
+        env={"HOME": str(tmp_path / "home"), "PROFILERA_PROFILE_DIR": str(profile_dir)},
+    )
+    payload = json.loads(result.stdout)
+    corpus_path = profile_dir / "intermediate" / "corpus.json"
+
+    assert result.returncode == 0, result.stderr
+    assert payload["status"] == "pass"
+    assert payload["privacy"]["local_history_read"] is True
+    assert payload["privacy"]["corpus_write"] is True
+    assert corpus_path.is_file()
+    corpus = json.loads(corpus_path.read_text(encoding="utf-8"))
+    assert corpus["metadata"]["total_records"] >= 1
+
+
+def test_stats_help_preserves_usage_and_exposes_no_top_level_corpus_command() -> None:
+    root_help = _run_cli("--help")
+    stats_help = _run_cli("stats", "--help")
+    corpus_help = _run_cli("corpus", "--help")
+
+    assert root_help.returncode == stats_help.returncode == 0
+    assert "agentera stats" in root_help.stdout
+    assert "agentera usage" in root_help.stdout
+    assert "agentera stats refresh --dry-run" in stats_help.stdout
+    assert "--consent" in stats_help.stdout
+    assert "corpus" not in {line.strip() for line in root_help.stdout.splitlines()}
+    assert corpus_help.returncode != 0
