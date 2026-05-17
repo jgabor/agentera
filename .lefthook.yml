@@ -31,4 +31,4 @@ pre-push:
     agentera:
       run: uv run scripts/agentera gate
     test:
-      run: uv run --with pytest --with pyyaml pytest tests/ -q
+      run: uv run --with pytest --with pyyaml --with pytest-xdist pytest tests/ -q -n auto

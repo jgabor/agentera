@@ -1,5 +1,6 @@
 .claude
 .codex
+.opencode/goals/
 docs/*
 !docs/benchmark.md
 !docs/d47-app-home-vocabulary-inventory.md
