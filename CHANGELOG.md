@@ -1,5 +1,42 @@
 # Changelog
 
+## [Unreleased]
+
+## [2.4.1] · 2026-05-17
+
+### Key highlights
+
+- Cross-runtime subagent descriptors now cover Codex and OpenCode with descriptor validation.
+- Codex and OpenCode hook packaging is aligned with current runtime/plugin surfaces.
+- `agentera stats` adds privacy-gated usage analytics with explicit local-history consent.
+- `agentera validate` now wraps the remaining stable validators through canonical CLI commands.
+- Helper-script documentation now routes user-facing workflows through `agentera` namespaces first.
+
+### Added
+
+- Codex now ships one managed `skills/agentera/agents/*.toml` descriptor per Agentera capability; `agentera upgrade` install them under `~/.codex/agents` and configure bounded `[agents]` settings without reviving deprecated `[agents.*]` blocks.
+- OpenCode now ships one managed `.opencode/agents/*.md` descriptor per Agentera capability; `.opencode/plugins/agentera.js` bootstraps those descriptors into `~/.config/opencode/agents` while preserving user-owned collisions.
+- `agentera validate descriptors` now validates Codex and OpenCode capability descriptor parity, required metadata, managed markers, and capability prose pointers in text or JSON form.
+
+### Changed
+
+- `agentera stats` is now the canonical user-facing usage analytics workflow: plain stats reads only the existing internal corpus, refresh dry-runs report privacy-safe diagnostics without reading runtime history or writing corpus files, consented refresh writes `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`, and `agentera usage` remains compatible for existing callers.
+- `agentera validate` now covers stable repository validators for cross-capability artifact graphs, lifecycle adapter metadata, app-home contract terminology, and capability schema contract self/protocol checks while preserving the direct helper scripts as maintainer seams.
+- OpenCode package metadata now exposes `.opencode/plugins/agentera.js` through `.opencode/package.json` `main` and `exports` for npm-style plugin loading while preserving the project-local plugin install path and keeping `.opencode/package.json` out of suite version authority.
+- Codex plugin metadata now exposes optional bundled apply_patch hooks through `.codex-plugin/plugin.json`, while upgrade-generated copied user hooks remain the default reliable Codex hook path and use exact resolved validator commands with matching `[hooks.state]` trust hashes.
+- RuntimeAdapter registry and interface docs now include a required `subagent_dispatch` group covering each runtime's mechanism, setup targets, descriptor sources, invocation pattern, and limitations without absorbing package metadata or install-root ownership facts.
+- Orkestrera, Realisera, and Optimera dispatch prose now names concrete Claude Code, OpenCode, Codex CLI, and Copilot CLI subagent surfaces instead of relying on an abstract host-adapter substrate line.
+- Helper-script docs now classify `agentera` namespaces as the canonical user-facing entry points while retaining direct scripts as backward-compatible maintainer seams, private support modules, explicit local analysis surfaces, or generators; validation examples now route through `agentera validate` first.
+
+### Fixed
+
+- OpenCode compaction now receives bounded Agentera project context through `experimental.session.compacting`, generated from `agentera hej --format json` summaries rather than direct raw `.agentera` artifact reads; runtime tests validate `event`, `shell.env`, `chat.message`, tool hooks, and compaction hooks against the installed `@opencode-ai/plugin` Hooks interface.
+- Codex copied `~/.codex/hooks.json` generation no longer depends on hook-time `AGENTERA_HOME` expansion; generated hook commands point at the resolved Agentera validator path and tests cover local clone plus installed app-home trust-hash behavior.
+- Canonical capability-name requests with trailing topic text now route directly to the named capability: `resonera <topic>` invokes ❈ resonera instead of falling through to generic analysis or attempting the unsupported `agentera resonera` CLI command. Planera guidance and compact startup context now state that archiving an already complete existing plan is implicit in direct Planera replacement, while human-initiated plan approval and explicit confirmation for active or incomplete plan replacement remain required.
+- Runtime docs compatibility now aligns OpenCode and Codex adapter surfaces with official runtime documentation: exact bare `hej` routing remains source-backed by OpenCode `chat.message`, OpenCode managed agent descriptors use documented `description` plus `mode: subagent` frontmatter with body ownership markers, Codex descriptor defaults are limited to documented personal/project agent directories, and OpenCode session lifecycle events are classified as generic `event` payloads while context preload remains deferred.
+- OpenCode `shell.env` injection now preserves a valid pre-merged `AGENTERA_HOME` but replaces stale inherited legacy values with the validated app home.
+- OpenCode bare `hej` routing is documented as source-backed by the `chat.message` Hooks interface, with smoke/runtime-adapter tests preserving exact-match routing while recording the public-docs omission as known drift.
+
 ## [2.4.0] · 2026-05-16
 
 ### Key highlights
@@ -12,13 +49,6 @@
 
 ### Changed
 
-- Helper-script docs now classify `agentera` namespaces as the canonical user-facing entry points while retaining direct scripts as backward-compatible maintainer seams, private support modules, explicit local analysis surfaces, or generators; validation examples now route through `agentera validate` first.
-- `agentera stats` is now the canonical user-facing usage analytics workflow: plain stats reads only the existing internal corpus, refresh dry-runs report privacy-safe diagnostics without reading runtime history or writing corpus files, consented refresh writes `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`, and `agentera usage` remains compatible for existing callers.
-- `agentera validate` now covers stable repository validators for cross-capability artifact graphs, lifecycle adapter metadata, app-home contract terminology, and capability schema contract self/protocol checks while preserving the direct helper scripts as maintainer seams.
-- OpenCode package metadata now exposes `.opencode/plugins/agentera.js` through `.opencode/package.json` `main` and `exports` for npm-style plugin loading while preserving the project-local plugin install path and keeping `.opencode/package.json` out of suite version authority.
-- Codex plugin metadata now exposes optional bundled apply_patch hooks through `.codex-plugin/plugin.json`, while upgrade-generated copied user hooks remain the default reliable Codex hook path and use exact resolved validator commands with matching `[hooks.state]` trust hashes.
-- RuntimeAdapter registry and interface docs now include a required `subagent_dispatch` group covering each runtime's mechanism, setup targets, descriptor sources, invocation pattern, and limitations without absorbing package metadata or install-root ownership facts.
-- Orkestrera, Realisera, and Optimera dispatch prose now names concrete Claude Code, OpenCode, Codex CLI, and Copilot CLI subagent surfaces instead of relying on an abstract host-adapter substrate line.
 - 2.4.0 minor release metadata now aligns package, plugin, OpenCode marker, registry, lockfile, and skill frontmatter versions with the aggregate post-v2.3.12 feature and fix set after intermediate version bumps were removed from history.
 - 2.3.12 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Realisera execution-context source-contract patch.
 - 2.3.11 patch release metadata now aligns package, plugin, OpenCode marker, registry, and skill frontmatter versions with the Optimera benchmark-context source-contract patch; the 2.3.12 Realisera execution-context source-contract work is now closed separately.
@@ -36,11 +66,6 @@
 
 ### Fixed
 
-- OpenCode compaction now receives bounded Agentera project context through `experimental.session.compacting`, generated from `agentera hej --format json` summaries rather than direct raw `.agentera` artifact reads; runtime tests validate `event`, `shell.env`, `chat.message`, tool hooks, and compaction hooks against the installed `@opencode-ai/plugin` Hooks interface.
-- Codex copied `~/.codex/hooks.json` generation no longer depends on hook-time `AGENTERA_HOME` expansion; generated hook commands point at the resolved Agentera validator path and tests cover local clone plus installed app-home trust-hash behavior.
-- Canonical capability-name requests with trailing topic text now route directly to the named capability: `resonera <topic>` invokes ❈ resonera instead of falling through to generic analysis or attempting the unsupported `agentera resonera` CLI command. Planera guidance and compact startup context now state that archiving an already complete existing plan is implicit in direct Planera replacement, while human-initiated plan approval and explicit confirmation for active or incomplete plan replacement remain required.
-- Runtime docs compatibility now aligns OpenCode and Codex adapter surfaces with official runtime documentation: exact bare `hej` routing remains source-backed by OpenCode `chat.message`, OpenCode managed agent descriptors use documented `description` plus `mode: subagent` frontmatter with body ownership markers, Codex descriptor defaults are limited to documented personal/project agent directories, and OpenCode session lifecycle events are classified as generic `event` payloads while context preload remains deferred.
-- OpenCode `shell.env` injection now preserves a valid pre-merged `AGENTERA_HOME` but replaces stale inherited legacy values with the validated app home.
 - `agentera doctor` now renders an up-to-date app home as `No action needed` without a required-looking `Next:` repair block, hard-renames doctor app metadata to canonical statuses (`up_to_date`, `outdated`, `repair_needed`, `migration_needed`, `manual_review_needed`), preserves safe preview/apply/retry guidance for actionable states, blocks automatic repair for manual-review states, and covers dry-run command spacing with focused regressions.
 - `agentera lint --artifact <ARTIFACT> --file <PATH>` now checks verbosity against the artifact full-file budget while `--text` and stdin keep per-entry budgets, removing repeated false-positive PLAN.md full-plan pressure found in retained `post-audit-flagged` archive evidence.
 - `agentera lint --artifact PLAN.md` now treats concrete repo-style path anchors such as `internal/runtime`, `internal/app`, and `internal/tui` as anchors, preventing false no-anchor advisories for concrete Planera plans while preserving abstraction advisories for generic unanchored prose.
@@ -96,9 +121,6 @@
 
 ### Added
 
-- Codex now ships one managed `skills/agentera/agents/*.toml` descriptor per Agentera capability; `setup_codex.py` and `agentera upgrade` install them under `~/.codex/agents` and configure bounded `[agents]` settings without reviving deprecated `[agents.*]` blocks.
-- OpenCode now ships one managed `.opencode/agents/*.md` descriptor per Agentera capability; `.opencode/plugins/agentera.js` bootstraps those descriptors into `~/.config/opencode/agents` while preserving user-owned collisions.
-- `agentera validate descriptors` now validates Codex and OpenCode capability descriptor parity, required metadata, managed markers, and capability prose pointers in text or JSON form.
 - Startup threshold analysis now includes a privacy-safe retained-artifact scan and classifier path for archived lint evidence, emitting only canonical artifact labels, warning categories, salted event labels, aggregate counts, and coverage caveats.
 - `agentera decisions --format json` now exposes a clearer DECISIONS.md source contract with `complete_for_returned_full_detail`, `complete_for_normal_deliberation_context`, a decision context truth table, separate missing-full-detail, missing-artifact, filtered-result, satisfaction-review, and compacted-history boundaries, raw artifact access boundaries, and fallback policy so agents can use compacted/missing decision caveats without raw `.agentera/decisions.yaml` reads or inference.
 - `agentera hej --format json --capability-context planera` now exposes `source_contract.capability_context.startup_contract`, a bounded compact Planera startup contract with planning levels, step markers, CLI-first orientation, raw plan artifact boundaries, full-plan review/self-audit requirements, handoff expectations, prose authority exceptions, seam-selection rationale, and unsupported-command boundary without adding `agentera planera` or reading `planera/prose.md` at runtime.
@@ -128,8 +150,6 @@
 
 ### Verified
 
-- Runtime docs compatibility closeout passed descriptor validation, Codex setup/upgrade tests, runtime-adapter registry/package tests, lifecycle adapter validation, OpenCode bootstrap smoke, PLAN/PROGRESS artifact validators, and `git diff --check` without live-host calls, publication, installed app/profile refresh, tag, remote push, version bump, protected-state edit, or unsupported capability-name CLI command.
-- Cross-runtime subagent dispatch support passed descriptor validation, OpenCode bootstrap smoke, capability validators, setup/upgrade/runtime/package tests, artifact validators, compaction checks, `git diff --check`, and the full `uv run pytest` suite locally after synchronizing plan artifacts.
 - 2.4.0 aggregate release metadata is synchronized locally without remote push; intermediate post-v2.3.12 version bumps were removed from rewritten history, version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.4.0, package/version contract tests passed, touched artifact validators passed, and `git diff --check` passed.
 - D47 app-home vocabulary cleanup closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, vision edit, objective edit, decision satisfaction-state change, or unsupported capability-name CLI command; independent Task 1 and Task 2 evaluations passed, focused Task 3 verification reported 346 passing tests, and Task 4 metadata validators plus `git diff --check` passed.
 - 2.3.12 Realisera execution-context source-contract patch closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, objective-state mutation, or unsupported capability CLI command introduction; focused CLI/contract tests passed with 181 tests, Realisera capability validation and schema self-validation passed, repository gate/compaction/artifact validation/diff-check gates passed, and PLAN lint remains failed only on the pre-existing advisory verbosity budget.
@@ -156,12 +176,6 @@
 - Decision 51 state-access measurement replaces an uncommitted route/intro startup-window draft that found zero qualifying windows and would have closed the startup-envelope follow-up; direct OpenCode analysis showed repeated `CLI state -> raw artifact access` behavior, so the CLI startup state-envelope follow-up is reopened as planning work without version-bearing metadata changes.
 - Profilera corpus runtime parity state is synchronized without a selected release target: TODO, docs, progress, changelog, and plan state record completion while package, plugin, registry, lockfile, and skill version-bearing files remain unchanged.
 - 2.3.3 patch release readiness is recorded locally without publication, installed app refresh, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces are aligned.
-
-## [Unreleased]
-
-### Fixed
-
-- OpenCode bare `hej` routing is documented as source-backed by the `chat.message` Hooks interface, with smoke/runtime-adapter tests preserving exact-match routing while recording the public-docs omission as known drift.
 
 ## [2.2.3] · 2026-05-09
 
