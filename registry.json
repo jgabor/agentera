@@ -4,7 +4,7 @@
   "skills": [
     {
       "name": "agentera",
-      "version": "2.4.0",
+      "version": "2.4.1",
       "description": "Compound agent orchestration suite — 12 capabilities in one bundled skill; exact bare hej uses the Agentera dashboard path",
       "path": "skills/agentera",
       "capabilities": [
