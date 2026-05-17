@@ -290,14 +290,21 @@ You do not need to remember capability names. Type `/agentera` followed by what 
 | "research this pattern" | → inspirera (external analysis) |
 | "what should I work on" | → hej (briefing) |
 
-Validate any capability against the schema contract. Capability schema structure
-is owned by `skills/agentera/capability_schema_contract.yaml` and loaded through
-`scripts/capability_contract.py`; `scripts/validate_capability.py` consumes that
-model instead of duplicating required groups, priority values, directory rules,
+Validate capabilities, artifacts, descriptors, and stable repository contracts
+through `agentera validate`. Capability schema structure is owned by
+`skills/agentera/capability_schema_contract.yaml` and loaded through
+`scripts/capability_contract.py`; the validate namespace delegates to the stable
+helpers instead of duplicating required groups, priority values, directory rules,
 or capability-field primitive mappings.
 
 ```bash
-uv run scripts/validate_capability.py skills/agentera/capabilities/<name>
+uv run scripts/agentera validate capability hej
+uv run scripts/agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml
+uv run scripts/agentera validate descriptors
+uv run scripts/agentera validate cross-capability
+uv run scripts/agentera validate lifecycle-adapters
+uv run scripts/agentera validate app-home-contract
+uv run scripts/agentera validate capability-contract --format json
 ```
 
 ## Hooks
