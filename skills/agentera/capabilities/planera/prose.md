@@ -39,6 +39,13 @@ required for writing a new plan, archiving a completed plan, artifact validation
 corruption diagnostics, or when CLI output is unavailable or incomplete after
 CLI fallbacks.
 
+When a user directly invokes ≡ planera to create a new plan and the existing
+PLAN.md is already complete, archiving that completed plan before writing its
+replacement is implicit in the direct Planera invocation and does not require a
+separate pre-write confirmation. Human-initiated replacement plans still require
+plan approval before the write. Replacing, discarding, or archiving an active or
+incomplete plan is not implicit; ask for explicit confirmation before the write.
+
 Use `agentera describe --format json` and its `artifact_schemas` entry for `plan` to locate the active installed schema; use `artifact_locations` or `agentera query --list-artifacts --format json` to locate the mapped plan path and raw-access boundary before any diagnostic raw read. Do not search Agentera directories manually. Existing plan artifacts provide repository-local examples of the shape.
 
 For normal Planera startup, `agentera hej --format json --capability-context

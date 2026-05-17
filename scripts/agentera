@@ -928,6 +928,19 @@ PLANERA_RAW_PLAN_ACCESS_ALLOWED_FOR = [
     "corruption diagnostics",
     "unavailable or incomplete CLI state after CLI fallbacks",
 ]
+PLANERA_COMPLETED_PLAN_ARCHIVE_CONFIRMATION = {
+    "direct_planera_invocation": (
+        "Archiving an already completed existing plan before writing its replacement is implicit "
+        "in the direct Planera invocation and does not require a separate pre-write confirmation."
+    ),
+    "human_initiated_plan_write": (
+        "Plan approval is still required before writing a human-initiated replacement plan."
+    ),
+    "active_or_incomplete_plan": (
+        "Replacing, discarding, or archiving an active or incomplete plan is not implicit; "
+        "ask for explicit confirmation before the write."
+    ),
+}
 
 COMMAND_FILTERS = {
     "hej": [],
@@ -1516,6 +1529,7 @@ def _planera_startup_contract() -> dict[str, Any]:
                 "during normal read-only startup or evaluation."
             ),
             "raw_plan_artifact_allowed_for": PLANERA_RAW_PLAN_ACCESS_ALLOWED_FOR,
+            "completed_plan_archive_confirmation": PLANERA_COMPLETED_PLAN_ARCHIVE_CONFIRMATION,
             "artifact_mapping_source": "agentera docs/query artifact mapping before writes or closeout",
         },
         "handoff_expectations": [

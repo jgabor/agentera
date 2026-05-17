@@ -1,0 +1,171 @@
+header:
+  level: full
+  created: 2026-05-16
+  status: complete
+  reviewed: 2026-05-16
+  critic_issues: 5 found, 5 addressed, 0 dismissed
+  revised: >-
+    Adversarial review converted the completed cross-runtime subagent dispatch work into a follow-up
+    compatibility plan covering OpenCode message-hook evidence, OpenCode descriptor mode/name
+    metadata, Codex descriptor discovery paths, and OpenCode session event classification against
+    official Codex and OpenCode documentation.
+  title: Runtime Docs Compatibility Fix Plan
+what: >-
+  Bring Agentera's Codex and OpenCode runtime surfaces back into alignment with official runtime
+  documentation by reconciling OpenCode plugin hook evidence, normalizing OpenCode
+  agent descriptors, constraining Codex descriptor installation to documented discovery paths, and
+  correcting OpenCode session lifecycle docs/tests.
+why: >-
+  A post-implementation adversarial review found five compatibility gaps in the cross-runtime subagent
+  dispatch change. Official Codex docs require custom agent TOML files under `~/.codex/agents/` or
+  `.codex/agents/` with `name`, `description`, and `developer_instructions`. Official OpenCode agent
+  docs say markdown filenames become agent names, `description` is required, omitted `mode` defaults
+  to `all`, and subagents should use `mode: subagent`. Official OpenCode plugin docs list supported
+  hooks and session events through the generic `event` hook, while the OpenCode plugin source
+  defines `chat.message` on the exported Hooks interface.
+constraints: >-
+  Plan fixes only until a build capability is explicitly invoked. Do not add unsupported Agentera
+  capability-name CLI commands, publish, push, tag, bump release metadata, refresh installed apps or
+  profiles, edit `.agentera/vision.yaml`, mutate objective state, or change decision satisfaction state.
+  Preserve user-owned runtime files and keep setup/upgrade commands non-interactive, idempotent, and
+  dry-run safe.
+scope:
+  included:
+    - "`.opencode/plugins/agentera.js` OpenCode plugin hook registration and bootstrap behavior."
+    - "`.opencode/agents/*.md` OpenCode managed descriptor frontmatter and ownership marker format."
+    - "`scripts/setup_codex.py` and upgrade/setup tests that choose Codex descriptor install paths."
+    - Runtime adapter registry, feature parity docs, and OpenCode adapter docs for lifecycle events.
+    - Regression tests, smoke fixtures, TODO, CHANGELOG, PLAN, and PROGRESS synchronization.
+  excluded:
+    - Live Codex or OpenCode host execution beyond local smoke/unit tests.
+    - Redesigning Agentera capability routing or adding new CLI commands.
+    - Replacing the one bundled Agentera skill with separate per-capability skills.
+    - Package publication, release tagging, remote pushes, installed app refresh, or profile refresh.
+  deferred:
+    - A later routing-correctness fix for direct user messages such as `resonera ...`.
+    - Broad greeting detection or non-exact bare-message interception beyond source-backed `chat.message`.
+design: >-
+  Treat official runtime docs as the compatibility contract and remove local assumptions that are not
+  documented. For OpenCode plugins, keep only documented hook keys such as `event`, `shell.env`, and
+  tool hooks; session lifecycle handling should branch on `event.type`, while bare `hej` interception uses
+  the source-backed `chat.message` Hooks interface entry and remains exact-match only. For OpenCode agents,
+  generate markdown frontmatter with documented config only: `description`, `mode: subagent`, and any
+  supported permissions or model options. Move Agentera ownership out of custom frontmatter into a
+  non-config body marker that bootstrap code can detect without passing unknown options to OpenCode.
+  For Codex, default descriptor installation to `~/.codex/agents/` for personal config and
+  `.codex/agents/` for project config; require an explicit `--agents-dir` for isolated/nonstandard test
+  locations instead of deriving an arbitrary sibling directory from `--config-file`.
+tasks:
+  - number: 1
+    name: Reconcile OpenCode message hook evidence
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the OpenCode plugin source defines `chat.message` on the exported Hooks interface WHEN plugin
+        registration is updated THEN production and test surfaces keep exact bare-`hej` routing through
+        `chat.message`.
+      - >-
+        GIVEN public OpenCode docs omit `chat.message` WHEN behavior is revised THEN OpenCode docs/tests
+        cite source-backed hook support and preserve the docs-page omission as a known compatibility gap.
+      - >-
+        GIVEN the plugin still owns bootstrap and artifact validation WHEN smoke tests run THEN slash
+        commands, skills, `shell.env`, `event`, and tool hooks keep their existing supported behavior.
+  - number: 2
+    name: Normalize OpenCode agent descriptors
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN official OpenCode markdown agent docs WHEN `.opencode/agents/*.md` is inspected THEN each
+        managed descriptor has `description` and `mode: subagent` and omits redundant `name` frontmatter.
+      - >-
+        GIVEN custom frontmatter is passed through as model options WHEN descriptors are refreshed THEN
+        Agentera ownership uses a non-config body marker instead of `agentera_managed` frontmatter.
+      - >-
+        GIVEN user-owned collisions exist WHEN bootstrap runs THEN only absent or Agentera-managed
+        descriptors are written and unknown files remain untouched.
+  - number: 3
+    name: Constrain Codex descriptor discovery paths
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN official Codex custom agent docs WHEN `setup_codex.py` chooses a default descriptor target
+        THEN it uses `~/.codex/agents/` for personal config or `.codex/agents/` for project config.
+      - >-
+        GIVEN a caller passes an arbitrary `--config-file` outside documented config layouts WHEN setup
+        plans descriptors THEN it requires explicit `--agents-dir` instead of writing beside that file.
+      - >-
+        GIVEN setup and upgrade tests run WHEN descriptors are installed THEN managed TOML files remain
+        idempotent, preserve user-owned files, and keep required `name`, `description`, and
+        `developer_instructions` fields without deprecated `[agents.*]` blocks.
+  - number: 4
+    name: Reclassify OpenCode session lifecycle events
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN official OpenCode plugin docs expose session events through `event` WHEN registry and docs
+        are updated THEN `session.created` and `session.idle` are no longer marked unsupported or phantom.
+      - >-
+        GIVEN session preload still lacks verified model-context injection WHEN limitations are updated
+        THEN the caveat is about context injection only, not event observability.
+      - >-
+        GIVEN regression tests prevent direct hook mistakes WHEN tests run THEN direct `"session.idle"` or
+        `"session.created"` hook keys still fail while generic `event` handling passes.
+  - number: 5
+    name: Refresh compatibility regression coverage
+    depends_on:
+      - 1
+      - 2
+      - 3
+      - 4
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the five findings are fixed WHEN focused tests run THEN coverage asserts source-backed
+        `chat.message`, documented OpenCode descriptor frontmatter, official Codex agent paths, and
+        truthful OpenCode session event classification.
+      - >-
+        GIVEN plugin smoke fixtures and installed-surface fixtures embed runtime text WHEN updated THEN
+        they match the revised docs-compatible plugin and descriptor surfaces.
+      - >-
+        GIVEN validation commands run WHEN implementation is complete THEN descriptor validation,
+        runtime-adapter tests, Codex setup/upgrade tests, OpenCode smoke, and artifact validators pass.
+  - number: 6
+    name: Synchronize artifacts and hand off implementation
+    depends_on:
+      - 5
+    status: complete
+    acceptance:
+      - >-
+        GIVEN implementation evidence exists WHEN closeout happens THEN TODO, CHANGELOG, PROGRESS, and
+        PLAN record the docs-compatibility fixes and remaining deferred routing work.
+      - >-
+        GIVEN the active plan is complete WHEN artifact validation runs THEN `PLAN.md` validates and the
+        previous dispatch plan remains archived at the recorded path.
+      - >-
+        GIVEN Planera only plans work WHEN this artifact is written THEN the next handoff suggests
+        `⧉ realisera` or `⎈ orkestrera` and waits for explicit confirmation before code changes.
+overall_acceptance:
+  - >-
+    Agentera's OpenCode bare-`hej` routing uses the source-backed `chat.message` plugin hook and records
+    the public-docs omission as a compatibility gap.
+  - >-
+    OpenCode managed agent descriptors use documented markdown-agent fields and explicit `mode: subagent`.
+  - >-
+    Codex managed descriptor installation defaults only to documented personal or project agent directories.
+  - >-
+    OpenCode session lifecycle events are documented as observable through the generic `event` hook, with
+    model-context preload limitations preserved separately.
+  - >-
+    Focused tests, smoke checks, descriptor validation, artifact validation, and `git diff --check` pass
+    without live host calls, release side effects, protected-state edits, or remote operations.
+surprises:
+  - >-
+    OpenCode's public plugin docs omit `chat.message`, but `packages/plugin/src/index.ts` defines it on
+    the exported Hooks interface; the compatibility fix keeps Layer 1 routing and cites that source.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-16-cross-runtime-subagent-dispatch-plan.yaml

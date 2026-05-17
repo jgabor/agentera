@@ -132,11 +132,15 @@ def _exact_direct_route(message: str, routes: tuple[DirectRoute, ...]) -> Direct
 
     if text.startswith("/agentera "):
         text = text.removeprefix("/agentera ").strip()
-        if not text or " " in text:
+        if not text:
             return None
 
     for route in routes:
         if text == route.route.casefold():
+            return route
+
+    for route in routes:
+        if route.source == "canonical" and text.startswith(route.route.casefold() + " "):
             return route
     return None
 

@@ -1870,6 +1870,11 @@ class TestHej:
         assert contract["cli_first_orientation"]["complete_plan_contract_key"] == "source_contract.complete_for_plan_artifact"
         assert "normal read-only startup" in contract["artifact_access_boundaries"]["skip_raw_plan_artifact_when"]
         assert "writing a new plan" in contract["artifact_access_boundaries"]["raw_plan_artifact_allowed_for"]
+        archive_confirmation = contract["artifact_access_boundaries"]["completed_plan_archive_confirmation"]
+        assert "implicit" in archive_confirmation["direct_planera_invocation"]
+        assert "does not require a separate pre-write confirmation" in archive_confirmation["direct_planera_invocation"]
+        assert "Plan approval is still required" in archive_confirmation["human_initiated_plan_write"]
+        assert "active or incomplete plan is not implicit" in archive_confirmation["active_or_incomplete_plan"]
         assert "editing Planera behavior or prose" in contract["prose_authority"]["read_planera_prose_when"]
         assert "agentera planera" in contract["unsupported_command_boundary"]["forbidden_examples"]
         assert contract["unsupported_command_boundary"]["capability_cli_commands_added"] is False
