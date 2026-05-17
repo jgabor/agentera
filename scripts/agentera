@@ -4290,15 +4290,21 @@ def _descriptor_validation_payload() -> dict[str, Any]:
             continue
         fields = _frontmatter_fields(text)
         expected_ref = f"capabilities/{name}/prose.md"
-        if fields.get("name") != name:
-            check = {**check, "status": "fail", "message": "frontmatter name does not match capability"}
-            violations.append(f"opencode {name}: frontmatter name must be {name}")
-        elif fields.get("agentera_managed") != "true":
-            check = {**check, "status": "fail", "message": "agentera_managed frontmatter is required"}
-            violations.append(f"opencode {name}: agentera_managed frontmatter is required")
+        if "name" in fields:
+            check = {**check, "status": "fail", "message": "name frontmatter must be omitted"}
+            violations.append(f"opencode {name}: name frontmatter must be omitted")
+        elif fields.get("agentera_managed") == "true":
+            check = {**check, "status": "fail", "message": "agentera_managed frontmatter must be omitted"}
+            violations.append(f"opencode {name}: agentera_managed frontmatter must be omitted")
+        elif fields.get("mode") != "subagent":
+            check = {**check, "status": "fail", "message": "mode: subagent frontmatter is required"}
+            violations.append(f"opencode {name}: mode: subagent frontmatter is required")
         elif not fields.get("description"):
             check = {**check, "status": "fail", "message": "description is required"}
             violations.append(f"opencode {name}: description is required")
+        elif "<!-- agentera: managed -->" not in text:
+            check = {**check, "status": "fail", "message": "managed body marker is required"}
+            violations.append(f"opencode {name}: managed body marker is required")
         elif expected_ref not in text:
             check = {**check, "status": "fail", "message": "descriptor must reference capability prose"}
             violations.append(f"opencode {name}: descriptor must reference {expected_ref}")

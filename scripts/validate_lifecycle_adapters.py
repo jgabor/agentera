@@ -91,6 +91,14 @@ def _unsupported_events(registry: RuntimeAdapterRegistry, runtime: str) -> set[s
     return set(_runtime_view(registry, runtime)["lifecycle_events"]["unsupported_events"])
 
 
+def _opencode_event_payload_types(registry: RuntimeAdapterRegistry) -> set[str]:
+    return {
+        event
+        for event, status in _runtime_view(registry, "opencode")["lifecycle_events"]["event_status"].items()
+        if status == "supported_via_event"
+    }
+
+
 def _validation_events(registry: RuntimeAdapterRegistry, runtime: str) -> list[str]:
     return _runtime_view(registry, runtime)["artifact_validation"]["validation_events"]
 
@@ -594,12 +602,16 @@ def validate_opencode(
     text = plugin_path.read_text(encoding="utf-8")
     if "event: async" not in text:
         errors.append("opencode: session lifecycle must use the generic event hook")
-    for event_type in _unsupported_events(registry, "opencode"):
+    for event_type in _opencode_event_payload_types(registry):
         if f'event.type !== "{event_type}"' not in text and f'event.type === "{event_type}"' not in text:
             errors.append(f"opencode: event hook must handle or explicitly skip {event_type}")
         if f'"{event_type}":' in text:
-            errors.append(f"opencode: must not register phantom direct hook {event_type}")
-    for hook in (f'"{event}"' for event in _supported_events(registry, "opencode")):
+            errors.append(f"opencode: must not register direct hook {event_type}")
+    for event_type in _unsupported_events(registry, "opencode"):
+        if f'"{event_type}":' in text:
+            errors.append(f"opencode: must not register unsupported direct hook {event_type}")
+    direct_hooks = _supported_events(registry, "opencode") - _opencode_event_payload_types(registry)
+    for hook in (f'"{event}"' for event in direct_hooks):
         if hook not in text:
             errors.append(f"opencode: missing {hook} hook")
     if "validateArtifactCandidate" not in text:

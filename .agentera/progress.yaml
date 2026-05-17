@@ -1,4 +1,148 @@
 cycles:
+- number: 552
+  timestamp: 2026-05-17 07:18
+  type: docs
+  phase: build
+  what: Closed out the Runtime Docs Compatibility Fix Plan.
+  commit: pending
+  inspiration: Orkestrera executed Task 6 after Tasks 1-5 completed the OpenCode and
+    Codex runtime docs compatibility fixes and focused regression coverage.
+  discovered: 'Closeout was limited to artifact synchronization: TODO and CHANGELOG
+    now record the compatibility fixes, PLAN is marked complete, the prior cross-runtime
+    dispatch plan remains archived at `.agentera/archive/PLAN-2026-05-16-cross-runtime-subagent-dispatch-plan.yaml`,
+    and protected vision/objective/decision satisfaction state plus release metadata
+    remained untouched.'
+  verified: '`uv run scripts/agentera validate artifact --artifact TODO.md --file
+    TODO.md` passed. `uv run scripts/agentera validate artifact --artifact CHANGELOG.md
+    --file CHANGELOG.md` passed. `uv run scripts/agentera validate artifact --artifact
+    PLAN.md --file .agentera/plan.yaml` passed. `uv run scripts/agentera validate
+    artifact --artifact PROGRESS.md --file .agentera/progress.yaml` passed. `git diff
+    --check` passed.'
+  next: Active Runtime Docs Compatibility Fix Plan is complete. Remaining open TODOs
+    are direct capability invocation routing and Planera confirmation-boundary guidance.
+    Do not refresh installed apps/profiles, publish, push, tag, change package-manager
+    state, edit vision/objective state, change decision satisfaction, or commit unless
+    explicitly requested.
+  context:
+    intent: Orkestrera execution of Runtime Docs Compatibility Fix Plan Task 6 closeout.
+    constraints: No unsupported capability-name CLI commands, installed app/profile
+      refresh, publication, push, tag, package-manager change, vision/objective edit,
+      decision satisfaction change, or commit.
+    scope: TODO, CHANGELOG, PLAN, and PROGRESS synchronization plus artifact validation.
+- number: 551
+  timestamp: 2026-05-17 07:18
+  type: test
+  phase: build
+  what: Refreshed compatibility regression coverage for plan Task 5.
+  commit: pending
+  inspiration: Orkestrera executed Runtime Docs Compatibility Fix Plan Task 5 after
+    Tasks 1-4 changed OpenCode hook evidence, OpenCode agent descriptors, Codex descriptor
+    paths, and OpenCode lifecycle classification.
+  discovered: 'Existing focused surfaces now cover the revised compatibility contract:
+    runtime adapter tests assert source-backed `chat.message` and direct session-hook
+    rejection, descriptor validation and OpenCode smoke assert documented agent frontmatter
+    plus body ownership markers, Codex setup/upgrade tests assert documented agent
+    directories, and lifecycle validation consumes the updated RuntimeAdapter registry
+    status for session event payloads.'
+  verified: '`uv run scripts/agentera validate descriptors` passed with 24 checks.
+    `uv run pytest tests/test_setup_codex.py tests/test_upgrade_cli.py -q` passed
+    with 42 tests. `uv run pytest tests/test_runtime_adapter_registry.py tests/test_runtime_adapters.py
+    -q` passed with 85 tests. `node scripts/smoke_opencode_bootstrap.mjs` passed.
+    `uv run scripts/validate_lifecycle_adapters.py` passed.'
+  next: Continue Runtime Docs Compatibility Fix Plan with Task 6 closeout. Do not
+    refresh installed apps/profiles, publish, push, tag, change package-manager state,
+    edit vision/objective state, change decision satisfaction, or commit unless explicitly
+    requested.
+  context:
+    intent: Orkestrera execution of Runtime Docs Compatibility Fix Plan Task 5.
+    constraints: No unsupported capability-name CLI commands, installed app/profile
+      refresh, publication, push, tag, package-manager change, vision/objective edit,
+      decision satisfaction change, or commit.
+    scope: Descriptor validation, Codex setup/upgrade tests, runtime-adapter tests,
+      lifecycle validation, OpenCode bootstrap smoke, PLAN, and PROGRESS.
+- number: 550
+  timestamp: 2026-05-17 07:16
+  type: fix
+  phase: build
+  what: Reclassified OpenCode session lifecycle events for plan Task 4.
+  commit: pending
+  inspiration: Orkestrera executed Runtime Docs Compatibility Fix Plan Task 4 after
+    official OpenCode plugin docs and local adapter code showed session lifecycle
+    events arrive through the generic `event` hook as `event.type` payloads.
+  discovered: RuntimeAdapter registry state was still marking `session.created` and
+    `session.idle` as unsupported phantom events even though the plugin handles both
+    through `event`. The registry now records them as supported via event payloads,
+    while lifecycle validation keeps direct hook keys rejected and still preserves
+    the separate session-preload context-injection caveat.
+  verified: '`uv run pytest tests/test_runtime_adapter_registry.py tests/test_runtime_adapters.py
+    -q` passed with 85 tests. `uv run scripts/validate_lifecycle_adapters.py` passed.
+    `node scripts/smoke_opencode_bootstrap.mjs` passed.'
+  next: Continue Runtime Docs Compatibility Fix Plan with Task 5. Do not refresh installed
+    apps/profiles, publish, push, tag, change package-manager state, edit vision/objective
+    state, change decision satisfaction, or commit unless explicitly requested.
+  context:
+    intent: Orkestrera execution of Runtime Docs Compatibility Fix Plan Task 4.
+    constraints: No unsupported capability-name CLI commands, installed app/profile
+      refresh, publication, push, tag, package-manager change, vision/objective edit,
+      decision satisfaction change, or commit.
+    scope: '`references/adapters/runtime-adapter-registry.yaml`, lifecycle validation,
+      runtime-adapter tests, OpenCode bootstrap smoke, PLAN, and PROGRESS.'
+- number: 549
+  timestamp: 2026-05-17 07:12
+  type: fix
+  phase: build
+  what: Constrained Codex descriptor discovery paths for plan Task 3.
+  commit: pending
+  inspiration: Orkestrera executed Runtime Docs Compatibility Fix Plan Task 3 after
+    official Codex subagent docs defined custom agent files under personal `~/.codex/agents/`
+    or project `.codex/agents/` directories.
+  discovered: '`setup_codex.py` was still deriving descriptor output from any arbitrary
+    `--config-file` parent. It now infers defaults only for documented `.codex/config.toml`
+    layouts and requires explicit `--agents-dir` for nonstandard config paths, while
+    upgrade keeps writing the documented managed `~/.codex/agents` runtime target.'
+  verified: '`uv run pytest tests/test_setup_codex.py -q` passed with 12 tests. `uv
+    run scripts/agentera validate descriptors` passed with 24 checks. `uv run pytest
+    tests/test_setup_codex.py tests/test_upgrade_cli.py -q` passed with 42 tests.
+    `uv run pytest tests/test_runtime_adapter_registry.py tests/test_runtime_adapters.py
+    -q` passed with 85 tests.'
+  next: Continue Runtime Docs Compatibility Fix Plan with Task 4. Do not refresh installed
+    apps/profiles, publish, push, tag, change package-manager state, edit vision/objective
+    state, change decision satisfaction, or commit unless explicitly requested.
+  context:
+    intent: Orkestrera execution of Runtime Docs Compatibility Fix Plan Task 3.
+    constraints: No unsupported capability-name CLI commands, installed app/profile
+      refresh, publication, push, tag, package-manager change, vision/objective edit,
+      decision satisfaction change, or commit.
+    scope: '`scripts/setup_codex.py`, `tests/test_setup_codex.py`, Codex upgrade/runtime
+      adapter tests, runtime feature parity docs, PLAN, and PROGRESS.'
+- number: 548
+  timestamp: 2026-05-17 07:02
+  type: fix
+  phase: build
+  what: Normalized OpenCode managed agent descriptors for plan Task 2.
+  commit: pending
+  inspiration: Orkestrera executed Runtime Docs Compatibility Fix Plan Task 2 after
+    official OpenCode markdown agent docs showed agent names come from filenames and
+    custom frontmatter is passed through as model options.
+  discovered: 'OpenCode descriptor ownership needed two paths: source descriptors
+    now use only documented `description` and `mode: subagent` frontmatter with a
+    body marker, while bootstrap still recognizes legacy `agentera_managed` frontmatter
+    targets as Agentera-owned for one-way refresh.'
+  verified: '`node scripts/smoke_opencode_bootstrap.mjs` passed. `uv run scripts/agentera
+    validate descriptors` passed with 24 checks. `uv run pytest tests/test_validate_namespace.py
+    tests/test_runtime_adapters.py -q` passed with 86 tests. `git diff --check` passed.'
+  next: Continue Runtime Docs Compatibility Fix Plan with Task 3 or Task 4. Do not
+    refresh installed apps/profiles, publish, push, tag, change package-manager state,
+    edit vision/objective state, change decision satisfaction, or commit unless explicitly
+    requested.
+  context:
+    intent: Orkestrera execution of Runtime Docs Compatibility Fix Plan Task 2.
+    constraints: No unsupported capability-name CLI commands, installed app/profile
+      refresh, publication, push, tag, package-manager change, vision/objective edit,
+      decision satisfaction change, or commit.
+    scope: '`.opencode/agents/*.md`, `.opencode/plugins/agentera.js`, descriptor validation,
+      OpenCode bootstrap smoke, runtime-adapter tests, OpenCode adapter docs, PLAN,
+      and PROGRESS.'
 - number: 547
   timestamp: 2026-05-16 17:14
   type: fix
@@ -7,20 +151,20 @@ cycles:
   commit: pending
   inspiration: Realisera executed Runtime Docs Compatibility Fix Plan Task 1 after
     public OpenCode plugin docs omitted the raw-message hook.
-  discovered: OpenCode `packages/plugin/src/index.ts` defines `chat.message` on
-    the exported Hooks interface, so Layer 1 routing is source-backed despite the
-    public-docs omission.
+  discovered: OpenCode `packages/plugin/src/index.ts` defines `chat.message` on the
+    exported Hooks interface, so Layer 1 routing is source-backed despite the public-docs
+    omission.
   verified: '`node scripts/smoke_opencode_bootstrap.mjs` passed. `uv run pytest tests/test_runtime_adapters.py
     tests/test_runtime_adapter_registry.py -q` passed with 85 tests. `uv run scripts/validate_lifecycle_adapters.py`
-    passed. Source and test surfaces preserve exact bare-`hej` routing through
-    `chat.message`, reject broad greeting matching, and preserve `event`, `shell.env`,
-    and tool hooks.'
+    passed. Source and test surfaces preserve exact bare-`hej` routing through `chat.message`,
+    reject broad greeting matching, and preserve `event`, `shell.env`, and tool hooks.'
   next: Continue Runtime Docs Compatibility Fix Plan with Task 2 or Task 3. Do not
     refresh installed apps/profiles, publish, push, tag, change package-manager state,
     edit vision/objective state, change decision satisfaction, or commit unless explicitly
     requested.
   context:
-    intent: Realisera execution of Runtime Docs Compatibility Fix Plan Task 1 with corrected OpenCode source evidence.
+    intent: Realisera execution of Runtime Docs Compatibility Fix Plan Task 1 with
+      corrected OpenCode source evidence.
     constraints: No unsupported capability-name CLI commands, installed app/profile
       refresh, publication, push, tag, package-manager change, vision/objective edit,
       decision satisfaction change, or commit.
@@ -150,139 +294,17 @@ cycles:
       state, change decision satisfaction, or commit.
     scope: '`scripts/agentera_upgrade.py`, `scripts/agentera`, focused tests, PLAN
       and PROGRESS evidence updates.'
-- number: 542
-  timestamp: 2026-05-16 08:54
-  type: docs
-  phase: deliberate
-  what: Defined the doctor app metadata vocabulary contract for Plan Task 2.
-  commit: pending
-  inspiration: Orkestrera selected the next dependency-ready task after Task 1 reproduced
-    the ready-state doctor output ambiguity.
-  discovered: Doctor/hej app metadata currently uses `fresh`, `update_needed`, `stale`,
-    `migration_required`, and `blocked`; upgrade preview/apply operation statuses
-    use `pending`, `applied`, `noop`, `blocked`, `failed`, and `skipped`. These are
-    distinct status families, so only the doctor/upgrade app repair UX is in scope
-    now.
-  verified: 'Marked Plan Task 2 complete and added `app_metadata_vocabulary` to the
-    active plan: app states map to `up_to_date`, `outdated`, `repair_needed`, `migration_needed`,
-    and `manual_review_needed`; upgrade operation statuses map to `ready_to_apply`,
-    `applied`, `no_changes_needed`, `manual_review_needed`, `failed`, and `skipped`.
-    No compatibility aliases are retained by default; Task 3 may add only concrete
-    transitional aliases.'
-  next: Continue with Plan Task 3, implementing the minimal doctor rendering/status
-    change while preserving dry-run/apply/retry safety and deferring broader vocabulary
-    renames.
-  context:
-    intent: Orkestrera execution of Doctor Ready Next Output Plan Task 2
-    constraints: Do not rename capability names, artifact names or paths, exit signals,
-      general task statuses, health grades, broad prose, or `docs/vocabulary.md`;
-      no package-manager state, installed app/profile refresh, publication, push,
-      tag, vision/objective state, decision satisfaction, or commit.
-    scope: Status-surface review and PLAN/PROGRESS evidence updates only.
-- number: 541
-  timestamp: 2026-05-16 08:49
-  type: test
-  phase: audit
-  what: Reproduced doctor ready-state output ambiguity for Plan Task 1.
-  commit: pending
-  inspiration: Orkestrera selected the first dependency-ready task in the active Doctor
-    Ready Next Output Plan.
-  discovered: 'The installed app is healthy but the text renderer still presents repair
-    steps. `agentera doctor` shows `status: ready` followed by preview/apply/retry
-    repair commands, while `agentera doctor --json` reports `status=fresh`, `signals=[]`,
-    `expectedVersion=2.4.0`, and `markerVersion=2.4.0`.'
-  verified: Marked Plan Task 1 complete with evidence. Dry-run command formatting
-    is generated by `scripts/agentera_upgrade.py` `preview_parts` and `_command_text`,
-    and the reproduced text contains correct spacing before `--dry-run`.
-  next: Continue with Plan Task 2, defining the doctor app metadata vocabulary while
-    preserving Decision 54 boundaries and deferring broader vocabulary renames until
-    inventory and a separate Resonera decision.
-  context:
-    intent: Orkestrera execution of Doctor Ready Next Output Plan Task 1
-    constraints: Evidence-only reproduction; do not change upgrade semantics, installed
-      app/profile state, package-manager state, vision/objective state, decision satisfaction,
-      publishing, pushing, tagging, or committing.
-    scope: Doctor text/JSON probes, command-formatting seam inspection, PLAN and PROGRESS
-      evidence updates.
-- number: 540
-  timestamp: 2026-05-16 08:45
-  type: docs
-  phase: deliberate
-  what: Expanded Decision 54 with broader vocabulary inventory boundaries.
-  commit: pending
-  inspiration: User asked to add capability names, artifact names, exit signals, task
-    statuses, health grades, and general prose as rename targets that need thorough
-    inventory and review instead of being silently folded into the doctor app-metadata
-    change.
-  discovered: The immediate doctor issue is still app metadata vocabulary, but wider
-    vocabulary seams are protocol identity surfaces with different compatibility costs.
-    A structured `vocabulary.yaml` replacement for `docs/vocabulary.md` needs its
-    own Resonera decision before implementation.
-  verified: Updated Decision 54 to keep the hard rename for doctor/hej/upgrade app
-    metadata while explicitly deferring broader renames until inventory, consumer
-    review, and a separate Resonera decision on `vocabulary.yaml`. Updated the active
-    Doctor Ready Next Output Plan so broader vocabulary migration remains inventory-gated
-    and out of scope for the doctor rendering fix.
-  next: Validate DECISIONS, PLAN, PROGRESS, TODO, compaction, and whitespace. Continue
-    the active doctor plan only after preserving the broader vocabulary boundary.
-  context:
-    intent: Decision 54 expansion for vocabulary governance
-    constraints: Do not rename capability names, artifact names or paths, exit signals,
-      task statuses, health grades, or general prose in the doctor implementation;
-      decide any `vocabulary.yaml` replacement through a later Resonera deliberation.
-    scope: DECISIONS, PLAN, and PROGRESS updates only.
-- number: 539
-  timestamp: 2026-05-16 08:35
-  type: docs
-  phase: deliberate
-  what: Recorded Decision 54 for app metadata vocabulary convergence.
-  commit: pending
-  inspiration: User correction required real Resonera deliberation with questions
-    before recording a stance on app metadata vocabulary.
-  discovered: The deliberation selected one vocabulary as the first priority, standard
-    app terms as the starting candidate, hard rename now as the migration strictness,
-    and a separate decision before implementation.
-  verified: 'Added Decision 54 to `.agentera/decisions.yaml`: hard-rename app metadata
-    toward canonical terms such as `up_to_date`, `outdated`, `repair_needed`, `migration_needed`,
-    `manual_review_needed`, `ready_to_apply`, `applied`, and `no_changes_needed`;
-    avoid `fresh`, `stale`, `refresh`, and `fixed` as canonical status words; retain
-    compatibility aliases only for concrete existing consumers.'
-  next: Continue the active doctor plan with Decision 54 as the vocabulary authority.
-    Validate decisions, plan, progress, TODO, compaction, and whitespace after this
-    update.
-  context:
-    intent: Resonera deliberation correction and decision recording
-    constraints: Ask the user questions before deciding; avoid internal/public vocabulary
-      divergence by default; do not implement yet.
-    scope: DECISIONS, PLAN, and PROGRESS updates only.
-- number: 538
-  timestamp: 2026-05-16 08:35
-  type: docs
-  phase: deliberate
-  what: Tightened doctor plan around app metadata vocabulary convergence.
-  commit: pending
-  inspiration: User feedback rejected an easy internal-versus-user-facing status split
-    for app metadata and noted a repeated routing failure where an explicit `resonera`
-    request did not trigger true Resonera deliberation.
-  discovered: The current doctor plan already covered misleading ready-state `Next:`
-    output, but it was too willing to keep internal labels such as `fresh`, `stale`,
-    `refresh`, and `fixed` while only changing public text. That risks repeating prior
-    terminology divergence problems such as bundle/app and DECISIONS.md/decisions.yaml.
-  verified: Added a Normal-priority TODO to fix explicit Agentera capability invocation
-    routing so `resonera ...` cannot silently degrade into generic analysis. Updated
-    `.agentera/plan.yaml` so Task 2 defines app metadata vocabulary as a contract,
-    prefers shared canonical terms across JSON and text, and allows old JSON values
-    only as documented compatibility aliases when consumers require them.
-  next: Continue Doctor Ready Next Output Plan Task 1, but carry the stronger vocabulary-convergence
-    stance into Task 2 before implementation. Do not commit, publish, push, tag, refresh
-    installed apps/profiles, edit vision/objective state, or change decision satisfaction
-    unless explicitly requested.
-  context:
-    intent: Resonera correction for app metadata vocabulary
-    constraints: Log missed capability-routing issue as TODO; avoid unexamined internal/public
-      vocabulary divergence; preserve compatibility only with explicit rationale.
-    scope: TODO, PLAN, and PROGRESS updates only.
 archive:
+- summary: 'Cycle 542 (2026-05-16): Defined the doctor app metadata vocabulary contract
+    for Plan Task 2.'
+- summary: 'Cycle 541 (2026-05-16): Reproduced doctor ready-state output ambiguity
+    for Plan Task 1.'
+- summary: 'Cycle 540 (2026-05-16): Expanded Decision 54 with broader vocabulary inventory
+    boundaries.'
+- summary: 'Cycle 539 (2026-05-16): Recorded Decision 54 for app metadata vocabulary
+    convergence.'
+- summary: 'Cycle 538 (2026-05-16): Tightened doctor plan around app metadata vocabulary
+    convergence.'
 - summary: 'Cycle 537 (2026-05-16): Planned the doctor ready-state Next output fix.'
 - summary: 'Cycle 536 (2026-05-16): Closed out transcript lint threshold analysis
     with full-file PLAN.md lint behavior.'
@@ -352,13 +374,3 @@ archive:
     and legacy semantics for Decision 53.'
 - summary: 'Cycle 503 (2026-05-15): Completed PLAN Task 7 local closeout metadata
     sync for the 2.3.12 Realisera execution-context source-contract patch.'
-- summary: 'Cycle 502 (2026-05-15): Completed PLAN Task 7 local closeout metadata
-    sync for the 2.3.11 Optimera benchmark-context source-contract patch.'
-- summary: 'Cycle 501 (2026-05-15): Completed PLAN Task 7 local closeout metadata
-    sync for the 2.3.10 Inspektera evidence-context source-contract patch.'
-- summary: 'Cycle 500 (2026-05-15): Completed PLAN Task 6 evaluation startup fixtures
-    and validation gates for Inspektera evidence_context.'
-- summary: 'Cycle 499 (2026-05-15): Completed PLAN Task 5 focused evidence-context
-    regression coverage for Inspektera.'
-- summary: 'Cycle 498 (2026-05-15): Completed PLAN Task 4 Inspektera guidance and
-    schema integration for the evidence_context source contract.'

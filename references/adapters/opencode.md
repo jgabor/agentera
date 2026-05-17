@@ -110,6 +110,8 @@ Read PROFILE.md from the runtime-provided profile path (Section 21). In OpenCode
 
 - Define Agentera's dispatched capabilities as OpenCode subagents
 - Each capability gets a managed markdown file in `.opencode/agents/`
+- Descriptor frontmatter stays within documented OpenCode agent fields: `description` and `mode: subagent`; the file name supplies the agent name.
+- Agentera ownership is recorded in a body comment marker, not custom frontmatter, so unknown options are not passed through as model options.
 - The OpenCode plugin copies those descriptors to `~/.config/opencode/agents/` on startup and preserves user-owned collisions
 - The orchestrating skill (realisera, orkestrera) uses `@<capability>` to invoke work
 - Limitation: runs in the same working tree, not isolated. Suitable for non-destructive work.

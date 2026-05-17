@@ -45,7 +45,14 @@ def test_runtime_adapter_registry_returns_current_runtimes_in_deterministic_orde
         "Copilot CLI",
         "Codex CLI",
     ]
-    assert "chat.message" in registry.get("opencode")["lifecycle_events"]["supported_events"]
+    opencode_lifecycle = registry.get("opencode")["lifecycle_events"]
+    assert "chat.message" in opencode_lifecycle["supported_events"]
+    assert "session.created" in opencode_lifecycle["supported_events"]
+    assert "session.idle" in opencode_lifecycle["supported_events"]
+    assert "session.created" not in opencode_lifecycle["unsupported_events"]
+    assert "session.idle" not in opencode_lifecycle["unsupported_events"]
+    assert opencode_lifecycle["event_status"]["session.created"] == "supported_via_event"
+    assert opencode_lifecycle["event_status"]["session.idle"] == "supported_via_event"
     assert registry.get("opencode")["subagent_dispatch"]["invocation_pattern"].startswith("Use @<capability>")
     assert "skills/agentera/agents/*.toml" in registry.get("codex")["subagent_dispatch"]["descriptor_sources"]
 

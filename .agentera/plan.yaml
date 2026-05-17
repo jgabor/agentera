@@ -1,7 +1,7 @@
 header:
   level: full
   created: 2026-05-16
-  status: active
+  status: complete
   reviewed: 2026-05-16
   critic_issues: 5 found, 5 addressed, 0 dismissed
   revised: >-
@@ -75,7 +75,7 @@ tasks:
     name: Normalize OpenCode agent descriptors
     depends_on:
       - 1
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN official OpenCode markdown agent docs WHEN `.opencode/agents/*.md` is inspected THEN each
@@ -89,7 +89,7 @@ tasks:
   - number: 3
     name: Constrain Codex descriptor discovery paths
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN official Codex custom agent docs WHEN `setup_codex.py` chooses a default descriptor target
@@ -105,7 +105,7 @@ tasks:
     name: Reclassify OpenCode session lifecycle events
     depends_on:
       - 1
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN official OpenCode plugin docs expose session events through `event` WHEN registry and docs
@@ -123,7 +123,7 @@ tasks:
       - 2
       - 3
       - 4
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN the five findings are fixed WHEN focused tests run THEN coverage asserts source-backed
@@ -139,7 +139,7 @@ tasks:
     name: Synchronize artifacts and hand off implementation
     depends_on:
       - 5
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN implementation evidence exists WHEN closeout happens THEN TODO, CHANGELOG, PROGRESS, and

@@ -61,6 +61,12 @@ def _run(setup_codex: ModuleType, *args: str) -> int:
     return setup_codex.main(list(args))
 
 
+def _codex_config(tmp_path: Path) -> Path:
+    path = tmp_path / ".codex" / "config.toml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 def _write_current_descriptors(setup_codex: ModuleType, install_root: Path, agents_dir: Path) -> None:
     changes = setup_codex.plan_agent_descriptor_changes(install_root, agents_dir, force=False)
     setup_codex.write_agent_descriptor_changes(changes)
@@ -75,7 +81,7 @@ def test_branch1_fresh_write(
     setup_codex: ModuleType, tmp_path: Path, install_root: Path, capsys
 ):
     """Branch 1: absent file → fresh write with shell env, agent limits, descriptors."""
-    target = tmp_path / "config.toml"
+    target = _codex_config(tmp_path)
     assert not target.exists()
 
     rc = _run(
@@ -113,7 +119,7 @@ def test_branch2_section_absent_appends(
     setup_codex: ModuleType, tmp_path: Path, install_root: Path, capsys
 ):
     """Branch 2: file exists with other tables, no section → append, others byte-identical."""
-    target = tmp_path / "config.toml"
+    target = _codex_config(tmp_path)
     pre_existing = (
         '[unrelated]\n'
         'name = "keep me"\n'
@@ -142,7 +148,7 @@ def test_branch3_section_without_set(
     setup_codex: ModuleType, tmp_path: Path, install_root: Path, capsys
 ):
     """Branch 3: section exists without `set` → insert set line, other tables byte-identical."""
-    target = tmp_path / "config.toml"
+    target = _codex_config(tmp_path)
     pre_existing = (
         '[shell_environment_policy]\n'
         'inherit = "core"\n'
@@ -181,7 +187,7 @@ def test_branch4_noop_byte_identical(
     setup_codex: ModuleType, tmp_path: Path, install_root: Path, capsys
 ):
     """Branch 4: AGENTERA_HOME already at desired value → exit 0, byte-identical (AC2)."""
-    target = tmp_path / "config.toml"
+    target = _codex_config(tmp_path)
     pre_existing = (
         '[shell_environment_policy]\n'
         f'set = {{ AGENTERA_HOME = "{install_root}" }}\n'
@@ -212,7 +218,7 @@ def test_branch5_conflict_refuses(
     setup_codex: ModuleType, tmp_path: Path, install_root: Path, capsys
 ):
     """Branch 5: sibling keys without AGENTERA_HOME → exit non-zero, no write."""
-    target = tmp_path / "config.toml"
+    target = _codex_config(tmp_path)
     pre_existing = (
         '[shell_environment_policy]\n'
         'set = { LANG = "en_US.UTF-8", PATH = "/usr/bin" }\n'
@@ -240,7 +246,7 @@ def test_branch6_force_merges(
     setup_codex: ModuleType, tmp_path: Path, install_root: Path, capsys
 ):
     """Branch 6: --force merges AGENTERA_HOME alongside sibling keys; siblings preserved."""
-    target = tmp_path / "config.toml"
+    target = _codex_config(tmp_path)
     pre_existing = (
         '[shell_environment_policy]\n'
         'set = { LANG = "en_US.UTF-8", PATH = "/usr/bin" }\n'
@@ -285,7 +291,7 @@ def test_install_root_invalid_rejected(
     """AC5: --install-root path missing canonical entries exits non-zero with names."""
     bogus_root = tmp_path / "not-an-install"
     bogus_root.mkdir()
-    target = tmp_path / "config.toml"
+    target = _codex_config(tmp_path)
 
     rc = _run(
         setup_codex,
@@ -316,7 +322,7 @@ def test_auto_detect_failure_message(
     # find the live agentera repo because the script lives under it).
     monkeypatch.setattr(setup_codex, "auto_detect_install_root", lambda: None)
 
-    target = tmp_path / "config.toml"
+    target = _codex_config(tmp_path)
     rc = _run(setup_codex, "--config-file", str(target))
     err = capsys.readouterr().err
     assert rc == 2
@@ -328,7 +334,7 @@ def test_dry_run_pending_exits_1(
     setup_codex: ModuleType, tmp_path: Path, install_root: Path, capsys
 ):
     """AC7: --dry-run with a pending change writes nothing and exits 1."""
-    target = tmp_path / "config.toml"
+    target = _codex_config(tmp_path)
     assert not target.exists()
 
     rc = _run(
@@ -351,7 +357,7 @@ def test_dry_run_noop_exits_0(
     setup_codex: ModuleType, tmp_path: Path, install_root: Path, capsys
 ):
     """AC7: --dry-run when no change is needed exits 0."""
-    target = tmp_path / "config.toml"
+    target = _codex_config(tmp_path)
     pre_existing = (
         '[shell_environment_policy]\n'
         f'set = {{ AGENTERA_HOME = "{install_root}" }}\n'
@@ -382,7 +388,7 @@ def test_enable_agents_is_v2_noop(
     setup_codex: ModuleType, tmp_path: Path, install_root: Path, capsys
 ):
     """Agentera v2 installs descriptor files; --enable-agents must not write v1 config paths."""
-    target = tmp_path / "config.toml"
+    target = _codex_config(tmp_path)
 
     rc = _run(
         setup_codex,
@@ -400,3 +406,37 @@ def test_enable_agents_is_v2_noop(
     assert f'AGENTERA_HOME = "{install_root}"' in text
     assert "[agents." not in text
     assert "skills/hej" not in text
+
+
+def test_nonstandard_config_file_requires_explicit_agents_dir(
+    setup_codex: ModuleType, tmp_path: Path, install_root: Path, capsys
+):
+    target = tmp_path / "isolated-config.toml"
+
+    rc = _run(
+        setup_codex,
+        "--install-root",
+        str(install_root),
+        "--config-file",
+        str(target),
+        "--dry-run",
+    )
+    out = capsys.readouterr()
+    assert rc == 2
+    assert "--agents-dir" in out.err
+    assert not target.exists()
+
+    agents_dir = tmp_path / "explicit-agents"
+    rc = _run(
+        setup_codex,
+        "--install-root",
+        str(install_root),
+        "--config-file",
+        str(target),
+        "--agents-dir",
+        str(agents_dir),
+    )
+    out = capsys.readouterr()
+    assert rc == 0, out
+    assert target.exists()
+    assert (agents_dir / "realisera.toml").is_file()

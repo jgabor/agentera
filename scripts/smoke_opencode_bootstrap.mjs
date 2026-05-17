@@ -47,12 +47,14 @@ try {
     bootstrapSkills,
     COMMAND_TEMPLATES,
     AGENTERA_VERSION,
+    AGENTERA_AGENT_MARKER,
     REQUIRED_AGENT_NAMES,
     OPENCODE_SKILL_INSTALL_COMMAND,
     commandBootstrap,
     agentBootstrap,
     skillBootstrap,
     hasManagedMarker,
+    hasManagedAgentMarker,
     resolveAgenteraAppHome,
     resolveDefaultAgenteraAppHome,
     resolveAgenteraHome,
@@ -170,9 +172,14 @@ try {
   for (const name of REQUIRED_AGENT_NAMES) {
     const filePath = path.join(agentsDir, `${name}.md`);
     assert(fs.existsSync(filePath), `${name}.md should exist after agent descriptor bootstrap`);
-    assert(hasManagedMarker(filePath), `${name}.md should contain agentera_managed: true in frontmatter`);
+    const descriptorText = fs.readFileSync(filePath, "utf8");
+    assert(hasManagedAgentMarker(filePath), `${name}.md should contain the Agentera body marker`);
+    assert(!descriptorText.includes("\nname:"), `${name}.md should rely on filename for agent name`);
+    assert(!descriptorText.includes("agentera_managed:"), `${name}.md should not use custom frontmatter`);
+    assert(descriptorText.includes("mode: subagent"), `${name}.md should declare documented subagent mode`);
+    assert(descriptorText.includes(AGENTERA_AGENT_MARKER), `${name}.md should include the managed body marker`);
     assert(
-      fs.readFileSync(filePath, "utf8").includes(`capabilities/${name}/prose.md`),
+      descriptorText.includes(`capabilities/${name}/prose.md`),
       `${name}.md should point to the capability prose source`
     );
   }
@@ -180,6 +187,22 @@ try {
     fs.readFileSync(path.join(agentsDir, ".agentera-version"), "utf8").trim() === AGENTERA_VERSION,
     "agent descriptor marker should equal AGENTERA_VERSION"
   );
+
+  // --- Test 1d.1: Legacy managed agent descriptor frontmatter is migrated ---
+  const legacyManagedAgent = path.join(agentsDir, "realisera.md");
+  fs.writeFileSync(
+    legacyManagedAgent,
+    "---\nname: realisera\ndescription: stale realisera\nagentera_managed: true\n---\nLegacy managed descriptor.\n"
+  );
+  const legacyAgentReport = bootstrapAgents();
+  assert(
+    legacyAgentReport.refreshed.includes("realisera"),
+    "bootstrapAgents should refresh legacy managed descriptor frontmatter"
+  );
+  const migratedAgentText = fs.readFileSync(legacyManagedAgent, "utf8");
+  assert(!migratedAgentText.includes("agentera_managed:"), "migrated agent descriptor must remove custom frontmatter");
+  assert(migratedAgentText.includes("mode: subagent"), "migrated agent descriptor must use documented subagent mode");
+  assert(hasManagedAgentMarker(legacyManagedAgent), "migrated agent descriptor must use the body marker");
 
   // --- Test 1e: Agent descriptor bootstrap preserves user-owned collisions ---
   const userOwnedAgent = path.join(agentsDir, "realisera.md");
