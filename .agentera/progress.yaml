@@ -1,4 +1,34 @@
 cycles:
+- number: 558
+  timestamp: 2026-05-17 11:42
+  type: docs
+  phase: build
+  what: Documented the helper-script classification policy and canonical CLI examples.
+  commit: pending
+  inspiration: Orkestrera executed the final Helper Script Classification Policy plan
+    to close the remaining 2.5.x helper cleanup and policy TODOs without removing
+    backward-compatible direct helpers.
+  discovered: The safe cleanup was documentation and regression coverage, not script
+    deletion. Direct helpers still serve tests, maintainers, setup/smoke/eval seams,
+    and local-only analysis surfaces, while normal user and agent workflows should
+    route through `agentera` namespaces first.
+  verified: '`uv run pytest tests/test_helper_script_policy.py tests/test_validate_namespace.py
+    tests/test_usage_namespace.py -q` passed with 25 tests. `uv run pytest -q` passed
+    with 1106 tests. Touched artifact validators for TODO, CHANGELOG, PLAN, PROGRESS,
+    and DOCS passed. `uv run scripts/agentera compact --mode check --format json`
+    passed after safe compaction fix trimmed TODO/PROGRESS retained logs. `git diff
+    --check` passed.'
+  next: Commit the helper-policy batch, then audit the active 2.5.x/2.5.0 goal for
+    completion.
+  context:
+    intent: Orkestrera execution of the Helper Script Classification Policy plan.
+    constraints: Preserve direct helper compatibility where it is a maintainer or
+      backward-compatible seam; keep internal support modules private; keep corpus
+      generation behind `agentera stats refresh`; no installed app/profile refresh,
+      publication, push, tag, package-manager change, vision/objective edit, or decision
+      satisfaction change.
+    scope: README, UPGRADE, AGENTS.md, `skills/agentera/SKILL.md`, helper-policy tests,
+      TODO, CHANGELOG, PLAN, DOCS, and PROGRESS.
 - number: 557
   timestamp: 2026-05-17 11:18
   type: feat
@@ -13,10 +43,10 @@ cycles:
     corpus and a separate `stats refresh` path that previews by default and requires
     `--consent local-history` before delegating to `extract_corpus.py`.
   verified: '`uv run pytest tests/test_usage_namespace.py tests/test_usage_stats.py
-    -q` passed with 59 tests. `uv run pytest -q` passed with 1103 tests. Touched
-    artifact validators for TODO, CHANGELOG, PLAN, PROGRESS, and DOCS passed. `uv
-    run scripts/agentera compact --mode check --format json` passed after safe compaction
-    fix trimmed TODO/PROGRESS retained logs. `git diff --check` passed.'
+    -q` passed with 59 tests. `uv run pytest -q` passed with 1103 tests. Touched artifact
+    validators for TODO, CHANGELOG, PLAN, PROGRESS, and DOCS passed. `uv run scripts/agentera
+    compact --mode check --format json` passed after safe compaction fix trimmed TODO/PROGRESS
+    retained logs. `git diff --check` passed.'
   next: Commit the stats batch, then continue remaining 2.5.x helper-script cleanup
     and classification-policy seams.
   context:
@@ -283,35 +313,9 @@ cycles:
       decision satisfaction change, or commit.
     scope: '`scripts/setup_codex.py`, `tests/test_setup_codex.py`, Codex upgrade/runtime
       adapter tests, runtime feature parity docs, PLAN, and PROGRESS.'
-- number: 548
-  timestamp: 2026-05-17 07:02
-  type: fix
-  phase: build
-  what: Normalized OpenCode managed agent descriptors for plan Task 2.
-  commit: pending
-  inspiration: Orkestrera executed Runtime Docs Compatibility Fix Plan Task 2 after
-    official OpenCode markdown agent docs showed agent names come from filenames and
-    custom frontmatter is passed through as model options.
-  discovered: 'OpenCode descriptor ownership needed two paths: source descriptors
-    now use only documented `description` and `mode: subagent` frontmatter with a
-    body marker, while bootstrap still recognizes legacy `agentera_managed` frontmatter
-    targets as Agentera-owned for one-way refresh.'
-  verified: '`node scripts/smoke_opencode_bootstrap.mjs` passed. `uv run scripts/agentera
-    validate descriptors` passed with 24 checks. `uv run pytest tests/test_validate_namespace.py
-    tests/test_runtime_adapters.py -q` passed with 86 tests. `git diff --check` passed.'
-  next: Continue Runtime Docs Compatibility Fix Plan with Task 3 or Task 4. Do not
-    refresh installed apps/profiles, publish, push, tag, change package-manager state,
-    edit vision/objective state, change decision satisfaction, or commit unless explicitly
-    requested.
-  context:
-    intent: Orkestrera execution of Runtime Docs Compatibility Fix Plan Task 2.
-    constraints: No unsupported capability-name CLI commands, installed app/profile
-      refresh, publication, push, tag, package-manager change, vision/objective edit,
-      decision satisfaction change, or commit.
-    scope: '`.opencode/agents/*.md`, `.opencode/plugins/agentera.js`, descriptor validation,
-      OpenCode bootstrap smoke, runtime-adapter tests, OpenCode adapter docs, PLAN,
-      and PROGRESS.'
 archive:
+- summary: 'Cycle 548 (2026-05-17): Normalized OpenCode managed agent descriptors
+    for plan Task 2.'
 - summary: 'Cycle 547 (2026-05-16): Reconciled source-backed OpenCode bare-message
     hook usage for plan Task 1.'
 - summary: 'Cycle 546 (2026-05-16): Completed the Cross-runtime Subagent Dispatch
@@ -389,5 +393,3 @@ archive:
     for the 2.3.13 Decision satisfaction tracking patch.'
 - summary: 'Cycle 509 (2026-05-15): Added PLAN Task 6 focused regression coverage
     and prepared validation gates.'
-- summary: 'Cycle 508 (2026-05-15): Added PLAN Task 5 capability guidance for decision
-    satisfaction authority boundaries.'

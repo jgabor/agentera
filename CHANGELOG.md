@@ -12,6 +12,7 @@
 
 ### Changed
 
+- Helper-script docs now classify `agentera` namespaces as the canonical user-facing entry points while retaining direct scripts as backward-compatible maintainer seams, private support modules, explicit local analysis surfaces, or generators; validation examples now route through `agentera validate` first.
 - `agentera stats` is now the canonical user-facing usage analytics workflow: plain stats reads only the existing internal corpus, refresh dry-runs report privacy-safe diagnostics without reading runtime history or writing corpus files, consented refresh writes `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`, and `agentera usage` remains compatible for existing callers.
 - `agentera validate` now covers stable repository validators for cross-capability artifact graphs, lifecycle adapter metadata, app-home contract terminology, and capability schema contract self/protocol checks while preserving the direct helper scripts as maintainer seams.
 - OpenCode package metadata now exposes `.opencode/plugins/agentera.js` through `.opencode/package.json` `main` and `exports` for npm-style plugin loading while preserving the project-local plugin install path and keeping `.opencode/package.json` out of suite version authority.

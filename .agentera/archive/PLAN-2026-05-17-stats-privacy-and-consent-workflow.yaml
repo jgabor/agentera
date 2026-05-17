@@ -1,0 +1,95 @@
+header:
+  level: light
+  created: 2026-05-17
+  status: complete
+  title: Stats Privacy and Consent Workflow
+what: >-
+  Add `agentera stats` as the canonical user-facing usage analytics workflow over
+  the existing usage analytics engine, with explicit local-history consent for
+  corpus refresh and no top-level `agentera corpus` command.
+why: >-
+  `agentera usage` already provides analytics over an existing corpus, but the
+  remaining 2.5.x TODO requires a safer user-facing workflow: plain stats must not
+  touch runtime history, refresh previews must be dry-run safe, and extraction must
+  require explicit consent before reading local runtime stores.
+constraints: >-
+  Preserve `agentera usage` compatibility and direct `scripts/usage_stats.py`
+  behavior. Do not expose `agentera corpus`. Plain `stats` and `stats refresh
+  --dry-run` must not read local runtime history or write corpus files. Do not
+  refresh installed apps/profiles beyond the explicitly consented internal corpus,
+  publish, push, tag, change package-manager state, edit `.agentera/vision.yaml`,
+  mutate objective state, or change decision satisfaction state.
+tasks:
+  - number: 1
+    name: Add safe `agentera stats` read workflow
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN no internal corpus exists WHEN `agentera stats` runs THEN it does not
+        run extraction, does not write profile artifacts, and points to `agentera
+        stats refresh --dry-run`.
+      - >-
+        GIVEN an internal corpus already exists WHEN `agentera stats --format json`
+        runs THEN it analyzes that corpus through the usage engine without requiring
+        `--corpus`.
+    evidence: >-
+      `agentera stats` checks only `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`
+      before delegating to the usage engine. Missing or unusable corpus data exits
+      with `agentera stats refresh --dry-run` guidance, while JSON mode analyzes an
+      existing internal corpus without a caller-facing `--corpus` option.
+  - number: 2
+    name: Add consent-gated corpus refresh
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `agentera stats refresh --dry-run` runs WHEN no consent is provided
+        THEN it reports bounded diagnostics and writes no corpus.
+      - >-
+        GIVEN `agentera stats refresh` runs without `--consent local-history` WHEN
+        extraction would be needed THEN it fails with actionable privacy guidance.
+      - >-
+        GIVEN `--consent local-history` is provided WHEN refresh runs THEN the
+        internal corpus is written at `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`.
+    evidence: >-
+      `agentera stats refresh --dry-run` emits a privacy payload with
+      `local_history_read=false` and `corpus_write=false`. Refresh without consent
+      fails with explicit `--consent local-history` guidance. Consented refresh
+      delegates to `scripts/extract_corpus.py --output
+      $PROFILERA_PROFILE_DIR/intermediate/corpus.json` and reports bounded engine
+      diagnostics.
+  - number: 3
+    name: Preserve usage compatibility and update docs/tests
+    depends_on:
+      - 1
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `agentera usage` and `scripts/usage_stats.py` are used WHEN stats is
+        added THEN existing text/JSON behavior remains compatible.
+      - >-
+        GIVEN CLI help is inspected WHEN stats is added THEN `agentera stats` is
+        discoverable and no top-level `agentera corpus` command is exposed.
+      - >-
+        GIVEN TODO, changelog, docs, progress, and plan artifacts are inspected WHEN
+        the batch is complete THEN they record the stats privacy/consent workflow and
+        remaining helper-script cleanup seams.
+    evidence: >-
+      `uv run pytest tests/test_usage_namespace.py -q` passed with 13 tests,
+      covering stats privacy, consent, existing-corpus behavior, preserved usage
+      compatibility, and absence of a top-level `agentera corpus` command.
+overall_acceptance:
+  - >-
+    `agentera stats` is the canonical user-facing usage analytics command and never
+    reads local runtime history unless `stats refresh --consent local-history` is
+    explicitly provided.
+  - >-
+    `agentera usage` remains compatible for existing callers and direct usage stats
+    tests continue to pass.
+  - >-
+    No top-level `agentera corpus` command is added.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-17-validate-namespace-stable-validator-coverage.yaml

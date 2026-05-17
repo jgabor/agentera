@@ -43,21 +43,21 @@ tests/                              # pytest suite
 
 ## Capability validation
 
-Validate any capability against the schema contract. `capability_schema_contract.yaml`
-owns capability schema structure; `scripts/capability_contract.py` loads the
-model consumed by `scripts/validate_capability.py`. Do not duplicate
-contract-owned groups, priority values, directory rules, or primitive-reference
-field mappings in tests or docs unless a validation check ties them back to the
-loader/model.
+Validate any capability through the canonical `agentera validate` namespace.
+`capability_schema_contract.yaml` owns capability schema structure;
+`scripts/capability_contract.py` loads the model consumed by the validator. Do not
+duplicate contract-owned groups, priority values, directory rules, or
+primitive-reference field mappings in tests or docs unless a validation check ties
+them back to the loader/model.
 
 ```bash
-uv run scripts/validate_capability.py skills/agentera/capabilities/<name>
+uv run scripts/agentera validate capability <name-or-path>
 ```
 
 Self-validate the contract:
 
 ```bash
-uv run scripts/validate_capability.py --self-validate
+uv run scripts/agentera validate capability-contract --format json
 ```
 
 ## Adding or modifying a capability
@@ -65,7 +65,7 @@ uv run scripts/validate_capability.py --self-validate
 1. Create `skills/agentera/capabilities/<name>/prose.md` with behavioral instructions
 2. Create `skills/agentera/capabilities/<name>/schemas/` with the four schema files: `triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`
 3. Update the capability table in `skills/agentera/SKILL.md`
-4. Validate: `uv run scripts/validate_capability.py skills/agentera/capabilities/<name>`
+4. Validate: `uv run scripts/agentera validate capability <name-or-path>`
 
 ## Artifact path resolution
 

@@ -447,14 +447,14 @@ skills/agentera/
     ... (12 capabilities total)
 ```
 
-Validate any capability against the contract:
+Validate any capability against the contract through the canonical CLI:
 
 ```bash
-uv run scripts/validate_capability.py skills/agentera/capabilities/<name>
+uv run scripts/agentera validate capability <name-or-path>
 ```
 
 Self-validate the contract:
 
 ```bash
-uv run scripts/validate_capability.py --self-validate
+uv run scripts/agentera validate capability-contract --format json
 ```

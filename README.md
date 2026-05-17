@@ -514,12 +514,30 @@ The core surfaces:
 ## Maintainer checks
 
 ```bash
-uv run scripts/validate_capability.py --self-validate
-uv run scripts/validate_capability.py skills/agentera/capabilities/<name>
-uv run scripts/validate_cross_capability.py
-uv run scripts/validate_lifecycle_adapters.py --check-uv-runtime
+uv run scripts/agentera validate capability-contract --format json
+uv run scripts/agentera validate capability <name-or-path>
+uv run scripts/agentera validate cross-capability
+uv run scripts/agentera validate lifecycle-adapters
 uv run --with pytest --with pyyaml pytest -q
 ```
+
+### Helper Script Classification Policy
+
+`uv run scripts/agentera ...` is the canonical documented entry point for normal
+users and agents. Direct helper scripts remain in the repository, but they are
+classified by purpose rather than promoted as the default workflow:
+
+| Class | Rule | Examples |
+|---|---|---|
+| User-facing workflow | Document and test the `agentera` namespace first. | `agentera validate ...`, `agentera verify ...`, `agentera stats ...`, `agentera lint ...`, `agentera compact ...`, `agentera doctor`, `agentera upgrade` |
+| Backward-compatible maintainer seam | Keep direct helper execution working when existing tests or maintainer scripts rely on it, but point new user docs at `agentera`. | `scripts/validate_capability.py`, `scripts/validate_cross_capability.py`, `scripts/validate_lifecycle_adapters.py`, `scripts/usage_stats.py`, `scripts/self_audit.py`, smoke/eval helpers |
+| Internal support module | Import from the canonical CLI or tests; do not document as a standalone user command. | `scripts/artifact_registry.py`, `scripts/capability_contract.py`, `scripts/package_registry.py`, `scripts/runtime_adapter_registry.py`, `scripts/install_root.py` |
+| Corpus generation | Keep extraction internal behind explicit stats refresh consent. | `agentera stats refresh --dry-run`, then `agentera stats refresh --consent local-history`; no top-level `agentera corpus` command |
+| Maintainer-only generator or analysis surface | Document as local-only and explicit, with privacy/scope caveats. | `scripts/generate_js_install_root_contract.py`, `scripts/startup_analysis_contract.py`, token/benchmark analyzers |
+
+When adding a new helper, either expose a stable `agentera` namespace for normal
+use or document why the helper is internal/maintainer-only. Do not add broad new
+top-level CLI commands for implementation details.
 
 Agentera has two eval surfaces:
 
