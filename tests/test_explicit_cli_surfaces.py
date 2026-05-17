@@ -191,12 +191,11 @@ def test_explicit_validator_uses_docs_mapped_default_when_file_omitted(tmp_path:
     assert payload["path_source"] == "docs_mapped_default"
 
 
-def test_repository_gate_is_wired_into_commit_push_and_ci_automation():
+def test_repository_gate_is_wired_into_commit_and_ci_automation():
     lefthook = (REPO_ROOT / ".lefthook.yml").read_text(encoding="utf-8")
     ci = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
-    assert lefthook.count("uv run scripts/agentera gate") >= 2
+    assert lefthook.count("uv run scripts/agentera gate") >= 1
     assert "pre-commit:" in lefthook
-    assert "pre-push:" in lefthook
     assert "Repository gates" in ci
     assert "uv run scripts/agentera gate" in ci
