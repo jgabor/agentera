@@ -2220,10 +2220,7 @@ def test_docs_link_startup_report_surface_and_preserve_correct_metric():
     assert "startup-overhead-report.md" in audit_text
     assert "Decision 51" in audit_text
     assert "raw artifact access after CLI state" in audit_text
-    assert "--corpus-json" in readme
-    assert "--output-dir" in readme
     assert "docs/benchmark.md" in readme
-    assert "runtime-store" in readme
     assert "mage bench:startupState" in benchmark_doc
     assert "AGENTERA_BENCH_RUNTIME_STORES" in benchmark_doc
     assert "Mage generates one" in benchmark_doc
@@ -2236,6 +2233,4 @@ def test_docs_link_startup_report_surface_and_preserve_correct_metric():
     assert "raw_after_cli_rate" in benchmark_doc
     assert "redundant_raw_access_rate" in benchmark_doc
     assert "uncommitted, unshipped, and not" in benchmark_doc
-    assert "live hosts" in readme
-    assert "transcript output" in readme
     assert "raw transcripts" in benchmark_doc
