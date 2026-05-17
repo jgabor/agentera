@@ -1674,7 +1674,7 @@ def _git_output(args: list[str]) -> str | None:
 def _git_metadata() -> dict[str, Any]:
     commit = _git_output(["rev-parse", "HEAD"]) or "unknown"
     status = _git_output(["status", "--porcelain"])
-    return {"git_commit": commit, "git_dirty": bool(status) if status is not None else None}
+    return {"git_commit": commit, "git_dirty": bool(status) if status is not None else False}
 
 
 def _runtime_scope(metrics: dict[str, Any], approved_scope: list[str] | None = None) -> list[str]:

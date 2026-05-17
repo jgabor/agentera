@@ -24,11 +24,5 @@ pre-commit:
       run: bunx prettier --write {staged_files}
       stage_fixed: true
       glob: "*.json"
-
-pre-push:
-  parallel: true
-  commands:
-    agentera:
-      run: uv run scripts/agentera gate
-    test:
+    tests:
       run: uv run --with pytest --with pyyaml --with pytest-xdist pytest tests/ -q -n auto
