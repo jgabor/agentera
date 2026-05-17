@@ -31,6 +31,7 @@
 
 ### Fixed
 
+- Runtime docs compatibility now aligns OpenCode and Codex adapter surfaces with official runtime documentation: exact bare `hej` routing remains source-backed by OpenCode `chat.message`, OpenCode managed agent descriptors use documented `description` plus `mode: subagent` frontmatter with body ownership markers, Codex descriptor defaults are limited to documented personal/project agent directories, and OpenCode session lifecycle events are classified as generic `event` payloads while context preload remains deferred.
 - OpenCode `shell.env` injection now preserves a valid pre-merged `AGENTERA_HOME` but replaces stale inherited legacy values with the validated app home.
 - `agentera doctor` now renders an up-to-date app home as `No action needed` without a required-looking `Next:` repair block, hard-renames doctor app metadata to canonical statuses (`up_to_date`, `outdated`, `repair_needed`, `migration_needed`, `manual_review_needed`), preserves safe preview/apply/retry guidance for actionable states, blocks automatic repair for manual-review states, and covers dry-run command spacing with focused regressions.
 - `agentera lint --artifact <ARTIFACT> --file <PATH>` now checks verbosity against the artifact full-file budget while `--text` and stdin keep per-entry budgets, removing repeated false-positive PLAN.md full-plan pressure found in retained `post-audit-flagged` archive evidence.
@@ -119,6 +120,7 @@
 
 ### Verified
 
+- Runtime docs compatibility closeout passed descriptor validation, Codex setup/upgrade tests, runtime-adapter registry/package tests, lifecycle adapter validation, OpenCode bootstrap smoke, PLAN/PROGRESS artifact validators, and `git diff --check` without live-host calls, publication, installed app/profile refresh, tag, remote push, version bump, protected-state edit, or unsupported capability-name CLI command.
 - Cross-runtime subagent dispatch support passed descriptor validation, OpenCode bootstrap smoke, capability validators, setup/upgrade/runtime/package tests, artifact validators, compaction checks, `git diff --check`, and the full `uv run pytest` suite locally after synchronizing plan artifacts.
 - 2.4.0 aggregate release metadata is synchronized locally without remote push; intermediate post-v2.3.12 version bumps were removed from rewritten history, version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces target 2.4.0, package/version contract tests passed, touched artifact validators passed, and `git diff --check` passed.
 - D47 app-home vocabulary cleanup closeout is synchronized locally without publication, installed app refresh, profile refresh, tag, remote push, vision edit, objective edit, decision satisfaction-state change, or unsupported capability-name CLI command; independent Task 1 and Task 2 evaluations passed, focused Task 3 verification reported 346 passing tests, and Task 4 metadata validators plus `git diff --check` passed.

@@ -28,6 +28,7 @@ const REQUIRED_AGENT_NAMES = [
   "visualisera",
   "orkestrera",
 ];
+const AGENTERA_AGENT_MARKER = "<!-- agentera: managed -->";
 
 const COMMAND_TEMPLATES = {
   "agentera": `---
@@ -116,6 +117,20 @@ function hasManagedMarker(filePath) {
   return /^agentera_managed:\s*true\s*$/m.test(frontmatter);
 }
 
+function hasManagedAgentMarker(filePath) {
+  let content;
+  try {
+    content = fs.readFileSync(filePath, "utf8");
+  } catch {
+    return false;
+  }
+  const lines = content.split("\n");
+  if (lines[0] !== "---") return false;
+  const closingIdx = lines.indexOf("---", 1);
+  if (closingIdx === -1) return false;
+  return lines.slice(closingIdx + 1).some((line) => line.trim() === AGENTERA_AGENT_MARKER);
+}
+
 const commandBootstrap = { lastReport: null };
 
 function validSkillDir(skillDir, name) {
@@ -167,7 +182,7 @@ const skillBootstrap = { lastReport: null };
 
 function validAgentDescriptor(sourceDir, name) {
   const descriptor = path.join(sourceDir, `${name}.md`);
-  return fs.existsSync(descriptor) && hasManagedMarker(descriptor);
+  return fs.existsSync(descriptor) && hasManagedAgentMarker(descriptor);
 }
 
 function resolveInstalledOpenCodeAgentsDir() {
@@ -239,7 +254,7 @@ function bootstrapAgents() {
         continue;
       }
 
-      if (!hasManagedMarker(targetFile)) {
+      if (!hasManagedAgentMarker(targetFile) && !hasManagedMarker(targetFile)) {
         report.skippedUserOwned.push(name);
         continue;
       }
@@ -677,6 +692,7 @@ export const Agentera = async (input = {}, _options) => {
 
 Agentera.__test = {
   AGENTERA_VERSION,
+  AGENTERA_AGENT_MARKER,
   OPENCODE_SKILL_INSTALL_COMMAND,
   COMMAND_TEMPLATES,
   BARE_HEJ_ROUTED_PROMPT,
@@ -686,6 +702,7 @@ Agentera.__test = {
   bootstrapSkills,
   agentBootstrap,
   commandBootstrap,
+  hasManagedAgentMarker,
   hasManagedMarker,
   isBareHejUserMessage,
   lifecycle,

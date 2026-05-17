@@ -98,16 +98,16 @@ records:
         - chat.message
         - tool.execute.before
         - tool.execute.after
-      unsupported_events:
         - session.created
         - session.idle
+      unsupported_events: []
       event_status:
         shell.env: supported
         chat.message: supported
         tool.execute.before: supported
         tool.execute.after: supported
-        session.created: phantom
-        session.idle: phantom
+        session.created: supported_via_event
+        session.idle: supported_via_event
       limitations:
         - OpenCode session preload observes session.created but has no verified context injection path.
         - OpenCode docs omit chat.message, but the exported plugin Hooks interface defines it.

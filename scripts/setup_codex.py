@@ -34,7 +34,8 @@ before any write. Auto-detection walks up from this script's location.
 ``--install-root PATH`` overrides detection; ``--config-file PATH``
 overrides the TOML target (tests use this to avoid touching the real
 ``~/.codex/config.toml``). It also installs Agentera-managed runtime-native
-capability descriptors under an ``agents/`` sibling of the config file.
+capability descriptors under the documented Codex agent directory for personal
+or project config files, or under ``--agents-dir`` for nonstandard config paths.
 
 Usage::
 
@@ -42,7 +43,7 @@ Usage::
     uv run scripts/setup_codex.py --install-root /opt/agentera
     uv run scripts/setup_codex.py --dry-run
     uv run scripts/setup_codex.py --force
-    uv run scripts/setup_codex.py --config-file /tmp/config.toml
+    uv run scripts/setup_codex.py --config-file /tmp/config.toml --agents-dir /tmp/codex-agents
 
 Exit codes:
 
@@ -1005,7 +1006,14 @@ def codex_agent_source_dir(install_root: Path) -> Path:
 
 
 def default_agents_dir_for_config(config_path: Path) -> Path:
-    return config_path.parent / "agents"
+    expanded = config_path.expanduser()
+    if expanded.name == "config.toml" and expanded.parent.name == ".codex":
+        return expanded.parent / "agents"
+    raise ValueError(
+        "Codex agent descriptors can be inferred only for documented config layouts: "
+        "~/.codex/config.toml or <project>/.codex/config.toml. "
+        "Pass --agents-dir for nonstandard --config-file paths."
+    )
 
 
 def _codex_descriptor_managed(text: str) -> bool:
@@ -1110,7 +1118,8 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help=(
             "Directory for Codex runtime-native agent descriptors. "
-            "Default: an agents/ sibling of --config-file."
+            "Default: ~/.codex/agents for personal config or .codex/agents "
+            "for project config; required with nonstandard --config-file paths."
         ),
     )
     parser.add_argument(
@@ -1172,7 +1181,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # Step 4: plan the AGENTERA_HOME change and runtime-native descriptors.
     outcome = plan_change(current_text, install_root, force=args.force)
-    agents_dir = args.agents_dir or default_agents_dir_for_config(config_path)
+    try:
+        agents_dir = args.agents_dir or default_agents_dir_for_config(config_path)
+    except ValueError as err:
+        print(f"error: {err}", file=sys.stderr)
+        return 2
     descriptor_changes = plan_agent_descriptor_changes(install_root, agents_dir, force=args.force)
     pending_descriptors = [change for change in descriptor_changes if change.action == "pending"]
     blocked_descriptors = [change for change in descriptor_changes if change.action == "blocked"]

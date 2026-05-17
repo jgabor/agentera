@@ -273,7 +273,7 @@ def _validate_opencode_package(root: Path = REPO_ROOT, package_manifest: Any | N
             errors.append(f"opencode plugin missing {hook} hook")
     for phantom in ('"session.created":', '"session.idle":'):
         if phantom in plugin_text:
-            errors.append(f"opencode plugin must not register phantom hook {phantom}")
+            errors.append(f"opencode plugin must not register direct session hook {phantom}")
 
     for name in expected:
         template_match = re.search(
@@ -1904,8 +1904,8 @@ class TestLegacyRuntimeCompatibility:
         )
         assert "opencode.agentera: command template must keep managed marker" in _validate_opencode_package(root)
 
-    def test_opencode_package_fails_on_phantom_hook_regression(self, tmp_path):
-        """Phantom direct hooks (`session.created`, `session.idle`) must not reappear.
+    def test_opencode_package_fails_on_direct_session_hook_regression(self, tmp_path):
+        """Direct session hooks (`session.created`, `session.idle`) must not reappear.
 
         Verified against `@opencode-ai/plugin` Hooks interface in
         `.opencode/node_modules/@opencode-ai/plugin/dist/index.d.ts` lines 142-268;
@@ -1936,5 +1936,5 @@ class TestLegacyRuntimeCompatibility:
             encoding="utf-8",
         )
         errors = _validate_opencode_package(root)
-        assert any('"session.created":' in err and "phantom" in err for err in errors)
-        assert any('"session.idle":' in err and "phantom" in err for err in errors)
+        assert any('"session.created":' in err and "direct session hook" in err for err in errors)
+        assert any('"session.idle":' in err and "direct session hook" in err for err in errors)
