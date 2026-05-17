@@ -139,3 +139,38 @@ Use the scope for the primary behavior changed, not every file touched.
 | `orkestrera` | Orkestrera capability behavior, prose, schemas, or tests |
 
 New scopes are closed by default. If a commit needs a new scope, update this table with a one-line definition in the same commit; otherwise omit the scope.
+
+## Helper script classification
+
+`uv run scripts/agentera ...` is the canonical documented entry point for normal
+users and agents. Direct helper scripts remain in the repository, classified by
+purpose rather than promoted as the default workflow:
+
+| Class | Rule | Examples |
+|-------|------|---------|
+| User-facing workflow | Document and test the `agentera` namespace first. | `agentera validate ...`, `agentera verify ...`, `agentera stats ...`, `agentera lint ...`, `agentera compact ...`, `agentera doctor`, `agentera upgrade` |
+| Backward-compatible maintainer seam | Keep direct helper execution working when existing tests or maintainer scripts rely on it, but point new user docs at `agentera`. | `scripts/validate_capability.py`, `scripts/validate_cross_capability.py`, `scripts/validate_lifecycle_adapters.py`, `scripts/usage_stats.py`, `scripts/self_audit.py`, smoke/eval helpers |
+| Internal support module | Import from the canonical CLI or tests; do not document as a standalone user command. | `scripts/artifact_registry.py`, `scripts/capability_contract.py`, `scripts/package_registry.py`, `scripts/runtime_adapter_registry.py`, `scripts/install_root.py` |
+| Corpus generation | Keep extraction internal behind explicit stats refresh consent. | `agentera stats refresh --dry-run`, then `agentera stats refresh --consent local-history`; no top-level `agentera corpus` command |
+| Maintainer-only generator or analysis surface | Document as local-only and explicit, with privacy/scope caveats. | `scripts/generate_js_install_root_contract.py`, `scripts/startup_analysis_contract.py`, token/benchmark analyzers |
+
+When adding a new helper, either expose a stable `agentera` namespace for normal
+use or document why the helper is internal/maintainer-only. Do not add broad new
+top-level CLI commands for implementation details.
+
+## Install root documentation
+
+The install root contract is owned by `scripts/install_root.py`. All
+documentation that describes `AGENTERA_HOME`, the normal platform Agentera
+directory, app files, the upgrade lifecycle, repair diagnostics, directory
+selection, or no-write fallback behavior must point to `scripts/install_root.py`
+as the authoritative implementation.
+
+Contract terms that must appear in install-root documentation:
+
+- `AGENTERA_HOME`: environment variable pointing to the Agentera directory
+- `normal Agentera directory`: the platform-appropriate data directory
+- `app files`: managed Agentera code under `$AGENTERA_HOME/app`
+- `directory with unknown files`: a directory that exists but does not look like
+  Agentera state; doctor reports it instead of guessing
+- `needs repair`: diagnostic when app files are missing or stale

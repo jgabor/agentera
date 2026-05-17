@@ -568,7 +568,7 @@ def _validate_opencode_reference(text: str) -> list[str]:
 def _validate_install_root_documentation(root: Path = REPO_ROOT) -> list[str]:
     errors: list[str] = []
     surfaces = {
-        "README.md": root / "README.md",
+        "AGENTS.md": root / "AGENTS.md",
         "UPGRADE.md": root / "UPGRADE.md",
         "skills/agentera/SKILL.md": root / "skills/agentera/SKILL.md",
         "skills/agentera/capabilities/hej/prose.md": root / "skills/agentera/capabilities/hej/prose.md",
@@ -1813,7 +1813,7 @@ class TestLegacyRuntimeCompatibility:
             "scripts/install_root.py package metadata registry work stays outside\n"
         )
         for relative in (
-            "README.md",
+            "AGENTS.md",
             "UPGRADE.md",
             "skills/agentera/SKILL.md",
             "skills/agentera/capabilities/hej/prose.md",

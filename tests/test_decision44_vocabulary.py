@@ -143,6 +143,11 @@ ALLOWED_USES = (
         r"guard here for safety",
         "Ordinary code comment uses guard as a conventional safety phrase, not Agentera preferred vocabulary.",
     ),
+    AllowedUse(
+        r"^README\.md$",
+        r"documentation inventory and drift",
+        "README docs artifact table uses 'drift' as a descriptive metadata term, not Agentera preferred vocabulary.",
+    ),
 )
 
 
