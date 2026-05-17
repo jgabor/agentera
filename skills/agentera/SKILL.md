@@ -352,12 +352,19 @@ routing through the `agentera hej` composite result, which condenses project
 artifacts and suggests the most useful next capability. This is deterministic
 and never wrong. Bare `hej` must not be handled as a generic greeting.
 
-### Layer 2: `/agentera <capability-name-or-primary-alias>` — direct route
+### Layer 2: capability name or `/agentera <primary-alias>` — direct route
 
 If the request text exactly matches a capability name (case-insensitive, e.g.,
 "resonera", "planera", "hej"), route directly to that capability without
 evaluating natural-language trigger patterns. Canonical Swedish names remain the
 protocol identity and bypass natural-language matching.
+
+If the request begins with a canonical capability name followed by more text, or
+uses `/agentera <capability-name> <topic>`, route directly to that capability and
+pass the remaining text as the user's topic or instruction. For example,
+`resonera decide whether to keep this API` invokes ❈ resonera; it must not
+receive a generic analysis response and must not try the unsupported CLI command
+`agentera resonera`.
 
 If the request text exactly matches one primary alias from
 `capability_schema_contract.yaml` `ROUTE_ALIASES.primary_aliases`, route directly

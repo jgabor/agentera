@@ -111,8 +111,8 @@ Capability names use Swedish-style `-era` verb forms. The name is the action:
 | Bare `/agentera` | Invocation without a specific request. It delegates to `hej` and renders the Hej dashboard from one composite source command. |
 | Hej dashboard | User-facing project briefing with logo, status, attention, next action, and `⌂ hej · <status>`. |
 | `agentera hej` | Compact CLI source data for the caller-rendered dashboard. It is not the dashboard itself. |
-| Direct route | `/agentera <capability-name>` or `/agentera <primary-alias>` routes directly to that capability and bypasses natural-language matching. |
-| Canonical capability route | `/agentera <capability-name>` using the Swedish capability name, such as `/agentera hej`, `/agentera resonera`, or `/agentera realisera`. Canonical names remain protocol identity. |
+| Direct route | A canonical capability name with optional following topic text, `/agentera <capability-name>` with optional topic text, or `/agentera <primary-alias>` routes directly to that capability and bypasses natural-language matching. |
+| Canonical capability route | A Swedish capability name such as `resonera`, `planera`, or `orkestrera`, optionally followed by topic text, plus the slash form `/agentera <capability-name>` with optional topic text. Canonical names remain protocol identity. |
 | Primary route alias | The one plain `/agentera <alias>` direct route for a capability, owned by `ROUTE_ALIASES.primary_aliases`. Each canonical capability has exactly one primary alias. |
 | Secondary request wording | Natural-language phrases in capability trigger schemas, such as `deliberate`, `brainstorm`, `rubber duck`, `brief`, and `what's next`. They route through trigger matching and are not primary aliases. |
 | Natural-language trigger | A phrase in `schemas/triggers.yaml` that maps a request to a capability. |

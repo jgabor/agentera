@@ -1,4 +1,4 @@
-last_audit: '2026-05-16 (2.4.0 aggregate release metadata sync)'
+last_audit: '2026-05-17 (2.5.0 direct capability routing and Planera boundary sync)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -98,15 +98,15 @@ index:
   status: current
 - document: Progress
   path: .agentera/progress.yaml
-  last_updated: '2026-05-16'
+  last_updated: '2026-05-17'
   status: current
 - document: TODO
   path: TODO.md
-  last_updated: '2026-05-16'
+  last_updated: '2026-05-17'
   status: current
 - document: Changelog
   path: CHANGELOG.md
-  last_updated: '2026-05-16'
+  last_updated: '2026-05-17'
   status: current
 - document: Health
   path: .agentera/health.yaml
@@ -114,15 +114,15 @@ index:
   status: current
 - document: Plan
   path: .agentera/plan.yaml
-  last_updated: '2026-05-16'
+  last_updated: '2026-05-17'
   status: current
 - document: DOCS
   path: .agentera/docs.yaml
-  last_updated: '2026-05-16'
+  last_updated: '2026-05-17'
   status: current
 - document: Vocabulary
   path: docs/vocabulary.md
-  last_updated: '2026-05-13'
+  last_updated: '2026-05-17'
   status: current
 - document: Benchmark guide
   path: docs/benchmark.md
@@ -254,7 +254,7 @@ index:
   status: current
 - document: Agentera CLI
   path: scripts/agentera
-  last_updated: '2026-05-15'
+  last_updated: '2026-05-17'
   status: current
 - document: Upgrade orchestrator
   path: scripts/agentera_upgrade.py
@@ -290,7 +290,7 @@ index:
   status: current
 - document: Agentera skill dispatcher
   path: skills/agentera/SKILL.md
-  last_updated: '2026-05-15'
+  last_updated: '2026-05-17'
   status: current
 - document: Agentera protocol
   path: skills/agentera/protocol.yaml
@@ -338,11 +338,11 @@ index:
   status: current
 - document: Schema-backed routing test interface
   path: tests/routing_test_interface.py
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-17'
   status: current
 - document: Schema-backed routing interface tests
   path: tests/test_schema_backed_routing_interface.py
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-17'
   status: current
 - document: Decision 44 vocabulary proof tests
   path: tests/test_decision44_vocabulary.py

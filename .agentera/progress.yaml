@@ -1,4 +1,38 @@
 cycles:
+- number: 553
+  timestamp: 2026-05-17 10:10
+  type: fix
+  phase: build
+  what: Fixed 2.5.0 direct capability routing and Planera completed-plan archive boundaries.
+  commit: pending
+  inspiration: Planera scoped a light 2.5.0 batch for the two open routing and confirmation-boundary
+    TODOs, then Orkestrera executed the focused dispatcher, Planera, test, and artifact
+    closeout loop without nested subagents.
+  discovered: Canonical capability-name requests with trailing topic text needed to
+    be treated as direct routes, not generic natural-language analysis. Planera also
+    needed to state that archiving an already complete existing plan is implicit in
+    direct Planera replacement, while active or incomplete plan replacement still
+    requires explicit confirmation. The previously complete Runtime Docs Compatibility
+    Fix Plan was archived to `.agentera/archive/PLAN-2026-05-17-runtime-docs-compatibility-fix-plan.yaml`
+    before this completed light plan replaced it.
+  verified: '`uv run pytest tests/test_schema_backed_routing_interface.py tests/test_planera_capability.py
+    tests/test_query_cli.py::TestHej::test_hej_planera_context_exposes_compact_startup_contract
+    tests/test_skill_dispatch_contract.py -q` passed with 30 tests. `uv run scripts/validate_capability.py
+    skills/agentera/capabilities/planera` passed. Touched artifact validators for
+    TODO, CHANGELOG, PLAN, PROGRESS, and DOCS passed. `git diff --check` passed. `uv
+    run pytest -q` passed with 1090 tests.'
+  next: Continue the 2.5.x goal with Codex hook packaging/wiring tasks or OpenCode
+    plugin packaging/compaction tasks after artifact validation and commit. Do not
+    refresh installed apps/profiles, publish, push, tag, change package-manager state,
+    edit vision/objective state, or change decision satisfaction.
+  context:
+    intent: Orkestrera execution of the Capability Route and Planera Boundary Fix
+      plan.
+    constraints: No unsupported capability-name CLI commands, installed app/profile
+      refresh, publication, push, tag, package-manager change, vision/objective edit,
+      or decision satisfaction change.
+    scope: '`skills/agentera/SKILL.md`, `docs/vocabulary.md`, `scripts/agentera`,
+      Planera prose, routing/query/dispatch tests, TODO, CHANGELOG, PLAN, and PROGRESS.'
 - number: 552
   timestamp: 2026-05-17 07:18
   type: docs
@@ -264,37 +298,9 @@ cycles:
       unless concrete consumers require them.
     scope: '`tests/test_install_root_characterization.py`, TODO, CHANGELOG, PLAN,
       and PROGRESS updates.'
-- number: 543
-  timestamp: 2026-05-16 09:11
-  type: fix
-  phase: build
-  what: Implemented canonical doctor app metadata statuses for Plan Task 3.
-  commit: pending
-  inspiration: Orkestrera selected the minimal doctor rendering implementation task
-    after Task 2 defined the canonical app-state vocabulary.
-  discovered: The smallest safe implementation seam was `scripts/agentera_upgrade.py`
-    plus the hej app-attention helper in `scripts/agentera`. Doctor status construction,
-    signal statuses, text rendering, JSON output, and hej app-home summaries all needed
-    the same canonical app-state values to avoid an internal/public vocabulary split.
-  verified: Doctor app metadata now emits `up_to_date`, `outdated`, `repair_needed`,
-    `migration_needed`, and `manual_review_needed`. `up_to_date` renders `No action
-    needed` without a repair-looking `Next:` block and returns null dry-run/apply
-    commands; actionable outdated/repair/migration states retain preview/apply/retry
-    guidance. Focused verification passed with `uv run pytest tests/test_bundle_freshness.py
-    tests/test_install_root_characterization.py tests/test_query_cli.py -q` (217 tests),
-    plus local `agentera doctor` text/JSON probes.
-  next: Continue with Plan Task 4 to add explicit doctor-output regressions around
-    no required `Next:` for up-to-date state and preserved guidance for actionable
-    states.
-  context:
-    intent: Orkestrera execution of Doctor Ready Next Output Plan Task 3
-    constraints: No compatibility aliases by default; preserve dry-run-before-apply
-      safety; do not rename broader vocabulary targets, refresh installed app/profile
-      state, publish, push, tag, change package-manager state, edit vision/objective
-      state, change decision satisfaction, or commit.
-    scope: '`scripts/agentera_upgrade.py`, `scripts/agentera`, focused tests, PLAN
-      and PROGRESS evidence updates.'
 archive:
+- summary: 'Cycle 543 (2026-05-16): Implemented canonical doctor app metadata statuses
+    for Plan Task 3.'
 - summary: 'Cycle 542 (2026-05-16): Defined the doctor app metadata vocabulary contract
     for Plan Task 2.'
 - summary: 'Cycle 541 (2026-05-16): Reproduced doctor ready-state output ambiguity
@@ -372,5 +378,3 @@ archive:
     source-contract output.'
 - summary: 'Cycle 504 (2026-05-15): Implemented PLAN Task 1 satisfaction contract
     and legacy semantics for Decision 53.'
-- summary: 'Cycle 503 (2026-05-15): Completed PLAN Task 7 local closeout metadata
-    sync for the 2.3.12 Realisera execution-context source-contract patch.'

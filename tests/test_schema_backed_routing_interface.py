@@ -129,6 +129,25 @@ def test_canonical_capability_names_still_route_directly():
         assert result.direct_route.source == "canonical"
 
 
+def test_canonical_capability_prefix_with_topic_routes_directly():
+    triggers = load_trigger_patterns()
+
+    examples = {
+        "resonera decide whether to keep this API": "resonera",
+        "/agentera resonera decide whether to keep this API": "resonera",
+        "planera break down the plugin hook work": "planera",
+        "orkestrera execute the active plan": "orkestrera",
+    }
+
+    for message, capability in examples.items():
+        result = evaluate_route(message, triggers)
+
+        assert result.kind == "route"
+        assert result.capability == capability
+        assert result.direct_route is not None
+        assert result.direct_route.source == "canonical"
+
+
 def test_bare_hej_routes_directly_to_hej_capability():
     result = evaluate_route("hej", load_trigger_patterns())
 

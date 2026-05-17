@@ -129,3 +129,13 @@ def test_planera_prose_uses_complete_plan_cli_state_before_raw_artifact_reads():
     assert "source_contract.capability_context.startup_contract" in content
     assert "Use that compact context before rereading this prose" in content
     assert "editing Planera, resolving contradiction or ambiguity" in content
+
+
+def test_planera_prose_defines_completed_plan_archive_confirmation_boundary():
+    content = (PLANERA_CAP_DIR / "prose.md").read_text()
+
+    assert "existing\nPLAN.md is already complete" in content
+    assert "implicit in the direct Planera invocation" in content
+    assert "does not require a\nseparate pre-write confirmation" in content
+    assert "Human-initiated replacement plans still require\nplan approval" in content
+    assert "active or\nincomplete plan is not implicit" in content
