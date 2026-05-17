@@ -1,0 +1,100 @@
+header:
+  level: light
+  created: 2026-05-17
+  status: complete
+  title: OpenCode Plugin Packaging and Compaction Context
+what: >-
+  Implement the related 2.5.x OpenCode adapter tasks by making the adapter
+  package-loadable as an npm-style plugin while preserving the project-local
+  `.opencode/plugins/agentera.js` install surface, adding CLI-first compaction
+  context through `experimental.session.compacting`, and strengthening
+  source-backed hook contract coverage against the installed `@opencode-ai/plugin`
+  interface.
+why: >-
+  The OpenCode adapter is already the production local plugin, but OpenCode also
+  supports plugin package loading. Packaging metadata, compaction context, and
+  hook contract tests should converge now so the adapter remains installable both
+  as a local file and as a package entry without diverging from OpenCode's actual
+  hook surface.
+constraints: >-
+  Preserve `.opencode/plugins/agentera.js` as the project-local install behavior.
+  Keep `.opencode/package.json` out of suite version authority unless the package
+  registry explicitly changes that contract. Use `agentera` CLI summaries for
+  compaction context; do not raw-read artifacts from the OpenCode plugin. Do not
+  refresh installed apps/profiles, publish, push, tag, change package-manager
+  state, edit `.agentera/vision.yaml`, mutate objective state, or change decision
+  satisfaction state.
+tasks:
+  - number: 1
+    name: Make OpenCode adapter package-loadable
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `.opencode/package.json` is inspected WHEN OpenCode loads it as a
+        package plugin THEN it exposes `.opencode/plugins/agentera.js` through
+        package entry metadata while preserving ESM and project-local plugin file
+        behavior.
+      - >-
+        GIVEN package registry validation runs WHEN the OpenCode manifest is
+        checked THEN the package-loadable metadata is validated without making the
+        manifest a suite version-bearing surface.
+    evidence: >-
+      `.opencode/package.json` now exposes `./plugins/agentera.js` through `main`
+      and `exports`, records `agentera.packageShape: npm-loadable-plugin`, and
+      keeps `.opencode/plugins/agentera.js` as the local plugin path. Package
+      registry/runtime tests passed with the OpenCode manifest still excluded from
+      suite version surfaces.
+  - number: 2
+    name: Add CLI-first compaction context hook
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN OpenCode calls `experimental.session.compacting` WHEN Agentera state
+        is discoverable THEN the plugin appends bounded context generated from
+        `agentera hej --format json` summaries.
+      - >-
+        GIVEN the compaction hook is inspected WHEN source reads are searched THEN
+        it does not read `.agentera` artifacts directly for compaction context.
+    evidence: >-
+      `.opencode/plugins/agentera.js` registers `experimental.session.compacting`,
+      calls the resolved `scripts/agentera hej --format json`, formats bounded
+      context from the returned summaries, and smoke coverage proves the hook
+      appends context when CLI state is available.
+  - number: 3
+    name: Strengthen source-backed OpenCode hook contract coverage
+    depends_on:
+      - 1
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `@opencode-ai/plugin` types expose hook keys WHEN runtime adapter
+        tests run THEN coverage proves Agentera registers `chat.message`,
+        `shell.env`, `event`, tool hooks, and `experimental.session.compacting`
+        against that source-backed interface.
+      - >-
+        GIVEN public OpenCode docs omit specific hook keys WHEN docs/tests are
+        inspected THEN the source-backed evidence and known documentation gap is
+        recorded instead of guessing unsupported hook names.
+    evidence: >-
+      Runtime adapter tests now validate `event`, `shell.env`, `chat.message`,
+      `tool.execute.before`, `tool.execute.after`, and
+      `experimental.session.compacting` against the installed
+      `@opencode-ai/plugin` Hooks interface while preserving direct session-event
+      hook rejection. Focused runtime, package, descriptor, lifecycle, and smoke
+      checks passed.
+overall_acceptance:
+  - >-
+    OpenCode package metadata supports npm-style plugin loading while keeping the
+    checked-in project-local `.opencode/plugins/agentera.js` installation path.
+  - >-
+    OpenCode compaction receives bounded Agentera context through CLI state
+    summaries and no direct raw artifact reads.
+  - >-
+    Tests and docs cover the OpenCode hook surface from `@opencode-ai/plugin`
+    source/types, including compaction hooks and the public-docs omission caveat.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-17-codex-hook-packaging-and-trust-flow.yaml

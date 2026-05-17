@@ -1,4 +1,41 @@
 cycles:
+- number: 556
+  timestamp: 2026-05-17 10:54
+  type: feat
+  phase: build
+  what: Extended `agentera validate` to cover the remaining stable validators.
+  commit: pending
+  inspiration: Orkestrera executed the Validate Namespace Stable Validator Coverage
+    plan to make `agentera` the canonical entry point for validator workflows before
+    the broader helper-script cleanup seam.
+  discovered: The existing helpers already had clean non-interactive behavior and
+    useful success output, so the minimal correct change was a set of thin validate
+    subcommands that delegate to the helpers and wrap their stdout/stderr/exit codes
+    for JSON mode. The capability contract case needed one aggregate command because
+    it combines `--self-validate` and `--validate-protocol` checks from the same direct
+    helper.
+  verified: '`uv run pytest tests/test_validate_namespace.py -q` passed with 9 tests.
+    `uv run scripts/agentera validate cross-capability --format json`, `uv run scripts/agentera
+    validate lifecycle-adapters`, `uv run scripts/agentera validate app-home-contract`,
+    and `uv run scripts/agentera validate capability-contract --format json` passed.
+    Direct helper compatibility checks for `validate_cross_capability.py`, `validate_lifecycle_adapters.py`,
+    `validate_app_home_contract.py`, `validate_capability.py --self-validate`, and
+    `validate_capability.py --validate-protocol` passed. `uv run pytest -q` passed
+    with 1097 tests. Touched artifact validators for TODO, CHANGELOG, PLAN, PROGRESS,
+    and DOCS passed. `uv run scripts/agentera compact --mode check --format json`
+    passed after safe compaction fix trimmed TODO/PROGRESS retained logs. `git diff
+    --check` passed.'
+  next: Commit this validate batch and continue the remaining 2.5.x stats/helper-script
+    seams.
+  context:
+    intent: Orkestrera execution of the Validate Namespace Stable Validator Coverage
+      plan.
+    constraints: Preserve direct helper compatibility; keep wrappers thin, JSON-capable,
+      and explicit about delegated engines; no installed app/profile refresh, publication,
+      push, tag, package-manager change, vision/objective edit, or decision satisfaction
+      change.
+    scope: '`scripts/agentera`, `tests/test_validate_namespace.py`, README, TODO,
+      CHANGELOG, PLAN, DOCS, and PROGRESS.'
 - number: 555
   timestamp: 2026-05-17 10:40
   type: feat
@@ -272,38 +309,9 @@ cycles:
       decision satisfaction change, or commit.
     scope: '`.opencode/plugins/agentera.js`, OpenCode command templates, smoke/runtime-adapter
       tests, RuntimeAdapter registry/docs, CHANGELOG, TODO, PLAN, and PROGRESS.'
-- number: 546
-  timestamp: 2026-05-16 14:45
-  type: feat
-  phase: build
-  what: Completed the Cross-runtime Subagent Dispatch Plan.
-  commit: pending
-  inspiration: Orkestrera executed the active Planera plan to make capability subagent
-    dispatch concrete across Codex CLI, OpenCode, Claude Code, and Copilot CLI.
-  discovered: 'Descriptor installation touched more seams than prose: Codex setup,
-    upgrade copy actions, OpenCode bootstrap, bundle surfaces, registry tests, installed-surface
-    fixtures, and OpenCode app-home injection.'
-  verified: Passing gates included `uv run pytest tests/test_setup_codex.py`, `uv
-    run pytest tests/test_validate_namespace.py`, `uv run pytest tests/test_runtime_adapter_registry.py`,
-    `node scripts/smoke_opencode_bootstrap.mjs`, `uv run pytest tests/test_upgrade_cli.py`,
-    `uv run pytest tests/test_setup_doctor.py`, Orkestrera/Realisera capability prose
-    tests, Orkestrera/Realisera/Optimera capability validators, RuntimeAdapter/package
-    tests, `uv run scripts/agentera validate descriptors`, artifact validators, clean
-    compaction, `git diff --check`, and final full `uv run pytest` with 1087 passed.
-  next: Active dispatch plan is complete. Remaining open TODOs are the explicit capability
-    invocation routing bug and Planera confirmation-boundary guidance. Do not commit,
-    refresh installed apps/profiles, publish, push, tag, change package-manager state,
-    edit vision/objective state, or change decision satisfaction unless explicitly
-    requested.
-  context:
-    intent: Orkestrera execution of Cross-runtime Subagent Dispatch Plan Tasks 1-7.
-    constraints: No unsupported capability-name CLI commands, installed app/profile
-      refresh, publication, push, tag, package-manager change, vision/objective edit,
-      decision satisfaction change, or commit.
-    scope: RuntimeAdapter `subagent_dispatch`, Codex descriptors/setup/upgrade, OpenCode
-      descriptors/plugin/bootstrap, Orkestrera/Realisera/Optimera dispatch prose,
-      descriptor validation, tests, TODO, CHANGELOG, PLAN, and PROGRESS.
 archive:
+- summary: 'Cycle 546 (2026-05-16): Completed the Cross-runtime Subagent Dispatch
+    Plan.'
 - summary: 'Cycle 545 (2026-05-16): Completed the Doctor Ready Next Output Plan verification
     closeout.'
 - summary: 'Cycle 544 (2026-05-16): Added doctor output regressions and synchronized
@@ -381,5 +389,3 @@ archive:
     satisfaction authority boundaries.'
 - summary: 'Cycle 507 (2026-05-15): Implemented PLAN Task 4 health audit and release
     closeout review surfaces.'
-- summary: 'Cycle 506 (2026-05-15): Implemented PLAN Task 3 shared compaction protection
-    and protected-overflow review pressure.'

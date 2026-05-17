@@ -12,6 +12,7 @@
 
 ### Changed
 
+- `agentera validate` now covers stable repository validators for cross-capability artifact graphs, lifecycle adapter metadata, app-home contract terminology, and capability schema contract self/protocol checks while preserving the direct helper scripts as maintainer seams.
 - OpenCode package metadata now exposes `.opencode/plugins/agentera.js` through `.opencode/package.json` `main` and `exports` for npm-style plugin loading while preserving the project-local plugin install path and keeping `.opencode/package.json` out of suite version authority.
 - Codex plugin metadata now exposes optional bundled apply_patch hooks through `.codex-plugin/plugin.json`, while upgrade-generated copied user hooks remain the default reliable Codex hook path and use exact resolved validator commands with matching `[hooks.state]` trust hashes.
 - RuntimeAdapter registry and interface docs now include a required `subagent_dispatch` group covering each runtime's mechanism, setup targets, descriptor sources, invocation pattern, and limitations without absorbing package metadata or install-root ownership facts.

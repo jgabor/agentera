@@ -4349,6 +4349,116 @@ def cmd_validate_descriptors(args: argparse.Namespace) -> int:
     return 0 if payload["status"] == "pass" else 1
 
 
+VALIDATE_DELEGATED_SCRIPTS = {
+    "cross-capability": "validate_cross_capability.py",
+    "lifecycle-adapters": "validate_lifecycle_adapters.py",
+    "app-home-contract": "validate_app_home_contract.py",
+}
+
+
+def _delegated_validation_payload(
+    *,
+    target_family: str,
+    result: subprocess.CompletedProcess[str],
+    engine_command: str,
+) -> dict[str, Any]:
+    payload = _validation_process_payload(
+        target_family=target_family,
+        target=target_family,
+        path=None,
+        result=result,
+    )
+    payload["engine"] = {
+        **payload["engine"],
+        "command": engine_command,
+    }
+    return payload
+
+
+def cmd_validate_delegated_script(args: argparse.Namespace) -> int:
+    target_family = str(args.validate_family)
+    script_name = VALIDATE_DELEGATED_SCRIPTS[target_family]
+    script = Path(__file__).resolve().parent / script_name
+    result = subprocess.run(
+        [sys.executable, str(script)],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if getattr(args, "format", "text") == "json":
+        _emit_structured(
+            _delegated_validation_payload(
+                target_family=target_family,
+                result=result,
+                engine_command=script_name,
+            ),
+            "json",
+        )
+    else:
+        if result.stdout:
+            print(result.stdout, end="")
+        if result.stderr:
+            print(result.stderr, end="", file=sys.stderr)
+    return result.returncode
+
+
+def _capability_contract_payload(results: list[tuple[str, subprocess.CompletedProcess[str]]]) -> dict[str, Any]:
+    checks = [
+        _delegated_validation_payload(
+            target_family=name,
+            result=result,
+            engine_command="validate_capability.py",
+        )
+        for name, result in results
+    ]
+    violations = [violation for check in checks for violation in check["violations"]]
+    return {
+        "command": "validate",
+        "status": "pass" if all(result.returncode == 0 for _, result in results) else "fail",
+        "target_family": "capability-contract",
+        "target": "capability-schema-contract-and-protocol",
+        "checks": checks,
+        "violations": violations,
+        "summary": {
+            "passed": sum(1 for _, result in results if result.returncode == 0),
+            "failed": sum(1 for _, result in results if result.returncode != 0),
+        },
+    }
+
+
+def cmd_validate_capability_contract(args: argparse.Namespace) -> int:
+    validator = Path(__file__).resolve().parent / "validate_capability.py"
+    checks = [
+        (
+            "capability-contract-self",
+            subprocess.run(
+                [sys.executable, str(validator), "--self-validate"],
+                text=True,
+                capture_output=True,
+                check=False,
+            ),
+        ),
+        (
+            "capability-protocol",
+            subprocess.run(
+                [sys.executable, str(validator), "--validate-protocol"],
+                text=True,
+                capture_output=True,
+                check=False,
+            ),
+        ),
+    ]
+    if getattr(args, "format", "text") == "json":
+        _emit_structured(_capability_contract_payload(checks), "json")
+    else:
+        for _, result in checks:
+            if result.stdout:
+                print(result.stdout, end="")
+            if result.stderr:
+                print(result.stderr, end="", file=sys.stderr)
+    return 0 if all(result.returncode == 0 for _, result in checks) else 1
+
+
 def cmd_validate(args: argparse.Namespace) -> int:
     if args.validate_family == "capability":
         return cmd_validate_capability(args)
@@ -4356,14 +4466,21 @@ def cmd_validate(args: argparse.Namespace) -> int:
         return cmd_validate_artifact(args)
     if args.validate_family == "descriptors":
         return cmd_validate_descriptors(args)
+    if args.validate_family in VALIDATE_DELEGATED_SCRIPTS:
+        return cmd_validate_delegated_script(args)
+    if args.validate_family == "capability-contract":
+        return cmd_validate_capability_contract(args)
     raise ValueError(
-        "unsupported validate target family; valid families: capability, artifact, descriptors. "
+        "unsupported validate target family; valid families: capability, artifact, descriptors, "
+        "cross-capability, lifecycle-adapters, app-home-contract, capability-contract. "
         "Syntax: agentera validate capability <capability-or-path> [--format text|json] OR "
         "agentera validate artifact --artifact <ARTIFACT> [--file <PATH>] [--format text|json] OR "
-        "agentera validate descriptors [--format text|json]. "
+        "agentera validate descriptors [--format text|json] OR "
+        "agentera validate cross-capability [--format text|json]. "
         "Examples: agentera validate capability hej; "
         "agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json; "
-        "agentera validate descriptors --format json"
+        "agentera validate descriptors --format json; "
+        "agentera validate capability-contract --format json"
     )
 
 
@@ -6467,14 +6584,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate = sub.add_parser(
         "validate",
-        help="Validate capabilities, artifacts, or descriptors",
+        help="Validate capabilities, artifacts, or descriptors, plus stable contracts",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=(
-            "Validate capability directories, canonical Agentera artifacts, or runtime agent descriptors.\n\n"
+            "Validate capability directories, canonical Agentera artifacts, runtime agent descriptors, "
+            "and stable repository contracts.\n\n"
             "Examples:\n"
             "  agentera validate capability hej\n"
             "  agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json\n"
-            "agentera validate descriptors --format json"
+            "  agentera validate descriptors --format json\n"
+            "  agentera validate cross-capability --format json\n"
+            "  agentera validate lifecycle-adapters\n"
+            "  agentera validate app-home-contract\n"
+            "  agentera validate capability-contract --format json"
         ),
     )
     validate_sub = validate.add_subparsers(dest="validate_family")
@@ -6515,6 +6637,18 @@ def build_parser() -> argparse.ArgumentParser:
         description="Validate Codex and OpenCode Agentera capability descriptors.",
     )
     validate_descriptors.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+    for family, description in (
+        ("cross-capability", "Validate capability artifact producer/consumer consistency"),
+        ("lifecycle-adapters", "Validate runtime lifecycle adapter metadata"),
+        ("app-home-contract", "Validate app-home contract terminology"),
+        ("capability-contract", "Validate the capability schema contract and protocol"),
+    ):
+        validate_family_parser = validate_sub.add_parser(
+            family,
+            help=description,
+            description=description,
+        )
+        validate_family_parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
 
     u = sub.add_parser(
         "upgrade",
