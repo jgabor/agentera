@@ -38,6 +38,9 @@ APP_OUTDATED = "outdated"
 APP_REPAIR_NEEDED = "repair_needed"
 APP_MIGRATION_NEEDED = "migration_needed"
 APP_MANUAL_REVIEW_NEEDED = "manual_review_needed"
+APP_READY_TO_APPLY = "ready_to_apply"
+APP_APPLIED = "applied"
+APP_NO_CHANGES_NEEDED = "no_changes_needed"
 EXPECTED_STATE_COMMANDS = ("hej",)
 USER_STATE_NAMES = ("PROFILE.md", "USAGE.md", "history", "corpus", "corpus.json")
 ROOT_USER_STATE_NAMES = (*USER_STATE_NAMES, "TODO.md", "CHANGELOG.md", "DESIGN.md")
@@ -524,7 +527,7 @@ def build_doctor_status(
             signals.append({
                 "status": APP_REPAIR_NEEDED,
                 "kind": "missing_marker",
-                "message": "Agentera cannot prove these app files are current, so it should refresh them",
+                "message": "Agentera cannot prove these app files are current, so it should repair them",
             })
         elif classification.kind == "managed_stale" and reason == "version_mismatch":
             if recoverable_stale_default:
@@ -625,7 +628,7 @@ def build_doctor_status(
             str(active_bundle_root / "scripts" / "agentera"),
             "hej",
         ]),
-        "approval": f"approve app refresh for {install_root}",
+        "approval": f"approve app files repair for {install_root}",
     }
 
 
@@ -880,7 +883,7 @@ def plan_bundle_phase(source_root: Path, install_root: Path, home: Path, *, forc
         message = "Agentera app files are already current"
     else:
         status = "pending"
-        message = "will install or refresh Agentera app files"
+        message = "will install or update Agentera app files"
 
     items = [{
             "status": status,
@@ -949,7 +952,7 @@ def apply_bundle_phase(phase: dict[str, Any], source_root: Path, install_root: P
             elif item["action"] == "migrate-app-home":
                 if not _valid_install_root(install_root):
                     item["status"] = "blocked"
-                    item["message"] = "Agentera could not find the refreshed app files after install"
+                    item["message"] = "Agentera could not find the selected app files after install"
                     continue
                 removed = _remove_legacy_bundle_files(install_root, rel_paths)
                 item["legacyManagedFileCount"] = removed
@@ -1960,10 +1963,13 @@ def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
             summary[status] += count
     mode = "apply" if args.yes else "plan"
     status = "blocked" if summary["blocked"] else "failed" if summary["failed"] else "pending" if summary["pending"] else "noop"
+    lifecycle_status = _upgrade_lifecycle_status(status)
     return {
         "schemaVersion": "agentera.upgrade.v1",
         "mode": mode,
         "status": status,
+        "lifecycleStatus": lifecycle_status,
+        "compatibilityStatus": status,
         "project": str(project),
         "sourceRoot": str(source_root),
         "appHome": str(install_root),
@@ -2011,6 +2017,8 @@ def apply_upgrade_plan(plan: dict[str, Any], args: argparse.Namespace) -> None:
             summary[status] += count
     plan["summary"] = summary
     plan["status"] = "blocked" if summary["blocked"] else "failed" if summary["failed"] else "applied" if summary["applied"] else "noop"
+    plan["lifecycleStatus"] = _upgrade_lifecycle_status(plan["status"])
+    plan["compatibilityStatus"] = plan["status"]
 
     if any(phase["name"] == "runtime" for phase in plan["phases"]):
         doctor = _setup_doctor_module()
@@ -2032,6 +2040,18 @@ def _public_plan(plan: dict[str, Any]) -> dict[str, Any]:
         for item in phase["items"]:
             item.pop("newText", None)
     return public
+
+
+def _upgrade_lifecycle_status(workflow_status: str) -> str:
+    """Map the legacy upgrade workflow status to canonical app lifecycle metadata."""
+    return {
+        "pending": APP_READY_TO_APPLY,
+        "applied": APP_APPLIED,
+        "noop": APP_NO_CHANGES_NEEDED,
+        "blocked": APP_MANUAL_REVIEW_NEEDED,
+        "failed": APP_MANUAL_REVIEW_NEEDED,
+        "skipped": APP_NO_CHANGES_NEEDED,
+    }.get(workflow_status, APP_MANUAL_REVIEW_NEEDED)
 
 
 def public_doctor_status(status: dict[str, Any]) -> dict[str, Any]:
@@ -2064,7 +2084,7 @@ PHASE_LABELS = {
 }
 
 ACTION_LABELS = {
-    "install-bundle": "install or refresh Agentera app files",
+    "install-bundle": "install or update Agentera app files",
     "migrate-app-home": "move Agentera app files into app/",
     "retire-legacy-default-app-home": "move old Agentera data and clean up old app files",
     "migrate": "convert old project notes",

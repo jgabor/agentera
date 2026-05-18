@@ -15,6 +15,7 @@ reference resolution, plus collective checks for prose cross-references.
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 import yaml
@@ -338,6 +339,48 @@ def test_master_bundle_health_gate_is_single_call():
     assert "agentera upgrade --dry-run" in text
     assert "managed runtime surfaces" in text
     assert "normal platform app directory" in text
+
+
+def test_installed_hej_entrypoint_resolves_app_home_before_script_expansion():
+    bad = subprocess.run(
+        [
+            "bash",
+            "-c",
+            'unset AGENTERA_HOME XDG_DATA_HOME; '
+            'AGENTERA_HOME="/tmp/agentera" printf "%s\\n" "$AGENTERA_HOME/app/scripts/agentera"',
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    ).stdout.strip()
+    good = subprocess.run(
+        [
+            "bash",
+            "-c",
+            'unset AGENTERA_HOME XDG_DATA_HOME; '
+            'RESOLVED_AGENTERA_HOME="/tmp/agentera"; '
+            'printf "%s\\n" "$RESOLVED_AGENTERA_HOME/app/scripts/agentera"',
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    ).stdout.strip()
+
+    assert bad == "/app/scripts/agentera"
+    assert good == "/tmp/agentera/app/scripts/agentera"
+
+    surfaces = {
+        "Agentera skill dispatcher": SKILL_MD_PATH.read_text(encoding="utf-8"),
+        "Hej capability": (CAPABILITIES_DIR / "hej" / "prose.md").read_text(encoding="utf-8"),
+        "Upgrade guide": UPGRADE_MD_PATH.read_text(encoding="utf-8"),
+    }
+    for label, text in surfaces.items():
+        assert 'uv run "$AGENTERA_HOME/app/scripts/agentera" hej' not in text, label
+        assert 'uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej' in text, label
+
+    combined = "\n".join(surfaces.values())
+    assert "Never combine the app-home assignment" in combined
+    assert "same shell command that expands" in combined
 
 
 def test_upgrade_guide_documents_app_home_recovery_and_artifact_backups():

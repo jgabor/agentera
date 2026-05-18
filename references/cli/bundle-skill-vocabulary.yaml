@@ -1,0 +1,203 @@
+schema_version: agentera.bundle_skill_vocabulary.v1
+status: active_authority
+purpose: >-
+  Classify surviving `bundle` and `SKILL.md` terminology so docs, package
+  metadata, runtime descriptors, tests, historical records, and compatibility
+  identifiers share one bounded vocabulary source without forcing mechanical
+  renames of shipped surfaces.
+sources:
+  prose:
+    - docs/vocabulary.md#bundle-and-skillmd-vocabulary
+scope:
+  includes:
+    - Current user-facing and diagnostic prose that names Agentera app files.
+    - Package and distribution metadata that names the suite package shape.
+    - Runtime hook packaging prose and metadata for plugin-shipped hooks.
+    - Historical references to the removed `bundle-status` command.
+    - Current and legacy references to `skills/agentera/SKILL.md` and v1 skill entry files.
+  excludes:
+    - Routing and execution vocabulary collapse work.
+    - Capability instruction-file rename work.
+    - "`first_invocation_read` metadata or startup-read behavior."
+    - Objective state, decision satisfaction state, package publication, and installed app refreshes.
+compatibility_boundary: >-
+  Compatibility identifiers, package metadata names, fixture names, historical
+  records, and path-like references may keep `bundle` or `SKILL.md` when the
+  spelling is the contract. New conceptual prose should use the canonical
+  concept terms below.
+canonical_concept_order:
+  - agentera_app_files
+  - suite_package
+  - plugin_shipped_hooks
+  - removed_bundle_status_command
+  - agentera_skill_dispatcher
+  - skill_entry_file
+  - v1_skill_entry_file
+  - legacy_hej_bridge
+canonical_concepts:
+  agentera_app_files:
+    definition: >-
+      Managed Agentera application files installed under the app files directory,
+      separate from user data in the Agentera directory.
+    allowed_terms:
+      - Agentera app files
+      - app files
+      - app files directory
+      - installed app
+      - managed app files
+    forbidden_ambiguous_shortcuts:
+      - bundle
+      - installed bundle
+      - bundle freshness
+      - bundle refresh
+      - durable bundle
+  suite_package:
+    definition: >-
+      The packaged distribution shape that ships the Agentera skill, CLI,
+      scripts, hooks, references, runtime descriptors, and package metadata as
+      one suite artifact.
+    allowed_terms:
+      - suite package
+      - Agentera package
+      - packaged suite
+      - suite-bundle
+    forbidden_ambiguous_shortcuts:
+      - bundle
+      - single-bundle model
+      - bundled suite
+  plugin_shipped_hooks:
+    definition: >-
+      Hooks that are shipped by runtime plugin package surfaces such as Codex,
+      OpenCode, Claude, or GitHub plugin metadata.
+    allowed_terms:
+      - plugin-shipped hooks
+      - plugin-bundled hooks
+      - bundled hook metadata
+      - copied user hooks
+    forbidden_ambiguous_shortcuts:
+      - bundle hooks
+      - bundled hooks
+      - hook bundle
+  removed_bundle_status_command:
+    definition: >-
+      The removed legacy `agentera bundle-status` command name, preserved only
+      for historical release notes, migration evidence, and tests that prove it
+      remains unavailable.
+    allowed_terms:
+      - "removed `bundle-status` command"
+      - "legacy `agentera bundle-status` command"
+      - "historical `bundle-status` reference"
+    forbidden_ambiguous_shortcuts:
+      - bundle status
+      - bundle-status path
+      - bundle status command
+  agentera_skill_dispatcher:
+    definition: >-
+      The v2 `skills/agentera/SKILL.md` dispatcher that describes the Agentera
+      skill entry point, capability routing model, CLI-first state access, and
+      safety rails.
+    allowed_terms:
+      - Agentera skill dispatcher
+      - Agentera skill entry dispatcher
+      - "`skills/agentera/SKILL.md` dispatcher"
+    forbidden_ambiguous_shortcuts:
+      - SKILL.md
+      - master dispatcher
+      - skill dispatcher
+  skill_entry_file:
+    definition: >-
+      A concrete runtime skill entry file named `SKILL.md`, usually referenced
+      as a path or validation target rather than as a conceptual noun.
+    allowed_terms:
+      - skill entry file
+      - "`SKILL.md` file"
+      - "`skills/agentera/SKILL.md`"
+      - "`skills/*/SKILL.md`"
+    forbidden_ambiguous_shortcuts:
+      - SKILL.md
+      - skill file
+      - skill entry
+  v1_skill_entry_file:
+    definition: >-
+      A historical standalone v1 skill entry file or path retained in migration
+      notes, tests, stale-path checks, and compatibility fixtures.
+    allowed_terms:
+      - v1 skill entry file
+      - v1 standalone skill entry file
+      - "historical v1 `SKILL.md` file"
+      - v1 skill path
+    forbidden_ambiguous_shortcuts:
+      - SKILL.md
+      - v1 SKILL.md
+      - old skill file
+  legacy_hej_bridge:
+    definition: >-
+      The temporary v1 `/hej` bridge or exact bare `hej` compatibility path that
+      guides users toward `/agentera` and the v2 upgrade path.
+    allowed_terms:
+      - legacy hej bridge
+      - "legacy `/hej` bridge"
+      - v1 hej bridge
+      - "bare `hej` compatibility path"
+    forbidden_ambiguous_shortcuts:
+      - hej skill
+      - legacy skill
+      - old hej
+classification_order:
+  - canonical_concept
+  - compatibility_identifier
+  - path_like_reference
+  - package_metadata
+  - historical_record
+  - fixture_only
+  - generic_plain_language
+  - ambiguous_current_prose
+classification_rules:
+  canonical_concept:
+    meaning: Usage matches one of the canonical concepts and uses an allowed term.
+    action: Keep and prefer in new current prose.
+  compatibility_identifier:
+    meaning: The spelling is a shipped field, command flag, file name, code identifier, or parseable label.
+    action: Preserve until an explicit migration exists.
+  path_like_reference:
+    meaning: The occurrence is a literal file path, glob, manifest path, fixture path, or code path.
+    action: Preserve the concrete path spelling.
+  package_metadata:
+    meaning: The occurrence is a concrete package metadata value or installed package layout name.
+    action: Preserve unless package metadata migration is explicitly in scope.
+  historical_record:
+    meaning: The occurrence is in changelog, progress, decision, archived plan, migration history, or release evidence.
+    action: Do not rewrite solely for vocabulary cleanup; qualify when current prose interprets it.
+  fixture_only:
+    meaning: The occurrence is test fixture input, expected compatibility output, or stale-path regression data.
+    action: Preserve when the test proves compatibility or rejection behavior.
+  generic_plain_language:
+    meaning: The occurrence is ordinary English unrelated to Agentera app files, package shape, hooks, commands, or skill entries.
+    action: Allowed, but prefer object-specific terms when risk is high.
+  ambiguous_current_prose:
+    meaning: The occurrence uses bare `bundle` or bare `SKILL.md` as a conceptual noun in current user-facing prose.
+    action: Replace or qualify with the relevant canonical concept term.
+compatibility_identifiers:
+  bundle:
+    - .agentera-bundle.json
+    - bundle.status
+    - activeBundleRoot
+    - "--only bundle"
+    - bundle.dryRunCommand
+  skill_entry_file:
+    - skills/agentera/SKILL.md
+    - skills/*/SKILL.md
+    - SKILL.md
+package_metadata_values:
+  - suite-bundle
+  - agentera_cli/bundle
+  - bundle-only enhancements
+historical_terms:
+  - agentera bundle-status
+  - bundle-status
+  - single-bundle model
+docs_delegation:
+  document: docs/vocabulary.md
+  required_anchor: Bundle and SKILL.md vocabulary
+  authority_path: references/cli/bundle-skill-vocabulary.yaml
+  must_not_duplicate_large_table: true

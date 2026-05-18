@@ -1,0 +1,107 @@
+header:
+  level: light
+  created: 2026-05-18
+  status: complete
+  title: Routing and Execution Vocabulary Collapse
+what: >-
+  Document the routing and execution vocabulary collapse so Agentera uses
+  `Agentera router` for request-to-capability routing, `suggest` for next-action
+  recommendations, `delegate` for Orkestrera task assignment, `spawn` for
+  Realisera/Optimera workers, `subagent mechanism` for runtime support, and
+  `pre-spawn Git commit` for worker safety.
+why: >-
+  The remaining vocabulary fixes and regressions need one authoritative boundary
+  before current prose is rewritten. Without that boundary, implementation agents
+  will keep mixing dispatcher, dispatch, router, conductor, worktree dispatch,
+  and pre-dispatch commit language across routing, recommendations,
+  orchestration assignment, worker launch, runtime capability, and Git safety.
+constraints: >-
+  Keep this plan scoped to the P0 documentation/authority boundary for routing
+  and execution vocabulary. Do not implement the later broad prose replacement
+  TODO, do not add the later ambiguous dispatcher/dispatch/router/conductor
+  regression sweep, do not rename capability `prose.md` files, and do not add or
+  implement `first_invocation_read`. Preserve shipped compatibility names and
+  code identifiers such as `subagent_dispatch` unless a concrete migration is in
+  scope. Do not refresh installed apps/profiles, publish, push, tag, change
+  package-manager state, edit `.agentera/vision.yaml`, mutate objective state,
+  or change decision satisfaction state.
+tasks:
+  - number: 1
+    name: Inventory routing and execution vocabulary surfaces
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN current vocabulary docs, capability instructions, runtime adapter
+        references, archived pre-dispatch commit guidance, and TODO sequencing are
+        inspected WHEN the vocabulary boundary is designed THEN each surviving term
+        is classified as canonical, compatibility-preserved, historical, fixture-only,
+        code identifier, or ambiguous current prose.
+      - >-
+        GIVEN adjacent TODOs are reviewed WHEN scope is recorded THEN this plan
+        explicitly excludes broad current-prose replacement, the full future
+        regression sweep, Decision 57 instruction-file renames, and
+        `first_invocation_read` feature work.
+  - number: 2
+    name: Add routing and execution vocabulary authority
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the structured authority is loaded WHEN canonical concepts are
+        inspected THEN it defines request-to-capability routing, next-action
+        suggestion, Orkestrera task assignment, Realisera/Optimera worker launch,
+        runtime subagent mechanism, and pre-spawn Git commit safety as separate
+        concepts with preferred terms and forbidden ambiguous shortcuts.
+      - >-
+        GIVEN compatibility surfaces are inspected WHEN the authority is read THEN it
+        preserves qualified shipped identifiers and historical names such as
+        `subagent_dispatch`, historical `pre-dispatch commit` records, and concrete
+        fixture names where mechanical renames would break compatibility or evidence.
+  - number: 3
+    name: Connect vocabulary docs without doing the broad cleanup
+    depends_on:
+      - 1
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `docs/vocabulary.md` is inspected WHEN the routing/execution section is
+        read THEN it delegates detailed classification to the structured authority
+        and names the canonical terms without duplicating a parallel Markdown table.
+      - >-
+        GIVEN focused synchronization checks run WHEN the docs are updated THEN they
+        prove source-index wiring and docs delegation while leaving the later broad
+        ambiguous-term sweep TODO open.
+  - number: 4
+    name: Close the routing and execution vocabulary plan artifacts
+    depends_on:
+      - 3
+    status: complete
+    acceptance:
+      - >-
+        GIVEN focused verification runs WHEN implementation is complete THEN exact
+        test, artifact validation, and diff-check evidence is recorded in plan
+        evidence and progress.
+      - >-
+        GIVEN TODO, CHANGELOG, PLAN, and PROGRESS are inspected WHEN closeout is
+        complete THEN the top `[docs:2.4.x]` routing/execution vocabulary TODO is
+        resolved and the later fix/test and Decision 57 TODOs remain open.
+overall_acceptance:
+  - >-
+    A routing/execution vocabulary authority defines and separates `Agentera router`,
+    `suggest`, `delegate`, `spawn`, `subagent mechanism`, and `pre-spawn Git commit`
+    while preserving compatibility and historical surfaces that must retain older
+    names.
+  - >-
+    `docs/vocabulary.md` delegates to that authority and gives humans a short,
+    unambiguous boundary without introducing a broad prose rewrite in this batch.
+  - >-
+    The top TODO is closed without implementing broad current-prose cleanup,
+    full ambiguous-term regressions, Decision 57 instruction-file renames,
+    `first_invocation_read`, version bumps, runtime config refreshes,
+    package-manager changes, publication, protected artifact edits, or decision
+    satisfaction changes.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-bundle-and-skill-vocabulary-authority.yaml

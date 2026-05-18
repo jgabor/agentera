@@ -158,7 +158,7 @@ instead of reconstructing hidden outcomes or claiming automation proved intent.
 6. **execution_context.changelog_boundary**: current public-history boundary or fallback
 7. **execution_context.scope_boundary**: artifact-family scope and conservative source-file scope
 8. **source_contract.capability_context**: missing state families and CLI fallback commands
-9. **profile summary**: use `hej.profile`; stale or missing profile is a caveat, not approval to refresh it.
+9. **profile summary**: use `hej.profile`; stale or missing profile is a caveat, not approval to refresh profile state.
 
 10. **Project discovery** (cycle 1 or when unfamiliar):
     - Map the directory structure

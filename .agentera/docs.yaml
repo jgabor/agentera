@@ -98,15 +98,15 @@ index:
   status: current
 - document: Progress
   path: .agentera/progress.yaml
-  last_updated: '2026-05-17'
+  last_updated: '2026-05-18'
   status: current
 - document: TODO
   path: TODO.md
-  last_updated: '2026-05-17'
+  last_updated: '2026-05-18'
   status: current
 - document: Changelog
   path: CHANGELOG.md
-  last_updated: '2026-05-17'
+  last_updated: '2026-05-18'
   status: current
 - document: Health
   path: .agentera/health.yaml
@@ -114,15 +114,15 @@ index:
   status: current
 - document: Plan
   path: .agentera/plan.yaml
-  last_updated: '2026-05-17'
+  last_updated: '2026-05-18'
   status: current
 - document: DOCS
   path: .agentera/docs.yaml
-  last_updated: '2026-05-17'
+  last_updated: '2026-05-18'
   status: current
 - document: Vocabulary
   path: docs/vocabulary.md
-  last_updated: '2026-05-17'
+  last_updated: '2026-05-18'
   status: current
 - document: Benchmark guide
   path: docs/benchmark.md
@@ -179,6 +179,10 @@ index:
 - document: Agent-ready state CLI contract
   path: references/cli/agent-ready-state-contract.yaml
   last_updated: '2026-05-16'
+  status: current
+- document: Capability instruction contract
+  path: references/cli/capability-instruction-contract.yaml
+  last_updated: '2026-05-18'
   status: current
 - document: Startup measurement contract
   path: references/analysis/startup-measurement-contract.yaml

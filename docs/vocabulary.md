@@ -16,6 +16,10 @@ included when they shape cross-suite usage.
 | `skills/agentera/capability_schema_contract.yaml` | Capability schema structure, required groups, priorities, and primitive-reference fields. |
 | `skills/agentera/schemas/artifacts/*.yaml` | Artifact field grammar, status values, path contracts, and validation rules. |
 | `references/artifacts/artifact-registry-interface-model.yaml` | Artifact identity facts: `artifact_id`, display name, default path, producers, consumers, type, scope. |
+| `references/cli/app-lifecycle-vocabulary.yaml` | App lifecycle canonical statuses, deprecated aliases, operation verbs, and consumer ownership boundaries. |
+| `references/cli/bundle-skill-vocabulary.yaml` | Canonical concepts, compatibility boundaries, and classification rules for `bundle` and `SKILL.md` usage. |
+| `references/cli/capability-instruction-contract.yaml` | Decision 57 capability instruction-file contract, future `instructions.md`, current `prose.md` compatibility, and `first_invocation_read` semantics. |
+| `references/cli/routing-execution-vocabulary.yaml` | Canonical concepts, compatibility boundaries, and classification rules for routing, suggestions, delegation, worker spawning, runtime subagent mechanisms, and pre-spawn Git commits. |
 | `skills/agentera/SKILL.md` | Agentera skill dispatcher, routing model, CLI-first state access, installed-app status checks, and safety rails. |
 | `skills/agentera/capabilities/*/prose.md` | Capability behavior, workflow grammar, step markers, and cross-capability boundaries. |
 | `scripts/agentera` and `scripts/agentera_upgrade.py` | CLI-visible command labels, upgrade output, and doctor diagnostics. |
@@ -34,7 +38,9 @@ included when they shape cross-suite usage.
 | Canonical artifact names are identifiers. | `VISION.md` maps to `.agentera/vision.yaml` | Assuming display names are literal paths. |
 | Exit signals are fixed. | `complete`, `flagged`, `stuck`, `waiting` | `blocked`, `partial`, `escalated` as exit signals. |
 | Current-state language names the object. | `Agentera app files need repair`, `artifacts are current`, `plan-level current-state check` | Bare `freshness` in new docs. |
-| Checkpoint is Git-only. | `pre-dispatch checkpoint commit` | Non-Git `checkpoint` in new docs. |
+| App lifecycle state is canonical metadata. | `up_to_date`, `outdated`, `repair_needed`, `migration_needed`, `manual_review_needed`, `ready_to_apply`, `applied`, `no_changes_needed` | `fresh`, `stale`, `refresh`, `fixed`, `ready`, or `noop` as app lifecycle status values. |
+| Worker safety commits are Git-only. | `pre-spawn Git commit` | Non-Git `checkpoint` or `pre-dispatch commit gate` in new docs. |
+| Capability instruction files have a future contract and a current compatibility state. | Future rule: `instructions.md` plus `first_invocation_read`; current state: `prose.md` remains supported until the later rename and validator work. | Claiming `instructions.md` is already required, or adding `first_invocation_read` to docs as current CLI output. |
 
 ## Plain-language rule
 
@@ -101,6 +107,27 @@ brand language before they can act.
 Capability names use Swedish-style `-era` verb forms. The name is the action:
 `planera` plans, `realisera` realizes, `optimera` optimizes.
 
+### Capability instruction contract
+
+The machine-readable authority is
+`references/cli/capability-instruction-contract.yaml`; it owns Decision 57's
+instruction-file boundary, including the future canonical `instructions.md` file,
+current `prose.md` compatibility, future `first_invocation_read` values, full-read
+obligations, compact-startup exceptions, and unsupported implementation states.
+
+Use this prose as guidance only: the future default is that initial capability
+invocation reads `instructions.md` in full unless an explicit compact-startup
+exception is declared. Today, capability files are still `prose.md`, validators
+still require `prose.md`, runtime descriptors may still point at `prose.md`, and
+`agentera hej --format json --capability-context <name>` does not emit
+`first_invocation_read` metadata.
+
+Do not replace this with a parallel Markdown table of read modes or migration
+surfaces. Update the YAML authority first, then keep this section as the short
+human-facing boundary. The file rename, CLI/schema metadata feature,
+first-invocation read behavior, descriptor rewrite, and validation/regression
+sweep remain separate follow-up work.
+
 ## Invocation and routing grammar
 
 | Term | Definition |
@@ -129,8 +156,9 @@ Capability names use Swedish-style `-era` verb forms. The name is the action:
 | Handoff confirmation | Clear free-form acceptance of the named single suggestion confirms invocation. Selecting a downstream capability option in a bounded prompt also confirms invocation; selecting `Done` stops without routing. Ambiguous replies get one clarifying question. |
 | Route | Direct user invocation by canonical capability name, primary alias, or slash route. A route is already consent to invoke the capability and does not need an extra handoff confirmation. |
 | Suggest | Recommend a downstream capability and wait for confirmation. |
-| Dispatch | Autonomous invocation of another capability, allowed only when the current capability explicitly owns that orchestration flow. |
-| Chain | Autonomous dispatch of multiple capabilities, allowed only inside an explicitly orchestrated flow. Otherwise, suggest the next capability and wait. |
+| Delegate | Orkestrera assigns approved plan work to a worker capability during an explicitly orchestrated flow. |
+| Spawn | Realisera or Optimera launches an isolated runtime worker through the host subagent mechanism. |
+| Subagent mechanism | Runtime support for worker execution through Claude Code, OpenCode, Codex CLI, Copilot CLI, or another host-native worker surface. |
 | Legacy bridge | Temporary v1 entry points, especially `/hej`, that guide users to `/agentera` and the v2 upgrade path. |
 
 CLI-visible `agentera hej` labels are source labels. Preserve them in CLI tests
@@ -162,6 +190,27 @@ remains `hej`, `plan`, `progress`, `health`, `todo`, `decisions`, `docs`,
 When capability prose recommends another capability, use the handoff label
 grammar (`<glyph> <capability>`). Keep slash forms only when documenting the
 entry route (`/agentera <alias>`) or preserving clearly historical evidence.
+
+### Routing and execution vocabulary
+
+The machine-readable authority is
+`references/cli/routing-execution-vocabulary.yaml`; it owns classification of
+routing and execution terms into canonical concepts, compatibility identifiers,
+code identifiers, historical records, fixtures, path-like references, generic
+plain language, and ambiguous current prose.
+
+Use this prose as guidance only: request-to-capability routing uses `Agentera router`
+or routing language, next-action recommendations `suggest`, Orkestrera
+task assignment `delegate`, Realisera/Optimera worker launch `spawn`, runtime
+support `subagent mechanism`, and worker safety `pre-spawn Git commit`.
+Preserve shipped identifiers and concrete code/path evidence such as
+`subagent_dispatch`, historical `pre-dispatch commit` records, fixture names,
+and archived plans unless an explicit compatibility migration is in scope.
+
+Do not replace this with a parallel Markdown table of preferred and forbidden
+terms. Update the YAML authority first, then keep this section as the short
+human-facing boundary. The broader current-prose replacement and repository-wide
+ambiguous-term sweep remain separate follow-up work.
 
 ## Artifact grammar
 
@@ -305,9 +354,9 @@ records the migration rationale, validation path, and compatibility impact.
 | Behavioral verification gate | Realisera check that behavior was verified against real project state. | Tests, builds, or manual verification. |
 | Pre-write self-audit | Prose check for verbosity mismatch, abstraction creep, and filler accumulation. | `agentera lint --artifact <ARTIFACT>` exposes the checks through the CLI. |
 | Plan-completion sweep | Realisera cleanup when plan tasks finish. | Progress rollup, changelog, TODO, health cross-reference, archive. |
-| Worktree dispatch | Isolated implementation by a subagent in a git worktree. | Realisera and optimera can use it. |
-| Stale-base awareness | Prevent worktrees from branching from old `origin/main` or stale HEAD. | Use checkpoint commits before dispatch. |
-| Orchestration loop | Orkestrera loop: select, dispatch, evaluate, resolve, log. | Thin conductor; it dispatches, not implements. |
+| Worker spawn | Isolated implementation or measurement by a worker through the host subagent mechanism. | Realisera and optimera can use it. |
+| Stale-base awareness | Prevent workers from branching from old `origin/main` or stale HEAD. | Use pre-spawn Git commits before spawning workers. |
+| Orchestration loop | Orkestrera loop: select, delegate, evaluate, resolve, log. | Orkestrera delegates; it does not implement. |
 | Evidence audit | Check that recorded verification actually proves acceptance criteria. | Orkestrera and inspektera use this language. |
 | Loop stop condition | Stop repeated failed cycles, tasks, or experiments. | Prevents endless retries. |
 
@@ -341,13 +390,13 @@ not add precision:
 | resonera | Socratic questioning, one question at a time, honest friction, steelman, tradeoffs, decision pressure. |
 | inspirera | Source analysis, pattern extraction, cross-pollination, worth stealing, external practice, adaptation. |
 | planera | WHAT and WHY, behavioral acceptance criteria, scope, included/excluded/deferred, task dependencies, plan-level current-state check. |
-| realisera | Cycle, orient/select/research/plan/dispatch/verify/commit/audit/log, HOW, progress log, worktree dispatch. |
+| realisera | Cycle, orient/select/research/plan/spawn/verify/commit/audit/log, HOW, progress log, worker spawn. |
 | optimera | Objective, experiment, baseline, harness, locked measurement, hypothesis, metric, regression, keep/discard gate. |
 | inspektera | Audit, health grade, dimensions, findings, evidence, impact, suggested action, artifact current-state review, deliberate decisions. |
 | dokumentera | Intent-first docs, explore-and-generate, update-and-verify, first-run survey, evergreen docs, docs become the spec. |
 | profilera | Decision profile, signal extraction, confidence, preference, validation, reusable user model. |
 | visualisera | Visual identity, design tokens, semantic weight, terminal-native, glyphs, logo scarcity. |
-| orkestrera | Thin conductor, plan execution, dispatch, task-notification result, presence check, evaluate, resolve, loop stop condition. |
+| orkestrera | Plan execution, delegate, task-notification result, presence check, evaluate, resolve, loop stop condition. |
 
 ## Runtime, install, and release grammar
 
@@ -376,6 +425,22 @@ not add precision:
 
 Canonical runtime names are Claude Code, OpenCode, Copilot CLI, and Codex CLI.
 
+### App lifecycle status vocabulary
+
+Decision 54 makes app lifecycle state a protocol surface, not ad hoc output
+copy. The machine-readable authority is
+`references/cli/app-lifecycle-vocabulary.yaml`; it owns the canonical status
+order, status definitions, deprecated aliases, scoped operation verbs, and
+consumer ownership boundaries for doctor, hej, upgrade, docs, and tests.
+
+Use this prose as guidance only: human-readable text can be friendlier, but it
+should be derived from canonical metadata instead of inventing parallel status
+words. `agentera upgrade` remains the umbrella command name. Its structured
+output and plain text should still name concrete operations such as repair app
+files, update app files, migrate Agentera data, or report no changes needed.
+Compatibility aliases are transitional classifications in the YAML authority,
+not second source-of-truth status values.
+
 Recovery prompts must be recommendation-first and plain-language. Avoid asking a
 user to choose between technical labels. Say: what happened, what the preview did
 or did not change, what the recommended fix will do, and what it will not touch.
@@ -391,6 +456,26 @@ CLI-visible doctor labels to preserve: `Agentera doctor`,
 CLI-visible upgrade labels to preserve: `Agentera upgrade`, `mode:`,
 `status:`, `project:`, `app home:`, `managed app root:`, `user data root:`, phase lines, item lines,
 `run with --yes to apply pending changes`, and `postflight doctor:`.
+
+### Bundle and SKILL.md vocabulary
+
+The machine-readable authority is
+`references/cli/bundle-skill-vocabulary.yaml`; it owns classification of
+`bundle` and `SKILL.md` usage into canonical concepts, compatibility
+identifiers, package metadata, historical records, fixtures, path-like
+references, generic plain language, and ambiguous current prose.
+
+Use this prose as guidance only: current conceptual docs should say the object
+they mean, such as Agentera app files, suite package, plugin-shipped hooks,
+removed `bundle-status` command, Agentera skill dispatcher, skill entry file,
+v1 skill entry file, or legacy hej bridge. Preserve shipped identifiers and
+literal paths such as `.agentera-bundle.json`, `bundle.status`,
+`activeBundleRoot`, `--only bundle`, and `skills/agentera/SKILL.md` unless an
+explicit compatibility migration is in scope.
+
+Do not replace this with a parallel Markdown table of allowed and forbidden
+terms. Update the YAML authority first, then keep this section as the short
+human-facing boundary.
 
 ## Evaluation and evidence grammar
 
@@ -478,6 +563,7 @@ High-risk diagnostic rewrites:
 | `bundle freshness gap detected` | `Agentera app files need repair` |
 | `bundle freshness guard failed` | `install status check failed` |
 | `bundle refresh required` | `repair Agentera app files` |
+| `app refresh required` | `Agentera app files need repair` or `Agentera app files are outdated` |
 | `upgrade guard triggered` | `v1 migration check found legacy files` |
 | `stale marker` | `missing or outdated version marker` |
 | `artifact freshness failed` | `artifact is stale` or `artifact needs sync` |
@@ -495,6 +581,10 @@ High-signal source surfaces for this vocabulary:
 | `skills/agentera/capabilities/*/schemas/*.yaml` | Trigger patterns, artifact roles, validation rules, exit conditions. |
 | `skills/agentera/schemas/artifacts/*.yaml` | Artifact fields, status enums, validation vocabulary, and protected current-state fields. |
 | `references/artifacts/artifact-registry-interface-model.yaml` | Canonical artifact registry language. |
+| `references/cli/app-lifecycle-vocabulary.yaml` | App lifecycle canonical status and operation vocabulary authority. |
+| `references/cli/bundle-skill-vocabulary.yaml` | Bundle and `SKILL.md` concept classification authority. |
+| `references/cli/capability-instruction-contract.yaml` | Decision 57 capability instruction-file and first-invocation read contract authority. |
+| `references/cli/routing-execution-vocabulary.yaml` | Routing and execution vocabulary authority. |
 | `scripts/agentera` | Flat State CLI labels and `agentera hej` source contract. |
 | `scripts/agentera_upgrade.py` | Upgrade and doctor output grammar. |
 | `scripts/install_root.py` | Install-root classification semantics. |

@@ -105,7 +105,7 @@ def test_doctor_reports_legacy_bundle_root_migration_required_with_exact_command
         "uvx --from git+https://github.com/jgabor/agentera agentera upgrade "
         f"--only bundle --install-root {install_root} --yes"
     )
-    assert payload["approval"] == f"approve app refresh for {install_root}"
+    assert payload["approval"] == f"approve app files repair for {install_root}"
     assert payload["retryCommand"].endswith(f"{install_root}/scripts/agentera hej")
 
 

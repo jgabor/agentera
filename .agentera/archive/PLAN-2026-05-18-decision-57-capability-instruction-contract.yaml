@@ -1,0 +1,144 @@
+header:
+  level: light
+  created: 2026-05-18
+  status: complete
+  title: Decision 57 Capability Instruction Contract
+what: >-
+  Document Decision 57's capability instruction contract: capability instruction
+  files move from `prose.md` to `instructions.md`, `first_invocation_read`
+  declares startup-read obligations, and first capability invocation reads
+  `instructions.md` in full unless a compact-startup exception is explicitly
+  declared.
+why: >-
+  Decision 57 is the last P0 foundation document before the rename, metadata,
+  feature, and validation TODOs. Agents need one documented contract that separates
+  the future instruction-file name, startup-read metadata, compact-startup
+  exception semantics, and compatibility boundaries before implementation starts.
+constraints: >-
+  Keep this plan scoped to documentation and contract authority for Decision 57.
+  Do not rename any `skills/agentera/capabilities/*/prose.md` files, do not update
+  validators to require `instructions.md`, do not add or emit `first_invocation_read`
+  metadata, and do not rewrite runtime descriptors or package metadata except for
+  narrow docs/test delegation needed to document the contract. Preserve existing
+  `prose.md` paths as compatibility and current-state references until the later
+  fix TODO is selected. Do not refresh installed apps/profiles, publish, push, tag,
+  change package-manager state, edit `.agentera/vision.yaml`, mutate objective
+  state, or change decision satisfaction state.
+tasks:
+  - number: 1
+    name: Inventory Decision 57 instruction surfaces
+    depends_on: []
+    status: complete
+    evidence:
+      - >-
+        Inventory checked Decision 57 references, TODO sequencing, vocabulary docs,
+        `capability_schema_contract.yaml`, runtime descriptor references, current
+        `skills/agentera/capabilities/*/prose.md` surfaces, and existing authority
+        patterns. The contract classifies `instructions.md` as future canonical,
+        `prose.md` as current compatibility, `first_invocation_read` as future
+        metadata, compact startup as a future exception boundary, and rename/validator
+        behavior as later implementation work.
+    acceptance:
+      - >-
+        GIVEN Decision 57, TODO sequencing, vocabulary docs, capability schema
+        contract references, runtime descriptors, and current `prose.md` surfaces
+        are inspected WHEN the contract boundary is designed THEN each surface is
+        classified as future canonical `instructions.md`, current compatibility
+        `prose.md`, startup-read metadata, compact-startup exception, or later
+        implementation work.
+      - >-
+        GIVEN adjacent TODOs are reviewed WHEN scope is recorded THEN this plan
+        explicitly excludes the actual file rename, validator changes, descriptor
+        rewrites, CLI metadata emission, `first_invocation_read` feature behavior,
+        and the later validation/regression sweep.
+  - number: 2
+    name: Add the Decision 57 capability instruction contract authority
+    depends_on:
+      - 1
+    status: complete
+    evidence:
+      - >-
+        Added `references/cli/capability-instruction-contract.yaml` defining the
+        future canonical `instructions.md` file, current compatibility `prose.md`,
+        `first_invocation_read` values (`full`, `compact_startup`, `skip`), full-read
+        obligation, compact-startup escalation boundaries, unsupported implementation
+        state, compatibility-preserved current references, later TODO separation, and
+        surface inventory.
+    acceptance:
+      - >-
+        GIVEN the structured authority is loaded WHEN Decision 57 terms are inspected
+        THEN it defines `instructions.md`, compatibility `prose.md`,
+        `first_invocation_read` values, full-read obligations, compact-startup
+        exceptions, and current unsupported implementation states.
+      - >-
+        GIVEN compatibility boundaries are inspected WHEN the authority is read THEN
+        existing `prose.md` paths, archived v1/v2 migration records, descriptor
+        pointers, fixtures, and current validator references are preserved until the
+        later implementation TODOs explicitly migrate them.
+  - number: 3
+    name: Connect docs and focused contract checks
+    depends_on:
+      - 1
+      - 2
+    status: complete
+    evidence:
+      - >-
+        Updated `docs/vocabulary.md`, README capability-author guidance, and
+        `.agentera/docs.yaml` so humans and docs indexes delegate Decision 57 details
+        to the machine-readable authority without pretending the rename, validators,
+        runtime descriptors, CLI metadata, or first-invocation behavior already
+        changed. Added `tests/test_capability_instruction_contract.py` for source-index
+        wiring, docs delegation, current compatibility state, future terms, and later
+        implementation separation.
+    acceptance:
+      - >-
+        GIVEN `docs/vocabulary.md` and user-facing docs are inspected WHEN the
+        contract is documented THEN they delegate the detailed Decision 57 boundary
+        to the structured authority and explain the future rule without pretending
+        the rename or CLI metadata already exists.
+      - >-
+        GIVEN focused contract tests run WHEN the docs are updated THEN they prove
+        source-index wiring, docs delegation, allowed current compatibility
+        references, and explicit separation from later rename and metadata work.
+  - number: 4
+    name: Close the Decision 57 contract plan artifacts
+    depends_on:
+      - 3
+    status: complete
+    evidence:
+      - >-
+        Focused verification passed: `uv run pytest tests/test_capability_instruction_contract.py
+        tests/test_routing_execution_vocabulary_authority.py tests/test_bundle_skill_vocabulary_authority.py
+        tests/test_lifecycle_vocabulary_authority.py tests/test_decision44_vocabulary.py
+        -q` reported 29 passed. Artifact validators for PLAN.md, TODO.md,
+        CHANGELOG.md, PROGRESS.md, and DOCS.md returned `status=pass`. `git diff
+        --check` passed. TODO, CHANGELOG, PLAN, and PROGRESS were updated for closeout
+        while the later rename, metadata feature, and validation/regression TODOs remain
+        open.
+    acceptance:
+      - >-
+        GIVEN focused verification runs WHEN implementation is complete THEN exact
+        test, artifact validation, and diff-check evidence is recorded in plan
+        evidence and progress.
+      - >-
+        GIVEN TODO, CHANGELOG, PLAN, and PROGRESS are inspected WHEN closeout is
+        complete THEN the top `[docs:2.4.x]` Decision 57 documentation TODO is
+        resolved while the later rename, `first_invocation_read`, and validation
+        coverage TODOs remain open.
+overall_acceptance:
+  - >-
+    A Decision 57 capability instruction contract authority documents the future
+    `instructions.md` convention, `first_invocation_read` semantics, full-read
+    obligation, compact-startup exception boundary, and current compatibility
+    state for `prose.md`.
+  - >-
+    Docs and focused checks make the contract discoverable without claiming that
+    file renames, validator behavior, runtime descriptors, or CLI metadata have
+    already changed.
+  - >-
+    The top TODO is closed without renaming capability files, adding
+    `first_invocation_read` behavior, changing validators, rewriting descriptors,
+    version bumps, runtime config refreshes, package-manager changes, publication,
+    protected artifact edits, or decision satisfaction changes.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-routing-and-execution-vocabulary-collapse.yaml

@@ -1,0 +1,129 @@
+header:
+  level: light
+  created: 2026-05-18
+  status: complete
+  title: Agentera App Files Wording Cleanup
+what: >-
+  Replace current user-facing and diagnostic `bundle` wording that means installed
+  Agentera app files with the canonical terms from `references/cli/bundle-skill-vocabulary.yaml`:
+  `Agentera app files`, `app files directory`, `installed app`, or another authority-approved
+  app-files term.
+why: >-
+  The bundle/SKILL.md vocabulary authority exists and the structured app lifecycle
+  metadata now uses Decision 54 statuses, but current prose and diagnostics still risk
+  describing installed app files as a `bundle`. This fix applies the authority to the
+  installed-app wording surface while preserving shipped compatibility identifiers,
+  historical records, package metadata, and path-like references.
+constraints: >-
+  Keep this plan scoped to user-facing and diagnostic wording where `bundle` means
+  Agentera app files. Do not rewrite compatibility identifiers such as `.agentera-bundle.json`,
+  `bundle.status`, `activeBundleRoot`, `bundle.dryRunCommand`, `--only bundle`, package
+  metadata values, fixtures, archived plans, changelog/progress history, or concrete file
+  paths. Do not work on ambiguous `SKILL.md` prose, routing/execution vocabulary cleanup,
+  capability `prose.md` rename, `first_invocation_read`, broad vocabulary regression
+  coverage, 3.0.0 packaging, app/profile refresh, publication, push, tag, package-manager
+  state, `.agentera/vision.yaml`, objective state, or decision satisfaction state.
+tasks:
+  - number: 1
+    name: Inventory current bundle wording surfaces
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `references/cli/bundle-skill-vocabulary.yaml`, current docs, CLI diagnostics,
+        README/UPGRADE guidance, scripts, and focused tests are inspected WHEN each surviving
+        `bundle` occurrence is classified THEN the implementation scope separates current
+        user-facing installed-app wording from compatibility identifiers, package metadata,
+        historical records, fixtures, generic prose, and unrelated SKILL.md vocabulary.
+      - >-
+        GIVEN adjacent TODOs are reviewed WHEN the scope is recorded THEN ambiguous SKILL.md
+        cleanup, routing/execution cleanup, Decision 57 implementation, broad vocabulary
+        regression coverage, and 3.0.0 packaging remain explicitly out of scope.
+    evidence: >-
+      Inspected the authority, active docs/guidance/diagnostic surfaces, scripts, focused
+      tests, and adjacent TODOs. In scope: current installed-app diagnostic wording in
+      `scripts/agentera` and `scripts/agentera_upgrade.py`; preserved compatibility
+      fields and selectors such as `.agentera-bundle.json`, `bundle.status`,
+      `activeBundleRoot`, `bundle.dryRunCommand`, and `--only bundle`; left SKILL.md,
+      routing/execution, capability instruction rename, broad regression, package, and
+      historical-record work out of scope.
+  - number: 2
+    name: Replace installed-app bundle wording
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN current user-facing docs, CLI diagnostics, and recovery guidance describe
+        installed app files as a `bundle` WHEN the wording means Agentera app files THEN
+        the text uses authority-approved terms such as `Agentera app files`, `app files`,
+        `app files directory`, `installed app`, or `managed app files`.
+      - >-
+        GIVEN shipped compatibility names and historical evidence contain `bundle` WHEN
+        the spelling is a field, flag, file name, package metadata value, fixture, command
+        history, or archived record THEN the spelling is preserved or explicitly qualified
+        rather than mechanically renamed.
+    evidence: >-
+      Reworded current installed-app caveats from generic app-state/refresh language to
+      authority-approved app-files language, changed missing-marker repair guidance to
+      repair app files, and changed the approval phrase to `approve app files repair ...`.
+      Structured compatibility identifiers, command phases/actions, package metadata,
+      fixtures, and historical records were preserved.
+  - number: 3
+    name: Add focused wording regressions
+    depends_on:
+      - 1
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN focused tests run WHEN current docs or diagnostics introduce new ambiguous
+        installed-app `bundle` wording THEN the tests fail while preserving allowed
+        compatibility identifiers, path-like references, package metadata, fixtures,
+        and historical records from the authority.
+      - >-
+        GIVEN `references/cli/bundle-skill-vocabulary.yaml` changes WHEN the tests load
+        the authority THEN allowed app-files terms and preserved compatibility surfaces
+        stay synchronized with the machine-readable source of truth.
+    evidence: >-
+      Extended `tests/test_bundle_skill_vocabulary_authority.py` to load the authority,
+      assert required app-files allowed terms, preserve compatibility surfaces, and reject
+      current installed-app diagnostics that reintroduce ambiguous app-state, app-refresh,
+      or bundle freshness/refresh wording.
+  - number: 4
+    name: Close wording cleanup artifacts
+    depends_on:
+      - 3
+    status: complete
+    acceptance:
+      - >-
+        GIVEN focused verification completes WHEN the cleanup is ready THEN exact pytest,
+        artifact validator, and `git diff --check` evidence is recorded in PLAN and PROGRESS.
+      - >-
+        GIVEN TODO, CHANGELOG, PLAN, and PROGRESS are inspected WHEN closeout is complete
+        THEN the top `[fix:2.4.x]` bundle wording cleanup TODO is resolved while SKILL.md
+        wording cleanup, routing/execution cleanup, Decision 57 implementation, broad
+        regression TODOs, and 3.0.0 work remain open.
+    evidence: >-
+      Focused tests passed: `uv run pytest tests/test_bundle_skill_vocabulary_authority.py
+      tests/test_lifecycle_vocabulary_authority.py tests/test_decision44_vocabulary.py
+      tests/test_bundle_freshness.py tests/test_query_cli.py::TestHej::test_stale_bundle_structured_output_has_repair_contract
+      -q` (37 passed) and `uv run pytest tests/test_upgrade_cli.py
+      tests/test_install_root_characterization.py -q` (40 passed). TODO, CHANGELOG,
+      PLAN, and PROGRESS were synchronized for closeout. `uv run scripts/agentera
+      validate artifact --artifact PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`,
+      and `DOCS.md` each returned `status=pass`; `git diff --check` passed.
+overall_acceptance:
+  - >-
+    Current user-facing and diagnostic wording no longer calls installed Agentera app
+    files a `bundle` unless the occurrence is a preserved compatibility identifier,
+    historical record, package metadata value, fixture, or concrete path.
+  - >-
+    Focused tests enforce the boundary through `references/cli/bundle-skill-vocabulary.yaml`
+    without starting the later broad vocabulary regression sweep.
+  - >-
+    The top TODO is closed without changing SKILL.md terminology, routing/execution
+    terminology, Decision 57 implementation, package/runtime state, publication state,
+    protected artifacts, or decision satisfaction state.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-decision-54-app-lifecycle-metadata-alignment.yaml

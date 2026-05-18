@@ -1,0 +1,134 @@
+header:
+  level: light
+  created: 2026-05-18
+  status: complete
+  title: Bundle and Skill Vocabulary Authority
+what: >-
+  Extend the machine-readable vocabulary authority to classify `bundle` and
+  `SKILL.md` usage into canonical concepts for Agentera app files, suite package,
+  plugin-shipped hooks, removed `bundle-status` command, Agentera skill dispatcher,
+  skill entry file, v1 skill entry file, and legacy hej bridge.
+why: >-
+  The next vocabulary fix and regression TODOs need a structured classification
+  boundary before replacing ambiguous `bundle` and bare `SKILL.md` prose. Without
+  that authority, implementation agents risk broad, inconsistent renames across
+  compatibility surfaces, package metadata, runtime descriptors, historical
+  records, and user-facing documentation.
+constraints: >-
+  Keep the scope bounded to classification authority for `bundle` and `SKILL.md`
+  terminology. Do not implement the later routing/execution vocabulary collapse,
+  do not rename capability `prose.md` files, do not add `first_invocation_read`,
+  and do not apply broad prose replacements outside authority/docs/test seams.
+  Preserve shipped compatibility identifiers such as `.agentera-bundle.json`,
+  `bundle.status`, `activeBundleRoot`, `--only bundle`, and concrete package or
+  fixture path names. Do not refresh installed apps/profiles, publish, push, tag,
+  change package-manager state, edit `.agentera/vision.yaml`, mutate objective
+  state, or change decision satisfaction state.
+tasks:
+  - number: 1
+    name: Inventory bundle and SKILL.md terminology surfaces
+    depends_on: []
+    status: complete
+    evidence:
+      - >-
+        Inventory checked current vocabulary docs, the existing app lifecycle authority
+        precedent, Decision 44 vocabulary regressions, and `bundle`/`SKILL.md`
+        occurrence surfaces. The plan remains bounded away from routing/execution
+        vocabulary, capability instruction-file renames, and `first_invocation_read`.
+    acceptance:
+      - >-
+        GIVEN current docs, runtime adapter tests, package metadata, upgrade tests,
+        and vocabulary references are inspected WHEN the authority scope is designed
+        THEN surviving `bundle` and `SKILL.md` usages are classified as canonical,
+        compatibility-preserved, historical, fixture-only, path-like, or ambiguous.
+      - >-
+        GIVEN the next TODOs are reviewed WHEN boundaries are recorded THEN this plan
+        explicitly excludes routing/execution vocabulary changes, capability
+        instruction file renames, and `first_invocation_read` feature work.
+  - number: 2
+    name: Add the machine-readable bundle and skill terminology authority
+    depends_on:
+      - 1
+    status: complete
+    evidence:
+      - >-
+        Added `references/cli/bundle-skill-vocabulary.yaml` defining Agentera app
+        files, suite package, plugin-shipped hooks, removed `bundle-status` command,
+        Agentera skill dispatcher, skill entry file, v1 skill entry file, and legacy
+        hej bridge, with allowed terms, forbidden ambiguous shortcuts,
+        compatibility identifiers, package metadata values, historical terms, and
+        classification rules.
+    acceptance:
+      - >-
+        GIVEN the authority file is loaded WHEN canonical concepts are inspected THEN
+        it defines Agentera app files, suite package, plugin-shipped hooks, removed
+        `bundle-status` command, Agentera skill dispatcher, skill entry file, v1
+        skill entry file, and legacy hej bridge with allowed terms and forbidden
+        ambiguous shortcuts.
+      - >-
+        GIVEN compatibility surfaces are inspected WHEN the authority is read THEN it
+        preserves concrete shipped identifiers and path-like references instead of
+        forcing mechanical renames.
+  - number: 3
+    name: Connect docs and regression coverage to the authority
+    depends_on:
+      - 1
+      - 2
+    status: complete
+    evidence:
+      - >-
+        Updated `docs/vocabulary.md` to delegate bundle/SKILL.md classification to
+        the YAML authority without a parallel Markdown table, and added
+        `tests/test_bundle_skill_vocabulary_authority.py` coverage for canonical
+        concepts, allowed/forbidden terms, compatibility preservation,
+        classification rules, docs delegation, and source-index wiring.
+    acceptance:
+      - >-
+        GIVEN `docs/vocabulary.md` is inspected WHEN the bundle/SKILL.md vocabulary
+        section is read THEN it delegates classification details to the structured
+        authority and describes the user-facing boundary without duplicating a
+        parallel untyped table.
+      - >-
+        GIVEN vocabulary regression tests run WHEN `bundle` or `SKILL.md` usage is
+        ambiguous THEN the tests fail while still allowing canonical concepts,
+        compatibility-preserved identifiers, historical records, fixtures, and
+        path-like references.
+  - number: 4
+    name: Close the bundle and SKILL.md authority TODO artifacts
+    depends_on:
+      - 3
+    status: complete
+    evidence:
+      - >-
+        Focused verification passed: `uv run pytest tests/test_bundle_skill_vocabulary_authority.py
+        tests/test_lifecycle_vocabulary_authority.py tests/test_decision44_vocabulary.py
+        -q` reported 14 passed. `uv run scripts/agentera validate artifact --artifact
+        PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`, and `DOCS.md` each
+        returned `status=pass`. `git diff --check` passed. TODO, CHANGELOG, PLAN,
+        and PROGRESS were updated for closeout while the later routing/execution
+        and Decision 57 TODOs remain open.
+    acceptance:
+      - >-
+        GIVEN focused verification runs WHEN the batch is complete THEN the exact
+        test, artifact validation, and diff-check evidence is recorded in plan
+        evidence and progress.
+      - >-
+        GIVEN TODO, CHANGELOG, PLAN, and PROGRESS are inspected WHEN closeout is
+        complete THEN the top `[docs:2.4.x]` bundle/SKILL.md authority TODO is
+        resolved and later routing/execution and Decision 57 TODOs remain open.
+overall_acceptance:
+  - >-
+    A machine-readable vocabulary authority classifies `bundle` and `SKILL.md`
+    usages into canonical concepts, compatibility-preserved surfaces, historical
+    records, fixtures, path-like references, and ambiguous usages.
+  - >-
+    Documentation and focused regressions prove the structured authority remains
+    synchronized with the vocabulary contract and rejects new ambiguous user-facing
+    terminology.
+  - >-
+    The top TODO is closed without implementing routing/execution vocabulary work,
+    capability instruction-file renames, `first_invocation_read`, version bumps,
+    runtime config refreshes, package-manager changes, publication, protected
+    artifact edits, or decision satisfaction changes.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-decision-54-app-lifecycle-vocabulary-authority.yaml

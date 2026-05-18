@@ -1,0 +1,119 @@
+header:
+  level: light
+  created: 2026-05-18
+  status: complete
+  title: Decision 54 App Lifecycle Vocabulary Authority
+what: >-
+  Create a machine-readable app lifecycle vocabulary authority for Decision 54 so
+  doctor, hej, upgrade, docs, and tests share one canonical source for lifecycle
+  statuses, operation verbs, deprecated aliases, and ownership boundaries.
+why: >-
+  Decision 54 made app lifecycle metadata a protocol surface. The prose section in
+  `docs/vocabulary.md` documents the intended words, but the next fix and test
+  work needs a structured authority that code and regressions can load instead of
+  copying enum lists by hand.
+constraints: >-
+  Keep the scope bounded to app lifecycle vocabulary from Decision 54. Do not
+  rename capability names, artifact names or paths, exit signals, task statuses,
+  health grades, or general prose. Preserve compatibility identifiers such as
+  `.agentera-bundle.json`, `bundle.status`, `activeBundleRoot`, and `--only bundle`
+  when they are shipped surfaces. Do not refresh installed apps/profiles, publish,
+  push, tag, change package-manager state, edit `.agentera/vision.yaml`, mutate
+  objective state, or change decision satisfaction state.
+tasks:
+  - number: 1
+    name: Inventory Decision 54 vocabulary sources and consumers
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN Decision 54 and `docs/vocabulary.md` are inspected WHEN the structured
+        authority is designed THEN the inventory covers canonical statuses,
+        operation verbs, deprecated aliases, and the explicit no-broader-rename
+        boundary.
+      - >-
+        GIVEN current CLI and test consumers are inspected WHEN ownership boundaries
+        are listed THEN doctor, hej, upgrade, docs, and tests are the only in-scope
+        consumers for this batch.
+    evidence: >-
+      Decision 54 and `docs/vocabulary.md` were inspected; the authority scope records
+      canonical statuses, operation verbs, deprecated aliases, and the explicit
+      no-broader-rename boundary. The in-scope consumers are closed to doctor, hej,
+      upgrade, docs, and tests.
+  - number: 2
+    name: Add the machine-readable lifecycle vocabulary authority
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the new authority file is loaded WHEN its schema is inspected THEN it
+        defines the canonical statuses `up_to_date`, `outdated`, `repair_needed`,
+        `migration_needed`, `manual_review_needed`, `ready_to_apply`, `applied`, and
+        `no_changes_needed` with concepts and deprecated aliases.
+      - >-
+        GIVEN the new authority file is loaded WHEN operation verbs and consumers
+        are inspected THEN `install`, `repair`, `update`, `migrate`, `upgrade`, and
+        `refresh` have scoped meanings and doctor, hej, upgrade, docs, and tests
+        have explicit ownership permissions.
+    evidence: >-
+      Added `references/cli/app-lifecycle-vocabulary.yaml` with the canonical status
+      order, definitions, deprecated aliases, scoped operation verbs, compatibility
+      boundary, and closed consumer ownership records for doctor, hej, upgrade, docs,
+      and tests.
+  - number: 3
+    name: Connect docs and tests to the authority
+    depends_on:
+      - 1
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `docs/vocabulary.md` is inspected WHEN the app lifecycle section is
+        read THEN it points to the machine-readable authority instead of acting as an
+        untyped parallel source of truth.
+      - >-
+        GIVEN vocabulary regression tests run WHEN the authority changes THEN they
+        prove the canonical status list, deprecated app status aliases, scoped verbs,
+        and consumer ownership boundaries remain synchronized.
+    evidence: >-
+      `docs/vocabulary.md` now names `references/cli/app-lifecycle-vocabulary.yaml`
+      as the machine-readable authority instead of carrying parallel status and verb
+      tables. `tests/test_lifecycle_vocabulary_authority.py` loads the YAML and proves
+      canonical status order, deprecated alias mappings, scoped verbs, and closed
+      consumer ownership boundaries.
+  - number: 4
+    name: Close the Decision 54 vocabulary TODO artifacts
+    depends_on:
+      - 3
+    status: complete
+    acceptance:
+      - >-
+        GIVEN focused verification runs WHEN the batch is complete THEN the exact
+        command output is recorded in plan evidence and progress.
+      - >-
+        GIVEN TODO, CHANGELOG, PLAN, and PROGRESS are inspected WHEN closeout is
+        complete THEN the top `[docs:2.4.x]` lifecycle vocabulary authority TODO is
+        resolved and the next open TODO remains correctly ordered.
+    evidence: >-
+      Verification recorded for this closeout: `uv run pytest tests/test_lifecycle_vocabulary_authority.py
+      -q` passed with 5 tests; `uv run pytest tests/test_lifecycle_vocabulary_authority.py
+      tests/test_decision44_vocabulary.py -q` passed with 8 tests; `uv run "$AGENTERA_HOME/app/scripts/agentera"
+      validate artifact --artifact PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`,
+      and `DOCS.md` each returned `status=pass`; `git diff --check` passed. The
+      top lifecycle vocabulary TODO moved to Resolved and the next P0 TODO remains
+      first open.
+overall_acceptance:
+  - >-
+    A machine-readable lifecycle vocabulary authority exists and is the source of
+    truth for Decision 54 canonical statuses, operation verbs, deprecated aliases,
+    and ownership boundaries.
+  - >-
+    Documentation and focused regressions prove the structured authority remains
+    synchronized with the prose vocabulary contract.
+  - >-
+    The top TODO is closed without broad protocol renames, version bumps, runtime
+    config refreshes, package-manager changes, publication, protected artifact
+    edits, or decision satisfaction changes.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-helper-script-classification-policy.yaml

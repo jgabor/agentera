@@ -1445,7 +1445,7 @@ class TestHej:
         assert bundle["dryRunCommand"].startswith("uvx --from git+https://github.com/jgabor/agentera")
         assert "--only bundle" in bundle["dryRunCommand"]
         assert bundle["applyCommand"].endswith("--yes")
-        assert bundle["approval"] == f"approve app refresh for {install_root}"
+        assert bundle["approval"] == f"approve app files repair for {install_root}"
         assert bundle["appHome"] == str(install_root)
         assert "installRoot" not in bundle
         assert "installRootSource" not in bundle

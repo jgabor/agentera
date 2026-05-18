@@ -1,0 +1,191 @@
+schema_version: agentera.routing_execution_vocabulary.v1
+status: active_authority
+purpose: >-
+  Define routing and execution vocabulary boundaries so request routing, next-action
+  recommendation, Orkestrera task assignment, worker launch, runtime support, and
+  worker-safety Git commits stay distinct without forcing mechanical renames of
+  shipped compatibility identifiers or historical evidence.
+sources:
+  prose:
+    - docs/vocabulary.md#routing-and-execution-vocabulary
+scope:
+  includes:
+    - Request-to-capability routing through the Agentera skill entry point.
+    - Hej and capability next-action recommendations that wait for confirmation.
+    - Orkestrera assignment of approved plan work to worker capabilities.
+    - Realisera and Optimera launch of runtime workers.
+    - Runtime subagent support mechanisms and compatibility identifiers.
+    - Git commit safety language before spawning isolated worker execution.
+  excludes:
+    - Broad current-prose replacement across capability instructions.
+    - Repository-wide ambiguous dispatcher/dispatch/router/conductor occurrence rejection.
+    - Capability instruction-file rename work.
+    - "`first_invocation_read` metadata or startup-read behavior."
+    - Objective state, decision satisfaction state, package publication, and installed app refreshes.
+compatibility_boundary: >-
+  Compatibility identifiers, code symbols, fixture names, literal paths, archived
+  plans, changelog/progress/decision history, and concrete runtime API names may
+  keep older dispatcher, dispatch, conductor, worktree dispatch, and pre-dispatch
+  wording when the spelling is the contract or historical evidence. New conceptual
+  prose should use the canonical concept terms below.
+canonical_concept_order:
+  - request_to_capability_routing
+  - next_action_recommendation
+  - orkestrera_task_assignment
+  - worker_launch
+  - runtime_subagent_support
+  - worker_safety_git_commit
+canonical_concepts:
+  request_to_capability_routing:
+    definition: >-
+      Agentera chooses the capability that should handle a user request, using
+      direct routes, primary route aliases, trigger schemas, disambiguation, or
+      fallback to hej.
+    preferred_terms:
+      - Agentera router
+      - request-to-capability routing
+      - route
+      - routing
+    forbidden_ambiguous_shortcuts:
+      - master dispatcher
+      - bare dispatch
+      - skill dispatcher
+      - conductor
+  next_action_recommendation:
+    definition: >-
+      A capability recommends a concrete next capability or action and waits for
+      user confirmation before state-changing work begins.
+    preferred_terms:
+      - suggest
+      - suggestion
+      - next-action recommendation
+      - suggested next action
+    forbidden_ambiguous_shortcuts:
+      - dispatch
+      - force
+      - chain
+      - conductor handoff
+  orkestrera_task_assignment:
+    definition: >-
+      Orkestrera assigns approved plan work to a worker capability during an
+      explicitly orchestrated flow; it evaluates the result instead of implementing
+      the task itself.
+    preferred_terms:
+      - delegate
+      - delegation
+      - Orkestrera task delegation
+      - assigned plan work
+    forbidden_ambiguous_shortcuts:
+      - conductor
+      - conductor protocol
+      - dispatch
+      - orchestrator implementation
+  worker_launch:
+    definition: >-
+      Realisera or Optimera starts a worker through the host runtime when an
+      implementation or measurement cycle needs isolated execution.
+    preferred_terms:
+      - spawn
+      - spawn worker
+      - worker spawn
+      - worker launch
+    forbidden_ambiguous_shortcuts:
+      - dispatch
+      - worktree dispatch
+      - subagent dispatch
+      - launch substrate
+  runtime_subagent_support:
+    definition: >-
+      Runtime-specific support that lets Agentera use a host's subagent surface,
+      descriptor model, or equivalent worker mechanism.
+    preferred_terms:
+      - subagent mechanism
+      - runtime subagent mechanism
+      - host subagent mechanism
+      - runtime worker mechanism
+    forbidden_ambiguous_shortcuts:
+      - runtime dispatch substrate
+      - dispatch substrate
+      - subagent dispatch
+      - adapter dispatch
+  worker_safety_git_commit:
+    definition: >-
+      The Git-only commit synchronization required before spawning isolated worker
+      execution so the worker starts from a coherent base.
+    preferred_terms:
+      - pre-spawn Git commit
+      - pre-spawn commit
+      - Git commit before spawning workers
+      - commit before worker spawn
+    forbidden_ambiguous_shortcuts:
+      - pre-dispatch commit
+      - pre-dispatch checkpoint commit
+      - pre-dispatch commit gate
+      - checkpoint before dispatch
+classification_order:
+  - canonical_concept
+  - compatibility_identifier
+  - code_identifier
+  - path_like_reference
+  - historical_record
+  - fixture_only
+  - generic_plain_language
+  - ambiguous_current_prose
+classification_rules:
+  canonical_concept:
+    meaning: Usage matches one of the canonical concepts and uses a preferred term.
+    action: Keep and prefer in new current prose.
+  compatibility_identifier:
+    meaning: The spelling is a shipped field, command flag, runtime group name, descriptor key, or parseable label.
+    action: Preserve until an explicit migration exists.
+  code_identifier:
+    meaning: The spelling is a Python, JavaScript, TOML, YAML, test, or API identifier consumed by code or runtime descriptors.
+    action: Preserve unless a code migration is explicitly in scope.
+  path_like_reference:
+    meaning: The occurrence is a literal file path, glob, manifest path, fixture path, archive path, or code path.
+    action: Preserve the concrete path spelling.
+  historical_record:
+    meaning: The occurrence is in changelog, progress, decision, archived plan, migration history, or release evidence.
+    action: Do not rewrite solely for vocabulary cleanup; qualify when current prose interprets it.
+  fixture_only:
+    meaning: The occurrence is test fixture input, expected compatibility output, stale-path data, or semantic-eval evidence.
+    action: Preserve when the test proves compatibility or rejection behavior.
+  generic_plain_language:
+    meaning: The occurrence is ordinary English unrelated to Agentera routing, recommendation, orchestration assignment, worker launch, runtime support, or Git safety.
+    action: Allowed, but prefer object-specific terms when risk is high.
+  ambiguous_current_prose:
+    meaning: The occurrence uses dispatcher, dispatch, router, conductor, worktree dispatch, runtime dispatch substrate, or pre-dispatch commit language as a conceptual shortcut in current prose.
+    action: Replace or qualify with the relevant canonical concept term.
+compatibility_identifiers:
+  runtime_adapter:
+    - subagent_dispatch
+    - RuntimeAdapter.subagent_dispatch
+    - subagent_dispatch.supported
+    - subagent_dispatch.group
+  route_aliases:
+    - ROUTE_ALIASES
+    - primary_aliases
+  command_and_schema_surfaces:
+    - agentera validate descriptors
+    - descriptor_sources
+    - invocation_pattern
+code_identifiers:
+  - subagent_dispatch
+  - test_runtime_adapter_subagent_dispatch_metadata_is_complete
+  - test_cross_runtime_capability_subagent_dispatch_support
+historical_terms:
+  - pre-dispatch commit
+  - pre-dispatch checkpoint commit
+  - pre-dispatch commit gate
+  - worktree dispatch
+  - runtime dispatch substrate
+  - master dispatcher
+  - conductor protocol
+fixture_terms:
+  - subagent_dispatch fixture
+  - worktree dispatch fixture
+docs_delegation:
+  document: docs/vocabulary.md
+  required_anchor: Routing and execution vocabulary
+  authority_path: references/cli/routing-execution-vocabulary.yaml
+  must_not_duplicate_large_table: true

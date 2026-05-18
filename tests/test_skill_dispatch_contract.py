@@ -108,8 +108,12 @@ def test_vocabulary_documents_handoff_and_route_boundary() -> None:
     assert "Handoff confirmation" in content
     assert "Direct user invocation by canonical capability name" in content
     assert "Recommend a downstream capability and wait for confirmation" in content
-    assert "Autonomous invocation of another capability" in content
-    assert "Autonomous dispatch of multiple capabilities" in content
+    assert "Delegate" in content
+    assert "Orkestrera assigns approved plan work" in content
+    assert "Spawn" in content
+    assert "launches an isolated runtime worker" in content
+    assert "Subagent mechanism" in content
+    assert "Runtime support for worker execution" in content
     assert "not schema authority" in content
 
 
