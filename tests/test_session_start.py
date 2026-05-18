@@ -8,6 +8,7 @@ parse_artifact_mapping (table parsing with regex boundaries).
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -343,6 +344,28 @@ class TestBuildDigest:
         assert "Health" in result
         assert "Critical issues" in result
 
+    def test_builds_digest_with_runtime_session(self, session_start, tmp_path, monkeypatch):
+        """Runtime-local session bookmarks are included when present."""
+        data_home = tmp_path / "data"
+        monkeypatch.delenv("AGENTERA_HOME", raising=False)
+        monkeypatch.setenv("XDG_DATA_HOME", str(data_home))
+        session_path = session_start.resolve_session_path(tmp_path)
+        session_path.parent.mkdir(parents=True)
+        session_path.write_text(
+            "bookmarks:\n"
+            "- timestamp: '2026-05-18 10:00'\n"
+            "  artifacts:\n"
+            "  - PLAN.md\n"
+            "  summary: Modified 1 artifact(s)\n",
+            encoding="utf-8",
+        )
+
+        result = session_start.build_digest(tmp_path)
+
+        assert result is not None
+        assert "Last session" in result
+        assert "PLAN.md" in result
+
     def test_no_artifacts_returns_none(self, session_start, tmp_path):
         """Empty project with no artifacts produces no digest."""
         result = session_start.build_digest(tmp_path)
@@ -407,6 +430,7 @@ class TestEntryPoint:
             input=hook_input,
             capture_output=True,
             text=True,
+            env={**dict(os.environ)},
             timeout=10,
         )
         assert result.returncode == 0

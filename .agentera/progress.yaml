@@ -1,4 +1,33 @@
 cycles:
+- number: 570
+  timestamp: 2026-05-18 18:20
+  type: feat
+  phase: build
+  what: Added first_invocation_read metadata to hej capability context output.
+  commit: pending
+  inspiration: Orkestrera executed the active First Invocation Read Metadata plan,
+    keeping the feature scoped to metadata declaration and CLI discoverability instead
+    of runtime policing.
+  discovered: Planera can report `compact_startup` from its existing compact startup
+    contract while default capabilities report `full`. The CLI reads allowed values
+    from the Decision 57 authority and leaves runtime enforcement false.
+  verified: '`uv run pytest tests/test_capability_instruction_contract.py tests/test_query_cli.py
+    -q` passed with 202 tests. `uv run scripts/agentera validate capability-contract
+    --format json` passed. `uv run scripts/agentera validate capability skills/agentera/capabilities`
+    passed for all 12 capabilities. `uv run scripts/agentera hej --format json --capability-context
+    planera` returned valid JSON with `first_invocation_read.value=compact_startup`.
+    Artifact validators for PLAN.md, TODO.md, CHANGELOG.md, PROGRESS.md, and DOCS.md
+    returned status=pass. `git diff --check` passed.'
+  next: Hand off without committing.
+  context:
+    intent: Close the active `[feat:2.4.x]` first_invocation_read metadata TODO and
+      plan.
+    constraints: No runtime first-invocation read enforcement, unsupported capability-name
+      CLI command, broad validation/vocabulary TODO closeout, installed app/profile
+      refresh, publication, push, tag, vision edit, objective edit, or decision satisfaction
+      change.
+    scope: Capability instruction contract, hej capability context metadata, focused
+      tests, README, vocabulary docs, docs registry, TODO, CHANGELOG, PLAN, and PROGRESS.
 - number: 569
   timestamp: 2026-05-18 17:36
   type: fix
@@ -314,35 +343,8 @@ cycles:
       edits.
     scope: '`references/cli/routing-execution-vocabulary.yaml`, `tests/test_routing_execution_vocabulary_authority.py`,
       `docs/vocabulary.md`, TODO, CHANGELOG, PLAN, and PROGRESS.'
-- number: 560
-  timestamp: 2026-05-18 07:17
-  type: docs
-  phase: build
-  what: Added the bundle and SKILL.md vocabulary authority.
-  commit: pending
-  inspiration: Realisera executed the active Bundle and Skill Vocabulary Authority
-    plan after explicit confirmation so bundle/SKILL.md terminology has one machine-readable
-    classification source before later prose cleanup.
-  discovered: The right seam was a narrow authority plus docs/test delegation, not
-    broad current-prose replacement. Compatibility identifiers and path-like references
-    such as `.agentera-bundle.json`, `bundle.status`, `activeBundleRoot`, `--only
-    bundle`, and `skills/agentera/SKILL.md` remain preserved.
-  verified: '`uv run pytest tests/test_bundle_skill_vocabulary_authority.py tests/test_lifecycle_vocabulary_authority.py
-    tests/test_decision44_vocabulary.py -q` passed with 14 tests. `uv run scripts/agentera
-    validate artifact --artifact PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`,
-    and `DOCS.md` each returned `status=pass`. `git diff --check` passed.'
-  next: Continue with the next open P0 vocabulary task for routing/execution terms;
-    do not implement Decision 57 instruction-file rename or `first_invocation_read`
-    work until explicitly selected.
-  context:
-    intent: Close the active bundle/SKILL.md vocabulary authority plan.
-    constraints: Keep the scope to classification authority, docs delegation, and
-      focused tests; no routing/execution vocabulary collapse, capability prose rename,
-      `first_invocation_read`, installed app/profile refresh, package-manager change,
-      publication, push, tag, vision/objective edit, or decision satisfaction change.
-    scope: '`references/cli/bundle-skill-vocabulary.yaml`, `tests/test_bundle_skill_vocabulary_authority.py`,
-      `docs/vocabulary.md`, TODO, CHANGELOG, PLAN, and PROGRESS.'
 archive:
+- summary: 'Cycle 560 (2026-05-18): Added the bundle and SKILL.md vocabulary authority.'
 - summary: 'Cycle 559 (2026-05-18): Added the Decision 54 app lifecycle vocabulary
     authority.'
 - summary: 'Cycle 558 (2026-05-17): Documented the helper-script classification policy
@@ -419,5 +421,3 @@ archive:
     verify` namespace.'
 - summary: 'Cycle 521 (2026-05-15): Defined the PLAN Task 1 command contract for the
     planned `agentera verify` namespace.'
-- summary: 'Cycle 520 (2026-05-15): Synchronized PLAN Task 4 version and local state
-    closeout for the D48 `agentera validate` namespace...'

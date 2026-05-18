@@ -38,9 +38,9 @@ def test_decision_57_instruction_files_define_current_canonical_state() -> None:
 def test_first_invocation_read_values_and_obligation_are_documented() -> None:
     first_read = _authority()["first_invocation_read"]
 
-    assert first_read["field_status"] == "future_metadata_not_yet_implemented"
+    assert first_read["field_status"] == "cli_schema_discoverability_implemented"
     assert list(first_read["allowed_values"]) == ["full", "compact_startup", "skip"]
-    assert first_read["default_future_rule"] == "full"
+    assert first_read["default_rule"] == "full"
     assert "read `instructions.md` in full" in first_read["full_read_obligation"]
     assert first_read["allowed_values"]["full"]["obligation"] == (
         "full_instruction_file_read_required"
@@ -56,7 +56,7 @@ def test_first_invocation_read_values_and_obligation_are_documented() -> None:
 def test_compact_startup_exception_has_escalation_boundaries() -> None:
     exception = _authority()["compact_startup_exception"]
 
-    assert exception["status"] == "future_exception_boundary_documented_not_implemented"
+    assert exception["status"] == "implemented_for_planera_compact_startup_discoverability"
     assert "A machine-readable startup contract is available through supported state access." in exception[
         "allowed_when"
     ]
@@ -77,8 +77,8 @@ def test_implementation_state_keeps_later_work_explicitly_unsupported() -> None:
     assert state == {
         "instructions_md_files": "renamed",
         "validators_require_instructions_md": True,
-        "first_invocation_read_cli_metadata": False,
-        "first_invocation_read_schema_metadata": False,
+        "first_invocation_read_cli_metadata": True,
+        "first_invocation_read_schema_metadata": True,
         "runtime_first_invocation_behavior": False,
         "descriptors_rewritten_to_instructions_md": True,
         "package_metadata_rewritten_to_instructions_md": True,
@@ -88,13 +88,13 @@ def test_implementation_state_keeps_later_work_explicitly_unsupported() -> None:
 def test_compatibility_references_and_later_todos_are_preserved() -> None:
     authority = _authority()
     preserve = authority["compatibility_preservation"]["preserve_legacy_references_only_when_classified"]
-    todos = authority["compatibility_preservation"]["later_implementation_todos"]
+    todos = authority["compatibility_preservation"]["resolved_implementation_todos"]
 
     assert "skills/agentera/capabilities/*/instructions.md paths" in preserve
     assert "skills/agentera/capability_schema_contract.yaml directory requirements" in preserve
     assert "runtime descriptors and generated agent guidance that point to `instructions.md`" in preserve
     assert "archived v1/v2 migration records and progress evidence" in preserve
-    assert "Add `first_invocation_read` metadata" in todos["metadata_feature"]
+    assert "Added `first_invocation_read` metadata" in todos["metadata_feature"]
     assert "Prove capability directories require `instructions.md`" in todos[
         "validation_regression"
     ]
@@ -104,7 +104,7 @@ def test_surface_inventory_classifies_decision_57_surfaces() -> None:
     inventory = _authority()["surface_inventory"]
 
     assert inventory == {
-        "decision_57": "future_canonical_contract_source",
+        "decision_57": "current_canonical_contract_source",
         "todo_sequence": "separates_docs_rename_metadata_and_validation_work",
         "docs_vocabulary": "delegates_to_this_authority",
         "readme": "concise_user_facing_current_and_future_authoring_seam",
@@ -124,20 +124,20 @@ def test_vocabulary_docs_delegate_instruction_contract_to_yaml() -> None:
     assert "machine-readable authority" in section
     assert "canonical `instructions.md`" in section
     assert "legacy `prose.md`" in section
-    assert "future `first_invocation_read` values" in section
-    assert "does not emit `first_invocation_read`\nmetadata" in section
+    assert "implemented `first_invocation_read` values" in section
+    assert "emits `source_contract.capability_context.first_invocation_read`" in section
     assert "Do not replace this with a parallel Markdown table" in section
     assert "| Value |" not in section
     assert "| Mode |" not in section
 
 
-def test_readme_explains_current_compatibility_without_claiming_metadata() -> None:
+def test_readme_explains_current_metadata_without_claiming_runtime_enforcement() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
 
     assert "references/cli/capability-instruction-contract.yaml" in readme
     assert "Every capability has `instructions.md`" in readme
     assert "`first_invocation_read`" in readme
-    assert "future\nmetadata is not emitted by the CLI" in readme
+    assert "runtime enforcement is still false" in readme
 
 
 def test_source_indexes_point_to_instruction_contract_authority() -> None:

@@ -166,7 +166,7 @@ MAPPING:
     required: true
     description: >-
       Canonical artifact name (e.g., 'VISION.md', 'PROGRESS.md',
-      'SESSION.md'). Must match the tracked artifact set.
+      'TODO.md'). Must match the tracked artifact set.
     validation:
       - "Non-empty string"
   3:

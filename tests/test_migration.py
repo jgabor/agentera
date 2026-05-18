@@ -331,55 +331,6 @@ class TestHealthMigration:
         assert out.exists()
 
 
-# ── Session ───────────────────────────────────────────────────────────
-
-SESSION_V1 = """\
-# Session
-
-## 2026-01-15 14:30
-
-Artifacts modified: PROGRESS, DECISIONS
-Summary: Completed initial setup cycle and recorded first decision.
-
-## 2026-01-15 10:00
-
-Artifacts modified: PROGRESS
-Summary: First session bookmark.
-
-## Archived Sessions
-
-- 2026-01-14 09:00 (project initialized)
-"""
-
-
-class TestSessionMigration:
-    def test_parse_bookmarks(self, migrate):
-        data = migrate._parse_session(SESSION_V1)
-        assert len(data["bookmarks"]) == 2
-        b = data["bookmarks"][0]
-        assert b["timestamp"] == "2026-01-15 14:30"
-        assert "PROGRESS" in b["artifacts"]
-        assert "DECISIONS" in b["artifacts"]
-
-    def test_empty_session(self, migrate):
-        data = migrate._parse_session("# Session\n")
-        assert data["bookmarks"] == []
-
-    def test_full_migration_writes_yaml(self, migrate, project_dir):
-        _write_agentera(project_dir, "SESSION.md", SESSION_V1)
-        migrate.migrate_project(project_dir)
-        out = project_dir / ".agentera" / "session.yaml"
-        assert out.exists()
-        data = yaml.safe_load(out.read_text())
-        assert len(data["bookmarks"]) == 2
-
-    def test_missing_session_file(self, migrate, project_dir):
-        (project_dir / ".agentera").mkdir()
-        migrate.migrate_project(project_dir)
-        out = project_dir / ".agentera" / "session.yaml"
-        assert not out.exists()
-
-
 # ── Plan ──────────────────────────────────────────────────────────────
 
 PLAN_V1 = """\

@@ -31,7 +31,6 @@ DEFAULT_PATHS: dict[str, str] = {
     "HEALTH.md": ".agentera/health.yaml",
     "DOCS.md": ".agentera/docs.yaml",
     "DESIGN.md": "DESIGN.md",
-    "SESSION.md": ".agentera/session.yaml",
 }
 
 

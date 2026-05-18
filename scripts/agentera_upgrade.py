@@ -52,7 +52,6 @@ AGENTERA_USER_STATE_NAMES = (
     "health.yaml",
     "plan.yaml",
     "docs.yaml",
-    "session.yaml",
 )
 
 

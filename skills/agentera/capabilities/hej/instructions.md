@@ -118,7 +118,7 @@ needed, check `.agentera/docs.yaml` for path mappings before reading artifacts.
 Without a mapping, use the default layout:
 
 - Human-facing artifacts at the project root (Markdown): `TODO.md`, `CHANGELOG.md`, `DESIGN.md`
-- Agent-facing artifacts in `.agentera/` (YAML): `progress.yaml`, `decisions.yaml`, `health.yaml`, `plan.yaml`, `docs.yaml`, `vision.yaml`, `session.yaml`, and per-objective `objective.yaml` / `experiments.yaml`
+- Agent-facing artifacts in `.agentera/` (YAML): `progress.yaml`, `decisions.yaml`, `health.yaml`, `plan.yaml`, `docs.yaml`, `vision.yaml`, and per-objective `objective.yaml` / `experiments.yaml`
 
 Canonical names are identifiers, not literal paths. PROFILE.md is global:
 `$PROFILERA_PROFILE_DIR/PROFILE.md`, default `$XDG_DATA_HOME/agentera/PROFILE.md`.

@@ -54,7 +54,7 @@ def test_query_smoke_bundle_includes_upgrade_support_module(tmp_path: Path) -> N
     assert result.returncode == 0, result.stdout + result.stderr
     assert "decisions" in result.stdout
     assert "progress" in result.stdout
-    assert "session" in result.stdout
+    assert "session" not in result.stdout
     assert "ModuleNotFoundError" not in result.stdout + result.stderr
 
 

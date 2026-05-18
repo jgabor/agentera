@@ -17,8 +17,6 @@ def _write_docs_mapping(project, state_dir="state"):
         f"  path: {state_dir}/decisions.yaml\n"
         "- artifact: HEALTH.md\n"
         f"  path: {state_dir}/health.yaml\n"
-        "- artifact: SESSION.md\n"
-        f"  path: {state_dir}/session.yaml\n"
         "- artifact: VISION.md\n"
         f"  path: {state_dir}/vision.yaml\n",
         encoding="utf-8",
@@ -76,7 +74,6 @@ def test_compaction_status_counts_mapped_compactable_artifacts(compaction, tmp_p
     )
     (project / "state" / "decisions.yaml").write_text("decisions:\n- number: 1\narchive: []\n", encoding="utf-8")
     (project / "state" / "health.yaml").write_text("audits: []\narchive:\n- summary: old\n", encoding="utf-8")
-    (project / "state" / "session.yaml").write_text("bookmarks:\n- timestamp: now\narchive: []\n", encoding="utf-8")
 
     statuses = {status.artifact: status for status in compaction.compute_compaction_status(project)}
 
@@ -89,7 +86,6 @@ def test_compaction_status_counts_mapped_compactable_artifacts(compaction, tmp_p
     assert statuses["PROGRESS.md"].over_limit_count == 2
     assert statuses["DECISIONS.md"].over_limit_count == 0
     assert statuses["HEALTH.md"].archive_count == 1
-    assert statuses["SESSION.md"].active_count == 1
 
 
 def test_compaction_status_classifies_non_compactable_and_protected_without_mutation(compaction, tmp_path):
@@ -153,12 +149,10 @@ def test_check_mode_reports_over_limit_without_mutation(compaction, tmp_path):
         "audits": [{"number": i} for i in range(1, 11)],
         "archive": [{"summary": f"Audit {i} (2026-04-01): old"} for i in range(1, 42)],
     }
-    session = {"bookmarks": [], "archive": []}
     fixtures = {
         state / "progress.yaml": over_full,
         state / "decisions.yaml": over_archive,
         state / "health.yaml": over_total,
-        state / "session.yaml": session,
     }
     for path, data in fixtures.items():
         path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
@@ -182,7 +176,7 @@ def test_fix_mode_compacts_yaml_artifact_and_preserves_top_level_metadata(compac
     state = project / "state"
     state.mkdir()
     (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
-    for name in ["decisions", "health", "session"]:
+    for name in ["decisions", "health"]:
         (state / f"{name}.yaml").write_text(f"{name if name != 'health' else 'audits'}: []\narchive: []\n", encoding="utf-8")
 
     before = {
@@ -223,8 +217,8 @@ def test_fix_mode_compacts_todo_resolved_one_line_overflow(compaction, tmp_path)
         + "\n",
         encoding="utf-8",
     )
-    for name in ["progress", "decisions", "health", "session"]:
-        key = {"progress": "cycles", "decisions": "decisions", "health": "audits", "session": "bookmarks"}[name]
+    for name in ["progress", "decisions", "health"]:
+        key = {"progress": "cycles", "decisions": "decisions", "health": "audits"}[name]
         (state / f"{name}.yaml").write_text(f"{key}: []\narchive: []\n", encoding="utf-8")
 
     check_ops = {op.status.artifact: op for op in compaction.run_compaction(project, mode="check")}
@@ -251,8 +245,7 @@ def test_decision_compaction_retains_schema_allowed_outcome_fields(compaction, t
     (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
     (state / "progress.yaml").write_text("cycles: []\narchive: []\n", encoding="utf-8")
     (state / "health.yaml").write_text("audits: []\narchive: []\n", encoding="utf-8")
-    (state / "session.yaml").write_text("bookmarks: []\narchive: []\n", encoding="utf-8")
-    unrelated_paths = [state / "progress.yaml", state / "health.yaml", state / "session.yaml", state / "TODO.md"]
+    unrelated_paths = [state / "progress.yaml", state / "health.yaml", state / "TODO.md"]
     unrelated_originals = {path: path.read_text(encoding="utf-8") for path in unrelated_paths}
     decisions_path = state / "decisions.yaml"
     decisions_path.write_text(
@@ -303,7 +296,6 @@ def test_decision_compaction_keeps_review_needed_active_entries_full(compaction,
     (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
     (state / "progress.yaml").write_text("cycles: []\narchive: []\n", encoding="utf-8")
     (state / "health.yaml").write_text("audits: []\narchive: []\n", encoding="utf-8")
-    (state / "session.yaml").write_text("bookmarks: []\narchive: []\n", encoding="utf-8")
     decisions = [_decision(i) for i in range(1, 13)]
     decisions[0]["satisfaction"] = {"state": "open"}
     decisions[1]["satisfaction"] = {"state": "provisionally_satisfied", "evidence": "local test evidence"}
@@ -332,7 +324,6 @@ def test_decision_protected_overflow_reports_review_pressure_without_mutation(co
     (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
     (state / "progress.yaml").write_text("cycles: []\narchive: []\n", encoding="utf-8")
     (state / "health.yaml").write_text("audits: []\narchive: []\n", encoding="utf-8")
-    (state / "session.yaml").write_text("bookmarks: []\narchive: []\n", encoding="utf-8")
     decisions_path = state / "decisions.yaml"
     decisions = [_decision(i) for i in range(1, 12)]
     for entry in decisions:
@@ -358,7 +349,6 @@ def test_decision_compaction_requires_review_before_dropping_legacy_archive(comp
     (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
     (state / "progress.yaml").write_text("cycles: []\narchive: []\n", encoding="utf-8")
     (state / "health.yaml").write_text("audits: []\narchive: []\n", encoding="utf-8")
-    (state / "session.yaml").write_text("bookmarks: []\narchive: []\n", encoding="utf-8")
     decisions_path = state / "decisions.yaml"
     decisions_path.write_text(
         yaml.safe_dump(
@@ -406,7 +396,6 @@ def test_fix_mode_reports_missing_and_protected_without_blocking_compactable(com
     assert statuses["PROGRESS.md"].over_limit_count == 0
     assert by_artifact["DECISIONS.md"].action == "missing"
     assert by_artifact["HEALTH.md"].action == "missing"
-    assert by_artifact["SESSION.md"].action == "missing"
     assert by_artifact["VISION.md"].action == "skipped"
     assert experiment_op.action == "skipped"
     assert experiments.read_text(encoding="utf-8") == "experiments:\n- number: 1\narchive: []\n"

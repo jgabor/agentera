@@ -29,7 +29,6 @@ dashboard. This bridge is an upgrade handoff.
    - `.agentera/PLAN.md` without `.agentera/plan.yaml`
    - `.agentera/DECISIONS.md` without `.agentera/decisions.yaml`
    - `.agentera/HEALTH.md` without `.agentera/health.yaml`
-   - `.agentera/SESSION.md` without `.agentera/session.yaml`
    - `.agentera/DOCS.md` without `.agentera/docs.yaml`
    - root `VISION.md` without `.agentera/vision.yaml`
 3. If any old project state is present, show the affected files and run or offer

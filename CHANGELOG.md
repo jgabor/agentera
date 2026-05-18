@@ -4,8 +4,10 @@
 
 ### Changed
 
-- Added a machine-readable Decision 57 capability instruction contract for future `instructions.md`, current `prose.md` compatibility, `first_invocation_read` values, full-read obligations, compact-startup exception boundaries, and explicit separation from later rename, metadata, validation, descriptor, and runtime behavior work.
+- Added `first_invocation_read` capability metadata to `agentera hej --format json --capability-context <name>`, including Planera's compact startup exception and explicit non-enforcement of runtime reads.
+- Added a machine-readable Decision 57 capability instruction contract for current `instructions.md`, legacy `prose.md` compatibility, `first_invocation_read` values, full-read obligations, compact-startup exception boundaries, and explicit separation from runtime behavior work.
 - Changed `hej` next-action selection so complex TODOs with contract, schema, metadata, validation, migration, multi-surface, or acceptance-risk signals route to ≡ planera before ⧉ realisera, while narrow one-cycle TODOs still route directly to Realisera.
+- Moved session hook bookmarks out of committed project artifacts into runtime-local Agentera data-home storage and stopped treating `SESSION.md`/`.agentera/session.yaml` as a queryable, validated, compacted, or migrated state artifact.
 - Added a machine-readable bundle and `SKILL.md` vocabulary authority for canonical concept classification, compatibility preservation, and docs delegation without broad prose renames.
 - Added a machine-readable routing and execution vocabulary authority for Agentera router, suggest, delegate, spawn, subagent mechanism, and pre-spawn Git commit terminology without broad prose replacement.
 - Added a machine-readable Decision 54 app lifecycle vocabulary authority for canonical statuses, deprecated aliases, scoped operation verbs, and doctor/hej/upgrade/docs/tests ownership boundaries.

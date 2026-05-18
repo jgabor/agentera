@@ -421,7 +421,7 @@ The twelve-skill suite is collapsed into one Agentera skill. Each capability's s
 Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. If it has an Artifact Mapping section, use the path specified for each canonical filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given artifact, use the default layout:
 
 - Human-facing artifacts at the project root: `TODO.md`, `CHANGELOG.md`, `DESIGN.md`
-- Agent-facing artifacts in `.agentera/` as YAML: `progress.yaml`, `decisions.yaml`, `health.yaml`, `plan.yaml`, `docs.yaml`, `vision.yaml`, `session.yaml`, `objective.yaml`, `experiments.yaml`
+- Agent-facing artifacts in `.agentera/` as YAML: `progress.yaml`, `decisions.yaml`, `health.yaml`, `plan.yaml`, `docs.yaml`, `vision.yaml`, `objective.yaml`, `experiments.yaml`
 
 ---
 

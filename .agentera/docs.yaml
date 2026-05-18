@@ -1,4 +1,4 @@
-last_audit: '2026-05-17 (2.5.x helper-script classification policy sync)'
+last_audit: '2026-05-18 (first_invocation_read metadata CLI discoverability sync)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -59,10 +59,6 @@ mapping:
   path: DESIGN.md
   producers:
   - visualisera
-- artifact: SESSION.md
-  path: .agentera/session.yaml
-  producers:
-  - session stop hook
 - artifact: PROFILE.md
   path: '$PROFILERA_PROFILE_DIR/PROFILE.md (default: $XDG_DATA_HOME/agentera/PROFILE.md)'
   producers:

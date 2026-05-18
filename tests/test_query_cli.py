@@ -1036,35 +1036,21 @@ class TestGenericQuery:
         })
 
     def test_auto_discovered_artifact(self, project):
-        _write_artifact(project, ".agentera/session.yaml", {
-            "bookmarks": [
-                {
-                    "timestamp": "2026-05-01 10:00",
-                    "artifacts": ["PROGRESS"],
-                    "summary": "Updated progress",
-                },
-            ],
-        })
-        r = _run("query", "session", cwd=project)
+        self._write_custom_schema_and_artifact(project)
+        r = _run("query", "custom_thing", cwd=project)
         assert r.returncode == 0
-        assert r.stdout.strip() != ""
+        assert "title=My thing" in r.stdout
 
     def test_installed_app_model_resolves_schemas_without_project_copy(self, tmp_path):
         app_home = tmp_path / "agentera-home"
         project = tmp_path / "project"
         project.mkdir()
         _install_schema_surface(app_home)
-        _write_artifact(project, ".agentera/session.yaml", {
-            "bookmarks": [
-                {
-                    "timestamp": "2026-05-12 10:00",
-                    "artifacts": ["SESSION"],
-                    "summary": "Installed schema discovery works",
-                },
-            ],
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 1, "phase": "build", "what": "Installed schema discovery works"}],
         })
 
-        r = _run_installed(app_home, "query", "session", cwd=project)
+        r = _run_installed(app_home, "progress", cwd=project)
 
         assert r.returncode == 0
         assert "Installed schema discovery works" in r.stdout
@@ -1603,8 +1589,8 @@ class TestHej:
         assert not platform_home.exists()
 
     def test_saved_context_without_vision_routes_to_resonera(self, project):
-        _write_artifact(project, ".agentera/session.yaml", {
-            "bookmarks": [{"timestamp": "2026-05-08", "summary": "Direction prompt abandoned"}],
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 1, "what": "Direction prompt abandoned"}],
         })
 
         r = _run("hej", cwd=project)
@@ -1826,7 +1812,13 @@ class TestHej:
         assert r.returncode == 0
         data = json.loads(r.stdout)
         context = data["source_contract"]["capability_context"]
+        first_read = context["first_invocation_read"]
         assert context["capability"] == "orkestrera"
+        assert first_read["value"] == "full"
+        assert first_read["instruction_target"]["path"] == "skills/agentera/capabilities/orkestrera/instructions.md"
+        assert first_read["obligation_summary"] == "full_instruction_file_read_required"
+        assert first_read["runtime_enforcement"] is False
+        assert first_read["provenance"]["authority_path"] == "references/cli/capability-instruction-contract.yaml"
         assert context["declared_state_needs"] == [
             "plan",
             "progress",
@@ -1857,7 +1849,12 @@ class TestHej:
         data = json.loads(r.stdout)
         context = data["source_contract"]["capability_context"]
         contract = context["startup_contract"]
+        first_read = context["first_invocation_read"]
         assert context["capability"] == "planera"
+        assert first_read["value"] == "compact_startup"
+        assert first_read["instruction_target"]["path"] == "skills/agentera/capabilities/planera/instructions.md"
+        assert first_read["obligation_summary"] == "compact_contract_must_name_covered_guidance_and_escalation_rules"
+        assert first_read["provenance"]["authority_path"] == "references/cli/capability-instruction-contract.yaml"
         assert contract["schemaVersion"] == "agentera.planeraStartup.v1"
         assert contract["canonical_surface"] == "agentera hej --format json --capability-context planera"
         assert contract["bounded"] is True
@@ -1903,7 +1900,11 @@ class TestHej:
 
         assert r.returncode == 0, r.stderr
         data = json.loads(r.stdout)
-        contract = data["source_contract"]["capability_context"]["startup_contract"]
+        context = data["source_contract"]["capability_context"]
+        contract = context["startup_contract"]
+        first_read = context["first_invocation_read"]
+        assert first_read["value"] == "compact_startup"
+        assert first_read["instruction_target"]["exists"] is False
         assert contract["instructions_runtime_read_required"] is False
         assert contract["canonical_surface"] == "agentera hej --format json --capability-context planera"
 
@@ -3557,15 +3558,6 @@ ARTIFACT_FIXTURES = {
         },
         "expected": "phase=build",
     },
-    "session": {
-        "path": ".agentera/session.yaml",
-        "data": {
-            "bookmarks": [
-                {"timestamp": "2026-05-01", "summary": "Test session"},
-            ],
-        },
-        "expected": "timestamp=2026-05-01",
-    },
     "todo": {
         "path": "TODO.md",
         "data": {
@@ -3626,7 +3618,7 @@ class TestArtifactTypeCoverage:
         assert r.returncode == 0
         data = json.loads(r.stdout)
         assert data["schemaVersion"] == "agentera.query.list_artifacts.v2"
-        assert "session" in data["names"]
+        assert "session" not in data["names"]
         assert "plan" in data["names"]
         artifacts = {entry["name"]: entry for entry in data["artifacts"]}
         assert artifacts["plan"]["normal_read_command"] == "agentera plan --format json"
