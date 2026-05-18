@@ -60,7 +60,7 @@ def test_broken_profilera_fails_contract_validation(tmp_path):
     schemas_dir = cap_dir / "schemas"
     schemas_dir.mkdir()
 
-    (cap_dir / "prose.md").write_text("# Broken\n")
+    (cap_dir / "instructions.md").write_text("# Broken\n")
     (schemas_dir / "triggers.yaml").write_text(textwrap.dedent("""\
         TRIGGERS:
           bad_key:
@@ -122,8 +122,8 @@ def test_profilera_trigger_patterns_route_correctly():
 
 
 def test_profilera_prose_exists_and_contains_workflow():
-    prose_path = PROFILERA_CAP_DIR / "prose.md"
-    assert prose_path.is_file(), "prose.md must exist"
+    prose_path = PROFILERA_CAP_DIR / "instructions.md"
+    assert prose_path.is_file(), "instructions.md must exist"
 
     content = prose_path.read_text()
     for required in [
@@ -139,4 +139,4 @@ def test_profilera_prose_exists_and_contains_workflow():
         "Exit signals",
         "Cross-capability integration",
     ]:
-        assert required in content, f"prose.md must contain section '{required}'"
+        assert required in content, f"instructions.md must contain section '{required}'"

@@ -17,7 +17,7 @@ def test_measure_groups_static_v2_payload(tmp_path, measure_token_payload):
     root = tmp_path
     _write(root / "skills" / "agentera" / "SKILL.md", "master")
     _write(root / "skills" / "agentera" / "protocol.yaml", "protocol")
-    _write(root / "skills" / "agentera" / "capabilities" / "hej" / "prose.md", "prose")
+    _write(root / "skills" / "agentera" / "capabilities" / "hej" / "instructions.md", "prose")
     _write(root / "skills" / "agentera" / "capabilities" / "hej" / "schemas" / "triggers.yaml", "schema")
 
     measurement = measure_token_payload.measure(root)

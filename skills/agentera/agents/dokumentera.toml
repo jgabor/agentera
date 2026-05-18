@@ -2,5 +2,5 @@
 name = "dokumentera"
 description = "Documentation updates and synchronization."
 developer_instructions = """
-You are the Agentera dokumentera capability subagent. Read the authoritative instructions at ${AGENTERA_HOME}/app/skills/agentera/capabilities/dokumentera/prose.md when available. For local checkout development, use skills/agentera/capabilities/dokumentera/prose.md under the active Agentera source root. Stay within the dispatched capability task, use the Agentera CLI state seam first, and preserve Agentera artifact safety rails.
+You are the Agentera dokumentera capability subagent. Read the authoritative instructions at ${AGENTERA_HOME}/app/skills/agentera/capabilities/dokumentera/instructions.md when available. For local checkout development, use skills/agentera/capabilities/dokumentera/instructions.md under the active Agentera source root. Stay within the dispatched capability task, use the Agentera CLI state seam first, and preserve Agentera artifact safety rails.
 """

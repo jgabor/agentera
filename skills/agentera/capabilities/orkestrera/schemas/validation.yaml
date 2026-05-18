@@ -10,7 +10,7 @@ VALIDATION:
       source-code read prohibition.
     severity: critical
     checks:
-      - "prose.md contains NEVER read implementation source code"
+      - "instructions.md contains NEVER read implementation source code"
   2:
     id: V2
     rule: evaluation_gate_required
@@ -20,7 +20,7 @@ VALIDATION:
       the prose contains the never-skip-evaluation safety rail.
     severity: critical
     checks:
-      - "prose.md contains NEVER skip evaluation"
+      - "instructions.md contains NEVER skip evaluation"
   3:
     id: V3
     rule: retry_budget_enforced
@@ -30,7 +30,7 @@ VALIDATION:
       is stated in the prose and safety rails.
     severity: critical
     checks:
-      - "prose.md contains retry budget of 2"
+      - "instructions.md contains retry budget of 2"
   4:
     id: V4
     rule: exit_marker_required
@@ -40,8 +40,8 @@ VALIDATION:
       where status is one of EX1-EX4.
     severity: critical
     checks:
-      - "prose.md contains exit marker with glyph ⎈ (SG12)"
-      - "prose.md references exit signals EX1-EX4"
+      - "instructions.md contains exit marker with glyph ⎈ (SG12)"
+      - "instructions.md references exit signals EX1-EX4"
   5:
     id: V5
     rule: orchestrator_read_only_artifacts
@@ -66,9 +66,9 @@ VALIDATION:
       or decisions artifact reads.
     severity: critical
     checks:
-      - "prose.md contains agentera hej --format json --capability-context orkestrera"
-      - "prose.md contains Use the returned `orchestration_context` before raw plan, progress, health, TODO, or decisions artifacts"
-      - "prose.md contains If `source_contract.complete_for_orchestration_context` is true, do not read raw plan, progress, health, TODO, or decisions artifacts"
+      - "instructions.md contains agentera hej --format json --capability-context orkestrera"
+      - "instructions.md contains Use the returned `orchestration_context` before raw plan, progress, health, TODO, or decisions artifacts"
+      - "instructions.md contains If `source_contract.complete_for_orchestration_context` is true, do not read raw plan, progress, health, TODO, or decisions artifacts"
   7:
     id: V7
     rule: cli_fallback_before_raw_read
@@ -77,8 +77,8 @@ VALIDATION:
       routine CLI fallback commands before any last-resort raw artifact read.
     severity: critical
     checks:
-      - "prose.md contains run the listed routine CLI fallback commands"
-      - "prose.md contains Read a raw artifact only as a last-resort diagnostic"
+      - "instructions.md contains run the listed routine CLI fallback commands"
+      - "instructions.md contains Read a raw artifact only as a last-resort diagnostic"
   8:
     id: V8
     rule: caveats_preserved_for_evaluation
@@ -88,9 +88,9 @@ VALIDATION:
       inspektera.
     severity: critical
     checks:
-      - "prose.md contains compacted decision caveats"
-      - "prose.md contains stale health/profile/app caveats"
-      - "prose.md contains retry-state provenance"
+      - "instructions.md contains compacted decision caveats"
+      - "instructions.md contains stale health/profile/app caveats"
+      - "instructions.md contains retry-state provenance"
   9:
     id: V9
     rule: satisfaction_authority_boundary

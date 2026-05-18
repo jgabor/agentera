@@ -513,7 +513,7 @@ def test_setup_doctor_smoke_helper_failure_is_visible_in_human_and_json(
     skill = root / "skills" / "agentera" / "capabilities" / "hej"
     skill.parent.mkdir(parents=True, exist_ok=True)
     skill.mkdir(exist_ok=True)
-    (skill / "prose.md").write_text("fixture\n", encoding="utf-8")
+    (skill / "instructions.md").write_text("fixture\n", encoding="utf-8")
     (root / "scripts" / "validate_capability.py").write_text(
         "import sys\nprint('fixture helper failed')\nsys.exit(7)\n",
         encoding="utf-8",
@@ -553,7 +553,7 @@ def test_setup_doctor_smoke_hook_failure_is_visible_in_human_and_json(
     skill = root / "skills" / "agentera" / "capabilities" / "hej"
     skill.parent.mkdir(parents=True, exist_ok=True)
     skill.mkdir(exist_ok=True)
-    (skill / "prose.md").write_text("fixture\n", encoding="utf-8")
+    (skill / "instructions.md").write_text("fixture\n", encoding="utf-8")
     (root / "scripts" / "validate_capability.py").write_text(
         "import sys\nsys.exit(0)\n",
         encoding="utf-8",

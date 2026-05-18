@@ -38,7 +38,7 @@ class ContractBootstrapError(ValueError):
 
 @dataclass(frozen=True)
 class DirectoryRules:
-    prose_path: str
+    instruction_path: str
     schemas_path: str
     schema_glob: str
     minimum_schema_files: int
@@ -148,7 +148,7 @@ def build_capability_schema_contract(
         path=contract_path,
         required_groups=tuple(data["REQUIRED_GROUPS"]),
         directory_rules=DirectoryRules(
-            prose_path=directory["prose_file"]["path"],
+            instruction_path=directory["instruction_file"]["path"],
             schemas_path=directory["schemas_directory"]["path"],
             schema_glob=schema_files["glob"],
             minimum_schema_files=schema_files["minimum_count"],
@@ -255,7 +255,7 @@ def _check_directory_rules(
     directory = data.get("DIRECTORY_REQUIREMENTS")
     if not isinstance(directory, dict):
         return
-    for section in ("prose_file", "schemas_directory", "schema_files"):
+    for section in ("instruction_file", "schemas_directory", "schema_files"):
         if not isinstance(directory.get(section), dict):
             errors.append(
                 f"bootstrap [error]: DIRECTORY_REQUIREMENTS.{section} in {source_label} must be a mapping"

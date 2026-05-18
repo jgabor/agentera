@@ -916,8 +916,8 @@ STARTUP_ENVELOPE_STATE_FAMILIES = {
 PLANERA_STARTUP_CONTRACT_VERSION = "agentera.planeraStartup.v1"
 PLANERA_PLANNING_LEVELS = ["skip", "light", "full"]
 PLANERA_STEP_VERBS = ["orient", "specify", "review", "audit", "write", "handoff"]
-PLANERA_PROSE_AUTHORITY_EXCEPTIONS = [
-    "editing Planera behavior or prose",
+PLANERA_INSTRUCTIONS_AUTHORITY_EXCEPTIONS = [
+    "editing Planera behavior or instructions",
     "resolving contradiction or ambiguity in compact context",
     "validating detailed behavior not covered by compact context",
     "investigating benchmark or read-trigger evidence",
@@ -1499,13 +1499,13 @@ def _planera_startup_contract() -> dict[str, Any]:
         "status": "implemented_compact_normal_startup_contract",
         "canonical_surface": "agentera hej --format json --capability-context planera",
         "bounded": True,
-        "prose_runtime_read_required": False,
-        "prose_authority": {
+        "instructions_runtime_read_required": False,
+        "instructions_authority": {
             "normal_startup": (
                 "Use this compact context for normal Planera execution startup before reading "
-                "skills/agentera/capabilities/planera/prose.md."
+                "skills/agentera/capabilities/planera/instructions.md."
             ),
-            "read_planera_prose_when": PLANERA_PROSE_AUTHORITY_EXCEPTIONS,
+            "read_planera_instructions_when": PLANERA_INSTRUCTIONS_AUTHORITY_EXCEPTIONS,
         },
         "planning": {
             "levels": PLANERA_PLANNING_LEVELS,
@@ -4167,6 +4167,58 @@ def _validation_process_payload(
 def cmd_validate_capability(args: argparse.Namespace) -> int:
     cap_dir = _validate_capability_target(str(args.target))
     validator = Path(__file__).resolve().parent / "validate_capability.py"
+    capability_root = Path(__file__).resolve().parent.parent / "skills" / "agentera" / "capabilities"
+    targets = [cap_dir]
+    if cap_dir.resolve(strict=False) == capability_root.resolve(strict=False):
+        targets = sorted(path for path in cap_dir.iterdir() if path.is_dir())
+    results = [
+        subprocess.run(
+            [sys.executable, str(validator), str(target)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        for target in targets
+    ]
+    if len(results) > 1:
+        status = "pass" if all(result.returncode == 0 for result in results) else "fail"
+        if getattr(args, "format", "text") == "json":
+            checks = [
+                _validation_process_payload(
+                    target_family="capability",
+                    target=target.name,
+                    path=target,
+                    result=result,
+                )
+                for target, result in zip(targets, results, strict=True)
+            ]
+            _emit_structured(
+                {
+                    "command": "validate",
+                    "status": status,
+                    "target_family": "capability-set",
+                    "target": str(args.target),
+                    "path": str(cap_dir.resolve(strict=False)),
+                    "checks": checks,
+                    "violations": [
+                        violation
+                        for check in checks
+                        for violation in check.get("violations", [])
+                    ],
+                    "summary": {
+                        "passed": sum(1 for check in checks if check["status"] == "pass"),
+                        "failed": sum(1 for check in checks if check["status"] == "fail"),
+                    },
+                },
+                "json",
+            )
+        else:
+            for result in results:
+                if result.stdout:
+                    print(result.stdout, end="")
+                if result.stderr:
+                    print(result.stderr, end="", file=sys.stderr)
+        return 0 if status == "pass" else 1
     result = subprocess.run(
         [sys.executable, str(validator), str(cap_dir)],
         text=True,
@@ -4279,7 +4331,7 @@ def _descriptor_validation_payload() -> dict[str, Any]:
             violations.append(f"codex {name}: {exc}")
             checks.append(check)
             continue
-        expected_ref = f"capabilities/{name}/prose.md"
+        expected_ref = f"capabilities/{name}/instructions.md"
         if parsed.get("name") != name:
             check = {**check, "status": "fail", "message": "name field does not match capability"}
             violations.append(f"codex {name}: name field must be {name}")
@@ -4287,7 +4339,7 @@ def _descriptor_validation_payload() -> dict[str, Any]:
             check = {**check, "status": "fail", "message": "description is required"}
             violations.append(f"codex {name}: description is required")
         elif not isinstance(parsed.get("developer_instructions"), str) or expected_ref not in parsed["developer_instructions"]:
-            check = {**check, "status": "fail", "message": "developer_instructions must reference capability prose"}
+            check = {**check, "status": "fail", "message": "developer_instructions must reference capability instructions"}
             violations.append(f"codex {name}: developer_instructions must reference {expected_ref}")
         elif "# agentera_managed: true" not in text.splitlines()[:5]:
             check = {**check, "status": "fail", "message": "managed marker is required"}
@@ -4304,7 +4356,7 @@ def _descriptor_validation_payload() -> dict[str, Any]:
             checks.append(check)
             continue
         fields = _frontmatter_fields(text)
-        expected_ref = f"capabilities/{name}/prose.md"
+        expected_ref = f"capabilities/{name}/instructions.md"
         if "name" in fields:
             check = {**check, "status": "fail", "message": "name frontmatter must be omitted"}
             violations.append(f"opencode {name}: name frontmatter must be omitted")
@@ -4321,8 +4373,11 @@ def _descriptor_validation_payload() -> dict[str, Any]:
             check = {**check, "status": "fail", "message": "managed body marker is required"}
             violations.append(f"opencode {name}: managed body marker is required")
         elif expected_ref not in text:
-            check = {**check, "status": "fail", "message": "descriptor must reference capability prose"}
+            check = {**check, "status": "fail", "message": "descriptor must reference capability instructions"}
             violations.append(f"opencode {name}: descriptor must reference {expected_ref}")
+        elif "Dispatch only through the runtime-native" in text or f"`@{name}`" in text:
+            check = {**check, "status": "fail", "message": "descriptor must not self-dispatch from a subagent"}
+            violations.append(f"opencode {name}: descriptor must execute directly without self-dispatch")
         checks.append(check)
 
     return {

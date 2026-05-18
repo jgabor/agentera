@@ -25,7 +25,7 @@ TEXT_SURFACES = (
     ".codex-plugin/plugin.json",
     ".opencode/plugins/agentera.js",
     "skills/agentera/SKILL.md",
-    "skills/agentera/capabilities/hej/prose.md",
+    "skills/agentera/capabilities/hej/instructions.md",
     "skills/agentera/references/contract.md",
 )
 CLI_HELP_COMMANDS = (

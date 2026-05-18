@@ -7,20 +7,20 @@ No unmappable content.
 
 | v1 Section | v2 Target | Rationale |
 |---|---|---|
-| Frontmatter: `name`, `description` | `prose.md` (header) + `TRIGGERS` group | Name is prose identity. Description is prose metadata. Trigger patterns extracted to TRIGGERS entries. |
+| Frontmatter: `name`, `description` | `instructions.md` (header) + `TRIGGERS` group | Name is prose identity. Description is prose metadata. Trigger patterns extracted to TRIGGERS entries. |
 | Frontmatter: `spec_sections` | Dropped | SPEC.md dissolves into per-capability schemas (ROADMAP: "Spec dissolves into schemas"). No central spec to reference. |
 | `## State artifacts` (artifact list) | `ARTIFACTS` group | Each consumed/produced artifact becomes an ARTIFACTS entry with stable ID. |
 | `### Artifact path resolution` | `ARTIFACTS` group (path metadata) | Path resolution rules become path field metadata on artifact entries. |
 | `### Contract` (inlined values) | `VALIDATION` group + `protocol.yaml` | Inlined contract values (severity arrows, trend arrows, glyphs, token budgets) become shared protocol primitives referenced by VALIDATION entries. |
 | `references/contract.md` | `protocol.yaml` | Centralized contract reference replaced by shared protocol schema. |
-| `## Step N: ...` (workflow steps) | `prose.md` | Behavioral instructions the agent reads. Steps remain prose. |
-| `## Brainstorm: ...` (sub-workflows) | `prose.md` | Interactive sub-workflows are behavioral instructions. |
-| `## Personality` / `## Interaction rules` | `prose.md` | Personality and interaction rules are agent-facing behavioral guidance. |
+| `## Step N: ...` (workflow steps) | `instructions.md` | Behavioral instructions the agent reads. Steps remain prose. |
+| `## Brainstorm: ...` (sub-workflows) | `instructions.md` | Interactive sub-workflows are behavioral instructions. |
+| `## Personality` / `## Interaction rules` | `instructions.md` | Personality and interaction rules are agent-facing behavioral guidance. |
 | `## Safety rails` | `VALIDATION` group | Each safety rail becomes a VALIDATION entry with rule, severity, and checks. |
 | `## Exit signals` | `EXIT_CONDITIONS` group | Each exit signal becomes an EXIT_CONDITIONS entry with condition, description, and exit_code. |
-| `## Cross-skill integration` | `ARTIFACTS` group (cross-capability refs) + `prose.md` | Cross-skill dependencies become ARTIFACTS entries with cross-capability ID references. Integration guidance stays in prose. |
-| `## Getting started` | `prose.md` | First-run guidance is behavioral instruction. |
-| `references/templates/` | `prose.md` (embedded or referenced) | Templates are part of the capability's behavioral instructions. |
+| `## Cross-skill integration` | `ARTIFACTS` group (cross-capability refs) + `instructions.md` | Cross-skill dependencies become ARTIFACTS entries with cross-capability ID references. Integration guidance stays in prose. |
+| `## Getting started` | `instructions.md` | First-run guidance is behavioral instruction. |
+| `references/templates/` | `instructions.md` (embedded or referenced) | Templates are part of the capability's behavioral instructions. |
 | `scripts/` (Python helpers) | Kept at repo level or capability-local | Scripts are tooling, not behavioral. Location unchanged for v2. |
 
 ## Per-Skill Coverage
@@ -44,4 +44,4 @@ Every section found in each v1 SKILL.md is covered by the mapping above. Verific
 
 ## Unmappable Content
 
-None. Every section in every v1 SKILL.md maps to one of: `prose.md`, `TRIGGERS`, `ARTIFACTS`, `VALIDATION`, `EXIT_CONDITIONS`, or `protocol.yaml` (shared primitives extracted from Contract sections).
+None. Every section in every v1 SKILL.md maps to one of: `instructions.md`, `TRIGGERS`, `ARTIFACTS`, `VALIDATION`, `EXIT_CONDITIONS`, or `protocol.yaml` (shared primitives extracted from Contract sections).

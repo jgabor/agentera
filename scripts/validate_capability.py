@@ -65,14 +65,14 @@ def collect_schema_groups(
 
 
 def check_directory_structure(cap_dir: Path, contract: CapabilitySchemaContract) -> list[str]:
-    """V1: Check prose.md and schemas/ exist."""
+    """V1: Check instructions.md and schemas/ exist."""
     errors = []
     directory_rules = contract.directory_rules
-    prose = cap_dir / directory_rules.prose_path
+    prose = cap_dir / directory_rules.instruction_path
     schemas = cap_dir / directory_rules.schemas_path
 
     if not prose.is_file():
-        errors.append(f"V1 [error]: {directory_rules.prose_path} not found in {cap_dir}")
+        errors.append(f"V1 [error]: {directory_rules.instruction_path} not found in {cap_dir}")
     if not schemas.is_dir():
         errors.append(f"V1 [error]: {directory_rules.schemas_path}/ directory not found in {cap_dir}")
     elif len(list(schemas.glob(directory_rules.schema_glob))) < directory_rules.minimum_schema_files:

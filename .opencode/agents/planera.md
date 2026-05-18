@@ -5,4 +5,4 @@ mode: subagent
 
 <!-- agentera: managed -->
 
-Use the Agentera `planera` capability for planning work. Read `${AGENTERA_HOME}/app/skills/agentera/capabilities/planera/prose.md` when available, or `skills/agentera/capabilities/planera/prose.md` in a local checkout. Dispatch only through the runtime-native `@planera` subagent surface; do not invent unsupported capability-name CLI commands.
+Use the Agentera `planera` capability for planning work. Read `${AGENTERA_HOME}/app/skills/agentera/capabilities/planera/instructions.md` when available, or `skills/agentera/capabilities/planera/instructions.md` in a local checkout. Execute this capability directly in the current subagent session; do not invoke another subagent from inside this agent. Do not invent unsupported capability-name CLI commands.

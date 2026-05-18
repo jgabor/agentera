@@ -59,7 +59,7 @@ def test_load_valid_contract_builds_single_model_for_capability_rules():
         "VALIDATION",
         "EXIT_CONDITIONS",
     )
-    assert model.directory_rules.prose_path == "prose.md"
+    assert model.directory_rules.instruction_path == "instructions.md"
     assert model.directory_rules.schemas_path == "schemas"
     assert model.directory_rules.schema_glob == "*.yaml"
     assert model.directory_rules.minimum_schema_files == 1

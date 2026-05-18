@@ -18,10 +18,10 @@ included when they shape cross-suite usage.
 | `references/artifacts/artifact-registry-interface-model.yaml` | Artifact identity facts: `artifact_id`, display name, default path, producers, consumers, type, scope. |
 | `references/cli/app-lifecycle-vocabulary.yaml` | App lifecycle canonical statuses, deprecated aliases, operation verbs, and consumer ownership boundaries. |
 | `references/cli/bundle-skill-vocabulary.yaml` | Canonical concepts, compatibility boundaries, and classification rules for `bundle` and `SKILL.md` usage. |
-| `references/cli/capability-instruction-contract.yaml` | Decision 57 capability instruction-file contract, future `instructions.md`, current `prose.md` compatibility, and `first_invocation_read` semantics. |
+| `references/cli/capability-instruction-contract.yaml` | Decision 57 capability instruction-file contract, future `instructions.md`, current `instructions.md` compatibility, and `first_invocation_read` semantics. |
 | `references/cli/routing-execution-vocabulary.yaml` | Canonical concepts, compatibility boundaries, and classification rules for routing, suggestions, delegation, worker spawning, runtime subagent mechanisms, and pre-spawn Git commits. |
 | `skills/agentera/SKILL.md` | Agentera routing entry point, routing model, CLI-first state access, installed-app status checks, and safety rails. |
-| `skills/agentera/capabilities/*/prose.md` | Capability behavior, workflow grammar, step markers, and cross-capability boundaries. |
+| `skills/agentera/capabilities/*/instructions.md` | Capability behavior, workflow grammar, step markers, and cross-capability boundaries. |
 | `scripts/agentera` and `scripts/agentera_upgrade.py` | CLI-visible command labels, upgrade output, and doctor diagnostics. |
 | `README.md`, `UPGRADE.md`, `DESIGN.md`, `.agentera/*.yaml` | User-facing phrasing, design vocabulary, and current project-state examples. |
 
@@ -40,7 +40,7 @@ included when they shape cross-suite usage.
 | Current-state language names the object. | `Agentera app files need repair`, `artifacts are current`, `plan-level current-state check` | Bare `freshness` in new docs. |
 | App lifecycle state is canonical metadata. | `up_to_date`, `outdated`, `repair_needed`, `migration_needed`, `manual_review_needed`, `ready_to_apply`, `applied`, `no_changes_needed` | `fresh`, `stale`, `refresh`, `fixed`, `ready`, or `noop` as app lifecycle status values. |
 | Worker safety commits are Git-only. | `pre-spawn Git commit` | Non-Git `checkpoint` or `pre-dispatch commit gate` in new docs. |
-| Capability instruction files have a future contract and a current compatibility state. | Future rule: `instructions.md` plus `first_invocation_read`; current state: `prose.md` remains supported until the later rename and validator work. | Claiming `instructions.md` is already required, or adding `first_invocation_read` to docs as current CLI output. |
+| Capability instruction files have a future contract and a current compatibility state. | Future rule: `instructions.md` plus `first_invocation_read`; current state: `instructions.md` remains supported until the later rename and validator work. | Claiming `instructions.md` is already required, or adding `first_invocation_read` to docs as current CLI output. |
 
 ## Plain-language rule
 
@@ -78,7 +78,7 @@ brand language before they can act.
 | Agentera | The open protocol for turning AI agents into engineering teams through shared project state, roles, decisions, and verification. | `README.md`, `.agentera/vision.yaml`, `skills/agentera/SKILL.md` |
 | Agentera v2 | The current architecture: one Agentera skill, one `/agentera` entry point, twelve capabilities, YAML project state, and CLI-first access. | `README.md`, `UPGRADE.md`, `.agentera/decisions.yaml` |
 | Agentera skill | The runtime-loaded Agentera skill at `skills/agentera/`. It contains the routing entry and twelve capabilities. | `skills/agentera/SKILL.md` |
-| Capability | A routed behavioral unit inside the Agentera skill, with `prose.md` plus `triggers.yaml`, `artifacts.yaml`, `validation.yaml`, and `exit.yaml`. | `AGENTS.md`, `skills/agentera/capabilities/*` |
+| Capability | A routed behavioral unit inside the Agentera skill, with `instructions.md` plus `triggers.yaml`, `artifacts.yaml`, `validation.yaml`, and `exit.yaml`. | `AGENTS.md`, `skills/agentera/capabilities/*` |
 | Shared protocol | The primitive vocabulary in `protocol.yaml`: confidence, severity, decision labels, exits, visual tokens, glyphs, and phases. | `skills/agentera/protocol.yaml` |
 | Capability schema contract | The executable contract for capability schema groups, stable IDs, priorities, deprecations, and primitive references. | `skills/agentera/capability_schema_contract.yaml` |
 | Project state | Structured files that preserve intent, decisions, plans, progress, health, docs, design, and session continuity. | `README.md`, `.agentera/docs.yaml` |
@@ -111,22 +111,22 @@ Capability names use Swedish-style `-era` verb forms. The name is the action:
 
 The machine-readable authority is
 `references/cli/capability-instruction-contract.yaml`; it owns Decision 57's
-instruction-file boundary, including the future canonical `instructions.md` file,
-current `prose.md` compatibility, future `first_invocation_read` values, full-read
-obligations, compact-startup exceptions, and unsupported implementation states.
+instruction-file boundary, including the canonical `instructions.md` file,
+legacy `prose.md` compatibility boundaries, future `first_invocation_read` values,
+full-read obligations, compact-startup exceptions, and unsupported
+implementation states.
 
 Use this prose as guidance only: the future default is that initial capability
 invocation reads `instructions.md` in full unless an explicit compact-startup
-exception is declared. Today, capability files are still `prose.md`, validators
-still require `prose.md`, runtime descriptors may still point at `prose.md`, and
-`agentera hej --format json --capability-context <name>` does not emit
-`first_invocation_read` metadata.
+exception is declared. Today, capability files and runtime descriptors use
+`instructions.md`, validators require `instructions.md`, and `agentera hej
+--format json --capability-context <name>` does not emit `first_invocation_read`
+metadata.
 
 Do not replace this with a parallel Markdown table of read modes or migration
 surfaces. Update the YAML authority first, then keep this section as the short
-human-facing boundary. The file rename, CLI/schema metadata feature,
-first-invocation read behavior, descriptor rewrite, and validation/regression
-sweep remain separate follow-up work.
+human-facing boundary. The CLI/schema metadata feature, first-invocation read
+behavior, and required-read context regression remain separate follow-up work.
 
 ## Invocation and routing grammar
 
@@ -577,7 +577,7 @@ High-signal source surfaces for this vocabulary:
 | `skills/agentera/SKILL.md` | Routing entry, routing layers, CLI-first access, installed-app status check, and v1 migration check. |
 | `skills/agentera/protocol.yaml` | Protocol primitives, glyphs, phases, visual tokens, exit signals. |
 | `skills/agentera/capability_schema_contract.yaml` | Schema groups, priorities, stable IDs, primitive-reference fields. |
-| `skills/agentera/capabilities/*/prose.md` | Workflow grammar, capability roles, safety rails, exit marker forms. |
+| `skills/agentera/capabilities/*/instructions.md` | Workflow grammar, capability roles, safety rails, exit marker forms. |
 | `skills/agentera/capabilities/*/schemas/*.yaml` | Trigger patterns, artifact roles, validation rules, exit conditions. |
 | `skills/agentera/schemas/artifacts/*.yaml` | Artifact fields, status enums, validation vocabulary, and protected current-state fields. |
 | `references/artifacts/artifact-registry-interface-model.yaml` | Canonical artifact registry language. |

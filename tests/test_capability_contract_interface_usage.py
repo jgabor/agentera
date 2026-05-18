@@ -76,7 +76,7 @@ def test_capability_validation_observes_fixture_contract_without_validator_const
     cap_dir = tmp_path / "trigger_only"
     schemas_dir = cap_dir / "schemas"
     schemas_dir.mkdir(parents=True)
-    (cap_dir / "prose.md").write_text("# Trigger Only\n")
+    (cap_dir / "instructions.md").write_text("# Trigger Only\n")
     (schemas_dir / "triggers.yaml").write_text(
         yaml.safe_dump(
             {

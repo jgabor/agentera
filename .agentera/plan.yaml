@@ -1,71 +1,142 @@
 header:
-  level: light
+  level: full
   created: 2026-05-18
   status: complete
-  title: Routing/Execution Vocabulary Cleanup
-what: >-
-  Replace `master dispatcher`, `Agentera skill dispatcher`, bare `dispatch`,
-  `runtime dispatch substrate`, `worktree dispatch`, `pre-dispatch commit gate`,
-  and Orkestrera `conductor` metaphor with the canonical
-  `route`/`suggest`/`delegate`/`spawn`/`subagent-mechanism` vocabulary across
-  current docs, capability prose, schemas, scripts, tests, and SKILL.md prose.
-  Preserve qualified compatibility names only where shipped consumers require them.
-why: >-
-  The highest-priority open TODO. Vocabulary drift between legacy dispatch terms
-  and the Decision 46 ratified canonical terms creates confusion for agents and
-  humans reading the skill dispatch layer. This cleanup aligns prose with the
-  established protocol contract.
-constraints: >-
-  Keep this plan scoped to vocabulary replacement in current (non-archived) docs,
-  capability prose, schemas, scripts, tests, SKILL.md, TODO, CHANGELOG, and PROGRESS.
-  Do not rewrite historical archives, edit `.agentera/vision.yaml` or objective
-  state, advance Decision 57 implementation, perform broad vocabulary regressions
-  beyond the declared scope, or change app/profile/package state.
+  reviewed: 2026-05-18
+  critic_issues: 2 found, 2 addressed, 0 dismissed
+  revised: Added explicit compatibility-fixture boundaries and split validation so the plan
+    does not imply a blind repository-wide text replacement or require the full suite before
+    focused contract checks have narrowed failures.
+  title: Capability Instructions File Rename
+what: Rename the canonical capability instruction files from `skills/agentera/capabilities/*/instructions.md`
+  to `instructions.md`, then update the Agentera skill entry point, schema contract, runtime
+  descriptors, scripts, docs, tests, package metadata, and compatibility fixtures so `instructions.md`
+  is the supported convention and `instructions.md` survives only where explicitly preserved
+  for historical or compatibility evidence.
+why: This is the highest-priority open TODO and the implementation step after Decision 57's
+  capability instruction contract. Agents need the repository, runtime descriptors, validators,
+  and docs to agree on the canonical file name before later `first_invocation_read` metadata
+  and validation-regression work can be completed without ambiguous startup-read behavior.
+constraints: Keep this plan scoped to the `instructions.md` to `instructions.md` rename and
+  direct reference updates. Do not implement `first_invocation_read` metadata emission, do
+  not close the later validation/regression TODO unless its explicit coverage is actually
+  added, do not perform broad unrelated vocabulary sweeps, do not rewrite historical archives
+  except preserving the completed prior plan, do not refresh installed apps/profiles, publish,
+  push, tag, change package-manager state, edit `.agentera/vision.yaml`, mutate objective
+  state, or change decision satisfaction state.
+scope:
+  included:
+  - '`skills/agentera/capabilities/*/instructions.md` file renames to `instructions.md`.'
+  - Current references in `skills/agentera/SKILL.md`, `skills/agentera/capability_schema_contract.yaml`,
+    runtime descriptors, scripts, docs, tests, package metadata, and compatibility fixtures.
+  - Validator and test expectations needed to treat `instructions.md` as canonical while preserving
+    explicit historical or compatibility records.
+  - Plan, progress, TODO, and changelog closeout metadata for this rename cycle.
+  excluded:
+  - Implementing `first_invocation_read` CLI metadata behavior or compact-startup exception
+    plumbing beyond direct references required by the rename.
+  - Broad route/router/orchestration vocabulary regression sweeps not directly caused by the
+    instruction-file rename.
+  - Rewriting archived historical records solely to remove old `instructions.md` mentions.
+  - Runtime app/profile refreshes, package publication, version bumps beyond the repository's
+    normal closeout requirements, protected vision/objective edits, and decision satisfaction
+    changes.
+  deferred:
+  - The open `first_invocation_read` metadata TODO.
+  - The open validation/regression TODO proving capability directories require `instructions.md`,
+    if its full scope is not completed as part of this implementation.
+design: Treat the rename as a contract migration, not a string replacement. First build an
+  inventory of canonical references, generated/package surfaces, tests, and historical fixtures.
+  Then move the real capability files and update loaders, descriptors, validators, and docs
+  through the contract-owned surfaces instead of duplicating directory rules. Finally, run
+  focused capability-contract validation before the broader suite so compatibility fixture
+  failures can be classified as intentional preservation or canonical mismatch.
 tasks:
-  - number: 1
-    name: Core prose and SKILL.md vocabulary replacement
-    depends_on: []
-    status: complete
-    acceptance:
-      - >-
-        GIVEN SKILL.md, capability prose files, and dispatcher guidance are inspected
-        WHEN legacy dispatch/conductor terms are found THEN they are replaced with the
-        canonical route/suggest/delegate/spawn vocabulary.
-      - >-
-        GIVEN compatibility identifiers exist for shipped consumers WHEN the replacement
-        is applied THEN those qualified compatibility names are preserved intact.
-  - number: 2
-    name: Schemas, scripts, and tests vocabulary alignment
-    depends_on:
-      - 1
-    status: complete
-    acceptance:
-      - >-
-        GIVEN trigger schemas, validation tests, and vocabulary authority tests are
-        inspected WHEN legacy dispatch terms appear in non-archived current files THEN
-        they are updated to canonical terms.
-      - >-
-        GIVEN the vocabulary authority test passes WHEN the replacement is applied THEN
-        `uv run pytest tests/test_bundle_skill_vocabulary_authority.py -q` succeeds.
-  - number: 3
-    name: Verification and closeout
-    depends_on:
-      - 2
-    status: complete
-    acceptance:
-      - >-
-        GIVEN the full test suite runs WHEN vocabulary replacement is complete THEN
-        `uv run pytest -q` passes with no regressions.
-      - >-
-        GIVEN artifact validation and `git diff --check` pass WHEN closeout is complete
-        THEN the `[fix:2.4.x]` routing/execution vocabulary TODO is resolved.
+- number: 1
+  name: Inventory rename surfaces and compatibility boundaries
+  depends_on: []
+  status: complete
+  acceptance:
+  - GIVEN current files are searched for `instructions.md`, capability prose, and instruction-file
+    references WHEN the inventory is complete THEN each occurrence is classified as canonical
+    code/docs, runtime/package metadata, compatibility fixture, generated output, historical
+    archive, or unrelated prose.
+  - GIVEN Decision 57 and TODO sequencing are reviewed WHEN scope is recorded THEN `first_invocation_read`
+    behavior, broad vocabulary sweeps, and historical archive rewrites are explicitly excluded
+    unless directly required by the rename.
+  evidence:
+  - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
+- number: 2
+  name: Rename capability instruction files and update loaders
+  depends_on:
+  - 1
+  status: complete
+  acceptance:
+  - GIVEN real capability directories under `skills/agentera/capabilities/` are inspected
+    WHEN the rename is applied THEN each supported capability uses `instructions.md` as its
+    instruction file and no real capability still depends on `instructions.md` as canonical.
+  - GIVEN scripts, validators, runtime loaders, and descriptor generation paths are inspected
+    WHEN they resolve capability instructions THEN they prefer `instructions.md` and preserve
+    only explicit compatibility fallbacks required by shipped behavior.
+  evidence:
+  - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
+- number: 3
+  name: Update docs, descriptors, metadata, and compatibility fixtures
+  depends_on:
+  - 2
+  status: complete
+  acceptance:
+  - GIVEN `skills/agentera/SKILL.md`, `capability_schema_contract.yaml`, runtime descriptors,
+    docs, package metadata, and compatibility fixtures are inspected WHEN references are updated
+    THEN current user-facing and protocol references name `instructions.md` as canonical.
+  - GIVEN historical or compatibility fixtures still contain `prose.md` WHEN tests classify
+    them THEN those occurrences are justified as preserved evidence rather than unresolved
+    canonical mismatch.
+  evidence:
+  - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
+- number: 4
+  name: Align tests and validation coverage
+  depends_on:
+  - 2
+  - 3
+  status: complete
+  acceptance:
+  - GIVEN capability contract and validator tests run WHEN the rename is complete THEN they
+    encode `instructions.md` as the supported capability instruction filename and reject new
+    canonical `instructions.md` conventions where in scope.
+  - GIVEN focused regression tests inspect remaining `prose.md` occurrences WHEN they pass
+    THEN every survivor is classified as compatibility-preserved, historical, fixture-only,
+    generated-output evidence, or unrelated prose.
+  evidence:
+  - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
+- number: 5
+  name: Verify and close out rename cycle
+  depends_on:
+  - 4
+  status: complete
+  acceptance:
+  - GIVEN focused validation runs WHEN implementation is complete THEN `uv run scripts/agentera
+    validate capability-contract --format json`, `uv run scripts/agentera validate capability
+    skills/agentera/capabilities`, and targeted rename/contract tests pass.
+  - GIVEN the full test suite and artifact validation run WHEN closeout is complete THEN `uv
+    run pytest -q`, PLAN/TODO/CHANGELOG/PROGRESS/DOCS artifact validation, and `git diff --check`
+    pass, and the `[fix:2.4.x]` rename TODO is resolved.
+  evidence:
+  - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
 overall_acceptance:
-  - >-
-    Legacy dispatch/conductor vocabulary is replaced with canonical terms in all
-    current non-archived files.
-  - >-
-    Qualification compatibility names for shipped consumers are preserved.
-  - >-
-    The `[fix:2.4.x]` routing/execution vocabulary TODO is resolved.
-surprises: []
-previous_plan_archived: .agentera/archive/PLAN-2026-05-18-installed-hej-entrypoint-resolution-fix.yaml
+- All real Agentera capability instruction files use `instructions.md` as the canonical filename,
+  with loaders and validators aligned to that convention.
+- Current docs, schemas, runtime descriptors, scripts, package metadata, and tests no longer
+  present `instructions.md` as the canonical capability instruction path.
+- Any surviving `instructions.md` occurrence is explicitly compatibility-preserved, historical,
+  fixture-only, generated-output evidence, or unrelated prose.
+- The `[fix:2.4.x]` capability instruction rename TODO is resolved without implementing out-of-scope
+  `first_invocation_read` behavior or protected artifact mutations.
+surprises:
+- The documented required command `agentera validate capability skills/agentera/capabilities`
+  exposed that the CLI only validated a single capability path; it now expands the canonical
+  capabilities root and validates all twelve capabilities.
+- OpenCode and Codex descriptor validation had already been manually fixed for direct subagent
+  execution; this cycle preserved that behavior while updating descriptor instruction-file
+  paths.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-routing-execution-vocabulary-cleanup.yaml

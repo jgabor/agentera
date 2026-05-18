@@ -109,7 +109,7 @@ def test_startup_completeness_contract_preserves_cli_vocabulary():
     assert "--capability-context <capability>" in hej_contract["capability_context_semantics"]
     assert "--capability-context planera" in hej_contract["planera_startup_context_semantics"]
     assert "startup_contract" in hej_contract["planera_startup_context_semantics"]
-    assert "without reading `planera/prose.md` at runtime" in hej_contract["planera_startup_context_semantics"]
+    assert "without reading `planera/instructions.md` at runtime" in hej_contract["planera_startup_context_semantics"]
     assert "must not introduce `agentera planera`" in hej_contract["planera_startup_context_semantics"]
     assert "orchestration_context" in contract["structured_output"]["envelope"]["hej"]["fields"]
     assert "must not introduce `agentera orkestrera`" in hej_contract["orchestration_context_semantics"]

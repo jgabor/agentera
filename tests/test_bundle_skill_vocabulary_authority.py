@@ -39,7 +39,7 @@ CURRENT_PROSE_FILES = [
     "scripts/measure_token_payload.py",
     "skills/agentera/SKILL.md",
     "skills/agentera/capabilities/hej/schemas/triggers.yaml",
-    "skills/agentera/capabilities/resonera/prose.md",
+    "skills/agentera/capabilities/resonera/instructions.md",
     "tests/test_cross_capability.py",
     "tests/test_resonera_capability.py",
     "tests/test_runtime_adapters.py",

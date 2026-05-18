@@ -730,7 +730,7 @@ def test_classifier_uses_bare_capability_invocation_and_counts_raw_after_cli(sta
                 "tool-prose-before-cli",
                 "2026-05-13T08:00:01Z",
                 "read",
-                {"filePath": "skills/agentera/capabilities/orkestrera/prose.md"},
+                {"filePath": "skills/agentera/capabilities/orkestrera/instructions.md"},
             ),
             _fixture_tool(
                 "tool-cli-plan",

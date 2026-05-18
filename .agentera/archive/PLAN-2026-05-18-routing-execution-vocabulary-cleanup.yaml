@@ -1,0 +1,71 @@
+header:
+  level: light
+  created: 2026-05-18
+  status: complete
+  title: Routing/Execution Vocabulary Cleanup
+what: >-
+  Replace `master dispatcher`, `Agentera skill dispatcher`, bare `dispatch`,
+  `runtime dispatch substrate`, `worktree dispatch`, `pre-dispatch commit gate`,
+  and Orkestrera `conductor` metaphor with the canonical
+  `route`/`suggest`/`delegate`/`spawn`/`subagent-mechanism` vocabulary across
+  current docs, capability prose, schemas, scripts, tests, and SKILL.md prose.
+  Preserve qualified compatibility names only where shipped consumers require them.
+why: >-
+  The highest-priority open TODO. Vocabulary drift between legacy dispatch terms
+  and the Decision 46 ratified canonical terms creates confusion for agents and
+  humans reading the skill dispatch layer. This cleanup aligns prose with the
+  established protocol contract.
+constraints: >-
+  Keep this plan scoped to vocabulary replacement in current (non-archived) docs,
+  capability prose, schemas, scripts, tests, SKILL.md, TODO, CHANGELOG, and PROGRESS.
+  Do not rewrite historical archives, edit `.agentera/vision.yaml` or objective
+  state, advance Decision 57 implementation, perform broad vocabulary regressions
+  beyond the declared scope, or change app/profile/package state.
+tasks:
+  - number: 1
+    name: Core prose and SKILL.md vocabulary replacement
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN SKILL.md, capability prose files, and dispatcher guidance are inspected
+        WHEN legacy dispatch/conductor terms are found THEN they are replaced with the
+        canonical route/suggest/delegate/spawn vocabulary.
+      - >-
+        GIVEN compatibility identifiers exist for shipped consumers WHEN the replacement
+        is applied THEN those qualified compatibility names are preserved intact.
+  - number: 2
+    name: Schemas, scripts, and tests vocabulary alignment
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN trigger schemas, validation tests, and vocabulary authority tests are
+        inspected WHEN legacy dispatch terms appear in non-archived current files THEN
+        they are updated to canonical terms.
+      - >-
+        GIVEN the vocabulary authority test passes WHEN the replacement is applied THEN
+        `uv run pytest tests/test_bundle_skill_vocabulary_authority.py -q` succeeds.
+  - number: 3
+    name: Verification and closeout
+    depends_on:
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the full test suite runs WHEN vocabulary replacement is complete THEN
+        `uv run pytest -q` passes with no regressions.
+      - >-
+        GIVEN artifact validation and `git diff --check` pass WHEN closeout is complete
+        THEN the `[fix:2.4.x]` routing/execution vocabulary TODO is resolved.
+overall_acceptance:
+  - >-
+    Legacy dispatch/conductor vocabulary is replaced with canonical terms in all
+    current non-archived files.
+  - >-
+    Qualification compatibility names for shipped consumers are preserved.
+  - >-
+    The `[fix:2.4.x]` routing/execution vocabulary TODO is resolved.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-installed-hej-entrypoint-resolution-fix.yaml

@@ -17,7 +17,7 @@ TOUCH_DECISION_SATISFACTION_CAPABILITIES = [
 
 
 def _prose(capability: str) -> str:
-    return (CAPABILITIES_DIR / capability / "prose.md").read_text(encoding="utf-8")
+    return (CAPABILITIES_DIR / capability / "instructions.md").read_text(encoding="utf-8")
 
 
 def _validation_rules(capability: str) -> dict[str, dict[str, object]]:

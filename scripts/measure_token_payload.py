@@ -8,7 +8,7 @@
 Decision 41 used a byte-count proxy for the token target:
 
 - v1 baseline: all 12 v1 SKILL.md files plus SPEC.md
-- v2 payload: Agentera router, protocol.yaml, 12 capability prose.md files,
+- v2 payload: Agentera router, protocol.yaml, 12 capability instructions.md files,
   and 48 capability schema YAML files
 
 This script re-runs the v2 side of that benchmark and compares it to the
@@ -64,7 +64,7 @@ def measure(root: Path) -> Measurement:
     groups = [
         _group("master", [skill_root / "SKILL.md"]),
         _group("protocol", [skill_root / "protocol.yaml"]),
-        _group("prose", sorted(capabilities.glob("*/prose.md"))),
+        _group("prose", sorted(capabilities.glob("*/instructions.md"))),
         _group("capability_schemas", sorted(capabilities.glob("*/schemas/*.yaml"))),
     ]
     v2_bytes = sum(group.bytes for group in groups)

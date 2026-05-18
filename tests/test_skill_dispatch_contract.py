@@ -11,10 +11,10 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILL_MD = REPO_ROOT / "skills" / "agentera" / "SKILL.md"
 CAPABILITIES_DIR = REPO_ROOT / "skills" / "agentera" / "capabilities"
-HEJ_PROSE = CAPABILITIES_DIR / "hej" / "prose.md"
-ORK_PROSE = CAPABILITIES_DIR / "orkestrera" / "prose.md"
-PLANERA_PROSE = CAPABILITIES_DIR / "planera" / "prose.md"
-REALISERA_PROSE = CAPABILITIES_DIR / "realisera" / "prose.md"
+HEJ_PROSE = CAPABILITIES_DIR / "hej" / "instructions.md"
+ORK_PROSE = CAPABILITIES_DIR / "orkestrera" / "instructions.md"
+PLANERA_PROSE = CAPABILITIES_DIR / "planera" / "instructions.md"
+REALISERA_PROSE = CAPABILITIES_DIR / "realisera" / "instructions.md"
 CLI = REPO_ROOT / "scripts" / "agentera"
 VOCABULARY_MD = REPO_ROOT / "docs" / "vocabulary.md"
 DIRECT_SLASH_CAPABILITIES = {
@@ -155,7 +155,7 @@ def test_capability_prose_uses_slashless_handoff_labels() -> None:
     )
     violations: list[str] = []
 
-    for prose_path in sorted(CAPABILITIES_DIR.glob("*/prose.md")):
+    for prose_path in sorted(CAPABILITIES_DIR.glob("*/instructions.md")):
         relative_path = prose_path.relative_to(REPO_ROOT).as_posix()
         for line_number, line in enumerate(
             prose_path.read_text(encoding="utf-8").splitlines(), 1

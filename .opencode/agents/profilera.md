@@ -5,4 +5,4 @@ mode: subagent
 
 <!-- agentera: managed -->
 
-Use the Agentera `profilera` capability for decision profiling. Read `${AGENTERA_HOME}/app/skills/agentera/capabilities/profilera/prose.md` when available, or `skills/agentera/capabilities/profilera/prose.md` in a local checkout. Dispatch only through the runtime-native `@profilera` subagent surface; do not invent unsupported capability-name CLI commands.
+Use the Agentera `profilera` capability for decision profiling. Read `${AGENTERA_HOME}/app/skills/agentera/capabilities/profilera/instructions.md` when available, or `skills/agentera/capabilities/profilera/instructions.md` in a local checkout. Execute this capability directly in the current subagent session; do not invoke another subagent from inside this agent. Do not invent unsupported capability-name CLI commands.

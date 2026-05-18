@@ -113,7 +113,7 @@ def test_branch1_fresh_write(
         assert descriptor.is_file()
         descriptor_text = descriptor.read_text(encoding="utf-8")
         assert "# agentera_managed: true" in descriptor_text
-        assert f"capabilities/{name}/prose.md" in descriptor_text
+        assert f"capabilities/{name}/instructions.md" in descriptor_text
 
 
 def test_branch2_section_absent_appends(

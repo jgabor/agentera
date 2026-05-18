@@ -180,7 +180,7 @@ try {
     assert(descriptorText.includes("mode: subagent"), `${name}.md should declare documented subagent mode`);
     assert(descriptorText.includes(AGENTERA_AGENT_MARKER), `${name}.md should include the managed body marker`);
     assert(
-      descriptorText.includes(`capabilities/${name}/prose.md`),
+      descriptorText.includes(`capabilities/${name}/instructions.md`),
       `${name}.md should point to the capability prose source`
     );
   }

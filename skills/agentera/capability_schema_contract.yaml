@@ -7,7 +7,7 @@
 #   1. Required groups every capability schema must contain
 #   2. Entry structure within each group (numbered, stable IDs)
 #   3. Deprecation protocol (deprecated + replaced_by)
-#   4. Directory structure requirements (prose.md, schemas/)
+#   4. Directory structure requirements (instructions.md, schemas/)
 #   5. Machine-readable validation rules consumed by future contract loaders
 
 meta:
@@ -15,7 +15,7 @@ meta:
   version: "1.0.0"
   description: >-
     Defines what a valid capability schema looks like.
-    A capability directory must contain prose.md and a schemas/ directory.
+    A capability directory must contain instructions.md and a schemas/ directory.
     The union of all YAML files in schemas/ must contain all required groups.
   capability_type: contract
   self_referential: true
@@ -68,8 +68,8 @@ GROUP_PREFIXES:
   EXIT_CONDITIONS: E
 
 DIRECTORY_REQUIREMENTS:
-  prose_file:
-    path: prose.md
+  instruction_file:
+    path: instructions.md
     type: file
     required: true
     description: Behavioral instructions the agent reads.
@@ -84,7 +84,7 @@ DIRECTORY_REQUIREMENTS:
     minimum_count: 1
     description: Capability schema files whose union must satisfy REQUIRED_GROUPS.
   required_files:
-    - path: prose.md
+    - path: instructions.md
       description: Behavioral instructions the agent reads.
     - path: schemas/
       description: Directory containing YAML schema files.
@@ -94,7 +94,7 @@ DIRECTORY_REQUIREMENTS:
 ENTRY_REQUIREMENTS:
   description: >-
     Structured entry rules for each required capability schema group. These
-    rules mirror current validator behavior without changing enforcement yet.
+    rules mirror current validator behavior and keep enforcement contract-owned.
   default_required_fields:
     - id
     - description
@@ -252,7 +252,7 @@ ARTIFACTS:
     name: capability_directory
     path: "capabilities/<name>/"
     description: >-
-      A valid capability directory. Must contain prose.md and schemas/.
+      A valid capability directory. Must contain instructions.md and schemas/.
       The schemas/ directory holds YAML files whose union covers all required
       groups.
     produces: false
@@ -269,8 +269,8 @@ ARTIFACTS:
     consumes: true
   3:
     id: A3
-    name: prose_file
-    path: "capabilities/<name>/prose.md"
+    name: instruction_file
+    path: "capabilities/<name>/instructions.md"
     description: >-
       Behavioral instructions the agent reads. Markdown format. Contains the
       capability's workflow, personality, interaction rules, and examples.
@@ -291,10 +291,10 @@ VALIDATION:
     id: V1
     rule: directory_structure
     description: >-
-      Capability directory must contain prose.md and schemas/ directory.
+      Capability directory must contain instructions.md and schemas/ directory.
     severity: error
     checks:
-      - "prose.md is a file"
+      - "instructions.md is a file"
       - "schemas/ is a directory"
       - "schemas/ contains at least one .yaml file"
   2:
@@ -365,7 +365,7 @@ EXIT_CONDITIONS:
     id: E2
     condition: invalid_structure
     description: >-
-      Directory structure validation failed. Missing prose.md, schemas/
+      Directory structure validation failed. Missing instructions.md, schemas/
       directory, or YAML files.
     exit_code: 1
   3:
